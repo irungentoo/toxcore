@@ -45,8 +45,8 @@ typedef enum {
  * Call state identifiers.
  */
 typedef enum {
-    msi_CallInviting, /* when sending call invite */
-    msi_CallStarting, /* when getting call invite */
+    msi_CallRequesting, /* when sending call invite */
+    msi_CallRequested, /* when getting call invite */
     msi_CallActive,
     msi_CallHold,
     msi_CallOver

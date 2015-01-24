@@ -422,44 +422,6 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
 
 
 
-int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length )
-{
-    RTPMessage *msg = rtp_new_message (session, data, length);
-
-    if ( !msg ) return -1;
-
-    if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
-        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
-        rtp_free_msg ( session, msg );
-        return rtp_ErrorSending;
-    }
-
-
-    /* Set sequ number */
-    session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
-    rtp_free_msg ( session, msg );
-
-    return 0;
-}
-
-void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
-{
-    if ( !session ) {
-        if ( msg->ext_header ) {
-            free ( msg->ext_header->table );
-            free ( msg->ext_header );
-        }
-    } else {
-        if ( msg->ext_header && session->ext_header != msg->ext_header ) {
-            free ( msg->ext_header->table );
-            free ( msg->ext_header );
-        }
-    }
-
-    free ( msg->header );
-    free ( msg );
-}
-
 RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
 {
     RTPSession *retu = calloc(1, sizeof(RTPSession));
@@ -469,16 +431,10 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
         return NULL;
     }
 
-    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, retu)) {
-        LOGGER_ERROR("Error setting custom register handler for rtp session");
-        free(retu);
-        return NULL;
-    }
-
     LOGGER_DEBUG("Registered packet handler: pt: %d; fid: %d", payload_type, friend_num);
 
-    retu->version   = RTP_VERSION;   /* It's always 2 */
-    retu->padding   = 0;             /* If some additional data is needed about the packet */
+    retu->version   = RTP_VERSION; /* It's always 2 */
+    retu->padding   = 0;           /* If some additional data is needed about the packet */
     retu->extension = 0;           /* If extension to header is needed */
     retu->cc        = 1;           /* Amount of contributors */
     retu->csrc      = NULL;        /* Container */
@@ -498,23 +454,24 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
         free(retu);
         return NULL;
     }
-
+    
     retu->csrc[0] = retu->ssrc; /* Set my ssrc to the list receive */
 
     /* Also set payload type as prefix */
     retu->prefix = payload_type;
-
+    
+    retu->m = messenger;
     /*
      *
      */
     return retu;
 }
 
-void rtp_kill ( RTPSession *session, Messenger *messenger )
+void rtp_kill ( RTPSession *session )
 {
     if ( !session ) return;
 
-    custom_lossy_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
+    custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
 
     free ( session->ext_header );
     free ( session->csrc );
@@ -523,5 +480,48 @@ void rtp_kill ( RTPSession *session, Messenger *messenger )
 
     /* And finally free session */
     free ( session );
+}
 
+int rtp_register_for_receiving(RTPSession* session)
+{
+    return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
+                                               rtp_handle_packet, session);
+}
+
+int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length )
+{
+    RTPMessage *msg = rtp_new_message (session, data, length);
+    
+    if ( !msg ) return -1;
+    
+    if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
+        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
+        rtp_free_msg ( session, msg );
+        return rtp_ErrorSending;
+    }
+    
+    
+    /* Set sequ number */
+    session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
+    rtp_free_msg ( session, msg );
+    
+    return 0;
+}
+
+void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
+{
+    if ( !session ) {
+        if ( msg->ext_header ) {
+            free ( msg->ext_header->table );
+            free ( msg->ext_header );
+        }
+    } else {
+        if ( msg->ext_header && session->ext_header != msg->ext_header ) {
+            free ( msg->ext_header->table );
+            free ( msg->ext_header );
+        }
+    }
+    
+    free ( msg->header );
+    free ( msg );
 }

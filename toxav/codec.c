@@ -31,6 +31,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 #include <assert.h>
 #include <time.h>
@@ -38,6 +39,9 @@
 #include "msi.h"
 #include "rtp.h"
 #include "codec.h"
+
+
+#define DEFAULT_JBUF 6
 
 /* Good quality encode. */
 #define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
@@ -62,12 +66,12 @@ typedef struct {
     Payload **packets;
 } PayloadBuffer;
 
-static _Bool buffer_full(const PayloadBuffer *b)
+static bool buffer_full(const PayloadBuffer *b)
 {
     return (b->end + 1) % b->size == b->start;
 }
 
-static _Bool buffer_empty(const PayloadBuffer *b)
+static bool buffer_empty(const PayloadBuffer *b)
 {
     return b->end == b->start;
 }
@@ -121,7 +125,7 @@ static void buffer_free(PayloadBuffer *b)
 }
 
 /* JITTER BUFFER WORK */
-typedef struct _JitterBuffer {
+typedef struct {
     RTPMessage **queue;
     uint32_t     size;
     uint32_t     capacity;
@@ -225,99 +229,9 @@ static RTPMessage *jbuf_read(JitterBuffer *q, int32_t *success)
     return NULL;
 }
 
-static int init_video_decoder(CSSession *cs)
-{
-    int rc = vpx_codec_dec_init_ver(&cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0, VPX_DECODER_ABI_VERSION);
 
-    if ( rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
-        return -1;
-    }
 
-    return 0;
-}
 
-static int init_audio_decoder(CSSession *cs)
-{
-    int rc;
-    cs->audio_decoder = opus_decoder_create(cs->audio_decoder_sample_rate, cs->audio_decoder_channels, &rc );
-
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
-        return -1;
-    }
-
-    return 0;
-}
-
-static int init_video_encoder(CSSession *cs, uint16_t max_width, uint16_t max_height, uint32_t video_bitrate)
-{
-    vpx_codec_enc_cfg_t  cfg;
-    int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
-
-    if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
-        return -1;
-    }
-
-    cfg.rc_target_bitrate = video_bitrate;
-    cfg.g_w = max_width;
-    cfg.g_h = max_height;
-    cfg.g_pass = VPX_RC_ONE_PASS;
-    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
-    cfg.g_lag_in_frames = 0;
-    cfg.kf_min_dist = 0;
-    cfg.kf_max_dist = 48;
-    cfg.kf_mode = VPX_KF_AUTO;
-
-    rc = vpx_codec_enc_init_ver(&cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, VPX_ENCODER_ABI_VERSION);
-
-    if ( rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
-        return -1;
-    }
-
-    rc = vpx_codec_control(&cs->v_encoder, VP8E_SET_CPUUSED, 8);
-
-    if ( rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
-        return -1;
-    }
-
-    cs->max_width = max_width;
-    cs->max_height = max_height;
-    cs->video_bitrate = video_bitrate;
-
-    return 0;
-}
-
-static int init_audio_encoder(CSSession *cs)
-{
-    int rc = OPUS_OK;
-    cs->audio_encoder = opus_encoder_create(cs->audio_encoder_sample_rate,
-                                            cs->audio_encoder_channels, OPUS_APPLICATION_AUDIO, &rc);
-
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
-        return -1;
-    }
-
-    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(cs->audio_encoder_bitrate));
-
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
-        return -1;
-    }
-
-    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
-
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
-        return -1;
-    }
-
-    return 0;
-}
 
 /* PUBLIC */
 int cs_split_video_payload(CSSession *cs, const uint8_t *payload, uint16_t length)
@@ -406,17 +320,17 @@ void cs_do(CSSession *cs)
         /* Leave space for (possibly) other thread to queue more data after we read it here */
         pthread_mutex_unlock(cs->queue_mutex);
 
-        rc = vpx_codec_decode(&cs->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
+        rc = vpx_codec_decode(cs->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
         free(p);
 
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
         } else {
             vpx_codec_iter_t iter = NULL;
-            vpx_image_t *dest = vpx_codec_get_frame(&cs->v_decoder, &iter);
+            vpx_image_t *dest = vpx_codec_get_frame(cs->v_decoder, &iter);
 
             /* Play decoded images */
-            for (; dest; dest = vpx_codec_get_frame(&cs->v_decoder, &iter)) {
+            for (; dest; dest = vpx_codec_get_frame(cs->v_decoder, &iter)) {
                 if (cs->vcb.first)
                     cs->vcb.first(cs->agent, cs->call_idx, dest, cs->vcb.second);
 
@@ -430,13 +344,17 @@ void cs_do(CSSession *cs)
     pthread_mutex_unlock(cs->queue_mutex);
 }
 
-int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t height)
+int cs_set_sending_video_resolution(CSSession *cs, uint16_t width, uint16_t height)
 {
-    vpx_codec_enc_cfg_t cfg = *cs->v_encoder.config.enc;
-
+    if (!cs->v_encoding)
+        return -1;
+    
+    /* TODO FIXME reference is safe? */
+    vpx_codec_enc_cfg_t cfg = *cs->v_encoder[0].config.enc;
+    
     if (cfg.g_w == width && cfg.g_h == height)
         return 0;
-
+/*
     if (width * height > cs->max_width * cs->max_height) {
         vpx_codec_ctx_t v_encoder = cs->v_encoder;
 
@@ -447,12 +365,12 @@ int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t heig
 
         vpx_codec_destroy(&v_encoder);
         return 0;
-    }
+    }*/
 
     LOGGER_DEBUG("New video resolution: %u %u", width, height);
     cfg.g_w = width;
     cfg.g_h = height;
-    int rc = vpx_codec_enc_config_set(&cs->v_encoder, &cfg);
+    int rc = vpx_codec_enc_config_set(cs->v_encoder, &cfg);
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
@@ -462,27 +380,107 @@ int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t heig
     return 0;
 }
 
-int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate)
+int cs_set_sending_video_bitrate(CSSession *cs, uint32_t bitrate)
 {
-    vpx_codec_enc_cfg_t cfg = *cs->v_encoder.config.enc;
-
-    if (cfg.rc_target_bitrate == video_bitrate)
+    if (!cs->v_encoding)
+        return -1;
+    
+    /* TODO FIXME reference is safe? */
+    vpx_codec_enc_cfg_t cfg = *cs->v_encoder[0].config.enc;
+    if (cfg.rc_target_bitrate == bitrate)
         return 0;
 
     LOGGER_DEBUG("New video bitrate: %u", video_bitrate);
-    cfg.rc_target_bitrate = video_bitrate;
-    int rc = vpx_codec_enc_config_set(&cs->v_encoder, &cfg);
-
+    cfg.rc_target_bitrate = bitrate;
+    
+    int rc = vpx_codec_enc_config_set(cs->v_encoder, &cfg);
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return cs_ErrorSettingVideoBitrate;
     }
 
-    cs->video_bitrate = video_bitrate;
     return 0;
 }
 
-CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, uint32_t jbuf_size, int has_video)
+int cs_set_sending_audio_bitrate(CSSession *cs, int32_t rate)
+{
+    if (cs->audio_encoder == NULL)
+        return -1;
+    
+    int rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(rate));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    return 0;
+}
+
+int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate)
+{
+    /* TODO Find a better way? */
+    if (cs->audio_encoder == NULL)
+        return -1;
+    
+    int rc = OPUS_OK;
+    int last_rate = 0;
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(&last_rate));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while getting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    if (rate == last_rate)
+        return 0;
+        
+    OpusEncoder* new_enc = opus_encoder_create(rate, cs->channels, OPUS_APPLICATION_AUDIO, &rc);
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    opus_encoder_destroy(cs->audio_encoder);
+    cs->audio_encoder = new_enc;
+    return 0;
+}
+
+int cs_set_sending_audio_channels(CSSession* cs, int32_t count)
+{
+    /* TODO Find a better way? */
+    if (cs->audio_encoder == NULL)
+        return -1;
+    
+    if (cs->channels == count)
+        return 0;
+    
+    int rc = OPUS_OK;
+    int bitrate = 0;
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(&bitrate));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while getting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    cs->channels = count;
+    OpusEncoder* new_enc = opus_encoder_create(bitrate, cs->channels, OPUS_APPLICATION_AUDIO, &rc);
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    opus_encoder_destroy(cs->audio_encoder);
+    cs->audio_encoder = new_enc;
+    return 0;
+}
+
+CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, uint32_t p_video_b)
 {
     CSSession *cs = calloc(sizeof(CSSession), 1);
 
@@ -491,75 +489,40 @@ CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, 
         return NULL;
     }
 
-    if (create_recursive_mutex(cs->queue_mutex) != 0) {
-        LOGGER_WARNING("Failed to create recursive mutex!");
-        free(cs);
-        return NULL;
+    /* TODO this has to be exchanged in msi */
+    cs->max_video_frame_size = MAX_VIDEOFRAME_SIZE;
+    cs->video_frame_piece_size = VIDEOFRAME_PIECE_SIZE;
+    
+    if (s_audio_b > 0 && 0 != cs_enable_audio_sending(cs, s_audio_b)) { /* Sending audio enabled */
+        LOGGER_WARNING("Failed to enable audio sending!");
+        goto FAILURE;
     }
-
-    if ( !(cs->j_buf = jbuf_new(jbuf_size)) ) {
-        LOGGER_WARNING("Jitter buffer creaton failed!");
-        goto error;
+    
+    if (p_audio_b > 0 && 0 != cs_enable_audio_receiving(cs)) { /* Receiving audio enabled */
+        LOGGER_WARNING("Failed to enable audio receiving!");
+        goto FAILURE;
     }
-
-    cs->audio_encoder_bitrate        = cs_self->audio_bitrate;
-    cs->audio_encoder_sample_rate    = cs_self->audio_sample_rate;
-    cs->audio_encoder_channels       = cs_self->audio_channels;
-    cs->audio_encoder_frame_duration = cs_self->audio_frame_duration;
-
-    cs->audio_decoder_bitrate        = cs_peer->audio_bitrate;
-    cs->audio_decoder_sample_rate    = cs_peer->audio_sample_rate;
-    cs->audio_decoder_channels       = cs_peer->audio_channels;
-    cs->audio_decoder_frame_duration = cs_peer->audio_frame_duration;
-
-
-    cs->capabilities |= ( 0 == init_audio_encoder(cs) ) ? cs_AudioEncoding : 0;
-    cs->capabilities |= ( 0 == init_audio_decoder(cs) ) ? cs_AudioDecoding : 0;
-
-    if ( !(cs->capabilities & cs_AudioEncoding) || !(cs->capabilities & cs_AudioDecoding) ) goto error;
-
-    if ((cs->support_video = has_video)) {
-        cs->max_video_frame_size = MAX_VIDEOFRAME_SIZE;
-        cs->video_frame_piece_size = VIDEOFRAME_PIECE_SIZE;
-
-        cs->capabilities |= ( 0 == init_video_encoder(cs, cs_self->max_video_width,
-                              cs_self->max_video_height, cs_self->video_bitrate) ) ? cs_VideoEncoding : 0;
-        cs->capabilities |= ( 0 == init_video_decoder(cs) ) ? cs_VideoDecoding : 0;
-
-        if ( !(cs->capabilities & cs_VideoEncoding) || !(cs->capabilities & cs_VideoDecoding) ) goto error;
-
-        if ( !(cs->frame_buf = calloc(cs->max_video_frame_size, 1)) ) goto error;
-
-        if ( !(cs->split_video_frame = calloc(cs->video_frame_piece_size + VIDEOFRAME_HEADER_SIZE, 1)) )
-            goto error;
-
-        if ( !(cs->vbuf_raw = buffer_new(VIDEO_DECODE_BUFFER_SIZE)) ) goto error;
+        
+    if (s_video_b > 0 && 0 != cs_enable_video_sending(cs, s_video_b)) { /* Sending video enabled */
+        LOGGER_WARNING("Failed to enable video sending!");
+        goto FAILURE;
+    }
+            
+    if (p_video_b > 0  && 0 != cs_enable_video_receiving(cs)) { /* Receiving video enabled */
+        LOGGER_WARNING("Failed to enable video receiving!");
+        goto FAILURE;
     }
 
     return cs;
 
-error:
+FAILURE:
     LOGGER_WARNING("Error initializing codec session! Application might misbehave!");
 
-    pthread_mutex_destroy(cs->queue_mutex);
-
-    if ( cs->audio_encoder ) opus_encoder_destroy(cs->audio_encoder);
-
-    if ( cs->audio_decoder ) opus_decoder_destroy(cs->audio_decoder);
-
-
-    if (has_video) {
-        if ( cs->capabilities & cs_VideoDecoding ) vpx_codec_destroy(&cs->v_decoder);
-
-        if ( cs->capabilities & cs_VideoEncoding ) vpx_codec_destroy(&cs->v_encoder);
-
-        buffer_free(cs->vbuf_raw);
-
-        free(cs->frame_buf);
-        free(cs->split_video_frame);
-    }
-
-    jbuf_free(cs->j_buf);
+    cs_disable_audio_sending(cs);
+    cs_disable_audio_receiving(cs);
+    cs_disable_video_sending(cs);
+    cs_disable_video_receiving(cs);
+    
     free(cs);
 
     return NULL;
@@ -567,30 +530,224 @@ error:
 
 void cs_kill(CSSession *cs)
 {
-    if (!cs) return;
+    if (!cs) 
+        return;
 
-    /* queue_message will not be called since it's unregistered before cs_kill is called */
-    pthread_mutex_destroy(cs->queue_mutex);
-
-
-    if ( cs->audio_encoder )
-        opus_encoder_destroy(cs->audio_encoder);
-
-    if ( cs->audio_decoder )
-        opus_decoder_destroy(cs->audio_decoder);
-
-    if ( cs->capabilities & cs_VideoDecoding )
-        vpx_codec_destroy(&cs->v_decoder);
-
-    if ( cs->capabilities & cs_VideoEncoding )
-        vpx_codec_destroy(&cs->v_encoder);
-
-    jbuf_free(cs->j_buf);
-    buffer_free(cs->vbuf_raw);
-    free(cs->frame_buf);
+    /* NOTE: queue_message() will not be called since 
+     * the callback is unregistered before cs_kill is called.
+     */
+    
+    cs_disable_audio_sending(cs);
+    cs_disable_audio_receiving(cs);
+    cs_disable_video_sending(cs);
+    cs_disable_video_receiving(cs);
 
     LOGGER_DEBUG("Terminated codec state: %p", cs);
     free(cs);
+}
+
+int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate)
+{
+    if (cs->audio_encoder)
+        return 0;
+    
+    /**
+     * Encoder is initialized with default values. These values (Sampling rate, channel count) 
+     * change on the fly from toxav.
+     */
+    
+    int rc = OPUS_OK;
+    cs->audio_encoder = opus_encoder_create(48000, 2, OPUS_APPLICATION_AUDIO, &rc);
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_BITRATE(bitrate));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        goto FAILURE;
+    }
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        goto FAILURE;
+    }
+    
+    cs->channels = 2;
+    return 0;
+    
+FAILURE:
+    cs_disable_audio_sending(cs);
+    return -1;
+}
+
+int cs_enable_audio_receiving(CSSession* cs)
+{
+    if (cs->audio_decoder)
+        return 0;
+    
+    /**
+     * Decoder is initialized with default values. These values (Sampling rate, channel count) 
+     * change on the fly from toxav.
+     */
+    
+    int rc;
+    cs->audio_decoder = opus_decoder_create(48000, 2, &rc );
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    
+    if ( !(cs->j_buf = jbuf_new(DEFAULT_JBUF)) ) {
+        LOGGER_WARNING("Jitter buffer creaton failed!");
+        opus_decoder_destroy(cs->audio_decoder);
+        cs->audio_decoder = NULL;
+        return -1;
+    }
+    
+    
+    return 0;
+}
+
+int cs_enable_video_sending(CSSession* cs, uint32_t bitrate)
+{
+    if (cs->v_encoding)
+        return 0;
+    
+    vpx_codec_enc_cfg_t  cfg;
+    int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
+    
+    if (rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+    
+    rc = vpx_codec_enc_init_ver(cs->v_encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, 
+                                VPX_ENCODER_ABI_VERSION);
+    
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+    
+    /* So that we can use cs_disable_video_sending to clean up */
+    cs->v_encoding = true;
+    
+    if ( !(cs->split_video_frame = calloc(cs->video_frame_piece_size + VIDEOFRAME_HEADER_SIZE, 1)) )
+        goto FAILURE;
+    
+    cfg.rc_target_bitrate = bitrate;
+    cfg.g_w = 800;
+    cfg.g_h = 600;
+    cfg.g_pass = VPX_RC_ONE_PASS;
+    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+    cfg.g_lag_in_frames = 0;
+    cfg.kf_min_dist = 0;
+    cfg.kf_max_dist = 48;
+    cfg.kf_mode = VPX_KF_AUTO;
+    
+    
+    rc = vpx_codec_control(cs->v_encoder, VP8E_SET_CPUUSED, 8);
+    
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        goto FAILURE;
+    }
+    
+    return 0;
+    
+FAILURE:
+    cs_disable_video_sending(cs);
+    return -1;
+}
+
+int cs_enable_video_receiving(CSSession* cs)
+{
+    if (cs->v_decoding)
+        return 0;
+        
+    if (create_recursive_mutex(cs->queue_mutex) != 0) {
+        LOGGER_WARNING("Failed to create recursive mutex!");
+        return -1;
+    }
+    
+    int rc = vpx_codec_dec_init_ver(cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, 
+                                    NULL, 0, VPX_DECODER_ABI_VERSION);
+    
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
+        
+        pthread_mutex_destroy(cs->queue_mutex);
+        return -1;
+    }
+    
+    /* So that we can use cs_disable_video_sending to clean up */
+    cs->v_decoding = true;
+    
+    if ( !(cs->frame_buf = calloc(cs->max_video_frame_size, 1)) ) 
+        goto FAILURE;
+    
+    if ( !(cs->vbuf_raw = buffer_new(VIDEO_DECODE_BUFFER_SIZE)) ) 
+        goto FAILURE;
+    
+    return 0;
+    
+FAILURE:
+    cs_disable_video_receiving(cs);
+    return -1;
+}
+
+void cs_disable_audio_sending(CSSession* cs)
+{
+    if ( cs->audio_encoder ) {
+        opus_encoder_destroy(cs->audio_encoder);
+        cs->audio_encoder = NULL;
+        cs->channels = 0;
+    }
+}
+
+void cs_disable_audio_receiving(CSSession* cs)
+{
+    if ( cs->audio_decoder ) {
+        opus_decoder_destroy(cs->audio_decoder);
+        cs->audio_decoder = NULL;
+        jbuf_free(cs->j_buf);
+        cs->j_buf = NULL;
+    }
+}
+
+void cs_disable_video_sending(CSSession* cs)
+{
+    if (cs->v_encoding) {
+        cs->v_encoding = false;
+        
+        free(cs->split_video_frame);
+        cs->split_video_frame = NULL;
+        
+        vpx_codec_destroy(cs->v_encoder);
+    }
+}
+
+void cs_disable_video_receiving(CSSession* cs)
+{
+    if (cs->v_decoding) {
+        cs->v_decoding = false;
+        
+        buffer_free(cs->vbuf_raw);
+        cs->vbuf_raw = NULL;
+        free(cs->frame_buf);
+        cs->frame_buf = NULL;
+        
+        vpx_codec_destroy(cs->v_decoder);
+        pthread_mutex_destroy(cs->queue_mutex);
+    }
 }
 
 

@@ -75,18 +75,16 @@ typedef struct _CSSession {
         *
         *
         */
-    int support_video;
 
     /* video encoding */
-    vpx_codec_ctx_t  v_encoder;
+    vpx_codec_ctx_t v_encoder[1];
+    bool v_encoding;
     uint32_t frame_counter;
 
     /* video decoding */
-    vpx_codec_ctx_t  v_decoder;
-    int max_width;
-    int max_height;
-    unsigned int video_bitrate;
-
+    vpx_codec_ctx_t v_decoder[1];
+    bool v_decoding;
+    void *vbuf_raw; /* Un-decoded data */    
 
     /* Data handling */
     uint8_t *frame_buf; /* buffer for split video payloads */
@@ -112,18 +110,10 @@ typedef struct _CSSession {
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
-    int audio_encoder_bitrate;
-    int audio_encoder_sample_rate;
-    int audio_encoder_frame_duration;
-    int audio_encoder_channels;
-
+    int32_t channels;
+    
     /* audio decoding */
     OpusDecoder *audio_decoder;
-    int audio_decoder_bitrate;
-    int audio_decoder_sample_rate;
-    int audio_decoder_frame_duration;
-    int audio_decoder_channels;
-
     struct _JitterBuffer *j_buf;
 
 
@@ -138,24 +128,15 @@ typedef struct _CSSession {
         *
         */
 
-    uint64_t capabilities; /* supports*/
-
     /* Callbacks */
     PAIR(CSAudioCallback, void *) acb;
     PAIR(CSVideoCallback, void *) vcb;
 
-    /* Buffering */
-    void *vbuf_raw; /* Un-decoded data */
-    pthread_mutex_t queue_mutex[1];
-
     void *agent; /* Pointer to ToxAv */
     int32_t call_idx;
+    
+    pthread_mutex_t queue_mutex[1];
 } CSSession;
-
-/* Make sure to be called BEFORE corresponding rtp_new */
-CSSession *cs_new(const ToxAvCSettings *cs_self, const ToxAvCSettings *cs_peer, uint32_t jbuf_size, int has_video);
-/* Make sure to be called AFTER corresponding rtp_kill */
-void cs_kill(CSSession *cs);
 
 int cs_split_video_payload(CSSession *cs, const uint8_t *payload, uint16_t length);
 const uint8_t *cs_get_split_video_frame(CSSession *cs, uint16_t *size);
@@ -165,11 +146,35 @@ const uint8_t *cs_get_split_video_frame(CSSession *cs, uint16_t *size);
  */
 void cs_do(CSSession *cs);
 
+/** 
+ * Reconfigure video settings; return 0 on success or -1 on failure. 
+ */
+int cs_set_sending_video_resolution(CSSession *cs, uint16_t width, uint16_t height);
+int cs_set_sending_video_bitrate(CSSession *cs, uint32_t bitrate);
 
-/* Reconfigure video encoder; return 0 on success or -1 on failure. */
-int cs_set_video_encoder_resolution(CSSession *cs, uint16_t width, uint16_t height);
-int cs_set_video_encoder_bitrate(CSSession *cs, uint32_t video_bitrate);
+int cs_set_sending_audio_bitrate(CSSession* cs, int32_t rate);
+/* NOTE: Try not to call these a lot */
+int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate);
+int cs_set_sending_audio_channels(CSSession* cs, int32_t count);
 
+/** 
+ * Make sure to be called BEFORE corresponding rtp_new 
+ */
+CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, uint32_t p_video_b);
+/** 
+ * Make sure to be called AFTER corresponding rtp_kill 
+ */
+void cs_kill(CSSession *cs);
+
+int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate);
+int cs_enable_audio_receiving(CSSession* cs);
+int cs_enable_video_sending(CSSession* cs, uint32_t bitrate);
+int cs_enable_video_receiving(CSSession* cs);
+
+void cs_disable_audio_sending(CSSession* cs);
+void cs_disable_audio_receiving(CSSession* cs);
+void cs_disable_video_sending(CSSession* cs);
+void cs_disable_video_receiving(CSSession* cs);
 
 /* Internal. Called from rtp_handle_message */
 void queue_message(RTPSession *session, RTPMessage *msg);

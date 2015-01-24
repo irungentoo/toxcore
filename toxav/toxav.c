@@ -460,7 +460,7 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
         return av_ErrorInvalidState;
     }
 
-    if (cs_set_video_encoder_resolution(call->cs, input->d_w, input->d_h) < 0) {
+    if (cs_set_sending_video_resolution(call->cs, input->d_w, input->d_h) < 0) {
         pthread_mutex_unlock(call->mutex_control);
         return av_ErrorSettingVideoResolution;
     }
@@ -468,7 +468,7 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
     pthread_mutex_lock(call->mutex_encoding_video);
     pthread_mutex_unlock(call->mutex_control);
 
-    int rc = vpx_codec_encode(&call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
+    int rc = vpx_codec_encode(call->cs->v_encoder, input, call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(rc));
@@ -482,7 +482,7 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
     const vpx_codec_cx_pkt_t *pkt;
     int copied = 0;
 
-    while ( (pkt = vpx_codec_get_cx_data(&call->cs->v_encoder, &iter)) ) {
+    while ( (pkt = vpx_codec_get_cx_data(call->cs->v_encoder, &iter)) ) {
         if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
             if ( copied + pkt->data.frame.sz > dest_max ) {
                 pthread_mutex_unlock(call->mutex_encoding_video);
@@ -608,8 +608,6 @@ ToxAvCallState toxav_get_call_state(ToxAv *av, int32_t call_index)
 
 int toxav_capability_supported ( ToxAv *av, int32_t call_index, ToxAvCapabilities capability )
 {
-    return av->calls[call_index].cs ? av->calls[call_index].cs->capabilities & (CSCapabilities) capability : 0;
-    /* 0 is error here */
 }
 
 Tox *toxav_get_tox(ToxAv *av)

@@ -99,6 +99,7 @@ typedef struct _RTPSession {
     int             dest;
 
     struct _CSSession *cs;
+    Messenger* m;
 
 } RTPSession;
 
@@ -110,7 +111,12 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num );
 /**
  * Terminate the session.
  */
-void rtp_kill ( RTPSession *session, Messenger *messenger );
+void rtp_kill ( RTPSession* session );
+
+/**
+ * By default rtp is not in receiving state
+ */
+int rtp_register_for_receiving (RTPSession *session);
 
 /**
  * Sends msg to _RTPSession::dest

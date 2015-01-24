@@ -840,7 +840,7 @@ static int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *
 
     if ( call ) {
         if ( call->peers[0] == (uint32_t)msg->friend_id ) {
-            if (call->state == msi_CallInviting) {
+            if (call->state == msi_CallRequesting) {
                 /* The glare case. A calls B when at the same time
                  * B calls A. Who has advantage is set bey calculating
                  * 'bigger' Call id and then that call id is being used in
@@ -898,7 +898,7 @@ static int handle_recv_invite ( MSISession *session, MSICall *call, MSIMessage *
     }
 
     memcpy ( call->id, msg->callid.value, sizeof(msg->callid.value) );
-    call->state = msi_CallStarting;
+    call->state = msi_CallRequested;
 
     add_peer( call, msg->friend_id);
     flush_peer_csettings ( call, msg, 0 );
@@ -1009,7 +1009,7 @@ static int handle_recv_starting ( MSISession *session, MSICall *call, MSIMessage
 
         invoke_callback(session, call->call_idx, msi_OnSelfCSChange);
 
-    } else if ( call->state == msi_CallInviting ) {
+    } else if ( call->state == msi_CallRequesting ) {
         LOGGER_DEBUG("Session: %p Handling 'starting' on call: %d", session, call->call_idx );
 
         call->state = msi_CallActive;
@@ -1344,7 +1344,7 @@ int msi_invite ( MSISession *session,
     send_message ( session, call, msg_invite, friend_id );
     free( msg_invite );
 
-    call->state = msi_CallInviting;
+    call->state = msi_CallRequesting;
 
     call->request_timer_id = timer_alloc ( session, handle_timeout, call->call_idx, m_deftout );
 
@@ -1402,7 +1402,7 @@ int msi_answer ( MSISession *session, int32_t call_index, const MSICSettings *cs
         return msi_ErrorNoCall;
     }
 
-    if ( session->calls[call_index]->state != msi_CallStarting ) {
+    if ( session->calls[call_index]->state != msi_CallRequested ) {
         LOGGER_ERROR("Call is in invalid state!");
         pthread_mutex_unlock(session->mutex);
         return msi_ErrorInvalidState;
@@ -1434,7 +1434,7 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
         return msi_ErrorNoCall;
     }
 
-    if ( session->calls[call_index]->state != msi_CallInviting ) {
+    if ( session->calls[call_index]->state != msi_CallRequesting ) {
         LOGGER_ERROR("Call is in invalid state!");
         pthread_mutex_unlock(session->mutex);
         return msi_ErrorInvalidState;
@@ -1477,7 +1477,7 @@ int msi_reject ( MSISession *session, int32_t call_index, const char *reason )
         return msi_ErrorNoCall;
     }
 
-    if ( session->calls[call_index]->state != msi_CallStarting ) {
+    if ( session->calls[call_index]->state != msi_CallRequested ) {
         LOGGER_ERROR("Call is in invalid state!");
         pthread_mutex_unlock(session->mutex);
         return msi_ErrorInvalidState;
