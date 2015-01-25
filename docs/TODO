@@ -11,9 +11,11 @@ DHT:
     [IN PROGRESS] Hardening against attacks.
     [IN PROGRESS] Optimizing the code.
 
-[IN PROGRESS] Friend only group chats
-    [IN PROGRESS] Networking base.
-    [IN PROGRESS] Syncing chat state between clients (nicknames, list of who is in chat, etc...)
+[DONE] Friend only group chats
+    [DONE] Networking base.
+    [MOSTLY DONE] Syncing chat state between clients (nicknames, list of who is in chat, etc...)
+    [NOT STARTED] Private messages. (and adding friends from group chats using those private messages.)
+    [NOT STARTED] File transfers.
 
 [IN PROGRESS] Audio/Video
     [DONE] encoding/streaming/decoding
@@ -22,7 +24,7 @@ DHT:
     [IN PROGRESS] Auditing.
     [NEEDS TESTING] Video packet splitting.
     [IN PROGRESS] Prevent audio skew (seems to be easily solvable client side.)
-    [IN PROGRESS] Group chats.
+    [IN PROGRESS] Group chats, audio done.
 
 Friend_requests.c:
     [NOT STARTED] What happens when a friend request is received needs to be changed.
@@ -30,7 +32,7 @@ Friend_requests.c:
 
 [DONE] File transfers
 [NOT STARTED] Offline messaging
-[NOT STARTED] Friends list syncing
+[IN PROGRESS] Friends list syncing
 [DONE] IPV6 support
 
 [IN PROGRESS] Make toxcore thread safe.
@@ -38,14 +40,9 @@ Friend_requests.c:
 [NOT STARTED] Make the core save/datafile portable across client versions/different processor architectures.
 
 [MOSTLY DONE] A way for people to connect to people on Tox if they are behind a bad NAT that 
-blocks UDP (or is just unpunchable) (docs/TCP_Network.txt)
+blocks UDP (or is just unpunchable) (docs/TCP_Network.txt) (Current way doesn't scale very well.)
 
 [DONE] Encrypted Saves. (see: toxencryptsave)
 
-
-[IN PROGRESS] GUI (no official one chosen yet, a list of promising ones follows)
-https://github.com/notsecure/uTox
-https://github.com/tux3/qTox
-https://github.com/Reverp/Toxy
 
 [NOT STARTED] Security audit from professionals
