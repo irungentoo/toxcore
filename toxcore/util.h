@@ -22,8 +22,8 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -39,12 +39,12 @@
                                         static unsigned stat_buffer_counter_##name=0;
 #define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
 
-// Macroses for long keys and cert handle
+// Macros for long keys and cert handle
 #define ENC_KEY(key) (key)
-#define SIG_KEY(key) (key+ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+#define SIG_KEY(key) (key + ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
 #define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
 #define CERT_TARGET_KEY(cert) (cert + 1)
-#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERTIFICATE_SIGNED_SIZE)
+#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERT_SIGNED_SIZE)
 #define CERT_INVITEE_KEY(cert) (cert + 1)
 
 void unix_time_update();
@@ -79,12 +79,21 @@ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes);
 /* Converts 4 bytes to uint32_t */
 void bytes_to_U32(uint32_t *dest, const uint8_t *bytes);
 
+/* Converts 2 bytes to uint16_t */
+void bytes_to_U16(uint16_t *dest, const uint8_t *bytes);
+
 /* Convert uint64_t to byte string of size 8 */
 void U64_to_bytes(uint8_t *dest, uint64_t value);
 
 /* Convert uint32_t to byte string of size 4 */
 void U32_to_bytes(uint8_t *dest, uint32_t value);
 
+/* Convert uint16_t to byte string of size 2 */
+void U16_to_bytes(uint8_t *dest, uint16_t value);
+
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
-#endif /* __UTIL_H__ */
+/* Returns a 32-bit hash of key of size len */
+uint32_t jenkins_hash(const uint8_t *key, size_t len);
+
+#endif /* UTIL_H */

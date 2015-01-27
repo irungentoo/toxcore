@@ -1040,28 +1040,34 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
+
 /**********GROUP CHATS************/
 
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
+ *  Function(Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t))
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+                             void *userdata)
 {
     m->group_invite = function;
+    m->group_invite_userdata = userdata;
 }
-
 
 /* Send a group invite packet.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 on failure
  */
 int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0);
+    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0))
+        return 0;
+
+    return -1;
 }
+
 
 /****************FILE SENDING*****************/
 
@@ -1590,6 +1596,7 @@ Messenger *new_messenger(Messenger_Options *options)
     m->dht = new_DHT(m->net);
 
     if (m->dht == NULL) {
+        gc_kill_groupchats(m->group_handler);
         kill_networking(m->net);
         free(m);
         return NULL;
@@ -1604,6 +1611,13 @@ Messenger *new_messenger(Messenger_Options *options)
         return NULL;
     }
 
+    m->group_handler = new_groupchats(m);
+    if (m->group_handler == NULL) {
+        kill_networking(m->net);
+        free(m);
+        return NULL;
+    }
+
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
     m->onion_c =  new_onion_client(m->net_crypto);
@@ -1614,6 +1628,7 @@ Messenger *new_messenger(Messenger_Options *options)
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
+        gc_kill_groupchats(m->group_handler);
         kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
         kill_networking(m->net);
@@ -2129,7 +2144,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if (m->avatar_info_recv) {
                 /*
                  * A malicious user may send an incomplete avatar info message.
-                 * Check if it have the correct size for the format:
+                 * Check if it has the correct size for the format:
                  * [1 uint8_t: avatar format] [32 uint8_t: hash]
                  */
                 if (data_length == AVATAR_HASH_LENGTH + 1) {
@@ -2171,11 +2186,11 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_INVITE_GROUPCHAT: {
-            if (data_length == 0)
+            if (data_length != 1 + GROUP_INVITE_DATA_SIZE)
                 break;
 
             if (m->group_invite)
-                (*m->group_invite)(m, i, data, data_length);
+                (*m->group_invite)(m, i, data + 1, data_length - 1, m->group_invite_userdata);
 
             break;
         }
@@ -2398,6 +2413,7 @@ void do_messenger(Messenger *m)
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
+    do_gc(m->group_handler);
     do_friends(m);
     LANdiscovery(m);
 

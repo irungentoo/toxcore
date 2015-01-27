@@ -46,6 +46,7 @@
 #include "../../toxcore/onion_announce.h"
 #include "../../toxcore/TCP_server.h"
 #include "../../toxcore/util.h"
+#include "../../toxcore/group_announce.h"
 
 // misc
 #include "../bootstrap_node_packets.c"
@@ -595,6 +596,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    struct GC_Announce *group_announce = new_gca(dht);
+
+    if (group_announce == NULL) {
+        syslog(LOG_ERR, "Couldn't initialize group announce. Exiting.\n");
+        return 1;
+    }
+
     if (enable_motd) {
         if (bootstrap_set_callbacks(dht->net, DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
             syslog(LOG_DEBUG, "Set MOTD successfully.\n");
@@ -704,6 +712,7 @@ int main(int argc, char *argv[])
 
     while (1) {
         do_DHT(dht);
+        do_gca(group_announce);
 
         if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
             send_LANdiscovery(htons_port, dht);

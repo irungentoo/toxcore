@@ -166,13 +166,6 @@ typedef struct {
 }
 Node_format;
 
-typedef struct __attribute__ ((__packed__))
-{
-    uint8_t     client_id[EXT_PUBLIC_KEY];
-    IP_Port     ip_port;
-}
-Announced_Node_format;
-
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
@@ -241,8 +234,6 @@ typedef struct {
 
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;
-
-    struct ANNOUNCE *announce;
 
     struct PING   *ping;
     Ping_Array    dht_ping_array;

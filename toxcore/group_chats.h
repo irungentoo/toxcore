@@ -27,273 +27,341 @@
 
 #include <stdbool.h>
 
-#define MAX_NICK_BYTES 128
-#define MAX_TOPIC_BYTES 512
+typedef struct Messenger Messenger;
+
+#define TIME_STAMP_SIZE (sizeof(uint64_t))
+#define MAX_GC_PACKET_SIZE 65507
+#define MAX_GC_NICK_SIZE 128
+#define MAX_GC_TOPIC_SIZE 512
+#define MAX_GC_GROUP_NAME_SIZE 48
+#define MAX_GC_MESSAGE_SIZE 1368
+#define MAX_GC_PART_MESSAGE_SIZE 128
+#define MAX_GROUP_NUM_PEERS 1000   // temporary?
+
 #define GROUP_CLOSE_CONNECTIONS 6
-#define GROUP_PING_INTERVAL 5
 #define BAD_GROUPNODE_TIMEOUT 60
 
-#define TIME_STAMP (sizeof(uint64_t))
+/* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
+#define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
-// CERT_TYPE + INVITEE + TIME_STAMP + INVITEE_SIGNATURE + INVITER + TIME_STAMP + INVITER_SIGNATURE
-#define INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
-#define SEMI_INVITE_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
-// CERT_TYPE + TARGET + SOURCE + TIME_STAMP + SOURCE_SIGNATURE 
-#define COMMON_CERTIFICATE_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP + SIGNATURE_SIZE)
+/* CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE */
+#define INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+#define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
-#define MAX_CERTIFICATES_NUM 5
+enum {
+    GC_BAN,
+    GC_PROMOTE_OP,
+    GC_REVOKE_OP,
+    GC_SILENCE,
+    GC_INVITE,
+    GC_INVALID
+} GROUP_CERTIFICATE;
 
-// Certificates types
-#define CERT_INVITE 0
-#define CERT_BAN 1
-#define CERT_OP_CREDENTIALS 2
+/* Group roles are hierarchical where each role has a set of privileges plus
+ * all the privileges of the roles below it.
+ *
+ * - FOUNDER is all-powerful. Cannot be demoted or banned.
+ * - OP may issue bans, promotions and demotions to all roles below founder.
+ * - USER may talk, stream A/V, and change the group topic.
+ * - OBSERVER cannot interact with the group but may observe.
+ * - BANNED is dropped from the group.
+ */
+enum {
+    GR_FOUNDER,
+    GR_OP,
+    GR_USER,
+    GR_OBSERVER,
+    GR_BANNED,
+    GR_INVALID
+} GROUP_ROLE;
 
-// Roles
-#define FOUNDER_ROLE 1
-#define OP_ROLE 2
-#define USER_ROLE 4
-#define HUMAN_ROLE 8
-#define ELF_ROLE 16
-#define DWARF_ROLE 32
+enum {
+    GS_NONE,
+    GS_AWAY,
+    GS_BUSY,
+    GS_INVALID
+} GROUP_STATUS;
 
-// Statuses
-#define ONLINE_STATUS 0
-#define OFFLINE_STATUS 1
-#define AWAY_STATUS 2
-#define BUSY_STATUS 3
+enum {
+    GJ_NICK_TAKEN,
+    GJ_GROUP_FULL,
+    GJ_INVITES_DISABLED,
+    GJ_INVITE_FAILED,
+    GJ_INVALID
+} GROUP_JOIN_REJECTED;
 
-// Messages
-#define GROUP_CHAT_PING 0
-#define GROUP_CHAT_STATUS 1
-#define GROUP_CHAT_NEW_PEER 2
-#define GROUP_CHAT_CHANGE_NICK 3
-#define GROUP_CHAT_CHANGE_TOPIC 4
-#define GROUP_CHAT_MESSAGE 5
-#define GROUP_CHAT_ACTION 6
+enum {
+    CS_NONE,
+    CS_DISCONNECTED,
+    CS_CONNECTING,
+    CS_CONNECTED,
+    CS_INVALID
+} GROUP_CONNECTION_STATE;
+
+enum {
+    GM_PING,
+    GM_STATUS,
+    GM_NEW_PEER,
+    GM_CHANGE_NICK,
+    GM_CHANGE_TOPIC,
+    GM_PLAIN_MESSAGE,
+    GM_ACTION_MESSAGE,
+    GM_PRVT_MESSAGE,
+    GM_OP_CERTIFICATE,
+    GM_PEER_EXIT
+} GROUP_MESSAGE_TYPE;
 
 typedef struct {
-    uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
 
-    uint8_t     invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     common_certificate[COMMON_CERTIFICATE_SIGNED_SIZE][MAX_CERTIFICATES_NUM];
-    uint32_t    common_cert_num;
+    uint8_t     client_id[EXT_PUBLIC_KEY];
 
-    uint8_t     nick[MAX_NICK_BYTES];
+    uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
+    uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
+
+    uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
 
-    bool        banned;
-    uint64_t    banned_time;
+    uint8_t     status;
+    bool        ignore;
 
-    uint8_t     status; // TODO: enum
+    bool        verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
 
-    bool        verified; // is peer verified, e.g. was invited by verified peer. Recursion. Problems?
+    uint8_t     role;
 
-    uint64_t    role;
-
-    uint64_t    last_update_time; // updates when nick, role, verified, ip_port change or banned
+    uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
-} Group_Peer;
+} GC_GroupPeer;
 
+// TODO shouldn't be neccessarry
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
-} Peer_Address;
+} GC_PeerAddress;
 
 typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
-    uint64_t    role;    
-} Group_OPs;
+    uint8_t     role;
+} GC_ChatOps;
 
-// For founder needs
-typedef struct Group_Credentials {
+/* For founder needs */
+typedef struct {
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     chat_secret_key[EXT_SECRET_KEY];
     uint64_t    creation_time;
 
-    Group_OPs   *ops;
-} Group_Credentials;
+    GC_ChatOps   *ops;
+} GC_ChatCredentials;
 
-typedef struct Group_Chat {
+typedef struct GC_Announce GC_Announce;
+
+typedef struct GC_Chat {
     Networking_Core *net;
+
+    uint32_t    hash_id;   /* 32-bit hash of chat_public_key */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
-    uint8_t     self_invite_certificate[INVITE_CERTIFICATE_SIGNED_SIZE];
-    uint8_t     self_common_certificate[MAX_CERTIFICATES_NUM][COMMON_CERTIFICATE_SIGNED_SIZE];
-    uint32_t    self_common_cert_num;
 
-    Group_Peer  *group;
-    Peer_Address *group_address_only;
+    GC_GroupPeer   *group;
+    GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
 
-    Peer_Address close[GROUP_CLOSE_CONNECTIONS];
     uint32_t    numpeers;
+    uint16_t    maxpeers;
+    int         groupnumber;
 
-    uint8_t     self_nick[MAX_NICK_BYTES];
-    uint16_t    self_nick_len;
-    uint64_t    self_role;
-    uint8_t     self_status; // TODO: enum
-
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
-    uint8_t     founder_public_key[EXT_PUBLIC_KEY]; // not sure about it, invitee somehow needs to check it
-    uint8_t     topic[MAX_TOPIC_BYTES];
+    uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
+
+    uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
+    uint16_t    group_name_len;
+
+    uint8_t     connection_state;
+
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
 
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
+    uint64_t    self_last_rcvd_ping;
 
-    Group_Credentials *credentials;
+    GC_ChatCredentials *credentials;
+} GC_Chat;
 
-    uint32_t message_number;
-    void (*group_message)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
-    void *group_message_userdata;
-    void (*group_action)(struct Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata);
-    void *group_action_userdata;
+typedef struct GC_Session {
+    Messenger *messenger;
+    GC_Chat *chats;
+    GC_Announce *announce;
 
-} Group_Chat;
+    uint32_t num_chats;
 
-/* Sign input data
- * Add signer public key, time stamp and signature in the end of the data
- * Return -1 if fail, 0 if success
- */
-int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *private_key, const uint8_t *public_key, uint8_t *certificate);
-
-/* Make invite certificate
- * This cert is only half-done, cause it needs to be signed by inviter also
- * Return -1 if fail, 0 if success
- */
-int make_invite_cert(const uint8_t *private_key, const uint8_t *public_key, uint8_t *half_certificate);
-
-/* Make common certificate
- * Return -1 if fail, 0 if success
- */
-int make_common_cert(const uint8_t *private_key, const uint8_t *public_key, const uint8_t *target_pub_key, uint8_t *certificate, const uint8_t cert_type);
-
-/* Return -1 if certificate is corrupted
- * Return 0 if certificate is consistent
- * Works for invite and common certificates
- */
-int verify_cert_integrity(const uint8_t *certificate);
-
-/* Return -1 if we don't know who signed the certificate
- * Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
- * Return peer number in other cases
- * If inviter is verified peer, than invitee becomes verified also
- */ 
-int process_invite_cert(const Group_Chat *chat, const uint8_t *certificate);
-
-/* Return -1 if cert isn't issued by ops
- * Return issuer peer number in other cases
- */
-int process_common_cert(Group_Chat *chat, const uint8_t *certificate);
-
-// TODO !!!
-int process_chain_trust(Group_Chat *chat);
+    void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void *message_userdata;
+    void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void *private_message_userdata;
+    void (*action)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void *action_userdata;
+    void (*op_certificate)(Messenger *m, int, uint32_t, uint32_t, uint8_t, void *);
+    void *op_certificate_userdata;
+    void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void *nick_change_userdata;
+    void (*topic_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint16_t, void *);
+    void *topic_change_userdata;
+    void (*peer_join)(Messenger *m, int, uint32_t, void *);
+    void *peer_join_userdata;
+    void (*peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void *peer_exit_userdata;
+    void (*self_join)(Messenger *m, int, void *);
+    void *self_join_userdata;
+    void (*peerlist_update)(Messenger *m, int, void *);
+    void *peerlist_update_userdata;
+    void (*self_timeout)(Messenger *m, int, void *);
+    void *self_timeout_userdata;
+    void (*rejected)(Messenger *m, int, uint8_t, void *);
+    void *rejected_userdata;
+} GC_Session;
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_invite_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int gc_send_op_certificate(const GC_Chat *chat, uint32_t peernumber, uint8_t cert_type);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_invite_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
-                         const uint8_t *data, uint32_t length);
+int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_sync_request(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key);
+int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_sync_response(const Group_Chat *chat, IP_Port ip_port, const uint8_t *public_key,
-                         const uint8_t *data, uint32_t length);
+int gc_send_private_message(const GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_ping(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
+int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
+
+ /* Return topic length. */
+int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
+
+/* Returns group_name length */
+int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
+
+/* Return 0 if success
+ * Return -1 if fail
+ * Return -2 if nick is taken by another group member
+ */
+int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
+
+/* Return -1 on error
+ * Return nick length if success
+ */
+int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
+
+/* Return -1 on error.
+ * Return nick length if success
+ */
+int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
 
 /* Return -1 if fail
  * Return 0 if success
  */
-int send_gc_status(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, uint8_t status_type);
+int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Returns peernumber's status.
+ * Returns GS_INVALID on failure.
  */
-int send_gc_change_nick(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
+uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Returns number of peers */
+int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[], uint32_t num_peers);
+
+/* Returns number of peers in chat */
+int gc_get_numpeers(const GC_Chat *chat);
+
+/* Returns peernumber's group role.
+ * Returns GR_INVALID on failure.
  */
-int send_gc_change_topic(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
+uint8_t gc_get_role(const GC_Chat *chat, uint8_t peernumber);
 
-/* Return -1 if fail
- * Return 0 if success
- */
-int send_gc_new_peer(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers);
+void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                         const uint8_t *, uint16_t, void *), void *userdata);
 
-/* Return -1 if fail
- * Return 0 if success
- */
-int send_gc_action(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *certificate);
+void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                                 const uint8_t *, uint16_t, void *), void *userdata);
 
-/* Return -1 if fail
- * Return 0 if success
- */
-int send_gc_message(const Group_Chat *chat, const Peer_Address *rcv_peer, int numpeers, const uint8_t *message, uint32_t length);
+void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                        const uint8_t *, uint16_t, void *), void *userdata);
 
-void callback_groupmessage(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
-                           void *userdata);
+void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, uint32_t,
+                                uint8_t, void *), void *userdata);
 
-void callback_groupaction(Group_Chat *chat, void (*function)(Group_Chat *chat, int peernum, const uint8_t *data, uint32_t length, void *userdata),
+void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                             const uint8_t *, uint16_t, void *), void *userdata);
+
+void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                              const uint8_t *, uint16_t, void *), void *userdata);
+
+void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata);
+
+void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
+                           const uint8_t *, uint16_t, void *), void *userdata);
+
+void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
+
+void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *),
+                                 void *userdata);
+
+void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
+void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint8_t type, void *),
                           void *userdata);
 
-/* If we receive a group chat packet we call this function so it can be handled.
- * return 0 if packet is handled correctly.
- * return -1 if it didn't handle the packet or if the packet was shit.
+/* This is the main loop. */
+void do_gc(GC_Session* c);
+
+/* Returns a NULL pointer if fail.
+ * Make sure that DHT is initialized before calling this
  */
-int handle_groupchatpacket(void * _chat, IP_Port source, const uint8_t *packet, uint32_t length);
+GC_Session* new_groupchats(Messenger* m);
 
-/* Check if peer with client_id is in peer array.
- * return peer number if peer is in chat.
- * return -1 if peer is not in chat.
- * TODO: make this more efficient.
+/* Calls gc_group_exit() for every group chat */
+void gc_kill_groupchats(GC_Session* c);
+
+/* Creates a new group and announces it
+ *
+ * Return groupnumber on success
+ * Return -1 on failure
  */
-int peer_in_chat(const Group_Chat *chat, const uint8_t *client_id);
+int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
 
-int add_gc_peer(Group_Chat *chat, const Group_Peer *peer);
-int update_gc_peer(Group_Chat *chat, const Group_Peer *peer, uint32_t peernum);
-int gc_to_peer(const Group_Chat *chat, Group_Peer *peer);
-
-/* This is the main loop.
+/* Sends an invite request to an existing group using the invite key
+ *
+ * Return groupnumber on success.
+ * Reutrn -1 on failure.
  */
-void do_groupchat(Group_Chat *chat);
+int gc_group_join(GC_Session *c, const uint8_t *invite_key);
 
-/* Create new group credentials with pk ans sk.
- * Returns a new group credentials instance if success.
- * Returns a NULL pointer if fail.
+/* Joins a group using the invite data received in a friend's group invite.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure.
  */
-Group_Credentials *new_groupcredentials();
+int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length);
 
-/* Create a new group chat.
- * Returns a new group chat instance if success.
- * Returns a NULL pointer if fail.
+/* Sends parting message to group and deletes group.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
  */
-Group_Chat *new_groupchat(Networking_Core *net);
+int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint16_t length);
 
-/* Kill a group chat
- * Frees the memory and everything.
+/* Return groupnumber's GC_Chat pointer on success
+ * Return NULL on failure
  */
-void kill_groupchat(Group_Chat *chat);
+GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
 
-/* Kill a group chat credentials
- * Frees the memory and everything.
- */
-void kill_groupcredentials(Group_Credentials *credentials);
-
-#endif
+#endif  /* GROUP_CHATS_H */

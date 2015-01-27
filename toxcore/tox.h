@@ -26,7 +26,6 @@
 
 #include <stdint.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,6 +36,12 @@ extern "C" {
 #define TOX_MAX_MESSAGE_LENGTH 1368
 #define TOX_MAX_STATUSMESSAGE_LENGTH 1007
 #define TOX_MAX_FRIENDREQUEST_LENGTH 1016
+
+#define TOX_MAX_GROUP_TOPIC_LENGTH 512
+#define TOX_MAX_GROUP_PART_LENGTH 128
+#define TOX_MAX_GROUP_NAME_LENGTH 48
+#define TOX_GROUP_CHAT_ID_SIZE 64
+#define TOX_GROUP_INVITE_DATA_SIZE 160
 
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
@@ -73,7 +78,6 @@ typedef enum {
     TOX_USERSTATUS_INVALID
 }
 TOX_USERSTATUS;
-
 
 /* AVATAR_FORMAT -
  * Data formats for user avatar images
@@ -419,179 +423,6 @@ int tox_lossless_packet_registerhandler(Tox *tox, int32_t friendnumber, uint8_t 
  */
 int tox_send_lossless_packet(const Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length);
 
-/**********GROUP CHAT FUNCTIONS: WARNING Group chats undergo major changes right now ************/
-
-/* Group chat types for tox_callback_group_invite function.
- *
- * TOX_GROUPCHAT_TYPE_TEXT groupchats must be accepted with the tox_join_groupchat() function.
- * The function to accept TOX_GROUPCHAT_TYPE_AV is in toxav.
- */
-enum {
-    TOX_GROUPCHAT_TYPE_TEXT,
-    TOX_GROUPCHAT_TYPE_AV
-};
-
-/* Set the callback for group invites.
- *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
- *
- * data of length is what needs to be passed to join_groupchat().
- *
- * for what type means see the enum right above this comment.
- */
-void tox_callback_group_invite(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, const uint8_t *, uint16_t,
-                               void *), void *userdata);
-
-/* Set the callback for group messages.
- *
- *  Function(Tox *tox, int groupnumber, int peernumber, const uint8_t * message, uint16_t length, void *userdata)
- */
-void tox_callback_group_message(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
-                                void *userdata);
-
-/* Set the callback for group actions.
- *
- *  Function(Tox *tox, int groupnumber, int peernumber, const uint8_t * action, uint16_t length, void *userdata)
- */
-void tox_callback_group_action(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint16_t, void *),
-                               void *userdata);
-
-/* Set callback function for title changes.
- *
- * Function(Tox *tox, int groupnumber, int peernumber, uint8_t * title, uint8_t length, void *userdata)
- * if peernumber == -1, then author is unknown (e.g. initial joining the group)
- */
-void tox_callback_group_title(Tox *tox, void (*function)(Tox *tox, int, int, const uint8_t *, uint8_t,
-                              void *), void *userdata);
-
-/* Set callback function for peer name list changes.
- *
- * It gets called every time the name list changes(new peer/name, deleted peer)
- *  Function(Tox *tox, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
- */
-typedef enum {
-    TOX_CHAT_CHANGE_PEER_ADD,
-    TOX_CHAT_CHANGE_PEER_DEL,
-    TOX_CHAT_CHANGE_PEER_NAME,
-} TOX_CHAT_CHANGE;
-
-void tox_callback_group_namelist_change(Tox *tox, void (*function)(Tox *tox, int, int, uint8_t, void *),
-                                        void *userdata);
-
-/* Creates a new groupchat and puts it in the chats array.
- *
- * return group number on success.
- * return -1 on failure.
- */
-int tox_add_groupchat(Tox *tox);
-
-/* Delete a groupchat from the chats array.
- *
- * return 0 on success.
- * return -1 if failure.
- */
-int tox_del_groupchat(Tox *tox, int groupnumber);
-
-/* Copy the name of peernumber who is in groupnumber to name.
- * name must be at least TOX_MAX_NAME_LENGTH long.
- *
- * return length of name if success
- * return -1 if failure
- */
-int tox_group_peername(const Tox *tox, int groupnumber, int peernumber, uint8_t *name);
-
-/* Copy the public key of peernumber who is in groupnumber to pk.
- * pk must be TOX_CLIENT_ID_SIZE long.
- *
- * returns 0 on success
- * returns -1 on failure
- */
-int tox_group_peer_pubkey(const Tox *tox, int groupnumber, int peernumber, uint8_t *pk);
-
-/* invite friendnumber to groupnumber
- * return 0 on success
- * return -1 on failure
- */
-int tox_invite_friend(Tox *tox, int32_t friendnumber, int groupnumber);
-
-/* Join a group (you need to have been invited first.) using data of length obtained
- * in the group invite callback.
- *
- * returns group number on success
- * returns -1 on failure.
- */
-int tox_join_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length);
-
-/* send a group message
- * return 0 on success
- * return -1 on failure
- */
-int tox_group_message_send(Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
-
-/* send a group action
- * return 0 on success
- * return -1 on failure
- */
-int tox_group_action_send(Tox *tox, int groupnumber, const uint8_t *action, uint16_t length);
-
-/* set the group's title, limited to MAX_NAME_LENGTH
- * return 0 on success
- * return -1 on failure
- */
-int tox_group_set_title(Tox *tox, int groupnumber, const uint8_t *title, uint8_t length);
-
-/* Get group title from groupnumber and put it in title.
- * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
- *
- *  return length of copied title if success.
- *  return -1 if failure.
- */
-int tox_group_get_title(Tox *tox, int groupnumber, uint8_t *title, uint32_t max_length);
-
-/* Check if the current peernumber corresponds to ours.
- *
- * return 1 if the peernumber corresponds to ours.
- * return 0 on failure.
- */
-unsigned int tox_group_peernumber_is_ours(const Tox *tox, int groupnumber, int peernumber);
-
-/* Return the number of peers in the group chat on success.
- * return -1 on failure
- */
-int tox_group_number_peers(const Tox *tox, int groupnumber);
-
-/* List all the peers in the group chat.
- *
- * Copies the names of the peers to the name[length][TOX_MAX_NAME_LENGTH] array.
- *
- * Copies the lengths of the names to lengths[length]
- *
- * returns the number of peers on success.
- *
- * return -1 on failure.
- */
-int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t names[][TOX_MAX_NAME_LENGTH], uint16_t lengths[],
-                        uint16_t length);
-
-/* Return the number of chats in the instance m.
- * You should use this to determine how much memory to allocate
- * for copy_chatlist. */
-uint32_t tox_count_chatlist(const Tox *tox);
-
-/* Copy a list of valid chat IDs into the array out_list.
- * If out_list is NULL, returns 0.
- * Otherwise, returns the number of elements copied.
- * If the array was too small, the contents
- * of out_list will be truncated to list_size. */
-uint32_t tox_get_chatlist(const Tox *tox, int32_t *out_list, uint32_t list_size);
-
-/* return the type of groupchat (TOX_GROUPCHAT_TYPE_) that groupnumber is.
- *
- * return -1 on failure.
- * return type on success.
- */
-int tox_group_get_type(const Tox *tox, int groupnumber);
-
 /****************AVATAR FUNCTIONS*****************/
 
 /* Set the callback function for avatar information.
@@ -609,7 +440,6 @@ int tox_group_get_type(const Tox *tox, int groupnumber);
  */
 void tox_callback_avatar_info(Tox *tox, void (*function)(Tox *tox, int32_t, uint8_t, uint8_t *, void *),
                               void *userdata);
-
 
 /* Set the callback function for avatar data.
  * This callback will be called when the complete avatar data was correctly received from a
@@ -943,6 +773,307 @@ void tox_save(const Tox *tox, uint8_t *data);
  *  returns +1 on finding encrypted save data
  */
 int tox_load(Tox *tox, const uint8_t *data, uint32_t length);
+
+
+/**************** GROUPCHAT FUNCTIONS *****************/
+
+
+/* Group roles are hierarchical where each role has a set of privileges plus
+ * all the privileges of the roles below it.
+ *
+ * - FOUNDER is all-powerful. Cannot be demoted or banned.
+ * - OP may issue bans, promotions and demotions to all roles below founder.
+ * - USER may talk, stream A/V, and change the group topic.
+ * - OBSERVER cannot interact with the group but may observe.
+ * - BANNED is dropped from the group.
+ */
+typedef enum {
+    TOX_GR_FOUNDER,
+    TOX_GR_OP,
+    TOX_GR_USER,
+    TOX_GR_OBSERVER,
+    TOX_GR_BANNED,
+    TOX_GR_INVALID
+} TOX_GROUP_ROLE;
+
+/* parallel to TOX_USERSTATUS */
+typedef enum {
+    TOX_GS_NONE,
+    TOX_GS_AWAY,
+    TOX_GS_BUSY,
+    TOX_GS_INVALID
+} TOX_GROUP_STATUS;
+
+typedef enum {
+    TOX_GC_BAN,
+    TOX_GC_PROMOTE_OP,
+    TOX_GC_REVOKE_OP,
+    TOX_GC_SILENCE
+} TOX_GROUP_OP_CERTIFICATE;
+
+typedef enum {
+    TOX_GJ_NICK_TAKEN,
+    TOX_GJ_GROUP_FULL,
+    TOX_GJ_INVITES_DISABLED,
+    TOX_GJ_INVITE_FAILED
+} TOX_GROUP_JOIN_REJECTED;
+
+
+/* Set the callback for group invites from friends. Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * function(Tox *m, int32_t friendnumber, const uint8_t *invite_data, uint16_t length, void *userdata)
+ */
+void tox_callback_group_invite(Tox *tox, void (*function)(Tox *m, int32_t, const uint8_t *, uint16_t length, void *),
+                               void *userdata);
+
+/* Set the callback for group messages.
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
+ */
+void tox_callback_group_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
+                                void *), void *userdata);
+
+/* Set the callback for group private messages.
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
+ */
+void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
+                                        void *), void *userdata);
+
+/* Set the callback for group action messages (aka /me messages).
+ *
+ *  function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *message, uint16_t length, void *userdata)
+ */
+void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
+                               void *), void *userdata);
+
+/* Set the callback for group operator certificates.
+ *
+ *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, uint8_t certificate_type, void *userdata)
+ */
+void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t, uint8_t, void *),
+                                       void *userdata);
+
+/* Set the callback for group peer nickname changes.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *newnick, uint32_t length, void *userdata)
+ */
+void tox_callback_group_nick_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
+                                    void *), void *userdata);
+
+/* Set the callback for group topic changes.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *topic, uint16_t length, void *userdata)
+ */
+void tox_callback_group_topic_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *,
+                                     uint16_t, void *), void *userdata);
+
+/* Set the callback for group peer join.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, void *userdata)
+ */
+void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32_t, void *), void *userdata);
+
+/* Set the callback for group peer exit.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *partmessage, uint16_t length, void *userdata)
+ */
+void tox_callback_group_peer_exit(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
+                                  void *), void *userdata);
+
+/* Set the callback for group self join.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
+
+/* Set the callback for peerlist update. Should be used with tox_group_get_names.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_peerlist_update(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
+
+/* Set the callback for self timeout.
+ *
+ * function(Tox *m, int groupnumber, void *userdata)
+ */
+void tox_callback_group_self_timeout(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
+
+/* Set the callback for when your join attempt is rejected where type is one of TOX_GROUP_JOIN_REJECTED.
+ *
+ * function(Tox *m, int groupnumber, uint8_t type, void *userdata)
+ */
+void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t, void *), void *userdata);
+
+/* Adds a new groupchat to group chats array.
+ * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure.
+ */
+int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length);
+
+/* Creates and joins a groupchat using the supplied public key.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure.
+ */
+int tox_group_new_join(Tox *tox, const uint8_t *invite_key);
+
+/* Joins a group using the invite data received in a friend's group invite.
+ * Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure
+ */
+int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length);
+
+/* Invites friendnumber to groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_invite_friend(Tox *tox, int groupnumber, int32_t friendnumber);
+
+/* Deletes groupnumber's group chat and sends an optional parting message to group peers
+ * The maximum parting message length is TOX_MAX_GROUP_PART_LENGTH.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint16_t length);
+
+/* Sends a groupchat message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
+
+/* Sends a private message to peernumber in groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t peernumber, const uint8_t *message,
+                                   uint16_t length);
+
+/* Sends a groupchat action message to groupnumber. Messages should be split at TOX_MAX_MESSAGE_LENGTH bytes.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length);
+
+/* Issues a groupchat operator certificate for peernumber to groupnumber.
+ * type must be a TOX_GROUP_OP_CERTIFICATE.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t type);
+
+/* Sets your name for groupnumber. length should be no larger than TOX_MAX_NAME_LENGTH bytes.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ * Return -2 if nick is already taken by another group member
+ */
+int tox_group_set_self_name(Tox *tox, int groupnumber, const uint8_t *name, uint16_t length);
+
+/* Get peernumber's name in groupnumber's group chat.
+ * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
+ *
+ * Return length of name on success.
+ * Reutrn -1 on failure.
+ */
+int tox_group_get_peer_name(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t *name);
+
+/* Get your own name for groupnumber's group.
+ * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
+ *
+ * Return length of name on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_self_name(const Tox *tox, int groupnumber, uint8_t *name);
+
+/* Changes groupnumber's topic.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_set_topic(Tox *tox, int groupnumber, const uint8_t *topic, uint16_t length);
+
+/* Gets groupnumber's topic. topic buffer must be at least TOX_MAX_GROUP_TOPIC_LENGTH bytes.
+ *
+ * Return topic length on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topic);
+
+/* Gets groupnumber's group name. groupname buffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes.
+ *
+ * Return group name's length on success.
+ * Return -1 on failure.
+ */
+ int tox_group_get_group_name(const Tox *tox, int groupnumber, uint8_t *groupname);
+
+/* Sets your status for groupnumber.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type);
+
+/* Get peernumber's status in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_STATUS on success.
+ * Returns TOX_GS_INVALID on failure.
+ */
+uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber);
+
+/* Get peernumber's group role in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_ROLE on success.
+ * Returns TOX_GR_INVALID on failure.
+ */
+uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber);
+
+/* Get invite key for the groupchat from groupnumber.
+ * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.
+ *
+ * Returns 0 on success
+ * Retruns -1 on failure
+ */
+int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest);
+
+/* Copies the nicks of the peers in groupnumber to the nicks array.
+ * Copies the lengths of the nicks to the lengths array.
+ *
+ * Arrays must have room for num_peers items.
+ *
+ * Should be used with tox_callback_group_peerlist_update.
+ *
+ * returns number of peers on success.
+ * return -1 on failure.
+ */
+int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX_NAME_LENGTH], uint16_t lengths[],
+                        uint32_t num_peers);
+
+/* Returns the number of peers in groupnumber on success.
+ *
+ * Returns -1 on failure.
+ */
+int tox_group_get_number_peers(const Tox *tox, int groupnumber);
+
+/* Toggle ignore on peernumber in groupnumber.
+ * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.
+ * If ignore is 0, peer is unignored.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, uint8_t ignore);
 
 #ifdef __cplusplus
 }

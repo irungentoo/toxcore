@@ -80,11 +80,11 @@ char *id_toa(const uint8_t *id)
 {
     int i;
     char *str=STATIC_BUFFER_GETBUF(idtoa, CLIENT_ID_SIZE*2+1);
-    
+
     str[CLIENT_ID_SIZE*2]=0;
     for (i=0;i<CLIENT_ID_SIZE;i++)
         sprintf(str+2*i,"%02x",id[i]);
-    
+
     return str;
 }
 
@@ -183,53 +183,66 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 };
 
 /* Converts 8 bytes to uint64_t */
-inline__ void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
+inline void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
-        ( ( uint64_t ) *  bytes )              |
-        ( ( uint64_t ) * ( bytes + 1 ) << 8 )  |
+        ( ( uint64_t ) *   bytes )             |
+        ( ( uint64_t ) * ( bytes + 1 ) << 8  ) |
         ( ( uint64_t ) * ( bytes + 2 ) << 16 ) |
-        ( ( uint64_t ) * ( bytes + 3 ) << 24 )  |
+        ( ( uint64_t ) * ( bytes + 3 ) << 24 ) |
         ( ( uint64_t ) * ( bytes + 4 ) << 32 ) |
-        ( ( uint64_t ) * ( bytes + 5 ) << 40 )  |
+        ( ( uint64_t ) * ( bytes + 5 ) << 40 ) |
         ( ( uint64_t ) * ( bytes + 6 ) << 48 ) |
         ( ( uint64_t ) * ( bytes + 7 ) << 56 ) ;
 #else
-        ( ( uint64_t ) *  bytes        << 56 ) |
+        ( ( uint64_t ) *   bytes       << 56 ) |
         ( ( uint64_t ) * ( bytes + 1 ) << 48 ) |
-        ( ( uint64_t ) * ( bytes + 2 ) << 40 )  |
+        ( ( uint64_t ) * ( bytes + 2 ) << 40 ) |
         ( ( uint64_t ) * ( bytes + 3 ) << 32 ) |
-        ( ( uint64_t ) * ( bytes + 4 ) << 24 )  |
+        ( ( uint64_t ) * ( bytes + 4 ) << 24 ) |
         ( ( uint64_t ) * ( bytes + 5 ) << 16 ) |
-        ( ( uint64_t ) * ( bytes + 6 ) << 8 )  |
+        ( ( uint64_t ) * ( bytes + 6 ) << 8  ) |
         ( ( uint64_t ) * ( bytes + 7 ) ) ;
 #endif
 }
 
 /* Converts 4 bytes to uint32_t */
-inline__ void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
+inline void bytes_to_U32(uint32_t *dest, const uint8_t *bytes)
 {
     *dest =
 #ifdef WORDS_BIGENDIAN
-        ( ( uint32_t ) *  bytes )              |
-        ( ( uint32_t ) * ( bytes + 1 ) << 8 )  |
+        ( ( uint32_t ) *   bytes )             |
+        ( ( uint32_t ) * ( bytes + 1 ) << 8  ) |
         ( ( uint32_t ) * ( bytes + 2 ) << 16 ) |
         ( ( uint32_t ) * ( bytes + 3 ) << 24 ) ;
 #else
-        ( ( uint32_t ) *  bytes        << 24 ) |
+        ( ( uint32_t ) *   bytes       << 24 ) |
         ( ( uint32_t ) * ( bytes + 1 ) << 16 ) |
-        ( ( uint32_t ) * ( bytes + 2 ) << 8 )  |
+        ( ( uint32_t ) * ( bytes + 2 ) << 8  ) |
         ( ( uint32_t ) * ( bytes + 3 ) ) ;
 #endif
 }
 
+/* Converts 2 bytes to uint16_t */
+inline void bytes_to_U16(uint16_t *dest, const uint8_t *bytes)
+{
+    *dest =
+#ifdef WORDS_BIGENDIAN
+        ( ( uint16_t ) *   bytes )             |
+        ( ( uint16_t ) * ( bytes + 1 ) << 8 )  ;
+#else
+        ( ( uint16_t ) *   bytes       << 8 )  |
+        ( ( uint16_t ) * ( bytes + 1 ) ) ;
+#endif
+}
+
 /* Convert uint64_t to byte string of size 8 */
-inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
+inline void U64_to_bytes(uint8_t *dest, uint64_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
-    *(dest + 1) = ( value >> 8 );
+    *(dest + 1) = ( value >> 8  );
     *(dest + 2) = ( value >> 16 );
     *(dest + 3) = ( value >> 24 );
     *(dest + 4) = ( value >> 32 );
@@ -239,28 +252,40 @@ inline__ void U64_to_bytes(uint8_t *dest, uint64_t value)
 #else
     *(dest)     = ( value >> 56 );
     *(dest + 1) = ( value >> 48 );
-    *(dest + 2) = ( value >> 40 );    
+    *(dest + 2) = ( value >> 40 );
     *(dest + 3) = ( value >> 32 );
     *(dest + 4) = ( value >> 24 );
     *(dest + 5) = ( value >> 16 );
-    *(dest + 6) = ( value >> 8 );
+    *(dest + 6) = ( value >> 8  );
     *(dest + 7) = ( value );
 #endif
 }
 
 /* Convert uint32_t to byte string of size 4 */
-inline__ void U32_to_bytes(uint8_t *dest, uint32_t value)
+inline void U32_to_bytes(uint8_t *dest, uint32_t value)
 {
 #ifdef WORDS_BIGENDIAN
     *(dest)     = ( value );
-    *(dest + 1) = ( value >> 8 );
+    *(dest + 1) = ( value >> 8  );
     *(dest + 2) = ( value >> 16 );
     *(dest + 3) = ( value >> 24 );
 #else
     *(dest)     = ( value >> 24 );
     *(dest + 1) = ( value >> 16 );
-    *(dest + 2) = ( value >> 8 );
+    *(dest + 2) = ( value >> 8  );
     *(dest + 3) = ( value );
+#endif
+}
+
+/* Convert uint16_t to byte string of size 2 */
+inline void U16_to_bytes(uint8_t *dest, uint16_t value)
+{
+#ifdef WORDS_BIGENDIAN
+    *(dest)     = ( value );
+    *(dest + 1) = ( value >> 8 );
+#else
+    *(dest)     = ( value >> 8 );
+    *(dest + 1) = ( value );
 #endif
 }
 
@@ -285,4 +310,21 @@ int create_recursive_mutex(pthread_mutex_t *mutex)
     pthread_mutexattr_destroy(&attr);
 
     return 0;
+}
+
+/* Returns a 32-bit hash of key of size len */
+uint32_t jenkins_hash(const uint8_t *key, size_t len)
+{
+    uint32_t hash, i;
+
+    for (hash = i = 0; i < len; ++i) {
+        hash += key[i];
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
+    }
+
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    return hash;
 }

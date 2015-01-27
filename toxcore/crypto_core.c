@@ -44,18 +44,18 @@ void create_long_keypair(uint8_t *pk, uint8_t *sk)
  * Add signer long public key, time stamp and signature in the end of the data
  * Return -1 if fail, 0 if success
  */
-int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key, const uint8_t *ext_public_key, uint8_t *output)
+int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key,
+              const uint8_t *ext_public_key, uint8_t *output)
 {
     memcpy(output, data, length);
     memcpy(output + length, ext_public_key, EXT_PUBLIC_KEY);
 
-    unix_time_update(); 
     U64_to_bytes(output + length + EXT_PUBLIC_KEY, unix_time());
     uint32_t mlen = length + EXT_PUBLIC_KEY + sizeof(uint64_t);
 
     if (crypto_sign_detached(output+mlen, NULL, output, mlen, SIG_KEY(ext_secret_key)) != 0)
         return -1;
-    
+
     return 0;
 }
 
