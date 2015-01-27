@@ -880,7 +880,7 @@ static int handle_dht_fakeid(void *object, IP_Port source, const uint8_t *source
                            packet + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                            length - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES), plain);
 
-    if ((uint32_t)len != length - (DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES))
+    if (len != length - (DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES))
         return 1;
 
     if (memcmp(source_pubkey, plain + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES) != 0)
