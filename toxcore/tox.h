@@ -41,7 +41,6 @@ extern "C" {
 #define TOX_MAX_GROUP_PART_LENGTH 128
 #define TOX_MAX_GROUP_NAME_LENGTH 48
 #define TOX_GROUP_CHAT_ID_SIZE 64
-#define TOX_GROUP_INVITE_DATA_SIZE 160
 
 #define TOX_CLIENT_ID_SIZE 32
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
@@ -819,7 +818,7 @@ typedef enum {
 } TOX_GROUP_JOIN_REJECTED;
 
 
-/* Set the callback for group invites from friends. Length should be TOX_GROUP_INVITE_DATA_SIZE.
+/* Set the callback for group invites from friends.
  *
  * function(Tox *m, int32_t friendnumber, const uint8_t *invite_data, uint16_t length, void *userdata)
  */
@@ -921,7 +920,6 @@ int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length);
 int tox_group_new_join(Tox *tox, const uint8_t *invite_key);
 
 /* Joins a group using the invite data received in a friend's group invite.
- * Length should be TOX_GROUP_INVITE_DATA_SIZE.
  *
  * Return groupnumber on success.
  * Return -1 on failure

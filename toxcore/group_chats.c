@@ -42,10 +42,11 @@
 
 #define HASH_ID_BYTES (sizeof(uint32_t))
 #define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
+#define MAX_GC_PACKET_SIZE 65507
 
 #define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
-#define GROUP_PING_INTERVAL 60
-#define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 2 + 10)
+#define GROUP_PING_INTERVAL 40
+#define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 3 + 10)
 #define GROUP_SELF_TIMEOUT (GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL)
 
 /* Group packet ID's */
@@ -1981,16 +1982,18 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
 
     memcpy(packet + 1, chat->chat_public_key, EXT_PUBLIC_KEY);
 
-    IP_Port self_ipp;
-    if (ipport_self_copy(c->messenger->dht, &self_ipp) == -1)
+    GC_Announce_Node self_node;
+    if (make_self_gca_node(c->messenger->dht, &self_node, chat->self_public_key) == -1)
         return -1;
 
-    GC_Announce_Node node;
-    memcpy(node.client_id, chat->self_public_key, EXT_PUBLIC_KEY);
-    memcpy(&node.ip_port, &self_ipp, sizeof(IP_Port));
-    memcpy(packet + 1 + EXT_PUBLIC_KEY, &node, sizeof(GC_Announce_Node));
-    uint16_t length = 1 + EXT_PUBLIC_KEY + sizeof(GC_Announce_Node);
+    int node_len = pack_gca_nodes(packet + 1 + EXT_PUBLIC_KEY, sizeof(GC_Announce_Node), &self_node, 1);
 
+    if (node_len <= 0) {
+        fprintf(stderr, "pack_gca_nodes failed in gc_invite_friend (%d)\n", node_len);
+        return -1;
+    }
+
+    uint16_t length = 1 + EXT_PUBLIC_KEY + node_len;
     return send_group_invite_packet(c->messenger, friendnumber, packet, length);
 }
 
@@ -2001,14 +2004,12 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
  */
 int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
 {
-    if (length != GROUP_INVITE_DATA_SIZE)
-        return -1;
-
     uint8_t chat_id[EXT_PUBLIC_KEY];
     memcpy(chat_id, data, EXT_PUBLIC_KEY);
 
     GC_Announce_Node node;
-    memcpy(&node, data + EXT_PUBLIC_KEY, sizeof(GC_Announce_Node));
+    if (unpack_gca_nodes(&node, 1, 0, data + EXT_PUBLIC_KEY, length - EXT_PUBLIC_KEY, 0) != 1)
+        return -1;
 
     int groupnumber = create_new_group(c, false);
 

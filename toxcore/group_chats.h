@@ -30,7 +30,6 @@
 typedef struct Messenger Messenger;
 
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
-#define MAX_GC_PACKET_SIZE 65507
 #define MAX_GC_NICK_SIZE 128
 #define MAX_GC_TOPIC_SIZE 512
 #define MAX_GC_GROUP_NAME_SIZE 48

@@ -62,13 +62,28 @@ void gca_cleanup(struct GC_Announce *announce, const uint8_t *chat_id);
 struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
 
-
-/* Copies your own ip_port structure to target.
+/* Creates a GC_Announce_Node using client_id and your own IP_Port struct
  *
- * Return 0 on succcess.
+ * Return 0 on success.
  * Return -1 on failure.
  */
-int ipport_self_copy(DHT *dht, IP_Port *target);
+int make_self_gca_node(const DHT *dht, GC_Announce_Node *node, const uint8_t *client_id);
 
+/* Pack number of nodes into data of maxlength length.
+ *
+ * return length of packed nodes on success.
+ * return -1 on failure.
+ */
+int pack_gca_nodes(uint8_t *data, uint16_t length, const GC_Announce_Node *nodes, uint16_t number);
+
+/* Unpack data of length into nodes of size max_num_nodes.
+ * Put the length of the data processed in processed_data_len.
+ * tcp_enabled sets if TCP nodes are expected (true) or not (false).
+ *
+ * return number of unpacked nodes on success.
+ * return -1 on failure.
+ */
+int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len,
+                     const uint8_t *data, uint16_t length, uint8_t tcp_enabled);
 
 #endif /* GROUP_ANNOUNCE_H */
