@@ -25,12 +25,10 @@
 
 #define MAX_GCA_SELF_REQUESTS 30
 
-typedef struct __attribute__ ((__packed__))
-{
+typedef struct {
     uint8_t     client_id[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
-}
-GC_Announce_Node;
+} GC_Announce_Node;
 
 struct GC_Announce;
 /* Initiate the process of the announcement, claiming a node is part of a group chat.
@@ -61,6 +59,13 @@ void gca_cleanup(struct GC_Announce *announce, const uint8_t *chat_id);
 
 struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
+
+/* Copies your own ip_port structure to target. (TODO: This should probably go somewhere else)
+ *
+ * Return 0 on succcess.
+ * Return -1 on failure.
+ */
+int ipport_self_copy(const DHT *dht, IP_Port *target);
 
 /* Creates a GC_Announce_Node using client_id and your own IP_Port struct
  *

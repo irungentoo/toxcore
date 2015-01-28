@@ -122,9 +122,9 @@ typedef struct {
     uint16_t    nick_len;
 
     uint8_t     status;
-    bool        ignore;
+    uint8_t     ignore;
 
-    bool        verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
+    uint8_t     verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
 
     uint8_t     role;
 

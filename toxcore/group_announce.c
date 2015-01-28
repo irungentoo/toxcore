@@ -90,7 +90,7 @@ typedef struct GC_Announce {
  * Return 0 on succcess.
  * Return -1 on failure.
  */
-static int ipport_self_copy(const DHT *dht, IP_Port *target)
+int ipport_self_copy(const DHT *dht, IP_Port *target)
 {
     int i;
 
@@ -216,19 +216,19 @@ int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *
             host_family = AF_INET6;
         } else if (data[len_processed] == TOX_TCP_INET6) {
             if (!tcp_enabled)
-                return -2;
+                return -1;
 
             ipv6 = 1;
             host_family = TCP_INET6;
         } else {
-            return -3;
+            return -1;
         }
 
         if (ipv6 == 0) {
             uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + EXT_PUBLIC_KEY;
 
             if (len_processed + size > length)
-                return -4;
+                return -1;
 
             nodes[num].ip_port.ip.family = host_family;
             memcpy(&nodes[num].ip_port.ip.ip4, data + len_processed + 1, sizeof(IP4));
@@ -240,7 +240,7 @@ int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *
             uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + EXT_PUBLIC_KEY;
 
             if (len_processed + size > length)
-                return -5;
+                return -1;
 
             nodes[num].ip_port.ip.family = host_family;
             memcpy(&nodes[num].ip_port.ip.ip6, data + len_processed + 1, sizeof(IP6));
@@ -249,7 +249,7 @@ int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *
             len_processed += size;
             ++num;
         } else {
-            return -6;
+            return -1;
         }
     }
 
