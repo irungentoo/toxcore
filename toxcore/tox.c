@@ -97,7 +97,7 @@ int32_t tox_get_friend_number(const Tox *tox, const uint8_t *client_id)
 int tox_get_client_id(const Tox *tox, int32_t friendnumber, uint8_t *client_id)
 {
     const Messenger *m = tox;
-    return getclient_id(m, friendnumber, client_id);
+    return get_real_pk(m, friendnumber, client_id);
 }
 
 /* Remove a friend. */
