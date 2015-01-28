@@ -37,7 +37,6 @@
 #define MAX_STATUSMESSAGE_LENGTH 1007
 #define AVATAR_MAX_DATA_LENGTH 16384
 #define AVATAR_HASH_LENGTH crypto_hash_sha256_BYTES
-#define GROUP_INVITE_DATA_SIZE (EXT_PUBLIC_KEY + sizeof(GC_Announce_Node))
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 

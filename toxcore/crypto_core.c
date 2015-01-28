@@ -41,19 +41,17 @@ void create_long_keypair(uint8_t *pk, uint8_t *sk)
 }
 
 /* Sign input data
- * Add signer long public key, time stamp and signature in the end of the data
+ * Add a timestamp and signature at the end of the data
+ *
  * Return -1 if fail, 0 if success
  */
-int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key,
-              const uint8_t *ext_public_key, uint8_t *output)
+int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key, uint8_t *output)
 {
     memcpy(output, data, length);
-    memcpy(output + length, ext_public_key, EXT_PUBLIC_KEY);
+    U64_to_bytes(output + length, unix_time());
+    uint32_t mlen = length + sizeof(uint64_t);
 
-    U64_to_bytes(output + length + EXT_PUBLIC_KEY, unix_time());
-    uint32_t mlen = length + EXT_PUBLIC_KEY + sizeof(uint64_t);
-
-    if (crypto_sign_detached(output+mlen, NULL, output, mlen, SIG_KEY(ext_secret_key)) != 0)
+    if (crypto_sign_detached(output + mlen, NULL, output, mlen, SIG_KEY(ext_secret_key)) != 0)
         return -1;
 
     return 0;
@@ -80,7 +78,7 @@ int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length)
     return (1 & ((check - 1) >> 8)) - 1;
 }
 
-/*  return a random number.
+/*  return a random uint32_t.
  */
 uint32_t random_int(void)
 {

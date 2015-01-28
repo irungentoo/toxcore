@@ -44,10 +44,11 @@
 void create_long_keypair(uint8_t *pk, uint8_t *sk);
 
 /* Sign input data
- * Add signer long public key, time stamp and signature in the end of the data
+ * Add a timestamp and signature at the end of the data
+ *
  * Return -1 if fail, 0 if success
  */
-int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key, const uint8_t *ext_public_key, uint8_t *output);
+int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key, uint8_t *output);
 
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,

@@ -30,7 +30,6 @@
 typedef struct Messenger Messenger;
 
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
-#define MAX_GC_PACKET_SIZE 65507
 #define MAX_GC_NICK_SIZE 128
 #define MAX_GC_TOPIC_SIZE 512
 #define MAX_GC_GROUP_NAME_SIZE 48
@@ -123,9 +122,9 @@ typedef struct {
     uint16_t    nick_len;
 
     uint8_t     status;
-    bool        ignore;
+    uint8_t     ignore;
 
-    bool        verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
+    uint8_t     verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
 
     uint8_t     role;
 
