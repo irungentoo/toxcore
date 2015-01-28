@@ -132,10 +132,10 @@ static int pack_gc_peers(uint8_t *data, uint16_t length, const GC_GroupPeer *pee
         packed_length += INVITE_CERT_SIGNED_SIZE;
         memcpy(data + packed_length, peers[i].role_certificate, ROLE_CERT_SIGNED_SIZE);
         packed_length += ROLE_CERT_SIGNED_SIZE;
-        memcpy(data + packed_length, peers[i].nick, peers[i].nick_len);
-        packed_length += MAX_GC_NICK_SIZE;
         U16_to_bytes(data + packed_length, peers[i].nick_len);
         packed_length += sizeof(uint16_t);
+        memcpy(data + packed_length, peers[i].nick, peers[i].nick_len);
+        packed_length += peers[i].nick_len;
         memcpy(data + packed_length, &peers[i].status, sizeof(uint8_t));
         packed_length += sizeof(uint8_t);
         memcpy(data + packed_length, &peers[i].verified, sizeof(uint8_t));
@@ -229,13 +229,15 @@ int unpack_gc_peers(GC_GroupPeer *peers, uint16_t max_num_peers, uint16_t *proce
         len_processed += INVITE_CERT_SIGNED_SIZE;
         memcpy(peers[num].role_certificate, data + len_processed, ROLE_CERT_SIGNED_SIZE);
         len_processed += ROLE_CERT_SIGNED_SIZE;
-        memcpy(peers[num].nick, data + len_processed, MAX_GC_NICK_SIZE);
-        len_processed += MAX_GC_NICK_SIZE;
         bytes_to_U16(&peers[num].nick_len, data + len_processed);
         len_processed += sizeof(uint16_t);
+
+        if (peers[num].nick_len > MAX_GC_NICK_SIZE)
+            peers[num].nick_len = MAX_GC_NICK_SIZE;
+
+        memcpy(peers[num].nick, data + len_processed, peers[num].nick_len);
+        len_processed += peers[num].nick_len;
         memcpy(&peers[num].status, data + len_processed, sizeof(uint8_t));
-        len_processed += sizeof(uint8_t);
-        memcpy(&peers[num].ignore, data + len_processed, sizeof(uint8_t));
         len_processed += sizeof(uint8_t);
         memcpy(&peers[num].verified, data + len_processed, sizeof(uint8_t));
         len_processed += sizeof(uint8_t);
@@ -245,6 +247,8 @@ int unpack_gc_peers(GC_GroupPeer *peers, uint16_t max_num_peers, uint16_t *proce
         len_processed += sizeof(uint64_t);
         bytes_to_U64(&peers[num].last_rcvd_ping, data + len_processed);
         len_processed += sizeof(uint64_t);
+        memcpy(&peers[num].ignore, data + len_processed, sizeof(uint8_t));
+        len_processed += sizeof(uint8_t);
 
         ++num;
     }
@@ -420,6 +424,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, IP_Port ipp, c
     int unpacked_peers = unpack_gc_peers(peers, num_peers, &peers_len, data + len, group_size, 1);
 
     if (unpacked_peers != num_peers || peers_len == 0) {
+        free(peers);
         fprintf(stderr, "unpack peers failed: got %d expected %d\n", unpacked_peers, num_peers);
         return -1;
     }
@@ -546,6 +551,7 @@ static int handle_gc_sync_request(const Messenger *m, GC_Chat *chat, IP_Port ipp
     len += sizeof(uint32_t);
 
     int peers_len = pack_gc_peers(response + len, sizeof(GC_GroupPeer) * num_peers, peers, num_peers);
+    free(peers);
 
     if (peers_len <= 0) {
         fprintf(stderr, "pack_gc_peers failed %d\n", peers_len);
@@ -553,7 +559,6 @@ static int handle_gc_sync_request(const Messenger *m, GC_Chat *chat, IP_Port ipp
     }
 
     len += peers_len;
-    free(peers);
 
     return gc_send_sync_response(chat, ipp, public_key, response, len);
 }
@@ -869,13 +874,12 @@ static int send_gc_self_join(const GC_Session *c, const GC_Chat *chat)
     data[0] = GM_NEW_PEER;
 
     int peers_len = pack_gc_peers(data + 1, sizeof(GC_GroupPeer), peer, 1);
+    free(peer);
 
     if (peers_len <= 0) {
         fprintf(stderr, "pack_gc_peers failed in send_gc_self_join %d\n", peers_len);
         return -1;
     }
-
-    free(peer);
 
     uint32_t length = 1 + peers_len;
     uint32_t i;
@@ -906,6 +910,7 @@ static int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const 
     int unpacked_peers = unpack_gc_peers(peer, 1, 0, data, sizeof(GC_GroupPeer), 1);
 
     if (unpacked_peers != 1) {
+        free(peer);
         fprintf(stderr, "unpack peers failed in handle_gc_new_peer: got %d expected 1\n", unpacked_peers);
         return -1;
     }
@@ -1955,9 +1960,8 @@ static GC_ChatCredentials *new_groupcredentials(GC_Chat *chat)
 {
     GC_ChatCredentials *credentials = malloc(sizeof(GC_ChatCredentials));
 
-    if (credentials == NULL) {
+    if (credentials == NULL)
         return NULL;
-    }
 
     create_long_keypair(credentials->chat_public_key, credentials->chat_secret_key);
 
