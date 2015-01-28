@@ -868,11 +868,16 @@ static int send_gc_self_join(const GC_Session *c, const GC_Chat *chat)
     uint8_t data[MAX_GC_PACKET_SIZE];
     data[0] = GM_NEW_PEER;
 
-    memcpy(data + 1, peer, sizeof(GC_GroupPeer));
-    uint32_t length = 1 + sizeof(GC_GroupPeer);
+    int peers_len = pack_gc_peers(data + 1, sizeof(GC_GroupPeer), peer, 1);
+
+    if (peers_len <= 0) {
+        fprintf(stderr, "pack_gc_peers failed in send_gc_self_join %d\n", peers_len);
+        return -1;
+    }
 
     free(peer);
 
+    uint32_t length = 1 + peers_len;
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; i++) {
@@ -893,17 +898,17 @@ static int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const 
     if (chat == NULL)
         return -1;
 
-    if (length != sizeof(GC_GroupPeer)) {
-        fprintf(stderr, "handle_gc_new_peer fail! wrong length\n");
-        return -1;
-    }
-
     GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
 
     if (peer == NULL)
         return -1;
 
-    memcpy(peer, data, length);
+    int unpacked_peers = unpack_gc_peers(peer, 1, 0, data, sizeof(GC_GroupPeer), 1);
+
+    if (unpacked_peers != 1) {
+        fprintf(stderr, "unpack peers failed in handle_gc_new_peer: got %d expected 1\n", unpacked_peers);
+        return -1;
+    }
 
     // TODO: Probably we should make it also optional, but I'm personally against it (c) henotba
     if (verify_cert_integrity(peer->invite_certificate) == -1) {
