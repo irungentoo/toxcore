@@ -74,56 +74,17 @@ static int peer_nick_is_taken(const GC_Chat *chat, const uint8_t *nick, uint16_t
  */
 static int pack_gc_peers(uint8_t *data, uint16_t length, const GC_GroupPeer *peers, uint16_t number)
 {
-    // TODO: Split the ip_port part into its own function and reuse it with all pack/unpack functions
     uint32_t i, packed_length = 0;
 
     for (i = 0; i < number; ++i) {
-        int ipv6 = -1;
-        uint8_t net_family;
+        int ipp_size = pack_ip_port(data, length, packed_length, &peers[i].ip_port);
 
-        if (peers[i].ip_port.ip.family == AF_INET) {
-            ipv6 = 0;
-            net_family = TOX_AF_INET;
-        } else if (peers[i].ip_port.ip.family == TCP_INET) {
-            ipv6 = 0;
-            net_family = TOX_TCP_INET;
-        } else if (peers[i].ip_port.ip.family == AF_INET6) {
-            ipv6 = 1;
-            net_family = TOX_AF_INET6;
-        } else if (peers[i].ip_port.ip.family == TCP_INET6) {
-            ipv6 = 1;
-            net_family = TOX_TCP_INET6;
-        } else {
+        if (ipp_size == -1)
             return -1;
-        }
 
-        uint32_t size = 0;
+        packed_length += ipp_size;
 
-        if (ipv6 == 0) {
-            size = 1 + sizeof(IP4) + sizeof(uint16_t);
-
-            if (packed_length + size > length)
-                return -1;
-
-            data[packed_length] = net_family;
-            memcpy(data + packed_length + 1, &peers[i].ip_port.ip.ip4, sizeof(IP4));
-            memcpy(data + packed_length + 1 + sizeof(IP4), &peers[i].ip_port.port, sizeof(uint16_t));
-            packed_length += size;
-        } else if (ipv6 == 1) {
-            size = 1 + sizeof(IP6) + sizeof(uint16_t);
-
-            if (packed_length + size > length)
-                return -1;
-
-            data[packed_length] = net_family;
-            memcpy(data + packed_length + 1, &peers[i].ip_port.ip.ip6, sizeof(IP6));
-            memcpy(data + packed_length + 1 + sizeof(IP6), &peers[i].ip_port.port, sizeof(uint16_t));
-            packed_length += size;
-        } else {
-            return -1;
-        }
-
-        if (packed_length + sizeof(GC_GroupPeer) - size > length)
+        if (packed_length + sizeof(GC_GroupPeer) - ipp_size > length)
             return -1;
 
         memcpy(data + packed_length, peers[i].client_id, EXT_PUBLIC_KEY);
@@ -169,58 +130,14 @@ int unpack_gc_peers(GC_GroupPeer *peers, uint16_t max_num_peers, uint16_t *proce
     uint32_t num = 0, len_processed = 0;
 
     while (num < max_num_peers && len_processed < length) {
-        int ipv6 = -1;
-        uint8_t host_family;
+        int ipp_size = unpack_ip_port(&peers[num].ip_port, len_processed, data, length, tcp_enabled);
 
-        if (data[len_processed] == TOX_AF_INET) {
-            ipv6 = 0;
-            host_family = AF_INET;
-        } else if (data[len_processed] == TOX_TCP_INET) {
-            if (!tcp_enabled)
-                return -1;
-
-            ipv6 = 0;
-            host_family = TCP_INET;
-        } else if (data[len_processed] == TOX_AF_INET6) {
-            ipv6 = 1;
-            host_family = AF_INET6;
-        } else if (data[len_processed] == TOX_TCP_INET6) {
-            if (!tcp_enabled)
-                return -1;
-
-            ipv6 = 1;
-            host_family = TCP_INET6;
-        } else {
+        if (ipp_size == -1)
             return -1;
-        }
 
-        uint32_t size = 0;
+        len_processed += ipp_size;
 
-        if (ipv6 == 0) {
-            size = 1 + sizeof(IP4) + sizeof(uint16_t);
-
-            if (len_processed + size > length)
-                return -1;
-
-            peers[num].ip_port.ip.family = host_family;
-            memcpy(&peers[num].ip_port.ip.ip4, data + len_processed + 1, sizeof(IP4));
-            memcpy(&peers[num].ip_port.port, data + len_processed + 1 + sizeof(IP4), sizeof(uint16_t));
-            len_processed += size;
-        } else if (ipv6 == 1) {
-            size = 1 + sizeof(IP6) + sizeof(uint16_t);
-
-            if (len_processed + size > length)
-                return -1;
-
-            peers[num].ip_port.ip.family = host_family;
-            memcpy(&peers[num].ip_port.ip.ip6, data + len_processed + 1, sizeof(IP6));
-            memcpy(&peers[num].ip_port.port, data + len_processed + 1 + sizeof(IP6), sizeof(uint16_t));
-            len_processed += size;
-        } else {
-            return -1;
-        }
-
-        if (len_processed + sizeof(GC_GroupPeer) - size > length)
+        if (len_processed + sizeof(GC_GroupPeer) - ipp_size > length)
             return -1;
 
         memcpy(peers[num].client_id, data + len_processed, EXT_PUBLIC_KEY);

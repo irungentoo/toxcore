@@ -166,6 +166,23 @@ typedef struct {
 }
 Node_format;
 
+/* Packs an IP_Port structure into data of max size length.
+ * Packed_length is the offset of data currently packed.
+ *
+ * Returns size of packed IP_Port data on success
+ * Return -1 on failure.
+ */
+int pack_ip_port(uint8_t *data, uint16_t length, uint16_t packed_length, const IP_Port *ip_port);
+
+/* Unpack IP_Port structure into data of max size length.
+ * len_processed is the offset of data currently unpacked.
+ *
+ * Return size of unpacked ip_port on success.
+ * Return -1 on failure.
+ */
+int unpack_ip_port(IP_Port *ip_port, uint16_t len_processed, const uint8_t *data, uint16_t length,
+                   uint8_t tcp_enabled);
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
