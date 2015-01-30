@@ -137,50 +137,18 @@ int pack_gca_nodes(uint8_t *data, uint16_t length, const GC_Announce_Node *nodes
     uint32_t i, packed_length = 0;
 
     for (i = 0; i < number; ++i) {
-        int ipv6 = -1;
-        uint8_t net_family;
+        int ipp_size = pack_ip_port(data, length, packed_length, &nodes[i].ip_port);
 
-        if (nodes[i].ip_port.ip.family == AF_INET) {
-            ipv6 = 0;
-            net_family = TOX_AF_INET;
-        } else if (nodes[i].ip_port.ip.family == TCP_INET) {
-            ipv6 = 0;
-            net_family = TOX_TCP_INET;
-        } else if (nodes[i].ip_port.ip.family == AF_INET6) {
-            ipv6 = 1;
-            net_family = TOX_AF_INET6;
-        } else if (nodes[i].ip_port.ip.family == TCP_INET6) {
-            ipv6 = 1;
-            net_family = TOX_TCP_INET6;
-        } else {
+        if (ipp_size == -1)
             return -1;
-        }
 
-        if (ipv6 == 0) {
-            uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + EXT_PUBLIC_KEY;
+        packed_length += ipp_size;
 
-            if (packed_length + size > length)
-                return -1;
-
-            data[packed_length] = net_family;
-            memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip4, sizeof(IP4));
-            memcpy(data + packed_length + 1 + sizeof(IP4), &nodes[i].ip_port.port, sizeof(uint16_t));
-            memcpy(data + packed_length + 1 + sizeof(IP4) + sizeof(uint16_t), nodes[i].client_id, EXT_PUBLIC_KEY);
-            packed_length += size;
-        } else if (ipv6 == 1) {
-            uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + EXT_PUBLIC_KEY;
-
-            if (packed_length + size > length)
-                return -1;
-
-            data[packed_length] = net_family;
-            memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip6, sizeof(IP6));
-            memcpy(data + packed_length + 1 + sizeof(IP6), &nodes[i].ip_port.port, sizeof(uint16_t));
-            memcpy(data + packed_length + 1 + sizeof(IP6) + sizeof(uint16_t), nodes[i].client_id, EXT_PUBLIC_KEY);
-            packed_length += size;
-        } else {
+        if (packed_length + EXT_PUBLIC_KEY > length)
             return -1;
-        }
+
+        memcpy(data + packed_length, nodes[i].client_id, EXT_PUBLIC_KEY);
+        packed_length += EXT_PUBLIC_KEY;
     }
 
     return packed_length;
@@ -199,58 +167,19 @@ int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *
     uint32_t num = 0, len_processed = 0;
 
     while (num < max_num_nodes && len_processed < length) {
-        int ipv6 = -1;
-        uint8_t host_family;
+        int ipp_size = unpack_ip_port(&nodes[num].ip_port, len_processed, data, length, tcp_enabled);
 
-        if (data[len_processed] == TOX_AF_INET) {
-            ipv6 = 0;
-            host_family = AF_INET;
-        } else if (data[len_processed] == TOX_TCP_INET) {
-            if (!tcp_enabled)
-                return -1;
-
-            ipv6 = 0;
-            host_family = TCP_INET;
-        } else if (data[len_processed] == TOX_AF_INET6) {
-            ipv6 = 1;
-            host_family = AF_INET6;
-        } else if (data[len_processed] == TOX_TCP_INET6) {
-            if (!tcp_enabled)
-                return -1;
-
-            ipv6 = 1;
-            host_family = TCP_INET6;
-        } else {
+        if (ipp_size == -1)
             return -1;
-        }
 
-        if (ipv6 == 0) {
-            uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + EXT_PUBLIC_KEY;
+        len_processed += ipp_size;
 
-            if (len_processed + size > length)
-                return -1;
-
-            nodes[num].ip_port.ip.family = host_family;
-            memcpy(&nodes[num].ip_port.ip.ip4, data + len_processed + 1, sizeof(IP4));
-            memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + sizeof(IP4), sizeof(uint16_t));
-            memcpy(nodes[num].client_id, data + len_processed + 1 + sizeof(IP4) + sizeof(uint16_t), EXT_PUBLIC_KEY);
-            len_processed += size;
-            ++num;
-        } else if (ipv6 == 1) {
-            uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + EXT_PUBLIC_KEY;
-
-            if (len_processed + size > length)
-                return -1;
-
-            nodes[num].ip_port.ip.family = host_family;
-            memcpy(&nodes[num].ip_port.ip.ip6, data + len_processed + 1, sizeof(IP6));
-            memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + sizeof(IP6), sizeof(uint16_t));
-            memcpy(nodes[num].client_id, data + len_processed + 1 + sizeof(IP6) + sizeof(uint16_t), EXT_PUBLIC_KEY);
-            len_processed += size;
-            ++num;
-        } else {
+        if (len_processed + EXT_PUBLIC_KEY > length)
             return -1;
-        }
+
+        memcpy(nodes[num].client_id, data + len_processed, EXT_PUBLIC_KEY);
+        len_processed += EXT_PUBLIC_KEY;
+        ++num;
     }
 
     if (processed_data_len)
