@@ -230,7 +230,7 @@ int pack_ip_port(uint8_t *data, uint16_t length, uint16_t packed_length, const I
     }
 }
 
-/* Unpack IP_Port structure into data of max size length.
+/* Unpack IP_Port structure from data of max size length into ip_port.
  * len_processed is the offset of data currently unpacked.
  *
  * Return size of unpacked ip_port on success.
