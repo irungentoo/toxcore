@@ -148,7 +148,7 @@ typedef struct {
 } DHT_Friend;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port     ip_port;
 }
 Node_format;

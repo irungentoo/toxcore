@@ -1798,7 +1798,7 @@ static int tcp_response_callback(void *object, uint8_t connection_id, const uint
     uint32_t i;
 
     for (i = 0; i < conn->num_tcp_relays; ++i) {
-        if (memcmp(TCP_con->public_key, conn->tcp_relays[i].client_id, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (memcmp(TCP_con->public_key, conn->tcp_relays[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             set_conn_tcp_status(conn, location, STATUS_TCP_INVISIBLE);
             return 0;
         }
@@ -1977,7 +1977,7 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
     uint32_t i;
 
     for (i = 0; i < conn->num_tcp_relays; ++i) {
-        if (memcmp(conn->tcp_relays[i].client_id, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (memcmp(conn->tcp_relays[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             conn->tcp_relays[i].ip_port = ip_port;
             return 0;
         }
@@ -1986,10 +1986,10 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
     if (conn->num_tcp_relays == MAX_TCP_RELAYS_PEER) {
         uint16_t index = rand() % MAX_TCP_RELAYS_PEER;
         conn->tcp_relays[index].ip_port = ip_port;
-        memcpy(conn->tcp_relays[index].client_id, public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(conn->tcp_relays[index].public_key, public_key, crypto_box_PUBLICKEYBYTES);
     } else {
         conn->tcp_relays[conn->num_tcp_relays].ip_port = ip_port;
-        memcpy(conn->tcp_relays[conn->num_tcp_relays].client_id, public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(conn->tcp_relays[conn->num_tcp_relays].public_key, public_key, crypto_box_PUBLICKEYBYTES);
         ++conn->num_tcp_relays;
     }
 
@@ -2108,7 +2108,7 @@ unsigned int copy_connected_tcp_relays(const Net_Crypto *c, Node_format *tcp_rel
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections[i] != NULL) {
-            memcpy(tcp_relays[copied].client_id, c->tcp_connections[i]->public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(tcp_relays[copied].public_key, c->tcp_connections[i]->public_key, crypto_box_PUBLICKEYBYTES);
             tcp_relays[copied].ip_port = c->tcp_connections[i]->ip_port;
 
             if (tcp_relays[copied].ip_port.ip.family == AF_INET) {

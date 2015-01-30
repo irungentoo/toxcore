@@ -138,12 +138,12 @@ START_TEST(test_basic)
 
     IP_Port on1 = {ip, onion1->net->port};
     Node_format n1;
-    memcpy(n1.client_id, onion1->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(n1.public_key, onion1->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     n1.ip_port = on1;
 
     IP_Port on2 = {ip, onion2->net->port};
     Node_format n2;
-    memcpy(n2.client_id, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(n2.public_key, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     n2.ip_port = on2;
 
     Node_format nodes[4];
@@ -180,7 +180,7 @@ START_TEST(test_basic)
     randombytes(sb_data, sizeof(sb_data));
     uint64_t s;
     memcpy(&s, sb_data, sizeof(uint64_t));
-    memcpy(test_3_pub_key, nodes[3].client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(test_3_pub_key, nodes[3].public_key, crypto_box_PUBLICKEYBYTES);
     ret = send_announce_request(onion1->net, &path, nodes[3], onion1->dht->self_public_key,
                                 onion1->dht->self_secret_key,
                                 zeroes, onion1->dht->self_public_key, onion1->dht->self_public_key, s);

@@ -38,7 +38,7 @@
  * return -1 on failure
  * return 0 on success
  */
-int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id)
+int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key)
 {
     if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
         return -1;
@@ -46,12 +46,12 @@ int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t
     unsigned int i;
 
     for (i = 0; i < MAX_PATH_NODES; ++i) {
-        if (memcmp(client_id, onion_c->path_nodes_bs[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
+        if (memcmp(public_key, onion_c->path_nodes_bs[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
             return -1;
     }
 
     onion_c->path_nodes_bs[onion_c->path_nodes_index_bs % MAX_PATH_NODES].ip_port = ip_port;
-    memcpy(onion_c->path_nodes_bs[onion_c->path_nodes_index_bs % MAX_PATH_NODES].client_id, client_id,
+    memcpy(onion_c->path_nodes_bs[onion_c->path_nodes_index_bs % MAX_PATH_NODES].public_key, public_key,
            crypto_box_PUBLICKEYBYTES);
 
     uint16_t last = onion_c->path_nodes_index_bs;
@@ -68,7 +68,7 @@ int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t
  * return -1 on failure
  * return 0 on success
  */
-static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id)
+static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key)
 {
     if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6)
         return -1;
@@ -76,12 +76,13 @@ static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uin
     unsigned int i;
 
     for (i = 0; i < MAX_PATH_NODES; ++i) {
-        if (memcmp(client_id, onion_c->path_nodes[i].client_id, crypto_box_PUBLICKEYBYTES) == 0)
+        if (memcmp(public_key, onion_c->path_nodes[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
             return -1;
     }
 
     onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES].ip_port = ip_port;
-    memcpy(onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES].client_id, client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(onion_c->path_nodes[onion_c->path_nodes_index % MAX_PATH_NODES].public_key, public_key,
+           crypto_box_PUBLICKEYBYTES);
 
     uint16_t last = onion_c->path_nodes_index;
     ++onion_c->path_nodes_index;
@@ -273,7 +274,7 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
             unsigned int i;
 
             for (i = 0; i < path_len; ++i) {
-                onion_add_path_node(onion_c, nodes[i].ip_port, nodes[i].client_id);
+                onion_add_path_node(onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
         }
 
@@ -571,16 +572,16 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
                 continue;
 
         if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
-                || id_closest(reference_id, list_nodes[0].client_id, nodes[i].client_id) == 2) {
+                || id_closest(reference_id, list_nodes[0].client_id, nodes[i].public_key) == 2) {
             /* check if node is already in list. */
             for (j = 0; j < MAX_ONION_CLIENTS; ++j) {
-                if (memcmp(list_nodes[j].client_id, nodes[i].client_id, crypto_box_PUBLICKEYBYTES) == 0) {
+                if (memcmp(list_nodes[j].client_id, nodes[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
                     break;
                 }
             }
 
-            if (j == MAX_ONION_CLIENTS && good_to_ping(last_pinged, last_pinged_index, nodes[i].client_id)) {
-                client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].client_id, NULL, ~0);
+            if (j == MAX_ONION_CLIENTS && good_to_ping(last_pinged, last_pinged_index, nodes[i].public_key)) {
+                client_send_announce_request(onion_c, num, nodes[i].ip_port, nodes[i].public_key, NULL, ~0);
             }
         }
     }
@@ -727,12 +728,12 @@ static int handle_fakeid_announce(void *object, const uint8_t *source_pubkey, co
             uint8_t family = nodes[i].ip_port.ip.family;
 
             if (family == AF_INET || family == AF_INET6) {
-                DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].client_id, onion_c->friends_list[friend_num].fake_client_id);
+                DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].public_key, onion_c->friends_list[friend_num].fake_client_id);
             } else if (family == TCP_INET || family == TCP_INET6) {
                 if (onion_c->friends_list[friend_num].tcp_relay_node_callback) {
                     void *obj = onion_c->friends_list[friend_num].tcp_relay_node_callback_object;
                     uint32_t number = onion_c->friends_list[friend_num].tcp_relay_node_callback_number;
-                    onion_c->friends_list[friend_num].tcp_relay_node_callback(obj, number, nodes[i].ip_port, nodes[i].client_id);
+                    onion_c->friends_list[friend_num].tcp_relay_node_callback(obj, number, nodes[i].ip_port, nodes[i].public_key);
                 }
             }
         }
@@ -1191,7 +1192,7 @@ static void populate_path_nodes(Onion_Client *onion_c)
     unsigned int i;
 
     for (i = 0; i < num_nodes; ++i) {
-        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].client_id);
+        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
     }
 }
 
@@ -1203,7 +1204,7 @@ static void populate_path_nodes_tcp(Onion_Client *onion_c)
     unsigned int i;
 
     for (i = 0; i < num_nodes; ++i) {
-        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].client_id);
+        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
     }
 }
 
@@ -1263,7 +1264,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
                 for (j = 0; j < n; ++j) {
                     unsigned int num = rand() % num_nodes;
                     client_send_announce_request(onion_c, friendnum + 1, onion_c->path_nodes[num].ip_port,
-                                                 onion_c->path_nodes[num].client_id, 0, ~0);
+                                                 onion_c->path_nodes[num].public_key, 0, ~0);
                 }
 
                 ++onion_c->friends_list[friendnum].run_count;
@@ -1342,7 +1343,7 @@ static void do_announce(Onion_Client *onion_c)
             if (num_nodes != 0) {
                 for (i = 0; i < (MAX_ONION_CLIENTS / 2); ++i) {
                     unsigned int num = rand() % num_nodes;
-                    client_send_announce_request(onion_c, 0, path_nodes[num].ip_port, path_nodes[num].client_id, 0, ~0);
+                    client_send_announce_request(onion_c, 0, path_nodes[num].ip_port, path_nodes[num].public_key, 0, ~0);
                 }
             }
         }

@@ -2234,7 +2234,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             int i;
 
             for (i = 0; i < n; i++) {
-                add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].client_id);
+                add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].public_key);
             }
 
             break;
@@ -2359,7 +2359,7 @@ void do_messenger(Messenger *m)
         int i;
 
         for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
-            add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].client_id);
+            add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
         }
     }
 
@@ -2767,7 +2767,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             uint32_t i;
 
             for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
-                onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].client_id);
+                onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
 
             break;

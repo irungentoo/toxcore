@@ -116,27 +116,27 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
     if (!new_path || !nodes)
         return -1;
 
-    encrypt_precompute(nodes[0].client_id, dht->self_secret_key, new_path->shared_key1);
+    encrypt_precompute(nodes[0].public_key, dht->self_secret_key, new_path->shared_key1);
     memcpy(new_path->public_key1, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
 
     uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
 
     crypto_box_keypair(random_public_key, random_secret_key);
-    encrypt_precompute(nodes[1].client_id, random_secret_key, new_path->shared_key2);
+    encrypt_precompute(nodes[1].public_key, random_secret_key, new_path->shared_key2);
     memcpy(new_path->public_key2, random_public_key, crypto_box_PUBLICKEYBYTES);
 
     crypto_box_keypair(random_public_key, random_secret_key);
-    encrypt_precompute(nodes[2].client_id, random_secret_key, new_path->shared_key3);
+    encrypt_precompute(nodes[2].public_key, random_secret_key, new_path->shared_key3);
     memcpy(new_path->public_key3, random_public_key, crypto_box_PUBLICKEYBYTES);
 
     new_path->ip_port1 = nodes[0].ip_port;
     new_path->ip_port2 = nodes[1].ip_port;
     new_path->ip_port3 = nodes[2].ip_port;
 
-    memcpy(new_path->node_public_key1, nodes[0].client_id, crypto_box_PUBLICKEYBYTES);
-    memcpy(new_path->node_public_key2, nodes[1].client_id, crypto_box_PUBLICKEYBYTES);
-    memcpy(new_path->node_public_key3, nodes[2].client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(new_path->node_public_key1, nodes[0].public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(new_path->node_public_key2, nodes[1].public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(new_path->node_public_key3, nodes[2].public_key, crypto_box_PUBLICKEYBYTES);
 
     return 0;
 }
@@ -155,9 +155,9 @@ int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_
     nodes[1].ip_port = path->ip_port2;
     nodes[2].ip_port = path->ip_port3;
 
-    memcpy(nodes[0].client_id, path->node_public_key1, crypto_box_PUBLICKEYBYTES);
-    memcpy(nodes[1].client_id, path->node_public_key2, crypto_box_PUBLICKEYBYTES);
-    memcpy(nodes[2].client_id, path->node_public_key3, crypto_box_PUBLICKEYBYTES);
+    memcpy(nodes[0].public_key, path->node_public_key1, crypto_box_PUBLICKEYBYTES);
+    memcpy(nodes[1].public_key, path->node_public_key2, crypto_box_PUBLICKEYBYTES);
+    memcpy(nodes[2].public_key, path->node_public_key3, crypto_box_PUBLICKEYBYTES);
     return 0;
 }
 

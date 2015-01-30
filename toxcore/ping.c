@@ -269,12 +269,12 @@ int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
-            memcpy(ping->to_ping[i].client_id, client_id, CLIENT_ID_SIZE);
+            memcpy(ping->to_ping[i].public_key, client_id, CLIENT_ID_SIZE);
             ipport_copy(&ping->to_ping[i].ip_port, &ip_port);
             return 0;
         }
 
-        if (memcmp(ping->to_ping[i].client_id, client_id, CLIENT_ID_SIZE) == 0) {
+        if (memcmp(ping->to_ping[i].public_key, client_id, CLIENT_ID_SIZE) == 0) {
             return -1;
         }
     }
@@ -282,8 +282,8 @@ int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
     uint32_t r = rand();
 
     for (i = 0; i < MAX_TO_PING; ++i) {
-        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].client_id, client_id) == 2) {
-            memcpy(ping->to_ping[(i + r) % MAX_TO_PING].client_id, client_id, CLIENT_ID_SIZE);
+        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id) == 2) {
+            memcpy(ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id, CLIENT_ID_SIZE);
             ipport_copy(&ping->to_ping[(i + r) % MAX_TO_PING].ip_port, &ip_port);
             return 0;
         }
@@ -311,7 +311,7 @@ void do_to_ping(PING *ping)
         if (!ip_isset(&ping->to_ping[i].ip_port.ip))
             return;
 
-        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].client_id);
+        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);
     }
 }
