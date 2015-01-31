@@ -488,6 +488,9 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
     if (length > MAX_NAME_LENGTH || length == 0)
         return -1;
 
+    if (m->name_length == length && memcmp(name, m->name, length) == 0)
+        return 0;
+
     memcpy(m->name, name, length);
     m->name_length = length;
     uint32_t i;
@@ -547,6 +550,9 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
     if (length > MAX_STATUSMESSAGE_LENGTH)
         return -1;
 
+    if (m->statusmessage_length == length && memcmp(m->statusmessage, status, length) == 0)
+        return 0;
+
     memcpy(m->statusmessage, status, length);
     m->statusmessage_length = length;
 
@@ -560,9 +566,11 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
 
 int m_set_userstatus(Messenger *m, uint8_t status)
 {
-    if (status >= USERSTATUS_INVALID) {
+    if (status >= USERSTATUS_INVALID)
         return -1;
-    }
+
+    if (m->userstatus == status)
+        return 0;
 
     m->userstatus = status;
     uint32_t i;
@@ -788,12 +796,14 @@ uint64_t m_get_last_online(const Messenger *m, int32_t friendnumber)
 int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing)
 
 {
-    if (is_typing != 0 && is_typing != 1) {
+    if (is_typing != 0 && is_typing != 1)
         return -1;
-    }
 
     if (friend_not_valid(m, friendnumber))
         return -1;
+
+    if (m->friendlist[friendnumber].user_istyping == is_typing)
+        return 0;
 
     m->friendlist[friendnumber].user_istyping = is_typing;
     m->friendlist[friendnumber].user_istyping_sent = 0;
@@ -1659,6 +1669,8 @@ static int handle_status(void *object, int i, uint8_t status)
         m->friendlist[i].name_sent = 0;
         m->friendlist[i].userstatus_sent = 0;
         m->friendlist[i].statusmessage_sent = 0;
+        m->friendlist[i].user_istyping_sent = 0;
+        m->friendlist[i].avatar_info_sent = 0;
         m->friendlist[i].ping_lastrecv = temp_time;
     } else { /* Went offline. */
         if (m->friendlist[i].status == FRIEND_ONLINE) {
