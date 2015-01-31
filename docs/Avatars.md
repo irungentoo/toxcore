@@ -244,7 +244,7 @@ already downloaded by other clients can be reused.
 Given the Tox data directory described in STS Draft v0.1.0:
 
   - Avatars are stored in a directory called "avatars" and named
-    as "xxxxx.png", where "xxxxx" is the complete client id (but not friend
+    as "xxxxx.png", where "xxxxx" is the complete public key (but not friend
     address!) encoded as an uppercase hexadecimal string and "png" is the
     extension for the PNG avatar. As new image formats may be used in the
     future, clients should ensure no other file "xxxxx.*" exists. No file
@@ -408,7 +408,7 @@ calls:
 
 In the previous examples, implementation of the functions to check, store
 and retrieve data from the cache were omitted for brevity. These functions
-will also need to get the friend client ID (public key) from they friend
+will also need to get the friend public key (client id) from they friend
 number and, usually, convert it from a byte string to a hexadecimal
 string. A complete, yet more complex, example is available in the file
 `testing/test_avatars.c`.
