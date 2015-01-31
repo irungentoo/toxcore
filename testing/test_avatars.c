@@ -163,7 +163,7 @@ static void byte_to_hex_str(const uint8_t *buf, const size_t buflen, char *dst)
     dst[j++] = '\0';
 }
 
-/* Make the cache file name for a avatar of the given format for the given
+/* Make the cache file name for an avatar of the given format for the given
  * public key.
  */
 static int make_avatar_file_name(char *dst, size_t dst_len, const char *base_dir,
