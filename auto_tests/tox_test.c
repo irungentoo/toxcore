@@ -93,7 +93,8 @@ uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
 void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
-                         uint16_t filename_length, void *userdata)
+                         uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length,
+                         void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -363,7 +364,7 @@ START_TEST(test_few_clients)
     tox_callback_file_control(tox3, file_print_control, &to_compare);
     tox_callback_file_send_request(tox3, file_request_accept, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;
-    int fnum = tox_new_file_sender(tox2, 0, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"));
+    int fnum = tox_new_file_sender(tox2, 0, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"), NULL, 0);
     ck_assert_msg(fnum != -1, "tox_new_file_sender fail");
     int fpiece_size = tox_file_data_size(tox2, 0);
     uint8_t f_data[fpiece_size];

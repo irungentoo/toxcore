@@ -161,7 +161,7 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
+    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1, NULL, 0);
 
     if (filenum == -1)
         return -1;
@@ -1126,7 +1126,8 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
     }
 }
 void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
-                         uint16_t filename_length, void *userdata)
+                         uint16_t filename_length, const uint8_t *mimetype, uint16_t mimetype_length,
+                         void *userdata)
 {
     char msg[512];
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
