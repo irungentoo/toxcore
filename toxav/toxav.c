@@ -176,14 +176,14 @@ uint32_t toxav_do_interval(ToxAv *av)
 void toxav_do(ToxAv *av)
 {
     msi_do(av->msi_session);
-
+    
     uint64_t start = current_time_monotonic();
-
+    
     uint32_t i = 0;
-
+    
     for (; i < av->max_calls; i ++) {
         pthread_mutex_lock(av->calls[i].mutex_control);
-
+        
         if (av->calls[i].active) {
             pthread_mutex_lock(av->calls[i].mutex_do);
             pthread_mutex_unlock(av->calls[i].mutex_control);
@@ -193,12 +193,12 @@ void toxav_do(ToxAv *av)
             pthread_mutex_unlock(av->calls[i].mutex_control);
         }
     }
-
+    
     uint64_t end = current_time_monotonic();
-
+    
     /* TODO maybe use variable for sizes */
     av->dectmsstotal += end - start;
-
+    
     if (++av->dectmsscount == 3) {
         av->avgdectms = av->dectmsstotal / 3 + 2 /* NOTE Magic Offset */;
         av->dectmsscount = 0;
@@ -432,7 +432,7 @@ static int toxav_send_rtp_payload(ToxAv *av,
         int i;
 
         for (i = 0; i < parts; i++) {
-            iter = cs_get_split_video_frame(call->cs, &part_size);
+            iter = cs_iterate_split_video_frame(call->cs, &part_size);
 
             if (rtp_send_msg(call->crtps[video_index], av->messenger, iter, part_size) < 0)
                 return av_ErrorSendingPayload;

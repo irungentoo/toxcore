@@ -488,13 +488,13 @@ int rtp_register_for_receiving(RTPSession* session)
                                                rtp_handle_packet, session);
 }
 
-int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length )
+int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )
 {
     RTPMessage *msg = rtp_new_message (session, data, length);
     
     if ( !msg ) return -1;
     
-    if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
+    if ( -1 == send_custom_lossy_packet(session->m, session->dest, msg->data, msg->length) ) {
         LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
         rtp_free_msg ( session, msg );
         return rtp_ErrorSending;

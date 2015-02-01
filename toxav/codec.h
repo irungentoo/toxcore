@@ -96,7 +96,7 @@ typedef struct _CSSession {
     uint32_t video_frame_piece_size;
     uint32_t max_video_frame_size;
 
-    /* Reassembling */
+    /* Splitting */
     uint8_t *split_video_frame;
     const uint8_t *processing_video_frame;
     uint16_t processing_video_frame_size;
@@ -110,10 +110,13 @@ typedef struct _CSSession {
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
-    int32_t channels;
+    int32_t encoder_channels;
     
     /* audio decoding */
     OpusDecoder *audio_decoder;
+    int32_t last_pack_channels;
+    int32_t last_packet_sampling_rate;
+    int32_t last_packet_frame_duration;
     struct _JitterBuffer *j_buf;
 
 
@@ -127,54 +130,55 @@ typedef struct _CSSession {
         *
         *
         */
-
-    /* Callbacks */
-    PAIR(CSAudioCallback, void *) acb;
-    PAIR(CSVideoCallback, void *) vcb;
-
-    void *agent; /* Pointer to ToxAv */
+    void *agent; /* Pointer to ToxAV TODO make this pointer to ToxAV*/
     int32_t call_idx;
     
     pthread_mutex_t queue_mutex[1];
 } CSSession;
 
-int cs_split_video_payload(CSSession *cs, const uint8_t *payload, uint16_t length);
-const uint8_t *cs_get_split_video_frame(CSSession *cs, uint16_t *size);
 
 /**
- * Call playback callbacks
+ * Generic
  */
 void cs_do(CSSession *cs);
 
-/** 
- * Reconfigure video settings; return 0 on success or -1 on failure. 
+/* Make sure to be called BEFORE corresponding rtp_new */
+CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, uint32_t p_video_b);
+/* Make sure to be called AFTER corresponding rtp_kill */
+void cs_kill(CSSession *cs);
+
+
+/**
+ * VIDEO HANDLING
  */
+void cs_init_video_splitter_cycle(CSSession *cs);
+int cs_update_video_splitter_cycle(CSSession* cs, const uint8_t* payload, uint16_t length);
+const uint8_t *cs_iterate_split_video_frame(CSSession *cs, uint16_t *size);
+
 int cs_set_sending_video_resolution(CSSession *cs, uint16_t width, uint16_t height);
 int cs_set_sending_video_bitrate(CSSession *cs, uint32_t bitrate);
 
-int cs_set_sending_audio_bitrate(CSSession* cs, int32_t rate);
-/* NOTE: Try not to call these a lot */
-int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate);
-int cs_set_sending_audio_channels(CSSession* cs, int32_t count);
-
-/** 
- * Make sure to be called BEFORE corresponding rtp_new 
- */
-CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, uint32_t p_video_b);
-/** 
- * Make sure to be called AFTER corresponding rtp_kill 
- */
-void cs_kill(CSSession *cs);
-
-int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate);
-int cs_enable_audio_receiving(CSSession* cs);
 int cs_enable_video_sending(CSSession* cs, uint32_t bitrate);
 int cs_enable_video_receiving(CSSession* cs);
 
-void cs_disable_audio_sending(CSSession* cs);
-void cs_disable_audio_receiving(CSSession* cs);
 void cs_disable_video_sending(CSSession* cs);
 void cs_disable_video_receiving(CSSession* cs);
+
+/**
+ * AUDIO HANDLING
+ */
+int cs_set_sending_audio_bitrate(CSSession* cs, int32_t rate);
+int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate);
+int cs_set_sending_audio_channels(CSSession* cs, int32_t count);
+
+int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate, int channels);
+int cs_enable_audio_receiving(CSSession* cs);
+
+void cs_disable_audio_sending(CSSession* cs);
+void cs_disable_audio_receiving(CSSession* cs);
+
+
+
 
 /* Internal. Called from rtp_handle_message */
 void queue_message(RTPSession *session, RTPMessage *msg);

@@ -374,8 +374,9 @@ void toxav_callback_request_video_frame(ToxAV *av, toxav_request_video_frame_cb 
  *
  * This is called in response to receiving the `request_video_frame` event.
  *
- * Each plane should contain (width * height) pixels. The Alpha plane can be
- * NULL, in which case every pixel is assumed fully opaque.
+ * Y - plane should be of size: height * width
+ * U - plane should be of size: (height/2) * (width/2)
+ * V - plane should be of size: (height/2) * (width/2)
  *
  * @param friend_number The friend number of the friend to which to send a video
  * frame.
@@ -384,11 +385,10 @@ void toxav_callback_request_video_frame(ToxAV *av, toxav_request_video_frame_cb 
  * @param y Y (Luminance) plane data.
  * @param u U (Chroma) plane data.
  * @param v V (Chroma) plane data.
- * @param a A (Alpha) plane data.
  */
 bool toxav_send_video_frame(ToxAV *av, uint32_t friend_number,
                             uint16_t width, uint16_t height,
-                            uint8_t const *y, uint8_t const *u, uint8_t const *v, uint8_t const *a,
+                            uint8_t const *y, uint8_t const *u, uint8_t const *v,
                             TOXAV_ERR_SEND_FRAME *error);
 /**
  * The function type for the `request_audio_frame` callback.

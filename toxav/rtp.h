@@ -121,7 +121,7 @@ int rtp_register_for_receiving (RTPSession *session);
 /**
  * Sends msg to _RTPSession::dest
  */
-int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length );
+int rtp_send_msg ( RTPSession* session, const uint8_t* data, uint16_t length );
 
 /**
  * Dealloc msg.

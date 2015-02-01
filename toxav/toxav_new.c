@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
 
 enum {
     audio_index,
@@ -75,6 +76,8 @@ struct toxAV
     int32_t dmssc; /** Measure count */
     int32_t dmsst; /** Last cycle total */
     int32_t dmssa; /** Average decoding time in ms */
+    
+    uint32_t interval; /** Calculated interval */
 };
 
 
@@ -130,6 +133,7 @@ ToxAV* toxav_new(Tox* tox, TOXAV_ERR_NEW* error)
         goto FAILURE;
     }
     
+    av->interval = 200;
     av->msi->agent_handler = av;
     
     msi_register_callback(av->msi, i_toxav_msi_callback_invite, msi_OnInvite, NULL);
@@ -144,7 +148,7 @@ ToxAV* toxav_new(Tox* tox, TOXAV_ERR_NEW* error)
     msi_register_callback(av->msi, i_toxav_msi_callback_state_change, msi_OnSelfCSChange, NULL);
     
     
-    if (error) 
+    if (error)
         *error = rc;
     
     return av;
@@ -175,12 +179,32 @@ Tox* toxav_get_tox(ToxAV* av)
 
 uint32_t toxav_iteration_interval(const ToxAV* av)
 {
-
+    return av->interval;
 }
 
 void toxav_iteration(ToxAV* av)
 {
-
+    msi_do(av->msi);
+    
+    uint64_t start = current_time_monotonic();
+    uint32_t rc = 200 + av->dmssa; /* If no call is active interval is 200 */
+    
+    IToxAVCall* i = av->calls[av->calls_head];
+    for (; i; i = i->next) {
+        if (i->active) {
+            cs_do(i->cs);
+            rc = MIN(i->cs->last_packet_frame_duration, rc);
+        }
+    }
+    
+    av->interval = rc < av->dmssa ? 0 : rc - av->dmssa;
+    av->dmsst += current_time_monotonic() - start;
+    
+    if (++av->dmssc == 3) {
+        av->dmssa = av->dmsst / 3 + 2 /* NOTE Magic Offset for precission */;
+        av->dmssc = 0;
+        av->dmsst = 0;
+    }
 }
 
 bool toxav_call(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate, TOXAV_ERR_CALL* error)
@@ -261,52 +285,244 @@ void toxav_callback_call_state(ToxAV* av, toxav_call_state_cb* function, void* u
 
 bool toxav_call_control(ToxAV* av, uint32_t friend_number, TOXAV_CALL_CONTROL control, TOXAV_ERR_CALL_CONTROL* error)
 {
-
+    TOXAV_ERR_CALL_CONTROL rc = TOXAV_ERR_CALL_CONTROL_OK;
+    
+    if (m_friend_exists(av->m, friend_number)) {
+        rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_FOUND;
+        goto END;
+    }
+    
+    
+    IToxAVCall* call = i_toxav_get_call(av, friend_number);
+    if (call == NULL) {
+        rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    /* TODO rest of these */
+    switch (control)
+    {
+        case TOXAV_CALL_CONTROL_RESUME: {
+            
+        } break;
+        
+        case TOXAV_CALL_CONTROL_PAUSE: {
+            
+        } break;
+        
+        case TOXAV_CALL_CONTROL_CANCEL: {
+            if (av->msi->calls[call->call_idx]->state == msi_CallActive) {
+                /* Hang up */
+                msi_hangup(av->msi, call->call_idx);
+            } else if (av->msi->calls[call->call_idx]->state == msi_CallRequested) {
+                /* Reject the call */
+                msi_reject(av->msi, call->call_idx);
+            } else if (av->msi->calls[call->call_idx]->state == msi_CallRequesting) {
+                /* Cancel the call */
+                msi_cancel(av->msi, call->call_idx);
+            }
+        } break;
+        
+        case TOXAV_CALL_CONTROL_MUTE_AUDIO: {
+            
+        } break;
+        
+        case TOXAV_CALL_CONTROL_MUTE_VIDEO: {
+            
+        } break;
+    }
+    
+END:
+    if (error)
+        *error = rc;
+    
+    return rc == TOXAV_ERR_CALL_CONTROL_OK;
 }
 
 bool toxav_set_audio_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, TOXAV_ERR_BIT_RATE* error)
 {
-
+    /* TODO */
 }
 
 bool toxav_set_video_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t video_bit_rate, TOXAV_ERR_BIT_RATE* error)
 {
-
+    /* TODO */
 }
 
 void toxav_callback_request_video_frame(ToxAV* av, toxav_request_video_frame_cb* function, void* user_data)
 {
-
+    /* TODO */
 }
 
-bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t* y, const uint8_t* u, const uint8_t* v, const uint8_t* a, TOXAV_ERR_SEND_FRAME* error)
+bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t* y, const uint8_t* u, const uint8_t* v, TOXAV_ERR_SEND_FRAME* error)
 {
-
+    TOXAV_ERR_SEND_FRAME rc = TOXAV_ERR_SEND_FRAME_OK;
+    IToxAVCall* call;
+    
+    if (m_friend_exists(av->m, friend_number)) {
+        rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_FOUND;
+        goto END;
+    }
+    
+    call = i_toxav_get_call(av, friend_number);
+    if (call == NULL) {
+        rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    if (av->msi->calls[call->call_idx]->state != msi_CallActive) {
+        /* TODO */
+        rc = TOXAV_ERR_SEND_FRAME_NOT_REQUESTED;
+        goto END;
+    }
+    
+    if ( y == NULL || u == NULL || v == NULL ) {
+        rc = TOXAV_ERR_SEND_FRAME_NULL;
+        goto END;
+    }
+    
+    if ( cs_set_sending_video_resolution(call->cs, width, height) != 0 ) {
+        rc = TOXAV_ERR_SEND_FRAME_INVALID;
+        goto END;
+    }
+    
+    { /* Encode */
+        vpx_image_t img;
+        img.w = img.h = img.d_w = img.d_h = 0;
+        vpx_img_alloc(&img, VPX_IMG_FMT_VPXI420, width, height, 1);
+        
+        /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes." 
+         * http://fourcc.org/yuv.php#IYUV
+         */
+        memcpy(img.planes[VPX_PLANE_Y], y, width * height);
+        memcpy(img.planes[VPX_PLANE_U], u, (width/2) * (height/2));
+        memcpy(img.planes[VPX_PLANE_V], v, (width/2) * (height/2));
+        
+        int vrc = vpx_codec_encode(call->cs->v_encoder, &img, 
+                                   call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
+        
+        vpx_img_free(&img); /* FIXME don't free? */
+        if ( vrc != VPX_CODEC_OK) {
+            LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(vrc));
+            rc = TOXAV_ERR_SEND_FRAME_INVALID;
+            goto END;
+        }
+    }
+    
+    ++call->cs->frame_counter;
+    
+    { /* Split and send */
+        vpx_codec_iter_t iter = NULL;
+        const vpx_codec_cx_pkt_t *pkt;
+        
+        cs_init_video_splitter_cycle(call->cs);
+        
+        while ( (pkt = vpx_codec_get_cx_data(call->cs->v_encoder, &iter)) ) {
+            if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
+                int parts = cs_update_video_splitter_cycle(call->cs, pkt->data.frame.buf, 
+                                                           pkt->data.frame.sz);
+                
+                if (parts < 0) /* Should never happen though */
+                    continue;
+                
+                uint16_t part_size;
+                const uint8_t *iter;
+                
+                int i;
+                for (i = 0; i < parts; i++) {
+                    iter = cs_iterate_split_video_frame(call->cs, &part_size);
+                    
+                    if (rtp_send_msg(call->rtps[video_index], iter, part_size) < 0)
+                        goto END;
+                }
+            }
+        }
+    }
+    
+END:
+    if (error)
+        *error = rc;
+    
+    return rc == TOXAV_ERR_SEND_FRAME_OK;
 }
 
 void toxav_callback_request_audio_frame(ToxAV* av, toxav_request_audio_frame_cb* function, void* user_data)
 {
-
+    /* TODO */
 }
 
 bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pcm, size_t sample_count, uint8_t channels, uint32_t sampling_rate, TOXAV_ERR_SEND_FRAME* error)
 {
-
+    TOXAV_ERR_SEND_FRAME rc = TOXAV_ERR_SEND_FRAME_OK;
+    IToxAVCall* call;
+    
+    if (m_friend_exists(av->m, friend_number)) {
+        rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_FOUND;
+        goto END;
+    }
+    
+    call = i_toxav_get_call(av, friend_number);
+    if (call == NULL) {
+        rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    if (av->msi->calls[call->call_idx]->state != msi_CallActive) {
+        /* TODO */
+        rc = TOXAV_ERR_SEND_FRAME_NOT_REQUESTED;
+        goto END;
+    }
+    
+    if ( pcm == NULL ) {
+        rc = TOXAV_ERR_SEND_FRAME_NULL;
+        goto END;
+    }
+    
+    if ( channels != 1 || channels != 2 ) {
+        rc = TOXAV_ERR_SEND_FRAME_INVALID;
+        goto END;
+    }
+    
+    { /* Encode and send */
+        /* TODO redundant? */
+        cs_set_sending_audio_channels(call->cs, channels);
+        cs_set_sending_audio_sampling_rate(call->cs, sampling_rate);
+        
+        uint8_t dest[sample_count * channels * 2 /* sizeof(uint16_t) */];
+        int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest, sizeof (dest));
+        
+        if (vrc < 0) {
+            LOGGER_WARNING("Failed to encode frame");
+            rc = TOXAV_ERR_SEND_FRAME_INVALID;
+            goto END;
+        }
+        
+        vrc = rtp_send_msg(call->rtps[audio_index], dest, vrc);
+        /* TODO check for error? */
+    }
+    
+END:
+    if (error)
+        *error = rc;
+    
+    return rc == TOXAV_ERR_SEND_FRAME_OK;
 }
 
 void toxav_callback_receive_video_frame(ToxAV* av, toxav_receive_video_frame_cb* function, void* user_data)
 {
-
+    av->vcb.first = function;
+    av->vcb.second = user_data;
 }
 
 void toxav_callback_receive_audio_frame(ToxAV* av, toxav_receive_audio_frame_cb* function, void* user_data)
 {
-
+    av->acb.first = function;
+    av->acb.second = user_data;
 }
 
 
 /*******************************************************************************
- * 
+ *
  * :: Internal
  *
  ******************************************************************************/
@@ -615,12 +831,6 @@ bool i_toxav_prepare_transmission(ToxAV* av, IToxAVCall* call)
     
     call->cs->agent = av;
     call->cs->call_idx = call->call_idx;
-    
-    call->cs->acb.first = av->acb.first;
-    call->cs->acb.second = av->acb.second;
-    
-    call->cs->vcb.first = av->vcb.first;
-    call->cs->vcb.second = av->vcb.second;
     
     
     if (c_self->audio_bitrate > 0 || c_peer->audio_bitrate > 0) { /* Prepare audio rtp */
