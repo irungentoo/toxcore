@@ -11,8 +11,8 @@ way for one user to identify another in the friend list.
 This document describes the implementation of avatars in the Tox protocol,
 according to the following design considerations:
 
-  - Avatars are handled as private information, i.e., they are only exchanged over
-    Tox encrypted channels among previously authenticated friends;
+  - Avatars are handled as private information, i.e., they are only exchanged
+    over Tox encrypted channels among previously authenticated friends;
 
   - The library treats all images as blobs and does not interpret or
     understand image formats. It only ensures that the avatar data sent by
@@ -85,14 +85,15 @@ Tox protocol:
     connects to the network, changes his avatar, or in reply to an **avatar
     information request**. They are delivered by a very lightweight message
     but with information enough to allow a user to validate or discard an
-    avatar from the local cache and to decide if it is interesting to request the
-    avatar data from the peer.
+    avatar from the local cache and to decide if it is interesting to request
+    the avatar data from the peer.
 
     This event contains two data fields: (1) the image format, and (2) the
-    cryptographic hash of the actual image data. The image format may be NONE
-    (for users who have no avatar or removed their avatars) or PNG. The
+    cryptographic hash of the current image data. The image format may be
+    NONE (for users who have no avatar or removed their avatars) or PNG. The
     cryptographic hash is intended to be compared with the hash of the
-    currently cached avatar (if any) in order to check if it is still up to date.
+    currently cached avatar (if any) in order to check if it is still up to
+    date.
 
   - **Avatar Information Requests** are very lightweight messages sent by a
     user asking for an **avatar information notification**. They may be sent
@@ -144,6 +145,9 @@ TOX_AVATAR_FORMAT;
 
 /* Set the user avatar image data. */
 int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length);
+
+/* Removes the user avatar image data. */
+int tox_unset_avatar(Tox *tox);
 
 /* Get avatar data from the current user. */
 int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen, uint8_t *hash);
@@ -201,6 +205,11 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
       * A client may not understand a particular image format and ignore
         avatars using it, but request and handle other formats;
 
+      * A client on a slow mobile network may ask for avatar information to
+        ensure its cached avatars are still valid, but do not request avatar
+        data. The same client may start asking for avatar data once it
+        connects through a fast network.
+
   - Clients SHOULD implement a local cache of avatars and do not request
     avatar data from other peers unless necessary;
 
@@ -244,7 +253,7 @@ already downloaded by other clients can be reused.
 Given the Tox data directory described in STS Draft v0.1.0:
 
   - Avatars are stored in a directory called "avatars" and named
-    as "xxxxx.png", where "xxxxx" is the complete client id (but not friend
+    as "xxxxx.png", where "xxxxx" is the complete public key (but not friend
     address!) encoded as an uppercase hexadecimal string and "png" is the
     extension for the PNG avatar. As new image formats may be used in the
     future, clients should ensure no other file "xxxxx.*" exists. No file
@@ -253,7 +262,7 @@ Given the Tox data directory described in STS Draft v0.1.0:
   - The client's own avatar is not special and is stored like any other. This
     is partially for simplicity, and partially in anticipation of profiles.
 
-  - The avatar should be stored as its recieved, before any modifications by
+  - The avatar should be stored as its received, before any modifications by
     the client for display purposes.
 
   - The hash, as calculated by toxcore and passed in to the data callback,
@@ -269,7 +278,7 @@ Example for Linux and other Unix systems, assuming an user called "gildor":
     Tox data directory: /home/gildor/.config/tox/
     Tox data file:      /home/gildor/.config/tox/data
     Avatar data dir:    /home/gildor/.config/tox/avatars/
-    Gildor's avatar:    /home/gildor/.config/tox/avatars/E5809EEF5F11AB29B9BDF543C05B58DDF454AB9CA176C235C7699FDC2757DC33.png
+    Gildor's avatar:    /home/gildor/.config/tox/avatars/446F4E6F744D6564646C65496E546865416666616972734F6657697A61726473.png
     Elrond's avatar:    /home/gildor/.config/tox/avatars/43656C65627269616E20646F6E277420546F782E426164206D656D6F72696573.png
     Elrond's hash:      /home/gildor/.config/tox/avatars/43656C65627269616E20646F6E277420546F782E426164206D656D6F72696573.hash
     Elladan's avatar:   /home/gildor/.config/tox/avatars/49486174655768656E48756D616E735468696E6B49416D4D7942726F74686572.png
@@ -313,7 +322,12 @@ notifications and unnecessary data transfers.
 
 #### Removing the avatar from the current user
 
-To remove an avatar, an application must set it to `TOX_AVATAR_FORMAT_NONE`.
+To remove the current avatar, an application must call
+
+    tox_unset_avatar(tox);
+
+the effect is the same as setting the avatar format to `TOX_AVATAR_FORMAT_NONE`
+and with no data:
 
     tox_set_avatar(tox, TOX_AVATAR_FORMAT_NONE, NULL, 0);
 
@@ -408,7 +422,7 @@ calls:
 
 In the previous examples, implementation of the functions to check, store
 and retrieve data from the cache were omitted for brevity. These functions
-will also need to get the friend client ID (public key) from they friend
+will also need to get the friend public key (client id) from they friend
 number and, usually, convert it from a byte string to a hexadecimal
 string. A complete, yet more complex, example is available in the file
 `testing/test_avatars.c`.
@@ -555,7 +569,7 @@ from a client "B":
     If valid, "A" updates the 'bytes_received' counter and concatenates the
     newly arrived data to the buffer.
 
-    The "A" checks if all the data was already received by comparing the
+    Then "A" checks if all the data was already received by comparing the
     counter 'bytes_received' with the field 'total_length'. If they are
     equal, "A" takes a SHA-256 hash of the data and compares it with the
     hash stored in the field 'hash' received from the first
