@@ -1,13 +1,16 @@
 language: c
 compiler:
+  - gcc-4.8
   - gcc
   - clang
 
 before_script:
   #installing libsodium, needed for Core
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8 gcc-4.8; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
   - git clone git://github.com/jedisct1/libsodium.git > /dev/null
   - cd libsodium
-  - git checkout tags/0.7.0 > /dev/null
+  - git checkout tags/1.0.0 > /dev/null
   - ./autogen.sh > /dev/null
   - ./configure > /dev/null
   - make check -j3 > /dev/null
