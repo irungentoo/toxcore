@@ -7,7 +7,7 @@ before_script:
   #installing libsodium, needed for Core
   - git clone git://github.com/jedisct1/libsodium.git > /dev/null
   - cd libsodium
-  - git checkout tags/0.7.0 > /dev/null
+  - git checkout tags/1.0.0 > /dev/null
   - ./autogen.sh > /dev/null
   - ./configure > /dev/null
   - make check -j3 > /dev/null
