@@ -40,7 +40,6 @@
 #include "codec.h"
 
 /* Good quality encode. */
-#define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
 #define MAX_DECODE_TIME_US 0
 
 // TODO this has to be exchanged in msi
