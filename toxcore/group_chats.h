@@ -78,6 +78,7 @@ enum {
     GS_NONE,
     GS_AWAY,
     GS_BUSY,
+    GS_OFFLINE,
     GS_INVALID
 } GROUP_STATUS;
 
