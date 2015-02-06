@@ -587,6 +587,7 @@ void cs_kill(CSSession *cs)
     jbuf_free(cs->j_buf);
     buffer_free(cs->vbuf_raw);
     free(cs->frame_buf);
+    free(cs->split_video_frame);
 
     LOGGER_DEBUG("Terminated codec state: %p", cs);
     free(cs);
