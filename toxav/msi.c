@@ -1287,10 +1287,13 @@ int msi_kill ( MSISession *session )
             /* Cancel all? */
             uint16_t _it = 0;
             /*for ( ; _it < session->calls[idx]->peer_count; _it++ )
-             * FIXME: will not work on multiple peers, must cancel call for all peers
-             */
+                * FIXME: will not work on multiple peers, must cancel call for all peers
+                */
             msi_cancel ( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
         }
+
+    free(((TimerHandler *)session->timer_handler)->timers);
+    free(session->timer_handler);
 
     free ( session->calls );
     pthread_mutex_unlock(session->mutex);
