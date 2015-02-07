@@ -608,6 +608,23 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
     return 0;
 }
 
+static int clear_buffer(Packets_Array *array)
+{
+    uint32_t i;
+
+    for (i = array->buffer_start; i != array->buffer_end; ++i) {
+        uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
+
+        if (array->buffer[num]) {
+            free(array->buffer[num]);
+            array->buffer[num] = NULL;
+        }
+    }
+
+    array->buffer_start = i;
+    return 0;
+}
+
 /* Set array buffer end to number.
  *
  * return -1 on failure.
@@ -2705,6 +2722,8 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 
         disconnect_peer_tcp(c, crypt_connection_id);
         bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        clear_buffer(&conn->send_array);
+        clear_buffer(&conn->recv_array);
         ret = wipe_crypto_connection(c, crypt_connection_id);
     }
 
