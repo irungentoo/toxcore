@@ -2722,6 +2722,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 
         disconnect_peer_tcp(c, crypt_connection_id);
         bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        clear_temp_packet(c, crypt_connection_id);
         clear_buffer(&conn->send_array);
         clear_buffer(&conn->recv_array);
         ret = wipe_crypto_connection(c, crypt_connection_id);
