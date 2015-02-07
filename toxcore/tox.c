@@ -1012,8 +1012,8 @@ uint32_t tox_do_interval(Tox *tox)
  */
 Tox *tox_new(Tox_Options *options)
 {
-    logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
-
+    if (!logger_get_global())
+        logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
 
     Messenger_Options m_options = {0};
 
