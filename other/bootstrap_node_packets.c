@@ -34,7 +34,7 @@ static uint16_t bootstrap_motd_length;
 /* To request this packet just send a packet of length INFO_REQUEST_PACKET_LENGTH
  * with the first byte being BOOTSTRAP_INFO_PACKET_ID
  */
-static int handle_info_request(void *object, IP_Port source, const uint8_t *packet, uint32_t length)
+static int handle_info_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
     if (length != INFO_REQUEST_PACKET_LENGTH)
         return 1;
