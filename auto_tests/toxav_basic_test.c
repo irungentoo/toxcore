@@ -595,6 +595,7 @@ START_TEST(test_AV_flows)
         printf("\n");
     }
 
+    vpx_img_free(sample_image);
     toxav_kill(status_control.Alice.av);
     toxav_kill(status_control.Bob.av);
     tox_kill(bootstrap_node);
