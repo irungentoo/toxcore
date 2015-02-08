@@ -1289,7 +1289,13 @@ int msi_kill ( MSISession *session )
             /*for ( ; _it < session->calls[idx]->peer_count; _it++ )
                 * FIXME: will not work on multiple peers, must cancel call for all peers
                 */
-            msi_cancel ( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
+            MSICallState state = session->calls[idx]->state;
+
+            if (state == msi_CallInviting) {
+                msi_cancel( session, idx, session->calls[idx]->peers [_it], "MSI session terminated!" );
+            } else {
+                msi_stopcall(session, idx);
+            }
         }
 
     free(((TimerHandler *)session->timer_handler)->timers);
@@ -1438,7 +1444,7 @@ int msi_cancel ( MSISession *session, int32_t call_index, uint32_t peer, const c
     }
 
     if ( session->calls[call_index]->state != msi_CallInviting ) {
-        LOGGER_ERROR("Call is in invalid state!");
+        LOGGER_ERROR("Call is in invalid state: %u", session->calls[call_index]->state);
         pthread_mutex_unlock(session->mutex);
         return msi_ErrorInvalidState;
     }
