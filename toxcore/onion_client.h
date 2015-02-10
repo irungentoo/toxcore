@@ -91,16 +91,16 @@ typedef struct {
     uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
     uint8_t is_online; /* Set by the onion_set_friend_status function. */
 
-    uint8_t is_fake_public_key; /* 0 if we don't know the fake public key of the other, 1 if we do. */
-    uint8_t fake_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t know_dht_public_key; /* 0 if we don't know the dht public key of the other, 1 if we do. */
+    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
 
     Onion_Node clients_list[MAX_ONION_CLIENTS];
     uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
 
-    uint64_t last_fakeid_onion_sent;
-    uint64_t last_fakeid_dht_sent;
+    uint64_t last_dht_pk_onion_sent;
+    uint64_t last_dht_pk_dht_sent;
 
     uint64_t last_noreplay;
 
