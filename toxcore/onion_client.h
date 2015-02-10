@@ -92,8 +92,8 @@ typedef struct {
     uint8_t is_online; /* Set by the onion_set_friend_status function. */
 
     uint8_t is_fake_clientid; /* 0 if we don't know the fake client id of the other 1 if we do. */
-    uint8_t fake_client_id[crypto_box_PUBLICKEYBYTES];
-    uint8_t real_client_id[crypto_box_PUBLICKEYBYTES];
+    uint8_t fake_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
 
     Onion_Node clients_list[MAX_ONION_CLIENTS];
     uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
