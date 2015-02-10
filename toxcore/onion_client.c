@@ -841,7 +841,7 @@ static int send_dht_fakeid(const Onion_Client *onion_c, int friend_num, const ui
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
 
-    if (!onion_c->friends_list[friend_num].is_fake_clientid)
+    if (!onion_c->friends_list[friend_num].is_fake_public_key)
         return -1;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
@@ -1029,7 +1029,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     if ((uint32_t)friend_num >= onion_c->num_friends)
         return -1;
 
-    //if (onion_c->friends_list[friend_num].is_fake_clientid)
+    //if (onion_c->friends_list[friend_num].is_fake_public_key)
     //    DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].fake_public_key, 0);
 
     memset(&(onion_c->friends_list[friend_num]), 0, sizeof(Onion_Friend));
@@ -1101,16 +1101,16 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
     if (onion_c->friends_list[friend_num].status == 0)
         return -1;
 
-    if (onion_c->friends_list[friend_num].is_fake_clientid) {
+    if (onion_c->friends_list[friend_num].is_fake_public_key) {
         if (memcmp(dht_key, onion_c->friends_list[friend_num].fake_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             return -1;
         }
 
-        onion_c->friends_list[friend_num].is_fake_clientid = 0;
+        onion_c->friends_list[friend_num].is_fake_public_key = 0;
     }
 
     onion_c->friends_list[friend_num].last_seen = unix_time();
-    onion_c->friends_list[friend_num].is_fake_clientid = 1;
+    onion_c->friends_list[friend_num].is_fake_public_key = 1;
     memcpy(onion_c->friends_list[friend_num].fake_public_key, dht_key, crypto_box_PUBLICKEYBYTES);
 
     return 0;
@@ -1129,7 +1129,7 @@ unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_
     if (onion_c->friends_list[friend_num].status == 0)
         return 0;
 
-    if (!onion_c->friends_list[friend_num].is_fake_clientid)
+    if (!onion_c->friends_list[friend_num].is_fake_public_key)
         return 0;
 
     memcpy(dht_key, onion_c->friends_list[friend_num].fake_public_key, crypto_box_PUBLICKEYBYTES);
