@@ -60,7 +60,7 @@
 #define ONION_DATA_FAKEID CRYPTO_PACKET_FAKEID
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port     ip_port;
     uint8_t     ping_id[ONION_PING_ID_SIZE];
     uint8_t     data_public_key[crypto_box_PUBLICKEYBYTES];
@@ -83,7 +83,7 @@ typedef struct {
 } Onion_Client_Paths;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     uint64_t    timestamp;
 } Last_Pinged;
 
@@ -165,7 +165,7 @@ typedef struct {
  * return -1 on failure
  * return 0 on success
  */
-int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *client_id);
+int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key);
 
 /* Put up to max_num nodes in nodes.
  *
@@ -178,14 +178,14 @@ uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uin
  * return -1 on failure.
  * return the friend number on success or if the friend was already added.
  */
-int onion_friend_num(const Onion_Client *onion_c, const uint8_t *client_id);
+int onion_friend_num(const Onion_Client *onion_c, const uint8_t *public_key);
 
 /* Add a friend who we want to connect to.
  *
  * return -1 on failure.
  * return the friend number on success.
  */
-int onion_addfriend(Onion_Client *onion_c, const uint8_t *client_id);
+int onion_addfriend(Onion_Client *onion_c, const uint8_t *public_key);
 
 /* Delete a friend.
  *
@@ -207,9 +207,9 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
 
 /* Get the ip of friend friendnum and put it in ip_port
  *
- *  return -1, -- if client_id does NOT refer to a friend
- *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
- *  return  1, ip if client_id refers to a friend and we found him
+ *  return -1, -- if public_key does NOT refer to a friend
+ *  return  0, -- if public_key refers to a friend and we failed to find the friend (yet)
+ *  return  1, ip if public_key refers to a friend and we found him
  *
  */
 int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
