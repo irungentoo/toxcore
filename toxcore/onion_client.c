@@ -679,16 +679,16 @@ static int handle_data_response(void *object, IP_Port source, const uint8_t *pac
             sizeof(plain));
 }
 
-#define FAKEID_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES)
-#define FAKEID_DATA_MAX_LENGTH (FAKEID_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
+#define DHTPK_DATA_MIN_LENGTH (1 + sizeof(uint64_t) + crypto_box_PUBLICKEYBYTES)
+#define DHTPK_DATA_MAX_LENGTH (DHTPK_DATA_MIN_LENGTH + sizeof(Node_format)*MAX_SENT_NODES)
 static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length)
 {
     Onion_Client *onion_c = object;
 
-    if (length < FAKEID_DATA_MIN_LENGTH)
+    if (length < DHTPK_DATA_MIN_LENGTH)
         return 1;
 
-    if (length > FAKEID_DATA_MAX_LENGTH)
+    if (length > DHTPK_DATA_MAX_LENGTH)
         return 1;
 
     int friend_num = onion_friend_num(onion_c, source_pubkey);
@@ -712,7 +712,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
     onion_set_friend_DHT_pubkey(onion_c, friend_num, data + 1 + sizeof(uint64_t));
     onion_c->friends_list[friend_num].last_seen = unix_time();
 
-    uint16_t len_nodes = length - FAKEID_DATA_MIN_LENGTH;
+    uint16_t len_nodes = length - DHTPK_DATA_MIN_LENGTH;
 
     if (len_nodes != 0) {
         Node_format nodes[MAX_SENT_NODES];
@@ -871,13 +871,13 @@ static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_
 {
     Onion_Client *onion_c = object;
 
-    if (length < FAKEID_DATA_MIN_LENGTH + DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES)
+    if (length < DHTPK_DATA_MIN_LENGTH + DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES)
         return 1;
 
-    if (length > FAKEID_DATA_MAX_LENGTH + DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES)
+    if (length > DHTPK_DATA_MAX_LENGTH + DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES)
         return 1;
 
-    uint8_t plain[FAKEID_DATA_MAX_LENGTH];
+    uint8_t plain[DHTPK_DATA_MAX_LENGTH];
     int len = decrypt_data(packet, onion_c->c->self_secret_key, packet + crypto_box_PUBLICKEYBYTES,
                            packet + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                            length - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES), plain);
@@ -904,7 +904,7 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
     if (friend_num >= onion_c->num_friends)
         return -1;
 
-    uint8_t data[FAKEID_DATA_MAX_LENGTH];
+    uint8_t data[DHTPK_DATA_MAX_LENGTH];
     data[0] = ONION_DATA_FAKEID;
     uint64_t no_replay = unix_time();
     host_to_net((uint8_t *)&no_replay, sizeof(no_replay));
@@ -917,7 +917,7 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
     int nodes_len = 0;
 
     if (num_nodes != 0) {
-        nodes_len = pack_nodes(data + FAKEID_DATA_MIN_LENGTH, FAKEID_DATA_MAX_LENGTH - FAKEID_DATA_MIN_LENGTH, nodes,
+        nodes_len = pack_nodes(data + DHTPK_DATA_MIN_LENGTH, DHTPK_DATA_MAX_LENGTH - DHTPK_DATA_MIN_LENGTH, nodes,
                                num_nodes);
 
         if (nodes_len <= 0)
@@ -927,10 +927,10 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
     int num1 = -1, num2 = -1;
 
     if (onion_dht_both != 1)
-        num1 = send_onion_data(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + nodes_len);
+        num1 = send_onion_data(onion_c, friend_num, data, DHTPK_DATA_MIN_LENGTH + nodes_len);
 
     if (onion_dht_both != 0)
-        num2 = send_dht_dhtpk(onion_c, friend_num, data, FAKEID_DATA_MIN_LENGTH + nodes_len);
+        num2 = send_dht_dhtpk(onion_c, friend_num, data, DHTPK_DATA_MIN_LENGTH + nodes_len);
 
     if (num1 == -1)
         return num2;
@@ -1275,11 +1275,11 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
         }
 
         /* send packets to friend telling them our DHT public key. */
-        if (is_timeout(onion_c->friends_list[friendnum].last_dht_pk_onion_sent, ONION_FAKEID_INTERVAL))
+        if (is_timeout(onion_c->friends_list[friendnum].last_dht_pk_onion_sent, ONION_DHTPK_SEND_INTERVAL))
             if (send_dhtpk_announce(onion_c, friendnum, 0) >= 1)
                 onion_c->friends_list[friendnum].last_dht_pk_onion_sent = unix_time();
 
-        if (is_timeout(onion_c->friends_list[friendnum].last_dht_pk_dht_sent, DHT_FAKEID_INTERVAL))
+        if (is_timeout(onion_c->friends_list[friendnum].last_dht_pk_dht_sent, DHT_DHTPK_SEND_INTERVAL))
             if (send_dhtpk_announce(onion_c, friendnum, 1) >= 1)
                 onion_c->friends_list[friendnum].last_dht_pk_dht_sent = unix_time();
 
