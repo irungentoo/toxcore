@@ -57,7 +57,7 @@
 
 /* Onion data packet ids. */
 #define ONION_DATA_FRIEND_REQ CRYPTO_PACKET_FRIEND_REQ
-#define ONION_DATA_FAKEID CRYPTO_PACKET_FAKEID
+#define ONION_DATA_DHTPK CRYPTO_PACKET_FAKEID
 
 typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
