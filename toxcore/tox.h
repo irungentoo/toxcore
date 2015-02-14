@@ -344,7 +344,7 @@ struct Tox_Options {
      *
      * This member is ignored (it can be NULL) if proxy_enabled is false.
      */
-    char const *proxy_address;
+    const char *proxy_address;
 
     /**
      * The port to use to connect to the proxy server.
@@ -474,7 +474,7 @@ typedef uint8_t TOX_ERR_NEW;
  *
  * @see tox_iteration for the event loop.
  */
-Tox *tox_new(struct Tox_Options const *options, uint8_t const *data, size_t length, TOX_ERR_NEW *error);
+Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t length, TOX_ERR_NEW *error);
 
 
 /**
@@ -493,7 +493,7 @@ void tox_kill(Tox *tox);
  *
  * @see threading for concurrency implications.
  */
-size_t tox_save_size(Tox const *tox);
+size_t tox_save_size(const Tox *tox);
 
 /**
  * Store all information associated with the tox instance to a byte array.
@@ -502,7 +502,7 @@ size_t tox_save_size(Tox const *tox);
  *   Call tox_save_size to find the number of bytes required. If this parameter
  *   is NULL, this function has no effect.
  */
-void tox_save(Tox const *tox, uint8_t *data);
+void tox_save(const Tox *tox, uint8_t *data);
 
 
 /*******************************************************************************
@@ -546,7 +546,7 @@ typedef uint8_t TOX_ERR_BOOTSTRAP;
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_bootstrap(Tox *tox, char const *address, uint16_t port, uint8_t const *public_key, TOX_ERR_BOOTSTRAP *error);
+bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
 
 
 /**
@@ -562,7 +562,7 @@ bool tox_bootstrap(Tox *tox, char const *address, uint16_t port, uint8_t const *
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_add_tcp_relay(Tox *tox, char const *address, uint16_t port, uint8_t const *public_key,
+bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key,
                        TOX_ERR_BOOTSTRAP *error);
 
 
@@ -592,7 +592,7 @@ typedef uint8_t TOX_CONNECTION;
  * Return whether we are connected to the DHT. The return value is equal to the
  * last value received through the `connection_status` callback.
  */
-TOX_CONNECTION tox_get_connection_status(Tox const *tox);
+TOX_CONNECTION tox_get_connection_status(const Tox *tox);
 
 /**
  * The function type for the `connection_status` callback.
@@ -620,7 +620,7 @@ void tox_callback_connection_status(Tox *tox, tox_connection_status_cb *function
  * Return the time in milliseconds before tox_iteration() should be called again
  * for optimal performance.
  */
-uint32_t tox_iteration_interval(Tox const *tox);
+uint32_t tox_iteration_interval(const Tox *tox);
 
 
 /**
@@ -646,7 +646,7 @@ void tox_iteration(Tox *tox);
  *   parameter is NULL, this function has no effect.
  * @see TOX_ADDRESS_SIZE for the address format.
  */
-void tox_self_get_address(Tox const *tox, uint8_t *address);
+void tox_self_get_address(const Tox *tox, uint8_t *address);
 
 
 /**
@@ -659,7 +659,7 @@ void tox_self_set_nospam(Tox *tox, uint32_t nospam);
 /**
  * Get the 4-byte nospam part of the address.
  */
-uint32_t tox_self_get_nospam(Tox const *tox);
+uint32_t tox_self_get_nospam(const Tox *tox);
 
 /**
  * Copy the Tox Public Key (long term public key) from the Tox object.
@@ -667,7 +667,7 @@ uint32_t tox_self_get_nospam(Tox const *tox);
  * @param public_key A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If
  *   this parameter is NULL, this function has no effect.
  */
-void tox_self_get_public_key(Tox const *tox, uint8_t *public_key);
+void tox_self_get_public_key(const Tox *tox, uint8_t *public_key);
 
 /**
  * Copy the private key from the Tox object.
@@ -675,7 +675,7 @@ void tox_self_get_public_key(Tox const *tox, uint8_t *public_key);
  * @param private_key A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If
  *   this parameter is NULL, this function has no effect.
  */
-void tox_self_get_private_key(Tox const *tox, uint8_t *private_key);
+void tox_self_get_private_key(const Tox *tox, uint8_t *private_key);
 
 
 /*******************************************************************************
@@ -710,7 +710,7 @@ typedef uint8_t TOX_ERR_SET_INFO;
  *
  * @return true on success.
  */
-bool tox_self_set_name(Tox *tox, uint8_t const *name, size_t length, TOX_ERR_SET_INFO *error);
+bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET_INFO *error);
 
 /**
  * Return the length of the current nickname as passed to tox_self_set_name.
@@ -720,7 +720,7 @@ bool tox_self_set_name(Tox *tox, uint8_t const *name, size_t length, TOX_ERR_SET
  *
  * @see threading for concurrency implications.
  */
-size_t tox_self_get_name_size(Tox const *tox);
+size_t tox_self_get_name_size(const Tox *tox);
 
 /**
  * Write the nickname set by tox_self_set_name to a byte array.
@@ -734,7 +734,7 @@ size_t tox_self_get_name_size(Tox const *tox);
  * @param name A valid memory location large enough to hold the nickname.
  *   If this parameter is NULL, the function has no effect.
  */
-void tox_self_get_name(Tox const *tox, uint8_t *name);
+void tox_self_get_name(const Tox *tox, uint8_t *name);
 
 /**
  * Set the client's status message.
@@ -743,7 +743,7 @@ void tox_self_get_name(Tox const *tox, uint8_t *name);
  * length is 0, the status parameter is ignored (it can be NULL), and the
  * user status is set back to empty.
  */
-bool tox_self_set_status_message(Tox *tox, uint8_t const *status, size_t length, TOX_ERR_SET_INFO *error);
+bool tox_self_set_status_message(Tox *tox, const uint8_t *status, size_t length, TOX_ERR_SET_INFO *error);
 
 /**
  * Return the length of the current status message as passed to
@@ -754,7 +754,7 @@ bool tox_self_set_status_message(Tox *tox, uint8_t const *status, size_t length,
  *
  * @see threading for concurrency implications.
  */
-size_t tox_self_get_status_message_size(Tox const *tox);
+size_t tox_self_get_status_message_size(const Tox *tox);
 
 /**
  * Write the status message set by tox_self_set_status_message to a byte array.
@@ -768,7 +768,7 @@ size_t tox_self_get_status_message_size(Tox const *tox);
  * @param status A valid memory location large enough to hold the status message.
  *   If this parameter is NULL, the function has no effect.
  */
-void tox_self_get_status_message(Tox const *tox, uint8_t *status);
+void tox_self_get_status_message(const Tox *tox, uint8_t *status);
 
 
 /**
@@ -781,7 +781,7 @@ void tox_self_set_status(Tox *tox, TOX_STATUS user_status);
 /**
  * Returns the client's user status.
  */
-TOX_STATUS tox_self_get_status(Tox const *tox);
+TOX_STATUS tox_self_get_status(const Tox *tox);
 
 
 /*******************************************************************************
@@ -850,7 +850,7 @@ typedef uint8_t TOX_ERR_FRIEND_ADD;
  *
  * @return the friend number on success, UINT32_MAX on failure.
  */
-uint32_t tox_friend_add(Tox *tox, uint8_t const *address, uint8_t const *message, size_t length,
+uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message, size_t length,
                         TOX_ERR_FRIEND_ADD *error);
 
 
@@ -872,7 +872,7 @@ uint32_t tox_friend_add(Tox *tox, uint8_t const *address, uint8_t const *message
  * @return the friend number on success, UINT32_MAX on failure.
  * @see tox_friend_add for a more detailed description of friend numbers.
  */
-uint32_t tox_friend_add_norequest(Tox *tox, uint8_t const *public_key, TOX_ERR_FRIEND_ADD *error);
+uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_ADD *error);
 
 
 enum TOX_ERR_FRIEND_DELETE {
@@ -921,7 +921,7 @@ typedef uint8_t TOX_ERR_FRIEND_BY_PUBLIC_KEY;
  * @return the friend number on success, UINT32_MAX on failure.
  * @param public_key A byte array containing the Public Key.
  */
-uint32_t tox_friend_by_public_key(Tox const *tox, uint8_t const *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error);
+uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error);
 
 
 enum TOX_ERR_FRIEND_GET_PUBLIC_KEY {
@@ -943,7 +943,7 @@ typedef uint8_t TOX_ERR_FRIEND_GET_PUBLIC_KEY;
  *
  * @return true on success.
  */
-bool tox_friend_get_public_key(Tox const *tox, uint32_t friend_number, uint8_t *public_key,
+bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *public_key,
                                TOX_ERR_FRIEND_GET_PUBLIC_KEY *error);
 
 
@@ -951,7 +951,7 @@ bool tox_friend_get_public_key(Tox const *tox, uint32_t friend_number, uint8_t *
  * Checks if a friend with the given friend number exists and returns true if
  * it does.
  */
-bool tox_friend_exists(Tox const *tox, uint32_t friend_number);
+bool tox_friend_exists(const Tox *tox, uint32_t friend_number);
 
 
 /**
@@ -960,7 +960,7 @@ bool tox_friend_exists(Tox const *tox, uint32_t friend_number);
  * This function can be used to determine how much memory to allocate for
  * tox_friend_list.
  */
-size_t tox_friend_list_size(Tox const *tox);
+size_t tox_friend_list_size(const Tox *tox);
 
 
 /**
@@ -971,7 +971,7 @@ size_t tox_friend_list_size(Tox const *tox);
  * @param list A memory region with enough space to hold the friend list. If
  *   this parameter is NULL, this function has no effect.
  */
-void tox_friend_list(Tox const *tox, uint32_t *list);
+void tox_friend_list(const Tox *tox, uint32_t *list);
 
 
 
@@ -1007,7 +1007,7 @@ typedef uint8_t TOX_ERR_FRIEND_QUERY;
  * The return value is equal to the `length` argument received by the last
  * `friend_name` callback.
  */
-size_t tox_friend_get_name_size(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+size_t tox_friend_get_name_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * Write the name of the friend designated by the given friend number to a byte
@@ -1023,7 +1023,7 @@ size_t tox_friend_get_name_size(Tox const *tox, uint32_t friend_number, TOX_ERR_
  *
  * @return true on success.
  */
-bool tox_friend_get_name(Tox const *tox, uint32_t friend_number, uint8_t *name, TOX_ERR_FRIEND_QUERY *error);
+bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * The function type for the `friend_name` callback.
@@ -1034,7 +1034,7 @@ bool tox_friend_get_name(Tox const *tox, uint32_t friend_number, uint8_t *name, 
  * @param length A value equal to the return value of
  *   tox_friend_get_name_size.
  */
-typedef void tox_friend_name_cb(Tox *tox, uint32_t friend_number, uint8_t const *name, size_t length, void *user_data);
+typedef void tox_friend_name_cb(Tox *tox, uint32_t friend_number, const uint8_t *name, size_t length, void *user_data);
 
 /**
  * Set the callback for the `friend_name` event. Pass NULL to unset.
@@ -1048,7 +1048,7 @@ void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *function, void *user
  * Return the length of the friend's status message. If the friend number is
  * invalid, the return value is SIZE_MAX.
  */
-size_t tox_friend_get_status_message_size(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * Write the name of the friend designated by the given friend number to a byte
@@ -1062,7 +1062,7 @@ size_t tox_friend_get_status_message_size(Tox const *tox, uint32_t friend_number
  *
  * @param name A valid memory region large enough to store the friend's name.
  */
-bool tox_friend_get_status_message(Tox const *tox, uint32_t friend_number, uint8_t *message,
+bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8_t *message,
                                    TOX_ERR_FRIEND_QUERY *error);
 
 /**
@@ -1075,7 +1075,7 @@ bool tox_friend_get_status_message(Tox const *tox, uint32_t friend_number, uint8
  * @param length A value equal to the return value of
  *   tox_friend_get_status_message_size.
  */
-typedef void tox_friend_status_message_cb(Tox *tox, uint32_t friend_number, uint8_t const *message, size_t length,
+typedef void tox_friend_status_message_cb(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
         void *user_data);
 
 /**
@@ -1093,7 +1093,7 @@ void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *
  * The status returned is equal to the last status received through the
  * `friend_status` callback.
  */
-TOX_STATUS tox_friend_get_status(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+TOX_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * The function type for the `friend_status` callback.
@@ -1124,7 +1124,7 @@ void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *function, void *
  * @return the friend's connection status as it was received through the
  *   `friend_connection_status` event.
  */
-TOX_CONNECTION tox_friend_get_connection_status(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * The function type for the `friend_connection_status` callback.
@@ -1159,7 +1159,7 @@ void tox_callback_friend_connection_status(Tox *tox, tox_friend_connection_statu
  * @return false if the friend is not typing, or the friend number was
  *   invalid. Inspect the error code to determine which case it is.
  */
-bool tox_friend_get_typing(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * The function type for the `friend_typing` callback.
@@ -1251,7 +1251,7 @@ typedef uint8_t TOX_ERR_SEND_MESSAGE;
  * incremented by 1 each time a message is sent. If UINT32_MAX messages were
  * sent, the next message ID is 0.
  */
-uint32_t tox_send_message(Tox *tox, uint32_t friend_number, uint8_t const *message, size_t length,
+uint32_t tox_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
                           TOX_ERR_SEND_MESSAGE *error);
 
 
@@ -1266,7 +1266,7 @@ uint32_t tox_send_message(Tox *tox, uint32_t friend_number, uint8_t const *messa
  *
  * @see tox_send_message for more details.
  */
-uint32_t tox_send_action(Tox *tox, uint32_t friend_number, uint8_t const *action, size_t length,
+uint32_t tox_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
                          TOX_ERR_SEND_MESSAGE *error);
 
 
@@ -1310,7 +1310,7 @@ void tox_callback_read_receipt(Tox *tox, tox_read_receipt_cb *function, void *us
  * @param message The message they sent along with the request.
  * @param length The size of the message byte array.
  */
-typedef void tox_friend_request_cb(Tox *tox, uint8_t const *public_key, /*uint32_t time_delta, */uint8_t const *message,
+typedef void tox_friend_request_cb(Tox *tox, const uint8_t *public_key, /*uint32_t time_delta, */const uint8_t *message,
                                    size_t length, void *user_data);
 
 /**
@@ -1331,7 +1331,7 @@ void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *function, void
  *
  * @see tox_friend_request_cb for more information on time_delta.
  */
-typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */uint8_t const *message,
+typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */const uint8_t *message,
                                    size_t length, void *user_data);
 
 /**
@@ -1352,7 +1352,7 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void
  *
  * @see tox_friend_request_cb for more information on time_delta.
  */
-typedef void tox_friend_action_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */uint8_t const *action,
+typedef void tox_friend_action_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */const uint8_t *action,
                                   size_t length, void *user_data);
 
 /**
@@ -1416,7 +1416,7 @@ typedef uint8_t TOX_FILE_KIND;
  *
  * @return true if hash was not NULL.
  */
-bool tox_hash(uint8_t *hash, uint8_t const *data, size_t length);
+bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length);
 
 
 enum TOX_FILE_CONTROL {
@@ -1597,7 +1597,7 @@ typedef uint8_t TOX_ERR_FILE_SEND;
  *   number is per friend. File numbers are reused after a transfer terminates.
  */
 uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
-                       uint8_t const *filename, size_t filename_length, TOX_ERR_FILE_SEND *error);
+                       const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error);
 
 
 enum TOX_ERR_FILE_SEND_CHUNK {
@@ -1640,7 +1640,7 @@ typedef uint8_t TOX_ERR_FILE_SEND_CHUNK;
  *
  * @return true on success.
  */
-bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t const *data, size_t length,
+bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, const uint8_t *data, size_t length,
                          TOX_ERR_FILE_SEND_CHUNK *error);
 
 
@@ -1702,7 +1702,7 @@ void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *functi
  *   associated with.
  */
 typedef void tox_file_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind,
-                                 uint64_t file_size, uint8_t const *filename, size_t filename_length, void *user_data);
+                                 uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
 
 /**
  * Set the callback for the `file_receive` event. Pass NULL to unset.
@@ -1734,7 +1734,7 @@ void tox_callback_file_receive(Tox *tox, tox_file_receive_cb *function, void *us
  * @param length The length of the received chunk.
  */
 typedef void tox_file_receive_chunk_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
-                                       uint8_t const *data, size_t length, void *user_data);
+                                       const uint8_t *data, size_t length, void *user_data);
 
 /**
  * Set the callback for the `file_receive_chunk` event. Pass NULL to unset.
@@ -1814,7 +1814,7 @@ typedef uint8_t TOX_ERR_SEND_CUSTOM_PACKET;
  *
  * @return true on success.
  */
-bool tox_send_lossy_packet(Tox *tox, uint32_t friend_number, uint8_t const *data, size_t length,
+bool tox_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
                            TOX_ERR_SEND_CUSTOM_PACKET *error);
 
 /**
@@ -1824,7 +1824,7 @@ bool tox_send_lossy_packet(Tox *tox, uint32_t friend_number, uint8_t const *data
  * @param data A byte array containing the received packet data.
  * @param length The length of the packet data byte array.
  */
-typedef void tox_friend_lossy_packet_cb(Tox *tox, uint32_t friend_number, uint8_t const *data, size_t length,
+typedef void tox_friend_lossy_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
                                         void *user_data);
 
 /**
@@ -1849,7 +1849,7 @@ void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *func
  *
  * @return true on success.
  */
-bool tox_send_lossless_packet(Tox *tox, uint32_t friend_number, uint8_t const *data, size_t length,
+bool tox_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
                               TOX_ERR_SEND_CUSTOM_PACKET *error);
 
 /**
@@ -1859,7 +1859,7 @@ bool tox_send_lossless_packet(Tox *tox, uint32_t friend_number, uint8_t const *d
  * @param data A byte array containing the received packet data.
  * @param length The length of the packet data byte array.
  */
-typedef void tox_friend_lossless_packet_cb(Tox *tox, uint32_t friend_number, uint8_t const *data, size_t length,
+typedef void tox_friend_lossless_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
         void *user_data);
 
 /**
@@ -1888,7 +1888,7 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
  * @param dht_id A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If this
  *   parameter is NULL, this function has no effect.
  */
-void tox_get_dht_id(Tox const *tox, uint8_t *dht_id);
+void tox_get_dht_id(const Tox *tox, uint8_t *dht_id);
 
 
 enum TOX_ERR_GET_PORT {
@@ -1903,13 +1903,13 @@ typedef uint8_t TOX_ERR_GET_PORT;
 /**
  * Return the UDP port this Tox instance is bound to.
  */
-uint16_t tox_get_udp_port(Tox const *tox, TOX_ERR_GET_PORT *error);
+uint16_t tox_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 /**
  * Return the TCP port this Tox instance is bound to. This is only relevant if
  * the instance is acting as a TCP relay.
  */
-uint16_t tox_get_tcp_port(Tox const *tox, TOX_ERR_GET_PORT *error);
+uint16_t tox_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 
 #ifdef __cplusplus
