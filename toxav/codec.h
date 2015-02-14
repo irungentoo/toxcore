@@ -117,7 +117,7 @@ typedef struct _CSSession {
     int32_t last_pack_channels;
     int32_t last_packet_sampling_rate;
     int32_t last_packet_frame_duration;
-    struct _JitterBuffer *j_buf;
+    struct JitterBuffer *j_buf;
 
 
     /* Voice activity detection */
@@ -132,6 +132,10 @@ typedef struct _CSSession {
         */
     void *agent; /* Pointer to ToxAV TODO make this pointer to ToxAV*/
     int32_t call_idx;
+    int32_t friend_number;
+    
+    PAIR(toxav_receive_audio_frame_cb *, void *) acb; /* Audio frame receive callback */
+    PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
     
     pthread_mutex_t queue_mutex[1];
 } CSSession;

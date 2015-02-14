@@ -40,7 +40,6 @@
 #include "rtp.h"
 #include "codec.h"
 
-
 #define DEFAULT_JBUF 6
 
 /* Good quality encode. */
@@ -125,7 +124,7 @@ static void buffer_free(PayloadBuffer *b)
 }
 
 /* JITTER BUFFER WORK */
-typedef struct {
+typedef struct JitterBuffer {
     RTPMessage **queue;
     uint32_t     size;
     uint32_t     capacity;
@@ -260,48 +259,51 @@ void cs_do(CSSession *cs)
     int success = 0;
     
     pthread_mutex_lock(cs->queue_mutex);
-    RTPMessage *msg;
     
-    uint16_t fsize = 5760; /* Max frame size for 48 kHz */
-    int16_t tmp[fsize * 2];
-    
-    while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
-        pthread_mutex_unlock(cs->queue_mutex);
+    if (cs->audio_decoder) { /* If receiving enabled */
+        RTPMessage *msg;
         
-        if (success == 2) {
-            rc = opus_decode(cs->audio_decoder, 0, 0, tmp, fsize, 1);
-        } else {
-            /* Get values from packet and decode.
-             * It also checks for validity of an opus packet
-             */
-            rc = convert_bw_to_sampling_rate(opus_packet_get_bandwidth(msg->data));
-            if (rc != -1) {
-                cs->last_packet_sampling_rate = rc;
-                cs->last_pack_channels = opus_packet_get_nb_channels(msg->data);
+        uint16_t fsize = 5760; /* Max frame size for 48 kHz */
+        int16_t tmp[fsize * 2];
+        
+        while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
+            pthread_mutex_unlock(cs->queue_mutex);
             
-                cs->last_packet_frame_duration = 
-                    ( opus_packet_get_samples_per_frame(msg->data, cs->last_packet_sampling_rate) * 1000 )
-                    / cs->last_packet_sampling_rate;
-                    
+            if (success == 2) {
+                rc = opus_decode(cs->audio_decoder, 0, 0, tmp, fsize, 1);
             } else {
-                LOGGER_WARNING("Failed to load packet values!");
+                /* Get values from packet and decode.
+                * It also checks for validity of an opus packet
+                */
+                rc = convert_bw_to_sampling_rate(opus_packet_get_bandwidth(msg->data));
+                if (rc != -1) {
+                    cs->last_packet_sampling_rate = rc;
+                    cs->last_pack_channels = opus_packet_get_nb_channels(msg->data);
+                
+                    cs->last_packet_frame_duration = 
+                        ( opus_packet_get_samples_per_frame(msg->data, cs->last_packet_sampling_rate) * 1000 )
+                        / cs->last_packet_sampling_rate;
+                        
+                } else {
+                    LOGGER_WARNING("Failed to load packet values!");
+                    rtp_free_msg(NULL, msg);
+                    continue;
+                }
+                
+                rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
                 rtp_free_msg(NULL, msg);
-                continue;
             }
             
-            rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
-            rtp_free_msg(NULL, msg);
+            if (rc < 0) {
+                LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
+            } else if (cs->acb.first) {
+                /* Play */
+                cs->acb.first(cs->agent, cs->friend_number, tmp, rc, 
+                            cs->last_pack_channels, cs->last_packet_sampling_rate, cs->acb.second);
+            }
+            
+            pthread_mutex_lock(cs->queue_mutex);
         }
-        
-        if (rc < 0) {
-            LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
-        } else if (((ToxAV*)cs->agent)->acb.first) {
-            /* Play */
-            ((ToxAV*)cs->agent)->acb.first(cs->agent, cs->call_idx, tmp, rc, 
-                                           ((ToxAV*)cs->agent)->acb.second);
-        }
-        
-        pthread_mutex_lock(cs->queue_mutex);
     }
     
     if (cs->vbuf_raw && !buffer_empty(cs->vbuf_raw)) {
@@ -322,11 +324,11 @@ void cs_do(CSSession *cs)
             
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(cs->v_decoder, &iter)) {
-                if (((ToxAV*)cs->agent)->vcb.first)
-                    ((ToxAV*)cs->agent)->vcb.first(cs->agent, cs->call_idx, dest, 
-                                                   ((ToxAV*)cs->agent)->vcb.second);
-                    
-                    vpx_img_free(dest);
+                if (cs->vcb.first) 
+                    cs->vcb.first(cs->agent, cs->call_idx, dest->d_w, dest->d_h, 
+                                  (const uint8_t**)dest->planes, dest->stride, cs->vcb.second);
+                
+                vpx_img_free(dest);
             }
         }
         
