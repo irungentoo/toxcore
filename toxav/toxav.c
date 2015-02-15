@@ -322,6 +322,7 @@ bool toxav_call_control(ToxAV* av, uint32_t friend_number, TOXAV_CALL_CONTROL co
             } else if (av->msi->calls[call->call_idx]->state == msi_CallRequesting) {
                 /* Cancel the call */
                 msi_cancel(av->msi, call->call_idx, 0, NULL);
+                i_toxav_remove_call(av, friend_number);
             }
         } break;
         

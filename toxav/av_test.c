@@ -252,13 +252,13 @@ int main (int argc, char** argv)
     }
     
     printf("\nTrying regular call (Audio and Video)...\n");
-//     REGULAR_CALL_FLOW(48, 4000);
+    REGULAR_CALL_FLOW(48, 4000);
     
     printf("\nTrying regular call (Audio only)...\n");
-//     REGULAR_CALL_FLOW(48, 0);
+    REGULAR_CALL_FLOW(48, 0);
     
     printf("\nTrying regular call (Video only)...\n");
-//     REGULAR_CALL_FLOW(0, 4000);
+    REGULAR_CALL_FLOW(0, 4000);
     
 #undef REGULAR_CALL_FLOW
     
@@ -328,7 +328,8 @@ int main (int argc, char** argv)
             }
         }
         
-        while (!AliceCC.ended || !BobCC.ended)
+        /* Alice will not receive end state */
+        while (!BobCC.ended)
             iterate(Bsn, AliceAV, BobAV);
         
         printf("Success!\n");

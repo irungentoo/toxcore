@@ -30,7 +30,7 @@
 
 typedef uint8_t MSICallIDType[12];
 typedef uint8_t MSIReasonStrType[255];
-typedef void ( *MSICallbackType ) ( void *agent, int32_t call_idx, void *arg );
+typedef void ( *MSICallbackType ) ( void *agent, int32_t call_idx);
 
 /**
  * Call type identifier. Also used as rtp callback prefix.
@@ -70,6 +70,15 @@ typedef struct {
     uint32_t audio_channels;
 } MSICSettings;
 
+/**
+ * Active capabilities masks
+ */
+typedef enum {
+    msi_SendingAudio = 1,
+    msi_SendingVideo = 2,
+    msi_RecvingAudio = 4,
+    msi_RecvingVideo = 8,
+} MSICapMask;
 
 /**
  * Callbacks ids that handle the states
@@ -100,25 +109,13 @@ typedef enum {
 /**
  * The call struct.
  */
-typedef struct {                  /* Call info structure */
-    struct MSISession_s *session;           /* Session pointer */
+typedef struct {
+    struct MSISession_s *session;   /* Session pointer */
 
     MSICallState         state;
-
-    MSICSettings         csettings_local;   /* Local call settings */
-    MSICSettings        *csettings_peer;    /* Peers call settings */
-
-    MSICallIDType        id;                /* Random value identifying the call */
-
-    int                  ringing_tout_ms;   /* Ringing timeout in ms */
-
-    int                  request_timer_id;  /* Timer id for outgoing request/action */
-    int                  ringing_timer_id;  /* Timer id for ringing timeout */
-
-    uint32_t            *peers;
-    uint16_t             peer_count;
-
-    int32_t              call_idx;          /* Index of this call in MSISession */
+    uint8_t              caps;      /* Active capabilities */
+    
+    uint32_t             friend_id; /* Index of this call in MSISession */
 } MSICall;
 
 
@@ -126,21 +123,14 @@ typedef struct {                  /* Call info structure */
  * Control session struct
  */
 typedef struct MSISession_s {
-
     /* Call handlers */
     MSICall       **calls;
-    int32_t         max_calls;
 
     void           *agent_handler;
     Messenger      *messenger_handle;
 
-    uint32_t        frequ;
-    uint32_t        call_timeout;  /* Time of the timeout for some action to end; 0 if infinite */
-
     pthread_mutex_t mutex[1];
-
-    void           *timer_handler;
-    PAIR(MSICallbackType, void *) callbacks[10];
+    MSICallbackType callbacks[10];
 } MSISession;
 
 /**
@@ -156,7 +146,7 @@ int msi_kill ( MSISession *session );
 /**
  * Callback setter.
  */
-void msi_register_callback(MSISession *session, MSICallbackType callback, MSICallbackID id, void *userdata);
+void msi_register_callback(MSISession *session, MSICallbackType callback, MSICallbackID id);
 
 /**
  * Send invite request to friend_id.
