@@ -30,8 +30,8 @@ extern "C" {
 
 #include <stdint.h>
 
-#ifndef __TOX_DEFINED__
-#define __TOX_DEFINED__
+#ifndef TOX_DEFINED
+#define TOX_DEFINED
 typedef struct Tox Tox;
 #endif
 

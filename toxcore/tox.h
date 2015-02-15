@@ -418,12 +418,16 @@ typedef enum TOX_ERR_NEW {
      */
     TOX_ERR_NEW_PORT_ALLOC,
     /**
-     * proxy_enabled was true, but the proxy_address passed had an invalid format
+     * proxy_type was invalid.
+     */
+    TOX_ERR_PROXY_TYPE,
+    /**
+     * proxy_type was valid but the proxy_address passed had an invalid format
      * or was NULL.
      */
     TOX_ERR_NEW_PROXY_BAD_HOST,
     /**
-     * proxy_enabled was true, but the proxy_port was invalid.
+     * proxy_type was valid, but the proxy_port was invalid.
      */
     TOX_ERR_NEW_PROXY_BAD_PORT,
     /**
