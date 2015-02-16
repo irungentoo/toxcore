@@ -1074,7 +1074,7 @@ int tox_group_delete(Tox *tox, int groupnumber, const uint8_t *partmessage, uint
 int tox_group_message_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length)
 {
     const Messenger *m = tox;
-    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;
@@ -1091,7 +1091,7 @@ int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t pee
                                    uint16_t length)
 {
     const Messenger *m = tox;
-    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;
@@ -1107,7 +1107,7 @@ int tox_group_private_message_send(const Tox *tox, int groupnumber, uint32_t pee
 int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *message, uint16_t length)
 {
     const Messenger *m = tox;
-    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;
@@ -1124,7 +1124,7 @@ int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *messag
 int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t type)
 {
     const Messenger *m = tox;
-    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
         return -1;

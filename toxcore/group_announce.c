@@ -1,7 +1,7 @@
 /*
  * group_announce.h -- Similar to ping.h, but designed for group chat purposes
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
@@ -808,10 +808,8 @@ int handle_gca_ping_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint
         }
     }
 
-    if (!node_found) {
-        fprintf(stderr, "handle ping request node not found\n");
+    if (!node_found)
         return -1;
-    }
 
     uint8_t data[GCA_PING_REQUEST_PLAIN_SIZE];
     uint8_t public_key[ENC_PUBLIC_KEY];
@@ -872,10 +870,8 @@ void do_gca(GC_Announce *announce)
         if (!ipport_isset(&announce->announcements[i].node.ip_port))
             continue;
 
-        if (is_timeout(announce->announcements[i].last_rcvd_ping, GCA_NODES_EXPIRATION)) {
-            fprintf(stderr, "announce node %i timed out\n", i);
+        if (is_timeout(announce->announcements[i].last_rcvd_ping, GCA_NODES_EXPIRATION))
             memset(&announce->announcements[i], 0, sizeof(struct GC_AnnouncedNode));
-        }
     }
 
     ping_gca_nodes(announce);

@@ -3,7 +3,7 @@
  * An implementation of massive text only group chats.
  *
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
@@ -46,6 +46,10 @@ typedef struct Messenger Messenger;
 /* CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE */
 #define INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
+
+/* Return 1 if type is type is a lossless packet type, 0 otherwise */
+#define LOSSLESS_PACKET(type) ((type == GP_BROADCAST) || (type == GP_SYNC_RESPONSE)\
+                            || (type == GP_SYNC_REQUEST) || (type == GP_NEW_PEER))
 
 enum {
     GC_BAN,
@@ -99,9 +103,7 @@ enum {
 } GROUP_CONNECTION_STATE;
 
 enum {
-    GM_PING,
     GM_STATUS,
-    GM_NEW_PEER,
     GM_CHANGE_NICK,
     GM_CHANGE_TOPIC,
     GM_PLAIN_MESSAGE,
@@ -109,7 +111,20 @@ enum {
     GM_PRVT_MESSAGE,
     GM_OP_CERTIFICATE,
     GM_PEER_EXIT
-} GROUP_MESSAGE_TYPE;
+} GROUP_BROADCAST_TYPE;
+
+enum {
+    GP_BROADCAST,
+    GP_INVITE_REQUEST,
+    GP_INVITE_RESPONSE,
+    GP_INVITE_RESPONSE_REJECT,
+    GP_SYNC_REQUEST,
+    GP_SYNC_RESPONSE,
+    GP_FRIEND_INVITE,
+    GP_NEW_PEER,
+    GP_PING,
+    GP_MESSAGE_ACK
+} GROUP_PACKET_TYPE;
 
 typedef struct {
     IP_Port     ip_port;
@@ -154,6 +169,7 @@ typedef struct {
 } GC_ChatCredentials;
 
 typedef struct GC_Announce GC_Announce;
+typedef struct GC_Connection GC_Connection;
 
 typedef struct GC_Chat {
     Networking_Core *net;
@@ -185,6 +201,7 @@ typedef struct GC_Chat {
     uint64_t    self_last_rcvd_ping;
 
     GC_ChatCredentials *credentials;
+    GC_Connection *gcc;
 } GC_Chat;
 
 typedef struct GC_Session {
@@ -223,22 +240,22 @@ typedef struct GC_Session {
 /* Return -1 if fail
  * Return 0 if success
  */
-int gc_send_op_certificate(const GC_Chat *chat, uint32_t peernumber, uint8_t cert_type);
+int gc_send_op_certificate(GC_Chat *chat, uint32_t peernumber, uint8_t cert_type);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
+
+/* Return -1 if fail
+ * Return 0 if success
+ */
+int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length);
 
 /* Return -1 if fail
  * Return 0 if success
  */
 int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore);
-
-/* Return -1 if fail
- * Return 0 if success
- */
-int gc_send_message(const GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
-
-/* Return -1 if fail
- * Return 0 if success
- */
-int gc_send_private_message(const GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -364,4 +381,6 @@ int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint
  */
 GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
 
+int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernumber, const uint8_t *sender_pk,
+                        const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type, bool is_lossess);
 #endif  /* GROUP_CHATS_H */

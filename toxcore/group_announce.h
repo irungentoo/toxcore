@@ -1,7 +1,7 @@
 /*
  * group_announce.h -- Similar to ping.h, but designed for group chat purposes
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

@@ -800,6 +800,7 @@ typedef enum {
     TOX_GS_NONE,
     TOX_GS_AWAY,
     TOX_GS_BUSY,
+    TOX_GS_OFFLINE,
     TOX_GS_INVALID
 } TOX_GROUP_STATUS;
 
