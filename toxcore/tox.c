@@ -20,11 +20,7 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-/*
-TODO:
--replace bool with uint8_t
--remove enums (typedef enum in api to uint8_t)
-*/
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -157,6 +153,7 @@ Tox *tox_new(struct Tox_Options const *options, uint8_t const *data, size_t leng
 
     if (!new_groupchats(m)) {
         kill_messenger(m);
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         return NULL;
     }
 
@@ -180,16 +177,120 @@ void tox_kill(Tox *tox)
     logger_kill_global();
 }
 
-
 size_t tox_save_size(Tox const *tox)
 {
     const Messenger *m = tox;
     return messenger_size(m);
 }
 
-
 void tox_save(Tox const *tox, uint8_t *data)
 {
     const Messenger *m = tox;
     messenger_save(m, data);
 }
+
+static int address_to_ip(Messenger *m, char const *address, IP_Port *ip_port, IP_Port *ip_port_v4)
+{
+    if (!addr_parse_ip(address, &ip_port->ip)) {
+        if (m->options.udp_disabled) { /* Disable DNS when udp is disabled. */
+            return -1;
+        }
+
+        IP *ip_extra = NULL;
+        ip_init(&ip_port->ip, m->options.ipv6enabled);
+
+        if (m->options.ipv6enabled && ip_port_v4) {
+            /* setup for getting BOTH: an IPv6 AND an IPv4 address */
+            ip_port->ip.family = AF_UNSPEC;
+            ip_reset(&ip_port_v4->ip);
+            ip_extra = &ip_port_v4->ip;
+        }
+
+        if (!addr_resolve(address, &ip_port->ip, ip_extra)) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+bool tox_bootstrap(Tox *tox, char const *address, uint16_t port, uint8_t const *public_key, TOX_ERR_BOOTSTRAP *error)
+{
+    Messenger *m = tox;
+    bool ret = tox_add_tcp_relay(tox, address, port, public_key, error);
+
+    if (!ret) {
+        return 0;
+    }
+
+    if (m->options.udp_disabled) {
+        return ret;
+    } else { /* DHT only works on UDP. */
+        if (DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key) == 0) {
+            SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_ADDRESS);
+            return 0;
+        }
+
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
+        return 1;
+    }
+}
+
+bool tox_add_tcp_relay(Tox *tox, char const *address, uint16_t port, uint8_t const *public_key,
+                       TOX_ERR_BOOTSTRAP *error)
+{
+    Messenger *m = tox;
+    IP_Port ip_port, ip_port_v4;
+
+    if (port == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
+        return 0;
+    }
+
+    if (address_to_ip(m, address, &ip_port, &ip_port_v4) == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_ADDRESS);
+        return 0;
+    }
+
+    ip_port.port = htons(port);
+    add_tcp_relay(m->net_crypto, ip_port, public_key);
+    onion_add_bs_path_node(m->onion_c, ip_port, public_key); //TODO: move this
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
+    return 1;
+}
+
+TOX_CONNECTION tox_get_connection_status(Tox const *tox)
+{
+    const Messenger *m = tox;
+
+    if (onion_isconnected(m->onion_c)) {
+        if (DHT_non_lan_connected(m->dht)) {
+            return TOX_CONNECTION_UDP;
+        }
+
+        return TOX_CONNECTION_TCP;
+    }
+
+    return TOX_CONNECTION_NONE;
+}
+
+
+void tox_callback_connection_status(Tox *tox, tox_connection_status_cb *function, void *user_data)
+{
+    //TODO
+}
+
+uint32_t tox_iteration_interval(Tox const *tox)
+{
+    const Messenger *m = tox;
+    return messenger_run_interval(m);
+}
+
+void tox_iteration(Tox *tox)
+{
+    Messenger *m = tox;
+    do_messenger(m);
+    do_groupchats(m->group_chat_object);
+}
+

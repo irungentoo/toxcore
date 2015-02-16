@@ -891,7 +891,7 @@ void do_messenger(Messenger *m);
  *
  * returns time (in ms) before the next do_messenger() needs to be run on success.
  */
-uint32_t messenger_run_interval(Messenger *m);
+uint32_t messenger_run_interval(const Messenger *m);
 
 /* SAVING AND LOADING FUNCTIONS: */
 

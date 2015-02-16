@@ -2350,7 +2350,7 @@ static char *ID2String(const uint8_t *pk)
  *
  * returns time (in ms) before the next do_messenger() needs to be run on success.
  */
-uint32_t messenger_run_interval(Messenger *m)
+uint32_t messenger_run_interval(const Messenger *m)
 {
     uint32_t crypto_interval = crypto_run_interval(m->net_crypto);
 
