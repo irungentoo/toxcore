@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _CODEC_H_
-#define _CODEC_H_
+#ifndef CODEC_H
+#define CODEC_H
 
 #include "toxav.h"
 #include "rtp.h"
@@ -186,4 +186,4 @@ void cs_disable_audio_receiving(CSSession* cs);
 
 /* Internal. Called from rtp_handle_message */
 void queue_message(RTPSession *session, RTPMessage *msg);
-#endif /* _CODEC_H_ */
+#endif /* CODEC_H */

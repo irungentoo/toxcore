@@ -83,7 +83,6 @@ struct toxAV
 void i_toxav_msi_callback_invite(void* toxav_inst, int32_t call_idx, void *data);
 void i_toxav_msi_callback_ringing(void* toxav_inst, int32_t call_idx, void *data);
 void i_toxav_msi_callback_start(void* toxav_inst, int32_t call_idx, void *data);
-void i_toxav_msi_callback_cancel(void* toxav_inst, int32_t call_idx, void *data);
 void i_toxav_msi_callback_reject(void* toxav_inst, int32_t call_idx, void *data);
 void i_toxav_msi_callback_end(void* toxav_inst, int32_t call_idx, void *data);
 void i_toxav_msi_callback_request_to(void* toxav_inst, int32_t call_idx, void *data); /* TODO remove */
@@ -138,7 +137,6 @@ ToxAV* toxav_new(Tox* tox, TOXAV_ERR_NEW* error)
     msi_register_callback(av->msi, i_toxav_msi_callback_invite, msi_OnInvite, NULL);
     msi_register_callback(av->msi, i_toxav_msi_callback_ringing, msi_OnRinging, NULL);
     msi_register_callback(av->msi, i_toxav_msi_callback_start, msi_OnStart, NULL);
-    msi_register_callback(av->msi, i_toxav_msi_callback_cancel, msi_OnCancel, NULL);
     msi_register_callback(av->msi, i_toxav_msi_callback_reject, msi_OnReject, NULL);
     msi_register_callback(av->msi, i_toxav_msi_callback_end, msi_OnEnd, NULL);
     msi_register_callback(av->msi, i_toxav_msi_callback_request_to, msi_OnRequestTimeout, NULL);
@@ -588,17 +586,6 @@ void i_toxav_msi_callback_start(void* toxav_inst, int32_t call_idx, void* data)
         toxav->scb.first(toxav, call->friend_number, state, toxav->scb.second);
 }
 
-void i_toxav_msi_callback_cancel(void* toxav_inst, int32_t call_idx, void* data)
-{
-    ToxAV* toxav = toxav_inst;
-    
-    i_toxav_remove_call(toxav, toxav->msi->calls[call_idx]->peers[0]);
-    
-    if (toxav->scb.first)
-        toxav->scb.first(toxav, toxav->msi->calls[call_idx]->peers[0], 
-                         TOXAV_CALL_STATE_END, toxav->scb.second);
-}
-
 void i_toxav_msi_callback_reject(void* toxav_inst, int32_t call_idx, void* data)
 {
     ToxAV* toxav = toxav_inst;
@@ -918,7 +905,6 @@ void i_toxav_kill_transmission(ToxAV* av, uint32_t friend_number)
     
     if (!call->active) {
         pthread_mutex_unlock(call->mutex_control);
-        LOGGER_WARNING("Action on inactive call: %d", call->call_idx);
         return;
     }
     

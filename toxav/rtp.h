@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef __TOXRTP
-#define __TOXRTP
+#ifndef RTP_H
+#define RTP_H
 
 #define RTP_VERSION 2
 #include <inttypes.h>
@@ -130,4 +130,4 @@ void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
 
 
 
-#endif /* __TOXRTP */
+#endif /* RTP_H */

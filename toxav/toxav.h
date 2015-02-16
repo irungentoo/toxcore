@@ -1,4 +1,6 @@
-#pragma once
+#ifndef TOXAV_H
+#define TOXAV_H
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -481,3 +483,5 @@ typedef void toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
  * Set the callback for the `receive_audio_frame` event. Pass NULL to unset.
  */
 void toxav_callback_receive_audio_frame(ToxAV *av, toxav_receive_audio_frame_cb *function, void *user_data);
+
+#endif /* TOXAV_H */
