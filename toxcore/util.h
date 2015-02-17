@@ -30,6 +30,7 @@
 #include <pthread.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define power_of_2(x) (((x) != 0) && (((x) & ((~(x)) + 1)) == (x)))
 
 /* Enlarges static buffers returned by id_toa and ip_ntoa so that
  * they can be used multiple times in same output
@@ -39,7 +40,7 @@
                                         static unsigned stat_buffer_counter_##name=0;
 #define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
 
-// Macros for long keys and cert handle
+/* Macros for long keys and cert handle */
 #define ENC_KEY(key) (key)
 #define SIG_KEY(key) (key + ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
 #define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)

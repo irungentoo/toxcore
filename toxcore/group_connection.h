@@ -27,20 +27,21 @@
 
 #include "group_chats.h"
 
-#define GCC_BUFFER_SIZE 1024
+#define GCC_BUFFER_SIZE 20000    /* must fit inside an uint_16 */
 
 struct GC_Message_Ary {
     uint8_t *data;
     uint32_t data_length;
     uint8_t  packet_type;
     uint64_t message_id;
-    uint64_t time_queued;
+    uint64_t time_added;
     uint64_t last_send_try;
-    uint8_t  send_tries;
 };
 
 typedef struct GC_Connection {
     uint64_t send_message_id;
+    uint16_t send_ary_start;   /* send_ary index of first items */
+    uint64_t last_send_try;
     struct GC_Message_Ary send_ary[GCC_BUFFER_SIZE];
 
     uint64_t recv_message_id;
@@ -54,7 +55,7 @@ typedef struct GC_Connection {
  * Returns -1 on failure.
  */
 int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32_t peernum,
-                     uint8_t packet_type, uint64_t message_id);
+                     uint8_t packet_type);
 
 /* Decides if message need to be put in recv_ary or immediately handled.
  *
@@ -64,6 +65,9 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
  */
 int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data, uint32_t length,
                             uint8_t packet_type, uint64_t message_id);
+
+/* Returns ary index for message_id */
+uint16_t get_ary_index(const struct GC_Message_Ary *ary, uint64_t message_id);
 
 /* Removes send_ary item with message_id.
  *
@@ -80,7 +84,7 @@ int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id);
  */
 int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum);
 
-void gcc_do_connection(GC_Chat *chat, uint32_t peernumber);
+void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber);
 
 /* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn);

@@ -37,8 +37,10 @@ typedef struct Messenger Messenger;
 #define MAX_GC_PART_MESSAGE_SIZE 128
 #define MAX_GROUP_NUM_PEERS 1000   // temporary?
 
+#define GROUP_PING_INTERVAL 40
+#define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 3 + 10)
+#define GROUP_SELF_TIMEOUT (GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL)
 #define GROUP_CLOSE_CONNECTIONS 6
-#define BAD_GROUPNODE_TIMEOUT 60
 
 /* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
 #define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
@@ -48,8 +50,8 @@ typedef struct Messenger Messenger;
 #define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 /* Return 1 if type is type is a lossless packet type, 0 otherwise */
-#define LOSSLESS_PACKET(type) ((type == GP_BROADCAST) || (type == GP_SYNC_RESPONSE)\
-                            || (type == GP_SYNC_REQUEST) || (type == GP_NEW_PEER))
+#define LOSSLESS_PACKET(type) ((type == GP_BROADCAST) || (type == GP_SYNC_RESPONSE) || (type == GP_SYNC_REQUEST)\
+                                || (type == GP_NEW_PEER) || (type == GP_INVITE_RESPONSE))
 
 enum {
     GC_BAN,
@@ -382,5 +384,13 @@ int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint
 GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
 
 int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernumber, const uint8_t *sender_pk,
-                        const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type, bool is_lossess);
+                         const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type, bool is_lossess);
+
+/* Deletets peernumber from group.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
+
 #endif  /* GROUP_CHATS_H */
