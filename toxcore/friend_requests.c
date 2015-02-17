@@ -42,7 +42,7 @@ uint32_t get_nospam(const Friend_Requests *fr)
 
 
 /* Set the function that will be executed when a friend request is received. */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, uint16_t,
+void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, size_t,
                             void *), void *object, void *userdata)
 {
     fr->handle_friendrequest = function;

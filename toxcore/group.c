@@ -1236,7 +1236,7 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uin
     return max_length;
 }
 
-static void handle_friend_invite_packet(Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
+static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length)
 {
     Group_Chats *g_c = m->group_chat_object;
 

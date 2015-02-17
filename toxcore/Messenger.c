@@ -886,83 +886,83 @@ void m_set_sends_receipts(Messenger *m, int32_t friendnumber, int yesno)
     m->friendlist[friendnumber].receives_read_receipts = yesno;
 }
 
-/* static void (*friend_request)(uint8_t *, uint8_t *, uint16_t); */
 /* Set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, uint16_t,
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
                               void *), void *userdata)
 {
-    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, uint16_t, void *) = (void *)function;
+    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, size_t, void *) = (void *)function;
     callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
 }
 
 /* Set the function that will be executed when a message from a friend is received. */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                               void *userdata)
 {
     m->friend_message = function;
     m->friend_message_userdata = userdata;
 }
 
-void m_callback_action(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+void m_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                        void *userdata)
 {
     m->friend_action = function;
     m->friend_action_userdata = userdata;
 }
 
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                            void *userdata)
 {
     m->friend_namechange = function;
     m->friend_namechange_userdata = userdata;
 }
 
-void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                               void *userdata)
 {
     m->friend_statusmessagechange = function;
     m->friend_statuschange_userdata = userdata;
 }
 
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, void *), void *userdata)
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *), void *userdata)
 {
     m->friend_userstatuschange = function;
     m->friend_userstatuschange_userdata = userdata;
 }
 
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, int32_t, uint8_t, void *), void *userdata)
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, uint8_t, void *), void *userdata)
 {
     m->friend_typingchange = function;
     m->friend_typingchange_userdata = userdata;
 }
 
-void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, int32_t, uint32_t, void *), void *userdata)
+void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata)
 {
     m->read_receipt = function;
     m->read_receipt_userdata = userdata;
 }
 
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, void *), void *userdata)
+void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
+                                 void *userdata)
 {
     m->friend_connectionstatuschange = function;
     m->friend_connectionstatuschange_userdata = userdata;
 }
 
-void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, void *),
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
         void *userdata)
 {
     m->friend_connectionstatuschange_internal = function;
     m->friend_connectionstatuschange_internal_userdata = userdata;
 }
 
-void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, void *),
+void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t *, void *),
                             void *userdata)
 {
     m->avatar_info_recv = function;
     m->avatar_info_recv_userdata = userdata;
 }
 
-void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t *, uint8_t *,
+void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t *, uint8_t *,
                             uint32_t, void *), void *userdata)
 {
     m->avatar_data_recv = function;
@@ -1027,9 +1027,9 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, uint8_t *data, uint16_t length)
+ *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t))
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t))
 {
     m->group_invite = function;
 }
@@ -1050,9 +1050,10 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
  */
-void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint64_t, const uint8_t *,
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint64_t,
+                               const uint8_t *,
                                uint16_t, void *), void *userdata)
 {
     m->file_sendrequest = function;
@@ -1061,10 +1062,10 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, int3
 
 /* Set the callback for file control requests.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, uint8_t, uint8_t,
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t, uint8_t,
                            const uint8_t *, uint16_t, void *), void *userdata)
 {
     m->file_filecontrol = function;
@@ -1073,10 +1074,11 @@ void callback_file_control(Messenger *m, void (*function)(Messenger *m, int32_t,
 
 /* Set the callback for file data.
  *
- *  Function(Tox *tox, int32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
  *
  */
-void callback_file_data(Messenger *m, void (*function)(Messenger *m, int32_t, uint8_t, const uint8_t *, uint16_t length,
+void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, const uint8_t *,
+                        uint16_t length,
                         void *), void *userdata)
 {
     m->file_filedata = function;
@@ -1397,7 +1399,7 @@ static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t 
  *
  *  Function(Messenger *m, int friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, uint16_t, void *),
+void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *),
                            void *userdata)
 {
     m->msi_packet = function;
@@ -1430,7 +1432,7 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
 }
 
 int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+                                        int (*packet_handler_callback)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
                                         void *object)
 {
     if (friend_not_valid(m, friendnumber))
@@ -1481,7 +1483,7 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
 }
 
 int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-        int (*packet_handler_callback)(Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
+        int (*packet_handler_callback)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
         void *object)
 {
     if (friend_not_valid(m, friendnumber))
@@ -2839,7 +2841,7 @@ uint32_t get_num_online_friends(const Messenger *m)
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t copy_friendlist(Messenger const *m, int32_t *out_list, uint32_t list_size)
+uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_size)
 {
     if (!out_list)
         return 0;
