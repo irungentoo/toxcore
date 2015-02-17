@@ -91,6 +91,7 @@ static int pack_gc_peers(uint8_t *data, uint16_t length, const GC_GroupPeer *pee
 
         packed_length += ipp_size;
 
+        // TODO: Only pack/unpack necessary data
         if (packed_length + sizeof(GC_GroupPeer) - ipp_size > length)
             return -1;
 
@@ -144,6 +145,7 @@ int unpack_gc_peers(GC_GroupPeer *peers, uint16_t max_num_peers, uint16_t *proce
 
         len_processed += ipp_size;
 
+        // TODO: Only pack/unpack necessary data
         if (len_processed + sizeof(GC_GroupPeer) - ipp_size > length)
             return -1;
 
@@ -498,7 +500,8 @@ int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *p
     for (i = 1; i < chat->numpeers; ++i) {
         if ((chat->group[i].last_update_time > last_synced_time)
             && (!id_long_equal(chat->group[i].client_id, public_key))) {
-            memcpy(&peers[num_peers++], &chat->group[i], sizeof(GC_GroupPeer));
+            memcpy(&peers[num_peers], &chat->group[i], sizeof(GC_GroupPeer));
+            peers[num_peers++].last_rcvd_ping = unix_time();
         }
     }
 
@@ -1870,7 +1873,6 @@ static int self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *
         return -1;
 
     memcpy(&(peer->ip_port), &self_ipp, sizeof(IP_Port));
-
     memcpy(peer->client_id, chat->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer->invite_certificate, chat->group[0].invite_certificate, INVITE_CERT_SIGNED_SIZE);
     memcpy(peer->role_certificate, chat->group[0].role_certificate, ROLE_CERT_SIGNED_SIZE);
@@ -1879,10 +1881,9 @@ static int self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *
     peer->status = chat->group[0].status;
     peer->role = chat->group[0].role;
     peer->last_update_time = unix_time();
-    peer->last_rcvd_ping = unix_time();
+    return 0;
 }
 
-#define GC_RESEND_PACKETS_INTERVAL 5
 static void do_peer_connections(Messenger *m, int groupnumber)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);

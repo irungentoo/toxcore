@@ -71,6 +71,7 @@ static int add_to_ary(struct GC_Message_Ary *ary, const uint8_t *data, uint32_t 
     ary[idx].packet_type = packet_type;
     ary[idx].message_id = message_id;
     ary[idx].time_added = unix_time();
+    ary[idx].last_send_try = unix_time();
 
     return 0;
 }
@@ -266,7 +267,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
         }
 
         if (is_timeout(gconn->send_ary[i].time_added, GROUP_PEER_TIMEOUT))
-            gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Timed out", 9);
+            gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Peer timed out", 9);
     }
 }
 
