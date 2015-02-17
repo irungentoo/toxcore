@@ -407,3 +407,242 @@ void tox_self_get_status_message(Tox const *tox, uint8_t *status)
         m_copy_self_statusmessage(m, status);
     }
 }
+
+void tox_self_set_status(Tox *tox, TOX_STATUS user_status)
+{
+    Messenger *m = tox;
+    m_set_userstatus(m, user_status);
+}
+
+TOX_STATUS tox_self_get_status(Tox const *tox)
+{
+    const Messenger *m = tox;
+    return m_get_self_userstatus(m);
+}
+
+static void set_friend_error(int32_t ret, TOX_ERR_FRIEND_ADD *error)
+{
+    switch (ret) {
+        case FAERR_TOOLONG:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_TOO_LONG);
+            break;
+
+        case FAERR_NOMESSAGE:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_NO_MESSAGE);
+            break;
+
+        case FAERR_OWNKEY:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_OWN_KEY);
+            break;
+
+        case FAERR_ALREADYSENT:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_ALREADY_SENT);
+            break;
+
+        case FAERR_BADCHECKSUM:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_BAD_CHECKSUM);
+            break;
+
+        case FAERR_SETNEWNOSPAM:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_SET_NEW_NOSPAM);
+            break;
+
+        case FAERR_NOMEM:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_MALLOC);
+            break;
+
+    }
+}
+
+uint32_t tox_friend_add(Tox *tox, uint8_t const *address, uint8_t const *message, size_t length,
+                        TOX_ERR_FRIEND_ADD *error)
+{
+    if (!address || !message) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_NULL);
+        return UINT32_MAX;
+    }
+
+    Messenger *m = tox;
+    int32_t ret = m_addfriend(m, address, message, length);
+
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_OK);
+        return ret;
+    }
+
+    set_friend_error(ret, error);
+    return UINT32_MAX;
+}
+
+uint32_t tox_friend_add_norequest(Tox *tox, uint8_t const *public_key, TOX_ERR_FRIEND_ADD *error)
+{
+    if (!public_key) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_NULL);
+        return UINT32_MAX;
+    }
+
+    Messenger *m = tox;
+    int32_t ret = m_addfriend_norequest(m, public_key);
+
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_OK);
+        return ret;
+    }
+
+    set_friend_error(ret, error);
+    return UINT32_MAX;
+}
+
+bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *error)
+{
+    Messenger *m = tox;
+    int ret = m_delfriend(m, friend_number);
+
+    //TODO handle if realloc fails?
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_OK);
+    return 1;
+}
+
+uint32_t tox_friend_by_public_key(Tox const *tox, uint8_t const *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error)
+{
+    if (!public_key) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_BY_PUBLIC_KEY_NULL);
+        return UINT32_MAX;
+    }
+
+    const Messenger *m = tox;
+    int32_t ret = getfriend_id(m, public_key);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_BY_PUBLIC_KEY_NOT_FOUND);
+        return UINT32_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_BY_PUBLIC_KEY_OK);
+    return ret;
+}
+
+bool tox_friend_get_public_key(Tox const *tox, uint32_t friend_number, uint8_t *public_key,
+                               TOX_ERR_FRIEND_GET_PUBLIC_KEY *error)
+{
+    if (!public_key) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_PUBLIC_KEY_NULL);
+        return 0;
+    }
+
+    const Messenger *m = tox;
+
+    if (get_real_pk(m, friend_number, public_key) == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_PUBLIC_KEY_OK);
+    return 1;
+}
+
+bool tox_friend_exists(Tox const *tox, uint32_t friend_number)
+{
+    const Messenger *m = tox;
+    return m_friend_exists(m, friend_number);
+}
+
+size_t tox_friend_list_size(Tox const *tox)
+{
+    const Messenger *m = tox;
+    return count_friendlist(m);
+}
+
+void tox_friend_list(Tox const *tox, uint32_t *list)
+{
+    if (list) {
+        const Messenger *m = tox;
+        //TODO: size parameter?
+        copy_friendlist(m, list, tox_friend_list_size(tox));
+    }
+}
+
+size_t tox_friend_get_name_size(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = m_get_name_size(m, friend_number);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
+        return SIZE_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
+    return ret;
+}
+
+bool tox_friend_get_name(Tox const *tox, uint32_t friend_number, uint8_t *name, TOX_ERR_FRIEND_QUERY *error)
+{
+    if (!name) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
+        return 0;
+    }
+
+    const Messenger *m = tox;
+    int ret = getname(m, friend_number, name);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
+    return 1;
+}
+
+void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_friendmessage(m, function, user_data);
+}
+
+size_t tox_friend_get_status_message_size(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = m_get_statusmessage_size(m, friend_number);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
+        return SIZE_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
+    return ret;
+}
+
+bool tox_friend_get_status_message(Tox const *tox, uint32_t friend_number, uint8_t *message,
+                                   TOX_ERR_FRIEND_QUERY *error)
+{
+    if (!message) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
+        return 0;
+    }
+
+    const Messenger *m = tox;
+    //TODO: size parameter?
+    int ret = m_copy_statusmessage(m, friend_number, message, m_get_statusmessage_size(m, friend_number));
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
+    return 1;
+}
+
+void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_statusmessage(m, function, user_data);
+}

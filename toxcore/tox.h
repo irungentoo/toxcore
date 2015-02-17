@@ -274,7 +274,11 @@ typedef enum TOX_STATUS {
      * User is busy. Signals to other clients that this client does not
      * currently wish to communicate.
      */
-    TOX_STATUS_BUSY
+    TOX_STATUS_BUSY,
+    /**
+     * Invalid status used when function returns an error.
+     */
+    TOX_STATUS_INVALID
 } TOX_STATUS;
 
 
@@ -833,7 +837,7 @@ typedef enum TOX_ERR_FRIEND_ADD {
  * be the same as before. Deleting a friend creates a gap in the friend number
  * set, which is filled by the next adding of a friend.
  *
- * If more than UINT32_MAX friends are added, this function causes undefined
+ * If more than INT32_MAX friends are added, this function causes undefined
  * behaviour.
  *
  * @param address The address of the friend (returned by tox_self_get_address of
@@ -841,7 +845,7 @@ typedef enum TOX_ERR_FRIEND_ADD {
  * @param message The message that will be sent along with the friend request.
  * @param length The length of the data byte array.
  *
- * @return the friend number.
+ * @return the friend number on success, UINT32_MAX on failure.
  */
 uint32_t tox_friend_add(Tox *tox, uint8_t const *address, uint8_t const *message, size_t length,
                         TOX_ERR_FRIEND_ADD *error);
@@ -862,7 +866,7 @@ uint32_t tox_friend_add(Tox *tox, uint8_t const *address, uint8_t const *message
  * @param public_key A byte array of length TOX_PUBLIC_KEY_SIZE containing the
  *   Public Key (not the Address) of the friend to add.
  *
- * @return the friend number.
+ * @return the friend number on success, UINT32_MAX on failure.
  * @see tox_friend_add for a more detailed description of friend numbers.
  */
 uint32_t tox_friend_add_norequest(Tox *tox, uint8_t const *public_key, TOX_ERR_FRIEND_ADD *error);
@@ -909,6 +913,7 @@ typedef enum TOX_ERR_FRIEND_BY_PUBLIC_KEY {
 /**
  * Return the friend number associated with that Public Key.
  *
+ * @return the friend number on success, UINT32_MAX on failure.
  * @param public_key A byte array containing the Public Key.
  */
 uint32_t tox_friend_by_public_key(Tox const *tox, uint8_t const *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error);
@@ -916,6 +921,7 @@ uint32_t tox_friend_by_public_key(Tox const *tox, uint8_t const *public_key, TOX
 
 typedef enum TOX_ERR_FRIEND_GET_PUBLIC_KEY {
     TOX_ERR_FRIEND_GET_PUBLIC_KEY_OK,
+    TOX_ERR_FRIEND_GET_PUBLIC_KEY_NULL,
     /**
      * No friend with the given number exists on the friend list.
      */
@@ -990,7 +996,7 @@ typedef enum TOX_ERR_FRIEND_QUERY {
 
 /**
  * Return the length of the friend's name. If the friend number is invalid, the
- * return value is unspecified.
+ * return value is SIZE_MAX.
  *
  * The return value is equal to the `length` argument received by the last
  * `friend_name` callback.
@@ -1034,7 +1040,7 @@ void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *function, void *user
 
 /**
  * Return the length of the friend's status message. If the friend number is
- * invalid, the return value is unspecified.
+ * invalid, the return value is SIZE_MAX.
  */
 size_t tox_friend_get_status_message_size(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
