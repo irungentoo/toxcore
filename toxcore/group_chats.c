@@ -57,7 +57,7 @@ static int peernumber_valid(const GC_Chat *chat, uint32_t peernumber);
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *client_id);
 static int peer_add(Messenger *m, int groupnumber, const GC_GroupPeer *peer);
-static void peer_update(GC_Chat *chat, const GC_GroupPeer *peer, uint32_t peernumber);
+static void peer_update(GC_Chat *chat, GC_GroupPeer *peer, uint32_t peernumber);
 static int group_delete(GC_Session *c, GC_Chat *chat);
 static int peer_nick_is_taken(const GC_Chat *chat, const uint8_t *nick, uint16_t length);
 
@@ -171,7 +171,9 @@ int unpack_gc_peers(GC_GroupPeer *peers, uint16_t max_num_peers, uint16_t *proce
         len_processed += sizeof(uint8_t);
         bytes_to_U64(&peers[num].last_update_time, data + len_processed);
         len_processed += sizeof(uint64_t);
-        bytes_to_U64(&peers[num].last_rcvd_ping, data + len_processed);
+
+        uint64_t t = unix_time();
+        memcpy(&peers[num].last_rcvd_ping, &t, sizeof(uint64_t));
         len_processed += sizeof(uint64_t);
 
         uint64_t ignore = 0;
@@ -387,10 +389,11 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
     for (i = 0; i < num_peers; i++) {
         int peernum = peer_in_chat(chat, peers[i].client_id);
 
-        if (peernum != -1)
+        if (peernum != -1) {
             peer_update(chat, &peers[i], peernum);
-        else
+        } else {
             peer_add(m, groupnumber, &peers[i]);
+        }
     }
 
     free(peers);
@@ -501,7 +504,6 @@ int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *p
         if ((chat->group[i].last_update_time > last_synced_time)
             && (!id_long_equal(chat->group[i].client_id, public_key))) {
             memcpy(&peers[num_peers], &chat->group[i], sizeof(GC_GroupPeer));
-            peers[num_peers++].last_rcvd_ping = unix_time();
         }
     }
 
@@ -1860,7 +1862,7 @@ static int peer_add(Messenger *m, int groupnumber, const GC_GroupPeer *peer)
     return peernumber;
 }
 
-static void peer_update(GC_Chat *chat, const GC_GroupPeer *peer, uint32_t peernumber)
+static void peer_update(GC_Chat *chat, GC_GroupPeer *peer, uint32_t peernumber)
 {
     memcpy(&(chat->group[peernumber]), peer, sizeof(GC_GroupPeer));
 }
@@ -1880,7 +1882,6 @@ static int self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *
     peer->nick_len = chat->group[0].nick_len;
     peer->status = chat->group[0].status;
     peer->role = chat->group[0].role;
-    peer->last_update_time = unix_time();
     return 0;
 }
 
