@@ -1,6 +1,6 @@
 /**  msi.h
  *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -28,17 +28,9 @@
 #include "codec.h"
 #include "../toxcore/Messenger.h"
 
-typedef uint8_t MSICallIDType[12];
-typedef uint8_t MSIReasonStrType[255];
-typedef void ( *MSICallbackType ) ( void *agent, int32_t call_idx);
-
-/**
- * Call type identifier. Also used as rtp callback prefix.
- */
-typedef enum {
-    msi_TypeAudio = 192,
-    msi_TypeVideo
-} MSICallType;
+/** Preconfigured values for video splitting */
+#define D_MVFSZ     40000   /* 256KiB */
+#define D_MVFPSZ    500     /* 1.25 KiB*/
 
 /**
  * Error codes.
@@ -62,30 +54,11 @@ typedef enum {
  * Call state identifiers.
  */
 typedef enum {
+    msi_CallInactive, /* Default */
+    msi_CallActive,
     msi_CallRequesting, /* when sending call invite */
     msi_CallRequested, /* when getting call invite */
-    msi_CallActive,
-    msi_CallHold,
-    msi_CallOver
-
 } MSICallState;
-
-
-/**
- * Encoding settings.
- */
-typedef struct {
-    MSICallType call_type;
-
-    uint32_t video_bitrate; /* In kbits/s */
-    uint16_t max_video_width; /* In px */
-    uint16_t max_video_height; /* In px */
-
-    uint32_t audio_bitrate; /* In bits/s */
-    uint16_t audio_frame_duration; /* In ms */
-    uint32_t audio_sample_rate; /* In Hz */
-    uint32_t audio_channels;
-} MSICSettings;
 
 /**
  * Callbacks ids that handle the states
@@ -97,37 +70,35 @@ typedef enum {
     msi_OnReject, /* The side that was invited rejected the call */
     msi_OnEnd, /* Call that was active ended */
     msi_OnError, /* Call that was active ended */
-    msi_OnRequestTimeout, /* When the requested action didn't get response in specified time */
     msi_OnPeerTimeout, /* Peer timed out; stop the call */
-    msi_OnPeerCSChange, /* Peer requested Csettings change */
-    msi_OnSelfCSChange /* Csettings change confirmation */
+    msi_OnCapabilities, /* Peer requested capabilities change */
 } MSICallbackID;
-
-/**
- * Errors
- */
-typedef enum {
-    msi_ErrorNoCall = -20, /* Trying to perform call action while not in a call */
-    msi_ErrorInvalidState = -21, /* Trying to perform call action while in invalid state*/
-    msi_ErrorAlreadyInCallWithPeer = -22, /* Trying to call peer when already in a call with peer */
-    msi_ErrorReachedCallLimit = -23, /* Cannot handle more calls */
-} MSIError;
 
 /**
  * The call struct. Please do not modify outside msi.c
  */
 typedef struct MSICall_s {
-    struct MSISession_s *session;   /* Session pointer */
+    struct MSISession_s *session;           /* Session pointer */
 
     MSICallState         state;
-    uint8_t              capabilities;      /* Active capabilities */
     
-    uint32_t             friend_id; /* Index of this call in MSISession */
+    uint8_t              peer_capabilities; /* Peer capabilities */
+    uint8_t              self_capabilities; /* Self capabilities */
+    
+    uint16_t             peer_mvfsz;        /* Max video frame size */
+    uint16_t             peer_mvfpsz;       /* Max video frame part size */
+    
+    uint32_t             friend_id;         /* Index of this call in MSISession */
     
     struct MSICall_s*    next;
     struct MSICall_s*    prev;
 } MSICall;
 
+
+/**
+ * Msi callback type. 'agent' is a pointer to ToxAv
+ */
+typedef void ( *MSICallbackType ) ( void *agent, MSICall* call);
 
 /**
  * Control session struct. Please do not modify outside msi.c
@@ -142,7 +113,7 @@ typedef struct MSISession_s {
     Messenger      *messenger_handle;
 
     pthread_mutex_t mutex[1];
-    MSICallbackType callbacks[10];
+    MSICallbackType callbacks[8];
 } MSISession;
 
 /**

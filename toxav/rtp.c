@@ -1,6 +1,6 @@
 /**  rtp.c
  *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -333,8 +333,6 @@ RTPMessage *msg_parse ( const uint8_t *data, int length )
         return NULL;
     }
 
-    retu->next = NULL;
-
     return retu;
 }
 
@@ -414,8 +412,6 @@ RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t
     memcpy ( from_pos, data, length );
 
     retu->length = total_length;
-
-    retu->next = NULL;
 
     return retu;
 }
@@ -497,7 +493,7 @@ int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )
     if ( -1 == send_custom_lossy_packet(session->m, session->dest, msg->data, msg->length) ) {
         LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
         rtp_free_msg ( session, msg );
-        return rtp_ErrorSending;
+        return -1;
     }
     
     

@@ -1,8 +1,6 @@
 /**  codec.h
  *
- *   Audio and video codec intitialization, encoding/decoding and playback
- *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -69,7 +67,7 @@ typedef enum {
 /**
  * Codec session - controling codec
  */
-typedef struct _CSSession {
+typedef struct CSSession_s {
 
     /* VIDEO
         *
@@ -117,7 +115,7 @@ typedef struct _CSSession {
     int32_t last_pack_channels;
     int32_t last_packet_sampling_rate;
     int32_t last_packet_frame_duration;
-    struct JitterBuffer *j_buf;
+    struct JitterBuffer_s *j_buf;
 
 
     /* Voice activity detection */

@@ -1,6 +1,6 @@
 /**  msi.c
  *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -36,11 +36,6 @@
 
 #define MSI_MAXMSG_SIZE 256
 
-/* Define default timeout for a request.
- * There is no behavior specified by the msi on what will
- * client do on timeout, but to call timeout callback.
- */
-#define m_deftout 10000 /* in milliseconds */
 
 /**
  * Protocol:
@@ -53,16 +48,10 @@ typedef enum {
     IDResponse,
     IDError,
     IDCapabilities,
+    IDMVFSZ,
+    IDMVFPSZ,
 
 } MSIHeaderID;
-
-/**
- * Headers
- */
-typedef enum {
-    type_request,
-    type_response,
-} MSIMessageType;
 
 typedef enum {
     requ_invite,
@@ -77,17 +66,20 @@ typedef enum {
     resp_error,
 } MSIResponse;
 
+
 #define GENERIC_HEADER(header, val_type) \
 typedef struct { \
 val_type value; \
-_Bool exists; \
-} MSIHeader##header;
+bool exists; \
+} MSIHeader##header
 
 
-GENERIC_HEADER ( Request, MSIRequest )
-GENERIC_HEADER ( Response, MSIResponse )
-GENERIC_HEADER ( Error, MSIError )
-GENERIC_HEADER ( Capabilities, uint8_t )
+GENERIC_HEADER ( Request, MSIRequest );
+GENERIC_HEADER ( Response, MSIResponse );
+GENERIC_HEADER ( Error, MSIError );
+GENERIC_HEADER ( Capabilities, uint8_t );
+GENERIC_HEADER ( MVFSZ, uint16_t );
+GENERIC_HEADER ( MVFPSZ, uint16_t );
 
 
 typedef struct {
@@ -95,63 +87,36 @@ typedef struct {
     MSIHeaderResponse     response;
     MSIHeaderError        error;
     MSIHeaderCapabilities capabilities;
+    MSIHeaderMVFSZ        mvfsz;  /* Max video frame size. NOTE: Value must be in network b-order */
+    MSIHeaderMVFPSZ       mvfpsz; /* Max video frame piece size. NOTE: Value must be in network b-order */
 } MSIMessage;
 
 
-static void invoke_callback(MSICall* c, MSICallbackID i)
+static int parse_input ( MSIMessage *dest, const uint8_t *data, uint16_t length )
 {
-    if ( c->session->callbacks[i] ) {
-        LOGGER_DEBUG("Invoking callback function: %d", i);
-        c->session->callbacks[i] ( c->session->agent_handler, c );
-    }
-}
-
-/**
- * Create the message.
- */
-static MSIMessage *msi_new_message ( MSIMessageType type, const uint8_t type_value )
-{
-    MSIMessage *retu = calloc ( sizeof ( MSIMessage ), 1 );
-
-    if ( retu == NULL ) {
-        LOGGER_WARNING("Allocation failed! Program might misbehave!");
-        return NULL;
-    }
-
-    if ( type == type_request ) {
-        retu->request.exists = 1;
-        retu->request.value = type_value;
-
-    } else {
-        retu->response.exists = 1;
-        retu->response.value = type_value;
-    }
-
-    return retu;
-}
-
-
-/**
- * Parse raw data received from socket into MSIMessage struct.
- */
-static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t length )
-{
-
+    /* Parse raw data received from socket into MSIMessage struct */
+    
 #define CHECK_SIZE(bytes, constraint, size) \
-    if ((constraint -= 3) < 1) { LOGGER_ERROR("Read over length!"); return -1; } \
+    if ((constraint -= (2 + size)) < 1) { LOGGER_ERROR("Read over length!"); return -1; } \
     if ( bytes[1] != size ) { LOGGER_ERROR("Invalid data size!"); return -1; }
     
-#define CHECK_ENUM_HIGH(bytes, enum_high) \
+#define CHECK_ENUM_HIGH(bytes, enum_high) /* Assumes size == 1 */ \
     if ( bytes[2] > enum_high ) { LOGGER_ERROR("Failed enum high limit!"); return -1; }
     
-#define SET_VALUES(bytes, header) do { \
+#define SET_UINT8(bytes, header) do { \
         header.value = bytes[2]; \
-        header.exists = 1; \
+        header.exists = true; \
         bytes += 3; \
     } while(0)
 
-
-    if ( msg == NULL ) {
+#define SET_UINT16(bytes, header) do { \
+        memcpy(&header.value, bytes + 2, 2);\
+        header.exists = true; \
+        bytes += 4; \
+    } while(0)
+    
+    
+    if ( dest == NULL ) {
         LOGGER_ERROR("Could not parse message: no storage!");
         return -1;
     }
@@ -169,25 +134,35 @@ static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t lengt
             case IDRequest:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, requ_end);
-                SET_VALUES(it, msg->request);
+                SET_UINT8(it, dest->request);
                 break;
                 
             case IDResponse:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, resp_error);
-                SET_VALUES(it, msg->response);
+                SET_UINT8(it, dest->response);
                 it += 3;
                 break;
                 
             case IDError:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, msi_ErrUndisclosed);
-                SET_VALUES(it, msg->error);
+                SET_UINT8(it, dest->error);
                 break;
                 
             case IDCapabilities:
                 CHECK_SIZE(it, size_constraint, 1);
-                SET_VALUES(it, msg->capabilities);
+                SET_UINT8(it, dest->capabilities);
+                break;
+            
+            case IDMVFSZ:
+                CHECK_SIZE(it, size_constraint, 2);
+                SET_UINT16(it, dest->mvfsz);
+                break;
+                
+            case IDMVFPSZ:
+                CHECK_SIZE(it, size_constraint, 2);
+                SET_UINT16(it, dest->mvfpsz);
                 break;
                 
             default:
@@ -201,42 +176,15 @@ static int parse_raw_data ( MSIMessage *msg, const uint8_t *data, uint16_t lengt
 
 #undef CHECK_SIZE
 #undef CHECK_ENUM_HIGH
-#undef SET_VALUES
+#undef SET_UINT8
+#undef SET_UINT16
 }
 
-/**
- * Parse data from handle_packet.
- */
-static MSIMessage *parse_in ( const uint8_t *data, uint16_t length )
+static uint8_t *parse_header ( MSIHeaderID id, uint8_t *dest, const void *value, 
+                               uint8_t value_len, uint16_t *length )
 {
-    if ( data == NULL ) {
-        LOGGER_WARNING("Tried to parse empty message!");
-        return NULL;
-    }
-
-    MSIMessage *retu = calloc ( sizeof ( MSIMessage ), 1 );
-
-    if ( retu == NULL ) {
-        LOGGER_WARNING("Allocation failed! Program might misbehave!");
-        return NULL;
-    }
-
-    if ( parse_raw_data ( retu, data, length ) == -1 ) {
-
-        free ( retu );
-        return NULL;
-    }
-
-    return retu;
-}
-
-
-/**
- * Speaks for itself.
- */
-static uint8_t *prepare_header ( MSIHeaderID id, uint8_t *dest, const void *value, 
-                                 uint8_t value_len, uint16_t *length )
-{
+    /* Parse a single header for sending */
+    
     if ( dest == NULL ) {
         LOGGER_ERROR("No destination space!");
         return NULL;
@@ -260,60 +208,65 @@ static uint8_t *prepare_header ( MSIHeaderID id, uint8_t *dest, const void *valu
 }
 
 
-/**
- * Parse MSIMessage to send. Returns size in bytes of the parsed message
- */
-static uint16_t parse_out ( MSIMessage *msg, uint8_t *dest )
+
+static void call_invoke_callback(MSICall* call, MSICallbackID cb)
 {
-    if (msg == NULL) {
-        LOGGER_ERROR("No message!");
-        return 0;
+    if ( call->session->callbacks[cb] ) {
+        LOGGER_DEBUG("Invoking callback function: %d", cb);
+        call->session->callbacks[cb] ( call->session->agent_handler, call );
     }
-
-    if (dest == NULL ) {
-        LOGGER_ERROR("No destination!");
-        return 0;
-    }
-
-    uint8_t *it = dest;
-    uint16_t size = 0;
-
-    if (msg->request.exists) {
-        uint8_t cast = msg->request.value;
-        it = prepare_header(IDRequest, it, &cast, 1, &size);
-    }
-
-    if (msg->response.exists) {
-        uint8_t cast = msg->response.value;
-        it = prepare_header(IDResponse, it, &cast, 1, &size);
-    }
-
-    if (msg->error.exists) {
-        it = prepare_header(IDError, it, &msg->error.value, sizeof(msg->error.value), &size);
-    }
-
-    if (msg->capabilities.exists) {
-        it = prepare_header(IDCapabilities, it, &msg->capabilities.value, 
-                            sizeof(msg->capabilities.value), &size);
-    }
-
-    *it = 0;
-    size ++;
-
-    return size;
 }
 
-static int send_message ( MSICall *call, MSIMessage *msg, uint32_t to )
+static int call_send_message ( MSICall *call, const MSIMessage *msg )
 {
+    /* Parse and send message */
+    
     uint8_t parsed [MSI_MAXMSG_SIZE];
-    uint16_t length = parse_out ( msg, parsed );
 
-    if ( !length ) {
-        LOGGER_WARNING("Parsing message failed; nothing sent!");
+    uint8_t *it = parsed;
+    uint16_t size = 0;
+    
+    if (msg->request.exists) {
+        uint8_t cast = msg->request.value;
+        it = parse_header(IDRequest, it, &cast, 
+                          sizeof(cast), &size);
+    }
+    
+    if (msg->response.exists) {
+        uint8_t cast = msg->response.value;
+        it = parse_header(IDResponse, it, &cast, 
+                          sizeof(cast), &size);
+    }
+    
+    if (msg->error.exists) {
+        it = parse_header(IDError, it, &msg->error.value, 
+                          sizeof(msg->error.value), &size);
+    }
+    
+    if (msg->capabilities.exists) {
+        it = parse_header(IDCapabilities, it, &msg->capabilities.value, 
+                          sizeof(msg->capabilities.value), &size);
+    }
+    
+    if (msg->mvfsz.exists) {
+        it = parse_header(IDMVFSZ, it, &msg->mvfsz.value,
+                          sizeof(msg->mvfsz.value), &size);
+    }
+    
+    if (msg->mvfpsz.exists) {
+        it = parse_header(IDMVFPSZ, it, &msg->mvfpsz.value,
+                          sizeof(msg->mvfpsz.value), &size);
+    }
+    
+    *it = 0;
+    size ++;
+    
+    if ( it == parsed ) {
+        LOGGER_WARNING("Parsing message failed; empty message");
         return -1;
     }
     
-    if ( m_msi_packet(call->session->messenger_handle, to, parsed, length) ) {
+    if ( m_msi_packet(call->session->messenger_handle, call->friend_id, parsed, size) ) {
         LOGGER_DEBUG("Sent message");
         return 0;
     }
@@ -321,34 +274,25 @@ static int send_message ( MSICall *call, MSIMessage *msg, uint32_t to )
     return -1;
 }
 
-static int send_reponse ( MSICall *call, MSIResponse response, uint32_t to )
+static int call_send_error ( MSICall *call, MSIError error )
 {
-    MSIMessage *msg = msi_new_message ( type_response, response );
-    int ret = send_message ( call, msg, to );
-    free ( msg );
-    return ret;
-}
-
-static int send_error ( MSICall *call, MSIError error, uint32_t to )
-{
+    /* Send error message */
+    
     if (!call) {
         LOGGER_WARNING("Cannot handle error on 'null' call");
         return -1;
     }
 
-    LOGGER_DEBUG("Sending error: %d on call: %d", error, call->call_idx);
+    LOGGER_DEBUG("Sending error: %d to friend: %d", error, call->friend_id);
 
-    MSIMessage *msg_error = msi_new_message ( type_response, resp_error );
+    MSIMessage msg_error;
+    msg_error.response.exists = true;
+    msg_error.response.value = resp_error;
     
-    if (!msg_error)
-        return -1;
+    msg_error.error.exists = true;
+    msg_error.error.value = error;
     
-    msg_error->error.exists = 1;
-    msg_error->error.value = error;
-    
-    send_message ( call, msg_error, to );
-    free ( msg_error );
-
+    call_send_message ( call, &msg_error );
     return 0;
 }
 
@@ -415,7 +359,6 @@ static void kill_call ( MSICall *call )
     if ( call == NULL )
         return;
     
-    
     MSISession* session = call->session;
     
     MSICall* prev = call->prev;
@@ -446,7 +389,7 @@ CLEAR:
 
 
 
-static void handle_remote_connection_change(Messenger *messenger, int friend_id, uint8_t status, void *session_p)
+static void on_remote_connection_change(Messenger *messenger, int friend_id, uint8_t status, void *session_p)
 {
     (void)messenger;
     MSISession *session = session_p;
@@ -458,7 +401,7 @@ static void handle_remote_connection_change(Messenger *messenger, int friend_id,
             if (call == NULL)
                 return;
             
-            invoke_callback(call, msi_OnPeerTimeout);
+            call_invoke_callback(call, msi_OnPeerTimeout);
             kill_call(call);
         }
         break;
@@ -471,7 +414,7 @@ static void handle_remote_connection_change(Messenger *messenger, int friend_id,
 
 
 /********** Request handlers **********/
-static int handle_recv_invite ( MSICall *call, MSIMessage *msg )
+static int handle_recv_invite ( MSICall *call, const MSIMessage *msg )
 {
     if ( call == NULL ) {
         LOGGER_WARNING("Session: %p Handling 'invite' on no call");
@@ -482,6 +425,26 @@ static int handle_recv_invite ( MSICall *call, MSIMessage *msg )
     
     LOGGER_DEBUG("Session: %p Handling 'invite' friend: %d", call->session, call->friend_id);
 
+    if (!msg->capabilities.exists) {
+        LOGGER_WARNING("Session: %p Invalid capabilities on 'invite'");
+        /* TODO send error */
+        return -1;
+    }
+    
+    if (!msg->mvfsz.exists) {
+        LOGGER_WARNING("Session: %p Invalid mvfsz on 'invite'");
+        /* TODO send error */
+        return -1;
+    }
+    
+    if (!msg->mvfpsz.exists) {
+        LOGGER_WARNING("Session: %p Invalid mvfpsz on 'invite'");
+        /* TODO send error */
+        return -1;
+    }
+    
+    MSIMessage response;
+    response.response.exists = true;
     
     if ( call->state == msi_CallRequesting ) {
         /* The rare glare case.
@@ -493,29 +456,54 @@ static int handle_recv_invite ( MSICall *call, MSIMessage *msg )
         
         LOGGER_DEBUG("Glare detected!");
         
-        MSIMessage *msg_starting = msi_new_message ( type_response, resp_starting );
+        call->peer_capabilities = msg->capabilities;
         
-        call->capabilities &= msg->capabilities;
+        call->peer_mvfsz = ntohs(msg->mvfsz.value);
+        call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
         
-        msg_starting->capabilities.value = call->capabilities;
-        msg_starting->capabilities.exists = 1;
+        /* Send response */
+        response.response.value = resp_starting;
+        call_send_message ( call, &response );
         
-        send_message ( call, msg_starting, call->friend_id );
-        free ( msg_starting );
+        return 0;
+    } else if ( call->state == msi_CallActive ) {
+        /* Changing capabilities.
+         * We send starting but no response is expected.
+         * WARNING: if start is sent call is terminated with an error
+         */
+        LOGGER_DEBUG("Peer is changing capabilities");
         
+        call->peer_capabilities = msg->capabilities;
+        
+        call->peer_mvfsz = ntohs(msg->mvfsz.value);
+        call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
+        
+        /* Send response */
+        response.response.value = resp_starting;
+        call_send_message ( call, &response );
+        
+        
+        call_invoke_callback(call, msi_OnCapabilities);
         return 0;
     }
     
-    call->capabilities = msg->capabilities;
+    call->peer_capabilities = msg->capabilities;
+    
+    call->peer_mvfsz = ntohs(msg->mvfsz.value);
+    call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
+    
     call->state = msi_CallRequested;
     
-    send_reponse(call, resp_ringing, call->friend_id);
-    invoke_callback(call, msi_OnInvite);
-
+    /* Send response */
+    response.response.value = resp_ringing;
+    call_send_message ( call, &response );
+    
+    
+    call_invoke_callback(call, msi_OnInvite);
     return 0;
 }
 
-static int handle_recv_start ( MSICall *call, MSIMessage *msg )
+static int handle_recv_start ( MSICall *call, const MSIMessage *msg )
 {
     if ( call == NULL ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
@@ -533,12 +521,12 @@ static int handle_recv_start ( MSICall *call, MSIMessage *msg )
     LOGGER_DEBUG("Session: %p Handling 'start', friend id: %d", call->session, call->friend_id );
 
     call->state = msi_CallActive;
-    invoke_callback(call, msi_OnStart);
+    call_invoke_callback(call, msi_OnStart);
     
     return 0;
 }
 
-static int handle_recv_reject ( MSICall *call, MSIMessage *msg )
+static int handle_recv_reject ( MSICall *call, const MSIMessage *msg )
 {
     if ( call == NULL ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
@@ -555,13 +543,13 @@ static int handle_recv_reject ( MSICall *call, MSIMessage *msg )
     
     LOGGER_DEBUG("Session: %p Handling 'reject', friend id: %u", call->session, call->friend_id);
 
-    invoke_callback(call, msi_OnReject);
+    call_invoke_callback(call, msi_OnReject);
     kill_call(call);
 
     return 0;
 }
 
-static int handle_recv_end ( MSICall *call, MSIMessage *msg )
+static int handle_recv_end ( MSICall *call, const MSIMessage *msg )
 {
     (void)msg;
     
@@ -572,14 +560,14 @@ static int handle_recv_end ( MSICall *call, MSIMessage *msg )
 
     LOGGER_DEBUG("Session: %p Handling 'end', friend id: %d", call->session, call->friend_id);
 
-    invoke_callback(call, msi_OnEnd);
+    call_invoke_callback(call, msi_OnEnd);
     kill_call ( call );
 
     return 0;
 }
 
 /********** Response handlers **********/
-static int handle_recv_ringing ( MSICall *call, MSIMessage *msg )
+static int handle_recv_ringing ( MSICall *call, const MSIMessage *msg )
 {
     if ( call == NULL ) {
         LOGGER_WARNING("Session: %p Handling 'start' on no call");
@@ -596,36 +584,65 @@ static int handle_recv_ringing ( MSICall *call, MSIMessage *msg )
 
     LOGGER_DEBUG("Session: %p Handling 'ringing' friend id: %d", call->session, call->friend_id );
 
-    invoke_callback(call, msi_OnRinging);
+    call_invoke_callback(call, msi_OnRinging);
     return 0;
 }
-static int handle_recv_starting ( MSICall *call, MSIMessage *msg )
+
+static int handle_recv_starting ( MSICall *call, const MSIMessage *msg )
 {
     if ( call == NULL ) {
         LOGGER_WARNING("Session: %p Handling 'starting' on non-existing call");
         return 0;
     }
     
-    if ( call->state != msi_CallRequested || call->state != msi_CallRequesting ) {
+    if ( call->state == msi_CallActive ) {
+        LOGGER_DEBUG("Capabilities change confirmed");
+        return 0;
+    } else if ( call->state != msi_CallRequested || call->state != msi_CallRequesting ) {
         LOGGER_WARNING("Session: %p Invalid call state on 'starting'");
         /* TODO send error */
         return -1;
     }
     
-    MSIMessage *msg_start = msi_new_message ( type_request, requ_start );
-    send_message ( call, msg_start, call->friend_id );
-    free ( msg_start );
-    
     if (call->state == msi_CallRequesting) {
+        if (!msg->capabilities.exists) {
+            LOGGER_WARNING("Session: %p Invalid capabilities on 'starting'");
+            /* TODO send error */
+            return -1;
+        }
+        
+        if (!msg->mvfsz.exists) {
+            LOGGER_WARNING("Session: %p Invalid mvfsz on 'invite'");
+            /* TODO send error */
+            return -1;
+        }
+        
+        if (!msg->mvfpsz.exists) {
+            LOGGER_WARNING("Session: %p Invalid mvfpsz on 'invite'");
+            /* TODO send error */
+            return -1;
+        }
+        
+        call->peer_capabilities = msg->capabilities.value;
+        
+        call->peer_mvfsz = ntohs(msg->mvfsz.value);
+        call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
+        
         call->state = msi_CallActive;
-        invoke_callback(call, msi_OnStart);
-    } 
-    
+        call_invoke_callback(call, msi_OnStart);
+    }
     /* Otherwise it's a glare case so don't start until 'start' is recved */
+    
+    /* Send start in either case (glare or normal) */
+    MSIMessage msg_start;
+    msg_start.request.exists = true;
+    msg_start.request.value = requ_start;
+    call_send_message ( call, &msg_start );
     
     return 0;
 }
-static int handle_recv_error ( MSICall *call, MSIMessage *msg )
+
+static int handle_recv_error ( MSICall *call, const MSIMessage *msg )
 {
     if ( call == NULL ) {
         LOGGER_WARNING("Handling 'error' on non-existing call!");
@@ -634,46 +651,15 @@ static int handle_recv_error ( MSICall *call, MSIMessage *msg )
 
     LOGGER_DEBUG("Session: %p Handling 'error' friend id: %d", call->session, call->friend_id );
 
-    invoke_callback(call, msi_OnError);
+    call_invoke_callback(call, msi_OnError);
 
     /* TODO Handle error accordingly */
 
     return -1;
 }
 
-/**
- * BASIC call flow:
- *
- *    ALICE                    BOB
- *      | invite -->            |
- *      |                       |
- *      |           <-- ringing |
- *      |                       |
- *      |          <-- starting |
- *      |                       |
- *      | start -->             |
- *      |                       |
- *      |  <-- MEDIA TRANS -->  |
- *      |                       |
- *      | end -->               |
- *      |                       |
- *      |            <-- ending |
- *
- * Alice calls Bob by sending invite packet.
- * Bob recvs the packet and sends an ringing packet;
- * which notifies Alice that her invite is acknowledged.
- * Ringing screen shown on both sides.
- * Bob accepts the invite for a call by sending starting packet.
- * Alice recvs the starting packet and sends the started packet to
- * inform Bob that she recved the starting packet.
- * Now the media transmission is established ( i.e. RTP transmission ).
- * Alice hangs up and sends end packet.
- * Bob recves the end packet and sends ending packet
- * as the acknowledgement that the call is ending.
- *
- *
- */
-static void msi_handle_packet ( Messenger *messenger, int friend_id, const uint8_t *data, uint16_t length, void *object )
+static void handle_msi_packet ( Messenger *messenger, int friend_id, const uint8_t *data, 
+                                uint16_t length, void *object )
 {
     LOGGER_DEBUG("Got msi message");
     
@@ -681,11 +667,9 @@ static void msi_handle_packet ( Messenger *messenger, int friend_id, const uint8
     (void)messenger;
 
     MSISession *session = object;
-    MSIMessage *msg;
+    MSIMessage msg;
 
-    msg = parse_in ( data, length );
-
-    if ( !msg ) {
+    if ( parse_input ( &msg, data, length ) == -1 ) {
         LOGGER_WARNING("Error parsing message");
         return;
     } else {
@@ -697,7 +681,7 @@ static void msi_handle_packet ( Messenger *messenger, int friend_id, const uint8
     MSICall *call = get_call(session, friend_id);
     
     if (call == NULL) {
-        if (msg->request != requ_invite) {
+        if (msg.request != requ_invite) {
             /* TODO send error */
             return;
         }
@@ -712,36 +696,36 @@ static void msi_handle_packet ( Messenger *messenger, int friend_id, const uint8
     
     /* Now handle message */
     int rc = 0;
-    if ( msg->request.exists ) { /* Handle request */
-        switch (msg->request.value) {
+    if ( msg.request.exists ) { /* Handle request */
+        switch (msg.request.value) {
             case requ_invite:
-                rc = handle_recv_invite ( call, msg );
+                rc = handle_recv_invite ( call, &msg );
                 break;
 
             case requ_start:
-                rc = handle_recv_start ( call, msg );
+                rc = handle_recv_start ( call, &msg );
                 break;
 
             case requ_reject:
-                rc = handle_recv_reject ( call, msg );
+                rc = handle_recv_reject ( call, &msg );
                 break;
 
             case requ_end:
-                rc = handle_recv_end ( call, msg );
+                rc = handle_recv_end ( call, &msg );
                 break;
         }
-    } else if ( msg->response.exists ) { /* Handle response */
-        switch (msg->response.value) {
+    } else if ( msg.response.exists ) { /* Handle response */
+        switch (msg.response.value) {
             case resp_ringing:
-                rc = handle_recv_ringing ( call, msg );
+                rc = handle_recv_ringing ( call, &msg );
                 break;
 
             case resp_starting:
-                rc = handle_recv_starting ( call, msg );
+                rc = handle_recv_starting ( call, &msg );
                 break;
 
             case resp_error:
-                rc = handle_recv_error ( call, msg );
+                rc = handle_recv_error ( call, &msg );
                 break;
         }
     } else {
@@ -753,7 +737,6 @@ static void msi_handle_packet ( Messenger *messenger, int friend_id, const uint8
     if (rc == -1)
         kill_call(call);
     
-    free ( msg );
     pthread_mutex_unlock(session->mutex);
 }
 
@@ -787,10 +770,10 @@ MSISession *msi_new ( Messenger *messenger )
 
     retu->messenger_handle = messenger;
 
-    m_callback_msi_packet(messenger, msi_handle_packet, retu );
+    m_callback_msi_packet(messenger, handle_msi_packet, retu );
 
     /* This is called when remote terminates session */
-    m_callback_connectionstatus_internal_av(messenger, handle_remote_connection_change, retu);
+    m_callback_connectionstatus_internal_av(messenger, on_remote_connection_change, retu);
 
     LOGGER_DEBUG("New msi session: %p ", retu);
     return retu;
@@ -807,15 +790,15 @@ int msi_kill ( MSISession *session )
     pthread_mutex_lock(session->mutex);
 
     if (session->calls) {
-        MSIMessage *msg_end = msi_new_message ( type_request, requ_end );
+        MSIMessage msg_end;
+        msg_end.request.exists = true;
+        msg_end.request.value = requ_end;
         
         MSICall* it = get_call(session, session->calls_head);
         for (; it; it = it->next) {
-            send_message(it, msg_end, it->friend_id);
-            kill_call(it);
+            call_send_message(it, &msg_end);
+            kill_call(it); /* This will eventually free session->calls */
         }
-        
-        free(msg_end);
     }
     
     pthread_mutex_unlock(session->mutex);
@@ -840,15 +823,22 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
     if ( *call == NULL )
         return -1;
     
-    *call->capabilities = capabilities;
+    *call->self_capabilities = capabilities;
     
-    MSIMessage *msg_invite = msi_new_message ( type_request, requ_invite );
+    MSIMessage msg_invite;
+    msg_invite.request.exists = true;
+    msg_invite.request.value = requ_invite;
     
-    msg_invite->capabilities.value = capabilities;
-    msg_invite->capabilities.exists = 1;
+    msg_invite.capabilities.exists = true;
+    msg_invite.capabilities.value = capabilities;
     
-    send_message ( *call, msg_invite, friend_id );
-    free( msg_invite );
+    msg_invite.mvfsz.exists = true;
+    msg_invite.mvfsz.value = htons(D_MVFSZ);
+    
+    msg_invite.mvfpsz.exists = true;
+    msg_invite.mvfpsz.value = htons(D_MVFPSZ);
+    
+    call_send_message ( *call, &msg_invite );
 
     *call->state = msi_CallRequesting;
     
@@ -860,9 +850,10 @@ int msi_hangup ( MSICall* call )
 {
     LOGGER_DEBUG("Session: %p Hanging up call: %u", session, call_index);
     
-    MSIMessage *msg_end = msi_new_message ( type_request, requ_end );
-    send_message ( call, msg_end, call->friend_id );
-    free ( msg_end );
+    MSIMessage msg_end;
+    msg_end.request.exists = true;
+    msg_end.request.value = requ_end;
+    call_send_message ( call, &msg_end );
     
     kill_call(call);
     return 0;
@@ -870,22 +861,29 @@ int msi_hangup ( MSICall* call )
 
 int msi_answer ( MSICall* call, uint8_t capabilities )
 {
-    LOGGER_DEBUG("Session: %p Answering call: %u", session, call_index);
+    LOGGER_DEBUG("Session: %p Answering call from: %u", call->session, call->friend_id);
 
     if ( call->state != msi_CallRequested ) {
         LOGGER_ERROR("Call is in invalid state!");
         return -1;
     }
     
-    call->capabilities = capabilities;
+    call->self_capabilities = capabilities;
     
-    MSIMessage *msg_starting = msi_new_message ( type_response, resp_starting );
+    MSIMessage msg_starting;
+    msg_starting.response.exists = true;
+    msg_starting.response.value = resp_starting;
     
-    msg_starting->capabilities.value = capabilities;
-    msg_starting->capabilities.exists = 1;
+    msg_starting.capabilities.exists = true;
+    msg_starting.capabilities.value = capabilities;
     
-    send_message ( call, msg_starting, call->friend_id );
-    free ( msg_starting );
+    msg_starting.mvfsz.exists = true;
+    msg_starting.mvfsz.value = htons(D_MVFSZ);
+    
+    msg_starting.mvfpsz.exists = true;
+    msg_starting.mvfpsz.value = htons(D_MVFPSZ);
+    
+    call_send_message ( call, &msg_starting );
 
     return 0;
 }
@@ -896,57 +894,30 @@ int msi_reject ( MSICall* call )
 
     if ( call->state != msi_CallRequested ) {
         LOGGER_ERROR("Call is in invalid state!");
-        return msi_ErrorInvalidState;
+        return -1;
     }
-
-    MSIMessage *msg_reject = msi_new_message ( type_request, requ_reject );
-    send_message ( call, msg_reject, call->friend_id );
-    free ( msg_reject );
+    
+    MSIMessage msg_reject;
+    msg_reject.request.exists = true;
+    msg_reject.request.value = requ_reject;
+    
+    call_send_message ( call, &msg_reject );
 
     return 0;
 }
 
 int msi_change_csettings( MSICall* call, uint8_t capabilities )
 {
-    pthread_mutex_lock(session->mutex);
-
-    LOGGER_DEBUG("Changing media on call: %d", call_index);
-
-    MSICall *call = session->calls[call_index];
-
-    if ( call->state != msi_CallActive ) {
-        LOGGER_ERROR("Call is not active!");
-        pthread_mutex_unlock(session->mutex);
-        return msi_ErrorInvalidState;
-    }
-
-    MSICSettings *local = &call->csettings_local;
-
-    if (
-        local->call_type == csettings->call_type &&
-        local->video_bitrate == csettings->video_bitrate &&
-        local->max_video_width == csettings->max_video_width &&
-        local->max_video_height == csettings->max_video_height &&
-        local->audio_bitrate == csettings->audio_bitrate &&
-        local->audio_frame_duration == csettings->audio_frame_duration &&
-        local->audio_sample_rate == csettings->audio_sample_rate &&
-        local->audio_channels == csettings->audio_channels ) {
-        LOGGER_ERROR("Call is already set accordingly!");
-        pthread_mutex_unlock(session->mutex);
-        return -1;
-    }
-
-    *local = *csettings;
-
-    MSIMessage *msg_invite = msi_new_message ( type_request, requ_invite );
-
-    msi_msg_set_csettings ( msg_invite, local );
-    send_message ( session, call, msg_invite, call->peers[0] );
-    free ( msg_invite );
-
-    LOGGER_DEBUG("Request for media change sent");
-
-    pthread_mutex_unlock(session->mutex);
-
+    call->self_capabilities = capabilities;
+    
+    MSIMessage msg_invite;
+    msg_invite.request.exists = true;
+    msg_invite.request.value = requ_invite;
+    
+    msg_invite.capabilities.exists = true;
+    msg_invite.capabilities.value = capabilities;
+    
+    call_send_message ( *call, &msg_invite );
+    
     return 0;
 }

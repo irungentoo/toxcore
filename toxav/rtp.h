@@ -1,6 +1,6 @@
 /**  rtp.h
  *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -31,13 +31,18 @@
 #define MAX_SEQU_NUM 65535
 #define MAX_RTP_SIZE 65535
 
+/**
+ * Payload type identifier. Also used as rtp callback prefix.
+ */
 typedef enum {
-    rtp_ErrorSending = -40
-} RTPError;
+    rtp_TypeAudio = 192,
+    rtp_TypeVideo
+} RTPPayloadType;
+
 /**
  * Standard rtp header
  */
-typedef struct _RTPHeader {
+typedef struct {
     uint8_t  flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
     uint8_t  marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
     uint16_t sequnum;           /* Sequence Number */
@@ -51,7 +56,7 @@ typedef struct _RTPHeader {
 /**
  * Standard rtp extension header.
  */
-typedef struct _RTPExtHeader {
+typedef struct {
     uint16_t  type;          /* Extension profile */
     uint16_t  length;        /* Number of extensions */
     uint32_t *table;         /* Extension's table */
@@ -61,45 +66,43 @@ typedef struct _RTPExtHeader {
 /**
  * Standard rtp message.
  */
-typedef struct _RTPMessage {
+typedef struct {
     RTPHeader    *header;
     RTPExtHeader *ext_header;
 
     uint8_t       data[MAX_RTP_SIZE];
     uint32_t      length;
-
-    struct _RTPMessage   *next;
 } RTPMessage;
 
 /**
  * RTP control session.
  */
-typedef struct _RTPSession {
-    uint8_t         version;
-    uint8_t         padding;
-    uint8_t         extension;
-    uint8_t         cc;
-    uint8_t         marker;
-    uint8_t         payload_type;
-    uint16_t        sequnum;   /* Set when sending */
-    uint16_t        rsequnum;  /* Check when recving msg */
-    uint32_t        timestamp;
-    uint32_t        ssrc;
-    uint32_t       *csrc;
+typedef struct {
+    uint8_t             version;
+    uint8_t             padding;
+    uint8_t             extension;
+    uint8_t             cc;
+    uint8_t             marker;
+    uint8_t             payload_type;
+    uint16_t            sequnum;   /* Set when sending */
+    uint16_t            rsequnum;  /* Check when recving msg */
+    uint32_t            timestamp;
+    uint32_t            ssrc;
+    uint32_t           *csrc;
 
     /* If some additional data must be sent via message
      * apply it here. Only by allocating this member you will be
      * automatically placing it within a message.
      */
-    RTPExtHeader   *ext_header;
+    RTPExtHeader       *ext_header;
 
     /* Msg prefix for core to know when recving */
-    uint8_t         prefix;
+    uint8_t             prefix;
 
-    int             dest;
+    int                 dest;
 
-    struct _CSSession *cs;
-    Messenger* m;
+    struct CSSession_s *cs;
+    Messenger          *m;
 
 } RTPSession;
 
@@ -119,7 +122,7 @@ void rtp_kill ( RTPSession* session );
 int rtp_register_for_receiving (RTPSession *session);
 
 /**
- * Sends msg to _RTPSession::dest
+ * Sends msg to RTPSession::dest
  */
 int rtp_send_msg ( RTPSession* session, const uint8_t* data, uint16_t length );
 

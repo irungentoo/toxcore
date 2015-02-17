@@ -1,6 +1,6 @@
 /**  toxav.c
  * 
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -843,7 +843,7 @@ bool i_toxav_prepare_transmission(ToxAV* av, IToxAVCall* call)
     
     
     if (c_self->audio_bitrate > 0 || c_peer->audio_bitrate > 0) { /* Prepare audio rtp */
-        call->rtps[audio_index] = rtp_new(msi_TypeAudio, av->m, av->msi->calls[call->call_idx]->peers[0]);
+        call->rtps[audio_index] = rtp_new(rtp_TypeAudio, av->m, av->msi->calls[call->call_idx]->peers[0]);
         
         if ( !call->rtps[audio_index] ) {
             LOGGER_ERROR("Error while starting audio RTP session!\n");
@@ -857,7 +857,7 @@ bool i_toxav_prepare_transmission(ToxAV* av, IToxAVCall* call)
     }
     
     if (c_self->video_bitrate > 0 || c_peer->video_bitrate > 0) { /* Prepare video rtp */
-        call->rtps[video_index] = rtp_new(msi_TypeVideo, av->m, av->msi->calls[call->call_idx]->peers[0]);
+        call->rtps[video_index] = rtp_new(rtp_TypeVideo, av->m, av->msi->calls[call->call_idx]->peers[0]);
         
         if ( !call->rtps[video_index] ) {
             LOGGER_ERROR("Error while starting video RTP session!\n");

@@ -1,8 +1,6 @@
 /**  codec.c
  *
- *   Audio and video codec intitialization, encoding/decoding and playback
- *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -124,7 +122,7 @@ static void buffer_free(PayloadBuffer *b)
 }
 
 /* JITTER BUFFER WORK */
-typedef struct JitterBuffer {
+typedef struct JitterBuffer_s {
     RTPMessage **queue;
     uint32_t     size;
     uint32_t     capacity;
@@ -711,11 +709,6 @@ int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate, int channels)
     if (cs->audio_encoder)
         return 0;
     
-    /**
-     * Encoder is initialized with default values. These values (Sampling rate, channel count) 
-     * change on the fly from toxav.
-     */
-    
     int rc = OPUS_OK;
     cs->audio_encoder = opus_encoder_create(48000, channels, OPUS_APPLICATION_AUDIO, &rc);
     
@@ -750,12 +743,7 @@ int cs_enable_audio_receiving(CSSession* cs)
 {
     if (cs->audio_decoder)
         return 0;
-    
-    /**
-     * Decoder is initialized with default values. These values (Sampling rate, channel count) 
-     * change on the fly from toxav.
-     */
-    
+        
     int rc;
     cs->audio_decoder = opus_decoder_create(48000, 2, &rc );
     
@@ -792,7 +780,7 @@ void queue_message(RTPSession *session, RTPMessage *msg)
     if (!cs) return;
 
     /* Audio */
-    if (session->payload_type == msi_TypeAudio % 128) {
+    if (session->payload_type == rtp_TypeAudio % 128) {
         pthread_mutex_lock(cs->queue_mutex);
         int ret = jbuf_write(cs->j_buf, msg);
         pthread_mutex_unlock(cs->queue_mutex);
