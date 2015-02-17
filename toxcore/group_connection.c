@@ -214,12 +214,12 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
  */
 int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum)
 {
-    if (peernum < 0)
-        return -1;
-
     GC_Chat *chat = gc_get_group(m->group_handler, groupnum);
 
     if (!chat)
+        return -1;
+
+    if (peernum < 0 || peernum >= chat->numpeers)
         return -1;
 
     GC_Connection *gconn = &chat->gcc[peernum];
@@ -227,7 +227,7 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum)
     if (!gconn)
         return -1;
 
-    uint64_t idx = (gconn->recv_message_id + 1) % GCC_BUFFER_SIZE;
+    uint16_t idx = (gconn->recv_message_id + 1) % GCC_BUFFER_SIZE;
 
     while (gconn->recv_ary[idx].data != NULL) {
         if (process_recv_ary_item(chat, m, groupnum, peernum, idx) == -1)
