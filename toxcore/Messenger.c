@@ -44,7 +44,13 @@ static int send_avatar_data_control(const Messenger *m, const uint32_t friendnum
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
 {
-    return (unsigned int)friendnumber >= m->numfriends;
+    if ((unsigned int)friendnumber < m->numfriends) {
+        if (m->friendlist[friendnumber].status != 0) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 static int add_online_friend(Messenger *m, int32_t friendnumber)
@@ -113,12 +119,8 @@ int get_real_pk(const Messenger *m, int32_t friendnumber, uint8_t *real_pk)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (m->friendlist[friendnumber].status > 0) {
-        memcpy(real_pk, m->friendlist[friendnumber].real_pk, crypto_box_PUBLICKEYBYTES);
-        return 0;
-    }
-
-    return -1;
+    memcpy(real_pk, m->friendlist[friendnumber].real_pk, crypto_box_PUBLICKEYBYTES);
+    return 0;
 }
 
 /*  return friend connection id on success.
@@ -364,7 +366,7 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
     if (friend_not_valid(m, friendnumber))
         return 0;
 
-    return m->friendlist[friendnumber].status > NOFRIEND;
+    return 1;
 }
 
 /* Send a text chat message to an online friend.
