@@ -194,7 +194,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
     int friendcon_id = new_friend_connection(m->fr_c, real_pk);
 
     if (friendcon_id == -1)
-        return FAERR_UNKNOWN;
+        return FAERR_NOMEM;
 
     uint32_t i;
 
@@ -227,7 +227,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
         }
     }
 
-    return FAERR_UNKNOWN;
+    return FAERR_NOMEM;
 }
 
 /*
@@ -241,7 +241,6 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
  *  return FAERR_NOMESSAGE if no message (message length must be >= 1 byte).
  *  return FAERR_OWNKEY if user's own key.
  *  return FAERR_ALREADYSENT if friend request already sent or already a friend.
- *  return FAERR_UNKNOWN for unknown error.
  *  return FAERR_BADCHECKSUM if bad checksum in address.
  *  return FAERR_SETNEWNOSPAM if the friend was already there but the nospam was different.
  *  (the nospam for that friend was set to the new one).
@@ -303,21 +302,15 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk)
 {
     if (getfriend_id(m, real_pk) != -1)
-        return -1;
+        return FAERR_ALREADYSENT;
 
     if (!public_key_valid(real_pk))
-        return -1;
+        return FAERR_BADCHECKSUM;
 
     if (id_equal(real_pk, m->net_crypto->self_public_key))
-        return -1;
+        return FAERR_OWNKEY;
 
-    int32_t ret = init_new_friend(m, real_pk, FRIEND_CONFIRMED);
-
-    if (ret < 0) {
-        return -1;
-    } else {
-        return ret;
-    }
+    return init_new_friend(m, real_pk, FRIEND_CONFIRMED);
 }
 
 /* Remove a friend.

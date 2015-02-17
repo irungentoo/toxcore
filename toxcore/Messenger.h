@@ -95,7 +95,6 @@ enum {
     FAERR_NOMESSAGE = -2,
     FAERR_OWNKEY = -3,
     FAERR_ALREADYSENT = -4,
-    FAERR_UNKNOWN = -5,
     FAERR_BADCHECKSUM = -6,
     FAERR_SETNEWNOSPAM = -7,
     FAERR_NOMEM = -8
@@ -329,7 +328,6 @@ void getaddress(const Messenger *m, uint8_t *address);
  *  return -2 if no message (message length must be >= 1 byte).
  *  return -3 if user's own key.
  *  return -4 if friend request already sent or already a friend.
- *  return -5 for unknown error.
  *  return -6 if bad checksum in address.
  *  return -7 if the friend was already there but the nospam was different.
  *  (the nospam for that friend was set to the new one).
@@ -340,7 +338,10 @@ int32_t m_addfriend(Messenger *m, const uint8_t *address, const uint8_t *data, u
 
 /* Add a friend without sending a friendrequest.
  *  return the friend number if success.
- *  return -1 if failure.
+ *  return -3 if user's own key.
+ *  return -4 if friend request already sent or already a friend.
+ *  return -6 if bad checksum in address.
+ *  return -8 if increasing the friend list size fails.
  */
 int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk);
 
