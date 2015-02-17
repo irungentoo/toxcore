@@ -204,8 +204,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
             m->friendlist[i].friendcon_id = friendcon_id;
             m->friendlist[i].friendrequest_lastsent = 0;
             id_copy(m->friendlist[i].real_pk, real_pk);
-            m->friendlist[i].statusmessage = calloc(1, 1);
-            m->friendlist[i].statusmessage_length = 1;
+            m->friendlist[i].statusmessage_length = 0;
             m->friendlist[i].userstatus = USERSTATUS_NONE;
             m->friendlist[i].avatar_info_sent = 0;
             m->friendlist[i].avatar_recv_data = NULL;
@@ -334,7 +333,6 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE)
         remove_online_friend(m, friendnumber);
 
-    free(m->friendlist[friendnumber].statusmessage);
     free(m->friendlist[friendnumber].avatar_recv_data);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
@@ -451,7 +449,7 @@ uint32_t m_sendaction_withid(const Messenger *m, int32_t friendnumber, uint32_t 
  */
 static int m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *name, uint16_t length)
 {
-    if (length > MAX_NAME_LENGTH || length == 0)
+    if (length > MAX_NAME_LENGTH)
         return 0;
 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_NICKNAME, name, length, 0);
@@ -485,13 +483,15 @@ int setfriendname(Messenger *m, int32_t friendnumber, const uint8_t *name, uint1
  */
 int setname(Messenger *m, const uint8_t *name, uint16_t length)
 {
-    if (length > MAX_NAME_LENGTH || length == 0)
+    if (length > MAX_NAME_LENGTH)
         return -1;
 
-    if (m->name_length == length && memcmp(name, m->name, length) == 0)
+    if (m->name_length == length && (length == 0 || memcmp(name, m->name, length) == 0))
         return 0;
 
-    memcpy(m->name, name, length);
+    if (length)
+        memcpy(m->name, name, length);
+
     m->name_length = length;
     uint32_t i;
 
@@ -550,10 +550,12 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
     if (length > MAX_STATUSMESSAGE_LENGTH)
         return -1;
 
-    if (m->statusmessage_length == length && memcmp(m->statusmessage, status, length) == 0)
+    if (m->statusmessage_length == length && (length == 0 || memcmp(m->statusmessage, status, length) == 0))
         return 0;
 
-    memcpy(m->statusmessage, status, length);
+    if (length)
+        memcpy(m->statusmessage, status, length);
+
     m->statusmessage_length = length;
 
     uint32_t i;
@@ -859,10 +861,12 @@ static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, co
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    uint8_t *newstatus = calloc(length + 1, 1);
-    memcpy(newstatus, status, length);
-    free(m->friendlist[friendnumber].statusmessage);
-    m->friendlist[friendnumber].statusmessage = newstatus;
+    if (length > MAX_STATUSMESSAGE_LENGTH)
+        return -1;
+
+    if (length)
+        memcpy(m->friendlist[friendnumber].statusmessage, status, length);
+
     m->friendlist[friendnumber].statusmessage_length = length;
     return 0;
 }
@@ -1632,7 +1636,6 @@ void kill_messenger(Messenger *m)
     kill_networking(m->net);
 
     for (i = 0; i < m->numfriends; ++i) {
-        free(m->friendlist[i].statusmessage);
         free(m->friendlist[i].avatar_recv_data);
     }
 
@@ -1990,7 +1993,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_NICKNAME: {
-            if (data_length > MAX_NAME_LENGTH || data_length == 0)
+            if (data_length > MAX_NAME_LENGTH)
                 break;
 
             /* Make sure the NULL terminator is present. */
@@ -2009,7 +2012,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_STATUSMESSAGE: {
-            if (data_length == 0 || data_length > MAX_STATUSMESSAGE_LENGTH)
+            if (data_length > MAX_STATUSMESSAGE_LENGTH)
                 break;
 
             /* Make sure the NULL terminator is present. */

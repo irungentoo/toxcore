@@ -201,7 +201,7 @@ typedef struct {
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
     uint8_t name_sent; // 0 if we didn't send our name to this friend 1 if we have.
-    uint8_t *statusmessage;
+    uint8_t statusmessage[MAX_STATUSMESSAGE_LENGTH];
     uint16_t statusmessage_length;
     uint8_t statusmessage_sent;
     USERSTATUS userstatus;

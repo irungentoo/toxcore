@@ -518,7 +518,7 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
 
 static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *nick, uint16_t nick_len)
 {
-    if (nick_len > MAX_NAME_LENGTH || nick_len == 0)
+    if (nick_len > MAX_NAME_LENGTH)
         return -1;
 
     Group_c *g = get_group_c(g_c, groupnumber);
@@ -528,10 +528,12 @@ static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint
 
     /* same name as already stored? */
     if (g->group[peer_index].nick_len == nick_len)
-        if (!memcmp(g->group[peer_index].nick, nick, nick_len))
+        if (nick_len == 0 || !memcmp(g->group[peer_index].nick, nick, nick_len))
             return 0;
 
-    memcpy(g->group[peer_index].nick, nick, nick_len);
+    if (nick_len)
+        memcpy(g->group[peer_index].nick, nick, nick_len);
+
     g->group[peer_index].nick_len = nick_len;
 
     if (g_c->peer_namelistchange)
