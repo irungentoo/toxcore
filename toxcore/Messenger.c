@@ -760,12 +760,10 @@ int m_get_self_statusmessage_size(const Messenger *m)
     return m->statusmessage_length;
 }
 
-int m_copy_self_statusmessage(const Messenger *m, uint8_t *buf, uint32_t maxlen)
+int m_copy_self_statusmessage(const Messenger *m, uint8_t *buf)
 {
-    int msglen = MIN(maxlen, m->statusmessage_length);
-    memcpy(buf, m->statusmessage, msglen);
-    memset(buf + msglen, 0, maxlen - msglen);
-    return msglen;
+    memcpy(buf, m->statusmessage, m->statusmessage_length);
+    return m->statusmessage_length;
 }
 
 uint8_t m_get_userstatus(const Messenger *m, int32_t friendnumber)

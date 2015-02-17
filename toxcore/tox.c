@@ -185,8 +185,10 @@ size_t tox_save_size(Tox const *tox)
 
 void tox_save(Tox const *tox, uint8_t *data)
 {
-    const Messenger *m = tox;
-    messenger_save(m, data);
+    if (data) {
+        const Messenger *m = tox;
+        messenger_save(m, data);
+    }
 }
 
 static int address_to_ip(Messenger *m, char const *address, IP_Port *ip_port, IP_Port *ip_port_v4)
@@ -216,6 +218,11 @@ static int address_to_ip(Messenger *m, char const *address, IP_Port *ip_port, IP
 
 bool tox_bootstrap(Tox *tox, char const *address, uint16_t port, uint8_t const *public_key, TOX_ERR_BOOTSTRAP *error)
 {
+    if (!address || !public_key) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
+        return 0;
+    }
+
     Messenger *m = tox;
     bool ret = tox_add_tcp_relay(tox, address, port, public_key, error);
 
@@ -239,6 +246,11 @@ bool tox_bootstrap(Tox *tox, char const *address, uint16_t port, uint8_t const *
 bool tox_add_tcp_relay(Tox *tox, char const *address, uint16_t port, uint8_t const *public_key,
                        TOX_ERR_BOOTSTRAP *error)
 {
+    if (!address || !public_key) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
+        return 0;
+    }
+
     Messenger *m = tox;
     IP_Port ip_port, ip_port_v4;
 
@@ -294,3 +306,104 @@ void tox_iteration(Tox *tox)
     do_groupchats(m->group_chat_object);
 }
 
+void tox_self_get_address(Tox const *tox, uint8_t *address)
+{
+    if (address) {
+        const Messenger *m = tox;
+        getaddress(m, address);
+    }
+}
+
+void tox_self_set_nospam(Tox *tox, uint32_t nospam)
+{
+    Messenger *m = tox;
+    set_nospam(&(m->fr), nospam);
+}
+
+uint32_t tox_self_get_nospam(Tox const *tox)
+{
+    const Messenger *m = tox;
+    return get_nospam(&(m->fr));
+}
+
+void tox_self_get_public_key(Tox const *tox, uint8_t *public_key)
+{
+    const Messenger *m = tox;
+
+    if (public_key)
+        memcpy(public_key, m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
+}
+
+void tox_self_get_private_key(Tox const *tox, uint8_t *private_key)
+{
+    const Messenger *m = tox;
+
+    if (private_key)
+        memcpy(private_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
+}
+
+bool tox_self_set_name(Tox *tox, uint8_t const *name, size_t length, TOX_ERR_SET_INFO *error)
+{
+    if (!name && length != 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
+        return 0;
+    }
+
+    Messenger *m = tox;
+
+    if (setname(m, name, length) == 0) {
+        //TODO: function to set different per group names?
+        send_name_all_groups(m->group_chat_object);
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
+        return 1;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
+        return 0;
+    }
+}
+
+size_t tox_self_get_name_size(Tox const *tox)
+{
+    const Messenger *m = tox;
+    return m_get_self_name_size(m);
+}
+
+void tox_self_get_name(Tox const *tox, uint8_t *name)
+{
+    if (name) {
+        const Messenger *m = tox;
+        getself_name(m, name);
+    }
+}
+
+bool tox_self_set_status_message(Tox *tox, uint8_t const *status, size_t length, TOX_ERR_SET_INFO *error)
+{
+    if (!status && length != 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
+        return 0;
+    }
+
+    Messenger *m = tox;
+
+    if (m_set_statusmessage(m, status, length) == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
+        return 1;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
+        return 0;
+    }
+}
+
+size_t tox_self_get_status_message_size(Tox const *tox)
+{
+    const Messenger *m = tox;
+    return m_get_self_statusmessage_size(m);
+}
+
+void tox_self_get_status_message(Tox const *tox, uint8_t *status)
+{
+    if (status) {
+        const Messenger *m = tox;
+        m_copy_self_statusmessage(m, status);
+    }
+}

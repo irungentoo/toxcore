@@ -479,7 +479,7 @@ int m_get_self_statusmessage_size(const Messenger *m);
  * retruns -1 on failure.
  */
 int m_copy_statusmessage(const Messenger *m, int32_t friendnumber, uint8_t *buf, uint32_t maxlen);
-int m_copy_self_statusmessage(const Messenger *m, uint8_t *buf, uint32_t maxlen);
+int m_copy_self_statusmessage(const Messenger *m, uint8_t *buf);
 
 /*  return one of USERSTATUS values.
  *  Values unknown to your application should be represented as USERSTATUS_NONE.

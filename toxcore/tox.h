@@ -730,7 +730,6 @@ size_t tox_self_get_name_size(Tox const *tox);
  */
 void tox_self_get_name(Tox const *tox, uint8_t *name);
 
-
 /**
  * Set the client's status message.
  *
@@ -760,7 +759,7 @@ size_t tox_self_get_status_message_size(Tox const *tox);
  * Call tox_self_status_message_size to find out how much memory to allocate for
  * the result.
  *
- * @param name A valid memory location large enough to hold the status message.
+ * @param status A valid memory location large enough to hold the status message.
  *   If this parameter is NULL, the function has no effect.
  */
 void tox_self_get_status_message(Tox const *tox, uint8_t *status);
