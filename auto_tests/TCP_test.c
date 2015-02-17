@@ -118,6 +118,7 @@ START_TEST(test_basic)
     ck_assert_msg(packet_resp_plain[0] == 1, "wrong packet id %u", packet_resp_plain[0]);
     ck_assert_msg(packet_resp_plain[1] == 0, "connection not refused %u", packet_resp_plain[1]);
     ck_assert_msg(memcmp(packet_resp_plain + 2, f_public_key, crypto_box_PUBLICKEYBYTES) == 0, "key in packet wrong");
+    kill_TCP_server(tcp_s);
 }
 END_TEST
 
@@ -173,6 +174,12 @@ struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     memcpy(sec_c->recv_nonce, response_plain + crypto_box_BEFORENMBYTES, crypto_box_NONCEBYTES);
     sec_c->sock = sock;
     return sec_c;
+}
+
+void kill_TCP_con(struct sec_TCP_con *con)
+{
+    kill_sock(con->sock);
+    free(con);
 }
 
 int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
@@ -290,6 +297,10 @@ START_TEST(test_some)
     ck_assert_msg(len == sizeof(ping_packet), "wrong len %u", len);
     ck_assert_msg(data[0] == 5, "wrong packet id %u", data[0]);
     ck_assert_msg(memcmp(ping_packet + 1, data + 1, sizeof(uint64_t)) == 0, "wrong packet data");
+    kill_TCP_server(tcp_s);
+    kill_TCP_con(con1);
+    kill_TCP_con(con2);
+    kill_TCP_con(con3);
 }
 END_TEST
 
@@ -457,6 +468,9 @@ START_TEST(test_client)
     do_TCP_connection(conn2);
     ck_assert_msg(status_callback_good == 1, "status callback not called");
     ck_assert_msg(status_callback_status == 1, "wrong status");
+    kill_TCP_server(tcp_s);
+    kill_TCP_connection(conn);
+    kill_TCP_connection(conn2);
 }
 END_TEST
 
@@ -488,6 +502,8 @@ START_TEST(test_client_invalid)
     do_TCP_connection(conn);
     ck_assert_msg(conn->status == TCP_CLIENT_DISCONNECTED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_DISCONNECTED,
                   conn->status);
+
+    kill_TCP_connection(conn);
 }
 END_TEST
 

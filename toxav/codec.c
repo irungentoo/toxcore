@@ -40,7 +40,6 @@
 #include "codec.h"
 
 /* Good quality encode. */
-#define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
 #define MAX_DECODE_TIME_US 0
 
 // TODO this has to be exchanged in msi
@@ -588,6 +587,7 @@ void cs_kill(CSSession *cs)
     jbuf_free(cs->j_buf);
     buffer_free(cs->vbuf_raw);
     free(cs->frame_buf);
+    free(cs->split_video_frame);
 
     LOGGER_DEBUG("Terminated codec state: %p", cs);
     free(cs);

@@ -18,7 +18,7 @@
  * Data dir MAY have:
  *
  *  - A directory named "avatars" with the user's avatar and cached avatars.
- *    The user avatar must be named in the format: "<uppercase user id>.png"
+ *    The user avatar must be named in the format: "<uppercase pub key>.png"
  *
  *
  * The bot will answer to these commands:
@@ -163,14 +163,14 @@ static void byte_to_hex_str(const uint8_t *buf, const size_t buflen, char *dst)
     dst[j++] = '\0';
 }
 
-/* Make the cache file name for a avatar of the given format for the given
- * client id.
+/* Make the cache file name for an avatar of the given format for the given
+ * public key.
  */
 static int make_avatar_file_name(char *dst, size_t dst_len, const char *base_dir,
-                                 const uint8_t format, uint8_t *client_id)
+                                 const uint8_t format, uint8_t *public_key)
 {
-    char client_id_str[2 * TOX_CLIENT_ID_SIZE + 1];
-    byte_to_hex_str(client_id, TOX_CLIENT_ID_SIZE, client_id_str);
+    char public_key_str[2 * TOX_PUBLIC_KEY_SIZE + 1];
+    byte_to_hex_str(public_key, TOX_PUBLIC_KEY_SIZE, public_key_str);
 
     const char *suffix = get_avatar_suffix_from_format(format);
 
@@ -178,7 +178,7 @@ static int make_avatar_file_name(char *dst, size_t dst_len, const char *base_dir
         return -1;  /* Error */
 
     int n = snprintf(dst, dst_len, "%s/%s/%s.%s", base_dir, AVATAR_DIR_NAME,
-                     client_id_str, suffix);
+                     public_key_str, suffix);
     dst[dst_len - 1] = '\0';
 
     if (n >= dst_len)
@@ -196,7 +196,7 @@ static int make_avatar_file_name(char *dst, size_t dst_len, const char *base_dir
 static int load_user_avatar(Tox *tox, char *base_dir, int friendnum,
                             uint8_t format, uint8_t *hash, uint8_t *data, uint32_t *datalen)
 {
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
 
     if (tox_get_client_id(tox, friendnum, addr) != 0) {
         DEBUG("Bad client id, friendnumber=%d", friendnum);
@@ -224,14 +224,14 @@ static int load_user_avatar(Tox *tox, char *base_dir, int friendnum,
     return 0;
 }
 
-/* Save a user avatar into the cache. Gets the file name from client id and
- * the given data format.
+/* Save a user avatar into the cache. Gets the file name from the public key
+ * and the given data format.
  * Returns 0 on success, or -1 on error.
  */
 static int save_user_avatar(Tox *tox, char *base_dir, int friendnum,
                             uint8_t format, uint8_t *data, uint32_t datalen)
 {
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
 
     if (tox_get_client_id(tox, friendnum, addr) != 0) {
         DEBUG("Bad client id, friendnumber=%d", friendnum);
@@ -252,7 +252,7 @@ static int save_user_avatar(Tox *tox, char *base_dir, int friendnum,
 /* Delete all cached avatars for a given user */
 static int delete_user_avatar(Tox *tox, char *base_dir, int friendnum)
 {
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
 
     if (tox_get_client_id(tox, friendnum, addr) != 0) {
         DEBUG("Bad client id, friendnumber=%d", friendnum);
@@ -288,11 +288,11 @@ static int delete_user_avatar(Tox *tox, char *base_dir, int friendnum)
 
 static void friend_status_cb(Tox *tox, int n, uint8_t status, void *ud)
 {
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
-    char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
+    char addr_str[2 * TOX_PUBLIC_KEY_SIZE + 1];
 
     if (tox_get_client_id(tox, n, addr) == 0) {
-        byte_to_hex_str(addr, TOX_CLIENT_ID_SIZE, addr_str);
+        byte_to_hex_str(addr, TOX_PUBLIC_KEY_SIZE, addr_str);
         printf("Receiving status from %s: %u\n", addr_str, status);
     }
 }
@@ -300,12 +300,12 @@ static void friend_status_cb(Tox *tox, int n, uint8_t status, void *ud)
 static void friend_avatar_info_cb(Tox *tox, int32_t n, uint8_t format, uint8_t *hash, void *ud)
 {
     char *base_dir = (char *) ud;
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
-    char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
+    char addr_str[2 * TOX_PUBLIC_KEY_SIZE + 1];
     char hash_str[2 * TOX_HASH_LENGTH + 1];
 
     if (tox_get_client_id(tox, n, addr) == 0) {
-        byte_to_hex_str(addr, TOX_CLIENT_ID_SIZE, addr_str);
+        byte_to_hex_str(addr, TOX_PUBLIC_KEY_SIZE, addr_str);
         printf("Receiving avatar information from %s.\n", addr_str);
     } else {
         DEBUG("tox_get_client_id failed");
@@ -350,12 +350,12 @@ static void friend_avatar_data_cb(Tox *tox, int32_t n, uint8_t format,
                                   uint8_t *hash, uint8_t *data, uint32_t datalen, void *ud)
 {
     char *base_dir = (char *) ud;
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
-    char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
+    char addr_str[2 * TOX_PUBLIC_KEY_SIZE + 1];
     char hash_str[2 * TOX_HASH_LENGTH + 1];
 
     if (tox_get_client_id(tox, n, addr) == 0) {
-        byte_to_hex_str(addr, TOX_CLIENT_ID_SIZE, addr_str);
+        byte_to_hex_str(addr, TOX_PUBLIC_KEY_SIZE, addr_str);
         printf("Receiving avatar data from %s.\n", addr_str);
     } else {
         DEBUG("tox_get_client_id failed");
@@ -382,8 +382,8 @@ static void friend_msg_cb(Tox *tox, int n, const uint8_t *msg, uint16_t len, voi
 {
     const char *base_dir = (char *) ud;
     const char *msg_str = (char *) msg;
-    uint8_t addr[TOX_CLIENT_ID_SIZE];
-    char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
+    uint8_t addr[TOX_PUBLIC_KEY_SIZE];
+    char addr_str[2 * TOX_PUBLIC_KEY_SIZE + 1];
 
     if (tox_get_client_id(tox, n, addr) == 0) {
         byte_to_hex_str(addr, TOX_FRIEND_ADDRESS_SIZE, addr_str);
@@ -428,8 +428,8 @@ static void friend_msg_cb(Tox *tox, int n, const uint8_t *msg, uint16_t len, voi
 static void friend_request_cb(Tox *tox, const uint8_t *public_key,
                               const uint8_t *data, uint16_t length, void *ud)
 {
-    char addr_str[2 * TOX_CLIENT_ID_SIZE + 1];
-    byte_to_hex_str(public_key, TOX_CLIENT_ID_SIZE, addr_str);
+    char addr_str[2 * TOX_PUBLIC_KEY_SIZE + 1];
+    byte_to_hex_str(public_key, TOX_PUBLIC_KEY_SIZE, addr_str);
     printf("Accepting friend request from %s.\n   %s\n", addr_str, data);
     tox_add_friend_norequest(tox, public_key);
 }

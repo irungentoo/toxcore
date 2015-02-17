@@ -112,18 +112,18 @@ int ipport_self_copy(const DHT *dht, IP_Port *target)
     return 0;
 }
 
-/* Creates a GC_Announce_Node using client_id and your own IP_Port struct
+/* Creates a GC_Announce_Node using public_key and your own IP_Port struct
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-int make_self_gca_node(const DHT *dht, GC_Announce_Node *node, const uint8_t *client_id)
+int make_self_gca_node(const DHT *dht, GC_Announce_Node *node, const uint8_t *public_key)
 {
     IP_Port self_node;
     if (ipport_self_copy(dht, &node->ip_port) == -1)
         return -1;
 
-    memcpy(node->client_id, client_id, EXT_PUBLIC_KEY);
+    memcpy(node->public_key, public_key, EXT_PUBLIC_KEY);
     return 0;
 }
 
@@ -147,7 +147,7 @@ int pack_gca_nodes(uint8_t *data, uint16_t length, const GC_Announce_Node *nodes
         if (packed_length + EXT_PUBLIC_KEY > length)
             return -1;
 
-        memcpy(data + packed_length, nodes[i].client_id, EXT_PUBLIC_KEY);
+        memcpy(data + packed_length, nodes[i].public_key, EXT_PUBLIC_KEY);
         packed_length += EXT_PUBLIC_KEY;
     }
 
@@ -177,7 +177,7 @@ int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *
         if (len_processed + EXT_PUBLIC_KEY > length)
             return -1;
 
-        memcpy(nodes[num].client_id, data + len_processed, EXT_PUBLIC_KEY);
+        memcpy(nodes[num].public_key, data + len_processed, EXT_PUBLIC_KEY);
         len_processed += EXT_PUBLIC_KEY;
         ++num;
     }
@@ -264,11 +264,11 @@ static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *
 
     /* Relay announce request to all nclosest nodes if self announce */
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, nodes[i].client_id, sender_pk) != 1)
+        if (!self && id_closest(chat_id, nodes[i].public_key, sender_pk) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
-                                            nodes[i].client_id, packet, data, length, NET_PACKET_GCA_ANNOUNCE);
+                                            nodes[i].public_key, packet, data, length, NET_PACKET_GCA_ANNOUNCE);
 
         if (packet_length == -1)
             continue;
@@ -300,11 +300,11 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format 
     int i, sent = 0;
 
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, nodes[i].client_id, sender_pk) != 1)
+        if (!self && id_closest(chat_id, nodes[i].public_key, sender_pk) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
-                                            nodes[i].client_id, packet, data, length, NET_PACKET_GCA_GET_NODES);
+                                            nodes[i].public_key, packet, data, length, NET_PACKET_GCA_GET_NODES);
         if (packet_length == -1)
             continue;
 
@@ -353,8 +353,8 @@ static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node 
 
         for (j = 0; j < nodes_num; j++) {
             if (ipport_isset(&node[j].ip_port)
-                && memcmp(announce->self_requests[i].long_pk, node[j].client_id, EXT_PUBLIC_KEY) != 0) {
-                memcpy(announce->self_requests[i].nodes[j].client_id, node[j].client_id, EXT_PUBLIC_KEY);
+                && memcmp(announce->self_requests[i].long_pk, node[j].public_key, EXT_PUBLIC_KEY) != 0) {
+                memcpy(announce->self_requests[i].nodes[j].public_key, node[j].public_key, EXT_PUBLIC_KEY);
                 ipport_copy(&announce->self_requests[i].nodes[j].ip_port, &node[j].ip_port);
                 announce->self_requests[i].ready = true;
             }
@@ -379,7 +379,7 @@ static int add_announced_nodes_helper(GC_Announce *announce, const uint8_t *chat
     if (update)
         return idx;
 
-    memcpy(announce->announcements[idx].node.client_id, node.client_id, EXT_PUBLIC_KEY);
+    memcpy(announce->announcements[idx].node.public_key, node.public_key, EXT_PUBLIC_KEY);
     memcpy(announce->announcements[idx].chat_id, chat_id, EXT_PUBLIC_KEY);
 
     return idx;
@@ -398,7 +398,7 @@ static int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, 
             oldest_idx = i;
         }
 
-        if (id_long_equal(announce->announcements[i].node.client_id, node.client_id)
+        if (id_long_equal(announce->announcements[i].node.public_key, node.public_key)
             && id_long_equal(announce->announcements[i].chat_id, chat_id))
             return add_announced_nodes_helper(announce, chat_id, node, i, true);
 
@@ -421,7 +421,7 @@ static int get_gc_announced_nodes(GC_Announce *announce, const uint8_t *chat_id,
             continue;
 
         if (id_long_equal(announce->announcements[i].chat_id, chat_id)) {
-            memcpy(nodes[j].client_id, announce->announcements[i].node.client_id, EXT_PUBLIC_KEY);
+            memcpy(nodes[j].public_key, announce->announcements[i].node.public_key, EXT_PUBLIC_KEY);
             ipport_copy(&nodes[j].ip_port, &announce->announcements[i].node.ip_port);
 
             if (++j == MAX_GCA_SENT_NODES)
@@ -519,7 +519,7 @@ int handle_gca_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint16_t 
 
     if (crypto_sign_verify_detached(data + plain_length - SIGNATURE_SIZE, data,
                                     plain_length - SIGNATURE_SIZE,
-                                    SIG_KEY(node.client_id)) != 0) {
+                                    SIG_KEY(node.public_key)) != 0) {
         fprintf(stderr, "handle_gca_request sign verify failed\n");
         return -1;
     }
@@ -628,7 +628,7 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
 
     if (crypto_sign_verify_detached(data + plain_length - SIGNATURE_SIZE,
                                     data, plain_length - SIGNATURE_SIZE,
-                                    SIG_KEY(node.client_id)) != 0) {
+                                    SIG_KEY(node.public_key)) != 0) {
         fprintf(stderr, "sign verify failed in handle announced nodes request\n");
         return -1;
     }
@@ -640,7 +640,7 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
         uint64_t request_id;
         bytes_to_U64(&request_id, data + 1 + EXT_PUBLIC_KEY);
 
-        return send_gca_get_nodes_response(dht, request_id, node.ip_port, ENC_KEY(node.client_id), nodes, num_nodes);
+        return send_gca_get_nodes_response(dht, request_id, node.ip_port, ENC_KEY(node.public_key), nodes, num_nodes);
     }
 
     return dispatch_packet(announce, ENC_KEY(data+1), dht->self_public_key, data,
@@ -723,7 +723,7 @@ int gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_An
 
         for (j = 0; j < MAX_GCA_SENT_NODES; j++) {
             if (ipport_isset(&announce->self_requests[i].nodes[j].ip_port)) {
-                memcpy(nodes[k].client_id, announce->self_requests[i].nodes[j].client_id, EXT_PUBLIC_KEY);
+                memcpy(nodes[k].public_key, announce->self_requests[i].nodes[j].public_key, EXT_PUBLIC_KEY);
                 ipport_copy(&nodes[k].ip_port, &announce->self_requests[i].nodes[j].ip_port);
 
                 if (++k == MAX_GCA_SENT_NODES)
@@ -831,14 +831,14 @@ static int gca_send_ping_request(DHT *dht, GC_Announce_Node *node, uint64_t ping
     memcpy(data + 1, &ping_id, RAND_ID_SIZE);
 
     uint8_t packet[GCA_PING_REQUEST_DHT_SIZE];
-    int len = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, node->client_id, packet, data,
+    int len = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, node->public_key, packet, data,
                               GCA_PING_REQUEST_PLAIN_SIZE, NET_PACKET_GCA_PING_REQUEST);
     if (len == -1)
         return -1;
 
     /* insert recipient's client_id into packet header after the packet type and dht_pk */
     memmove(packet + 1 + ENC_PUBLIC_KEY + ENC_PUBLIC_KEY, packet + 1 + ENC_PUBLIC_KEY, len - 1 - ENC_PUBLIC_KEY);
-    memcpy(packet + 1 + ENC_PUBLIC_KEY, node->client_id, ENC_PUBLIC_KEY);
+    memcpy(packet + 1 + ENC_PUBLIC_KEY, node->public_key, ENC_PUBLIC_KEY);
     len += ENC_PUBLIC_KEY;
 
     return sendpacket(dht->net, node->ip_port, packet, len);

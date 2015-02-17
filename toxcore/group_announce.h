@@ -26,7 +26,7 @@
 #define MAX_GCA_SELF_REQUESTS 30
 
 typedef struct {
-    uint8_t     client_id[EXT_PUBLIC_KEY];
+    uint8_t     public_key[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
 } GC_Announce_Node;
 

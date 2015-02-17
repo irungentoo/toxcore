@@ -40,7 +40,7 @@ struct GC_Message_Ary {
 
 typedef struct GC_Connection {
     uint64_t send_message_id;
-    uint16_t send_ary_start;   /* send_ary index of first items */
+    uint16_t send_ary_start;   /* send_ary index of oldest item */
     uint64_t last_send_try;
     struct GC_Message_Ary send_ary[GCC_BUFFER_SIZE];
 

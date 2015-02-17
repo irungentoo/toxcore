@@ -1334,5 +1334,6 @@ void kill_TCP_server(TCP_Server *TCP_server)
 #endif
 
     free(TCP_server->socks_listening);
+    free(TCP_server->accepted_connection_array);
     free(TCP_server);
 }

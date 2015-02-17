@@ -1964,7 +1964,7 @@ void do_gc(GC_Session *c)
                 chat->connection_state = CS_CONNECTING;
                 int n = random_int() % num_nodes;
 
-                if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].client_id) == -1)
+                if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].public_key) == -1)
                     group_delete(c, chat);
             }
         }
@@ -2263,7 +2263,7 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
     memcpy(chat->chat_public_key, chat_id, EXT_PUBLIC_KEY);
     chat->hash_id = jenkins_hash(chat_id, EXT_PUBLIC_KEY);
 
-    if (gc_send_invite_request(chat, node.ip_port, node.client_id) == -1)
+    if (gc_send_invite_request(chat, node.ip_port, node.public_key) == -1)
         return -1;
 
     return groupnumber;

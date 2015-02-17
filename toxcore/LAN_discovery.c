@@ -152,6 +152,11 @@ static void fetch_broadcast_info(uint16_t port)
         IP_Port *ip_port = &broadcast_ip_port[broadcast_count];
         ip_port->ip.family = AF_INET;
         ip_port->ip.ip4.in_addr = sock4->sin_addr;
+
+        if (ip_port->ip.ip4.uint32 == 0) {
+            continue;
+        }
+
         ip_port->port = port;
         broadcast_count++;
     }

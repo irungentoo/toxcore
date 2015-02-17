@@ -36,7 +36,7 @@ typedef struct Messenger Tox;
 
 /*
  * returns a FRIEND_ADDRESS_SIZE byte address to give to others.
- * Format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
+ * Format: [public_key (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  *
  */
 void tox_get_address(const Tox *tox, uint8_t *address)
@@ -73,31 +73,31 @@ int32_t tox_add_friend(Tox *tox, const uint8_t *address, const uint8_t *data, ui
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int32_t tox_add_friend_norequest(Tox *tox, const uint8_t *client_id)
+int32_t tox_add_friend_norequest(Tox *tox, const uint8_t *public_key)
 {
     Messenger *m = tox;
-    return m_addfriend_norequest(m, client_id);
+    return m_addfriend_norequest(m, public_key);
 }
 
 /*  return the friend number associated to that client id.
  *  return -1 if no such friend.
  */
-int32_t tox_get_friend_number(const Tox *tox, const uint8_t *client_id)
+int32_t tox_get_friend_number(const Tox *tox, const uint8_t *public_key)
 {
     const Messenger *m = tox;
-    return getfriend_id(m, client_id);
+    return getfriend_id(m, public_key);
 }
 
-/* Copies the public key associated to that friend id into client_id buffer.
- * Make sure that client_id is of size CLIENT_ID_SIZE.
+/* Copies the public key associated to that friend id into public_key buffer.
+ * Make sure that public_key is of size crypto_box_PUBLICKEYBYTES.
  *
  *  return 0 if success.
  *  return -1 if failure.
  */
-int tox_get_client_id(const Tox *tox, int32_t friendnumber, uint8_t *client_id)
+int tox_get_client_id(const Tox *tox, int32_t friendnumber, uint8_t *public_key)
 {
     const Messenger *m = tox;
-    return getclient_id(m, friendnumber, client_id);
+    return get_real_pk(m, friendnumber, public_key);
 }
 
 /* Remove a friend. */
@@ -771,8 +771,8 @@ uint32_t tox_do_interval(Tox *tox)
  */
 Tox *tox_new(Tox_Options *options)
 {
-    logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
-
+    if (!logger_get_global())
+        logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
 
     Messenger_Options m_options = {0};
 

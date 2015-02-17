@@ -42,11 +42,15 @@ extern "C" {
 #define TOX_MAX_GROUP_NAME_LENGTH 48
 #define TOX_GROUP_CHAT_ID_SIZE 64
 
-#define TOX_CLIENT_ID_SIZE 32
+#define TOX_PUBLIC_KEY_SIZE 32
+/* TODO: remove */
+#define TOX_CLIENT_ID_SIZE TOX_PUBLIC_KEY_SIZE
+
+
 #define TOX_AVATAR_MAX_DATA_LENGTH 16384
 #define TOX_HASH_LENGTH /*crypto_hash_sha256_BYTES*/ 32
 
-#define TOX_FRIEND_ADDRESS_SIZE (TOX_CLIENT_ID_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
+#define TOX_FRIEND_ADDRESS_SIZE (TOX_PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
@@ -100,7 +104,7 @@ typedef struct Tox Tox;
  */
 
 /*  return TOX_FRIEND_ADDRESS_SIZE byte address to give to others.
- * format: [client_id (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
+ * format: [public_key (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
  */
 void tox_get_address(const Tox *tox, uint8_t *address);
 
@@ -127,18 +131,18 @@ int32_t tox_add_friend(Tox *tox, const uint8_t *address, const uint8_t *data, ui
  *  return the friend number if success.
  *  return -1 if failure.
  */
-int32_t tox_add_friend_norequest(Tox *tox, const uint8_t *client_id);
+int32_t tox_add_friend_norequest(Tox *tox, const uint8_t *public_key);
 
 /*  return the friend number associated to that client id.
     return -1 if no such friend */
-int32_t tox_get_friend_number(const Tox *tox, const uint8_t *client_id);
+int32_t tox_get_friend_number(const Tox *tox, const uint8_t *public_key);
 
-/* Copies the public key associated to that friend id into client_id buffer.
- * Make sure that client_id is of size CLIENT_ID_SIZE.
+/* Copies the public key associated to that friend id into public_key buffer.
+ * Make sure that public_key is of size TOX_PUBLIC_KEY_SIZE.
  *  return 0 if success.
  *  return -1 if failure.
  */
-int tox_get_client_id(const Tox *tox, int32_t friendnumber, uint8_t *client_id);
+int tox_get_client_id(const Tox *tox, int32_t friendnumber, uint8_t *public_key);
 
 /* Remove a friend.
  *
