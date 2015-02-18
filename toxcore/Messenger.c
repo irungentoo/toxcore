@@ -929,7 +929,7 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t
     m->friend_userstatuschange_userdata = userdata;
 }
 
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, uint8_t, void *), void *userdata)
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, _Bool, void *), void *userdata)
 {
     m->friend_typingchange = function;
     m->friend_typingchange_userdata = userdata;
@@ -2043,7 +2043,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if (data_length != 1)
                 break;
 
-            uint8_t typing = data[0];
+            _Bool typing = !!data[0];
 
             set_friend_typing(m, i, typing);
 
