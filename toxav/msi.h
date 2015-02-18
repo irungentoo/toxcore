@@ -36,6 +36,12 @@
  * Error codes.
  */
 typedef enum {
+    msi_ErrorNone,
+    msi_InvalidMessage,
+    msi_InvalidParam,
+    msi_InvalidState,
+    msi_StrayMessage,
+    msi_SystemError,
     msi_ErrUndisclosed,
 } MSIError;
 
@@ -69,7 +75,7 @@ typedef enum {
     msi_OnStart, /* Call (RTP transmission) started */
     msi_OnReject, /* The side that was invited rejected the call */
     msi_OnEnd, /* Call that was active ended */
-    msi_OnError, /* Call that was active ended */
+    msi_OnError, /* On protocol error */
     msi_OnPeerTimeout, /* Peer timed out; stop the call */
     msi_OnCapabilities, /* Peer requested capabilities change */
 } MSICallbackID;
@@ -90,6 +96,10 @@ typedef struct MSICall_s {
     
     uint32_t             friend_id;         /* Index of this call in MSISession */
     
+    MSIError             error;             /* Last error */
+    
+    void*                av_call;           /* Pointer to av call handler */
+    
     struct MSICall_s*    next;
     struct MSICall_s*    prev;
 } MSICall;
@@ -109,8 +119,8 @@ typedef struct MSISession_s {
     uint32_t        calls_tail;
     uint32_t        calls_head;
     
-    void           *agent_handler;
-    Messenger      *messenger_handle;
+    void           *av;
+    Messenger      *messenger;
 
     pthread_mutex_t mutex[1];
     MSICallbackType callbacks[8];
@@ -119,7 +129,7 @@ typedef struct MSISession_s {
 /**
  * Start the control session.
  */
-MSISession *msi_new ( Messenger *messenger, int32_t max_calls );
+MSISession *msi_new ( Messenger *messenger );
 
 /**
  * Terminate control session. NOTE: all calls will be freed
