@@ -53,7 +53,6 @@
 
 #define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
 
-static int peernumber_valid(const GC_Chat *chat, uint32_t peernumber);
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *client_id);
 static int peer_add(Messenger *m, int groupnumber, const GC_GroupPeer *peer);
@@ -501,10 +500,8 @@ int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *p
     }
 
     for (i = 1; i < chat->numpeers; ++i) {
-        if ((chat->group[i].last_update_time > last_synced_time)
-            && (!id_long_equal(chat->group[i].client_id, public_key))) {
-            memcpy(&peers[num_peers], &chat->group[i], sizeof(GC_GroupPeer));
-        }
+        if (!id_long_equal(chat->group[i].client_id, public_key))
+            memcpy(&peers[num_peers++], &chat->group[i], sizeof(GC_GroupPeer));
     }
 
     U32_to_bytes(response + len, num_peers);
@@ -560,8 +557,10 @@ static int gc_send_invite_response(GC_Chat *chat, uint32_t peernumber, const uin
 static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
                                      const uint8_t *data, uint32_t length, uint64_t message_id)
 {
-    if (message_id != 1)
+    if (message_id != 1) {
+        fprintf(stderr, "wat\n");
         return -1;
+    }
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
@@ -609,9 +608,9 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
     free(peer);
 
     if (peernumber == -1) {
-        fprintf(stderr, "peer_add failed in handle_invite_response %d\n", peernumber);
+        fprintf(stderr, "peer_add failed in handle_invite_response\n");
         return -1;
-    } else if (peernumber == -2) {   /* packet loss might cause this */
+    } else if (peernumber == -2) {
         peernumber = peer_in_chat(chat, public_key);
     }
 
@@ -644,7 +643,7 @@ static int handle_gc_invite_response_reject(Messenger *m, int groupnumber, const
     if (c->rejected)
         (*c->rejected)(m, groupnumber, type, c->rejected_userdata);
 
-    group_delete(c, chat);
+    gc_group_exit(m->group_handler, chat, NULL, 0);
     return 0;
 }
 
@@ -838,7 +837,7 @@ static int handle_bc_status(Messenger *m, int groupnumber, uint32_t peernumber, 
 /* Returns peernumber's status.
  * Returns GS_INVALID on failure.
  */
-uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber)
+uint8_t gc_get_status(const GC_Chat *chat, uint32_t peernumber)
 {
     if (!peernumber_valid(chat, peernumber))
         return GS_INVALID;
@@ -849,7 +848,7 @@ uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber)
 /* Returns peernumber's group role.
  * Returns GR_INVALID on failure.
  */
-uint8_t gc_get_role(const GC_Chat *chat, uint8_t peernumber)
+uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber)
 {
     if (!peernumber_valid(chat, peernumber))
         return GR_INVALID;
@@ -887,12 +886,9 @@ static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
 
 static int verify_cert_integrity(const uint8_t *certificate);
 
-static int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *data, uint32_t length,
-                              uint64_t message_id)
+int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *data, uint32_t length,
+                       uint64_t message_id)
 {
-    if (message_id != 1)
-        return -1;
-
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
@@ -924,19 +920,23 @@ static int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const 
     int peernumber = peer_add(m, groupnumber, peer);
     free(peer);
 
-    if (peernumber < 0) {
+    if (peernumber == -1) {
         fprintf(stderr, "handle_bc_new_peer fail (peernumber == -1)!\n");
         return -1;
     }
 
-    if (c->peerlist_update)
-        (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
+    if (peernumber != -2 && message_id == 1) {
+        if (c->peerlist_update)
+            (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
-    if (c->peer_join)
-        (*c->peer_join)(m, groupnumber, peernumber, c->peer_join_userdata);
+        if (c->peer_join)
+            (*c->peer_join)(m, groupnumber, peernumber, c->peer_join_userdata);
 
-    ++chat->gcc[peernumber].recv_message_id;
-    return gc_send_message_ack(chat, peernumber, message_id, 0);
+        ++chat->gcc[peernumber].recv_message_id;
+        return gc_send_message_ack(chat, peernumber, message_id, 0);
+    }
+
+    return 0;
 }
 
 static int send_gc_self_exit(GC_Chat *chat, const uint8_t *partmessage, uint32_t length)
@@ -1361,8 +1361,10 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
         }
 
         /* packet wasn't in correct sequence so we send an ack requesting the expected message_id */
-        if (lossless == 0)
+        if (lossless == 0) {
+            fprintf(stderr, "recv out of order packet; expected %llu, got %llu\n", chat->gcc[peernumber].recv_message_id + 1, message_id);
             return gc_send_message_ack(chat, peernumber, message_id, chat->gcc[peernumber].recv_message_id + 1);
+        }
 
         gc_send_message_ack(chat, peernumber, message_id, 0);
     }
@@ -1756,9 +1758,9 @@ static int peer_in_chat(const GC_Chat *chat, const uint8_t *client_id)
     return -1;
 }
 
-static int peernumber_valid(const GC_Chat *chat, uint32_t peernumber)
+int peernumber_valid(const GC_Chat *chat, int peernumber)
 {
-    return peernumber < chat->numpeers;
+    return peernumber >= 0 && peernumber < chat->numpeers;
 }
 
 /* Deletets peernumber from group.
@@ -1787,6 +1789,9 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
         memcpy(&chat->group[peernumber], &chat->group[chat->numpeers], sizeof(GC_GroupPeer));
         memcpy(&chat->gcc[peernumber], &chat->gcc[chat->numpeers], sizeof(GC_Connection));
     }
+
+    memset(&chat->group[chat->numpeers], 0, sizeof(GC_GroupPeer));
+    memset(&chat->gcc[chat->numpeers], 0, sizeof(GC_Connection));
 
     GC_GroupPeer *tmp_group = realloc(chat->group, sizeof(GC_GroupPeer) * chat->numpeers);
 
@@ -2054,7 +2059,7 @@ static int create_new_group(GC_Session *c, bool founder)
 
     chat->groupnumber = groupnumber;
     chat->numpeers = 0;
-    chat->last_synced_time = 0; // TODO: delete this later, it's for testing now
+    chat->last_synced_time = 0;   // TODO: delete this later, it's for testing now
     chat->connection_state = CS_DISCONNECTED;
     chat->net = m->net;
     memcpy(chat->topic, " ", 1);

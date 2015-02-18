@@ -294,7 +294,7 @@ int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 /* Returns peernumber's status.
  * Returns GS_INVALID on failure.
  */
-uint8_t gc_get_status(const GC_Chat *chat, uint8_t peernumber);
+uint8_t gc_get_status(const GC_Chat *chat, uint32_t peernumber);
 
 /* Returns number of peers */
 int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[], uint32_t num_peers);
@@ -305,7 +305,7 @@ int gc_get_numpeers(const GC_Chat *chat);
 /* Returns peernumber's group role.
  * Returns GR_INVALID on failure.
  */
-uint8_t gc_get_role(const GC_Chat *chat, uint8_t peernumber);
+uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                          const uint8_t *, uint16_t, void *), void *userdata);
@@ -392,5 +392,17 @@ int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernum
  * Return -1 on failure.
  */
 int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
+
+/* Return 1 if peernumber is valid, 0 otherwise. */
+int peernumber_valid(const GC_Chat *chat, int peernumber);
+
+int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
+                        const uint8_t *data, uint32_t length);
+int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *public_key,
+                           int peernumber, const uint8_t *data, uint32_t length);
+int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *data, uint32_t length,
+                       uint64_t message_id);
+int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key,
+                            const uint8_t *data, uint32_t length);
 
 #endif  /* GROUP_CHATS_H */

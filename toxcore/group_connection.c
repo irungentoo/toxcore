@@ -61,6 +61,9 @@ static int add_to_ary(struct GC_Message_Ary *ary, const uint8_t *data, uint32_t 
     if (!data || !length)
         return -1;
 
+    if (!ary)
+        return -1;
+
     ary[idx].data = malloc(sizeof(uint8_t) * length);
 
     if (ary[idx].data == NULL)
@@ -116,6 +119,9 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
  */
 int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id)
 {
+    if (!gconn)
+        return -1;
+
     uint16_t idx = get_ary_index(gconn->send_ary, message_id);
 
     if (gconn->send_ary[idx].data == NULL)
@@ -180,7 +186,7 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (gconn == NULL)
+    if (!gconn)
         return -1;
 
     int ret = -1;
@@ -197,6 +203,9 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
             break;
         case GP_SYNC_RESPONSE:
             ret = handle_gc_sync_response(m, groupnum, client_id, data, length);
+            break;
+        case GP_NEW_PEER:
+            ret = handle_gc_new_peer(m, groupnum, chat->group[peernum].ip_port, data, length, gconn->recv_ary[idx].message_id);
             break;
     }
 
@@ -219,7 +228,7 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum)
     if (!chat)
         return -1;
 
-    if (peernum < 0 || peernum >= chat->numpeers)
+    if (!peernumber_valid(chat, peernum))
         return -1;
 
     GC_Connection *gconn = &chat->gcc[peernum];
@@ -274,6 +283,9 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 /* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn)
 {
+    if (!gconn)
+        return;
+
     size_t i;
 
     for (i = 0; i < GCC_BUFFER_SIZE; ++i) {
