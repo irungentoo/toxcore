@@ -646,3 +646,43 @@ void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *
     Messenger *m = tox;
     m_callback_statusmessage(m, function, user_data);
 }
+
+TOX_STATUS tox_friend_get_status(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
+{
+    const Messenger *m = tox;
+
+    int ret = m_get_userstatus(m, friend_number);
+
+    if (ret == USERSTATUS_INVALID) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
+        return TOX_STATUS_INVALID;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
+    return ret;
+}
+
+void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_userstatus(m, function, user_data);
+}
+
+bool tox_friend_get_typing(Tox const *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = m_get_istyping(m, friend_number);
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
+    return !!ret;
+}
+
+void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_typingchange(m, function, user_data);
+}
