@@ -53,6 +53,7 @@
 
 #define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
 
+static int peernumber_valid(const GC_Chat *chat, int peernumber);
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *client_id);
 static int peer_add(Messenger *m, int groupnumber, const GC_GroupPeer *peer);
@@ -1351,7 +1352,7 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
     int peernumber = peer_in_chat(chat, sender_pk);
 
     /* peernumber will be -1 for a lossless NEW_PEER and GP_INVITE_RESPONSE packets which act like a handshake.
-       these acked in their respective handlers */
+       these are acked in their respective handlers */
     if (peernumber >= 0 && LOSSLESS_PACKET(packet_type)) {
         lossless = gcc_handle_recv_message(chat, peernumber, data, len, packet_type, message_id);
 
@@ -1401,7 +1402,7 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
             break;
     }
 
-    if (lossless == 1)
+    if (lossless == 1 && peernumber_valid(chat, peernumber))
         gcc_check_recv_ary(m, chat->groupnumber, peernumber);
 
     return ret;
@@ -1722,8 +1723,8 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
 
         case GC_BAN:
             /* TODO: how do we prevent the peer from simply rejoining? */
-            gc_peer_delete(m, groupnumber, trg, NULL, 0);
-            return src;
+           // gc_peer_delete(m, groupnumber, trg, NULL, 0);
+            return -1;
 
         default:
             return -1;
@@ -1758,7 +1759,7 @@ static int peer_in_chat(const GC_Chat *chat, const uint8_t *client_id)
     return -1;
 }
 
-int peernumber_valid(const GC_Chat *chat, int peernumber)
+static int peernumber_valid(const GC_Chat *chat, int peernumber)
 {
     return peernumber >= 0 && peernumber < chat->numpeers;
 }
@@ -1772,14 +1773,14 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
 {
     GC_Session *c = m->group_handler;
 
-    /* Needs to occur before peer is removed*/
-    if (c->peer_exit)
-        (*c->peer_exit)(m, groupnumber, peernumber, data, length, c->peer_exit_userdata);
-
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
         return -1;
+
+    /* Needs to occur before peer is removed*/
+    if (c->peer_exit)
+        (*c->peer_exit)(m, groupnumber, peernumber, data, length, c->peer_exit_userdata);
 
     gcc_peer_cleanup(&chat->gcc[peernumber]);
 
@@ -1900,12 +1901,14 @@ static void do_peer_connections(Messenger *m, int groupnumber)
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
-        gcc_resend_packets(m, chat, i);
-
         if (is_timeout(chat->group[i].last_rcvd_ping, GROUP_PEER_TIMEOUT)) {
             gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
-            continue;
+        } else {
+            gcc_resend_packets(m, chat, i);
         }
+
+        if (i >= chat->numpeers)
+            break;
     }
 }
 

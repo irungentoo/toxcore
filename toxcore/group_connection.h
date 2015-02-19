@@ -27,7 +27,7 @@
 
 #include "group_chats.h"
 
-#define GCC_BUFFER_SIZE 20000    /* must fit inside an uint_16 */
+#define GCC_BUFFER_SIZE 8192    /* must fit inside an uint16 */
 
 struct GC_Message_Ary {
     uint8_t *data;
@@ -41,7 +41,6 @@ struct GC_Message_Ary {
 typedef struct GC_Connection {
     uint64_t send_message_id;
     uint16_t send_ary_start;   /* send_ary index of oldest item */
-    uint64_t last_send_try;
     struct GC_Message_Ary send_ary[GCC_BUFFER_SIZE];
 
     uint64_t recv_message_id;

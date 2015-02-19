@@ -37,8 +37,8 @@ typedef struct Messenger Messenger;
 #define MAX_GC_PART_MESSAGE_SIZE 128
 #define MAX_GROUP_NUM_PEERS 1000   // temporary?
 
-#define GROUP_PING_INTERVAL 40
-#define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 3 + 10)
+#define GROUP_PING_INTERVAL 30
+#define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 4 + 10)
 #define GROUP_SELF_TIMEOUT (GROUP_PEER_TIMEOUT + GROUP_PING_INTERVAL)
 #define GROUP_CLOSE_CONNECTIONS 6
 
@@ -392,9 +392,6 @@ int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernum
  * Return -1 on failure.
  */
 int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
-
-/* Return 1 if peernumber is valid, 0 otherwise. */
-int peernumber_valid(const GC_Chat *chat, int peernumber);
 
 int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
                         const uint8_t *data, uint32_t length);

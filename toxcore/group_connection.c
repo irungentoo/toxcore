@@ -228,9 +228,6 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum)
     if (!chat)
         return -1;
 
-    if (!peernumber_valid(chat, peernum))
-        return -1;
-
     GC_Connection *gconn = &chat->gcc[peernum];
 
     if (!gconn)
@@ -262,7 +259,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
         if (gconn->send_ary[i].data == NULL)
             continue;
 
-        if (tm == gconn->send_ary[i].last_send_try)
+        if (tm == gconn->send_ary[i].last_send_try || tm == gconn->send_ary[i].time_added + 1)
             continue;
 
         gconn->send_ary[i].last_send_try = tm;
@@ -272,6 +269,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
         if (power_of_2(delta)) {
             sendpacket(chat->net, chat->group[peernum].ip_port, gconn->send_ary[i].data,
                        gconn->send_ary[i].data_length);
+            fprintf(stderr, "resending message_id %llu\n", gconn->send_ary[i].message_id);
             continue;
         }
 
