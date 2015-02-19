@@ -50,8 +50,7 @@ typedef enum {
     IDResponse,
     IDError,
     IDCapabilities,
-    IDMVFSZ,
-    IDMVFPSZ,
+    IDVFPSZ,
 
 } MSIHeaderID;
 
@@ -79,8 +78,7 @@ GENERIC_HEADER ( Request, MSIRequest );
 GENERIC_HEADER ( Response, MSIResponse );
 GENERIC_HEADER ( Error, MSIError );
 GENERIC_HEADER ( Capabilities, uint8_t );
-GENERIC_HEADER ( MVFSZ, uint16_t );
-GENERIC_HEADER ( MVFPSZ, uint16_t );
+GENERIC_HEADER ( VFPSZ, uint16_t );
 
 
 typedef struct {
@@ -88,8 +86,7 @@ typedef struct {
     MSIHeaderResponse     response;
     MSIHeaderError        error;
     MSIHeaderCapabilities capabilities;
-    MSIHeaderMVFSZ        mvfsz;  /* Max video frame size. NOTE: Value must be in network b-order */
-    MSIHeaderMVFPSZ       mvfpsz; /* Max video frame piece size. NOTE: Value must be in network b-order */
+    MSIHeaderVFPSZ        vfpsz; /* Video frame piece size. NOTE: Value must be in network b-order */
 } MSIMessage;
 
 
@@ -200,12 +197,9 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
     
     msg_invite.capabilities.exists = true;
     msg_invite.capabilities.value = capabilities;
-    
-    msg_invite.mvfsz.exists = true;
-    msg_invite.mvfsz.value = htons(D_MVFSZ);
-    
-    msg_invite.mvfpsz.exists = true;
-    msg_invite.mvfpsz.value = htons(D_MVFPSZ);
+        
+    msg_invite.vfpsz.exists = true;
+    msg_invite.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
     
     send_message ( (*call)->session->messenger, (*call)->friend_id, &msg_invite );
     
@@ -216,7 +210,7 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
 }
 int msi_hangup ( MSICall* call )
 {
-    LOGGER_DEBUG("Session: %p Hanging up call: %u", session, call_index);
+    LOGGER_DEBUG("Session: %p Hanging up call with friend: %u", call->session, call->friend_id);
     
     MSIMessage msg_end;
     msg_end.request.exists = true;
@@ -244,11 +238,8 @@ int msi_answer ( MSICall* call, uint8_t capabilities )
     msg_starting.capabilities.exists = true;
     msg_starting.capabilities.value = capabilities;
     
-    msg_starting.mvfsz.exists = true;
-    msg_starting.mvfsz.value = htons(D_MVFSZ);
-    
-    msg_starting.mvfpsz.exists = true;
-    msg_starting.mvfpsz.value = htons(D_MVFPSZ);
+    msg_starting.vfpsz.exists = true;
+    msg_starting.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
     
     send_message ( call->session->messenger, call->friend_id, &msg_starting );
     
@@ -256,7 +247,7 @@ int msi_answer ( MSICall* call, uint8_t capabilities )
 }
 int msi_reject ( MSICall* call )
 {
-    LOGGER_DEBUG("Session: %p Rejecting call: %u; reason: %s", session, call_index, reason ? reason : "Unknown");
+    LOGGER_DEBUG("Session: %p Rejecting call with friend: %u", call->session, call->friend_id);
     
     if ( call->state != msi_CallRequested ) {
         LOGGER_ERROR("Call is in invalid state!");
@@ -353,14 +344,9 @@ int msg_parse_in ( MSIMessage *dest, const uint8_t *data, uint16_t length )
                 SET_UINT8(it, dest->capabilities);
                 break;
             
-            case IDMVFSZ:
+            case IDVFPSZ:
                 CHECK_SIZE(it, size_constraint, 2);
-                SET_UINT16(it, dest->mvfsz);
-                break;
-                
-            case IDMVFPSZ:
-                CHECK_SIZE(it, size_constraint, 2);
-                SET_UINT16(it, dest->mvfpsz);
+                SET_UINT16(it, dest->vfpsz);
                 break;
                 
             default:
@@ -408,33 +394,28 @@ int send_message ( Messenger* m, uint32_t friend_id, const MSIMessage *msg )
     if (msg->request.exists) {
         uint8_t cast = msg->request.value;
         it = msg_parse_header_out(IDRequest, it, &cast, 
-                          sizeof(cast), &size);
+                                  sizeof(cast), &size);
     }
     
     if (msg->response.exists) {
         uint8_t cast = msg->response.value;
         it = msg_parse_header_out(IDResponse, it, &cast, 
-                          sizeof(cast), &size);
+                                  sizeof(cast), &size);
     }
     
     if (msg->error.exists) {
         it = msg_parse_header_out(IDError, it, &msg->error.value, 
-                          sizeof(msg->error.value), &size);
+                                  sizeof(msg->error.value), &size);
     }
     
     if (msg->capabilities.exists) {
         it = msg_parse_header_out(IDCapabilities, it, &msg->capabilities.value, 
-                          sizeof(msg->capabilities.value), &size);
+                                  sizeof(msg->capabilities.value), &size);
     }
     
-    if (msg->mvfsz.exists) {
-        it = msg_parse_header_out(IDMVFSZ, it, &msg->mvfsz.value,
-                          sizeof(msg->mvfsz.value), &size);
-    }
-    
-    if (msg->mvfpsz.exists) {
-        it = msg_parse_header_out(IDMVFPSZ, it, &msg->mvfpsz.value,
-                          sizeof(msg->mvfpsz.value), &size);
+    if (msg->vfpsz.exists) {
+        it = msg_parse_header_out(IDVFPSZ, it, &msg->vfpsz.value,
+                                  sizeof(msg->vfpsz.value), &size);
     }
     
     *it = 0;
@@ -494,6 +475,7 @@ MSICall *new_call ( MSISession *session, uint32_t friend_id )
     if (rc == NULL)
         return NULL;
     
+    rc->session = session;
     rc->friend_id = friend_id;
     
     if (session->calls == NULL) { /* Creating */
@@ -617,28 +599,14 @@ int handle_recv_invite ( MSICall *call, const MSIMessage *msg )
         
         LOGGER_DEBUG("Glare detected!");
         
-        if (!msg->mvfsz.exists) {
-            LOGGER_WARNING("Session: %p Invalid mvfsz on 'invite'");
-            call->error = msi_InvalidMessage;
-            return -1;
-        }
-        
-        if (!msg->mvfpsz.exists) {
+        if (!msg->vfpsz.exists) {
             LOGGER_WARNING("Session: %p Invalid mvfpsz on 'invite'");
             call->error = msi_InvalidMessage;
             return -1;
         }
         
         call->peer_capabilities = msg->capabilities.value;
-        
-        call->peer_mvfsz = ntohs(msg->mvfsz.value);
-        call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
-        
-        if (call->peer_mvfsz > call->peer_mvfpsz) {
-            LOGGER_WARNING("Session: %p mvfsz param greater than mvfpsz on 'invite'");
-            call->error = msi_InvalidParam;
-            return -1;
-        }
+        call->peer_vfpsz = ntohs(msg->vfpsz.value);
         
         /* Send response */
         response.response.value = resp_starting;
@@ -665,24 +633,14 @@ int handle_recv_invite ( MSICall *call, const MSIMessage *msg )
         return 0;
     }
     
-    
-    if (!msg->mvfsz.exists) {
-        LOGGER_WARNING("Session: %p Invalid mvfsz on 'invite'");
-        call->error = msi_InvalidMessage;
-        return -1;
-    }
-    
-    if (!msg->mvfpsz.exists) {
+    if (!msg->vfpsz.exists) {
         LOGGER_WARNING("Session: %p Invalid mvfpsz on 'invite'");
         call->error = msi_InvalidMessage;
         return -1;
     }
     
     call->peer_capabilities = msg->capabilities.value;
-    
-    call->peer_mvfsz = ntohs(msg->mvfsz.value);
-    call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
-    
+    call->peer_vfpsz = ntohs(msg->vfpsz.value);
     call->state = msi_CallRequested;
     
     /* Send response */
@@ -781,31 +739,16 @@ int handle_recv_starting ( MSICall *call, const MSIMessage *msg )
             return -1;
         }
         
-        if (!msg->mvfsz.exists) {
-            LOGGER_WARNING("Session: %p Invalid mvfsz on 'invite'");
-            call->error = msi_InvalidParam;
-            return -1;
-        }
-        
-        if (!msg->mvfpsz.exists) {
+        if (!msg->vfpsz.exists) {
             LOGGER_WARNING("Session: %p Invalid mvfpsz on 'invite'");
             call->error = msi_InvalidParam;
             return -1;
         }
         
         call->peer_capabilities = msg->capabilities.value;
-        
-        call->peer_mvfsz = ntohs(msg->mvfsz.value);
-        call->peer_mvfpsz = ntohs(msg->mvfpsz.value);
-        
-        
-        if (call->peer_mvfsz > call->peer_mvfpsz) {
-            LOGGER_WARNING("Session: %p mvfsz param greater than mvfpsz on 'invite'");
-            call->error = msi_InvalidParam;
-            return -1;
-        }
-        
+        call->peer_vfpsz = ntohs(msg->vfpsz.value);
         call->state = msi_CallActive;
+        
         invoke_callback(call, msi_OnStart);
     }
     /* Otherwise it's a glare case so don't start until 'start' is recved */

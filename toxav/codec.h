@@ -86,13 +86,12 @@ typedef struct CSSession_s {
 
     /* Data handling */
     uint8_t *frame_buf; /* buffer for split video payloads */
-    uint32_t frame_size; /* largest address written to in frame_buf for current input frame*/
+    uint32_t frame_size; /* largest address written to in frame_buf for current input frame */
     uint8_t  frameid_in, frameid_out; /* id of input and output video frame */
     uint32_t last_timestamp; /* calculating cycles */
 
     /* Limits */
-    uint32_t video_frame_piece_size;
-    uint32_t max_video_frame_size;
+    uint32_t peer_video_frame_piece_size;
 
     /* Splitting */
     uint8_t *split_video_frame;
@@ -129,8 +128,7 @@ typedef struct CSSession_s {
         *
         */
     void *agent; /* Pointer to ToxAV TODO make this pointer to ToxAV*/
-    int32_t call_idx;
-    int32_t friend_number;
+    int32_t friend_id;
     
     PAIR(toxav_receive_audio_frame_cb *, void *) acb; /* Audio frame receive callback */
     PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
@@ -145,7 +143,7 @@ typedef struct CSSession_s {
 void cs_do(CSSession *cs);
 
 /* Make sure to be called BEFORE corresponding rtp_new */
-CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, uint32_t p_video_b);
+CSSession *cs_new(uint32_t peer_mvfpsz);
 /* Make sure to be called AFTER corresponding rtp_kill */
 void cs_kill(CSSession *cs);
 

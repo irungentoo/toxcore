@@ -28,9 +28,8 @@
 #include "codec.h"
 #include "../toxcore/Messenger.h"
 
-/** Preconfigured values for video splitting */
-#define D_MVFSZ     40000   /* 256KiB */
-#define D_MVFPSZ    500     /* 1.25 KiB*/
+/** Preconfigured value for video splitting */
+#define VIDEOFRAME_PIECE_SIZE    500     /* 1.25 KiB*/
 
 /**
  * Error codes.
@@ -87,15 +86,10 @@ typedef struct MSICall_s {
     struct MSISession_s *session;           /* Session pointer */
 
     MSICallState         state;
-    
     uint8_t              peer_capabilities; /* Peer capabilities */
     uint8_t              self_capabilities; /* Self capabilities */
-    
-    uint16_t             peer_mvfsz;        /* Max video frame size */
-    uint16_t             peer_mvfpsz;       /* Max video frame part size */
-    
+    uint16_t             peer_vfpsz;        /* Video frame piece size */
     uint32_t             friend_id;         /* Index of this call in MSISession */
-    
     MSIError             error;             /* Last error */
     
     void*                av_call;           /* Pointer to av call handler */

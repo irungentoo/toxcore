@@ -44,9 +44,7 @@
 #define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
 #define MAX_DECODE_TIME_US 0
 
-// TODO this has to be exchanged in msi
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
-#define VIDEOFRAME_PIECE_SIZE 0x500 /* 1.25 KiB*/
 #define VIDEOFRAME_HEADER_SIZE 0x2
 
 /* FIXME: Might not be enough */
@@ -296,7 +294,7 @@ void cs_do(CSSession *cs)
                 LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
             } else if (cs->acb.first) {
                 /* Play */
-                cs->acb.first(cs->agent, cs->friend_number, tmp, rc, 
+                cs->acb.first(cs->agent, cs->friend_id, tmp, rc, 
                             cs->last_pack_channels, cs->last_packet_sampling_rate, cs->acb.second);
             }
             
@@ -323,7 +321,7 @@ void cs_do(CSSession *cs)
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(cs->v_decoder, &iter)) {
                 if (cs->vcb.first) 
-                    cs->vcb.first(cs->agent, cs->call_idx, dest->d_w, dest->d_h, 
+                    cs->vcb.first(cs->agent, cs->friend_id, dest->d_w, dest->d_h, 
                                   (const uint8_t**)dest->planes, dest->stride, cs->vcb.second);
                 
                 vpx_img_free(dest);
@@ -336,7 +334,7 @@ void cs_do(CSSession *cs)
     pthread_mutex_unlock(cs->queue_mutex);
 }
 
-CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, uint32_t p_video_b)
+CSSession *cs_new(uint32_t peer_video_frame_piece_size)
 {
     CSSession *cs = calloc(sizeof(CSSession), 1);
     
@@ -345,29 +343,7 @@ CSSession *cs_new(uint32_t s_audio_b, uint32_t p_audio_b, uint32_t s_video_b, ui
         return NULL;
     }
     
-    /* TODO this has to be exchanged in msi */
-    cs->max_video_frame_size = MAX_VIDEOFRAME_SIZE;
-    cs->video_frame_piece_size = VIDEOFRAME_PIECE_SIZE;
-    
-    if (s_audio_b > 0 && 0 != cs_enable_audio_sending(cs, s_audio_b, 2)) { /* Sending audio enabled */
-        LOGGER_WARNING("Failed to enable audio sending!");
-        goto FAILURE;
-    }
-    
-    if (p_audio_b > 0 && 0 != cs_enable_audio_receiving(cs)) { /* Receiving audio enabled */
-        LOGGER_WARNING("Failed to enable audio receiving!");
-        goto FAILURE;
-    }
-    
-    if (s_video_b > 0 && 0 != cs_enable_video_sending(cs, s_video_b)) { /* Sending video enabled */
-        LOGGER_WARNING("Failed to enable video sending!");
-        goto FAILURE;
-    }
-    
-    if (p_video_b > 0  && 0 != cs_enable_video_receiving(cs)) { /* Receiving video enabled */
-        LOGGER_WARNING("Failed to enable video receiving!");
-        goto FAILURE;
-    }
+    cs->peer_video_frame_piece_size = peer_video_frame_piece_size;
     
     return cs;
     
@@ -415,22 +391,22 @@ int cs_update_video_splitter_cycle(CSSession *cs, const uint8_t *payload, uint16
     cs->processing_video_frame = payload;
     cs->processing_video_frame_size = length;
     
-    return ((length - 1) / cs->video_frame_piece_size) + 1;
+    return ((length - 1) / VIDEOFRAME_PIECE_SIZE) + 1;
 }
 
 const uint8_t *cs_iterate_split_video_frame(CSSession *cs, uint16_t *size)
 {
     if (!cs || !size) return NULL;
 
-    if (cs->processing_video_frame_size > cs->video_frame_piece_size) {
+    if (cs->processing_video_frame_size > VIDEOFRAME_PIECE_SIZE) {
         memcpy(cs->split_video_frame + VIDEOFRAME_HEADER_SIZE,
                cs->processing_video_frame,
-               cs->video_frame_piece_size);
+               VIDEOFRAME_PIECE_SIZE);
 
-        cs->processing_video_frame += cs->video_frame_piece_size;
-        cs->processing_video_frame_size -= cs->video_frame_piece_size;
+        cs->processing_video_frame += VIDEOFRAME_PIECE_SIZE;
+        cs->processing_video_frame_size -= VIDEOFRAME_PIECE_SIZE;
 
-        *size = cs->video_frame_piece_size + VIDEOFRAME_HEADER_SIZE;
+        *size = VIDEOFRAME_PIECE_SIZE + VIDEOFRAME_HEADER_SIZE;
     } else {
         memcpy(cs->split_video_frame + VIDEOFRAME_HEADER_SIZE,
                cs->processing_video_frame,
@@ -492,7 +468,7 @@ int cs_set_sending_video_bitrate(CSSession *cs, uint32_t bitrate)
     if (cfg.rc_target_bitrate == bitrate)
         return 0;
 
-    LOGGER_DEBUG("New video bitrate: %u", video_bitrate);
+    LOGGER_DEBUG("New video bitrate: %u", bitrate);
     cfg.rc_target_bitrate = bitrate;
     
     int rc = vpx_codec_enc_config_set(cs->v_encoder, &cfg);
@@ -528,7 +504,7 @@ int cs_enable_video_sending(CSSession* cs, uint32_t bitrate)
     /* So that we can use cs_disable_video_sending to clean up */
     cs->v_encoding = true;
     
-    if ( !(cs->split_video_frame = calloc(cs->video_frame_piece_size + VIDEOFRAME_HEADER_SIZE, 1)) )
+    if ( !(cs->split_video_frame = calloc(VIDEOFRAME_PIECE_SIZE + VIDEOFRAME_HEADER_SIZE, 1)) )
         goto FAILURE;
     
     cfg.rc_target_bitrate = bitrate;
@@ -579,7 +555,7 @@ int cs_enable_video_receiving(CSSession* cs)
     /* So that we can use cs_disable_video_sending to clean up */
     cs->v_decoding = true;
     
-    if ( !(cs->frame_buf = calloc(cs->max_video_frame_size, 1)) ) 
+    if ( !(cs->frame_buf = calloc(MAX_VIDEOFRAME_SIZE, 1)) ) 
         goto FAILURE;
     
     if ( !(cs->vbuf_raw = buffer_new(VIDEO_DECODE_BUFFER_SIZE)) ) 
@@ -837,10 +813,10 @@ void queue_message(RTPSession *session, RTPMessage *msg)
 
         uint8_t piece_number = packet[1];
 
-        uint32_t length_before_piece = ((piece_number - 1) * cs->video_frame_piece_size);
+        uint32_t length_before_piece = ((piece_number - 1) * cs->peer_video_frame_piece_size);
         uint32_t framebuf_new_length = length_before_piece + (packet_size - VIDEOFRAME_HEADER_SIZE);
 
-        if (framebuf_new_length > cs->max_video_frame_size) {
+        if (framebuf_new_length > MAX_VIDEOFRAME_SIZE) {
             goto end;
         }
 
@@ -851,9 +827,8 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                packet + VIDEOFRAME_HEADER_SIZE,
                packet_size - VIDEOFRAME_HEADER_SIZE);
 
-        if (framebuf_new_length > cs->frame_size) {
+        if (framebuf_new_length > cs->frame_size)
             cs->frame_size = framebuf_new_length;
-        }
 
 end:
         rtp_free_msg(NULL, msg);

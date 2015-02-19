@@ -317,7 +317,6 @@ int toxav_prepare_transmission ( ToxAv *av, int32_t call_index, int support_vide
     }
 
     call->cs->agent = av;
-    call->cs->call_idx = call_index;
 
     call->cs->acb.first = av->acb.first;
     call->cs->acb.second = av->acb.second;
