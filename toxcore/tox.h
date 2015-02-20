@@ -238,7 +238,7 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
 /**
  * Maximum length of a single message after which it should be split.
  */
-#define TOX_MAX_MESSAGE_LENGTH          1368
+#define TOX_MAX_MESSAGE_LENGTH          1372
 
 /**
  * Maximum size of custom packets. TODO: should be LENGTH?
