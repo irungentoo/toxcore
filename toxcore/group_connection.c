@@ -45,7 +45,7 @@ static void rm_from_ary(struct GC_Message_Ary *ary, uint32_t idx)
 }
 
 /* Returns ary index for message_id */
-uint16_t get_ary_index(const struct GC_Message_Ary *ary, uint64_t message_id)
+uint16_t get_ary_index(uint64_t message_id)
 {
     return message_id % GCC_BUFFER_SIZE;
 }
@@ -99,7 +99,7 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
     if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (gconn->send_ary_start - 1))
         return -1;
 
-    uint16_t idx = get_ary_index(gconn->send_ary, gconn->send_message_id);
+    uint16_t idx = get_ary_index(gconn->send_message_id);
 
     if (gconn->send_ary[idx].data != NULL)
         return -1;
@@ -122,7 +122,7 @@ int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id)
     if (!gconn)
         return -1;
 
-    uint16_t idx = get_ary_index(gconn->send_ary, message_id);
+    uint16_t idx = get_ary_index(message_id);
 
     if (gconn->send_ary[idx].data == NULL)
         return -1;
@@ -165,7 +165,7 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
 
     /* we're missing an older message from this peer so we store it in recv_ary */
     if (message_id > gconn->recv_message_id + 1) {
-        uint16_t idx = get_ary_index(gconn->recv_ary, message_id);
+        uint16_t idx = get_ary_index(message_id);
 
         if (gconn->recv_ary[idx].data != NULL)
             return -1;
@@ -190,19 +190,19 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
         return -1;
 
     int ret = -1;
-    const uint8_t *client_id = chat->group[peernum].client_id;
+    const uint8_t *public_key = chat->group[peernum].public_key;
     const uint8_t *data = gconn->recv_ary[idx].data;
     uint32_t length = gconn->recv_ary[idx].data_length;
 
     switch (gconn->recv_ary[idx].packet_type) {
         case GP_BROADCAST:
-            ret = handle_gc_broadcast(m, groupnum, chat->group[peernum].ip_port, client_id, peernum, data, length);
+            ret = handle_gc_broadcast(m, groupnum, chat->group[peernum].ip_port, public_key, peernum, data, length);
             break;
         case GP_SYNC_REQUEST:
-            ret = handle_gc_sync_request(m, groupnum, client_id, peernum, data, length);
+            ret = handle_gc_sync_request(m, groupnum, public_key, peernum, data, length);
             break;
         case GP_SYNC_RESPONSE:
-            ret = handle_gc_sync_response(m, groupnum, client_id, data, length);
+            ret = handle_gc_sync_response(m, groupnum, public_key, data, length);
             break;
         case GP_NEW_PEER:
             ret = handle_gc_new_peer(m, groupnum, chat->group[peernum].ip_port, data, length, gconn->recv_ary[idx].message_id);

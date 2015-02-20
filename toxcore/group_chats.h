@@ -130,7 +130,7 @@ enum {
 typedef struct {
     IP_Port     ip_port;
 
-    uint8_t     client_id[EXT_PUBLIC_KEY];
+    uint8_t     public_key[EXT_PUBLIC_KEY];
 
     uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
     uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
@@ -151,12 +151,12 @@ typedef struct {
 
 // TODO shouldn't be neccessarry
 typedef struct {
-    uint8_t     client_id[EXT_PUBLIC_KEY];
+    uint8_t     public_key[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
 } GC_PeerAddress;
 
 typedef struct {
-    uint8_t     client_id[EXT_PUBLIC_KEY];
+    uint8_t     public_key[EXT_PUBLIC_KEY];
     uint8_t     role;
 } GC_ChatOps;
 

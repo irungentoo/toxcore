@@ -57,19 +57,18 @@
 
 /* Holds nodes that we receive when we send a request, used to join groups */
 struct GC_AnnounceRequest {
-    uint8_t chat_id[EXT_PUBLIC_KEY];
     GC_Announce_Node nodes[MAX_GCA_SENT_NODES];
     uint64_t req_id;
     uint64_t time_added;
     bool ready;
-
-    uint8_t long_pk[EXT_PUBLIC_KEY];
-    uint8_t long_sk[EXT_SECRET_KEY];
+    uint8_t chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t self_public_key[EXT_PUBLIC_KEY];
+    uint8_t self_secret_key[EXT_SECRET_KEY];
 };
 
 /* Holds announced nodes we get via announcements */
 struct GC_AnnouncedNode {
-    uint8_t chat_id[EXT_PUBLIC_KEY];
+    uint8_t chat_public_key[EXT_PUBLIC_KEY];
     GC_Announce_Node node;
     uint64_t last_rcvd_ping;
     uint64_t last_sent_ping;
@@ -253,10 +252,10 @@ static int wrap_gca_packet(const uint8_t *send_public_key, const uint8_t *send_s
     return GCA_HEADER_SIZE + len;
 }
 
-static int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, const GC_Announce_Node node);
+static int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_pk, const GC_Announce_Node node);
 
 static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *nodes, int nclosest,
-                                            const uint8_t *chat_id, const uint8_t *sender_pk, const uint8_t *data,
+                                            const uint8_t *chat_pk, const uint8_t *sender_pk, const uint8_t *data,
                                             uint32_t length, bool self)
 {
     uint8_t packet[length + GCA_HEADER_SIZE];
@@ -264,7 +263,7 @@ static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *
 
     /* Relay announce request to all nclosest nodes if self announce */
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, nodes[i].public_key, sender_pk) != 1)
+        if (!self && id_closest(chat_pk, nodes[i].public_key, sender_pk) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
@@ -277,30 +276,30 @@ static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *
             ++sent;
     }
 
-    /* Add to announcements if we're the closest node to chat_id and we aren't the announcer */
+    /* Add to announcements if we're the closest node to chat_public_key and we aren't the announcer */
     if (sent == 0 && !self) {
-        uint8_t chat_id[EXT_PUBLIC_KEY];
-        memcpy(chat_id, data + 1, EXT_PUBLIC_KEY);
+        uint8_t chat_pk[EXT_PUBLIC_KEY];
+        memcpy(chat_pk, data + 1, EXT_PUBLIC_KEY);
 
         GC_Announce_Node node;
         if (unpack_gca_nodes(&node, 1, 0, data + 1 + EXT_PUBLIC_KEY, length - 1 - EXT_PUBLIC_KEY, 0) != 1)
             return -1;
 
-        add_gc_announced_node(announce, chat_id, node);
+        add_gc_announced_node(announce, chat_pk, node);
     }
 
     return sent;
 }
 
 static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format *nodes, int nclosest,
-                                             const uint8_t *chat_id, const uint8_t *sender_pk, const uint8_t *data,
+                                             const uint8_t *chat_pk, const uint8_t *sender_pk, const uint8_t *data,
                                              uint32_t length, bool self)
 {
     uint8_t packet[length + GCA_HEADER_SIZE];
     int i, sent = 0;
 
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, nodes[i].public_key, sender_pk) != 1)
+        if (!self && id_closest(chat_pk, nodes[i].public_key, sender_pk) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
@@ -316,11 +315,11 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format 
 }
 
 /* Returns the number of sent packets */
-static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const uint8_t *sender_pk,
+static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_pk, const uint8_t *sender_pk,
                            const uint8_t *data, uint32_t length, uint8_t packet_type, bool self)
 {
     Node_format nodes[MAX_SENT_NODES];
-    int nclosest = get_close_nodes(announce->dht, chat_id, nodes, 0, 1, 1);
+    int nclosest = get_close_nodes(announce->dht, chat_pk, nodes, 0, 1, 1);
 
     if (nclosest > MAX_GCA_SENT_NODES)
         nclosest = MAX_GCA_SENT_NODES;
@@ -328,10 +327,10 @@ static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const 
         return -1;
 
     if (packet_type == NET_PACKET_GCA_ANNOUNCE)
-        return dispatch_packet_announce_request(announce, nodes, nclosest, chat_id, sender_pk, data, length, self);
+        return dispatch_packet_announce_request(announce, nodes, nclosest, chat_pk, sender_pk, data, length, self);
 
     if (packet_type == NET_PACKET_GCA_GET_NODES)
-        return dispatch_packet_get_nodes_request(announce, nodes, nclosest, chat_id, sender_pk, data, length, self);
+        return dispatch_packet_get_nodes_request(announce, nodes, nclosest, chat_pk, sender_pk, data, length, self);
 
     return -1;
 }
@@ -353,7 +352,7 @@ static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node 
 
         for (j = 0; j < nodes_num; j++) {
             if (ipport_isset(&node[j].ip_port)
-                && memcmp(announce->self_requests[i].long_pk, node[j].public_key, EXT_PUBLIC_KEY) != 0) {
+                && memcmp(announce->self_requests[i].self_public_key, node[j].public_key, EXT_PUBLIC_KEY) != 0) {
                 memcpy(announce->self_requests[i].nodes[j].public_key, node[j].public_key, EXT_PUBLIC_KEY);
                 ipport_copy(&announce->self_requests[i].nodes[j].ip_port, &node[j].ip_port);
                 announce->self_requests[i].ready = true;
@@ -366,7 +365,7 @@ static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node 
     return -1;
 }
 
-static int add_announced_nodes_helper(GC_Announce *announce, const uint8_t *chat_id,
+static int add_announced_nodes_helper(GC_Announce *announce, const uint8_t *chat_pk,
                                       const GC_Announce_Node node, int idx, bool update)
 {
     uint64_t timestamp = unix_time();
@@ -380,14 +379,14 @@ static int add_announced_nodes_helper(GC_Announce *announce, const uint8_t *chat
         return idx;
 
     memcpy(announce->announcements[idx].node.public_key, node.public_key, EXT_PUBLIC_KEY);
-    memcpy(announce->announcements[idx].chat_id, chat_id, EXT_PUBLIC_KEY);
+    memcpy(announce->announcements[idx].chat_public_key, chat_pk, EXT_PUBLIC_KEY);
 
     return idx;
 }
 
 /* Add announced node to announcements.
    If no slots are free replace the oldest node. */
-static int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, const GC_Announce_Node node)
+static int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_pk, const GC_Announce_Node node)
 {
     int i, oldest_idx = 0;
     uint64_t oldest_announce = 0;
@@ -399,20 +398,20 @@ static int add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, 
         }
 
         if (id_long_equal(announce->announcements[i].node.public_key, node.public_key)
-            && id_long_equal(announce->announcements[i].chat_id, chat_id))
-            return add_announced_nodes_helper(announce, chat_id, node, i, true);
+            && id_long_equal(announce->announcements[i].chat_public_key, chat_pk))
+            return add_announced_nodes_helper(announce, chat_pk, node, i, true);
 
         if (!ipport_isset(&announce->announcements[i].node.ip_port))
-            return add_announced_nodes_helper(announce, chat_id, node, i, false);
+            return add_announced_nodes_helper(announce, chat_pk, node, i, false);
     }
 
-    return add_announced_nodes_helper(announce, chat_id, node, oldest_idx, false);
+    return add_announced_nodes_helper(announce, chat_pk, node, oldest_idx, false);
 }
 
-/* Gets up to MAX_GCA_SENT_NODES nodes that hold chat_id from announcements and add them to nodes array.
+/* Gets up to MAX_GCA_SENT_NODES nodes that hold chat_public_key from announcements and add them to nodes array.
  * Returns the number of added nodes.
  */
-static int get_gc_announced_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes)
+static int get_gc_announced_nodes(GC_Announce *announce, const uint8_t *chat_pk, GC_Announce_Node *nodes)
 {
     int i, j = 0;
 
@@ -420,7 +419,7 @@ static int get_gc_announced_nodes(GC_Announce *announce, const uint8_t *chat_id,
         if (!ipport_isset(&announce->announcements[i].node.ip_port))
             continue;
 
-        if (id_long_equal(announce->announcements[i].chat_id, chat_id)) {
+        if (id_long_equal(announce->announcements[i].chat_public_key, chat_pk)) {
             memcpy(nodes[j].public_key, announce->announcements[i].node.public_key, EXT_PUBLIC_KEY);
             ipport_copy(&nodes[j].ip_port, &announce->announcements[i].node.ip_port);
 
@@ -432,13 +431,13 @@ static int get_gc_announced_nodes(GC_Announce *announce, const uint8_t *chat_id,
     return j;
 }
 
-/* Adds requested nodes that hold chat_id to self_requests.
+/* Adds requested nodes that hold chat_public_key to self_requests.
  *
  * Returns array index on success.
  * Returns -1 on failure.
  */
-static int add_announce_self_request(GC_Announce *announce, const uint8_t *chat_id, uint64_t req_id,
-                                     const uint8_t *self_long_pk, const uint8_t *self_long_sk)
+static int add_announce_self_request(GC_Announce *announce, const uint8_t *chat_pk, uint64_t req_id,
+                                     const uint8_t *self_public_key, const uint8_t *self_secret_key)
 {
     int i;
 
@@ -447,9 +446,9 @@ static int add_announce_self_request(GC_Announce *announce, const uint8_t *chat_
             announce->self_requests[i].ready = 0;
             announce->self_requests[i].req_id = req_id;
             announce->self_requests[i].time_added = unix_time();
-            memcpy(announce->self_requests[i].chat_id, chat_id, EXT_PUBLIC_KEY);
-            memcpy(announce->self_requests[i].long_pk, self_long_pk, EXT_PUBLIC_KEY);
-            memcpy(announce->self_requests[i].long_sk, self_long_sk, EXT_PUBLIC_KEY);
+            memcpy(announce->self_requests[i].chat_public_key, chat_pk, EXT_PUBLIC_KEY);
+            memcpy(announce->self_requests[i].self_public_key, self_public_key, EXT_PUBLIC_KEY);
+            memcpy(announce->self_requests[i].self_secret_key, self_secret_key, EXT_PUBLIC_KEY);
             return i;
         }
     }
@@ -458,19 +457,19 @@ static int add_announce_self_request(GC_Announce *announce, const uint8_t *chat_
 }
 
 /* Announce a new group chat */
-int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_long_pk, const uint8_t *self_long_sk,
-                              const uint8_t *chat_id)
+int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_key, const uint8_t *self_secret_key,
+                              const uint8_t *chat_pk)
 {
     DHT *dht = announce->dht;
 
-    /* packet contains: type, chat_id, node, timestamp, signature */
+    /* packet contains: type, chat_public_key, node, timestamp, signature */
     uint8_t data[1 + EXT_PUBLIC_KEY + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
     data[0] = NET_PACKET_GCA_ANNOUNCE;
 
-    memcpy(data + 1, chat_id, EXT_PUBLIC_KEY);
+    memcpy(data + 1, chat_pk, EXT_PUBLIC_KEY);
 
     GC_Announce_Node self_node;
-    if (make_self_gca_node(dht, &self_node, self_long_pk) == -1)
+    if (make_self_gca_node(dht, &self_node, self_public_key) == -1)
         return -1;
 
     int node_len = pack_gca_nodes(data + 1 + EXT_PUBLIC_KEY, sizeof(GC_Announce_Node), &self_node, 1);
@@ -483,12 +482,12 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_long_pk
     uint32_t length = 1 + EXT_PUBLIC_KEY + node_len + TIME_STAMP_SIZE + SIGNATURE_SIZE;
     uint8_t signed_data[length];
 
-    if (sign_data(data, 1 + EXT_PUBLIC_KEY + node_len, self_long_sk, signed_data) == -1) {
+    if (sign_data(data, 1 + EXT_PUBLIC_KEY + node_len, self_secret_key, signed_data) == -1) {
         fprintf(stderr, "sign_data failed in gca_send_announce_request\n");
         return -1;
     }
 
-    return dispatch_packet(announce, ENC_KEY(chat_id), dht->self_public_key, signed_data,
+    return dispatch_packet(announce, ENC_KEY(chat_pk), dht->self_public_key, signed_data,
                            length, NET_PACKET_GCA_ANNOUNCE, true);
 }
 
@@ -528,22 +527,22 @@ int handle_gca_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint16_t 
                            plain_length, NET_PACKET_GCA_ANNOUNCE, false);
 }
 
-/* Sends a request for nodes that hold chat_id */
-int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_long_pk, const uint8_t *self_long_sk,
-                               const uint8_t *chat_id)
+/* Sends a request for nodes that hold chat_public_key */
+int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_public_key, const uint8_t *self_secret_key,
+                               const uint8_t *chat_pk)
 {
     DHT *dht = announce->dht;
 
-    /* packet contains: type, chat_id, request_id, node, timestamp, signature */
+    /* packet contains: type, chat_public_key, request_id, node, timestamp, signature */
     uint8_t data[1 + EXT_PUBLIC_KEY + RAND_ID_SIZE + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
     data[0] = NET_PACKET_GCA_GET_NODES;
-    memcpy(data + 1, chat_id, EXT_PUBLIC_KEY);
+    memcpy(data + 1, chat_pk, EXT_PUBLIC_KEY);
 
     uint64_t request_id = random_64b();
     U64_to_bytes(data + 1 + EXT_PUBLIC_KEY, request_id);
 
     GC_Announce_Node self_node;
-    if (make_self_gca_node(dht, &self_node, self_long_pk) == -1)
+    if (make_self_gca_node(dht, &self_node, self_public_key) == -1)
         return -1;
 
     int node_len = pack_gca_nodes(data + 1 + EXT_PUBLIC_KEY + RAND_ID_SIZE, sizeof(GC_Announce_Node), &self_node, 1);
@@ -556,17 +555,17 @@ int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_long_p
     uint32_t length = 1 + EXT_PUBLIC_KEY + RAND_ID_SIZE + node_len + TIME_STAMP_SIZE + SIGNATURE_SIZE;
     uint8_t sigdata[length];
 
-    if (sign_data(data, 1 + EXT_PUBLIC_KEY + RAND_ID_SIZE + node_len, self_long_sk, sigdata) == -1) {
+    if (sign_data(data, 1 + EXT_PUBLIC_KEY + RAND_ID_SIZE + node_len, self_secret_key, sigdata) == -1) {
         fprintf(stderr, "gca_send_get_nodes_request sign_data failed\n");
         return -1;
     }
 
-    add_announce_self_request(announce, ENC_KEY(chat_id), request_id, self_long_pk, self_long_sk);
+    add_announce_self_request(announce, ENC_KEY(chat_pk), request_id, self_public_key, self_secret_key);
 
-    return dispatch_packet(announce, chat_id, dht->self_public_key, sigdata, length, NET_PACKET_GCA_GET_NODES, true);
+    return dispatch_packet(announce, chat_pk, dht->self_public_key, sigdata, length, NET_PACKET_GCA_GET_NODES, true);
 }
 
-/* Sends nodes that hold chat_id to node that requested them */
+/* Sends nodes that hold chat_public_key to node that requested them */
 static int send_gca_get_nodes_response(DHT *dht, uint64_t request_id, IP_Port ipp, const uint8_t *receiver_pk,
                                        GC_Announce_Node *nodes, uint32_t num_nodes)
 {
@@ -650,7 +649,7 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
 int handle_gca_get_nodes_response(void *ancp, IP_Port ipp, const uint8_t *packet, uint16_t length)
 {
     // NB: most probably we'll get nodes from different peers, so this would be called several times
-    // TODO: different request_ids for the same chat_id... Probably
+    // TODO: different request_ids for the same chat_public_key... Probably
 
     if (length == 0 || length > MAX_GCA_PACKET_SIZE)
         return -1;
@@ -669,8 +668,8 @@ int handle_gca_get_nodes_response(void *ancp, IP_Port ipp, const uint8_t *packet
 
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; i++) {
         if (announce->self_requests[i].req_id == request_id) {
-            plain_length = unwrap_gca_packet(ENC_KEY(announce->self_requests[i].long_pk),
-                                             ENC_KEY(announce->self_requests[i].long_sk),
+            plain_length = unwrap_gca_packet(ENC_KEY(announce->self_requests[i].self_public_key),
+                                             ENC_KEY(announce->self_requests[i].self_secret_key),
                                              public_key, data, packet[0],packet, length);
             break;
         }
@@ -710,12 +709,12 @@ int handle_gca_get_nodes_response(void *ancp, IP_Port ipp, const uint8_t *packet
 }
 
 /* Get group chat online members, which you searched for with get_announced_nodes_request */
-int gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes)
+int gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_pk, GC_Announce_Node *nodes)
 {
     int i, j, k = 0;
 
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; i++) {
-        if (!id_long_equal(announce->self_requests[i].chat_id, chat_id))
+        if (!id_long_equal(announce->self_requests[i].chat_public_key, chat_pk))
             continue;
 
         if (! (announce->self_requests[i].ready == 1 && announce->self_requests[i].req_id != 0) )
@@ -795,14 +794,14 @@ int handle_gca_ping_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint
     GC_Announce *announce = ancp;
     DHT *dht = announce->dht;
 
-    uint8_t self_client_id[ENC_PUBLIC_KEY];
-    memcpy(self_client_id, packet + 1 + ENC_PUBLIC_KEY, ENC_PUBLIC_KEY);
+    uint8_t self_public_key[ENC_PUBLIC_KEY];
+    memcpy(self_public_key, packet + 1 + ENC_PUBLIC_KEY, ENC_PUBLIC_KEY);
 
     int i;
     bool node_found = false;
 
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; ++i) {
-        if (memcmp(self_client_id, announce->self_requests[i].long_pk, ENC_PUBLIC_KEY) == 0) {
+        if (memcmp(self_public_key, announce->self_requests[i].self_public_key, ENC_PUBLIC_KEY) == 0) {
             node_found = true;
             break;
         }
@@ -813,7 +812,7 @@ int handle_gca_ping_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint
 
     uint8_t data[GCA_PING_REQUEST_PLAIN_SIZE];
     uint8_t public_key[ENC_PUBLIC_KEY];
-    int plain_length = unwrap_gca_packet(dht->self_public_key, announce->self_requests[i].long_sk,
+    int plain_length = unwrap_gca_packet(dht->self_public_key, announce->self_requests[i].self_secret_key,
                                          public_key, data, packet[0], packet, length);
 
     if (plain_length != GCA_PING_REQUEST_PLAIN_SIZE) {
@@ -836,7 +835,7 @@ static int gca_send_ping_request(DHT *dht, GC_Announce_Node *node, uint64_t ping
     if (len == -1)
         return -1;
 
-    /* insert recipient's client_id into packet header after the packet type and dht_pk */
+    /* insert recipient's public key into packet header after the packet type and dht_pk */
     memmove(packet + 1 + ENC_PUBLIC_KEY + ENC_PUBLIC_KEY, packet + 1 + ENC_PUBLIC_KEY, len - 1 - ENC_PUBLIC_KEY);
     memcpy(packet + 1 + ENC_PUBLIC_KEY, node->public_key, ENC_PUBLIC_KEY);
     len += ENC_PUBLIC_KEY;
@@ -877,16 +876,16 @@ void do_gca(GC_Announce *announce)
     ping_gca_nodes(announce);
 }
 
-void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id)
+void gca_cleanup(GC_Announce *announce, const uint8_t *chat_pk)
 {
     int i;
 
-    /* Remove all self_requests for chat_id */
+    /* Remove all self_requests for chat_public_key */
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; ++i) {
         if (! (announce->self_requests[i].ready && announce->self_requests[i].req_id > 0) )
             continue;
 
-        if (id_long_equal(announce->self_requests[i].chat_id, chat_id))
+        if (id_long_equal(announce->self_requests[i].chat_public_key, chat_pk))
             memset(&announce->self_requests[i], 0, sizeof(struct GC_AnnounceRequest));
     }
 }

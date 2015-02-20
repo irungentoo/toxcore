@@ -66,7 +66,7 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
                             uint8_t packet_type, uint64_t message_id);
 
 /* Returns ary index for message_id */
-uint16_t get_ary_index(const struct GC_Message_Ary *ary, uint64_t message_id);
+uint16_t get_ary_index(uint64_t message_id);
 
 /* Removes send_ary item with message_id.
  *
