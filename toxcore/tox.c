@@ -791,4 +791,21 @@ void tox_callback_read_receipt(Tox *tox, tox_read_receipt_cb *function, void *us
     m_callback_read_receipt(m, function, user_data);
 }
 
+void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_friendrequest(m, function, user_data);
+}
+
+void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_friendmessage(m, function, user_data);
+}
+
+void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_action(m, function, user_data);
+}
 
