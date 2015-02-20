@@ -358,7 +358,19 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    return m->friendlist[friendnumber].status == FRIEND_ONLINE;
+    if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
+        uint8_t direct_connected = 0;
+        crypto_connection_status(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                 m->friendlist[friendnumber].friendcon_id), &direct_connected);
+
+        if (direct_connected) {
+            return CONNECTION_UDP;
+        } else {
+            return CONNECTION_TCP;
+        }
+    } else {
+        return CONNECTION_NONE;
+    }
 }
 
 int m_friend_exists(const Messenger *m, int32_t friendnumber)
@@ -969,6 +981,23 @@ void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, uint32_
     m->avatar_data_recv_userdata = userdata;
 }
 
+static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
+{
+    int last_connection_udp_tcp = m->friendlist[friendnumber].last_connection_udp_tcp;
+
+    int ret = m_get_friend_connectionstatus(m, friendnumber);
+
+    if (ret == -1)
+        return;
+
+    if (last_connection_udp_tcp != ret) {
+        if (m->friend_connectionstatuschange)
+            m->friend_connectionstatuschange(m, friendnumber, ret, m->friend_connectionstatuschange_userdata);
+    }
+
+    m->friendlist[friendnumber].last_connection_udp_tcp = ret;
+}
+
 static void break_files(const Messenger *m, int32_t friendnumber);
 static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, uint8_t status)
 {
@@ -988,8 +1017,7 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
 
         m->friendlist[friendnumber].status = status;
 
-        if (m->friend_connectionstatuschange)
-            m->friend_connectionstatuschange(m, friendnumber, is_online, m->friend_connectionstatuschange_userdata);
+        check_friend_tcp_udp(m, friendnumber);
 
         if (m->friend_connectionstatuschange_internal)
             m->friend_connectionstatuschange_internal(m, friendnumber, is_online,
@@ -2316,6 +2344,8 @@ void do_friends(Messenger *m)
             if (m->friendlist[i].share_relays_lastsent + FRIEND_SHARE_RELAYS_INTERVAL < temp_time) {
                 send_relays(m, i);
             }
+
+            check_friend_tcp_udp(m, i);
         }
     }
 }

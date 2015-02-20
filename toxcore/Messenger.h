@@ -114,6 +114,12 @@ enum {
 #define AVATAR_DATA_TRANSFER_TIMEOUT    (60) /* 164kB every 60 seconds is not a lot */
 
 
+enum {
+    CONNECTION_NONE,
+    CONNECTION_TCP,
+    CONNECTION_UDP
+};
+
 /* USERSTATUS -
  * Represents userstatuses someone can have.
  */
@@ -215,6 +221,7 @@ typedef struct {
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t ping_lastrecv;//TODO remove
     uint64_t share_relays_lastsent;
+    uint8_t last_connection_udp_tcp;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 
@@ -372,8 +379,9 @@ int m_delfriend(Messenger *m, int32_t friendnumber);
 
 /* Checks friend's connecting status.
  *
- *  return 1 if friend is connected to us (Online).
- *  return 0 if friend is not connected to us (Offline).
+ *  return CONNECTION_UDP (2) if friend is directly connected to us (Online UDP).
+ *  return CONNECTION_TCP (1) if friend is connected to us (Online TCP).
+ *  return CONNECTION_NONE (0) if friend is not connected to us (Offline).
  *  return -1 on failure.
  */
 int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber);
