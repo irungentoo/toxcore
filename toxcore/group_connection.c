@@ -95,8 +95,8 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
     if (!LOSSLESS_PACKET(packet_type))
         return -1;
 
-    /* check if send_ary is full. TODO: should probably do something about this */
-    if ((gconn->send_message_id % GCC_BUFFER_SIZE) - gconn->send_ary_start >= GCC_BUFFER_SIZE)
+    /* check if send_ary is full */
+    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (gconn->send_ary_start - 1))
         return -1;
 
     uint16_t idx = get_ary_index(gconn->send_ary, gconn->send_message_id);
@@ -259,17 +259,17 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
         if (gconn->send_ary[i].data == NULL)
             continue;
 
-        if (tm == gconn->send_ary[i].last_send_try || tm == gconn->send_ary[i].time_added + 1)
+        if (tm == gconn->send_ary[i].last_send_try)
             continue;
 
-        gconn->send_ary[i].last_send_try = tm;
         uint64_t delta = gconn->send_ary[i].last_send_try - gconn->send_ary[i].time_added;
+        gconn->send_ary[i].last_send_try = tm;
 
         // FIXME: if this function is called less than once per second this won't be reliable
-        if (power_of_2(delta)) {
+        if (delta > 1 && power_of_2(delta)) {
             sendpacket(chat->net, chat->group[peernum].ip_port, gconn->send_ary[i].data,
                        gconn->send_ary[i].data_length);
-            fprintf(stderr, "resending message_id %llu\n", gconn->send_ary[i].message_id);
+            fprintf(stderr, "resending message_id %llu (peer %u)\n", gconn->send_ary[i].message_id, peernum);
             continue;
         }
 

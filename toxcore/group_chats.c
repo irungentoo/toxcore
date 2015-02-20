@@ -1256,7 +1256,7 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
-    if (ignore != 0 && ignore != 1)
+    if (ignore > 1)
         return -1;
 
     chat->group[peernumber].ignore = ignore;
@@ -1336,8 +1336,6 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
         return -1;
     }
 
-    chat->self_last_rcvd_ping = unix_time();   /* consider any received packet a keepalive */
-
     uint8_t sender_pk[EXT_PUBLIC_KEY];
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint8_t packet_type;
@@ -1347,6 +1345,8 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
                                   &message_id, &packet_type, packet, length);
     if (len <= 0)
         return -1;
+
+    chat->self_last_rcvd_ping = unix_time();   /* consider any received packet a keepalive */
 
     int lossless = -1;
     int peernumber = peer_in_chat(chat, sender_pk);
@@ -1946,7 +1946,7 @@ void do_gc(GC_Session *c)
             do_peer_connections(c->messenger, i);
 
             /* Try to auto-rejoin group if we get disconnected (This won't be necessary with persistent chats) */
-            if (is_timeout(chat->self_last_rcvd_ping, GROUP_SELF_TIMEOUT) && chat->numpeers > 1) {
+            if (is_timeout(chat->self_last_rcvd_ping, GROUP_PEER_TIMEOUT + 5) && chat->numpeers > 2) {
                 if (c->self_timeout)
                     (*c->self_timeout)(c->messenger, i, c->self_timeout_userdata);
 
@@ -1971,12 +1971,13 @@ void do_gc(GC_Session *c)
 
             /* Try to join random node */
             if (num_nodes) {
-                chat->connection_state = CS_CONNECTING;
                 int n = random_int() % num_nodes;
 
                 if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].public_key) == -1)
                     group_delete(c, chat);
             }
+
+            chat->connection_state = CS_CONNECTING;
         }
     }
 
@@ -2197,6 +2198,7 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat)
     new_chat.hash_id = chat->hash_id;
     new_chat.groupnumber = chat->groupnumber;
     new_chat.connection_state = CS_DISCONNECTED;
+    new_chat.net = c->messenger->net;
     create_long_keypair(new_chat.self_public_key, new_chat.self_secret_key);
 
     memcpy(&c->chats[new_chat.groupnumber], &new_chat, sizeof(GC_Chat));
@@ -2208,13 +2210,6 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat)
     }
 
     free(oldself);
-
-    gca_cleanup(c->announce, chat->chat_public_key);
-
-    if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
-        group_delete(c, chat);
-        return -1;
-    }
 
     return chat->groupnumber;
 }
