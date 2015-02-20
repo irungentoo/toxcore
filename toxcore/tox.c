@@ -708,3 +708,87 @@ void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *function, void *
     Messenger *m = tox;
     m_callback_typingchange(m, function, user_data);
 }
+
+bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool is_typing, TOX_ERR_SET_TYPING *error)
+{
+    Messenger *m = tox;
+
+    if (m_set_usertyping(m, friend_number, is_typing) == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SET_TYPING_FRIEND_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_SET_TYPING_OK);
+    return 1;
+}
+
+static void set_message_error(int ret, TOX_ERR_SEND_MESSAGE *error)
+{
+    switch (ret) {
+        case 0:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_OK);
+            break;
+
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_FRIEND_NOT_FOUND);
+            break;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_TOO_LONG);
+            break;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_FRIEND_NOT_CONNECTED);
+            break;
+
+        case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_SENDQ);
+            break;
+    }
+}
+
+uint32_t tox_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
+                          TOX_ERR_SEND_MESSAGE *error)
+{
+    if (!message) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_NULL);
+        return 0;
+    }
+
+    if (!length) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_EMPTY);
+        return 0;
+    }
+
+    Messenger *m = tox;
+    uint32_t message_id = 0;
+    set_message_error(m_sendmessage(m, friend_number, message, length, &message_id), error);
+    return message_id;
+}
+
+uint32_t tox_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
+                         TOX_ERR_SEND_MESSAGE *error)
+{
+    if (!action) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_NULL);
+        return 0;
+    }
+
+    if (!length) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_EMPTY);
+        return 0;
+    }
+
+    Messenger *m = tox;
+    uint32_t message_id = 0;
+    set_message_error(m_sendaction(m, friend_number, action, length, &message_id), error);
+    return message_id;
+}
+
+void tox_callback_read_receipt(Tox *tox, tox_read_receipt_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_read_receipt(m, function, user_data);
+}
+
+

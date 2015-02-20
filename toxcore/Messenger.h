@@ -403,23 +403,27 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber);
 
 /* Send a text chat message to an online friend.
  *
- *  return the message id if packet was successfully put into the send queue.
- *  return 0 if it was not.
+ * return -1 if friend not valid.
+ * return -2 if too large.
+ * return -3 if friend not online.
+ * return -4 if send failed (because queue is full).
+ * return 0 if success.
  *
- *  You will want to retain the return value, it will be passed to your read_receipt callback
- *  if one is received.
+ *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
  */
-uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length);
+int m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length, uint32_t *message_id);
 
 /* Send an action to an online friend.
  *
- *  return the message id if packet was successfully put into the send queue.
- *  return 0 if it was not.
+ * return -1 if friend not valid.
+ * return -2 if too large.
+ * return -3 if friend not online.
+ * return -4 if send failed (because queue is full).
+ * return 0 if success.
  *
- *  You will want to retain the return value, it will be passed to your read_receipt callback
- *  if one is received.
+ *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
  */
-uint32_t m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length);
+int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length, uint32_t *message_id);
 
 /* Set the name and name_length of a friend.
  * name must be a string of maximum MAX_NAME_LENGTH length.

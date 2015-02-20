@@ -366,7 +366,8 @@ static int do_receipts(Messenger *m, int32_t friendnumber)
     while (receipts) {
         struct Receipts *temp_r = receipts->next;
 
-        if (cryptpacket_received(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id), receipts->packet_num) == -1)
+        if (cryptpacket_received(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                 m->friendlist[friendnumber].friendcon_id), receipts->packet_num) == -1)
             break;
 
         if (m->read_receipt)
@@ -450,15 +451,25 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
     return 1;
 }
 
-
-static uint32_t send_message_generic(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length,
-                                     uint8_t packet_id)
+/* Send a packet_id message.
+ *
+ * return -1 if friend not valid.
+ * return -2 if too large.
+ * return -3 if friend not online.
+ * return -4 if send failed (because queue is full).
+ * return 0 if success.
+ */
+static int send_message_generic(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length,
+                                uint8_t packet_id, uint32_t *message_id)
 {
     if (friend_not_valid(m, friendnumber))
-        return 0;
+        return -1;
 
-    if (length >= MAX_CRYPTO_DATA_SIZE || m->friendlist[friendnumber].status != FRIEND_ONLINE)
-        return 0;
+    if (length >= MAX_CRYPTO_DATA_SIZE)
+        return -2;
+
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -3;
 
     uint8_t packet[length + 1];
     packet[0] = packet_id;
@@ -466,10 +477,11 @@ static uint32_t send_message_generic(Messenger *m, int32_t friendnumber, const u
     if (length != 0)
         memcpy(packet + 1, message, length);
 
-    int64_t packet_num = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id), packet, length + 1, 0);
+    int64_t packet_num = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                           m->friendlist[friendnumber].friendcon_id), packet, length + 1, 0);
 
     if (packet_num == -1)
-        return 0;
+        return -4;
 
     uint32_t msg_id = ++m->friendlist[friendnumber].message_id;
 
@@ -478,7 +490,11 @@ static uint32_t send_message_generic(Messenger *m, int32_t friendnumber, const u
     }
 
     add_receipt(m, friendnumber, packet_num, msg_id);
-    return msg_id;
+
+    if (message_id)
+        *message_id = msg_id;
+
+    return 0;
 }
 
 /* Send a text chat message to an online friend.
@@ -486,9 +502,9 @@ static uint32_t send_message_generic(Messenger *m, int32_t friendnumber, const u
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  */
-uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length)
+int m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length, uint32_t *message_id)
 {
-    return send_message_generic(m, friendnumber, message, length, PACKET_ID_MESSAGE);
+    return send_message_generic(m, friendnumber, message, length, PACKET_ID_MESSAGE, message_id);
 }
 
 /* Send an action to an online friend.
@@ -496,9 +512,9 @@ uint32_t m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *messag
  *  return the message id if packet was successfully put into the send queue.
  *  return 0 if it was not.
  */
-uint32_t m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length)
+int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length, uint32_t *message_id)
 {
-    return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION);
+    return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION, message_id);
 }
 
 /* Send a name packet to friendnumber.
