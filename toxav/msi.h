@@ -42,6 +42,7 @@ typedef enum {
     msi_StrayMessage,
     msi_SystemError,
     msi_ErrUndisclosed,
+    msi_HandleError,
 } MSIError;
 
 /**
@@ -70,9 +71,7 @@ typedef enum {
  */
 typedef enum {
     msi_OnInvite, /* Incoming call */
-    msi_OnRinging, /* When peer is ready to accept/reject the call */
     msi_OnStart, /* Call (RTP transmission) started */
-    msi_OnReject, /* The side that was invited rejected the call */
     msi_OnEnd, /* Call that was active ended */
     msi_OnError, /* On protocol error */
     msi_OnPeerTimeout, /* Peer timed out; stop the call */
@@ -100,9 +99,12 @@ typedef struct MSICall_s {
 
 
 /**
- * Msi callback type. 'agent' is a pointer to ToxAv
+ * Msi callback type. 'agent' is a pointer to ToxAv.
+ * Expected return on success is 0, if any other number is
+ * returned the call is considered errored and will be handled
+ * as such which means it will be terminated without any notice.
  */
-typedef void ( *MSICallbackType ) ( void *agent, MSICall* call);
+typedef int ( *MSICallbackType ) ( void *agent, MSICall* call);
 
 /**
  * Control session struct. Please do not modify outside msi.c
@@ -117,7 +119,7 @@ typedef struct MSISession_s {
     Messenger      *messenger;
 
     pthread_mutex_t mutex[1];
-    MSICallbackType callbacks[8];
+    MSICallbackType callbacks[7];
 } MSISession;
 
 /**
@@ -149,11 +151,6 @@ int msi_hangup ( MSICall* call );
  * Answer call request.
  */
 int msi_answer ( MSICall* call, uint8_t capabilities );
-
-/**
- * Reject incoming call. NOTE: 'call' will be freed
- */
-int msi_reject ( MSICall* call );
 
 /**
  * Change capabilities of the call.

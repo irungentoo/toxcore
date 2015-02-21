@@ -478,10 +478,22 @@ void rtp_kill ( RTPSession *session )
     free ( session );
 }
 
-int rtp_register_for_receiving(RTPSession* session)
+int rtp_start_receiving(RTPSession* session)
 {
+    if (session == NULL)
+        return 0;
+    
     return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
                                                rtp_handle_packet, session);
+}
+
+int rtp_stop_receiving(RTPSession* session)
+{
+    if (session == NULL)
+        return 0;
+    
+    return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
+                                               NULL, NULL);
 }
 
 int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )

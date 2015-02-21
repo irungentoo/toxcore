@@ -119,7 +119,12 @@ void rtp_kill ( RTPSession* session );
 /**
  * By default rtp is not in receiving state
  */
-int rtp_register_for_receiving (RTPSession *session);
+int rtp_start_receiving (RTPSession *session);
+
+/**
+ * Pause rtp receiving mode.
+ */
+int rtp_stop_receiving (RTPSession *session);
 
 /**
  * Sends msg to RTPSession::dest

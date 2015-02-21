@@ -187,11 +187,6 @@ bool toxav_answer(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, ui
  ******************************************************************************/
 typedef enum TOXAV_CALL_STATE {
     /**
-     * The friend's client is aware of the call. This happens after calling
-     * toxav_call and the initial call request has been received.
-     */
-    TOXAV_CALL_STATE_RINGING,
-    /**
      * Not sending anything. Either the friend requested that this client stops
      * sending anything, or the client turned off both audio and video by setting
      * the respective bit rates to 0.
