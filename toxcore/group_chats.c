@@ -51,8 +51,6 @@
 #define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + EXT_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + MESSAGE_ID_BYTES + crypto_box_MACBYTES)
 #define MAX_GC_PACKET_SIZE 65507
 
-#define GROUP_JOIN_TIMEOUT 10  // TODO: find ideal value
-
 static int peernumber_valid(const GC_Chat *chat, int peernumber);
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *public_key);
@@ -568,6 +566,9 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
     if (chat == NULL)
         return -1;
 
+    if (chat->connection_state == CS_CONNECTED)
+        return -1;
+
     if (!id_long_equal(public_key, data + SEMI_INVITE_CERT_SIGNED_SIZE)) {
         fprintf(stderr, "id_long_equal failed\n");
         return -1;
@@ -633,6 +634,9 @@ static int handle_gc_invite_response_reject(Messenger *m, int groupnumber, const
     if (chat == NULL)
         return -1;
 
+    if (chat->connection_state == CS_CONNECTED)
+        return -1;
+
     if (length != EXT_PUBLIC_KEY + 1)
         return -1;
 
@@ -672,6 +676,13 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
 
     if (chat == NULL)
         return -1;
+
+    uint64_t tm = unix_time();
+
+    if (chat->last_peer_join_time == tm)
+        return -1;
+
+    chat->last_peer_join_time = tm;
 
     if (chat->numpeers >= chat->maxpeers)
         return gc_invite_response_reject(chat, ipp, public_key, GJ_GROUP_FULL);
@@ -895,6 +906,16 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t
 
     if (chat == NULL)
         return -1;
+
+    if (chat->numpeers >= chat->maxpeers)
+        return -1;
+
+    uint64_t tm = unix_time();
+
+    if (chat->last_peer_join_time == tm)
+        return -1;
+
+    chat->last_peer_join_time = tm;
 
     GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
 
@@ -1931,6 +1952,14 @@ static void ping_group(GC_Chat *chat)
 
 static int rejoin_group(GC_Session *c, GC_Chat *chat);
 
+#define GROUP_JOIN_ATTEMPT_INTERVAL 3
+#define GROUP_GET_NEW_NODES_INTERVAL 10
+#define GROUP_MAX_JOIN_ATTEMPTS (GROUP_GET_NEW_NODES_INTERVAL * 3)
+
+/* If state is CS_CONNECTED peers are pinged, unsent packets are resent, and peer timeouts are checked.
+ * If state is CS_CONNECTING we look for new DHT nodes if our timeout (GROUP_GET_NEW_NODES_INTERVAL) has expired.
+ * If state is CS_DISCONNECTED we send an invite request using a random node if our timeout (GROUP_JOIN_ATTEMPT_INTERVAL) has expired.
+ */
 void do_gc(GC_Session *c)
 {
     if (!c)
@@ -1955,29 +1984,52 @@ void do_gc(GC_Session *c)
         }
 
         else if (chat->connection_state == CS_CONNECTING) {
-            if (is_timeout(chat->self_last_rcvd_ping, GROUP_JOIN_TIMEOUT)) {
-                chat->connection_state = CS_DISCONNECTED;
+            if (chat->join_attempts > GROUP_MAX_JOIN_ATTEMPTS) {
+                group_delete(c, chat);
+
+                if (i >= c->num_chats)
+                    break;
+
+                continue;
+            }
+
+            if (is_timeout(chat->self_last_rcvd_ping, GROUP_GET_NEW_NODES_INTERVAL)) {
+                ++chat->join_attempts;
                 chat->self_last_rcvd_ping = unix_time();
 
                 if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
                                                chat->chat_public_key) == -1)
                     group_delete(c, chat);
+
+                if (i >= c->num_chats)
+                    break;
+
+                continue;
             }
+
+            chat->connection_state = CS_DISCONNECTED;
         }
 
         else if (chat->connection_state == CS_DISCONNECTED) {
             GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
             int num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
 
-            /* Try to join random node */
-            if (num_nodes) {
+            if (num_nodes && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
+                chat->last_join_attempt = unix_time();
                 int n = random_int() % num_nodes;
 
-                if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].public_key) == -1)
+                if (gc_send_invite_request(chat, nodes[n].ip_port, nodes[n].public_key) == -1) {
                     group_delete(c, chat);
+
+                    if (i >= c->num_chats)
+                        break;
+
+                    continue;
+                }
             }
 
-            chat->connection_state = CS_CONNECTING;
+            if (onion_isconnected(c->messenger->onion_c))
+                chat->connection_state = CS_CONNECTING;
         }
     }
 

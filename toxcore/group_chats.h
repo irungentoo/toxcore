@@ -176,7 +176,7 @@ typedef struct GC_Chat {
     Networking_Core *net;
 
     uint32_t    hash_id;   /* 32-bit hash of chat_public_key */
-
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
 
@@ -194,9 +194,9 @@ typedef struct GC_Chat {
     uint16_t    group_name_len;
 
     uint8_t     connection_state;
-
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
-
+    uint64_t    last_join_attempt;
+    uint8_t     join_attempts;
+    uint64_t    last_peer_join_time;    /* last time a peer joined the group */
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
     uint64_t    self_last_rcvd_ping;
