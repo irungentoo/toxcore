@@ -1,13 +1,13 @@
 /* Basic group announcing testing
  * TODO: please add license and everything */
 
-#include "../toxcore/DHT.h"
-#include "../toxcore/tox.h"
-#include "../toxcore/network.h"
-#include "../toxcore/ping.h"
-#include "../toxcore/util.h"
-#include "../toxcore/group_announce.h"
-#include "../toxcore/Messenger.h"
+#include "../../toxcore/DHT.h"
+#include "../../toxcore/tox.h"
+#include "../../toxcore/network.h"
+#include "../../toxcore/ping.h"
+#include "../../toxcore/util.h"
+#include "../../toxcore/group_announce.h"
+#include "../../toxcore/Messenger.h"
 
 #include <stdio.h>
 #include <stdlib.h>

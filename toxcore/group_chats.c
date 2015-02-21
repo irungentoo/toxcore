@@ -2013,6 +2013,7 @@ void do_gc(GC_Session *c)
         else if (chat->connection_state == CS_DISCONNECTED) {
             GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
             int num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
+            printf("num_nodes %d\n", num_nodes);    
 
             if (num_nodes && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
                 chat->last_join_attempt = unix_time();
