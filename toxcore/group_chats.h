@@ -131,6 +131,7 @@ typedef struct {
     IP_Port     ip_port;
 
     uint8_t     public_key[EXT_PUBLIC_KEY];
+    uint32_t    peer_pk_hash;    /* 32-bit hash of public_key */
 
     uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
     uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
@@ -175,7 +176,7 @@ typedef struct GC_Connection GC_Connection;
 typedef struct GC_Chat {
     Networking_Core *net;
 
-    uint32_t    hash_id;   /* 32-bit hash of chat_public_key */
+    uint32_t    group_pk_hash;   /* 32-bit hash of chat_public_key */
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
