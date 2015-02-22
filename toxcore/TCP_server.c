@@ -863,11 +863,16 @@ static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection 
 {
     int index = add_accepted(TCP_server, con);
 
-    if (index == -1)
+    if (index == -1) {
+        kill_TCP_connection(con);
         return -1;
+    }
+
+    memset(con, 0, sizeof(TCP_Secure_Connection));
 
     if (handle_TCP_packet(TCP_server, index, data, length) == -1) {
         kill_accepted(TCP_server, index);
+        return -1;
     }
 
     return index;
@@ -1076,15 +1081,7 @@ static int do_unconfirmed(TCP_Server *TCP_server, uint32_t i)
         kill_TCP_connection(conn);
         return -1;
     } else {
-        int index_new;
-
-        if ((index_new = confirm_TCP_connection(TCP_server, conn, packet, len)) == -1) {
-            kill_TCP_connection(conn);
-        } else {
-            memset(conn, 0, sizeof(TCP_Secure_Connection));
-        }
-
-        return index_new;
+        return confirm_TCP_connection(TCP_server, conn, packet, len);
     }
 }
 
