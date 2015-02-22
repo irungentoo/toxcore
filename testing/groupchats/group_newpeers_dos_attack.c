@@ -14,17 +14,16 @@
 #include <stdlib.h>
 
 #define min(a,b) ((a)>(b)?(b):(a))
-#define PEERCOUNT   4
+#define PEERCOUNT   12
 
 
-void idle_cylce(Messenger **peers, int peercount)
+void do_messenger_cycle(Messenger **peers, int peercount)
 {
     int j;
     for (j=0; j<peercount; j++)
     {
         do_messenger(peers[j]);
     }
- 
 }
 
 void idle_n_secs(int n, Messenger **peers, int peercount)
@@ -32,7 +31,7 @@ void idle_n_secs(int n, Messenger **peers, int peercount)
     int i;
     for (i=0; i<n*1000; i+=50) /* msecs */
     {
-        idle_cylce(peers, peercount);
+        do_messenger_cycle(peers, peercount);
         usleep(50000); /* usecs */
     }
 }
@@ -41,7 +40,7 @@ int main(int argc, char *argv[])
 {
 
     Messenger* tox[PEERCOUNT];
-    
+
     /* Set ip to IPv6 loopback. TODO: IPv4 fallback? */
     IP localhost;
     ip_init(&localhost, 1);
@@ -49,11 +48,14 @@ int main(int argc, char *argv[])
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
 
-    printf("DHT public keys:\n"); 
+    printf("DHT public keys:\n");
     int i;
     for (i=0; i<PEERCOUNT; i++)
     {
         tox[i] = new_messenger(&options);
+        char nick[32];
+        snprintf(nick, sizeof(nick), "test%d", i);
+        setname(tox[i], nick, strlen(nick));
         printf("%s, %d\n", id_toa(tox[i]->dht->self_public_key), i);
     }
 
@@ -75,15 +77,15 @@ int main(int argc, char *argv[])
     }
 
 
-    printf("Waiting until every Tox is connected\n");
+    printf("Waiting until every Tox instance is connected\n");
     for (;;)
     {
-        idle_cylce(tox, PEERCOUNT);
-        
+        do_messenger_cycle(tox, PEERCOUNT);
+
         int numconnected=0;
-        for (i=0;i<PEERCOUNT;i++) 
+        for (i=0;i<PEERCOUNT;i++)
             numconnected+=DHT_isconnected(tox[i]->dht);
-        printf("%d\n", numconnected);
+       // printf("%d\n", numconnected);
 
         if (numconnected>PEERCOUNT*min(PEERCOUNT,LCLIENT_LIST))
             break;
@@ -91,22 +93,22 @@ int main(int argc, char *argv[])
         /* TODO: busy wait might be slightly more efficient here */
         usleep(50000);
     }
+
     idle_n_secs(10, tox, PEERCOUNT);
-
-    printf("Network is connected\n");    
-
-    printf("Joining the groupchat\n");    
+    printf("Network is connected\n");
+    printf("Joining the groupchat\n");
     unsigned char *chatid = hex_string_to_bin(argv[argvoffset + 4]);
 
     for (i=0; i<PEERCOUNT; i++) {
-        tox[i]->group_handler = new_groupchats(tox[i]);
+        do_messenger_cycle(tox, PEERCOUNT);
         int res = gc_group_join(tox[i]->group_handler, chatid);
-        // important
-        idle_n_secs(3, tox, PEERCOUNT);
+        idle_n_secs(3, tox, PEERCOUNT);   // comment this out to spam invites as fast as possible
+
         if (res<0)
             printf("Get nodes request failed\n");
     }
-    idle_n_secs(100, tox, PEERCOUNT);
+
+    idle_n_secs(240, tox, PEERCOUNT);
 
     return 0;
 }

@@ -1998,13 +1998,14 @@ void do_gc(GC_Session *c)
                 chat->self_last_rcvd_ping = unix_time();
 
                 if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
-                                               chat->chat_public_key) == -1)
+                                               chat->chat_public_key) == -1) {
                     group_delete(c, chat);
 
-                if (i >= c->num_chats)
-                    break;
+                    if (i >= c->num_chats)
+                        break;
 
-                continue;
+                    continue;
+                }
             }
 
             chat->connection_state = CS_DISCONNECTED;
@@ -2013,7 +2014,7 @@ void do_gc(GC_Session *c)
         else if (chat->connection_state == CS_DISCONNECTED) {
             GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
             int num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
-            printf("num_nodes %d\n", num_nodes);    
+           // fprintf(stderr, "num_nodes %d\n", num_nodes);
 
             if (num_nodes && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
                 chat->last_join_attempt = unix_time();
