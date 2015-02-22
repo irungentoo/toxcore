@@ -246,7 +246,7 @@ void toxav_callback_call_state(ToxAV *av, toxav_call_state_cb *function, void *u
 typedef enum TOXAV_CALL_CONTROL {
     /**
      * Resume a previously paused call. Only valid if the pause was caused by this
-     * client. Not valid before the call is accepted.
+     * client, if not, this control is ignored. Not valid before the call is accepted.
      */
     TOXAV_CALL_CONTROL_RESUME,
     /**
@@ -269,7 +269,19 @@ typedef enum TOXAV_CALL_CONTROL {
      * compliance, this will cause the `receive_video_frame` event to stop being
      * triggered on receiving an video frame from the friend.
      */
-    TOXAV_CALL_CONTROL_MUTE_VIDEO
+    TOXAV_CALL_CONTROL_MUTE_VIDEO,
+    /**
+     * Notify the friend that we are AGAIN ready to handle incoming audio.
+     * This control will not work if the call is not started with audio
+     * initiated.
+     */
+    TOXAV_CALL_CONTROL_UNMUTE_AUDIO,
+    /**
+     * Notify the friend that we are AGAIN ready to handle incoming video.
+     * This control will not work if the call is not started with video
+     * initiated.
+     */
+    TOXAV_CALL_CONTROL_UNMUTE_VIDEO
 } TOXAV_CALL_CONTROL;
 typedef enum TOXAV_ERR_CALL_CONTROL {
     TOXAV_ERR_CALL_CONTROL_OK,
@@ -296,7 +308,11 @@ typedef enum TOXAV_ERR_CALL_CONTROL {
      * other party paused the call. The call will resume after both parties sent
      * the RESUME control.
      */
-    TOXAV_ERR_CALL_CONTROL_ALREADY_PAUSED
+    TOXAV_ERR_CALL_CONTROL_ALREADY_PAUSED,
+    /**
+     * Tried to unmute a call that was not already muted.
+     */
+    TOXAV_ERR_CALL_CONTROL_NOT_MUTED
 } TOXAV_ERR_CALL_CONTROL;
 /**
  * Sends a call control command to a friend.

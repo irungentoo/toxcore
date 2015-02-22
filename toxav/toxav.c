@@ -235,6 +235,8 @@ bool toxav_call(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, uint
         return false;
     }
     
+    call->msi_call->av_call = call;
+    
     return true;
 }
 
@@ -310,12 +312,22 @@ bool toxav_call_control(ToxAV* av, uint32_t friend_number, TOXAV_CALL_CONTROL co
     switch (control)
     {
         case TOXAV_CALL_CONTROL_RESUME: {
-            if (call->msi_call->self_capabilities == 0 &&
+            if (!call->active) {
+                rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                goto END;
+            }
+            
+            /* Only act if paused and had media transfer active before */
+            if (call->msi_call->self_capabilities == 0 && 
                 call->last_capabilities ) {
-                /* Only act if paused and had media transfer active before */
                 
-                if (msi_change_capabilities(call->msi_call, call->last_capabilities) == -1)
-                    return false;
+                if (msi_change_capabilities(call->msi_call, 
+                    call->last_capabilities) == -1) {
+                    /* The only reason for this function to fail is invalid state 
+                     * ( not active ) */
+                    rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                    goto END;
+                }
                 
                 rtp_start_receiving(call->rtps[audio_index]);
                 rtp_start_receiving(call->rtps[video_index]);
@@ -323,13 +335,21 @@ bool toxav_call_control(ToxAV* av, uint32_t friend_number, TOXAV_CALL_CONTROL co
         } break;
         
         case TOXAV_CALL_CONTROL_PAUSE: {
+            if (!call->active) {
+                rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                goto END;
+            }
+            
+            /* Only act if not already paused */
             if (call->msi_call->self_capabilities) {
-                /* Only act if not already paused */
-                
                 call->last_capabilities = call->msi_call->self_capabilities;
                 
-                if (msi_change_capabilities(call->msi_call, 0) == -1 )
-                    return false;
+                if (msi_change_capabilities(call->msi_call, 0) == -1 ) {
+                    /* The only reason for this function to fail is invalid state 
+                     * ( not active ) */
+                    rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                    goto END;
+                }
                 
                 rtp_stop_receiving(call->rtps[audio_index]);
                 rtp_stop_receiving(call->rtps[video_index]);
@@ -341,26 +361,84 @@ bool toxav_call_control(ToxAV* av, uint32_t friend_number, TOXAV_CALL_CONTROL co
             msi_hangup(call->msi_call);
             
             /* No mather the case, terminate the call */
+            call_kill_transmission(call);
             call_remove(call);
         } break;
         
         case TOXAV_CALL_CONTROL_MUTE_AUDIO: {
-            if (call->msi_call->self_capabilities & msi_CapRAudio || 
-                call->msi_call->self_capabilities & msi_CapSAudio) {
-                
-                uint8_t capabilities = call->msi_call->self_capabilities;
-                capabilities ^= msi_CapRAudio;
-                capabilities ^= msi_CapRAudio;
-                
-                if (msi_change_capabilities(call->msi_call, call->msi_call->self_capabilities) == -1)
-                    return false;
+            if (!call->active) {
+                rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                goto END;
+            }
+            
+            if (call->msi_call->self_capabilities & msi_CapRAudio) {
+                if (msi_change_capabilities(call->msi_call, call->
+                    msi_call->self_capabilities ^ msi_CapRAudio) == -1) {
+                    /* The only reason for this function to fail is invalid state 
+                     * ( not active ) */
+                    rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                    goto END;
+                }
                 
                 rtp_stop_receiving(call->rtps[audio_index]);
             }
         } break;
         
         case TOXAV_CALL_CONTROL_MUTE_VIDEO: {
+            if (!call->active) {
+                rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                goto END;
+            }
             
+            if (call->msi_call->self_capabilities & msi_CapRVideo) {
+                if (msi_change_capabilities(call->msi_call, call->
+                    msi_call->self_capabilities ^ msi_CapRVideo) == -1) {
+                    /* The only reason for this function to fail is invalid state 
+                     * ( not active ) */
+                    rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                    goto END;
+                }
+                
+                rtp_stop_receiving(call->rtps[video_index]);
+            }
+        } break;
+        
+        case TOXAV_CALL_CONTROL_UNMUTE_AUDIO: {
+            if (!call->active) {
+                rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                goto END;
+            }
+            
+            if (call->msi_call->self_capabilities & ~msi_CapRAudio) {                
+                if (msi_change_capabilities(call->msi_call, call->
+                    msi_call->self_capabilities | msi_CapRAudio) == -1) {
+                    /* The only reason for this function to fail is invalid state 
+                     * ( not active ) */
+                    rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                    goto END;
+                }
+                
+                rtp_start_receiving(call->rtps[audio_index]);
+            }
+        } break;
+        
+        case TOXAV_CALL_CONTROL_UNMUTE_VIDEO: {
+            if (!call->active) {
+                rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                goto END;
+            }
+            
+            if (call->msi_call->self_capabilities & ~msi_CapRVideo) {
+                if (msi_change_capabilities(call->msi_call, call->
+                    msi_call->self_capabilities | msi_CapRVideo) == -1) {
+                    /* The only reason for this function to fail is invalid state 
+                     * ( not active ) */
+                    rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+                    goto END;
+                }
+                
+                rtp_start_receiving(call->rtps[video_index]);
+            }
         } break;
     }
     
@@ -558,8 +636,6 @@ void toxav_callback_receive_audio_frame(ToxAV* av, toxav_receive_audio_frame_cb*
  * :: Internal
  *
  ******************************************************************************/
-/** TODO:
- */
 int callback_invite(void* toxav_inst, MSICall* call)
 {
     ToxAV* toxav = toxav_inst;
@@ -586,15 +662,20 @@ int callback_start(void* toxav_inst, MSICall* call)
     
     ToxAVCall* av_call = call_get(toxav, call->friend_id);
     
-    if (av_call == NULL || !call_prepare_transmission(av_call)) {
+    if (av_call == NULL) {
+        /* Should this ever happen? */
+        return -1;
+    }
+    
+    if (!call_prepare_transmission(av_call)) {
+        callback_error(toxav_inst, call);
         call_remove(av_call);
         return -1;
     }
     
-    TOXAV_CALL_STATE state = capabilities_to_state(av_call->msi_call->peer_capabilities);
-    
     if (toxav->scb.first)
-        toxav->scb.first(toxav, call->friend_id, state, toxav->scb.second);
+        toxav->scb.first(toxav, call->friend_id, 
+                         capabilities_to_state(call->peer_capabilities), toxav->scb.second);
     
     return 0;
 }
@@ -603,11 +684,11 @@ int callback_end(void* toxav_inst, MSICall* call)
 {
     ToxAV* toxav = toxav_inst;
     
-    call_kill_transmission(call->av_call);
-    call_remove(call->av_call);
-    
     if (toxav->scb.first)
         toxav->scb.first(toxav, call->friend_id, TOXAV_CALL_STATE_END, toxav->scb.second);
+    
+    call_kill_transmission(call->av_call);
+    call_remove(call->av_call);
     
     return 0;
 }
@@ -615,6 +696,7 @@ int callback_end(void* toxav_inst, MSICall* call)
 int callback_error(void* toxav_inst, MSICall* call)
 {
     ToxAV* toxav = toxav_inst;
+    
     if (toxav->scb.first)
         toxav->scb.first(toxav, call->friend_id, TOXAV_CALL_STATE_ERROR, toxav->scb.second);
     
@@ -633,14 +715,16 @@ int callback_capabilites(void* toxav_inst, MSICall* call)
 
 TOXAV_CALL_STATE capabilities_to_state(uint8_t capabilities)
 {
-    if ((capabilities & msi_CapSAudio) && (capabilities & msi_CapSVideo))
+    if (capabilities == 0)
+        return TOXAV_CALL_STATE_PAUSED;
+    else if ((capabilities & msi_CapSAudio) && (capabilities & msi_CapSVideo))
         return TOXAV_CALL_STATE_SENDING_AV;
     else if (capabilities & msi_CapSAudio)
         return TOXAV_CALL_STATE_SENDING_A;
     else if (capabilities & msi_CapSVideo)
         return TOXAV_CALL_STATE_SENDING_V;
-    else
-        return TOXAV_CALL_STATE_PAUSED;
+    
+    return TOXAV_CALL_STATE_NOT_SENDING;
 }
 
 bool audio_bitrate_invalid(uint32_t bitrate)
@@ -798,8 +882,6 @@ bool call_prepare_transmission(ToxAVCall* call)
         goto MUTEX_INIT_ERROR;
     }
     
-    uint8_t capabilities = call->msi_call->self_capabilities;
-    
     call->cs = cs_new(call->msi_call->peer_vfpsz);
     
     if ( !call->cs ) {
@@ -813,8 +895,7 @@ bool call_prepare_transmission(ToxAVCall* call)
     memcpy(&call->cs->acb, &av->acb, sizeof(av->acb));
     memcpy(&call->cs->vcb, &av->vcb, sizeof(av->vcb));
     
-    if (capabilities & msi_CapSAudio || capabilities & msi_CapRAudio) { /* Prepare audio sending */
-        
+    { /* Prepare audio */
         call->rtps[audio_index] = rtp_new(rtp_TypeAudio, av->m, call->friend_id);
         
         if ( !call->rtps[audio_index] ) {
@@ -824,22 +905,21 @@ bool call_prepare_transmission(ToxAVCall* call)
         
         call->rtps[audio_index]->cs = call->cs;
         
-        if (cs_enable_audio_sending(call->cs, call->s_audio_b, 2) != 0) {
+        /* Only enable sending if bitrate is defined */
+        if (call->s_audio_b > 0 && cs_enable_audio_sending(call->cs, call->s_audio_b, 2) != 0) {
             LOGGER_WARNING("Failed to enable audio sending!");
             goto FAILURE;
         }
         
-        if (capabilities & msi_CapRAudio) {
-            if (cs_enable_audio_receiving(call->cs) != 0) {
-                LOGGER_WARNING("Failed to enable audio receiving!");
-                goto FAILURE;
-            }
-            
-            rtp_start_receiving(call->rtps[audio_index]);
+        if (cs_enable_audio_receiving(call->cs) != 0) {
+            LOGGER_WARNING("Failed to enable audio receiving!");
+            goto FAILURE;
         }
+        
+        rtp_start_receiving(call->rtps[audio_index]);
     }
     
-    if (capabilities & msi_CapSVideo || capabilities & msi_CapRVideo) { /* Prepare video rtp */
+    { /* Prepare video */
         call->rtps[video_index] = rtp_new(rtp_TypeVideo, av->m, call->friend_id);
         
         if ( !call->rtps[video_index] ) {
@@ -849,26 +929,26 @@ bool call_prepare_transmission(ToxAVCall* call)
         
         call->rtps[video_index]->cs = call->cs;
         
-        if (cs_enable_video_sending(call->cs, call->s_video_b) != 0) {
+        /* Only enable sending if bitrate is defined */
+        if (call->s_video_b > 0 && cs_enable_video_sending(call->cs, call->s_video_b) != 0) {
             LOGGER_WARNING("Failed to enable video sending!");
             goto FAILURE;
         }
         
-        if (capabilities & msi_CapRVideo) {
-            if (cs_enable_video_receiving(call->cs) != 0) {
-                LOGGER_WARNING("Failed to enable video receiving!");
-                goto FAILURE;
-            }
-            
-            rtp_start_receiving(call->rtps[audio_index]);
+        
+        if (cs_enable_video_receiving(call->cs) != 0) {
+            LOGGER_WARNING("Failed to enable video receiving!");
+            goto FAILURE;
         }
+        
+        rtp_start_receiving(call->rtps[audio_index]);
     }
     
     call->active = 1;
     pthread_mutex_unlock(call->mutex_control);
     return true;
     
-    FAILURE:
+FAILURE:
     rtp_kill(call->rtps[audio_index]);
     call->rtps[audio_index] = NULL;
     rtp_kill(call->rtps[video_index]);
@@ -883,7 +963,7 @@ bool call_prepare_transmission(ToxAVCall* call)
     pthread_mutex_unlock(call->mutex_control);
     return false;
     
-    MUTEX_INIT_ERROR:
+MUTEX_INIT_ERROR:
     pthread_mutex_unlock(call->mutex_control);
     LOGGER_ERROR("Mutex initialization failed!\n");
     return false;

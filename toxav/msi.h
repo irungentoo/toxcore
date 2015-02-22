@@ -41,8 +41,8 @@ typedef enum {
     msi_InvalidState,
     msi_StrayMessage,
     msi_SystemError,
-    msi_ErrUndisclosed,
     msi_HandleError,
+    msi_ErrUndisclosed, /* NOTE: must be last enum otherwise parsing wont work */
 } MSIError;
 
 /**
