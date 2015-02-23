@@ -29,6 +29,11 @@
 
 #ifdef TCP_SERVER_USE_EPOLL
 #include "sys/epoll.h"
+
+/* Android may not defined EPOLLRDHUP */
+#if !defined(EPOLLRDHUP)
+#define EPOLLRDHUP 0x2000
+#endif
 #endif
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
