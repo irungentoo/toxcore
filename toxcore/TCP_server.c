@@ -1192,7 +1192,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
             sock_t sock = events[n].data.u64 & 0xFFFFFFFF;
             int status = (events[n].data.u64 >> 32) & 0xFFFF, index = (events[n].data.u64 >> 48);
 
-            if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP)) {
+            if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (events[n].events & EPOLLRDHUP)) {
                 switch (status) {
                     case TCP_SOCKET_LISTENING: {
                         //should never happen
@@ -1239,7 +1239,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     }
 
                     struct epoll_event ev = {
-                        .events = EPOLLIN | EPOLLET,
+                        .events = EPOLLIN | EPOLLET | EPOLLRDHUP,
                         .data.u64 = sock_new | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 48)
                     };
 
@@ -1255,7 +1255,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     int index_new;
 
                     if ((index_new = do_incoming(TCP_server, index)) != -1) {
-                        events[n].events = EPOLLIN | EPOLLET;
+                        events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
                         events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 48);
 
                         if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
@@ -1271,7 +1271,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     int index_new;
 
                     if ((index_new = do_unconfirmed(TCP_server, index)) != -1) {
-                        events[n].events = EPOLLIN | EPOLLET;
+                        events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
                         events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 48);
 
                         if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
