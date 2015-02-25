@@ -39,7 +39,6 @@
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
-static int send_avatar_data_control(const Messenger *m, const uint32_t friendnumber, uint8_t op);
 
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
@@ -208,10 +207,6 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
             id_copy(m->friendlist[i].real_pk, real_pk);
             m->friendlist[i].statusmessage_length = 0;
             m->friendlist[i].userstatus = USERSTATUS_NONE;
-            m->friendlist[i].avatar_info_sent = 0;
-            m->friendlist[i].avatar_recv_data = NULL;
-            m->friendlist[i].avatar_send_data.bytes_sent = 0;
-            m->friendlist[i].avatar_send_data.last_reset = 0;
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
             friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
@@ -397,7 +392,6 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE)
         remove_online_friend(m, friendnumber);
 
-    free(m->friendlist[friendnumber].avatar_recv_data);
     clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
@@ -656,149 +650,6 @@ int m_set_userstatus(Messenger *m, uint8_t status)
     return 0;
 }
 
-int m_unset_avatar(Messenger *m)
-{
-    if (m->avatar_data != NULL)
-        free(m->avatar_data);
-
-    m->avatar_data = NULL;
-    m->avatar_data_length = 0;
-    m->avatar_format = AVATAR_FORMAT_NONE;
-    memset(m->avatar_hash, 0, AVATAR_HASH_LENGTH);
-
-    uint32_t i;
-
-    for (i = 0; i < m->numfriends; ++i)
-        m->friendlist[i].avatar_info_sent = 0;
-
-    return 0;
-}
-
-int m_set_avatar(Messenger *m, uint8_t format, const uint8_t *data, uint32_t length)
-{
-    if (format == AVATAR_FORMAT_NONE) {
-        m_unset_avatar(m);
-        return 0;
-    }
-
-    if (length > AVATAR_MAX_DATA_LENGTH || length == 0)
-        return -1;
-
-    if (data == NULL)
-        return -1;
-
-    uint8_t *tmp = realloc(m->avatar_data, length);
-
-    if (tmp == NULL)
-        return -1;
-
-    m->avatar_format = format;
-    m->avatar_data = tmp;
-    m->avatar_data_length = length;
-    memcpy(m->avatar_data, data, length);
-
-    m_avatar_hash(m->avatar_hash, m->avatar_data, m->avatar_data_length);
-
-    uint32_t i;
-
-    for (i = 0; i < m->numfriends; ++i)
-        m->friendlist[i].avatar_info_sent = 0;
-
-    return 0;
-}
-
-int m_get_self_avatar(const Messenger *m, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen,
-                      uint8_t *hash)
-{
-    if (format)
-        *format = m->avatar_format;
-
-    if (length)
-        *length = m->avatar_data_length;
-
-    if (hash)
-        memcpy(hash, m->avatar_hash, AVATAR_HASH_LENGTH);
-
-    if (buf != NULL && maxlen > 0) {
-        if (m->avatar_data_length <= maxlen)
-            memcpy(buf, m->avatar_data, m->avatar_data_length);
-        else
-            return -1;
-    }
-
-    return 0;
-}
-
-int m_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen)
-{
-    if (hash == NULL)
-        return -1;
-
-    return crypto_hash_sha256(hash, data, datalen);
-}
-
-int m_avatar_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen)
-{
-    return m_hash(hash, data, datalen);
-}
-
-int m_request_avatar_info(const Messenger *m, const int32_t friendnumber)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_INFO_REQ, 0, 0, 0))
-        return 0;
-    else
-        return -1;
-}
-
-int m_send_avatar_info(const Messenger *m, const int32_t friendnumber)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    uint8_t data[sizeof(uint8_t) + AVATAR_HASH_LENGTH];
-    data[0] = m->avatar_format;
-    memcpy(data + 1, m->avatar_hash, AVATAR_HASH_LENGTH);
-
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_INFO, data, sizeof(data), 0))
-        return 0;
-    else
-        return -1;
-}
-
-int m_request_avatar_data(const Messenger *m, const int32_t friendnumber)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    AVATAR_RECEIVEDATA *avrd = m->friendlist[friendnumber].avatar_recv_data;
-
-    if (avrd == NULL) {
-        avrd = calloc(sizeof(AVATAR_RECEIVEDATA), 1);
-
-        if (avrd == NULL)
-            return -1;
-
-        avrd->started = 0;
-        m->friendlist[friendnumber].avatar_recv_data = avrd;
-    }
-
-    if (avrd->started) {
-        LOGGER_DEBUG("Resetting already started data request. "
-                     "friendnumber == %u", friendnumber);
-    }
-
-    avrd->started = 0;
-    avrd->bytes_received = 0;
-    avrd->total_length = 0;
-    avrd->format = AVATAR_FORMAT_NONE;
-
-    return send_avatar_data_control(m, friendnumber, AVATAR_DATACONTROL_REQ);
-}
-
-
 /* return the size of friendnumber's user status.
  * Guaranteed to be at most MAX_STATUSMESSAGE_LENGTH.
  */
@@ -1019,20 +870,6 @@ void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Mess
 {
     m->friend_connectionstatuschange_internal = function;
     m->friend_connectionstatuschange_internal_userdata = userdata;
-}
-
-void m_callback_avatar_info(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t *, void *),
-                            void *userdata)
-{
-    m->avatar_info_recv = function;
-    m->avatar_info_recv_userdata = userdata;
-}
-
-void m_callback_avatar_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t *, uint8_t *,
-                            uint32_t, void *), void *userdata)
-{
-    m->avatar_data_recv = function;
-    m->avatar_data_recv_userdata = userdata;
 }
 
 static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
@@ -1646,9 +1483,6 @@ Messenger *new_messenger(Messenger_Options *options)
         m->net = new_networking(ip, TOX_PORT_DEFAULT);
     }
 
-    m->avatar_format = AVATAR_FORMAT_NONE;
-    m->avatar_data = NULL;
-
     if (m->net == NULL) {
         free(m);
         return NULL;
@@ -1714,11 +1548,9 @@ void kill_messenger(Messenger *m)
     kill_networking(m->net);
 
     for (i = 0; i < m->numfriends; ++i) {
-        free(m->friendlist[i].avatar_recv_data);
         clear_receipts(m, i);
     }
 
-    free(m->avatar_data);
     free(m->friendlist);
     free(m);
 }
@@ -1752,292 +1584,15 @@ static int handle_status(void *object, int i, uint8_t status)
         m->friendlist[i].userstatus_sent = 0;
         m->friendlist[i].statusmessage_sent = 0;
         m->friendlist[i].user_istyping_sent = 0;
-        m->friendlist[i].avatar_info_sent = 0;
         m->friendlist[i].ping_lastrecv = temp_time;
     } else { /* Went offline. */
         if (m->friendlist[i].status == FRIEND_ONLINE) {
             set_friend_status(m, i, FRIEND_CONFIRMED);
         }
-
-        /* Clear avatar transfer state */
-        if (m->friendlist[i].avatar_recv_data) {
-            free(m->friendlist[i].avatar_recv_data);
-            m->friendlist[i].avatar_recv_data = NULL;
-        }
     }
 
     return 0;
 }
-
-
-/* Sends an avatar data control packet to the peer. Usually to return status
- * values or request data.
- */
-static int send_avatar_data_control(const Messenger *m, const uint32_t friendnumber,
-                                    uint8_t op)
-{
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_DATA_CONTROL,
-                                   &op, sizeof(op), 0);
-    LOGGER_DEBUG("friendnumber = %u, op = %u, ret = %d",
-                 friendnumber, op, ret);
-    return ret ? 0 : -1;
-}
-
-
-static int handle_avatar_data_control(Messenger *m, uint32_t friendnumber,
-                                      uint8_t *data, uint32_t data_length)
-{
-    if (data_length != 1) {
-        LOGGER_DEBUG("Error: PACKET_ID_AVATAR_DATA_CONTROL with bad "
-                     "data_length = %u, friendnumber = %u",
-                     data_length, friendnumber);
-        send_avatar_data_control(m, friendnumber, AVATAR_DATACONTROL_ERROR);
-        return -1;  /* Error */
-    }
-
-    LOGGER_DEBUG("friendnumber = %u, op = %u", friendnumber, data[0]);
-
-    switch (data[0]) {
-        case AVATAR_DATACONTROL_REQ: {
-
-            /* Check data transfer limits for this friend */
-            AVATAR_SENDDATA *const avsd = &(m->friendlist[friendnumber].avatar_send_data);
-
-            if (avsd->bytes_sent >= AVATAR_DATA_TRANSFER_LIMIT) {
-                /* User reached data limit. Check timeout */
-                uint64_t now = unix_time();
-
-                if (avsd->last_reset > 0
-                        && (avsd->last_reset + AVATAR_DATA_TRANSFER_TIMEOUT < now)) {
-                    avsd->bytes_sent = 0;
-                    avsd->last_reset = now;
-                } else {
-                    /* Friend still rate-limitted. Send an error and stops. */
-                    LOGGER_DEBUG("Avatar data transfer limit reached. "
-                                 "friendnumber = %u", friendnumber);
-                    send_avatar_data_control(m, friendnumber, AVATAR_DATACONTROL_ERROR);
-                    return 0;
-                }
-            }
-
-            /* Start the transmission with a DATA_START message. Format:
-             *  uint8_t format
-             *  uint8_t hash[AVATAR_HASH_LENGTH]
-             *  uint32_t total_length
-             */
-            LOGGER_DEBUG("Sending start msg to friend number %u. "
-                         "m->avatar_format = %u, m->avatar_data_length = %u",
-                         friendnumber, m->avatar_format, m->avatar_data_length);
-            uint8_t start_data[1 + AVATAR_HASH_LENGTH + sizeof(uint32_t)];
-            uint32_t avatar_len = htonl(m->avatar_data_length);
-
-            start_data[0] = m->avatar_format;
-            memcpy(start_data + 1, m->avatar_hash, AVATAR_HASH_LENGTH);
-            memcpy(start_data + 1 + AVATAR_HASH_LENGTH, &avatar_len, sizeof(uint32_t));
-
-            avsd->bytes_sent += sizeof(start_data);  /* For rate limit */
-
-            int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_AVATAR_DATA_START,
-                                           start_data, sizeof(start_data), 0);
-
-            if (!ret) {
-                /* Something went wrong, try to signal the error so the friend
-                 * can clear up the state. */
-                send_avatar_data_control(m, friendnumber, AVATAR_DATACONTROL_ERROR);
-                return 0;
-            }
-
-            /* User have no avatar data, nothing more to do. */
-            if (m->avatar_format == AVATAR_FORMAT_NONE)
-                return 0;
-
-            /* Send the actual avatar data. */
-            uint32_t offset = 0;
-
-            while (offset < m->avatar_data_length) {
-                uint32_t chunk_len = m->avatar_data_length - offset;
-
-                if (chunk_len > AVATAR_DATA_MAX_CHUNK_SIZE)
-                    chunk_len = AVATAR_DATA_MAX_CHUNK_SIZE;
-
-                uint8_t chunk[AVATAR_DATA_MAX_CHUNK_SIZE];
-                memcpy(chunk, m->avatar_data + offset, chunk_len);
-                offset += chunk_len;
-                avsd->bytes_sent += chunk_len;  /* For rate limit */
-
-                int ret = write_cryptpacket_id(m, friendnumber,
-                                               PACKET_ID_AVATAR_DATA_PUSH,
-                                               chunk, chunk_len, 0);
-
-                if (!ret) {
-                    LOGGER_DEBUG("write_cryptpacket_id failed. ret = %d, "
-                                 "friendnumber = %u, offset = %u",
-                                 ret, friendnumber, offset);
-                    send_avatar_data_control(m, friendnumber, AVATAR_DATACONTROL_ERROR);
-                    return -1;
-                }
-            }
-
-            return 0;
-        }
-
-        case AVATAR_DATACONTROL_ERROR: {
-            if (m->friendlist[friendnumber].avatar_recv_data) {
-                /* We were receiving the data, sender detected an error
-                  (eg. changing avatar) and asked us to stop. */
-                free(m->friendlist[friendnumber].avatar_recv_data);
-                m->friendlist[friendnumber].avatar_recv_data = NULL;
-            }
-
-            return 0;
-        }
-    }
-
-    return -1;
-}
-
-
-static int handle_avatar_data_start(Messenger *m, uint32_t friendnumber,
-                                    uint8_t *data, uint32_t data_length)
-{
-    LOGGER_DEBUG("data_length = %u, friendnumber = %u", data_length, friendnumber);
-
-    if (data_length != 1 + AVATAR_HASH_LENGTH + sizeof(uint32_t)) {
-        LOGGER_DEBUG("Invalid msg length = %u, friendnumber = %u",
-                     data_length, friendnumber);
-        return -1;
-    }
-
-    AVATAR_RECEIVEDATA *avrd = m->friendlist[friendnumber].avatar_recv_data;
-
-    if (avrd == NULL) {
-        LOGGER_DEBUG("Received an unrequested DATA_START, friendnumber = %u",
-                     friendnumber);
-        return -1;
-    }
-
-    if (avrd->started) {
-        /* Already receiving data from this friend. Must be an error
-         * or an malicious request, because we zeroed the started bit
-         * when we requested the data. */
-        LOGGER_DEBUG("Received an unrequested duplicated DATA_START, "
-                     "friendnumber = %u", friendnumber);
-        return -1;
-    }
-
-    /* Copy data from message to our control structure */
-    avrd->started = 1;
-    avrd->format = data[0];
-    memcpy(avrd->hash, data + 1, AVATAR_HASH_LENGTH);
-    uint32_t tmp_len;
-    memcpy(&tmp_len, data + 1 + AVATAR_HASH_LENGTH, sizeof(uint32_t));
-    avrd->total_length = ntohl(tmp_len);
-    avrd->bytes_received = 0;
-
-    LOGGER_DEBUG("friendnumber = %u, avrd->format = %u, "
-                 "avrd->total_length = %u, avrd->bytes_received = %u",
-                 friendnumber, avrd->format, avrd->total_length,
-                 avrd->bytes_received);
-
-    if (avrd->total_length > AVATAR_MAX_DATA_LENGTH) {
-        /* Invalid data length. Stops. */
-        LOGGER_DEBUG("Error: total_length > MAX_AVATAR_DATA_LENGTH, "
-                     "friendnumber = %u", friendnumber);
-        free(avrd);
-        avrd = NULL;
-        m->friendlist[friendnumber].avatar_recv_data = NULL;
-        return 0;
-    }
-
-    if (avrd->format == AVATAR_FORMAT_NONE || avrd->total_length == 0) {
-        /* No real data to receive. Run callback function and finish. */
-        LOGGER_DEBUG("format == NONE, friendnumber = %u", friendnumber);
-
-        if (m->avatar_data_recv) {
-            memset(avrd->hash, 0, AVATAR_HASH_LENGTH);
-            (m->avatar_data_recv)(m, friendnumber, avrd->format, avrd->hash,
-                                  NULL, 0, m->avatar_data_recv_userdata);
-        }
-
-        free(avrd);
-        avrd = NULL;
-        m->friendlist[friendnumber].avatar_recv_data = NULL;
-        return 0;
-    }
-
-    /* Waits for more data to be received */
-    return 0;
-}
-
-
-static int handle_avatar_data_push(Messenger *m, uint32_t friendnumber,
-                                   uint8_t *data, uint32_t data_length)
-{
-    LOGGER_DEBUG("friendnumber = %u, data_length = %u", friendnumber, data_length);
-
-    AVATAR_RECEIVEDATA *avrd = m->friendlist[friendnumber].avatar_recv_data;
-
-    if (avrd == NULL) {
-        /* No active transfer. It must be an error or a malicious request,
-         * because we set the avatar_recv_data on the first DATA_START. */
-        LOGGER_DEBUG("Error: avrd == NULL, friendnumber = %u", friendnumber);
-        return -1;  /* Error */
-    }
-
-    if (avrd->started == 0) {
-        /* Receiving data for a non-started request. Must be an error
-         * or an malicious request. */
-        LOGGER_DEBUG("Received an data push for a yet non started data "
-                     "request. friendnumber = %u", friendnumber);
-        return -1;  /* Error */
-    }
-
-    uint32_t new_length = avrd->bytes_received + data_length;
-
-    if (new_length > avrd->total_length
-            || new_length >= AVATAR_MAX_DATA_LENGTH) {
-        /* Invalid data length due to error or malice. Stops. */
-        LOGGER_DEBUG("Invalid data length. friendnumber = %u, "
-                     "new_length = %u, avrd->total_length = %u",
-                     friendnumber, new_length,  avrd->total_length);
-        free(avrd);
-        m->friendlist[friendnumber].avatar_recv_data = NULL;
-        return 0;
-    }
-
-    memcpy(avrd->data + avrd->bytes_received, data, data_length);
-    avrd->bytes_received += data_length;
-
-    if (avrd->bytes_received == avrd->total_length) {
-        LOGGER_DEBUG("All data received. friendnumber = %u", friendnumber);
-
-        /* All data was received. Check if the hashes match. It the
-         * requester's responsability to do this. The sender may have done
-         * anything with its avatar data between the DATA_START and now.
-         */
-        uint8_t cur_hash[AVATAR_HASH_LENGTH];
-        m_avatar_hash(cur_hash, avrd->data, avrd->bytes_received);
-
-        if (memcmp(cur_hash, avrd->hash, AVATAR_HASH_LENGTH) == 0) {
-            /* Avatar successfuly received! */
-            if (m->avatar_data_recv) {
-                (m->avatar_data_recv)(m, friendnumber, avrd->format, cur_hash,
-                                      avrd->data, avrd->bytes_received, m->avatar_data_recv_userdata);
-            }
-        } else {
-            LOGGER_DEBUG("Avatar hash error. friendnumber = %u", friendnumber);
-        }
-
-        free(avrd);
-        m->friendlist[friendnumber].avatar_recv_data = NULL;
-        return 0;
-    }
-
-    /* Waits for more data to be received */
-    return 0;
-}
-
-
 
 static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 {
@@ -2175,42 +1730,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
 
 
-            break;
-        }
-
-        case PACKET_ID_AVATAR_INFO_REQ: {
-            /* Send our avatar information */
-            m_send_avatar_info(m, i);
-            break;
-        }
-
-        case PACKET_ID_AVATAR_INFO: {
-            if (m->avatar_info_recv) {
-                /*
-                 * A malicious user may send an incomplete avatar info message.
-                 * Check if it have the correct size for the format:
-                 * [1 uint8_t: avatar format] [32 uint8_t: hash]
-                 */
-                if (data_length == AVATAR_HASH_LENGTH + 1) {
-                    (m->avatar_info_recv)(m, i, data[0], data + 1, m->avatar_info_recv_userdata);
-                }
-            }
-
-            break;
-        }
-
-        case PACKET_ID_AVATAR_DATA_CONTROL: {
-            handle_avatar_data_control(m, i, data, data_length);
-            break;
-        }
-
-        case PACKET_ID_AVATAR_DATA_START: {
-            handle_avatar_data_start(m, i, data, data_length);
-            break;
-        }
-
-        case PACKET_ID_AVATAR_DATA_PUSH: {
-            handle_avatar_data_push(m, i, data, data_length);
             break;
         }
 
@@ -2360,11 +1879,6 @@ void do_friends(Messenger *m)
             if (m->friendlist[i].userstatus_sent == 0) {
                 if (send_userstatus(m, i, m->userstatus))
                     m->friendlist[i].userstatus_sent = 1;
-            }
-
-            if (m->friendlist[i].avatar_info_sent == 0) {
-                if (m_send_avatar_info(m, i) == 0)
-                    m->friendlist[i].avatar_info_sent = 1;
             }
 
             if (m->friendlist[i].user_istyping_sent == 0) {
