@@ -38,7 +38,7 @@
  * Return 0 on success.
  * Return -1 on failure.
  */
-static void rm_from_ary(struct GC_Message_Ary *ary, uint32_t idx)
+static void rm_from_ary(struct GC_Message_Ary *ary, uint16_t idx)
 {
     free(ary[idx].data);
     memset(&ary[idx], 0, sizeof(struct GC_Message_Ary));
@@ -96,7 +96,7 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
         return -1;
 
     /* check if send_ary is full */
-    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (gconn->send_ary_start - 1))
+    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (uint16_t) (gconn->send_ary_start - 1))
         return -1;
 
     uint16_t idx = get_ary_index(gconn->send_message_id);
@@ -182,7 +182,7 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
 }
 
 /* Handles peernum's recv_ary message at idx with appropriate handler and removes from it. */
-static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint32_t peernum, size_t idx)
+static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint32_t peernum, uint16_t idx)
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
@@ -287,18 +287,22 @@ void gcc_peer_cleanup(GC_Connection *gconn)
     size_t i;
 
     for (i = 0; i < GCC_BUFFER_SIZE; ++i) {
-        if (gconn->send_ary[i].data)
+        if (gconn->send_ary[i].data) {
             free(gconn->send_ary[i].data);
+            gconn->send_ary[i].data = NULL;
+        }
 
-        if (gconn->recv_ary[i].data)
+        if (gconn->recv_ary[i].data) {
             free(gconn->recv_ary[i].data);
+            gconn->recv_ary[i].data = NULL;
+        }
     }
 }
 
 /* called on group exit */
 void gcc_cleanup(GC_Chat *chat)
 {
-    size_t i;
+    uint32_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
         if (&chat->gcc[i])
@@ -306,4 +310,5 @@ void gcc_cleanup(GC_Chat *chat)
     }
 
     free(chat->gcc);
+    chat->gcc = NULL;
 }

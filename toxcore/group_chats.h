@@ -371,6 +371,13 @@ int gc_group_join(GC_Session *c, const uint8_t *invite_key);
  */
 int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length);
 
+/* Invites friendnumber to chat. Packet includes: Type, chat_id, node
+ *
+ * Return 0 on success.
+ * Return -1 on fail.
+ */
+int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnum);
+
 /* Sends parting message to group and deletes group.
  *
  * Return 0 on success.

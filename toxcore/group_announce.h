@@ -49,7 +49,7 @@ int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self
                                const uint8_t *self_long_sk, const uint8_t *chat_id);
 
 /* Retrieve nodes by chat id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
-int gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
+size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
 
 /* Do some periodic work, currently removes expired announcements */
 void do_gca(struct GC_Announce *announce);
@@ -79,7 +79,7 @@ int make_self_gca_node(const DHT *dht, GC_Announce_Node *node, const uint8_t *cl
  * return length of packed nodes on success.
  * return -1 on failure.
  */
-int pack_gca_nodes(uint8_t *data, uint16_t length, const GC_Announce_Node *nodes, uint16_t number);
+int pack_gca_nodes(uint8_t *data, uint16_t length, const GC_Announce_Node *nodes, uint32_t number);
 
 /* Unpack data of length into nodes of size max_num_nodes.
  * Put the length of the data processed in processed_data_len.
@@ -88,7 +88,7 @@ int pack_gca_nodes(uint8_t *data, uint16_t length, const GC_Announce_Node *nodes
  * return number of unpacked nodes on success.
  * return -1 on failure.
  */
-int unpack_gca_nodes(GC_Announce_Node *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len,
+int unpack_gca_nodes(GC_Announce_Node *nodes, uint32_t max_num_nodes, uint16_t *processed_data_len,
                      const uint8_t *data, uint16_t length, uint8_t tcp_enabled);
 
 #endif /* GROUP_ANNOUNCE_H */

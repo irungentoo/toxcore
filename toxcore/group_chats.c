@@ -1883,7 +1883,7 @@ static int self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *
     if (ipport_self_copy(c->messenger->dht, &self_ipp) == -1)
         return -1;
 
-    memcpy(&(peer->ip_port), &self_ipp, sizeof(IP_Port));
+    ipport_copy(&(peer->ip_port), &self_ipp);
     memcpy(peer->public_key, chat->self_public_key, EXT_PUBLIC_KEY);
     memcpy(peer->invite_certificate, chat->group[0].invite_certificate, INVITE_CERT_SIGNED_SIZE);
     memcpy(peer->role_certificate, chat->group[0].role_certificate, ROLE_CERT_SIGNED_SIZE);
@@ -1995,7 +1995,7 @@ void do_gc(GC_Session *c)
 
         else if (chat->connection_state == CS_DISCONNECTED) {
             GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
-            int num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
+            uint32_t num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
            // fprintf(stderr, "num_nodes %d\n", num_nodes);
 
             if (num_nodes && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
