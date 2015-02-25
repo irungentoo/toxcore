@@ -863,36 +863,42 @@ static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection 
 {
     int index = add_accepted(TCP_server, con);
 
-    if (index == -1)
+    if (index == -1) {
+        kill_TCP_connection(con);
         return -1;
+    }
+
+    memset(con, 0, sizeof(TCP_Secure_Connection));
 
     if (handle_TCP_packet(TCP_server, index, data, length) == -1) {
         kill_accepted(TCP_server, index);
+        return -1;
     }
 
     return index;
 }
 
-/* return 1 on success
- * return 0 on failure
+/* return index on success
+ * return -1 on failure
  */
 static int accept_connection(TCP_Server *TCP_server, sock_t sock)
 {
     if (!sock_valid(sock))
-        return 0;
+        return -1;
 
     if (!set_socket_nonblock(sock)) {
         kill_sock(sock);
-        return 0;
+        return -1;
     }
 
     if (!set_socket_nosigpipe(sock)) {
         kill_sock(sock);
-        return 0;
+        return -1;
     }
 
-    TCP_Secure_Connection *conn =
-        &TCP_server->incomming_connection_queue[TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS];
+    uint16_t index = TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS;
+
+    TCP_Secure_Connection *conn = &TCP_server->incomming_connection_queue[index];
 
     if (conn->status != TCP_STATUS_NO_STATUS)
         kill_TCP_connection(conn);
@@ -902,7 +908,7 @@ static int accept_connection(TCP_Server *TCP_server, sock_t sock)
     conn->next_packet_length = 0;
 
     ++TCP_server->incomming_connection_queue_index;
-    return 1;
+    return index;
 }
 
 static sock_t new_listening_TCP_socket(int family, uint16_t port)
@@ -913,11 +919,7 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
         return ~0;
     }
 
-#ifndef TCP_SERVER_USE_EPOLL
     int ok = set_socket_nonblock(sock);
-#else
-    int ok = 1;
-#endif
 
     if (ok && family == AF_INET6) {
         ok = set_socket_dualstack(sock);
@@ -984,7 +986,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
 
         if (sock_valid(sock)) {
 #ifdef TCP_SERVER_USE_EPOLL
-            ev.events = EPOLLIN;
+            ev.events = EPOLLIN | EPOLLET;
             ev.data.u64 = sock | ((uint64_t)TCP_SOCKET_LISTENING << 32);
 
             if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock, &ev) == -1) {
@@ -1028,7 +1030,7 @@ static void do_TCP_accept_new(TCP_Server *TCP_server)
 
         do {
             sock = accept(TCP_server->socks_listening[i], (struct sockaddr *)&addr, &addrlen);
-        } while (accept_connection(TCP_server, sock));
+        } while (accept_connection(TCP_server, sock) != -1);
     }
 }
 
@@ -1076,15 +1078,7 @@ static int do_unconfirmed(TCP_Server *TCP_server, uint32_t i)
         kill_TCP_connection(conn);
         return -1;
     } else {
-        int index_new;
-
-        if ((index_new = confirm_TCP_connection(TCP_server, conn, packet, len)) == -1) {
-            kill_TCP_connection(conn);
-        } else {
-            memset(conn, 0, sizeof(TCP_Secure_Connection));
-        }
-
-        return index_new;
+        return confirm_TCP_connection(TCP_server, conn, packet, len);
     }
 }
 
@@ -1195,7 +1189,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
             sock_t sock = events[n].data.u64 & 0xFFFFFFFF;
             int status = (events[n].data.u64 >> 32) & 0xFFFF, index = (events[n].data.u64 >> 48);
 
-            if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP)) {
+            if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (events[n].events & EPOLLRDHUP)) {
                 switch (status) {
                     case TCP_SOCKET_LISTENING: {
                         //should never happen
@@ -1231,24 +1225,29 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     //socket is from socks_listening, accept connection
                     struct sockaddr_storage addr;
                     unsigned int addrlen = sizeof(addr);
-                    sock_t sock_new;
 
-                    sock_new = accept(sock, (struct sockaddr *)&addr, &addrlen);
+                    while (1) {
+                        sock_t sock_new = accept(sock, (struct sockaddr *)&addr, &addrlen);
 
-                    int index_new = TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS;
+                        if (!sock_valid(sock_new)) {
+                            break;
+                        }
 
-                    if (!accept_connection(TCP_server, sock_new)) {
-                        break;
-                    }
+                        int index_new = accept_connection(TCP_server, sock_new);
 
-                    struct epoll_event ev = {
-                        .events = EPOLLIN | EPOLLET,
-                        .data.u64 = sock_new | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 48)
-                    };
+                        if (index_new == -1) {
+                            continue;
+                        }
 
-                    if (epoll_ctl(TCP_server->efd, EPOLL_CTL_ADD, sock_new, &ev) == -1) {
-                        kill_TCP_connection(&TCP_server->incomming_connection_queue[index_new]);
-                        break;
+                        struct epoll_event ev = {
+                            .events = EPOLLIN | EPOLLET | EPOLLRDHUP,
+                            .data.u64 = sock_new | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 48)
+                        };
+
+                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_ADD, sock_new, &ev) == -1) {
+                            kill_TCP_connection(&TCP_server->incomming_connection_queue[index_new]);
+                            continue;
+                        }
                     }
 
                     break;
@@ -1258,7 +1257,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     int index_new;
 
                     if ((index_new = do_incoming(TCP_server, index)) != -1) {
-                        events[n].events = EPOLLIN | EPOLLET;
+                        events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
                         events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 48);
 
                         if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
@@ -1274,7 +1273,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     int index_new;
 
                     if ((index_new = do_unconfirmed(TCP_server, index)) != -1) {
-                        events[n].events = EPOLLIN | EPOLLET;
+                        events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
                         events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 48);
 
                         if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
