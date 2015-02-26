@@ -341,7 +341,7 @@ RTPMessage *msg_parse ( const uint8_t *data, int length )
 /**
  * Callback for networking core.
  */
-int rtp_handle_packet ( Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
+int rtp_handle_packet ( Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object )
 {
     RTPSession *session = object;
     RTPMessage *msg;
@@ -469,7 +469,7 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
         return NULL;
     }
 
-    if ( -1 == custom_lossy_packet_registerhandler(messenger, friend_num, payload_type, rtp_handle_packet, retu)) {
+    if ( -1 == m_callback_rtp_packet(messenger, friend_num, payload_type, rtp_handle_packet, retu)) {
         LOGGER_ERROR("Error setting custom register handler for rtp session");
         free(retu);
         return NULL;
@@ -514,7 +514,7 @@ void rtp_kill ( RTPSession *session, Messenger *messenger )
 {
     if ( !session ) return;
 
-    custom_lossy_packet_registerhandler(messenger, session->dest, session->prefix, NULL, NULL);
+    m_callback_rtp_packet(messenger, session->dest, session->prefix, NULL, NULL);
 
     free ( session->ext_header );
     free ( session->csrc );

@@ -1333,17 +1333,30 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
     if (friend_not_valid(m, friend_num))
         return 1;
 
-    if (m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
-        return m->friendlist[friend_num].lossy_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
-                   m, friend_num, packet, length, m->friendlist[friend_num].lossy_packethandlers[packet[0] %
-                           PACKET_ID_LOSSY_RANGE_SIZE].object);
+    if (packet[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_LOSSY_AV_RESERVED)) {
+        if (m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] % PACKET_LOSSY_AV_RESERVED].function)
+            return m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] % PACKET_LOSSY_AV_RESERVED].function(
+                       m, friend_num, packet, length, m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] %
+                               PACKET_LOSSY_AV_RESERVED].object);
+
+        return 1;
+    }
+
+    if (m->lossy_packethandler)
+        m->lossy_packethandler(m, friend_num, packet, length, m->lossy_packethandler_userdata);
 
     return 1;
 }
 
-int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
-                                        void *object)
+void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
+        uint32_t friendnumber, const uint8_t *data, size_t len, void *object), void *object)
+{
+    m->lossy_packethandler = packet_handler_callback;
+    m->lossy_packethandler_userdata = object;
+}
+
+int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
+                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object), void *object)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1351,13 +1364,15 @@ int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint
     if (byte < PACKET_ID_LOSSY_RANGE_START)
         return -1;
 
-    if (byte >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+    if (byte >= (PACKET_ID_LOSSY_RANGE_START + PACKET_LOSSY_AV_RESERVED))
         return -1;
 
-    m->friendlist[friendnumber].lossy_packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].function = packet_handler_callback;
-    m->friendlist[friendnumber].lossy_packethandlers[byte % PACKET_ID_LOSSY_RANGE_SIZE].object = object;
+    m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_LOSSY_AV_RESERVED].function =
+        packet_handler_callback;
+    m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_LOSSY_AV_RESERVED].object = object;
     return 0;
 }
+
 
 int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
 {
@@ -1384,31 +1399,17 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
     if (packet[0] >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
         return -1;
 
-    if (m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function)
-        return m->friendlist[friend_num].lossless_packethandlers[packet[0] % PACKET_ID_LOSSLESS_RANGE_SIZE].function(
-                   m, friend_num, packet, length, m->friendlist[friend_num].lossless_packethandlers[packet[0] %
-                           PACKET_ID_LOSSLESS_RANGE_SIZE].object);
+    if (m->lossless_packethandler)
+        m->lossless_packethandler(m, friend_num, packet, length, m->lossless_packethandler_userdata);
 
     return 1;
 }
 
-int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-        int (*packet_handler_callback)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
-        void *object)
+void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
+        uint32_t friendnumber, const uint8_t *data, size_t len, void *object), void *object)
 {
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    if (byte < PACKET_ID_LOSSLESS_RANGE_START)
-        return -1;
-
-    if (byte >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
-        return -1;
-
-    m->friendlist[friendnumber].lossless_packethandlers[byte % PACKET_ID_LOSSLESS_RANGE_SIZE].function =
-        packet_handler_callback;
-    m->friendlist[friendnumber].lossless_packethandlers[byte % PACKET_ID_LOSSLESS_RANGE_SIZE].object = object;
-    return 0;
+    m->lossless_packethandler = packet_handler_callback;
+    m->lossless_packethandler_userdata = object;
 }
 
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)

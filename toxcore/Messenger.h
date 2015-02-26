@@ -63,6 +63,7 @@
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
 #define PACKET_ID_LOSSLESS_RANGE_SIZE 32
+#define PACKET_LOSSY_AV_RESERVED 8 /* Number of lossy packet types at start of range reserved for A/V. */
 
 typedef struct {
     uint8_t ipv6enabled;
@@ -179,14 +180,9 @@ typedef struct {
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 
     struct {
-        int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object);
+        int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
         void *object;
-    } lossy_packethandlers[PACKET_ID_LOSSY_RANGE_SIZE];
-
-    struct {
-        int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object);
-        void *object;
-    } lossless_packethandlers[PACKET_ID_LOSSLESS_RANGE_SIZE];
+    } lossy_rtp_packethandlers[PACKET_LOSSY_AV_RESERVED];
 
     struct Receipts *receipts_start;
     struct Receipts *receipts_end;
@@ -259,6 +255,11 @@ struct Messenger {
 
     void (*msi_packet)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
+
+    void (*lossy_packethandler)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void *lossy_packethandler_userdata;
+    void (*lossless_packethandler)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void *lossless_packethandler_userdata;
 
     Messenger_Options options;
 };
@@ -631,16 +632,21 @@ void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t
  */
 int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
-/**********************************************/
-
-/* Set handlers for custom lossy packets (RTP packets for example.)
+/* Set handlers for lossy rtp packets.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int custom_lossy_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-                                        int (*packet_handler_callback)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
-                                        void *object);
+int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
+                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object), void *object);
+
+/**********************************************/
+
+/* Set handlers for custom lossy packets.
+ *
+ */
+void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
+        uint32_t friendnumber, const uint8_t *data, size_t len, void *object), void *object);
 
 /* High level function to send custom lossy packets.
  *
@@ -652,14 +658,9 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set handlers for custom lossless packets.
  *
- * byte must be in PACKET_ID_LOSSLESS_RANGE_START PACKET_ID_LOSSLESS_RANGE_SIZE range.
- *
- * return -1 on failure.
- * return 0 on success.
  */
-int custom_lossless_packet_registerhandler(Messenger *m, int32_t friendnumber, uint8_t byte,
-        int (*packet_handler_callback)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint32_t len, void *object),
-        void *object);
+void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
+        uint32_t friendnumber, const uint8_t *data, size_t len, void *object), void *object);
 
 /* High level function to send custom lossless packets.
  *
