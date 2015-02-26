@@ -491,21 +491,11 @@ static int send_message_generic(Messenger *m, int32_t friendnumber, const uint8_
     return 0;
 }
 
-/* Send a text chat message to an online friend.
- *
- *  return the message id if packet was successfully put into the send queue.
- *  return 0 if it was not.
- */
 int m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length, uint32_t *message_id)
 {
     return send_message_generic(m, friendnumber, message, length, PACKET_ID_MESSAGE, message_id);
 }
 
-/* Send an action to an online friend.
- *
- *  return the message id if packet was successfully put into the send queue.
- *  return 0 if it was not.
- */
 int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length, uint32_t *message_id)
 {
     return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION, message_id);

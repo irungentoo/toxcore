@@ -21,18 +21,18 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
-void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_add_friend_norequest(m, public_key);
+        tox_friend_add_norequest(m, public_key, 0);
     }
 }
 uint32_t messages_received;
 
-void print_message(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
+void print_message(Tox *m, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -46,7 +46,7 @@ void print_message(Tox *m, int friendnumber, const uint8_t *string, uint16_t len
 
 uint32_t name_changes;
 
-void print_nickchange(Tox *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
+void print_nickchange(Tox *m, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -57,7 +57,7 @@ void print_nickchange(Tox *m, int friendnumber, const uint8_t *string, uint16_t 
 
 uint32_t typing_changes;
 
-void print_typingchange(Tox *m, int friendnumber, uint8_t typing, void *userdata)
+void print_typingchange(Tox *m, uint32_t friendnumber, bool typing, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -144,27 +144,35 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *dat
 
 START_TEST(test_one)
 {
-    Tox *tox1 = tox_new(0);
-    Tox *tox2 = tox_new(0);
+    Tox *tox1 = tox_new(0, 0, 0, 0);
+    Tox *tox2 = tox_new(0, 0, 0, 0);
 
-    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_get_address(tox1, address);
-    ck_assert_msg(tox_add_friend(tox1, address, (uint8_t *)"m", 1) == TOX_FAERR_OWNKEY, "Adding own address worked.");
+    uint8_t address[TOX_ADDRESS_SIZE];
+    tox_self_get_address(tox1, address);
+    TOX_ERR_FRIEND_ADD error;
+    uint32_t ret = tox_friend_add(tox1, address, (uint8_t *)"m", 1, &error);
+    ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_OWN_KEY, "Adding own address worked.");
 
-    tox_get_address(tox2, address);
-    uint8_t message[TOX_MAX_FRIENDREQUEST_LENGTH + 1];
-    ck_assert_msg(tox_add_friend(tox1, address, NULL, 0) == TOX_FAERR_NOMESSAGE, "Sending request with no message worked.");
-    ck_assert_msg(tox_add_friend(tox1, address, message, sizeof(message)) == TOX_FAERR_TOOLONG,
-                  "TOX_MAX_FRIENDREQUEST_LENGTH is too big.");
+    tox_self_get_address(tox2, address);
+    uint8_t message[TOX_MAX_FRIEND_REQUEST_LENGTH + 1];
+    ret = tox_friend_add(tox1, address, NULL, 0, &error);
+    ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_NULL, "Sending request with no message worked.");
+    ret = tox_friend_add(tox1, address, message, 0, &error);
+    ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_NO_MESSAGE, "Sending request with no message worked.");
+    ret = tox_friend_add(tox1, address, message, sizeof(message), &error);
+    ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_TOO_LONG,
+                  "TOX_MAX_FRIEND_REQUEST_LENGTH is too big.");
 
     address[0]++;
-    ck_assert_msg(tox_add_friend(tox1, address, (uint8_t *)"m", 1) == TOX_FAERR_BADCHECKSUM,
+    ret = tox_friend_add(tox1, address, (uint8_t *)"m", 1, &error);
+    ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_BAD_CHECKSUM,
                   "Adding address with bad checksum worked.");
 
-    tox_get_address(tox2, address);
-    ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == 0, "Failed to add friend.");
-    ck_assert_msg(tox_add_friend(tox1, address, message, TOX_MAX_FRIENDREQUEST_LENGTH) == TOX_FAERR_ALREADYSENT,
-                  "Adding friend twice worked.");
+    tox_self_get_address(tox2, address);
+    ret = tox_friend_add(tox1, address, message, TOX_MAX_FRIEND_REQUEST_LENGTH, &error);
+    ck_assert_msg(ret == 0 && error == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend.");
+    ret = tox_friend_add(tox1, address, message, TOX_MAX_FRIEND_REQUEST_LENGTH, &error);
+    ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_ALREADY_SENT, "Adding friend twice worked.");
 
     uint8_t name[TOX_MAX_NAME_LENGTH];
     int i;
@@ -173,22 +181,23 @@ START_TEST(test_one)
         name[i] = rand();
     }
 
-    tox_set_name(tox1, name, sizeof(name));
-    ck_assert_msg(tox_get_self_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
+    tox_self_set_name(tox1, name, sizeof(name), 0);
+    ck_assert_msg(tox_self_get_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
 
-    size_t save_size = tox_size(tox1);
+    size_t save_size = tox_save_size(tox1);
     uint8_t data[save_size];
     tox_save(tox1, data);
 
     tox_kill(tox2);
-    tox2 = tox_new(0);
-    ck_assert_msg(tox_load(tox2, data, save_size) == 0, "Load failed");
+    TOX_ERR_NEW err_n;
 
-    size_t length = tox_get_self_name_size(tox2);
-    ck_assert_msg(tox_get_self_name_size(tox2) == sizeof name, "Wrong name size.");
+    tox2 = tox_new(0, data, save_size, &err_n);
+    ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
+
+    ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
 
     uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
-    ck_assert_msg(tox_get_self_name(tox2, new_name) == TOX_MAX_NAME_LENGTH, "Wrong name length");
+    tox_self_get_name(tox2, new_name);
     ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");
 
     tox_kill(tox1);
