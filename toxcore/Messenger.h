@@ -650,7 +650,11 @@ void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_cal
 
 /* High level function to send custom lossy packets.
  *
- * return -1 on failure.
+ * return -1 if friend invalid.
+ * return -2 if length wrong.
+ * return -3 if first byte invalid.
+ * return -4 if friend offline.
+ * return -5 if packet failed to send because of other error.
  * return 0 on success.
  */
 int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length);
@@ -664,7 +668,11 @@ void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_
 
 /* High level function to send custom lossless packets.
  *
- * return -1 on failure.
+ * return -1 if friend invalid.
+ * return -2 if length wrong.
+ * return -3 if first byte invalid.
+ * return -4 if friend offline.
+ * return -5 if packet failed to send because of other error.
  * return 0 on success.
  */
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length);

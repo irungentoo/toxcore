@@ -1379,11 +1379,24 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
-        return -1;
+    if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
+        return -2;
 
-    return send_lossy_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                  m->friendlist[friendnumber].friendcon_id), data, length);
+    if (data[0] < PACKET_ID_LOSSY_RANGE_START)
+        return -3;
+
+    if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+        return -3;
+
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -4;
+
+    if (send_lossy_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                               m->friendlist[friendnumber].friendcon_id), data, length) == -1) {
+        return -5;
+    } else {
+        return 0;
+    }
 }
 
 static int handle_custom_lossless_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length)
@@ -1417,21 +1430,21 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (length == 0)
-        return -1;
+    if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
+        return -2;
 
     if (data[0] < PACKET_ID_LOSSLESS_RANGE_START)
-        return -1;
+        return -3;
 
     if (data[0] >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
-        return -1;
+        return -3;
 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
-        return -1;
+        return -4;
 
     if (write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                           m->friendlist[friendnumber].friendcon_id), data, length, 1) == -1) {
-        return -1;
+        return -5;
     } else {
         return 0;
     }

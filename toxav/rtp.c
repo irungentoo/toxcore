@@ -428,12 +428,13 @@ int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *dat
 
     if ( !msg ) return -1;
 
-    if ( -1 == send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length) ) {
-        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
+    int ret = send_custom_lossy_packet(messenger, session->dest, msg->data, msg->length);
+
+    if ( 0 !=  ret) {
+        LOGGER_WARNING("Failed to send full packet (len: %d)! error: %i", length, ret);
         rtp_free_msg ( session, msg );
         return rtp_ErrorSending;
     }
-
 
     /* Set sequ number */
     session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
