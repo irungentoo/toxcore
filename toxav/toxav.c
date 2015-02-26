@@ -23,7 +23,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#define __TOX_DEFINED__
+#define TOX_DEFINED
 typedef struct Messenger Tox;
 
 #define _GNU_SOURCE /* implicit declaration warning */
