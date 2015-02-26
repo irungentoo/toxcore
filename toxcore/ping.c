@@ -282,7 +282,7 @@ int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
     uint32_t r = rand();
 
     for (i = 0; i < MAX_TO_PING; ++i) {
-        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id) == 2) {
+        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id, CLIENT_ID_SIZE) == 2) {
             memcpy(ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id, CLIENT_ID_SIZE);
             ipport_copy(&ping->to_ping[(i + r) % MAX_TO_PING].ip_port, &ip_port);
             return 0;

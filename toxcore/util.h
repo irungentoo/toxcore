@@ -55,7 +55,13 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
-bool id_long_equal(const uint8_t *dest, const uint8_t *src);
+
+/* compares two extended public keys */
+bool ext_pk_equal(const uint8_t *dest, const uint8_t *src);
+
+/* compares two signature pubic keys */
+bool sig_pk_equal(const uint8_t *dest, const uint8_t *src);
+
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 
 // For printing purposes
