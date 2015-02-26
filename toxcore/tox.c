@@ -809,3 +809,100 @@ void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *
     m_callback_action(m, function, user_data);
 }
 
+static void set_custom_packet_error(int ret, TOX_ERR_SEND_CUSTOM_PACKET *error)
+{
+    switch (ret) {
+        case 0:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_OK);
+            break;
+
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_FRIEND_NOT_FOUND);
+            break;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_TOO_LONG);
+            break;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_INVALID);
+            break;
+
+        case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED);
+            break;
+
+        case -5:
+            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_SENDQ);
+            break;
+    }
+}
+
+bool tox_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                           TOX_ERR_SEND_CUSTOM_PACKET *error)
+{
+    if (!data) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_NULL);
+        return 0;
+    }
+
+    Messenger *m = tox;
+
+    if (length == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_EMPTY);
+        return 0;
+    }
+
+    if (data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_LOSSY_AV_RESERVED)) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_INVALID);
+        return 0;
+    }
+
+    int ret = send_custom_lossy_packet(m, friend_number, data, length);
+
+    set_custom_packet_error(ret, error);
+
+    if (ret == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    custom_lossy_packet_registerhandler(m, function, user_data);
+}
+
+bool tox_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                              TOX_ERR_SEND_CUSTOM_PACKET *error)
+{
+    if (!data) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_NULL);
+        return 0;
+    }
+
+    Messenger *m = tox;
+
+    if (length == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_EMPTY);
+        return 0;
+    }
+
+    int ret = send_custom_lossless_packet(m, friend_number, data, length);
+
+    set_custom_packet_error(ret, error);
+
+    if (ret == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    custom_lossless_packet_registerhandler(m, function, user_data);
+}
