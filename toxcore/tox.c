@@ -926,6 +926,16 @@ void tox_callback_group_nick_change(Tox *tox, void (*function)(Tox *m, int, uint
     gc_callback_nick_change(m, function, userdata);
 }
 
+/* Set the callback for group peer status changes.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, uint8_t status, void *userdata)
+ */
+void tox_callback_group_status_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint8_t, void *), void *userdata)
+{
+    Messenger *m = tox;
+    gc_callback_status_change(m, function, userdata);
+}
+
 /* Set the callback for group topic changes.
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *topic, uint16_t length, void *userdata)
@@ -1326,6 +1336,13 @@ int tox_group_get_number_peers(const Tox *tox, int groupnumber)
         return -1;
 
     return gc_get_numpeers(chat);
+}
+
+/* Returns the number of active groups. */
+uint32_t tox_group_count_groups(const Tox *tox)
+{
+    const Messenger *m = tox;
+    return gc_count_groups(m->group_handler);
 }
 
 /* Toggle ignore on peernumber in groupnumber.

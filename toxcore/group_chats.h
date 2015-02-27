@@ -225,6 +225,8 @@ typedef struct GC_Session {
     void *op_certificate_userdata;
     void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *nick_change_userdata;
+    void (*status_change)(Messenger *m, int, uint32_t, uint8_t, void *);
+    void *status_change_userdata;
     void (*topic_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint16_t, void *);
     void *topic_change_userdata;
     void (*peer_join)(Messenger *m, int, uint32_t, void *);
@@ -313,37 +315,39 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
-void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                         const uint8_t *, uint16_t, void *), void *userdata);
+void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
+                         void *), void *userdata);
 
-void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                                 const uint8_t *, uint16_t, void *), void *userdata);
+void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
+                                 uint16_t, void *), void *userdata);
 
-void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                        const uint8_t *, uint16_t, void *), void *userdata);
+void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
+                        void *), void *userdata);
 
-void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t, uint32_t,
-                                uint8_t, void *), void *userdata);
+void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint32_t, uint8_t,
+                               void *), void *userdata);
 
-void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                             const uint8_t *, uint16_t, void *), void *userdata);
+void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
+                             uint16_t, void *), void *userdata);
 
-void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                              const uint8_t *, uint16_t, void *), void *userdata);
+void gc_callback_status_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint8_t, void *),
+                               void *userdata);
+
+void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
+                              uint16_t, void *), void *userdata);
 
 void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata);
 
-void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
-                           const uint8_t *, uint16_t, void *), void *userdata);
+void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
+                           void *), void *userdata);
 
-void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
+void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, int, void *), void *userdata);
 
-void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *),
-                                 void *userdata);
+void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata);
 
-void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int groupnumber, void *), void *userdata);
-void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint8_t type, void *),
-                          void *userdata);
+void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata);
+
+void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int, uint8_t type, void *), void *userdata);
 
 /* This is the main loop. */
 void do_gc(GC_Session* c);
@@ -392,6 +396,12 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnum);
  * Return -1 on failure.
  */
 int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *partmessage, uint16_t length);
+
+/* Count number of active groups.
+ *
+ * Returns the count.
+ */
+uint32_t gc_count_groups(const GC_Session *c);
 
 /* Return groupnumber's GC_Chat pointer on success
  * Return NULL on failure

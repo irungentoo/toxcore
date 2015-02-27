@@ -2638,21 +2638,6 @@ struct SAVED_GROUP {
     uint8_t self_secret_key[EXT_SECRET_KEY];
 };
 
-/* Count groups to be saved, i.e. those with connection_state > CS_INVALID
- *
- * Returns the count.
- */
-static uint32_t gc_count_groups(const GC_Session *gc)
-{
-    uint32_t i, ret = 0;
-
-    for (i = 0; i < gc->num_chats; i++)
-        if (gc->chats[i].connection_state > CS_NONE && gc->chats[i].connection_state < CS_INVALID)
-            ret++;
-
-    return ret;
-}
-
 static uint32_t saved_groups_size(const Messenger *m)
 {
     return gc_count_groups(m->group_handler) * sizeof(struct SAVED_GROUP);

@@ -866,6 +866,12 @@ void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, u
 void tox_callback_group_nick_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                     void *), void *userdata);
 
+/* Set the callback for group peer status changes.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, uint8_t status, void *userdata)
+ */
+void tox_callback_group_status_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint8_t, void *), void *userdata);
+
 /* Set the callback for group topic changes.
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *topic, uint16_t length, void *userdata)
@@ -1069,6 +1075,9 @@ int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX
  * Returns -1 on failure.
  */
 int tox_group_get_number_peers(const Tox *tox, int groupnumber);
+
+/* Returns the number of active groups. */
+uint32_t tox_group_count_groups(const Tox *tox);
 
 /* Toggle ignore on peernumber in groupnumber.
  * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.
