@@ -353,6 +353,25 @@ struct Tox_Options {
      * proxy_enabled is false.
      */
     uint16_t proxy_port;
+
+    /**
+     * The start port of the inclusive port range to attempt to use.
+     *
+     * If both start_port and end_port are 0, the default port range will be
+     * used: [33445, 33545].
+     *
+     * If either start_port or end_port is 0 while the other is non-zero, the
+     * non-zero port will be the only port in the range.
+     *
+     * Having start_port > end_port will yield the same behavior as if start_port
+     * and end_port were swapped.
+     */
+    uint16_t start_port;
+
+    /**
+     * The end port of the inclusive port range to attempt to use.
+     */
+    uint16_t end_port;
 };
 
 

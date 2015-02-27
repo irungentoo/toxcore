@@ -107,6 +107,8 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
     } else {
         m_options.ipv6enabled = options->ipv6_enabled;
         m_options.udp_disabled = !options->udp_enabled;
+        m_options.port_range[0] = options->start_port;
+        m_options.port_range[1] = options->end_port;
 
         switch (options->proxy_type) {
             case TOX_PROXY_TYPE_HTTP:

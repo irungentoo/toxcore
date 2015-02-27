@@ -69,6 +69,7 @@ typedef struct {
     uint8_t ipv6enabled;
     uint8_t udp_disabled;
     TCP_Proxy_Info proxy_info;
+    uint16_t port_range[2];
 } Messenger_Options;
 
 

@@ -1484,7 +1484,7 @@ Messenger *new_messenger(Messenger_Options *options)
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking(ip, TOX_PORT_DEFAULT);
+        m->net = new_networking_ex(ip, options->port_range[0], options->port_range[1]);
     }
 
     if (m->net == NULL) {
