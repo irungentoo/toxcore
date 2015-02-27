@@ -33,11 +33,20 @@
 // Need dht because of ENC_SECRET_KEY and ENC_PUBLIC_KEY
 #include "DHT.h"
 
-// Long keypair: curve + ed. Currently for group chats and announcement purposes.
-void create_long_keypair(uint8_t *pk, uint8_t *sk)
+/* Extended keypair: curve + ed. Encryption keys are derived from the signature keys.
+ * Used for group chats and group DHT announcements.
+ * pk and sk must have room for at least EXT_PUBLIC_KEY bytes each.
+ */
+void create_extended_keypair(uint8_t *pk, uint8_t *sk)
 {
-    crypto_box_keypair(pk, sk);
-    crypto_sign_keypair(pk + ENC_SECRET_KEY, sk + ENC_PUBLIC_KEY);
+    /* create signature key pair */
+    crypto_sign_keypair(pk + ENC_PUBLIC_KEY, sk + ENC_SECRET_KEY);
+
+    /* convert public signature key to public encryption key */
+    crypto_sign_ed25519_pk_to_curve25519(pk, pk + ENC_PUBLIC_KEY);
+
+    /* convert secret signature key to secret encryption key */
+    crypto_sign_ed25519_sk_to_curve25519(sk, sk + ENC_SECRET_KEY);
 }
 
 /* Sign input data

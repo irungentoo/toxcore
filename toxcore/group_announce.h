@@ -26,30 +26,35 @@
 #define MAX_GCA_SELF_REQUESTS 30
 
 typedef struct {
-    uint8_t     public_key[EXT_PUBLIC_KEY];
-    IP_Port     ip_port;
+    uint8_t public_key[EXT_PUBLIC_KEY];
+    IP_Port ip_port;
 } GC_Announce_Node;
 
 struct GC_Announce;
-/* Initiate the process of the announcement, claiming a node is part of a group chat.
+
+/* Initiate the process of announcing a group to the DHT.
  *
- * dht = DHT object we're operating on
- * self_long_pk = extended (encryption+signature) public key of the node announcing its presence
- * self_long_sk = signing private key of the same node
- * chat_id = id of chat we're announcing to
+ * announce = announce object we're operating on.
+ * self_public_key = extended (encryption+signature) public key of the node announcing its presence
+ * self_secret_key = signing private key of the same node
+ * chat_public_key = extended public key of the group (the signature key is used as the chat_id)
  *
  * return -1 in case of error
  * return number of send packets otherwise
  */
-int gca_send_announce_request(struct GC_Announce *announce, const uint8_t *self_long_pk,
-                              const uint8_t *self_long_sk, const uint8_t *chat_id);
+int gca_send_announce_request(struct GC_Announce *announce, const uint8_t *self_public_key,
+                              const uint8_t *self_secret_key, const uint8_t *chat_public_key);
 
-/* Sends an actual announcement packet to the node specified as client_id on ipp */
-int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self_long_pk,
-                               const uint8_t *self_long_sk, const uint8_t *chat_id);
+/* Sends an announcement packet to the node specified as public_key with ipp */
+int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self_public_key,
+                               const uint8_t *self_secret_key, const uint8_t *chat_public_key);
 
-/* Retrieve nodes by chat id, returns 0 if no nodes found or request in progress, number of nodes otherwise */
-size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
+/* Retrieve nodes with chat_public_key.
+ *
+ * returns 0 if no nodes found or request in progress.
+ * returns the number of nodes otherwise.
+ */
+size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_public_key, GC_Announce_Node *nodes);
 
 /* Do some periodic work, currently removes expired announcements */
 void do_gca(struct GC_Announce *announce);

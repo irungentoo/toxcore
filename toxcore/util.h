@@ -59,8 +59,8 @@ bool id_equal(const uint8_t *dest, const uint8_t *src);
 /* compares two extended public keys */
 bool ext_pk_equal(const uint8_t *dest, const uint8_t *src);
 
-/* compares two signature pubic keys */
-bool sig_pk_equal(const uint8_t *dest, const uint8_t *src);
+/* compares two group chat_id's */
+bool chat_id_equal(const uint8_t *dest, const uint8_t *src);
 
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 

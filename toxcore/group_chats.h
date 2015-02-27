@@ -41,6 +41,8 @@ typedef struct Messenger Messenger;
 #define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 4 + 10)
 #define GROUP_CLOSE_CONNECTIONS 6
 
+#define CHAT_ID_SIZE SIG_PUBLIC_KEY
+
 /* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
 #define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
@@ -176,8 +178,10 @@ typedef struct GC_Connection GC_Connection;
 typedef struct GC_Chat {
     Networking_Core *net;
 
-    uint32_t    group_pk_hash;   /* 32-bit hash of chat_public_key */
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* Key used to join the chat */
+    /* The chat_id used to join the group is the signature portion of the key */
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
+    uint32_t    chat_pk_hash;   /* 32-bit hash of chat_public_key */
+
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
 
@@ -307,6 +311,9 @@ int gc_get_numpeers(const GC_Chat *chat);
  */
 uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 
+/* Copies the chat_id to dest */
+void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
+
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int groupnumber, uint32_t,
                          const uint8_t *, uint16_t, void *), void *userdata);
 
@@ -357,12 +364,12 @@ void gc_kill_groupchats(GC_Session* c);
  */
 int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
 
-/* Sends an invite request to an existing group using the invite key
+/* Sends an invite request to an existing group using the chat_id
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *invite_key);
+int gc_group_join(GC_Session *c, const uint8_t *chat_id);
 
 /* Joins a group using the invite data received in a friend's group invite.
  *

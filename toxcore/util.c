@@ -68,9 +68,9 @@ bool ext_pk_equal(const uint8_t *dest, const uint8_t *src)
     return memcmp(dest, src, EXT_PUBLIC_KEY) == 0;
 }
 
-bool sig_pk_equal(const uint8_t *dest, const uint8_t *src)
+bool chat_id_equal(const uint8_t *dest, const uint8_t *src)
 {
-    return memcmp(dest, src, SIG_PUBLIC_KEY) == 0;
+    return memcmp(dest, src, CHAT_ID_SIZE) == 0;
 }
 
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)

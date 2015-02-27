@@ -1010,15 +1010,15 @@ int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length)
     return gc_group_add(m->group_handler, group_name, length);
 }
 
-/* Joins a groupchat using the supplied public key.
+/* Joins a groupchat using the supplied chat_id
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new_join(Tox *tox, const uint8_t *invite_key)
+int tox_group_new_join(Tox *tox, const uint8_t *chat_id)
 {
     Messenger *m = tox;
-    return gc_group_join(m->group_handler, invite_key);
+    return gc_group_join(m->group_handler, chat_id);
 }
 
 /* Joins a group using the invite data received in a friend's group invite.
@@ -1274,13 +1274,13 @@ uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
     return gc_get_role(chat, peernumber);
 }
 
-/* Get invite key for the groupchat from the groupnumber.
+/* Get invite key (chat_id) for groupnumber's groupchat.
  * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.
  *
  * Returns 0 on success
  * Retruns -1 on failure
  */
-int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
+int tox_group_get_chat_id(const Tox *tox, int groupnumber, uint8_t *dest)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1288,7 +1288,7 @@ int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest)
     if (chat == NULL)
         return -1;
 
-    memcpy(dest, chat->chat_public_key, EXT_PUBLIC_KEY);
+    gc_get_chat_id(chat, dest);
     return 0;
 }
 

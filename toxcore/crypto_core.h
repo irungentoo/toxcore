@@ -40,8 +40,11 @@
 
 #define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
 
-// Long keypair: curve + ed. Currently for group chats and announcement purposes.
-void create_long_keypair(uint8_t *pk, uint8_t *sk);
+/* Extended keypair: curve + ed. Encryption keys are derived from the signature keys.
+ * Used for group chats and group DHT announcements.
+ * pk and sk must have room for at least EXT_PUBLIC_KEY bytes each.
+ */
+void create_extended_keypair(uint8_t *pk, uint8_t *sk);
 
 /* Sign input data
  * Add a timestamp and signature at the end of the data
