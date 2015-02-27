@@ -401,7 +401,8 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
 }
 
 /* Returns number of peers */
-int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[], uint32_t num_peers)
+uint32_t gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[],
+                          uint32_t num_peers)
 {
     uint32_t i;
 

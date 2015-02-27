@@ -41,8 +41,6 @@ typedef struct Messenger Messenger;
 #define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 4 + 10)
 #define GROUP_CLOSE_CONNECTIONS 6
 
-#define CHAT_ID_SIZE SIG_PUBLIC_KEY
-
 /* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
 #define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
@@ -301,7 +299,8 @@ int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 uint8_t gc_get_status(const GC_Chat *chat, uint32_t peernumber);
 
 /* Returns number of peers */
-int gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[], uint32_t num_peers);
+uint32_t gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[],
+                          uint32_t num_peers);
 
 /* Returns number of peers in chat */
 int gc_get_numpeers(const GC_Chat *chat);

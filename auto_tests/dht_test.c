@@ -61,7 +61,7 @@ uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t l
     uint32_t i;
 
     for (i = 0; i < length; ++i)
-        if (id_closest(comp_client_id, client_id, list[i].client_id) == 1)
+        if (id_closest(comp_client_id, client_id, list[i].client_id, CLIENT_ID_SIZE) == 1)
             return 0;
 
     return 1;
@@ -235,19 +235,19 @@ void test_addto_lists_possible_bad(DHT            *dht,
     ck_assert_msg(inlist_id1 + inlist_id2 + inlist_id3 == 2, "Wrong client removed");
 
     if (!inlist_id1) {
-        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id1) == 1,
+        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id1, CLIENT_ID_SIZE) == 1,
                       "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id1) == 1,
+        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id1, CLIENT_ID_SIZE) == 1,
                       "Id has been removed but is closer to than another one");
     } else if (!inlist_id2) {
-        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id2) == 1,
+        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id2, CLIENT_ID_SIZE) == 1,
                       "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id2) == 1,
+        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id2, CLIENT_ID_SIZE) == 1,
                       "Id has been removed but is closer to than another one");
     } else if (!inlist_id3) {
-        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id3) == 1,
+        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id3, CLIENT_ID_SIZE) == 1,
                       "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id3) == 1,
+        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id3, CLIENT_ID_SIZE) == 1,
                       "Id has been removed but is closer to than another one");
     }
 }
