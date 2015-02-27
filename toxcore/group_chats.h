@@ -364,11 +364,13 @@ void gc_kill_groupchats(GC_Session* c);
 int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
 
 /* Sends an invite request to an existing group using the chat_id
+ * The two keys must be either both null or both nonnull, and if the latter they'll be
+ * used instead of generating new ones
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id);
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *self_public_key, const uint8_t *self_secret_key);
 
 /* Joins a group using the invite data received in a friend's group invite.
  *
@@ -389,7 +391,7 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnum);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gc_group_exit(GC_Session* c, GC_Chat *chat, const uint8_t *partmessage, uint16_t length);
+int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *partmessage, uint16_t length);
 
 /* Return groupnumber's GC_Chat pointer on success
  * Return NULL on failure

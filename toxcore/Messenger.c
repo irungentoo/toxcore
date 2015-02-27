@@ -2523,6 +2523,7 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_NAME          4
 #define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
 #define MESSENGER_STATE_TYPE_STATUS        6
+#define MESSENGER_STATE_TYPE_GROUPS        7
 #define MESSENGER_STATE_TYPE_TCP_RELAY     10
 #define MESSENGER_STATE_TYPE_PATH_NODE     11
 
@@ -2629,6 +2630,75 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
     return num;
 }
 
+#include "group_chats.h"
+
+struct SAVED_GROUP {
+    uint8_t chat_id[CHAT_ID_SIZE];
+    uint8_t self_public_key[EXT_PUBLIC_KEY];
+    uint8_t self_secret_key[EXT_SECRET_KEY];
+};
+
+/* Count groups to be saved, i.e. those with connection_state > CS_INVALID
+ *
+ * Returns the count.
+ */
+static uint32_t gc_count_groups(const GC_Session *gc)
+{
+    uint32_t i, ret = 0;
+
+    for (i = 0; i < gc->num_chats; i++)
+        if (gc->chats[i].connection_state > CS_NONE && gc->chats[i].connection_state < CS_INVALID)
+            ret++;
+
+    return ret;
+}
+
+static uint32_t saved_groups_size(const Messenger *m)
+{
+    return gc_count_groups(m->group_handler) * sizeof(struct SAVED_GROUP);
+}
+
+static uint32_t groups_save(const Messenger *m, uint8_t *data)
+{
+    uint32_t i;
+    uint32_t num = 0;
+    GC_Session *gc = m->group_handler;
+    struct SAVED_GROUP temp;
+
+    for (i = 0; i < gc->num_chats; i++) {
+        if (gc->chats[i].connection_state > CS_NONE && gc->chats[i].connection_state < CS_INVALID) {
+            memset(&temp, 0, sizeof(struct SAVED_GROUP));
+            memcpy(temp.chat_id, SIG_KEY(gc->chats[i].chat_public_key), CHAT_ID_SIZE);
+            memcpy(temp.self_public_key, gc->chats[i].self_public_key, EXT_PUBLIC_KEY);
+            memcpy(temp.self_secret_key, gc->chats[i].self_secret_key, EXT_SECRET_KEY);
+
+            memcpy(data + num * sizeof(struct SAVED_GROUP), &temp, sizeof(struct SAVED_GROUP));
+            num++;
+        }
+    }
+
+    return num * sizeof(struct SAVED_GROUP);
+}
+
+static int groups_load(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length % sizeof(struct SAVED_GROUP) != 0)
+        return -1;
+
+    uint32_t i, num = length / sizeof(struct SAVED_GROUP);
+
+    for (i = 0; i < num; ++i) {
+        struct SAVED_GROUP temp;
+        memcpy(&temp, data + i * sizeof(struct SAVED_GROUP), sizeof(struct SAVED_GROUP));
+
+        int ret = gc_group_join(m->group_handler, temp.chat_id, temp.self_public_key, temp.self_secret_key);
+        if (ret == -1)
+            LOGGER_WARNING("Failed to join group");
+    }
+
+    return num;
+}
+
 /*  return size of the messenger data (for saving) */
 uint32_t messenger_size(const Messenger *m)
 {
@@ -2637,6 +2707,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
              + sizesubhead + DHT_size(m->dht)                  // DHT
              + sizesubhead + saved_friendslist_size(m)         // Friendlist itself.
+             + sizesubhead + saved_groups_size(m)              // Groupchats
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
@@ -2686,6 +2757,12 @@ void messenger_save(const Messenger *m, uint8_t *data)
     type = MESSENGER_STATE_TYPE_FRIENDS;
     data = z_state_save_subheader(data, len, type);
     friends_list_save(m, data);
+    data += len;
+
+    len = saved_groups_size(m);
+    type = MESSENGER_STATE_TYPE_GROUPS;
+    data = z_state_save_subheader(data, len, type);
+    len = groups_save(m, data);
     data += len;
 
     len = m->name_length;
@@ -2750,6 +2827,10 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
 
         case MESSENGER_STATE_TYPE_FRIENDS:
             friends_list_load(m, data, length);
+            break;
+
+        case MESSENGER_STATE_TYPE_GROUPS:
+            groups_load(m, data, length);
             break;
 
         case MESSENGER_STATE_TYPE_NAME:

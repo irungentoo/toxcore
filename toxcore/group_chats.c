@@ -2097,9 +2097,20 @@ static int get_new_group_index(GC_Session *c)
     return new_index;
 }
 
-static int create_new_group(GC_Session *c, bool founder)
+/* The two keys must be either both null or both nonnull, and if the latter they'll be
+ * used instead of generating new ones */
+static int create_new_group(GC_Session *c, bool founder, const uint8_t *self_public_key, const uint8_t *self_secret_key)
 {
-    // TODO: Need to handle the situation when we load info from locally stored data
+    bool have_old_keys = 0;
+    if (self_public_key) {
+        if (self_secret_key)
+            have_old_keys = 1;
+        else
+            return -1; /* one is null but the other isn't */
+    } else if (self_secret_key) {
+        return -1; /* one is null but the other isn't */
+    }
+
     int groupnumber = get_new_group_index(c);
 
     if (groupnumber == -1)
@@ -2129,7 +2140,12 @@ static int create_new_group(GC_Session *c, bool founder)
         }
     }
 
-    create_extended_keypair(chat->self_public_key, chat->self_secret_key);
+    if (have_old_keys) {
+        memcpy(chat->self_public_key, self_public_key, EXT_PUBLIC_KEY);
+        memcpy(chat->self_secret_key, self_secret_key, EXT_SECRET_KEY);
+    } else {
+        create_extended_keypair(chat->self_public_key, chat->self_secret_key);
+    }
 
     GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
 
@@ -2163,7 +2179,7 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     if (length > MAX_GC_GROUP_NAME_SIZE || length == 0)
         return -1;
 
-    int groupnumber = create_new_group(c, true);
+    int groupnumber = create_new_group(c, true, NULL, NULL);
 
     if (groupnumber == -1)
         return -1;
@@ -2189,13 +2205,15 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
 }
 
 /* Sends an invite request to an existing group using the chat_id
+ * The two keys must be either both null or both nonnull, and if the latter they'll be
+ * used instead of generating new ones
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id)
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *self_public_key, const uint8_t *self_secret_key)
 {
-    int groupnumber = create_new_group(c, false);
+    int groupnumber = create_new_group(c, false, self_public_key, self_secret_key);
 
     if (groupnumber == -1)
         return -1;
@@ -2303,7 +2321,7 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
     if (unpack_gca_nodes(&node, 1, 0, data + CHAT_ID_SIZE, length - CHAT_ID_SIZE, 0) != 1)
         return -1;
 
-    int groupnumber = create_new_group(c, false);
+    int groupnumber = create_new_group(c, false, NULL, NULL);
 
     if (groupnumber == -1)
         return -1;
