@@ -264,7 +264,7 @@ static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *
 
     /* Relay announce request to all nclosest nodes if self announce */
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, SIG_KEY(nodes[i].public_key), sender_pk, CHAT_ID_SIZE) != 1)
+        if (!self && id_closest(chat_id, SIG_KEY(nodes[i].public_key), SIG_KEY(sender_pk), CHAT_ID_SIZE) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
@@ -300,7 +300,7 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format 
     int i, sent = 0;
 
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, SIG_KEY(nodes[i].public_key), sender_pk, CHAT_ID_SIZE) != 1)
+        if (!self && id_closest(chat_id, SIG_KEY(nodes[i].public_key), SIG_KEY(sender_pk), CHAT_ID_SIZE) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
