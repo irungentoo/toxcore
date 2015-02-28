@@ -1002,7 +1002,7 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
  *  return 1 on success
  *  return 0 on failure
  */
-int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
+static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
                      const uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
@@ -1610,11 +1610,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
     if (m->friendlist[i].status != FRIEND_ONLINE) {
         if (packet_id == PACKET_ID_ONLINE && len == 1) {
-            set_friend_status(m, i, FRIEND_ONLINE);
-            send_online_packet(m, i);
-        } else if (packet_id == PACKET_ID_NICKNAME || packet_id == PACKET_ID_STATUSMESSAGE
-                   || packet_id == PACKET_ID_USERSTATUS) {
-            /* Some backward compatibility, TODO: remove. */
             set_friend_status(m, i, FRIEND_ONLINE);
             send_online_packet(m, i);
         } else {

@@ -577,14 +577,6 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
- *  return 1 on success
- *  return 0 on failure
- */
-int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
-                     const uint8_t *filename, uint16_t filename_length);
-
-/* Send a file send request.
- * Maximum filename length is 255 bytes.
  *  return file number on success
  *  return -1 on failure
  */
