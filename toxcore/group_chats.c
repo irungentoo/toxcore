@@ -2008,16 +2008,8 @@ void do_gc(GC_Session *c)
             if (is_timeout(chat->self_last_rcvd_ping, GROUP_GET_NEW_NODES_INTERVAL)) {
                 ++chat->join_attempts;
                 chat->self_last_rcvd_ping = unix_time();
-
-                if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
-                                               chat->chat_public_key) == -1) {
-                    group_delete(c, chat);
-
-                    if (i >= c->num_chats)
-                        break;
-
-                    continue;
-                }
+                gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
+                                           chat->chat_public_key);
             }
 
             chat->connection_state = CS_DISCONNECTED;
@@ -2243,10 +2235,7 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *self_pub
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_pk_hash = jenkins_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
 
-    if (gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
-        group_delete(c, chat);
-        return -1;
-    }
+    gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
 
     return groupnumber;
 }

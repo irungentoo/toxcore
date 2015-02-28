@@ -255,7 +255,7 @@ static int wrap_gca_packet(const uint8_t *send_public_key, const uint8_t *send_s
 
 static size_t add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, const GC_Announce_Node node);
 
-static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *nodes, uint32_t nclosest,
+static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *dht_nodes, uint32_t nclosest,
                                             const uint8_t *chat_id, const uint8_t *sender_pk, const uint8_t *data,
                                             uint32_t length, bool self)
 {
@@ -264,16 +264,16 @@ static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *
 
     /* Relay announce request to all nclosest nodes if self announce */
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, SIG_KEY(nodes[i].public_key), SIG_KEY(sender_pk), CHAT_ID_SIZE) != 1)
+        if (!self && id_closest(chat_id, dht_nodes[i].public_key, sender_pk, MIN(CHAT_ID_SIZE, ENC_PUBLIC_KEY)) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
-                                            nodes[i].public_key, packet, data, length, NET_PACKET_GCA_ANNOUNCE);
+                                            dht_nodes[i].public_key, packet, data, length, NET_PACKET_GCA_ANNOUNCE);
 
         if (packet_length == -1)
             continue;
 
-        if (sendpacket(announce->dht->net, nodes[i].ip_port, packet, packet_length) != -1)
+        if (sendpacket(announce->dht->net, dht_nodes[i].ip_port, packet, packet_length) != -1)
             ++sent;
     }
 
@@ -292,7 +292,7 @@ static int dispatch_packet_announce_request(GC_Announce* announce, Node_format *
     return sent;
 }
 
-static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format *nodes, uint32_t nclosest,
+static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format *dht_nodes, uint32_t nclosest,
                                              const uint8_t *chat_id, const uint8_t *sender_pk, const uint8_t *data,
                                              uint32_t length, bool self)
 {
@@ -300,15 +300,15 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format 
     int i, sent = 0;
 
     for (i = 0; i < nclosest; i++) {
-        if (!self && id_closest(chat_id, SIG_KEY(nodes[i].public_key), SIG_KEY(sender_pk), CHAT_ID_SIZE) != 1)
+        if (!self && id_closest(chat_id, dht_nodes[i].public_key, sender_pk, MIN(CHAT_ID_SIZE, ENC_PUBLIC_KEY)) != 1)
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
-                                            nodes[i].public_key, packet, data, length, NET_PACKET_GCA_GET_NODES);
+                                            dht_nodes[i].public_key, packet, data, length, NET_PACKET_GCA_GET_NODES);
         if (packet_length == -1)
             continue;
 
-        if (sendpacket(announce->dht->net, nodes[i].ip_port, packet, packet_length) != -1)
+        if (sendpacket(announce->dht->net, dht_nodes[i].ip_port, packet, packet_length) != -1)
             ++sent;
     }
 
@@ -319,17 +319,17 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format 
 static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const uint8_t *sender_pk,
                            const uint8_t *data, uint32_t length, uint8_t packet_type, bool self)
 {
-    Node_format nodes[MAX_SENT_NODES];
-    uint32_t nclosest = get_close_nodes(announce->dht, chat_id, nodes, 0, 1, 1);
+    Node_format dht_nodes[MAX_SENT_NODES];
+    uint32_t nclosest = get_close_nodes(announce->dht, chat_id, dht_nodes, 0, 1, 1);
 
     if (nclosest > MAX_GCA_SENT_NODES)
         nclosest = MAX_GCA_SENT_NODES;
 
     if (packet_type == NET_PACKET_GCA_ANNOUNCE)
-        return dispatch_packet_announce_request(announce, nodes, nclosest, chat_id, sender_pk, data, length, self);
+        return dispatch_packet_announce_request(announce, dht_nodes, nclosest, chat_id, sender_pk, data, length, self);
 
     if (packet_type == NET_PACKET_GCA_GET_NODES)
-        return dispatch_packet_get_nodes_request(announce, nodes, nclosest, chat_id, sender_pk, data, length, self);
+        return dispatch_packet_get_nodes_request(announce, dht_nodes, nclosest, chat_id, sender_pk, data, length, self);
 
     return -1;
 }
