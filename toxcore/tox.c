@@ -411,13 +411,13 @@ void tox_self_get_status_message(const Tox *tox, uint8_t *status)
     }
 }
 
-void tox_self_set_status(Tox *tox, TOX_STATUS user_status)
+void tox_self_set_status(Tox *tox, TOX_USER_STATUS user_status)
 {
     Messenger *m = tox;
     m_set_userstatus(m, user_status);
 }
 
-TOX_STATUS tox_self_get_status(const Tox *tox)
+TOX_USER_STATUS tox_self_get_status(const Tox *tox)
 {
     const Messenger *m = tox;
     return m_get_self_userstatus(m);
@@ -561,7 +561,7 @@ size_t tox_friend_list_size(const Tox *tox)
     return count_friendlist(m);
 }
 
-void tox_friend_list(const Tox *tox, uint32_t *list)
+void tox_friend_get_list(const Tox *tox, uint32_t *list)
 {
     if (list) {
         const Messenger *m = tox;
@@ -650,7 +650,7 @@ void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *
     m_callback_statusmessage(m, function, user_data);
 }
 
-TOX_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
+TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
 {
     const Messenger *m = tox;
 
@@ -658,7 +658,7 @@ TOX_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR
 
     if (ret == USERSTATUS_INVALID) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
-        return TOX_STATUS_INVALID;
+        return TOX_USER_STATUS_INVALID;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
@@ -725,41 +725,41 @@ bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool is_typing, TOX_E
     return 1;
 }
 
-static void set_message_error(int ret, TOX_ERR_SEND_MESSAGE *error)
+static void set_message_error(int ret, TOX_ERR_FRIEND_SEND_MESSAGE *error)
 {
     switch (ret) {
         case 0:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_OK);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_OK);
             break;
 
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_FRIEND_NOT_FOUND);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_FOUND);
             break;
 
         case -2:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_TOO_LONG);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG);
             break;
 
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_FRIEND_NOT_CONNECTED);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_CONNECTED);
             break;
 
         case -4:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_SENDQ);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ);
             break;
     }
 }
 
-uint32_t tox_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
-                          TOX_ERR_SEND_MESSAGE *error)
+uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
+                          TOX_ERR_FRIEND_SEND_MESSAGE *error)
 {
     if (!message) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_NULL);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
         return 0;
     }
 
     if (!length) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_EMPTY);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY);
         return 0;
     }
 
@@ -769,16 +769,16 @@ uint32_t tox_send_message(Tox *tox, uint32_t friend_number, const uint8_t *messa
     return message_id;
 }
 
-uint32_t tox_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
-                         TOX_ERR_SEND_MESSAGE *error)
+uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
+                         TOX_ERR_FRIEND_SEND_MESSAGE *error)
 {
     if (!action) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_NULL);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
         return 0;
     }
 
     if (!length) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_MESSAGE_EMPTY);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY);
         return 0;
     }
 
@@ -788,7 +788,7 @@ uint32_t tox_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action
     return message_id;
 }
 
-void tox_callback_read_receipt(Tox *tox, tox_read_receipt_cb *function, void *user_data)
+void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function, void *user_data)
 {
     Messenger *m = tox;
     m_callback_read_receipt(m, function, user_data);
@@ -871,13 +871,13 @@ bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TO
     return 0;
 }
 
-void tox_callback_file_control(Tox *tox, tox_file_control_cb *function, void *user_data)
+void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function, void *user_data)
 {
     Messenger *m = tox;
     callback_file_control(m, function, user_data);
 }
 
-uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_TYPE kind, uint64_t file_size,
                        const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error)
 {
     if (!filename) {
@@ -979,52 +979,52 @@ void tox_callback_file_receive_chunk(Tox *tox, tox_file_receive_chunk_cb *functi
     callback_file_data(m, function, user_data);
 }
 
-static void set_custom_packet_error(int ret, TOX_ERR_SEND_CUSTOM_PACKET *error)
+static void set_custom_packet_error(int ret, TOX_ERR_FRIEND_CUSTOM_PACKET *error)
 {
     switch (ret) {
         case 0:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_OK);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_OK);
             break;
 
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_FRIEND_NOT_FOUND);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_FOUND);
             break;
 
         case -2:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_TOO_LONG);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_TOO_LONG);
             break;
 
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_INVALID);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID);
             break;
 
         case -4:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED);
             break;
 
         case -5:
-            SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_SENDQ);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_SENDQ);
             break;
     }
 }
 
-bool tox_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-                           TOX_ERR_SEND_CUSTOM_PACKET *error)
+bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                           TOX_ERR_FRIEND_CUSTOM_PACKET *error)
 {
     if (!data) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_NULL);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
         return 0;
     }
 
     Messenger *m = tox;
 
     if (length == 0) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_EMPTY);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_EMPTY);
         return 0;
     }
 
     if (data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_LOSSY_AV_RESERVED)) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_INVALID);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID);
         return 0;
     }
 
@@ -1045,18 +1045,18 @@ void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *func
     custom_lossy_packet_registerhandler(m, function, user_data);
 }
 
-bool tox_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-                              TOX_ERR_SEND_CUSTOM_PACKET *error)
+bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                              TOX_ERR_FRIEND_CUSTOM_PACKET *error)
 {
     if (!data) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_NULL);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
         return 0;
     }
 
     Messenger *m = tox;
 
     if (length == 0) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SEND_CUSTOM_PACKET_EMPTY);
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_EMPTY);
         return 0;
     }
 
