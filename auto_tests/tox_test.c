@@ -503,13 +503,13 @@ END_TEST
 
 #define NUM_GROUP_TOX 32
 
-void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 234212)
         return;
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_add_friend_norequest(m, public_key);
+        tox_friend_add_norequest(m, public_key, 0);
     }
 }
 
@@ -560,24 +560,24 @@ START_TEST(test_many_group)
     uint32_t to_comp = 234212;
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
-        toxes[i] = tox_new(0);
+        toxes[i] = tox_new(0, 0, 0, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request, &to_comp);
         tox_callback_group_invite(toxes[i], &print_group_invite_callback, &to_comp);
     }
 
-    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_get_address(toxes[NUM_GROUP_TOX - 1], address);
+    uint8_t address[TOX_ADDRESS_SIZE];
+    tox_self_get_address(toxes[NUM_GROUP_TOX - 1], address);
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
-        ck_assert_msg(tox_add_friend(toxes[i], address, (uint8_t *)"Gentoo", 7) == 0, "Failed to add friend");
+        ck_assert_msg(tox_friend_add(toxes[i], address, (uint8_t *)"Gentoo", 7, 0) == 0, "Failed to add friend");
 
-        tox_get_address(toxes[i], address);
+        tox_self_get_address(toxes[i], address);
     }
 
     while (1) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            if (tox_get_friend_connection_status(toxes[i], 0) != 1) {
+            if (tox_friend_get_connection_status(toxes[i], 0, 0) != TOX_CONNECTION_UDP) {
                 break;
             }
         }
@@ -586,7 +586,7 @@ START_TEST(test_many_group)
             break;
 
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_do(toxes[i]);
+            tox_iteration(toxes[i]);
         }
 
         c_sleep(50);
@@ -604,7 +604,7 @@ START_TEST(test_many_group)
 
     while (1) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_do(toxes[i]);
+            tox_iteration(toxes[i]);
         }
 
         if (!invite_counter) {
@@ -642,7 +642,7 @@ START_TEST(test_many_group)
 
     for (j = 0; j < 20; ++j) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_do(toxes[i]);
+            tox_iteration(toxes[i]);
         }
 
         c_sleep(50);
@@ -655,7 +655,7 @@ START_TEST(test_many_group)
 
         for (j = 0; j < 10; ++j) {
             for (i = 0; i < NUM_GROUP_TOX; ++i) {
-                tox_do(toxes[i]);
+                tox_iteration(toxes[i]);
             }
 
             c_sleep(50);
