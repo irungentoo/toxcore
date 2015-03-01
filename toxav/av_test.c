@@ -16,7 +16,7 @@
 
 typedef struct {
     bool incoming;
-    TOXAV_CALL_STATE state;
+    uint32_t state;
 } CallControl;
 
 const char* stringify_state(TOXAV_CALL_STATE s)
@@ -44,9 +44,9 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
     printf("Handling CALL callback\n");
     ((CallControl*)user_data)->incoming = true;
 }
-void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, TOXAV_CALL_STATE state, void *user_data)
+void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
-    printf("Handling CALL STATE callback: %s\n", stringify_state(state));
+    printf("Handling CALL STATE callback: %d\n", state);
     
     ((CallControl*)user_data)->state = state;
 }
@@ -211,13 +211,13 @@ int main (int argc, char** argv)
     }
     
     printf("\nTrying regular call (Audio and Video)...\n");
-//     REGULAR_CALL_FLOW(48, 4000);
+    REGULAR_CALL_FLOW(48, 4000);
     
     printf("\nTrying regular call (Audio only)...\n");
-//     REGULAR_CALL_FLOW(48, 0);
+    REGULAR_CALL_FLOW(48, 0);
     
     printf("\nTrying regular call (Video only)...\n");
-//     REGULAR_CALL_FLOW(0, 4000);
+    REGULAR_CALL_FLOW(0, 4000);
     
 #undef REGULAR_CALL_FLOW
     
@@ -318,10 +318,8 @@ int main (int argc, char** argv)
         /* At first try all stuff while in invalid state */
         assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
         assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_MUTE_AUDIO, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_MUTE_VIDEO, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_UNMUTE_AUDIO, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_UNMUTE_VIDEO, NULL));
+        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
+        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
         
         {
             TOXAV_ERR_ANSWER rc;
@@ -342,36 +340,36 @@ int main (int argc, char** argv)
         assert(BobCC.state == TOXAV_CALL_STATE_PAUSED);
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_SENDING_AV);
+        assert(BobCC.state & (TOXAV_CALL_STATE_SENDING_A | TOXAV_CALL_STATE_SENDING_V));
         
         /* Mute/Unmute single */
         printf("Mute/Unmute single\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_MUTE_AUDIO, NULL));
+        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_CONTROL_MUTE_AUDIO);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_UNMUTE_AUDIO, NULL));
+        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
+        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_CONTROL_UNMUTE_AUDIO);
+        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
         
         /* Mute/Unmute both */
         printf("Mute/Unmute both\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_MUTE_AUDIO, NULL));
+        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_SENDING_V);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_MUTE_VIDEO, NULL));
+        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
+        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_NOT_SENDING);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_UNMUTE_AUDIO, NULL));
+        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_V);
+        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_SENDING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_UNMUTE_VIDEO, NULL));
+        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
+        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
         iterate(Bsn, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_SENDING_AV);
+        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_V);
         
         {
             TOXAV_ERR_CALL_CONTROL rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
-        
+            
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
                 printf("toxav_call_control failed: %d\n", rc);
                 exit(1);
@@ -383,6 +381,13 @@ int main (int argc, char** argv)
         
         printf("Success!\n");
     }
+    
+    
+    toxav_kill(BobAV);
+    toxav_kill(AliceAV);
+    tox_kill(Bob);
+    tox_kill(Alice);
+    tox_kill(Bsn);
     
     printf("\nTest successful!\n");
     return 0;

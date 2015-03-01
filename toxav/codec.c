@@ -343,21 +343,17 @@ CSSession *cs_new(uint32_t peer_video_frame_piece_size)
         return NULL;
     }
     
+    
+    if (create_recursive_mutex(cs->queue_mutex) != 0) {
+        LOGGER_WARNING("Failed to create recursive mutex!");
+        free(cs);
+        return NULL;
+    }
+    
+    
     cs->peer_video_frame_piece_size = peer_video_frame_piece_size;
     
     return cs;
-    
-    FAILURE:
-    LOGGER_WARNING("Error initializing codec session! Application might misbehave!");
-    
-    cs_disable_audio_sending(cs);
-    cs_disable_audio_receiving(cs);
-    cs_disable_video_sending(cs);
-    cs_disable_video_receiving(cs);
-    
-    free(cs);
-    
-    return NULL;
 }
 
 void cs_kill(CSSession *cs)
@@ -373,6 +369,8 @@ void cs_kill(CSSession *cs)
     cs_disable_audio_receiving(cs);
     cs_disable_video_sending(cs);
     cs_disable_video_receiving(cs);
+    
+    pthread_mutex_destroy(cs->queue_mutex);
     
     LOGGER_DEBUG("Terminated codec state: %p", cs);
     free(cs);
@@ -536,19 +534,12 @@ int cs_enable_video_receiving(CSSession* cs)
 {
     if (cs->v_decoding)
         return 0;
-        
-    if (create_recursive_mutex(cs->queue_mutex) != 0) {
-        LOGGER_WARNING("Failed to create recursive mutex!");
-        return -1;
-    }
-    
+
     int rc = vpx_codec_dec_init_ver(cs->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, 
                                     NULL, 0, VPX_DECODER_ABI_VERSION);
     
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
-        
-        pthread_mutex_destroy(cs->queue_mutex);
         return -1;
     }
     
@@ -591,7 +582,6 @@ void cs_disable_video_receiving(CSSession* cs)
         cs->frame_buf = NULL;
         
         vpx_codec_destroy(cs->v_decoder);
-        pthread_mutex_destroy(cs->queue_mutex);
     }
 }
 

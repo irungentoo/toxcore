@@ -187,43 +187,41 @@ bool toxav_answer(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, ui
  ******************************************************************************/
 typedef enum TOXAV_CALL_STATE {
     /**
-     * Not sending anything. Either the friend requested that this client stops
-     * sending anything, or the client turned off both audio and video by setting
-     * the respective bit rates to 0.
-     *
-     * If both sides are in this state, the call is effectively on hold, but not
-     * in the PAUSED state.
+     * Not sending nor receiving anything, meaning, one of the sides requested pause.
+     * The call will be resumed once the side that initiated pause resumes it.
      */
-    TOXAV_CALL_STATE_NOT_SENDING,
+    TOXAV_CALL_STATE_PAUSED = 0,
     /**
-     * Sending audio only. Either the friend requested that this client stops
-     * sending video, or the client turned off video by setting the video bit rate
-     * to 0.
+     * The flag that marks that friend is sending audio.
      */
-    TOXAV_CALL_STATE_SENDING_A,
+    TOXAV_CALL_STATE_SENDING_A = 1,
     /**
-     * Sending video only. Either the friend requested that this client stops
-     * sending audio (muted), or the client turned off audio by setting the audio
-     * bit rate to 0.
+     * The flag that marks that friend is sending video.
      */
-    TOXAV_CALL_STATE_SENDING_V,
+    TOXAV_CALL_STATE_SENDING_V = 2,
     /**
-     * Sending both audio and video.
+     * The flag that marks that friend is receiving audio.
      */
-    TOXAV_CALL_STATE_SENDING_AV,
+    TOXAV_CALL_STATE_RECEIVING_A = 4,
     /**
-     * The call is on hold. Both sides stop sending and receiving.
+     * The flag that marks that friend is receiving video.
      */
-    TOXAV_CALL_STATE_PAUSED,
+    TOXAV_CALL_STATE_RECEIVING_V = 8,
+    
+    /** 
+     * The core will never set TOXAV_CALL_STATE_END or TOXAV_CALL_STATE_ERROR 
+     * together with other states.
+     */
+    
     /**
      * The call has finished. This is the final state after which no more state
      * transitions can occur for the call.
      */
-    TOXAV_CALL_STATE_END,
+    TOXAV_CALL_STATE_END = 16,
     /**
      * Sent by the AV core if an error occurred on the remote end.
      */
-    TOXAV_CALL_STATE_ERROR
+    TOXAV_CALL_STATE_ERROR = 32
 } TOXAV_CALL_STATE;
 /**
  * The function type for the `call_state` callback.
@@ -231,7 +229,7 @@ typedef enum TOXAV_CALL_STATE {
  * @param friend_number The friend number for which the call state changed.
  * @param state The new call state.
  */
-typedef void toxav_call_state_cb(ToxAV *av, uint32_t friend_number, TOXAV_CALL_STATE state, void *user_data);
+typedef void toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data);
 /**
  * Set the callback for the `call_state` event. Pass NULL to unset.
  *
@@ -261,27 +259,19 @@ typedef enum TOXAV_CALL_CONTROL {
     /**
      * Request that the friend stops sending audio. Regardless of the friend's
      * compliance, this will cause the `receive_audio_frame` event to stop being
-     * triggered on receiving an audio frame from the friend.
+     * triggered on receiving an audio frame from the friend. If the audio was
+     * already muted, calling this control will notify client to start sending
+     * audio again.
      */
-    TOXAV_CALL_CONTROL_MUTE_AUDIO,
+    TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO,
     /**
      * Request that the friend stops sending video. Regardless of the friend's
      * compliance, this will cause the `receive_video_frame` event to stop being
-     * triggered on receiving an video frame from the friend.
+     * triggered on receiving an video frame from the friend. If the video was
+     * already muted, calling this control will notify client to start sending
+     * video again.
      */
-    TOXAV_CALL_CONTROL_MUTE_VIDEO,
-    /**
-     * Notify the friend that we are AGAIN ready to handle incoming audio.
-     * This control will not work if the call is not started with audio
-     * initiated.
-     */
-    TOXAV_CALL_CONTROL_UNMUTE_AUDIO,
-    /**
-     * Notify the friend that we are AGAIN ready to handle incoming video.
-     * This control will not work if the call is not started with video
-     * initiated.
-     */
-    TOXAV_CALL_CONTROL_UNMUTE_VIDEO
+    TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO,
 } TOXAV_CALL_CONTROL;
 typedef enum TOXAV_ERR_CALL_CONTROL {
     TOXAV_ERR_CALL_CONTROL_OK,

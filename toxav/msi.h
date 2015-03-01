@@ -35,14 +35,14 @@
  * Error codes.
  */
 typedef enum {
-    msi_ErrorNone,
-    msi_InvalidMessage,
-    msi_InvalidParam,
-    msi_InvalidState,
-    msi_StrayMessage,
-    msi_SystemError,
-    msi_HandleError,
-    msi_ErrUndisclosed, /* NOTE: must be last enum otherwise parsing wont work */
+    msi_ENone,
+    msi_EInvalidMessage,
+    msi_EInvalidParam,
+    msi_EInvalidState,
+    msi_EStrayMessage,
+    msi_ESystem,
+    msi_EHandle,
+    msi_EUndisclosed, /* NOTE: must be last enum otherwise parsing wont work */
 } MSIError;
 
 /**
@@ -118,6 +118,9 @@ typedef struct MSISession_s {
     void           *av;
     Messenger      *messenger;
 
+    /* The mutex controls async access from control
+     * thread(s) and core thread.
+     */
     pthread_mutex_t mutex[1];
     MSICallbackType callbacks[7];
 } MSISession;

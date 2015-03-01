@@ -99,7 +99,9 @@ void handle_msi_packet ( Messenger *m, int friend_id, const uint8_t *data, uint1
  */
 void msi_register_callback ( MSISession *session, MSICallbackType callback, MSICallbackID id)
 {
+    pthread_mutex_lock(session->mutex);
     session->callbacks[id] = callback;
+    pthread_mutex_unlock(session->mutex);
 }
 MSISession *msi_new ( Messenger *messenger )
 {
@@ -163,15 +165,19 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
 {
     LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_id);
     
+    pthread_mutex_lock(session->mutex);
     if (get_call(session, friend_id) != NULL) {
         LOGGER_ERROR("Already in a call");
+        pthread_mutex_unlock(session->mutex);
         return -1;
     }
     
     (*call) = new_call ( session, friend_id );
     
-    if ( *call == NULL )
+    if ( *call == NULL ) {
+        pthread_mutex_unlock(session->mutex);
         return -1;
+    }
     
     (*call)->self_capabilities = capabilities;
     
@@ -180,7 +186,7 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
     
     msg.capabilities.exists = true;
     msg.capabilities.value = capabilities;
-        
+    
     msg.vfpsz.exists = true;
     msg.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
     
@@ -189,28 +195,37 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
     (*call)->state = msi_CallRequesting;
     
     LOGGER_DEBUG("Invite sent");
+    pthread_mutex_unlock(session->mutex);
     return 0;
 }
 int msi_hangup ( MSICall* call )
 {
     LOGGER_DEBUG("Session: %p Hanging up call with friend: %u", call->session, call->friend_id);
     
+    MSISession* session = call->session;
+    pthread_mutex_lock(session->mutex);
+    
     MSIMessage msg;
     msg_init(&msg, requ_pop);
     
-    send_message ( call->session->messenger, call->friend_id, &msg );
+    send_message ( session->messenger, call->friend_id, &msg );
     
     kill_call(call);
+    pthread_mutex_unlock(session->mutex);
     return 0;
 }
 int msi_answer ( MSICall* call, uint8_t capabilities )
 {
     LOGGER_DEBUG("Session: %p Answering call from: %u", call->session, call->friend_id);
     
+    MSISession* session = call->session;
+    pthread_mutex_lock(session->mutex);
+    
     if ( call->state != msi_CallRequested ) {
         /* Though sending in invalid state will not cause anything wierd 
          * Its better to not do it like a maniac */
         LOGGER_ERROR("Call is in invalid state!");
+        pthread_mutex_unlock(session->mutex);
         return -1;
     }
     
@@ -225,15 +240,19 @@ int msi_answer ( MSICall* call, uint8_t capabilities )
     msg.vfpsz.exists = true;
     msg.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
     
-    send_message ( call->session->messenger, call->friend_id, &msg );
+    send_message ( session->messenger, call->friend_id, &msg );
     
     call->state = msi_CallActive;
+    pthread_mutex_unlock(session->mutex);
     
     return 0;
 }
 int msi_change_capabilities( MSICall* call, uint8_t capabilities )
 {
     LOGGER_DEBUG("Session: %p Trying to change capabilities to friend %u", call->session, call->friend_id);
+    
+    MSISession* session = call->session;
+    pthread_mutex_lock(session->mutex);
     
     if ( call->state != msi_CallActive ) {
         /* Sending capabilities change can cause error on other side if 
@@ -244,6 +263,7 @@ int msi_change_capabilities( MSICall* call, uint8_t capabilities )
          * like new. TODO: explain this better
          */
         LOGGER_ERROR("Call is in invalid state!");
+        pthread_mutex_unlock(session->mutex);
         return -1;
     }
     
@@ -257,6 +277,7 @@ int msi_change_capabilities( MSICall* call, uint8_t capabilities )
     
     send_message ( call->session->messenger, call->friend_id, &msg );
     
+    pthread_mutex_unlock(session->mutex);
     return 0;
 }
 
@@ -316,7 +337,7 @@ int msg_parse_in ( MSIMessage *dest, const uint8_t *data, uint16_t length )
                 
             case IDError:
                 CHECK_SIZE(it, size_constraint, 1);
-                CHECK_ENUM_HIGH(it, msi_ErrUndisclosed);
+                CHECK_ENUM_HIGH(it, msi_EUndisclosed);
                 SET_UINT8(it, dest->error);
                 break;
                 
@@ -440,7 +461,7 @@ int invoke_callback(MSICall* call, MSICallbackID cb)
     if ( call->session->callbacks[cb] ) {
         LOGGER_DEBUG("Invoking callback function: %d", cb);
         if ( call->session->callbacks[cb] ( call->session->av, call ) != 0 ) {
-            LOGGER_WARNING("Callback handling failed, sending error");
+            LOGGER_WARNING("Callback state handling failed, sending error");
             goto FAILURE;
         }
         
@@ -449,10 +470,11 @@ int invoke_callback(MSICall* call, MSICallbackID cb)
     
 FAILURE:
     /* If no callback present or error happened while handling,
-     * an error message will be send to friend
+     * an error message will be sent to friend
      */
     
-    call->error = msi_HandleError;
+    if (call->error == msi_ENone)
+        call->error = msi_EHandle;
     return -1;
 }
 static MSICall *get_call ( MSISession *session, uint32_t friend_id )
@@ -517,8 +539,11 @@ MSICall *new_call ( MSISession *session, uint32_t friend_id )
 }
 void kill_call ( MSICall *call )
 {
+    /* Assume that session mutex is locked */
     if ( call == NULL )
         return;
+    
+    LOGGER_DEBUG("Killing call: %p", call);
     
     MSISession* session = call->session;
     
@@ -529,23 +554,23 @@ void kill_call ( MSICall *call )
         prev->next = next;
     else if (next)
         session->calls_head = next->friend_id;
-    else goto CLEAR;
+    else goto CLEAR_CONTAINER;
     
     if (next)
         next->prev = prev;
     else if (prev)
         session->calls_tail = prev->friend_id;
-    else goto CLEAR;
+    else goto CLEAR_CONTAINER;
     
     session->calls[call->friend_id] = NULL;
     free(call);
     return;
     
-CLEAR:
+CLEAR_CONTAINER:
     session->calls_head = session->calls_tail = 0;
     free(session->calls);
-    session->calls = NULL;
     free(call);
+    session->calls = NULL;
 }
 void on_peer_status(Messenger *m, int friend_id, uint8_t status, void *data)
 {
@@ -556,13 +581,17 @@ void on_peer_status(Messenger *m, int friend_id, uint8_t status, void *data)
         case 0: { /* Friend is now offline */
             LOGGER_DEBUG("Friend %d is now offline", friend_id);
             
+            pthread_mutex_lock(session->mutex);
             MSICall* call = get_call(session, friend_id);
             
-            if (call == NULL)
+            if (call == NULL) {
+                pthread_mutex_unlock(session->mutex);
                 return;
+            }
             
             invoke_callback(call, msi_OnPeerTimeout); /* Failure is ignored */
             kill_call(call);
+            pthread_mutex_unlock(session->mutex);
         }
         break;
 
@@ -580,18 +609,17 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
 
     if (!msg->capabilities.exists) {
         LOGGER_WARNING("Session: %p Invalid capabilities on 'push'");
-        call->error = msi_InvalidMessage;
+        call->error = msi_EInvalidMessage;
         goto FAILURE;
     }
     
     if (call->state != msi_CallActive) {
         if (!msg->vfpsz.exists) {
             LOGGER_WARNING("Session: %p Invalid vfpsz on 'push'");
-            call->error = msi_InvalidMessage;
+            call->error = msi_EInvalidMessage;
             goto FAILURE;
         }
         
-        /* Sending video frame piece size is ignored when call is active */
         call->peer_vfpsz = ntohs(msg->vfpsz.value);
     }
     
@@ -610,6 +638,38 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
         } break;
         
         case msi_CallActive: {
+            if (msg->vfpsz.exists) {
+                /* If peer sended video frame piece size 
+                 * while the call is already active it's probable
+                 * that he is trying to re-call us while the call
+                 * is not terminated on our side. We can assume that
+                 * in this case we can automatically answer the re-call.
+                 */
+                if (call->peer_vfpsz != ntohs(msg->vfpsz.value)) {
+                    LOGGER_WARNING("Friend sent invalid parameters for re-call");
+                    call->error = msi_EInvalidParam;
+                    invoke_callback(call, msi_OnError);
+                    goto FAILURE;
+                }
+                
+                LOGGER_INFO("Friend is recalling us");
+                
+                MSIMessage msg;
+                msg_init(&msg, requ_push);
+                
+                msg.capabilities.exists = true;
+                msg.capabilities.value = call->self_capabilities;
+                
+                msg.vfpsz.exists = true;
+                msg.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
+                
+                send_message ( call->session->messenger, call->friend_id, &msg );
+                
+                /* If peer changed capabilities during re-call they will 
+                 * be handled accordingly during the next step
+                 */
+            }
+            
             /* Only act if capabilities changed */
             if ( call->peer_capabilities != msg->capabilities.value) {
                 LOGGER_INFO("Friend is changing capabilities");
@@ -629,6 +689,7 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
             
             if ( invoke_callback(call, msi_OnStart) == -1 )
                 goto FAILURE;
+            
         } break;
         
         case msi_CallRequested: {
@@ -646,7 +707,7 @@ FAILURE:
 void handle_pop ( MSICall *call, const MSIMessage *msg )
 {
     assert(call);
-
+    
     LOGGER_DEBUG("Session: %p Handling 'pop', friend id: %d", call->session, call->friend_id);
     
     /* callback errors are ignored */
@@ -682,8 +743,6 @@ void handle_pop ( MSICall *call, const MSIMessage *msg )
     }
     
     kill_call ( call );
-
-    return;
 }
 void handle_msi_packet ( Messenger *m, int friend_id, const uint8_t *data, uint16_t length, void *object )
 {
@@ -694,30 +753,34 @@ void handle_msi_packet ( Messenger *m, int friend_id, const uint8_t *data, uint1
     
     if ( msg_parse_in ( &msg, data, length ) == -1 ) {
         LOGGER_WARNING("Error parsing message");
-        send_error(m, friend_id, msi_InvalidMessage);
+        send_error(m, friend_id, msi_EInvalidMessage);
         return;
     } else {
         LOGGER_DEBUG("Successfully parsed message");
     }
     
+    pthread_mutex_lock(session->mutex);
     MSICall *call = get_call(session, friend_id);
     
     if (call == NULL) {
         if (msg.request.value != requ_push) {
-            send_error(m, friend_id, msi_StrayMessage);
+            send_error(m, friend_id, msi_EStrayMessage);
+            pthread_mutex_unlock(session->mutex);
             return;
         }
         
         call = new_call(session, friend_id);
         if (call == NULL) {
-            send_error(m, friend_id, msi_SystemError);
+            send_error(m, friend_id, msi_ESystem);
+            pthread_mutex_unlock(session->mutex);
             return;
         }
     }
     
-    
-    if (msg.request.value == requ_push) 
+    if (msg.request.value == requ_push)
         handle_push(call, &msg);
     else
         handle_pop(call, &msg); /* always kills the call */
+    
+    pthread_mutex_unlock(session->mutex);
 }
