@@ -1003,7 +1003,7 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
  *  return 0 on failure
  */
 static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
-                     const uint8_t *filename, uint16_t filename_length)
+                            const uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
         return 0;
