@@ -11,6 +11,7 @@ CLEANFILES = $(top_builddir)/libtoxcore.pc
 
 
 EXTRA_DIST = \
+	README.md \
 	libtoxcore.pc.in \
 	dist-build/android-arm.sh \
 	dist-build/android-armv7.sh \
