@@ -71,3 +71,6 @@ toxcore-android-*
 
 # cscope files list
 cscope.files
+
+# rpm
+tox.spec
