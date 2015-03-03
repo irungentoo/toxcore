@@ -364,6 +364,7 @@ void networking_poll(Networking_Core *net);
  * return NULL if there are problems.
  */
 Networking_Core *new_networking(IP ip, uint16_t port);
+Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
