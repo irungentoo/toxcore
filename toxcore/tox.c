@@ -1028,7 +1028,7 @@ int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length)
 int tox_group_new_join(Tox *tox, const uint8_t *chat_id)
 {
     Messenger *m = tox;
-    return gc_group_join(m->group_handler, chat_id, NULL, NULL);
+    return gc_group_join(m->group_handler, chat_id);
 }
 
 /* Joins a group using the invite data received in a friend's group invite.

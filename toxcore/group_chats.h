@@ -243,6 +243,23 @@ typedef struct GC_Session {
     void *rejected_userdata;
 } GC_Session;
 
+struct SAVED_GROUP {
+    uint8_t   chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t   group_name[MAX_GC_GROUP_NAME_SIZE];
+    uint16_t  group_name_len;
+    uint8_t   topic[MAX_GC_TOPIC_SIZE];
+    uint16_t  topic_len;
+
+    uint8_t   self_public_key[EXT_PUBLIC_KEY];
+    uint8_t   self_secret_key[EXT_SECRET_KEY];
+    uint8_t   self_invite_cert[INVITE_CERT_SIGNED_SIZE];
+    uint8_t   self_role_cert[ROLE_CERT_SIGNED_SIZE];
+    uint8_t   self_nick[MAX_GC_NICK_SIZE];
+    uint16_t  self_nick_len;
+    uint8_t   self_role;
+    uint8_t   self_status;
+};
+
 /* Return -1 if fail
  * Return 0 if success
  */
@@ -360,6 +377,13 @@ GC_Session* new_groupchats(Messenger* m);
 /* Calls gc_group_exit() for every group chat */
 void gc_kill_groupchats(GC_Session* c);
 
+/* Loads a previously saved group and attempts to join it.
+ *
+ * Returns groupnumber on success.
+ * Returns -1 on failure.
+ */
+int gc_group_load(GC_Session *c, struct SAVED_GROUP *save);
+
 /* Creates a new group and announces it
  *
  * Return groupnumber on success
@@ -374,7 +398,7 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *self_public_key, const uint8_t *self_secret_key);
+int gc_group_join(GC_Session *c, const uint8_t *chat_id);
 
 /* Joins a group using the invite data received in a friend's group invite.
  *

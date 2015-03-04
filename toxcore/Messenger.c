@@ -34,7 +34,7 @@
 #include "assoc.h"
 #include "network.h"
 #include "util.h"
-
+#include "group_chats.h"
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
@@ -2630,14 +2630,6 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
     return num;
 }
 
-#include "group_chats.h"
-
-struct SAVED_GROUP {
-    uint8_t chat_id[CHAT_ID_SIZE];
-    uint8_t self_public_key[EXT_PUBLIC_KEY];
-    uint8_t self_secret_key[EXT_SECRET_KEY];
-};
-
 static uint32_t saved_groups_size(const Messenger *m)
 {
     return gc_count_groups(m->group_handler) * sizeof(struct SAVED_GROUP);
@@ -2647,15 +2639,27 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
 {
     uint32_t i;
     uint32_t num = 0;
-    GC_Session *gc = m->group_handler;
-    struct SAVED_GROUP temp;
+    GC_Session *c = m->group_handler;
 
-    for (i = 0; i < gc->num_chats; i++) {
-        if (gc->chats[i].connection_state > CS_NONE && gc->chats[i].connection_state < CS_INVALID) {
+    for (i = 0; i < c->num_chats; i++) {
+        if (c->chats[i].connection_state > CS_NONE && c->chats[i].connection_state < CS_INVALID) {
+            struct SAVED_GROUP temp;
             memset(&temp, 0, sizeof(struct SAVED_GROUP));
-            memcpy(temp.chat_id, SIG_KEY(gc->chats[i].chat_public_key), CHAT_ID_SIZE);
-            memcpy(temp.self_public_key, gc->chats[i].self_public_key, EXT_PUBLIC_KEY);
-            memcpy(temp.self_secret_key, gc->chats[i].self_secret_key, EXT_SECRET_KEY);
+
+            memcpy(temp.chat_public_key, c->chats[i].chat_public_key, EXT_PUBLIC_KEY);
+            memcpy(temp.group_name, c->chats[i].group_name, MAX_GC_GROUP_NAME_SIZE);
+            memcpy(temp.topic, c->chats[i].topic, MAX_GC_TOPIC_SIZE);
+            temp.group_name_len = htons(c->chats[i].group_name_len);
+            temp.topic_len = htons(c->chats[i].topic_len);
+
+            memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
+            memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);
+            memcpy(temp.self_invite_cert, c->chats[i].group[0].invite_certificate, INVITE_CERT_SIGNED_SIZE);
+            memcpy(temp.self_role_cert, c->chats[i].group[0].role_certificate, ROLE_CERT_SIGNED_SIZE);
+            memcpy(temp.self_nick, c->chats[i].group[0].nick, MAX_GC_NICK_SIZE);
+            temp.self_nick_len = htons(c->chats[i].group[0].nick_len);
+            temp.self_role = c->chats[i].group[0].role;
+            temp.self_status = c->chats[i].group[0].status;
 
             memcpy(data + num * sizeof(struct SAVED_GROUP), &temp, sizeof(struct SAVED_GROUP));
             num++;
@@ -2676,7 +2680,8 @@ static int groups_load(Messenger *m, const uint8_t *data, uint32_t length)
         struct SAVED_GROUP temp;
         memcpy(&temp, data + i * sizeof(struct SAVED_GROUP), sizeof(struct SAVED_GROUP));
 
-        int ret = gc_group_join(m->group_handler, temp.chat_id, temp.self_public_key, temp.self_secret_key);
+        int ret = gc_group_load(m->group_handler, &temp);
+
         if (ret == -1)
             LOGGER_WARNING("Failed to join group");
     }

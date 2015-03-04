@@ -2108,25 +2108,14 @@ static int get_new_group_index(GC_Session *c)
 
 /* The two keys must be either both null or both nonnull, and if the latter they'll be
  * used instead of generating new ones */
-static int create_new_group(GC_Session *c, bool founder, const uint8_t *self_public_key, const uint8_t *self_secret_key)
+static int create_new_group(GC_Session *c, bool founder)
 {
-    bool have_old_keys = 0;
-    if (self_public_key) {
-        if (self_secret_key)
-            have_old_keys = 1;
-        else
-            return -1; /* one is null but the other isn't */
-    } else if (self_secret_key) {
-        return -1; /* one is null but the other isn't */
-    }
-
     int groupnumber = get_new_group_index(c);
 
     if (groupnumber == -1)
         return -1;
 
     Messenger *m = c->messenger;
-
     GC_Chat *chat = &c->chats[groupnumber];
 
     chat->groupnumber = groupnumber;
@@ -2149,12 +2138,7 @@ static int create_new_group(GC_Session *c, bool founder, const uint8_t *self_pub
         }
     }
 
-    if (have_old_keys) {
-        memcpy(chat->self_public_key, self_public_key, EXT_PUBLIC_KEY);
-        memcpy(chat->self_secret_key, self_secret_key, EXT_SECRET_KEY);
-    } else {
-        create_extended_keypair(chat->self_public_key, chat->self_secret_key);
-    }
+    create_extended_keypair(chat->self_public_key, chat->self_secret_key);
 
     GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
 
@@ -2178,6 +2162,66 @@ static int create_new_group(GC_Session *c, bool founder, const uint8_t *self_pub
     return groupnumber;
 }
 
+/* Loads a previously saved group and attempts to connect to it.
+ *
+ * Returns groupnumber on success.
+ * Returns -1 on failure.
+ */
+int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
+{
+    int groupnumber = get_new_group_index(c);
+
+    if (groupnumber == -1)
+        return -1;
+
+    Messenger *m = c->messenger;
+    GC_Chat *chat = &c->chats[groupnumber];
+
+    chat->groupnumber = groupnumber;
+    chat->numpeers = 0;
+    chat->last_synced_time = 0;   // TODO: delete this later, it's for testing now
+    chat->connection_state = CS_DISCONNECTED;
+    chat->net = m->net;
+    chat->maxpeers = MAX_GROUP_NUM_PEERS;
+    chat->self_last_rcvd_ping = unix_time();
+    chat->last_sent_ping_time = unix_time();
+
+    memcpy(chat->group_name, save->group_name, MAX_GC_GROUP_NAME_SIZE);
+    memcpy(chat->topic, save->topic, MAX_GC_TOPIC_SIZE);
+    memcpy(chat->chat_public_key, save->chat_public_key, EXT_PUBLIC_KEY);
+    memcpy(chat->self_public_key, save->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(chat->self_secret_key, save->self_secret_key, EXT_SECRET_KEY);
+    chat->topic_len = ntohs(save->topic_len);
+    chat->group_name_len = ntohs(save->group_name_len);
+    chat->chat_pk_hash = jenkins_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
+
+    GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
+
+    if (self == NULL) {
+        group_delete(c, chat);
+        return -1;
+    }
+
+    memcpy(self->invite_certificate, save->self_invite_cert, INVITE_CERT_SIGNED_SIZE);
+    memcpy(self->role_certificate, save->self_role_cert, ROLE_CERT_SIGNED_SIZE);
+    memcpy(self->nick, save->self_nick, MAX_GC_NICK_SIZE);
+    self->nick_len = ntohs(save->self_nick_len);
+    self->role = save->self_role;
+    self->status = save->self_status;
+
+    if (peer_add(m, groupnumber, self) != 0) {
+        free(self);
+        group_delete(c, chat);
+        return -1;
+    }
+
+    free(self);
+
+    gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
+
+    return groupnumber;
+}
+
 /* Creates a new group and announces it
  *
  * Return groupnumber on success
@@ -2188,7 +2232,7 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     if (length > MAX_GC_GROUP_NAME_SIZE || length == 0)
         return -1;
 
-    int groupnumber = create_new_group(c, true, NULL, NULL);
+    int groupnumber = create_new_group(c, true);
 
     if (groupnumber == -1)
         return -1;
@@ -2204,7 +2248,6 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     chat->connection_state = CS_CONNECTED;
     chat->chat_pk_hash = jenkins_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
 
-    /* We send announce to the DHT so that everyone can join our chat */
     if (gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
         group_delete(c, chat);
         return -1;
@@ -2220,9 +2263,9 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *self_public_key, const uint8_t *self_secret_key)
+int gc_group_join(GC_Session *c, const uint8_t *chat_id)
 {
-    int groupnumber = create_new_group(c, false, self_public_key, self_secret_key);
+    int groupnumber = create_new_group(c, false);
 
     if (groupnumber == -1)
         return -1;
@@ -2327,7 +2370,7 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
     if (unpack_gca_nodes(&node, 1, 0, data + CHAT_ID_SIZE, length - CHAT_ID_SIZE, 0) != 1)
         return -1;
 
-    int groupnumber = create_new_group(c, false, NULL, NULL);
+    int groupnumber = create_new_group(c, false);
 
     if (groupnumber == -1)
         return -1;
