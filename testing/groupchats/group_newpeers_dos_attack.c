@@ -54,8 +54,9 @@ int main(int argc, char *argv[])
     {
         tox[i] = new_messenger(&options);
         char nick[32];
-        snprintf(nick, sizeof(nick), "test%d", i);
+        snprintf(nick, sizeof(nick), "Botik %d", rand());
         setname(tox[i], nick, strlen(nick));
+        printf("nick: %s\n", nick);
         printf("%s, %d\n", id_toa(tox[i]->dht->self_public_key), i);
     }
 
