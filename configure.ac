@@ -6,7 +6,7 @@ AC_INIT([tox], [0.0.0], [https://tox.im])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects])
+AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects tar-ustar])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -693,6 +693,7 @@ AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 AC_CONFIG_FILES([Makefile
                  build/Makefile
                  libtoxcore.pc
+                 tox.spec
                 ])
 
 AM_COND_IF(BUILD_AV,
