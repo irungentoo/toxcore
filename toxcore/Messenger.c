@@ -34,7 +34,7 @@
 #include "assoc.h"
 #include "network.h"
 #include "util.h"
-
+#include "group_chats.h"
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
@@ -2523,6 +2523,7 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_NAME          4
 #define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
 #define MESSENGER_STATE_TYPE_STATUS        6
+#define MESSENGER_STATE_TYPE_GROUPS        7
 #define MESSENGER_STATE_TYPE_TCP_RELAY     10
 #define MESSENGER_STATE_TYPE_PATH_NODE     11
 
@@ -2629,6 +2630,65 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
     return num;
 }
 
+static uint32_t saved_groups_size(const Messenger *m)
+{
+    return gc_count_groups(m->group_handler) * sizeof(struct SAVED_GROUP);
+}
+
+static uint32_t groups_save(const Messenger *m, uint8_t *data)
+{
+    uint32_t i;
+    uint32_t num = 0;
+    GC_Session *c = m->group_handler;
+
+    for (i = 0; i < c->num_chats; i++) {
+        if (c->chats[i].connection_state > CS_NONE && c->chats[i].connection_state < CS_INVALID) {
+            struct SAVED_GROUP temp;
+            memset(&temp, 0, sizeof(struct SAVED_GROUP));
+
+            memcpy(temp.chat_public_key, c->chats[i].chat_public_key, EXT_PUBLIC_KEY);
+            memcpy(temp.group_name, c->chats[i].group_name, MAX_GC_GROUP_NAME_SIZE);
+            memcpy(temp.topic, c->chats[i].topic, MAX_GC_TOPIC_SIZE);
+            temp.group_name_len = htons(c->chats[i].group_name_len);
+            temp.topic_len = htons(c->chats[i].topic_len);
+
+            memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
+            memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);
+            memcpy(temp.self_invite_cert, c->chats[i].group[0].invite_certificate, INVITE_CERT_SIGNED_SIZE);
+            memcpy(temp.self_role_cert, c->chats[i].group[0].role_certificate, ROLE_CERT_SIGNED_SIZE);
+            memcpy(temp.self_nick, c->chats[i].group[0].nick, MAX_GC_NICK_SIZE);
+            temp.self_nick_len = htons(c->chats[i].group[0].nick_len);
+            temp.self_role = c->chats[i].group[0].role;
+            temp.self_status = c->chats[i].group[0].status;
+
+            memcpy(data + num * sizeof(struct SAVED_GROUP), &temp, sizeof(struct SAVED_GROUP));
+            num++;
+        }
+    }
+
+    return num * sizeof(struct SAVED_GROUP);
+}
+
+static int groups_load(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length % sizeof(struct SAVED_GROUP) != 0)
+        return -1;
+
+    uint32_t i, num = length / sizeof(struct SAVED_GROUP);
+
+    for (i = 0; i < num; ++i) {
+        struct SAVED_GROUP temp;
+        memcpy(&temp, data + i * sizeof(struct SAVED_GROUP), sizeof(struct SAVED_GROUP));
+
+        int ret = gc_group_load(m->group_handler, &temp);
+
+        if (ret == -1)
+            LOGGER_WARNING("Failed to join group");
+    }
+
+    return num;
+}
+
 /*  return size of the messenger data (for saving) */
 uint32_t messenger_size(const Messenger *m)
 {
@@ -2637,6 +2697,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
              + sizesubhead + DHT_size(m->dht)                  // DHT
              + sizesubhead + saved_friendslist_size(m)         // Friendlist itself.
+             + sizesubhead + saved_groups_size(m)              // Groupchats
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
@@ -2686,6 +2747,12 @@ void messenger_save(const Messenger *m, uint8_t *data)
     type = MESSENGER_STATE_TYPE_FRIENDS;
     data = z_state_save_subheader(data, len, type);
     friends_list_save(m, data);
+    data += len;
+
+    len = saved_groups_size(m);
+    type = MESSENGER_STATE_TYPE_GROUPS;
+    data = z_state_save_subheader(data, len, type);
+    len = groups_save(m, data);
     data += len;
 
     len = m->name_length;
@@ -2750,6 +2817,10 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
 
         case MESSENGER_STATE_TYPE_FRIENDS:
             friends_list_load(m, data, length);
+            break;
+
+        case MESSENGER_STATE_TYPE_GROUPS:
+            groups_load(m, data, length);
             break;
 
         case MESSENGER_STATE_TYPE_NAME:

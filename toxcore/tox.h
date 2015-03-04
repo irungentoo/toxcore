@@ -40,9 +40,10 @@ extern "C" {
 #define TOX_MAX_GROUP_TOPIC_LENGTH 512
 #define TOX_MAX_GROUP_PART_LENGTH 128
 #define TOX_MAX_GROUP_NAME_LENGTH 48
-#define TOX_GROUP_CHAT_ID_SIZE 64
+#define TOX_GROUP_CHAT_ID_SIZE 32
 
 #define TOX_PUBLIC_KEY_SIZE 32
+
 /* TODO: remove */
 #define TOX_CLIENT_ID_SIZE TOX_PUBLIC_KEY_SIZE
 
@@ -865,6 +866,12 @@ void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, u
 void tox_callback_group_nick_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                     void *), void *userdata);
 
+/* Set the callback for group peer status changes.
+ *
+ * function(Tox *m, int groupnumber, uint32_t peernumber, uint8_t status, void *userdata)
+ */
+void tox_callback_group_status_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint8_t, void *), void *userdata);
+
 /* Set the callback for group topic changes.
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *topic, uint16_t length, void *userdata)
@@ -917,12 +924,12 @@ void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t
  */
 int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length);
 
-/* Creates and joins a groupchat using the supplied public key.
+/* Joins a groupchat using the supplied chat_id
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new_join(Tox *tox, const uint8_t *invite_key);
+int tox_group_new_join(Tox *tox, const uint8_t *chat_id);
 
 /* Joins a group using the invite data received in a friend's group invite.
  *
@@ -1042,13 +1049,13 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
  */
 uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber);
 
-/* Get invite key for the groupchat from groupnumber.
+/* Get invite key (chat_id) for groupnumber's groupchat.
  * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.
  *
  * Returns 0 on success
  * Retruns -1 on failure
  */
-int tox_group_get_invite_key(const Tox *tox, int groupnumber, uint8_t *dest);
+int tox_group_get_chat_id(const Tox *tox, int groupnumber, uint8_t *dest);
 
 /* Copies the nicks of the peers in groupnumber to the nicks array.
  * Copies the lengths of the nicks to the lengths array.
@@ -1068,6 +1075,9 @@ int tox_group_get_names(const Tox *tox, int groupnumber, uint8_t nicks[][TOX_MAX
  * Returns -1 on failure.
  */
 int tox_group_get_number_peers(const Tox *tox, int groupnumber);
+
+/* Returns the number of active groups. */
+uint32_t tox_group_count_groups(const Tox *tox);
 
 /* Toggle ignore on peernumber in groupnumber.
  * If ignore is 1, group and private messages from peernumber are ignored, as well as A/V.

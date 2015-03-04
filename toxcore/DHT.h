@@ -34,6 +34,9 @@
 #define SIG_PUBLIC_KEY crypto_sign_PUBLICKEYBYTES
 #define SIG_SECRET_KEY crypto_sign_SECRETKEYBYTES
 
+/* Size of the group chat_id */
+#define CHAT_ID_SIZE SIG_PUBLIC_KEY
+
 /* Long keys for group chats */
 #define EXT_SECRET_KEY (ENC_SECRET_KEY + SIG_SECRET_KEY)
 #define EXT_PUBLIC_KEY (ENC_PUBLIC_KEY + SIG_PUBLIC_KEY)
@@ -328,13 +331,13 @@ int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count);
  */
 int DHT_getfriendip(const DHT *dht, const uint8_t *client_id, IP_Port *ip_port);
 
-/* Compares client_id1 and client_id2 with client_id.
+/* Compares size bytes of key1 and key2 with k.
  *
  *  return 0 if both are same distance.
- *  return 1 if client_id1 is closer.
- *  return 2 if client_id2 is closer.
+ *  return 1 if key1 is closer.
+ *  return 2 if key2 is closer.
  */
-int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
+int id_closest(const uint8_t *k, const uint8_t *key1, const uint8_t *key2, size_t size);
 
 /* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
