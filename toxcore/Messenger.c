@@ -829,7 +829,7 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint3
     m->friend_statusmessagechange_userdata = userdata;
 }
 
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *), void *userdata)
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *), void *userdata)
 {
     m->friend_userstatuschange = function;
     m->friend_userstatuschange_userdata = userdata;
@@ -847,7 +847,7 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32
     m->read_receipt_userdata = userdata;
 }
 
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
+void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *),
                                  void *userdata)
 {
     m->friend_connectionstatuschange = function;

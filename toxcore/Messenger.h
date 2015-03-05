@@ -230,13 +230,13 @@ struct Messenger {
     void *friend_namechange_userdata;
     void (*friend_statusmessagechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *friend_statusmessagechange_userdata;
-    void (*friend_userstatuschange)(struct Messenger *m, uint32_t, uint8_t, void *);
+    void (*friend_userstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
     void *friend_userstatuschange_userdata;
     void (*friend_typingchange)(struct Messenger *m, uint32_t, _Bool, void *);
     void *friend_typingchange_userdata;
     void (*read_receipt)(struct Messenger *m, uint32_t, uint32_t, void *);
     void *read_receipt_userdata;
-    void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, uint8_t, void *);
+    void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
     void *friend_connectionstatuschange_userdata;
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);
     void *friend_connectionstatuschange_internal_userdata;
@@ -495,7 +495,8 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint3
 /* Set the callback for status type changes.
  *  Function(uint32_t friendnumber, USERSTATUS kind)
  */
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *), void *userdata);
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *),
+                           void *userdata);
 
 /* Set the callback for typing changes.
  *  Function(uint32_t friendnumber, uint8_t is_typing)
@@ -524,7 +525,7 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32
  *  being previously online" part.
  *  It's assumed that when adding friends, their connection status is offline.
  */
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
+void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *),
                                  void *userdata);
 /* Same as previous but for internal A/V core usage only */
 void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
