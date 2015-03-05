@@ -133,8 +133,7 @@ int getfriendcon_id(const Messenger *m, int32_t friendnumber)
     return m->friendlist[friendnumber].friendcon_id;
 }
 
-/* TODO: Another checksum algorithm might be better.
- *
+/*
  *  return a uint16_t that represents the checksum of address of length len.
  */
 static uint16_t address_checksum(const uint8_t *address, uint32_t len)
@@ -1836,7 +1835,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
     return 0;
 }
 
-/* TODO: Make this function not suck. */
 void do_friends(Messenger *m)
 {
     uint32_t i;
