@@ -236,8 +236,6 @@ struct Messenger {
     void *friend_typingchange_userdata;
     void (*read_receipt)(struct Messenger *m, uint32_t, uint32_t, void *);
     void *read_receipt_userdata;
-    void (*friend_statuschange)(struct Messenger *m, uint32_t, uint8_t, void *);
-    void *friend_statuschange_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, uint8_t, void *);
     void *friend_connectionstatuschange_userdata;
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);

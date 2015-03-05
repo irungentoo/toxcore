@@ -826,7 +826,7 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint3
                               void *userdata)
 {
     m->friend_statusmessagechange = function;
-    m->friend_statuschange_userdata = userdata;
+    m->friend_statusmessagechange_userdata = userdata;
 }
 
 void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *), void *userdata)
@@ -1654,7 +1654,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             if (m->friend_statusmessagechange)
                 m->friend_statusmessagechange(m, i, data_terminated, data_length,
-                                              m->friend_statuschange_userdata);
+                                              m->friend_statusmessagechange_userdata);
 
             set_friend_statusmessage(m, i, data_terminated, data_length);
             break;
