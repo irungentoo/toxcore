@@ -1171,6 +1171,22 @@ int tox_group_get_peer_name(const Tox *tox, int groupnumber, uint32_t peernumber
     return gc_get_peer_nick(chat, peernumber, name);
 }
 
+/* Get peernumber's name's size in bytes in groupnumber's group chat.
+ *
+ * Return length of name on success.
+ * Reutrn -1 on failure.
+ */
+int tox_group_get_peer_name_size(const Tox *tox, int groupnumber, uint32_t peernumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_peer_nick_size(chat, peernumber);
+}
+
 /* Get your own name for groupnumber's group.
  * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
  *
@@ -1186,6 +1202,22 @@ int tox_group_get_self_name(const Tox *tox, int groupnumber, uint8_t *name)
         return -1;
 
     return gc_get_self_nick(chat, name);
+}
+
+/* Get your own name's size in bytes for groupnumber's group.
+ *
+ * Return length of name on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_self_name_size(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_self_nick_size(chat);
 }
 
 /* Sets groupnumber's topic.
@@ -1220,6 +1252,22 @@ int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topic)
     return gc_get_topic(chat, topic);
 }
 
+/* Gets groupnumber's topic's size in bytes.
+ *
+ * Return topic length on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_topic_size(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_topic_size(chat);
+}
+
 /* Gets groupnumber's group name. groupname buffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return group name's length on success.
@@ -1234,6 +1282,22 @@ int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topic)
         return -1;
 
     return gc_get_group_name(chat, groupname);
+}
+
+/* Gets groupnumber's group name's size in bytes.
+ *
+ * Return group name's length on success.
+ * Return -1 on failure.
+ */
+ int tox_group_get_group_name_size(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_group_name_size(chat);
 }
 
 /* Sets your status for groupnumber.

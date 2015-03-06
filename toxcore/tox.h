@@ -999,6 +999,13 @@ int tox_group_set_self_name(Tox *tox, int groupnumber, const uint8_t *name, uint
  */
 int tox_group_get_peer_name(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t *name);
 
+/* Get peernumber's name's size in bytes.
+ *
+ * Return length of name on success.
+ * Reutrn -1 on failure.
+ */
+int tox_group_get_peer_name_size(const Tox *tox, int groupnumber, uint32_t peernumber);
+
 /* Get your own name for groupnumber's group.
  * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
  *
@@ -1006,6 +1013,13 @@ int tox_group_get_peer_name(const Tox *tox, int groupnumber, uint32_t peernumber
  * Return -1 on failure.
  */
 int tox_group_get_self_name(const Tox *tox, int groupnumber, uint8_t *name);
+
+/* Get your own name's size in bytes for groupnumber's group.
+ *
+ * Return length of name on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_self_name_size(const Tox *tox, int groupnumber);
 
 /* Changes groupnumber's topic.
  *
@@ -1021,12 +1035,27 @@ int tox_group_set_topic(Tox *tox, int groupnumber, const uint8_t *topic, uint16_
  */
 int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topic);
 
+/* Gets groupnumber's topic's size in bytes.
+ *
+ * Return topic length on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_topic_size(const Tox *tox, int groupnumber);
+
 /* Gets groupnumber's group name. groupname buffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return group name's length on success.
  * Return -1 on failure.
  */
  int tox_group_get_group_name(const Tox *tox, int groupnumber, uint8_t *groupname);
+
+
+/* Gets groupnumber's group name's size in bytes.
+ *
+ * Return group name's length on success.
+ * Return -1 on failure.
+ */
+ int tox_group_get_group_name_size(const Tox *tox, int groupnumber);
 
 /* Sets your status for groupnumber.
  *

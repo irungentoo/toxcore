@@ -1014,6 +1014,14 @@ int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
     return chat->group[0].nick_len;
 }
 
+/* 
+ * Return nick length
+ */
+uint16_t gc_get_self_nick_size(const GC_Chat *chat)
+{
+    return chat->group[0].nick_len;
+}
+
 /* Return -1 on error
  * Return nick length if success
  */
@@ -1023,6 +1031,17 @@ int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuff
         return -1;
 
     memcpy(namebuffer, chat->group[peernumber].nick, chat->group[peernumber].nick_len);
+    return chat->group[peernumber].nick_len;
+}
+
+/* Return -1 on error
+ * Return nick length if success
+ */
+int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peernumber)
+{
+    if (!peernumber_valid(chat, peernumber))
+        return -1;
+
     return chat->group[peernumber].nick_len;
 }
 
@@ -1075,6 +1094,12 @@ int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer)
     return chat->topic_len;
 }
 
+ /* Return topic length. */
+uint16_t gc_get_topic_size(const GC_Chat *chat)
+{
+    return chat->topic_len;
+}
+
 static int handle_bc_change_topic(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                   uint32_t length)
 {
@@ -1104,6 +1129,12 @@ static int handle_bc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
 int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname)
 {
     memcpy(groupname, chat->group_name, chat->group_name_len);
+    return chat->group_name_len;
+}
+
+/* Returns group_name length */
+uint16_t gc_get_group_name_size(const GC_Chat *chat)
+{
     return chat->group_name_len;
 }
 
