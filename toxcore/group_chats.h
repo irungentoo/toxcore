@@ -417,6 +417,13 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
  */
 int gc_group_join(GC_Session *c, const uint8_t *chat_id);
 
+/* Resets chat saving all necessary state.
+ *
+ * Returns groupnumber on success.
+ * Returns -1 on falure.
+ */
+int gc_rejoin_group(GC_Session *c, GC_Chat *chat);
+
 /* Joins a group using the invite data received in a friend's group invite.
  *
  * Return groupnumber on success.

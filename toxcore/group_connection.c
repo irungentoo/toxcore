@@ -269,7 +269,6 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
         if (delta > 1 && power_of_2(delta)) {
             sendpacket(chat->net, chat->group[peernum].ip_port, gconn->send_ary[i].data,
                        gconn->send_ary[i].data_length);
-            fprintf(stderr, "resending message_id %llu (peer %u)\n", gconn->send_ary[i].message_id, peernum);
             continue;
         }
 

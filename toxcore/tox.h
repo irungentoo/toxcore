@@ -931,6 +931,13 @@ int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length);
  */
 int tox_group_new_join(Tox *tox, const uint8_t *chat_id);
 
+/* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, certificates
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure or if already connected to the group.
+ */
+int tox_group_reconnect(Tox *tox, int groupnumber);
+
 /* Joins a group using the invite data received in a friend's group invite.
  *
  * Return groupnumber on success.

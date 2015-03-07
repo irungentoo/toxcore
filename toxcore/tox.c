@@ -1031,6 +1031,22 @@ int tox_group_new_join(Tox *tox, const uint8_t *chat_id)
     return gc_group_join(m->group_handler, chat_id);
 }
 
+/* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, certificates
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure or if already connected to the group.
+ */
+int tox_group_reconnect(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_rejoin_group(m->group_handler, chat);
+}
+
 /* Joins a group using the invite data received in a friend's group invite.
  * Length should be TOX_GROUP_INVITE_DATA_SIZE.
  *
