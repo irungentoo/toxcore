@@ -655,8 +655,8 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to)
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,
-            strerror(errno), ip_ntoa(&ip), port);
+    fprintf(stderr, "Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u\n", errno, strerror(errno),
+            ip_ntoa(&ip), port_from, port_to);
 #endif
     kill_networking(temp);
     return NULL;
