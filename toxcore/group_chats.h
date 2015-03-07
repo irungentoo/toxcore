@@ -304,15 +304,17 @@ uint16_t gc_get_group_name_size(const GC_Chat *chat);
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
-/* Return -1 on error
- * Return nick length if success
- */
-int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
+/* Return nick length */
+uint16_t gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
 
-/*
- * Return nick length if success
- */
+/* Return your own nick length */
 uint16_t gc_get_self_nick_size(const GC_Chat *chat);
+
+/* Return your own group role */
+uint8_t gc_get_self_role(const GC_Chat *chat);
+
+/* Return your own status */
+uint8_t gc_get_self_status(const GC_Chat *chat);
 
 /* Return -1 on error.
  * Return nick length if success

@@ -1004,21 +1004,29 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
     return send_gc_broadcast_packet(chat, nick, length, GM_CHANGE_NICK);
 }
 
-/* Return -1 on error
- * Return nick length if success
- */
-int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
+/* Return nick length */
+uint16_t gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
 {
     memcpy(nick, chat->group[0].nick, chat->group[0].nick_len);
     return chat->group[0].nick_len;
 }
 
-/*
- * Return nick length
- */
+/* Return your own nick length */
 uint16_t gc_get_self_nick_size(const GC_Chat *chat)
 {
     return chat->group[0].nick_len;
+}
+
+/* Return your own group role */
+uint8_t gc_get_self_role(const GC_Chat *chat)
+{
+    return chat->group[0].role;
+}
+
+/* Return your own status */
+uint8_t gc_get_self_status(const GC_Chat *chat)
+{
+    return chat->group[0].status;
 }
 
 /* Return -1 on error

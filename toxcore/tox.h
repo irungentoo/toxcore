@@ -1078,12 +1078,26 @@ int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type);
  */
 uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber);
 
+/* Get your own group status in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_STATUS on success.
+ * Returns TOX_GS_INVALID on failure.
+ */
+uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber);
+
 /* Get peernumber's group role in groupnumber's group chat.
  *
  * Returns a TOX_GROUP_ROLE on success.
  * Returns TOX_GR_INVALID on failure.
  */
 uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber);
+
+/* Get your own group role in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_ROLE on success.
+ * Returns TOX_GR_INVALID on failure.
+ */
+uint8_t tox_group_get_self_role(const Tox *tox, int groupnumber);
 
 /* Get invite key (chat_id) for groupnumber's groupchat.
  * The result is stored in 'dest' which must have space for TOX_GROUP_CHAT_ID_SIZE bytes.

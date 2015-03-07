@@ -1348,9 +1348,25 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     return gc_get_status(chat, peernumber);
 }
 
+/* Get your own group status in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_STATUS on success.
+ * Returns TOX_GS_INVALID on failure.
+ */
+uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return TOX_GS_INVALID;
+
+    return gc_get_self_status(chat);
+}
+
 /* Get peernumber's group role in groupnumber's group chat.
  *
- * Return a TOX_GROUP_ROLE on success.
+ * Returns a TOX_GROUP_ROLE on success.
  * Returns TOX_GR_INVALID on failure.
  */
 uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
@@ -1362,6 +1378,22 @@ uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
         return TOX_GR_INVALID;
 
     return gc_get_role(chat, peernumber);
+}
+
+/* Get your own group role in groupnumber's group chat.
+ *
+ * Return a TOX_GROUP_ROLE on success.
+ * Return TOX_GR_INVALID on failure.
+ */
+uint8_t tox_group_get_self_role(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return TOX_GR_INVALID;
+
+    return gc_get_self_role(chat);
 }
 
 /* Get invite key (chat_id) for groupnumber's groupchat.
