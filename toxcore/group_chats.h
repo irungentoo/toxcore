@@ -97,6 +97,7 @@ enum {
 
 enum {
     CS_NONE,
+    CS_FAILED,
     CS_DISCONNECTED,
     CS_CONNECTING,
     CS_CONNECTED,
@@ -308,7 +309,7 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
  */
 int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
 
-/* 
+/*
  * Return nick length if success
  */
 uint16_t gc_get_self_nick_size(const GC_Chat *chat);

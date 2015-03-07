@@ -630,10 +630,11 @@ static int handle_gc_invite_response_reject(Messenger *m, int groupnumber, const
     if (type >= GJ_INVALID)
         return -1;
 
+    chat->connection_state = CS_FAILED;
+
     if (c->rejected)
         (*c->rejected)(m, groupnumber, type, c->rejected_userdata);
 
-    gc_group_exit(m->group_handler, chat, NULL, 0);
     return 0;
 }
 
@@ -1014,7 +1015,7 @@ int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
     return chat->group[0].nick_len;
 }
 
-/* 
+/*
  * Return nick length
  */
 uint16_t gc_get_self_nick_size(const GC_Chat *chat)
@@ -1999,9 +2000,10 @@ static int rejoin_group(GC_Session *c, GC_Chat *chat);
 #define GROUP_GET_NEW_NODES_INTERVAL 10
 #define GROUP_MAX_JOIN_ATTEMPTS (GROUP_GET_NEW_NODES_INTERVAL * 3)
 
-/* If state is CS_CONNECTED peers are pinged, unsent packets are resent, and peer timeouts are checked.
- * If state is CS_CONNECTING we look for new DHT nodes if our timeout (GROUP_GET_NEW_NODES_INTERVAL) has expired.
- * If state is CS_DISCONNECTED we send an invite request using a random node if our timeout (GROUP_JOIN_ATTEMPT_INTERVAL) has expired.
+/* CS_CONNECTED: Peers are pinged, unsent packets are resent, and peer timeouts are checked.
+ * CS_CONNECTING: Look for new DHT nodes if our timeout (GROUP_GET_NEW_NODES_INTERVAL) has expired.
+ * CS_DISCONNECTED: Send an invite request using a random node if our timeout GROUP_JOIN_ATTEMPT_INTERVAL has expired.
+ * CS_FAILED: Do nothing. This occurrs if we cannot connect to a group or our invite request is rejected.
  */
 void do_gc(GC_Session *c)
 {
@@ -2028,11 +2030,7 @@ void do_gc(GC_Session *c)
 
         else if (chat->connection_state == CS_CONNECTING) {
             if (chat->join_attempts > GROUP_MAX_JOIN_ATTEMPTS) {
-                group_delete(c, chat);
-
-                if (i >= c->num_chats)
-                    break;
-
+                chat->connection_state = CS_FAILED;
                 continue;
             }
 
