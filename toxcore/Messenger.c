@@ -959,11 +959,10 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
  */
-void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint64_t,
-                               const uint8_t *,
-                               uint16_t, void *), void *userdata)
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uint32_t, uint32_t, unsigned int, uint64_t,
+                               const uint8_t *, size_t, void *), void *userdata)
 {
     m->file_sendrequest = function;
     m->file_sendrequest_userdata = userdata;
@@ -1001,8 +1000,8 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
  *  return 1 on success
  *  return 0 on failure
  */
-static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint64_t filesize,
-                            const uint8_t *filename, uint16_t filename_length)
+static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint32_t file_type,
+                            uint64_t filesize, const uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
         return 0;
@@ -1010,13 +1009,14 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
     if (filename_length > MAX_FILENAME_LENGTH)
         return 0;
 
-    uint8_t packet[MAX_FILENAME_LENGTH + 1 + sizeof(filesize)];
+    uint8_t packet[1 + sizeof(file_type) + sizeof(filesize) + filename_length];
     packet[0] = filenumber;
+    file_type = htonl(file_type);
+    memcpy(packet + 1, &file_type, sizeof(file_type));
     host_to_net((uint8_t *)&filesize, sizeof(filesize));
-    memcpy(packet + 1, &filesize, sizeof(filesize));
-    memcpy(packet + 1 + sizeof(filesize), filename, filename_length);
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet,
-                                1 + sizeof(filesize) + filename_length, 0);
+    memcpy(packet + 1 + sizeof(file_type), &filesize, sizeof(filesize));
+    memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize), filename, filename_length);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, sizeof(packet), 0);
 }
 
 /* Send a file send request.
@@ -1040,7 +1040,7 @@ int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, 
     if (i == MAX_CONCURRENT_FILE_PIPES)
         return -1;
 
-    if (file_sendrequest(m, friendnumber, i, filesize, filename, filename_length) == 0)
+    if (file_sendrequest(m, friendnumber, i, 0, filesize, filename, filename_length) == 0)
         return -1;
 
     m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NOT_ACCEPTED;
@@ -1742,24 +1742,33 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_FILE_SENDREQUEST: {
-            if (data_length < 1 + sizeof(uint64_t) + 1)
+            const unsigned int head_length = 1 + sizeof(uint32_t) + sizeof(uint64_t);
+
+            if (data_length < head_length + 1)
                 break;
 
             uint8_t filenumber = data[0];
             uint64_t filesize;
-            memcpy(&filesize, data + 1, sizeof(filesize));
+            uint32_t file_type;
+            memcpy(&file_type, data + 1, sizeof(file_type));
+            file_type = ntohl(file_type);
+
+            memcpy(&filesize, data + 1 + sizeof(uint32_t), sizeof(filesize));
             net_to_host((uint8_t *) &filesize, sizeof(filesize));
             m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
             m->friendlist[i].file_receiving[filenumber].size = filesize;
             m->friendlist[i].file_receiving[filenumber].transferred = 0;
 
             /* Force NULL terminate file name. */
-            uint8_t filename_terminated[data_length - 1 - sizeof(uint64_t) + 1];
-            memcpy(filename_terminated, data + 1 + sizeof(uint64_t), data_length - 1 - sizeof(uint64_t));
-            filename_terminated[data_length - 1 - sizeof(uint64_t)] = 0;
+            uint8_t filename_terminated[data_length - head_length + 1];
+            memcpy(filename_terminated, data + head_length, data_length - head_length);
+            filename_terminated[data_length - head_length] = 0;
+
+            uint32_t real_filenumber = filenumber;
+            real_filenumber <<= 16;
 
             if (m->file_sendrequest)
-                (*m->file_sendrequest)(m, i, filenumber, filesize, filename_terminated, data_length - 1 - sizeof(uint64_t),
+                (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename_terminated, data_length - head_length,
                                        m->file_sendrequest_userdata);
 
             break;

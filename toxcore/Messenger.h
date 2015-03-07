@@ -245,7 +245,8 @@ struct Messenger {
     void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t);
     void (*group_message)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t);
 
-    void (*file_sendrequest)(struct Messenger *m, uint32_t, uint8_t, uint64_t, const uint8_t *, uint16_t, void *);
+    void (*file_sendrequest)(struct Messenger *m, uint32_t, uint32_t, unsigned int, uint64_t, const uint8_t *, size_t,
+                             void *);
     void *file_sendrequest_userdata;
     void (*file_filecontrol)(struct Messenger *m, uint32_t, uint8_t, uint8_t, uint8_t, const uint8_t *, uint16_t, void *);
     void *file_filecontrol_userdata;
@@ -552,11 +553,11 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint8_t filenumber, uint64_t filesize, uint8_t *filename, uint16_t filename_length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
  */
-void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint64_t,
-                               const uint8_t *,
-                               uint16_t, void *), void *userdata);
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uint32_t, uint32_t, unsigned int, uint64_t,
+                               const uint8_t *, size_t, void *), void *userdata);
+
 
 /* Set the callback for file control requests.
  *
