@@ -35,7 +35,7 @@ extern "C" {
 #define TOX_DEFINED
 typedef struct Tox Tox;
 struct Tox_Options;
-typedef uint8_t TOX_ERR_NEW;
+typedef enum TOX_ERR_NEW TOX_ERR_NEW;
 #endif
 
 // these functions provide access to these defines in toxencryptsave.c, which
