@@ -654,10 +654,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to)
         *portptr = htons(port_to_try);
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u\n", errno, strerror(errno),
+    LOGGER_DEBUG("Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u", errno, strerror(errno),
             ip_ntoa(&ip), port_from, port_to);
-#endif
+
     kill_networking(temp);
     return NULL;
 }
