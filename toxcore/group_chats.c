@@ -2367,7 +2367,6 @@ int gc_rejoin_group(GC_Session *c, GC_Chat *chat)
     new_chat.net = c->messenger->net;
     new_chat.self_last_rcvd_ping = unix_time();
     new_chat.last_sent_ping_time = unix_time();
-    create_extended_keypair(new_chat.self_public_key, new_chat.self_secret_key);
 
     memcpy(&c->chats[new_chat.groupnumber], &new_chat, sizeof(GC_Chat));
 
@@ -2392,7 +2391,7 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
     uint8_t packet[MAX_GC_PACKET_SIZE];
     packet[0] = GP_FRIEND_INVITE;
 
-    memcpy(packet + 1, chat->chat_public_key, CHAT_ID_SIZE);
+    memcpy(packet + 1, SIG_KEY(chat->chat_public_key), CHAT_ID_SIZE);
 
     GC_Announce_Node self_node;
     if (make_self_gca_node(c->messenger->dht, &self_node, chat->self_public_key) == -1)
