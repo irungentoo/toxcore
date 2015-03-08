@@ -164,7 +164,10 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
 
     if (filenum == -1)
+    {
+        fclose(tempfile);
         return -1;
+    }
 
     file_senders[numfilesenders].file = tempfile;
     file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_file_data_size(m,
