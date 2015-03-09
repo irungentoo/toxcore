@@ -475,7 +475,7 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_
     DHT *dht = announce->dht;
 
     uint8_t chat_id[CHAT_ID_SIZE];
-    memcpy(chat_id, SIG_KEY(chat_public_key), CHAT_ID_SIZE);
+    memcpy(chat_id, SIG_PK(chat_public_key), CHAT_ID_SIZE);
 
     /* packet contains: type, chat_id, node, timestamp, signature */
     uint8_t data[1 + CHAT_ID_SIZE + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
@@ -535,7 +535,7 @@ int handle_gca_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint16_t 
 
     if (crypto_sign_verify_detached(data + plain_length - SIGNATURE_SIZE, data,
                                     plain_length - SIGNATURE_SIZE,
-                                    SIG_KEY(node.public_key)) != 0) {
+                                    SIG_PK(node.public_key)) != 0) {
         fprintf(stderr, "handle_gca_request sign verify failed\n");
         return -1;
     }
@@ -551,7 +551,7 @@ int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_public
     DHT *dht = announce->dht;
 
     uint8_t chat_id[CHAT_ID_SIZE];
-    memcpy(chat_id, SIG_KEY(chat_public_key), CHAT_ID_SIZE);
+    memcpy(chat_id, SIG_PK(chat_public_key), CHAT_ID_SIZE);
 
     /* packet contains: type, chat_id, request_id, node, timestamp, signature */
     uint8_t data[1 + CHAT_ID_SIZE + RAND_ID_SIZE + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
@@ -647,7 +647,7 @@ int handle_gc_get_announced_nodes_request(void *ancp, IP_Port ipp, const uint8_t
 
     if (crypto_sign_verify_detached(data + plain_length - SIGNATURE_SIZE,
                                     data, plain_length - SIGNATURE_SIZE,
-                                    SIG_KEY(node.public_key)) != 0) {
+                                    SIG_PK(node.public_key)) != 0) {
         fprintf(stderr, "sign verify failed in handle announced nodes request\n");
         return -1;
     }
@@ -734,7 +734,7 @@ size_t gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_public
     size_t i, j, k = 0;
 
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; i++) {
-        if (!chat_id_equal(announce->self_requests[i].chat_id, SIG_KEY(chat_public_key)))
+        if (!chat_id_equal(announce->self_requests[i].chat_id, SIG_PK(chat_public_key)))
             continue;
 
         if (! (announce->self_requests[i].ready == 1 && announce->self_requests[i].req_id != 0) )

@@ -565,7 +565,7 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
     /* Verify our own signature */
     if (crypto_sign_verify_detached(data + SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    SIG_KEY(chat->self_public_key)) != 0) {
+                                    SIG_PK(chat->self_public_key)) != 0) {
         fprintf(stderr, "handle_gc_invite_response sign verify failed (self)\n");
         return -1;
     }
@@ -573,7 +573,7 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
     /* Verify inviter signature */
     if (crypto_sign_verify_detached(data + INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    SIG_KEY(public_key)) != 0) {
+                                    SIG_PK(public_key)) != 0) {
         fprintf(stderr, "handle_gc_invite_response sign verify failed (inviter)\n");
         return -1;
     }
@@ -683,7 +683,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
 
     if (crypto_sign_verify_detached(data + SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    SIG_KEY(public_key)) != 0) {
+                                    SIG_PK(public_key)) != 0) {
         fprintf(stderr, "handle_gc_invite_request sign_verify failed!\n");
         return -1;
     }
@@ -865,7 +865,7 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber)
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest)
 {
-    memcpy(dest, SIG_KEY(chat->chat_public_key), SIG_PUBLIC_KEY);
+    memcpy(dest, SIG_PK(chat->chat_public_key), SIG_PUBLIC_KEY);
 }
 
 static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
@@ -1603,7 +1603,7 @@ static int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t 
     U64_to_bytes(certificate + length + EXT_PUBLIC_KEY, unix_time());
     uint32_t mlen = length + EXT_PUBLIC_KEY + TIME_STAMP_SIZE;
 
-    if (crypto_sign_detached(certificate + mlen, NULL, certificate, mlen, SIG_KEY(secret_key)) != 0)
+    if (crypto_sign_detached(certificate + mlen, NULL, certificate, mlen, SIG_SK(secret_key)) != 0)
         return -1;
 
     return 0;
@@ -1622,8 +1622,8 @@ static int verify_cert_integrity(const uint8_t *certificate)
     if (cert_type == GC_INVITE) {
         uint8_t invitee_pk[SIG_PUBLIC_KEY];
         uint8_t inviter_pk[SIG_PUBLIC_KEY];
-        memcpy(invitee_pk, SIG_KEY(CERT_INVITEE_KEY(certificate)), SIG_PUBLIC_KEY);
-        memcpy(inviter_pk, SIG_KEY(CERT_INVITER_KEY(certificate)), SIG_PUBLIC_KEY);
+        memcpy(invitee_pk, SIG_PK(CERT_INVITEE_KEY(certificate)), SIG_PUBLIC_KEY);
+        memcpy(inviter_pk, SIG_PK(CERT_INVITER_KEY(certificate)), SIG_PUBLIC_KEY);
 
         if (crypto_sign_verify_detached(certificate + INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
                                         certificate, INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
@@ -1637,7 +1637,7 @@ static int verify_cert_integrity(const uint8_t *certificate)
 
     } else {
         uint8_t source_pk[SIG_PUBLIC_KEY];
-        memcpy(source_pk, SIG_KEY(CERT_SOURCE_KEY(certificate)), SIG_PUBLIC_KEY);
+        memcpy(source_pk, SIG_PK(CERT_SOURCE_KEY(certificate)), SIG_PUBLIC_KEY);
 
         if (crypto_sign_verify_detached(certificate + ROLE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
                                         certificate, ROLE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
@@ -2391,7 +2391,7 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
     uint8_t packet[MAX_GC_PACKET_SIZE];
     packet[0] = GP_FRIEND_INVITE;
 
-    memcpy(packet + 1, SIG_KEY(chat->chat_public_key), CHAT_ID_SIZE);
+    memcpy(packet + 1, SIG_PK(chat->chat_public_key), CHAT_ID_SIZE);
 
     GC_Announce_Node self_node;
     if (make_self_gca_node(c->messenger->dht, &self_node, chat->self_public_key) == -1)
