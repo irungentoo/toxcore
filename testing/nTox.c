@@ -513,7 +513,7 @@ void line_eval(Tox *m, char *line)
             int friendnumber = strtoul(line + prompt_offset, posi, 0);
             int groupnumber = strtoul(*posi + 1, NULL, 0);
             char msg[256];
-            sprintf(msg, "[g] Invited friend number %u to group number %u, returned: %u (0 means success)", friendnumber,
+            sprintf(msg, "[g] Invited friend number %d to group number %d, returned: %u (0 means success)", friendnumber,
                     groupnumber, tox_invite_friend(m, friendnumber, groupnumber));
             new_lines(msg);
         } else if (inpt_command == 'z') { //send message to groupnum
@@ -525,11 +525,11 @@ void line_eval(Tox *m, char *line)
 
                 if (res == 0) {
                     char msg[32 + STRING_LENGTH];
-                    sprintf(msg, "[g] #%u: YOU: %s", groupnumber, *posi + 1);
+                    sprintf(msg, "[g] #%d: YOU: %s", groupnumber, *posi + 1);
                     new_lines(msg);
                 } else {
                     char msg[128];
-                    sprintf(msg, "[i] could not send message to group no. %u: %i", groupnumber, res);
+                    sprintf(msg, "[i] could not send message to group no. %d: %i", groupnumber, res);
                     new_lines(msg);
                 }
             }
@@ -539,7 +539,7 @@ void line_eval(Tox *m, char *line)
 
             if (**posi != 0) {
                 char msg[512];
-                sprintf(msg, "[t] Sending file %s to friendnum %u filenumber is %i (-1 means failure)", *posi + 1, friendnum,
+                sprintf(msg, "[t] Sending file %s to friendnum %d filenumber is %i (-1 means failure)", *posi + 1, friendnum,
                         add_filesender(m, friendnum, *posi + 1));
                 new_lines(msg);
             }
@@ -609,7 +609,7 @@ void line_eval(Tox *m, char *line)
 
                 if (res == 0) {
                     char sss[128];
-                    sprintf(sss, "[i] could not send message to friend no. %u", friendnumber);
+                    sprintf(sss, "[i] could not send message to friend no. %d", friendnumber);
                     new_lines(sss);
                 } else
                     print_formatted_message(m, line, friendnumber, 1);
@@ -619,11 +619,11 @@ void line_eval(Tox *m, char *line)
 
                 if (res == 0) {
                     char msg[32 + STRING_LENGTH];
-                    sprintf(msg, "[g] #%u: YOU: %s", groupnumber, line);
+                    sprintf(msg, "[g] #%d: YOU: %s", groupnumber, line);
                     new_lines(msg);
                 } else {
                     char msg[128];
-                    sprintf(msg, "[i] could not send message to group no. %u: %i", groupnumber, res);
+                    sprintf(msg, "[i] could not send message to group no. %d: %i", groupnumber, res);
                     new_lines(msg);
                 }
             }
@@ -1009,7 +1009,7 @@ void print_invite(Tox *m, int friendnumber, uint8_t type, const uint8_t *data, u
     char msg[256];
 
     if (type == TOX_GROUPCHAT_TYPE_TEXT) {
-        sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
+        sprintf(msg, "[i] received group chat invite from: %d, auto accepting and joining. group number: %u", friendnumber,
                 tox_join_groupchat(m, friendnumber, data, length));
     } else {
         sprintf(msg, "[i] Group chat invite received of type %u that could not be accepted by ntox.", type);
@@ -1078,9 +1078,9 @@ void print_groupmessage(Tox *m, int groupnumber, int peernumber, const uint8_t *
         name[0] = 0;
 
     if (name[0] != 0)
-        sprintf(msg, "[g] %u: %u <%s>: %s", groupnumber, peernumber, name, message);
+        sprintf(msg, "[g] %d: %d <%s>: %s", groupnumber, peernumber, name, message);
     else
-        sprintf(msg, "[g] #%u: %u Unknown: %s", groupnumber, peernumber, message);
+        sprintf(msg, "[g] #%d: %d Unknown: %s", groupnumber, peernumber, message);
 
     new_lines(msg);
 }
@@ -1132,11 +1132,11 @@ void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t 
                          uint16_t filename_length, void *userdata)
 {
     char msg[512];
-    sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
+    sprintf(msg, "[t] %d is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
     new_lines(msg);
 
     if (tox_file_send_control(m, friendnumber, 1, filenumber, 0, 0, 0) == 0) {
-        sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
+        sprintf(msg, "Accepted file transfer. (saving file as: %d.%u.bin)", friendnumber, filenumber);
         new_lines(msg);
     } else
         new_lines("Could not accept file transfer.");
@@ -1148,9 +1148,9 @@ void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t 
     char msg[512] = {0};
 
     if (control_type == 0)
-        sprintf(msg, "[t] %u accepted file transfer: %u", friendnumber, filenumber);
+        sprintf(msg, "[t] %d accepted file transfer: %u", friendnumber, filenumber);
     else if (control_type == 3)
-        sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
+        sprintf(msg, "[t] %d file transfer: %u completed", friendnumber, filenumber);
     else
         sprintf(msg, "[t] control %u received", control_type);
 
@@ -1160,13 +1160,13 @@ void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t 
 void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     char filename[256];
-    sprintf(filename, "%u.%u.bin", friendnumber, filenumber);
+    sprintf(filename, "%d.%u.bin", friendnumber, filenumber);
     FILE *pFile = fopen(filename, "a");
 
     if (tox_file_data_remaining(m, friendnumber, filenumber, 1) == 0) {
         //file_control(m, friendnumber, 1, filenumber, 3, 0, 0);
         char msg[512];
-        sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
+        sprintf(msg, "[t] %d file transfer: %u completed", friendnumber, filenumber);
         new_lines(msg);
     }
 
