@@ -1765,6 +1765,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             filename_terminated[data_length - head_length] = 0;
 
             uint32_t real_filenumber = filenumber;
+            real_filenumber += 1;
             real_filenumber <<= 16;
 
             if (m->file_sendrequest)
