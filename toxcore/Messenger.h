@@ -129,6 +129,7 @@ struct File_Transfers {
     uint64_t size;
     uint64_t transferred;
     uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused by the other, 3 = transferring, 4 = broken, 5 = paused by us */
+    unsigned int type;
 };
 enum {
     FILESTATUS_NONE,
@@ -579,10 +580,14 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
  *  return file number on success
- *  return -1 on failure
+ *  return -1 if friend not found.
+ *  return -2 if filename too big.
+ *  return -3 if no more file sending slots left.
+ *  return -4 if could not send packet (friend offline).
+ *
  */
-int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, const uint8_t *filename,
-                   uint16_t filename_length);
+long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
+                        const uint8_t *filename, uint16_t filename_length);
 
 /* Send a file control request.
  * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.

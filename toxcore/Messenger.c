@@ -1022,13 +1022,20 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
  *  return file number on success
- *  return -1 on failure
+ *  return -1 if friend not found.
+ *  return -2 if filename too big.
+ *  return -3 if no more file sending slots left.
+ *  return -4 if could not send packet (friend offline).
+ *
  */
-int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, const uint8_t *filename,
-                   uint16_t filename_length)
+long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
+                        const uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
+
+    if (filename_length > MAX_FILENAME_LENGTH)
+        return -2;
 
     uint32_t i;
 
@@ -1038,14 +1045,15 @@ int new_filesender(const Messenger *m, int32_t friendnumber, uint64_t filesize, 
     }
 
     if (i == MAX_CONCURRENT_FILE_PIPES)
-        return -1;
+        return -3;
 
-    if (file_sendrequest(m, friendnumber, i, 0, filesize, filename, filename_length) == 0)
-        return -1;
+    if (file_sendrequest(m, friendnumber, i, file_type, filesize, filename, filename_length) == 0)
+        return -4;
 
     m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NOT_ACCEPTED;
     m->friendlist[friendnumber].file_sending[i].size = filesize;
     m->friendlist[friendnumber].file_sending[i].transferred = 0;
+    m->friendlist[friendnumber].file_sending[i].type = file_type;
     return i;
 }
 
