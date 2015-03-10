@@ -45,7 +45,7 @@
 
 #define c_sleep(x) usleep(1000*x)
 
-void print_online(Tox *tox, uint32_t friendnumber, uint8_t status, void *userdata)
+void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
     if (status)
         printf("\nOther went online.\n");
