@@ -2009,7 +2009,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_STATUSMESSAGE: {
-            if (data_length == 0 || data_length > MAX_STATUSMESSAGE_LENGTH)
+            if (data_length > MAX_STATUSMESSAGE_LENGTH)
                 break;
 
             /* Make sure the NULL terminator is present. */
