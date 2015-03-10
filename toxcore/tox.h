@@ -1485,7 +1485,11 @@ typedef enum TOX_ERR_FILE_CONTROL {
     /**
      * A PAUSE control was sent, but the file transfer was already paused.
      */
-    TOX_ERR_FILE_CONTROL_ALREADY_PAUSED
+    TOX_ERR_FILE_CONTROL_ALREADY_PAUSED,
+    /**
+     * Packet failed to send.
+     */
+    TOX_ERR_FILE_CONTROL_SEND_FAILED
 } TOX_ERR_FILE_CONTROL;
 
 /**
@@ -1612,6 +1616,7 @@ typedef enum TOX_ERR_FILE_SEND {
  *
  * @return A file number used as an identifier in subsequent callbacks. This
  *   number is per friend. File numbers are reused after a transfer terminates.
+ *   on failure, this function returns UINT32_MAX.
  */
 uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
                        const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error);
@@ -1636,11 +1641,20 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
      */
     TOX_ERR_FILE_SEND_CHUNK_NOT_FOUND,
     /**
+     * File transfer was found but isn't in a transferring state: (paused, done,
+     * broken, etc...) (happens only when not called from the request chunk callback).
+     */
+    TOX_ERR_FILE_SEND_CHUNK_NOT_TRANSFERRING,
+    /**
      * Attempted to send more data than requested. The requested data size is
      * adjusted according to maximum transmission unit and the expected end of
      * the file. Trying to send more will result in no data being sent.
      */
-    TOX_ERR_FILE_SEND_CHUNK_TOO_LARGE
+    TOX_ERR_FILE_SEND_CHUNK_TOO_LARGE,
+    /**
+     * Packet queue is full.
+     */
+    TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL
 } TOX_ERR_FILE_SEND_CHUNK;
 
 /**

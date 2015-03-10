@@ -349,6 +349,18 @@ static int add_receipt(Messenger *m, int32_t friendnumber, uint32_t packet_num, 
     new->next = NULL;
     return 0;
 }
+/*
+ * return -1 on failure.
+ * return 0 if packet was received.
+ */
+static int friend_received_packet(const Messenger *m, int32_t friendnumber, uint32_t number)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    return cryptpacket_received(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                m->friendlist[friendnumber].friendcon_id), number);
+}
 
 static int do_receipts(Messenger *m, int32_t friendnumber)
 {
@@ -360,8 +372,7 @@ static int do_receipts(Messenger *m, int32_t friendnumber)
     while (receipts) {
         struct Receipts *temp_r = receipts->next;
 
-        if (cryptpacket_received(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                 m->friendlist[friendnumber].friendcon_id), receipts->packet_num) == -1)
+        if (friend_received_packet(m, friendnumber, receipts->packet_num) == -1)
             break;
 
         if (m->read_receipt)
@@ -970,11 +981,11 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uin
 
 /* Set the callback for file control requests.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int control_type, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t, uint8_t,
-                           const uint8_t *, uint16_t, void *), void *userdata)
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *),
+                           void *userdata)
 {
     m->file_filecontrol = function;
     m->file_filecontrol_userdata = userdata;
@@ -982,15 +993,26 @@ void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t
 
 /* Set the callback for file data.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, uint8_t *data, size_t length, void *userdata)
  *
  */
-void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, const uint8_t *,
-                        uint16_t length,
-                        void *), void *userdata)
+void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *,
+                        size_t, void *), void *userdata)
 {
     m->file_filedata = function;
     m->file_filedata_userdata = userdata;
+}
+
+/* Set the callback for file request chunk.
+ *
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, size_t length, void *userdata)
+ *
+ */
+void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *),
+                            void *userdata)
+{
+    m->file_reqchunk = function;
+    m->file_reqchunk_userdata = userdata;
 }
 
 #define MAX_FILENAME_LENGTH 255
@@ -1053,132 +1075,182 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NOT_ACCEPTED;
     m->friendlist[friendnumber].file_sending[i].size = filesize;
     m->friendlist[friendnumber].file_sending[i].transferred = 0;
-    m->friendlist[friendnumber].file_sending[i].type = file_type;
+    m->friendlist[friendnumber].file_sending[i].paused = FILE_PAUSE_NOT;
+    ++m->friendlist[friendnumber].num_sending_files;
+
     return i;
 }
 
-/* Send a file control request.
- * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
- *
- *  return 0 on success
- *  return -1 on failure
- */
-int file_control(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
-                 const uint8_t *data, uint16_t length)
+int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
+                             uint8_t control_type, uint8_t *data, uint16_t data_length)
 {
-    if (length > MAX_CRYPTO_DATA_SIZE - 3)
+    if (1 + 3 + data_length > MAX_CRYPTO_DATA_SIZE)
         return -1;
 
+    uint8_t packet[3 + data_length];
+
+    packet[0] = send_receive;
+    packet[1] = filenumber;
+    packet[2] = control_type;
+
+    if (data_length) {
+        memcpy(packet, packet + 3, data_length);
+    }
+
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, sizeof(packet), 0);
+}
+
+/* Send a file control request.
+ *
+ *  return 0 on success
+ *  return -1 if friend not valid.
+ *  return -2 if friend not online.
+ *  return -3 if file number invalid.
+ *  return -4 if file control is bad.
+ *  return -5 if file already paused.
+ *  return -6 if resume file failed because it was only paused by the other.
+ *  return -7 if resume file failed because it wasn't paused.
+ *  return -8 if packet failed to send.
+ */
+int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, unsigned int control)
+{
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (send_receive == 1) {
-        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE)
-            return -1;
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -2;
+
+    uint32_t temp_filenum;
+    uint8_t send_receive, file_number;
+
+    if (filenumber >= (1 << 16)) {
+        send_receive = 1;
+        temp_filenum = (filenumber >> 16) - 1;
     } else {
-        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE)
-            return -1;
+        send_receive = 0;
+        temp_filenum = filenumber;
     }
 
-    if (send_receive > 1)
-        return -1;
+    if (temp_filenum >= MAX_CONCURRENT_FILE_PIPES)
+        return -3;
 
-    uint8_t packet[MAX_CRYPTO_DATA_SIZE];
-    packet[0] = send_receive;
-    packet[1] = filenumber;
-    packet[2] = message_id;
-    uint64_t transferred = 0;
+    file_number = temp_filenum;
 
-    if (message_id ==  FILECONTROL_RESUME_BROKEN) {
-        if (length != sizeof(uint64_t))
-            return -1;
+    struct File_Transfers *ft;
 
-        uint8_t remaining[sizeof(uint64_t)];
-        memcpy(remaining, data, sizeof(uint64_t));
-        host_to_net(remaining, sizeof(uint64_t));
-        memcpy(packet + 3, remaining, sizeof(uint64_t));
-        memcpy(&transferred, data, sizeof(uint64_t));
+    if (send_receive) {
+        ft = &m->friendlist[friendnumber].file_receiving[file_number];
     } else {
-        memcpy(packet + 3, data, length);
+        ft = &m->friendlist[friendnumber].file_sending[file_number];
     }
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, length + 3, 0)) {
-        if (send_receive == 1)
-            switch (message_id) {
-                case FILECONTROL_ACCEPT:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TRANSFERRING;
-                    break;
+    if (ft->status == FILESTATUS_NONE)
+        return -3;
 
-                case FILECONTROL_PAUSE:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_US;
-                    break;
+    if (control > FILECONTROL_KILL)
+        return -4;
 
-                case FILECONTROL_KILL:
-                case FILECONTROL_FINISHED:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
-                    break;
+    if (control == FILECONTROL_PAUSE && (ft->paused & FILE_PAUSE_US))
+        return -5;
 
-                case FILECONTROL_RESUME_BROKEN:
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
-                    m->friendlist[friendnumber].file_receiving[filenumber].transferred = transferred;
-                    break;
+    if (control == FILECONTROL_ACCEPT && ft->status == FILESTATUS_TRANSFERRING) {
+        if (!(ft->paused & FILE_PAUSE_US)) {
+            if (ft->paused & FILE_PAUSE_OTHER) {
+                return -6;
+            } else {
+                return -7;
             }
-        else
-            switch (message_id) {
-                case FILECONTROL_ACCEPT:
-                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TRANSFERRING;
-                    break;
-
-                case FILECONTROL_PAUSE:
-                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_US;
-                    break;
-
-                case FILECONTROL_KILL:
-                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
-                    break;
-
-                case FILECONTROL_FINISHED:
-                    break;
-            }
-
-        return 0;
-    } else {
-        return -1;
+        }
     }
+
+    if (send_file_control_packet(m, friendnumber, send_receive, file_number, control, 0, 0)) {
+        if (control == FILECONTROL_KILL) {
+            ft->status = FILESTATUS_NONE;
+
+            if (send_receive == 0) {
+                --m->friendlist[friendnumber].num_sending_files;
+            }
+        } else if (control == FILECONTROL_PAUSE) {
+            ft->paused |= FILE_PAUSE_US;
+        } else if (control == FILECONTROL_ACCEPT) {
+            ft->status = FILESTATUS_TRANSFERRING;
+
+            if (ft->paused & FILE_PAUSE_US) {
+                ft->paused ^=  FILE_PAUSE_US;
+            }
+        }
+    } else {
+        return -8;
+    }
+
+    return 0;
 }
 
 #define MIN_SLOTS_FREE (CRYPTO_MIN_QUEUE_LENGTH / 2)
 /* Send file data.
  *
  *  return 0 on success
- *  return -1 on failure
+ *  return -1 if friend not valid.
+ *  return -2 if friend not online.
+ *  return -3 if filenumber invalid.
+ *  return -4 if file transfer not transferring.
+ *  return -5 if trying to send too much data.
+ *  return -6 if packet queue full.
  */
-int file_data(const Messenger *m, int32_t friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length)
+int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, const uint8_t *data, uint16_t length)
 {
-    if (length > MAX_CRYPTO_DATA_SIZE - 1)
-        return -1;
-
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_TRANSFERRING)
-        return -1;
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -2;
+
+    if (filenumber > MAX_CONCURRENT_FILE_PIPES)
+        return -3;
+
+    struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[filenumber];
+
+    if (ft->status != FILESTATUS_TRANSFERRING)
+        return -4;
+
+    if (ft->paused != FILE_PAUSE_NOT)
+        return -4;
+
+    if (length > MAX_CRYPTO_DATA_SIZE - 2)
+        return -5;
+
+    if (ft->size) {
+        if (ft->size - ft->transferred < length) {
+            return -5;
+        }
+    }
 
     /* Prevent file sending from filling up the entire buffer preventing messages from being sent. TODO: remove */
     if (crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                                         m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE)
-        return -1;
+        return -6;
 
-    uint8_t packet[MAX_CRYPTO_DATA_SIZE];
-    packet[0] = filenumber;
-    memcpy(packet + 1, data, length);
+    uint8_t packet[2 + length];
+    packet[0] = PACKET_ID_FILE_DATA;
+    packet[1] = filenumber;
+    memcpy(packet + 2, data, length);
 
-    if (write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_DATA, packet, length + 1, 1)) {
-        m->friendlist[friendnumber].file_sending[filenumber].transferred += length;
+    int64_t ret = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                                    m->friendlist[friendnumber].friendcon_id), packet, sizeof(packet), 1);
+
+    if (ret != -1) {
+        //TODO record packet ids to check if other received complete file.
+        ft->transferred += length;
+
+        if (length == 0 || ft->size == ft->transferred) {
+            ft->status = FILESTATUS_FINISHED;
+            ft->last_packet_number = ret;
+        }
+
         return 0;
     }
 
-    return -1;
+    return -6;
 
 }
 
@@ -1209,105 +1281,142 @@ uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t fi
     }
 }
 
+static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
+{
+    if (!m->friendlist[friendnumber].num_sending_files)
+        return;
+
+    int free_slots = crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                     m->friendlist[friendnumber].friendcon_id));
+
+    if (free_slots <= MIN_SLOTS_FREE)
+        return;
+
+    free_slots -= MIN_SLOTS_FREE;
+
+    unsigned int i, num = m->friendlist[friendnumber].num_sending_files;
+
+    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+        struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
+
+        if (ft->status != FILESTATUS_NONE) {
+            --num;
+
+            if (ft->status == FILESTATUS_FINISHED) {
+                /* Check if file was entirely sent. */
+                if (friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
+                    if (m->file_reqchunk)
+                        (*m->file_reqchunk)(m, friendnumber, i, ft->transferred, 0, m->file_reqchunk_userdata);
+
+                    ft->status = FILESTATUS_NONE;
+                    --m->friendlist[friendnumber].num_sending_files;
+                }
+            }
+        }
+
+        while (ft->status == FILESTATUS_TRANSFERRING && (ft->paused == FILE_PAUSE_NOT)) {
+            if (free_slots == 0)
+                break;
+
+            uint16_t length = MAX_CRYPTO_DATA_SIZE - 2;
+
+            if (ft->size) {
+                if (ft->size == ft->transferred) {
+                    break;
+                }
+
+                if (ft->size - ft->transferred < length) {
+                    length = ft->size - ft->transferred;
+                }
+            }
+
+            if (m->file_reqchunk)
+                (*m->file_reqchunk)(m, friendnumber, i, ft->transferred, length, m->file_reqchunk_userdata);
+
+            --free_slots;
+        }
+
+        if (num == 0)
+            break;
+    }
+}
+
 /* Run this when the friend disconnects.
  *  Sets all current file transfers to broken.
  */
 static void break_files(const Messenger *m, int32_t friendnumber)
 {
     uint32_t i;
+    /* TODO
+        for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+            if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE)
+                m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_BROKEN;
 
-    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
-        if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE)
-            m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_BROKEN;
-
-        if (m->friendlist[friendnumber].file_receiving[i].status != FILESTATUS_NONE)
-            m->friendlist[friendnumber].file_receiving[i].status = FILESTATUS_BROKEN;
-    }
+            if (m->friendlist[friendnumber].file_receiving[i].status != FILESTATUS_NONE)
+                m->friendlist[friendnumber].file_receiving[i].status = FILESTATUS_BROKEN;
+        }*/
 }
 
-static int handle_filecontrol(const Messenger *m, int32_t friendnumber, uint8_t receive_send, uint8_t filenumber,
-                              uint8_t message_id, uint8_t *data,
-                              uint16_t length)
+/* return -1 on failure, 0 on success.
+ */
+static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receive_send, uint8_t filenumber,
+                              uint8_t control_type, uint8_t *data, uint16_t length)
 {
     if (receive_send > 1)
         return -1;
 
+    if (control_type > FILECONTROL_RESUME_BROKEN)
+        return -1;
+
+    uint32_t real_filenumber = filenumber;
+    struct File_Transfers *ft;
+
     if (receive_send == 0) {
-        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE) {
-            /* Tell the other to kill the file sending if we don't know this one. */
-            m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TEMPORARY;
-            file_control(m, friendnumber, !receive_send, filenumber, FILECONTROL_KILL, NULL, 0);
-            m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
-            return -1;
-
-        }
-
-        switch (message_id) {
-            case FILECONTROL_ACCEPT:
-                if (m->friendlist[friendnumber].file_receiving[filenumber].status != FILESTATUS_PAUSED_BY_US) {
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_TRANSFERRING;
-                    return 0;
-                }
-
-                return -1;
-
-            case FILECONTROL_PAUSE:
-                if (m->friendlist[friendnumber].file_receiving[filenumber].status != FILESTATUS_PAUSED_BY_US) {
-                    m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
-                    return 0;
-                }
-
-                return -1;
-
-            case FILECONTROL_KILL:
-                m->friendlist[friendnumber].file_receiving[filenumber].status = FILESTATUS_NONE;
-
-            case FILECONTROL_FINISHED:
-                return 0;
-        }
+        real_filenumber += 1;
+        real_filenumber <<= 16;
+        ft = &m->friendlist[friendnumber].file_receiving[filenumber];
     } else {
-        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE) {
-            /* Tell the other to kill the file sending if we don't know this one. */
-            m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TEMPORARY;
-            file_control(m, friendnumber, !receive_send, filenumber, FILECONTROL_KILL, NULL, 0);
-            m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
-            return -1;
-        }
-
-        switch (message_id) {
-            case FILECONTROL_ACCEPT:
-                if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_PAUSED_BY_US) {
-                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_TRANSFERRING;
-                    return 0;
-                }
-
-                return -1;
-
-            case FILECONTROL_PAUSE:
-                if (m->friendlist[friendnumber].file_sending[filenumber].status != FILESTATUS_PAUSED_BY_US) {
-                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_OTHER;
-                }
-
-                return 0;
-
-            case FILECONTROL_KILL:
-            case FILECONTROL_FINISHED:
-                m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_NONE;
-                return 0;
-
-            case FILECONTROL_RESUME_BROKEN: {
-                if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_BROKEN && length == sizeof(uint64_t)) {
-                    m->friendlist[friendnumber].file_sending[filenumber].status = FILESTATUS_PAUSED_BY_US;
-                    net_to_host(data, sizeof(uint64_t));
-                    return 0;
-                }
-
-                return -1;
-            }
-        }
+        ft = &m->friendlist[friendnumber].file_sending[filenumber];
     }
 
-    return -1;
+    if (ft->status == FILESTATUS_NONE) {
+        /* File transfer doesn't exist, tell the other to kill it. */
+        send_file_control_packet(m, friendnumber, !receive_send, filenumber, FILECONTROL_KILL, 0, 0);
+        return -1;
+    }
+
+    if (control_type == FILECONTROL_ACCEPT) {
+        ft->status = FILESTATUS_TRANSFERRING;
+
+        if (ft->paused & FILE_PAUSE_OTHER) {
+            ft->paused ^=  FILE_PAUSE_OTHER;
+        }
+
+        if (m->file_filecontrol)
+            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
+    } else if (control_type == FILECONTROL_PAUSE) {
+        ft->paused |= FILE_PAUSE_OTHER;
+
+        if (m->file_filecontrol)
+            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
+    } else if (control_type == FILECONTROL_KILL) {
+
+        if (m->file_filecontrol)
+            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
+
+        ft->status = FILESTATUS_NONE;
+
+        if (receive_send) {
+            --m->friendlist[friendnumber].num_sending_files;
+        }
+
+    } else if (control_type == FILECONTROL_RESUME_BROKEN) {
+        //TODO
+    } else {
+        return -1;
+    }
+
+    return 0;
 }
 
 /**************************************/
@@ -1766,6 +1875,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
             m->friendlist[i].file_receiving[filenumber].size = filesize;
             m->friendlist[i].file_receiving[filenumber].transferred = 0;
+            m->friendlist[i].file_receiving[filenumber].paused = FILE_PAUSE_NOT;
 
             /* Force NULL terminate file name. */
             uint8_t filename_terminated[data_length - head_length + 1];
@@ -1794,26 +1904,51 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3) == -1)
                 break;
 
-            if (m->file_filecontrol)
-                (*m->file_filecontrol)(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3,
-                                       m->file_filecontrol_userdata);
-
             break;
         }
 
         case PACKET_ID_FILE_DATA: {
-            if (data_length < 2)
+            if (data_length <= 1)
                 break;
 
             uint8_t filenumber = data[0];
+            struct File_Transfers *ft = &m->friendlist[i].file_receiving[filenumber];
 
-            if (m->friendlist[i].file_receiving[filenumber].status == FILESTATUS_NONE)
+            if (ft->status == FILESTATUS_NONE)
                 break;
 
-            m->friendlist[i].file_receiving[filenumber].transferred += (data_length - 1);
+            uint64_t position = ft->transferred;
+            uint32_t real_filenumber = filenumber;
+            real_filenumber += 1;
+            real_filenumber <<= 16;
+            uint16_t file_data_length = (data_length - 1);
+            uint8_t *file_data;
+
+            if (file_data_length == 0) {
+                file_data = NULL;
+            } else {
+                file_data = data + 1;
+            }
 
             if (m->file_filedata)
-                (*m->file_filedata)(m, i, filenumber, data + 1, data_length - 1, m->file_filedata_userdata);
+                (*m->file_filedata)(m, i, real_filenumber, position, file_data, file_data_length, m->file_filedata_userdata);
+
+            ft->transferred += file_data_length;
+
+            if (ft->size && ft->transferred >= ft->size) {
+                file_data_length = 0;
+                file_data = NULL;
+                position = ft->transferred;
+
+                /* Full file received. */
+                if (m->file_filedata)
+                    (*m->file_filedata)(m, i, real_filenumber, position, file_data, file_data_length, m->file_filedata_userdata);
+            }
+
+            /* Data is zero, filetransfer is over. */
+            if (file_data_length == 0) {
+                ft->status = FILESTATUS_NONE;
+            }
 
             break;
         }
@@ -1907,6 +2042,7 @@ void do_friends(Messenger *m)
 
             check_friend_tcp_udp(m, i);
             do_receipts(m, i);
+            do_reqchunk_filecb(m, i);
         }
     }
 }

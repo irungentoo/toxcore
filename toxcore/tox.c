@@ -811,6 +811,173 @@ void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *
     m_callback_action(m, function, user_data);
 }
 
+bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
+{
+    if (!hash || !data) {
+        return 0;
+    }
+
+    crypto_hash_sha256(hash, data, length);
+    return 1;
+}
+
+bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                      TOX_ERR_FILE_CONTROL *error)
+{
+    Messenger *m = tox;
+    int ret = file_control(m, friend_number, file_number, control);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_OK);
+        return 1;
+    }
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_FRIEND_NOT_FOUND);
+            return 0;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_FRIEND_NOT_CONNECTED);
+            return 0;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_NOT_FOUND);
+            return 0;
+
+        case -4:
+            /* can't happen */
+            return 0;
+
+        case -5:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_ALREADY_PAUSED);
+            return 0;
+
+        case -6:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_DENIED);
+            return 0;
+
+        case -7:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_NOT_PAUSED);
+            return 0;
+
+        case -8:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_SEND_FAILED);
+            return 0;
+    }
+
+    /* can't happen */
+    return 0;
+}
+
+void tox_callback_file_control(Tox *tox, tox_file_control_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    callback_file_control(m, function, user_data);
+}
+
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
+                       const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error)
+{
+    if (!filename) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NULL);
+        return UINT32_MAX;
+    }
+
+    if (!filename_length) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NAME_EMPTY);
+        return UINT32_MAX;
+    }
+
+    Messenger *m = tox;
+    long int file_num = new_filesender(m, friend_number, kind, file_size, filename, filename_length);
+
+    if (file_num >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_OK);
+        return file_num;
+    }
+
+    switch (file_num) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_FRIEND_NOT_FOUND);
+            return UINT32_MAX;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NAME_TOO_LONG);
+            return UINT32_MAX;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_TOO_MANY);
+            return UINT32_MAX;
+
+        case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_FRIEND_NOT_CONNECTED);
+            return UINT32_MAX;
+    }
+
+    /* can't happen */
+    return UINT32_MAX;
+}
+
+bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, const uint8_t *data, size_t length,
+                         TOX_ERR_FILE_SEND_CHUNK *error)
+{
+    Messenger *m = tox;
+    int ret = file_data(m, friend_number, file_number, data, length);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_OK);
+        return 1;
+    }
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_FOUND);
+            return 0;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_CONNECTED);
+            return 0;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_NOT_FOUND);
+            return 0;
+
+        case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_NOT_TRANSFERRING);
+            return 0;
+
+        case -5:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_TOO_LARGE);
+            return 0;
+
+        case -6:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL);
+            return 0;
+    }
+
+    /* can't happen */
+    return 0;
+}
+
+void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    callback_file_reqchunk(m, function, user_data);
+}
+
+void tox_callback_file_receive(Tox *tox, tox_file_receive_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    callback_file_sendrequest(m, function, user_data);
+}
+
+void tox_callback_file_receive_chunk(Tox *tox, tox_file_receive_chunk_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    callback_file_data(m, function, user_data);
+}
+
 static void set_custom_packet_error(int ret, TOX_ERR_SEND_CUSTOM_PACKET *error)
 {
     switch (ret) {

@@ -21,6 +21,7 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+
 void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
@@ -83,7 +84,7 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
     if (memcmp(f_data, data, len) == 0) {
         ++custom_packet;
     } else {
-        printf("Custom packet fail. %u\n", number );
+        ck_abort_msg("Custom packet fail. %u", number);
     }
 
     return;
@@ -92,44 +93,103 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
-void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
-                         uint16_t filename_length, void *userdata)
+void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind, uint64_t filesize,
+                      const uint8_t *filename, size_t filename_length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (filename_length == sizeof("Gentoo.exe") && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0)
-        ++file_accepted;
+    if (kind != TOX_FILE_KIND_DATA) {
+        ck_abort_msg("Bad kind");
+        return;
+    }
+
+    if (!(filename_length == sizeof("Gentoo.exe") && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0)) {
+        ck_abort_msg("Bad filename");
+        return;
+    }
 
     file_size = filesize;
-    tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_ACCEPT, NULL, 0);
+
+    TOX_ERR_FILE_CONTROL error;
+
+    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error)) {
+        ++file_accepted;
+    } else {
+        ck_abort_msg("tox_file_control failed. %i", error);
+    }
 }
 
-uint32_t file_sent;
 uint32_t sendf_ok;
-void file_print_control(Tox *m, int friendnumber, uint8_t receive_send, uint8_t filenumber, uint8_t control_type,
-                        const uint8_t *data, uint16_t length, void *userdata)
+void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                        void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (receive_send == 0 && control_type == TOX_FILECONTROL_FINISHED)
-        tox_file_send_control(m, friendnumber, 1, filenumber, TOX_FILECONTROL_FINISHED, NULL, 0);
-
-    if (receive_send == 1 && control_type == TOX_FILECONTROL_FINISHED)
-        file_sent = 1;
-
-    if (receive_send == 1 && control_type == TOX_FILECONTROL_ACCEPT)
+    /* First send file num is 0.*/
+    if (file_number == 0 && control == TOX_FILE_CONTROL_RESUME)
         sendf_ok = 1;
-
 }
+
+uint8_t sending_num;
+uint64_t sending_pos;
+_Bool file_sending_done;
+void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
+                            void *user_data)
+{
+    if (*((uint32_t *)user_data) != 974536)
+        return;
+
+    if (!sendf_ok) {
+        ck_abort_msg("Didn't get resume control");
+    }
+
+    if (sending_pos != position) {
+        ck_abort_msg("Bad position");
+        return;
+    }
+
+    if (length == 0) {
+        file_sending_done = 1;
+        return;
+    }
+
+    TOX_ERR_FILE_SEND_CHUNK error;
+    uint8_t f_data[length];
+    memset(f_data, sending_num, length);
+
+    if (tox_file_send_chunk(tox, friend_number, file_number, f_data, length, &error)) {
+        ++sending_num;
+        sending_pos += length;
+    } else {
+        ck_abort_msg("Could not send chunk %i", error);
+    }
+
+    if (error != TOX_ERR_FILE_SEND_CHUNK_OK) {
+        ck_abort_msg("Wrong error code");
+    }
+}
+
 
 uint64_t size_recv;
 uint8_t num;
-void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
+_Bool file_recv;
+void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
+                size_t length, void *user_data)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)user_data) != 974536)
         return;
+
+    if (size_recv != position) {
+        ck_abort_msg("Bad position");
+        return;
+    }
+
+    if (length == 0) {
+        file_recv = 1;
+        return;
+    }
 
     uint8_t f_data[length];
     memset(f_data, num, length);
@@ -138,7 +198,7 @@ void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *dat
     if (memcmp(f_data, data, length) == 0) {
         size_recv += length;
     } else {
-        printf("FILE_CORRUPTED\n");
+        ck_abort_msg("FILE_CORRUPTED");
     }
 }
 
@@ -371,41 +431,32 @@ START_TEST(test_few_clients)
         c_sleep(50);
     }
 
-    filenum = file_accepted = file_size = file_sent = sendf_ok = size_recv = 0;
+    file_accepted = file_size = file_recv = sendf_ok = size_recv = 0;
     long long unsigned int f_time = time(NULL);
-    tox_callback_file_data(tox3, write_file, &to_compare);
+    tox_callback_file_receive_chunk(tox3, write_file, &to_compare);
     tox_callback_file_control(tox2, file_print_control, &to_compare);
+    tox_callback_file_request_chunk(tox2, tox_file_request_chunk, &to_compare);
     tox_callback_file_control(tox3, file_print_control, &to_compare);
-    tox_callback_file_send_request(tox3, file_request_accept, &to_compare);
+    tox_callback_file_receive(tox3, tox_file_receive, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;
-    int fnum = tox_new_file_sender(tox2, 0, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"));
-    ck_assert_msg(fnum != -1, "tox_new_file_sender fail");
-    int fpiece_size = tox_file_data_size(tox2, 0);
-    uint8_t f_data[fpiece_size];
-    uint8_t num = 0;
-    memset(f_data, num, fpiece_size);
+    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
+                                  0);
+    ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
+
 
     while (1) {
-        file_sent = 0;
         tox_iteration(tox1);
         tox_iteration(tox2);
         tox_iteration(tox3);
 
-        if (sendf_ok)
-            while (tox_file_send_data(tox2, 0, fnum, f_data, fpiece_size < totalf_size ? fpiece_size : totalf_size) == 0) {
-                if (totalf_size <= fpiece_size) {
-                    sendf_ok = 0;
-                    tox_file_send_control(tox2, 0, 0, fnum, TOX_FILECONTROL_FINISHED, NULL, 0);
-                }
-
-                ++num;
-                memset(f_data, num, fpiece_size);
-
-                totalf_size -= fpiece_size;
+        if (file_sending_done) {
+            if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv) {
+                break;
+            } else {
+                ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u", sendf_ok, file_recv, totalf_size == file_size,
+                             size_recv == file_size, sending_pos == size_recv);
             }
-
-        if (file_sent && size_recv == file_size)
-            break;
+        }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
         uint32_t tox2_interval = tox_iteration_interval(tox2);

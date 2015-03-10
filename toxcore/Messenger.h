@@ -128,18 +128,25 @@ USERSTATUS;
 struct File_Transfers {
     uint64_t size;
     uint64_t transferred;
-    uint8_t status; /* 0 == no transfer, 1 = not accepted, 2 = paused by the other, 3 = transferring, 4 = broken, 5 = paused by us */
-    unsigned int type;
+    uint8_t status; /* 0 == no transfer, 1 = not accepted, 3 = transferring, 4 = broken, 5 = finished */
+    uint8_t paused; /* 0: not paused, 1 = paused by us, 2 = paused by other, 3 = paused by both. */
+    uint32_t last_packet_number; /* number of the last packet sent. */
 };
 enum {
     FILESTATUS_NONE,
     FILESTATUS_NOT_ACCEPTED,
-    FILESTATUS_PAUSED_BY_OTHER,
     FILESTATUS_TRANSFERRING,
-    FILESTATUS_BROKEN,
-    FILESTATUS_PAUSED_BY_US,
-    FILESTATUS_TEMPORARY
+    //FILESTATUS_BROKEN,
+    FILESTATUS_FINISHED
 };
+
+enum {
+    FILE_PAUSE_NOT,
+    FILE_PAUSE_US,
+    FILE_PAUSE_OTHER,
+    FILE_PAUSE_BOTH
+};
+
 /* This cannot be bigger than 256 */
 #define MAX_CONCURRENT_FILE_PIPES 256
 
@@ -147,7 +154,6 @@ enum {
     FILECONTROL_ACCEPT,
     FILECONTROL_PAUSE,
     FILECONTROL_KILL,
-    FILECONTROL_FINISHED,
     FILECONTROL_RESUME_BROKEN
 };
 
@@ -179,6 +185,7 @@ typedef struct {
     uint64_t share_relays_lastsent;
     uint8_t last_connection_udp_tcp;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
+    unsigned int num_sending_files;
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 
     struct {
@@ -249,10 +256,12 @@ struct Messenger {
     void (*file_sendrequest)(struct Messenger *m, uint32_t, uint32_t, unsigned int, uint64_t, const uint8_t *, size_t,
                              void *);
     void *file_sendrequest_userdata;
-    void (*file_filecontrol)(struct Messenger *m, uint32_t, uint8_t, uint8_t, uint8_t, const uint8_t *, uint16_t, void *);
+    void (*file_filecontrol)(struct Messenger *m, uint32_t, uint32_t, unsigned int, void *);
     void *file_filecontrol_userdata;
-    void (*file_filedata)(struct Messenger *m, uint32_t, uint8_t, const uint8_t *, uint16_t length, void *);
+    void (*file_filedata)(struct Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t, void *);
     void *file_filedata_userdata;
+    void (*file_reqchunk)(struct Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *);
+    void *file_reqchunk_userdata;
 
     void (*msi_packet)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
@@ -562,20 +571,27 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uin
 
 /* Set the callback for file control requests.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t control_type, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int control_type, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, uint8_t, uint8_t,
-                           const uint8_t *, uint16_t, void *), void *userdata);
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *),
+                           void *userdata);
 
 /* Set the callback for file data.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint8_t filenumber, uint8_t *data, uint16_t length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, uint8_t *data, size_t length, void *userdata)
  *
  */
-void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, const uint8_t *,
-                        uint16_t length,
-                        void *), void *userdata);
+void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *,
+                        size_t, void *), void *userdata);
+
+/* Set the callback for file request chunk.
+ *
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, size_t length, void *userdata)
+ *
+ */
+void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *),
+                            void *userdata);
 
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
@@ -590,20 +606,30 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
                         const uint8_t *filename, uint16_t filename_length);
 
 /* Send a file control request.
- * send_receive is 0 if we want the control packet to target a sending file, 1 if it targets a receiving file.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 if friend not valid.
+ *  return -2 if friend not online.
+ *  return -3 if file number invalid.
+ *  return -4 if file control is bad.
+ *  return -5 if file already paused.
+ *  return -6 if resume file failed because it was only paused by the other.
+ *  return -7 if resume file failed because it wasn't paused.
+ *  return -8 if packet failed to send.
  */
-int file_control(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber, uint8_t message_id,
-                 const uint8_t *data, uint16_t length);
+int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, unsigned int control);
 
 /* Send file data.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 if friend not valid.
+ *  return -2 if friend not online.
+ *  return -3 if filenumber invalid.
+ *  return -4 if file transfer not transferring.
+ *  return -5 if trying to send too much data.
+ *  return -6 if packet queue full.
  */
-int file_data(const Messenger *m, int32_t friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length);
+int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, const uint8_t *data, uint16_t length);
 
 /* Give the number of bytes left to be sent/received.
  *
