@@ -112,48 +112,45 @@ typedef struct {
 Friend_request pending_requests[256];
 uint8_t num_requests = 0;
 
-#define NUM_FILE_SENDERS 256
+#define NUM_FILE_SENDERS 64
 typedef struct {
     FILE *file;
-    uint16_t friendnum;
-    uint8_t filenumber;
-    uint8_t nextpiece[1024];
-    uint16_t piecelength;
+    uint32_t friendnum;
+    uint32_t filenumber;
 } File_Sender;
 File_Sender file_senders[NUM_FILE_SENDERS];
 uint8_t numfilesenders;
 
-void send_filesenders(Tox *m)
+void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
+                            void *user_data)
 {
-    uint32_t i;
+    unsigned int i;
 
     for (i = 0; i < NUM_FILE_SENDERS; ++i) {
-        if (file_senders[i].file == 0)
-            continue;
-
-        while (1) {
-            if (tox_file_send_data(m, file_senders[i].friendnum, file_senders[i].filenumber, file_senders[i].nextpiece,
-                                   file_senders[i].piecelength) == -1)
-                break;
-
-            file_senders[i].piecelength = fread(file_senders[i].nextpiece, 1, tox_file_data_size(m, file_senders[i].friendnum),
-                                                file_senders[i].file);
-
-            if (file_senders[i].piecelength == 0) {
+        /* This is slow */
+        if (file_senders[i].file && file_senders[i].friendnum == friend_number && file_senders[i].filenumber == file_number) {
+            if (length == 0) {
                 fclose(file_senders[i].file);
                 file_senders[i].file = 0;
-                tox_file_send_control(m, file_senders[i].friendnum, 0, file_senders[i].filenumber, 3, 0, 0);
                 char msg[512];
                 sprintf(msg, "[t] %u file transfer: %u completed", file_senders[i].friendnum, file_senders[i].filenumber);
                 new_lines(msg);
                 break;
             }
+
+            fseek(file_senders[i].file, position, SEEK_SET);
+            uint8_t data[length];
+            int len = fread(data, 1, length, file_senders[i].file);
+            tox_file_send_chunk(tox, friend_number, file_number, data, len, 0);
+            break;
         }
     }
 }
-int add_filesender(Tox *m, uint16_t friendnum, char *filename)
+
+
+uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
 {
-    FILE *tempfile = fopen(filename, "r");
+    FILE *tempfile = fopen(filename, "rb");
 
     if (tempfile == 0)
         return -1;
@@ -161,15 +158,13 @@ int add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    int filenum = tox_new_file_sender(m, friendnum, filesize, (uint8_t *)filename, strlen(filename) + 1);
+    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_KIND_DATA, filesize, (uint8_t *)filename, strlen(filename) + 1,
+                                     0);
 
     if (filenum == -1)
         return -1;
 
     file_senders[numfilesenders].file = tempfile;
-    file_senders[numfilesenders].piecelength = fread(file_senders[numfilesenders].nextpiece, 1, tox_file_data_size(m,
-            file_senders[numfilesenders].friendnum),
-            file_senders[numfilesenders].file);
     file_senders[numfilesenders].friendnum = friendnum;
     file_senders[numfilesenders].filenumber = filenum;
     ++numfilesenders;
@@ -1132,47 +1127,67 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
         print_groupchatpeers(m, groupnumber);
     }
 }
-void file_request_accept(Tox *m, int friendnumber, uint8_t filenumber, uint64_t filesize, const uint8_t *filename,
-                         uint16_t filename_length, void *userdata)
+void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND type,
+                         uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data)
 {
+    if (type != TOX_FILE_KIND_DATA) {
+        new_lines("Refused invalid file type.");
+        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        return;
+    }
+
     char msg[512];
-    sprintf(msg, "[t] %u is sending us: %s of size %llu", friendnumber, filename, (long long unsigned int)filesize);
+    sprintf(msg, "[t] %u is sending us: %s of size %llu", friend_number, filename, (long long unsigned int)file_size);
     new_lines(msg);
 
-    if (tox_file_send_control(m, friendnumber, 1, filenumber, 0, 0, 0) == 0) {
-        sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friendnumber, filenumber);
+    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
+        sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friend_number, file_number);
         new_lines(msg);
     } else
         new_lines("Could not accept file transfer.");
 }
 
-void file_print_control(Tox *m, int friendnumber, uint8_t send_recieve, uint8_t filenumber, uint8_t control_type,
-                        const uint8_t *data, uint16_t length, void *userdata)
+void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                        void *user_data)
 {
     char msg[512] = {0};
-
-    if (control_type == 0)
-        sprintf(msg, "[t] %u accepted file transfer: %u", friendnumber, filenumber);
-    else if (control_type == 3)
-        sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
-    else
-        sprintf(msg, "[t] control %u received", control_type);
-
+    sprintf(msg, "[t] control %u received", control);
     new_lines(msg);
+
+    if (control == TOX_FILE_CONTROL_CANCEL) {
+        unsigned int i;
+
+        for (i = 0; i < NUM_FILE_SENDERS; ++i) {
+            /* This is slow */
+            if (file_senders[i].file && file_senders[i].friendnum == friend_number && file_senders[i].filenumber == file_number) {
+                fclose(file_senders[i].file);
+                file_senders[i].file = 0;
+                char msg[512];
+                sprintf(msg, "[t] %u file transfer: %u cancelled", file_senders[i].friendnum, file_senders[i].filenumber);
+                new_lines(msg);
+            }
+        }
+    }
 }
 
-void write_file(Tox *m, int friendnumber, uint8_t filenumber, const uint8_t *data, uint16_t length, void *userdata)
+void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
+                size_t length, void *user_data)
 {
-    char filename[256];
-    sprintf(filename, "%u.%u.bin", friendnumber, filenumber);
-    FILE *pFile = fopen(filename, "a");
-
-    if (tox_file_data_remaining(m, friendnumber, filenumber, 1) == 0) {
-        //file_control(m, friendnumber, 1, filenumber, 3, 0, 0);
+    if (length == 0) {
         char msg[512];
         sprintf(msg, "[t] %u file transfer: %u completed", friendnumber, filenumber);
         new_lines(msg);
+        return;
     }
+
+    char filename[256];
+    sprintf(filename, "%u.%u.bin", friendnumber, filenumber);
+    FILE *pFile = fopen(filename, "r+b");
+
+    if (pFile == NULL)
+        pFile = fopen(filename, "wb");
+
+    fseek(pFile, position, SEEK_SET);
 
     if (fwrite(data, length, 1, pFile) != 1)
         new_lines("Error writing to file");
@@ -1254,9 +1269,10 @@ int main(int argc, char *argv[])
     tox_callback_friend_status_message(m, print_statuschange, NULL);
     tox_callback_group_invite(m, print_invite, NULL);
     tox_callback_group_message(m, print_groupmessage, NULL);
-    tox_callback_file_data(m, write_file, NULL);
+    tox_callback_file_receive_chunk(m, write_file, NULL);
     tox_callback_file_control(m, file_print_control, NULL);
-    tox_callback_file_send_request(m, file_request_accept, NULL);
+    tox_callback_file_receive(m, file_request_accept, NULL);
+    tox_callback_file_request_chunk(m, tox_file_request_chunk, NULL);
     tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
 
     initscr();
@@ -1310,7 +1326,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        send_filesenders(m);
         tox_iteration(m);
         do_refresh();
 

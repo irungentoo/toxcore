@@ -190,6 +190,7 @@ void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t p
                 size_t length, void *user_data)
 {
     uint8_t file_index = (filenumber >> 16) - 1;
+
     if (length == 0) {
         fclose(file_recv[file_index].file);
         printf("File closed\n");
