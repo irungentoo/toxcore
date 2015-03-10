@@ -1785,6 +1785,7 @@ void tox_callback_file_receive_chunk(Tox *tox, tox_file_receive_chunk_cb *functi
  *
  ******************************************************************************/
 
+/* See: tox_old.h for now. */
 
 /*******************************************************************************
  *
@@ -1940,6 +1941,7 @@ uint16_t tox_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
  */
 uint16_t tox_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
+#include "tox_old.h"
 
 #ifdef __cplusplus
 }

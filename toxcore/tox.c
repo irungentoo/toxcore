@@ -1075,3 +1075,6 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
     Messenger *m = tox;
     custom_lossless_packet_registerhandler(m, function, user_data);
 }
+
+
+#include "tox_old.c"
