@@ -652,7 +652,7 @@ uint32_t tox_iteration_interval(const Tox *tox);
  * The main loop that needs to be run in intervals of tox_iteration_interval()
  * milliseconds.
  */
-void tox_do_iteration(Tox *tox);
+void tox_iterate(Tox *tox);
 
 
 /*******************************************************************************

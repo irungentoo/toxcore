@@ -148,10 +148,10 @@ int main(int argc, char *argv[])
             if (ret <= 0)
                 break;
 
-            tox_send_message(tox, num, buf, ret, 0);
+            tox_friend_send_message(tox, num, buf, ret, 0);
         }
 
-        tox_iteration(tox);
+        tox_iterate(tox);
         c_sleep(1);
     }
 

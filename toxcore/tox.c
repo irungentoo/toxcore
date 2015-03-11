@@ -302,7 +302,7 @@ uint32_t tox_iteration_interval(const Tox *tox)
     return messenger_run_interval(m);
 }
 
-void tox_iteration(Tox *tox)
+void tox_iterate(Tox *tox)
 {
     Messenger *m = tox;
     do_messenger(m);
@@ -822,7 +822,7 @@ bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
     return 1;
 }
 
-bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
                       TOX_ERR_FILE_CONTROL *error)
 {
     Messenger *m = tox;
@@ -1077,7 +1077,7 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
     custom_lossless_packet_registerhandler(m, function, user_data);
 }
 
-void tox_get_dht_id(const Tox *tox, uint8_t *dht_id)
+void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
 {
     if (dht_id) {
         const Messenger *m = tox;
@@ -1085,7 +1085,7 @@ void tox_get_dht_id(const Tox *tox, uint8_t *dht_id)
     }
 }
 
-uint16_t tox_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
+uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 {
     const Messenger *m = tox;
     uint16_t port = htons(m->net->port);
@@ -1099,7 +1099,7 @@ uint16_t tox_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
     return port;
 }
 
-uint16_t tox_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
+uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 {
     /* TCP server not yet implemented in clients. */
     SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);

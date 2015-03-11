@@ -294,11 +294,11 @@ START_TEST(test_AV_three_calls)
     uint8_t off = 1;
 
     while (1) {
-        tox_iteration(bootstrap_node);
-        tox_iteration(caller);
+        tox_iterate(bootstrap_node);
+        tox_iterate(caller);
 
         for (i = 0; i < 3; i ++) {
-            tox_iteration(callees[i]);
+            tox_iterate(callees[i]);
         }
 
 
@@ -351,11 +351,11 @@ START_TEST(test_AV_three_calls)
     while (call_running[0] || call_running[1] || call_running[2]) {
         pthread_mutex_lock(&muhmutex);
 
-        tox_iteration(bootstrap_node);
-        tox_iteration(caller);
-        tox_iteration(callees[0]);
-        tox_iteration(callees[1]);
-        tox_iteration(callees[2]);
+        tox_iterate(bootstrap_node);
+        tox_iterate(caller);
+        tox_iterate(callees[0]);
+        tox_iterate(callees[1]);
+        tox_iterate(callees[2]);
 
         for ( i = 0; i < 3; i++ )
             toxav_do(status_control.calls[0].Caller.av);

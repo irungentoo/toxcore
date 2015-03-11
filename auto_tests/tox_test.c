@@ -93,13 +93,13 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
-void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind, uint64_t filesize,
+void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_TYPE kind, uint64_t filesize,
                       const uint8_t *filename, size_t filename_length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (kind != TOX_FILE_KIND_DATA) {
+    if (kind != TOX_FILE_TYPE_DATA) {
         ck_abort_msg("Bad kind");
         return;
     }
@@ -113,10 +113,10 @@ void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TO
 
     TOX_ERR_FILE_CONTROL error;
 
-    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error)) {
+    if (tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error)) {
         ++file_accepted;
     } else {
-        ck_abort_msg("tox_file_control failed. %i", error);
+        ck_abort_msg("tox_file_send_control failed. %i", error);
     }
 }
 
@@ -221,7 +221,7 @@ START_TEST(test_one)
 
     {
         TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_get_udp_port(tox1, &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(tox_self_get_udp_port(tox1, &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
@@ -293,7 +293,7 @@ START_TEST(test_few_clients)
 
     {
         TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_get_udp_port(tox1, &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(tox_self_get_udp_port(tox1, &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
@@ -309,9 +309,9 @@ START_TEST(test_few_clients)
     uint8_t off = 1;
 
     while (1) {
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (tox_get_connection_status(tox1) && tox_get_connection_status(tox2) && tox_get_connection_status(tox3)) {
             if (off) {
@@ -334,17 +334,17 @@ START_TEST(test_few_clients)
     tox_callback_friend_message(tox3, print_message, &to_compare);
     uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
     memset(msgs, 'G', sizeof(msgs));
-    TOX_ERR_SEND_MESSAGE errm;
-    tox_send_message(tox2, 0, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
-    ck_assert_msg(errm == TOX_ERR_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small\n");
-    tox_send_message(tox2, 0, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
-    ck_assert_msg(errm == TOX_ERR_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big\n");
+    TOX_ERR_FRIEND_SEND_MESSAGE errm;
+    tox_friend_send_message(tox2, 0, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
+    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small\n");
+    tox_friend_send_message(tox2, 0, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
+    ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big\n");
 
     while (1) {
         messages_received = 0;
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (messages_received)
             break;
@@ -361,9 +361,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         name_changes = 0;
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (name_changes)
             break;
@@ -381,9 +381,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         typing_changes = 0;
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
 
         if (typing_changes == 2)
@@ -399,9 +399,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         typing_changes = 0;
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (typing_changes == 1)
             break;
@@ -419,16 +419,16 @@ START_TEST(test_few_clients)
     tox_callback_friend_lossless_packet(tox3, &handle_custom_packet, &packet_number);
     uint8_t data_c[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
-    int ret = tox_send_lossless_packet(tox2, 0, data_c, sizeof(data_c), 0);
-    ck_assert_msg(ret == 0, "tox_send_lossless_packet bigger fail %i", ret);
-    ret = tox_send_lossless_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE, 0);
-    ck_assert_msg(ret == 1, "tox_send_lossless_packet fail %i", ret);
+    int ret = tox_friend_send_lossless_packet(tox2, 0, data_c, sizeof(data_c), 0);
+    ck_assert_msg(ret == 0, "tox_friend_send_lossless_packet bigger fail %i", ret);
+    ret = tox_friend_send_lossless_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE, 0);
+    ck_assert_msg(ret == 1, "tox_friend_send_lossless_packet fail %i", ret);
 
     while (1) {
         custom_packet = 0;
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (custom_packet == 1)
             break;
@@ -441,16 +441,16 @@ START_TEST(test_few_clients)
     packet_number = 200;
     tox_callback_friend_lossy_packet(tox3, &handle_custom_packet, &packet_number);
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
-    ret = tox_send_lossy_packet(tox2, 0, data_c, sizeof(data_c), 0);
-    ck_assert_msg(ret == 0, "tox_send_lossy_packet bigger fail %i", ret);
-    ret = tox_send_lossy_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE, 0);
-    ck_assert_msg(ret == 1, "tox_send_lossy_packet fail %i", ret);
+    ret = tox_friend_send_lossy_packet(tox2, 0, data_c, sizeof(data_c), 0);
+    ck_assert_msg(ret == 0, "tox_friend_send_lossy_packet bigger fail %i", ret);
+    ret = tox_friend_send_lossy_packet(tox2, 0, data_c, TOX_MAX_CUSTOM_PACKET_SIZE, 0);
+    ck_assert_msg(ret == 1, "tox_friend_send_lossy_packet fail %i", ret);
 
     while (1) {
         custom_packet = 0;
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (custom_packet == 1)
             break;
@@ -463,20 +463,20 @@ START_TEST(test_few_clients)
     file_accepted = file_size = file_recv = sendf_ok = size_recv = 0;
     long long unsigned int f_time = time(NULL);
     tox_callback_file_receive_chunk(tox3, write_file, &to_compare);
-    tox_callback_file_control(tox2, file_print_control, &to_compare);
+    tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
     tox_callback_file_request_chunk(tox2, tox_file_request_chunk, &to_compare);
-    tox_callback_file_control(tox3, file_print_control, &to_compare);
+    tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
     tox_callback_file_receive(tox3, tox_file_receive, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;
-    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
+    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_TYPE_DATA, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
                                   0);
     ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
 
 
     while (1) {
-        tox_iteration(tox1);
-        tox_iteration(tox2);
-        tox_iteration(tox3);
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
 
         if (file_sending_done) {
             if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv) {
@@ -526,7 +526,7 @@ START_TEST(test_many_clients)
 
     {
         TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
@@ -573,7 +573,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_TOXES; ++i) {
-            tox_iteration(toxes[i]);
+            tox_iterate(toxes[i]);
         }
 
         c_sleep(50);
@@ -654,7 +654,7 @@ START_TEST(test_many_group)
 
     {
         TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
@@ -678,7 +678,7 @@ START_TEST(test_many_group)
             break;
 
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iteration(toxes[i]);
+            tox_iterate(toxes[i]);
         }
 
         c_sleep(50);
@@ -696,7 +696,7 @@ START_TEST(test_many_group)
 
     while (1) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iteration(toxes[i]);
+            tox_iterate(toxes[i]);
         }
 
         if (!invite_counter) {
@@ -734,7 +734,7 @@ START_TEST(test_many_group)
 
     for (j = 0; j < 20; ++j) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iteration(toxes[i]);
+            tox_iterate(toxes[i]);
         }
 
         c_sleep(50);
@@ -747,7 +747,7 @@ START_TEST(test_many_group)
 
         for (j = 0; j < 10; ++j) {
             for (i = 0; i < NUM_GROUP_TOX; ++i) {
-                tox_iteration(toxes[i]);
+                tox_iterate(toxes[i]);
             }
 
             c_sleep(50);

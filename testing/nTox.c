@@ -158,7 +158,7 @@ uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_KIND_DATA, filesize, (uint8_t *)filename, strlen(filename) + 1,
+    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_TYPE_DATA, filesize, (uint8_t *)filename, strlen(filename) + 1,
                                      0);
 
     if (filenum == -1)
@@ -389,13 +389,13 @@ void line_eval(Tox *m, char *line)
 
             new_lines(numstring);
         } else if (inpt_command == 'd') {
-            tox_iteration(m);
+            tox_iterate(m);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             char *posi[1];
             int num = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                if (tox_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1), NULL) < 1) {
+                if (tox_friend_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1), NULL) < 1) {
                     char sss[256];
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
@@ -607,7 +607,7 @@ void line_eval(Tox *m, char *line)
         if (conversation_default != 0) {
             if (conversation_default > 0) {
                 int friendnumber = conversation_default - 1;
-                uint32_t res = tox_send_message(m, friendnumber, (uint8_t *)line, strlen(line), NULL);
+                uint32_t res = tox_friend_send_message(m, friendnumber, (uint8_t *)line, strlen(line), NULL);
 
                 if (res == 0) {
                     char sss[128];
@@ -1127,12 +1127,12 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
         print_groupchatpeers(m, groupnumber);
     }
 }
-void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND type,
+void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_TYPE type,
                          uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data)
 {
-    if (type != TOX_FILE_KIND_DATA) {
+    if (type != TOX_FILE_TYPE_DATA) {
         new_lines("Refused invalid file type.");
-        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
@@ -1140,7 +1140,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friend_number, filename, (long long unsigned int)file_size);
     new_lines(msg);
 
-    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
+    if (tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
         sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friend_number, file_number);
         new_lines(msg);
     } else
@@ -1270,7 +1270,7 @@ int main(int argc, char *argv[])
     tox_callback_group_invite(m, print_invite, NULL);
     tox_callback_group_message(m, print_groupmessage, NULL);
     tox_callback_file_receive_chunk(m, write_file, NULL);
-    tox_callback_file_control(m, file_print_control, NULL);
+    tox_callback_file_recv_control(m, file_print_control, NULL);
     tox_callback_file_receive(m, file_request_accept, NULL);
     tox_callback_file_request_chunk(m, tox_file_request_chunk, NULL);
     tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
@@ -1326,7 +1326,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        tox_iteration(m);
+        tox_iterate(m);
         do_refresh();
 
         int c = timeout_getch(m);
