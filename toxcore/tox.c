@@ -1105,4 +1105,4 @@ uint16_t tox_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
     return 0;
 }
 
-#include "tox_old.c"
+#include "tox_old_code.h"
