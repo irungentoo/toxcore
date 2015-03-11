@@ -207,6 +207,12 @@ START_TEST(test_one)
     Tox *tox1 = tox_new(0, 0, 0, 0);
     Tox *tox2 = tox_new(0, 0, 0, 0);
 
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_get_udp_port(tox1, &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox1, address);
     TOX_ERR_FRIEND_ADD error;
@@ -272,6 +278,13 @@ START_TEST(test_few_clients)
     Tox *tox2 = tox_new(0, 0, 0, 0);
     Tox *tox3 = tox_new(0, 0, 0, 0);
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
+
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_get_udp_port(tox1, &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
     uint32_t to_compare = 974536;
     tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
     uint8_t address[TOX_ADDRESS_SIZE];
@@ -495,6 +508,12 @@ START_TEST(test_many_clients)
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }
 
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
     struct {
         uint16_t tox1;
         uint16_t tox2;
@@ -615,6 +634,12 @@ START_TEST(test_many_group)
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request, &to_comp);
         tox_callback_group_invite(toxes[i], &print_group_invite_callback, &to_comp);
+    }
+
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
     uint8_t address[TOX_ADDRESS_SIZE];

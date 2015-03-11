@@ -1076,5 +1076,33 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
     custom_lossless_packet_registerhandler(m, function, user_data);
 }
 
+void tox_get_dht_id(const Tox *tox, uint8_t *dht_id)
+{
+    if (dht_id) {
+        const Messenger *m = tox;
+        memcpy(dht_id , m->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    }
+}
+
+uint16_t tox_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
+{
+    const Messenger *m = tox;
+    uint16_t port = htons(m->net->port);
+
+    if (port) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+    }
+
+    return port;
+}
+
+uint16_t tox_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
+{
+    /* TCP server not yet implemented in clients. */
+    SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+    return 0;
+}
 
 #include "tox_old.c"
