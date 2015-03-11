@@ -278,21 +278,22 @@ TOX_CONNECTION tox_get_connection_status(const Tox *tox)
 {
     const Messenger *m = tox;
 
-    if (onion_isconnected(m->onion_c)) {
-        if (DHT_non_lan_connected(m->dht)) {
-            return TOX_CONNECTION_UDP;
-        }
+    unsigned int ret = onion_connection_status(m->onion_c);
 
+    if (ret == 2) {
+        return TOX_CONNECTION_UDP;
+    } else if (ret == 1) {
         return TOX_CONNECTION_TCP;
+    } else {
+        return TOX_CONNECTION_NONE;
     }
-
-    return TOX_CONNECTION_NONE;
 }
 
 
 void tox_callback_connection_status(Tox *tox, tox_connection_status_cb *function, void *user_data)
 {
-    //TODO
+    Messenger *m = tox;
+    m_callback_core_connection(m, function, user_data);
 }
 
 uint32_t tox_iteration_interval(const Tox *tox)

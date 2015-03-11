@@ -1351,6 +1351,64 @@ static void do_announce(Onion_Client *onion_c)
     }
 }
 
+/*  return 0 if we are not connected to the network.
+ *  return 1 if we are.
+ */
+static int onion_isconnected(const Onion_Client *onion_c)
+{
+    unsigned int i, num = 0, announced = 0;
+
+    if (is_timeout(onion_c->last_packet_recv, ONION_OFFLINE_TIMEOUT))
+        return 0;
+
+    if (onion_c->path_nodes_index == 0)
+        return 0;
+
+    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT)) {
+            ++num;
+
+            if (onion_c->clients_announce_list[i].is_stored) {
+                ++announced;
+            }
+        }
+    }
+
+    unsigned int pnodes = onion_c->path_nodes_index;
+
+    if (pnodes > MAX_ONION_CLIENTS) {
+        pnodes = MAX_ONION_CLIENTS;
+    }
+
+    /* Consider ourselves online if we are announced to half or more nodes
+      we are connected to */
+    if (num && announced) {
+        if ((num / 2) <= announced && (pnodes / 2) <= num)
+            return 1;
+    }
+
+    return 0;
+}
+
+#define ONION_CONNECTION_SECONDS 2
+
+/*  return 0 if we are not connected to the network.
+ *  return 1 if we are connected with TCP only.
+ *  return 2 if we are also connected with UDP.
+ */
+unsigned int onion_connection_status(const Onion_Client *onion_c)
+{
+    if (onion_c->onion_connected >= ONION_CONNECTION_SECONDS) {
+        if (onion_c->UDP_connected) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void do_onion_client(Onion_Client *onion_c)
 {
     unsigned int i;
@@ -1363,11 +1421,23 @@ void do_onion_client(Onion_Client *onion_c)
     do_announce(onion_c);
 
     if (onion_isconnected(onion_c)) {
+        if (onion_c->onion_connected < ONION_CONNECTION_SECONDS * 2) {
+            ++onion_c->onion_connected;
+        }
+
+        onion_c->UDP_connected = DHT_non_lan_connected(onion_c->dht);
+    } else {
+        populate_path_nodes_tcp(onion_c);
+
+        if (onion_c->onion_connected != 0) {
+            --onion_c->onion_connected;
+        }
+    }
+
+    if (onion_connection_status(onion_c)) {
         for (i = 0; i < onion_c->num_friends; ++i) {
             do_friend(onion_c, i);
         }
-    } else {
-        populate_path_nodes_tcp(onion_c);
     }
 
     onion_c->last_run = unix_time();
@@ -1418,42 +1488,3 @@ void kill_onion_client(Onion_Client *onion_c)
     free(onion_c);
 }
 
-
-/*  return 0 if we are not connected to the network.
- *  return 1 if we are.
- */
-int onion_isconnected(const Onion_Client *onion_c)
-{
-    unsigned int i, num = 0, announced = 0;
-
-    if (is_timeout(onion_c->last_packet_recv, ONION_OFFLINE_TIMEOUT))
-        return 0;
-
-    if (onion_c->path_nodes_index == 0)
-        return 0;
-
-    for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
-        if (!is_timeout(onion_c->clients_announce_list[i].timestamp, ONION_NODE_TIMEOUT)) {
-            ++num;
-
-            if (onion_c->clients_announce_list[i].is_stored) {
-                ++announced;
-            }
-        }
-    }
-
-    unsigned int pnodes = onion_c->path_nodes_index;
-
-    if (pnodes > MAX_ONION_CLIENTS) {
-        pnodes = MAX_ONION_CLIENTS;
-    }
-
-    /* Consider ourselves online if we are announced to half or more nodes
-      we are connected to */
-    if (num && announced) {
-        if ((num / 2) <= announced && (pnodes / 2) <= num)
-            return 1;
-    }
-
-    return 0;
-}

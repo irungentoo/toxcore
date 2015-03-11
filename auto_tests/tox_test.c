@@ -202,6 +202,18 @@ void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t p
     }
 }
 
+unsigned int connected_t1;
+void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
+{
+    if (*((uint32_t *)user_data) != 974536)
+        return;
+
+    if (connected_t1 && !connection_status)
+        ck_abort_msg("Tox went offline");
+
+    connected_t1 = connection_status;
+}
+
 START_TEST(test_one)
 {
     Tox *tox1 = tox_new(0, 0, 0, 0);
@@ -286,6 +298,8 @@ START_TEST(test_few_clients)
     }
 
     uint32_t to_compare = 974536;
+    connected_t1 = 0;
+    tox_callback_connection_status(tox1, tox_connection_status, &to_compare);
     tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
@@ -299,20 +313,22 @@ START_TEST(test_few_clients)
         tox_iteration(tox2);
         tox_iteration(tox3);
 
-        if (tox_get_connection_status(tox1) && tox_get_connection_status(tox2) && tox_get_connection_status(tox3) && off) {
-            printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
-            con_time = time(NULL);
-            off = 0;
+        if (tox_get_connection_status(tox1) && tox_get_connection_status(tox2) && tox_get_connection_status(tox3)) {
+            if (off) {
+                printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
+                con_time = time(NULL);
+                off = 0;
+            }
+
+            if (tox_friend_get_connection_status(tox2, 0, 0) == TOX_CONNECTION_UDP
+                    && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP)
+                break;
         }
-
-
-        if (tox_friend_get_connection_status(tox2, 0, 0) == TOX_CONNECTION_UDP
-                && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP)
-            break;
 
         c_sleep(50);
     }
 
+    ck_assert_msg(connected_t1, "Tox1 isn't connected. %u", connected_t1);
     printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
     to_compare = 974536;
     tox_callback_friend_message(tox3, print_message, &to_compare);

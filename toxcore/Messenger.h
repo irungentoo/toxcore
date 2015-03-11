@@ -271,6 +271,10 @@ struct Messenger {
     void (*lossless_packethandler)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *lossless_packethandler_userdata;
 
+    void (*core_connection_change)(struct Messenger *m, unsigned int, void *);
+    void *core_connection_change_userdata;
+    unsigned int last_connection_status;
+
     Messenger_Options options;
 };
 
@@ -542,6 +546,11 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, ui
 void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
         void *userdata);
 
+
+/* Set the callback for typing changes.
+ *  Function(unsigned int connection_status (0 = not connected, 1 = TCP only, 2 = UDP + TCP))
+ */
+void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *), void *userdata);
 
 /**********GROUP CHATS************/
 

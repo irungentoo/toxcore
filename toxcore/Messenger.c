@@ -865,6 +865,12 @@ void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, ui
     m->friend_connectionstatuschange_userdata = userdata;
 }
 
+void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *), void *userdata)
+{
+    m->core_connection_change = function;
+    m->core_connection_change_userdata = userdata;
+}
+
 void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
         void *userdata)
 {
@@ -2047,7 +2053,17 @@ void do_friends(Messenger *m)
     }
 }
 
+static void connection_status_cb(Messenger *m)
+{
+    unsigned int conn_status = onion_connection_status(m->onion_c);
 
+    if (conn_status != m->last_connection_status) {
+        if (m->core_connection_change)
+            (*m->core_connection_change)(m, conn_status, m->core_connection_change_userdata);
+
+        m->last_connection_status = conn_status;
+    }
+}
 
 
 #ifdef LOGGING
@@ -2112,6 +2128,7 @@ void do_messenger(Messenger *m)
     do_friend_connections(m->fr_c);
     do_friends(m);
     LANdiscovery(m);
+    connection_status_cb(m);
 
 #ifdef LOGGING
 
