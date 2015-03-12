@@ -56,6 +56,16 @@ void print_nickchange(Tox *m, uint32_t friendnumber, const uint8_t *string, size
         ++name_changes;
 }
 
+uint32_t status_m_changes;
+void print_status_m_change(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length, void *user_data)
+{
+    if (*((uint32_t *)user_data) != 974536)
+        return;
+
+    if (length == sizeof("Installing Gentoo") && memcmp(message, "Installing Gentoo", sizeof("Installing Gentoo")) == 0)
+        ++status_m_changes;
+}
+
 uint32_t typing_changes;
 
 void print_typingchange(Tox *m, uint32_t friendnumber, bool typing, void *userdata)
@@ -376,6 +386,29 @@ START_TEST(test_few_clients)
     tox_friend_get_name(tox3, 0, temp_name, 0);
     ck_assert_msg(memcmp(temp_name, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
 
+    tox_callback_friend_status_message(tox3, print_status_m_change, &to_compare);
+    succ = tox_self_set_status_message(tox2, (uint8_t *)"Installing Gentoo", sizeof("Installing Gentoo"), &err_n);
+    ck_assert_msg(succ && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_status_message failed because %u\n", err_n);
+
+    while (1) {
+        status_m_changes = 0;
+        tox_iteration(tox1);
+        tox_iteration(tox2);
+        tox_iteration(tox3);
+
+        if (status_m_changes)
+            break;
+
+        c_sleep(50);
+    }
+
+    ck_assert_msg(tox_friend_get_status_message_size(tox3, 0, 0) == sizeof("Installing Gentoo"),
+                  "status message length not correct");
+    uint8_t temp_status_m[sizeof("Installing Gentoo")];
+    tox_friend_get_status_message(tox3, 0, temp_status_m, 0);
+    ck_assert_msg(memcmp(temp_status_m, "Installing Gentoo", sizeof("Installing Gentoo")) == 0,
+                  "status message not correct");
+
     tox_callback_friend_typing(tox2, &print_typingchange, &to_compare);
     tox_self_set_typing(tox3, 0, 1, 0);
 
@@ -459,6 +492,8 @@ START_TEST(test_few_clients)
 
         c_sleep(50);
     }
+
+    printf("Starting file transfer test.\n");
 
     file_accepted = file_size = file_recv = sendf_ok = size_recv = 0;
     long long unsigned int f_time = time(NULL);
