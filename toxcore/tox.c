@@ -93,6 +93,11 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
     if (!logger_get_global())
         logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
 
+    if (data == NULL && length != 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_NULL);
+        return NULL;
+    }
+
     if (data) {
         if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
@@ -160,14 +165,11 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
     }
 
     if (messenger_load(m, data, length) == -1) {
-        /* TODO: uncomment this when tox is stable.
-        tox_kill(m);
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-        return NULL;
-        */
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     }
 
-    SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     return m;
 }
 
