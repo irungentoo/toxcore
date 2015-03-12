@@ -2586,7 +2586,13 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
     if (conn == 0)
         return 0;
 
-    return conn->packets_left;
+    uint32_t max_packets = CRYPTO_PACKET_BUFFER_SIZE - num_packets_array(&conn->send_array);
+
+    if (conn->packets_left < max_packets) {
+        return conn->packets_left;
+    } else {
+        return max_packets;
+    }
 }
 
 /* Sends a lossless cryptopacket.

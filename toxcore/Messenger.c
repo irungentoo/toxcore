@@ -1196,7 +1196,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
     return 0;
 }
 
-#define MIN_SLOTS_FREE (CRYPTO_MIN_QUEUE_LENGTH / 2)
+#define MIN_SLOTS_FREE (CRYPTO_MIN_QUEUE_LENGTH / 4)
 /* Send file data.
  *
  *  return 0 on success
@@ -1309,10 +1309,11 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
     int free_slots = crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                      m->friendlist[friendnumber].friendcon_id));
 
-    if (free_slots <= MIN_SLOTS_FREE)
-        return;
-
-    free_slots -= MIN_SLOTS_FREE;
+    if (free_slots < MIN_SLOTS_FREE) {
+        free_slots = 0;
+    } else {
+        free_slots -= MIN_SLOTS_FREE;
+    }
 
     unsigned int i, num = m->friendlist[friendnumber].num_sending_files;
 
@@ -1357,12 +1358,13 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
                 }
             }
 
+            ++ft->slots_allocated;
+
             if (m->file_reqchunk)
                 (*m->file_reqchunk)(m, friendnumber, i, ft->requested, length, m->file_reqchunk_userdata);
 
             ft->requested += length;
 
-            ++ft->slots_allocated;
             --free_slots;
         }
 
