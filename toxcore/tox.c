@@ -99,6 +99,11 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
     }
 
     if (data) {
+        if (length < TOX_ENC_SAVE_MAGIC_LENGTH) {
+            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+            return NULL;
+        }
+
         if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
             return NULL;
@@ -169,7 +174,7 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
         return NULL;
     }
 
-    if (messenger_load(m, data, length) == -1) {
+    if (data && length && messenger_load(m, data, length) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
