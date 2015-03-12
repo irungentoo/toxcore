@@ -932,11 +932,11 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uin
     return UINT32_MAX;
 }
 
-bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, const uint8_t *data, size_t length,
-                         TOX_ERR_FILE_SEND_CHUNK *error)
+bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
+                         size_t length, TOX_ERR_FILE_SEND_CHUNK *error)
 {
     Messenger *m = tox;
-    int ret = file_data(m, friend_number, file_number, data, length);
+    int ret = file_data(m, friend_number, file_number, position, data, length);
 
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_OK);
@@ -966,6 +966,10 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
 
         case -6:
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL);
+            return 0;
+
+        case -7:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION);
             return 0;
     }
 

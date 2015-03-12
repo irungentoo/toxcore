@@ -1654,7 +1654,11 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
     /**
      * Packet queue is full.
      */
-    TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL
+    TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL,
+    /**
+     * Position parameter was wrong.
+     */
+    TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION
 } TOX_ERR_FILE_SEND_CHUNK;
 
 /**
@@ -1670,8 +1674,8 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
  *
  * @return true on success.
  */
-bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, const uint8_t *data, size_t length,
-                         TOX_ERR_FILE_SEND_CHUNK *error);
+bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
+                         size_t length, TOX_ERR_FILE_SEND_CHUNK *error);
 
 
 /**

@@ -169,7 +169,7 @@ void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_numb
     uint8_t f_data[length];
     memset(f_data, sending_num, length);
 
-    if (tox_file_send_chunk(tox, friend_number, file_number, f_data, length, &error)) {
+    if (tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error)) {
         ++sending_num;
         sending_pos += length;
     } else {
@@ -296,9 +296,14 @@ END_TEST
 START_TEST(test_few_clients)
 {
     long long unsigned int con_time, cur_time = time(NULL);
-    Tox *tox1 = tox_new(0, 0, 0, 0);
-    Tox *tox2 = tox_new(0, 0, 0, 0);
-    Tox *tox3 = tox_new(0, 0, 0, 0);
+    TOX_ERR_NEW t_n_error;
+    Tox *tox1 = tox_new(0, 0, 0, &t_n_error);
+    ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
+    Tox *tox2 = tox_new(0, 0, 0, &t_n_error);
+    ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
+    Tox *tox3 = tox_new(0, 0, 0, &t_n_error);
+    ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
+
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
 
     {

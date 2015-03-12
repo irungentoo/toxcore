@@ -1202,8 +1202,10 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
  *  return -4 if file transfer not transferring.
  *  return -5 if trying to send too much data.
  *  return -6 if packet queue full.
+ *  return -7 if wrong position.
  */
-int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, const uint8_t *data, uint16_t length)
+int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
+              uint16_t length)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1229,6 +1231,10 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, con
         if (ft->size - ft->transferred < length) {
             return -5;
         }
+    }
+
+    if (position != ft->transferred) {
+        return -7;
     }
 
     /* Prevent file sending from filling up the entire buffer preventing messages from being sent. TODO: remove */

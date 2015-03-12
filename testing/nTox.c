@@ -141,7 +141,7 @@ void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_numb
             fseek(file_senders[i].file, position, SEEK_SET);
             uint8_t data[length];
             int len = fread(data, 1, length, file_senders[i].file);
-            tox_file_send_chunk(tox, friend_number, file_number, data, len, 0);
+            tox_file_send_chunk(tox, friend_number, file_number, position, data, len, 0);
             break;
         }
     }
