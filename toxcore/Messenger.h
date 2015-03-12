@@ -131,6 +131,8 @@ struct File_Transfers {
     uint8_t status; /* 0 == no transfer, 1 = not accepted, 3 = transferring, 4 = broken, 5 = finished */
     uint8_t paused; /* 0: not paused, 1 = paused by us, 2 = paused by other, 3 = paused by both. */
     uint32_t last_packet_number; /* number of the last packet sent. */
+    uint64_t requested; /* total data requested by the request chunk callback */
+    unsigned int slots_allocated; /* number of slots allocated to this transfer. */
 };
 enum {
     FILESTATUS_NONE,

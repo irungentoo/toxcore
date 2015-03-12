@@ -1078,10 +1078,14 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     if (file_sendrequest(m, friendnumber, i, file_type, filesize, filename, filename_length) == 0)
         return -4;
 
-    m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NOT_ACCEPTED;
-    m->friendlist[friendnumber].file_sending[i].size = filesize;
-    m->friendlist[friendnumber].file_sending[i].transferred = 0;
-    m->friendlist[friendnumber].file_sending[i].paused = FILE_PAUSE_NOT;
+    struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
+    ft->status = FILESTATUS_NOT_ACCEPTED;
+    ft->size = filesize;
+    ft->transferred = 0;
+    ft->requested = 0;
+    ft->slots_allocated = 0;
+    ft->paused = FILE_PAUSE_NOT;
+
     ++m->friendlist[friendnumber].num_sending_files;
 
     return i;
@@ -1254,6 +1258,10 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         //TODO record packet ids to check if other received complete file.
         ft->transferred += length;
 
+        if (ft->slots_allocated) {
+            --ft->slots_allocated;
+        }
+
         if (length == 0 || ft->size == ft->transferred) {
             ft->status = FILESTATUS_FINISHED;
             ft->last_packet_number = ret;
@@ -1324,6 +1332,13 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
                     --m->friendlist[friendnumber].num_sending_files;
                 }
             }
+
+            /* TODO: if file is too slow, switch to the next. */
+            if (ft->slots_allocated > free_slots) {
+                free_slots = 0;
+            } else {
+                free_slots -= ft->slots_allocated;
+            }
         }
 
         while (ft->status == FILESTATUS_TRANSFERRING && (ft->paused == FILE_PAUSE_NOT)) {
@@ -1333,18 +1348,21 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
             uint16_t length = MAX_CRYPTO_DATA_SIZE - 2;
 
             if (ft->size) {
-                if (ft->size == ft->transferred) {
+                if (ft->size == ft->requested) {
                     break;
                 }
 
-                if (ft->size - ft->transferred < length) {
-                    length = ft->size - ft->transferred;
+                if (ft->size - ft->requested < length) {
+                    length = ft->size - ft->requested;
                 }
             }
 
             if (m->file_reqchunk)
-                (*m->file_reqchunk)(m, friendnumber, i, ft->transferred, length, m->file_reqchunk_userdata);
+                (*m->file_reqchunk)(m, friendnumber, i, ft->requested, length, m->file_reqchunk_userdata);
 
+            ft->requested += length;
+
+            ++ft->slots_allocated;
             --free_slots;
         }
 
