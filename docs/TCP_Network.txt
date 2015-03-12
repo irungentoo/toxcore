@@ -64,14 +64,14 @@ always the same so we don't need to specify it.)
 When the client connects to the server, he sends this packet:
 [temporary public key of client (32 bytes)][nonce for the encrypted data [24
 bytes]][encrypted with the temporary private key of the client and public key of
-the server and the nonce:[public key of the client (32 bytes) and][base nonce we
-want the server to use to encrypt the packets sent to us (24 bytes)]]
+the server and the nonce:[public key of the client (32 bytes) and][base nonce
+the client will use to to encrypt the packets sent to the server (24 bytes)]]
 
 The server responds with:
 [nonce for the encrypted data [24 bytes]][encrypted with the temporary public
 key of the client and private key of the server and the nonce:[temporary public
-key of the server (32 bytes) and][base nonce we want the client to use to
-encrypt the packets sent to us (24 bytes)]]
+key of the server (32 bytes) and][base nonce the server will use to encrypt the
+packets sent to the client (24 bytes)]]
 
 All packets to the server are end to end encrypted with the information
 received (and sent) in the handshake.
