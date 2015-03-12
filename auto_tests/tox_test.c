@@ -312,6 +312,18 @@ START_TEST(test_few_clients)
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_get_udp_port(tox2, &error) == 33446, "Second Tox instance did not bind to udp port 33446.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_get_udp_port(tox3, &error) == 33447, "Third Tox instance did not bind to udp port 33447.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
     uint32_t to_compare = 974536;
     connected_t1 = 0;
     tox_callback_connection_status(tox1, tox_connection_status, &to_compare);
