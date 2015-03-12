@@ -471,7 +471,7 @@ static void at_shutdown(void)
  */
 Networking_Core *new_networking(IP ip, uint16_t port)
 {
-    return new_networking_ex(ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM));
+    return new_networking_ex(ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
 }
 
 /* Initialize networking.
@@ -481,8 +481,10 @@ Networking_Core *new_networking(IP ip, uint16_t port)
  *
  *  return Networking_Core object if no problems
  *  return NULL if there are problems.
+ *
+ * If error is non NULL it is set to 0 if no issues, 1 if bind failed, 2 if other.
  */
-Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to)
+Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
     /* If both from and to are 0, use default port range
      * If one is 0 and the other is non-0, use the non-0 value as only port
@@ -500,6 +502,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to)
         port_from = port_to;
         port_to = temp;
     }
+
+    if (error)
+        *error = 2;
 
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != AF_INET && ip.family != AF_INET6) {
@@ -643,6 +648,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to)
             if (tries > 0)
                 errno = 0;
 
+            if (error)
+                *error = 0;
+
             return temp;
         }
 
@@ -658,6 +666,10 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to)
                  ip_ntoa(&ip), port_from, port_to);
 
     kill_networking(temp);
+
+    if (error)
+        *error = 1;
+
     return NULL;
 }
 

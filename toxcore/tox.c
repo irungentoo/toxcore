@@ -154,13 +154,18 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
         }
     }
 
-    Messenger *m = new_messenger(&m_options);
-    //TODO: TOX_ERR_NEW_MALLOC
-    //TODO: TOX_ERR_NEW_PORT_ALLOC
+    unsigned int m_error;
+    Messenger *m = new_messenger(&m_options, &m_error);
 
     if (!new_groupchats(m)) {
         kill_messenger(m);
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+
+        if (m_error == MESSENGER_ERROR_PORT) {
+            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
+        } else {
+            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        }
+
         return NULL;
     }
 

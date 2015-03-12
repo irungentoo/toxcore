@@ -1593,12 +1593,17 @@ static void LANdiscovery(Messenger *m)
 }
 
 /* Run this at startup. */
-Messenger *new_messenger(Messenger_Options *options)
+Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 {
     Messenger *m = calloc(1, sizeof(Messenger));
 
+    if (error)
+        *error = MESSENGER_ERROR_OTHER;
+
     if ( ! m )
         return NULL;
+
+    unsigned int net_err = 0;
 
     if (options->udp_disabled) {
         /* this is the easiest way to completely disable UDP without changing too much code. */
@@ -1606,11 +1611,16 @@ Messenger *new_messenger(Messenger_Options *options)
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking_ex(ip, options->port_range[0], options->port_range[1]);
+        m->net = new_networking_ex(ip, options->port_range[0], options->port_range[1], &net_err);
     }
 
     if (m->net == NULL) {
         free(m);
+
+        if (error && net_err == 1) {
+            *error = MESSENGER_ERROR_PORT;
+        }
+
         return NULL;
     }
 
@@ -1653,6 +1663,9 @@ Messenger *new_messenger(Messenger_Options *options)
     LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
+
+    if (error)
+        *error = MESSENGER_ERROR_NONE;
 
     return m;
 }

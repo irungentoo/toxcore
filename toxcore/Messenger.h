@@ -711,11 +711,20 @@ void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length);
 
 /**********************************************/
+
+enum {
+    MESSENGER_ERROR_NONE,
+    MESSENGER_ERROR_PORT,
+    MESSENGER_ERROR_OTHER
+};
+
 /* Run this at startup.
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
+ *
+ *  if error is not NULL it will be set to one of the values in the enum above.
  */
-Messenger *new_messenger(Messenger_Options *options);
+Messenger *new_messenger(Messenger_Options *options, unsigned int *error);
 
 /* Run this before closing shop
  * Free all datastructures.
