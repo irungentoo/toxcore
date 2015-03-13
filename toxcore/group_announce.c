@@ -35,7 +35,6 @@
 #include "network.h"
 #include "DHT.h"
 
-#define MAX_GCA_PACKET_SIZE 65507
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define RAND_ID_SIZE (sizeof(uint64_t))
 
@@ -53,6 +52,7 @@
 #define GCA_PING_INTERVAL 60
 #define GCA_NODES_EXPIRATION (GCA_PING_INTERVAL * 3 + 10)
 
+#define MAX_GCA_PACKET_SIZE 1024
 #define MAX_GCA_SENT_NODES 4
 #define MAX_GCA_ANNOUNCED_NODES 30
 
@@ -89,28 +89,28 @@ typedef struct GC_Announce {
 } GC_Announce;
 
 
-/* Copies your own ip_port structure to target. (TODO: This should probably go somewhere else)
+/* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
  *
  * Return 0 on succcess.
  * Return -1 on failure.
  */
-int ipport_self_copy(const DHT *dht, IP_Port *target)
+int ipport_self_copy(const DHT *dht, IP_Port *dest)
 {
     int i;
 
     for (i = 0; i < LCLIENT_LIST; i++) {
         if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
-            ipport_copy(target, &dht->close_clientlist[i].assoc4.ret_ip_port);
+            ipport_copy(dest, &dht->close_clientlist[i].assoc4.ret_ip_port);
             break;
         }
 
         if (ipport_isset(&dht->close_clientlist[i].assoc6.ret_ip_port)) {
-            ipport_copy(target, &dht->close_clientlist[i].assoc6.ret_ip_port);
+            ipport_copy(dest, &dht->close_clientlist[i].assoc6.ret_ip_port);
             break;
         }
     }
 
-    if (!ipport_isset(target))
+    if (!ipport_isset(dest))
         return -1;
 
     return 0;
