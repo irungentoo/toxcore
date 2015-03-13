@@ -103,7 +103,7 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
-void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind, uint64_t filesize,
+void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t filesize,
                       const uint8_t *filename, size_t filename_length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
