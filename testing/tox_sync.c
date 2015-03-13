@@ -124,8 +124,8 @@ int not_sending()
 
 static char path[1024];
 
-void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND type,
-                         uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data)
+void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t type, uint64_t file_size,
+                         const uint8_t *filename, size_t filename_length, void *user_data)
 {
     if (type != TOX_FILE_KIND_DATA) {
         printf("Refused invalid file type.");

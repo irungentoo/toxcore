@@ -1389,7 +1389,7 @@ void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *
  ******************************************************************************/
 
 
-typedef enum TOX_FILE_KIND {
+enum TOX_FILE_KIND {
     /**
      * Arbitrary file data. Clients can choose to handle it based on the file name
      * or magic or any other way they choose.
@@ -1412,7 +1412,7 @@ typedef enum TOX_FILE_KIND {
      * transfer if it matches.
      */
     TOX_FILE_KIND_AVATAR
-} TOX_FILE_KIND;
+};
 
 
 /**
