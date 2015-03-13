@@ -1617,8 +1617,8 @@ typedef enum TOX_ERR_FILE_SEND {
  *   number is per friend. File numbers are reused after a transfer terminates.
  *   on failure, this function returns UINT32_MAX.
  */
-uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
-                       const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error);
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *filename,
+                       size_t filename_length, TOX_ERR_FILE_SEND *error);
 
 
 typedef enum TOX_ERR_FILE_SEND_CHUNK {
@@ -1664,11 +1664,11 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
  * Send a chunk of file data to a friend.
  *
  * This function is called in response to the `file_request_chunk` callback. The
- * length parameter should be equal to the one received though the callback. 
- * If it is zero, the transfer is assumed complete. For files with known size, 
- * Core will know that the transfer is complete after the last byte has been 
- * received, so it is not necessary (though not harmful) to send a zero-length 
- * chunk to terminate. For streams, core will know that the transfer is finished 
+ * length parameter should be equal to the one received though the callback.
+ * If it is zero, the transfer is assumed complete. For files with known size,
+ * Core will know that the transfer is complete after the last byte has been
+ * received, so it is not necessary (though not harmful) to send a zero-length
+ * chunk to terminate. For streams, core will know that the transfer is finished
  * if a chunk with length less than the length requested in the callback is sent.
  *
  * @return true on success.
@@ -1731,7 +1731,7 @@ void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *functi
  * @param file_number The friend-specific file number the data received is
  *   associated with.
  */
-typedef void tox_file_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind,
+typedef void tox_file_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind,
                                  uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
 
 /**

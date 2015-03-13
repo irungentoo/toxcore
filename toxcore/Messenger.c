@@ -976,9 +976,9 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
 
 /* Set the callback for file send requests.
  *
- *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
+ *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint32_t filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
  */
-void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uint32_t, uint32_t, unsigned int, uint64_t,
+void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uint32_t, uint32_t, uint32_t, uint64_t,
                                const uint8_t *, size_t, void *), void *userdata)
 {
     m->file_sendrequest = function;

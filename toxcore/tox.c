@@ -888,8 +888,8 @@ void tox_callback_file_control(Tox *tox, tox_file_control_cb *function, void *us
     callback_file_control(m, function, user_data);
 }
 
-uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
-                       const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error)
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *filename,
+                       size_t filename_length, TOX_ERR_FILE_SEND *error)
 {
     if (!filename) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NULL);
