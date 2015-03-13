@@ -93,13 +93,13 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
-void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_TYPE kind, uint64_t filesize,
+void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind, uint64_t filesize,
                       const uint8_t *filename, size_t filename_length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (kind != TOX_FILE_TYPE_DATA) {
+    if (kind != TOX_FILE_KIND_DATA) {
         ck_abort_msg("Bad kind");
         return;
     }
@@ -468,7 +468,7 @@ START_TEST(test_few_clients)
     tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
     tox_callback_file_receive(tox3, tox_file_receive, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;
-    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_TYPE_DATA, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
+    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
                                   0);
     ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
 

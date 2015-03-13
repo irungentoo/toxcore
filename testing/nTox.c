@@ -158,7 +158,7 @@ uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_TYPE_DATA, filesize, (uint8_t *)filename, strlen(filename) + 1,
+    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_KIND_DATA, filesize, (uint8_t *)filename, strlen(filename) + 1,
                                      0);
 
     if (filenum == -1)
@@ -1127,10 +1127,10 @@ void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t 
         print_groupchatpeers(m, groupnumber);
     }
 }
-void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_TYPE type,
+void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND type,
                          uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data)
 {
-    if (type != TOX_FILE_TYPE_DATA) {
+    if (type != TOX_FILE_KIND_DATA) {
         new_lines("Refused invalid file type.");
         tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;

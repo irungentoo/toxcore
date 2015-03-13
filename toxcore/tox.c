@@ -877,7 +877,7 @@ void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function
     callback_file_control(m, function, user_data);
 }
 
-uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_TYPE kind, uint64_t file_size,
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
                        const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error)
 {
     if (!filename) {

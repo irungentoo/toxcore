@@ -1390,12 +1390,12 @@ void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *
  ******************************************************************************/
 
 
-typedef enum TOX_FILE_TYPE {
+typedef enum TOX_FILE_KIND {
     /**
      * Arbitrary file data. Clients can choose to handle it based on the file name
      * or magic or any other way they choose.
      */
-    TOX_FILE_TYPE_DATA,
+    TOX_FILE_KIND_DATA,
     /**
      * Avatar data. This consists of tox_hash(image) + image.
      *
@@ -1412,8 +1412,8 @@ typedef enum TOX_FILE_TYPE {
      * saved hash and send TOX_FILE_CONTROL_CANCEL to terminate the avatar
      * transfer if it matches.
      */
-    TOX_FILE_TYPE_AVATAR
-} TOX_FILE_TYPE;
+    TOX_FILE_KIND_AVATAR
+} TOX_FILE_KIND;
 
 
 /**
@@ -1618,7 +1618,7 @@ typedef enum TOX_ERR_FILE_SEND {
  *   number is per friend. File numbers are reused after a transfer terminates.
  *   on failure, this function returns UINT32_MAX.
  */
-uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_TYPE kind, uint64_t file_size,
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, TOX_FILE_KIND kind, uint64_t file_size,
                        const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error);
 
 
@@ -1731,7 +1731,7 @@ void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *functi
  * @param file_number The friend-specific file number the data received is
  *   associated with.
  */
-typedef void tox_file_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_TYPE kind,
+typedef void tox_file_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_KIND kind,
                                  uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
 
 /**
