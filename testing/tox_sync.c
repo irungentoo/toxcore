@@ -129,7 +129,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
 {
     if (type != TOX_FILE_KIND_DATA) {
         printf("Refused invalid file type.");
-        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
@@ -151,7 +151,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
 
     if (tempfile != 0) {
         fclose(tempfile);
-        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
@@ -159,11 +159,11 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     file_recv[file_index].file = fopen(fullpath, "wb");
 
     if (file_recv[file_index].file == 0) {
-        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
-    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
+    if (tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
         printf("Accepted file transfer. (file: %s)\n", fullpath);
     }
 
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 
     Tox *tox = tox_new(0, 0, 0, 0);
     tox_callback_file_receive_chunk(tox, write_file, NULL);
-    tox_callback_file_control(tox, file_print_control, NULL);
+    tox_callback_file_recv_control(tox, file_print_control, NULL);
     tox_callback_file_receive(tox, file_request_accept, NULL);
     tox_callback_file_request_chunk(tox, tox_file_request_chunk, NULL);
     tox_callback_friend_connection_status(tox, print_online, NULL);
@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        tox_iteration(tox);
+        tox_iterate(tox);
         c_sleep(1);
     }
 

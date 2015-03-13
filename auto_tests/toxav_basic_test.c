@@ -232,7 +232,7 @@ void register_callbacks(ToxAv *av, void *data)
  */
 #define CALL_AND_START_LOOP(AliceCallType, BobCallType) \
 { int step = 0, running = 1; while (running) {\
-    tox_iteration(bootstrap_node); tox_iteration(Alice); tox_iteration(Bob); \
+    tox_iterate(bootstrap_node); tox_iterate(Alice); tox_iterate(Bob); \
     toxav_do(status_control.Bob.av); toxav_do(status_control.Alice.av); \
     switch ( step ) {\
         case 0: /* Alice */  printf("Alice is calling...\n");\
@@ -267,9 +267,9 @@ START_TEST(test_AV_flows)
     uint8_t off = 1;
 
     while (1) {
-        tox_iteration(bootstrap_node);
-        tox_iteration(Alice);
-        tox_iteration(Bob);
+        tox_iterate(bootstrap_node);
+        tox_iterate(Alice);
+        tox_iterate(Bob);
 
         if (tox_get_connection_status(bootstrap_node) && tox_get_connection_status(Alice) && tox_get_connection_status(Bob)
                 && off) {
@@ -484,9 +484,9 @@ START_TEST(test_AV_flows)
         int running = 1;
 
         while (running) {
-            tox_iteration(bootstrap_node);
-            tox_iteration(Alice);
-            tox_iteration(Bob);
+            tox_iterate(bootstrap_node);
+            tox_iterate(Alice);
+            tox_iterate(Bob);
 
             switch ( step ) {
                 case 0: /* Alice */
@@ -525,9 +525,9 @@ START_TEST(test_AV_flows)
         int running = 1;
 
         while (running) {
-            tox_iteration(bootstrap_node);
-            tox_iteration(Alice);
-            tox_iteration(Bob);
+            tox_iterate(bootstrap_node);
+            tox_iterate(Alice);
+            tox_iterate(Bob);
 
             toxav_do(status_control.Alice.av);
             toxav_do(status_control.Bob.av);
@@ -570,9 +570,9 @@ START_TEST(test_AV_flows)
         int running = 1;
 
         while (running) {
-            tox_iteration(bootstrap_node);
-            tox_iteration(Alice);
-            tox_iteration(Bob);
+            tox_iterate(bootstrap_node);
+            tox_iterate(Alice);
+            tox_iterate(Bob);
 
             toxav_do(status_control.Alice.av);
             toxav_do(status_control.Bob.av);

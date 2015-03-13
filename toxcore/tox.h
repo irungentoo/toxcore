@@ -260,26 +260,26 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
 /**
  * Represents the possible statuses a client can have.
  */
-typedef enum TOX_STATUS {
+typedef enum TOX_USER_STATUS {
     /**
      * User is online and available.
      */
-    TOX_STATUS_NONE,
+    TOX_USER_STATUS_NONE,
     /**
      * User is away. Clients can set this e.g. after a user defined
      * inactivity time.
      */
-    TOX_STATUS_AWAY,
+    TOX_USER_STATUS_AWAY,
     /**
      * User is busy. Signals to other clients that this client does not
      * currently wish to communicate.
      */
-    TOX_STATUS_BUSY,
+    TOX_USER_STATUS_BUSY,
     /**
      * Invalid status used when function returns an error.
      */
-    TOX_STATUS_INVALID
-} TOX_STATUS;
+    TOX_USER_STATUS_INVALID
+} TOX_USER_STATUS;
 
 
 /*******************************************************************************
@@ -652,7 +652,7 @@ uint32_t tox_iteration_interval(const Tox *tox);
  * The main loop that needs to be run in intervals of tox_iteration_interval()
  * milliseconds.
  */
-void tox_iteration(Tox *tox);
+void tox_iterate(Tox *tox);
 
 
 /*******************************************************************************
@@ -695,12 +695,12 @@ uint32_t tox_self_get_nospam(const Tox *tox);
 void tox_self_get_public_key(const Tox *tox, uint8_t *public_key);
 
 /**
- * Copy the private key from the Tox object.
+ * Copy the secret key from the Tox object.
  *
- * @param private_key A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If
+ * @param secret_key A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If
  *   this parameter is NULL, this function has no effect.
  */
-void tox_self_get_private_key(const Tox *tox, uint8_t *private_key);
+void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key);
 
 
 /*******************************************************************************
@@ -801,12 +801,12 @@ void tox_self_get_status_message(const Tox *tox, uint8_t *status);
  *
  * @param user_status One of the user statuses listed in the enumeration above.
  */
-void tox_self_set_status(Tox *tox, TOX_STATUS user_status);
+void tox_self_set_status(Tox *tox, TOX_USER_STATUS user_status);
 
 /**
  * Returns the client's user status.
  */
-TOX_STATUS tox_self_get_status(const Tox *tox);
+TOX_USER_STATUS tox_self_get_status(const Tox *tox);
 
 
 /*******************************************************************************
@@ -991,7 +991,7 @@ size_t tox_friend_list_size(const Tox *tox);
  * @param list A memory region with enough space to hold the friend list. If
  *   this parameter is NULL, this function has no effect.
  */
-void tox_friend_list(const Tox *tox, uint32_t *list);
+void tox_friend_get_list(const Tox *tox, uint32_t *list);
 
 
 
@@ -1113,7 +1113,7 @@ void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *
  * The status returned is equal to the last status received through the
  * `friend_status` callback.
  */
-TOX_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
  * The function type for the `friend_status` callback.
@@ -1122,7 +1122,7 @@ TOX_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR
  *   changed.
  * @param status The new user status.
  */
-typedef void tox_friend_status_cb(Tox *tox, uint32_t friend_number, TOX_STATUS status, void *user_data);
+typedef void tox_friend_status_cb(Tox *tox, uint32_t friend_number, TOX_USER_STATUS status, void *user_data);
 
 /**
  * Set the callback for the `friend_status` event. Pass NULL to unset.
@@ -1227,30 +1227,30 @@ typedef enum TOX_ERR_SET_TYPING {
 bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool is_typing, TOX_ERR_SET_TYPING *error);
 
 
-typedef enum TOX_ERR_SEND_MESSAGE {
-    TOX_ERR_SEND_MESSAGE_OK,
-    TOX_ERR_SEND_MESSAGE_NULL,
+typedef enum TOX_ERR_FRIEND_SEND_MESSAGE {
+    TOX_ERR_FRIEND_SEND_MESSAGE_OK,
+    TOX_ERR_FRIEND_SEND_MESSAGE_NULL,
     /**
      * The friend number did not designate a valid friend.
      */
-    TOX_ERR_SEND_MESSAGE_FRIEND_NOT_FOUND,
+    TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_FOUND,
     /**
      * This client is currently not connected to the friend.
      */
-    TOX_ERR_SEND_MESSAGE_FRIEND_NOT_CONNECTED,
+    TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_CONNECTED,
     /**
      * An allocation error occurred while increasing the send queue size.
      */
-    TOX_ERR_SEND_MESSAGE_SENDQ,
+    TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ,
     /**
      * Message length exceeded TOX_MAX_MESSAGE_LENGTH.
      */
-    TOX_ERR_SEND_MESSAGE_TOO_LONG,
+    TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG,
     /**
      * Attempted to send a zero-length message.
      */
-    TOX_ERR_SEND_MESSAGE_EMPTY
-} TOX_ERR_SEND_MESSAGE;
+    TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY
+} TOX_ERR_FRIEND_SEND_MESSAGE;
 
 /**
  * Send a text chat message to an online friend.
@@ -1269,8 +1269,8 @@ typedef enum TOX_ERR_SEND_MESSAGE {
  * incremented by 1 each time a message is sent. If UINT32_MAX messages were
  * sent, the next message ID is 0.
  */
-uint32_t tox_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
-                          TOX_ERR_SEND_MESSAGE *error);
+uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
+                                 TOX_ERR_FRIEND_SEND_MESSAGE *error);
 
 
 /**
@@ -1282,10 +1282,10 @@ uint32_t tox_send_message(Tox *tox, uint32_t friend_number, const uint8_t *messa
  * means that sending a message will cause the next message ID from sending an
  * action will be incremented.
  *
- * @see tox_send_message for more details.
+ * @see tox_friend_send_message for more details.
  */
-uint32_t tox_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
-                         TOX_ERR_SEND_MESSAGE *error);
+uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
+                                TOX_ERR_FRIEND_SEND_MESSAGE *error);
 
 
 /**
@@ -1295,7 +1295,7 @@ uint32_t tox_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action
  * @param message_id The message ID as returned from tox_send_message or
  *   tox_send_action corresponding to the message sent.
  */
-typedef void tox_read_receipt_cb(Tox *tox, uint32_t friend_number, uint32_t message_id, void *user_data);
+typedef void tox_friend_read_receipt_cb(Tox *tox, uint32_t friend_number, uint32_t message_id, void *user_data);
 
 /**
  * Set the callback for the `read_receipt` event. Pass NULL to unset.
@@ -1306,7 +1306,7 @@ typedef void tox_read_receipt_cb(Tox *tox, uint32_t friend_number, uint32_t mess
  * received here may not correspond to any message sent through tox_send_message
  * or tox_send_action. In that case, the receipt should be discarded.
  */
-void tox_callback_read_receipt(Tox *tox, tox_read_receipt_cb *function, void *user_data);
+void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function, void *user_data);
 
 
 /*******************************************************************************
@@ -1501,8 +1501,8 @@ typedef enum TOX_ERR_FILE_CONTROL {
  *
  * @return true on success.
  */
-bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
-                      TOX_ERR_FILE_CONTROL *error);
+bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                           TOX_ERR_FILE_CONTROL *error);
 
 
 /**
@@ -1516,8 +1516,8 @@ bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TO
  *   associated with.
  * @param control The file control command received.
  */
-typedef void tox_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
-                                 void *user_data);
+typedef void tox_file_recv_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                                      void *user_data);
 
 /**
  * Set the callback for the `file_control` event. Pass NULL to unset.
@@ -1525,7 +1525,7 @@ typedef void tox_file_control_cb(Tox *tox, uint32_t friend_number, uint32_t file
  * This event is triggered when a file control command is received from a
  * friend.
  */
-void tox_callback_file_control(Tox *tox, tox_file_control_cb *function, void *user_data);
+void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function, void *user_data);
 
 
 /*******************************************************************************
@@ -1794,35 +1794,35 @@ void tox_callback_file_receive_chunk(Tox *tox, tox_file_receive_chunk_cb *functi
  ******************************************************************************/
 
 
-typedef enum TOX_ERR_SEND_CUSTOM_PACKET {
-    TOX_ERR_SEND_CUSTOM_PACKET_OK,
-    TOX_ERR_SEND_CUSTOM_PACKET_NULL,
+typedef enum TOX_ERR_FRIEND_CUSTOM_PACKET {
+    TOX_ERR_FRIEND_CUSTOM_PACKET_OK,
+    TOX_ERR_FRIEND_CUSTOM_PACKET_NULL,
     /**
      * The friend number did not designate a valid friend.
      */
-    TOX_ERR_SEND_CUSTOM_PACKET_FRIEND_NOT_FOUND,
+    TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_FOUND,
     /**
      * This client is currently not connected to the friend.
      */
-    TOX_ERR_SEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED,
+    TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED,
     /**
      * The first byte of data was not in the specified range for the packet type.
      * This range is 200-254 for lossy, and 160-191 for lossless packets.
      */
-    TOX_ERR_SEND_CUSTOM_PACKET_INVALID,
+    TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID,
     /**
      * Attempted to send an empty packet.
      */
-    TOX_ERR_SEND_CUSTOM_PACKET_EMPTY,
+    TOX_ERR_FRIEND_CUSTOM_PACKET_EMPTY,
     /**
      * Packet data length exceeded TOX_MAX_CUSTOM_PACKET_SIZE.
      */
-    TOX_ERR_SEND_CUSTOM_PACKET_TOO_LONG,
+    TOX_ERR_FRIEND_CUSTOM_PACKET_TOO_LONG,
     /**
      * Send queue size exceeded.
      */
-    TOX_ERR_SEND_CUSTOM_PACKET_SENDQ
-} TOX_ERR_SEND_CUSTOM_PACKET;
+    TOX_ERR_FRIEND_CUSTOM_PACKET_SENDQ
+} TOX_ERR_FRIEND_CUSTOM_PACKET;
 
 
 /**
@@ -1845,8 +1845,8 @@ typedef enum TOX_ERR_SEND_CUSTOM_PACKET {
  *
  * @return true on success.
  */
-bool tox_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-                           TOX_ERR_SEND_CUSTOM_PACKET *error);
+bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                                  TOX_ERR_FRIEND_CUSTOM_PACKET *error);
 
 /**
  * The function type for the `friend_lossy_packet` callback.
@@ -1880,8 +1880,8 @@ void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *func
  *
  * @return true on success.
  */
-bool tox_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-                              TOX_ERR_SEND_CUSTOM_PACKET *error);
+bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
+                                     TOX_ERR_FRIEND_CUSTOM_PACKET *error);
 
 /**
  * The function type for the `friend_lossless_packet` callback.
@@ -1919,7 +1919,7 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
  * @param dht_id A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If this
  *   parameter is NULL, this function has no effect.
  */
-void tox_get_dht_id(const Tox *tox, uint8_t *dht_id);
+void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id);
 
 
 typedef enum TOX_ERR_GET_PORT {
@@ -1933,13 +1933,13 @@ typedef enum TOX_ERR_GET_PORT {
 /**
  * Return the UDP port this Tox instance is bound to.
  */
-uint16_t tox_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
+uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 /**
  * Return the TCP port this Tox instance is bound to. This is only relevant if
  * the instance is acting as a TCP relay.
  */
-uint16_t tox_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
+uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 #include "tox_old.h"
 
