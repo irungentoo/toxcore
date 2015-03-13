@@ -948,7 +948,6 @@ uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, TOX
 
 typedef enum TOX_ERR_FRIEND_GET_PUBLIC_KEY {
     TOX_ERR_FRIEND_GET_PUBLIC_KEY_OK,
-    TOX_ERR_FRIEND_GET_PUBLIC_KEY_NULL,
     /**
      * No friend with the given number exists on the friend list.
      */

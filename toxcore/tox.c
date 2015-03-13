@@ -546,7 +546,6 @@ bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *
                                TOX_ERR_FRIEND_GET_PUBLIC_KEY *error)
 {
     if (!public_key) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_PUBLIC_KEY_NULL);
         return 0;
     }
 
