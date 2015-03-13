@@ -476,7 +476,7 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
                        uint32_t length, uint64_t message_id);
 int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key,
                             const uint8_t *data, uint32_t length);
-int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, uint32_t peernumber,
+int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, int peernumber,
                            const uint8_t *data, uint32_t length);
 
 #endif  /* GROUP_CHATS_H */

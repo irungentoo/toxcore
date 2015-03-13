@@ -484,12 +484,12 @@ static int self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *
 int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *public_key,
                            int peernumber, const uint8_t *data, uint32_t length)
 {
-    if (peernumber < 0)
-        return -1;
-
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
+        return -1;
+
+    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     if (!ext_pk_equal(public_key, data))
@@ -846,15 +846,15 @@ static int send_gc_broadcast_packet(GC_Chat *chat, const uint8_t *data, uint32_t
 static int handle_gc_ping(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
                           int peernumber, const uint8_t *data, uint32_t length)
 {
-    if (peernumber < 0)
-        return -1;
-
     if (!ext_pk_equal(sender_pk, data))
         return -1;
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (!chat)
+        return -1;
+
+    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     chat->group[peernumber].addr.ip_port = ipp;
@@ -924,7 +924,7 @@ void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest)
     memcpy(dest, SIG_PK(chat->chat_public_key), SIG_PUBLIC_KEY);
 }
 
-int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, uint32_t peernumber,
+int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, int peernumber,
                            const uint8_t *data, uint32_t length)
 {
     if (!ext_pk_equal(public_key, data))
@@ -934,6 +934,9 @@ int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
+        return -1;
+
+    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
@@ -1397,7 +1400,7 @@ int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t message_
 static int handle_gc_message_ack(GC_Chat *chat, const uint8_t *sender_pk, int peernumber,
                                  const uint8_t *data, uint32_t length)
 {
-    if (peernumber < 0)
+    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     if (!ext_pk_equal(sender_pk, data))
@@ -1437,9 +1440,6 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
 int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
                         const uint8_t *data, uint32_t length)
 {
-    if (peernumber < 0)
-        return -1;
-
     GC_Session *c = m->group_handler;
 
     if (!c)
@@ -1448,6 +1448,9 @@ int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
+        return -1;
+
+    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     if (!ext_pk_equal(sender_pk, data))

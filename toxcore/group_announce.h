@@ -65,12 +65,12 @@ void gca_cleanup(struct GC_Announce *announce, const uint8_t *chat_id);
 struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
 
-/* Copies your own ip_port structure to target. (TODO: This should probably go somewhere else)
+/* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
  *
  * Return 0 on succcess.
  * Return -1 on failure.
  */
-int ipport_self_copy(const DHT *dht, IP_Port *target);
+int ipport_self_copy(const DHT *dht, IP_Port *dest);
 
 /* Creates a GC_Announce_Node using client_id and your own IP_Port struct
  *

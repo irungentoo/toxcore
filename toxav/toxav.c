@@ -30,8 +30,8 @@ typedef struct Messenger Tox;
 
 #include "codec.h"
 #include "msi.h"
-#include "group_chats.h"
 
+#include "../toxcore/group_chats.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 
