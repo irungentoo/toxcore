@@ -960,7 +960,7 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
             return 0;
 
         case -5:
-            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_TOO_LARGE);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_INVALID_LENGTH);
             return 0;
 
         case -6:

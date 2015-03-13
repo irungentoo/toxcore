@@ -1196,6 +1196,28 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
     return 0;
 }
 
+/* return packet number on success.
+ * return -1 on failure.
+ */
+static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, uint8_t filenumber, const uint8_t *data,
+                                     uint16_t length)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    uint8_t packet[2 + length];
+    packet[0] = PACKET_ID_FILE_DATA;
+    packet[1] = filenumber;
+
+    if (length) {
+        memcpy(packet + 2, data, length);
+    }
+
+    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+                             m->friendlist[friendnumber].friendcon_id), packet, sizeof(packet), 1);
+}
+
+#define MAX_FILE_DATA_SIZE (MAX_CRYPTO_DATA_SIZE - 2)
 #define MIN_SLOTS_FREE (CRYPTO_MIN_QUEUE_LENGTH / 4)
 /* Send file data.
  *
@@ -1204,7 +1226,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
  *  return -2 if friend not online.
  *  return -3 if filenumber invalid.
  *  return -4 if file transfer not transferring.
- *  return -5 if trying to send too much data.
+ *  return -5 if bad data size.
  *  return -6 if packet queue full.
  *  return -7 if wrong position.
  */
@@ -1228,11 +1250,15 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (ft->paused != FILE_PAUSE_NOT)
         return -4;
 
-    if (length > MAX_CRYPTO_DATA_SIZE - 2)
+    if (length > MAX_FILE_DATA_SIZE)
         return -5;
 
     if (ft->size) {
         if (ft->size - ft->transferred < length) {
+            return -5;
+        }
+
+        if (length != MAX_FILE_DATA_SIZE && (ft->transferred + length) != ft->size) {
             return -5;
         }
     }
@@ -1246,13 +1272,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
                                         m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE)
         return -6;
 
-    uint8_t packet[2 + length];
-    packet[0] = PACKET_ID_FILE_DATA;
-    packet[1] = filenumber;
-    memcpy(packet + 2, data, length);
-
-    int64_t ret = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                    m->friendlist[friendnumber].friendcon_id), packet, sizeof(packet), 1);
+    int64_t ret = send_file_data_packet(m, friendnumber, filenumber, data, length);
 
     if (ret != -1) {
         //TODO record packet ids to check if other received complete file.
@@ -1262,7 +1282,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
             --ft->slots_allocated;
         }
 
-        if (length == 0 || ft->size == ft->transferred) {
+        if (length != MAX_FILE_DATA_SIZE || ft->size == ft->transferred) {
             ft->status = FILESTATUS_FINISHED;
             ft->last_packet_number = ret;
         }
@@ -1346,7 +1366,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
             if (free_slots == 0)
                 break;
 
-            uint16_t length = MAX_CRYPTO_DATA_SIZE - 2;
+            uint16_t length = MAX_FILE_DATA_SIZE;
 
             if (ft->size) {
                 if (ft->size == ft->requested) {
@@ -1980,7 +2000,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             ft->transferred += file_data_length;
 
-            if (ft->size && ft->transferred >= ft->size) {
+            if ((ft->size && ft->transferred >= ft->size) || file_data_length != MAX_FILE_DATA_SIZE) {
                 file_data_length = 0;
                 file_data = NULL;
                 position = ft->transferred;

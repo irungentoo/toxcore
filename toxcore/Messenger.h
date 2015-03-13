@@ -637,7 +637,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
  *  return -2 if friend not online.
  *  return -3 if filenumber invalid.
  *  return -4 if file transfer not transferring.
- *  return -5 if trying to send too much data.
+ *  return -5 if bad data size.
  *  return -6 if packet queue full.
  *  return -7 if wrong position.
  */
