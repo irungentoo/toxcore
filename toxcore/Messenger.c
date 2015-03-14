@@ -511,7 +511,7 @@ int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint
     return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION, message_id);
 }
 
-int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *metadata, uint32_t length, uint32_t *message_id)
+int m_sendmetadata(Messenger *m, int32_t friendnumber, const uint8_t *metadata, uint32_t length, uint32_t *message_id)
 {
     return send_message_generic(m, friendnumber, metadata, length, PACKET_ID_METADATA, message_id);
 }

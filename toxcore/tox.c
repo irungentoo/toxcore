@@ -799,6 +799,25 @@ uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t 
     return message_id;
 }
 
+uint32_t tox_friend_send_metadata(Tox *tox, uint32_t friend_number, const uint8_t *metadata, size_t length,
+                                TOX_ERR_FRIEND_SEND_MESSAGE *error)
+{
+    if (!action) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
+        return 0;
+    }
+
+    if (!length) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY);
+        return 0;
+    }
+
+    Messenger *m = tox;
+    uint32_t message_id = 0;
+    set_message_error(m_sendmetadata(m, friend_number, metadata, length, &message_id), error);
+    return message_id;
+}
+
 void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function, void *user_data)
 {
     Messenger *m = tox;
