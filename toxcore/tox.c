@@ -802,7 +802,7 @@ uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t 
 uint32_t tox_friend_send_metadata(Tox *tox, uint32_t friend_number, const uint8_t *metadata, size_t length,
                                 TOX_ERR_FRIEND_SEND_MESSAGE *error)
 {
-    if (!action) {
+    if (!metadata) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
         return 0;
     }
