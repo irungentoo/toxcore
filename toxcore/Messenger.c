@@ -511,6 +511,11 @@ int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint
     return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION, message_id);
 }
 
+int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *metadata, uint32_t length, uint32_t *message_id)
+{
+    return send_message_generic(m, friendnumber, metadata, length, PACKET_ID_METADATA, message_id);
+}
+
 /* Send a name packet to friendnumber.
  * length is the length with the NULL terminator.
  */
@@ -824,6 +829,13 @@ void m_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, co
 {
     m->friend_action = function;
     m->friend_action_userdata = userdata;
+}
+
+void m_callback_metadata(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
+                       void *userdata)
+{
+    m->friend_metadata = function;
+    m->friend_metadata_userdata = userdata;
 }
 
 void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
@@ -1913,6 +1925,27 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             if (m->friend_action)
                 (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
+
+
+            break;
+        }
+
+        case PACKET_ID_METADATA: {
+            const uint8_t *message_id = data;
+
+            if (data_length == 0)
+                break;
+
+            const uint8_t *metadata = data;
+            uint16_t metadata_length = data_length;
+
+            /* Make sure the NULL terminator is present. */
+            uint8_t metadata_terminated[metadata_length + 1];
+            memcpy(metadata_terminated, metadata, metadata_length);
+            metadata_terminated[metadata_length] = 0;
+
+            if (m->friend_metadata)
+                (*m->friend_metadata)(m, i, metadata_terminated, metadata_length, m->friend_metadata_userdata);
 
 
             break;

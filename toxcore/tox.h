@@ -1278,13 +1278,28 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, const uint8_t
  *
  * This is similar to /me (CTCP ACTION) on IRC.
  *
- * Message ID space is shared between tox_send_message and tox_send_action. This
- * means that sending a message will cause the next message ID from sending an
- * action will be incremented.
+ * Message ID space is shared between tox_send_message, tox_send_action, and
+ * tox_send_meta. This means that sending a message will cause the next message
+ * ID from sending an action will be incremented.
  *
  * @see tox_friend_send_message for more details.
  */
 uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
+                                TOX_ERR_FRIEND_SEND_MESSAGE *error);
+
+/**
+ * Send Meta Data to an online friend.
+ *
+ * This is similar to a notice (CTCP NOTICE) on IRC. But should be information
+ * for the tox client, not the user.
+ *
+ * Message ID space is shared between tox_send_message, tox_send_action, and
+ * tox_send_meta. This means that sending a message will cause the next message
+ * ID from sending meta will be incremented.
+ *
+ * @see tox_friend_send_message for more details.
+ */
+uint32_t tox_friend_send_metadata(Tox *tox, uint32_t friend_number, const uint8_t *metadata, size_t length,
                                 TOX_ERR_FRIEND_SEND_MESSAGE *error);
 
 
@@ -1379,6 +1394,26 @@ typedef void tox_friend_action_cb(Tox *tox, uint32_t friend_number, /*uint32_t t
  * This event is triggered when an action from a friend is received.
  */
 void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *user_data);
+
+/**
+ * The function type for the `friend_metadata` callback.
+ *
+ * @param friend_number The friend number of the friend who sent the metadata.
+ * @param time_delta Time between composition and sending.
+ * @param metadata The meta data they sent.
+ * @param length The size of the metadata byte array.
+ *
+ * @see tox_friend_request_cb for more information on time_delta.
+ */
+typedef void tox_friend_metadata_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */const uint8_t *metadata,
+                                  size_t length, void *user_data);
+
+/**
+ * Set the callback for the `friend_metadata` event. Pass NULL to unset.
+ *
+ * This event is triggered when an metadata from a friend is received.
+ */
+void tox_callback_friend_metadata(Tox *tox, tox_friend_metadata_cb *function, void *user_data);
 
 
 

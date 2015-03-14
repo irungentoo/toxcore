@@ -47,6 +47,9 @@
 #define PACKET_ID_TYPING 51
 #define PACKET_ID_MESSAGE 64
 #define PACKET_ID_ACTION 65
+/* Packet used to send meta data between clients */
+#define PACKET_ID_METADATA 66
+/* Packet ID used for sending/receiving calls */
 #define PACKET_ID_MSI 69
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
@@ -236,6 +239,8 @@ struct Messenger {
     void *friend_message_userdata;
     void (*friend_action)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *friend_action_userdata;
+    void (*friend_metadata)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void *friend_metadata_userdata;
     void (*friend_namechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *friend_namechange_userdata;
     void (*friend_statusmessagechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
@@ -377,6 +382,18 @@ int m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, ui
  *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
  */
 int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length, uint32_t *message_id);
+
+/* Send meta data to an online friend/client.
+ *
+ * return -1 if friend is not valid.
+ * return -2 if data is too large.
+ * return -3 if friend/client not online.
+ * return -4 if send failed (because queue is full).
+ * return 0 if success.
+ *
+ *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
+ */
+int m_sendmetadata(Messenger *m, int32_t friendnumber, const uint8_t *metadata, uint32_t length, uint32_t *message_id);
 
 /* Set the name and name_length of a friend.
  * name must be a string of maximum MAX_NAME_LENGTH length.

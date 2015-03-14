@@ -823,6 +823,12 @@ void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *
     m_callback_action(m, function, user_data);
 }
 
+void tox_callback_friend_metadata(Tox *tox, tox_friend_action_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    m_callback_metadata(m, function, user_data);
+}
+
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
 {
     if (!hash || !data) {
