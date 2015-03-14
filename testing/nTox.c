@@ -1347,6 +1347,7 @@ int main(int argc, char *argv[])
     }
 
     free(binary_string);
+    save_data_file(m, filename);
     tox_kill(m);
     endwin();
     return 0;
