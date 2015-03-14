@@ -344,7 +344,7 @@ struct Tox_Options {
      *
      * This member is ignored (it can be NULL) if proxy_enabled is false.
      */
-    const char *proxy_address;
+    char *proxy_address;
 
     /**
      * The port to use to connect to the proxy server.
