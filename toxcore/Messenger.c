@@ -1051,7 +1051,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
  * Maximum filename length is 255 bytes.
  *  return file number on success
  *  return -1 if friend not found.
- *  return -2 if filename too big.
+ *  return -2 if filename length invalid.
  *  return -3 if no more file sending slots left.
  *  return -4 if could not send packet (friend offline).
  *
@@ -1063,6 +1063,9 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
         return -1;
 
     if (filename_length > MAX_FILENAME_LENGTH)
+        return -2;
+
+    if (file_type == FILEKIND_AVATAR && filename_length != crypto_hash_sha256_BYTES)
         return -2;
 
     uint32_t i;
@@ -1937,8 +1940,13 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             uint8_t filenumber = data[0];
             uint64_t filesize;
             uint32_t file_type;
+            uint16_t filename_length = data_length - head_length;
             memcpy(&file_type, data + 1, sizeof(file_type));
             file_type = ntohl(file_type);
+
+            /* Check if the name is the right size if file is avatar. */
+            if (file_type == FILEKIND_AVATAR && filename_length != crypto_hash_sha256_BYTES)
+                break;
 
             memcpy(&filesize, data + 1 + sizeof(uint32_t), sizeof(filesize));
             net_to_host((uint8_t *) &filesize, sizeof(filesize));
@@ -1948,16 +1956,16 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             m->friendlist[i].file_receiving[filenumber].paused = FILE_PAUSE_NOT;
 
             /* Force NULL terminate file name. */
-            uint8_t filename_terminated[data_length - head_length + 1];
-            memcpy(filename_terminated, data + head_length, data_length - head_length);
-            filename_terminated[data_length - head_length] = 0;
+            uint8_t filename_terminated[filename_length + 1];
+            memcpy(filename_terminated, data + head_length, filename_length);
+            filename_terminated[filename_length] = 0;
 
             uint32_t real_filenumber = filenumber;
             real_filenumber += 1;
             real_filenumber <<= 16;
 
             if (m->file_sendrequest)
-                (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename_terminated, data_length - head_length,
+                (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename_terminated, filename_length,
                                        m->file_sendrequest_userdata);
 
             break;

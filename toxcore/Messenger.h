@@ -159,6 +159,12 @@ enum {
     FILECONTROL_RESUME_BROKEN
 };
 
+enum {
+    FILEKIND_DATA,
+    FILEKIND_AVATAR
+};
+
+
 typedef struct Messenger Messenger;
 
 typedef struct {
@@ -608,7 +614,7 @@ void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_
  * Maximum filename length is 255 bytes.
  *  return file number on success
  *  return -1 if friend not found.
- *  return -2 if filename too big.
+ *  return -2 if filename length invalid.
  *  return -3 if no more file sending slots left.
  *  return -4 if could not send packet (friend offline).
  *

@@ -1396,7 +1396,8 @@ enum TOX_FILE_KIND {
      */
     TOX_FILE_KIND_DATA,
     /**
-     * Avatar data. This consists of tox_hash(image) + image.
+     * Avatar filename. This consists of tox_hash(image).
+     * Avatar data. This consists of the image data.
      *
      * Avatars can be sent at any time the client wishes. Generally, a client will
      * send the avatar to a friend when that friend comes online, and to all
@@ -1406,8 +1407,8 @@ enum TOX_FILE_KIND {
      *
      * Clients who receive avatar send requests can reject it (by sending
      * TOX_FILE_CONTROL_CANCEL before any other controls), or accept it (by
-     * sending TOX_FILE_CONTROL_RESUME). The first chunk will contain the hash in
-     * its first TOX_HASH_LENGTH bytes. A client can compare this hash with a
+     * sending TOX_FILE_CONTROL_RESUME). The filename of length TOX_HASH_LENGTH bytes
+     * will contain the hash. A client can compare this hash with a
      * saved hash and send TOX_FILE_CONTROL_CANCEL to terminate the avatar
      * transfer if it matches.
      */
@@ -1551,9 +1552,10 @@ typedef enum TOX_ERR_FILE_SEND {
      */
     TOX_ERR_FILE_SEND_NAME_EMPTY,
     /**
-     * Filename length exceeded 255 bytes.
+     * Filename length exceeded 255 bytes or if kind was equal to TOX_FILE_KIND_AVATAR
+     * the length was not TOX_HASH_LENGTH.
      */
-    TOX_ERR_FILE_SEND_NAME_TOO_LONG,
+    TOX_ERR_FILE_SEND_NAME_INVALID_LENGTH,
     /**
      * Too many ongoing transfers. The maximum number of concurrent file transfers
      * is 256 per friend per direction (sending and receiving).
