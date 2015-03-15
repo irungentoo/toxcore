@@ -734,10 +734,10 @@ size_t gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_public
     size_t i, j, k = 0;
 
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; i++) {
-        if (!chat_id_equal(announce->self_requests[i].chat_id, SIG_PK(chat_public_key)))
+        if (! (announce->self_requests[i].ready == 1 && announce->self_requests[i].req_id != 0) )
             continue;
 
-        if (! (announce->self_requests[i].ready == 1 && announce->self_requests[i].req_id != 0) )
+        if (!chat_id_equal(announce->self_requests[i].chat_id, SIG_PK(chat_public_key)))
             continue;
 
         for (j = 0; j < MAX_GCA_SENT_NODES; j++) {
@@ -843,7 +843,7 @@ int handle_gca_ping_request(void *ancp, IP_Port ipp, const uint8_t *packet, uint
     return send_gca_ping_response(dht, ipp, data, public_key);
 }
 
-static int gca_send_ping_request(DHT *dht, GC_Announce_Node *node, uint64_t ping_id)
+static int send_gca_ping_request(DHT *dht, GC_Announce_Node *node, uint64_t ping_id)
 {
     uint8_t data[GCA_PING_REQUEST_PLAIN_SIZE];
     data[0] = NET_PACKET_GCA_PING_REQUEST;
@@ -877,7 +877,7 @@ static void ping_gca_nodes(GC_Announce *announce)
         uint64_t ping_id = random_64b();
         announce->announcements[i].ping_id = ping_id;
         announce->announcements[i].last_sent_ping = unix_time();
-        gca_send_ping_request(announce->dht, &announce->announcements[i].node, ping_id);
+        send_gca_ping_request(announce->dht, &announce->announcements[i].node, ping_id);
     }
 }
 
@@ -901,13 +901,10 @@ void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id)
 {
     size_t i;
 
-    /* Remove all self_requests for chat_id */
-    for (i = 0; i < MAX_GCA_SELF_REQUESTS; ++i) {
-        if (! (announce->self_requests[i].ready && announce->self_requests[i].req_id > 0) )
-            continue;
-
-        if (chat_id_equal(announce->self_requests[i].chat_id, chat_id))
-            memset(&announce->self_requests[i], 0, sizeof(struct GC_AnnounceRequest));
+    /* Remove self announcements for chat_id */
+    for (i = 0; i < MAX_GCA_ANNOUNCED_NODES; ++i) {
+        if (announce->announcements[i].self && chat_id_equal(announce->announcements[i].chat_id, chat_id))
+            reset_announcement(announce, i);
     }
 }
 

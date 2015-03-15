@@ -59,7 +59,7 @@ size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat
 /* Do some periodic work, currently removes expired announcements */
 void do_gca(struct GC_Announce *announce);
 
-/* Cleans up announce data (call on group exit) */
+/* Cleans up announcements related to chat_id (call on group exit) */
 void gca_cleanup(struct GC_Announce *announce, const uint8_t *chat_id);
 
 struct GC_Announce *new_gca(DHT *dht);

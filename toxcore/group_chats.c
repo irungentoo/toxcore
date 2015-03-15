@@ -2424,7 +2424,9 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id)
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_pk_hash = jenkins_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
 
-    gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
+    GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
+    if (gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes) == 0)
+        gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
 
     return groupnumber;
 }
