@@ -135,7 +135,7 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
                 break;
 
             default:
-                SET_ERROR_PARAMETER(error, TOX_ERR_PROXY_TYPE);
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_TYPE);
                 return NULL;
         }
 
@@ -150,7 +150,7 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
             if (m_options.ipv6enabled)
                 m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
 
-            if (!addr_resolve_or_parse_ip(options->proxy_address, &m_options.proxy_info.ip_port.ip, NULL)) {
+            if (!addr_resolve_or_parse_ip(options->proxy_host, &m_options.proxy_info.ip_port.ip, NULL)) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
                 //TODO: TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
                 return NULL;
@@ -249,7 +249,7 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
         return ret;
     } else { /* DHT only works on UDP. */
         if (DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key) == 0) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_ADDRESS);
+            SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
             return 0;
         }
 
@@ -275,7 +275,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
     }
 
     if (address_to_ip(m, address, &ip_port, &ip_port_v4) == -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_ADDRESS);
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
 
@@ -350,12 +350,12 @@ void tox_self_get_public_key(const Tox *tox, uint8_t *public_key)
         memcpy(public_key, m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
 }
 
-void tox_self_get_private_key(const Tox *tox, uint8_t *private_key)
+void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key)
 {
     const Messenger *m = tox;
 
-    if (private_key)
-        memcpy(private_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
+    if (secret_key)
+        memcpy(secret_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
 }
 
 bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET_INFO *error)
@@ -567,18 +567,18 @@ bool tox_friend_exists(const Tox *tox, uint32_t friend_number)
     return m_friend_exists(m, friend_number);
 }
 
-size_t tox_friend_list_size(const Tox *tox)
+size_t tox_self_get_friend_list_size(const Tox *tox)
 {
     const Messenger *m = tox;
     return count_friendlist(m);
 }
 
-void tox_friend_get_list(const Tox *tox, uint32_t *list)
+void tox_self_get_friend_list(const Tox *tox, uint32_t *list)
 {
     if (list) {
         const Messenger *m = tox;
         //TODO: size parameter?
-        copy_friendlist(m, list, tox_friend_list_size(tox));
+        copy_friendlist(m, list, tox_self_get_friend_list_size(tox));
     }
 }
 
@@ -965,7 +965,7 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
             return 0;
 
         case -6:
-            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_SENDQ);
             return 0;
 
         case -7:

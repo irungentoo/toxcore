@@ -615,7 +615,7 @@ loop_top:
         uint16_t counter = 0;
 
         for (i = 0; i < NUM_TOXES; ++i) {
-            for (j = 0; j < tox_friend_list_size(toxes[i]); ++j)
+            for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
                 if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_UDP)
                     ++counter;
         }

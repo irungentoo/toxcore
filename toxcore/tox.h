@@ -211,6 +211,11 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
 #define TOX_PUBLIC_KEY_SIZE              32
 
 /**
+ * The size of a Tox Secret Key in bytes.
+ */
+#define TOX_SECRET_KEY_SIZE              32
+
+/**
  * The size of a Tox address in bytes. Tox addresses are in the format
  * [Public Key (TOX_PUBLIC_KEY_SIZE bytes)][nospam (4 bytes)][checksum (2 bytes)].
  *
@@ -344,7 +349,7 @@ struct Tox_Options {
      *
      * This member is ignored (it can be NULL) if proxy_enabled is false.
      */
-    char *proxy_address;
+    const char *proxy_host;
 
     /**
      * The port to use to connect to the proxy server.
@@ -443,9 +448,9 @@ typedef enum TOX_ERR_NEW {
     /**
      * proxy_type was invalid.
      */
-    TOX_ERR_PROXY_TYPE,
+    TOX_ERR_NEW_PROXY_BAD_TYPE,
     /**
-     * proxy_type was valid but the proxy_address passed had an invalid format
+     * proxy_type was valid but the proxy_host passed had an invalid format
      * or was NULL.
      */
     TOX_ERR_NEW_PROXY_BAD_HOST,
@@ -454,7 +459,7 @@ typedef enum TOX_ERR_NEW {
      */
     TOX_ERR_NEW_PROXY_BAD_PORT,
     /**
-     * The proxy address passed could not be resolved.
+     * The proxy host passed could not be resolved.
      */
     TOX_ERR_NEW_PROXY_NOT_FOUND,
     /**
@@ -542,10 +547,10 @@ typedef enum TOX_ERR_BOOTSTRAP {
     TOX_ERR_BOOTSTRAP_OK,
     TOX_ERR_BOOTSTRAP_NULL,
     /**
-     * The address could not be resolved to an IP address, or the IP address
+     * The host could not be resolved to an IP address, or the IP address
      * passed was invalid.
      */
-    TOX_ERR_BOOTSTRAP_BAD_ADDRESS,
+    TOX_ERR_BOOTSTRAP_BAD_HOST,
     /**
      * The port passed was invalid. The valid port range is (1, 65535).
      */
@@ -564,14 +569,14 @@ typedef enum TOX_ERR_BOOTSTRAP {
  * also use the TCP connection when NAT hole punching is slow, and later switch
  * to UDP if hole punching succeeds.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the node.
+ * @param host The hostname or IP address (IPv4 or IPv6) of the node.
  * @param port The port on the host on which the bootstrap Tox instance is
  *   listening.
  * @param public_key The long term public key of the bootstrap node
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
+bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
 
 
 /**
@@ -581,13 +586,13 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
  * the same bootstrap node, or to add TCP relays without using them as
  * bootstrap nodes.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the TCP relay.
+ * @param host The hostname or IP address (IPv4 or IPv6) of the TCP relay.
  * @param port The port on the host on which the TCP relay is listening.
  * @param public_key The long term public key of the TCP relay
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key,
+bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key,
                        TOX_ERR_BOOTSTRAP *error);
 
 
@@ -697,7 +702,7 @@ void tox_self_get_public_key(const Tox *tox, uint8_t *public_key);
 /**
  * Copy the secret key from the Tox object.
  *
- * @param secret_key A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If
+ * @param secret_key A memory region of at least TOX_SECRET_KEY_SIZE bytes. If
  *   this parameter is NULL, this function has no effect.
  */
 void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key);
@@ -978,20 +983,20 @@ bool tox_friend_exists(const Tox *tox, uint32_t friend_number);
  * Return the number of friends on the friend list.
  *
  * This function can be used to determine how much memory to allocate for
- * tox_friend_list.
+ * tox_self_get_friend_list.
  */
-size_t tox_friend_list_size(const Tox *tox);
+size_t tox_self_get_friend_list_size(const Tox *tox);
 
 
 /**
  * Copy a list of valid friend numbers into an array.
  *
- * Call tox_friend_list_size to determine the number of elements to allocate.
+ * Call tox_self_get_friend_list_size to determine the number of elements to allocate.
  *
  * @param list A memory region with enough space to hold the friend list. If
  *   this parameter is NULL, this function has no effect.
  */
-void tox_friend_get_list(const Tox *tox, uint32_t *list);
+void tox_self_get_friend_list(const Tox *tox, uint32_t *list);
 
 
 
@@ -1096,7 +1101,7 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
  *   tox_friend_get_status_message_size.
  */
 typedef void tox_friend_status_message_cb(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
-        void *user_data);
+                                          void *user_data);
 
 /**
  * Set the callback for the `friend_status_message` event. Pass NULL to unset.
@@ -1155,7 +1160,7 @@ TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_
  *   tox_friend_get_connection_status on the passed friend_number.
  */
 typedef void tox_friend_connection_status_cb(Tox *tox, uint32_t friend_number, TOX_CONNECTION connection_status,
-        void *user_data);
+                                             void *user_data);
 
 /**
  * Set the callback for the `friend_connection_status` event. Pass NULL to
@@ -1655,7 +1660,7 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
     /**
      * Packet queue is full.
      */
-    TOX_ERR_FILE_SEND_CHUNK_QUEUE_FULL,
+    TOX_ERR_FILE_SEND_CHUNK_SENDQ,
     /**
      * Position parameter was wrong.
      */
@@ -1893,7 +1898,7 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
  * @param length The length of the packet data byte array.
  */
 typedef void tox_friend_lossless_packet_cb(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-        void *user_data);
+                                           void *user_data);
 
 /**
  * Set the callback for the `friend_lossless_packet` event. Pass NULL to unset.
