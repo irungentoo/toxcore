@@ -468,7 +468,7 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
 
     chat->connection_state = CS_CONNECTED;
 
-    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
+    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
@@ -921,7 +921,7 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber)
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest)
 {
-    memcpy(dest, SIG_PK(chat->chat_public_key), SIG_PUBLIC_KEY);
+    memcpy(dest, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 }
 
 int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, int peernumber,
@@ -2138,7 +2138,7 @@ void do_gc(GC_Session *c)
                 ++chat->join_attempts;
                 chat->self_last_rcvd_ping = unix_time();
                 gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
-                                           chat->chat_public_key);
+                                           CHAT_ID(chat->chat_public_key));
             }
 
             chat->connection_state = CS_DISCONNECTED;
@@ -2146,7 +2146,7 @@ void do_gc(GC_Session *c)
 
         else if (chat->connection_state == CS_DISCONNECTED) {
             GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
-            uint32_t num_nodes = gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes);
+            uint32_t num_nodes = gca_get_requested_nodes(c->announce, CHAT_ID(chat->chat_public_key), nodes);
             //fprintf(stderr, "num_nodes %d\n", num_nodes);
 
             if (num_nodes && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
@@ -2358,7 +2358,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 
     free(self);
 
-    gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
+    gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
 
     return groupnumber;
 }
@@ -2394,7 +2394,8 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
         return -1;
     }
 
-    if (gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key) == -1) {
+    if (gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key,
+                                  CHAT_ID(chat->chat_public_key)) == -1) {
         group_delete(c, chat);
         return -1;
     }
@@ -2425,8 +2426,8 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id)
     chat->chat_pk_hash = jenkins_hash(chat->chat_public_key, EXT_PUBLIC_KEY);
 
     GC_Announce_Node nodes[MAX_GCA_SELF_REQUESTS];
-    if (gca_get_requested_nodes(c->announce, chat->chat_public_key, nodes) == 0)
-        gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, chat->chat_public_key);
+    if (gca_get_requested_nodes(c->announce, CHAT_ID(chat->chat_public_key), nodes) == 0)
+        gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
 
     return groupnumber;
 }
@@ -2503,7 +2504,7 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
     uint8_t packet[MAX_GC_PACKET_SIZE];
     packet[0] = GP_FRIEND_INVITE;
 
-    memcpy(packet + 1, SIG_PK(chat->chat_public_key), CHAT_ID_SIZE);
+    memcpy(packet + 1, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 
     GC_Announce_Node self_node;
     if (make_self_gca_node(c->messenger->dht, &self_node, chat->self_public_key) == -1)
@@ -2591,7 +2592,7 @@ static int group_delete(GC_Session* c, GC_Chat *chat)
     if (c == NULL)
         return -1;
 
-    gca_cleanup(c->announce, chat->chat_public_key);
+    gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
     gcc_cleanup(chat);
     kill_groupcredentials(chat->credentials);
     free(chat->group);

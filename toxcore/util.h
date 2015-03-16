@@ -44,6 +44,7 @@
 #define ENC_KEY(key) (key)
 #define SIG_PK(key) (key + ENC_PUBLIC_KEY)
 #define SIG_SK(key) (key + ENC_SECRET_KEY)
+#define CHAT_ID(key) (key + ENC_PUBLIC_KEY)
 #define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
 #define CERT_TARGET_KEY(cert) (cert + 1)
 #define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERT_SIGNED_SIZE)
