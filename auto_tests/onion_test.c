@@ -280,6 +280,7 @@ Onions *new_onions(uint16_t port)
     if (on->onion && on->onion_a && on->onion_c)
         return on;
 
+    free(on);
     return NULL;
 }
 
