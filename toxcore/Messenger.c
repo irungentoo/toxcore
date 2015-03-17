@@ -1155,7 +1155,7 @@ int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t s
     packet[2] = control_type;
 
     if (data_length) {
-        memcpy(packet, packet + 3, data_length);
+        memcpy(packet + 3, data, data_length);
     }
 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, sizeof(packet), 0);
@@ -1240,6 +1240,71 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
                 ft->paused ^=  FILE_PAUSE_US;
             }
         }
+    } else {
+        return -8;
+    }
+
+    return 0;
+}
+
+/* Send a seek file control request.
+ *
+ *  return 0 on success
+ *  return -1 if friend not valid.
+ *  return -2 if friend not online.
+ *  return -3 if file number invalid.
+ *  return -4 if not receiving file.
+ *  return -5 if file status wrong.
+ *  return -6 if position bad.
+ *  return -8 if packet failed to send.
+ */
+int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -2;
+
+    uint32_t temp_filenum;
+    uint8_t send_receive, file_number;
+
+    if (filenumber >= (1 << 16)) {
+        send_receive = 1;
+        temp_filenum = (filenumber >> 16) - 1;
+    } else {
+        return -4;
+    }
+
+    if (temp_filenum >= MAX_CONCURRENT_FILE_PIPES)
+        return -3;
+
+    file_number = temp_filenum;
+
+    struct File_Transfers *ft;
+
+    if (send_receive) {
+        ft = &m->friendlist[friendnumber].file_receiving[file_number];
+    } else {
+        ft = &m->friendlist[friendnumber].file_sending[file_number];
+    }
+
+    if (ft->status == FILESTATUS_NONE)
+        return -3;
+
+    if (ft->status != FILESTATUS_NOT_ACCEPTED)
+        return -5;
+
+    if (ft->size && position > ft->size) {
+        return -6;
+    }
+
+    uint64_t sending_pos = position;
+    host_to_net((uint8_t *)&sending_pos, sizeof(sending_pos));
+
+    if (send_file_control_packet(m, friendnumber, send_receive, file_number, FILECONTROL_SEEK, (uint8_t *)&sending_pos,
+                                 sizeof(sending_pos))) {
+        ft->transferred = position;
     } else {
         return -8;
     }
@@ -1473,7 +1538,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
     if (receive_send > 1)
         return -1;
 
-    if (control_type > FILECONTROL_RESUME_BROKEN)
+    if (control_type > FILECONTROL_SEEK)
         return -1;
 
     uint32_t real_filenumber = filenumber;
@@ -1518,8 +1583,26 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
             --m->friendlist[friendnumber].num_sending_files;
         }
 
-    } else if (control_type == FILECONTROL_RESUME_BROKEN) {
-        //TODO
+    } else if (control_type == FILECONTROL_SEEK) {
+        uint64_t position;
+
+        if (length != sizeof(position)) {
+            return -1;
+        }
+
+        /* seek can only be sent by the receiver to seek before resuming broken tranfers. */
+        if (ft->status != FILESTATUS_NOT_ACCEPTED || !receive_send) {
+            return -1;
+        }
+
+        memcpy(&position, data, sizeof(position));
+        net_to_host((uint8_t *) &position, sizeof(position));
+
+        if (ft->size && position > ft->size) {
+            return -1;
+        }
+
+        ft->transferred = ft->requested = position;
     } else {
         return -1;
     }

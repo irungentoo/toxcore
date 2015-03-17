@@ -100,6 +100,9 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
     return;
 }
 
+uint64_t size_recv;
+uint64_t sending_pos;
+
 uint8_t file_cmp_id[TOX_FILE_ID_LENGTH];
 uint8_t filenum;
 uint32_t file_accepted;
@@ -137,6 +140,15 @@ void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, ui
     }
 
     file_size = filesize;
+    sending_pos = size_recv = 1337;
+
+    TOX_ERR_FILE_SEEK err_s;
+
+    if (!tox_file_send_seek(tox, friend_number, file_number, 1337, &err_s)) {
+        ck_abort_msg("tox_file_send_seek error");
+    }
+
+    ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_OK, "tox_file_send_seek wrong error");
 
     TOX_ERR_FILE_CONTROL error;
 
@@ -145,6 +157,12 @@ void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, ui
     } else {
         ck_abort_msg("tox_file_send_control failed. %i", error);
     }
+
+    if (tox_file_send_seek(tox, friend_number, file_number, 1234, &err_s)) {
+        ck_abort_msg("tox_file_send_seek no error");
+    }
+
+    ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_DENIED, "tox_file_send_seek wrong error");
 }
 
 uint32_t sendf_ok;
@@ -160,7 +178,6 @@ void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, 
 }
 
 uint8_t sending_num;
-uint64_t sending_pos;
 _Bool file_sending_done;
 void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
                             void *user_data)
@@ -173,7 +190,7 @@ void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_numb
     }
 
     if (sending_pos != position) {
-        ck_abort_msg("Bad position");
+        ck_abort_msg("Bad position %llu", position);
         return;
     }
 
@@ -199,7 +216,6 @@ void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_numb
 }
 
 
-uint64_t size_recv;
 uint8_t num;
 _Bool file_recv;
 void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
@@ -549,7 +565,6 @@ START_TEST(test_few_clients)
     ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
-
     while (1) {
         tox_iterate(tox1);
         tox_iterate(tox2);
@@ -559,8 +574,8 @@ START_TEST(test_few_clients)
             if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv) {
                 break;
             } else {
-                ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u", sendf_ok, file_recv, totalf_size == file_size,
-                             size_recv == file_size, sending_pos == size_recv);
+                ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
+                             totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, totalf_size, size_recv, sending_pos);
             }
         }
 

@@ -159,7 +159,7 @@ enum {
     FILECONTROL_ACCEPT,
     FILECONTROL_PAUSE,
     FILECONTROL_KILL,
-    FILECONTROL_RESUME_BROKEN
+    FILECONTROL_SEEK
 };
 
 enum {
@@ -647,6 +647,19 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
  *  return -8 if packet failed to send.
  */
 int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, unsigned int control);
+
+/* Send a seek file control request.
+ *
+ *  return 0 on success
+ *  return -1 if friend not valid.
+ *  return -2 if friend not online.
+ *  return -3 if file number invalid.
+ *  return -4 if not receiving file.
+ *  return -5 if file status wrong.
+ *  return -6 if position bad.
+ *  return -8 if packet failed to send.
+ */
+int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position);
 
 /* Send file data.
  *

@@ -1539,6 +1539,48 @@ typedef void tox_file_recv_control_cb(Tox *tox, uint32_t friend_number, uint32_t
 void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function, void *user_data);
 
 
+typedef enum TOX_ERR_FILE_SEEK {
+    TOX_ERR_FILE_SEEK_OK,
+    /**
+     * The friend_number passed did not designate a valid friend.
+     */
+    TOX_ERR_FILE_SEEK_FRIEND_NOT_FOUND,
+    /**
+     * This client is currently not connected to the friend.
+     */
+    TOX_ERR_FILE_SEEK_FRIEND_NOT_CONNECTED,
+    /**
+     * No file transfer with the given file number was found for the given friend.
+     */
+    TOX_ERR_FILE_SEEK_NOT_FOUND,
+    /**
+     * File was not in a state where it could be seeked.
+     */
+    TOX_ERR_FILE_SEEK_DENIED,
+    /**
+     * Seek position was invalid
+     */
+    TOX_ERR_FILE_SEEK_INVALID_POSITION,
+    /**
+     * Packet failed to send.
+     */
+    TOX_ERR_FILE_SEEK_SEND_FAILED
+} TOX_ERR_FILE_SEEK;
+
+/**
+ * Sends a file seek control command to a friend for a given file transfer.
+ *
+ * This function can only be called to resume a file transfer right before
+ * TOX_FILE_CONTROL_RESUME is sent.
+ *
+ * @param friend_number The friend number of the friend the file is being
+ *   transferred to.
+ * @param file_number The friend-specific identifier for the file transfer.
+ * @param position The position that the file should be seeked to.
+ */
+bool tox_file_send_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                        TOX_ERR_FILE_SEEK *error);
+
 typedef enum TOX_ERR_FILE_GET {
     TOX_ERR_FILE_GET_OK,
     /**

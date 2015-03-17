@@ -883,6 +883,48 @@ bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_numbe
     return 0;
 }
 
+bool tox_file_send_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                        TOX_ERR_FILE_SEEK *error)
+{
+    Messenger *m = tox;
+    int ret = file_seek(m, friend_number, file_number, position);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_OK);
+        return 1;
+    }
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_FRIEND_NOT_FOUND);
+            return 0;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_FRIEND_NOT_CONNECTED);
+            return 0;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_NOT_FOUND);
+            return 0;
+
+        case -4:
+        case -5:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_DENIED);
+            return 0;
+
+        case -6:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_INVALID_POSITION);
+            return 0;
+
+        case -8:
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_SEND_FAILED);
+            return 0;
+    }
+
+    /* can't happen */
+    return 0;
+}
+
 void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function, void *user_data)
 {
     Messenger *m = tox;
