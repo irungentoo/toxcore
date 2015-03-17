@@ -1515,19 +1515,20 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
 }
 
 /* Run this when the friend disconnects.
- *  Sets all current file transfers to broken.
+ *  Kill all current file transfers.
  */
 static void break_files(const Messenger *m, int32_t friendnumber)
 {
     uint32_t i;
-    /* TODO
-        for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
-            if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE)
-                m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_BROKEN;
 
-            if (m->friendlist[friendnumber].file_receiving[i].status != FILESTATUS_NONE)
-                m->friendlist[friendnumber].file_receiving[i].status = FILESTATUS_BROKEN;
-        }*/
+    //TODO: Inform the client which file transfers get killed with a callback?
+    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+        if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE)
+            m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NONE;
+
+        if (m->friendlist[friendnumber].file_receiving[i].status != FILESTATUS_NONE)
+            m->friendlist[friendnumber].file_receiving[i].status = FILESTATUS_NONE;
+    }
 }
 
 /* return -1 on failure, 0 on success.
