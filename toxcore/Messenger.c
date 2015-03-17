@@ -1115,9 +1115,6 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     if (filename_length > MAX_FILENAME_LENGTH)
         return -2;
 
-    if (file_type == FILEKIND_AVATAR && filename_length != crypto_hash_sha256_BYTES)
-        return -2;
-
     uint32_t i;
 
     for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
@@ -2005,10 +2002,15 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             ft->paused = FILE_PAUSE_NOT;
             memcpy(ft->id, data + 1 + sizeof(uint32_t) + sizeof(uint64_t), FILE_ID_LENGTH);
 
-            /* Force NULL terminate file name. */
             uint8_t filename_terminated[filename_length + 1];
-            memcpy(filename_terminated, data + head_length, filename_length);
-            filename_terminated[filename_length] = 0;
+            uint8_t *filename = NULL;
+
+            if (filename_length) {
+                /* Force NULL terminate file name. */
+                memcpy(filename_terminated, data + head_length, filename_length);
+                filename_terminated[filename_length] = 0;
+                filename = filename_terminated;
+            }
 
             uint32_t real_filenumber = filenumber;
             real_filenumber += 1;

@@ -910,7 +910,7 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
 uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *file_id,
                        const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error)
 {
-    if (!filename) {
+    if (filename_length && !filename) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NULL);
         return UINT32_MAX;
     }

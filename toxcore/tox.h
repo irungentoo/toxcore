@@ -1584,10 +1584,6 @@ typedef enum TOX_ERR_FILE_SEND {
      */
     TOX_ERR_FILE_SEND_FRIEND_NOT_CONNECTED,
     /**
-     * Filename length was 0.
-     */
-    TOX_ERR_FILE_SEND_NAME_EMPTY,
-    /**
      * Filename length exceeded 255 bytes.
      */
     TOX_ERR_FILE_SEND_NAME_INVALID_LENGTH,
