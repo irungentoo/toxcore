@@ -907,7 +907,7 @@ bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_numbe
             return 0;
 
         case -8:
-            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_SEND_FAILED);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_SENDQ);
             return 0;
     }
 
@@ -949,7 +949,7 @@ bool tox_file_send_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, 
             return 0;
 
         case -8:
-            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_SEND_FAILED);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_SENDQ);
             return 0;
     }
 

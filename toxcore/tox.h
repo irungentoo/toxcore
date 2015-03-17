@@ -1498,9 +1498,9 @@ typedef enum TOX_ERR_FILE_CONTROL {
      */
     TOX_ERR_FILE_CONTROL_ALREADY_PAUSED,
     /**
-     * Packet failed to send.
+     * Packet queue is full.
      */
-    TOX_ERR_FILE_CONTROL_SEND_FAILED
+    TOX_ERR_FILE_CONTROL_SENDQ
 } TOX_ERR_FILE_CONTROL;
 
 /**
@@ -1563,9 +1563,9 @@ typedef enum TOX_ERR_FILE_SEEK {
      */
     TOX_ERR_FILE_SEEK_INVALID_POSITION,
     /**
-     * Packet failed to send.
+     * Packet queue is full.
      */
-    TOX_ERR_FILE_SEEK_SEND_FAILED
+    TOX_ERR_FILE_SEEK_SENDQ
 } TOX_ERR_FILE_SEEK;
 
 /**
