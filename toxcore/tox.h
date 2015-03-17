@@ -1628,7 +1628,7 @@ typedef enum TOX_ERR_FILE_SEND {
     /**
      * Filename length exceeded 255 bytes.
      */
-    TOX_ERR_FILE_SEND_NAME_INVALID_LENGTH,
+    TOX_ERR_FILE_SEND_NAME_TOO_LONG,
     /**
      * Too many ongoing transfers. The maximum number of concurrent file transfers
      * is 256 per friend per direction (sending and receiving).

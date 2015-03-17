@@ -979,7 +979,7 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
             return UINT32_MAX;
 
         case -2:
-            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NAME_INVALID_LENGTH);
+            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NAME_TOO_LONG);
             return UINT32_MAX;
 
         case -3:
