@@ -38,6 +38,38 @@ typedef struct Messenger Tox;
 
 #define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
 
+#if TOX_HASH_LENGTH != crypto_hash_sha256_BYTES
+#error TOX_HASH_LENGTH is assumed to be equal to crypto_hash_sha256_BYTES
+#endif
+
+#if FILE_ID_LENGTH != crypto_box_KEYBYTES
+#error FILE_ID_LENGTH is assumed to be equal to crypto_box_KEYBYTES
+#endif
+
+#if TOX_FILE_ID_LENGTH != crypto_box_KEYBYTES
+#error TOX_FILE_ID_LENGTH is assumed to be equal to crypto_box_KEYBYTES
+#endif
+
+#if TOX_FILE_ID_LENGTH != TOX_HASH_LENGTH
+#error TOX_FILE_ID_LENGTH is assumed to be equal to TOX_HASH_LENGTH
+#endif
+
+#if TOX_PUBLIC_KEY_SIZE != crypto_box_PUBLICKEYBYTES
+#error TOX_PUBLIC_KEY_SIZE is assumed to be equal to crypto_box_PUBLICKEYBYTES
+#endif
+
+#if TOX_SECRET_KEY_SIZE != crypto_box_SECRETKEYBYTES
+#error TOX_SECRET_KEY_SIZE is assumed to be equal to crypto_box_SECRETKEYBYTES
+#endif
+
+#if TOX_MAX_NAME_LENGTH != MAX_NAME_LENGTH
+#error TOX_MAX_NAME_LENGTH is assumed to be equal to MAX_NAME_LENGTH
+#endif
+
+#if TOX_MAX_STATUS_MESSAGE_LENGTH != MAX_STATUSMESSAGE_LENGTH
+#error TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH
+#endif
+
 uint32_t tox_version_major(void)
 {
     return 0;
