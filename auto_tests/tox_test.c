@@ -305,9 +305,9 @@ START_TEST(test_one)
     tox_self_set_name(tox1, name, sizeof(name), 0);
     ck_assert_msg(tox_self_get_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
 
-    size_t save_size = tox_save_size(tox1);
+    size_t save_size = tox_get_savedata_size(tox1);
     uint8_t data[save_size];
-    tox_save(tox1, data);
+    tox_get_savedata(tox1, data);
 
     tox_kill(tox2);
     TOX_ERR_NEW err_n;

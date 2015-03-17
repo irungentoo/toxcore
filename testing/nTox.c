@@ -965,9 +965,9 @@ static int save_data(Tox *m)
     }
 
     int res = 1;
-    size_t size = tox_save_size(m);
+    size_t size = tox_get_savedata_size(m);
     uint8_t data[size];
-    tox_save(m, data);
+    tox_get_savedata(m, data);
 
     if (fwrite(data, sizeof(uint8_t), size, data_file) != size) {
         fputs("[!] could not write data file (1)!", stderr);

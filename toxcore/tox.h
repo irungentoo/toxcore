@@ -497,14 +497,14 @@ typedef enum TOX_ERR_NEW {
  * loop with a new instance will operate correctly.
  *
  * If the data parameter is not NULL, this function will load the Tox instance
- * from a byte array previously filled by tox_save.
+ * from a byte array previously filled by tox_get_savedata.
  *
  * If loading failed or succeeded only partially, the new or partially loaded
  * instance is returned and an error code is set.
  *
  * @param options An options object as described above. If this parameter is
  *   NULL, the default options are used.
- * @param data A byte array containing data previously stored by tox_save.
+ * @param data A byte array containing data previously stored by tox_get_savedata.
  * @param length The length of the byte array data. If this parameter is 0, the
  *   data parameter is ignored.
  *
@@ -525,20 +525,21 @@ void tox_kill(Tox *tox);
 
 /**
  * Calculates the number of bytes required to store the tox instance with
- * tox_save. This function cannot fail. The result is always greater than 0.
+ * tox_get_savedata. This function cannot fail. The result is always greater
+ * than 0.
  *
  * @see threading for concurrency implications.
  */
-size_t tox_save_size(const Tox *tox);
+size_t tox_get_savedata_size(const Tox *tox);
 
 /**
  * Store all information associated with the tox instance to a byte array.
  *
  * @param data A memory region large enough to store the tox instance data.
- *   Call tox_save_size to find the number of bytes required. If this parameter
+ *   Call tox_get_savedata_size to find the number of bytes required. If this parameter
  *   is NULL, this function has no effect.
  */
-void tox_save(const Tox *tox, uint8_t *data);
+void tox_get_savedata(const Tox *tox, uint8_t *data);
 
 
 /*******************************************************************************

@@ -66,7 +66,7 @@ int tox_pass_salt_length()
 /*  return size of the messenger data (for encrypted saving). */
 uint32_t tox_encrypted_size(const Tox *tox)
 {
-    return tox_save_size(tox) + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+    return tox_get_savedata_size(tox) + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
 }
 
 /* This retrieves the salt used to encrypt the given data, which can then be passed to
@@ -205,9 +205,9 @@ int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase
 int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength)
 {
     /* first get plain save data */
-    uint32_t temp_size = tox_save_size(tox);
+    uint32_t temp_size = tox_get_savedata_size(tox);
     uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
+    tox_get_savedata(tox, temp_data);
 
     /* now encrypt */
     return tox_pass_encrypt(temp_data, temp_size, passphrase, pplength, data);
@@ -222,9 +222,9 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
 int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key)
 {
     /* first get plain save data */
-    uint32_t temp_size = tox_save_size(tox);
+    uint32_t temp_size = tox_get_savedata_size(tox);
     uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
+    tox_get_savedata(tox, temp_data);
 
     /* encrypt */
     return tox_pass_key_encrypt(temp_data, temp_size, key, data);

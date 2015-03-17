@@ -224,13 +224,13 @@ void tox_kill(Tox *tox)
     logger_kill_global();
 }
 
-size_t tox_save_size(const Tox *tox)
+size_t tox_get_savedata_size(const Tox *tox)
 {
     const Messenger *m = tox;
     return messenger_size(m);
 }
 
-void tox_save(const Tox *tox, uint8_t *data)
+void tox_get_savedata(const Tox *tox, uint8_t *data)
 {
     if (data) {
         const Messenger *m = tox;
