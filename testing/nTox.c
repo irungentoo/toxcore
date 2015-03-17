@@ -158,8 +158,8 @@ uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
     fseek(tempfile, 0, SEEK_SET);
-    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_KIND_DATA, filesize, (uint8_t *)filename, strlen(filename) + 1,
-                                     0);
+    uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename,
+                                     strlen(filename), 0);
 
     if (filenum == -1)
         return -1;

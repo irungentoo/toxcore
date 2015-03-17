@@ -125,6 +125,8 @@ typedef enum {
 }
 USERSTATUS;
 
+#define FILE_ID_LENGTH 32
+
 struct File_Transfers {
     uint64_t size;
     uint64_t transferred;
@@ -133,6 +135,7 @@ struct File_Transfers {
     uint32_t last_packet_number; /* number of the last packet sent. */
     uint64_t requested; /* total data requested by the request chunk callback */
     unsigned int slots_allocated; /* number of slots allocated to this transfer. */
+    uint8_t id[FILE_ID_LENGTH];
 };
 enum {
     FILESTATUS_NONE,
@@ -610,6 +613,15 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
 void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *),
                             void *userdata);
 
+
+/* Copy the file transfer file id to file_id
+ *
+ * return 0 on success.
+ * return -1 if friend not valid.
+ * return -2 if filenumber not valid
+ */
+int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint8_t *file_id);
+
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
  *  return file number on success
@@ -620,7 +632,7 @@ void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_
  *
  */
 long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
-                        const uint8_t *filename, uint16_t filename_length);
+                        const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length);
 
 /* Send a file control request.
  *

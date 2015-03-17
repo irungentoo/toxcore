@@ -889,21 +889,42 @@ void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function
     callback_file_control(m, function, user_data);
 }
 
-uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *filename,
-                       size_t filename_length, TOX_ERR_FILE_SEND *error)
+bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t *file_id,
+                          TOX_ERR_FILE_GET *error)
+{
+    const Messenger *m = tox;
+    int ret = file_get_id(m, friend_number, file_number, file_id);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_OK);
+        return 1;
+    } else if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_FRIEND_NOT_FOUND);
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NOT_FOUND);
+    }
+
+    return 0;
+}
+
+uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *file_id,
+                       const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error)
 {
     if (!filename) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NULL);
         return UINT32_MAX;
     }
 
-    if (!filename_length) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NAME_EMPTY);
-        return UINT32_MAX;
+    uint8_t f_id[FILE_ID_LENGTH];
+
+    if (!file_id) {
+        /* Tox keys are 32 bytes like FILE_ID_LENGTH. */
+        new_symmetric_key(f_id);
+        file_id = f_id;
     }
 
     Messenger *m = tox;
-    long int file_num = new_filesender(m, friend_number, kind, file_size, filename, filename_length);
+    long int file_num = new_filesender(m, friend_number, kind, file_size, file_id, filename, filename_length);
 
     if (file_num >= 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_OK);

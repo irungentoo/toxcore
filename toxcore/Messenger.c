@@ -1023,13 +1023,58 @@ void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_
 
 #define MAX_FILENAME_LENGTH 255
 
+/* Copy the file transfer file id to file_id
+ *
+ * return 0 on success.
+ * return -1 if friend not valid.
+ * return -2 if filenumber not valid
+ */
+int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint8_t *file_id)
+{
+    if (friend_not_valid(m, friendnumber))
+        return -1;
+
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
+        return -2;
+
+    uint32_t temp_filenum;
+    uint8_t send_receive, file_number;
+
+    if (filenumber >= (1 << 16)) {
+        send_receive = 1;
+        temp_filenum = (filenumber >> 16) - 1;
+    } else {
+        send_receive = 0;
+        temp_filenum = filenumber;
+    }
+
+    if (temp_filenum >= MAX_CONCURRENT_FILE_PIPES)
+        return -2;
+
+    file_number = temp_filenum;
+
+    struct File_Transfers *ft;
+
+    if (send_receive) {
+        ft = &m->friendlist[friendnumber].file_receiving[file_number];
+    } else {
+        ft = &m->friendlist[friendnumber].file_sending[file_number];
+    }
+
+    if (ft->status == FILESTATUS_NONE)
+        return -2;
+
+    memcpy(file_id, ft->id, FILE_ID_LENGTH);
+    return 0;
+}
+
 /* Send a file send request.
  * Maximum filename length is 255 bytes.
  *  return 1 on success
  *  return 0 on failure
  */
 static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint32_t file_type,
-                            uint64_t filesize, const uint8_t *filename, uint16_t filename_length)
+                            uint64_t filesize, const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
         return 0;
@@ -1037,13 +1082,18 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
     if (filename_length > MAX_FILENAME_LENGTH)
         return 0;
 
-    uint8_t packet[1 + sizeof(file_type) + sizeof(filesize) + filename_length];
+    uint8_t packet[1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length];
     packet[0] = filenumber;
     file_type = htonl(file_type);
     memcpy(packet + 1, &file_type, sizeof(file_type));
     host_to_net((uint8_t *)&filesize, sizeof(filesize));
     memcpy(packet + 1 + sizeof(file_type), &filesize, sizeof(filesize));
-    memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize), filename, filename_length);
+    memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize), file_id, FILE_ID_LENGTH);
+
+    if (filename_length) {
+        memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH, filename, filename_length);
+    }
+
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, sizeof(packet), 0);
 }
 
@@ -1057,7 +1107,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
  *
  */
 long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
-                        const uint8_t *filename, uint16_t filename_length)
+                        const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -1078,7 +1128,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     if (i == MAX_CONCURRENT_FILE_PIPES)
         return -3;
 
-    if (file_sendrequest(m, friendnumber, i, file_type, filesize, filename, filename_length) == 0)
+    if (file_sendrequest(m, friendnumber, i, file_type, filesize, file_id, filename, filename_length) == 0)
         return -4;
 
     struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
@@ -1088,6 +1138,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     ft->requested = 0;
     ft->slots_allocated = 0;
     ft->paused = FILE_PAUSE_NOT;
+    memcpy(ft->id, file_id, FILE_ID_LENGTH);
 
     ++m->friendlist[friendnumber].num_sending_files;
 
@@ -1932,9 +1983,9 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_FILE_SENDREQUEST: {
-            const unsigned int head_length = 1 + sizeof(uint32_t) + sizeof(uint64_t);
+            const unsigned int head_length = 1 + sizeof(uint32_t) + sizeof(uint64_t) + FILE_ID_LENGTH;
 
-            if (data_length < head_length + 1)
+            if (data_length < head_length)
                 break;
 
             uint8_t filenumber = data[0];
@@ -1944,16 +1995,15 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             memcpy(&file_type, data + 1, sizeof(file_type));
             file_type = ntohl(file_type);
 
-            /* Check if the name is the right size if file is avatar. */
-            if (file_type == FILEKIND_AVATAR && filename_length != crypto_hash_sha256_BYTES)
-                break;
-
             memcpy(&filesize, data + 1 + sizeof(uint32_t), sizeof(filesize));
             net_to_host((uint8_t *) &filesize, sizeof(filesize));
-            m->friendlist[i].file_receiving[filenumber].status = FILESTATUS_NOT_ACCEPTED;
-            m->friendlist[i].file_receiving[filenumber].size = filesize;
-            m->friendlist[i].file_receiving[filenumber].transferred = 0;
-            m->friendlist[i].file_receiving[filenumber].paused = FILE_PAUSE_NOT;
+            struct File_Transfers *ft = &m->friendlist[i].file_receiving[filenumber];
+
+            ft->status = FILESTATUS_NOT_ACCEPTED;
+            ft->size = filesize;
+            ft->transferred = 0;
+            ft->paused = FILE_PAUSE_NOT;
+            memcpy(ft->id, data + 1 + sizeof(uint32_t) + sizeof(uint64_t), FILE_ID_LENGTH);
 
             /* Force NULL terminate file name. */
             uint8_t filename_terminated[filename_length + 1];
@@ -1965,7 +2015,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             real_filenumber <<= 16;
 
             if (m->file_sendrequest)
-                (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename_terminated, filename_length,
+                (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename, filename_length,
                                        m->file_sendrequest_userdata);
 
             break;

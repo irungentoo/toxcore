@@ -100,6 +100,7 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
     return;
 }
 
+uint8_t file_cmp_id[TOX_FILE_ID_LENGTH];
 uint8_t filenum;
 uint32_t file_accepted;
 uint64_t file_size;
@@ -117,6 +118,22 @@ void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, ui
     if (!(filename_length == sizeof("Gentoo.exe") && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0)) {
         ck_abort_msg("Bad filename");
         return;
+    }
+
+    uint8_t file_id[TOX_FILE_ID_LENGTH];
+
+    if (!tox_file_get_file_id(tox, friend_number, file_number, file_id, 0)) {
+        ck_abort_msg("tox_file_get_file_id error");
+    }
+
+    if (memcmp(file_id, file_cmp_id, TOX_FILE_ID_LENGTH) != 0) {
+        ck_abort_msg("bad file_id");
+    }
+
+    uint8_t empty[TOX_FILE_ID_LENGTH] = {0};
+
+    if (memcmp(empty, file_cmp_id, TOX_FILE_ID_LENGTH) == 0) {
+        ck_abort_msg("empty file_id");
     }
 
     file_size = filesize;
@@ -520,9 +537,17 @@ START_TEST(test_few_clients)
     tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
     tox_callback_file_receive(tox3, tox_file_receive, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;
-    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, (uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
-                                  0);
+    uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, 0, (uint8_t *)"Gentoo.exe",
+                                  sizeof("Gentoo.exe"), 0);
     ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
+
+    TOX_ERR_FILE_GET gfierr;
+    ck_assert_msg(!tox_file_get_file_id(tox2, 1, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
+    ck_assert_msg(gfierr == TOX_ERR_FILE_GET_FRIEND_NOT_FOUND, "wrong error");
+    ck_assert_msg(!tox_file_get_file_id(tox2, 0, fnum + 1, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
+    ck_assert_msg(gfierr == TOX_ERR_FILE_GET_NOT_FOUND, "wrong error");
+    ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
+    ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
 
     while (1) {
