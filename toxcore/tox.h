@@ -260,6 +260,11 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
  */
 #define TOX_FILE_ID_LENGTH              32
 
+/**
+ * Maximum file name length for file tran.
+ */
+#define TOX_MAX_FILENAME_LENGTH         255
+
 /*******************************************************************************
  *
  * :: Global enumerations
@@ -1627,7 +1632,7 @@ typedef enum TOX_ERR_FILE_SEND {
      */
     TOX_ERR_FILE_SEND_FRIEND_NOT_CONNECTED,
     /**
-     * Filename length exceeded 255 bytes.
+     * Filename length exceeded TOX_MAX_FILENAME_LENGTH bytes.
      */
     TOX_ERR_FILE_SEND_NAME_TOO_LONG,
     /**
@@ -1640,7 +1645,7 @@ typedef enum TOX_ERR_FILE_SEND {
 /**
  * Send a file transmission request.
  *
- * Maximum filename length is 255 bytes. The filename should generally just be
+ * Maximum filename length is TOX_MAX_FILENAME_LENGTH bytes. The filename should generally just be
  * a file name, not a path with directory names.
  *
  * If a non-zero file size is provided, this can be used by both sides to
@@ -1805,15 +1810,15 @@ void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *functi
  * @param file_number The friend-specific file number the data received is
  *   associated with.
  */
-typedef void tox_file_receive_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind,
-                                 uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
+typedef void tox_file_recv_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind,
+                              uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
 
 /**
  * Set the callback for the `file_receive` event. Pass NULL to unset.
  *
  * This event is triggered when a file transfer request is received.
  */
-void tox_callback_file_receive(Tox *tox, tox_file_receive_cb *function, void *user_data);
+void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *function, void *user_data);
 
 
 /**
@@ -1837,13 +1842,13 @@ void tox_callback_file_receive(Tox *tox, tox_file_receive_cb *function, void *us
  * @param data A byte array containing the received chunk.
  * @param length The length of the received chunk.
  */
-typedef void tox_file_receive_chunk_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
-                                       const uint8_t *data, size_t length, void *user_data);
+typedef void tox_file_recv_chunk_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                                    const uint8_t *data, size_t length, void *user_data);
 
 /**
  * Set the callback for the `file_receive_chunk` event. Pass NULL to unset.
  */
-void tox_callback_file_receive_chunk(Tox *tox, tox_file_receive_chunk_cb *function, void *user_data);
+void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *function, void *user_data);
 
 
 /*******************************************************************************

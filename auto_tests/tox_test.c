@@ -547,11 +547,11 @@ START_TEST(test_few_clients)
 
     file_accepted = file_size = file_recv = sendf_ok = size_recv = 0;
     long long unsigned int f_time = time(NULL);
-    tox_callback_file_receive_chunk(tox3, write_file, &to_compare);
+    tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
     tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
     tox_callback_file_request_chunk(tox2, tox_file_request_chunk, &to_compare);
     tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
-    tox_callback_file_receive(tox3, tox_file_receive, &to_compare);
+    tox_callback_file_recv(tox3, tox_file_receive, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;
     uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, 0, (uint8_t *)"Gentoo.exe",
                                   sizeof("Gentoo.exe"), 0);

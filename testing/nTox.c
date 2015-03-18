@@ -1269,9 +1269,9 @@ int main(int argc, char *argv[])
     tox_callback_friend_status_message(m, print_statuschange, NULL);
     tox_callback_group_invite(m, print_invite, NULL);
     tox_callback_group_message(m, print_groupmessage, NULL);
-    tox_callback_file_receive_chunk(m, write_file, NULL);
+    tox_callback_file_recv_chunk(m, write_file, NULL);
     tox_callback_file_recv_control(m, file_print_control, NULL);
-    tox_callback_file_receive(m, file_request_accept, NULL);
+    tox_callback_file_recv(m, file_request_accept, NULL);
     tox_callback_file_request_chunk(m, tox_file_request_chunk, NULL);
     tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
 

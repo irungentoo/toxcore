@@ -1078,13 +1078,13 @@ void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *functi
     callback_file_reqchunk(m, function, user_data);
 }
 
-void tox_callback_file_receive(Tox *tox, tox_file_receive_cb *function, void *user_data)
+void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *function, void *user_data)
 {
     Messenger *m = tox;
     callback_file_sendrequest(m, function, user_data);
 }
 
-void tox_callback_file_receive_chunk(Tox *tox, tox_file_receive_chunk_cb *function, void *user_data)
+void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *function, void *user_data)
 {
     Messenger *m = tox;
     callback_file_data(m, function, user_data);

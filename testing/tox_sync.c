@@ -230,9 +230,9 @@ int main(int argc, char *argv[])
     }
 
     Tox *tox = tox_new(0, 0, 0, 0);
-    tox_callback_file_receive_chunk(tox, write_file, NULL);
+    tox_callback_file_recv_chunk(tox, write_file, NULL);
     tox_callback_file_recv_control(tox, file_print_control, NULL);
-    tox_callback_file_receive(tox, file_request_accept, NULL);
+    tox_callback_file_recv(tox, file_request_accept, NULL);
     tox_callback_file_request_chunk(tox, tox_file_request_chunk, NULL);
     tox_callback_friend_connection_status(tox, print_online, NULL);
 
