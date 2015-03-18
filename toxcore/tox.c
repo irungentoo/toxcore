@@ -1031,6 +1031,22 @@ int tox_group_new_join(Tox *tox, const uint8_t *chat_id)
     return gc_group_join(m->group_handler, chat_id);
 }
 
+/* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, certificates
+ *
+ * Return groupnumber on success.
+ * Return -1 on failure or if already connected to the group.
+ */
+int tox_group_reconnect(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_rejoin_group(m->group_handler, chat);
+}
+
 /* Joins a group using the invite data received in a friend's group invite.
  * Length should be TOX_GROUP_INVITE_DATA_SIZE.
  *
@@ -1171,6 +1187,22 @@ int tox_group_get_peer_name(const Tox *tox, int groupnumber, uint32_t peernumber
     return gc_get_peer_nick(chat, peernumber, name);
 }
 
+/* Get peernumber's name's size in bytes in groupnumber's group chat.
+ *
+ * Return length of name on success.
+ * Reutrn -1 on failure.
+ */
+int tox_group_get_peer_name_size(const Tox *tox, int groupnumber, uint32_t peernumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_peer_nick_size(chat, peernumber);
+}
+
 /* Get your own name for groupnumber's group.
  * name buffer must be at least TOX_MAX_NAME_LENGTH bytes.
  *
@@ -1186,6 +1218,22 @@ int tox_group_get_self_name(const Tox *tox, int groupnumber, uint8_t *name)
         return -1;
 
     return gc_get_self_nick(chat, name);
+}
+
+/* Get your own name's size in bytes for groupnumber's group.
+ *
+ * Return length of name on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_self_name_size(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_self_nick_size(chat);
 }
 
 /* Sets groupnumber's topic.
@@ -1220,6 +1268,22 @@ int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topic)
     return gc_get_topic(chat, topic);
 }
 
+/* Gets groupnumber's topic's size in bytes.
+ *
+ * Return topic length on success.
+ * Return -1 on failure.
+ */
+int tox_group_get_topic_size(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_topic_size(chat);
+}
+
 /* Gets groupnumber's group name. groupname buffer must be at least TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return group name's length on success.
@@ -1234,6 +1298,22 @@ int tox_group_get_topic(const Tox *tox, int groupnumber, uint8_t *topic)
         return -1;
 
     return gc_get_group_name(chat, groupname);
+}
+
+/* Gets groupnumber's group name's size in bytes.
+ *
+ * Return group name's length on success.
+ * Return -1 on failure.
+ */
+ int tox_group_get_group_name_size(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_group_name_size(chat);
 }
 
 /* Sets your status for groupnumber.
@@ -1268,9 +1348,25 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     return gc_get_status(chat, peernumber);
 }
 
+/* Get your own group status in groupnumber's group chat.
+ *
+ * Returns a TOX_GROUP_STATUS on success.
+ * Returns TOX_GS_INVALID on failure.
+ */
+uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return TOX_GS_INVALID;
+
+    return gc_get_self_status(chat);
+}
+
 /* Get peernumber's group role in groupnumber's group chat.
  *
- * Return a TOX_GROUP_ROLE on success.
+ * Returns a TOX_GROUP_ROLE on success.
  * Returns TOX_GR_INVALID on failure.
  */
 uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
@@ -1282,6 +1378,22 @@ uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
         return TOX_GR_INVALID;
 
     return gc_get_role(chat, peernumber);
+}
+
+/* Get your own group role in groupnumber's group chat.
+ *
+ * Return a TOX_GROUP_ROLE on success.
+ * Return TOX_GR_INVALID on failure.
+ */
+uint8_t tox_group_get_self_role(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return TOX_GR_INVALID;
+
+    return gc_get_self_role(chat);
 }
 
 /* Get invite key (chat_id) for groupnumber's groupchat.

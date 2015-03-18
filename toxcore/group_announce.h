@@ -34,43 +34,43 @@ struct GC_Announce;
 
 /* Initiate the process of announcing a group to the DHT.
  *
- * announce = announce object we're operating on.
- * self_public_key = extended (encryption+signature) public key of the node announcing its presence
- * self_secret_key = signing private key of the same node
- * chat_public_key = extended public key of the group (the signature key is used as the chat_id)
+ * announce: announce object we're operating on.
+ * self_public_key: extended (encryption+signature) public key of the node announcing its presence
+ * self_secret_key: signing private key of the same node
+ * chat_id: chat_id of the group (public signature key)
  *
  * return -1 in case of error
  * return number of send packets otherwise
  */
 int gca_send_announce_request(struct GC_Announce *announce, const uint8_t *self_public_key,
-                              const uint8_t *self_secret_key, const uint8_t *chat_public_key);
+                              const uint8_t *self_secret_key, const uint8_t *chat_id);
 
 /* Sends an announcement packet to the node specified as public_key with ipp */
 int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self_public_key,
-                               const uint8_t *self_secret_key, const uint8_t *chat_public_key);
+                               const uint8_t *self_secret_key, const uint8_t *chat_id);
 
-/* Retrieve nodes with chat_public_key.
+/* Retrieve nodes with chat_id.
  *
  * returns 0 if no nodes found or request in progress.
  * returns the number of nodes otherwise.
  */
-size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_public_key, GC_Announce_Node *nodes);
+size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
 
 /* Do some periodic work, currently removes expired announcements */
 void do_gca(struct GC_Announce *announce);
 
-/* Cleans up announce data (call on group exit) */
+/* Cleans up announcements related to chat_id (call on group exit) */
 void gca_cleanup(struct GC_Announce *announce, const uint8_t *chat_id);
 
 struct GC_Announce *new_gca(DHT *dht);
 void kill_gca(struct GC_Announce *announce);
 
-/* Copies your own ip_port structure to target. (TODO: This should probably go somewhere else)
+/* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
  *
  * Return 0 on succcess.
  * Return -1 on failure.
  */
-int ipport_self_copy(const DHT *dht, IP_Port *target);
+int ipport_self_copy(const DHT *dht, IP_Port *dest);
 
 /* Creates a GC_Announce_Node using client_id and your own IP_Port struct
  *

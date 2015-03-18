@@ -42,7 +42,9 @@
 
 /* Macros for long keys and cert handle */
 #define ENC_KEY(key) (key)
-#define SIG_KEY(key) (key + ENC_PUBLIC_KEY) // Don't forget, that public and secert could be different in the future
+#define SIG_PK(key) (key + ENC_PUBLIC_KEY)
+#define SIG_SK(key) (key + ENC_SECRET_KEY)
+#define CHAT_ID(key) (key + ENC_PUBLIC_KEY)
 #define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
 #define CERT_TARGET_KEY(cert) (cert + 1)
 #define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERT_SIGNED_SIZE)

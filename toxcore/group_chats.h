@@ -49,8 +49,9 @@ typedef struct Messenger Messenger;
 #define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 /* Return 1 if type is type is a lossless packet type, 0 otherwise */
-#define LOSSLESS_PACKET(type) ((type == GP_BROADCAST) || (type == GP_SYNC_RESPONSE) || (type == GP_SYNC_REQUEST)\
-                                || (type == GP_NEW_PEER) || (type == GP_INVITE_RESPONSE))
+#define LOSSLESS_PACKET(type) ( (type == GP_BROADCAST) || (type == GP_SYNC_RESPONSE) ||\
+                                (type == GP_SYNC_REQUEST) || (type == GP_NEW_PEER) ||\
+                                (type == GP_INVITE_RESPONSE) || (type == GP_PEER_REQUEST) )
 
 enum {
     GC_BAN,
@@ -97,6 +98,7 @@ enum {
 
 enum {
     CS_NONE,
+    CS_FAILED,
     CS_DISCONNECTED,
     CS_CONNECTING,
     CS_CONNECTED,
@@ -116,6 +118,7 @@ enum {
 
 enum {
     GP_BROADCAST,
+    GP_PEER_REQUEST,
     GP_INVITE_REQUEST,
     GP_INVITE_RESPONSE,
     GP_INVITE_RESPONSE_REJECT,
@@ -127,10 +130,14 @@ enum {
     GP_MESSAGE_ACK
 } GROUP_PACKET_TYPE;
 
-typedef struct {
-    IP_Port     ip_port;
-
+typedef struct GC_PeerAddress {
     uint8_t     public_key[EXT_PUBLIC_KEY];
+    IP_Port     ip_port;
+} GC_PeerAddress;
+
+typedef struct {
+    GC_PeerAddress addr;
+
     uint32_t    peer_pk_hash;    /* 32-bit hash of public_key */
 
     uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
@@ -149,12 +156,6 @@ typedef struct {
     uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
 } GC_GroupPeer;
-
-// TODO shouldn't be neccessarry
-typedef struct {
-    uint8_t     public_key[EXT_PUBLIC_KEY];
-    IP_Port     ip_port;
-} GC_PeerAddress;
 
 typedef struct {
     uint8_t     public_key[EXT_PUBLIC_KEY];
@@ -184,7 +185,6 @@ typedef struct GC_Chat {
     uint8_t     self_secret_key[EXT_SECRET_KEY];
 
     GC_GroupPeer   *group;
-    GC_PeerAddress  close[GROUP_CLOSE_CONNECTIONS];
 
     uint32_t    numpeers;
     uint16_t    maxpeers;
@@ -288,8 +288,14 @@ int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
  /* Return topic length. */
 int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
 
+ /* Return topic length. */
+uint16_t gc_get_topic_size(const GC_Chat *chat);
+
 /* Returns group_name length */
 int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
+
+/* Returns group_name length */
+uint16_t gc_get_group_name_size(const GC_Chat *chat);
 
 /* Return 0 if success
  * Return -1 if fail
@@ -297,15 +303,27 @@ int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
-/* Return -1 on error
- * Return nick length if success
- */
-int gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
+/* Return nick length */
+uint16_t gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
+
+/* Return your own nick length */
+uint16_t gc_get_self_nick_size(const GC_Chat *chat);
+
+/* Return your own group role */
+uint8_t gc_get_self_role(const GC_Chat *chat);
+
+/* Return your own status */
+uint8_t gc_get_self_status(const GC_Chat *chat);
 
 /* Return -1 on error.
  * Return nick length if success
  */
 int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
+
+/* Return -1 on error.
+ * Return nick length if success
+ */
+int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peernumber);
 
 /* Return -1 if fail
  * Return 0 if success
@@ -400,6 +418,13 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
  */
 int gc_group_join(GC_Session *c, const uint8_t *chat_id);
 
+/* Resets chat saving all necessary state.
+ *
+ * Returns groupnumber on success.
+ * Returns -1 on falure.
+ */
+int gc_rejoin_group(GC_Session *c, GC_Chat *chat);
+
 /* Joins a group using the invite data received in a friend's group invite.
  *
  * Return groupnumber on success.
@@ -442,13 +467,16 @@ int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernum
  */
 int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
 
+/* lossless Packet handlers */
 int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
                         const uint8_t *data, uint32_t length);
 int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *public_key,
                            int peernumber, const uint8_t *data, uint32_t length);
-int handle_gc_new_peer(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *data, uint32_t length,
-                       uint64_t message_id);
+int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, IP_Port ipp, const uint8_t *data,
+                       uint32_t length, uint64_t message_id);
 int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key,
                             const uint8_t *data, uint32_t length);
+int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, int peernumber,
+                           const uint8_t *data, uint32_t length);
 
 #endif  /* GROUP_CHATS_H */

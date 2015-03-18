@@ -17,7 +17,7 @@
 void on_group_peer_join(Messenger *m, int groupnumber, uint32_t peernumber, void *userdata)
 {
     GC_Chat *ct = gc_get_group(m->group_handler, groupnumber);
-    printf("Number of peers in the chat: %d\n", gc_get_numpeers(ct));    
+    printf("Number of peers in the chat: %d\n", gc_get_numpeers(ct));
 }
 
 int main(int argc, char *argv[])
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     ip_init(&localhost, 1);
     localhost.ip6.uint8[15]=1;
     Messenger_Options options = {0};
-    options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;    
+    options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
 
     Messenger* tox[PEERCOUNT];
     Messenger* chat;
@@ -62,9 +62,9 @@ int main(int argc, char *argv[])
             do_messenger(tox[i]);
         }
         do_messenger(chat);
-        
+
         int numconnected=0;
-        for (i=0;i<PEERCOUNT;i++) 
+        for (i=0;i<PEERCOUNT;i++)
             numconnected+=DHT_isconnected(tox[i]->dht);
         //printf("%d\n", numconnected);
 
@@ -75,15 +75,15 @@ int main(int argc, char *argv[])
         usleep(50000);
     }
 
-    printf("Network is connected\n");    
+    printf("Network is connected\n");
 
     chat->group_handler = new_groupchats(chat);
     int groupnumber = gc_group_add(chat->group_handler, "Test", 4);
     if (groupnumber<0)
-        printf("Cannot create group\n");    
+        printf("Cannot create group\n");
 
     GC_Chat *ct = gc_get_group(chat->group_handler, groupnumber);
-    printf("%s%s\n", id_toa(ENC_KEY(ct->chat_public_key)), id_toa(SIG_KEY(ct->chat_public_key)));
+    printf("%s%s\n", id_toa(ENC_KEY(ct->chat_public_key)), id_toa(SIG_PK(ct->chat_public_key)));
 
     gc_callback_peer_join(chat, on_group_peer_join, NULL);
 

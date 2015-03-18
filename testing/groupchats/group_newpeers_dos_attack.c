@@ -97,8 +97,8 @@ int main(int argc, char *argv[])
 
     idle_n_secs(10, tox, PEERCOUNT);
     printf("Network is connected\n");
-    printf("Joining the groupchat\n");
     unsigned char *chatid = hex_string_to_bin(argv[argvoffset + 4]);
+    printf("Joining groupchat %s\n", id_toa(chatid));
 
     for (i=0; i<PEERCOUNT; i++) {
         do_messenger_cycle(tox, PEERCOUNT);

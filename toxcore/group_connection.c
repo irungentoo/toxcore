@@ -190,13 +190,13 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
         return -1;
 
     int ret = -1;
-    const uint8_t *public_key = chat->group[peernum].public_key;
+    const uint8_t *public_key = chat->group[peernum].addr.public_key;
     const uint8_t *data = gconn->recv_ary[idx].data;
     uint32_t length = gconn->recv_ary[idx].data_length;
 
     switch (gconn->recv_ary[idx].packet_type) {
         case GP_BROADCAST:
-            ret = handle_gc_broadcast(m, groupnum, chat->group[peernum].ip_port, public_key, peernum, data, length);
+            ret = handle_gc_broadcast(m, groupnum, chat->group[peernum].addr.ip_port, public_key, peernum, data, length);
             break;
         case GP_SYNC_REQUEST:
             ret = handle_gc_sync_request(m, groupnum, public_key, peernum, data, length);
@@ -205,7 +205,11 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
             ret = handle_gc_sync_response(m, groupnum, public_key, data, length);
             break;
         case GP_NEW_PEER:
-            ret = handle_gc_new_peer(m, groupnum, chat->group[peernum].ip_port, data, length, gconn->recv_ary[idx].message_id);
+            ret = handle_gc_new_peer(m, groupnum, public_key, chat->group[peernum].addr.ip_port, data, length,
+                                     gconn->recv_ary[idx].message_id);
+            break;
+        case GP_PEER_REQUEST:
+            ret = handle_gc_peer_request(m, groupnum, public_key, peernum, data, length);
             break;
     }
 
@@ -267,9 +271,8 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 
         // FIXME: if this function is called less than once per second this won't be reliable
         if (delta > 1 && power_of_2(delta)) {
-            sendpacket(chat->net, chat->group[peernum].ip_port, gconn->send_ary[i].data,
+            sendpacket(chat->net, chat->group[peernum].addr.ip_port, gconn->send_ary[i].data,
                        gconn->send_ary[i].data_length);
-            fprintf(stderr, "resending message_id %llu (peer %u)\n", gconn->send_ary[i].message_id, peernum);
             continue;
         }
 

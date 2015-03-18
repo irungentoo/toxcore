@@ -60,7 +60,7 @@ int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_ke
     U64_to_bytes(output + length, unix_time());
     uint32_t mlen = length + sizeof(uint64_t);
 
-    if (crypto_sign_detached(output + mlen, NULL, output, mlen, SIG_KEY(ext_secret_key)) != 0)
+    if (crypto_sign_detached(output + mlen, NULL, output, mlen, SIG_SK(ext_secret_key)) != 0)
         return -1;
 
     return 0;
