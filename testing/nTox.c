@@ -395,7 +395,7 @@ void line_eval(Tox *m, char *line)
             int num = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                if (tox_friend_send_message(m, num, TOX_MESSAGE_TYPE_MESSAGE, (uint8_t *) *posi + 1, strlen(*posi + 1), NULL) < 1) {
+                if (tox_friend_send_message(m, num, TOX_MESSAGE_TYPE_NORMAL, (uint8_t *) *posi + 1, strlen(*posi + 1), NULL) < 1) {
                     char sss[256];
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
@@ -607,7 +607,7 @@ void line_eval(Tox *m, char *line)
         if (conversation_default != 0) {
             if (conversation_default > 0) {
                 int friendnumber = conversation_default - 1;
-                uint32_t res = tox_friend_send_message(m, friendnumber, TOX_MESSAGE_TYPE_MESSAGE, (uint8_t *)line, strlen(line), NULL);
+                uint32_t res = tox_friend_send_message(m, friendnumber, TOX_MESSAGE_TYPE_NORMAL, (uint8_t *)line, strlen(line), NULL);
 
                 if (res == 0) {
                     char sss[128];

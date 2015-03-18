@@ -300,7 +300,7 @@ typedef enum TOX_MESSAGE_TYPE {
     /**
      * Normal text message. Similar to PRIVMSG on IRC.
      */
-    TOX_MESSAGE_TYPE_MESSAGE,
+    TOX_MESSAGE_TYPE_NORMAL,
     /**
      * A message describing an user action. This is similar to /me (CTCP ACTION)
      * on IRC.

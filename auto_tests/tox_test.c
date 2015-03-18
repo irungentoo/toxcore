@@ -39,7 +39,7 @@ void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const u
     if (*((uint32_t *)userdata) != 974536)
         return;
 
-    if (type != TOX_MESSAGE_TYPE_MESSAGE) {
+    if (type != TOX_MESSAGE_TYPE_NORMAL) {
         ck_abort_msg("Bad type");
     }
 
@@ -401,9 +401,9 @@ START_TEST(test_few_clients)
     uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
     memset(msgs, 'G', sizeof(msgs));
     TOX_ERR_FRIEND_SEND_MESSAGE errm;
-    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_MESSAGE, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
+    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
     ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small\n");
-    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_MESSAGE, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
+    tox_friend_send_message(tox2, 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH, &errm);
     ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big\n");
 
     while (1) {
