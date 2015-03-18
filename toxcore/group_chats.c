@@ -570,7 +570,7 @@ int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *p
 static int make_invite_cert(const uint8_t *secret_key, const uint8_t *public_key, uint8_t *half_certificate);
 
 /* Send invite request with half-signed invite certificate, as well as
- * self state, including your nick length, nick, and status.
+ * self state, including your nick and nick length.
  *
  * Return -1 if fail
  * Return 0 if success
@@ -583,8 +583,7 @@ static int gc_send_invite_request(const GC_Chat *chat, IP_Port ip_port, const ui
 
     U16_to_bytes(data + SEMI_INVITE_CERT_SIGNED_SIZE, chat->group[0].nick_len);
     memcpy(data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), chat->group[0].nick, chat->group[0].nick_len);
-    uint32_t length = SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t) + chat->group[0].nick_len + 1;
-    memcpy(data + length - 1, &(chat->group[0].status), sizeof(uint8_t));
+    uint32_t length = SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t) + chat->group[0].nick_len;
     return send_lossy_group_packet(chat, ip_port, public_key, data, length, GP_INVITE_REQUEST);
 }
 
@@ -758,18 +757,14 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
         return -1;
     }
 
-    memcpy(peer->addr.public_key, public_key, EXT_PUBLIC_KEY);
-    memcpy(peer->invite_certificate, invite_certificate, sizeof(invite_certificate));
     bytes_to_U16(&peer->nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
 
     if (peer->nick_len > MAX_GC_NICK_SIZE)
         peer->nick_len = MAX_GC_NICK_SIZE;
 
     memcpy(peer->nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), peer->nick_len);
-    memcpy(&peer->status, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t) + peer->nick_len, sizeof(uint8_t));
-    peer->role = GR_USER;
-    peer->verified = true;
-    peer->addr.ip_port = ipp;
+    memcpy(peer->addr.public_key, public_key, EXT_PUBLIC_KEY);
+    ipport_copy(&peer->addr.ip_port, &ipp);
 
     if (peer_nick_is_taken(chat, peer->nick, peer->nick_len)) {
         free(peer);
@@ -857,7 +852,7 @@ static int handle_gc_ping(Messenger *m, int groupnumber, IP_Port ipp, const uint
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
-    chat->group[peernumber].addr.ip_port = ipp;
+    ipport_copy(&chat->group[peernumber].addr.ip_port, &ipp);
     chat->group[peernumber].last_rcvd_ping = unix_time();
     return 0;
 }
@@ -975,6 +970,11 @@ static int send_gc_peer_request(GC_Chat *chat, uint32_t peernumber)
     send_lossless_group_packet(chat, peernumber, data, len, GP_PEER_REQUEST);
 }
 
+/* Sends self info to all group peers and requests info from all group peers.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
 static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
 {
     GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
@@ -1003,12 +1003,12 @@ static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
 
     uint32_t i;
 
-    /* don't need to send self to inviter */
-    for (i = 2; i < chat->numpeers; ++i)
+    for (i = 1; i < chat->numpeers; ++i) {
         send_lossless_group_packet(chat, i, data, len, GP_NEW_PEER);
-
-    for (i = 1; i < chat->numpeers; ++i)
         send_gc_peer_request(chat, i);
+    }
+
+    return 0;
 }
 
 static int verify_cert_integrity(const uint8_t *certificate);
@@ -1049,7 +1049,7 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
         return -1;
     }
 
-    peer->addr.ip_port = ipp;
+    ipport_copy(&peer->addr.ip_port, &ipp);
 
     int peer_exists = peer_in_chat(chat, sender_pk);
     int peernumber = peer_add(m, groupnumber, peer, NULL);
