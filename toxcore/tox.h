@@ -289,11 +289,7 @@ typedef enum TOX_USER_STATUS {
      * User is busy. Signals to other clients that this client does not
      * currently wish to communicate.
      */
-    TOX_USER_STATUS_BUSY,
-    /**
-     * Invalid status used when function returns an error.
-     */
-    TOX_USER_STATUS_INVALID
+    TOX_USER_STATUS_BUSY
 } TOX_USER_STATUS;
 
 /**

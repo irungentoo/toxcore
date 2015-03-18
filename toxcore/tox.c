@@ -702,7 +702,7 @@ TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TO
 
     if (ret == USERSTATUS_INVALID) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
-        return TOX_USER_STATUS_INVALID;
+        return TOX_USER_STATUS_BUSY + 1;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
