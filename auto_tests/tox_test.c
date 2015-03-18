@@ -184,7 +184,7 @@ void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, 
 
 uint8_t sending_num;
 _Bool file_sending_done;
-void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
+void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
                             void *user_data)
 {
     if (*((uint32_t *)user_data) != 974536)
@@ -555,7 +555,7 @@ START_TEST(test_few_clients)
     long long unsigned int f_time = time(NULL);
     tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
     tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
-    tox_callback_file_request_chunk(tox2, tox_file_request_chunk, &to_compare);
+    tox_callback_file_chunk_request(tox2, tox_file_chunk_request, &to_compare);
     tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
     tox_callback_file_recv(tox3, tox_file_receive, &to_compare);
     uint64_t totalf_size = 100 * 1024 * 1024;

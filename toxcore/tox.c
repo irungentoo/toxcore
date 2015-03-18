@@ -1051,7 +1051,7 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
     return 0;
 }
 
-void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *function, void *user_data)
+void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *function, void *user_data)
 {
     Messenger *m = tox;
     callback_file_reqchunk(m, function, user_data);
