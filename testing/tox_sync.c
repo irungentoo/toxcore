@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
     uint8_t notconnected = 1;
 
     while (1) {
-        if (tox_get_connection_status(tox) && notconnected) {
+        if (tox_self_get_connection_status(tox) && notconnected) {
             printf("\nDHT connected.\n");
             notconnected = 0;
         }

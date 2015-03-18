@@ -302,11 +302,11 @@ START_TEST(test_AV_three_calls)
         }
 
 
-        if (tox_get_connection_status(bootstrap_node) &&
-                tox_get_connection_status(caller) &&
-                tox_get_connection_status(callees[0]) &&
-                tox_get_connection_status(callees[1]) &&
-                tox_get_connection_status(callees[2]) && off) {
+        if (tox_self_get_connection_status(bootstrap_node) &&
+                tox_self_get_connection_status(caller) &&
+                tox_self_get_connection_status(callees[0]) &&
+                tox_self_get_connection_status(callees[1]) &&
+                tox_self_get_connection_status(callees[2]) && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;
         }

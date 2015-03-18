@@ -364,7 +364,7 @@ START_TEST(test_few_clients)
 
     uint32_t to_compare = 974536;
     connected_t1 = 0;
-    tox_callback_connection_status(tox1, tox_connection_status, &to_compare);
+    tox_callback_self_connection_status(tox1, tox_connection_status, &to_compare);
     tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
@@ -378,7 +378,8 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (tox_get_connection_status(tox1) && tox_get_connection_status(tox2) && tox_get_connection_status(tox3)) {
+        if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
+                && tox_self_get_connection_status(tox3)) {
             if (off) {
                 printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
                 con_time = time(NULL);
