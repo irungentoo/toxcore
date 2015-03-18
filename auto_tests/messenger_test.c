@@ -50,10 +50,10 @@ START_TEST(test_m_sendmesage)
     int bad_len = MAX_CRYPTO_PACKET_SIZE;
 
 
-    ck_assert(m_sendmessage(m, -1, (uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_sendmessage(m, REALLY_BIG_NUMBER, (uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_sendmessage(m, 17, (uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_sendmessage(m, friend_id_num, (uint8_t *)message, bad_len, 0) == -2);
+    ck_assert(m_send_message_generic(m, -1, MESSAGE_NORMAL, (uint8_t *)message, good_len, 0) == -1);
+    ck_assert(m_send_message_generic(m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (uint8_t *)message, good_len, 0) == -1);
+    ck_assert(m_send_message_generic(m, 17, MESSAGE_NORMAL, (uint8_t *)message, good_len, 0) == -1);
+    ck_assert(m_send_message_generic(m, friend_id_num, MESSAGE_NORMAL, (uint8_t *)message, bad_len, 0) == -2);
 }
 END_TEST
 

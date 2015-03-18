@@ -395,7 +395,7 @@ void line_eval(Tox *m, char *line)
             int num = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                if (tox_friend_send_message(m, num, (uint8_t *) *posi + 1, strlen(*posi + 1), NULL) < 1) {
+                if (tox_friend_send_message(m, num, TOX_MESSAGE_TYPE_MESSAGE, (uint8_t *) *posi + 1, strlen(*posi + 1), NULL) < 1) {
                     char sss[256];
                     sprintf(sss, "[i] could not send message to friend num %u", num);
                     new_lines(sss);
@@ -607,7 +607,7 @@ void line_eval(Tox *m, char *line)
         if (conversation_default != 0) {
             if (conversation_default > 0) {
                 int friendnumber = conversation_default - 1;
-                uint32_t res = tox_friend_send_message(m, friendnumber, (uint8_t *)line, strlen(line), NULL);
+                uint32_t res = tox_friend_send_message(m, friendnumber, TOX_MESSAGE_TYPE_MESSAGE, (uint8_t *)line, strlen(line), NULL);
 
                 if (res == 0) {
                     char sss[128];
@@ -881,7 +881,8 @@ void print_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_
     do_refresh();
 }
 
-void print_message(Tox *m, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
+void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
+                   void *userdata)
 {
     /* ensure null termination */
     uint8_t null_string[length + 1];
@@ -1204,7 +1205,7 @@ void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *
         unsigned int i;
 
         for (i = 0; i < NUM_FILE_SENDERS; ++i)
-            if (file_senders[i].file != 0 && file_senders[i].friendnum == friend_number) {
+            if (file_senders[i].file != 0 && file_senders[i].friendnum == friendnumber) {
                 fclose(file_senders[i].file);
                 file_senders[i].file = 0;
             }
@@ -1290,7 +1291,7 @@ int main(int argc, char *argv[])
     tox_callback_file_recv(m, file_request_accept, NULL);
     tox_callback_file_request_chunk(m, tox_file_request_chunk, NULL);
     tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
-    tox_callback_friend_connection_status(tox, print_online, NULL);
+    tox_callback_friend_connection_status(m, print_online, NULL);
 
     initscr();
     noecho();

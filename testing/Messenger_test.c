@@ -56,10 +56,11 @@
 
 #endif
 
-void print_message(Messenger *m, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
+void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
+                   void *userdata)
 {
     printf("Message with length %lu received from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(m, friendnumber, (uint8_t *)"Test1", 6, 0);
+    m_send_message_generic(m, friendnumber, type, (uint8_t *)"Test1", 6, 0);
 }
 
 /* FIXME needed as print_request has to match the interface expected by
@@ -184,7 +185,7 @@ int main(int argc, char *argv[])
         getname(m, num, name);
         printf("%s\n", name);
 
-        m_sendmessage(m, num, (uint8_t *)"Test", 5, 0);
+        m_send_message_generic(m, num, MESSAGE_NORMAL, (uint8_t *)"Test", 5, 0);
         do_messenger(m);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");

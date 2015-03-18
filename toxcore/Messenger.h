@@ -37,6 +37,11 @@
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
 
+enum {
+    MESSAGE_NORMAL,
+    MESSAGE_ACTION
+};
+
 /* NOTE: Packet ids below 17 must never be used. */
 #define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_ONLINE 24
@@ -46,7 +51,7 @@
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
 #define PACKET_ID_MESSAGE 64
-#define PACKET_ID_ACTION 65
+#define PACKET_ID_ACTION (PACKET_ID_MESSAGE + MESSAGE_ACTION) /* 65 */
 #define PACKET_ID_MSI 69
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
@@ -100,6 +105,7 @@ enum {
     FAERR_SETNEWNOSPAM = -7,
     FAERR_NOMEM = -8
 };
+
 
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;
@@ -241,10 +247,8 @@ struct Messenger {
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
 
-    void (*friend_message)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void (*friend_message)(struct Messenger *m, uint32_t, unsigned int, const uint8_t *, size_t, void *);
     void *friend_message_userdata;
-    void (*friend_action)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
-    void *friend_action_userdata;
     void (*friend_namechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *friend_namechange_userdata;
     void (*friend_statusmessagechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
@@ -363,29 +367,20 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber);
  */
 int m_friend_exists(const Messenger *m, int32_t friendnumber);
 
-/* Send a text chat message to an online friend.
+/* Send a message of type to an online friend.
  *
  * return -1 if friend not valid.
  * return -2 if too large.
  * return -3 if friend not online.
  * return -4 if send failed (because queue is full).
+ * return -5 if bad type.
  * return 0 if success.
  *
  *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
  */
-int m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length, uint32_t *message_id);
+int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, const uint8_t *message, uint32_t length,
+                           uint32_t *message_id);
 
-/* Send an action to an online friend.
- *
- * return -1 if friend not valid.
- * return -2 if too large.
- * return -3 if friend not online.
- * return -4 if send failed (because queue is full).
- * return 0 if success.
- *
- *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
- */
-int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length, uint32_t *message_id);
 
 /* Set the name and name_length of a friend.
  * name must be a string of maximum MAX_NAME_LENGTH length.
@@ -492,16 +487,10 @@ void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const
                               void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
- *  Function format is: function(uint32_t friendnumber, uint8_t * message, uint32_t length)
+ *  Function format is: function(uint32_t friendnumber, unsigned int type, uint8_t * message, uint32_t length)
  */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                              void *userdata);
-
-/* Set the function that will be executed when an action from a friend is received.
- *  Function format is: function(uint32_t friendnumber, uint8_t * action, uint32_t length)
- */
-void m_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                       void *userdata);
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, const uint8_t *,
+                              size_t, void *), void *userdata);
 
 /* Set the callback for name changes.
  *  Function(uint32_t friendnumber, uint8_t *newname, size_t length)

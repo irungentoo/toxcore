@@ -791,11 +791,15 @@ static void set_message_error(int ret, TOX_ERR_FRIEND_SEND_MESSAGE *error)
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ);
             break;
+
+        case -5:
+            /* can't happen */
+            break;
     }
 }
 
-uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
-                                 TOX_ERR_FRIEND_SEND_MESSAGE *error)
+uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
+                                 size_t length, TOX_ERR_FRIEND_SEND_MESSAGE *error)
 {
     if (!message) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
@@ -809,26 +813,7 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, const uint8_t
 
     Messenger *m = tox;
     uint32_t message_id = 0;
-    set_message_error(m_sendmessage(m, friend_number, message, length, &message_id), error);
-    return message_id;
-}
-
-uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
-                                TOX_ERR_FRIEND_SEND_MESSAGE *error)
-{
-    if (!action) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
-        return 0;
-    }
-
-    if (!length) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY);
-        return 0;
-    }
-
-    Messenger *m = tox;
-    uint32_t message_id = 0;
-    set_message_error(m_sendaction(m, friend_number, action, length, &message_id), error);
+    set_message_error(m_send_message_generic(m, friend_number, type, message, length, &message_id), error);
     return message_id;
 }
 
@@ -848,12 +833,6 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void
 {
     Messenger *m = tox;
     m_callback_friendmessage(m, function, user_data);
-}
-
-void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *user_data)
-{
-    Messenger *m = tox;
-    m_callback_action(m, function, user_data);
 }
 
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)

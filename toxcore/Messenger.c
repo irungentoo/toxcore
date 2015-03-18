@@ -455,17 +455,21 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
     return 1;
 }
 
-/* Send a packet_id message.
+/* Send a message of type.
  *
  * return -1 if friend not valid.
  * return -2 if too large.
  * return -3 if friend not online.
  * return -4 if send failed (because queue is full).
+ * return -5 if bad type.
  * return 0 if success.
  */
-static int send_message_generic(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length,
-                                uint8_t packet_id, uint32_t *message_id)
+int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, const uint8_t *message, uint32_t length,
+                           uint32_t *message_id)
 {
+    if (type > MESSAGE_ACTION)
+        return -5;
+
     if (friend_not_valid(m, friendnumber))
         return -1;
 
@@ -476,7 +480,7 @@ static int send_message_generic(Messenger *m, int32_t friendnumber, const uint8_
         return -3;
 
     uint8_t packet[length + 1];
-    packet[0] = packet_id;
+    packet[0] = type + PACKET_ID_MESSAGE;
 
     if (length != 0)
         memcpy(packet + 1, message, length);
@@ -499,16 +503,6 @@ static int send_message_generic(Messenger *m, int32_t friendnumber, const uint8_
         *message_id = msg_id;
 
     return 0;
-}
-
-int m_sendmessage(Messenger *m, int32_t friendnumber, const uint8_t *message, uint32_t length, uint32_t *message_id)
-{
-    return send_message_generic(m, friendnumber, message, length, PACKET_ID_MESSAGE, message_id);
-}
-
-int m_sendaction(Messenger *m, int32_t friendnumber, const uint8_t *action, uint32_t length, uint32_t *message_id)
-{
-    return send_message_generic(m, friendnumber, action, length, PACKET_ID_ACTION, message_id);
 }
 
 /* Send a name packet to friendnumber.
@@ -812,18 +806,11 @@ void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const
 }
 
 /* Set the function that will be executed when a message from a friend is received. */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                              void *userdata)
+void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, const uint8_t *,
+                              size_t, void *), void *userdata)
 {
     m->friend_message = function;
     m->friend_message_userdata = userdata;
-}
-
-void m_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                       void *userdata)
-{
-    m->friend_action = function;
-    m->friend_action_userdata = userdata;
 }
 
 void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
@@ -2012,7 +1999,8 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             break;
         }
 
-        case PACKET_ID_MESSAGE: {
+        case PACKET_ID_MESSAGE:
+        case PACKET_ID_ACTION: {
             const uint8_t *message_id = data;
 
             if (data_length == 0)
@@ -2025,30 +2013,10 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             uint8_t message_terminated[message_length + 1];
             memcpy(message_terminated, message, message_length);
             message_terminated[message_length] = 0;
+            uint8_t type = packet_id - PACKET_ID_MESSAGE;
 
             if (m->friend_message)
-                (*m->friend_message)(m, i, message_terminated, message_length, m->friend_message_userdata);
-
-            break;
-        }
-
-        case PACKET_ID_ACTION: {
-            const uint8_t *message_id = data;
-
-            if (data_length == 0)
-                break;
-
-            const uint8_t *action = data;
-            uint16_t action_length = data_length;
-
-            /* Make sure the NULL terminator is present. */
-            uint8_t action_terminated[action_length + 1];
-            memcpy(action_terminated, action, action_length);
-            action_terminated[action_length] = 0;
-
-            if (m->friend_action)
-                (*m->friend_action)(m, i, action_terminated, action_length, m->friend_action_userdata);
-
+                (*m->friend_message)(m, i, type, message_terminated, message_length, m->friend_message_userdata);
 
             break;
         }

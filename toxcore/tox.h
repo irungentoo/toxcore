@@ -296,6 +296,21 @@ typedef enum TOX_USER_STATUS {
     TOX_USER_STATUS_INVALID
 } TOX_USER_STATUS;
 
+/**
+ * Represents message types for friend messages and group chat
+ * messages.
+ */
+typedef enum TOX_MESSAGE_TYPE {
+    /**
+     * Normal text message. Similar to PRIVMSG on IRC.
+     */
+    TOX_MESSAGE_TYPE_MESSAGE,
+    /**
+     * A message describing an user action. This is similar to /me (CTCP ACTION)
+     * on IRC.
+     */
+    TOX_MESSAGE_TYPE_ACTION
+} TOX_MESSAGE_TYPE;
 
 /*******************************************************************************
  *
@@ -1274,6 +1289,8 @@ typedef enum TOX_ERR_FRIEND_SEND_MESSAGE {
  * This function creates a chat message packet and pushes it into the send
  * queue.
  *
+ * Type corresponds to the message type, for a list of valid types see TOX_MESSAGE_TYPE.
+ *
  * The message length may not exceed TOX_MAX_MESSAGE_LENGTH. Larger messages
  * must be split by the client and sent as separate messages. Other clients can
  * then reassemble the fragments. Messages may not be empty.
@@ -1285,24 +1302,8 @@ typedef enum TOX_ERR_FRIEND_SEND_MESSAGE {
  * incremented by 1 each time a message is sent. If UINT32_MAX messages were
  * sent, the next message ID is 0.
  */
-uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
-                                 TOX_ERR_FRIEND_SEND_MESSAGE *error);
-
-
-/**
- * Send an action to an online friend.
- *
- * This is similar to /me (CTCP ACTION) on IRC.
- *
- * Message ID space is shared between tox_send_message and tox_send_action. This
- * means that sending a message will cause the next message ID from sending an
- * action will be incremented.
- *
- * @see tox_friend_send_message for more details.
- */
-uint32_t tox_friend_send_action(Tox *tox, uint32_t friend_number, const uint8_t *action, size_t length,
-                                TOX_ERR_FRIEND_SEND_MESSAGE *error);
-
+uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
+                                 size_t length, TOX_ERR_FRIEND_SEND_MESSAGE *error);
 
 /**
  * The function type for the `read_receipt` callback.
@@ -1336,16 +1337,11 @@ void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *func
  * The function type for the `friend_request` callback.
  *
  * @param public_key The Public Key of the user who sent the friend request.
- * @param time_delta A delta in seconds between when the message was composed
- *   and when it is being transmitted. For messages that are sent immediately,
- *   it will be 0. If a message was written and couldn't be sent immediately
- *   (due to a connection failure, for example), the time_delta is an
- *   approximation of when it was composed.
  * @param message The message they sent along with the request.
  * @param length The size of the message byte array.
  */
-typedef void tox_friend_request_cb(Tox *tox, const uint8_t *public_key, /*uint32_t time_delta, */const uint8_t *message,
-                                   size_t length, void *user_data);
+typedef void tox_friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length,
+                                   void *user_data);
 
 /**
  * Set the callback for the `friend_request` event. Pass NULL to unset.
@@ -1359,13 +1355,11 @@ void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *function, void
  * The function type for the `friend_message` callback.
  *
  * @param friend_number The friend number of the friend who sent the message.
- * @param time_delta Time between composition and sending.
+ * @param type The message type, for a list of valid types see TOX_MESSAGE_TYPE.
  * @param message The message data they sent.
  * @param length The size of the message byte array.
- *
- * @see tox_friend_request_cb for more information on time_delta.
  */
-typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */const uint8_t *message,
+typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
                                    size_t length, void *user_data);
 
 /**
@@ -1374,28 +1368,6 @@ typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, /*uint32_t 
  * This event is triggered when a message from a friend is received.
  */
 void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void *user_data);
-
-
-/**
- * The function type for the `friend_action` callback.
- *
- * @param friend_number The friend number of the friend who sent the action.
- * @param time_delta Time between composition and sending.
- * @param action The action message data they sent.
- * @param length The size of the action byte array.
- *
- * @see tox_friend_request_cb for more information on time_delta.
- */
-typedef void tox_friend_action_cb(Tox *tox, uint32_t friend_number, /*uint32_t time_delta, */const uint8_t *action,
-                                  size_t length, void *user_data);
-
-/**
- * Set the callback for the `friend_action` event. Pass NULL to unset.
- *
- * This event is triggered when an action from a friend is received.
- */
-void tox_callback_friend_action(Tox *tox, tox_friend_action_cb *function, void *user_data);
-
 
 
 /*******************************************************************************

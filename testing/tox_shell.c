@@ -53,7 +53,8 @@ void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *
         printf("\nOther went offline.\n");
 }
 
-void print_message(Tox *tox, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
+void print_message(Tox *tox, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
+                   void *userdata)
 {
     int master = *((int *)userdata);
     write(master, string, length);
@@ -148,7 +149,7 @@ int main(int argc, char *argv[])
             if (ret <= 0)
                 break;
 
-            tox_friend_send_message(tox, num, buf, ret, 0);
+            tox_friend_send_message(tox, num, TOX_MESSAGE_TYPE_MESSAGE, buf, ret, 0);
         }
 
         tox_iterate(tox);

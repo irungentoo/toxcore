@@ -89,7 +89,8 @@ static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t
         current_group = tox_join_groupchat(tox, fid, data, length);
 }
 
-void callback_friend_message(Tox *tox, uint32_t fid, const uint8_t *message, size_t length, void *userdata)
+void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length,
+                             void *userdata)
 {
     if (length == 1 && *message == 'c') {
         if (tox_del_groupchat(tox, current_group) == 0)
