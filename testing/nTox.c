@@ -1313,7 +1313,7 @@ int main(int argc, char *argv[])
 
     while (1) {
         if (on == 0) {
-            if (tox_get_connection_status(m)) {
+            if (tox_self_get_connection_status(m)) {
                 new_lines("[i] connected to DHT");
                 on = 1;
             } else {

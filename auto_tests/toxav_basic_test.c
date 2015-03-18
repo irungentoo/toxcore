@@ -271,7 +271,7 @@ START_TEST(test_AV_flows)
         tox_iterate(Alice);
         tox_iterate(Bob);
 
-        if (tox_get_connection_status(bootstrap_node) && tox_get_connection_status(Alice) && tox_get_connection_status(Bob)
+        if (tox_self_get_connection_status(bootstrap_node) && tox_self_get_connection_status(Alice) && tox_self_get_connection_status(Bob)
                 && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;

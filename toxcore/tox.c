@@ -319,7 +319,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
     return 1;
 }
 
-TOX_CONNECTION tox_get_connection_status(const Tox *tox)
+TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
 {
     const Messenger *m = tox;
 
@@ -335,7 +335,7 @@ TOX_CONNECTION tox_get_connection_status(const Tox *tox)
 }
 
 
-void tox_callback_connection_status(Tox *tox, tox_connection_status_cb *function, void *user_data)
+void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *function, void *user_data)
 {
     Messenger *m = tox;
     m_callback_core_connection(m, function, user_data);

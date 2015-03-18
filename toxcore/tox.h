@@ -626,20 +626,20 @@ typedef enum TOX_CONNECTION {
 
 /**
  * Return whether we are connected to the DHT. The return value is equal to the
- * last value received through the `connection_status` callback.
+ * last value received through the `self_connection_status` callback.
  */
-TOX_CONNECTION tox_get_connection_status(const Tox *tox);
+TOX_CONNECTION tox_self_get_connection_status(const Tox *tox);
 
 /**
- * The function type for the `connection_status` callback.
+ * The function type for the `self_connection_status` callback.
  *
  * @param connection_status Equal to the return value of
- *   tox_get_connection_status.
+ *   tox_self_get_connection_status.
  */
-typedef void tox_connection_status_cb(Tox *tox, TOX_CONNECTION connection_status, void *user_data);
+typedef void tox_self_connection_status_cb(Tox *tox, TOX_CONNECTION connection_status, void *user_data);
 
 /**
- * Set the callback for the `connection_status` event. Pass NULL to unset.
+ * Set the callback for the `self_connection_status` event. Pass NULL to unset.
  *
  * This event is triggered whenever there is a change in the DHT connection
  * state. When disconnected, a client may choose to call tox_bootstrap again, to
@@ -649,7 +649,7 @@ typedef void tox_connection_status_cb(Tox *tox, TOX_CONNECTION connection_status
  *
  * TODO: how long should a client wait before bootstrapping again?
  */
-void tox_callback_connection_status(Tox *tox, tox_connection_status_cb *function, void *user_data);
+void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *function, void *user_data);
 
 
 /**
