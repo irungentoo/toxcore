@@ -211,8 +211,22 @@ void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *
 {
     if (status)
         printf("\nOther went online.\n");
-    else
+    else {
         printf("\nOther went offline.\n");
+        unsigned int i;
+
+        for (i = 0; i < NUM_FILE_SENDERS; ++i) {
+            if (file_senders[i].file != 0) {
+                fclose(file_senders[i].file);
+                file_senders[i].file = 0;
+            }
+
+            if (file_recv[i].file != 0) {
+                fclose(file_recv[i].file);
+                file_recv[i].file = 0;
+            }
+        }
+    }
 }
 
 int main(int argc, char *argv[])

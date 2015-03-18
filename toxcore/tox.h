@@ -1655,6 +1655,9 @@ typedef enum TOX_ERR_FILE_SEND {
  * File transmission occurs in chunks, which are requested through the
  * `file_request_chunk` event.
  *
+ * When a friend goes offline, all file transfers associated with the friend are
+ * purged from core.
+ *
  * If the file contents change during a transfer, the behaviour is unspecified
  * in general. What will actually happen depends on the mode in which the file
  * was modified and how the client determines the file size.

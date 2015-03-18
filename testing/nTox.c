@@ -1195,6 +1195,22 @@ void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t p
     fclose(pFile);
 }
 
+void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
+{
+    if (status)
+        printf("\nOther went online.\n");
+    else {
+        printf("\nOther went offline.\n");
+        unsigned int i;
+
+        for (i = 0; i < NUM_FILE_SENDERS; ++i)
+            if (file_senders[i].file != 0 && file_senders[i].friendnum == friend_number) {
+                fclose(file_senders[i].file);
+                file_senders[i].file = 0;
+            }
+    }
+}
+
 char timeout_getch(Tox *m)
 {
     char c;
@@ -1274,6 +1290,7 @@ int main(int argc, char *argv[])
     tox_callback_file_recv(m, file_request_accept, NULL);
     tox_callback_file_request_chunk(m, tox_file_request_chunk, NULL);
     tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
+    tox_callback_friend_connection_status(tox, print_online, NULL);
 
     initscr();
     noecho();
