@@ -946,7 +946,6 @@ GC_Announce *new_gca(DHT *dht)
     if (announce == NULL)
         return NULL;
 
-    announce->group_handler = NULL;   /* initiated later by core, ignored by bootstrap */
     announce->dht = dht;
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_ANNOUNCE, &handle_gca_request, announce);
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_GET_NODES, &handle_gc_get_announced_nodes_request, announce);

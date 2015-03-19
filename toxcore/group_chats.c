@@ -873,9 +873,6 @@ static uint32_t make_gc_broadcast_header(GC_Chat *chat, const uint8_t *data, uin
  */
 static int send_gc_broadcast_packet(GC_Chat *chat, const uint8_t *data, uint32_t length, uint8_t bc_type)
 {
-    if (!data)
-        return -1;
-
     if (length + GC_BROADCAST_ENC_HEADER_SIZE > MAX_GC_PACKET_SIZE)
         return -1;
 
@@ -2676,7 +2673,7 @@ void kill_groupchats(GC_Session *c)
 
     for (i = 0; i < c->num_chats; ++i) {
         if (c->chats[i].connection_state != CS_NONE)
-            gc_group_exit(c, &c->chats[i], NULL, 0);
+            send_gc_self_exit(&c->chats[i], NULL, 0);
     }
 
     kill_gca(c->announce);
