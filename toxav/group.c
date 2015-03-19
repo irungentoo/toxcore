@@ -23,6 +23,7 @@
 #endif
 
 #include "group.h"
+#include "../toxcore/util.h"
 #include "../toxcore/logger.h"
 
 #define GROUP_JBUF_SIZE 6
