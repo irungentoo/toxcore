@@ -58,6 +58,9 @@ static int peer_nick_is_taken(const GC_Chat *chat, const uint8_t *nick, uint16_t
 
 static GC_Chat *get_chat_by_hash(GC_Session *c, uint32_t hash)
 {
+    if (!c)
+        return NULL;
+
     uint32_t i;
 
     for (i = 0; i < c->num_chats; i ++) {
@@ -128,7 +131,7 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
 void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
 {
     uint32_t chat_id_hash = jenkins_hash(chat_id, CHAT_ID_SIZE);
-    GC_Chat *chat = get_chat_by_hash(announce->messenger->group_handler, chat_id_hash);
+    GC_Chat *chat = get_chat_by_hash(announce->group_handler, chat_id_hash);
 
     if (chat == NULL)
         return;
@@ -2615,14 +2618,9 @@ GC_Session *new_groupchats(Messenger* m)
         return NULL;
 
     c->messenger = m;
-    c->announce = new_gca(m);
-
-    if (c->announce == NULL) {
-        free(c);
-        return NULL;
-    }
-
+    c->announce = m->group_announce;
     networking_registerhandler(m->net, NET_PACKET_GC_MESSAGE, &handle_groupchatpacket, m);
+
     return c;
 }
 

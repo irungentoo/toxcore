@@ -939,15 +939,15 @@ void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id)
     }
 }
 
-GC_Announce *new_gca(Messenger *m)
+GC_Announce *new_gca(DHT *dht)
 {
     GC_Announce *announce = calloc(1, sizeof(GC_Announce));
 
     if (announce == NULL)
         return NULL;
 
-    announce->messenger = m;
-    announce->dht = m->dht;
+    announce->group_handler = NULL;   /* initiated later by core, ignored by bootstrap */
+    announce->dht = dht;
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_ANNOUNCE, &handle_gca_request, announce);
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_GET_NODES, &handle_gc_get_announced_nodes_request, announce);
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_SEND_NODES, &handle_gca_get_nodes_response, announce);

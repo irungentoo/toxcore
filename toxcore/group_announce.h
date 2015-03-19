@@ -24,8 +24,8 @@
 #include "DHT.h"
 #include "stdbool.h"
 
-typedef struct Messenger Messenger;
 typedef struct GC_Announce GC_Announce;
+typedef struct GC_Session GC_Session;
 
 #define MAX_GCA_SELF_REQUESTS 30
 #define MAX_GCA_ANNOUNCED_NODES 30
@@ -71,8 +71,8 @@ struct GC_AnnouncedSelf {
 };
 
 struct GC_Announce {
-    Messenger *messenger;
     DHT *dht;
+    GC_Session *group_handler;
     struct GC_AnnouncedNode announcements[MAX_GCA_ANNOUNCED_NODES];
     struct GC_AnnounceRequest requests[MAX_GCA_SELF_REQUESTS];
     struct GC_AnnouncedSelf self_announce[MAX_GCA_SELF_ANNOUNCEMENTS];
@@ -108,7 +108,7 @@ void do_gca(GC_Announce *announce);
 /* Cleans up announcements related to chat_id (call on group exit) */
 void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id);
 
-GC_Announce *new_gca(Messenger *m);
+GC_Announce *new_gca(DHT *dht);
 
 void kill_gca(GC_Announce *announce);
 
