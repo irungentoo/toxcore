@@ -473,6 +473,8 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_
 {
     DHT *dht = announce->dht;
 
+    add_gca_self_announce(announce, chat_id, self_public_key, self_secret_key);
+
     /* packet contains: type, chat_id, node, timestamp, signature */
     uint8_t data[1 + CHAT_ID_SIZE + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
     data[0] = NET_PACKET_GCA_ANNOUNCE;
@@ -499,8 +501,6 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_
 
     if (length > MAX_GCA_PACKET_SIZE)
         return -1;
-
-    add_gca_self_announce(announce, chat_id, self_public_key, self_secret_key);
 
     return dispatch_packet(announce, chat_id, dht->self_public_key, signed_data,
                            length, NET_PACKET_GCA_ANNOUNCE, true);
