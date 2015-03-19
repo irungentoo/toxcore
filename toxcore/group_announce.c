@@ -27,13 +27,14 @@
 #include <inttypes.h>
 #include <stdbool.h>
 
-#include "group_announce.h"
-#include "group_chats.h"
-
+#include "Messenger.h"
 #include "logger.h"
 #include "util.h"
 #include "network.h"
 #include "DHT.h"
+
+#include "group_announce.h"
+#include "group_chats.h"
 
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define RAND_ID_SIZE (sizeof(uint64_t))
@@ -53,50 +54,6 @@
 #define GCA_NODES_EXPIRATION (GCA_PING_INTERVAL * 3 + 10)
 
 #define MAX_GCA_PACKET_SIZE 1024
-#define MAX_GCA_SENT_NODES 4
-#define MAX_GCA_ANNOUNCED_NODES 30
-#define MAX_GCA_SELF_ANNOUNCEMENTS 30
-
-/* Holds nodes that we receive when we send a request. Used to join groups */
-struct GC_AnnounceRequest {
-    GC_Announce_Node nodes[MAX_GCA_SENT_NODES];
-    uint64_t req_id;
-    uint64_t time_added;
-    uint8_t chat_id[CHAT_ID_SIZE];
-    uint8_t self_public_key[EXT_PUBLIC_KEY];
-    uint8_t self_secret_key[EXT_SECRET_KEY];
-    bool ready;
-};
-
-/* Holds announced nodes we get via announcements */
-struct GC_AnnouncedNode {
-    uint8_t chat_id[CHAT_ID_SIZE];
-    GC_Announce_Node node;
-    uint64_t last_rcvd_ping;
-    uint64_t last_sent_ping;
-    uint64_t time_added;
-    uint64_t ping_id;
-    bool self;   /* true if this is our own announcement; will never be pinged or timeout */
-};
-
-/* Holds our own announcements when we join a group.
- * Currently will only keep track of up to MAX_GCA_SELF_ANNOUNCEMENTS groups at once.
- */
-struct GC_AnnouncedSelf {
-    uint8_t chat_id[CHAT_ID_SIZE];
-    uint8_t self_public_key[EXT_PUBLIC_KEY];
-    uint8_t self_secret_key[EXT_SECRET_KEY];
-    uint64_t last_rcvd_ping;
-    bool is_set;
-};
-
-typedef struct GC_Announce {
-    DHT *dht;
-    struct GC_AnnouncedNode announcements[MAX_GCA_ANNOUNCED_NODES];
-    struct GC_AnnounceRequest requests[MAX_GCA_SELF_REQUESTS];
-    struct GC_AnnouncedSelf self_announce[MAX_GCA_SELF_ANNOUNCEMENTS];
-} GC_Announce;
-
 
 /* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
  *
@@ -375,6 +332,7 @@ static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node 
             }
         }
 
+        gc_update_addrs(announce, announce->requests[i].chat_id);
         return i;
     }
 
@@ -981,14 +939,15 @@ void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id)
     }
 }
 
-GC_Announce *new_gca(DHT *dht)
+GC_Announce *new_gca(Messenger *m)
 {
     GC_Announce *announce = calloc(1, sizeof(GC_Announce));
 
     if (announce == NULL)
         return NULL;
 
-    announce->dht = dht;
+    announce->messenger = m;
+    announce->dht = m->dht;
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_ANNOUNCE, &handle_gca_request, announce);
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_GET_NODES, &handle_gc_get_announced_nodes_request, announce);
     networking_registerhandler(announce->dht->net, NET_PACKET_GCA_SEND_NODES, &handle_gca_get_nodes_response, announce);

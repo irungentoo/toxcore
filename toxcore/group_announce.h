@@ -22,15 +22,61 @@
 #define GROUP_ANNOUNCE_H
 
 #include "DHT.h"
+#include "stdbool.h"
+
+typedef struct Messenger Messenger;
+typedef struct GC_Announce GC_Announce;
 
 #define MAX_GCA_SELF_REQUESTS 30
+#define MAX_GCA_ANNOUNCED_NODES 30
+#define MAX_GCA_SELF_ANNOUNCEMENTS 30
+#define MAX_GCA_SENT_NODES 4
 
 typedef struct {
     uint8_t public_key[EXT_PUBLIC_KEY];
     IP_Port ip_port;
 } GC_Announce_Node;
 
-struct GC_Announce;
+/* Holds nodes that we receive when we send a request. Used to join groups */
+struct GC_AnnounceRequest {
+    GC_Announce_Node nodes[MAX_GCA_SENT_NODES];
+    uint64_t req_id;
+    uint64_t time_added;
+    uint8_t chat_id[CHAT_ID_SIZE];
+    uint8_t self_public_key[EXT_PUBLIC_KEY];
+    uint8_t self_secret_key[EXT_SECRET_KEY];
+    bool ready;
+};
+
+/* Holds announced nodes we get via announcements */
+struct GC_AnnouncedNode {
+    uint8_t chat_id[CHAT_ID_SIZE];
+    GC_Announce_Node node;
+    uint64_t last_rcvd_ping;
+    uint64_t last_sent_ping;
+    uint64_t time_added;
+    uint64_t ping_id;
+    bool self;   /* true if this is our own announcement; will never be pinged or timeout */
+};
+
+/* Holds our own announcements when we join a group.
+ * Currently will only keep track of up to MAX_GCA_SELF_ANNOUNCEMENTS groups at once.
+ */
+struct GC_AnnouncedSelf {
+    uint8_t chat_id[CHAT_ID_SIZE];
+    uint8_t self_public_key[EXT_PUBLIC_KEY];
+    uint8_t self_secret_key[EXT_SECRET_KEY];
+    uint64_t last_rcvd_ping;
+    bool is_set;
+};
+
+struct GC_Announce {
+    Messenger *messenger;
+    DHT *dht;
+    struct GC_AnnouncedNode announcements[MAX_GCA_ANNOUNCED_NODES];
+    struct GC_AnnounceRequest requests[MAX_GCA_SELF_REQUESTS];
+    struct GC_AnnouncedSelf self_announce[MAX_GCA_SELF_ANNOUNCEMENTS];
+};
 
 /* Initiate the process of announcing a group to the DHT.
  *
@@ -42,11 +88,11 @@ struct GC_Announce;
  * return -1 in case of error
  * return number of send packets otherwise
  */
-int gca_send_announce_request(struct GC_Announce *announce, const uint8_t *self_public_key,
+int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_key,
                               const uint8_t *self_secret_key, const uint8_t *chat_id);
 
 /* Sends an announcement packet to the node specified as public_key with ipp */
-int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self_public_key,
+int gca_send_get_nodes_request(GC_Announce *announce, const uint8_t *self_public_key,
                                const uint8_t *self_secret_key, const uint8_t *chat_id);
 
 /* Retrieve nodes with chat_id.
@@ -54,16 +100,17 @@ int gca_send_get_nodes_request(struct GC_Announce *announce, const uint8_t *self
  * returns 0 if no nodes found or request in progress.
  * returns the number of nodes otherwise.
  */
-size_t gca_get_requested_nodes(struct GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
+size_t gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
 
 /* Do some periodic work, currently removes expired announcements */
-void do_gca(struct GC_Announce *announce);
+void do_gca(GC_Announce *announce);
 
 /* Cleans up announcements related to chat_id (call on group exit) */
-void gca_cleanup(struct GC_Announce *announce, const uint8_t *chat_id);
+void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id);
 
-struct GC_Announce *new_gca(DHT *dht);
-void kill_gca(struct GC_Announce *announce);
+GC_Announce *new_gca(Messenger *m);
+
+void kill_gca(GC_Announce *announce);
 
 /* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
  *
