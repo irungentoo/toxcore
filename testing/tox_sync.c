@@ -53,7 +53,7 @@ File_t file_senders[NUM_FILE_SENDERS];
 File_t file_recv[NUM_FILE_SENDERS];
 uint8_t numfilesenders;
 
-void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
+void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
                             void *user_data)
 {
     unsigned int i;
@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
     tox_callback_file_recv_chunk(tox, write_file, NULL);
     tox_callback_file_recv_control(tox, file_print_control, NULL);
     tox_callback_file_recv(tox, file_request_accept, NULL);
-    tox_callback_file_request_chunk(tox, tox_file_request_chunk, NULL);
+    tox_callback_file_chunk_request(tox, tox_file_chunk_request, NULL);
     tox_callback_friend_connection_status(tox, print_online, NULL);
 
     uint16_t port = atoi(argv[argvoffset + 2]);

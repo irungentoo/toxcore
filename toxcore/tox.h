@@ -1621,7 +1621,7 @@ typedef enum TOX_ERR_FILE_SEND {
  * data of unknown size.
  *
  * File transmission occurs in chunks, which are requested through the
- * `file_request_chunk` event.
+ * `file_chunk_request` event.
  *
  * When a friend goes offline, all file transfers associated with the friend are
  * purged from core.
@@ -1633,7 +1633,7 @@ typedef enum TOX_ERR_FILE_SEND {
  * - If the file size was increased
  *   - and sending mode was streaming (file_size = 0), the behaviour will be as
  *     expected.
- *   - and sending mode was file (file_size != 0), the file_request_chunk
+ *   - and sending mode was file (file_size != 0), the file_chunk_request
  *     callback will receive length = 0 when Core thinks the file transfer has
  *     finished. If the client remembers the file size as it was when sending
  *     the request, it will terminate the transfer normally. If the client
@@ -1713,7 +1713,7 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
 /**
  * Send a chunk of file data to a friend.
  *
- * This function is called in response to the `file_request_chunk` callback. The
+ * This function is called in response to the `file_chunk_request` callback. The
  * length parameter should be equal to the one received though the callback.
  * If it is zero, the transfer is assumed complete. For files with known size,
  * Core will know that the transfer is complete after the last byte has been
@@ -1728,7 +1728,7 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
 
 
 /**
- * The function type for the `file_request_chunk` callback.
+ * The function type for the `file_chunk_request` callback.
  *
  * If the length parameter is 0, the file transfer is finished, and the client's
  * resources associated with the file number should be released. After a call
@@ -1751,13 +1751,13 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
  * @param position The file or stream position from which to continue reading.
  * @param length The number of bytes requested for the current chunk.
  */
-typedef void tox_file_request_chunk_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+typedef void tox_file_chunk_request_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
                                        size_t length, void *user_data);
 
 /**
- * Set the callback for the `file_request_chunk` event. Pass NULL to unset.
+ * Set the callback for the `file_chunk_request` event. Pass NULL to unset.
  */
-void tox_callback_file_request_chunk(Tox *tox, tox_file_request_chunk_cb *function, void *user_data);
+void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *function, void *user_data);
 
 
 /*******************************************************************************

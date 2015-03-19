@@ -121,7 +121,7 @@ typedef struct {
 File_Sender file_senders[NUM_FILE_SENDERS];
 uint8_t numfilesenders;
 
-void tox_file_request_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
+void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
                             void *user_data)
 {
     unsigned int i;
@@ -1289,7 +1289,7 @@ int main(int argc, char *argv[])
     tox_callback_file_recv_chunk(m, write_file, NULL);
     tox_callback_file_recv_control(m, file_print_control, NULL);
     tox_callback_file_recv(m, file_request_accept, NULL);
-    tox_callback_file_request_chunk(m, tox_file_request_chunk, NULL);
+    tox_callback_file_chunk_request(m, tox_file_chunk_request, NULL);
     tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
     tox_callback_friend_connection_status(m, print_online, NULL);
 
