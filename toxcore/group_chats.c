@@ -687,16 +687,13 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
     memcpy(chat->group[0].invite_certificate, data, INVITE_CERT_SIGNED_SIZE);
 
     /* Add inviter to peerlist with incomplete info so that we can use a lossless connection */
-    GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer peer;
+    memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    if (peer == NULL)
-        return -1;
+    memcpy(peer.addr.public_key, public_key, EXT_PUBLIC_KEY);
+    ipport_copy(&peer.addr.ip_port, &ipp);
 
-    memcpy(peer->addr.public_key, public_key, EXT_PUBLIC_KEY);
-    ipport_copy(&peer->addr.ip_port, &ipp);
-
-    int peernumber = peer_add(m, groupnumber, peer, NULL);
-    free(peer);
+    int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
         fprintf(stderr, "peer_add failed in handle_invite_response\n");
@@ -802,35 +799,25 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     }
 
     /* Adding peer we just invited to the peer group list */
-    GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer peer;
+    memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    if (peer == NULL) {
-        gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
-        return -1;
-    }
+    bytes_to_U16(&peer.nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
 
-    bytes_to_U16(&peer->nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
+    if (peer.nick_len > MAX_GC_NICK_SIZE)
+        peer.nick_len = MAX_GC_NICK_SIZE;
 
-    if (peer->nick_len > MAX_GC_NICK_SIZE)
-        peer->nick_len = MAX_GC_NICK_SIZE;
+    memcpy(peer.nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), peer.nick_len);
+    memcpy(peer.addr.public_key, public_key, EXT_PUBLIC_KEY);
+    ipport_copy(&peer.addr.ip_port, &ipp);
 
-    memcpy(peer->nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), peer->nick_len);
-    memcpy(peer->addr.public_key, public_key, EXT_PUBLIC_KEY);
-    ipport_copy(&peer->addr.ip_port, &ipp);
-
-    if (peer_nick_is_taken(chat, peer->nick, peer->nick_len)) {
-        free(peer);
+    if (peer_nick_is_taken(chat, peer.nick, peer.nick_len))
         return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
-    }
 
-    if (peer_in_chat(chat, peer->addr.public_key) != -1) {
-        free(peer);
+    if (peer_in_chat(chat, peer.addr.public_key) != -1)
         return gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
-    }
 
-    int peernumber = peer_add(m, groupnumber, peer, NULL);
-
-    free(peer);
+    int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
         fprintf(stderr, "handle_gc_invite_request failed: peernum < 0\n");
@@ -983,21 +970,17 @@ int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
-    GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer self;
+    memset(&self, 0, sizeof(GC_GroupPeer));
 
-    if (self == NULL)
-        return -1;
-
-    self_to_peer(c, chat, self);
+    self_to_peer(c, chat, &self);
 
     uint8_t packet[MAX_GC_PACKET_SIZE];
     memcpy(packet, chat->self_public_key, EXT_PUBLIC_KEY);
     uint32_t len = EXT_PUBLIC_KEY;
 
-    int packed_len = pack_gc_peer(packet + len, sizeof(packet) - len, self);
+    int packed_len = pack_gc_peer(packet + len, sizeof(packet) - len, &self);
     len += packed_len;
-
-    free(self);
 
     if (packed_len <= 0) {
         fprintf(stderr, "pack_gc_peer failed in handle_gc_peer_request %d\n", packed_len);
@@ -1022,21 +1005,17 @@ static int send_gc_peer_request(GC_Chat *chat, uint32_t peernumber)
  */
 static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
 {
-    GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer peer;
+    memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    if (peer == NULL)
-        return -1;
-
-    self_to_peer(c, chat, peer);
+    self_to_peer(c, chat, &peer);
 
     uint8_t data[MAX_GC_PACKET_SIZE];
     memcpy(data, chat->self_public_key, EXT_PUBLIC_KEY);
     uint32_t len = EXT_PUBLIC_KEY;
 
-    int peers_len = pack_gc_peer(data + len, sizeof(data) - len, peer);
+    int peers_len = pack_gc_peer(data + len, sizeof(data) - len, &peer);
     len += peers_len;
-
-    free(peer);
 
     if (peers_len <= 0) {
         fprintf(stderr, "pack_gc_peer failed in send_gc_self_join %d\n", peers_len);
@@ -1076,29 +1055,24 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
     if (chat->numpeers >= chat->maxpeers)
         return -1;
 
-    GC_GroupPeer *peer = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer peer;
+    memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    if (peer == NULL)
-        return -1;
-
-    if (unpack_gc_peer(peer, data + EXT_PUBLIC_KEY, sizeof(GC_GroupPeer)) == -1) {
-        free(peer);
+    if (unpack_gc_peer(&peer, data + EXT_PUBLIC_KEY, sizeof(GC_GroupPeer)) == -1) {
         fprintf(stderr, "unpack_gc_peer failed in handle_bc_new_peer\n");
         return -1;
     }
 
     // TODO: Probably we should make it also optional, but I'm personally against it (c) henotba
-    if (verify_cert_integrity(peer->invite_certificate) == -1) {
-        free(peer);
+    if (verify_cert_integrity(peer.invite_certificate) == -1) {
         fprintf(stderr, "handle_bc_new_peer fail! verify cert failed\n");
         return -1;
     }
 
-    ipport_copy(&peer->addr.ip_port, &ipp);
+    ipport_copy(&peer.addr.ip_port, &ipp);
 
     int peer_exists = peer_in_chat(chat, sender_pk);
-    int peernumber = peer_add(m, groupnumber, peer, NULL);
-    free(peer);
+    int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
         fprintf(stderr, "handle_bc_new_peer fail (peernumber == -1)!\n");
@@ -2325,25 +2299,19 @@ static int create_new_group(GC_Session *c, bool founder)
 
     create_extended_keypair(chat->self_public_key, chat->self_secret_key);
 
-    GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer self;
+    memset(&self, 0, sizeof(GC_GroupPeer));
 
-    if (self == NULL) {
+    memcpy(self.nick, m->name, m->name_length);
+    self.nick_len = m->name_length;
+    self.status = m->userstatus;
+    self.role = GR_FOUNDER ? founder : GR_USER;
+
+    if (peer_add(m, groupnumber, &self, NULL) != 0) {    /* you are always peernumber/index 0 */
         group_delete(c, chat);
         return -1;
     }
 
-    memcpy(self->nick, m->name, m->name_length);
-    self->nick_len = m->name_length;
-    self->status = m->userstatus;
-    self->role = GR_FOUNDER ? founder : GR_USER;
-
-    if (peer_add(m, groupnumber, self, NULL) != 0) {    /* you are always peernumber/index 0 */
-        free(self);
-        group_delete(c, chat);
-        return -1;
-    }
-
-    free(self);
     return groupnumber;
 }
 
@@ -2380,24 +2348,18 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->group_name_len = ntohs(save->group_name_len);
     chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 
-    GC_GroupPeer *self = calloc(1, sizeof(GC_GroupPeer));
+    GC_GroupPeer self;
+    memset(&self, 0, sizeof(GC_GroupPeer));
 
-    if (self == NULL)
+    memcpy(self.invite_certificate, save->self_invite_cert, INVITE_CERT_SIGNED_SIZE);
+    memcpy(self.role_certificate, save->self_role_cert, ROLE_CERT_SIGNED_SIZE);
+    memcpy(self.nick, save->self_nick, MAX_GC_NICK_SIZE);
+    self.nick_len = ntohs(save->self_nick_len);
+    self.role = save->self_role;
+    self.status = save->self_status;
+
+    if (peer_add(m, groupnumber, &self, NULL) != 0)
         return -1;
-
-    memcpy(self->invite_certificate, save->self_invite_cert, INVITE_CERT_SIGNED_SIZE);
-    memcpy(self->role_certificate, save->self_role_cert, ROLE_CERT_SIGNED_SIZE);
-    memcpy(self->nick, save->self_nick, MAX_GC_NICK_SIZE);
-    self->nick_len = ntohs(save->self_nick_len);
-    self->role = save->self_role;
-    self->status = save->self_status;
-
-    if (peer_add(m, groupnumber, self, NULL) != 0) {
-        free(self);
-        return -1;
-    }
-
-    free(self);
 
     uint16_t i, num = 0, num_addrs = ntohs(save->num_addrs);
 
