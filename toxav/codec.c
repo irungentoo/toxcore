@@ -279,7 +279,6 @@ void cs_do(CSSession *cs)
                     cs->last_packet_frame_duration = 
                         ( opus_packet_get_samples_per_frame(msg->data, cs->last_packet_sampling_rate) * 1000 )
                         / cs->last_packet_sampling_rate;
-                        
                 } else {
                     LOGGER_WARNING("Failed to load packet values!");
                     rtp_free_msg(NULL, msg);
