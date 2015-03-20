@@ -2448,7 +2448,8 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
 
     uint32_t i;
 
-    for (i = 1; i < chat->numpeers; ++i)
+    /* Remove all peers except self. Numpeers decrements with each call to gc_peer_delete */
+    for (i = 1; chat->numpeers > 1; )
         gc_peer_delete(c->messenger, chat->groupnumber, i, NULL, 0);
 
     chat->connection_state = CS_DISCONNECTED;
