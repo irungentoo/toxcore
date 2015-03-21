@@ -12,7 +12,7 @@ This document describes the implementation of avatars in the Tox protocol,
 according to the following design considerations:
 
   - Avatars are handled as private information, i.e., they are only exchanged
-    over Tox encrypted channels among previously authenticated friends;
+    over Tox encrypted channels among previously authenticated friends.
 
   - The library treats all images as blobs and does not interpret or
     understand image formats. It only ensures that the avatar data sent by
@@ -33,7 +33,7 @@ according to the following design considerations:
   - The protocol MUST provide means to allow caching and avoid unnecessary
     data transfers.
 
-  - Avatars are transfered between clients in a background operation.
+  - Avatars are transferred between clients in a background operation.
 
   - Avatars are served on a "best effort" basis, without breaking clients
     which do not support them.
@@ -76,7 +76,7 @@ protocol. Moving this feature to the core protocol also:
 This is a very high level description. The usage patterns expected from
 client applications are described in the section "Using Avatars in Client
 Applications", and a low level protocol description is available in the
-section "Internal Protocol Description".)
+section "Internal Protocol Description").
 The avatar exchange is implemented with the following new elements in the
 Tox protocol:
 
@@ -84,7 +84,7 @@ Tox protocol:
     a user to another anytime, but are usually sent after one of them
     connects to the network, changes his avatar, or in reply to an **avatar
     information request**. They are delivered by a very lightweight message
-    but with information enough to allow a user to validate or discard an
+    but with enough information to allow a user to validate or discard an
     avatar from the local cache and to decide if it is interesting to request
     the avatar data from the peer.
 
@@ -115,7 +115,7 @@ Tox protocol:
 
     This event contains three data fields: (1) the image format, (2) the
     cryptographic hash of the image data, and (3) the raw image data. If the
-    image format is NONE (i.e. no avatar) the hash is zeroed and the image
+    image format is NONE (i.e. no avatar), the hash is zeroed and the image
     data is empty. The raw image data is locally validated and ensured to
     match the hash (the event is **not** triggered otherwise).
 
@@ -146,13 +146,13 @@ TOX_AVATAR_FORMAT;
 /* Set the user avatar image data. */
 int tox_set_avatar(Tox *tox, uint8_t format, const uint8_t *data, uint32_t length);
 
-/* Removes the user avatar image data. */
+/* Remove the user avatar image data. */
 int tox_unset_avatar(Tox *tox);
 
 /* Get avatar data from the current user. */
 int tox_get_self_avatar(const Tox *tox, uint8_t *format, uint8_t *buf, uint32_t *length, uint32_t maxlen, uint8_t *hash);
 
-/* Generates a cryptographic hash of the given data (usually a cached avatar). */
+/* Generate a cryptographic hash of the given data (usually a cached avatar). */
 int tox_hash(uint8_t *hash, const uint8_t *data, const uint32_t datalen);
 
 /* Request avatar information from a friend. */
@@ -181,17 +181,17 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
 
   - Clients MUST NOT imply the availability of avatars in other users.
     Avatars are an optional feature and not all users and clients may
-    support them;
+    support them.
 
   - Clients MUST NOT block waiting for avatar information and avatar data
-    packets;
+    packets.
 
-  - Clients MUST treat avatar data as insecure and potentially malicious;
+  - Clients MUST treat avatar data as insecure and potentially malicious.
     For example, users may accidentally use corrupted images as avatars,
-    a malicious user may send a specially crafted image to exploit a know
+    a malicious user may send a specially crafted image to exploit a known
     vulnerability in an image decoding library, etc. It is recommended to
     handle the avatar image data in the same way as an image downloaded
-    from an unknown Internet source;
+    from an unknown Internet source.
 
   - The peers MUST NOT assume any coupling between the operations of
     receiving an avatar information packet, sending unrequested avatar
@@ -200,36 +200,36 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
     For example, the following situations are valid:
 
       * A text-mode client may send avatars to other users, but never
-        request them;
+        request them.
 
       * A client may not understand a particular image format and ignore
-        avatars using it, but request and handle other formats;
+        avatars using it, but request and handle other formats.
 
       * A client on a slow mobile network may ask for avatar information to
-        ensure its cached avatars are still valid, but do not request avatar
+        ensure its cached avatars are still valid, but not request avatar
         data. The same client may start asking for avatar data once it
         connects through a fast network.
 
-  - Clients SHOULD implement a local cache of avatars and do not request
-    avatar data from other peers unless necessary;
+  - Clients SHOULD implement a local cache of avatars and not request
+    avatar data from other peers unless necessary.
 
-  - When an avatar information is received, the client should delete the
+  - When avatar information is received, the client should delete the
     avatar if the new avatar format is NONE or compare the hash received
     from the peer with the hash of the currently cached avatar. If they
-    differ, send an avatar data request;
+    differ, send an avatar data request.
 
   - If the cached avatar is older than a given threshold, the client may
     also send an avatar info request to that friend once he is online and
     mark the avatar as updated *before* any avatar information is received
-    (to not spam the peer with such requests);
+    (to not spam the peer with such requests).
 
   - When an avatar data notification is received, the client must update
-    the cached avatar with the new one;
+    the cached avatar with the new one.
 
-  - Clients should resize or crop the image to the way it better adapts
-    to the client user interface;
+  - Clients should resize or crop the image such that it better adapts
+    to the client's user interface.
 
-  - If the user already have an avatar defined in the client configuration,
+  - If the user already has an avatar defined in the client configuration,
     it must be set before connecting to the network to avoid spurious avatar
     change notifications and unnecessary data transfers.
 
@@ -241,10 +241,10 @@ void tox_callback_avatar_data(Tox *tox, void (*function)(Tox *tox, int32_t, uint
 ### Interoperability and sharing avatars among different clients
 
 **This section is a tentative recommendation of how clients should store
-avatars to ensure local interoperability and should be revised if this
+avatars to ensure local interoperability, and should be revised if this
 code is accepted into Tox core.**
 
-It is desirable that the user avatar and the cached friends avatars could be
+It is desirable that the user avatar and the cached friends' avatars could be
 shared among different Tox clients in the same system, in the spirit of the
 proposed Single Tox Standard. This not only makes switching from one client
 to another easier, but also minimizes the need of data transfers, as avatars
@@ -262,10 +262,10 @@ Given the Tox data directory described in STS Draft v0.1.0:
   - The client's own avatar is not special and is stored like any other. This
     is partially for simplicity, and partially in anticipation of profiles.
 
-  - The avatar should be stored as its received, before any modifications by
+  - The avatar should be stored as it was received, before any modifications by
     the client for display purposes.
 
-  - The hash, as calculated by toxcore and passed in to the data callback,
+  - The hash, as calculated by toxcore and passed into the data callback,
     should be saved in "avatars/xxxxx.hash" where "xxxxx" means the
     same thing as for avatars. (The filename is longer than the file :) )
 
@@ -273,7 +273,7 @@ Given the Tox data directory described in STS Draft v0.1.0:
     upper case strings, but lower case file names are more usual.
 
 
-Example for Linux and other Unix systems, assuming an user called "gildor":
+Example for Linux and other Unix systems, assuming a user called "gildor":
 
     Tox data directory: /home/gildor/.config/tox/
     Tox data file:      /home/gildor/.config/tox/data
@@ -294,13 +294,13 @@ This recommendation is partially implemented by "testing/test_avatars.c".
 
 ### Common operations
 
-These are minimal examples of how perform common operations with avatar
-functions. For a complete, working, example, see `testing/test_avatars.c`.
+These are minimal examples of how to perform common operations with avatar
+functions. For a complete working example, see `testing/test_avatars.c`.
 
 
 #### Setting an avatar for the current user
 
-In this example `load_data_file` is just an hypothetical function that loads
+In this example, `load_data_file` is just a hypothetical function that loads
 data from a file into the buffer and sets the length accordingly.
 
     uint8_t buf[TOX_AVATAR_MAX_DATA_LENGTH];
@@ -313,7 +313,7 @@ data from a file into the buffer and sets the length accordingly.
 If the user is connected, this function will also notify all connected
 friends about the avatar change.
 
-If the user already have an avatar defined in the client configuration, it
+If the user already has an avatar defined in the client configuration, it
 must be set before connecting to the network to avoid spurious avatar change
 notifications and unnecessary data transfers.
 
@@ -327,7 +327,7 @@ To remove the current avatar, an application must call
     tox_unset_avatar(tox);
 
 the effect is the same as setting the avatar format to `TOX_AVATAR_FORMAT_NONE`
-and with no data:
+with no data:
 
     tox_set_avatar(tox, TOX_AVATAR_FORMAT_NONE, NULL, 0);
 
@@ -357,7 +357,7 @@ As in this example:
         printf("\n");
     }
 
-And, somewhere in the Tox initialization calls, set if as the callback to be
+And, somewhere in the Tox initialization calls, set it as the callback to be
 triggered when an avatar information event arrives:
 
     tox_callback_avatar_info(tox, avatar_info_cb, NULL);
@@ -370,7 +370,7 @@ in the avatar information event and, if needed, request the avatar data.
 
 #### Receiving avatar data from friends
 
-Avatar data events are only delivered in reply of avatar data requests which
+Avatar data events are only delivered in reply to avatar data requests, which
 **should** only be sent after getting the user avatar information (format
 and hash) from an avatar information event and checking it against a local
 cache.
@@ -388,7 +388,7 @@ checks the local avatar cache and emits an avatar data request if necessary:
             delete_avatar_from_cache(tox, friendnumber);
         } else {
             /* Use the received hash to check if the cached avatar is
-               still updated. */
+               still up to date. */
             if (!is_user_cached_avatar_updated(tox, friendnumber, hash)) {
                 /* User avatar is outdated, send data request */
                 tox_request_avatar_data(tox, friendnumber);
@@ -420,9 +420,9 @@ calls:
     tox_callback_avatar_data(tox, avatar_data_cb, NULL);
 
 
-In the previous examples, implementation of the functions to check, store
+In the previous examples, implementation of the functions to check, store,
 and retrieve data from the cache were omitted for brevity. These functions
-will also need to get the friend public key (client id) from they friend
+will also need to get the friend public key (client id) from the friend
 number and, usually, convert it from a byte string to a hexadecimal
 string. A complete, yet more complex, example is available in the file
 `testing/test_avatars.c`.
@@ -454,7 +454,7 @@ The avatar transfer protocol adds the following new packet types and ids:
 
 ### Requesting avatar information
 
-To request avatar information, an user must send a packet of type
+To request avatar information, a user must send a packet of type
 `PACKET_ID_AVATAR_INFO_REQ`. This packet has no data fields. Upon
 receiving this packet, a client which supports avatars should answer with
 a `PACKET_ID_AVATAR_INFO`. The sender must accept that the friend may
@@ -472,7 +472,7 @@ the following structure:
     Packet data size: 33 bytes
     [1: uint8_t format][32: uint8_t hash]
 
-Where 'format' is the image data format, one of the following:
+where 'format' is the image data format, one of the following:
 
     0 = AVATAR_FORMAT_NONE  (no avatar set)
     1 = AVATAR_FORMAT_PNG
@@ -492,21 +492,21 @@ connects, in the same way Tox sends name, status and action information.
 Transmission of avatar data is a multi-step procedure using three new packet
 types.
 
-  - Packet `PACKET_ID_AVATAR_DATA_CONTROL` have the format:
+  - Packet `PACKET_ID_AVATAR_DATA_CONTROL` has the format:
 
         PACKET_ID_AVATAR_DATA_CONTROL (54)
         Packet data size: 1 byte
         [1: uint8_t op]
 
-    where 'op' is a code signaling both an operation request or a status
-    return, which semantics are explained bellow. The following values are
+    where 'op' is a code signaling either an operation request or a status
+    return, the semantics of which are explained below. The following values are
     defined:
 
         0 = AVATAR_DATACONTROL_REQ
         1 = AVATAR_DATACONTROL_ERROR
 
 
-  - Packet `PACKET_ID_AVATAR_DATA_START` have the following format:
+  - Packet `PACKET_ID_AVATAR_DATA_START` has the following format:
 
         PACKET_ID_AVATAR_DATA_START (55)
         Packet data size: 37 bytes
@@ -515,13 +515,13 @@ types.
 
     where 'format' is the image format, with the same values accepted for
     the field 'format' in packet type `PACKET_ID_AVATAR_INFO`, 'hash' is
-    the SHA-256 cryptographic hash of the avatar raw data and 'data_length'
+    the SHA-256 cryptographic hash of the avatar raw data, and 'data_length'
     is the total number of bytes the raw avatar data.
 
 
   - Packet `PACKET_ID_AVATAR_DATA_PUSH` has no format structure, just up
     to `AVATAR_DATA_MAX_CHUNK_SIZE` bytes of raw avatar image data; this
-    value is defined according to the maximum amount of data a Tox crypted
+    value is defined according to the maximum amount of data a Tox encrypted
     packet can hold.
 
 
@@ -534,9 +534,9 @@ from a client "B":
     packet `PACKET_ID_AVATAR_DATA_CONTROL` with 'op' set to
     `AVATAR_DATACONTROL_REQ`.
 
-  - If "B" accepts this transfer, it answers by sending an
-    `PACKET_ID_AVATAR_DATA_START` with the fields 'format', 'hash' and
-    'data_length' set to the respective values from the current avatar.
+  - If "B" accepts this transfer, it answers by sending a
+    `PACKET_ID_AVATAR_DATA_START` with the fields 'format', 'hash', and
+    'data_length' set to the respective values of the current avatar.
     If "B" has no avatar set, 'format' must be `AVATAR_FORMAT_NONE`, 'hash'
     must be zeroed and 'data_length' must be zero.
 
@@ -545,12 +545,12 @@ from a client "B":
     `AVATAR_DATACONTROL_ERROR` or simply ignore this request. "A" must cope
     with this.
 
-    If "B" have an avatar, it sends a variable number of
+    If "B" has an avatar, it sends a variable number of
     `PACKET_ID_AVATAR_DATA_PUSH` packets with the avatar data in a single
     shot.
 
   - Upon receiving a `PACKET_ID_AVATAR_DATA_START`, "A" checks if it
-    has sent a data request to "B". If not, just ignores the packet.
+    has sent a data request to "B". If not, it simply ignores the packet.
 
     If "A" really requested avatar data and the format is `AVATAR_FORMAT_NONE`,
     it triggers the avatar data callback, and clears all the temporary data,
@@ -559,36 +559,36 @@ from a client "B":
 
   - Upon receiving a `PACKET_ID_AVATAR_DATA_PUSH`, "A" checks if it really
     sent an avatar data request and if the `PACKET_ID_AVATAR_DATA_START` was
-    already received. If this conditions are valid, it checks if the total
+    already received. If these conditions were met, it checks if the total
     length of the data already stored in the receiving buffer plus the data
     present in the push packet is still less or equal than
-    `TOX_AVATAR_MAX_DATA_LENGTH`. If invalid, it replies with a
+    `TOX_AVATAR_MAX_DATA_LENGTH`. If that is not the case, it replies with a
     `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op' set to
     `AVATAR_DATACONTROL_ERROR`.
 
     If valid, "A" updates the 'bytes_received' counter and concatenates the
     newly arrived data to the buffer.
 
-    Then "A" checks if all the data was already received by comparing the
+    Then "A" checks if all the data has already been received, by comparing the
     counter 'bytes_received' with the field 'total_length'. If they are
     equal, "A" takes a SHA-256 hash of the data and compares it with the
-    hash stored in the field 'hash' received from the first
+    hash stored in the field 'hash' received with the first
     `PACKET_ID_AVATAR_DATA_START`.
 
-    If the hashes match, the avatar data was correctly received and "A"
-    triggers the avatar data callback, and clears all the temporary data,
+    If the hashes match, the avatar data was correctly received, and "A"
+    triggers the avatar data callback and clears all the temporary data,
     finishing the process.
 
     If not all data was received, "A" simply waits for more data.
 
     Client "A" is always responsible for controlling the transfer and
-    validating the data received. "B" don't need to keep any state for the
+    validating the data received. "B" doesn't need to keep any state for the
     protocol, have full control over the data sent and should implement
     some transfer limit for the data it sends.
 
   - Any peer receiving a `PACKET_ID_AVATAR_DATA_CONTROL` with the field 'op'
     set to `AVATAR_DATACONTROL_ERROR` clears any existing control state and
-    finishes sending or receiving data.
+    aborts sending or receiving data.
 
 
 
@@ -597,33 +597,33 @@ from a client "B":
 ## Security considerations
 
 The major security implication of background data transfers of large objects,
-like avatars, is the possibility of exhausting the network resources from a
+like avatars, is the possibility of exhausting the network resources of a
 client. This problem is exacerbated when there is the possibility of an
-amplification attack as happens, for example, when sending a very small
+amplification attack, as happens, for example, when sending a very small
 avatar request message will force the user to reply with a larger avatar
 data message.
 
 The present proposal mitigates this situation by:
 
-  - Only transferring data between previously authenticated friends;
+  - only transferring data between previously authenticated friends,
 
-  - Enforcing strict limits on the avatar data size;
+  - enforcing strict limits on the avatar data size,
 
-  - Providing an alternate, smaller, message to cooperative users refresh
-    avatar information when nothing has changed (`PACKET_ID_AVATAR_INFO`);
+  - providing an alternate, smaller message for cooperative users to refresh
+    avatar information when nothing has changed (`PACKET_ID_AVATAR_INFO`),
 
-  - Having per-friend data transfer limit. As the current protocol still
-    allows an user to request avatar data again and again, the implementation
+  - having a per-friend data transfer limit. As the current protocol still
+    allows a user to request avatar data again and again, the implementation
     limits the amount of data a particular user can request for some time. The
     exact values are defined in constants `AVATAR_DATA_TRANSFER_LIMIT` and
     `AVATAR_DATA_TRANSFER_TIMEOUT` in file `Messenger.c`.
 
-  - Making the requester responsible for storing partial data and state
-    information;
+  - making the requester responsible for storing partial data and state
+    information
 
-Another problem present in the avatars is the possibility of a friend send
+Another problem present in avatars is the possibility of a friend sending
 a maliciously crafted image intended to exploit vulnerabilities in image
-decoders. Without an intermediate server to recompress and validate and
+decoders. Without an intermediate server to recompress, validate, and
 convert the images to neutral formats, the client applications must handle
 this situation by themselves using stable and secure image libraries and
 imposing limits on the maximum amount of system resources the decoding

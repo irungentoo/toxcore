@@ -37,6 +37,7 @@ The goal of this project is to create a configuration-free P2P Skype replacement
 - [Compiling](/INSTALL.md)
 - [DHT Protocol](/docs/updates/DHT.md)<br />
 - [Crypto](/docs/updates/Crypto.md)<br />
-- [Ideas](https://wiki.tox.im/index.php/Ideas)
+
+Additional developer documentation can be found at [Libtoxcore.so](https://libtoxcore.so/)
 
 [String]: https://en.wikipedia.org/wiki/String_(computer_science)
