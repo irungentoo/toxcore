@@ -1395,6 +1395,9 @@ enum TOX_FILE_KIND {
      * (same length as TOX_FILE_ID_LENGTH) will contain the hash. A client can compare
      * this hash with a saved hash and send TOX_FILE_CONTROL_CANCEL to terminate the avatar
      * transfer if it matches.
+     *
+     * When file_size is set to 0 in the transfer request it means that the client has no
+     * avatar.
      */
     TOX_FILE_KIND_AVATAR
 };
@@ -1631,9 +1634,9 @@ typedef enum TOX_ERR_FILE_SEND {
  * was modified and how the client determines the file size.
  *
  * - If the file size was increased
- *   - and sending mode was streaming (file_size = 0), the behaviour will be as
+ *   - and sending mode was streaming (file_size = UINT64_MAX), the behaviour will be as
  *     expected.
- *   - and sending mode was file (file_size != 0), the file_chunk_request
+ *   - and sending mode was file (file_size != UINT64_MAX), the file_chunk_request
  *     callback will receive length = 0 when Core thinks the file transfer has
  *     finished. If the client remembers the file size as it was when sending
  *     the request, it will terminate the transfer normally. If the client
@@ -1654,7 +1657,7 @@ typedef enum TOX_ERR_FILE_SEND {
  * @param friend_number The friend number of the friend the file send request
  *   should be sent to.
  * @param kind The meaning of the file to be sent.
- * @param file_size Size in bytes of the file the client wants to send, 0 if
+ * @param file_size Size in bytes of the file the client wants to send, UINT64_MAX if
  *   unknown or streaming.
  * @param file_id A file identifier of length TOX_FILE_ID_LENGTH that can be used to
  *   uniquely identify file transfers across core restarts. If NULL, a random one will
@@ -1804,7 +1807,7 @@ void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *function, void *user_dat
  *
  * If position is equal to file_size (received in the file_receive callback)
  * when the transfer finishes, the file was received completely. Otherwise, if
- * file_size was 0, streaming ended successfully when length is 0.
+ * file_size was UINT64_MAX, streaming ended successfully when length is 0.
  *
  * @param friend_number The friend number of the friend who is sending the file.
  * @param file_number The friend-specific file number the data received is

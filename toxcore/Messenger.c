@@ -1282,7 +1282,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (ft->status != FILESTATUS_NOT_ACCEPTED)
         return -5;
 
-    if (ft->size && position > ft->size) {
+    if (position > ft->size) {
         return -6;
     }
 
@@ -1356,14 +1356,12 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (length > MAX_FILE_DATA_SIZE)
         return -5;
 
-    if (ft->size) {
-        if (ft->size - ft->transferred < length) {
-            return -5;
-        }
+    if (ft->size - ft->transferred < length) {
+        return -5;
+    }
 
-        if (length != MAX_FILE_DATA_SIZE && (ft->transferred + length) != ft->size) {
-            return -5;
-        }
+    if (ft->size != UINT64_MAX && length != MAX_FILE_DATA_SIZE && (ft->transferred + length) != ft->size) {
+        return -5;
     }
 
     if (position != ft->transferred) {
@@ -1471,14 +1469,12 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
 
             uint16_t length = MAX_FILE_DATA_SIZE;
 
-            if (ft->size) {
-                if (ft->size == ft->requested) {
-                    break;
-                }
+            if (ft->size == ft->requested) {
+                break;
+            }
 
-                if (ft->size - ft->requested < length) {
-                    length = ft->size - ft->requested;
-                }
+            if (ft->size - ft->requested < length) {
+                length = ft->size - ft->requested;
             }
 
             ++ft->slots_allocated;
@@ -1586,7 +1582,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
         memcpy(&position, data, sizeof(position));
         net_to_host((uint8_t *) &position, sizeof(position));
 
-        if (ft->size && position > ft->size) {
+        if (position > ft->size) {
             return -1;
         }
 
@@ -2117,7 +2113,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             ft->transferred += file_data_length;
 
-            if ((ft->size && ft->transferred >= ft->size) || file_data_length != MAX_FILE_DATA_SIZE) {
+            if (ft->transferred >= ft->size || file_data_length != MAX_FILE_DATA_SIZE) {
                 file_data_length = 0;
                 file_data = NULL;
                 position = ft->transferred;
