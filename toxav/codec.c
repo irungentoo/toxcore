@@ -41,7 +41,6 @@
 #define DEFAULT_JBUF 6
 
 /* Good quality encode. */
-#define MAX_ENCODE_TIME_US VPX_DL_GOOD_QUALITY
 #define MAX_DECODE_TIME_US 0
 
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */

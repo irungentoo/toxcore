@@ -86,7 +86,7 @@
 
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
    at the dT defined in net_crypto.c */
-#define CONGESTION_QUEUE_ARRAY_SIZE 8
+#define CONGESTION_QUEUE_ARRAY_SIZE 24
 
 typedef struct {
     uint64_t time;
@@ -364,12 +364,19 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
                                 uint16_t length), void *object);
 
-/* Send an onion packet via a random connected TCP relay.
+/* Return a random TCP connection number for use in send_tcp_onion_request.
+ *
+ * return TCP connection number on success.
+ * return -1 on failure.
+ */
+int get_random_tcp_con_number(Net_Crypto *c);
+
+/* Send an onion packet via the TCP relay corresponding to TCP_conn_number.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length);
+int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const uint8_t *data, uint16_t length);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.

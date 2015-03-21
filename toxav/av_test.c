@@ -1,6 +1,18 @@
 #include "toxav.h"
 #include "../toxcore/tox.h"
 
+#ifdef __APPLE__
+#	include <OpenAL/al.h>
+#	include <OpenAL/alc.h>
+#else
+#	include <AL/al.h>
+#	include <AL/alc.h>
+/* compatibility with older versions of OpenAL */
+#	ifndef ALC_ALL_DEVICES_SPECIFIER
+#		include <AL/alext.h>
+#	endif  /* ALC_ALL_DEVICES_SPECIFIER */
+#endif  /* __APPLE__ */
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +25,16 @@
 #include <unistd.h>
 #define c_sleep(x) usleep(1000*x)
 #endif
+
+/* Enable/disable tests */
+#define TEST_REGULAR_AV 0
+#define TEST_REGULAR_A 0
+#define TEST_REGULAR_V 0
+#define TEST_REJECT 0
+#define TEST_CANCEL 0
+#define TEST_MUTE_UNMUTE 0
+#define TEST_TRANSFER_A 1
+
 
 typedef struct {
     bool incoming;
@@ -134,9 +156,201 @@ void iterate(Tox* Bsn, ToxAV* AliceAV, ToxAV* BobAV)
     c_sleep(20);
 }
 
+int device_read_frame(ALCdevice* device, int32_t frame_dur, int16_t* PCM, size_t max_size)
+{
+	int f_size = (48000 * frame_dur / 1000);
+	
+	if (max_size < f_size)
+		return -1;
+
+	/* Don't block if not enough data */
+	int32_t samples;
+	alcGetIntegerv(device, ALC_CAPTURE_SAMPLES, sizeof(int32_t), &samples);
+	if (samples < f_size) 
+		return 0;
+	
+	alcCaptureSamples(device, PCM, f_size);
+	return f_size;
+}
+
+int device_play_frame(uint32_t source, int16_t* PCM, size_t size)
+{
+	uint32_t bufid;
+    int32_t processed, queued;
+    alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
+    alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
+
+    if(processed) {
+        uint32_t bufids[processed];
+        alSourceUnqueueBuffers(source, processed, bufids);
+        alDeleteBuffers(processed - 1, bufids + 1);
+        bufid = bufids[0];
+    }
+    else if(queued < 16)
+		alGenBuffers(1, &bufid);
+    else
+        return 0;
+    
+
+    alBufferData(bufid, AL_FORMAT_STEREO16, PCM, size * 2 * 2, 48000);
+    alSourceQueueBuffers(source, 1, &bufid);
+
+    int32_t state;
+    alGetSourcei(source, AL_SOURCE_STATE, &state);
+
+    if(state != AL_PLAYING) 
+		alSourcePlay(source);
+	return 1;
+}
+
+int print_devices()
+{
+	const char* default_input;
+	const char* default_output;
+	
+	const char *device;
+
+	printf("Default input device: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
+	printf("Default output device: %s\n", alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER));
+	
+	printf("\n");
+	
+	printf("Input devices:\n");
+	
+	int i = 0;
+	for(device = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER); *device; 
+		device += strlen( device ) + 1, ++i) {
+		printf("%d) %s\n", i, device);
+	}
+	
+	printf("\n");
+	printf("Output devices:\n");
+	
+	i = 0;
+	for(device = alcGetString(NULL, ALC_DEVICE_SPECIFIER); *device; 
+		device += strlen( device ) + 1, ++i) {
+		printf("%d) %s\n", i, device);
+	}
+	
+	return 0;
+}
+
+int print_help(const char* name, int rc)
+{
+	fprintf(stderr, "Usage: %s [-h] <in device> <out device>\n", name);
+	return rc;
+}
+
+long get_device_idx(const char* arg)
+{
+	if (strcmp(arg, "-") == 0)
+		return -1; /* Default */
+	
+	char *p;
+	long res = strtol(arg, &p, 10);
+	
+	if (*p) {
+		fprintf(stderr, "Invalid device!");
+		exit(1);
+	}
+	
+	return res;
+}
 
 int main (int argc, char** argv)
 {
+	if (argc == 2) {
+		if (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--devices") == 0) {
+			return print_devices();
+		}
+		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+			return print_help(argv[0], 0);
+		}
+	}
+	
+	if (argc != 3) {
+		fprintf(stderr, "Invalid input!\n");
+		return print_help(argv[0], 1);
+	}
+	
+	int i;
+	
+	const char* in_device_name = "";
+	const char* out_device_name = "";
+	
+	{
+		long dev = get_device_idx(argv[1]);
+		if (dev == -1)
+			in_device_name = alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER);
+		else
+		{
+			const char* tmp;
+			i = -1;
+			for(tmp = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER); *tmp && i != dev;
+				tmp += strlen( tmp ) + 1, ++i)
+				in_device_name = tmp;
+		}
+		
+		printf("Input device: %s\n", in_device_name);
+	}
+	
+	{
+		long dev = get_device_idx(argv[1]);
+		if (dev == -1)
+			out_device_name = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+		else
+		{
+			const char* tmp;
+			i = -1;
+			for(tmp = alcGetString(NULL, ALC_DEVICE_SPECIFIER); *tmp && i != dev;
+				tmp += strlen( tmp ) + 1, ++i)
+				out_device_name = tmp;
+		}
+		
+		printf("Output device: %s\n", out_device_name);
+	}
+	
+	ALCdevice* out_device;
+	ALCcontext* out_ctx;
+	uint32_t source;
+	uint32_t buffers[5];
+	
+	{ /* Open output device */
+		out_device = alcOpenDevice(out_device_name);
+		if ( !out_device ) {
+			fprintf(stderr, "Failed to open playback device: %s: %d\n", out_device_name, alGetError());
+			return 1;
+		}
+		
+		out_ctx = alcCreateContext(out_device, NULL);
+        alcMakeContextCurrent(out_ctx);
+		
+		alGenBuffers(5, buffers);
+		alGenSources((uint32_t)1, &source);
+		alSourcei(source, AL_LOOPING, AL_FALSE);
+		
+		uint16_t zeros[10000];
+		memset(zeros, 0, 10000);
+		
+		for ( i = 0; i < 5; ++i ) 
+			alBufferData(buffers[i], AL_FORMAT_STEREO16, zeros, 10000, 48000);
+		
+		alSourceQueueBuffers(source, 5, buffers);
+		alSourcePlay(source);
+	}
+	
+	ALCdevice* in_device;
+	
+	{ /* Open input device */
+		in_device = alcCaptureOpenDevice(in_device_name, 48000, AL_FORMAT_STEREO16, 10000);
+		if ( !in_device ) {
+			fprintf(stderr, "Failed to open capture device: %s: %d\n", in_device_name, alGetError());
+			return 1;
+		}
+		
+		alcCaptureStart(in_device);
+	}
+	
     Tox *Bsn = tox_new(0);
     Tox *Alice = tox_new(0);
     Tox *Bob = tox_new(0);
@@ -163,7 +377,7 @@ int main (int argc, char** argv)
     
 
 #define REGULAR_CALL_FLOW(A_BR, V_BR) \
-    { \
+	do { \
         memset(&AliceCC, 0, sizeof(CallControl)); \
         memset(&BobCC, 0, sizeof(CallControl)); \
         \
@@ -208,20 +422,26 @@ int main (int argc, char** argv)
             iterate(Bsn, AliceAV, BobAV); \
         } \
         printf("Success!\n");\
-    }
+    } while(0)
     
-    printf("\nTrying regular call (Audio and Video)...\n");
-    REGULAR_CALL_FLOW(48, 4000);
-    
-    printf("\nTrying regular call (Audio only)...\n");
-    REGULAR_CALL_FLOW(48, 0);
-    
-    printf("\nTrying regular call (Video only)...\n");
-    REGULAR_CALL_FLOW(0, 4000);
-    
+    if (TEST_REGULAR_AV) {
+		printf("\nTrying regular call (Audio and Video)...\n");
+		REGULAR_CALL_FLOW(48, 4000);
+	}
+	
+    if (TEST_REGULAR_A) {
+		printf("\nTrying regular call (Audio only)...\n");
+		REGULAR_CALL_FLOW(48, 0);
+	}
+	
+	if (TEST_REGULAR_V) {
+		printf("\nTrying regular call (Video only)...\n");
+		REGULAR_CALL_FLOW(0, 4000);
+	}
+	
 #undef REGULAR_CALL_FLOW
     
-    { /* Alice calls; Bob rejects */
+    if (TEST_REJECT) { /* Alice calls; Bob rejects */
         printf("\nTrying reject flow...\n");
         
         memset(&AliceCC, 0, sizeof(CallControl));
@@ -257,7 +477,7 @@ int main (int argc, char** argv)
         printf("Success!\n");
     }
     
-    { /* Alice calls; Alice cancels while ringing */
+    if (TEST_CANCEL) { /* Alice calls; Alice cancels while ringing */
         printf("\nTrying cancel (while ringing) flow...\n");
         
         memset(&AliceCC, 0, sizeof(CallControl));
@@ -294,9 +514,8 @@ int main (int argc, char** argv)
         printf("Success!\n");
     }
     
-    { /* Check Mute-Unmute etc */
+    if (TEST_MUTE_UNMUTE) { /* Check Mute-Unmute etc */
         printf("\nTrying mute functionality...\n");
-        
         
         memset(&AliceCC, 0, sizeof(CallControl));
         memset(&BobCC, 0, sizeof(CallControl));
@@ -382,7 +601,23 @@ int main (int argc, char** argv)
         printf("Success!\n");
     }
     
-    
+    if (TEST_TRANSFER_A) { /* Audio encoding/decoding and transfer */
+		printf("\nTrying audio enc/dec...\n");
+		
+		int16_t PCM[10000];
+		time_t start_time = time(NULL);
+		
+		/* Run for 5 seconds */
+		while ( start_time + 10 > time(NULL) ) {
+			int frame_size = device_read_frame(in_device, 20, PCM, sizeof(PCM));
+			if (frame_size > 0)
+				device_play_frame(source, PCM, frame_size);
+// 			c_sleep(20);
+		}
+		
+		printf("Success!");
+	}
+	
     toxav_kill(BobAV);
     toxav_kill(AliceAV);
     tox_kill(Bob);
@@ -390,5 +625,8 @@ int main (int argc, char** argv)
     tox_kill(Bsn);
     
     printf("\nTest successful!\n");
+	
+	alcCloseDevice(out_device);
+	alcCaptureCloseDevice(in_device);
     return 0;
 }

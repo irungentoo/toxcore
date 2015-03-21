@@ -49,6 +49,7 @@ av_test_LDADD =       $(LIBSODIUM_LDFLAGS) \
                       libtoxcore.la \
                       $(LIBSODIUM_LIBS) \
                       $(NACL_OBJECTS) \
+                      -lopenal \
                       $(NACL_LIBS)
 
 

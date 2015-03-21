@@ -51,12 +51,12 @@ typedef struct {
 void set_nospam(Friend_Requests *fr, uint32_t num);
 uint32_t get_nospam(const Friend_Requests *fr);
 
-/* Remove client id from received_requests list.
+/* Remove real_pk from received_requests list.
  *
  *  return 0 if it removed it successfully.
  *  return -1 if it didn't find it.
  */
-int remove_request_received(Friend_Requests *fr, const uint8_t *client_id);
+int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk);
 
 /* Set the function that will be executed when a friend request for us is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, uint16_t length, void * userdata)

@@ -55,6 +55,7 @@ START_TEST(test_basics)
 
     uint8_t found = Assoc_get_close_entries(assoc, &close_entries);
     ck_assert_msg(found == 1, "get_close_entries(): expected %u, got %u", 1, found);
+    kill_Assoc(assoc);
 }
 END_TEST
 
@@ -130,6 +131,7 @@ START_TEST(test_fillup)
 
     ck_assert_msg(good == 8, "Entries found were not the closest ones. Only %u/8 were.", good);
     //printf("good: %u %u %u\n", good, a, ((uint32_t)current_time() - a));
+    kill_Assoc(assoc);
 }
 END_TEST
 

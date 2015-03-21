@@ -138,12 +138,12 @@ START_TEST(test_basic)
 
     IP_Port on1 = {ip, onion1->net->port};
     Node_format n1;
-    memcpy(n1.client_id, onion1->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(n1.public_key, onion1->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     n1.ip_port = on1;
 
     IP_Port on2 = {ip, onion2->net->port};
     Node_format n2;
-    memcpy(n2.client_id, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(n2.public_key, onion2->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
     n2.ip_port = on2;
 
     Node_format nodes[4];
@@ -180,7 +180,7 @@ START_TEST(test_basic)
     randombytes(sb_data, sizeof(sb_data));
     uint64_t s;
     memcpy(&s, sb_data, sizeof(uint64_t));
-    memcpy(test_3_pub_key, nodes[3].client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(test_3_pub_key, nodes[3].public_key, crypto_box_PUBLICKEYBYTES);
     ret = send_announce_request(onion1->net, &path, nodes[3], onion1->dht->self_public_key,
                                 onion1->dht->self_secret_key,
                                 zeroes, onion1->dht->self_public_key, onion1->dht->self_public_key, s);
@@ -224,6 +224,39 @@ START_TEST(test_basic)
         do_onion(onion2);
         c_sleep(50);
     }
+
+    kill_onion_announce(onion1_a);
+    kill_onion_announce(onion2_a);
+
+    {
+        Onion *onion = onion1;
+
+        Networking_Core *net = onion->dht->net;
+        DHT *dht = onion->dht;
+        kill_onion(onion);
+        kill_DHT(dht);
+        kill_networking(net);
+    }
+
+    {
+        Onion *onion = onion2;
+
+        Networking_Core *net = onion->dht->net;
+        DHT *dht = onion->dht;
+        kill_onion(onion);
+        kill_DHT(dht);
+        kill_networking(net);
+    }
+
+    {
+        Onion *onion = onion3;
+
+        Networking_Core *net = onion->dht->net;
+        DHT *dht = onion->dht;
+        kill_onion(onion);
+        kill_DHT(dht);
+        kill_networking(net);
+    }
 }
 END_TEST
 
@@ -255,6 +288,18 @@ void do_onions(Onions *on)
     networking_poll(on->onion->net);
     do_DHT(on->onion->dht);
     do_onion_client(on->onion_c);
+}
+
+void kill_onions(Onions *on)
+{
+    Networking_Core *net = on->onion->dht->net;
+    DHT *dht = on->onion->dht;
+    kill_onion_client(on->onion_c);
+    kill_onion_announce(on->onion_a);
+    kill_onion(on->onion);
+    kill_DHT(dht);
+    kill_networking(net);
+    free(on);
 }
 
 #define NUM_ONIONS 50
@@ -334,6 +379,10 @@ START_TEST(test_announce)
     }
 
     ck_assert_msg(ip_port.port == onions[7]->onion->net->port, "Port in returned ip not correct.");
+
+    for (i = 0; i < NUM_ONIONS; ++i) {
+        kill_onions(onions[i]);
+    }
 }
 END_TEST
 

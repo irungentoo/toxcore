@@ -105,6 +105,8 @@ sudo make install
 You need the latest XCode with the Developer Tools (Preferences -> Downloads -> Command Line Tools).
 The following libraries are required along with libsodium and cmake for Mountain Lion and XCode 4.6.3 install libtool, automake and autoconf. You can download them with Homebrew, or install them manually.
 
+**Note: OS X users can also install Toxcore using [osx_build_script_toxcore.sh](other/osx_build_script_toxcore.sh)**
+
 There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch. See [Usage](#usage) below.
 <a name="homebrew" />
 ####Homebrew:

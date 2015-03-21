@@ -447,7 +447,7 @@ static int remove_close_conn(Group_Chats *g_c, int groupnumber, int friendcon_id
         if (g->close[i].type == GROUPCHAT_CLOSE_NONE)
             continue;
 
-        if (g->close[i].number == friendcon_id) {
+        if (g->close[i].number == (unsigned int)friendcon_id) {
             g->close[i].type = GROUPCHAT_CLOSE_NONE;
             kill_friend_connection(g_c->fr_c, friendcon_id);
             return 0;
@@ -576,7 +576,7 @@ static void set_conns_type_close(Group_Chats *g_c, int groupnumber, int friendco
         if (g->close[i].type == GROUPCHAT_CLOSE_NONE)
             continue;
 
-        if (g->close[i].number != friendcon_id)
+        if (g->close[i].number != (unsigned int)friendcon_id)
             continue;
 
         if (type == GROUPCHAT_CLOSE_ONLINE) {
@@ -789,7 +789,7 @@ int group_names(const Group_Chats *g_c, int groupnumber, uint8_t names[][MAX_NAM
     if (!g)
         return -1;
 
-    int i;
+    unsigned int i;
 
     for (i = 0; i < g->numpeers && i < length; ++i) {
         lengths[i] = group_peername(g_c, groupnumber, i, names[i]);

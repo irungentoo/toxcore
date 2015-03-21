@@ -1,0 +1,19 @@
+[Unit]
+Description=Tox DHT Bootstrap Daemon
+After=network.target
+
+[Service]
+Type=forking
+PermissionsStartOnly=true
+ExecStartPre=-/bin/mkdir /var/run/tox-bootstrapd -p
+ExecStartPre=/bin/chown tox-bootstrapd:tox-bootstrapd -R /var/run/tox-bootstrapd
+WorkingDirectory=/var/lib/tox-bootstrapd
+ExecStart=/usr/local/bin/tox-bootstrapd /etc/tox-bootstrapd.conf
+User=tox-bootstrapd
+Group=tox-bootstrapd
+PIDFile=/var/run/tox-bootstrapd/tox-bootstrapd.pid
+#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+

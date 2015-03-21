@@ -114,6 +114,12 @@ START_TEST(test_save_friend)
     test = tox_get_client_id(tox4, 0, address5);
     ck_assert_msg(test == 0, "no friends! the third");
     ck_assert_msg(memcmp(address, address2, TOX_CLIENT_ID_SIZE) == 0, "addresses don't match! the third");
+
+    tox_kill(tox1);
+    tox_kill(tox2);
+    tox_kill(tox3);
+    tox_kill(tox4);
+    tox_kill(tox5);
 }
 END_TEST
 
@@ -160,8 +166,8 @@ Suite *encryptsave_suite(void)
     Suite *s = suite_create("encryptsave");
 
     DEFTESTCASE_SLOW(known_kdf, 60); /* is 5-10 seconds on my computer, but is directly dependent on CPU */
-    DEFTESTCASE(save_friend);
-    DEFTESTCASE(keys);
+    DEFTESTCASE_SLOW(save_friend, 20);
+    DEFTESTCASE_SLOW(keys, 30);
 
     return s;
 }

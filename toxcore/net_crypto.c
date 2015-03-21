@@ -608,6 +608,23 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
     return 0;
 }
 
+static int clear_buffer(Packets_Array *array)
+{
+    uint32_t i;
+
+    for (i = array->buffer_start; i != array->buffer_end; ++i) {
+        uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
+
+        if (array->buffer[num]) {
+            free(array->buffer[num]);
+            array->buffer[num] = NULL;
+        }
+    }
+
+    array->buffer_start = i;
+    return 0;
+}
+
 /* Set array buffer end to number.
  *
  * return -1 on failure.
@@ -1378,12 +1395,18 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
         return -1;
 
     uint32_t i;
-    pthread_mutex_destroy(&c->crypto_connections[crypt_connection_id].mutex);
+
+    /* Keep mutex, only destroy it when connection is realloced out. */
+    pthread_mutex_t mutex = c->crypto_connections[crypt_connection_id].mutex;
     memset(&(c->crypto_connections[crypt_connection_id]), 0 , sizeof(Crypto_Connection));
+    c->crypto_connections[crypt_connection_id].mutex = mutex;
 
     for (i = c->crypto_connections_length; i != 0; --i) {
-        if (c->crypto_connections[i - 1].status != CRYPTO_CONN_NO_CONNECTION)
+        if (c->crypto_connections[i - 1].status == CRYPTO_CONN_NO_CONNECTION) {
+            pthread_mutex_destroy(&c->crypto_connections[i - 1].mutex);
+        } else {
             break;
+        }
     }
 
     if (c->crypto_connections_length != i) {
@@ -1798,7 +1821,7 @@ static int tcp_response_callback(void *object, uint8_t connection_id, const uint
     uint32_t i;
 
     for (i = 0; i < conn->num_tcp_relays; ++i) {
-        if (memcmp(TCP_con->public_key, conn->tcp_relays[i].client_id, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (memcmp(TCP_con->public_key, conn->tcp_relays[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             set_conn_tcp_status(conn, location, STATUS_TCP_INVISIBLE);
             return 0;
         }
@@ -1977,7 +2000,7 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
     uint32_t i;
 
     for (i = 0; i < conn->num_tcp_relays; ++i) {
-        if (memcmp(conn->tcp_relays[i].client_id, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (memcmp(conn->tcp_relays[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             conn->tcp_relays[i].ip_port = ip_port;
             return 0;
         }
@@ -1986,10 +2009,10 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
     if (conn->num_tcp_relays == MAX_TCP_RELAYS_PEER) {
         uint16_t index = rand() % MAX_TCP_RELAYS_PEER;
         conn->tcp_relays[index].ip_port = ip_port;
-        memcpy(conn->tcp_relays[index].client_id, public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(conn->tcp_relays[index].public_key, public_key, crypto_box_PUBLICKEYBYTES);
     } else {
         conn->tcp_relays[conn->num_tcp_relays].ip_port = ip_port;
-        memcpy(conn->tcp_relays[conn->num_tcp_relays].client_id, public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(conn->tcp_relays[conn->num_tcp_relays].public_key, public_key, crypto_box_PUBLICKEYBYTES);
         ++conn->num_tcp_relays;
     }
 
@@ -2039,24 +2062,45 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
     return -1;
 }
 
-/* Send an onion packet via a random connected TCP relay.
+/* Return a random TCP connection number for use in send_tcp_onion_request.
  *
- * return 0 on success.
+ * TODO: This number is just the index of an array that the elements can
+ * change without warning.
+ *
+ * return TCP connection number on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(Net_Crypto *c, const uint8_t *data, uint16_t length)
+int get_random_tcp_con_number(Net_Crypto *c)
 {
     unsigned int i, r = rand();
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS]) {
-            pthread_mutex_lock(&c->tcp_mutex);
-            int ret = send_onion_request(c->tcp_connections[(i + r) % MAX_TCP_CONNECTIONS], data, length);
-            pthread_mutex_unlock(&c->tcp_mutex);
-
-            if (ret == 1)
-                return 0;
+            return (i + r) % MAX_TCP_CONNECTIONS;
         }
+    }
+
+    return -1;
+}
+
+/* Send an onion packet via the TCP relay corresponding to TCP_conn_number.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const uint8_t *data, uint16_t length)
+{
+    if (TCP_conn_number > MAX_TCP_CONNECTIONS) {
+        return -1;
+    }
+
+    if (c->tcp_connections[TCP_conn_number]) {
+        pthread_mutex_lock(&c->tcp_mutex);
+        int ret = send_onion_request(c->tcp_connections[TCP_conn_number], data, length);
+        pthread_mutex_unlock(&c->tcp_mutex);
+
+        if (ret == 1)
+            return 0;
     }
 
     return -1;
@@ -2087,7 +2131,7 @@ unsigned int copy_connected_tcp_relays(const Net_Crypto *c, Node_format *tcp_rel
 
     for (i = 0; i < MAX_TCP_CONNECTIONS; ++i) {
         if (c->tcp_connections[i] != NULL) {
-            memcpy(tcp_relays[copied].client_id, c->tcp_connections[i]->public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(tcp_relays[copied].public_key, c->tcp_connections[i]->public_key, crypto_box_PUBLICKEYBYTES);
             tcp_relays[copied].ip_port = c->tcp_connections[i]->ip_port;
 
             if (tcp_relays[copied].ip_port.ip.family == AF_INET) {
@@ -2391,7 +2435,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 
 /* The dT for the average packet receiving rate calculations.
    Also used as the */
-#define PACKET_COUNTER_AVERAGE_INTERVAL 100
+#define PACKET_COUNTER_AVERAGE_INTERVAL 50
 
 /* Ratio of recv queue size / recv packet rate (in seconds) times
  * the number of ms between request packets to send at that ratio
@@ -2474,7 +2518,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 double min_speed = 1000.0 * (((double)(total_sent)) / ((double)(CONGESTION_QUEUE_ARRAY_SIZE) *
                                              PACKET_COUNTER_AVERAGE_INTERVAL));
 
-                conn->packet_send_rate = min_speed * 1.3;
+                conn->packet_send_rate = min_speed * 1.2;
 
                 if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
                     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
@@ -2678,6 +2722,9 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 
         disconnect_peer_tcp(c, crypt_connection_id);
         bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        clear_temp_packet(c, crypt_connection_id);
+        clear_buffer(&conn->send_array);
+        clear_buffer(&conn->recv_array);
         ret = wipe_crypto_connection(c, crypt_connection_id);
     }
 
