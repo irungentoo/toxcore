@@ -202,6 +202,10 @@ void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_numb
     }
 
     if (length == 0) {
+        if (file_sending_done) {
+            ck_abort_msg("File sending already done.");
+        }
+
         file_sending_done = 1;
         return;
     }
