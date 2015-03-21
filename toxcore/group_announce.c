@@ -467,13 +467,33 @@ static void remove_gca_self_announce(GC_Announce *announce, const uint8_t *chat_
     }
 }
 
+/* Returns true if a self announce entry exists containing chat_id/self_public_key.
+ * Returns false otherwise.
+ */
+static bool gca_self_announce_set(GC_Announce *announce, const uint8_t *chat_id, const uint8_t *public_key)
+{
+    size_t i;
+
+    for (i = 0; i < MAX_GCA_SELF_ANNOUNCEMENTS; ++i) {
+        if (!announce->self_announce[i].is_set)
+            continue;
+
+        if (chat_id_equal(announce->self_announce[i].chat_id, chat_id)
+            && ext_pk_equal(announce->self_announce[i].self_public_key, public_key))
+            return true;
+    }
+
+    return false;
+}
+
 /* Announce a new group chat. Takes the extended public key and uses the signature key as the chat_id */
 int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_key, const uint8_t *self_secret_key,
                               const uint8_t *chat_id)
 {
     DHT *dht = announce->dht;
 
-    add_gca_self_announce(announce, chat_id, self_public_key, self_secret_key);
+    if (!gca_self_announce_set(announce, chat_id, self_public_key))
+        add_gca_self_announce(announce, chat_id, self_public_key, self_secret_key);
 
     /* packet contains: type, chat_id, node, timestamp, signature */
     uint8_t data[1 + CHAT_ID_SIZE + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
@@ -892,12 +912,10 @@ static void renew_gca_self_announces(GC_Announce *announce)
             continue;
 
         if (is_timeout(announce->self_announce[i].last_rcvd_ping, SELF_ANNOUNCE_TIMEOUT)) {
+            announce->self_announce[i].last_rcvd_ping = unix_time();
             gca_send_announce_request(announce, announce->self_announce[i].self_public_key,
                                       announce->self_announce[i].self_secret_key,
                                       announce->self_announce[i].chat_id);
-
-            /* remove old entry since a new one has been created */
-            memset(&announce->self_announce[i], 0, sizeof(struct GC_AnnouncedSelf));
         }
     }
 }

@@ -2450,7 +2450,8 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
 
     /* Remove all peers except self. Numpeers decrements with each call to gc_peer_delete */
     for (i = 1; chat->numpeers > 1; )
-        gc_peer_delete(c->messenger, chat->groupnumber, i, NULL, 0);
+        if (gc_peer_delete(c->messenger, chat->groupnumber, i, NULL, 0) == -1)
+            break;
 
     chat->connection_state = CS_DISCONNECTED;
     chat->self_last_rcvd_ping = chat->num_addrs > 0 ? unix_time() : 0;  /* Reconnect using saved peers or DHT */
