@@ -1091,7 +1091,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
  *  return -2 if filename length invalid.
  *  return -3 if no more file sending slots left.
  *  return -4 if could not send packet (friend offline).
- *  return -5 if succesfully sent file send request with filesize 0.
+ *
  */
 long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
                         const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
@@ -1115,22 +1115,18 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     if (file_sendrequest(m, friendnumber, i, file_type, filesize, file_id, filename, filename_length) == 0)
         return -4;
 
-    /* Only init file if filesize isn't 0. */
-    if (filesize) {
-        struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
-        ft->status = FILESTATUS_NOT_ACCEPTED;
-        ft->size = filesize;
-        ft->transferred = 0;
-        ft->requested = 0;
-        ft->slots_allocated = 0;
-        ft->paused = FILE_PAUSE_NOT;
-        memcpy(ft->id, file_id, FILE_ID_LENGTH);
+    struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
+    ft->status = FILESTATUS_NOT_ACCEPTED;
+    ft->size = filesize;
+    ft->transferred = 0;
+    ft->requested = 0;
+    ft->slots_allocated = 0;
+    ft->paused = FILE_PAUSE_NOT;
+    memcpy(ft->id, file_id, FILE_ID_LENGTH);
 
-        ++m->friendlist[friendnumber].num_sending_files;
-        return i;
-    } else {
-        return -5;
-    }
+    ++m->friendlist[friendnumber].num_sending_files;
+
+    return i;
 }
 
 int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
@@ -1472,6 +1468,12 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
                 break;
 
             uint16_t length = MAX_FILE_DATA_SIZE;
+
+            if (ft->size == 0) {
+                /* Send 0 data to friend if file is 0 length. */
+                file_data(m, friendnumber, i, 0, 0, 0);
+                break;
+            }
 
             if (ft->size == ft->requested) {
                 break;
@@ -2051,20 +2053,11 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if (ft->status != FILESTATUS_NONE)
                 break;
 
-            uint32_t real_filenumber = UINT32_MAX;
-
-            if (filesize) {
-                /* Don't */
-                ft->status = FILESTATUS_NOT_ACCEPTED;
-                ft->size = filesize;
-                ft->transferred = 0;
-                ft->paused = FILE_PAUSE_NOT;
-                memcpy(ft->id, data + 1 + sizeof(uint32_t) + sizeof(uint64_t), FILE_ID_LENGTH);
-
-                real_filenumber = filenumber;
-                real_filenumber += 1;
-                real_filenumber <<= 16;
-            }
+            ft->status = FILESTATUS_NOT_ACCEPTED;
+            ft->size = filesize;
+            ft->transferred = 0;
+            ft->paused = FILE_PAUSE_NOT;
+            memcpy(ft->id, data + 1 + sizeof(uint32_t) + sizeof(uint64_t), FILE_ID_LENGTH);
 
             uint8_t filename_terminated[filename_length + 1];
             uint8_t *filename = NULL;
@@ -2076,6 +2069,9 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 filename = filename_terminated;
             }
 
+            uint32_t real_filenumber = filenumber;
+            real_filenumber += 1;
+            real_filenumber <<= 16;
 
             if (m->file_sendrequest)
                 (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename, filename_length,
@@ -2099,13 +2095,13 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_FILE_DATA: {
-            if (data_length <= 1)
+            if (data_length < 1)
                 break;
 
             uint8_t filenumber = data[0];
             struct File_Transfers *ft = &m->friendlist[i].file_receiving[filenumber];
 
-            if (ft->status == FILESTATUS_NONE)
+            if (ft->status != FILESTATUS_TRANSFERRING)
                 break;
 
             uint64_t position = ft->transferred;
@@ -2126,7 +2122,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             ft->transferred += file_data_length;
 
-            if (ft->transferred >= ft->size || file_data_length != MAX_FILE_DATA_SIZE) {
+            if (file_data_length && (ft->transferred >= ft->size || file_data_length != MAX_FILE_DATA_SIZE)) {
                 file_data_length = 0;
                 file_data = NULL;
                 position = ft->transferred;

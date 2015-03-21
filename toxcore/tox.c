@@ -1000,10 +1000,6 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_FRIEND_NOT_CONNECTED);
             return UINT32_MAX;
-
-        case -5:
-            SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_OK_ZERO_LENGTH);
-            return UINT32_MAX;
     }
 
     /* can't happen */

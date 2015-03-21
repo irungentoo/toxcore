@@ -1610,12 +1610,7 @@ typedef enum TOX_ERR_FILE_SEND {
      * Too many ongoing transfers. The maximum number of concurrent file transfers
      * is 256 per friend per direction (sending and receiving).
      */
-    TOX_ERR_FILE_SEND_TOO_MANY,
-    /**
-     * A file request packet was successfully sent to the friend however since it was zero
-     * length, no file number was allocated for the file transfer.
-     */
-    TOX_ERR_FILE_SEND_OK_ZERO_LENGTH
+    TOX_ERR_FILE_SEND_TOO_MANY
 } TOX_ERR_FILE_SEND;
 
 /**
@@ -1633,9 +1628,6 @@ typedef enum TOX_ERR_FILE_SEND {
  *
  * When a friend goes offline, all file transfers associated with the friend are
  * purged from core.
- *
- * if file_size is 0, this function will not allocate a file transfer in core and so
- * will not return a valid file number however it will send a file request packet.
  *
  * If the file contents change during a transfer, the behaviour is unspecified
  * in general. What will actually happen depends on the mode in which the file
@@ -1786,8 +1778,6 @@ void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *functi
  * returns, a transfer can be rejected by sending a TOX_FILE_CONTROL_CANCEL
  * control command before any other control commands. It can be accepted by
  * sending TOX_FILE_CONTROL_RESUME.
- *
- * If file_size is zero, the file_number is invalid and should be ignored.
  *
  * @param friend_number The friend number of the friend who is sending the file
  *   transfer request.

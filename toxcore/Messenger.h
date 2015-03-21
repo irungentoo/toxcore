@@ -618,7 +618,7 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
  *  return -2 if filename length invalid.
  *  return -3 if no more file sending slots left.
  *  return -4 if could not send packet (friend offline).
- *  return -5 if succesfully sent file send request with filesize 0.
+ *
  */
 long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
                         const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length);
