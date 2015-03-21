@@ -1489,8 +1489,8 @@ typedef enum TOX_ERR_FILE_CONTROL {
  *
  * @return true on success.
  */
-bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
-                           TOX_ERR_FILE_CONTROL *error);
+bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                      TOX_ERR_FILE_CONTROL *error);
 
 
 /**
@@ -1555,8 +1555,8 @@ typedef enum TOX_ERR_FILE_SEEK {
  * @param file_number The friend-specific identifier for the file transfer.
  * @param position The position that the file should be seeked to.
  */
-bool tox_file_send_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
-                        TOX_ERR_FILE_SEEK *error);
+bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                   TOX_ERR_FILE_SEEK *error);
 
 typedef enum TOX_ERR_FILE_GET {
     TOX_ERR_FILE_GET_OK,

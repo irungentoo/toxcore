@@ -845,8 +845,8 @@ bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
     return 1;
 }
 
-bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
-                           TOX_ERR_FILE_CONTROL *error)
+bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                      TOX_ERR_FILE_CONTROL *error)
 {
     Messenger *m = tox;
     int ret = file_control(m, friend_number, file_number, control);
@@ -894,8 +894,8 @@ bool tox_file_send_control(Tox *tox, uint32_t friend_number, uint32_t file_numbe
     return 0;
 }
 
-bool tox_file_send_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
-                        TOX_ERR_FILE_SEEK *error)
+bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                   TOX_ERR_FILE_SEEK *error)
 {
     Messenger *m = tox;
     int ret = file_seek(m, friend_number, file_number, position);

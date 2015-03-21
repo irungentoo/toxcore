@@ -151,30 +151,30 @@ void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, ui
 
         TOX_ERR_FILE_SEEK err_s;
 
-        if (!tox_file_send_seek(tox, friend_number, file_number, 1337, &err_s)) {
-            ck_abort_msg("tox_file_send_seek error");
+        if (!tox_file_seek(tox, friend_number, file_number, 1337, &err_s)) {
+            ck_abort_msg("tox_file_seek error");
         }
 
-        ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_OK, "tox_file_send_seek wrong error");
+        ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_OK, "tox_file_seek wrong error");
     } else {
         sending_pos = size_recv = 0;
     }
 
     TOX_ERR_FILE_CONTROL error;
 
-    if (tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error)) {
+    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error)) {
         ++file_accepted;
     } else {
-        ck_abort_msg("tox_file_send_control failed. %i", error);
+        ck_abort_msg("tox_file_control failed. %i", error);
     }
 
     TOX_ERR_FILE_SEEK err_s;
 
-    if (tox_file_send_seek(tox, friend_number, file_number, 1234, &err_s)) {
-        ck_abort_msg("tox_file_send_seek no error");
+    if (tox_file_seek(tox, friend_number, file_number, 1234, &err_s)) {
+        ck_abort_msg("tox_file_seek no error");
     }
 
-    ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_DENIED, "tox_file_send_seek wrong error");
+    ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_DENIED, "tox_file_seek wrong error");
 }
 
 uint32_t sendf_ok;

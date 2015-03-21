@@ -129,7 +129,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
 {
     if (type != TOX_FILE_KIND_DATA) {
         printf("Refused invalid file type.");
-        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
@@ -151,7 +151,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
 
     if (tempfile != 0) {
         fclose(tempfile);
-        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
@@ -159,11 +159,11 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     file_recv[file_index].file = fopen(fullpath, "wb");
 
     if (file_recv[file_index].file == 0) {
-        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
-    if (tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
+    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
         printf("Accepted file transfer. (file: %s)\n", fullpath);
     }
 

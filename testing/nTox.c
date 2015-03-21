@@ -1133,7 +1133,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
 {
     if (type != TOX_FILE_KIND_DATA) {
         new_lines("Refused invalid file type.");
-        tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
+        tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_CANCEL, 0);
         return;
     }
 
@@ -1141,7 +1141,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     sprintf(msg, "[t] %u is sending us: %s of size %llu", friend_number, filename, (long long unsigned int)file_size);
     new_lines(msg);
 
-    if (tox_file_send_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
+    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
         sprintf(msg, "Accepted file transfer. (saving file as: %u.%u.bin)", friend_number, file_number);
         new_lines(msg);
     } else
