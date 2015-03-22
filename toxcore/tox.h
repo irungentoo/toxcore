@@ -1128,7 +1128,7 @@ typedef void tox_friend_status_message_cb(Tox *tox, uint32_t friend_number, cons
 /**
  * Set the callback for the `friend_status_message` event. Pass NULL to unset.
  *
- * This event is triggered when a friend changes their name.
+ * This event is triggered when a friend changes their status message.
  */
 void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *function, void *user_data);
 
