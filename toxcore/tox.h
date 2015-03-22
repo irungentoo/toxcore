@@ -1724,6 +1724,9 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
  * chunk to terminate. For streams, core will know that the transfer is finished
  * if a chunk with length less than the length requested in the callback is sent.
  *
+ * @param friend_number The friend number of the receiving friend for this file.
+ * @param file_number The file transfer identifier returned by tox_file_send.
+ * @param position The file or stream position from which to continue reading.
  * @return true on success.
  */
 bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
