@@ -1128,7 +1128,7 @@ typedef void tox_friend_status_message_cb(Tox *tox, uint32_t friend_number, cons
 /**
  * Set the callback for the `friend_status_message` event. Pass NULL to unset.
  *
- * This event is triggered when a friend changes their name.
+ * This event is triggered when a friend changes their status message.
  */
 void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *function, void *user_data);
 
@@ -1724,6 +1724,9 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
  * chunk to terminate. For streams, core will know that the transfer is finished
  * if a chunk with length less than the length requested in the callback is sent.
  *
+ * @param friend_number The friend number of the receiving friend for this file.
+ * @param file_number The file transfer identifier returned by tox_file_send.
+ * @param position The file or stream position from which to continue reading.
  * @return true on success.
  */
 bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
@@ -1773,6 +1776,9 @@ void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *functi
 /**
  * The function type for the `file_receive` callback.
  *
+ * Maximum filename length is TOX_MAX_FILENAME_LENGTH bytes. The filename should generally just be
+ * a file name, not a path with directory names.
+ *
  * The client should acquire resources to be associated with the file transfer.
  * Incoming file transfers start in the PAUSED state. After this callback
  * returns, a transfer can be rejected by sending a TOX_FILE_CONTROL_CANCEL
@@ -1783,6 +1789,10 @@ void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *functi
  *   transfer request.
  * @param file_number The friend-specific file number the data received is
  *   associated with.
+ * @param kind The meaning of the file to be sent.
+ * @param file_size Size in bytes of the file about to be received from the client,
+ *   UINT64_MAX if unknown or streaming.
+ * @param filename_length Size in bytes of the filename.
  */
 typedef void tox_file_recv_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind,
                               uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
