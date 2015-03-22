@@ -215,13 +215,6 @@ void toxav_iteration(ToxAV* av)
     for (; i; i = i->next) {
         if (i->active) {
             pthread_mutex_lock(i->mutex_decoding);
-            
-            /* TODO make AV synchronisation */
-            if (av->racb.first)
-                av->racb.first(av, i->friend_id, av->racb.second);
-            if (av->rvcb.first)
-                av->rvcb.first(av, i->friend_id, av->rvcb.second);
-            
             pthread_mutex_unlock(av->mutex);
             cs_do(i->cs);
             rc = MIN(i->cs->last_packet_frame_duration, rc);
@@ -303,6 +296,11 @@ bool toxav_answer(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, ui
         rc = TOXAV_ERR_ANSWER_FRIEND_NOT_CALLING;
         goto END;
     }
+    
+    if (!call_prepare_transmission(call)) {
+		rc = TOXAV_ERR_ANSWER_MALLOC;
+		goto END;
+	}
     
     call->s_audio_b = audio_bit_rate;
     call->s_video_b = video_bit_rate;
@@ -645,7 +643,7 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
         goto END;
     }
     
-    if ( channels != 1 || channels != 2 ) {
+    if ( channels != 1 && channels != 2 ) {
         pthread_mutex_unlock(call->mutex_audio_sending);
         rc = TOXAV_ERR_SEND_FRAME_INVALID;
         goto END;
@@ -666,8 +664,12 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
             goto END;
         }
         
-        vrc = rtp_send_msg(call->rtps[audio_index], dest, vrc);
-        /* TODO check for error? */
+		if (rtp_send_msg(call->rtps[audio_index], dest, vrc) != 0) {
+			LOGGER_WARNING("Failed to send audio packet");
+			rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
+		}
+		
+		LOGGER_DEBUG("Sent packet of size: %d (o %d)", vrc, sample_count);
     }
     
     pthread_mutex_unlock(call->mutex_audio_sending);
@@ -965,7 +967,10 @@ bool call_prepare_transmission(ToxAVCall* call)
             goto FAILURE;
         }
         
-        rtp_start_receiving(call->rtps[audio_index]);
+        if (rtp_start_receiving(call->rtps[audio_index]) != 0) {
+            LOGGER_WARNING("Failed to enable audio receiving!");
+            goto FAILURE;
+        }
     }
     
     { /* Prepare video */
@@ -984,13 +989,15 @@ bool call_prepare_transmission(ToxAVCall* call)
             goto FAILURE;
         }
         
-        
         if (cs_enable_video_receiving(call->cs) != 0) {
             LOGGER_WARNING("Failed to enable video receiving!");
             goto FAILURE;
         }
         
-        rtp_start_receiving(call->rtps[audio_index]);
+        if (rtp_start_receiving(call->rtps[video_index]) != 0) {
+            LOGGER_WARNING("Failed to enable audio receiving!");
+            goto FAILURE;
+        }
     }
     
     call->active = 1;

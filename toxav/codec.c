@@ -245,7 +245,7 @@ void cs_do(CSSession *cs)
     /* Codec session should always be protected by call mutex so no need to check for cs validity
      */
     
-    if (!cs) 
+    if (!cs)
         return;
     
     Payload *p;
@@ -258,7 +258,7 @@ void cs_do(CSSession *cs)
     if (cs->audio_decoder) { /* If receiving enabled */
         RTPMessage *msg;
         
-        uint16_t fsize = 5760; /* Max frame size for 48 kHz */
+        uint16_t fsize = 16000; /* Max frame size for 48 kHz */
         int16_t tmp[fsize * 2];
         
         while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
@@ -284,6 +284,7 @@ void cs_do(CSSession *cs)
                     continue;
                 }
                 
+                LOGGER_DEBUG("Decoding packet of length: %d", msg->length);
                 rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
                 rtp_free_msg(NULL, msg);
             }
@@ -741,8 +742,9 @@ void queue_message(RTPSession *session, RTPMessage *msg)
      */
     CSSession *cs = session->cs;
 
-    if (!cs) return;
-
+    if (!cs) 
+		return;
+	
     /* Audio */
     if (session->payload_type == rtp_TypeAudio % 128) {
         pthread_mutex_lock(cs->queue_mutex);

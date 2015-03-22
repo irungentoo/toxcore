@@ -39,6 +39,7 @@
 typedef struct {
     bool incoming;
     uint32_t state;
+	uint32_t output_source;
 } CallControl;
 
 const char* stringify_state(TOXAV_CALL_STATE s)
@@ -57,6 +58,8 @@ const char* stringify_state(TOXAV_CALL_STATE s)
     return strings [s];
 };
 
+
+int device_play_frame(uint32_t source, const int16_t* PCM, size_t size);
 
 /** 
  * Callbacks 
@@ -86,7 +89,7 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint32_t sampling_rate,
                                     void *user_data)
 {
-    printf("Handling AUDIO FRAME callback\n");
+    device_play_frame(((CallControl*)user_data)->output_source, pcm, sample_count);
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -173,7 +176,7 @@ int device_read_frame(ALCdevice* device, int32_t frame_dur, int16_t* PCM, size_t
 	return f_size;
 }
 
-int device_play_frame(uint32_t source, int16_t* PCM, size_t size)
+int device_play_frame(uint32_t source, const int16_t* PCM, size_t size)
 {
 	uint32_t bufid;
     int32_t processed, queued;
@@ -604,16 +607,66 @@ int main (int argc, char** argv)
     if (TEST_TRANSFER_A) { /* Audio encoding/decoding and transfer */
 		printf("\nTrying audio enc/dec...\n");
 		
+		memset(&AliceCC, 0, sizeof(CallControl));
+        memset(&BobCC, 0, sizeof(CallControl));
+		
+		AliceCC.output_source = BobCC.output_source = source;
+        
+        {
+            TOXAV_ERR_CALL rc;
+            toxav_call(AliceAV, 0, 48, 0, &rc);
+            
+            if (rc != TOXAV_ERR_CALL_OK) {
+                printf("toxav_call failed: %d\n", rc);
+                exit(1);
+            }
+        }
+        
+        while (!BobCC.incoming)
+            iterate(Bsn, AliceAV, BobAV);
+		
+		{
+            TOXAV_ERR_ANSWER rc;
+            toxav_answer(BobAV, 0, 48, 0, &rc);
+            
+            if (rc != TOXAV_ERR_ANSWER_OK) {
+                printf("toxav_answer failed: %d\n", rc);
+                exit(1);
+            }
+        }
+        
+        iterate(Bsn, AliceAV, BobAV);
+		
 		int16_t PCM[10000];
 		time_t start_time = time(NULL);
 		
 		/* Run for 5 seconds */
 		while ( start_time + 10 > time(NULL) ) {
 			int frame_size = device_read_frame(in_device, 20, PCM, sizeof(PCM));
-			if (frame_size > 0)
-				device_play_frame(source, PCM, frame_size);
+			if (frame_size > 0) {
+				TOXAV_ERR_SEND_FRAME rc;
+				if (toxav_send_audio_frame(AliceAV, 0, PCM, frame_size, 2, 48000, &rc) == false) {
+					printf("Error sending frame of size %d: %d\n", frame_size, rc);
+					exit (1);
+				}
+			}
+			
+			iterate(Bsn, AliceAV, BobAV);
 // 			c_sleep(20);
 		}
+		
+		{
+            TOXAV_ERR_CALL_CONTROL rc;
+            toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
+            
+            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
+                printf("toxav_call_control failed: %d\n", rc);
+                exit(1);
+            }
+        }
+        
+        iterate(Bsn, AliceAV, BobAV);
+        assert(BobCC.state == TOXAV_CALL_STATE_END);
 		
 		printf("Success!");
 	}

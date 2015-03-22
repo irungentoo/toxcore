@@ -363,7 +363,6 @@ int rtp_handle_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data,
     }
 
     queue_message(session, msg);
-
     return 0;
 }
 
@@ -427,8 +426,6 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
         return NULL;
     }
 
-    LOGGER_DEBUG("Registered packet handler: pt: %d; fid: %d", payload_type, friend_num);
-
     retu->version   = RTP_VERSION; /* It's always 2 */
     retu->padding   = 0;           /* If some additional data is needed about the packet */
     retu->extension = 0;           /* If extension to header is needed */
@@ -467,7 +464,7 @@ void rtp_kill ( RTPSession *session )
 {
     if ( !session ) return;
 
-    custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
+	rtp_stop_receiving (session);
 
     free ( session->ext_header );
     free ( session->csrc );
@@ -483,6 +480,7 @@ int rtp_start_receiving(RTPSession* session)
     if (session == NULL)
         return 0;
     
+	LOGGER_DEBUG("Registering packet handler: pt: %d; friend: %d", session->prefix, session->dest);
     return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
                                                rtp_handle_packet, session);
 }
@@ -492,6 +490,7 @@ int rtp_stop_receiving(RTPSession* session)
     if (session == NULL)
         return 0;
     
+	LOGGER_DEBUG("Unregistering packet handler: pt: %d; friend: %d", session->prefix, session->dest);
     return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
                                                NULL, NULL);
 }

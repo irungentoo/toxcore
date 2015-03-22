@@ -380,7 +380,11 @@ typedef enum TOXAV_ERR_SEND_FRAME {
      * One of the frame parameters was invalid. E.g. the resolution may be too
      * small or too large, or the audio sampling rate may be unsupported.
      */
-    TOXAV_ERR_SEND_FRAME_INVALID
+    TOXAV_ERR_SEND_FRAME_INVALID,
+	/**
+     * Failed to push frame through rtp interface.
+     */
+	TOXAV_ERR_SEND_FRAME_RTP_FAILED
 } TOXAV_ERR_SEND_FRAME;
 /**
  * The function type for the `request_video_frame` callback.
