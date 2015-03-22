@@ -276,8 +276,10 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
             continue;
         }
 
-        if (is_timeout(gconn->send_ary[i].time_added, GROUP_PEER_TIMEOUT))
-            gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Peer timed out", 9);
+        if (is_timeout(gconn->send_ary[i].time_added, GROUP_PEER_TIMEOUT)) {
+            gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Peer timed out", 14);
+            return;
+        }
     }
 }
 
