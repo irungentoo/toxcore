@@ -1350,7 +1350,7 @@ static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t pee
 }
 
 static int make_role_cert(const uint8_t *secret_key, const uint8_t *public_key, const uint8_t *target_pub_key,
-                            uint8_t *certificate, uint8_t cert_type);
+                          uint8_t *certificate, uint8_t cert_type);
 /* Return -1 if fail
  * Return 0 if success
  */
@@ -1400,22 +1400,31 @@ static int handle_bc_op_certificate(Messenger *m, int groupnumber, uint32_t peer
     return 0;
 }
 
-/* Sends ack for message_id. expected_id is the message_id that we were expecting in the sequence,
- * or 0 if we got the correct id.
+#define VALID_GC_MESSAGE_ACK(a, b) (((a) == 0) || ((b) == 0))
+
+/* If read_id is non-zero sends a read-receipt for read_id's packet.
+ * If request_id is non-zero sends a request for the respective id's packet.
  */
-int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t message_id, uint64_t expected_id)
+int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id)
 {
+    if (!VALID_GC_MESSAGE_ACK(read_id, request_id))
+        return -1;
+
     uint8_t data[EXT_PUBLIC_KEY + MESSAGE_ID_BYTES + MESSAGE_ID_BYTES];
     memcpy(data, chat->self_public_key, EXT_PUBLIC_KEY);
-    U64_to_bytes(data + EXT_PUBLIC_KEY, message_id);
-    U64_to_bytes(data + EXT_PUBLIC_KEY + MESSAGE_ID_BYTES, expected_id);
+    U64_to_bytes(data + EXT_PUBLIC_KEY, read_id);
+    U64_to_bytes(data + EXT_PUBLIC_KEY + MESSAGE_ID_BYTES, request_id);
     uint32_t length = EXT_PUBLIC_KEY + MESSAGE_ID_BYTES + MESSAGE_ID_BYTES;
 
     return send_lossy_group_packet(chat, chat->group[peernum].addr.ip_port, chat->group[peernum].addr.public_key,
                                    data, length, GP_MESSAGE_ACK);
 }
 
-/* Handles a message ack. If packet contains a non-zero expected_id we try to resend its respective packet */
+/* If packet contains a non-zero request_id we try to resend its respective packet.
+ * If packet contains a non-zero read_id we remove the packet from our send array.
+ *
+ * Return -1 if error or we fail to send a packet in case of a request response.
+ */
 static int handle_gc_message_ack(GC_Chat *chat, const uint8_t *sender_pk, int peernumber,
                                  const uint8_t *data, uint32_t length)
 {
@@ -1425,23 +1434,28 @@ static int handle_gc_message_ack(GC_Chat *chat, const uint8_t *sender_pk, int pe
     if (!ext_pk_equal(sender_pk, data))
         return -1;
 
-    uint64_t message_id, expected_id;
-    bytes_to_U64(&message_id, data + EXT_PUBLIC_KEY);
-    bytes_to_U64(&expected_id, data + EXT_PUBLIC_KEY + MESSAGE_ID_BYTES);
+    uint64_t read_id, request_id;
+    bytes_to_U64(&read_id, data + EXT_PUBLIC_KEY);
+    bytes_to_U64(&request_id, data + EXT_PUBLIC_KEY + MESSAGE_ID_BYTES);
 
-    if (expected_id > 0) {
-        GC_Connection *gconn = &chat->gcc[peernumber];
-        uint64_t tm = unix_time();
-        uint16_t idx = get_ary_index(expected_id);
+    if (!VALID_GC_MESSAGE_ACK(read_id, request_id))
+        return -1;
 
-        if (gconn->send_ary[idx].message_id == expected_id
-            && (gconn->send_ary[idx].last_send_try != tm || gconn->send_ary[idx].time_added == tm)) {
-            sendpacket(chat->net, chat->group[peernumber].addr.ip_port, gconn->send_ary[idx].data, gconn->send_ary[idx].data_length);
-            gconn->send_ary[idx].last_send_try = tm;
-        }
+    if (read_id > 0)
+        return gcc_handle_ack(&chat->gcc[peernumber], read_id);
+
+    /* re-send requested packet */
+    GC_Connection *gconn = &chat->gcc[peernumber];
+    uint64_t tm = unix_time();
+    uint16_t idx = get_ary_index(request_id);
+
+    if (gconn->send_ary[idx].message_id == request_id
+        && (gconn->send_ary[idx].last_send_try != tm || gconn->send_ary[idx].time_added == tm)) {
+        gconn->send_ary[idx].last_send_try = tm;
+        return sendpacket(chat->net, chat->group[peernumber].addr.ip_port, gconn->send_ary[idx].data, gconn->send_ary[idx].data_length);
     }
 
-    return gcc_handle_ack(&chat->gcc[peernumber], message_id);
+    return -1;
 }
 
 int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
@@ -1552,14 +1566,16 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
     if (peernumber >= 0 && LOSSLESS_PACKET(packet_type)) {
         lossless = gcc_handle_recv_message(chat, peernumber, data, len, packet_type, message_id);
 
-        if (lossless < 0)
+        if (lossless == -1)
             return -1;
 
-        /* packet wasn't in correct sequence so we send an ack requesting the expected message_id */
+        /* Duplicate packet */
         if (lossless == 0)
-            return gc_send_message_ack(chat, peernumber, message_id, chat->gcc[peernumber].recv_message_id + 1);
+            return gc_send_message_ack(chat, peernumber, message_id, 0);
 
-        gc_send_message_ack(chat, peernumber, message_id, 0);
+        /* request missing packet */
+        if (lossless == 1)
+            return gc_send_message_ack(chat, peernumber, 0, chat->gcc[peernumber].recv_message_id + 1);
     }
 
     int ret = -1;
@@ -1597,8 +1613,10 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
             break;
     }
 
-    if (lossless == 1 && peernumber_valid(chat, peernumber))
+    if (lossless == 2 && ret != -1 && peernumber_valid(chat, peernumber)) {
+        gc_send_message_ack(chat, peernumber, message_id, 0);
         gcc_check_recv_ary(m, chat->groupnumber, peernumber);
+    }
 
     return ret;
 }

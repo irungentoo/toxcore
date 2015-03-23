@@ -482,6 +482,11 @@ void gc_update_addrs(struct GC_Announce *announce, const uint8_t *chat_id);
  */
 uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t max_addrs);
 
+/* If read_id is non-zero sends a read-receipt for ack_id's packet.
+ * If request_id is non-zero sends a request for the respective id's packet.
+ */
+int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id);
+
 /* lossless Packet handlers */
 int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
                         const uint8_t *data, uint32_t length);
