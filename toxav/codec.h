@@ -108,6 +108,7 @@ typedef struct CSSession_s {
     /* audio encoding */
     OpusEncoder *audio_encoder;
     int32_t encoder_channels;
+	int32_t encoder_sample_rate;
     
     /* audio decoding */
     OpusDecoder *audio_decoder;

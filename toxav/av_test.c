@@ -156,7 +156,7 @@ void iterate(Tox* Bsn, ToxAV* AliceAV, ToxAV* BobAV)
     toxav_iteration(AliceAV);
     toxav_iteration(BobAV);
     
-    c_sleep(20);
+	c_sleep(toxav_iteration_interval(AliceAV));
 }
 
 int device_read_frame(ALCdevice* device, int32_t frame_dur, int16_t* PCM, size_t max_size)
@@ -652,7 +652,6 @@ int main (int argc, char** argv)
 			}
 			
 			iterate(Bsn, AliceAV, BobAV);
-// 			c_sleep(20);
 		}
 		
 		{

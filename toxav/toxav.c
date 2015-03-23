@@ -957,7 +957,7 @@ bool call_prepare_transmission(ToxAVCall* call)
         call->rtps[audio_index]->cs = call->cs;
         
         /* Only enable sending if bitrate is defined */
-        if (call->s_audio_b > 0 && cs_enable_audio_sending(call->cs, call->s_audio_b, 2) != 0) {
+        if (call->s_audio_b > 0 && cs_enable_audio_sending(call->cs, call->s_audio_b * 1000, 2) != 0) {
             LOGGER_WARNING("Failed to enable audio sending!");
             goto FAILURE;
         }

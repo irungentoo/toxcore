@@ -258,7 +258,7 @@ void cs_do(CSSession *cs)
     if (cs->audio_decoder) { /* If receiving enabled */
         RTPMessage *msg;
         
-        uint16_t fsize = 16000; /* Max frame size for 48 kHz */
+        uint16_t fsize = 10000; /* Should be enough for all normal frequences */
         int16_t tmp[fsize * 2];
         
         while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
@@ -293,6 +293,7 @@ void cs_do(CSSession *cs)
                 LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
             } else if (cs->acb.first) {
                 /* Play */
+				LOGGER_DEBUG("Playing audio frame size: %d chans: %d srate: %d", rc, cs->last_pack_channels, cs->last_packet_sampling_rate);
                 cs->acb.first(cs->agent, cs->friend_id, tmp, rc, 
                             cs->last_pack_channels, cs->last_packet_sampling_rate, cs->acb.second);
             }
@@ -598,6 +599,7 @@ int cs_set_sending_audio_bitrate(CSSession *cs, int32_t rate)
         return -1;
     }
     
+    LOGGER_DEBUG("Set new encoder bitrate to: %d", rate);
     return 0;
 }
 
@@ -607,6 +609,9 @@ int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate)
     if (cs->audio_encoder == NULL)
         return -1;
     
+	if (cs->encoder_sample_rate == rate)
+		return 0;
+	
     int rc = OPUS_OK;
     int bitrate = 0;
     int channels = cs->encoder_channels;
@@ -619,6 +624,9 @@ int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate)
     }
     
     cs_disable_audio_sending(cs);
+	cs->encoder_sample_rate = rate;
+	
+	LOGGER_DEBUG("Set new encoder sampling rate: %d", rate);
     return cs_enable_audio_sending(cs, bitrate, channels);
 }
 
@@ -642,6 +650,8 @@ int cs_set_sending_audio_channels(CSSession* cs, int32_t count)
     }
     
     cs_disable_audio_sending(cs);
+	
+	LOGGER_DEBUG("Set new encoder channel count: %d", count);
     return cs_enable_audio_sending(cs, bitrate, count);
 }
 
@@ -674,8 +684,12 @@ int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate, int channels)
     if (cs->audio_encoder)
         return 0;
     
+	if (!cs->encoder_sample_rate)
+		cs->encoder_sample_rate = 48000;
+	cs->encoder_channels = channels;
+	
     int rc = OPUS_OK;
-    cs->audio_encoder = opus_encoder_create(48000, channels, OPUS_APPLICATION_AUDIO, &rc);
+    cs->audio_encoder = opus_encoder_create(cs->encoder_sample_rate, channels, OPUS_APPLICATION_AUDIO, &rc);
     
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
@@ -696,7 +710,6 @@ int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate, int channels)
         goto FAILURE;
     }
     
-    cs->encoder_channels = channels;
     return 0;
     
 FAILURE:
