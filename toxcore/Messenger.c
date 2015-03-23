@@ -2040,9 +2040,17 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 break;
 
             uint8_t filenumber = data[0];
+
+            if (filenumber >= MAX_CONCURRENT_FILE_PIPES)
+                break;
+
             uint64_t filesize;
             uint32_t file_type;
             uint16_t filename_length = data_length - head_length;
+
+            if (filename_length > MAX_FILENAME_LENGTH)
+                break;
+
             memcpy(&file_type, data + 1, sizeof(file_type));
             file_type = ntohl(file_type);
 
@@ -2088,6 +2096,9 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             uint8_t filenumber = data[1];
             uint8_t control_type = data[2];
 
+            if (filenumber >= MAX_CONCURRENT_FILE_PIPES)
+                break;
+
             if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3) == -1)
                 break;
 
@@ -2099,6 +2110,10 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 break;
 
             uint8_t filenumber = data[0];
+
+            if (filenumber >= MAX_CONCURRENT_FILE_PIPES)
+                break;
+
             struct File_Transfers *ft = &m->friendlist[i].file_receiving[filenumber];
 
             if (ft->status != FILESTATUS_TRANSFERRING)
