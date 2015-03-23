@@ -1305,19 +1305,16 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_T
  * The function type for the `read_receipt` callback.
  *
  * @param friend_number The friend number of the friend who received the message.
- * @param message_id The message ID as returned from tox_send_message or
- *   tox_send_action corresponding to the message sent.
+ * @param message_id The message ID as returned from tox_friend_send_message
+ *   corresponding to the message sent.
  */
 typedef void tox_friend_read_receipt_cb(Tox *tox, uint32_t friend_number, uint32_t message_id, void *user_data);
 
 /**
  * Set the callback for the `read_receipt` event. Pass NULL to unset.
  *
- * This event is triggered when a read receipt is received from a friend. This
- * normally means that the message has been received by the friend, however a
- * friend can send a read receipt with any message ID in it, so the number
- * received here may not correspond to any message sent through tox_send_message
- * or tox_send_action. In that case, the receipt should be discarded.
+ * This event is triggered when the friend receives the message sent with
+ * tox_friend_send_message with the corresponding message ID.
  */
 void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function, void *user_data);
 
