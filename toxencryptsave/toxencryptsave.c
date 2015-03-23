@@ -26,8 +26,10 @@
 #endif
 
 #include "toxencryptsave.h"
+#include "defines.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
+#define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
 
 #ifdef VANILLA_NACL
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
@@ -64,7 +66,7 @@ int tox_pass_salt_length()
 /*  return size of the messenger data (for encrypted saving). */
 uint32_t tox_encrypted_size(const Tox *tox)
 {
-    return tox_size(tox) + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+    return tox_get_savedata_size(tox) + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
 }
 
 /* This retrieves the salt used to encrypt the given data, which can then be passed to
@@ -203,9 +205,9 @@ int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase
 int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength)
 {
     /* first get plain save data */
-    uint32_t temp_size = tox_size(tox);
+    uint32_t temp_size = tox_get_savedata_size(tox);
     uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
+    tox_get_savedata(tox, temp_data);
 
     /* now encrypt */
     return tox_pass_encrypt(temp_data, temp_size, passphrase, pplength, data);
@@ -220,9 +222,9 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
 int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key)
 {
     /* first get plain save data */
-    uint32_t temp_size = tox_size(tox);
+    uint32_t temp_size = tox_get_savedata_size(tox);
     uint8_t temp_data[temp_size];
-    tox_save(tox, temp_data);
+    tox_get_savedata(tox, temp_data);
 
     /* encrypt */
     return tox_pass_key_encrypt(temp_data, temp_size, key, data);
@@ -292,38 +294,44 @@ int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, 
     return tox_pass_key_decrypt(data, length, key, out);
 }
 
-/* Load the messenger from encrypted data of size length.
+/* Load the new messenger from encrypted data of size length.
+ * All other arguments are like toxcore/tox_new().
  *
- * returns 0 on success
- * returns -1 on failure
+ * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
-int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength)
+Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *passphrase,
+                       size_t pplength, TOX_ERR_NEW *error)
 {
     uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t temp_data[decrypt_length];
 
     if (tox_pass_decrypt(data, length, passphrase, pplength, temp_data)
-            != decrypt_length)
-        return -1;
+            != decrypt_length) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_DECRYPTION_FAILED);
+        return NULL;
+    }
 
-    return tox_load(tox, temp_data, decrypt_length);
+    return tox_new(options, temp_data, decrypt_length, error);
 }
 
 /* Load the messenger from encrypted data of size length, with key from tox_derive_key.
+ * All other arguments are like toxcore/tox_new().
  *
- * returns 0 on success
- * returns -1 on failure
+ * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
-int tox_encrypted_key_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *key)
+Tox *tox_encrypted_key_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *key,
+                           TOX_ERR_NEW *error)
 {
     uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t temp_data[decrypt_length];
 
     if (tox_pass_key_decrypt(data, length, key, temp_data)
-            != decrypt_length)
-        return -1;
+            != decrypt_length) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_DECRYPTION_FAILED);
+        return NULL;
+    }
 
-    return tox_load(tox, temp_data, decrypt_length);
+    return tox_new(options, temp_data, decrypt_length, error);
 }
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
@@ -337,9 +345,4 @@ int tox_is_data_encrypted(const uint8_t *data)
         return 1;
     else
         return 0;
-}
-
-int tox_is_save_encrypted(const uint8_t *data)
-{
-    return tox_is_data_encrypted(data);
 }

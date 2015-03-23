@@ -89,7 +89,7 @@
 #define CONGESTION_QUEUE_ARRAY_SIZE 24
 
 typedef struct {
-    uint64_t time;
+    _Bool sent;
     uint16_t length;
     uint8_t data[MAX_CRYPTO_DATA_SIZE];
 } Packet_Data;
@@ -316,6 +316,11 @@ int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(
  * return 0 if failure.
  */
 uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connection_id);
+
+/* Return 1 if max speed was reached for this connection (no more data can be physically through the pipe).
+ * Return 0 if it wasn't reached.
+ */
+_Bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
 
 /* Sends a lossless cryptopacket.
  *

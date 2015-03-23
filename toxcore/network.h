@@ -362,8 +362,11 @@ void networking_poll(Networking_Core *net);
  *
  * return Networking_Core object if no problems
  * return NULL if there are problems.
+ *
+ * If error is non NULL it is set to 0 if no issues, 1 if bind failed, 2 if other.
  */
 Networking_Core *new_networking(IP ip, uint16_t port);
+Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

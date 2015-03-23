@@ -29,10 +29,13 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stddef.h>
 
-#ifndef __TOX_DEFINED__
-#define __TOX_DEFINED__
+#ifndef TOX_DEFINED
+#define TOX_DEFINED
 typedef struct Tox Tox;
+struct Tox_Options;
+typedef enum TOX_ERR_NEW TOX_ERR_NEW;
 #endif
 
 // these functions provide access to these defines in toxencryptsave.c, which
@@ -88,6 +91,9 @@ int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase
 /* Save the messenger data encrypted with the given password.
  * data must be at least tox_encrypted_size().
  *
+ * NOTE: Unlike tox_save(), this function may fail. Be sure to check its return
+ * value.
+ *
  * returns 0 on success
  * returns -1 on failure
  */
@@ -104,12 +110,13 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
  */
 int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
 
-/* Load the messenger from encrypted data of size length.
+/* Load the new messenger from encrypted data of size length.
+ * All other arguments are like toxcore/tox_new().
  *
- * returns 0 on success
- * returns -1 on failure
+ * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
-int tox_encrypted_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength);
+Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *passphrase,
+                       size_t pplength, TOX_ERR_NEW *error);
 
 
 /******************************* BEGIN PART 1 *******************************
@@ -161,6 +168,9 @@ int tox_pass_key_encrypt(const uint8_t *data, uint32_t data_len, const uint8_t *
 /* Save the messenger data encrypted with the given key from tox_derive_key.
  * data must be at least tox_encrypted_size().
  *
+ * NOTE: Unlike tox_save(), this function may fail. Be sure to check its return
+ * value.
+ *
  * returns 0 on success
  * returns -1 on failure
  */
@@ -175,11 +185,13 @@ int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key);
 int tox_pass_key_decrypt(const uint8_t *data, uint32_t length, const uint8_t *key, uint8_t *out);
 
 /* Load the messenger from encrypted data of size length, with key from tox_derive_key.
+ * All other arguments are like toxcore/tox_new().
  *
- * returns 0 on success
- * returns -1 on failure
+ * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
-int tox_encrypted_key_load(Tox *tox, const uint8_t *data, uint32_t length, uint8_t *key);
+Tox *tox_encrypted_key_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *key,
+                           TOX_ERR_NEW *error);
+
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
  *
@@ -187,7 +199,6 @@ int tox_encrypted_key_load(Tox *tox, const uint8_t *data, uint32_t length, uint8
  * returns 0 otherwise
  */
 int tox_is_data_encrypted(const uint8_t *data);
-int tox_is_save_encrypted(const uint8_t *data); // poorly-named alias for backwards compat (oh irony...)
 
 #ifdef __cplusplus
 }

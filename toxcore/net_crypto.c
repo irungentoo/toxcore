@@ -722,7 +722,7 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
 
         if (n == data[0]) {
             if (send_array->buffer[num]) {
-                send_array->buffer[num]->time = 0;
+                send_array->buffer[num]->sent = 0;
             }
 
             ++data;
@@ -809,6 +809,43 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
     return send_data_packet(c, crypt_connection_id, packet, sizeof(packet));
 }
 
+static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return -1;
+
+    /* If last packet send failed, try to send packet again.
+       If sending it fails we won't be able to send the new packet. */
+    if (conn->maximum_speed_reached) {
+        Packet_Data *dt = NULL;
+        uint32_t packet_num = conn->send_array.buffer_end - 1;
+        int ret = get_data_pointer(&conn->send_array, &dt, packet_num);
+
+        uint8_t send_failed = 0;
+
+        if (ret == 1) {
+            if (!dt->sent) {
+                if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
+                                            dt->length) != 0) {
+                    send_failed = 1;
+                } else {
+                    dt->sent = 1;
+                }
+            }
+        }
+
+        if (!send_failed) {
+            conn->maximum_speed_reached = 0;
+        } else {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 /*  return -1 if data could not be put in packet queue.
  *  return positive packet number if data was put into the queue.
  */
@@ -823,39 +860,16 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     if (conn == 0)
         return -1;
 
-    uint64_t temp_time = current_time_monotonic();
-
     /* If last packet send failed, try to send packet again.
        If sending it fails we won't be able to send the new packet. */
-    if (conn->maximum_speed_reached) {
-        Packet_Data *dt = NULL;
-        uint32_t packet_num = conn->send_array.buffer_end - 1;
-        int ret = get_data_pointer(&conn->send_array, &dt, packet_num);
+    reset_max_speed_reached(c, crypt_connection_id);
 
-        uint8_t send_failed = 0;
-
-        if (ret == 1) {
-            if (!dt->time) {
-                if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
-                                            dt->length) != 0) {
-                    if (congestion_control) {
-                        return -1;
-                    } else {
-                        send_failed = 1;
-                    }
-                } else {
-                    dt->time = temp_time;
-                }
-            }
-        }
-
-        if (!send_failed) {
-            conn->maximum_speed_reached = 0;
-        }
+    if (conn->maximum_speed_reached && congestion_control) {
+        return -1;
     }
 
     Packet_Data dt;
-    dt.time = 0;
+    dt.sent = 0;
     dt.length = length;
     memcpy(dt.data, data, length);
     pthread_mutex_lock(&conn->mutex);
@@ -873,7 +887,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         Packet_Data *dt1 = NULL;
 
         if (get_data_pointer(&conn->send_array, &dt1, packet_num) == 1)
-            dt1->time = temp_time;
+            dt1->sent = 1;
     } else {
         conn->maximum_speed_reached = 1;
         LOGGER_ERROR("send_data_packet failed\n");
@@ -983,15 +997,15 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint16
             continue;
         }
 
-        if (dt->time != 0) {
+        if (dt->sent) {
             continue;
         }
 
-        dt->time = current_time_monotonic();
-
         if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
-                                    dt->length) == 0)
+                                    dt->length) == 0) {
+            dt->sent = 1;
             ++num_sent;
+        }
 
         if (num_sent >= max_num)
             break;
@@ -1189,7 +1203,6 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
         set_buffer_end(&conn->recv_array, num);
     } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
         Packet_Data dt;
-        dt.time = current_time_monotonic();
         dt.length = real_length;
         memcpy(dt.data, real_data, real_length);
 
@@ -2529,7 +2542,7 @@ static void send_crypto_packets(Net_Crypto *c)
             if (conn->last_packets_left_set == 0) {
                 conn->last_packets_left_set = temp_time;
                 conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
-            } else if (((1000.0 / conn->packet_send_rate) + conn->last_packets_left_set) < temp_time) {
+            } else if (((uint64_t)((1000.0 / conn->packet_send_rate) + 0.5) + conn->last_packets_left_set) < temp_time) {
                 uint32_t num_packets = conn->packet_send_rate * ((double)(temp_time - conn->last_packets_left_set) / 1000.0) + 0.5;
 
                 if (conn->packets_left > num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH) {
@@ -2575,6 +2588,13 @@ static void send_crypto_packets(Net_Crypto *c)
     }
 }
 
+/* Return 1 if max speed was reached for this connection (no more data can be physically through the pipe).
+ * Return 0 if it wasn't reached.
+ */
+_Bool max_speed_reached(Net_Crypto *c, int crypt_connection_id)
+{
+    return reset_max_speed_reached(c, crypt_connection_id) != 0;
+}
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
@@ -2586,7 +2606,13 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
     if (conn == 0)
         return 0;
 
-    return conn->packets_left;
+    uint32_t max_packets = CRYPTO_PACKET_BUFFER_SIZE - num_packets_array(&conn->send_array);
+
+    if (conn->packets_left < max_packets) {
+        return conn->packets_left;
+    } else {
+        return max_packets;
+    }
 }
 
 /* Sends a lossless cryptopacket.
