@@ -237,6 +237,61 @@ static int convert_bw_to_sampling_rate(int bw)
 }
 
 
+int cs_set_receiving_audio_bitrate(CSSession *cs, int32_t rate)
+{
+    if (cs->audio_decoder == NULL)
+        return -1;
+    
+    int rc = opus_decoder_ctl(cs->audio_decoder, OPUS_SET_BITRATE(rate));
+    
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting decoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+    
+    LOGGER_DEBUG("Set new decoder bitrate to: %d", rate);
+    return 0;
+}
+
+int cs_set_receiving_audio_sampling_rate(CSSession* cs, int32_t rate)
+{
+    /* TODO Find a better way? */
+    if (cs->audio_decoder == NULL)
+        return -1;
+    
+	if (cs->decoder_sample_rate == rate)
+		return 0;
+    
+    int channels = cs->decoder_channels;
+    
+    cs_disable_audio_receiving(cs);
+    
+	cs->decoder_sample_rate = rate;
+    cs->decoder_channels = channels;
+	
+	LOGGER_DEBUG("Set new encoder sampling rate: %d", rate);
+    return cs_enable_audio_receiving(cs);
+}
+
+int cs_set_receiving_audio_channels(CSSession* cs, int32_t count)
+{
+    /* TODO Find a better way? */
+    if (cs->audio_decoder == NULL)
+        return -1;
+    
+    if (cs->decoder_channels == count)
+        return 0;
+    
+    int srate = cs->decoder_sample_rate;
+    cs_disable_audio_receiving(cs);
+	
+    cs->decoder_channels = count;
+    cs->decoder_sample_rate = srate;
+    
+	LOGGER_DEBUG("Set new encoder channel count: %d", count);
+    return cs_enable_audio_receiving(cs);
+}
+
 
 /* PUBLIC */
 
@@ -283,6 +338,9 @@ void cs_do(CSSession *cs)
                     rtp_free_msg(NULL, msg);
                     continue;
                 }
+                
+                cs_set_receiving_audio_sampling_rate(cs, cs->last_packet_sampling_rate);
+                cs_set_receiving_audio_channels(cs, cs->last_pack_channels);
                 
                 LOGGER_DEBUG("Decoding packet of length: %d", msg->length);
                 rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
@@ -353,6 +411,8 @@ CSSession *cs_new(uint32_t peer_video_frame_piece_size)
     
     cs->peer_video_frame_piece_size = peer_video_frame_piece_size;
     
+    cs->decoder_sample_rate = 48000;
+    cs->decoder_channels = 2;
     return cs;
 }
 
@@ -676,6 +736,8 @@ void cs_disable_audio_receiving(CSSession* cs)
          * To avoid unecessary checking we set this to 500
          */
         cs->last_packet_frame_duration = 500;
+		cs->decoder_sample_rate = 48000;
+		cs->decoder_channels = 2;
     }
 }
 
@@ -721,9 +783,9 @@ int cs_enable_audio_receiving(CSSession* cs)
 {
     if (cs->audio_decoder)
         return 0;
-        
+    
     int rc;
-    cs->audio_decoder = opus_decoder_create(48000, 2, &rc );
+    cs->audio_decoder = opus_decoder_create(cs->decoder_sample_rate, cs->decoder_channels, &rc );
     
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
@@ -742,6 +804,7 @@ int cs_enable_audio_receiving(CSSession* cs)
      * To avoid unecessary checking we set this to 500
      */
     cs->last_packet_frame_duration = 500;
+	
     return 0;
 }
 

@@ -650,7 +650,6 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
     }
     
     { /* Encode and send */
-        /* TODO redundant? */
         cs_set_sending_audio_channels(call->cs, channels);
         cs_set_sending_audio_sampling_rate(call->cs, sampling_rate);
         

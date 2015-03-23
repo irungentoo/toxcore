@@ -26,6 +26,8 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+
 /* Enable/disable tests */
 #define TEST_REGULAR_AV 0
 #define TEST_REGULAR_A 0
@@ -156,12 +158,15 @@ void iterate(Tox* Bsn, ToxAV* AliceAV, ToxAV* BobAV)
     toxav_iteration(AliceAV);
     toxav_iteration(BobAV);
     
-	c_sleep(toxav_iteration_interval(AliceAV));
+	int mina = MIN(tox_do_interval(toxav_get_tox(AliceAV)), toxav_iteration_interval(AliceAV));
+	int minb = MIN(tox_do_interval(toxav_get_tox(BobAV)), toxav_iteration_interval(BobAV));
+	
+	c_sleep(MIN(mina, minb));
 }
 
 int device_read_frame(ALCdevice* device, int32_t frame_dur, int16_t* PCM, size_t max_size)
 {
-	int f_size = (48000 * frame_dur / 1000);
+	int f_size = (8000 * frame_dur / 1000);
 	
 	if (max_size < f_size)
 		return -1;
@@ -645,7 +650,7 @@ int main (int argc, char** argv)
 			int frame_size = device_read_frame(in_device, 20, PCM, sizeof(PCM));
 			if (frame_size > 0) {
 				TOXAV_ERR_SEND_FRAME rc;
-				if (toxav_send_audio_frame(AliceAV, 0, PCM, frame_size, 2, 48000, &rc) == false) {
+				if (toxav_send_audio_frame(AliceAV, 0, PCM, frame_size, 2, 8000, &rc) == false) {
 					printf("Error sending frame of size %d: %d\n", frame_size, rc);
 					exit (1);
 				}
