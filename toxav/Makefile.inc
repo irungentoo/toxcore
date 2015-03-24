@@ -36,6 +36,7 @@ libtoxav_la_LIBADD =  libtoxcore.la \
                       $(AV_LIBS)
 
 
+
 noinst_PROGRAMS +=    av_test
 
 av_test_SOURCES =     ../toxav/av_test.c
@@ -50,6 +51,7 @@ av_test_LDADD =       $(LIBSODIUM_LDFLAGS) \
                       $(LIBSODIUM_LIBS) \
                       $(NACL_OBJECTS) \
                       -lopenal \
+                      -lopencv_calib3d -lopencv_contrib -lopencv_core -lopencv_features2d -lopencv_flann -lopencv_gpu -lopencv_highgui -lopencv_imgproc -lopencv_legacy -lopencv_ml -lopencv_objdetect -lopencv_ocl -lopencv_photo -lopencv_stitching -lopencv_superres -lopencv_ts -lopencv_video -lopencv_videostab \
                       $(NACL_LIBS)
 
 

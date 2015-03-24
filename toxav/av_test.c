@@ -13,6 +13,11 @@
 #	endif  /* ALC_ALL_DEVICES_SPECIFIER */
 #endif  /* __APPLE__ */
 
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+
+#include <vpx/vpx_image.h>
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +31,6 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
 
 /* Enable/disable tests */
 #define TEST_REGULAR_AV 0
@@ -35,7 +39,8 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 1
+#define TEST_TRANSFER_A 0
+#define TEST_TRANSFER_V 1
 
 
 typedef struct {
@@ -43,6 +48,8 @@ typedef struct {
     uint32_t state;
 	uint32_t output_source;
 } CallControl;
+
+const char* video_test_window = "AV Test";
 
 const char* stringify_state(TOXAV_CALL_STATE s)
 {
@@ -82,7 +89,36 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint8_t const *planes[], int32_t const stride[],
                                     void *user_data)
 {
-    printf("Handling VIDEO FRAME callback\n");
+    IplImage output_img;
+    const int bpl = stride[VPX_PLANE_Y];
+    const int cxbpl = stride[VPX_PLANE_V];
+    
+    output_img.imageData = malloc(width * height * 3);
+    output_img.imageSize = width * height * 3;
+    output_img.width = width;
+    output_img.height = height;
+    
+    /* FIXME: possible bug? */
+    const uint8_t* yData = planes[VPX_PLANE_Y];
+    const uint8_t* uData = planes[VPX_PLANE_V];
+    const uint8_t* vData = planes[VPX_PLANE_U];
+    
+    // convert from planar to packed
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            uint8_t Y = planes[VPX_PLANE_Y][x + y * bpl];
+            uint8_t U = planes[VPX_PLANE_V][x/(1 << 1) + y/(1 << 1)*cxbpl];
+            uint8_t V = planes[VPX_PLANE_U][x/(1 << 1) + y/(1 << 1)*cxbpl];
+            output_img.imageData[width * 3 * y + x * 3 + 0] = Y;
+            output_img.imageData[width * 3 * y + x * 3 + 1] = U;
+            output_img.imageData[width * 3 * y + x * 3 + 2] = V;
+        }
+    }
+    
+    cvShowImage(video_test_window, &output_img);
+    free(output_img.imageData);
 }
 void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     int16_t const *pcm,
@@ -265,8 +301,84 @@ long get_device_idx(const char* arg)
 	return res;
 }
 
+int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
+{
+    /* I use vpx image coz i'm noob TODO use opencv conversion */
+    vpx_image vpx_img;
+    vpx_img.w = vpx_img.h = vpx_img.d_w = vpx_img.d_h = 0;
+    
+    const int w = img->width;
+    const int h = img->height;
+    
+    vpx_img_alloc(&vpx_img, VPX_IMG_FMT_VPXI420, w, h, 1);
+    
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
+            uint8_t b = img->imageData[(x + y * w) * 3 + 0];
+            uint8_t g = img->imageData[(x + y * w) * 3 + 1];
+            uint8_t r = img->imageData[(x + y * w) * 3 + 2];
+            
+            vpx_img.planes[VPX_PLANE_Y][x + y * vpx_img.stride[VPX_PLANE_Y]] = ((66 * r + 129 * g + 25 * b) >> 8) + 16;
+            
+            if (!(x % (1 << vpx_img.x_chroma_shift)) && !(y % (1 << vpx_img.y_chroma_shift)))
+            {
+                const int i = x / (1 << vpx_img.x_chroma_shift);
+                const int j = y / (1 << vpx_img.y_chroma_shift);
+                vpx_img.planes[VPX_PLANE_U][i + j * vpx_img.stride[VPX_PLANE_U]] = ((112 * r + -94 * g + -18 * b) >> 8) + 128;
+                vpx_img.planes[VPX_PLANE_V][i + j * vpx_img.stride[VPX_PLANE_V]] = ((-38 * r + -74 * g + 112 * b) >> 8) + 128;
+            }
+        }
+    }
+    
+    int rc = toxav_send_video_frame(av, friend_number, w, h, 
+                                    vpx_img.planes[VPX_PLANE_Y], 
+                                    vpx_img.planes[VPX_PLANE_U], 
+                                    vpx_img.planes[VPX_PLANE_V], NULL);
+    
+    vpx_img_free(&vpx_img);
+    return rc;
+}
+
 int main (int argc, char** argv)
 {
+    /* AV files for testing */
+    const char* audio_in = "";
+    const char* video_in = "";
+    long audio_out_dev = 0;
+    
+AGAIN:
+    switch (getopt(argc, argv, "a:v:o:"))
+    {
+        case 'a':
+            audio_in = optarg;
+            goto AGAIN;
+            break;
+        case 'v':
+            video_in = optarg;
+            goto AGAIN;
+            break;
+        case 'o':
+            char *d;
+            audio_out_dev = strtol(optarg, &d, 10);
+            if (*d) {
+                fprintf(stderr, "Invalid value for argument: 'o'");
+                return 1;
+            }
+            goto AGAIN;
+            break;
+        case '?':
+            return 1;
+            break;
+        case -1:
+            break;
+    }
+    
+    
+    
+    return 0;
+    
 	if (argc == 2) {
 		if (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--devices") == 0) {
 			return print_devices();
@@ -675,6 +787,37 @@ int main (int argc, char** argv)
 		printf("Success!");
 	}
 	
+	if (TEST_TRANSFER_V) {
+        if (strlen(video_in) == 0) {
+            printf("Skipping video test...\n");
+            goto CONTINUE;
+        }
+        
+        cvNamedWindow(video_test_window, CV_WINDOW_AUTOSIZE);
+        
+        CvCapture* capture = cvCreateFileCapture(video_in);
+        if (!capture) {
+            printf("No file named: %s\n", video_in);
+            return 1;
+        }
+        
+        IplImage* frame;
+        time_t start_time = time(NULL);
+        
+        while(start_time + 10 > time(NULL)) {
+            frame = cvQueryFrame( capture );
+            if (!frame)
+                break;
+            
+        }
+        
+        cvReleaseCapture(&capture);
+        cvDestroyWindow(video_test_window);
+        
+    CONTINUE:;
+    }
+    
+    
     toxav_kill(BobAV);
     toxav_kill(AliceAV);
     tox_kill(Bob);
