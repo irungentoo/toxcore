@@ -62,7 +62,7 @@
  */
 int ipport_self_copy(const DHT *dht, IP_Port *dest)
 {
-    int i;
+    size_t i;
 
     for (i = 0; i < LCLIENT_LIST; i++) {
         if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
@@ -233,7 +233,8 @@ static int dispatch_packet_announce_request(GC_Announce *announce, Node_format *
                                             uint32_t length, bool self)
 {
     uint8_t packet[length + GCA_HEADER_SIZE];
-    int i, sent = 0;
+    uint32_t i;
+    int sent = 0;
 
     /* Relay announce request to all nclosest nodes */
     for (i = 0; i < nclosest; i++) {
@@ -271,7 +272,8 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, Node_format 
                                              uint32_t length, bool self)
 {
     uint8_t packet[length + GCA_HEADER_SIZE];
-    int i, sent = 0;
+    uint32_t i;
+    int sent = 0;
 
     for (i = 0; i < nclosest; i++) {
         if (!self && id_closest(chat_id, dht_nodes[i].public_key, sender_pk, MIN(CHAT_ID_SIZE, ENC_PUBLIC_KEY)) != 1)
@@ -316,7 +318,7 @@ static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const 
 static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node *node, uint64_t req_id,
                                   uint32_t nodes_num)
 {
-    int i;
+    size_t i;
     uint32_t j;
 
     for (i = 0; i < MAX_GCA_SELF_REQUESTS; i++) {
