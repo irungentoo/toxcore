@@ -1480,7 +1480,7 @@ typedef enum TOX_ERR_FILE_CONTROL {
  * Sends a file control command to a friend for a given file transfer.
  *
  * @param friend_number The friend number of the friend the file is being
- *   transferred to.
+ *   transferred to or received from.
  * @param file_number The friend-specific identifier for the file transfer.
  * @param control The control command to send.
  *
@@ -1548,7 +1548,7 @@ typedef enum TOX_ERR_FILE_SEEK {
  * TOX_FILE_CONTROL_RESUME is sent.
  *
  * @param friend_number The friend number of the friend the file is being
- *   transferred to.
+ *   transferred to or received from.
  * @param file_number The friend-specific identifier for the file transfer.
  * @param position The position that the file should be seeked to.
  */
