@@ -82,8 +82,8 @@ Tox *toxav_get_tox(ToxAV *av);
  *
  ******************************************************************************/
 /**
- * Returns the interval in milliseconds when the next toxav_iteration should be
- * called. If no call is active at the moment, this function returns 200.
+ * Returns the interval in milliseconds when the next toxav_iterate call should
+ * be. If no call is active at the moment, this function returns 200.
  */
 uint32_t toxav_iteration_interval(ToxAV const *av);
 /**
@@ -91,7 +91,7 @@ uint32_t toxav_iteration_interval(ToxAV const *av);
  * toxav_iteration_interval() milliseconds. It is best called in the same loop
  * as tox_iteration.
  */
-void toxav_iteration(ToxAV *av);
+void toxav_iterate(ToxAV *av);
 /*******************************************************************************
  * 
  * :: Call setup
@@ -372,7 +372,7 @@ typedef enum TOXAV_ERR_SEND_FRAME {
      */
     TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL,
     /**
-     * No video frame had been requested through the `request_video_frame` event,
+     * No video frame had been requested through the `video_frame_request` event,
      * but the client tried to send one, anyway.
      */
     TOXAV_ERR_SEND_FRAME_NOT_REQUESTED,
@@ -387,20 +387,20 @@ typedef enum TOXAV_ERR_SEND_FRAME {
 	TOXAV_ERR_SEND_FRAME_RTP_FAILED
 } TOXAV_ERR_SEND_FRAME;
 /**
- * The function type for the `request_video_frame` callback.
+ * The function type for the `video_frame_request` callback.
  *
  * @param friend_number The friend number of the friend for which the next video
  * frame should be sent.
  */
-typedef void toxav_request_video_frame_cb(ToxAV *av, uint32_t friend_number, void *user_data);
+typedef void toxav_video_frame_request_cb(ToxAV *av, uint32_t friend_number, void *user_data);
 /**
- * Set the callback for the `request_video_frame` event. Pass NULL to unset.
+ * Set the callback for the `video_frame_request` event. Pass NULL to unset.
  */
-void toxav_callback_request_video_frame(ToxAV *av, toxav_request_video_frame_cb *function, void *user_data);
+void toxav_callback_video_frame_request(ToxAV *av, toxav_video_frame_request_cb *function, void *user_data);
 /**
  * Send a video frame to a friend.
  *
- * This is called in response to receiving the `request_video_frame` event.
+ * This is called in response to receiving the `video_frame_request` event.
  *
  * Y - plane should be of size: height * width
  * U - plane should be of size: (height/2) * (width/2)
@@ -419,20 +419,20 @@ bool toxav_send_video_frame(ToxAV *av, uint32_t friend_number,
                             uint8_t const *y, uint8_t const *u, uint8_t const *v,
                             TOXAV_ERR_SEND_FRAME *error);
 /**
- * The function type for the `request_audio_frame` callback.
+ * The function type for the `audio_frame_request` callback.
  *
  * @param friend_number The friend number of the friend for which the next audio
  * frame should be sent.
  */
-typedef void toxav_request_audio_frame_cb(ToxAV *av, uint32_t friend_number, void *user_data);
+typedef void toxav_audio_frame_request_cb(ToxAV *av, uint32_t friend_number, void *user_data);
 /**
- * Set the callback for the `request_audio_frame` event. Pass NULL to unset.
+ * Set the callback for the `audio_frame_request` event. Pass NULL to unset.
  */
-void toxav_callback_request_audio_frame(ToxAV *av, toxav_request_audio_frame_cb *function, void *user_data);
+void toxav_callback_audio_frame_request(ToxAV *av, toxav_audio_frame_request_cb *function, void *user_data);
 /**
  * Send an audio frame to a friend.
  *
- * This is called in response to receiving the `request_audio_frame` event.
+ * This is called in response to receiving the `audio_frame_request` event.
  *
  * The expected format of the PCM data is: [s1c1][s1c2][...][s2c1][s2c2][...]...
  * Meaning: sample 1 for channel 1, sample 1 for channel 2, ...
