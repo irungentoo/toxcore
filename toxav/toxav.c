@@ -78,8 +78,8 @@ struct toxAV {
     PAIR(toxav_call_state_cb *, void *) scb; /* Call state callback */
     PAIR(toxav_receive_audio_frame_cb *, void *) acb; /* Audio frame receive callback */
     PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
-    PAIR(toxav_request_video_frame_cb *, void *) rvcb; /* Request video callback */
-    PAIR(toxav_request_audio_frame_cb *, void *) racb; /* Request video callback */
+    PAIR(toxav_video_frame_request_cb *, void *) rvcb; /* Video request callback */
+    PAIR(toxav_audio_frame_request_cb *, void *) racb; /* Audio request callback */
     
     /** Decode time measures */
     int32_t dmssc; /** Measure count */
@@ -202,7 +202,7 @@ uint32_t toxav_iteration_interval(const ToxAV* av)
     return av->calls ? av->interval : 200;
 }
 
-void toxav_iteration(ToxAV* av)
+void toxav_iterate(ToxAV* av)
 {
     if (av->calls == NULL)
         return;
@@ -487,7 +487,7 @@ bool toxav_set_video_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t video_
     /* TODO */
 }
 
-void toxav_callback_request_video_frame(ToxAV* av, toxav_request_video_frame_cb* function, void* user_data)
+void toxav_callback_video_frame_request(ToxAV* av, toxav_video_frame_request_cb* function, void* user_data)
 {
     pthread_mutex_lock(av->mutex);
     av->rvcb.first = function;
@@ -601,7 +601,7 @@ END:
     return rc == TOXAV_ERR_SEND_FRAME_OK;
 }
 
-void toxav_callback_request_audio_frame(ToxAV* av, toxav_request_audio_frame_cb* function, void* user_data)
+void toxav_callback_audio_frame_request(ToxAV* av, toxav_audio_frame_request_cb* function, void* user_data)
 {
     pthread_mutex_lock(av->mutex);
     av->racb.first = function;

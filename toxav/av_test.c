@@ -155,8 +155,8 @@ void iterate(Tox* Bsn, ToxAV* AliceAV, ToxAV* BobAV)
     tox_do(toxav_get_tox(AliceAV));
     tox_do(toxav_get_tox(BobAV));
     
-    toxav_iteration(AliceAV);
-    toxav_iteration(BobAV);
+    toxav_iterate(AliceAV);
+    toxav_iterate(BobAV);
     
 	int mina = MIN(tox_do_interval(toxav_get_tox(AliceAV)), toxav_iteration_interval(AliceAV));
 	int minb = MIN(tox_do_interval(toxav_get_tox(BobAV)), toxav_iteration_interval(BobAV));
