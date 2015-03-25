@@ -2041,13 +2041,13 @@ static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_
     if (addr)
         copy_gc_peer_addr(&peer->addr, addr);
 
+    if (peer_nick_is_taken(chat, peer->nick, peer->nick_len))
+        return -1;
+        
     int peernumber = peer_in_chat(chat, peer->addr.public_key);
 
     if (peernumber >= 0)
         return peer_update(chat, peer, peernumber);
-
-    if (peer_nick_is_taken(chat, peer->nick, peer->nick_len))
-        return -1;
 
     GC_Connection *tmp_gcc = realloc(chat->gcc, sizeof(GC_Connection) * (chat->numpeers + 1));
 
