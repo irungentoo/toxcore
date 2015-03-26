@@ -1,6 +1,5 @@
 env:
-  global:
-    secure: ndYANZwVcCHfmhVQEOj/BGFphqkhSzAbG+Zt6bfEGhPDfgB85IaxuU9HbxxbeCLJZheR0LYIkSO7FAu7raQnbv2diSOEW94OtBAYRDle4sq7OfENOFKk9NzCuAKGxzoe4kF+qIE35+5CEqCJKojwpSSmcvDxtpDRuxp7n70h5wg=
+  secure: ndYANZwVcCHfmhVQEOj/BGFphqkhSzAbG+Zt6bfEGhPDfgB85IaxuU9HbxxbeCLJZheR0LYIkSO7FAu7raQnbv2diSOEW94OtBAYRDle4sq7OfENOFKk9NzCuAKGxzoe4kF+qIE35+5CEqCJKojwpSSmcvDxtpDRuxp7n70h5wg=
 
 before_script:
  - sudo apt-get install curl
