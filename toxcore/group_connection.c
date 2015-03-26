@@ -147,8 +147,9 @@ int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id)
 
 /* Decides if message need to be put in recv_ary or immediately handled.
  *
- * Return 1 if message is in correct sequence and may be handled immediately.
- * Return 0 if message is a duplicate or put in ary.
+ * Return 2 if message is in correct sequence and may be handled immediately.
+ * Return 1 if packet is out of sequence and added to recv_ary.
+ * Return 0 if message is a duplicate.
  * Return -1 on failure
  */
 int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data, uint32_t length,
@@ -173,12 +174,12 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
         if (add_to_ary(gconn->recv_ary, data, length, packet_type, message_id, idx) == -1)
             return -1;
 
-        return 0;
+        return 1;
     }
 
     ++gconn->recv_message_id;
 
-    return 1;
+    return 2;
 }
 
 /* Handles peernum's recv_ary message at idx with appropriate handler and removes from it. */
@@ -213,8 +214,15 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
             break;
     }
 
-    ++gconn->recv_message_id;
     rm_from_ary(gconn->recv_ary, idx);
+
+    if (ret == -1) {
+        gc_send_message_ack(chat, peernum, 0, gconn->recv_ary[idx].message_id);
+        return -1;
+    }
+
+    gc_send_message_ack(chat, peernum, gconn->recv_ary[idx].message_id, 0);
+    ++gconn->recv_message_id;
 
     return ret;
 }
@@ -276,8 +284,10 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
             continue;
         }
 
-        if (is_timeout(gconn->send_ary[i].time_added, GROUP_PEER_TIMEOUT))
-            gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Peer timed out", 9);
+        if (is_timeout(gconn->send_ary[i].time_added, GROUP_PEER_TIMEOUT)) {
+            gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Peer timed out", 14);
+            return;
+        }
     }
 }
 

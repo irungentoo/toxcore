@@ -36,6 +36,7 @@ typedef struct Messenger Messenger;
 #define MAX_GC_MESSAGE_SIZE 1368
 #define MAX_GC_PART_MESSAGE_SIZE 128
 #define MAX_GROUP_NUM_PEERS 1000   // temporary?
+#define MAX_GC_PEER_ADDRS 30
 
 #define GROUP_PING_INTERVAL 30
 #define GROUP_PEER_TIMEOUT (GROUP_PING_INTERVAL * 4 + 10)
@@ -176,19 +177,18 @@ typedef struct GC_Connection GC_Connection;
 
 typedef struct GC_Chat {
     Networking_Core *net;
-
-    /* The chat_id used to join the group is the signature portion of the key */
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
-    uint32_t    chat_pk_hash;   /* 32-bit hash of chat_public_key */
-
-    uint8_t     self_public_key[EXT_PUBLIC_KEY];
-    uint8_t     self_secret_key[EXT_SECRET_KEY];
-
     GC_GroupPeer   *group;
 
     uint32_t    numpeers;
     uint16_t    maxpeers;
     int         groupnumber;
+
+    /* The chat_id used to join the group is the signature portion of the key */
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
+    uint32_t    chat_id_hash;   /* 32-bit hash of the chat_id */
+
+    uint8_t     self_public_key[EXT_PUBLIC_KEY];
+    uint8_t     self_secret_key[EXT_SECRET_KEY];
 
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
@@ -203,6 +203,11 @@ typedef struct GC_Chat {
     uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
     uint64_t    self_last_rcvd_ping;
+
+    /* Holder for IP/keys received from announcement requests and loaded from saved groups */
+    GC_PeerAddress addr_list[MAX_GC_PEER_ADDRS];
+    uint16_t    num_addrs;
+    uint16_t    addrs_idx;
 
     GC_ChatCredentials *credentials;
     GC_Connection *gcc;
@@ -243,6 +248,8 @@ typedef struct GC_Session {
     void *rejected_userdata;
 } GC_Session;
 
+#define GROUP_SAVE_MAX_PEERS MAX_GC_PEER_ADDRS
+
 struct SAVED_GROUP {
     uint8_t   chat_public_key[EXT_PUBLIC_KEY];
     uint8_t   group_name[MAX_GC_GROUP_NAME_SIZE];
@@ -258,6 +265,9 @@ struct SAVED_GROUP {
     uint16_t  self_nick_len;
     uint8_t   self_role;
     uint8_t   self_status;
+
+    uint16_t  num_addrs;
+    GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];
 };
 
 /* Return -1 if fail
@@ -392,8 +402,8 @@ void do_gc(GC_Session* c);
  */
 GC_Session* new_groupchats(Messenger* m);
 
-/* Calls gc_group_exit() for every group chat */
-void gc_kill_groupchats(GC_Session* c);
+/* Cleans up groupchat structures and calls gc_group_exit() for every group chat */
+void kill_groupchats(GC_Session *c);
 
 /* Loads a previously saved group and attempts to join it.
  *
@@ -418,12 +428,8 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
  */
 int gc_group_join(GC_Session *c, const uint8_t *chat_id);
 
-/* Resets chat saving all necessary state.
- *
- * Returns groupnumber on success.
- * Returns -1 on falure.
- */
-int gc_rejoin_group(GC_Session *c, GC_Chat *chat);
+/* Resets chat saving all self state and attempts to reconnect to group */
+void gc_rejoin_group(GC_Session *c, GC_Chat *chat);
 
 /* Joins a group using the invite data received in a friend's group invite.
  *
@@ -466,6 +472,20 @@ int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernum
  * Return -1 on failure.
  */
 int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
+
+/* Updates chat_id's peer_addrs list when we get a nodes request reply from DHT */
+void gc_update_addrs(struct GC_Announce *announce, const uint8_t *chat_id);
+
+/* Copies up to max_addrs peer addresses from chat into addrs.
+ *
+ * Returns number of addresses copied.
+ */
+uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t max_addrs);
+
+/* If read_id is non-zero sends a read-receipt for ack_id's packet.
+ * If request_id is non-zero sends a request for the respective id's packet.
+ */
+int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id);
 
 /* lossless Packet handlers */
 int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,

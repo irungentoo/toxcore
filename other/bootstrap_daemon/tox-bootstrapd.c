@@ -596,7 +596,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    struct GC_Announce *group_announce = new_gca(dht);
+    GC_Announce *group_announce = new_gca(dht);
 
     if (group_announce == NULL) {
         syslog(LOG_ERR, "Couldn't initialize group announce. Exiting.\n");

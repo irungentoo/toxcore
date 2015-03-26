@@ -1,0 +1,67 @@
+Name:           @PACKAGE_NAME@
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        All-in-one secure communication platform
+
+License:        GPLv3
+URL:            https://github.com/irungentoo/toxcore
+Source0:        https://github.com/irungentoo/toxcore/releases/tox-%{version}.tar.gz
+
+BuildRequires:  autoconf automake libtool libvpx-devel opus-devel
+BuildRequires:  libsodium-devel libconfig-devel
+
+%description
+With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures their users full privacy and secure message delivery.
+
+%package devel
+Summary:        Development files for @PACKAGE_NAME@
+Requires:       %{name} = %{version}-%{release}
+
+%description devel
+Development package for @PACKAGE_NAME@
+
+%prep
+%setup -q
+
+
+%build
+%configure \
+    --enable-shared \
+    --disable-static \
+    --enable-av \
+    --disable-ntox \
+    --disable-daemon \
+    --disable-testing
+
+make %{?_smp_mflags}
+
+
+%install
+%make_install
+
+# remove la files
+find %{buildroot} -name '*.la' -delete -print
+
+# not handling DHT_bootstrap yet
+rm -f %{buildroot}%{_bindir}/DHT_bootstrap
+
+%post
+/sbin/ldconfig
+
+%postun
+/sbin/ldconfig
+
+%files
+%defattr(-,root,root)
+%doc COPYING README.md
+%{_libdir}/libtox*.so.*
+
+%files devel
+%defattr(-, root, root)
+%{_includedir}/tox/
+%{_libdir}/libtox*.so
+%{_libdir}/pkgconfig/libtox*.pc
+
+%changelog
+* Tue Mar  3 2015 Sergey 'Jin' Bostandzhyan <jin@mediatomb.cc> - 0.0.0-1
+- initial package

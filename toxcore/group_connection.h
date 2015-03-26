@@ -58,8 +58,9 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
 
 /* Decides if message need to be put in recv_ary or immediately handled.
  *
- * Return 1 if message is in correct sequence and may be handled immediately.
- * Return 0 if message is a duplicate or put in ary.
+ * Return 2 if message is in correct sequence and may be handled immediately.
+ * Return 1 if packet is out of sequence and added to recv_ary.
+ * Return 0 if message is a duplicate.
  * Return -1 on failure
  */
 int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data, uint32_t length,
