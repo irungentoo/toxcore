@@ -488,14 +488,6 @@ typedef enum TOX_ERR_NEW {
      */
     TOX_ERR_NEW_LOAD_ENCRYPTED,
     /**
-     * The encrypted byte array could not be decrypted. Either the data was
-     * corrupt or the password/key was incorrect.
-     *
-     * NOTE: This error code is only set by tox_encrypted_new() and
-     * tox_encrypted_key_new(), in the toxencryptsave module.
-     */
-    TOX_ERR_NEW_LOAD_DECRYPTION_FAILED,
-    /**
      * The data format was invalid. This can happen when loading data that was
      * saved by an older version of Tox, or when the data has been corrupted.
      * When loading from badly formatted data, some data may have been loaded,

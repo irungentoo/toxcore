@@ -35,7 +35,6 @@ extern "C" {
 #define TOX_DEFINED
 typedef struct Tox Tox;
 struct Tox_Options;
-typedef enum TOX_ERR_NEW TOX_ERR_NEW;
 #endif
 
 // these functions provide access to these defines in toxencryptsave.c, which
@@ -110,13 +109,66 @@ int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint3
  */
 int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
 
+typedef enum TOX_ERR_ENCRYPTED_NEW {
+    TOX_ERR_ENCRYPTED_NEW_OK,
+    TOX_ERR_ENCRYPTED_NEW_NULL,
+    /**
+     * The function was unable to allocate enough memory to store the internal
+     * structures for the Tox object.
+     */
+    TOX_ERR_ENCRYPTED_NEW_MALLOC,
+    /**
+     * The function was unable to bind to a port. This may mean that all ports
+     * have already been bound, e.g. by other Tox instances, or it may mean
+     * a permission error. You may be able to gather more information from errno.
+     */
+    TOX_ERR_ENCRYPTED_NEW_PORT_ALLOC,
+    /**
+     * proxy_type was invalid.
+     */
+    TOX_ERR_ENCRYPTED_NEW_PROXY_BAD_TYPE,
+    /**
+     * proxy_type was valid but the proxy_host passed had an invalid format
+     * or was NULL.
+     */
+    TOX_ERR_ENCRYPTED_NEW_PROXY_BAD_HOST,
+    /**
+     * proxy_type was valid, but the proxy_port was invalid.
+     */
+    TOX_ERR_ENCRYPTED_NEW_PROXY_BAD_PORT,
+    /**
+     * The proxy host passed could not be resolved.
+     */
+    TOX_ERR_ENCRYPTED_NEW_PROXY_NOT_FOUND,
+    /**
+     * The byte array to be loaded contained an encrypted save.
+     */
+    TOX_ERR_ENCRYPTED_NEW_LOAD_ENCRYPTED,
+    /**
+     * The data format was invalid. This can happen when loading data that was
+     * saved by an older version of Tox, or when the data has been corrupted.
+     * When loading from badly formatted data, some data may have been loaded,
+     * and the rest is discarded. Passing an invalid length parameter also
+     * causes this error.
+     */
+    TOX_ERR_ENCRYPTED_NEW_LOAD_BAD_FORMAT,
+    /**
+     * The encrypted byte array could not be decrypted. Either the data was
+     * corrupt or the password/key was incorrect.
+     *
+     * NOTE: This error code is only set by tox_encrypted_new() and
+     * tox_encrypted_key_new(), in the toxencryptsave module.
+     */
+    TOX_ERR_ENCRYPTED_NEW_LOAD_DECRYPTION_FAILED
+} TOX_ERR_ENCRYPTED_NEW;
+
 /* Load the new messenger from encrypted data of size length.
  * All other arguments are like toxcore/tox_new().
  *
  * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
 Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *passphrase,
-                       size_t pplength, TOX_ERR_NEW *error);
+                       size_t pplength, TOX_ERR_ENCRYPTED_NEW *error);
 
 
 /******************************* BEGIN PART 1 *******************************
@@ -190,7 +242,7 @@ int tox_pass_key_decrypt(const uint8_t *data, uint32_t length, const uint8_t *ke
  * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
 Tox *tox_encrypted_key_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *key,
-                           TOX_ERR_NEW *error);
+                           TOX_ERR_ENCRYPTED_NEW *error);
 
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
