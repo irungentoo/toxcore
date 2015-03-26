@@ -131,7 +131,7 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
         return NULL;
     }
 
-    if (data) {
+    if (data && length) {
         if (length < TOX_ENC_SAVE_MAGIC_LENGTH) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
             return NULL;
