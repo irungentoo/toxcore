@@ -6,7 +6,7 @@ before_script:
  - sudo apt-get install curl
 
 script:
-  - https://jenkins.libtoxcore.so/job/toxic_linux_beta/build?token=$TOKEN
+  - curl https://jenkins.libtoxcore.so/job/toxic_linux_beta/build?token=$TOKEN
 
 notifications:
   email: false
