@@ -467,15 +467,45 @@ static void at_shutdown(void)
 */
 
 /* Initialize networking.
+ * Added for reverse compatibility with old new_networking calls.
+ */
+Networking_Core *new_networking(IP ip, uint16_t port)
+{
+    return new_networking_ex(ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
+}
+
+/* Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
  *
  *  return Networking_Core object if no problems
  *  return NULL if there are problems.
+ *
+ * If error is non NULL it is set to 0 if no issues, 1 if bind failed, 2 if other.
  */
-Networking_Core *new_networking(IP ip, uint16_t port)
+Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
+    /* If both from and to are 0, use default port range
+     * If one is 0 and the other is non-0, use the non-0 value as only port
+     * If from > to, swap
+     */
+    if (port_from == 0 && port_to == 0) {
+        port_from = TOX_PORTRANGE_FROM;
+        port_to = TOX_PORTRANGE_TO;
+    } else if (port_from == 0 && port_to != 0) {
+        port_from = port_to;
+    } else if (port_from != 0 && port_to == 0) {
+        port_to = port_from;
+    } else if (port_from > port_to) {
+        uint16_t temp = port_from;
+        port_from = port_to;
+        port_to = temp;
+    }
+
+    if (error)
+        *error = 2;
+
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != AF_INET && ip.family != AF_INET6) {
 #ifdef DEBUG
@@ -600,11 +630,11 @@ Networking_Core *new_networking(IP ip, uint16_t port)
      *   some clients might not test return of tox_new(), blindly assuming that
      *   it worked ok (which it did previously without a successful bind)
      */
-    uint16_t port_to_try = port;
+    uint16_t port_to_try = port_from;
     *portptr = htons(port_to_try);
     int tries;
 
-    for (tries = TOX_PORTRANGE_FROM; tries <= TOX_PORTRANGE_TO; tries++) {
+    for (tries = port_from; tries <= port_to; tries++) {
         int res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
@@ -618,22 +648,28 @@ Networking_Core *new_networking(IP ip, uint16_t port)
             if (tries > 0)
                 errno = 0;
 
+            if (error)
+                *error = 0;
+
             return temp;
         }
 
         port_to_try++;
 
-        if (port_to_try > TOX_PORTRANGE_TO)
-            port_to_try = TOX_PORTRANGE_FROM;
+        if (port_to_try > port_to)
+            port_to_try = port_from;
 
         *portptr = htons(port_to_try);
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "Failed to bind socket: %u, %s (IP/Port: %s:%u\n", errno,
-            strerror(errno), ip_ntoa(&ip), port);
-#endif
+    LOGGER_ERROR("Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u", errno, strerror(errno),
+                 ip_ntoa(&ip), port_from, port_to);
+
     kill_networking(temp);
+
+    if (error)
+        *error = 1;
+
     return NULL;
 }
 

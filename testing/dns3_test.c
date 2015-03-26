@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     for (i = r_len - 1; i != 0 && buffer[i] != '='; --i);
 
-    uint8_t tox_id[TOX_FRIEND_ADDRESS_SIZE];
+    uint8_t tox_id[TOX_ADDRESS_SIZE];
 
     if (tox_decrypt_dns3_TXT(d, tox_id, buffer + i + 1, r_len - (i + 1), request_id) != 0)
         return -1;
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     printf("The Tox id for username %s is:\n", argv[3]);
 
     //unsigned int i;
-    for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; ++i) {
+    for (i = 0; i < TOX_ADDRESS_SIZE; ++i) {
         printf("%02hhX", tox_id[i]);
     }
 

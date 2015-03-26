@@ -1,0 +1,2 @@
+#define TOX_ENC_SAVE_MAGIC_NUMBER "toxEsave"
+#define TOX_ENC_SAVE_MAGIC_LENGTH 8

@@ -774,7 +774,7 @@ static int terminate_call ( MSISession *session, MSICall *call )
     return 0;
 }
 
-static void handle_remote_connection_change(Messenger *messenger, int friend_num, uint8_t status, void *session_p)
+static void handle_remote_connection_change(Messenger *messenger, uint32_t friend_num, uint8_t status, void *session_p)
 {
     (void)messenger;
     MSISession *session = session_p;
@@ -1101,7 +1101,8 @@ static int handle_recv_error ( MSISession *session, MSICall *call, MSIMessage *m
  *
  *
  */
-static void msi_handle_packet ( Messenger *messenger, int source, const uint8_t *data, uint16_t length, void *object )
+static void msi_handle_packet ( Messenger *messenger, uint32_t source, const uint8_t *data, uint16_t length,
+                                void *object )
 {
     LOGGER_DEBUG("Got msi message");
     /* Unused */

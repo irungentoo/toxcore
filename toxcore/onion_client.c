@@ -858,7 +858,7 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
 
     uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
     len = create_request(onion_c->dht->self_public_key, onion_c->dht->self_secret_key, packet,
-                         onion_c->friends_list[friend_num].dht_public_key, temp, sizeof(temp), CRYPTO_PACKET_FAKEID);
+                         onion_c->friends_list[friend_num].dht_public_key, temp, sizeof(temp), CRYPTO_PACKET_DHTPK);
 
     if (len == -1)
         return -1;
@@ -1351,78 +1351,10 @@ static void do_announce(Onion_Client *onion_c)
     }
 }
 
-void do_onion_client(Onion_Client *onion_c)
-{
-    unsigned int i;
-
-    if (onion_c->last_run == unix_time())
-        return;
-
-    populate_path_nodes(onion_c);
-
-    do_announce(onion_c);
-
-    if (onion_isconnected(onion_c)) {
-        for (i = 0; i < onion_c->num_friends; ++i) {
-            do_friend(onion_c, i);
-        }
-    } else {
-        populate_path_nodes_tcp(onion_c);
-    }
-
-    onion_c->last_run = unix_time();
-}
-
-Onion_Client *new_onion_client(Net_Crypto *c)
-{
-    if (c == NULL)
-        return NULL;
-
-    Onion_Client *onion_c = calloc(1, sizeof(Onion_Client));
-
-    if (onion_c == NULL)
-        return NULL;
-
-    if (ping_array_init(&onion_c->announce_ping_array, ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT) != 0) {
-        free(onion_c);
-        return NULL;
-    }
-
-    onion_c->dht = c->dht;
-    onion_c->net = c->dht->net;
-    onion_c->c = c;
-    new_symmetric_key(onion_c->secret_symmetric_key);
-    crypto_box_keypair(onion_c->temp_public_key, onion_c->temp_secret_key);
-    networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);
-    networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
-    oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, &handle_dhtpk_announce, onion_c);
-    cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_FAKEID, &handle_dht_dhtpk, onion_c);
-    tcp_onion_response_handler(onion_c->c, &handle_tcp_onion, onion_c);
-
-    return onion_c;
-}
-
-void kill_onion_client(Onion_Client *onion_c)
-{
-    if (onion_c == NULL)
-        return;
-
-    ping_array_free_all(&onion_c->announce_ping_array);
-    realloc_onion_friends(onion_c, 0);
-    networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
-    networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
-    oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, NULL, NULL);
-    cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_FAKEID, NULL, NULL);
-    tcp_onion_response_handler(onion_c->c, NULL, NULL);
-    memset(onion_c, 0, sizeof(Onion_Client));
-    free(onion_c);
-}
-
-
 /*  return 0 if we are not connected to the network.
  *  return 1 if we are.
  */
-int onion_isconnected(const Onion_Client *onion_c)
+static int onion_isconnected(const Onion_Client *onion_c)
 {
     unsigned int i, num = 0, announced = 0;
 
@@ -1457,3 +1389,102 @@ int onion_isconnected(const Onion_Client *onion_c)
 
     return 0;
 }
+
+#define ONION_CONNECTION_SECONDS 2
+
+/*  return 0 if we are not connected to the network.
+ *  return 1 if we are connected with TCP only.
+ *  return 2 if we are also connected with UDP.
+ */
+unsigned int onion_connection_status(const Onion_Client *onion_c)
+{
+    if (onion_c->onion_connected >= ONION_CONNECTION_SECONDS) {
+        if (onion_c->UDP_connected) {
+            return 2;
+        } else {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+void do_onion_client(Onion_Client *onion_c)
+{
+    unsigned int i;
+
+    if (onion_c->last_run == unix_time())
+        return;
+
+    populate_path_nodes(onion_c);
+
+    do_announce(onion_c);
+
+    if (onion_isconnected(onion_c)) {
+        if (onion_c->onion_connected < ONION_CONNECTION_SECONDS * 2) {
+            ++onion_c->onion_connected;
+        }
+
+        onion_c->UDP_connected = DHT_non_lan_connected(onion_c->dht);
+    } else {
+        populate_path_nodes_tcp(onion_c);
+
+        if (onion_c->onion_connected != 0) {
+            --onion_c->onion_connected;
+        }
+    }
+
+    if (onion_connection_status(onion_c)) {
+        for (i = 0; i < onion_c->num_friends; ++i) {
+            do_friend(onion_c, i);
+        }
+    }
+
+    onion_c->last_run = unix_time();
+}
+
+Onion_Client *new_onion_client(Net_Crypto *c)
+{
+    if (c == NULL)
+        return NULL;
+
+    Onion_Client *onion_c = calloc(1, sizeof(Onion_Client));
+
+    if (onion_c == NULL)
+        return NULL;
+
+    if (ping_array_init(&onion_c->announce_ping_array, ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT) != 0) {
+        free(onion_c);
+        return NULL;
+    }
+
+    onion_c->dht = c->dht;
+    onion_c->net = c->dht->net;
+    onion_c->c = c;
+    new_symmetric_key(onion_c->secret_symmetric_key);
+    crypto_box_keypair(onion_c->temp_public_key, onion_c->temp_secret_key);
+    networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_announce_response, onion_c);
+    networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
+    oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, &handle_dhtpk_announce, onion_c);
+    cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_DHTPK, &handle_dht_dhtpk, onion_c);
+    tcp_onion_response_handler(onion_c->c, &handle_tcp_onion, onion_c);
+
+    return onion_c;
+}
+
+void kill_onion_client(Onion_Client *onion_c)
+{
+    if (onion_c == NULL)
+        return;
+
+    ping_array_free_all(&onion_c->announce_ping_array);
+    realloc_onion_friends(onion_c, 0);
+    networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
+    networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
+    oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, NULL, NULL);
+    cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_DHTPK, NULL, NULL);
+    tcp_onion_response_handler(onion_c->c, NULL, NULL);
+    memset(onion_c, 0, sizeof(Onion_Client));
+    free(onion_c);
+}
+
