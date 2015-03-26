@@ -266,8 +266,10 @@ struct Messenger {
     void *friend_connectionstatuschange_internal_userdata;
 
     //void *group_chat_object; /* Set by new_groupchats()*/
-    void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t);
-    void (*group_message)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t);
+    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
+    void *group_invite_userdata;
+    //void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t);
+    //void (*group_message)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t);
 
     void (*file_sendrequest)(struct Messenger *m, uint32_t, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t,
                              void *);
@@ -282,10 +284,6 @@ struct Messenger {
     void (*msi_packet)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
 
-//<<<<<<< HEAD
-    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, uint16_t, void *);
-    void *group_invite_userdata;
-//=======
     void (*lossy_packethandler)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *lossy_packethandler_userdata;
     void (*lossless_packethandler)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);

@@ -2054,16 +2054,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             break;
         }
 
-        case PACKET_ID_INVITE_GROUPCHAT: {
-            if (data_length == 0)
-                break;
-
-            if (m->group_invite)
-                (*m->group_invite)(m, i, data, data_length);
-
-            break;
-        }
-
         case PACKET_ID_FILE_SENDREQUEST: {
             const unsigned int head_length = 1 + sizeof(uint32_t) + sizeof(uint64_t) + FILE_ID_LENGTH;
 

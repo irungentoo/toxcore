@@ -439,7 +439,7 @@ static int cmp_entry(const void *a, const void *b)
     if (t2)
         return 1;
 
-    int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key, CLIENT_ID_SIZE);
+    int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
 
     if (close == 1)
         return 1;
@@ -482,7 +482,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     unsigned int i;
 
     if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
-            || id_closest(reference_id, list_nodes[0].public_key, public_key, CLIENT_ID_SIZE) == 2) {
+            || id_closest(reference_id, list_nodes[0].public_key, public_key) == 2) {
         index = 0;
     }
 
@@ -572,7 +572,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
                 continue;
 
         if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
-                || id_closest(reference_id, list_nodes[0].public_key, nodes[i].public_key, CLIENT_ID_SIZE) == 2) {
+                || id_closest(reference_id, list_nodes[0].public_key, nodes[i].public_key) == 2) {
             /* check if node is already in list. */
             for (j = 0; j < MAX_ONION_CLIENTS; ++j) {
                 if (memcmp(list_nodes[j].public_key, nodes[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {

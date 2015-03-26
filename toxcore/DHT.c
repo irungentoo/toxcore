@@ -66,18 +66,18 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 10
 
-/* Compares size bytes of key1 and key2 with k.
+/* Compares client_id1 and client_id2 with client_id.
  *
  *  return 0 if both are same distance.
- *  return 1 if key1 is closer.
- *  return 2 if key2 is closer.
+ *  return 1 if client_id1 is closer.
+ *  return 2 if client_id2 is closer.
  */
-int id_closest(const uint8_t *k, const uint8_t *key1, const uint8_t *key2, size_t size)
+int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
 {
     size_t   i;
     uint8_t distance1, distance2;
 
-    for (i = 0; i < size; ++i) {
+    for (i = 0; i < CLIENT_ID_SIZE; ++i) {
 
         distance1 = id[i] ^ id1[i];
         distance2 = id[i] ^ id2[i];
@@ -537,8 +537,7 @@ static void get_close_nodes_inner(const uint8_t *client_id, Node_format *nodes_l
             for (j = 0; j < MAX_SENT_NODES; ++j) {
                 closest = id_closest(   client_id,
                                         nodes_list[j].public_key,
-                                        client->client_id,
-                                        CLIENT_ID_SIZE );
+                                        client->client_id );
 
                 /* second client_id is closer than current: change to it */
                 if (closest == 2) {
@@ -676,7 +675,7 @@ static int cmp_dht_entry(const void *a, const void *b)
             return 1;
     }
 
-    int close = id_closest(cmp_public_key, entry1.client_id, entry2.client_id, CLIENT_ID_SIZE);
+    int close = id_closest(cmp_public_key, entry1.client_id, entry2.client_id);
 
     if (close == 1)
         return 1;
@@ -695,7 +694,7 @@ static int cmp_dht_entry(const void *a, const void *b)
 static unsigned int store_node_ok(const Client_data *client, const uint8_t *client_id, const uint8_t *comp_client_id)
 {
     if ((is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            || (id_closest(comp_client_id, client->client_id, client_id, CLIENT_ID_SIZE) == 2)) {
+            || (id_closest(comp_client_id, client->client_id, client_id) == 2)) {
         return 1;
     } else {
         return 0;

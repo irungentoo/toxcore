@@ -220,7 +220,7 @@ void tox_kill(Tox *tox)
 {
     Messenger *m = tox;
     //kill_groupchats(m->group_chat_object);
-    gc_kill_groupchats(m->group_handler);
+    kill_groupchats(m->group_handler);
     kill_messenger(m);
     logger_kill_global();
 }

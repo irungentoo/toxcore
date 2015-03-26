@@ -2195,7 +2195,7 @@ void do_gc(GC_Session *c)
                  chat->addrs_idx = (chat->addrs_idx + 1) % chat->num_addrs;
             }
 
-            if (onion_isconnected(c->messenger->onion_c))
+            if (onion_connection_status(c->messenger->onion_c))
                 chat->connection_state = CS_CONNECTING;
         }
 

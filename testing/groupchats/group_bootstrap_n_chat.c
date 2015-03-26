@@ -31,12 +31,12 @@ int main(int argc, char *argv[])
 
     Messenger* tox[PEERCOUNT];
     Messenger* chat;
-    chat = new_messenger(&options);
+    chat = new_messenger(&options, 0);
 
     int i;
     for (i=0; i<PEERCOUNT; i++)
     {
-        tox[i] = new_messenger(&options);
+        tox[i] = new_messenger(&options, 0);
     }
 
     printf("%s\n", id_toa(tox[0]->dht->self_public_key));
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
         printf("Cannot create group\n");
 
     GC_Chat *ct = gc_get_group(chat->group_handler, groupnumber);
-    printf("%s%s\n", id_toa(ENC_KEY(ct->chat_public_key)), id_toa(SIG_PK(ct->chat_public_key)));
+    printf("CHAT ENC: %s\n CHAT SIG: %s\n", id_toa(ENC_KEY(ct->chat_public_key)), id_toa(SIG_PK(ct->chat_public_key)));
 
     gc_callback_peer_join(chat, on_group_peer_join, NULL);
 

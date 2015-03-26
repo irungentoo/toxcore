@@ -236,7 +236,7 @@ static int cmp_entry(const void *a, const void *b)
     if (t2)
         return 1;
 
-    int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key, CLIENT_ID_SIZE);
+    int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
 
     if (close == 1)
         return 1;
@@ -268,7 +268,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
     }
 
     if (pos == -1) {
-        if (id_closest(onion_a->dht->self_public_key, public_key, onion_a->entries[0].public_key, CLIENT_ID_SIZE) == 1)
+        if (id_closest(onion_a->dht->self_public_key, public_key, onion_a->entries[0].public_key) == 1)
             pos = 0;
     }
 

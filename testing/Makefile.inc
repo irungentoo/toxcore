@@ -106,7 +106,7 @@ tox_shell_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         -lutil
 
 
-noinst_PROGRAMS +=      irc_syncbot
+#noinst_PROGRAMS +=      irc_syncbot
 
 #irc_syncbot_SOURCES =   ../testing/irc_syncbot.c
 

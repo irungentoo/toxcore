@@ -65,7 +65,7 @@ void basicannouncetest()
     for (i=0; i<PEERCOUNT; i++)
     {
 
-        peers[i].tox = new_messenger(&options);
+        peers[i].tox = new_messenger(&options, 0);
         create_long_keypair(peers[i].pk, peers[i].sk);
         printf("%s, %d\n", id_toa(peers[i].tox->dht->self_public_key), i);
     }
