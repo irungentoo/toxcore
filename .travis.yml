@@ -1,60 +1,12 @@
-language: c
-compiler:
-  - gcc
-  - clang
+env:
+  global:
+    secure: ndYANZwVcCHfmhVQEOj/BGFphqkhSzAbG+Zt6bfEGhPDfgB85IaxuU9HbxxbeCLJZheR0LYIkSO7FAu7raQnbv2diSOEW94OtBAYRDle4sq7OfENOFKk9NzCuAKGxzoe4kF+qIE35+5CEqCJKojwpSSmcvDxtpDRuxp7n70h5wg=
 
 before_script:
-  #installing libsodium, needed for Core
-  - git clone git://github.com/jedisct1/libsodium.git > /dev/null
-  - cd libsodium
-  - git checkout tags/1.0.0 > /dev/null
-  - ./autogen.sh > /dev/null
-  - ./configure > /dev/null
-  - make check -j3 > /dev/null
-  - sudo make install >/dev/null
-  - cd ..
-  #installing yasm, needed for compiling vpx
-  - sudo apt-get install yasm > /dev/null
-  #installing libconfig, needed for DHT_bootstrap_daemon
-  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz > /dev/null
-  - tar -xvzf libconfig-1.4.9.tar.gz > /dev/null
-  - cd libconfig-1.4.9
-  - ./configure > /dev/null
-  - make -j3 > /dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #installing libopus, needed for audio encoding/decoding
-  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz > /dev/null
-  - tar xzf opus-1.0.3.tar.gz > /dev/null
-  - cd opus-1.0.3
-  - ./configure > /dev/null
-  - make -j3 > /dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #installing vpx
-  - git clone http://git.chromium.org/webm/libvpx.git > /dev/null
-  - cd libvpx
-  - ./configure --enable-shared > /dev/null
-  - make -j3 >/dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #creating libraries links and updating cache
-  - sudo ldconfig > /dev/null
-  #installing check, needed for unit tests
-  - sudo apt-get install check > /dev/null
+ - apt-get install curl
 
 script:
-  - autoreconf -i
-  - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --enable-ntox
-  - make -j3
-  - make check
-  - make dist
+  - https://jenkins.libtoxcore.so/job/toxic_linux_beta/build?token=$TOKEN
 
 notifications:
   email: false
-
-  irc: 
-    channels:
-      - "chat.freenode.net#tox-dev"
-    on_success: always
-    on_failure: always
