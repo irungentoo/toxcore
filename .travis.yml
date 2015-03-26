@@ -3,7 +3,7 @@ env:
     secure: ndYANZwVcCHfmhVQEOj/BGFphqkhSzAbG+Zt6bfEGhPDfgB85IaxuU9HbxxbeCLJZheR0LYIkSO7FAu7raQnbv2diSOEW94OtBAYRDle4sq7OfENOFKk9NzCuAKGxzoe4kF+qIE35+5CEqCJKojwpSSmcvDxtpDRuxp7n70h5wg=
 
 before_script:
- - apt-get install curl
+ - sudo apt-get install curl
 
 script:
   - https://jenkins.libtoxcore.so/job/toxic_linux_beta/build?token=$TOKEN
