@@ -1540,7 +1540,7 @@ typedef enum TOX_ERR_FILE_SEEK {
  * TOX_FILE_CONTROL_RESUME is sent.
  *
  * @param friend_number The friend number of the friend the file is being
- *   transferred to or received from.
+ *   received from.
  * @param file_number The friend-specific identifier for the file transfer.
  * @param position The position that the file should be seeked to.
  */
