@@ -936,6 +936,8 @@ typedef enum TOX_ERR_FRIEND_DELETE {
 
 /**
  * Remove a friend from the friend list.
+ * Other friend numbers are unchanged.
+ * The friend_number can be reused by toxcore as a friend number for a new friend.
  *
  * This does not notify the friend of their deletion. After calling this
  * function, this client will appear offline to the friend and no communication
@@ -944,6 +946,7 @@ typedef enum TOX_ERR_FRIEND_DELETE {
  * @friend_number Friend number for the friend to be deleted.
  *
  * @return true on success.
+ * @see tox_friend_add for detailed description of friend numbers.
  */
 bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *error);
 
