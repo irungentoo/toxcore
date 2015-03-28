@@ -1,35 +1,32 @@
 #include "toxav.h"
 #include "../toxcore/tox.h"
 
-#ifdef __APPLE__
-#	include <OpenAL/al.h>
-#	include <OpenAL/alc.h>
-#else
-#	include <AL/al.h>
-#	include <AL/alc.h>
-/* compatibility with older versions of OpenAL */
-#	ifndef ALC_ALL_DEVICES_SPECIFIER
-#		include <AL/alext.h>
-#	endif  /* ALC_ALL_DEVICES_SPECIFIER */
-#endif  /* __APPLE__ */
+/* For playing audio data */
+#include <AL/al.h>
+#include <AL/alc.h>
 
+/* Processing wav's */
+#include <sndfile.h>
+
+/* For reading and displaying video data */
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
+/* For converting images TODO remove */
 #include <vpx/vpx_image.h>
 
+
+#include <sys/stat.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
-
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#define c_sleep(x) Sleep(1*x)
-#else
+#include <errno.h>
 #include <unistd.h>
+
+
 #define c_sleep(x) usleep(1000*x)
-#endif
 
 
 /* Enable/disable tests */
@@ -39,17 +36,17 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 0
-#define TEST_TRANSFER_V 1
+#define TEST_TRANSFER_A 1
+#define TEST_TRANSFER_V 0
 
 
 typedef struct {
     bool incoming;
     uint32_t state;
-	uint32_t output_source;
 } CallControl;
 
-const char* video_test_window = "AV Test";
+const char* vdout = "AV Test";
+uint32_t adout;
 
 const char* stringify_state(TOXAV_CALL_STATE s)
 {
@@ -65,10 +62,7 @@ const char* stringify_state(TOXAV_CALL_STATE s)
     };
     
     return strings [s];
-};
-
-
-int device_play_frame(uint32_t source, const int16_t* PCM, size_t size);
+}
 
 /** 
  * Callbacks 
@@ -104,9 +98,11 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     const uint8_t* vData = planes[VPX_PLANE_U];
     
     // convert from planar to packed
-    for (int y = 0; y < height; ++y)
+    int y = 0;
+    for (; y < height; ++y)
     {
-        for (int x = 0; x < width; ++x)
+        int x = 0;
+        for (; x < width; ++x)
         {
             uint8_t Y = planes[VPX_PLANE_Y][x + y * bpl];
             uint8_t U = planes[VPX_PLANE_V][x/(1 << 1) + y/(1 << 1)*cxbpl];
@@ -117,7 +113,7 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
         }
     }
     
-    cvShowImage(video_test_window, &output_img);
+    cvShowImage(vdout, &output_img);
     free(output_img.imageData);
 }
 void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
@@ -127,7 +123,32 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint32_t sampling_rate,
                                     void *user_data)
 {
-    device_play_frame(((CallControl*)user_data)->output_source, pcm, sample_count);
+    uint32_t bufid;
+    int32_t processed, queued;
+    alGetSourcei(adout, AL_BUFFERS_PROCESSED, &processed);
+    alGetSourcei(adout, AL_BUFFERS_QUEUED, &queued);
+
+    if(processed) {
+        uint32_t bufids[processed];
+        alSourceUnqueueBuffers(adout, processed, bufids);
+        alDeleteBuffers(processed - 1, bufids + 1);
+        bufid = bufids[0];
+    }
+//     else if(queued < 16)
+        alGenBuffers(1, &bufid);
+//     else
+//         return;
+    
+
+    alBufferData(bufid, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, 
+                 pcm, sample_count * channels * 2, sampling_rate);
+    alSourceQueueBuffers(adout, 1, &bufid);
+
+    int32_t state;
+    alGetSourcei(adout, AL_SOURCE_STATE, &state);
+
+    if(state != AL_PLAYING) 
+        alSourcePlay(adout);
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -139,8 +160,20 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
 
 /**
  */
-void prepare(Tox* Bsn, Tox* Alice, Tox* Bob)
+void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxAV** BobAV, CallControl* BobCC)
 {
+    Tox* Alice;
+    Tox* Bob;
+    
+    *bootstrap = tox_new(0);
+    Alice = tox_new(0);
+    Bob = tox_new(0);
+    
+    assert(bootstrap && Alice && Bob);
+    
+    printf("Created 3 instances of Tox\n");
+    
+    printf("Preparing network...\n");
     long long unsigned int cur_time = time(NULL);
     
     uint32_t to_compare = 974536;
@@ -154,11 +187,11 @@ void prepare(Tox* Bsn, Tox* Alice, Tox* Bob)
     uint8_t off = 1;
     
     while (1) {
-        tox_do(Bsn);
+        tox_do(*bootstrap);
         tox_do(Alice);
         tox_do(Bob);
         
-        if (tox_isconnected(Bsn) && tox_isconnected(Alice) && tox_isconnected(Bob) && off) {
+        if (tox_isconnected(*bootstrap) && tox_isconnected(Alice) && tox_isconnected(Bob) && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;
         }
@@ -169,25 +202,32 @@ void prepare(Tox* Bsn, Tox* Alice, Tox* Bob)
         c_sleep(20);
     }
     
-    printf("All set after %llu seconds!\n", time(NULL) - cur_time);
-}
-void prepareAV(ToxAV* AliceAV, void* AliceUD, ToxAV* BobAV, void* BobUD)
-{
+    
+    TOXAV_ERR_NEW rc;
+    *AliceAV = toxav_new(Alice, &rc);
+    assert(rc == TOXAV_ERR_NEW_OK);
+    
+    *BobAV = toxav_new(Bob, &rc);
+    assert(rc == TOXAV_ERR_NEW_OK);
+    
     /* Alice */
-    toxav_callback_call(AliceAV, t_toxav_call_cb, AliceUD);
-    toxav_callback_call_state(AliceAV, t_toxav_call_state_cb, AliceUD);
-    toxav_callback_receive_video_frame(AliceAV, t_toxav_receive_video_frame_cb, AliceUD);
-    toxav_callback_receive_audio_frame(AliceAV, t_toxav_receive_audio_frame_cb, AliceUD);
+    toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
+    toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
+    toxav_callback_receive_video_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
+    toxav_callback_receive_audio_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
     
     /* Bob */
-    toxav_callback_call(BobAV, t_toxav_call_cb, BobUD);
-    toxav_callback_call_state(BobAV, t_toxav_call_state_cb, BobUD);
-    toxav_callback_receive_video_frame(BobAV, t_toxav_receive_video_frame_cb, BobUD);
-    toxav_callback_receive_audio_frame(BobAV, t_toxav_receive_audio_frame_cb, BobUD);
+    toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
+    toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
+    toxav_callback_receive_video_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
+    toxav_callback_receive_audio_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
+    
+    printf("Created 2 instances of ToxAV\n");
+    printf("All set after %llu seconds!\n", time(NULL) - cur_time);
 }
-void iterate(Tox* Bsn, ToxAV* AliceAV, ToxAV* BobAV)
+int iterate_tox(Tox* bootstrap, ToxAV* AliceAV, ToxAV* BobAV)
 {
-    tox_do(Bsn);
+    tox_do(bootstrap);
     tox_do(toxav_get_tox(AliceAV));
     tox_do(toxav_get_tox(BobAV));
     
@@ -197,114 +237,16 @@ void iterate(Tox* Bsn, ToxAV* AliceAV, ToxAV* BobAV)
 	int mina = MIN(tox_do_interval(toxav_get_tox(AliceAV)), toxav_iteration_interval(AliceAV));
 	int minb = MIN(tox_do_interval(toxav_get_tox(BobAV)), toxav_iteration_interval(BobAV));
 	
-	c_sleep(MIN(mina, minb));
-}
-
-int device_read_frame(ALCdevice* device, int32_t frame_dur, int16_t* PCM, size_t max_size)
-{
-	int f_size = (8000 * frame_dur / 1000);
-	
-	if (max_size < f_size)
-		return -1;
-
-	/* Don't block if not enough data */
-	int32_t samples;
-	alcGetIntegerv(device, ALC_CAPTURE_SAMPLES, sizeof(int32_t), &samples);
-	if (samples < f_size) 
-		return 0;
-	
-	alcCaptureSamples(device, PCM, f_size);
-	return f_size;
-}
-
-int device_play_frame(uint32_t source, const int16_t* PCM, size_t size)
-{
-	uint32_t bufid;
-    int32_t processed, queued;
-    alGetSourcei(source, AL_BUFFERS_PROCESSED, &processed);
-    alGetSourcei(source, AL_BUFFERS_QUEUED, &queued);
-
-    if(processed) {
-        uint32_t bufids[processed];
-        alSourceUnqueueBuffers(source, processed, bufids);
-        alDeleteBuffers(processed - 1, bufids + 1);
-        bufid = bufids[0];
-    }
-    else if(queued < 16)
-		alGenBuffers(1, &bufid);
-    else
-        return 0;
+    int rc = MIN(mina, minb);
+	c_sleep(rc);
     
-
-    alBufferData(bufid, AL_FORMAT_STEREO16, PCM, size * 2 * 2, 48000);
-    alSourceQueueBuffers(source, 1, &bufid);
-
-    int32_t state;
-    alGetSourcei(source, AL_SOURCE_STATE, &state);
-
-    if(state != AL_PLAYING) 
-		alSourcePlay(source);
-	return 1;
-}
-
-int print_devices()
-{
-	const char* default_input;
-	const char* default_output;
-	
-	const char *device;
-
-	printf("Default input device: %s\n", alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER));
-	printf("Default output device: %s\n", alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER));
-	
-	printf("\n");
-	
-	printf("Input devices:\n");
-	
-	int i = 0;
-	for(device = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER); *device; 
-		device += strlen( device ) + 1, ++i) {
-		printf("%d) %s\n", i, device);
-	}
-	
-	printf("\n");
-	printf("Output devices:\n");
-	
-	i = 0;
-	for(device = alcGetString(NULL, ALC_DEVICE_SPECIFIER); *device; 
-		device += strlen( device ) + 1, ++i) {
-		printf("%d) %s\n", i, device);
-	}
-	
-	return 0;
-}
-
-int print_help(const char* name, int rc)
-{
-	fprintf(stderr, "Usage: %s [-h] <in device> <out device>\n", name);
-	return rc;
-}
-
-long get_device_idx(const char* arg)
-{
-	if (strcmp(arg, "-") == 0)
-		return -1; /* Default */
-	
-	char *p;
-	long res = strtol(arg, &p, 10);
-	
-	if (*p) {
-		fprintf(stderr, "Invalid device!");
-		exit(1);
-	}
-	
-	return res;
+    return rc;
 }
 
 int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
 {
     /* I use vpx image coz i'm noob TODO use opencv conversion */
-    vpx_image vpx_img;
+    vpx_image_t vpx_img;
     vpx_img.w = vpx_img.h = vpx_img.d_w = vpx_img.d_h = 0;
     
     const int w = img->width;
@@ -312,9 +254,11 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     
     vpx_img_alloc(&vpx_img, VPX_IMG_FMT_VPXI420, w, h, 1);
     
-    for (int y = 0; y < h; ++y)
+    int y = 0;
+    for (; y < h; ++y)
     {
-        for (int x = 0; x < w; ++x)
+        int x = 0;
+        for (; x < w; ++x)
         {
             uint8_t b = img->imageData[(x + y * w) * 3 + 0];
             uint8_t g = img->imageData[(x + y * w) * 3 + 1];
@@ -341,113 +285,118 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     return rc;
 }
 
-int main (int argc, char** argv)
+int print_audio_devices()
 {
-    /* AV files for testing */
-    const char* audio_in = "";
-    const char* video_in = "";
-    long audio_out_dev = 0;
+    const char *device;
+
+    printf("Default output device: %s\n", alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER));
+    printf("Output devices:\n");
     
-AGAIN:
-    switch (getopt(argc, argv, "a:v:o:"))
-    {
-        case 'a':
-            audio_in = optarg;
-            goto AGAIN;
-            break;
-        case 'v':
-            video_in = optarg;
-            goto AGAIN;
-            break;
-        case 'o':
-            char *d;
-            audio_out_dev = strtol(optarg, &d, 10);
-            if (*d) {
-                fprintf(stderr, "Invalid value for argument: 'o'");
-                return 1;
-            }
-            goto AGAIN;
-            break;
-        case '?':
-            return 1;
-            break;
-        case -1:
-            break;
+    int i = 0;
+    for(device = alcGetString(NULL, ALC_DEVICE_SPECIFIER); *device; 
+        device += strlen( device ) + 1, ++i) {
+        printf("%d) %s\n", i, device);
     }
     
-    
+    return 0;
+}
+
+int print_help (const char* name)
+{
+    printf("Usage: %s -[a:v:o:dh]\n"
+           "-a <path> video input file\n"
+           "-v <path> video input file\n"
+           "-o <idx> output audio device index\n"
+           "-d print output audio devices\n"
+           "-h print this help\n", name);
     
     return 0;
+}
+
+int main (int argc, char** argv)
+{
+    struct stat st;
     
-	if (argc == 2) {
-		if (strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "--devices") == 0) {
-			return print_devices();
-		}
-		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-			return print_help(argv[0], 0);
-		}
-	}
-	
-	if (argc != 3) {
-		fprintf(stderr, "Invalid input!\n");
-		return print_help(argv[0], 1);
-	}
-	
-	int i;
-	
-	const char* in_device_name = "";
-	const char* out_device_name = "";
-	
-	{
-		long dev = get_device_idx(argv[1]);
-		if (dev == -1)
-			in_device_name = alcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER);
-		else
-		{
-			const char* tmp;
-			i = -1;
-			for(tmp = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER); *tmp && i != dev;
-				tmp += strlen( tmp ) + 1, ++i)
-				in_device_name = tmp;
-		}
-		
-		printf("Input device: %s\n", in_device_name);
-	}
-	
-	{
-		long dev = get_device_idx(argv[1]);
-		if (dev == -1)
-			out_device_name = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-		else
-		{
-			const char* tmp;
-			i = -1;
-			for(tmp = alcGetString(NULL, ALC_DEVICE_SPECIFIER); *tmp && i != dev;
-				tmp += strlen( tmp ) + 1, ++i)
-				out_device_name = tmp;
-		}
-		
-		printf("Output device: %s\n", out_device_name);
-	}
-	
-	ALCdevice* out_device;
-	ALCcontext* out_ctx;
-	uint32_t source;
-	uint32_t buffers[5];
+    /* AV files for testing */
+    const char* af_name = NULL;
+    const char* vf_name = NULL;
+    long audio_out_dev_idx = 0;
+    
+    /* Pasre settings */
+    CHECK_ARG: switch (getopt(argc, argv, "a:v:o:dh")) {
+    case 'a':
+        af_name = optarg;
+        goto CHECK_ARG;
+    case 'v':
+        vf_name = optarg;
+        goto CHECK_ARG;
+    case 'o': {
+        char *d;
+        audio_out_dev_idx = strtol(optarg, &d, 10);
+        if (*d) {
+            printf("Invalid value for argument: 'o'");
+            exit(1);
+        }
+        goto CHECK_ARG;
+    }
+    case 'd':
+        return print_audio_devices();
+    case 'h':
+        return print_help(argv[0]);
+    case '?':
+        exit(1);
+    case -1:;
+    }
+    
+    { /* Check files */
+        if (!af_name) {
+            printf("Required audio input file!\n");
+            exit(1);
+        }
+        
+        if (!vf_name) {
+            printf("Required video input file!\n");
+            exit(1);
+        }
+        
+        /* Check for files */
+        if(stat(af_name, &st) != 0 || !S_ISREG(st.st_mode))
+        {
+            printf("%s doesn't seem to be a regular file!\n", af_name);
+            exit(1);
+        }
+        
+        if(stat(vf_name, &st) != 0 || !S_ISREG(st.st_mode))
+        {
+            printf("%s doesn't seem to be a regular file!\n", vf_name);
+            exit(1);
+        }
+    }
+    
+	ALCdevice* audio_out_device;
 	
 	{ /* Open output device */
-		out_device = alcOpenDevice(out_device_name);
-		if ( !out_device ) {
-			fprintf(stderr, "Failed to open playback device: %s: %d\n", out_device_name, alGetError());
-			return 1;
+        const char* audio_out_dev_name = NULL;
+        
+        int i = 0;
+        for(audio_out_dev_name = alcGetString(NULL, ALC_DEVICE_SPECIFIER); i < audio_out_dev_idx;
+            audio_out_dev_name += strlen( audio_out_dev_name ) + 1, ++i)
+            if (!(audio_out_dev_name + strlen( audio_out_dev_name ) + 1))
+                break;
+        
+		audio_out_device = alcOpenDevice(audio_out_dev_name);
+		if ( !audio_out_device ) {
+			printf("Failed to open playback device: %s: %d\n", audio_out_dev_name, alGetError());
+			exit(1);
 		}
 		
-		out_ctx = alcCreateContext(out_device, NULL);
+        ALCcontext* out_ctx = alcCreateContext(audio_out_device, NULL);
         alcMakeContextCurrent(out_ctx);
 		
+        uint32_t buffers[5];
 		alGenBuffers(5, buffers);
-		alGenSources((uint32_t)1, &source);
-		alSourcei(source, AL_LOOPING, AL_FALSE);
+		alGenSources((uint32_t)1, &adout);
+		alSourcei(adout, AL_LOOPING, AL_FALSE);
 		
 		uint16_t zeros[10000];
 		memset(zeros, 0, 10000);
@@ -455,45 +404,31 @@ AGAIN:
 		for ( i = 0; i < 5; ++i ) 
 			alBufferData(buffers[i], AL_FORMAT_STEREO16, zeros, 10000, 48000);
 		
-		alSourceQueueBuffers(source, 5, buffers);
-		alSourcePlay(source);
+		alSourceQueueBuffers(adout, 5, buffers);
+		alSourcePlay(adout);
+        
+        printf("Using audio device: %s\n", audio_out_dev_name);
 	}
 	
-	ALCdevice* in_device;
+    printf("Using audio file: %s\n", af_name);
+    printf("Using video file: %s\n", vf_name);
+    
 	
-	{ /* Open input device */
-		in_device = alcCaptureOpenDevice(in_device_name, 48000, AL_FORMAT_STEREO16, 10000);
-		if ( !in_device ) {
-			fprintf(stderr, "Failed to open capture device: %s: %d\n", in_device_name, alGetError());
-			return 1;
-		}
-		
-		alcCaptureStart(in_device);
-	}
-	
-    Tox *Bsn = tox_new(0);
-    Tox *Alice = tox_new(0);
-    Tox *Bob = tox_new(0);
-    
-    assert(Bsn && Alice && Bob);
-    
-    prepare(Bsn, Alice, Bob);
     
     
-    ToxAV *AliceAV, *BobAV;
-    CallControl AliceCC, BobCC;
     
-    {
-        TOXAV_ERR_NEW rc;
-        AliceAV = toxav_new(Alice, &rc);
-        assert(rc == TOXAV_ERR_NEW_OK);
-        
-        BobAV = toxav_new(Bob, &rc);
-        assert(rc == TOXAV_ERR_NEW_OK);
-        
-        prepareAV(AliceAV, &AliceCC, BobAV, &BobCC);
-        printf("Created 2 instances of ToxAV\n");
-    }
+    /* START TOX NETWORK */
+    
+    Tox *bootstrap;
+    ToxAV *AliceAV;
+    ToxAV *BobAV;
+    
+    CallControl AliceCC;
+    CallControl BobCC;
+    
+    initialize_tox(&bootstrap, &AliceAV, &AliceCC, &BobAV, &BobCC);
+    
+    
     
 
 #define REGULAR_CALL_FLOW(A_BR, V_BR) \
@@ -539,7 +474,7 @@ AGAIN:
                 } \
             } \
              \
-            iterate(Bsn, AliceAV, BobAV); \
+            iterate(bootstrap, AliceAV, BobAV); \
         } \
         printf("Success!\n");\
     } while(0)
@@ -578,7 +513,7 @@ AGAIN:
         }
         
         while (!BobCC.incoming)
-            iterate(Bsn, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
         
         /* Reject */
         {
@@ -592,7 +527,7 @@ AGAIN:
         }
         
         while (AliceCC.state != TOXAV_CALL_STATE_END)
-            iterate(Bsn, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
         
         printf("Success!\n");
     }
@@ -614,7 +549,7 @@ AGAIN:
         }
         
         while (!BobCC.incoming)
-            iterate(Bsn, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
         
         /* Cancel */
         {
@@ -629,7 +564,7 @@ AGAIN:
         
         /* Alice will not receive end state */
         while (BobCC.state != TOXAV_CALL_STATE_END)
-            iterate(Bsn, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
         
         printf("Success!\n");
     }
@@ -652,7 +587,7 @@ AGAIN:
         }
         
         while (!BobCC.incoming)
-            iterate(Bsn, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
         
         /* At first try all stuff while in invalid state */
         assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
@@ -670,39 +605,39 @@ AGAIN:
             }
         }
         
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         
         /* Pause and Resume */
         printf("Pause and Resume\n");
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state == TOXAV_CALL_STATE_PAUSED);
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state & (TOXAV_CALL_STATE_SENDING_A | TOXAV_CALL_STATE_SENDING_V));
         
         /* Mute/Unmute single */
         printf("Mute/Unmute single\n");
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
         
         /* Mute/Unmute both */
         printf("Mute/Unmute both\n");
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_V);
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
         assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_V);
         
         {
@@ -715,21 +650,22 @@ AGAIN:
             }
         }
         
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state == TOXAV_CALL_STATE_END);
         
         printf("Success!\n");
     }
     
     if (TEST_TRANSFER_A) { /* Audio encoding/decoding and transfer */
+        SNDFILE* af_handle;
+        SF_INFO af_info;
+        
 		printf("\nTrying audio enc/dec...\n");
 		
 		memset(&AliceCC, 0, sizeof(CallControl));
         memset(&BobCC, 0, sizeof(CallControl));
-		
-		AliceCC.output_source = BobCC.output_source = source;
         
-        {
+        { /* Call */
             TOXAV_ERR_CALL rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
             
@@ -740,11 +676,11 @@ AGAIN:
         }
         
         while (!BobCC.incoming)
-            iterate(Bsn, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
 		
-		{
+		{ /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 48, 0, &rc);
+            toxav_answer(BobAV, 0, 64, 0, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
@@ -752,26 +688,44 @@ AGAIN:
             }
         }
         
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
 		
-		int16_t PCM[10000];
-		time_t start_time = time(NULL);
-		
+        /* Open audio file */
+        af_handle = sf_open(af_name, SFM_READ, &af_info);
+        if (af_handle == NULL)
+        {
+            printf("Failed to open the file.\n");
+            exit(1);
+        }
+        
 		/* Run for 5 seconds */
-		while ( start_time + 10 > time(NULL) ) {
-			int frame_size = device_read_frame(in_device, 20, PCM, sizeof(PCM));
-			if (frame_size > 0) {
-				TOXAV_ERR_SEND_FRAME rc;
-				if (toxav_send_audio_frame(AliceAV, 0, PCM, frame_size, 2, 8000, &rc) == false) {
-					printf("Error sending frame of size %d: %d\n", frame_size, rc);
-					exit (1);
-				}
-			}
-			
-			iterate(Bsn, AliceAV, BobAV);
+        
+        uint32_t frame_duration = 10;
+        int16_t PCM[10000];
+        
+        time_t start_time = time(NULL);
+        time_t expected_time = af_info.frames / af_info.samplerate + 2;
+        
+		while ( start_time + expected_time > time(NULL) ) {
+            int frame_size = (af_info.samplerate * frame_duration / 1000);
+            
+            int64_t count = sf_read_short(af_handle, PCM, frame_size);
+            if (count > 0) {
+                TOXAV_ERR_SEND_FRAME rc;
+                if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
+                    printf("Error sending frame of size %ld: %d\n", count, rc);
+                    exit(1);
+                }
+            }
+            
+            iterate_tox(bootstrap, AliceAV, BobAV);
 		}
+        
+		printf("Played file in: %lu\n", time(NULL) - start_time);
+        
+        sf_close(af_handle);
 		
-		{
+		{ /* Hangup */
             TOXAV_ERR_CALL_CONTROL rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
             
@@ -781,24 +735,19 @@ AGAIN:
             }
         }
         
-        iterate(Bsn, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state == TOXAV_CALL_STATE_END);
 		
 		printf("Success!");
 	}
 	
 	if (TEST_TRANSFER_V) {
-        if (strlen(video_in) == 0) {
-            printf("Skipping video test...\n");
-            goto CONTINUE;
-        }
+        cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
         
-        cvNamedWindow(video_test_window, CV_WINDOW_AUTOSIZE);
-        
-        CvCapture* capture = cvCreateFileCapture(video_in);
+        CvCapture* capture = cvCreateFileCapture(vf_name);
         if (!capture) {
-            printf("No file named: %s\n", video_in);
-            return 1;
+            printf("Failed to open video file: %s\n", vf_name);
+            exit(1);
         }
         
         IplImage* frame;
@@ -812,21 +761,20 @@ AGAIN:
         }
         
         cvReleaseCapture(&capture);
-        cvDestroyWindow(video_test_window);
-        
-    CONTINUE:;
+        cvDestroyWindow(vdout);
     }
     
     
+    Tox* Alice = toxav_get_tox(AliceAV);
+    Tox* Bob = toxav_get_tox(BobAV);
     toxav_kill(BobAV);
     toxav_kill(AliceAV);
     tox_kill(Bob);
     tox_kill(Alice);
-    tox_kill(Bsn);
+    tox_kill(bootstrap);
     
     printf("\nTest successful!\n");
 	
-	alcCloseDevice(out_device);
-	alcCaptureCloseDevice(in_device);
+	alcCloseDevice(audio_out_device);
     return 0;
 }

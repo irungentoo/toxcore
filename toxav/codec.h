@@ -107,23 +107,13 @@ typedef struct CSSession_s {
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
-    int32_t encoder_channels;
-	int32_t encoder_sample_rate;
     
     /* audio decoding */
     OpusDecoder *audio_decoder;
-    int32_t decoder_channels;
-	int32_t decoder_sample_rate;
-    int32_t last_pack_channels;
+    int32_t last_packet_channels;
     int32_t last_packet_sampling_rate;
     int32_t last_packet_frame_duration;
     struct JitterBuffer_s *j_buf;
-
-
-    /* Voice activity detection */
-    uint32_t EVAD_tolerance; /* In frames */
-    uint32_t EVAD_tolerance_cr;
-
 
 
     /* OTHER
@@ -171,10 +161,8 @@ void cs_disable_video_receiving(CSSession* cs);
  * AUDIO HANDLING
  */
 int cs_set_sending_audio_bitrate(CSSession* cs, int32_t rate);
-int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate);
-int cs_set_sending_audio_channels(CSSession* cs, int32_t count);
 
-int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate, int channels);
+int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate);
 int cs_enable_audio_receiving(CSSession* cs);
 
 void cs_disable_audio_sending(CSSession* cs);

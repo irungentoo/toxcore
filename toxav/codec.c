@@ -38,7 +38,7 @@
 #include "rtp.h"
 #include "codec.h"
 
-#define DEFAULT_JBUF 6
+#define DEFAULT_JBUF 3
 
 /* Good quality encode. */
 #define MAX_DECODE_TIME_US 0
@@ -175,6 +175,8 @@ static int jbuf_write(JitterBuffer *q, RTPMessage *m)
     unsigned int num = sequnum % q->size;
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
+        LOGGER_DEBUG("Clearing jitter: %p", q);
+        
         jbuf_clear(q);
         q->bottom = sequnum - q->capacity;
         q->queue[num] = m;
@@ -193,7 +195,7 @@ static int jbuf_write(JitterBuffer *q, RTPMessage *m)
     return 0;
 }
 
-/* Success is 0 when there is nothing to dequeue,
+/* success is set to 0 when there is nothing to dequeue,
  * 1 when there's a good packet,
  * 2 when there's a lost packet */
 static RTPMessage *jbuf_read(JitterBuffer *q, int32_t *success)
@@ -237,62 +239,6 @@ static int convert_bw_to_sampling_rate(int bw)
 }
 
 
-int cs_set_receiving_audio_bitrate(CSSession *cs, int32_t rate)
-{
-    if (cs->audio_decoder == NULL)
-        return -1;
-    
-    int rc = opus_decoder_ctl(cs->audio_decoder, OPUS_SET_BITRATE(rate));
-    
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while setting decoder ctl: %s", opus_strerror(rc));
-        return -1;
-    }
-    
-    LOGGER_DEBUG("Set new decoder bitrate to: %d", rate);
-    return 0;
-}
-
-int cs_set_receiving_audio_sampling_rate(CSSession* cs, int32_t rate)
-{
-    /* TODO Find a better way? */
-    if (cs->audio_decoder == NULL)
-        return -1;
-    
-	if (cs->decoder_sample_rate == rate)
-		return 0;
-    
-    int channels = cs->decoder_channels;
-    
-    cs_disable_audio_receiving(cs);
-    
-	cs->decoder_sample_rate = rate;
-    cs->decoder_channels = channels;
-	
-	LOGGER_DEBUG("Set new encoder sampling rate: %d", rate);
-    return cs_enable_audio_receiving(cs);
-}
-
-int cs_set_receiving_audio_channels(CSSession* cs, int32_t count)
-{
-    /* TODO Find a better way? */
-    if (cs->audio_decoder == NULL)
-        return -1;
-    
-    if (cs->decoder_channels == count)
-        return 0;
-    
-    int srate = cs->decoder_sample_rate;
-    cs_disable_audio_receiving(cs);
-	
-    cs->decoder_channels = count;
-    cs->decoder_sample_rate = srate;
-    
-	LOGGER_DEBUG("Set new encoder channel count: %d", count);
-    return cs_enable_audio_receiving(cs);
-}
-
-
 /* PUBLIC */
 
 void cs_do(CSSession *cs)
@@ -310,17 +256,19 @@ void cs_do(CSSession *cs)
     
     pthread_mutex_lock(cs->queue_mutex);
     
+    /********************* AUDIO *********************/
     if (cs->audio_decoder) { /* If receiving enabled */
         RTPMessage *msg;
         
-        uint16_t fsize = 10000; /* Should be enough for all normal frequences */
-        int16_t tmp[fsize * 2];
+        /* The maximum for 120 ms 48 KHz audio */
+        int16_t tmp[20000];
         
         while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
             pthread_mutex_unlock(cs->queue_mutex);
             
             if (success == 2) {
-                rc = opus_decode(cs->audio_decoder, 0, 0, tmp, fsize, 1);
+                rc = opus_decode(cs->audio_decoder, NULL, 0, tmp,
+                                 cs->last_packet_sampling_rate * cs->last_packet_frame_duration / 1000, 1);
             } else {
                 /* Get values from packet and decode.
                 * It also checks for validity of an opus packet
@@ -328,7 +276,7 @@ void cs_do(CSSession *cs)
                 rc = convert_bw_to_sampling_rate(opus_packet_get_bandwidth(msg->data));
                 if (rc != -1) {
                     cs->last_packet_sampling_rate = rc;
-                    cs->last_pack_channels = opus_packet_get_nb_channels(msg->data);
+                    cs->last_packet_channels = opus_packet_get_nb_channels(msg->data);
                 
                     cs->last_packet_frame_duration = 
                         ( opus_packet_get_samples_per_frame(msg->data, cs->last_packet_sampling_rate) * 1000 )
@@ -339,11 +287,7 @@ void cs_do(CSSession *cs)
                     continue;
                 }
                 
-                cs_set_receiving_audio_sampling_rate(cs, cs->last_packet_sampling_rate);
-                cs_set_receiving_audio_channels(cs, cs->last_pack_channels);
-                
-                LOGGER_DEBUG("Decoding packet of length: %d", msg->length);
-                rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, fsize, 0);
+                rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, sizeof(tmp), 0);
                 rtp_free_msg(NULL, msg);
             }
             
@@ -351,15 +295,28 @@ void cs_do(CSSession *cs)
                 LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
             } else if (cs->acb.first) {
                 /* Play */
-				LOGGER_DEBUG("Playing audio frame size: %d chans: %d srate: %d", rc, cs->last_pack_channels, cs->last_packet_sampling_rate);
+                
+				LOGGER_DEBUG("Playing audio frame size: %d; channels: %d; srate: %d; duration %d", rc, 
+                             cs->last_packet_channels, cs->last_packet_sampling_rate, cs->last_packet_frame_duration);
+                
+                /* According to https://tools.ietf.org/html/rfc6716#section-2.1.2 
+                 * Every encoder can encode both mono and stereo data so we must
+                 * determine which format is selected.
+                 */
+                
+                if (cs->last_packet_channels == 2) {
+                    /* The packet is encoded with stereo encoder */
+                }
+                
                 cs->acb.first(cs->agent, cs->friend_id, tmp, rc, 
-                            cs->last_pack_channels, cs->last_packet_sampling_rate, cs->acb.second);
+                              cs->last_packet_channels, cs->last_packet_sampling_rate, cs->acb.second);
             }
             
             pthread_mutex_lock(cs->queue_mutex);
         }
     }
     
+    /********************* VIDEO *********************/
     if (cs->vbuf_raw && !buffer_empty(cs->vbuf_raw)) {
         /* Decode video */
         buffer_read(cs->vbuf_raw, &p);
@@ -411,8 +368,6 @@ CSSession *cs_new(uint32_t peer_video_frame_piece_size)
     
     cs->peer_video_frame_piece_size = peer_video_frame_piece_size;
     
-    cs->decoder_sample_rate = 48000;
-    cs->decoder_channels = 2;
     return cs;
 }
 
@@ -538,6 +493,8 @@ int cs_set_sending_video_bitrate(CSSession *cs, uint32_t bitrate)
     return 0;
 }
 
+
+
 int cs_enable_video_sending(CSSession* cs, uint32_t bitrate)
 {
     if (cs->v_encoding)
@@ -619,6 +576,8 @@ FAILURE:
     return -1;
 }
 
+
+
 void cs_disable_video_sending(CSSession* cs)
 {
     if (cs->v_encoding) {
@@ -663,64 +622,13 @@ int cs_set_sending_audio_bitrate(CSSession *cs, int32_t rate)
     return 0;
 }
 
-int cs_set_sending_audio_sampling_rate(CSSession* cs, int32_t rate)
-{
-    /* TODO Find a better way? */
-    if (cs->audio_encoder == NULL)
-        return -1;
-    
-	if (cs->encoder_sample_rate == rate)
-		return 0;
-	
-    int rc = OPUS_OK;
-    int bitrate = 0;
-    int channels = cs->encoder_channels;
-    
-    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_BITRATE(&bitrate));
-    
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while getting encoder ctl: %s", opus_strerror(rc));
-        return -1;
-    }
-    
-    cs_disable_audio_sending(cs);
-	cs->encoder_sample_rate = rate;
-	
-	LOGGER_DEBUG("Set new encoder sampling rate: %d", rate);
-    return cs_enable_audio_sending(cs, bitrate, channels);
-}
 
-int cs_set_sending_audio_channels(CSSession* cs, int32_t count)
-{
-    /* TODO Find a better way? */
-    if (cs->audio_encoder == NULL)
-        return -1;
-    
-    if (cs->encoder_channels == count)
-        return 0;
-    
-    int rc = OPUS_OK;
-    int bitrate = 0;
-    
-    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_GET_BITRATE(&bitrate));
-    
-    if ( rc != OPUS_OK ) {
-        LOGGER_ERROR("Error while getting encoder ctl: %s", opus_strerror(rc));
-        return -1;
-    }
-    
-    cs_disable_audio_sending(cs);
-	
-	LOGGER_DEBUG("Set new encoder channel count: %d", count);
-    return cs_enable_audio_sending(cs, bitrate, count);
-}
 
 void cs_disable_audio_sending(CSSession* cs)
 {
     if ( cs->audio_encoder ) {
         opus_encoder_destroy(cs->audio_encoder);
         cs->audio_encoder = NULL;
-        cs->encoder_channels = 0;
     }
 }
 
@@ -732,26 +640,22 @@ void cs_disable_audio_receiving(CSSession* cs)
         jbuf_free(cs->j_buf);
         cs->j_buf = NULL;
         
-        /* It's used for measuring iteration interval so this has to be some value.
-         * To avoid unecessary checking we set this to 500
-         */
-        cs->last_packet_frame_duration = 500;
-		cs->decoder_sample_rate = 48000;
-		cs->decoder_channels = 2;
+        /* These need to be set in order to properly
+         * do error correction with opus */
+        cs->last_packet_frame_duration = 120;
+        cs->last_packet_sampling_rate = 48000;
     }
 }
 
-int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate, int channels)
+
+
+int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate)
 {
     if (cs->audio_encoder)
         return 0;
     
-	if (!cs->encoder_sample_rate)
-		cs->encoder_sample_rate = 48000;
-	cs->encoder_channels = channels;
-	
     int rc = OPUS_OK;
-    cs->audio_encoder = opus_encoder_create(cs->encoder_sample_rate, channels, OPUS_APPLICATION_AUDIO, &rc);
+    cs->audio_encoder = opus_encoder_create(48000, 2, OPUS_APPLICATION_AUDIO, &rc);
     
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
@@ -785,7 +689,7 @@ int cs_enable_audio_receiving(CSSession* cs)
         return 0;
     
     int rc;
-    cs->audio_decoder = opus_decoder_create(cs->decoder_sample_rate, cs->decoder_channels, &rc );
+    cs->audio_decoder = opus_decoder_create(48000, 2, &rc );
     
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
@@ -800,10 +704,11 @@ int cs_enable_audio_receiving(CSSession* cs)
         return -1;
     }
     
-    /* It's used for measuring iteration interval so this has to be some value.
-     * To avoid unecessary checking we set this to 500
-     */
-    cs->last_packet_frame_duration = 500;
+    
+    /* These need to be set in order to properly
+     * do error correction with opus */
+    cs->last_packet_frame_duration = 120;
+    cs->last_packet_sampling_rate = 48000;
 	
     return 0;
 }
@@ -813,8 +718,8 @@ int cs_enable_audio_receiving(CSSession* cs)
 /* Called from RTP */
 void queue_message(RTPSession *session, RTPMessage *msg)
 {
-    /* This function is unregistered during call termination befor destroing
-     * Codec session so no need to check for validity of cs
+    /* This function is unregistered during call termination befor destroying
+     * Codec session so no need to check for validity of cs TODO properly check video cycle
      */
     CSSession *cs = session->cs;
 

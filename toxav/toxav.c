@@ -208,7 +208,7 @@ void toxav_iterate(ToxAV* av)
         return;
     
     uint64_t start = current_time_monotonic();
-    uint32_t rc = 0;
+    uint32_t rc = 500;
     
     pthread_mutex_lock(av->mutex);
     ToxAVCall* i = av->calls[av->calls_head];
@@ -225,7 +225,7 @@ void toxav_iterate(ToxAV* av)
         pthread_mutex_lock(av->mutex);
     }
     
-    av->interval = rc < av->dmssa ? 0 : rc - av->dmssa;
+    av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
     av->dmsst += current_time_monotonic() - start;
     
     if (++av->dmssc == 3) {
@@ -650,9 +650,6 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
     }
     
     { /* Encode and send */
-        cs_set_sending_audio_channels(call->cs, channels);
-        cs_set_sending_audio_sampling_rate(call->cs, sampling_rate);
-        
         uint8_t dest[sample_count * channels * 2 /* sizeof(uint16_t) */];
         int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest, sizeof (dest));
         
@@ -667,8 +664,6 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
 			LOGGER_WARNING("Failed to send audio packet");
 			rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
 		}
-		
-		LOGGER_DEBUG("Sent packet of size: %d (o %d)", vrc, sample_count);
     }
     
     pthread_mutex_unlock(call->mutex_audio_sending);
@@ -956,7 +951,7 @@ bool call_prepare_transmission(ToxAVCall* call)
         call->rtps[audio_index]->cs = call->cs;
         
         /* Only enable sending if bitrate is defined */
-        if (call->s_audio_b > 0 && cs_enable_audio_sending(call->cs, call->s_audio_b * 1000, 2) != 0) {
+        if (call->s_audio_b > 0 && cs_enable_audio_sending(call->cs, call->s_audio_b * 1000) != 0) {
             LOGGER_WARNING("Failed to enable audio sending!");
             goto FAILURE;
         }
