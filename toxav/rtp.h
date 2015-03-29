@@ -101,7 +101,7 @@ typedef struct {
 
     int                 dest;
 
-    struct CSSession_s *cs;
+    struct CSession_s *cs;
     Messenger          *m;
 
 } RTPSession;

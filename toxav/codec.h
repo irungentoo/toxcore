@@ -42,32 +42,7 @@
 
 #define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
-typedef void (*CSAudioCallback) (void *agent, int32_t call_idx, const int16_t *PCM, uint16_t size, void *data);
-typedef void (*CSVideoCallback) (void *agent, int32_t call_idx, const vpx_image_t *img, void *data);
-
-/**
- * Codec capabilities
- */
-typedef enum {
-    cs_AudioEncoding = 1 << 0,
-    cs_AudioDecoding = 1 << 1,
-    cs_VideoEncoding = 1 << 2,
-    cs_VideoDecoding = 1 << 3
-} CSCapabilities;
-
-/**
- * Codec errors.
- */
-typedef enum {
-    cs_ErrorSettingVideoResolution = -30,
-    cs_ErrorSettingVideoBitrate = -31,
-    cs_ErrorSplittingVideoPayload = -32,
-} CSError;
-
-/**
- * Codec session - controling codec
- */
-typedef struct CSSession_s {
+typedef struct CSession_s {
 
     /* VIDEO
         *
@@ -76,12 +51,10 @@ typedef struct CSSession_s {
 
     /* video encoding */
     vpx_codec_ctx_t v_encoder[1];
-    bool v_encoding;
     uint32_t frame_counter;
 
     /* video decoding */
     vpx_codec_ctx_t v_decoder[1];
-    bool v_decoding;
     void *vbuf_raw; /* Un-decoded data */    
 
     /* Data handling */
@@ -107,10 +80,13 @@ typedef struct CSSession_s {
 
     /* audio encoding */
     OpusEncoder *audio_encoder;
+    int32_t last_encoding_sampling_rate;
+    int32_t last_encoding_channel_count;
+    int32_t last_encoding_bitrate;
     
     /* audio decoding */
     OpusDecoder *audio_decoder;
-    int32_t last_packet_channels;
+    int32_t last_packet_channel_count;
     int32_t last_packet_sampling_rate;
     int32_t last_packet_frame_duration;
     struct JitterBuffer_s *j_buf;
@@ -120,55 +96,28 @@ typedef struct CSSession_s {
         *
         *
         */
-    void *agent; /* Pointer to ToxAV TODO make this pointer to ToxAV*/
+    ToxAV *av;
     int32_t friend_id;
     
     PAIR(toxav_receive_audio_frame_cb *, void *) acb; /* Audio frame receive callback */
     PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
     
     pthread_mutex_t queue_mutex[1];
-} CSSession;
+} CSession;
 
 
-/**
- * Generic
- */
-void cs_do(CSSession *cs);
-
+void cs_do(CSession *cs);
 /* Make sure to be called BEFORE corresponding rtp_new */
-CSSession *cs_new(uint32_t peer_mvfpsz);
+CSession *cs_new(uint32_t peer_mvfpsz);
 /* Make sure to be called AFTER corresponding rtp_kill */
-void cs_kill(CSSession *cs);
+void cs_kill(CSession *cs);
 
+void cs_init_video_splitter_cycle(CSession *cs);
+int cs_update_video_splitter_cycle(CSession* cs, const uint8_t* payload, uint16_t length);
+const uint8_t *cs_iterate_split_video_frame(CSession *cs, uint16_t *size);
 
-/**
- * VIDEO HANDLING
- */
-void cs_init_video_splitter_cycle(CSSession *cs);
-int cs_update_video_splitter_cycle(CSSession* cs, const uint8_t* payload, uint16_t length);
-const uint8_t *cs_iterate_split_video_frame(CSSession *cs, uint16_t *size);
-
-int cs_set_sending_video_resolution(CSSession *cs, uint16_t width, uint16_t height);
-int cs_set_sending_video_bitrate(CSSession *cs, uint32_t bitrate);
-
-int cs_enable_video_sending(CSSession* cs, uint32_t bitrate);
-int cs_enable_video_receiving(CSSession* cs);
-
-void cs_disable_video_sending(CSSession* cs);
-void cs_disable_video_receiving(CSSession* cs);
-
-/**
- * AUDIO HANDLING
- */
-int cs_set_sending_audio_bitrate(CSSession* cs, int32_t rate);
-
-int cs_enable_audio_sending(CSSession* cs, uint32_t bitrate);
-int cs_enable_audio_receiving(CSSession* cs);
-
-void cs_disable_audio_sending(CSSession* cs);
-void cs_disable_audio_receiving(CSSession* cs);
-
-
+int cs_reconfigure_video_encoder(CSession* cs, int32_t bitrate, uint16_t width, uint16_t height);
+int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
 
 
 /* Internal. Called from rtp_handle_message */

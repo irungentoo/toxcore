@@ -134,14 +134,14 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
         alDeleteBuffers(processed - 1, bufids + 1);
         bufid = bufids[0];
     }
-//     else if(queued < 16)
+    else if(queued < 16)
         alGenBuffers(1, &bufid);
-//     else
-//         return;
+    else
+        return;
     
 
     alBufferData(bufid, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, 
-                 pcm, sample_count * channels * 2, sampling_rate);
+                 pcm, sample_count * 2, sampling_rate);
     alSourceQueueBuffers(adout, 1, &bufid);
 
     int32_t state;
@@ -285,6 +285,36 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     return rc;
 }
 
+ALCdevice* open_audio_device(const char* audio_out_dev_name)
+{
+    ALCdevice* rc;
+    rc = alcOpenDevice(audio_out_dev_name);
+    if ( !rc ) {
+        printf("Failed to open playback device: %s: %d\n", audio_out_dev_name, alGetError());
+        exit(1);
+    }
+    
+    ALCcontext* out_ctx = alcCreateContext(rc, NULL);
+    alcMakeContextCurrent(out_ctx);
+    
+    uint32_t buffers[10];
+    alGenBuffers(10, buffers);
+    alGenSources((uint32_t)1, &adout);
+    alSourcei(adout, AL_LOOPING, AL_FALSE);
+    
+    int16_t zeros[10000];
+    memset(zeros, 0, sizeof(zeros));
+    
+    int i;
+    for ( i = 0; i < 10; ++i ) 
+        alBufferData(buffers[i], AL_FORMAT_STEREO16, zeros, sizeof(zeros), 48000);
+    
+    alSourceQueueBuffers(adout, 10, buffers);
+    alSourcePlay(adout);
+    
+    return rc;
+}
+
 int print_audio_devices()
 {
     const char *device;
@@ -373,48 +403,17 @@ int main (int argc, char** argv)
         }
     }
     
-	ALCdevice* audio_out_device;
+    const char* audio_out_dev_name = NULL;
+    
+    int i = 0;
+    for(audio_out_dev_name = alcGetString(NULL, ALC_DEVICE_SPECIFIER); i < audio_out_dev_idx;
+        audio_out_dev_name += strlen( audio_out_dev_name ) + 1, ++i)
+        if (!(audio_out_dev_name + strlen( audio_out_dev_name ) + 1))
+            break;
 	
-	{ /* Open output device */
-        const char* audio_out_dev_name = NULL;
-        
-        int i = 0;
-        for(audio_out_dev_name = alcGetString(NULL, ALC_DEVICE_SPECIFIER); i < audio_out_dev_idx;
-            audio_out_dev_name += strlen( audio_out_dev_name ) + 1, ++i)
-            if (!(audio_out_dev_name + strlen( audio_out_dev_name ) + 1))
-                break;
-        
-		audio_out_device = alcOpenDevice(audio_out_dev_name);
-		if ( !audio_out_device ) {
-			printf("Failed to open playback device: %s: %d\n", audio_out_dev_name, alGetError());
-			exit(1);
-		}
-		
-        ALCcontext* out_ctx = alcCreateContext(audio_out_device, NULL);
-        alcMakeContextCurrent(out_ctx);
-		
-        uint32_t buffers[5];
-		alGenBuffers(5, buffers);
-		alGenSources((uint32_t)1, &adout);
-		alSourcei(adout, AL_LOOPING, AL_FALSE);
-		
-		uint16_t zeros[10000];
-		memset(zeros, 0, 10000);
-		
-		for ( i = 0; i < 5; ++i ) 
-			alBufferData(buffers[i], AL_FORMAT_STEREO16, zeros, 10000, 48000);
-		
-		alSourceQueueBuffers(adout, 5, buffers);
-		alSourcePlay(adout);
-        
-        printf("Using audio device: %s\n", audio_out_dev_name);
-	}
-	
+    printf("Using audio device: %s\n", audio_out_dev_name);
     printf("Using audio file: %s\n", af_name);
     printf("Using video file: %s\n", vf_name);
-    
-	
-    
     
     
     /* START TOX NETWORK */
@@ -697,11 +696,11 @@ int main (int argc, char** argv)
             printf("Failed to open the file.\n");
             exit(1);
         }
+        ALCdevice* audio_out_device = open_audio_device(audio_out_dev_name);
         
-		/* Run for 5 seconds */
         
         uint32_t frame_duration = 10;
-        int16_t PCM[10000];
+        int16_t PCM[5760];
         
         time_t start_time = time(NULL);
         time_t expected_time = af_info.frames / af_info.samplerate + 2;
@@ -711,18 +710,21 @@ int main (int argc, char** argv)
             
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
-                TOXAV_ERR_SEND_FRAME rc;
-                if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
-                    printf("Error sending frame of size %ld: %d\n", count, rc);
-                    exit(1);
-                }
+                t_toxav_receive_audio_frame_cb(BobAV, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
+//                 TOXAV_ERR_SEND_FRAME rc;
+//                 if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
+//                     printf("Error sending frame of size %ld: %d\n", count, rc);
+//                     exit(1);
+//                 }
             }
-            
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            c_sleep(frame_duration);
+//             iterate_tox(bootstrap, AliceAV, BobAV);
 		}
+    
         
 		printf("Played file in: %lu\n", time(NULL) - start_time);
         
+        alcCloseDevice(audio_out_device);
         sf_close(af_handle);
 		
 		{ /* Hangup */
@@ -774,7 +776,5 @@ int main (int argc, char** argv)
     tox_kill(bootstrap);
     
     printf("\nTest successful!\n");
-	
-	alcCloseDevice(audio_out_device);
     return 0;
 }

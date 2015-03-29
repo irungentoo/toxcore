@@ -43,7 +43,7 @@ enum {
 typedef struct ToxAVCall_s {
     ToxAV* av;
     RTPSession *rtps[2]; /* Audio is first and video is second */
-    CSSession *cs;
+    CSession *cs;
     
     pthread_mutex_t mutex_audio_sending[1];
     pthread_mutex_t mutex_video_sending[1];
@@ -54,8 +54,8 @@ typedef struct ToxAVCall_s {
     MSICall* msi_call;
     uint32_t friend_id;
     
-    uint32_t s_audio_b; /* Sending audio bitrate */
-    uint32_t s_video_b; /* Sending video bitrate */
+    uint32_t audio_bit_rate; /* Sending audio bitrate */
+    uint32_t video_bit_rate; /* Sending video bitrate */
     
     uint8_t last_self_capabilities;
     uint8_t last_peer_capabilities;
@@ -244,8 +244,8 @@ bool toxav_call(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, uint
         return false;
     }
     
-    call->s_audio_b = audio_bit_rate;
-    call->s_video_b = video_bit_rate;
+    call->audio_bit_rate = audio_bit_rate;
+    call->video_bit_rate = video_bit_rate;
     
     call->last_self_capabilities = msi_CapRAudio | msi_CapRVideo;
     
@@ -302,8 +302,8 @@ bool toxav_answer(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, ui
 		goto END;
 	}
     
-    call->s_audio_b = audio_bit_rate;
-    call->s_video_b = video_bit_rate;
+    call->audio_bit_rate = audio_bit_rate;
+    call->video_bit_rate = video_bit_rate;
     
     call->last_self_capabilities = msi_CapRAudio | msi_CapRVideo;
     
@@ -479,12 +479,70 @@ END:
 
 bool toxav_set_audio_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, TOXAV_ERR_BIT_RATE* error)
 {
-    /* TODO */
+    TOXAV_ERR_BIT_RATE rc = TOXAV_ERR_BIT_RATE_OK;
+    ToxAVCall* call;
+    
+    if (m_friend_exists(av->m, friend_number) == 0) {
+        rc = TOXAV_ERR_BIT_RATE_FRIEND_NOT_FOUND;
+        goto END;
+    }
+    
+    if (audio_bitrate_invalid(audio_bit_rate)) {
+        rc = TOXAV_ERR_BIT_RATE_INVALID;
+        goto END;
+    }
+    
+    pthread_mutex_lock(av->mutex);
+    call = call_get(av, friend_number);
+    if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
+        pthread_mutex_unlock(av->mutex);
+        rc = TOXAV_ERR_BIT_RATE_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    /* NOTE: no need to lock*/
+    call->audio_bit_rate = audio_bit_rate;
+    pthread_mutex_unlock(av->mutex);
+    
+END:
+    if (error)
+        *error = rc;
+    
+    return rc == TOXAV_ERR_BIT_RATE_OK;
 }
 
 bool toxav_set_video_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t video_bit_rate, TOXAV_ERR_BIT_RATE* error)
 {
-    /* TODO */
+    TOXAV_ERR_BIT_RATE rc = TOXAV_ERR_BIT_RATE_OK;
+    ToxAVCall* call;
+    
+    if (m_friend_exists(av->m, friend_number) == 0) {
+        rc = TOXAV_ERR_BIT_RATE_FRIEND_NOT_FOUND;
+        goto END;
+    }
+    
+    if (video_bitrate_invalid(video_bit_rate)) {
+        rc = TOXAV_ERR_BIT_RATE_INVALID;
+        goto END;
+    }
+    
+    pthread_mutex_lock(av->mutex);
+    call = call_get(av, friend_number);
+    if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
+        pthread_mutex_unlock(av->mutex);
+        rc = TOXAV_ERR_BIT_RATE_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    /* NOTE: no need to lock*/
+    call->video_bit_rate = video_bit_rate;
+    pthread_mutex_unlock(av->mutex);
+    
+END:
+    if (error)
+        *error = rc;
+    
+    return rc == TOXAV_ERR_BIT_RATE_OK;
 }
 
 void toxav_callback_video_frame_request(ToxAV* av, toxav_video_frame_request_cb* function, void* user_data)
@@ -507,7 +565,7 @@ bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
     
     pthread_mutex_lock(av->mutex);
     call = call_get(av, friend_number);
-    if (call == NULL || !call->active) {
+    if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
         pthread_mutex_unlock(av->mutex);
         rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL;
         goto END;
@@ -516,20 +574,13 @@ bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
     pthread_mutex_lock(call->mutex_video_sending);
     pthread_mutex_unlock(av->mutex);
     
-    if (call->msi_call->state != msi_CallActive) {
-        /* TODO */
-        pthread_mutex_unlock(call->mutex_video_sending);
-        rc = TOXAV_ERR_SEND_FRAME_NOT_REQUESTED;
-        goto END;
-    }
-    
     if ( y == NULL || u == NULL || v == NULL ) {
         pthread_mutex_unlock(call->mutex_video_sending);
         rc = TOXAV_ERR_SEND_FRAME_NULL;
         goto END;
     }
     
-    if ( cs_set_sending_video_resolution(call->cs, width, height) != 0 ) {
+    if ( cs_reconfigure_video_encoder(call->cs, call->video_bit_rate, width, height) != 0 ) {
         pthread_mutex_unlock(call->mutex_video_sending);
         rc = TOXAV_ERR_SEND_FRAME_INVALID;
         goto END;
@@ -550,7 +601,7 @@ bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
         int vrc = vpx_codec_encode(call->cs->v_encoder, &img, 
                                    call->cs->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
         
-        vpx_img_free(&img); /* FIXME don't free? */
+        vpx_img_free(&img);
         if ( vrc != VPX_CODEC_OK) {
             pthread_mutex_unlock(call->mutex_video_sending);
             LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(vrc));
@@ -621,7 +672,7 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
     
     pthread_mutex_lock(av->mutex);
     call = call_get(av, friend_number);
-    if (call == NULL || !call->active) {
+    if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
         pthread_mutex_unlock(av->mutex);
         rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL;
         goto END;
@@ -630,33 +681,34 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
     pthread_mutex_lock(call->mutex_audio_sending);
     pthread_mutex_unlock(av->mutex);
     
-    if (call->msi_call->state != msi_CallActive) {
-        /* TODO */
-        pthread_mutex_unlock(call->mutex_audio_sending);
-        rc = TOXAV_ERR_SEND_FRAME_NOT_REQUESTED;
-        goto END;
-    }
-    
     if ( pcm == NULL ) {
         pthread_mutex_unlock(call->mutex_audio_sending);
         rc = TOXAV_ERR_SEND_FRAME_NULL;
         goto END;
     }
     
-    if ( channels != 1 && channels != 2 ) {
+    if ( channels > 2 ) {
         pthread_mutex_unlock(call->mutex_audio_sending);
         rc = TOXAV_ERR_SEND_FRAME_INVALID;
         goto END;
     }
     
     { /* Encode and send */
+        if (cs_reconfigure_audio_encoder(call->cs, call->audio_bit_rate * 1000, sampling_rate, channels) != 0) {
+            pthread_mutex_unlock(call->mutex_audio_sending);
+            rc = TOXAV_ERR_SEND_FRAME_INVALID;
+            goto END;
+        }
+        
+        
+        LOGGER_DEBUG("Sending audio frame size: %d; channels: %d; srate: %d", sample_count, channels, sampling_rate);
         uint8_t dest[sample_count * channels * 2 /* sizeof(uint16_t) */];
         int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest, sizeof (dest));
         
         if (vrc < 0) {
             LOGGER_WARNING("Failed to encode frame");
-            rc = TOXAV_ERR_SEND_FRAME_INVALID;
             pthread_mutex_unlock(call->mutex_audio_sending);
+            rc = TOXAV_ERR_SEND_FRAME_INVALID;
             goto END;
         }
         
@@ -914,19 +966,19 @@ bool call_prepare_transmission(ToxAVCall* call)
     }
     
     if (pthread_mutex_init(call->mutex_audio_sending, NULL) != 0)
-        goto MUTEX_INIT_ERROR;
+        return false;
     
     if (pthread_mutex_init(call->mutex_video_sending, NULL) != 0) {
-        pthread_mutex_destroy(call->mutex_audio_sending);
-        goto MUTEX_INIT_ERROR;
+        goto AUDIO_SENDING_MUTEX_CLEANUP;
     }
     
     if (pthread_mutex_init(call->mutex_decoding, NULL) != 0) {
-        pthread_mutex_destroy(call->mutex_audio_sending);
-        pthread_mutex_destroy(call->mutex_video_sending);
-        goto MUTEX_INIT_ERROR;
+        goto VIDEO_SENDING_MUTEX_CLEANUP;
     }
     
+    /* Creates both audio and video encoders and decoders with some default values.
+     * Make sure to reconfigure encoders dynamically when sending data
+     */
     call->cs = cs_new(call->msi_call->peer_vfpsz);
     
     if ( !call->cs ) {
@@ -934,13 +986,13 @@ bool call_prepare_transmission(ToxAVCall* call)
         goto FAILURE;
     }
     
-    call->cs->agent = av;
+    call->cs->av = av;
     call->cs->friend_id = call->friend_id;
     
     memcpy(&call->cs->acb, &av->acb, sizeof(av->acb));
     memcpy(&call->cs->vcb, &av->vcb, sizeof(av->vcb));
     
-    { /* Prepare audio */
+    { /* Prepare audio RTP */
         call->rtps[audio_index] = rtp_new(rtp_TypeAudio, av->m, call->friend_id);
         
         if ( !call->rtps[audio_index] ) {
@@ -950,24 +1002,13 @@ bool call_prepare_transmission(ToxAVCall* call)
         
         call->rtps[audio_index]->cs = call->cs;
         
-        /* Only enable sending if bitrate is defined */
-        if (call->s_audio_b > 0 && cs_enable_audio_sending(call->cs, call->s_audio_b * 1000) != 0) {
-            LOGGER_WARNING("Failed to enable audio sending!");
-            goto FAILURE;
-        }
-        
-        if (cs_enable_audio_receiving(call->cs) != 0) {
-            LOGGER_WARNING("Failed to enable audio receiving!");
-            goto FAILURE;
-        }
-        
         if (rtp_start_receiving(call->rtps[audio_index]) != 0) {
             LOGGER_WARNING("Failed to enable audio receiving!");
             goto FAILURE;
         }
     }
     
-    { /* Prepare video */
+    { /* Prepare video RTP */
         call->rtps[video_index] = rtp_new(rtp_TypeVideo, av->m, call->friend_id);
         
         if ( !call->rtps[video_index] ) {
@@ -976,17 +1017,6 @@ bool call_prepare_transmission(ToxAVCall* call)
         }
         
         call->rtps[video_index]->cs = call->cs;
-        
-        /* Only enable sending if bitrate is defined */
-        if (call->s_video_b > 0 && cs_enable_video_sending(call->cs, call->s_video_b) != 0) {
-            LOGGER_WARNING("Failed to enable video sending!");
-            goto FAILURE;
-        }
-        
-        if (cs_enable_video_receiving(call->cs) != 0) {
-            LOGGER_WARNING("Failed to enable video receiving!");
-            goto FAILURE;
-        }
         
         if (rtp_start_receiving(call->rtps[video_index]) != 0) {
             LOGGER_WARNING("Failed to enable audio receiving!");
@@ -1004,13 +1034,11 @@ FAILURE:
     call->rtps[video_index] = NULL;
     cs_kill(call->cs);
     call->cs = NULL;
-    pthread_mutex_destroy(call->mutex_audio_sending);
-    pthread_mutex_destroy(call->mutex_video_sending);
     pthread_mutex_destroy(call->mutex_decoding);
-    return false;
-    
-MUTEX_INIT_ERROR:
-    LOGGER_ERROR("Mutex initialization failed!\n");
+VIDEO_SENDING_MUTEX_CLEANUP:
+    pthread_mutex_destroy(call->mutex_video_sending);
+AUDIO_SENDING_MUTEX_CLEANUP:
+    pthread_mutex_destroy(call->mutex_audio_sending);
     return false;
 }
 
