@@ -41,10 +41,6 @@ int main(int argc, char *argv[])
 
     Messenger* tox[PEERCOUNT];
 
-    /* Set ip to IPv6 loopback. TODO: IPv4 fallback? */
-    IP localhost;
-    ip_init(&localhost, 1);
-    localhost.ip6.uint8[15]=1;
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
 
@@ -52,10 +48,11 @@ int main(int argc, char *argv[])
     int i;
     for (i=0; i<PEERCOUNT; i++)
     {
-        tox[i] = new_messenger(&options);
+        tox[i] = new_messenger(&options, 0);
         char nick[32];
-        snprintf(nick, sizeof(nick), "test%d", i);
+        snprintf(nick, sizeof(nick), "Botik %d", rand());
         setname(tox[i], nick, strlen(nick));
+        printf("nick: %s\n", nick);
         printf("%s, %d\n", id_toa(tox[i]->dht->self_public_key), i);
     }
 
@@ -85,9 +82,9 @@ int main(int argc, char *argv[])
         int numconnected=0;
         for (i=0;i<PEERCOUNT;i++)
             numconnected+=DHT_isconnected(tox[i]->dht);
-       // printf("%d\n", numconnected);
+        printf("%d\n", numconnected);
 
-        if (numconnected>PEERCOUNT*min(PEERCOUNT,LCLIENT_LIST))
+        if (numconnected>PEERCOUNT*min(PEERCOUNT-1,LCLIENT_LIST))
             break;
 
         /* TODO: busy wait might be slightly more efficient here */

@@ -37,8 +37,8 @@ typedef void ( *ToxAVCallback ) ( void *agent, int32_t call_idx, void *arg );
 typedef void ( *ToxAvAudioCallback ) (void *agent, int32_t call_idx, const int16_t *PCM, uint16_t size, void *data);
 typedef void ( *ToxAvVideoCallback ) (void *agent, int32_t call_idx, const vpx_image_t *img, void *data);
 
-#ifndef __TOX_DEFINED__
-#define __TOX_DEFINED__
+#ifndef TOX_DEFINED
+#define TOX_DEFINED
 typedef struct Tox Tox;
 #endif
 

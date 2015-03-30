@@ -337,7 +337,7 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *client_id, IP_Port *ip_port);
  *  return 1 if key1 is closer.
  *  return 2 if key2 is closer.
  */
-int id_closest(const uint8_t *k, const uint8_t *key1, const uint8_t *key2, size_t size);
+int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
 
 /* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
