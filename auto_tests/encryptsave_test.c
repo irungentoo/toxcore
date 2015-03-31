@@ -55,7 +55,7 @@ END_TEST
 
 START_TEST(test_save_friend)
 {
-    TOX_ERR_NEW err = TOX_ERR_NEW_OK;
+    TOX_ERR_ENCRYPTED_NEW err = TOX_ERR_ENCRYPTED_NEW_OK;
     Tox *tox1 = tox_new(0, 0, 0, 0);
     Tox *tox2 = tox_new(0, 0, 0, 0);
     ck_assert_msg(tox1 || tox2, "Failed to create 2 tox instances");
@@ -73,7 +73,7 @@ START_TEST(test_save_friend)
     //ck_assert_msg(tox_is_save_encrypted(data) == 1, "magic number missing");
 
     Tox *tox3 = tox_encrypted_new(0, data, size, "correcthorsebatterystaple", 25, &err);
-    ck_assert_msg(err == TOX_ERR_NEW_OK, "failed to encrypted new");
+    ck_assert_msg(err == TOX_ERR_ENCRYPTED_NEW_OK, "failed to encrypted new");
     uint8_t address2[TOX_PUBLIC_KEY_SIZE];
     test = tox_friend_get_public_key(tox3, 0, address2, 0);
     ck_assert_msg(test == 1, "no friends!");
@@ -90,7 +90,7 @@ START_TEST(test_save_friend)
 
     // first test tox_encrypted_key_new
     Tox *tox4 = tox_encrypted_key_new(0, data2, size, key, &err);
-    ck_assert_msg(err == TOX_ERR_NEW_OK, "failed to encrypted new the second");
+    ck_assert_msg(err == TOX_ERR_ENCRYPTED_NEW_OK, "failed to encrypted new the second");
     uint8_t address4[TOX_PUBLIC_KEY_SIZE];
     test = tox_friend_get_public_key(tox4, 0, address4, 0);
     ck_assert_msg(test == 1, "no friends! the second");
@@ -107,7 +107,7 @@ START_TEST(test_save_friend)
     // and now with the code in use (I only bothered with manually to debug this, and it seems a waste
     // to remove the manual check now that it's there)
     Tox *tox5 = tox_encrypted_new(0, data2, size, pw, pwlen, &err);
-    ck_assert_msg(err == TOX_ERR_NEW_OK, "failed to encrypted new the third");
+    ck_assert_msg(err == TOX_ERR_ENCRYPTED_NEW_OK, "failed to encrypted new the third");
     uint8_t address5[TOX_PUBLIC_KEY_SIZE];
     test = tox_friend_get_public_key(tox4, 0, address5, 0);
     ck_assert_msg(test == 1, "no friends! the third");

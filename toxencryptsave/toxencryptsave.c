@@ -300,14 +300,14 @@ int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, 
  * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
 Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *passphrase,
-                       size_t pplength, TOX_ERR_NEW *error)
+                       size_t pplength, TOX_ERR_ENCRYPTED_NEW *error)
 {
     uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t temp_data[decrypt_length];
 
     if (tox_pass_decrypt(data, length, passphrase, pplength, temp_data)
             != decrypt_length) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_DECRYPTION_FAILED);
+        SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTED_NEW_LOAD_DECRYPTION_FAILED);
         return NULL;
     }
 
@@ -320,14 +320,14 @@ Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, s
  * returns NULL on failure; see the documentation in toxcore/tox.h.
  */
 Tox *tox_encrypted_key_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *key,
-                           TOX_ERR_NEW *error)
+                           TOX_ERR_ENCRYPTED_NEW *error)
 {
     uint32_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t temp_data[decrypt_length];
 
     if (tox_pass_key_decrypt(data, length, key, temp_data)
             != decrypt_length) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_DECRYPTION_FAILED);
+        SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTED_NEW_LOAD_DECRYPTION_FAILED);
         return NULL;
     }
 
