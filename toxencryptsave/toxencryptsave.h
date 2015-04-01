@@ -39,7 +39,7 @@ struct Tox_Options;
 #endif
 
 #define TOX_PASS_SALT_LENGTH 32
-#define TOX_PASS_KEY_LENGTH 64
+#define TOX_PASS_KEY_LENGTH 32
 #define TOX_PASS_ENCRYPTION_EXTRA_LENGTH 80
 
 /* This module is conceptually organized into two parts. The first part are the functions
@@ -155,6 +155,14 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, uint8_t *passphrase, s
  * intensive than part one. The first 3 functions are for key handling.
  */
 
+/* This key structure's internals should not be used by any client program, even
+ * if they are straightforward here.
+ */
+typedef struct {
+    uint8_t salt[TOX_PASS_SALT_LENGTH];
+    uint8_t key[TOX_PASS_KEY_LENGTH];
+} TOX_PASS_KEY;
+
 /* Generates a secret symmetric key from the given passphrase. out_key must be at least
  * TOX_PASS_KEY_LENGTH bytes long.
  * Be sure to not compromise the key! Only keep it in memory, do not write to disk.
@@ -166,12 +174,12 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, uint8_t *passphrase, s
  *
  * returns true on success
  */
-bool tox_derive_key_from_pass(uint8_t *passphrase, size_t pplength, uint8_t *out_key, TOX_ERR_KEY_DERIVATION *error);
+bool tox_derive_key_from_pass(uint8_t *passphrase, size_t pplength, TOX_PASS_KEY *out_key, TOX_ERR_KEY_DERIVATION *error);
 
 /* Same as above, except use the given salt for deterministic key derivation.
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  */
-bool tox_derive_key_with_salt(uint8_t *passphrase, size_t pplength, uint8_t *salt, uint8_t *out_key,
+bool tox_derive_key_with_salt(uint8_t *passphrase, size_t pplength, uint8_t *salt, TOX_PASS_KEY *out_key,
                               TOX_ERR_KEY_DERIVATION *error);
 
 /* This retrieves the salt used to encrypt the given data, which can then be passed to
@@ -194,7 +202,7 @@ bool tox_get_salt(const uint8_t *data, uint8_t *salt);
  *
  * returns true on success
  */
-bool tox_pass_key_encrypt(const uint8_t *data, size_t data_len, const uint8_t *key, uint8_t *out,
+bool tox_pass_key_encrypt(const uint8_t *data, size_t data_len, const TOX_PASS_KEY *key, uint8_t *out,
                           TOX_ERR_ENCRYPTION *error);
 
 /* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
@@ -204,7 +212,7 @@ bool tox_pass_key_encrypt(const uint8_t *data, size_t data_len, const uint8_t *k
  *
  * returns true on success
  */
-bool tox_pass_key_decrypt(const uint8_t *data, size_t length, const uint8_t *key, uint8_t *out,
+bool tox_pass_key_decrypt(const uint8_t *data, size_t length, const TOX_PASS_KEY *key, uint8_t *out,
                           TOX_ERR_DECRYPTION *error);
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
