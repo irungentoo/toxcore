@@ -2035,8 +2035,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
         case PACKET_ID_MESSAGE:
         case PACKET_ID_ACTION: {
-            const uint8_t *message_id = data;
-
             if (data_length == 0)
                 break;
 

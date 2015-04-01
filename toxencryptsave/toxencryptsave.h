@@ -30,6 +30,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #ifndef TOX_DEFINED
 #define TOX_DEFINED
@@ -37,21 +38,11 @@ typedef struct Tox Tox;
 struct Tox_Options;
 #endif
 
-// these functions provide access to these defines in toxencryptsave.c, which
-// otherwise aren't actually available in clients...
-int tox_pass_encryption_extra_length();
+#define TOX_PASS_SALT_LENGTH 32
+#define TOX_PASS_KEY_LENGTH 64
+#define TOX_PASS_ENCRYPTION_EXTRA_LENGTH 80
 
-int tox_pass_key_length();
-
-int tox_pass_salt_length();
-
-/*  return size of the messenger data (for encrypted Messenger saving). */
-uint32_t tox_encrypted_size(const Tox *tox);
-
-/* This "module" provides functions analogous to tox_load and tox_save in toxcore,
- * as well as functions for encryption of arbitrary client data (e.g. chat logs).
- *
- * It is conceptually organized into two parts. The first part are the functions
+/* This module is conceptually organized into two parts. The first part are the functions
  * with "key" in the name. To use these functions, first derive an encryption key
  * from a password with tox_derive_key_from_pass, and use the returned key to
  * encrypt the data. The second part takes the password itself instead of the key,
@@ -61,12 +52,73 @@ uint32_t tox_encrypted_size(const Tox *tox);
  * favor using the first part intead of the second part.
  *
  * The encrypted data is prepended with a magic number, to aid validity checking
- * (no guarantees are made of course).
+ * (no guarantees are made of course). Any data to be decrypted must start with
+ * the magic number.
  *
  * Clients should consider alerting their users that, unlike plain data, if even one bit
  * becomes corrupted, the data will be entirely unrecoverable.
  * Ditto if they forget their password, there is no way to recover the data.
  */
+
+typedef enum TOX_ERR_KEY_DERIVATION {
+    TOX_ERR_KEY_DERIVATION_OK,
+    /**
+     * Some input data, or maybe the output pointer, was null.
+     */
+    TOX_ERR_KEY_DERIVATION_NULL,
+    /**
+     * The crypto lib was unable to derive a key from the given passphrase,
+     * which is usually a lack of memory issue. The functions accepting keys
+     * do not produce this error.
+     */
+    TOX_ERR_KEY_DERIVATION_FAILED
+} TOX_ERR_KEY_DERIVATION;
+
+typedef enum TOX_ERR_ENCRYPTION {
+    TOX_ERR_ENCRYPTION_OK,
+    /**
+     * Some input data, or maybe the output pointer, was null.
+     */
+    TOX_ERR_ENCRYPTION_NULL,
+    /**
+     * The crypto lib was unable to derive a key from the given passphrase,
+     * which is usually a lack of memory issue. The functions accepting keys
+     * do not produce this error.
+     */
+    TOX_ERR_ENCRYPTION_KEY_DERIVATION_FAILED,
+    /**
+     * The encryption itself failed.
+     */
+    TOX_ERR_ENCRYPTION_FAILED
+} TOX_ERR_ENCRYPTION;
+
+typedef enum TOX_ERR_DECRYPTION {
+    TOX_ERR_DECRYPTION_OK,
+    /**
+     * Some input data, or maybe the output pointer, was null.
+     */
+    TOX_ERR_DECRYPTION_NULL,
+    /**
+     * The input data was shorter than TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes
+     */
+    TOX_ERR_DECRYPTION_INVALID_LENGTH,
+    /**
+     * The input data is missing the magic number (i.e. wasn't created by this
+     * module, or is corrupted)
+     */
+    TOX_ERR_DECRYPTION_BAD_FORMAT,
+    /**
+     * The crypto lib was unable to derive a key from the given passphrase,
+     * which is usually a lack of memory issue. The functions accepting keys
+     * do not produce this error.
+     */
+    TOX_ERR_DECRYPTION_KEY_DERIVATION_FAILED,
+    /**
+     * The encrypted byte array could not be decrypted. Either the data was
+     * corrupt or the password/key was incorrect.
+     */
+    TOX_ERR_DECRYPTION_FAILED
+} TOX_ERR_DECRYPTION;
 
 
 /******************************* BEGIN PART 2 *******************************
@@ -77,98 +129,25 @@ uint32_t tox_encrypted_size(const Tox *tox);
  */
 
 /* Encrypts the given data with the given passphrase. The output array must be
- * at least data_len + tox_pass_encryption_extra_length() bytes long. This delegates
+ * at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long. This delegates
  * to tox_derive_key_from_pass and tox_pass_key_encrypt.
  *
- * tox_encrypted_save() is a good example of how to use this function.
- *
- * returns 0 on success
- * returns -1 on failure
+ * returns true on success
  */
-int tox_pass_encrypt(const uint8_t *data, uint32_t data_len, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
+bool tox_pass_encrypt(const uint8_t *data, size_t data_len, uint8_t *passphrase, size_t pplength, uint8_t *out,
+                      TOX_ERR_ENCRYPTION *error);
 
-/* Save the messenger data encrypted with the given password.
- * data must be at least tox_encrypted_size().
- *
- * NOTE: Unlike tox_save(), this function may fail. Be sure to check its return
- * value.
- *
- * returns 0 on success
- * returns -1 on failure
- */
-int tox_encrypted_save(const Tox *tox, uint8_t *data, uint8_t *passphrase, uint32_t pplength);
 
 /* Decrypts the given data with the given passphrase. The output array must be
- * at least data_len - tox_pass_encryption_extra_length() bytes long. This delegates
+ * at least data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long. This delegates
  * to tox_pass_key_decrypt.
  *
- * tox_encrypted_load() is a good example of how to use this function.
+ * the output data has size data_length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH
  *
- * returns the length of the output data (== data_len - tox_pass_encryption_extra_length()) on success
- * returns -1 on failure
+ * returns true on success
  */
-int tox_pass_decrypt(const uint8_t *data, uint32_t length, uint8_t *passphrase, uint32_t pplength, uint8_t *out);
-
-typedef enum TOX_ERR_ENCRYPTED_NEW {
-    TOX_ERR_ENCRYPTED_NEW_OK,
-    TOX_ERR_ENCRYPTED_NEW_NULL,
-    /**
-     * The function was unable to allocate enough memory to store the internal
-     * structures for the Tox object.
-     */
-    TOX_ERR_ENCRYPTED_NEW_MALLOC,
-    /**
-     * The function was unable to bind to a port. This may mean that all ports
-     * have already been bound, e.g. by other Tox instances, or it may mean
-     * a permission error. You may be able to gather more information from errno.
-     */
-    TOX_ERR_ENCRYPTED_NEW_PORT_ALLOC,
-    /**
-     * proxy_type was invalid.
-     */
-    TOX_ERR_ENCRYPTED_NEW_PROXY_BAD_TYPE,
-    /**
-     * proxy_type was valid but the proxy_host passed had an invalid format
-     * or was NULL.
-     */
-    TOX_ERR_ENCRYPTED_NEW_PROXY_BAD_HOST,
-    /**
-     * proxy_type was valid, but the proxy_port was invalid.
-     */
-    TOX_ERR_ENCRYPTED_NEW_PROXY_BAD_PORT,
-    /**
-     * The proxy host passed could not be resolved.
-     */
-    TOX_ERR_ENCRYPTED_NEW_PROXY_NOT_FOUND,
-    /**
-     * The byte array to be loaded contained an encrypted save.
-     */
-    TOX_ERR_ENCRYPTED_NEW_LOAD_ENCRYPTED,
-    /**
-     * The data format was invalid. This can happen when loading data that was
-     * saved by an older version of Tox, or when the data has been corrupted.
-     * When loading from badly formatted data, some data may have been loaded,
-     * and the rest is discarded. Passing an invalid length parameter also
-     * causes this error.
-     */
-    TOX_ERR_ENCRYPTED_NEW_LOAD_BAD_FORMAT,
-    /**
-     * The encrypted byte array could not be decrypted. Either the data was
-     * corrupt or the password/key was incorrect.
-     *
-     * NOTE: This error code is only set by tox_encrypted_new() and
-     * tox_encrypted_key_new(), in the toxencryptsave module.
-     */
-    TOX_ERR_ENCRYPTED_NEW_LOAD_DECRYPTION_FAILED
-} TOX_ERR_ENCRYPTED_NEW;
-
-/* Load the new messenger from encrypted data of size length.
- * All other arguments are like toxcore/tox_new().
- *
- * returns NULL on failure; see the documentation in toxcore/tox.h.
- */
-Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *passphrase,
-                       size_t pplength, TOX_ERR_ENCRYPTED_NEW *error);
+bool tox_pass_decrypt(const uint8_t *data, size_t length, uint8_t *passphrase, size_t pplength, uint8_t *out,
+                      TOX_ERR_DECRYPTION *error);
 
 
 /******************************* BEGIN PART 1 *******************************
@@ -177,7 +156,7 @@ Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, s
  */
 
 /* Generates a secret symmetric key from the given passphrase. out_key must be at least
- * tox_pass_key_length() bytes long.
+ * TOX_PASS_KEY_LENGTH bytes long.
  * Be sure to not compromise the key! Only keep it in memory, do not write to disk.
  * The password is zeroed after key derivation.
  * The key should only be used with the other functions in this module, as it
@@ -185,72 +164,52 @@ Tox *tox_encrypted_new(const struct Tox_Options *options, const uint8_t *data, s
  * Note that this function is not deterministic; to derive the same key from a
  * password, you also must know the random salt that was used. See below.
  *
- * returns 0 on success
- * returns -1 on failure
+ * returns true on success
  */
-int tox_derive_key_from_pass(uint8_t *passphrase, uint32_t pplength, uint8_t *out_key);
+bool tox_derive_key_from_pass(uint8_t *passphrase, size_t pplength, uint8_t *out_key, TOX_ERR_KEY_DERIVATION *error);
 
 /* Same as above, except with use the given salt for deterministic key derivation.
  * The salt must be tox_salt_length() bytes in length.
  */
-int tox_derive_key_with_salt(uint8_t *passphrase, uint32_t pplength, uint8_t *salt, uint8_t *out_key);
+bool tox_derive_key_with_salt(uint8_t *passphrase, size_t pplength, uint8_t *salt, uint8_t *out_key,
+                              TOX_ERR_KEY_DERIVATION *error);
 
 /* This retrieves the salt used to encrypt the given data, which can then be passed to
  * derive_key_with_salt to produce the same key as was previously used. Any encrpyted
  * data with this module can be used as input.
  *
- * returns -1 if the magic number is wrong
- * returns 0 otherwise (no guarantee about validity of data)
+ * returns true if magic number matches
+ * success does not say anything about the validity of the data, only that data of
+ * the appropriate size was copied
  */
-int tox_get_salt(uint8_t *data, uint8_t *salt);
+bool tox_get_salt(const uint8_t *data, uint8_t *salt);
 
 /* Now come the functions that are analogous to the part 2 functions. */
 
-/* Encrypt arbitrary with a key produced by tox_derive_key_. The output
- * array must be at least data_len + tox_pass_encryption_extra_length() bytes long.
- * key must be tox_pass_key_length() bytes.
+/* Encrypt arbitrary with a key produced by tox_derive_key_*. The output
+ * array must be at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
+ * key must be TOX_PASS_KEY_LENGTH bytes.
  * If you already have a symmetric key from somewhere besides this module, simply
  * call encrypt_data_symmetric in toxcore/crypto_core directly.
  *
- * returns 0 on success
- * returns -1 on failure
+ * returns true on success
  */
-int tox_pass_key_encrypt(const uint8_t *data, uint32_t data_len, const uint8_t *key, uint8_t *out);
-
-/* Save the messenger data encrypted with the given key from tox_derive_key.
- * data must be at least tox_encrypted_size().
- *
- * NOTE: Unlike tox_save(), this function may fail. Be sure to check its return
- * value.
- *
- * returns 0 on success
- * returns -1 on failure
- */
-int tox_encrypted_key_save(const Tox *tox, uint8_t *data, uint8_t *key);
+bool tox_pass_key_encrypt(const uint8_t *data, size_t data_len, const uint8_t *key, uint8_t *out,
+                          TOX_ERR_ENCRYPTION *error);
 
 /* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
  * tox_derive_key_from_pass.
  *
- * returns the length of the output data (== data_len - tox_pass_encryption_extra_length()) on success
- * returns -1 on failure
- */
-int tox_pass_key_decrypt(const uint8_t *data, uint32_t length, const uint8_t *key, uint8_t *out);
-
-/* Load the messenger from encrypted data of size length, with key from tox_derive_key.
- * All other arguments are like toxcore/tox_new().
+ * the output data has size data_length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH
  *
- * returns NULL on failure; see the documentation in toxcore/tox.h.
+ * returns true on success
  */
-Tox *tox_encrypted_key_new(const struct Tox_Options *options, const uint8_t *data, size_t length, uint8_t *key,
-                           TOX_ERR_ENCRYPTED_NEW *error);
-
+bool tox_pass_key_decrypt(const uint8_t *data, size_t length, const uint8_t *key, uint8_t *out,
+                          TOX_ERR_DECRYPTION *error);
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
- *
- * returns 1 if it is encrypted
- * returns 0 otherwise
  */
-int tox_is_data_encrypted(const uint8_t *data);
+bool tox_is_data_encrypted(const uint8_t *data);
 
 #ifdef __cplusplus
 }
