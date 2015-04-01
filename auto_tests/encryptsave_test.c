@@ -151,7 +151,7 @@ START_TEST(test_keys)
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 1 failed");
 
     ret = tox_pass_decrypt(encrypted2, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, "123qweasdzxc", 12, out2, &decerr);
-    ck_assert_msg(ret, "generic failure 5: %u", &decerr);
+    ck_assert_msg(ret, "generic failure 5: %u", decerr);
     ck_assert_msg(memcmp(out2, string, 44) == 0, "decryption 2 failed");
 
     // test that pass_decrypt can decrypt things from pass_key_encrypt

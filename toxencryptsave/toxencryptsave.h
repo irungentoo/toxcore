@@ -168,8 +168,8 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, uint8_t *passphrase, s
  */
 bool tox_derive_key_from_pass(uint8_t *passphrase, size_t pplength, uint8_t *out_key, TOX_ERR_KEY_DERIVATION *error);
 
-/* Same as above, except with use the given salt for deterministic key derivation.
- * The salt must be tox_salt_length() bytes in length.
+/* Same as above, except use the given salt for deterministic key derivation.
+ * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  */
 bool tox_derive_key_with_salt(uint8_t *passphrase, size_t pplength, uint8_t *salt, uint8_t *out_key,
                               TOX_ERR_KEY_DERIVATION *error);
