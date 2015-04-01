@@ -60,6 +60,15 @@ struct Tox_Options;
  * Ditto if they forget their password, there is no way to recover the data.
  */
 
+/* Since apparently no one actually bothered to learn about the module previously,
+ * the recently removed functions tox_encrypted_new and tox_get_encrypted_savedata
+ * may be trivially replaced by calls to tox_pass_decrypt -> tox_new or
+ * tox_get_savedata -> tox_pass_encrypt as appropriate. The removed functions
+ * were never more than 5 line wrappers of the other public API functions anyways.
+ * (As has always been, tox_pass_decrypt and tox_pass_encrypt are interchangeable
+ *  with tox_pass_key_decrypt and tox_pass_key_encrypt, as the client program requires.)
+ */
+
 typedef enum TOX_ERR_KEY_DERIVATION {
     TOX_ERR_KEY_DERIVATION_OK,
     /**
