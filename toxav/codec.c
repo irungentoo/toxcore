@@ -337,12 +337,14 @@ void cs_do(CSession *cs)
             pthread_mutex_unlock(cs->queue_mutex);
             
             if (success == 2) {
+                LOGGER_DEBUG("OPUS correction");
                 rc = opus_decode(cs->audio_decoder, NULL, 0, tmp,
-                                 cs->last_packet_sampling_rate * cs->last_packet_frame_duration / 1000, 1);
+                                (cs->last_packet_sampling_rate * cs->last_packet_frame_duration / 1000) *
+                                 cs->last_packet_channel_count, 1);
             } else {
                 /* Get values from packet and decode.
-                * It also checks for validity of an opus packet
-                */
+                 * It also checks for validity of an opus packet
+                 */
                 rc = convert_bw_to_sampling_rate(opus_packet_get_bandwidth(msg->data));
                 if (rc != -1) {
                     cs->last_packet_sampling_rate = rc;
@@ -351,6 +353,9 @@ void cs_do(CSession *cs)
                     cs->last_packet_frame_duration = 
                         ( opus_packet_get_samples_per_frame(msg->data, cs->last_packet_sampling_rate) * 1000 )
                         / cs->last_packet_sampling_rate;
+                    
+                    /* TODO FIXME WARNING calculate properly according to propper channel count */
+                    cs->last_packet_frame_duration /= cs->last_packet_channel_count;
                 } else {
                     LOGGER_WARNING("Failed to load packet values!");
                     rtp_free_msg(NULL, msg);
@@ -433,7 +438,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
      */
     
     int status;
-    cs->audio_decoder = opus_decoder_create(48000, 2, &status ); /* NOTE: Must be mono */
+    cs->audio_decoder = opus_decoder_create(48000, 1, &status ); /* NOTE: Must be mono */
     
     if ( status != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(status));
@@ -472,6 +477,10 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
         vpx_codec_destroy(cs->v_decoder);
         goto AUDIO_DECODER_CLEANUP;
     }
+    
+    if ( !(cs->split_video_frame = calloc(VIDEOFRAME_PIECE_SIZE + VIDEOFRAME_HEADER_SIZE, 1)) )
+        goto FAILURE;
+    
     /*++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
     
     /* Initialize encoders with default values */

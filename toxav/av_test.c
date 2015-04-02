@@ -1,4 +1,4 @@
-#include "toxav.h"
+#include "../toxav/toxav.h"
 #include "../toxcore/tox.h"
 
 /* For playing audio data */
@@ -11,9 +11,7 @@
 /* For reading and displaying video data */
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-
-/* For converting images TODO remove */
-#include <vpx/vpx_image.h>
+#include <opencv/cvwimage.h>
 
 
 #include <sys/stat.h>
@@ -29,6 +27,23 @@
 #define c_sleep(x) usleep(1000*x)
 
 
+#define CLIP(X) ( (X) > 255 ? 255 : (X) < 0 ? 0 : X)
+
+// RGB -> YUV
+#define RGB2Y(R, G, B) CLIP(( (  66 * (R) + 129 * (G) +  25 * (B) + 128) >> 8) +  16)
+#define RGB2U(R, G, B) CLIP(( ( -38 * (R) -  74 * (G) + 112 * (B) + 128) >> 8) + 128)
+#define RGB2V(R, G, B) CLIP(( ( 112 * (R) -  94 * (G) -  18 * (B) + 128) >> 8) + 128)
+
+// YUV -> RGB
+#define C(Y) ( (Y) - 16  )
+#define D(U) ( (U) - 128 )
+#define E(V) ( (V) - 128 )
+
+#define YUV2R(Y, U, V) CLIP(( 298 * C(Y)              + 409 * E(V) + 128) >> 8)
+#define YUV2G(Y, U, V) CLIP(( 298 * C(Y) - 100 * D(U) - 208 * E(V) + 128) >> 8)
+#define YUV2B(Y, U, V) CLIP(( 298 * C(Y) + 516 * D(U)              + 128) >> 8)
+
+
 /* Enable/disable tests */
 #define TEST_REGULAR_AV 0
 #define TEST_REGULAR_A 0
@@ -36,8 +51,8 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 1
-#define TEST_TRANSFER_V 0
+#define TEST_TRANSFER_A 0
+#define TEST_TRANSFER_V 1
 
 
 typedef struct {
@@ -83,38 +98,32 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint8_t const *planes[], int32_t const stride[],
                                     void *user_data)
 {
-    IplImage output_img;
-    const int bpl = stride[VPX_PLANE_Y];
-    const int cxbpl = stride[VPX_PLANE_V];
+    uint16_t *img_data = malloc(height * width * 6);
     
-    output_img.imageData = malloc(width * height * 3);
-    output_img.imageSize = width * height * 3;
-    output_img.width = width;
-    output_img.height = height;
-    
-    /* FIXME: possible bug? */
-    const uint8_t* yData = planes[VPX_PLANE_Y];
-    const uint8_t* uData = planes[VPX_PLANE_V];
-    const uint8_t* vData = planes[VPX_PLANE_U];
-    
-    // convert from planar to packed
-    int y = 0;
-    for (; y < height; ++y)
-    {
-        int x = 0;
-        for (; x < width; ++x)
-        {
-            uint8_t Y = planes[VPX_PLANE_Y][x + y * bpl];
-            uint8_t U = planes[VPX_PLANE_V][x/(1 << 1) + y/(1 << 1)*cxbpl];
-            uint8_t V = planes[VPX_PLANE_U][x/(1 << 1) + y/(1 << 1)*cxbpl];
-            output_img.imageData[width * 3 * y + x * 3 + 0] = Y;
-            output_img.imageData[width * 3 * y + x * 3 + 1] = U;
-            output_img.imageData[width * 3 * y + x * 3 + 2] = V;
+    unsigned long int i, j;
+    for (i = 0; i < height; ++i) {
+        for (j = 0; j < width; ++j) {
+            uint8_t *point = (void*)img_data + 3 * ((i * width) + j);
+            int y = planes[0][(i * stride[0]) + j];
+            int u = planes[1][((i / 2) * stride[1]) + (j / 2)];
+            int v = planes[2][((i / 2) * stride[2]) + (j / 2)];
+            
+            point[0] = YUV2R(y, u, v);
+            point[1] = YUV2G(y, u, v);
+            point[2] = YUV2B(y, u, v);
         }
     }
     
-    cvShowImage(vdout, &output_img);
-    free(output_img.imageData);
+    
+    CvMat mat = cvMat(height, width, CV_8UC3, img_data);
+    
+    CvSize sz = {.height = height, .width = width};
+    
+    IplImage* header = cvCreateImageHeader(sz, 1, 3);
+    IplImage* img = cvGetImage(&mat, header);
+    cvShowImage(vdout, img);
+    cvWaitKey(1);
+    free(img_data);
 }
 void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     int16_t const *pcm,
@@ -140,7 +149,7 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
         return;
     
 
-    alBufferData(bufid, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, 
+    alBufferData(bufid, channels == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
                  pcm, sample_count * 2, sampling_rate);
     alSourceQueueBuffers(adout, 1, &bufid);
 
@@ -244,45 +253,42 @@ int iterate_tox(Tox* bootstrap, ToxAV* AliceAV, ToxAV* BobAV)
 }
 
 int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
-{
-    /* I use vpx image coz i'm noob TODO use opencv conversion */
-    vpx_image_t vpx_img;
-    vpx_img.w = vpx_img.h = vpx_img.d_w = vpx_img.d_h = 0;
+{   
+    int32_t strides[3] = { 1280, 640, 640 };
+    uint8_t* planes[3] = {
+        malloc(img->height * img->width),
+        malloc(img->height * img->width / 2),
+        malloc(img->height * img->width / 2),
+    };
     
-    const int w = img->width;
-    const int h = img->height;
+    int x_chroma_shift = 1;
+    int y_chroma_shift = 1;
     
-    vpx_img_alloc(&vpx_img, VPX_IMG_FMT_VPXI420, w, h, 1);
-    
-    int y = 0;
-    for (; y < h; ++y)
-    {
-        int x = 0;
-        for (; x < w; ++x)
-        {
-            uint8_t b = img->imageData[(x + y * w) * 3 + 0];
-            uint8_t g = img->imageData[(x + y * w) * 3 + 1];
-            uint8_t r = img->imageData[(x + y * w) * 3 + 2];
+    int x, y;
+    for (y = 0; y < img->height; ++y) {
+        for (x = 0; x < img->width; ++x) {
+            uint8_t r = img->imageData[(x + y * img->width) * 3 + 0];
+            uint8_t g = img->imageData[(x + y * img->width) * 3 + 1];
+            uint8_t b = img->imageData[(x + y * img->width) * 3 + 2];
             
-            vpx_img.planes[VPX_PLANE_Y][x + y * vpx_img.stride[VPX_PLANE_Y]] = ((66 * r + 129 * g + 25 * b) >> 8) + 16;
-            
-            if (!(x % (1 << vpx_img.x_chroma_shift)) && !(y % (1 << vpx_img.y_chroma_shift)))
-            {
-                const int i = x / (1 << vpx_img.x_chroma_shift);
-                const int j = y / (1 << vpx_img.y_chroma_shift);
-                vpx_img.planes[VPX_PLANE_U][i + j * vpx_img.stride[VPX_PLANE_U]] = ((112 * r + -94 * g + -18 * b) >> 8) + 128;
-                vpx_img.planes[VPX_PLANE_V][i + j * vpx_img.stride[VPX_PLANE_V]] = ((-38 * r + -74 * g + 112 * b) >> 8) + 128;
+            planes[0][x + y * strides[0]] = RGB2Y(r, g, b);
+            if (!(x % (1 << x_chroma_shift)) && !(y % (1 << y_chroma_shift))) {
+                const int i = x / (1 << x_chroma_shift);
+                const int j = y / (1 << y_chroma_shift);
+                planes[1][i + j * strides[1]] = RGB2U(r, g, b);
+                planes[2][i + j * strides[2]] = RGB2V(r, g, b);
             }
         }
     }
     
-    int rc = toxav_send_video_frame(av, friend_number, w, h, 
-                                    vpx_img.planes[VPX_PLANE_Y], 
-                                    vpx_img.planes[VPX_PLANE_U], 
-                                    vpx_img.planes[VPX_PLANE_V], NULL);
     
-    vpx_img_free(&vpx_img);
-    return rc;
+//     int rc = toxav_send_video_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL);
+    t_toxav_receive_video_frame_cb(av, 0, img->width, img->height, (const uint8_t**) planes, strides, NULL);
+    free(planes[0]);
+    free(planes[1]);
+    free(planes[2]);
+//     return rc;
+    return 0;
 }
 
 ALCdevice* open_audio_device(const char* audio_out_dev_name)
@@ -403,6 +409,32 @@ int main (int argc, char** argv)
         }
     }
     
+    
+    cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
+    
+    CvCapture* capture = cvCreateFileCapture(vf_name);
+    if (!capture) {
+        printf("Failed to open video file: %s\n", vf_name);
+        exit(1);
+    }
+    
+    IplImage* frame;
+    time_t start_time = time(NULL);
+    
+    int frame_rate = cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
+    while(start_time + 4 > time(NULL)) {
+        frame = cvQueryFrame( capture );
+        if (!frame)
+            break;
+        
+        send_opencv_img(NULL, 0, frame);
+        c_sleep(1);
+    }
+    
+    cvReleaseCapture(&capture);
+    cvDestroyWindow(vdout);
+    
+    return 0;
     const char* audio_out_dev_name = NULL;
     
     int i = 0;
@@ -706,19 +738,19 @@ int main (int argc, char** argv)
         time_t expected_time = af_info.frames / af_info.samplerate + 2;
         
 		while ( start_time + expected_time > time(NULL) ) {
-            int frame_size = (af_info.samplerate * frame_duration / 1000);
+            int frame_size = (af_info.samplerate * frame_duration / 1000) * af_info.channels;
             
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
-                t_toxav_receive_audio_frame_cb(BobAV, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
-//                 TOXAV_ERR_SEND_FRAME rc;
-//                 if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
-//                     printf("Error sending frame of size %ld: %d\n", count, rc);
-//                     exit(1);
-//                 }
+//                 t_toxav_receive_audio_frame_cb(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
+                TOXAV_ERR_SEND_FRAME rc;
+                if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
+                    printf("Error sending frame of size %ld: %d\n", count, rc);
+                    exit(1);
+                }
             }
-            c_sleep(frame_duration);
-//             iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV);
+//             c_sleep(frame_duration);
 		}
     
         
@@ -744,6 +776,36 @@ int main (int argc, char** argv)
 	}
 	
 	if (TEST_TRANSFER_V) {
+        printf("\nTrying video enc/dec...\n");
+        
+        memset(&AliceCC, 0, sizeof(CallControl));
+        memset(&BobCC, 0, sizeof(CallControl));
+        
+        { /* Call */
+            TOXAV_ERR_CALL rc;
+            toxav_call(AliceAV, 0, 0, 500000, &rc);
+            
+            if (rc != TOXAV_ERR_CALL_OK) {
+                printf("toxav_call failed: %d\n", rc);
+                exit(1);
+            }
+        }
+        
+        while (!BobCC.incoming)
+            iterate_tox(bootstrap, AliceAV, BobAV);
+        
+        { /* Answer */
+            TOXAV_ERR_ANSWER rc;
+            toxav_answer(BobAV, 0, 0, 500000, &rc);
+            
+            if (rc != TOXAV_ERR_ANSWER_OK) {
+                printf("toxav_answer failed: %d\n", rc);
+                exit(1);
+            }
+        }
+        
+        iterate_tox(bootstrap, AliceAV, BobAV);
+        
         cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
         
         CvCapture* capture = cvCreateFileCapture(vf_name);
@@ -755,15 +817,35 @@ int main (int argc, char** argv)
         IplImage* frame;
         time_t start_time = time(NULL);
         
+        int frame_rate = cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
         while(start_time + 10 > time(NULL)) {
             frame = cvQueryFrame( capture );
             if (!frame)
                 break;
             
+//             cvShowImage(vdout, frame);
+//             cvWaitKey(frame_rate);
+            send_opencv_img(AliceAV, 0, frame);
+            iterate_tox(bootstrap, AliceAV, BobAV);
         }
         
         cvReleaseCapture(&capture);
         cvDestroyWindow(vdout);
+        
+        { /* Hangup */
+            TOXAV_ERR_CALL_CONTROL rc;
+            toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
+            
+            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
+                printf("toxav_call_control failed: %d\n", rc);
+                exit(1);
+            }
+        }
+        
+        iterate_tox(bootstrap, AliceAV, BobAV);
+        assert(BobCC.state == TOXAV_CALL_STATE_END);
+        
+        printf("Success!");
     }
     
     

@@ -37,14 +37,14 @@ libtoxav_la_LIBADD =  libtoxcore.la \
 
 
 
-noinst_PROGRAMS +=    av_test
+#noinst_PROGRAMS +=    av_test
 
-av_test_SOURCES =     ../toxav/av_test.c
+#av_test_SOURCES =     ../toxav/av_test.c
 
-av_test_CFLAGS =      $(LIBSODIUM_CFLAGS) \
+#av_test_CFLAGS =      $(LIBSODIUM_CFLAGS) \
                       $(NACL_CFLAGS)
 
-av_test_LDADD =       $(LIBSODIUM_LDFLAGS) \
+#av_test_LDADD =       $(LIBSODIUM_LDFLAGS) \
                       $(NACL_LDFLAGS) \
                       libtoxav.la \
                       libtoxcore.la \

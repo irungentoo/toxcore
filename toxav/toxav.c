@@ -700,9 +700,8 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
             goto END;
         }
         
-        
         LOGGER_DEBUG("Sending audio frame size: %d; channels: %d; srate: %d", sample_count, channels, sampling_rate);
-        uint8_t dest[sample_count * channels * 2 /* sizeof(uint16_t) */];
+        uint8_t dest[sample_count * channels * sizeof(int16_t)];
         int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest, sizeof (dest));
         
         if (vrc < 0) {
