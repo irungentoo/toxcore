@@ -868,7 +868,7 @@ void do_refresh()
     refresh();
 }
 
-void print_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+void print_request(Tox *m, const uint8_t *public_key, uint32_t nospam, const uint8_t *data, size_t length, void *userdata)
 {
     new_lines("[i] received friend request with message:");
     new_lines((char *)data);

@@ -276,7 +276,7 @@ uint32_t nospam_saved_list_size(const Friend_Requests *fr)
 
 void nospam_list_save(const Friend_Requests *fr, uint8_t *data)
 {
-    int i = 0;
+    size_t i = 0;
 
     for (i = 0; i < fr->nospam_amount; ++i) {
         const No_Spam *ns = fr->nospam + i;

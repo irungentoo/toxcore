@@ -29,7 +29,7 @@ unsigned char known_key2[crypto_box_BEFORENMBYTES] = {0x7a, 0xfa, 0x95, 0x45, 0x
 // same as above, except standard opslimit instead of extra ops limit for test_known_kdf, and hash pw before kdf for compat
 
 /* cause I'm shameless */
-void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, uint32_t nospam, const uint8_t *data, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;

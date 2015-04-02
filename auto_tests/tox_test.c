@@ -22,7 +22,7 @@
 #endif
 
 
-void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, uint32_t nospam, const uint8_t *data, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 974536)
         return;
@@ -811,7 +811,7 @@ END_TEST
 
 #define NUM_GROUP_TOX 32
 
-void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+void g_accept_friend_request(Tox *m, const uint8_t *public_key, uint32_t nospam, const uint8_t *data, size_t length, void *userdata)
 {
     if (*((uint32_t *)userdata) != 234212)
         return;
