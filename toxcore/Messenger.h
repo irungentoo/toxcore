@@ -198,7 +198,7 @@ typedef struct {
     uint16_t info_size; // Length of the info.
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
-    uint64_t ping_lastrecv;//TODO remove
+    uint64_t last_seen_time;
     uint64_t share_relays_lastsent;
     uint8_t last_connection_udp_tcp;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
@@ -460,8 +460,8 @@ uint8_t m_get_userstatus(const Messenger *m, int32_t friendnumber);
 uint8_t m_get_self_userstatus(const Messenger *m);
 
 
-/* returns timestamp of last time friendnumber was seen online, or 0 if never seen.
- * returns -1 on error.
+/* returns timestamp of last time friendnumber was seen online or 0 if never seen.
+ * if friendnumber is invalid this function will return UINT64_MAX.
  */
 uint64_t m_get_last_online(const Messenger *m, int32_t friendnumber);
 
