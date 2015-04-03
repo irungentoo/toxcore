@@ -996,6 +996,21 @@ bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *
  */
 bool tox_friend_exists(const Tox *tox, uint32_t friend_number);
 
+typedef enum TOX_ERR_FRIEND_GET_LAST_ONLINE {
+    TOX_ERR_FRIEND_GET_LAST_ONLINE_OK,
+    /**
+     * No friend with the given number exists on the friend list.
+     */
+    TOX_ERR_FRIEND_GET_LAST_ONLINE_FRIEND_NOT_FOUND,
+} TOX_ERR_FRIEND_GET_LAST_ONLINE;
+
+/**
+ * Return a unix-time timestamp of the last time the friend associated with a given
+ * friend number was seen online. This function will return UINT64_MAX on error.
+ *
+ * @param friend_number The friend number you want to query.
+ */
+uint64_t tox_friend_get_last_online(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_GET_LAST_ONLINE *error);
 
 /**
  * Return the number of friends on the friend list.

@@ -599,6 +599,20 @@ bool tox_friend_exists(const Tox *tox, uint32_t friend_number)
     return m_friend_exists(m, friend_number);
 }
 
+uint64_t tox_friend_get_last_online(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_GET_LAST_ONLINE *error)
+{
+    const Messenger *m = tox;
+    uint64_t timestamp = m_get_last_online(m, friend_number);
+
+    if (timestamp == UINT64_MAX) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_LAST_ONLINE_FRIEND_NOT_FOUND)
+        return UINT64_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_LAST_ONLINE_OK);
+    return timestamp;
+}
+
 size_t tox_self_get_friend_list_size(const Tox *tox)
 {
     const Messenger *m = tox;
