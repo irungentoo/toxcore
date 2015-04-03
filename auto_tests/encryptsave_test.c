@@ -93,19 +93,19 @@ START_TEST(test_save_friend)
     size = tox_get_savedata_size(tox3);
     uint8_t data2[size];
     tox_get_savedata(tox3, data2);
-    uint8_t key[32 + crypto_box_BEFORENMBYTES];
-    memcpy(key, salt, 32);
-    memcpy(key + 32, known_key2, crypto_box_BEFORENMBYTES);
+    TOX_PASS_KEY key;
+    memcpy(key.salt, salt, 32);
+    memcpy(key.key, known_key2, crypto_box_BEFORENMBYTES);
     size2 = size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t encdata2[size2];
-    ret = tox_pass_key_encrypt(data2, size, key, encdata2, &error1);
+    ret = tox_pass_key_encrypt(data2, size, &key, encdata2, &error1);
     ck_assert_msg(ret, "failed to key encrypt %u", error1);
     ck_assert_msg(tox_is_data_encrypted(encdata2), "magic number the second missing");
 
     uint8_t out1[size], out2[size];
     ret = tox_pass_decrypt(encdata2, size2, pw, pwlen, out1, &err3);
     ck_assert_msg(ret, "failed to pw decrypt %u", err3);
-    ret = tox_pass_key_decrypt(encdata2, size2, key, out2, &err3);
+    ret = tox_pass_key_decrypt(encdata2, size2, &key, out2, &err3);
     ck_assert_msg(ret, "failed to key decrypt %u", err3);
     ck_assert_msg(memcmp(out1, out2, size) == 0, "differing output data");
 
@@ -130,13 +130,13 @@ START_TEST(test_keys)
     TOX_ERR_ENCRYPTION encerr;
     TOX_ERR_DECRYPTION decerr;
     TOX_ERR_KEY_DERIVATION keyerr;
-    uint8_t key[TOX_PASS_KEY_LENGTH];
-    bool ret = tox_derive_key_from_pass("123qweasdzxc", 12, key, &keyerr);
+    TOX_PASS_KEY key;
+    bool ret = tox_derive_key_from_pass("123qweasdzxc", 12, &key, &keyerr);
     ck_assert_msg(ret, "generic failure 1: %u", keyerr);
     uint8_t *string = "No Patrick, mayonnaise is not an instrument."; // 44
 
     uint8_t encrypted[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
-    ret = tox_pass_key_encrypt(string, 44, key, encrypted, &encerr);
+    ret = tox_pass_key_encrypt(string, 44, &key, encrypted, &encerr);
     ck_assert_msg(ret, "generic failure 2: %u", encerr);
 
     uint8_t encrypted2[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
@@ -146,12 +146,12 @@ START_TEST(test_keys)
     uint8_t out1[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
     uint8_t out2[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
 
-    ret = tox_pass_key_decrypt(encrypted, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, key, out1, &decerr);
+    ret = tox_pass_key_decrypt(encrypted, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, &key, out1, &decerr);
     ck_assert_msg(ret, "generic failure 4: %u", decerr);
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 1 failed");
 
     ret = tox_pass_decrypt(encrypted2, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, "123qweasdzxc", 12, out2, &decerr);
-    ck_assert_msg(ret, "generic failure 5: %u", &decerr);
+    ck_assert_msg(ret, "generic failure 5: %u", decerr);
     ck_assert_msg(memcmp(out2, string, 44) == 0, "decryption 2 failed");
 
     // test that pass_decrypt can decrypt things from pass_key_encrypt
@@ -161,10 +161,10 @@ START_TEST(test_keys)
 
     uint8_t salt[TOX_PASS_SALT_LENGTH];
     ck_assert_msg(tox_get_salt(encrypted, salt), "couldn't get salt");
-    uint8_t key2[TOX_PASS_KEY_LENGTH];
-    ret = tox_derive_key_with_salt("123qweasdzxc", 12, salt, key2, &keyerr);
+    TOX_PASS_KEY key2;
+    ret = tox_derive_key_with_salt("123qweasdzxc", 12, salt, &key2, &keyerr);
     ck_assert_msg(ret, "generic failure 7: %u", keyerr);
-    ck_assert_msg(0 == memcmp(key, key2, TOX_PASS_KEY_LENGTH), "salt comparison failed");
+    ck_assert_msg(0 == memcmp(&key, &key2, sizeof(TOX_PASS_KEY)), "salt comparison failed");
 }
 END_TEST
 
