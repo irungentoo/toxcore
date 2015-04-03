@@ -1198,16 +1198,24 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
     if (control > FILECONTROL_KILL)
         return -4;
 
-    if (control == FILECONTROL_PAUSE && (ft->paused & FILE_PAUSE_US))
+    if (control == FILECONTROL_PAUSE && ((ft->paused & FILE_PAUSE_US) || ft->status != FILESTATUS_TRANSFERRING))
         return -5;
 
-    if (control == FILECONTROL_ACCEPT && ft->status == FILESTATUS_TRANSFERRING) {
-        if (!(ft->paused & FILE_PAUSE_US)) {
-            if (ft->paused & FILE_PAUSE_OTHER) {
-                return -6;
-            } else {
-                return -7;
+    if (control == FILECONTROL_ACCEPT) {
+        if (ft->status == FILESTATUS_TRANSFERRING) {
+            if (!(ft->paused & FILE_PAUSE_US)) {
+                if (ft->paused & FILE_PAUSE_OTHER) {
+                    return -6;
+                } else {
+                    return -7;
+                }
             }
+        } else {
+            if (ft->status != FILESTATUS_NOT_ACCEPTED)
+                return -7;
+
+            if (!send_receive)
+                return -6;
         }
     }
 
@@ -1550,15 +1558,23 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
     }
 
     if (control_type == FILECONTROL_ACCEPT) {
-        ft->status = FILESTATUS_TRANSFERRING;
-
-        if (ft->paused & FILE_PAUSE_OTHER) {
-            ft->paused ^=  FILE_PAUSE_OTHER;
+        if (receive_send && ft->status == FILESTATUS_NOT_ACCEPTED) {
+            ft->status = FILESTATUS_TRANSFERRING;
+        } else {
+            if (ft->paused & FILE_PAUSE_OTHER) {
+                ft->paused ^= FILE_PAUSE_OTHER;
+            } else {
+                return -1;
+            }
         }
 
         if (m->file_filecontrol)
             (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
     } else if (control_type == FILECONTROL_PAUSE) {
+        if ((ft->paused & FILE_PAUSE_OTHER) || ft->status != FILESTATUS_TRANSFERRING) {
+            return -1;
+        }
+
         ft->paused |= FILE_PAUSE_OTHER;
 
         if (m->file_filecontrol)
