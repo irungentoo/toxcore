@@ -224,23 +224,32 @@ static int handle_status(void *object, int number, uint8_t status)
     if (!friend_con)
         return -1;
 
+    _Bool call_cb = 0;
+
     if (status) {  /* Went online. */
+        call_cb = 1;
         friend_con->status = FRIENDCONN_STATUS_CONNECTED;
         friend_con->ping_lastrecv = unix_time();
         onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     } else {  /* Went offline. */
+        if (friend_con->status != FRIENDCONN_STATUS_CONNECTING) {
+            call_cb = 1;
+            friend_con->dht_ping_lastrecv = unix_time();
+            onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
+        }
+
         friend_con->status = FRIENDCONN_STATUS_CONNECTING;
         friend_con->crypt_connection_id = -1;
-        friend_con->dht_ping_lastrecv = unix_time();
-        onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     }
 
-    unsigned int i;
+    if (call_cb) {
+        unsigned int i;
 
-    for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].status_callback)
-            friend_con->callbacks[i].status_callback(friend_con->callbacks[i].status_callback_object,
-                    friend_con->callbacks[i].status_callback_id, status);
+        for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
+            if (friend_con->callbacks[i].status_callback)
+                friend_con->callbacks[i].status_callback(friend_con->callbacks[i].status_callback_object,
+                        friend_con->callbacks[i].status_callback_id, status);
+        }
     }
 
     return 0;
