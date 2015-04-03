@@ -9,3 +9,9 @@ script:
 
 notifications:
   email: false
+
+  irc: 
+    channels:
+      - "chat.freenode.net#tox-groupchats"
+    on_success: always
+    on_failure: always
