@@ -803,7 +803,7 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
     uint8_t packet[sizeof(uint32_t) + sizeof(uint32_t) + padding_length + length];
     memcpy(packet, &buffer_start, sizeof(uint32_t));
     memcpy(packet + sizeof(uint32_t), &num, sizeof(uint32_t));
-    memset(packet + (sizeof(uint32_t) * 2), 0, padding_length);
+    memset(packet + (sizeof(uint32_t) * 2), PACKET_ID_PADDING, padding_length);
     memcpy(packet + (sizeof(uint32_t) * 2) + padding_length, data, length);
 
     return send_data_packet(c, crypt_connection_id, packet, sizeof(packet));
@@ -1170,7 +1170,7 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
     uint8_t *real_data = data + (sizeof(uint32_t) * 2);
     uint16_t real_length = len - (sizeof(uint32_t) * 2);
 
-    while (real_data[0] == 0) { /* Remove Padding */
+    while (real_data[0] == PACKET_ID_PADDING) { /* Remove Padding */
         ++real_data;
         --real_length;
 
