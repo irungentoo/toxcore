@@ -127,7 +127,7 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
     return num;
 }
 
-/* Updates chat_id's addr_list list when we get a nodes request reply from DHT. */
+/* Updates chat_id's addr_list when we get a nodes request reply from DHT. */
 void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
 {
     uint32_t chat_id_hash = jenkins_hash(chat_id, CHAT_ID_SIZE);
@@ -802,16 +802,17 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     GC_GroupPeer peer;
     memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    bytes_to_U16(&peer.nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
+    uint16_t nick_len;
+    bytes_to_U16(&nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
+    nick_len = MIN(nick_len, MAX_GC_NICK_SIZE);
 
-    if (peer.nick_len > MAX_GC_NICK_SIZE)
-        peer.nick_len = MAX_GC_NICK_SIZE;
+    uint8_t nick[nick_len];
+    memcpy(nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), nick_len);
 
-    memcpy(peer.nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), peer.nick_len);
     memcpy(peer.addr.public_key, public_key, EXT_PUBLIC_KEY);
     ipport_copy(&peer.addr.ip_port, &ipp);
 
-    if (peer_nick_is_taken(chat, peer.nick, peer.nick_len))
+    if (peer_nick_is_taken(chat, nick, nick_len))
         return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
 
     if (peer_in_chat(chat, peer.addr.public_key) != -1)
@@ -1075,7 +1076,7 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
     int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
-        fprintf(stderr, "handle_bc_new_peer fail (peernumber == -1)!\n");
+        fprintf(stderr, "handle_bc_new_peer failed (peernumber == -1)!\n");
         return -1;
     }
 
@@ -2043,7 +2044,7 @@ static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_
 
     if (peer_nick_is_taken(chat, peer->nick, peer->nick_len))
         return -1;
-        
+
     int peernumber = peer_in_chat(chat, peer->addr.public_key);
 
     if (peernumber >= 0)
