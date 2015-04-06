@@ -275,7 +275,8 @@ Onions *new_onions(uint16_t port)
     DHT *dht = new_DHT(new_networking(ip, port));
     on->onion = new_onion(dht);
     on->onion_a = new_onion_announce(dht);
-    on->onion_c = new_onion_client(new_net_crypto(dht, 0));
+    TCP_Proxy_Info inf = {0};
+    on->onion_c = new_onion_client(new_net_crypto(dht, &inf));
 
     if (on->onion && on->onion_a && on->onion_c)
         return on;
@@ -294,15 +295,70 @@ void kill_onions(Onions *on)
 {
     Networking_Core *net = on->onion->dht->net;
     DHT *dht = on->onion->dht;
+    Net_Crypto *c = on->onion_c->c;
     kill_onion_client(on->onion_c);
     kill_onion_announce(on->onion_a);
     kill_onion(on->onion);
+    kill_net_crypto(c);
     kill_DHT(dht);
     kill_networking(net);
     free(on);
 }
 
 #define NUM_ONIONS 50
+#define NUM_FIRST 7
+#define NUM_LAST 37
+
+_Bool first_ip, last_ip;
+void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
+{
+    if (NUM_FIRST == number) {
+        first_ip = 1;
+        return;
+    }
+
+    if (NUM_LAST == number) {
+        last_ip = 1;
+        return;
+    }
+
+    ck_abort_msg("Error.");
+}
+
+_Bool first, last;
+uint8_t first_dht_pk[crypto_box_PUBLICKEYBYTES];
+uint8_t last_dht_pk[crypto_box_PUBLICKEYBYTES];
+
+static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
+{
+    Onions *on = object;
+    uint16_t count = 0;
+    int ret = DHT_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
+    ck_assert_msg(count == 1, "Count not 1");
+    ck_assert_msg(ret == 0, "DHT_addfriend() did not return 0");
+
+    if (NUM_FIRST == number && !first) {
+        first = 1;
+
+        if (memcmp(dht_public_key, last_dht_pk, crypto_box_PUBLICKEYBYTES) != 0) {
+            ck_abort_msg("Error wrong dht key.");
+        }
+
+        return;
+    }
+
+    if (NUM_LAST == number && !last) {
+        last = 1;
+
+        if (memcmp(dht_public_key, first_dht_pk, crypto_box_PUBLICKEYBYTES) != 0) {
+            ck_abort_msg("Error wrong dht key.");
+        }
+
+        return;
+    }
+
+    ck_abort_msg("Error.");
+}
 
 START_TEST(test_announce)
 {
@@ -340,6 +396,8 @@ START_TEST(test_announce)
         c_sleep(50);
     }
 
+    printf("connected\n");
+
     for (i = 0; i < 25 * 2; ++i) {
         for (j = 0; j < NUM_ONIONS; ++j) {
             do_onions(onions[j]);
@@ -348,37 +406,40 @@ START_TEST(test_announce)
         c_sleep(50);
     }
 
-    onion_addfriend(onions[7]->onion_c, onions[37]->onion_c->c->self_public_key);
-    int frnum = onion_addfriend(onions[37]->onion_c, onions[7]->onion_c->c->self_public_key);
+    memcpy(first_dht_pk, onions[NUM_FIRST]->onion->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(last_dht_pk, onions[NUM_LAST]->onion->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+
+    printf("adding friend\n");
+    int frnum_f = onion_addfriend(onions[NUM_FIRST]->onion_c, onions[NUM_LAST]->onion_c->c->self_public_key);
+    int frnum = onion_addfriend(onions[NUM_LAST]->onion_c, onions[NUM_FIRST]->onion_c->c->self_public_key);
+
+    onion_dht_pk_callback(onions[NUM_FIRST]->onion_c, frnum_f, &dht_pk_callback, onions[NUM_FIRST], NUM_FIRST);
+    onion_dht_pk_callback(onions[NUM_LAST]->onion_c, frnum, &dht_pk_callback, onions[NUM_LAST], NUM_LAST);
 
     int ok = -1;
 
     IP_Port ip_port;
 
-    while (ok == -1) {
-        for (i = 0; i < NUM_ONIONS; ++i) {
-            networking_poll(onions[i]->onion->net);
-            do_onion_client(onions[i]->onion_c);
-        }
-
-        ok = onion_getfriendip(onions[37]->onion_c, frnum, &ip_port);
-
-        c_sleep(50);
-    }
-
-    printf("id discovered\n");
-
-    while (ok != 1) {
+    while (!first || !last) {
         for (i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
         }
 
-        ok = onion_getfriendip(onions[37]->onion_c, frnum, &ip_port);
+        c_sleep(50);
+    }
+
+    printf("Waiting for ips\n");
+
+    while (!first_ip || !last_ip) {
+        for (i = 0; i < NUM_ONIONS; ++i) {
+            do_onions(onions[i]);
+        }
 
         c_sleep(50);
     }
 
-    ck_assert_msg(ip_port.port == onions[7]->onion->net->port, "Port in returned ip not correct.");
+    onion_getfriendip(onions[NUM_LAST]->onion_c, frnum, &ip_port);
+    ck_assert_msg(ip_port.port == onions[NUM_FIRST]->onion->net->port, "Port in returned ip not correct.");
 
     for (i = 0; i < NUM_ONIONS; ++i) {
         kill_onions(onions[i]);
@@ -391,7 +452,7 @@ Suite *onion_suite(void)
     Suite *s = suite_create("Onion");
 
     DEFTESTCASE_SLOW(basic, 5);
-    //DEFTESTCASE_SLOW(announce, 50); //TODO: fix test.
+    DEFTESTCASE_SLOW(announce, 70);
     return s;
 }
 
