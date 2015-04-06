@@ -423,7 +423,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
         return NULL;
     }
     
-    if (create_recursive_mutex(cs->queue_mutex) != 0) {
+    if (pthread_mutex_init(cs->queue_mutex, NULL) != 0) {
         LOGGER_WARNING("Failed to create recursive mutex!");
         free(cs);
         return NULL;

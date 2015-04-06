@@ -47,7 +47,7 @@ typedef struct ToxAVCall_s {
     
     pthread_mutex_t mutex_audio_sending[1];
     pthread_mutex_t mutex_video_sending[1];
-    /* Only audio or video can be decoded at one time */
+    /* Only audio or video can be decoded at the time */
     pthread_mutex_t mutex_decoding[1];
     
     bool active;
@@ -129,7 +129,8 @@ ToxAV* toxav_new(Tox* tox, TOXAV_ERR_NEW* error)
         goto FAILURE;
     }
     
-    if (create_recursive_mutex(av->mutex) == -1) {
+//     if (create_recursive_mutex(av->mutex) == -1) {
+    if (pthread_mutex_init(av->mutex, NULL) == -1) {
         LOGGER_WARNING("Mutex creation failed!");
         rc = TOXAV_ERR_NEW_MALLOC;
         goto FAILURE;
@@ -204,26 +205,30 @@ uint32_t toxav_iteration_interval(const ToxAV* av)
 
 void toxav_iterate(ToxAV* av)
 {
-    if (av->calls == NULL)
+    pthread_mutex_lock(av->mutex);
+    if (av->calls == NULL) {
+        pthread_mutex_unlock(av->mutex);
         return;
+    }
     
     uint64_t start = current_time_monotonic();
     uint32_t rc = 500;
     
-    pthread_mutex_lock(av->mutex);
     ToxAVCall* i = av->calls[av->calls_head];
-    for (; i; i = i->next) {
+    while (i) {
         if (i->active) {
             pthread_mutex_lock(i->mutex_decoding);
             pthread_mutex_unlock(av->mutex);
+            
             cs_do(i->cs);
             rc = MIN(i->cs->last_packet_frame_duration, rc);
+            
+            pthread_mutex_lock(av->mutex);
             pthread_mutex_unlock(i->mutex_decoding);
-        } else
-            continue;
-        
-        pthread_mutex_lock(av->mutex);
+            i = i->next;
+        }
     }
+    pthread_mutex_unlock(av->mutex);
     
     av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
     av->dmsst += current_time_monotonic() - start;
@@ -1048,17 +1053,17 @@ void call_kill_transmission(ToxAVCall* call)
     
     call->active = 0;
     
+    rtp_kill(call->rtps[audio_index]);
+    call->rtps[audio_index] = NULL;
+    rtp_kill(call->rtps[video_index]);
+    call->rtps[video_index] = NULL;
+    
     pthread_mutex_lock(call->mutex_audio_sending);
     pthread_mutex_unlock(call->mutex_audio_sending);
     pthread_mutex_lock(call->mutex_video_sending);
     pthread_mutex_unlock(call->mutex_video_sending);
     pthread_mutex_lock(call->mutex_decoding);
     pthread_mutex_unlock(call->mutex_decoding);
-    
-    rtp_kill(call->rtps[audio_index]);
-    call->rtps[audio_index] = NULL;
-    rtp_kill(call->rtps[video_index]);
-    call->rtps[video_index] = NULL;
     
     cs_kill(call->cs);
     call->cs = NULL;

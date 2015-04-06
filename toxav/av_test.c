@@ -60,6 +60,12 @@ typedef struct {
     uint32_t state;
 } CallControl;
 
+struct toxav_thread_data {
+    ToxAV*  AliceAV;
+    ToxAV*  BobAV;
+    int32_t sig;
+};
+
 const char* vdout = "AV Test";
 uint32_t adout;
 
@@ -240,16 +246,23 @@ int iterate_tox(Tox* bootstrap, ToxAV* AliceAV, ToxAV* BobAV)
     tox_do(toxav_get_tox(AliceAV));
     tox_do(toxav_get_tox(BobAV));
     
-    toxav_iterate(AliceAV);
-    toxav_iterate(BobAV);
-    
-	int mina = MIN(tox_do_interval(toxav_get_tox(AliceAV)), toxav_iteration_interval(AliceAV));
-	int minb = MIN(tox_do_interval(toxav_get_tox(BobAV)), toxav_iteration_interval(BobAV));
-	
-    int rc = MIN(mina, minb);
+    uint32_t rc = MIN(tox_do_interval(toxav_get_tox(AliceAV)), tox_do_interval(toxav_get_tox(BobAV)));
 	c_sleep(rc);
-    
     return rc;
+}
+void* iterate_toxav (void * data)
+{   
+    struct toxav_thread_data* data_cast = data;
+    while (data_cast->sig == 0) {
+        toxav_iterate(data_cast->AliceAV);
+        toxav_iterate(data_cast->BobAV);
+//         c_sleep(1);
+    }
+    
+    data_cast->sig = 1;
+    
+    cvDestroyWindow(vdout);
+    pthread_exit(NULL);
 }
 
 int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
@@ -282,13 +295,11 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     }
     
     
-//     int rc = toxav_send_video_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL);
-    t_toxav_receive_video_frame_cb(av, 0, img->width, img->height, (const uint8_t**) planes, strides, NULL);
+    int rc = toxav_send_video_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL);
     free(planes[0]);
     free(planes[1]);
     free(planes[2]);
-//     return rc;
-    return 0;
+    return rc;
 }
 
 ALCdevice* open_audio_device(const char* audio_out_dev_name)
@@ -349,8 +360,10 @@ int print_help (const char* name)
     return 0;
 }
 
+
 int main (int argc, char** argv)
 {
+    cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
     struct stat st;
     
     /* AV files for testing */
@@ -409,32 +422,6 @@ int main (int argc, char** argv)
         }
     }
     
-    
-    cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
-    
-    CvCapture* capture = cvCreateFileCapture(vf_name);
-    if (!capture) {
-        printf("Failed to open video file: %s\n", vf_name);
-        exit(1);
-    }
-    
-    IplImage* frame;
-    time_t start_time = time(NULL);
-    
-    int frame_rate = cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
-    while(start_time + 4 > time(NULL)) {
-        frame = cvQueryFrame( capture );
-        if (!frame)
-            break;
-        
-        send_opencv_img(NULL, 0, frame);
-        c_sleep(1);
-    }
-    
-    cvReleaseCapture(&capture);
-    cvDestroyWindow(vdout);
-    
-    return 0;
     const char* audio_out_dev_name = NULL;
     
     int i = 0;
@@ -459,9 +446,6 @@ int main (int argc, char** argv)
     
     initialize_tox(&bootstrap, &AliceAV, &AliceCC, &BobAV, &BobCC);
     
-    
-    
-
 #define REGULAR_CALL_FLOW(A_BR, V_BR) \
 	do { \
         memset(&AliceCC, 0, sizeof(CallControl)); \
@@ -737,6 +721,18 @@ int main (int argc, char** argv)
         time_t start_time = time(NULL);
         time_t expected_time = af_info.frames / af_info.samplerate + 2;
         
+        
+        /* Start decode thread */
+        struct toxav_thread_data data = { 
+            .AliceAV = AliceAV, 
+            .BobAV = BobAV, 
+            .sig = 0
+        };
+        
+        pthread_t dect;
+        pthread_create(&dect, NULL, iterate_toxav, &data);
+        pthread_detach(dect);
+        
 		while ( start_time + expected_time > time(NULL) ) {
             int frame_size = (af_info.samplerate * frame_duration / 1000) * af_info.channels;
             
@@ -772,6 +768,10 @@ int main (int argc, char** argv)
         iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state == TOXAV_CALL_STATE_END);
 		
+        /* Stop decode thread */
+        data.sig = -1;
+        while(data.sig != 1);
+        
 		printf("Success!");
 	}
 	
@@ -783,7 +783,7 @@ int main (int argc, char** argv)
         
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 0, 500000, &rc);
+            toxav_call(AliceAV, 0, 0, 5000000, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -796,7 +796,7 @@ int main (int argc, char** argv)
         
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 0, 500000, &rc);
+            toxav_answer(BobAV, 0, 0, 5000000, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
@@ -806,7 +806,16 @@ int main (int argc, char** argv)
         
         iterate_tox(bootstrap, AliceAV, BobAV);
         
-        cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
+        /* Start decode thread */
+        struct toxav_thread_data data = { 
+            .AliceAV = AliceAV, 
+            .BobAV = BobAV, 
+            .sig = 0
+        };
+        
+        pthread_t dect;
+        pthread_create(&dect, NULL, iterate_toxav, &data);
+        pthread_detach(dect);
         
         CvCapture* capture = cvCreateFileCapture(vf_name);
         if (!capture) {
@@ -814,23 +823,17 @@ int main (int argc, char** argv)
             exit(1);
         }
         
-        IplImage* frame;
         time_t start_time = time(NULL);
-        
-        int frame_rate = cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
-        while(start_time + 10 > time(NULL)) {
-            frame = cvQueryFrame( capture );
+        while(start_time + 6 > time(NULL)) {
+            IplImage* frame = cvQueryFrame( capture );
             if (!frame)
                 break;
             
-//             cvShowImage(vdout, frame);
-//             cvWaitKey(frame_rate);
             send_opencv_img(AliceAV, 0, frame);
             iterate_tox(bootstrap, AliceAV, BobAV);
         }
         
         cvReleaseCapture(&capture);
-        cvDestroyWindow(vdout);
         
         { /* Hangup */
             TOXAV_ERR_CALL_CONTROL rc;
@@ -844,6 +847,11 @@ int main (int argc, char** argv)
         
         iterate_tox(bootstrap, AliceAV, BobAV);
         assert(BobCC.state == TOXAV_CALL_STATE_END);
+        
+        /* Stop decode thread */
+        printf("Stopping decode thread");
+        data.sig = -1;
+        while(data.sig != 1);
         
         printf("Success!");
     }
