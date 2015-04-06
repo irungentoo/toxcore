@@ -172,7 +172,7 @@ static int send_online_packet(Messenger *m, int32_t friendnumber)
                              m->friendlist[friendnumber].friendcon_id), &packet, sizeof(packet), 0) != -1;
 }
 
-static int send_offine_packet(Messenger *m, int friendcon_id)
+static int send_offline_packet(Messenger *m, int friendcon_id)
 {
     uint8_t packet = PACKET_ID_OFFLINE;
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
@@ -408,7 +408,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
 
     if (friend_con_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
-        send_offine_packet(m, m->friendlist[friendnumber].friendcon_id);
+        send_offline_packet(m, m->friendlist[friendnumber].friendcon_id);
     }
 
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
