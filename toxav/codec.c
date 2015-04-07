@@ -38,7 +38,7 @@
 #include "rtp.h"
 #include "codec.h"
 
-#define DEFAULT_JBUF 3
+#define DEFAULT_JBUF 6
 
 /* Good quality encode. */
 #define MAX_DECODE_TIME_US 0
@@ -324,17 +324,17 @@ void cs_do(CSession *cs)
     
     int success = 0;
     
-    pthread_mutex_lock(cs->queue_mutex);
+    LOGGED_LOCK(cs->queue_mutex);
     
     /********************* AUDIO *********************/
-    if (cs->audio_decoder) { /* If receiving enabled */
+    if (cs->audio_decoder) {
         RTPMessage *msg;
         
         /* The maximum for 120 ms 48 KHz audio */
         int16_t tmp[5760];
         
         while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
-            pthread_mutex_unlock(cs->queue_mutex);
+            LOGGED_UNLOCK(cs->queue_mutex);
             
             if (success == 2) {
                 LOGGER_DEBUG("OPUS correction");
@@ -377,7 +377,7 @@ void cs_do(CSession *cs)
                               cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
             }
             
-            pthread_mutex_lock(cs->queue_mutex);
+            LOGGED_LOCK(cs->queue_mutex);
         }
     }
     
@@ -387,7 +387,7 @@ void cs_do(CSession *cs)
         buffer_read(cs->vbuf_raw, &p);
         
         /* Leave space for (possibly) other thread to queue more data after we read it here */
-        pthread_mutex_unlock(cs->queue_mutex);
+        LOGGED_UNLOCK(cs->queue_mutex);
         
         rc = vpx_codec_decode(cs->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
         free(p);
@@ -411,7 +411,7 @@ void cs_do(CSession *cs)
         return;
     }
     
-    pthread_mutex_unlock(cs->queue_mutex);
+    LOGGED_UNLOCK(cs->queue_mutex);
 }
 
 CSession *cs_new(uint32_t peer_video_frame_piece_size)
@@ -423,7 +423,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
         return NULL;
     }
     
-    if (pthread_mutex_init(cs->queue_mutex, NULL) != 0) {
+    if (create_recursive_mutex(cs->queue_mutex) != 0) {
         LOGGER_WARNING("Failed to create recursive mutex!");
         free(cs);
         return NULL;
@@ -481,6 +481,8 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
     if ( !(cs->split_video_frame = calloc(VIDEOFRAME_PIECE_SIZE + VIDEOFRAME_HEADER_SIZE, 1)) )
         goto FAILURE;
     
+    cs->linfts = current_time_monotonic();
+    cs->lcfd = 10;
     /*++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
     
     /* Initialize encoders with default values */
@@ -621,6 +623,8 @@ int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling
     cs->last_encoding_bitrate = bitrate;
     cs->last_encoding_sampling_rate = sampling_rate;
     cs->last_encoding_channel_count = channels;
+    
+    LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
     return 0;
 }
 
@@ -628,9 +632,6 @@ int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling
 /* Called from RTP */
 void queue_message(RTPSession *session, RTPMessage *msg)
 {
-    /* This function is unregistered during call termination befor destroying
-     * Codec session so no need to check for validity of cs TODO properly check video cycle
-     */
     CSession *cs = session->cs;
 
     if (!cs) 
@@ -638,9 +639,9 @@ void queue_message(RTPSession *session, RTPMessage *msg)
 	
     /* Audio */
     if (session->payload_type == rtp_TypeAudio % 128) {
-        pthread_mutex_lock(cs->queue_mutex);
+        LOGGED_LOCK(cs->queue_mutex);
         int ret = jbuf_write(cs->j_buf, msg);
-        pthread_mutex_unlock(cs->queue_mutex);
+        LOGGED_UNLOCK(cs->queue_mutex);
 
         if (ret == -1) {
             rtp_free_msg(NULL, msg);
@@ -662,7 +663,7 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                 Payload *p = malloc(sizeof(Payload) + cs->frame_size);
 
                 if (p) {
-                    pthread_mutex_lock(cs->queue_mutex);
+                    LOGGED_LOCK(cs->queue_mutex);
 
                     if (buffer_full(cs->vbuf_raw)) {
                         LOGGER_DEBUG("Dropped video frame");
@@ -673,15 +674,19 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                         p->size = cs->frame_size;
                         memcpy(p->data, cs->frame_buf, cs->frame_size);
                     }
-
+                    
+                    /* Calculate time took for peer to send us this frame */
+                    uint32_t t_lcfd = current_time_monotonic() - cs->linfts;
+                    cs->lcfd = t_lcfd > 100 ? cs->lcfd : t_lcfd;
+                    cs->linfts = current_time_monotonic();
+                    
                     buffer_write(cs->vbuf_raw, p);
-                    pthread_mutex_unlock(cs->queue_mutex);
+                    LOGGED_UNLOCK(cs->queue_mutex);
                 } else {
                     LOGGER_WARNING("Allocation failed! Program might misbehave!");
                     goto end;
                 }
 
-                cs->last_timestamp = msg->header->timestamp;
                 cs->frameid_in = packet[0];
                 memset(cs->frame_buf, 0, cs->frame_size);
                 cs->frame_size = 0;

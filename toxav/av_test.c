@@ -51,8 +51,8 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 0
-#define TEST_TRANSFER_V 1
+#define TEST_TRANSFER_A 1
+#define TEST_TRANSFER_V 0
 
 
 typedef struct {
@@ -128,7 +128,6 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     IplImage* header = cvCreateImageHeader(sz, 1, 3);
     IplImage* img = cvGetImage(&mat, header);
     cvShowImage(vdout, img);
-    cvWaitKey(1);
     free(img_data);
 }
 void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
@@ -139,7 +138,7 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     void *user_data)
 {
     uint32_t bufid;
-    int32_t processed, queued;
+    int32_t processed = 0, queued = 16;
     alGetSourcei(adout, AL_BUFFERS_PROCESSED, &processed);
     alGetSourcei(adout, AL_BUFFERS_QUEUED, &queued);
 
@@ -147,12 +146,12 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
         uint32_t bufids[processed];
         alSourceUnqueueBuffers(adout, processed, bufids);
         alDeleteBuffers(processed - 1, bufids + 1);
-        bufid = bufids[0];
+//         bufid = bufids[0];
     }
-    else if(queued < 16)
+//     else if(queued < 16)
         alGenBuffers(1, &bufid);
-    else
-        return;
+//     else
+//         return;
     
 
     alBufferData(bufid, channels == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
@@ -246,22 +245,27 @@ int iterate_tox(Tox* bootstrap, ToxAV* AliceAV, ToxAV* BobAV)
     tox_do(toxav_get_tox(AliceAV));
     tox_do(toxav_get_tox(BobAV));
     
-    uint32_t rc = MIN(tox_do_interval(toxav_get_tox(AliceAV)), tox_do_interval(toxav_get_tox(BobAV)));
-	c_sleep(rc);
-    return rc;
+    return MIN(tox_do_interval(toxav_get_tox(AliceAV)), tox_do_interval(toxav_get_tox(BobAV)));
 }
 void* iterate_toxav (void * data)
 {   
     struct toxav_thread_data* data_cast = data;
+    
+//     cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
+    
     while (data_cast->sig == 0) {
         toxav_iterate(data_cast->AliceAV);
         toxav_iterate(data_cast->BobAV);
-//         c_sleep(1);
+        int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
+        
+        printf("\rToxAV interval: %d   ", rc);
+        fflush(stdout);
+        cvWaitKey(rc);
     }
     
     data_cast->sig = 1;
     
-    cvDestroyWindow(vdout);
+//     cvDestroyWindow(vdout);
     pthread_exit(NULL);
 }
 
@@ -314,19 +318,8 @@ ALCdevice* open_audio_device(const char* audio_out_dev_name)
     ALCcontext* out_ctx = alcCreateContext(rc, NULL);
     alcMakeContextCurrent(out_ctx);
     
-    uint32_t buffers[10];
-    alGenBuffers(10, buffers);
     alGenSources((uint32_t)1, &adout);
     alSourcei(adout, AL_LOOPING, AL_FALSE);
-    
-    int16_t zeros[10000];
-    memset(zeros, 0, sizeof(zeros));
-    
-    int i;
-    for ( i = 0; i < 10; ++i ) 
-        alBufferData(buffers[i], AL_FORMAT_STEREO16, zeros, sizeof(zeros), 48000);
-    
-    alSourceQueueBuffers(adout, 10, buffers);
     alSourcePlay(adout);
     
     return rc;
@@ -351,8 +344,10 @@ int print_audio_devices()
 int print_help (const char* name)
 {
     printf("Usage: %s -[a:v:o:dh]\n"
-           "-a <path> video input file\n"
+           "-a <path> audio input file\n"
+           "-b <ms> audio frame duration\n"
            "-v <path> video input file\n"
+           "-x <ms> video frame duration\n"
            "-o <idx> output audio device index\n"
            "-d print output audio devices\n"
            "-h print this help\n", name);
@@ -363,7 +358,6 @@ int print_help (const char* name)
 
 int main (int argc, char** argv)
 {
-    cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
     struct stat st;
     
     /* AV files for testing */
@@ -371,14 +365,35 @@ int main (int argc, char** argv)
     const char* vf_name = NULL;
     long audio_out_dev_idx = 0;
     
-    /* Pasre settings */
-    CHECK_ARG: switch (getopt(argc, argv, "a:v:o:dh")) {
+    int32_t audio_frame_duration = 20;
+    int32_t video_frame_duration = 10;
+    
+    /* Parse settings */
+    CHECK_ARG: switch (getopt(argc, argv, "a:b:v:x:o:dh")) {
     case 'a':
         af_name = optarg;
         goto CHECK_ARG;
+    case 'b':{
+        char *d;
+        audio_frame_duration = strtol(optarg, &d, 10);
+        if (*d) {
+            printf("Invalid value for argument: 'b'");
+            exit(1);
+        }
+        goto CHECK_ARG;
+    }
     case 'v':
         vf_name = optarg;
         goto CHECK_ARG;
+    case 'x':{
+        char *d;
+        video_frame_duration = strtol(optarg, &d, 10);
+        if (*d) {
+            printf("Invalid value for argument: 'x'");
+            exit(1);
+        }
+        goto CHECK_ARG;
+    }
     case 'o': {
         char *d;
         audio_out_dev_idx = strtol(optarg, &d, 10);
@@ -434,7 +449,40 @@ int main (int argc, char** argv)
     printf("Using audio file: %s\n", af_name);
     printf("Using video file: %s\n", vf_name);
     
+    if (0) {
+        /* Open audio file */
+        SF_INFO af_info;
+        SNDFILE* af_handle = sf_open(af_name, SFM_READ, &af_info);
+        if (af_handle == NULL)
+        {
+            printf("Failed to open the file.\n");
+            exit(1);
+        }
+        ALCdevice* audio_out_device = open_audio_device(audio_out_dev_name);
+        
+        
+        int16_t PCM[5760];
+        
+        time_t start_time = time(NULL);
+        time_t expected_time = af_info.frames / af_info.samplerate + 2;
+        
+        printf("Sample rate %d\n", af_info.samplerate);
+        while ( start_time + expected_time > time(NULL) ) {
+            int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
+            
+            int64_t count = sf_read_short(af_handle, PCM, frame_size);
+            if (count > 0)
+                t_toxav_receive_audio_frame_cb(NULL, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
+            c_sleep(audio_frame_duration);
+        }
     
+        
+        printf("Played file in: %lu\n", time(NULL) - start_time);
+        
+        alcCloseDevice(audio_out_device);
+        sf_close(af_handle);
+        return 0;
+    }
     /* START TOX NETWORK */
     
     Tox *bootstrap;
@@ -714,8 +762,6 @@ int main (int argc, char** argv)
         }
         ALCdevice* audio_out_device = open_audio_device(audio_out_dev_name);
         
-        
-        uint32_t frame_duration = 10;
         int16_t PCM[5760];
         
         time_t start_time = time(NULL);
@@ -724,8 +770,8 @@ int main (int argc, char** argv)
         
         /* Start decode thread */
         struct toxav_thread_data data = { 
-            .AliceAV = AliceAV, 
-            .BobAV = BobAV, 
+            .AliceAV = AliceAV,
+            .BobAV = BobAV,
             .sig = 0
         };
         
@@ -733,8 +779,9 @@ int main (int argc, char** argv)
         pthread_create(&dect, NULL, iterate_toxav, &data);
         pthread_detach(dect);
         
+        printf("Sample rate %d\n", af_info.samplerate);
 		while ( start_time + expected_time > time(NULL) ) {
-            int frame_size = (af_info.samplerate * frame_duration / 1000) * af_info.channels;
+            int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
             
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
@@ -746,7 +793,7 @@ int main (int argc, char** argv)
                 }
             }
             iterate_tox(bootstrap, AliceAV, BobAV);
-//             c_sleep(frame_duration);
+            c_sleep(audio_frame_duration);
 		}
     
         
@@ -770,7 +817,8 @@ int main (int argc, char** argv)
 		
         /* Stop decode thread */
         data.sig = -1;
-        while(data.sig != 1);
+        while(data.sig != 1)
+            pthread_yield();
         
 		printf("Success!");
 	}
@@ -824,13 +872,14 @@ int main (int argc, char** argv)
         }
         
         time_t start_time = time(NULL);
-        while(start_time + 6 > time(NULL)) {
+        while(start_time + 90 > time(NULL)) {
             IplImage* frame = cvQueryFrame( capture );
             if (!frame)
                 break;
             
             send_opencv_img(AliceAV, 0, frame);
             iterate_tox(bootstrap, AliceAV, BobAV);
+            c_sleep(video_frame_duration);
         }
         
         cvReleaseCapture(&capture);
@@ -849,9 +898,10 @@ int main (int argc, char** argv)
         assert(BobCC.state == TOXAV_CALL_STATE_END);
         
         /* Stop decode thread */
-        printf("Stopping decode thread");
+        printf("Stopping decode thread\n");
         data.sig = -1;
-        while(data.sig != 1);
+        while(data.sig != 1) 
+            pthread_yield();
         
         printf("Success!");
     }

@@ -61,8 +61,9 @@ typedef struct CSession_s {
     uint8_t *frame_buf; /* buffer for split video payloads */
     uint32_t frame_size; /* largest address written to in frame_buf for current input frame */
     uint8_t  frameid_in, frameid_out; /* id of input and output video frame */
-    uint32_t last_timestamp; /* calculating cycles */
-
+    uint64_t linfts; /* Last received frame time stamp */
+    uint32_t lcfd; /* Last calculated frame duration for incoming video payload */
+    
     /* Limits */
     uint32_t peer_video_frame_piece_size;
 

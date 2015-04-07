@@ -29,15 +29,15 @@
 #include "../toxcore/Messenger.h"
 
 #define LOGGED_LOCK(mutex) do { \
-    LOGGER_DEBUG("Locking mutex: %p", mutex);\
+    /*LOGGER_DEBUG("Locking mutex: %p", mutex);*/\
     pthread_mutex_lock(mutex);\
-    LOGGER_DEBUG("Locked mutex: %p", mutex);\
+    /*LOGGER_DEBUG("Locked mutex: %p", mutex);*/\
 } while(0)
 
 #define LOGGED_UNLOCK(mutex) do { \
-    LOGGER_DEBUG("Unlocking mutex: %p", mutex);\
+    /*LOGGER_DEBUG("Unlocking mutex: %p", mutex);*/\
     pthread_mutex_unlock(mutex);\
-    LOGGER_DEBUG("Unlocked mutex: %p", mutex);\
+    /*LOGGER_DEBUG("Unlocked mutex: %p", mutex);*/\
 } while(0)
 
 #define MAX_SEQU_NUM 65535
