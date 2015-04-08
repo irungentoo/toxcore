@@ -472,7 +472,7 @@ AC_C_BIGENDIAN
 # Checks for library functions.
 AC_FUNC_FORK
 AC_CHECK_FUNCS([gettimeofday memset socket strchr malloc])
-if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes") && (test "x$DISABLE_RT" != "xyes"); then
+if (test "x$WIN32" != "xyes") && (test "x$MACH" != "xyes") && (test "x${host_os#*openbsd}" == "x$host_os") && (test "x$DISABLE_RT" != "xyes"); then
     AC_CHECK_LIB(rt, clock_gettime,
         [
             RT_LIBS="-lrt"
