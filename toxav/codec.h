@@ -42,6 +42,9 @@
 
 #define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
+#define PACKED_AUDIO_SIZE(x) (x + 5)
+#define UNPACKED_AUDIO_SIZE(x) (x - 5)
+
 typedef struct CSession_s {
 
     /* VIDEO

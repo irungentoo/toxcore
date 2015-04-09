@@ -38,7 +38,7 @@
 #include "rtp.h"
 #include "codec.h"
 
-#define DEFAULT_JBUF 6
+#define DEFAULT_JBUF 3
 
 /* Good quality encode. */
 #define MAX_DECODE_TIME_US 0
@@ -342,39 +342,59 @@ void cs_do(CSession *cs)
                                 (cs->last_packet_sampling_rate * cs->last_packet_frame_duration / 1000) *
                                  cs->last_packet_channel_count, 1);
             } else {
-                /* Get values from packet and decode.
-                 * It also checks for validity of an opus packet
-                 */
+                /* Get values from packet and decode. */
+                /* NOTE: This didn't work very well
                 rc = convert_bw_to_sampling_rate(opus_packet_get_bandwidth(msg->data));
                 if (rc != -1) {
                     cs->last_packet_sampling_rate = rc;
-                    cs->last_packet_channel_count = opus_packet_get_nb_channels(msg->data);
-                
-                    cs->last_packet_frame_duration = 
-                        ( opus_packet_get_samples_per_frame(msg->data, cs->last_packet_sampling_rate) * 1000 )
-                        / cs->last_packet_sampling_rate;
-                    
-                    /* TODO FIXME WARNING calculate properly according to propper channel count */
-                    cs->last_packet_frame_duration /= cs->last_packet_channel_count;
                 } else {
                     LOGGER_WARNING("Failed to load packet values!");
                     rtp_free_msg(NULL, msg);
                     continue;
-                }
+                }*/
                 
-                rc = opus_decode(cs->audio_decoder, msg->data, msg->length, tmp, 5760, 0);
+                
+                /* Pick up sampling rate from packet */
+                memcpy(&cs->last_packet_sampling_rate, msg->data, 4);
+                cs->last_packet_sampling_rate = ntohl(cs->last_packet_sampling_rate);
+                
+                cs->last_packet_channel_count = opus_packet_get_nb_channels(msg->data + 4);
+                rc = opus_decode(cs->audio_decoder, msg->data + 4, msg->length - 4, tmp, 5760, 0);
                 rtp_free_msg(NULL, msg);
             }
             
             if (rc < 0) {
                 LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
             } else if (cs->acb.first) {
-                /* Play */
-				LOGGER_DEBUG("Playing audio frame size: %d; channels: %d; srate: %d; duration %d", rc, 
-                             cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->last_packet_frame_duration);
                 
-                cs->acb.first(cs->av, cs->friend_id, tmp, rc,
-                              cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
+                /* Extract channels */
+                int16_t left[rc/2];
+                int16_t right[rc/2];
+                int i = 0;
+                for (; i < rc/2; i ++) {
+                    left[i] = tmp[i * 2];
+                    right[i] = tmp[(i * 2) + 1];
+                }
+                
+                if (memcmp(left, right, sizeof(int16_t)) == 0) {
+                    cs->last_packet_channel_count = 1;
+                    cs->last_packet_frame_duration = (rc * 1000) / cs->last_packet_sampling_rate * cs->last_packet_channel_count;
+                    
+                    LOGGER_DEBUG("Playing mono audio frame size: %d; srate: %d; duration %d", rc, 
+                                 cs->last_packet_sampling_rate, cs->last_packet_frame_duration);
+                    
+                    cs->acb.first(cs->av, cs->friend_id, right, rc / 2,
+                                cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
+                } else {
+                    cs->last_packet_channel_count = 2;
+                    cs->last_packet_frame_duration = (rc * 1000) / cs->last_packet_sampling_rate * cs->last_packet_channel_count;
+                    
+                    LOGGER_DEBUG("Playing stereo audio frame size: %d; channels: %d; srate: %d; duration %d", rc, 
+                                cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->last_packet_frame_duration);
+                    
+                    cs->acb.first(cs->av, cs->friend_id, tmp, rc,
+                                cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
+                }
             }
             
             LOGGED_LOCK(cs->queue_mutex);
@@ -438,7 +458,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
      */
     
     int status;
-    cs->audio_decoder = opus_decoder_create(48000, 1, &status ); /* NOTE: Must be mono */
+    cs->audio_decoder = opus_decoder_create(48000, 2, &status ); /* NOTE: Must be stereo */
     
     if ( status != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(status));
@@ -482,7 +502,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
         goto FAILURE;
     
     cs->linfts = current_time_monotonic();
-    cs->lcfd = 10;
+    cs->lcfd = 60;
     /*++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
     
     /* Initialize encoders with default values */
@@ -578,6 +598,8 @@ const uint8_t *cs_iterate_split_video_frame(CSession *cs, uint16_t *size)
 
     return cs->split_video_frame;
 }
+
+
 
 int cs_reconfigure_video_encoder(CSession* cs, int32_t bitrate, uint16_t width, uint16_t height)
 {

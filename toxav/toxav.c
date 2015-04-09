@@ -223,7 +223,7 @@ void toxav_iterate(ToxAV* av)
             if (i->last_self_capabilities & msi_CapRAudio) /* Receiving audio */
                 rc = MIN(i->cs->last_packet_frame_duration, rc);
             if (i->last_self_capabilities & msi_CapRVideo) /* Receiving video */
-                rc = MIN(i->cs->lcfd, rc);
+                rc = MIN(i->cs->lcfd, rc); /* TODO handle on/off */
             
             uint32_t fid = i->friend_id;
             
@@ -712,9 +712,11 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
             goto END;
         }
         
-        LOGGER_DEBUG("Sending audio frame size: %d; channels: %d; srate: %d", sample_count, channels, sampling_rate);
-        uint8_t dest[sample_count * channels * sizeof(int16_t)];
-        int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest, sizeof (dest));
+        uint8_t dest[sample_count * channels + sizeof(sampling_rate)]; /* This is more than enough always */
+        
+        sampling_rate = htonl(sampling_rate);
+        memcpy(dest, &sampling_rate, sizeof(sampling_rate));
+        int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest + sizeof(sampling_rate), sizeof(dest) - sizeof(sampling_rate));
         
         if (vrc < 0) {
             LOGGER_WARNING("Failed to encode frame");
@@ -723,7 +725,10 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
             goto END;
         }
         
-		if (rtp_send_msg(call->rtps[audio_index], dest, vrc) != 0) {
+        LOGGER_DEBUG("Sending encoded audio frame size: %d; channels: %d; srate: %d", vrc, channels,
+                     ntohl(sampling_rate));
+        
+		if (rtp_send_msg(call->rtps[audio_index], dest, vrc + sizeof(sampling_rate)) != 0) {
 			LOGGER_WARNING("Failed to send audio packet");
 			rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
 		}

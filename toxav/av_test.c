@@ -141,28 +141,30 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     int32_t processed = 0, queued = 16;
     alGetSourcei(adout, AL_BUFFERS_PROCESSED, &processed);
     alGetSourcei(adout, AL_BUFFERS_QUEUED, &queued);
-
+    
     if(processed) {
         uint32_t bufids[processed];
         alSourceUnqueueBuffers(adout, processed, bufids);
         alDeleteBuffers(processed - 1, bufids + 1);
-//         bufid = bufids[0];
+        bufid = bufids[0];
     }
-//     else if(queued < 16)
+//     else if(queued < 16) {
         alGenBuffers(1, &bufid);
+//     }
 //     else
 //         return;
     
-
+    
     alBufferData(bufid, channels == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
-                 pcm, sample_count * 2, sampling_rate);
+                 pcm, sample_count * 2 * channels, sampling_rate);
     alSourceQueueBuffers(adout, 1, &bufid);
-
+    
     int32_t state;
     alGetSourcei(adout, AL_SOURCE_STATE, &state);
-
-    if(state != AL_PLAYING) 
+    if(state != AL_PLAYING) {
+        printf("Here\n");
         alSourcePlay(adout);
+    }
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -260,7 +262,8 @@ void* iterate_toxav (void * data)
         
         printf("\rToxAV interval: %d   ", rc);
         fflush(stdout);
-        cvWaitKey(rc);
+//         cvWaitKey(rc);
+        c_sleep(rc/2);
     }
     
     data_cast->sig = 1;
@@ -319,7 +322,7 @@ ALCdevice* open_audio_device(const char* audio_out_dev_name)
     alcMakeContextCurrent(out_ctx);
     
     alGenSources((uint32_t)1, &adout);
-    alSourcei(adout, AL_LOOPING, AL_FALSE);
+    alSourcei(adout, AL_LOOPING, AL_FALSE);    
     alSourcePlay(adout);
     
     return rc;
@@ -730,7 +733,7 @@ int main (int argc, char** argv)
         
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 48, 0, &rc);
+            toxav_call(AliceAV, 0, 8, 0, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -785,7 +788,6 @@ int main (int argc, char** argv)
             
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
-//                 t_toxav_receive_audio_frame_cb(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
                 TOXAV_ERR_SEND_FRAME rc;
                 if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
                     printf("Error sending frame of size %ld: %d\n", count, rc);
