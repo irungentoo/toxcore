@@ -2148,8 +2148,8 @@ static void do_peer_connections(Messenger *m, int groupnumber)
         if (is_timeout(chat->group[i].last_rcvd_ping, GROUP_PEER_TIMEOUT)) {
             gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
         } else {
-            gcc_resend_packets(m, chat, i);
             try_gc_peer_sync(chat, i);
+            gcc_resend_packets(m, chat, i);
         }
 
         if (i >= chat->numpeers)
