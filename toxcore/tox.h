@@ -1418,8 +1418,8 @@ enum TOX_FILE_KIND {
  * primarily for validating cached avatars. This use is highly recommended to
  * avoid unnecessary avatar updates.
  *
- * If length is zero or data is NULL, the hash will contain all zero. If hash is
- * NULL, the function returns false, otherwise it returns true.
+ * If hash is NULL or data is NULL while length is not 0 the function returns false,
+ * otherwise it returns true.
  *
  * This function is a wrapper to internal message-digest functions.
  *

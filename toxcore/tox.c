@@ -851,7 +851,7 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void
 
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
 {
-    if (!hash || !data) {
+    if (!hash || (length && !data)) {
         return 0;
     }
 
