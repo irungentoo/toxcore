@@ -137,25 +137,19 @@ typedef struct GC_PeerAddress {
 } GC_PeerAddress;
 
 typedef struct {
-    GC_PeerAddress addr;
-
+    GC_PeerAddress   addr;
     uint32_t    peer_pk_hash;    /* 32-bit hash of public_key */
-
     uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
     uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
-
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
-
     uint8_t     status;
     uint8_t     ignore;
-
     uint8_t     verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
-
     uint8_t     role;
-
     uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
+    uint64_t    peer_sync_timer;
 } GC_GroupPeer;
 
 typedef struct {
@@ -168,7 +162,6 @@ typedef struct {
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     chat_secret_key[EXT_SECRET_KEY];
     uint64_t    creation_time;
-
     GC_ChatOps   *ops;
 } GC_ChatCredentials;
 
@@ -177,7 +170,7 @@ typedef struct GC_Connection GC_Connection;
 
 typedef struct GC_Chat {
     Networking_Core *net;
-    GC_GroupPeer   *group;
+    GC_GroupPeer    *group;
 
     uint32_t    numpeers;
     uint16_t    maxpeers;
@@ -186,13 +179,11 @@ typedef struct GC_Chat {
     /* The chat_id used to join the group is the signature portion of the key */
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint32_t    chat_id_hash;   /* 32-bit hash of the chat_id */
-
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
 
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
-
     uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
     uint16_t    group_name_len;
 
@@ -200,7 +191,6 @@ typedef struct GC_Chat {
     uint64_t    last_join_attempt;
     uint8_t     join_attempts;
     uint64_t    last_peer_join_time;    /* last time a peer joined the group */
-    uint64_t    last_synced_time;
     uint64_t    last_sent_ping_time;
     uint64_t    self_last_rcvd_ping;
 

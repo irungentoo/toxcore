@@ -30,7 +30,7 @@
 #include <pthread.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
-#define power_of_2(x) (((x) != 0) && (((x) & ((~(x)) + 1)) == (x)))
+#define POWER_OF_2(x) (((x) != 0) && (((x) & ((~(x)) + 1)) == (x)))
 
 /* Enlarges static buffers returned by id_toa and ip_ntoa so that
  * they can be used multiple times in same output
