@@ -26,11 +26,27 @@
 
 #include "TCP_client.h"
 
-#define TCP_CONN_STATUS_NONE 0
+#define TCP_CONN_NONE 0
+#define TCP_CONN_VALID 1
+
+#define TCP_CONNECTIONS_STATUS_NONE 0
+#define TCP_CONNECTIONS_STATUS_REGISTERED 1
+#define TCP_CONNECTIONS_STATUS_ONLINE 2
+
+#define MAX_FRIEND_TCP_CONNECTIONS 4
+
 
 typedef struct {
     uint8_t status;
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
+
+    struct {
+        uint32_t tcp_connection;
+        unsigned int status;
+        unsigned int connection_id;
+    } connections[MAX_FRIEND_TCP_CONNECTIONS];
+
+    int id; /* id used in callbacks. */
 } TCP_Connection_to;
 
 typedef struct {
@@ -48,7 +64,15 @@ typedef struct {
     TCP_con *tcp_connections;
     uint32_t tcp_connections_length; /* Length of tcp_connections array. */
 
+    int (*tcp_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
+    void *tcp_data_callback_object;
 
+    int (*tcp_oob_callback)(void *object, const uint8_t *public_key, const uint8_t *relay_pk, const uint8_t *data,
+                            uint16_t length);
+    void *tcp_oob_callback_object;
+
+    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
+    void *tcp_onion_callback_object;
 } TCP_Connections;
 
 
