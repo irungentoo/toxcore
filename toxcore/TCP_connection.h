@@ -28,6 +28,7 @@
 
 #define TCP_CONN_NONE 0
 #define TCP_CONN_VALID 1
+#define TCP_CONN_CONNECTED 2
 
 #define TCP_CONNECTIONS_STATUS_NONE 0
 #define TCP_CONNECTIONS_STATUS_REGISTERED 1
@@ -73,6 +74,8 @@ typedef struct {
 
     int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *tcp_onion_callback_object;
+
+    TCP_Proxy_Info proxy_info;
 } TCP_Connections;
 
 
