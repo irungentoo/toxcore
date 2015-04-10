@@ -145,11 +145,12 @@ typedef struct {
     uint16_t    nick_len;
     uint8_t     status;
     uint8_t     ignore;
-    uint8_t     verified; /* is peer verified, e.g. was invited by verified peer. Recursion. Problems? */
     uint8_t     role;
     uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
+    bool        confirmed;  /* true if we have successfully handshaked with this peer */
+    bool        verified; /* true if this peer's invite certificate is legitimate */
 } GC_GroupPeer;
 
 typedef struct {
@@ -162,7 +163,7 @@ typedef struct {
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint8_t     chat_secret_key[EXT_SECRET_KEY];
     uint64_t    creation_time;
-    GC_ChatOps   *ops;
+    GC_ChatOps  *ops;
 } GC_ChatCredentials;
 
 typedef struct GC_Announce GC_Announce;

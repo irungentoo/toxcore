@@ -86,7 +86,7 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum);
 
 void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber);
 
-/* called when a peer leaves the group */
+/* called when a peer leaves the group or we want to reset the lossless connection */
 void gcc_peer_cleanup(GC_Connection *gconn);
 
 /* called on group exit */
