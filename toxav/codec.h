@@ -93,6 +93,9 @@ typedef struct CSession_s {
     int32_t last_packet_channel_count;
     int32_t last_packet_sampling_rate;
     int32_t last_packet_frame_duration;
+    int32_t last_decoding_sampling_rate;
+    int32_t last_decoding_channel_count;
+    uint64_t last_decoder_reconfiguration;
     struct JitterBuffer_s *j_buf;
 
 

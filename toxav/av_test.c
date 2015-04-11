@@ -1,14 +1,12 @@
 #include "../toxav/toxav.h"
 #include "../toxcore/tox.h"
 
-/* For playing audio data */
-#include <AL/al.h>
-#include <AL/alc.h>
-
-/* Processing wav's */
+/* Playing audio data */
+#include <portaudio.h>
+/* Reading audio */
 #include <sndfile.h>
 
-/* For reading and displaying video data */
+/* Reading and Displaying video data */
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <opencv/cvwimage.h>
@@ -22,7 +20,6 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-
 
 #define c_sleep(x) usleep(1000*x)
 
@@ -67,7 +64,7 @@ struct toxav_thread_data {
 };
 
 const char* vdout = "AV Test";
-uint32_t adout;
+PaStream* adout = NULL;
 
 const char* stringify_state(TOXAV_CALL_STATE s)
 {
@@ -137,34 +134,7 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint32_t sampling_rate,
                                     void *user_data)
 {
-    uint32_t bufid;
-    int32_t processed = 0, queued = 16;
-    alGetSourcei(adout, AL_BUFFERS_PROCESSED, &processed);
-    alGetSourcei(adout, AL_BUFFERS_QUEUED, &queued);
-    
-    if(processed) {
-        uint32_t bufids[processed];
-        alSourceUnqueueBuffers(adout, processed, bufids);
-        alDeleteBuffers(processed - 1, bufids + 1);
-        bufid = bufids[0];
-    }
-//     else if(queued < 16) {
-        alGenBuffers(1, &bufid);
-//     }
-//     else
-//         return;
-    
-    
-    alBufferData(bufid, channels == 1 ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
-                 pcm, sample_count * 2 * channels, sampling_rate);
-    alSourceQueueBuffers(adout, 1, &bufid);
-    
-    int32_t state;
-    alGetSourcei(adout, AL_SOURCE_STATE, &state);
-    if(state != AL_PLAYING) {
-        printf("Here\n");
-        alSourcePlay(adout);
-    }
+    Pa_WriteStream(adout, pcm, sample_count/channels);
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -260,10 +230,8 @@ void* iterate_toxav (void * data)
         toxav_iterate(data_cast->BobAV);
         int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
         
-        printf("\rToxAV interval: %d   ", rc);
-        fflush(stdout);
 //         cvWaitKey(rc);
-        c_sleep(rc/2);
+        c_sleep(10);
     }
     
     data_cast->sig = 1;
@@ -309,36 +277,13 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     return rc;
 }
 
-ALCdevice* open_audio_device(const char* audio_out_dev_name)
-{
-    ALCdevice* rc;
-    rc = alcOpenDevice(audio_out_dev_name);
-    if ( !rc ) {
-        printf("Failed to open playback device: %s: %d\n", audio_out_dev_name, alGetError());
-        exit(1);
-    }
-    
-    ALCcontext* out_ctx = alcCreateContext(rc, NULL);
-    alcMakeContextCurrent(out_ctx);
-    
-    alGenSources((uint32_t)1, &adout);
-    alSourcei(adout, AL_LOOPING, AL_FALSE);    
-    alSourcePlay(adout);
-    
-    return rc;
-}
-
 int print_audio_devices()
 {
-    const char *device;
-
-    printf("Default output device: %s\n", alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER));
-    printf("Output devices:\n");
-    
     int i = 0;
-    for(device = alcGetString(NULL, ALC_DEVICE_SPECIFIER); *device; 
-        device += strlen( device ) + 1, ++i) {
-        printf("%d) %s\n", i, device);
+    for (i = 0; i < Pa_GetDeviceCount(); ++i) {
+        const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
+        if (info)
+            printf("%d) %s\n", i, info->name);
     }
     
     return 0;
@@ -361,12 +306,13 @@ int print_help (const char* name)
 
 int main (int argc, char** argv)
 {
+    Pa_Initialize();
     struct stat st;
     
     /* AV files for testing */
     const char* af_name = NULL;
     const char* vf_name = NULL;
-    long audio_out_dev_idx = 0;
+    long audio_out_dev_idx = -1;
     
     int32_t audio_frame_duration = 20;
     int32_t video_frame_duration = 10;
@@ -440,52 +386,66 @@ int main (int argc, char** argv)
         }
     }
     
-    const char* audio_out_dev_name = NULL;
+    if (audio_out_dev_idx < 0)
+        audio_out_dev_idx = Pa_GetDefaultOutputDevice();
     
-    int i = 0;
-    for(audio_out_dev_name = alcGetString(NULL, ALC_DEVICE_SPECIFIER); i < audio_out_dev_idx;
-        audio_out_dev_name += strlen( audio_out_dev_name ) + 1, ++i)
-        if (!(audio_out_dev_name + strlen( audio_out_dev_name ) + 1))
-            break;
-	
-    printf("Using audio device: %s\n", audio_out_dev_name);
-    printf("Using audio file: %s\n", af_name);
-    printf("Using video file: %s\n", vf_name);
+    const PaDeviceInfo* audio_dev = Pa_GetDeviceInfo(audio_out_dev_idx);
+    if (!audio_dev) {
+        fprintf(stderr, "Device under index: %ld invalid", audio_out_dev_idx);
+        return 1;
+    }
     
     if (0) {
-        /* Open audio file */
+        SNDFILE* af_handle;
         SF_INFO af_info;
-        SNDFILE* af_handle = sf_open(af_name, SFM_READ, &af_info);
-        if (af_handle == NULL)
-        {
+        
+        /* Open audio file */
+        af_handle = sf_open(af_name, SFM_READ, &af_info);
+        if (af_handle == NULL) {
             printf("Failed to open the file.\n");
             exit(1);
         }
-        ALCdevice* audio_out_device = open_audio_device(audio_out_dev_name);
+        
+        int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
+        
+        struct PaStreamParameters output;
+        output.device = audio_out_dev_idx; /* default output device */
+        output.channelCount = af_info.channels;
+        output.sampleFormat = paInt16;
+        output.suggestedLatency = audio_dev->defaultHighOutputLatency;
+        output.hostApiSpecificStreamInfo = NULL;
         
         
-        int16_t PCM[5760];
+        PaError err = Pa_OpenStream(&adout, NULL, &output, af_info.samplerate, frame_size, paNoFlag, NULL, NULL);
+        assert(err == paNoError);
+        
+        err = Pa_StartStream(adout);
+        assert(err == paNoError);
+        
+        int16_t PCM[frame_size];
         
         time_t start_time = time(NULL);
         time_t expected_time = af_info.frames / af_info.samplerate + 2;
         
         printf("Sample rate %d\n", af_info.samplerate);
         while ( start_time + expected_time > time(NULL) ) {
-            int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
             
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
-            if (count > 0)
+            if (count > 0) {
                 t_toxav_receive_audio_frame_cb(NULL, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
-            c_sleep(audio_frame_duration);
+            }
+            
+            c_sleep(audio_frame_duration / 2);
         }
-    
         
-        printf("Played file in: %lu\n", time(NULL) - start_time);
-        
-        alcCloseDevice(audio_out_device);
-        sf_close(af_handle);
+        Pa_Terminate();
         return 0;
     }
+    
+    printf("Using audio device: %s\n", audio_dev->name);
+    printf("Using audio file: %s\n", af_name);
+    printf("Using video file: %s\n", vf_name);
+    
     /* START TOX NETWORK */
     
     Tox *bootstrap;
@@ -733,7 +693,7 @@ int main (int argc, char** argv)
         
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 8, 0, &rc);
+            toxav_call(AliceAV, 0, 48, 0, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -746,7 +706,7 @@ int main (int argc, char** argv)
 		
 		{ /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 64, 0, &rc);
+            toxav_answer(BobAV, 0, 48, 0, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
@@ -758,12 +718,26 @@ int main (int argc, char** argv)
 		
         /* Open audio file */
         af_handle = sf_open(af_name, SFM_READ, &af_info);
-        if (af_handle == NULL)
-        {
+        if (af_handle == NULL) {
             printf("Failed to open the file.\n");
             exit(1);
         }
-        ALCdevice* audio_out_device = open_audio_device(audio_out_dev_name);
+        
+        
+        int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
+        
+        struct PaStreamParameters output;
+        output.device = audio_out_dev_idx;
+        output.channelCount = af_info.channels;
+        output.sampleFormat = paInt16;
+        output.suggestedLatency = audio_dev->defaultHighOutputLatency;
+        output.hostApiSpecificStreamInfo = NULL;
+        
+        PaError err = Pa_OpenStream(&adout, NULL, &output, af_info.samplerate, frame_size, paNoFlag, NULL, NULL);
+        assert(err == paNoError);
+        
+        err = Pa_StartStream(adout);
+        assert(err == paNoError);
         
         int16_t PCM[5760];
         
@@ -784,24 +758,22 @@ int main (int argc, char** argv)
         
         printf("Sample rate %d\n", af_info.samplerate);
 		while ( start_time + expected_time > time(NULL) ) {
-            int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
             
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
                 TOXAV_ERR_SEND_FRAME rc;
-                if (toxav_send_audio_frame(AliceAV, 0, PCM, count, af_info.channels, af_info.samplerate, &rc) == false) {
+                if (toxav_send_audio_frame(AliceAV, 0, PCM, count/af_info.channels, af_info.channels, af_info.samplerate, &rc) == false) {
                     printf("Error sending frame of size %ld: %d\n", count, rc);
-                    exit(1);
+//                     exit(1);
                 }
             }
             iterate_tox(bootstrap, AliceAV, BobAV);
-            c_sleep(audio_frame_duration);
+            c_sleep(30);
 		}
     
         
 		printf("Played file in: %lu\n", time(NULL) - start_time);
         
-        alcCloseDevice(audio_out_device);
         sf_close(af_handle);
 		
 		{ /* Hangup */

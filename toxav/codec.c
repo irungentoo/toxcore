@@ -175,7 +175,7 @@ static int jbuf_write(JitterBuffer *q, RTPMessage *m)
     unsigned int num = sequnum % q->size;
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
-        LOGGER_DEBUG("Clearing jitter: %p", q);
+        LOGGER_DEBUG("Clearing filled jitter buffer: %p", q);
         
         jbuf_clear(q);
         q->bottom = sequnum - q->capacity;
@@ -309,6 +309,32 @@ bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bitrate)
     return true;
 }
 
+bool reconfigure_audio_decoder(CSession* cs, int32_t sampling_rate, int8_t channels)
+{
+    if (sampling_rate != cs->last_decoding_sampling_rate || channels != cs->last_decoding_channel_count) {
+        if (current_time_monotonic() - cs->last_decoder_reconfiguration < 500)
+            return false;
+        
+        int status;
+        OpusDecoder* new_dec = opus_decoder_create(sampling_rate, channels, &status );
+        if ( status != OPUS_OK ) {
+            LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(status));
+            return false;
+        }
+        
+        cs->last_decoding_sampling_rate = sampling_rate;
+        cs->last_decoding_channel_count = channels;
+        cs->last_decoder_reconfiguration = current_time_monotonic();
+        
+        opus_decoder_destroy(cs->audio_decoder);
+        cs->audio_decoder = new_dec;
+        
+        LOGGER_DEBUG("Reconfigured audio decoder sr: %d cc: %d", sampling_rate, channels);
+    }
+    
+    return true;
+}
+
 /* PUBLIC */
 
 void cs_do(CSession *cs)
@@ -339,7 +365,7 @@ void cs_do(CSession *cs)
             if (success == 2) {
                 LOGGER_DEBUG("OPUS correction");
                 rc = opus_decode(cs->audio_decoder, NULL, 0, tmp,
-                                (cs->last_packet_sampling_rate * cs->last_packet_frame_duration / 1000) *
+                                (cs->last_packet_sampling_rate * cs->last_packet_frame_duration / 1000) /
                                  cs->last_packet_channel_count, 1);
             } else {
                 /* Get values from packet and decode. */
@@ -359,6 +385,17 @@ void cs_do(CSession *cs)
                 cs->last_packet_sampling_rate = ntohl(cs->last_packet_sampling_rate);
                 
                 cs->last_packet_channel_count = opus_packet_get_nb_channels(msg->data + 4);
+                
+                /* 
+                 * NOTE: even though OPUS supports decoding mono frames with stereo decoder and vice versa,
+                 * it didn't work quite well.
+                 */
+                if (!reconfigure_audio_decoder(cs, cs->last_packet_sampling_rate, cs->last_packet_channel_count)) {
+                    LOGGER_WARNING("Failed to reconfigure decoder!");
+                    rtp_free_msg(NULL, msg);
+                    continue;
+                }
+                
                 rc = opus_decode(cs->audio_decoder, msg->data + 4, msg->length - 4, tmp, 5760, 0);
                 rtp_free_msg(NULL, msg);
             }
@@ -366,35 +403,12 @@ void cs_do(CSession *cs)
             if (rc < 0) {
                 LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
             } else if (cs->acb.first) {
+                cs->last_packet_channel_count = 2;
+                cs->last_packet_frame_duration = (rc * 1000) / cs->last_packet_sampling_rate * cs->last_packet_channel_count;
                 
-                /* Extract channels */
-                int16_t left[rc/2];
-                int16_t right[rc/2];
-                int i = 0;
-                for (; i < rc/2; i ++) {
-                    left[i] = tmp[i * 2];
-                    right[i] = tmp[(i * 2) + 1];
-                }
+                cs->acb.first(cs->av, cs->friend_id, tmp, rc * cs->last_packet_channel_count,
+                            cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
                 
-                if (memcmp(left, right, sizeof(int16_t)) == 0) {
-                    cs->last_packet_channel_count = 1;
-                    cs->last_packet_frame_duration = (rc * 1000) / cs->last_packet_sampling_rate * cs->last_packet_channel_count;
-                    
-                    LOGGER_DEBUG("Playing mono audio frame size: %d; srate: %d; duration %d", rc, 
-                                 cs->last_packet_sampling_rate, cs->last_packet_frame_duration);
-                    
-                    cs->acb.first(cs->av, cs->friend_id, right, rc / 2,
-                                cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
-                } else {
-                    cs->last_packet_channel_count = 2;
-                    cs->last_packet_frame_duration = (rc * 1000) / cs->last_packet_sampling_rate * cs->last_packet_channel_count;
-                    
-                    LOGGER_DEBUG("Playing stereo audio frame size: %d; channels: %d; srate: %d; duration %d", rc, 
-                                cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->last_packet_frame_duration);
-                    
-                    cs->acb.first(cs->av, cs->friend_id, tmp, rc,
-                                cs->last_packet_channel_count, cs->last_packet_sampling_rate, cs->acb.second);
-                }
             }
             
             LOGGED_LOCK(cs->queue_mutex);
@@ -458,12 +472,16 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
      */
     
     int status;
-    cs->audio_decoder = opus_decoder_create(48000, 2, &status ); /* NOTE: Must be stereo */
+    cs->audio_decoder = opus_decoder_create(48000, 2, &status );
     
     if ( status != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(status));
         goto FAILURE;
     }
+    
+    cs->last_decoding_channel_count = 2;
+    cs->last_decoding_sampling_rate = 48000;
+    cs->last_decoder_reconfiguration = 0; /* Make it possible to reconfigure straight away */
     
     /* These need to be set in order to properly
      * do error correction with opus */

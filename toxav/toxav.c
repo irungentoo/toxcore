@@ -237,7 +237,8 @@ void toxav_iterate(ToxAV* av)
     }
     LOGGED_UNLOCK(av->mutex);
     
-    av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
+//     av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
+    av->interval = rc < 5 ? 1: rc - 5;
     av->dmsst += current_time_monotonic() - start;
     
     if (++av->dmssc == 3) {
@@ -712,21 +713,22 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
             goto END;
         }
         
-        uint8_t dest[sample_count * channels + sizeof(sampling_rate)]; /* This is more than enough always */
+        uint8_t dest[sample_count + sizeof(sampling_rate)]; /* This is more than enough always */
         
         sampling_rate = htonl(sampling_rate);
         memcpy(dest, &sampling_rate, sizeof(sampling_rate));
-        int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count, dest + sizeof(sampling_rate), sizeof(dest) - sizeof(sampling_rate));
+        int vrc = opus_encode(call->cs->audio_encoder, pcm, sample_count,
+                              dest + sizeof(sampling_rate), sizeof(dest) - sizeof(sampling_rate));
         
         if (vrc < 0) {
-            LOGGER_WARNING("Failed to encode frame");
+            LOGGER_WARNING("Failed to encode frame %s", opus_strerror(vrc));
             LOGGED_UNLOCK(call->mutex_audio_sending);
             rc = TOXAV_ERR_SEND_FRAME_INVALID;
             goto END;
         }
         
-        LOGGER_DEBUG("Sending encoded audio frame size: %d; channels: %d; srate: %d", vrc, channels,
-                     ntohl(sampling_rate));
+//         LOGGER_DEBUG("Sending encoded audio frame size: %d; channels: %d; srate: %d", vrc, channels,
+//                      ntohl(sampling_rate));
         
 		if (rtp_send_msg(call->rtps[audio_index], dest, vrc + sizeof(sampling_rate)) != 0) {
 			LOGGER_WARNING("Failed to send audio packet");
