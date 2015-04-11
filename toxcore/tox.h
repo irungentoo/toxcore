@@ -2120,13 +2120,15 @@ void tox_callback_group_status_change(Tox *tox, void (*function)(Tox *m, int, ui
 void tox_callback_group_topic_change(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *,
                                      uint16_t, void *), void *userdata);
 
-/* Set the callback for group peer join.
+/* Set the callback for group peer join alert. This callback must not be
+ * relied on for updating the client's peer list (use tox_callback_group_peerlist_update).
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, void *userdata)
  */
 void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32_t, void *), void *userdata);
 
-/* Set the callback for group peer exit.
+/* Set the callback for group peer exit alert. This callback must not be
+ * relied on for updating the client's peer list (use tox_callback_group_peerlist_update).
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *partmessage, uint16_t length, void *userdata)
  */

@@ -1300,7 +1300,8 @@ void tox_callback_group_topic_change(Tox *tox, void (*function)(Tox *m, int, uin
     gc_callback_topic_change(m, function, userdata);
 }
 
-/* Set the callback for group peer join.
+/* Set the callback for group peer join. This callback must not be
+ * relied on for updating the client's peer list (use tox_callback_group_peerlist_update).
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, void *userdata)
  */
@@ -1310,7 +1311,9 @@ void tox_callback_group_peer_join(Tox *tox, void (*function)(Tox *m, int, uint32
     gc_callback_peer_join(m, function, userdata);
 }
 
-/* Set the callback for group peer exit.
+/* Set the callback for group peer exit alert. This callback must not be
+ * relied on for updating the client's peer list (use tox_callback_group_peerlist_update).
+ *
  *
  * function(Tox *m, int groupnumber, uint32_t peernumber, const uint8_t *partmessage, uint16_t length, void *userdata)
  */

@@ -2352,6 +2352,7 @@ void do_messenger(Messenger *m)
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
     do_gc(m->group_handler);
+    do_gca(m->group_handler->announce);
     do_friends(m);
     LANdiscovery(m);
     connection_status_cb(m);

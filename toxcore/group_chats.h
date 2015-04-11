@@ -201,7 +201,7 @@ typedef struct GC_Chat {
     uint16_t    addrs_idx;
 
     GC_ChatCredentials *credentials;
-    GC_Connection *gcc;
+    GC_Connection      *gcc;
 } GC_Chat;
 
 typedef struct GC_Session {
@@ -464,8 +464,9 @@ int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernum
  */
 int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
 
-/* Updates chat_id's peer_addrs list when we get a nodes request reply from DHT */
-void gc_update_addrs(struct GC_Announce *announce, const uint8_t *chat_id);
+/* Updates chat_id's addr_list when we get a nodes request reply from DHT.
+ * This will clear previous entries. */
+void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id);
 
 /* Copies up to max_addrs peer addresses from chat into addrs.
  *
