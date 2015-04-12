@@ -35,7 +35,7 @@ just unpunchable) ([docs/TCP_Network.txt](TCP_Network.txt)) (Current way doesn't
  - [ ] [TODO] Make the core save/datafile portable across client versions/different processor architectures.
  - [ ] [TODO] Friend_requests.c:
      - [ ] [TODO] What happens when a friend request is received needs to be changed.
-     - [ ] [TODO] Add multiple nospam functionality.
+     - [ ] [DONE?] Add multiple nospam functionality. ([#1317](https://github.com/irungentoo/toxcore/pull/1317))
 
  - [ ] [TODO] Offline messaging
  - [ ] [TODO] Security audit from professionals
