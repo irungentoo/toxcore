@@ -55,6 +55,7 @@ static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_PeerAddress *addr);
 static int group_delete(GC_Session *c, GC_Chat *chat);
 static int get_nick_peernumber(const GC_Chat *chat, const uint8_t *nick, uint16_t length);
+static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat);
 
 // for debugging
 static void print_peer(const GC_GroupPeer *peer)
@@ -174,6 +175,10 @@ void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
         ipport_copy(&chat->addr_list[i].ip_port, &nodes[i].ip_port);
         memcpy(chat->addr_list[i].public_key, nodes[i].public_key, EXT_PUBLIC_KEY);
     }
+
+    /* If we're already connected this is part of the DHT sync procedure */
+    if (chat->connection_state == CS_CONNECTED)
+        sync_gc_announced_nodes(announce->group_handler, chat);
 }
 
 /* Returns number of peers */
@@ -458,7 +463,6 @@ static int send_gc_sync_response(GC_Chat *chat, uint32_t peernumber, const uint8
 }
 
 static int send_gc_self_join(const GC_Session *c, GC_Chat *chat);
-static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat);
 
 int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key, const uint8_t *data,
                             uint32_t length)
@@ -2262,6 +2266,25 @@ static void ping_group(GC_Chat *chat)
     chat->last_sent_ping_time = unix_time();
 }
 
+#define GROUP_SEARCH_ANNOUNCE_INTERVAL 300
+
+/* Searches the DHT for nodes belonging to the group periodically in case of a split group.
+ * The search frequency is relative to the number of peers in the group.
+ */
+static void search_gc_announce(GC_Session *c, GC_Chat *chat)
+{
+    if (!is_timeout(chat->announce_search_timer, GROUP_SEARCH_ANNOUNCE_INTERVAL))
+        return;
+
+    chat->announce_search_timer = unix_time();
+
+    if (random_int_range(chat->numpeers) == 0) {
+        /* DHT response/sync procedure is handled in gc_update_addrs() */
+        gca_send_get_nodes_request(c->announce, chat->self_public_key,
+                                   chat->self_secret_key, CHAT_ID(chat->chat_public_key));
+    }
+}
+
 #define GROUP_JOIN_ATTEMPT_INTERVAL 2
 #define GROUP_GET_NEW_NODES_INTERVAL 15
 #define GROUP_MAX_JOIN_ATTEMPTS (GROUP_GET_NEW_NODES_INTERVAL * 3)
@@ -2281,9 +2304,13 @@ void do_gc(GC_Session *c)
     for (i = 0; i < c->num_chats; ++i) {
         GC_Chat *chat = &c->chats[i];
 
+        if (!chat)
+            continue;
+
         if (chat->connection_state == CS_CONNECTED) {
             ping_group(chat);
             do_peer_connections(c->messenger, i);
+            search_gc_announce(c, chat);
 
             /* Try to auto-rejoin group if we get disconnected */
             if (is_timeout(chat->self_last_rcvd_ping, GROUP_PEER_TIMEOUT + 5) && chat->numpeers > 2) {

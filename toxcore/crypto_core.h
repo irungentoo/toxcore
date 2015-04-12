@@ -66,6 +66,9 @@ int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length);
 uint32_t random_int(void);
 uint64_t random_64b(void);
 
+/* Return a value between 0 and upper_bound using a uniform distribution */
+uint32_t random_int_range(uint32_t upper_bound);
+
 /* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
  * This should only be used for input validation.
  *

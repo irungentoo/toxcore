@@ -193,6 +193,7 @@ typedef struct GC_Chat {
     uint64_t    last_peer_join_time;    /* last time a peer joined the group */
     uint64_t    last_sent_ping_time;
     uint64_t    self_last_rcvd_ping;
+    uint64_t    announce_search_timer;
 
     /* Holder for IP/keys received from announcement requests and loaded from saved groups */
     GC_PeerAddress addr_list[MAX_GC_PEER_ADDRS];

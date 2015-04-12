@@ -103,6 +103,12 @@ uint64_t random_64b(void)
     return randnum;
 }
 
+/* Return a value between 0 and upper_bound using a uniform distribution */
+uint32_t random_int_range(uint32_t upper_bound)
+{
+    return randombytes_uniform(upper_bound);
+}
+
 /* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
  * This should only be used for input validation.
  *
