@@ -973,8 +973,10 @@ static int send_gc_broadcast_packet(GC_Chat *chat, const uint8_t *data, uint32_t
 
     uint32_t i;
 
-    for (i = 1; i < chat->numpeers; ++i)
-        send_lossless_group_packet(chat, i, packet, packet_len, GP_BROADCAST);
+    for (i = 1; i < chat->numpeers; ++i) {
+        if (chat->group[i].confirmed)
+            send_lossless_group_packet(chat, i, packet, packet_len, GP_BROADCAST);
+    }
 
     return 0;
 }
@@ -1609,6 +1611,9 @@ int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_
 
     uint8_t broadcast_type = data[EXT_PUBLIC_KEY];
 
+    if (!chat->group[peernumber].confirmed)
+        return -1;
+
     uint64_t timestamp;
     bytes_to_U64(&timestamp, data + 1);
 
@@ -2099,7 +2104,7 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
         return -1;
 
     /* Needs to occur before peer is removed*/
-    if (c->peer_exit && chat->group[peernumber].confirmed)
+    if (c->peer_exit)
         (*c->peer_exit)(m, groupnumber, peernumber, data, length, c->peer_exit_userdata);
 
     gcc_peer_cleanup(&chat->gcc[peernumber]);
