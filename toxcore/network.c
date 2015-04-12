@@ -172,6 +172,17 @@ int set_socket_nosigpipe(sock_t sock)
 #endif
 }
 
+/* Enable SO_REUSEADDR on socket.
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_reuseaddr(sock_t sock)
+{
+    int set = 1;
+    return (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &set, sizeof(set)) == 0);
+}
+
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success

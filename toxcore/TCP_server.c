@@ -925,6 +925,10 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
         ok = set_socket_dualstack(sock);
     }
 
+    if (ok) {
+        ok = set_socket_reuseaddr(sock);
+    }
+
     ok = ok && bind_to_port(sock, family, port) && (listen(sock, TCP_MAX_BACKLOG) == 0);
 
     if (!ok) {
