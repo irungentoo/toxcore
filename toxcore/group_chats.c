@@ -701,9 +701,6 @@ static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat)
     uint16_t i;
 
     for (i = 0; i < chat->num_addrs; ++i) {
-        if (!ipport_isset(&chat->addr_list[i].ip_port))
-            continue;
-
         if (peer_in_chat(chat, chat->addr_list[i].public_key) != -1)
             continue;
 
@@ -2111,6 +2108,7 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
     if (c->peer_exit)
         (*c->peer_exit)(m, groupnumber, peernumber, data, length, c->peer_exit_userdata);
 
+    gca_peer_cleanup(m->group_handler->announce, CHAT_ID(chat->chat_public_key), chat->group[peernumber].addr.public_key);
     gcc_peer_cleanup(&chat->gcc[peernumber]);
 
     --chat->numpeers;
@@ -2461,6 +2459,7 @@ static int create_new_group(GC_Session *c, bool founder)
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
     chat->self_last_rcvd_ping = unix_time();
     chat->last_sent_ping_time = unix_time();
+    chat->announce_search_timer = unix_time();
 
     if (founder) {
         chat->credentials = new_groupcredentials(chat);
@@ -2511,6 +2510,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
     chat->self_last_rcvd_ping = unix_time();
     chat->last_sent_ping_time = unix_time();
+    chat->announce_search_timer = unix_time();
 
     memcpy(chat->group_name, save->group_name, MAX_GC_GROUP_NAME_SIZE);
     memcpy(chat->topic, save->topic, MAX_GC_TOPIC_SIZE);
@@ -2630,6 +2630,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
     chat->self_last_rcvd_ping = chat->num_addrs > 0 ? unix_time() : 0;  /* Reconnect using saved peers or DHT */
     chat->last_sent_ping_time = unix_time();
     chat->last_join_attempt = unix_time() + 3;  /* Delay reconnection in case of heavy lag for part signal */
+    chat->announce_search_timer = unix_time();
     chat->join_attempts = 0;
 }
 
