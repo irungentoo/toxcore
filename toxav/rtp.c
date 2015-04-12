@@ -28,9 +28,9 @@
 
 #include "rtp.h"
 #include <stdlib.h>
-void queue_message(RTPSession *_session, RTPMessage *_msg);
 
 #define size_32 4
+#define RTCP_REPORT_INTERVAL_MS 500
 
 #define ADD_FLAG_VERSION(_h, _v) do { ( _h->flags ) &= 0x3F; ( _h->flags ) |= ( ( ( _v ) << 6 ) & 0xC0 ); } while(0)
 #define ADD_FLAG_PADDING(_h, _v) do { if ( _v > 0 ) _v = 1; ( _h->flags ) &= 0xDF; ( _h->flags ) |= ( ( ( _v ) << 5 ) & 0x20 ); } while(0)
@@ -46,24 +46,236 @@ void queue_message(RTPSession *_session, RTPMessage *_msg);
 #define GET_SETTING_MARKER(_h) (( _h->marker_payloadt ) >> 7)
 #define GET_SETTING_PAYLOAD(_h) ((_h->marker_payloadt) & 0x7f)
 
-/**
- * Checks if message came in late.
- */
-static int check_late_message (RTPSession *session, RTPMessage *msg)
+
+typedef struct {
+    uint64_t timestamp; /* in ms */
+    
+    uint32_t packets_missing;
+    uint32_t expected_packets;
+    /* ... other stuff in the future */
+} RTCPReport;
+
+typedef struct RTCPSession_s {
+    uint8_t prefix;
+    uint64_t last_sent_report_ts;
+    uint32_t last_missing_packets;
+    uint32_t last_expected_packets;
+    
+    RingBuffer* pl_stats; /* Packet loss stats over time */
+} RTCPSession;
+
+
+
+/* queue_message() is defined in codec.c */
+void queue_message(RTPSession *session, RTPMessage *msg);
+RTPHeader *parse_header_in ( const uint8_t *payload, int length );
+RTPExtHeader *parse_ext_header_in ( const uint8_t *payload, uint16_t length );
+RTPMessage *msg_parse ( const uint8_t *data, int length );
+uint8_t *parse_header_out ( const RTPHeader* header, uint8_t* payload );
+uint8_t *parse_ext_header_out ( const RTPExtHeader* header, uint8_t* payload );
+void build_header ( RTPSession* session, RTPHeader* header );
+void send_rtcp_report ( RTCPSession* session, Messenger* m, int32_t friendnumber );
+int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object );
+int handle_rtcp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object );
+
+
+
+
+RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
 {
-    /*
-     * Check Sequence number. If this new msg has lesser number then the session->rsequnum
-     * it shows that the message came in late. Also check timestamp to be 100% certain.
-     *
-     */
-    return ( msg->header->sequnum < session->rsequnum && msg->header->timestamp < session->timestamp ) ? 0 : -1;
+    RTPSession *retu = calloc(1, sizeof(RTPSession));
+
+    if ( !retu ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        return NULL;
+    }
+
+    retu->version   = RTP_VERSION; /* It's always 2 */
+    retu->padding   = 0;           /* If some additional data is needed about the packet */
+    retu->extension = 0;           /* If extension to header is needed */
+    retu->cc        = 1;           /* Amount of contributors */
+    retu->csrc      = NULL;        /* Container */
+    retu->ssrc      = random_int();
+    retu->marker    = 0;
+    retu->payload_type = payload_type % 128;
+
+    retu->m = messenger;
+    retu->dest = friend_num;
+    retu->rsequnum = retu->sequnum = 0;
+    retu->ext_header = NULL; /* When needed allocate */
+
+    if ( !(retu->csrc = calloc(1, sizeof(uint32_t))) ) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        free(retu);
+        return NULL;
+    }
+    
+    retu->csrc[0] = retu->ssrc; /* Set my ssrc to the list receive */
+
+    /* Also set payload type as prefix */
+    retu->prefix = payload_type;
+    
+    
+    /* Initialize rtcp session */
+    if (!(retu->rtcp = calloc(1, sizeof(RTCPSession)))) {
+        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        free(retu->csrc);
+        free(retu);
+        return NULL;
+    }
+    
+    retu->rtcp->prefix = 222 + payload_type % 192;
+    retu->rtcp->pl_stats = rb_new(4);
+    
+    return retu;
+}
+void rtp_kill ( RTPSession *session )
+{
+    if ( !session ) return;
+
+	rtp_stop_receiving (session);
+
+    free ( session->ext_header );
+    free ( session->csrc );
+    
+    void* t;
+    while (!rb_empty(session->rtcp->pl_stats)) {
+        rb_read(session->rtcp->pl_stats, (void**) &t);
+        free(t);
+    }
+    rb_free(session->rtcp->pl_stats);
+    
+    LOGGER_DEBUG("Terminated RTP session: %p", session);
+
+    /* And finally free session */
+    free ( session );
+}
+void rtp_do(RTPSession *session)
+{
+    if (!session || !session->rtcp)
+        return;
+    
+    if (current_time_monotonic() - session->rtcp->last_sent_report_ts >= RTCP_REPORT_INTERVAL_MS) {
+        send_rtcp_report(session->rtcp, session->m, session->dest);
+    }
+    
+    if (rb_full(session->rtcp->pl_stats)) {
+        RTCPReport* reports[4];
+        
+        int i = 0;
+        for (; rb_read(session->rtcp->pl_stats, (void**) reports + i); i++);
+        
+        /* Check for timed out reports (> 6 sec) */
+        uint64_t now = current_time_monotonic();
+        for (i = 0; i < 4 && now - reports[i]->timestamp < 6000; i ++);
+        for (; i < 4; i ++) {
+            rb_write(session->rtcp->pl_stats, reports[i]);
+            reports[i] = NULL;
+        }
+        if (!rb_empty(session->rtcp->pl_stats)) {
+            for (i = 0; reports[i] != NULL; i ++)
+                free(reports[i]);
+            return; /* As some reports are timed out, we need more... */
+        }
+        
+        /* We have 4 on-time reports so we can proceed */
+        uint32_t quality_loss = 0;
+        for (i = 0; i < 4; i++) {
+            uint32_t idx = reports[i]->packets_missing * 100 / reports[i]->expected_packets;
+            quality_loss += idx;
+        }
+        
+        if (quality_loss > 40) {
+            LOGGER_DEBUG("Packet loss detected");
+        }
+    }
+}
+int rtp_start_receiving(RTPSession* session)
+{
+    if (session == NULL)
+        return -1;
+    
+    if (custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix,
+        handle_rtp_packet, session) == -1) {
+        LOGGER_WARNING("Failed to register rtp receive handler");
+        return -1;
+    }
+    if (custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp->prefix,
+        handle_rtcp_packet, session->rtcp) == -1) {
+        LOGGER_WARNING("Failed to register rtcp receive handler");
+        custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
+        return -1;
+    }
+    
+    return 0;
+}
+int rtp_stop_receiving(RTPSession* session)
+{
+    if (session == NULL)
+        return -1;
+    
+    custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
+    custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp->prefix, NULL, NULL); /* RTCP */
+    
+    return 0;
+}
+int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )
+{
+    if ( !session ) {
+        LOGGER_WARNING("No session!");
+        return -1;
+    }
+    
+    uint8_t parsed[MAX_RTP_SIZE];
+    uint8_t *it;
+
+    RTPHeader header[1];
+    build_header(session, header);
+
+    uint32_t parsed_len = length + header->length + 1;
+
+    parsed[0] = session->prefix;
+
+    it = parse_header_out ( header, parsed + 1 );
+    
+    if ( session->ext_header ) {
+        parsed_len += ( 4 /* Minimum ext header len */ + session->ext_header->length * size_32 );
+        it = parse_ext_header_out ( session->ext_header, it );
+    }
+
+    memcpy ( it, data, length );
+    
+    if ( -1 == send_custom_lossy_packet(session->m, session->dest, parsed, parsed_len) ) {
+        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
+        return -1;
+    }
+    
+    /* Set sequ number */
+    session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
+    return 0;
+}
+void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
+{
+    if ( !session ) {
+        if ( msg->ext_header ) {
+            free ( msg->ext_header->table );
+            free ( msg->ext_header );
+        }
+    } else {
+        if ( msg->ext_header && session->ext_header != msg->ext_header ) {
+            free ( msg->ext_header->table );
+            free ( msg->ext_header );
+        }
+    }
+    
+    free ( msg->header );
+    free ( msg );
 }
 
 
-/**
- * Extracts header from payload.
- */
-RTPHeader *extract_header ( const uint8_t *payload, int length )
+
+
+RTPHeader *parse_header_in ( const uint8_t *payload, int length )
 {
     if ( !payload || !length ) {
         LOGGER_WARNING("No payload to extract!");
@@ -111,8 +323,6 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
         return NULL;
     }
 
-    memset(retu->csrc, 0, 16 * sizeof (uint32_t));
-
     retu->marker_payloadt = *it;
     ++it;
     retu->length = total;
@@ -125,7 +335,6 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
     retu->ssrc = ntohl(retu->ssrc);
 
     uint8_t x;
-
     for ( x = 0; x < cc; x++ ) {
         it += 4;
         memcpy(&retu->csrc[x], it, sizeof(retu->csrc[x]));
@@ -134,11 +343,7 @@ RTPHeader *extract_header ( const uint8_t *payload, int length )
 
     return retu;
 }
-
-/**
- * Extracts external header from payload. Must be called AFTER extract_header()!
- */
-RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
+RTPExtHeader *parse_ext_header_in ( const uint8_t *payload, uint16_t length )
 {
     const uint8_t *it = payload;
 
@@ -182,11 +387,47 @@ RTPExtHeader *extract_ext_header ( const uint8_t *payload, uint16_t length )
 
     return retu;
 }
+RTPMessage *msg_parse ( const uint8_t *data, int length )
+{
+    RTPMessage *retu = calloc(1, sizeof (RTPMessage));
 
-/**
- * Adds header to payload. Make sure _payload_ has enough space.
- */
-uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
+    retu->header = parse_header_in ( data, length ); /* It allocates memory and all */
+
+    if ( !retu->header ) {
+        LOGGER_WARNING("Header failed to extract!");
+        free(retu);
+        return NULL;
+    }
+
+    uint16_t from_pos = retu->header->length;
+    retu->length = length - from_pos;
+
+    if ( GET_FLAG_EXTENSION ( retu->header ) ) {
+        retu->ext_header = parse_ext_header_in ( data + from_pos, length );
+
+        if ( retu->ext_header ) {
+            retu->length -= ( 4 /* Minimum ext header len */ + retu->ext_header->length * size_32 );
+            from_pos += ( 4 /* Minimum ext header len */ + retu->ext_header->length * size_32 );
+        } else { /* Error */
+            LOGGER_WARNING("Ext Header failed to extract!");
+            rtp_free_msg(NULL, retu);
+            return NULL;
+        }
+    } else {
+        retu->ext_header = NULL;
+    }
+
+    if ( length - from_pos <= MAX_RTP_SIZE )
+        memcpy ( retu->data, data + from_pos, length - from_pos );
+    else {
+        LOGGER_WARNING("Invalid length!");
+        rtp_free_msg(NULL, retu);
+        return NULL;
+    }
+
+    return retu;
+}
+uint8_t *parse_header_out ( const RTPHeader *header, uint8_t *payload )
 {
     uint8_t cc = GET_FLAG_CSRCC ( header );
     uint8_t *it = payload;
@@ -223,11 +464,7 @@ uint8_t *add_header ( RTPHeader *header, uint8_t *payload )
 
     return it + 4;
 }
-
-/**
- * Adds extension header to payload. Make sure _payload_ has enough space.
- */
-uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
+uint8_t *parse_ext_header_out ( const RTPExtHeader *header, uint8_t *payload )
 {
     uint8_t *it = payload;
     uint16_t length;
@@ -242,9 +479,7 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
     it -= 2; /* Return to 0 position */
 
     if ( header->table ) {
-
         uint16_t x;
-
         for ( x = 0; x < header->length; x++ ) {
             it += 4;
             entry = htonl(header->table[x]);
@@ -254,92 +489,45 @@ uint8_t *add_ext_header ( RTPExtHeader *header, uint8_t *payload )
 
     return it + 4;
 }
-
-/**
- * Builds header from control session values.
- */
-RTPHeader *build_header ( RTPSession *session )
+void build_header ( RTPSession *session, RTPHeader *header )
 {
-    RTPHeader *retu = calloc ( 1, sizeof (RTPHeader) );
+    ADD_FLAG_VERSION ( header, session->version );
+    ADD_FLAG_PADDING ( header, session->padding );
+    ADD_FLAG_EXTENSION ( header, session->extension );
+    ADD_FLAG_CSRCC ( header, session->cc );
+    ADD_SETTING_MARKER ( header, session->marker );
+    ADD_SETTING_PAYLOAD ( header, session->payload_type );
 
-    if ( !retu ) {
-        LOGGER_WARNING("Alloc failed! Program might misbehave!");
-        return NULL;
-    }
-
-    ADD_FLAG_VERSION ( retu, session->version );
-    ADD_FLAG_PADDING ( retu, session->padding );
-    ADD_FLAG_EXTENSION ( retu, session->extension );
-    ADD_FLAG_CSRCC ( retu, session->cc );
-    ADD_SETTING_MARKER ( retu, session->marker );
-    ADD_SETTING_PAYLOAD ( retu, session->payload_type );
-
-    retu->sequnum = session->sequnum;
-    retu->timestamp = current_time_monotonic(); /* milliseconds */
-    retu->ssrc = session->ssrc;
+    header->sequnum = session->sequnum;
+    header->timestamp = current_time_monotonic(); /* milliseconds */
+    header->ssrc = session->ssrc;
 
     int i;
-
     for ( i = 0; i < session->cc; i++ )
-        retu->csrc[i] = session->csrc[i];
+        header->csrc[i] = session->csrc[i];
 
-    retu->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
-
-    return retu;
+    header->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
 }
-
-
-/**
- * Parses data into RTPMessage struct. Stores headers separately from the payload data
- * and so the length variable is set accordingly.
- */
-RTPMessage *msg_parse ( const uint8_t *data, int length )
+void send_rtcp_report(RTCPSession* session, Messenger* m, int32_t friendnumber)
 {
-    RTPMessage *retu = calloc(1, sizeof (RTPMessage));
-
-    retu->header = extract_header ( data, length ); /* It allocates memory and all */
-
-    if ( !retu->header ) {
-        LOGGER_WARNING("Header failed to extract!");
-        free(retu);
-        return NULL;
-    }
-
-    uint16_t from_pos = retu->header->length;
-    retu->length = length - from_pos;
-
-
-
-    if ( GET_FLAG_EXTENSION ( retu->header ) ) {
-        retu->ext_header = extract_ext_header ( data + from_pos, length );
-
-        if ( retu->ext_header ) {
-            retu->length -= ( 4 /* Minimum ext header len */ + retu->ext_header->length * size_32 );
-            from_pos += ( 4 /* Minimum ext header len */ + retu->ext_header->length * size_32 );
-        } else { /* Error */
-            LOGGER_WARNING("Ext Header failed to extract!");
-            rtp_free_msg(NULL, retu);
-            return NULL;
-        }
-    } else {
-        retu->ext_header = NULL;
-    }
-
-    if ( length - from_pos <= MAX_RTP_SIZE )
-        memcpy ( retu->data, data + from_pos, length - from_pos );
-    else {
-        LOGGER_WARNING("Invalid length!");
-        rtp_free_msg(NULL, retu);
-        return NULL;
-    }
-
-    return retu;
+    if (session->last_expected_packets == 0)
+        return;
+    
+    uint8_t parsed[9];
+    parsed[0] = session->prefix;
+    
+    uint32_t packets_missing = htonl(session->last_missing_packets);
+    uint32_t expected_packets = htonl(session->last_expected_packets);
+    
+    memcpy(parsed + 1, &packets_missing, 4);
+    memcpy(parsed + 5, &expected_packets, 4);
+    
+    if (-1 == send_custom_lossy_packet(m, friendnumber, parsed, sizeof(parsed)))
+        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", sizeof(parsed), strerror(errno));
+    else
+        session->last_sent_report_ts = current_time_monotonic();
 }
-
-/**
- * Callback for networking core.
- */
-int rtp_handle_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
+int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
 {
     RTPSession *session = object;
     RTPMessage *msg;
@@ -357,178 +545,37 @@ int rtp_handle_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data,
     }
 
     /* Check if message came in late */
-    if ( check_late_message(session, msg) < 0 ) { /* Not late */
+    if ( msg->header->sequnum > session->rsequnum && msg->header->timestamp > session->rtimestamp ) {
+        /* Not late */
         session->rsequnum = msg->header->sequnum;
-        session->timestamp = msg->header->timestamp;
+        session->rtimestamp = msg->header->timestamp;
     }
 
     queue_message(session, msg);
     return 0;
 }
-
-/**
- * Allocate message and store data there
- */
-RTPMessage *rtp_new_message ( RTPSession *session, const uint8_t *data, uint32_t length )
+int handle_rtcp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
 {
-    if ( !session ) {
-        LOGGER_WARNING("No session!");
-        return NULL;
-    }
-
-    uint8_t *from_pos;
-    RTPMessage *retu = calloc(1, sizeof (RTPMessage));
-
-    if ( !retu ) {
-        LOGGER_WARNING("Alloc failed! Program might misbehave!");
-        return NULL;
-    }
-
-    /* Sets header values and copies the extension header in retu */
-    retu->header = build_header ( session ); /* It allocates memory and all */
-    retu->ext_header = session->ext_header;
-
-
-    uint32_t total_length = length + retu->header->length + 1;
-
-    retu->data[0] = session->prefix;
-
-    if ( retu->ext_header ) {
-        total_length += ( 4 /* Minimum ext header len */ + retu->ext_header->length * size_32 );
-
-        from_pos = add_header ( retu->header, retu->data + 1 );
-        from_pos = add_ext_header ( retu->ext_header, from_pos + 1 );
-    } else {
-        from_pos = add_header ( retu->header, retu->data + 1 );
-    }
-
-    /*
-     * Parses the extension header into the message
-     * Of course if any
-     */
-
-    /* Appends data on to retu->data */
-    memcpy ( from_pos, data, length );
-
-    retu->length = total_length;
-
-    return retu;
-}
-
-
-
-RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
-{
-    RTPSession *retu = calloc(1, sizeof(RTPSession));
-
-    if ( !retu ) {
-        LOGGER_WARNING("Alloc failed! Program might misbehave!");
-        return NULL;
-    }
-
-    retu->version   = RTP_VERSION; /* It's always 2 */
-    retu->padding   = 0;           /* If some additional data is needed about the packet */
-    retu->extension = 0;           /* If extension to header is needed */
-    retu->cc        = 1;           /* Amount of contributors */
-    retu->csrc      = NULL;        /* Container */
-    retu->ssrc      = random_int();
-    retu->marker    = 0;
-    retu->payload_type = payload_type % 128;
-
-    retu->dest = friend_num;
-
-    retu->rsequnum = retu->sequnum = 0;
-
-    retu->ext_header = NULL; /* When needed allocate */
-
-
-    if ( !(retu->csrc = calloc(1, sizeof (uint32_t))) ) {
-        LOGGER_WARNING("Alloc failed! Program might misbehave!");
-        free(retu);
-        return NULL;
-    }
-    
-    retu->csrc[0] = retu->ssrc; /* Set my ssrc to the list receive */
-
-    /* Also set payload type as prefix */
-    retu->prefix = payload_type;
-    
-    retu->m = messenger;
-    /*
-     *
-     */
-    return retu;
-}
-
-void rtp_kill ( RTPSession *session )
-{
-    if ( !session ) return;
-
-	rtp_stop_receiving (session);
-
-    free ( session->ext_header );
-    free ( session->csrc );
-
-    LOGGER_DEBUG("Terminated RTP session: %p", session);
-
-    /* And finally free session */
-    free ( session );
-}
-
-int rtp_start_receiving(RTPSession* session)
-{
-    if (session == NULL)
-        return 0;
-    
-	LOGGER_DEBUG("Registering packet handler: pt: %d; friend: %d", session->prefix, session->dest);
-    return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
-                                               rtp_handle_packet, session);
-}
-
-int rtp_stop_receiving(RTPSession* session)
-{
-    if (session == NULL)
-        return 0;
-    
-	LOGGER_DEBUG("Unregistering packet handler: pt: %d; friend: %d", session->prefix, session->dest);
-    return custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, 
-                                               NULL, NULL);
-}
-
-int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )
-{
-    RTPMessage *msg = rtp_new_message (session, data, length);
-    
-    if ( !msg ) return -1;
-    
-    if ( -1 == send_custom_lossy_packet(session->m, session->dest, msg->data, msg->length) ) {
-        LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
-        rtp_free_msg ( session, msg );
+    if (length < 9)
         return -1;
+    
+    RTCPSession* session = object;
+    RTCPReport* report = malloc(sizeof(RTCPReport));
+    
+    memcpy(&report->packets_missing, data + 1, 4);
+    memcpy(&report->expected_packets, data + 5, 4);
+    
+    report->packets_missing = ntohl(report->packets_missing);
+    report->expected_packets = ntohl(report->expected_packets);
+    
+    /* This would cause undefined behaviour */
+    if (report->expected_packets == 0) {
+        free(report);
+        return 0;
     }
     
+    report->timestamp = current_time_monotonic();
     
-    /* Set sequ number */
-    session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
-    rtp_free_msg ( session, msg );
-    
+    free(rb_write(session->pl_stats, report));
     return 0;
-}
-
-void rtp_free_msg ( RTPSession *session, RTPMessage *msg )
-{
-    if ( !session ) {
-        if ( msg->ext_header ) {
-            free ( msg->ext_header->table );
-            free ( msg->ext_header );
-        }
-    } else {
-        if ( msg->ext_header && session->ext_header != msg->ext_header ) {
-            free ( msg->ext_header->table );
-            free ( msg->ext_header );
-        }
-    }
-    
-    free ( msg->header );
-    free ( msg );
 }

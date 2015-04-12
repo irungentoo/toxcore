@@ -29,7 +29,7 @@
 #include "../toxcore/Messenger.h"
 
 /** Preconfigured value for video splitting */
-#define VIDEOFRAME_PIECE_SIZE    500     /* 1.25 KiB*/
+#define VIDEOFRAME_PIECE_SIZE 500
 
 /**
  * Error codes.
@@ -42,7 +42,7 @@ typedef enum {
     msi_EStrayMessage,
     msi_ESystem,
     msi_EHandle,
-    msi_EUndisclosed, /* NOTE: must be last enum otherwise parsing wont work */
+    msi_EUndisclosed, /* NOTE: must be last enum otherwise parsing will not work */
 } MSIError;
 
 /**

@@ -1,5 +1,31 @@
+/**  av_test.c
+ *
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
+ *
+ *   This file is part of Tox.
+ *
+ *   Tox is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Tox is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
+ *   
+ *   Compile with (Linux only; in newly created directory toxcore/dir_name): 
+ *   gcc -o av_test ../toxav/av_test.c ../build/.libs/libtox*.a -lopencv_core \
+ *   -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
+ */
+
+
 #include "../toxav/toxav.h"
 #include "../toxcore/tox.h"
+#include "../toxcore/util.h"
 
 /* Playing audio data */
 #include <portaudio.h>
@@ -10,7 +36,6 @@
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 #include <opencv/cvwimage.h>
-
 
 #include <sys/stat.h>
 #include <assert.h>
@@ -63,8 +88,8 @@ struct toxav_thread_data {
     int32_t sig;
 };
 
-const char* vdout = "AV Test";
-PaStream* adout = NULL;
+const char* vdout = "AV Test"; /* Video output */
+PaStream* adout = NULL; /* Audio output */
 
 const char* stringify_state(TOXAV_CALL_STATE s)
 {
@@ -230,7 +255,7 @@ void* iterate_toxav (void * data)
         toxav_iterate(data_cast->BobAV);
         int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
         
-//         cvWaitKey(rc);
+//         cvWaitKey(10);
         c_sleep(10);
     }
     
@@ -306,7 +331,26 @@ int print_help (const char* name)
 
 int main (int argc, char** argv)
 {
+    RingBuffer* rb = rb_new(4);
+    int a[5] = {0, 1, 2, 3, 4};
+    int* x;
+    rb_write(rb, a + 0);
+    rb_write(rb, a + 1);
+    rb_write(rb, a + 2);
+    rb_write(rb, a + 3);
+//     rb_write(rb, a + 4);
+    
+    x = rb_write(rb, a + 4);
+    while (rb_read(rb, (void**) &x))
+//     rb_read(rb, (void**)&x);
+        printf("%d ", *x);
+    
+    printf("\n");
+//     int r = 43;
+//     printf("%d\n", r >= 40 ? 3 : r / 10);
+    return 0;
     Pa_Initialize();
+    
     struct stat st;
     
     /* AV files for testing */
@@ -393,53 +437,6 @@ int main (int argc, char** argv)
     if (!audio_dev) {
         fprintf(stderr, "Device under index: %ld invalid", audio_out_dev_idx);
         return 1;
-    }
-    
-    if (0) {
-        SNDFILE* af_handle;
-        SF_INFO af_info;
-        
-        /* Open audio file */
-        af_handle = sf_open(af_name, SFM_READ, &af_info);
-        if (af_handle == NULL) {
-            printf("Failed to open the file.\n");
-            exit(1);
-        }
-        
-        int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
-        
-        struct PaStreamParameters output;
-        output.device = audio_out_dev_idx; /* default output device */
-        output.channelCount = af_info.channels;
-        output.sampleFormat = paInt16;
-        output.suggestedLatency = audio_dev->defaultHighOutputLatency;
-        output.hostApiSpecificStreamInfo = NULL;
-        
-        
-        PaError err = Pa_OpenStream(&adout, NULL, &output, af_info.samplerate, frame_size, paNoFlag, NULL, NULL);
-        assert(err == paNoError);
-        
-        err = Pa_StartStream(adout);
-        assert(err == paNoError);
-        
-        int16_t PCM[frame_size];
-        
-        time_t start_time = time(NULL);
-        time_t expected_time = af_info.frames / af_info.samplerate + 2;
-        
-        printf("Sample rate %d\n", af_info.samplerate);
-        while ( start_time + expected_time > time(NULL) ) {
-            
-            int64_t count = sf_read_short(af_handle, PCM, frame_size);
-            if (count > 0) {
-                t_toxav_receive_audio_frame_cb(NULL, 0, PCM, count, af_info.channels, af_info.samplerate, NULL);
-            }
-            
-            c_sleep(audio_frame_duration / 2);
-        }
-        
-        Pa_Terminate();
-        return 0;
     }
     
     printf("Using audio device: %s\n", audio_dev->name);
@@ -758,17 +755,15 @@ int main (int argc, char** argv)
         
         printf("Sample rate %d\n", af_info.samplerate);
 		while ( start_time + expected_time > time(NULL) ) {
-            
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
                 TOXAV_ERR_SEND_FRAME rc;
                 if (toxav_send_audio_frame(AliceAV, 0, PCM, count/af_info.channels, af_info.channels, af_info.samplerate, &rc) == false) {
                     printf("Error sending frame of size %ld: %d\n", count, rc);
-//                     exit(1);
                 }
             }
             iterate_tox(bootstrap, AliceAV, BobAV);
-            c_sleep(30);
+            c_sleep(53);
 		}
     
         
@@ -793,6 +788,8 @@ int main (int argc, char** argv)
         data.sig = -1;
         while(data.sig != 1)
             pthread_yield();
+        
+        Pa_StopStream(adout);
         
 		printf("Success!");
 	}
@@ -890,5 +887,7 @@ int main (int argc, char** argv)
     tox_kill(bootstrap);
     
     printf("\nTest successful!\n");
+    
+    Pa_Terminate();
     return 0;
 }

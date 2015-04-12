@@ -25,6 +25,8 @@
 #include "toxav.h"
 #include "rtp.h"
 
+#include "../toxcore/util.h"
+
 #include <stdio.h>
 #include <math.h>
 #include <pthread.h>
@@ -39,8 +41,6 @@
 
 /* Audio encoding/decoding */
 #include <opus.h>
-
-#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
 #define PACKED_AUDIO_SIZE(x) (x + 5)
 #define UNPACKED_AUDIO_SIZE(x) (x - 5)
@@ -125,8 +125,4 @@ const uint8_t *cs_iterate_split_video_frame(CSession *cs, uint16_t *size);
 
 int cs_reconfigure_video_encoder(CSession* cs, int32_t bitrate, uint16_t width, uint16_t height);
 int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
-
-
-/* Internal. Called from rtp_handle_message */
-void queue_message(RTPSession *session, RTPMessage *msg);
 #endif /* CODEC_H */

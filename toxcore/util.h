@@ -30,6 +30,7 @@
 #include <pthread.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
 void unix_time_update();
 uint64_t unix_time();
@@ -56,4 +57,13 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
+/* Ring buffer */
+typedef struct RingBuffer RingBuffer;
+bool rb_full(const RingBuffer *b);
+bool rb_empty(const RingBuffer *b);
+void* rb_write(RingBuffer* b, void* p);
+bool rb_read(RingBuffer* b, void** p);
+void rb_clear(RingBuffer *b);
+RingBuffer *rb_new(int size);
+void rb_free(RingBuffer *b);
 #endif /* __UTIL_H__ */

@@ -220,6 +220,9 @@ void toxav_iterate(ToxAV* av)
             LOGGED_UNLOCK(av->mutex);
             
             cs_do(i->cs);
+            rtp_do(i->rtps[0]);
+            rtp_do(i->rtps[1]);
+            
             if (i->last_self_capabilities & msi_CapRAudio) /* Receiving audio */
                 rc = MIN(i->cs->last_packet_frame_duration, rc);
             if (i->last_self_capabilities & msi_CapRVideo) /* Receiving video */

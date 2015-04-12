@@ -23,8 +23,6 @@
 #define RTP_H
 
 #define RTP_VERSION 2
-#include <inttypes.h>
-// #include <pthread.h>
 
 #include "../toxcore/Messenger.h"
 
@@ -51,8 +49,8 @@ typedef enum {
     rtp_TypeVideo
 } RTPPayloadType;
 
-/**
- * Standard rtp header
+/** 
+ * Standard rtp header.
  */
 typedef struct {
     uint8_t  flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
@@ -62,17 +60,14 @@ typedef struct {
     uint32_t ssrc;              /* SSRC */
     uint32_t csrc[16];          /* CSRC's table */
     uint32_t length;            /* Length of the header in payload string. */
-
 } RTPHeader;
-
-/**
+/** 
  * Standard rtp extension header.
  */
 typedef struct {
     uint16_t  type;          /* Extension profile */
     uint16_t  length;        /* Number of extensions */
     uint32_t *table;         /* Extension's table */
-
 } RTPExtHeader;
 
 /**
@@ -90,31 +85,32 @@ typedef struct {
  * RTP control session.
  */
 typedef struct {
-    uint8_t             version;
-    uint8_t             padding;
-    uint8_t             extension;
-    uint8_t             cc;
-    uint8_t             marker;
-    uint8_t             payload_type;
-    uint16_t            sequnum;   /* Set when sending */
-    uint16_t            rsequnum;  /* Check when recving msg */
-    uint32_t            timestamp;
-    uint32_t            ssrc;
-    uint32_t           *csrc;
+    uint8_t               version;
+    uint8_t               padding;
+    uint8_t               extension;
+    uint8_t               cc;
+    uint8_t               marker;
+    uint8_t               payload_type;
+    uint16_t              sequnum;   /* Sending sequence number */
+    uint16_t              rsequnum;  /* Receiving sequence number */
+    uint32_t              rtimestamp;
+    uint32_t              ssrc;
+    uint32_t             *csrc;
 
     /* If some additional data must be sent via message
      * apply it here. Only by allocating this member you will be
      * automatically placing it within a message.
      */
-    RTPExtHeader       *ext_header;
+    RTPExtHeader         *ext_header;
 
     /* Msg prefix for core to know when recving */
-    uint8_t             prefix;
+    uint8_t               prefix;
 
-    int                 dest;
+    int                   dest;
 
-    struct CSession_s *cs;
-    Messenger          *m;
+    struct RTCPSession_s *rtcp;
+    struct CSession_s    *cs;
+    Messenger            *m;
 
 } RTPSession;
 
@@ -127,6 +123,11 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num );
  * Terminate the session.
  */
 void rtp_kill ( RTPSession* session );
+
+/**
+ * Do periodical rtp work.
+ */
+void rtp_do(RTPSession *session);
 
 /**
  * By default rtp is not in receiving state

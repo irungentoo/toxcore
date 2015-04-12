@@ -46,77 +46,12 @@
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_HEADER_SIZE 0x2
 
-/* FIXME: Might not be enough */
+/* FIXME: Might not be enough? NOTE: I think it is enough */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
 #define ARRAY(TYPE__) struct { uint16_t size; TYPE__ data[]; }
 
 typedef ARRAY(uint8_t) Payload;
-
-typedef struct {
-    uint16_t size; /* Max size */
-    uint16_t start;
-    uint16_t end;
-    Payload **packets;
-} PayloadBuffer;
-
-static bool buffer_full(const PayloadBuffer *b)
-{
-    return (b->end + 1) % b->size == b->start;
-}
-
-static bool buffer_empty(const PayloadBuffer *b)
-{
-    return b->end == b->start;
-}
-
-static void buffer_write(PayloadBuffer *b, Payload *p)
-{
-    b->packets[b->end] = p;
-    b->end = (b->end + 1) % b->size;
-
-    if (b->end == b->start) b->start = (b->start + 1) % b->size; /* full, overwrite */
-}
-
-static void buffer_read(PayloadBuffer *b, Payload **p)
-{
-    *p = b->packets[b->start];
-    b->start = (b->start + 1) % b->size;
-}
-
-static void buffer_clear(PayloadBuffer *b)
-{
-    while (!buffer_empty(b)) {
-        Payload *p;
-        buffer_read(b, &p);
-        free(p);
-    }
-}
-
-static PayloadBuffer *buffer_new(int size)
-{
-    PayloadBuffer *buf = calloc(sizeof(PayloadBuffer), 1);
-
-    if (!buf) return NULL;
-
-    buf->size = size + 1; /* include empty elem */
-
-    if (!(buf->packets = calloc(buf->size, sizeof(Payload *)))) {
-        free(buf);
-        return NULL;
-    }
-
-    return buf;
-}
-
-static void buffer_free(PayloadBuffer *b)
-{
-    if (b) {
-        buffer_clear(b);
-        free(b->packets);
-        free(b);
-    }
-}
 
 /* JITTER BUFFER WORK */
 typedef struct JitterBuffer_s {
@@ -318,7 +253,7 @@ bool reconfigure_audio_decoder(CSession* cs, int32_t sampling_rate, int8_t chann
         int status;
         OpusDecoder* new_dec = opus_decoder_create(sampling_rate, channels, &status );
         if ( status != OPUS_OK ) {
-            LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(status));
+            LOGGER_ERROR("Error while starting audio decoder(%d %d): %s", sampling_rate, channels, opus_strerror(status));
             return false;
         }
         
@@ -336,7 +271,6 @@ bool reconfigure_audio_decoder(CSession* cs, int32_t sampling_rate, int8_t chann
 }
 
 /* PUBLIC */
-
 void cs_do(CSession *cs)
 {
     /* Codec session should always be protected by call mutex so no need to check for cs validity
@@ -416,9 +350,9 @@ void cs_do(CSession *cs)
     }
     
     /********************* VIDEO *********************/
-    if (cs->vbuf_raw && !buffer_empty(cs->vbuf_raw)) {
+    if (cs->vbuf_raw && !rb_empty(cs->vbuf_raw)) {
         /* Decode video */
-        buffer_read(cs->vbuf_raw, &p);
+        rb_read(cs->vbuf_raw, (void**)&p);
         
         /* Leave space for (possibly) other thread to queue more data after we read it here */
         LOGGED_UNLOCK(cs->queue_mutex);
@@ -447,7 +381,6 @@ void cs_do(CSession *cs)
     
     LOGGED_UNLOCK(cs->queue_mutex);
 }
-
 CSession *cs_new(uint32_t peer_video_frame_piece_size)
 {
     CSession *cs = calloc(sizeof(CSession), 1);
@@ -510,7 +443,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
         goto AUDIO_DECODER_CLEANUP;
     }
     
-    if ( !(cs->vbuf_raw = buffer_new(VIDEO_DECODE_BUFFER_SIZE)) ) {
+    if ( !(cs->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE)) ) {
         free(cs->frame_buf);
         vpx_codec_destroy(cs->v_decoder);
         goto AUDIO_DECODER_CLEANUP;
@@ -542,7 +475,7 @@ CSession *cs_new(uint32_t peer_video_frame_piece_size)
     return cs;
 
 VIDEO_DECODER_CLEANUP:
-    buffer_free(cs->vbuf_raw);
+    rb_free(cs->vbuf_raw);
     free(cs->frame_buf);
     vpx_codec_destroy(cs->v_decoder);
 AUDIO_DECODER_CLEANUP:
@@ -553,7 +486,6 @@ FAILURE:
     free(cs);
     return NULL;
 }
-
 void cs_kill(CSession *cs)
 {
     if (!cs) 
@@ -567,22 +499,21 @@ void cs_kill(CSession *cs)
     vpx_codec_destroy(cs->v_decoder);
     opus_encoder_destroy(cs->audio_encoder);
     opus_decoder_destroy(cs->audio_decoder);
-    buffer_free(cs->vbuf_raw);
+    rb_free(cs->vbuf_raw);
     jbuf_free(cs->j_buf);
     free(cs->frame_buf);
+    free(cs->split_video_frame);
     
     pthread_mutex_destroy(cs->queue_mutex);
     
     LOGGER_DEBUG("Terminated codec state: %p", cs);
     free(cs);
 }
-
 void cs_init_video_splitter_cycle(CSession* cs)
 {
     cs->split_video_frame[0] = cs->frameid_out++;
     cs->split_video_frame[1] = 0;
 }
-
 int cs_update_video_splitter_cycle(CSession *cs, const uint8_t *payload, uint16_t length)
 {
     cs->processing_video_frame = payload;
@@ -590,7 +521,6 @@ int cs_update_video_splitter_cycle(CSession *cs, const uint8_t *payload, uint16_
     
     return ((length - 1) / VIDEOFRAME_PIECE_SIZE) + 1;
 }
-
 const uint8_t *cs_iterate_split_video_frame(CSession *cs, uint16_t *size)
 {
     if (!cs || !size) return NULL;
@@ -616,9 +546,6 @@ const uint8_t *cs_iterate_split_video_frame(CSession *cs, uint16_t *size)
 
     return cs->split_video_frame;
 }
-
-
-
 int cs_reconfigure_video_encoder(CSession* cs, int32_t bitrate, uint16_t width, uint16_t height)
 {
     vpx_codec_enc_cfg_t cfg = *cs->v_encoder[0].config.enc;
@@ -637,7 +564,6 @@ int cs_reconfigure_video_encoder(CSession* cs, int32_t bitrate, uint16_t width, 
 
     return 0;
 }
-
 int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling_rate, uint8_t channels)
 {
     /* Values are checked in toxav.c */
@@ -667,8 +593,6 @@ int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling
     LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
     return 0;
 }
-
-
 /* Called from RTP */
 void queue_message(RTPSession *session, RTPMessage *msg)
 {
@@ -705,10 +629,10 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                 if (p) {
                     LOGGED_LOCK(cs->queue_mutex);
 
-                    if (buffer_full(cs->vbuf_raw)) {
+                    if (rb_full(cs->vbuf_raw)) {
                         LOGGER_DEBUG("Dropped video frame");
                         Payload *tp;
-                        buffer_read(cs->vbuf_raw, &tp);
+                        rb_read(cs->vbuf_raw, (void**)&tp);
                         free(tp);
                     } else {
                         p->size = cs->frame_size;
@@ -720,7 +644,7 @@ void queue_message(RTPSession *session, RTPMessage *msg)
                     cs->lcfd = t_lcfd > 100 ? cs->lcfd : t_lcfd;
                     cs->linfts = current_time_monotonic();
                     
-                    buffer_write(cs->vbuf_raw, p);
+                    rb_write(cs->vbuf_raw, p);
                     LOGGED_UNLOCK(cs->queue_mutex);
                 } else {
                     LOGGER_WARNING("Allocation failed! Program might misbehave!");
