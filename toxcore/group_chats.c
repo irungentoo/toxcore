@@ -1834,13 +1834,6 @@ void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, in
     c->peerlist_update_userdata = userdata;
 }
 
-void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata)
-{
-    GC_Session *c = m->group_handler;
-    c->self_timeout = function;
-    c->self_timeout_userdata = userdata;
-}
-
 void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int, uint8_t type, void *), void *userdata)
 {
     GC_Session *c = m->group_handler;

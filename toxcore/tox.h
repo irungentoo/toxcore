@@ -2146,12 +2146,6 @@ void tox_callback_group_self_join(Tox *tox, void (*function)(Tox *m, int, void *
  */
 void tox_callback_group_peerlist_update(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
 
-/* Set the callback for self timeout.
- *
- * function(Tox *m, int groupnumber, void *userdata)
- */
-void tox_callback_group_self_timeout(Tox *tox, void (*function)(Tox *m, int, void *), void *userdata);
-
 /* Set the callback for when your join attempt is rejected where type is one of TOX_GROUP_JOIN_REJECTED.
  *
  * function(Tox *m, int groupnumber, uint8_t type, void *userdata)

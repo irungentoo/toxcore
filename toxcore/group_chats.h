@@ -233,8 +233,6 @@ typedef struct GC_Session {
     void *self_join_userdata;
     void (*peerlist_update)(Messenger *m, int, void *);
     void *peerlist_update_userdata;
-    void (*self_timeout)(Messenger *m, int, void *);
-    void *self_timeout_userdata;
     void (*rejected)(Messenger *m, int, uint8_t, void *);
     void *rejected_userdata;
 } GC_Session;
@@ -381,8 +379,6 @@ void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int, uin
 void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, int, void *), void *userdata);
 
 void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata);
-
-void gc_callback_self_timeout(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata);
 
 void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int, uint8_t type, void *), void *userdata);
 
