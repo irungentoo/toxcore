@@ -189,7 +189,7 @@ typedef struct GC_Chat {
 
     uint8_t     connection_state;
     uint64_t    last_join_attempt;
-    uint8_t     join_attempts;
+    uint8_t     get_nodes_attempts;
     uint64_t    last_peer_join_time;    /* last time a peer joined the group */
     uint64_t    last_sent_ping_time;
     uint64_t    self_last_rcvd_ping;
@@ -256,6 +256,7 @@ struct SAVED_GROUP {
     uint16_t  self_nick_len;
     uint8_t   self_role;
     uint8_t   self_status;
+    uint8_t   self_verified;
 
     uint16_t  num_addrs;
     GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];

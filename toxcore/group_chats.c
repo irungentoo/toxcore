@@ -793,6 +793,7 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
     }
 
     memcpy(chat->group[0].invite_certificate, data, INVITE_CERT_SIGNED_SIZE);
+    chat->group[0].verified = true;
 
     /* Add inviter to peerlist with incomplete info so that we can use a lossless connection */
     GC_GroupPeer peer;
@@ -923,6 +924,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     if (peer_in_chat(chat, peer.addr.public_key) != -1)
         return gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
 
+    peer.verified = true;
     int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
@@ -1178,6 +1180,7 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
         return -1;
     }
 
+    peer.verified = true;
     ipport_copy(&peer.addr.ip_port, &ipp);
     memcpy(peer.addr.public_key, sender_pk, EXT_PUBLIC_KEY);
 
@@ -1933,10 +1936,12 @@ static int verify_cert_integrity(const uint8_t *certificate)
 /* Return -1 if we don't know who signed the certificate
  * Return -2 if cert is signed by chat pk, e.g. in case it is the cert founder created for himself
  * Return peer number in other cases
- * TODO: update this function with new chat_id size
+ * TODO: update this function with new chat_id size and make it actually work
  */
 static int process_invite_cert(const GC_Chat *chat, const uint8_t *certificate)
 {
+    return -1;
+
     if (certificate[0] != GC_INVITE)
         return -1;
 
@@ -2105,7 +2110,7 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
         return -1;
 
     /* Needs to occur before peer is removed*/
-    if (c->peer_exit)
+    if (c->peer_exit && chat->group[peernumber].confirmed)
         (*c->peer_exit)(m, groupnumber, peernumber, data, length, c->peer_exit_userdata);
 
     gca_peer_cleanup(m->group_handler->announce, CHAT_ID(chat->chat_public_key), chat->group[peernumber].addr.public_key);
@@ -2147,6 +2152,7 @@ static int peer_update(GC_Chat *chat, GC_GroupPeer *peer, uint32_t peernumber)
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
+    peer->verified = chat->group[peernumber].verified;
     peer->confirmed = chat->group[peernumber].confirmed;
     memcpy(&(chat->group[peernumber]), peer, sizeof(GC_GroupPeer));
     return peernumber;
@@ -2219,7 +2225,6 @@ static void self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer 
     peer->nick_len = chat->group[0].nick_len;
     peer->status = chat->group[0].status;
     peer->role = chat->group[0].role;
-    peer->verified = true;
     peer->confirmed = true;
 }
 
@@ -2285,10 +2290,10 @@ static void search_gc_announce(GC_Session *c, GC_Chat *chat)
 
 #define GROUP_JOIN_ATTEMPT_INTERVAL 2
 #define GROUP_GET_NEW_NODES_INTERVAL 15
-#define GROUP_MAX_JOIN_ATTEMPTS (GROUP_GET_NEW_NODES_INTERVAL * 3)
+#define GROUP_MAX_GET_NODES_ATTEMPTS 3
 
-/* CS_CONNECTED: Peers are pinged, unsent packets are resent, and peer timeouts are checked.
- * CS_CONNECTING: Look for new DHT nodes if our timeout (GROUP_GET_NEW_NODES_INTERVAL) has expired.
+/* CS_CONNECTED: Peers are pinged, unsent packets are resent, and timeouts are checked.
+ * CS_CONNECTING: Look for new DHT nodes after an interval.
  * CS_DISCONNECTED: Send an invite request using a random node if our timeout GROUP_JOIN_ATTEMPT_INTERVAL has expired.
  * CS_FAILED: Do nothing. This occurrs if we cannot connect to a group or our invite request is rejected.
  */
@@ -2305,59 +2310,68 @@ void do_gc(GC_Session *c)
         if (!chat)
             continue;
 
-        if (chat->connection_state == CS_CONNECTED) {
-            ping_group(chat);
-            do_peer_connections(c->messenger, i);
-            search_gc_announce(c, chat);
+        switch (chat->connection_state) {
+            case CS_CONNECTED: {
+                ping_group(chat);
+                do_peer_connections(c->messenger, i);
+                search_gc_announce(c, chat);
 
-            /* Try to auto-rejoin group if we get disconnected */
-            if (is_timeout(chat->self_last_rcvd_ping, GROUP_PEER_TIMEOUT + 5) && chat->numpeers > 2) {
-                if (c->self_timeout)
-                    (*c->self_timeout)(c->messenger, i, c->self_timeout_userdata);
-
-                chat->connection_state = CS_DISCONNECTED;
-                gc_rejoin_group(c, chat);
-            }
-        }
-
-        else if (chat->connection_state == CS_CONNECTING) {
-            if (chat->join_attempts > GROUP_MAX_JOIN_ATTEMPTS) {
-                chat->connection_state = CS_FAILED;
-                continue;
+                break;
             }
 
-            if (is_timeout(chat->self_last_rcvd_ping, GROUP_GET_NEW_NODES_INTERVAL)) {
-                ++chat->join_attempts;
-                chat->self_last_rcvd_ping = unix_time();
-                gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
-                                           CHAT_ID(chat->chat_public_key));
-            }
+            case CS_CONNECTING: {
+                if (chat->get_nodes_attempts > GROUP_MAX_GET_NODES_ATTEMPTS) {
+                    chat->connection_state = CS_CONNECTED;
 
-            chat->connection_state = CS_DISCONNECTED;
-        }
+                    /* If we can't get an invite we assume the group is empty */
+                    if (!chat->group[0].verified
+                        || gca_send_announce_request(c->announce, chat->self_public_key,
+                                                     chat->self_secret_key, CHAT_ID(chat->chat_public_key)) == -1) {
+                        if (c->rejected)
+                            (*c->rejected)(c->messenger, i, GJ_INVITE_FAILED, c->rejected_userdata);
 
-        else if (chat->connection_state == CS_DISCONNECTED) {
-            if (chat->num_addrs && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
-                chat->last_join_attempt = unix_time();
+                        chat->connection_state = CS_FAILED;
+                    }
 
-                if (gc_send_invite_request(chat, chat->addr_list[chat->addrs_idx].ip_port,
-                    chat->addr_list[chat->addrs_idx].public_key) == -1) {
-                    if (c->rejected)
-                        (*c->rejected)(c->messenger, i, GJ_INVITE_FAILED, c->rejected_userdata);
-
-                    chat->connection_state = CS_FAILED;
-                    continue;
+                    break;
                 }
 
-                 chat->addrs_idx = (chat->addrs_idx + 1) % chat->num_addrs;
+                if (is_timeout(chat->self_last_rcvd_ping, GROUP_GET_NEW_NODES_INTERVAL)) {
+                    ++chat->get_nodes_attempts;
+                    chat->self_last_rcvd_ping = unix_time();
+                    gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
+                                               CHAT_ID(chat->chat_public_key));
+                }
+
+                chat->connection_state = CS_DISCONNECTED;
+                break;
             }
 
-            if (onion_connection_status(c->messenger->onion_c))
-                chat->connection_state = CS_CONNECTING;
-        }
+            case CS_DISCONNECTED: {
+                if (chat->num_addrs && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
+                    chat->last_join_attempt = unix_time();
 
-        else if (chat->connection_state == CS_FAILED) {
-            continue;
+                    if (gc_send_invite_request(chat, chat->addr_list[chat->addrs_idx].ip_port,
+                                               chat->addr_list[chat->addrs_idx].public_key) == -1) {
+                        if (c->rejected)
+                            (*c->rejected)(c->messenger, i, GJ_INVITE_FAILED, c->rejected_userdata);
+
+                        chat->connection_state = CS_FAILED;
+                        break;
+                    }
+
+                    chat->addrs_idx = (chat->addrs_idx + 1) % chat->num_addrs;
+                }
+
+                if (onion_connection_status(c->messenger->onion_c))
+                    chat->connection_state = CS_CONNECTING;
+
+                break;
+            }
+
+            case CS_FAILED: {
+                break;
+            }
         }
     }
 }
@@ -2461,7 +2475,11 @@ static int create_new_group(GC_Session *c, bool founder)
     chat->last_sent_ping_time = unix_time();
     chat->announce_search_timer = unix_time();
 
+    GC_GroupPeer self;
+    memset(&self, 0, sizeof(GC_GroupPeer));
+
     if (founder) {
+        self.verified = true;
         chat->credentials = new_groupcredentials(chat);
 
         if (chat->credentials == NULL) {
@@ -2471,9 +2489,6 @@ static int create_new_group(GC_Session *c, bool founder)
     }
 
     create_extended_keypair(chat->self_public_key, chat->self_secret_key);
-
-    GC_GroupPeer self;
-    memset(&self, 0, sizeof(GC_GroupPeer));
 
     memcpy(self.nick, m->name, m->name_length);
     self.nick_len = m->name_length;
@@ -2530,6 +2545,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     self.nick_len = ntohs(save->self_nick_len);
     self.role = save->self_role;
     self.status = save->self_status;
+    self.verified = (bool) save->self_verified;
 
     if (peer_add(m, groupnumber, &self, NULL) != 0)
         return -1;
@@ -2631,7 +2647,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
     chat->last_sent_ping_time = unix_time();
     chat->last_join_attempt = unix_time() + 3;  /* Delay reconnection in case of heavy lag for part signal */
     chat->announce_search_timer = unix_time();
-    chat->join_attempts = 0;
+    chat->get_nodes_attempts = 0;
 }
 
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
