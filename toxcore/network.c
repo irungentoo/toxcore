@@ -493,7 +493,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
  *  return Networking_Core object if no problems
  *  return NULL if there are problems.
  *
- * If error is non NULL it is set to 0 if no issues, 1 if bind failed, 2 if other.
+ * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
 Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
@@ -546,6 +546,10 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
         fprintf(stderr, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
 #endif
         free(temp);
+
+        if (error)
+            *error = 1;
+
         return NULL;
     }
 
@@ -562,12 +566,20 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
     /* iOS UDP sockets are weird and apparently can SIGPIPE */
     if (!set_socket_nosigpipe(temp->sock)) {
         kill_networking(temp);
+
+        if (error)
+            *error = 1;
+
         return NULL;
     }
 
     /* Set socket nonblocking. */
     if (!set_socket_nonblock(temp->sock)) {
         kill_networking(temp);
+
+        if (error)
+            *error = 1;
+
         return NULL;
     }
 
