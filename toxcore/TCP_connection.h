@@ -78,6 +78,73 @@ typedef struct {
     TCP_Proxy_Info proxy_info;
 } TCP_Connections;
 
+/* Send a packet to the TCP connection.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, uint8_t *packet, uint16_t length);
+
+/* Return a random TCP connection number for use in send_tcp_onion_request.
+ *
+ * TODO: This number is just the index of an array that the elements can
+ * change without warning.
+ *
+ * return TCP connection number on success.
+ * return -1 on failure.
+ */
+int get_random_tcp_conn_number(TCP_Connections *tcp_c);
+
+/* Send an onion packet via the TCP relay corresponding to tcp_connections_number.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *data,
+                           uint16_t length);
+
+/* Set the callback for TCP data packets.
+ */
+void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(void *object, int id,
+                                        const uint8_t *data, uint16_t length), void *object);
+
+/* Set the callback for TCP oob data packets.
+ */
+void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(void *object,
+        const uint8_t *data, uint16_t length), void *object);
+
+/* Set the callback for TCP oob data packets.
+ */
+void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oob_callback)(void *object,
+        const uint8_t *public_key, const uint8_t *relay_pk, const uint8_t *data, uint16_t length), void *object);
+
+/* Create a new TCP connection to public_key.
+ *
+ * id is the id in the callbacks for that connection.
+ *
+ * return connections_number on success.
+ * return -1 on failure.
+ */
+int new_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_key, int id);
+
+/* return 0 on success.
+ * return -1 on failure.
+ */
+int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
+
+/* Add a TCP relay tied to a connection.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_Port ip_port, const uint8_t *relay_pk);
+
+/* Add a TCP relay to the instance.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk);
 
 
 TCP_Connections *new_tcp_connections(DHT *dht);
