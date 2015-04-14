@@ -148,6 +148,7 @@ typedef struct {
     uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
+    uint64_t    time_connected;
     bool        confirmed;  /* true if we have successfully handshaked with this peer */
     bool        verified; /* true if this peer's invite certificate is legitimate */
 } GC_GroupPeer;
@@ -188,7 +189,6 @@ typedef struct GC_Chat {
     uint16_t    group_name_len;
 
     uint8_t     connection_state;
-    uint64_t    time_connected;
     uint64_t    last_join_attempt;
     uint8_t     get_nodes_attempts;
     uint64_t    last_peer_join_time;    /* last time a peer joined the group */

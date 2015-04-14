@@ -111,6 +111,12 @@ static bool peernumber_valid(const GC_Chat *chat, int peernumber)
     return peernumber >= 0 && peernumber < chat->numpeers;
 }
 
+static void self_gc_connected(GC_Chat *chat)
+{
+    chat->connection_state = CS_CONNECTED;
+    chat->group[0].time_connected = unix_time();
+}
+
 /* Expands the chat_id into the extended chat public key (encryption key + signature key)
  * dest must have room for EXT_PUBLIC_KEY bytes.
  */
@@ -540,9 +546,7 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
     if (chat->num_addrs > 0)
         sync_gc_announced_nodes(c, chat);
 
-    chat->time_connected = unix_time();
-    chat->connection_state = CS_CONNECTED;
-
+    self_gc_connected(chat);
     gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
 
     if (c->self_join)
@@ -1194,8 +1198,8 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
-    // TODO: find a less hacky way to not call this when we just joined the group
-    if (c->peer_join && !chat->group[peernumber].confirmed && is_timeout(chat->time_connected, 5))
+    if (c->peer_join && !chat->group[peernumber].confirmed
+        && chat->group[0].time_connected != chat->group[peernumber].time_connected)
         (*c->peer_join)(m, groupnumber, peernumber, c->peer_join_userdata);
 
     /* this is a handshake packet */
@@ -2145,9 +2149,12 @@ static int peer_update(GC_Chat *chat, GC_GroupPeer *peer, uint32_t peernumber)
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
+    peer->time_connected = chat->group[peernumber].time_connected;
+    peer->peer_pk_hash = chat->group[peernumber].peer_pk_hash;
     peer->verified = chat->group[peernumber].verified;
     peer->confirmed = chat->group[peernumber].confirmed;
     memcpy(&(chat->group[peernumber]), peer, sizeof(GC_GroupPeer));
+
     return peernumber;
 }
 
@@ -2197,8 +2204,8 @@ static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_
     chat->gcc = tmp_gcc;
     chat->group = tmp_group;
 
+    chat->group[peernumber].time_connected = unix_time();
     chat->group[peernumber].peer_pk_hash = jenkins_hash(peer->addr.public_key, EXT_PUBLIC_KEY);
-    chat->group[peernumber].nick_len = MIN(MAX_GC_NICK_SIZE, chat->group[peernumber].nick_len);
 
     chat->gcc[peernumber].send_message_id = 1;
     chat->gcc[peernumber].send_ary_start = 1;
@@ -2314,7 +2321,7 @@ void do_gc(GC_Session *c)
 
             case CS_CONNECTING: {
                 if (chat->get_nodes_attempts > GROUP_MAX_GET_NODES_ATTEMPTS) {
-                    chat->connection_state = CS_CONNECTED;
+                    self_gc_connected(chat);
 
                     /* If we can't get an invite we assume the group is empty */
                     if (!chat->group[0].verified
@@ -2577,11 +2584,10 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     if (chat == NULL)
         return -1;
 
+    self_gc_connected(chat);
     memcpy(chat->chat_public_key, chat->credentials->chat_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->group_name, group_name, length);
     chat->group_name_len = length;
-    chat->time_connected = unix_time();
-    chat->connection_state = CS_CONNECTED;
     chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 
     if (make_founder_certificates(chat) == -1) {
