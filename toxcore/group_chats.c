@@ -540,7 +540,9 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
     if (chat->num_addrs > 0)
         sync_gc_announced_nodes(c, chat);
 
+    chat->time_connected = unix_time();
     chat->connection_state = CS_CONNECTED;
+
     gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
 
     if (c->self_join)
@@ -936,9 +938,6 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
-    if (c->peer_join)
-        (*c->peer_join)(m, groupnumber, peernumber, c->peer_join_userdata);
-
     return gc_send_invite_response(chat, peernumber, invite_certificate, INVITE_CERT_SIGNED_SIZE);
 }
 
@@ -1195,11 +1194,12 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
+    // TODO: find a less hacky way to not call this when we just joined the group
+    if (c->peer_join && !chat->group[peernumber].confirmed && is_timeout(chat->time_connected, 5))
+        (*c->peer_join)(m, groupnumber, peernumber, c->peer_join_userdata);
+
     /* this is a handshake packet */
     if (peer_exists == -1) {
-        if (c->peer_join)
-            (*c->peer_join)(m, groupnumber, peernumber, c->peer_join_userdata);
-
         gc_send_message_ack(chat, peernumber, message_id, 0);
         ++chat->gcc[peernumber].recv_message_id;
     }
@@ -2443,7 +2443,9 @@ static int get_new_group_index(GC_Session *c)
 
     int new_index = c->num_chats;
     memset(&(c->chats[new_index]), 0, sizeof(GC_Chat));
+
     ++c->num_chats;
+
     return new_index;
 }
 
@@ -2578,6 +2580,7 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     memcpy(chat->chat_public_key, chat->credentials->chat_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->group_name, group_name, length);
     chat->group_name_len = length;
+    chat->time_connected = unix_time();
     chat->connection_state = CS_CONNECTED;
     chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 
