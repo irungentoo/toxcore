@@ -68,8 +68,8 @@ typedef struct {
     int (*tcp_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
     void *tcp_data_callback_object;
 
-    int (*tcp_oob_callback)(void *object, const uint8_t *public_key, const uint8_t *relay_pk, const uint8_t *data,
-                            uint16_t length);
+    int (*tcp_oob_callback)(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
+                            const uint8_t *data, uint16_t length);
     void *tcp_oob_callback_object;
 
     int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
@@ -83,7 +83,7 @@ typedef struct {
  * return -1 on failure.
  * return 0 on success.
  */
-int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, uint8_t *packet, uint16_t length);
+int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, const uint8_t *packet, uint16_t length);
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
@@ -103,12 +103,20 @@ int get_random_tcp_conn_number(TCP_Connections *tcp_c);
 int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *data,
                            uint16_t length);
 
+/* Send an oob packet via the TCP relay corresponding to tcp_connections_number.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *public_key,
+                        const uint8_t *packet, uint16_t length);
+
 /* Set the callback for TCP data packets.
  */
 void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(void *object, int id,
                                         const uint8_t *data, uint16_t length), void *object);
 
-/* Set the callback for TCP oob data packets.
+/* Set the callback for TCP onion packets.
  */
 void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(void *object,
         const uint8_t *data, uint16_t length), void *object);
@@ -116,7 +124,7 @@ void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_
 /* Set the callback for TCP oob data packets.
  */
 void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oob_callback)(void *object,
-        const uint8_t *public_key, const uint8_t *relay_pk, const uint8_t *data, uint16_t length), void *object);
+        const uint8_t *public_key, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length), void *object);
 
 /* Create a new TCP connection to public_key.
  *
@@ -134,6 +142,16 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
 
 /* Add a TCP relay tied to a connection.
  *
+ * NOTE: This can only be used during the tcp_oob_callback.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_number,
+                                    unsigned int tcp_connections_number);
+
+/* Add a TCP relay tied to a connection.
+ *
  * return 0 on success.
  * return -1 on failure.
  */
@@ -146,6 +164,13 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
  */
 int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk);
 
+/* Copy a maximum of max_num TCP relays we are connected to to tcp_relays.
+ * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
+ *
+ * return number of relays copied to tcp_relays on success.
+ * return 0 on failure.
+ */
+unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
 TCP_Connections *new_tcp_connections(DHT *dht);
 void do_tcp_connections(TCP_Connections *tcp_c);
