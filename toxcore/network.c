@@ -180,7 +180,7 @@ int set_socket_nosigpipe(sock_t sock)
 int set_socket_reuseaddr(sock_t sock)
 {
     int set = 1;
-    return (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &set, sizeof(set)) == 0);
+    return (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&set, sizeof(set)) == 0);
 }
 
 /* Set socket to dual (IPv4 + IPv6 socket)
