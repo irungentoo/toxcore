@@ -921,14 +921,16 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     GC_GroupPeer peer;
     memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    bytes_to_U16(&peer.nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
-    peer.nick_len = MIN(peer.nick_len, MAX_GC_NICK_SIZE);
+    uint8_t nick[MAX_GC_NICK_SIZE];
+    uint16_t nick_len;
+    bytes_to_U16(&nick_len, data + SEMI_INVITE_CERT_SIGNED_SIZE);
+    nick_len = MIN(nick_len, MAX_GC_NICK_SIZE);
 
-    memcpy(peer.nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), peer.nick_len);
+    memcpy(nick, data + SEMI_INVITE_CERT_SIGNED_SIZE + sizeof(uint16_t), nick_len);
     memcpy(peer.addr.public_key, public_key, EXT_PUBLIC_KEY);
     ipport_copy(&peer.addr.ip_port, &ipp);
 
-    if (get_nick_peernumber(chat, peer.nick, peer.nick_len) != -1)
+    if (get_nick_peernumber(chat, nick, nick_len) != -1)
         return gc_invite_response_reject(chat, ipp, public_key, GJ_NICK_TAKEN);
 
     if (peer_in_chat(chat, peer.addr.public_key) != -1)
@@ -1202,6 +1204,9 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
     int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
+        if (peer_exists != -1)
+            chat->group[peer_exists].confirmed = false;
+
         fprintf(stderr, "handle_bc_new_peer failed (peernumber == -1)!\n");
         return -1;
     }
@@ -1331,11 +1336,11 @@ static int handle_bc_change_nick(Messenger *m, int groupnumber, uint32_t peernum
     if (chat == NULL)
         return -1;
 
-    if (length > MAX_GC_NICK_SIZE)
-        return -1;
-
-    if (get_nick_peernumber(chat, nick, length) != -1)
-        return -1;
+    /* This shouldn't happen; if it does we need to refresh this peer's info */
+    if (length > MAX_GC_NICK_SIZE || get_nick_peernumber(chat, nick, length) != -1) {
+        chat->group[peernumber].confirmed = false;
+        return send_gc_peer_request(chat, peernumber);
+    }
 
     if (c->nick_change)
         (*c->nick_change)(m, groupnumber, peernumber, nick, length, c->nick_change_userdata);

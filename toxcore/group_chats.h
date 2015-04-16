@@ -136,8 +136,8 @@ typedef struct GC_PeerAddress {
 } GC_PeerAddress;
 
 typedef struct {
+    /* info we get from peer */
     GC_PeerAddress   addr;
-    uint32_t    peer_pk_hash;    /* 32-bit hash of public_key */
     uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
     uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
     uint8_t     nick[MAX_GC_NICK_SIZE];
@@ -145,6 +145,9 @@ typedef struct {
     uint8_t     status;
     uint8_t     ignore;
     uint8_t     role;
+
+    /* info we set ourselves */
+    uint32_t    peer_pk_hash;    /* 32-bit hash of public_key */
     uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
