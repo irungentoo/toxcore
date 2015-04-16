@@ -1467,7 +1467,7 @@ Onion_Client *new_onion_client(Net_Crypto *c)
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_data_response, onion_c);
     oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, &handle_dhtpk_announce, onion_c);
     cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_DHTPK, &handle_dht_dhtpk, onion_c);
-    tcp_onion_response_handler(onion_c->c, &handle_tcp_onion, onion_c);
+    set_onion_packet_tcp_connection_callback(onion_c->c->tcp_c, &handle_tcp_onion, onion_c);
 
     return onion_c;
 }
@@ -1483,7 +1483,7 @@ void kill_onion_client(Onion_Client *onion_c)
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
     oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, NULL, NULL);
     cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_DHTPK, NULL, NULL);
-    tcp_onion_response_handler(onion_c->c, NULL, NULL);
+    set_onion_packet_tcp_connection_callback(onion_c->c->tcp_c, NULL, NULL);
     memset(onion_c, 0, sizeof(Onion_Client));
     free(onion_c);
 }

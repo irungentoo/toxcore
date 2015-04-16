@@ -26,7 +26,7 @@
 
 #include "DHT.h"
 #include "LAN_discovery.h"
-#include "TCP_client.h"
+#include "TCP_connection.h"
 #include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
@@ -72,11 +72,6 @@
 
 #define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
-
-#define STATUS_TCP_NULL      0
-#define STATUS_TCP_OFFLINE   1
-#define STATUS_TCP_INVISIBLE 2 /* we know the other peer is connected to this relay but he isn't appearing online */
-#define STATUS_TCP_ONLINE    3
 
 /* All packets starting with a byte in this range are considered lossy packets. */
 #define PACKET_ID_LOSSY_RANGE_START 192
@@ -157,13 +152,8 @@ typedef struct {
 
     uint8_t killed; /* set to 1 to kill the connection. */
 
-    uint8_t status_tcp[MAX_TCP_CONNECTIONS]; /* set to one of STATUS_TCP_* */
-    uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
-    unsigned int last_relay_sentto;
-    unsigned int num_tcp_online;
-
-    Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
-    uint16_t num_tcp_relays;
+    /* TCP_connection connection_number */
+    unsigned int connection_number_tcp;
 
     uint8_t maximum_speed_reached;
 
@@ -186,10 +176,9 @@ typedef struct {
 
 typedef struct {
     DHT *dht;
+    TCP_Connections *tcp_c;
 
     Crypto_Connection *crypto_connections;
-    TCP_Client_Connection *tcp_connections_new[MAX_TCP_CONNECTIONS];
-    TCP_Client_Connection *tcp_connections[MAX_TCP_CONNECTIONS];
     pthread_mutex_t tcp_mutex;
 
     pthread_mutex_t connections_mutex;
@@ -211,9 +200,6 @@ typedef struct {
     uint32_t current_sleep_time;
 
     BS_LIST ip_port_list;
-
-    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
-    void *tcp_onion_callback_object;
 
     TCP_Proxy_Info proxy_info;
 } Net_Crypto;
@@ -364,11 +350,6 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 
-/* Set the function to be called when an onion response packet is received by one of the TCP connections.
- */
-void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
-                                uint16_t length), void *object);
-
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
  * return TCP connection number on success.
@@ -389,7 +370,7 @@ int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const ui
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
-unsigned int copy_connected_tcp_relays(const Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
+unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
 
 /* Kill a crypto connection.
  *
