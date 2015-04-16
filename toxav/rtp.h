@@ -44,10 +44,16 @@
 /**
  * Payload type identifier. Also used as rtp callback prefix.
  */
-typedef enum {
+enum {
     rtp_TypeAudio = 192,
     rtp_TypeVideo
-} RTPPayloadType;
+};
+
+typedef enum {
+    rtp_StateBad = -1,
+    rtp_StateNormal,
+    rtp_StateGood,
+} RTPTransmissionState;
 
 /** 
  * Standard rtp header.
@@ -108,10 +114,11 @@ typedef struct {
 
     int                   dest;
 
-    struct RTCPSession_s *rtcp;
+    struct RTCPSession_s *rtcp_session;
     struct CSession_s    *cs;
     Messenger            *m;
-
+    
+    RTPTransmissionState  tstate;
 } RTPSession;
 
 /**
@@ -148,7 +155,6 @@ int rtp_send_msg ( RTPSession* session, const uint8_t* data, uint16_t length );
  * Dealloc msg.
  */
 void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
-
 
 
 #endif /* RTP_H */

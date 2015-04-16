@@ -293,7 +293,7 @@ void cs_do(CSession *cs)
         /* The maximum for 120 ms 48 KHz audio */
         int16_t tmp[5760];
         
-        while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
+        if ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
             LOGGED_UNLOCK(cs->queue_mutex);
             
             if (success == 2) {
@@ -327,7 +327,7 @@ void cs_do(CSession *cs)
                 if (!reconfigure_audio_decoder(cs, cs->last_packet_sampling_rate, cs->last_packet_channel_count)) {
                     LOGGER_WARNING("Failed to reconfigure decoder!");
                     rtp_free_msg(NULL, msg);
-                    continue;
+                    goto DONE;
                 }
                 
                 rc = opus_decode(cs->audio_decoder, msg->data + 4, msg->length - 4, tmp, 5760, 0);
@@ -347,6 +347,7 @@ void cs_do(CSession *cs)
             
             LOGGED_LOCK(cs->queue_mutex);
         }
+        DONE:;
     }
     
     /********************* VIDEO *********************/

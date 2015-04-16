@@ -207,21 +207,31 @@ typedef enum TOXAV_CALL_STATE {
      * The flag that marks that friend is receiving video.
      */
     TOXAV_CALL_STATE_RECEIVING_V = 8,
-    
-    /** 
-     * The core will never set TOXAV_CALL_STATE_END or TOXAV_CALL_STATE_ERROR 
-     * together with other states.
-     */
-    
     /**
      * The call has finished. This is the final state after which no more state
      * transitions can occur for the call.
      */
     TOXAV_CALL_STATE_END = 16,
     /**
-     * Sent by the AV core if an error occurred on the remote end.
+     * AV core suggests you to lower bitrate for audio.
      */
-    TOXAV_CALL_STATE_ERROR = 32
+    TOXAV_CALL_STATE_LOWER_AUDIO_BITRATE = 32,
+    /**
+     * AV core suggests you to lower bitrate for video.
+     */
+    TOXAV_CALL_STATE_LOWER_VIDEO_BITRATE = 64,
+    /**
+     * AV core suggests you to increase bitrate for audio.
+     */
+    TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE = 128,
+    /**
+     * AV core suggests you to increase bitrate for video.
+     */
+    TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE = 256,
+    /**
+     * Set by the AV core if an error occurred on the remote end.
+     */
+    TOXAV_CALL_STATE_ERROR = 32768
 } TOXAV_CALL_STATE;
 /**
  * The function type for the `call_state` callback.

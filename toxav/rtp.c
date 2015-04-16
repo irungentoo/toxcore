@@ -50,19 +50,22 @@
 typedef struct {
     uint64_t timestamp; /* in ms */
     
-    uint32_t packets_missing;
+    uint32_t received_packets;
     uint32_t expected_packets;
     /* ... other stuff in the future */
 } RTCPReport;
 
 typedef struct RTCPSession_s {
+    RTPSession *rtp_session;
+    
     uint8_t prefix;
     uint64_t last_sent_report_ts;
-    uint32_t last_missing_packets;
+    uint32_t last_received_packets;
     uint32_t last_expected_packets;
     
     RingBuffer* pl_stats; /* Packet loss stats over time */
 } RTCPSession;
+
 
 
 
@@ -91,18 +94,12 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
     }
 
     retu->version   = RTP_VERSION; /* It's always 2 */
-    retu->padding   = 0;           /* If some additional data is needed about the packet */
-    retu->extension = 0;           /* If extension to header is needed */
-    retu->cc        = 1;           /* Amount of contributors */
-    retu->csrc      = NULL;        /* Container */
     retu->ssrc      = random_int();
-    retu->marker    = 0;
     retu->payload_type = payload_type % 128;
-
+    
+    retu->tstate = rtp_StateNormal;
     retu->m = messenger;
     retu->dest = friend_num;
-    retu->rsequnum = retu->sequnum = 0;
-    retu->ext_header = NULL; /* When needed allocate */
 
     if ( !(retu->csrc = calloc(1, sizeof(uint32_t))) ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
@@ -117,15 +114,16 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
     
     
     /* Initialize rtcp session */
-    if (!(retu->rtcp = calloc(1, sizeof(RTCPSession)))) {
+    if (!(retu->rtcp_session = calloc(1, sizeof(RTCPSession)))) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         free(retu->csrc);
         free(retu);
         return NULL;
     }
     
-    retu->rtcp->prefix = 222 + payload_type % 192;
-    retu->rtcp->pl_stats = rb_new(4);
+    retu->rtcp_session->prefix = 222 + payload_type % 192;
+    retu->rtcp_session->pl_stats = rb_new(4);
+    retu->rtcp_session->rtp_session = retu;
     
     return retu;
 }
@@ -139,11 +137,11 @@ void rtp_kill ( RTPSession *session )
     free ( session->csrc );
     
     void* t;
-    while (!rb_empty(session->rtcp->pl_stats)) {
-        rb_read(session->rtcp->pl_stats, (void**) &t);
+    while (!rb_empty(session->rtcp_session->pl_stats)) {
+        rb_read(session->rtcp_session->pl_stats, (void**) &t);
         free(t);
     }
-    rb_free(session->rtcp->pl_stats);
+    rb_free(session->rtcp_session->pl_stats);
     
     LOGGER_DEBUG("Terminated RTP session: %p", session);
 
@@ -152,41 +150,49 @@ void rtp_kill ( RTPSession *session )
 }
 void rtp_do(RTPSession *session)
 {
-    if (!session || !session->rtcp)
+    if (!session || !session->rtcp_session)
         return;
     
-    if (current_time_monotonic() - session->rtcp->last_sent_report_ts >= RTCP_REPORT_INTERVAL_MS) {
-        send_rtcp_report(session->rtcp, session->m, session->dest);
+    if (current_time_monotonic() - session->rtcp_session->last_sent_report_ts >= RTCP_REPORT_INTERVAL_MS) {
+        send_rtcp_report(session->rtcp_session, session->m, session->dest);
     }
     
-    if (rb_full(session->rtcp->pl_stats)) {
+    if (rb_full(session->rtcp_session->pl_stats)) {
         RTCPReport* reports[4];
         
         int i = 0;
-        for (; rb_read(session->rtcp->pl_stats, (void**) reports + i); i++);
+        for (; rb_read(session->rtcp_session->pl_stats, (void**) reports + i); i++);
         
         /* Check for timed out reports (> 6 sec) */
         uint64_t now = current_time_monotonic();
         for (i = 0; i < 4 && now - reports[i]->timestamp < 6000; i ++);
         for (; i < 4; i ++) {
-            rb_write(session->rtcp->pl_stats, reports[i]);
+            rb_write(session->rtcp_session->pl_stats, reports[i]);
             reports[i] = NULL;
         }
-        if (!rb_empty(session->rtcp->pl_stats)) {
+        if (!rb_empty(session->rtcp_session->pl_stats)) {
             for (i = 0; reports[i] != NULL; i ++)
                 free(reports[i]);
             return; /* As some reports are timed out, we need more... */
         }
         
         /* We have 4 on-time reports so we can proceed */
-        uint32_t quality_loss = 0;
+        uint32_t quality = 100;
         for (i = 0; i < 4; i++) {
-            uint32_t idx = reports[i]->packets_missing * 100 / reports[i]->expected_packets;
-            quality_loss += idx;
+            uint32_t idx = reports[i]->received_packets * 100 / reports[i]->expected_packets;
+            quality = MIN(quality, idx);
+            free(reports[i]);
         }
         
-        if (quality_loss > 40) {
-            LOGGER_DEBUG("Packet loss detected");
+        if (quality <= 70) {
+            session->tstate = rtp_StateBad;
+            LOGGER_WARNING("Stream quality: BAD");
+        } else if (quality >= 99) {
+            session->tstate = rtp_StateGood;
+            LOGGER_DEBUG("Stream quality: GOOD");
+        } else {
+            session->tstate = rtp_StateNormal;
+            LOGGER_DEBUG("Stream quality: NORMAL");
         }
     }
 }
@@ -200,8 +206,8 @@ int rtp_start_receiving(RTPSession* session)
         LOGGER_WARNING("Failed to register rtp receive handler");
         return -1;
     }
-    if (custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp->prefix,
-        handle_rtcp_packet, session->rtcp) == -1) {
+    if (custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp_session->prefix,
+        handle_rtcp_packet, session->rtcp_session) == -1) {
         LOGGER_WARNING("Failed to register rtcp receive handler");
         custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
         return -1;
@@ -215,7 +221,7 @@ int rtp_stop_receiving(RTPSession* session)
         return -1;
     
     custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
-    custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp->prefix, NULL, NULL); /* RTCP */
+    custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
     
     return 0;
 }
@@ -516,16 +522,21 @@ void send_rtcp_report(RTCPSession* session, Messenger* m, int32_t friendnumber)
     uint8_t parsed[9];
     parsed[0] = session->prefix;
     
-    uint32_t packets_missing = htonl(session->last_missing_packets);
+    uint32_t received_packets = htonl(session->last_received_packets);
     uint32_t expected_packets = htonl(session->last_expected_packets);
     
-    memcpy(parsed + 1, &packets_missing, 4);
+    memcpy(parsed + 1, &received_packets, 4);
     memcpy(parsed + 5, &expected_packets, 4);
     
     if (-1 == send_custom_lossy_packet(m, friendnumber, parsed, sizeof(parsed)))
         LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", sizeof(parsed), strerror(errno));
-    else
+    else {
+        LOGGER_DEBUG("Sent rtcp report: ex: %d rc: %d", session->last_expected_packets, session->last_received_packets);
+        
+        session->last_received_packets = 0;
+        session->last_expected_packets = 0;
         session->last_sent_report_ts = current_time_monotonic();
+    }
 }
 int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
 {
@@ -545,11 +556,20 @@ int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data,
     }
 
     /* Check if message came in late */
-    if ( msg->header->sequnum > session->rsequnum && msg->header->timestamp > session->rtimestamp ) {
+    if ( msg->header->sequnum > session->rsequnum || msg->header->timestamp > session->rtimestamp ) {
         /* Not late */
+        if (msg->header->sequnum > session->rsequnum)
+            session->rtcp_session->last_expected_packets += msg->header->sequnum - session->rsequnum;
+        else if (msg->header->sequnum < session->rsequnum)
+            session->rtcp_session->last_expected_packets += (msg->header->sequnum + 65535) - session->rsequnum;
+        else /* Usual case when transmission starts */
+            session->rtcp_session->last_expected_packets ++;
+        
         session->rsequnum = msg->header->sequnum;
         session->rtimestamp = msg->header->timestamp;
     }
+
+    session->rtcp_session->last_received_packets ++;
 
     queue_message(session, msg);
     return 0;
@@ -562,14 +582,15 @@ int handle_rtcp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data
     RTCPSession* session = object;
     RTCPReport* report = malloc(sizeof(RTCPReport));
     
-    memcpy(&report->packets_missing, data + 1, 4);
+    memcpy(&report->received_packets, data + 1, 4);
     memcpy(&report->expected_packets, data + 5, 4);
     
-    report->packets_missing = ntohl(report->packets_missing);
+    report->received_packets = ntohl(report->received_packets);
     report->expected_packets = ntohl(report->expected_packets);
     
-    /* This would cause undefined behaviour */
-    if (report->expected_packets == 0) {
+    /* Invalid values */
+    if (report->expected_packets == 0 || report->received_packets > report->expected_packets) {
+        LOGGER_WARNING("Malformed rtcp report! %d %d", report->expected_packets, report->received_packets);
         free(report);
         return 0;
     }
@@ -577,5 +598,7 @@ int handle_rtcp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data
     report->timestamp = current_time_monotonic();
     
     free(rb_write(session->pl_stats, report));
+    
+    LOGGER_DEBUG("Got rtcp report: ex: %d rc: %d", report->expected_packets, report->received_packets);
     return 0;
 }

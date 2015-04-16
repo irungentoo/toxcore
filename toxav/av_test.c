@@ -27,6 +27,9 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
+#define LOGGING
+#include "../toxcore/logger.h"
+
 /* Playing audio data */
 #include <portaudio.h>
 /* Reading audio */
@@ -80,6 +83,7 @@
 typedef struct {
     bool incoming;
     uint32_t state;
+    uint32_t abitrate;
 } CallControl;
 
 struct toxav_thread_data {
@@ -91,22 +95,6 @@ struct toxav_thread_data {
 const char* vdout = "AV Test"; /* Video output */
 PaStream* adout = NULL; /* Audio output */
 
-const char* stringify_state(TOXAV_CALL_STATE s)
-{
-    static const char* strings[] =
-    {
-        "NOT SENDING",
-        "SENDING AUDIO",
-        "SENDING VIDEO",
-        "SENDING AUDIO AND VIDEO",
-        "PAUSED",
-        "END",
-        "ERROR"
-    };
-    
-    return strings [s];
-}
-
 /** 
  * Callbacks 
  */
@@ -117,9 +105,20 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
 }
 void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
-    printf("Handling CALL STATE callback: %d\n", state);
-    
     ((CallControl*)user_data)->state = state;
+    
+    if (state & TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE) {
+        uint32_t bitrate = ((CallControl*)user_data)->abitrate;
+        
+        if (bitrate < 64) {
+            printf("Changing bitrate to: %d\n", 64);
+            toxav_set_audio_bit_rate(av, friend_number, 64, 0);
+        }
+    } else if (state & TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE) {
+        
+    } else {
+        printf("Handling CALL STATE callback: %d\n", state);
+    }
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint16_t width, uint16_t height,
@@ -331,24 +330,6 @@ int print_help (const char* name)
 
 int main (int argc, char** argv)
 {
-    RingBuffer* rb = rb_new(4);
-    int a[5] = {0, 1, 2, 3, 4};
-    int* x;
-    rb_write(rb, a + 0);
-    rb_write(rb, a + 1);
-    rb_write(rb, a + 2);
-    rb_write(rb, a + 3);
-//     rb_write(rb, a + 4);
-    
-    x = rb_write(rb, a + 4);
-    while (rb_read(rb, (void**) &x))
-//     rb_read(rb, (void**)&x);
-        printf("%d ", *x);
-    
-    printf("\n");
-//     int r = 43;
-//     printf("%d\n", r >= 40 ? 3 : r / 10);
-    return 0;
     Pa_Initialize();
     
     struct stat st;
@@ -688,9 +669,11 @@ int main (int argc, char** argv)
 		memset(&AliceCC, 0, sizeof(CallControl));
         memset(&BobCC, 0, sizeof(CallControl));
         
+        AliceCC.abitrate = BobCC.abitrate = 8;
+        
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 48, 0, &rc);
+            toxav_call(AliceAV, 0, AliceCC.abitrate, 0, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -703,7 +686,7 @@ int main (int argc, char** argv)
 		
 		{ /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 48, 0, &rc);
+            toxav_answer(BobAV, 0, BobCC.abitrate, 0, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);

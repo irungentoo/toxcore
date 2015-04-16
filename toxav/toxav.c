@@ -60,6 +60,12 @@ typedef struct ToxAVCall_s {
     uint8_t last_self_capabilities;
     uint8_t last_peer_capabilities;
     
+    /** Quality control */
+    uint64_t time_audio_good;
+    uint32_t last_bad_audio_bit_rate;
+    uint64_t time_video_good;
+    uint32_t last_bad_video_bit_rate;
+    
     struct ToxAVCall_s *prev;
     struct ToxAVCall_s *next;
 } ToxAVCall;
@@ -96,11 +102,13 @@ int callback_end(void* toxav_inst, MSICall* call);
 int callback_error(void* toxav_inst, MSICall* call);
 int callback_capabilites(void* toxav_inst, MSICall* call);
 
-ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error);
-ToxAVCall* call_get(ToxAV* av, uint32_t friend_number);
-void call_remove(ToxAVCall* call);
 bool audio_bitrate_invalid(uint32_t bitrate);
 bool video_bitrate_invalid(uint32_t bitrate);
+void invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state);
+ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error);
+ToxAVCall* call_get(ToxAV* av, uint32_t friend_number);
+void qc_do(ToxAVCall* call);
+void call_remove(ToxAVCall* call);
 bool call_prepare_transmission(ToxAVCall* call);
 void call_kill_transmission(ToxAVCall* call);
 
@@ -220,8 +228,9 @@ void toxav_iterate(ToxAV* av)
             LOGGED_UNLOCK(av->mutex);
             
             cs_do(i->cs);
-            rtp_do(i->rtps[0]);
-            rtp_do(i->rtps[1]);
+            rtp_do(i->rtps[audio_index]);
+            rtp_do(i->rtps[video_index]);
+            qc_do(i);
             
             if (i->last_self_capabilities & msi_CapRAudio) /* Receiving audio */
                 rc = MIN(i->cs->last_packet_frame_duration, rc);
@@ -516,8 +525,10 @@ bool toxav_set_audio_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t audio_
         goto END;
     }
     
-    /* NOTE: no need to lock*/
+    /* Decoding mutex is locked because of quality control */
+    LOGGED_LOCK(call->mutex_decoding);
     call->audio_bit_rate = audio_bit_rate;
+    LOGGED_UNLOCK(call->mutex_decoding);
     LOGGED_UNLOCK(av->mutex);
     
 END:
@@ -550,8 +561,10 @@ bool toxav_set_video_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t video_
         goto END;
     }
     
-    /* NOTE: no need to lock*/
+    /* Decoding mutex is locked because of quality control */
+    LOGGED_LOCK(call->mutex_decoding);
     call->video_bit_rate = video_bit_rate;
+    LOGGED_UNLOCK(call->mutex_decoding);
     LOGGED_UNLOCK(av->mutex);
     
 END:
@@ -813,8 +826,7 @@ int callback_start(void* toxav_inst, MSICall* call)
         return -1;
     }
     
-    if (toxav->scb.first)
-        toxav->scb.first(toxav, call->friend_id, call->peer_capabilities, toxav->scb.second);
+    invoke_call_state(toxav, call->friend_id, call->peer_capabilities);
     
     LOGGED_UNLOCK(toxav->mutex);
     return 0;
@@ -825,8 +837,7 @@ int callback_end(void* toxav_inst, MSICall* call)
     ToxAV* toxav = toxav_inst;
     LOGGED_LOCK(toxav->mutex);
     
-    if (toxav->scb.first)
-        toxav->scb.first(toxav, call->friend_id, TOXAV_CALL_STATE_END, toxav->scb.second);
+    invoke_call_state(toxav, call->friend_id, TOXAV_CALL_STATE_END);
     
     call_kill_transmission(call->av_call);
     call_remove(call->av_call);
@@ -840,8 +851,7 @@ int callback_error(void* toxav_inst, MSICall* call)
     ToxAV* toxav = toxav_inst;
     LOGGED_LOCK(toxav->mutex);
     
-    if (toxav->scb.first)
-        toxav->scb.first(toxav, call->friend_id, TOXAV_CALL_STATE_ERROR, toxav->scb.second);
+    invoke_call_state(toxav, call->friend_id, TOXAV_CALL_STATE_ERROR);
     
     call_kill_transmission(call->av_call);
     call_remove(call->av_call);
@@ -857,8 +867,7 @@ int callback_capabilites(void* toxav_inst, MSICall* call)
     
     /* TODO modify cs? */
     
-    if (toxav->scb.first)
-        toxav->scb.first(toxav, call->friend_id, call->peer_capabilities, toxav->scb.second);
+    invoke_call_state(toxav, call->friend_id, call->peer_capabilities);
     
     LOGGED_UNLOCK(toxav->mutex);
     return 0;
@@ -876,6 +885,12 @@ bool video_bitrate_invalid(uint32_t bitrate)
 {
     /* TODO: If anyone knows the answer to this one please fill it up */
     return false;
+}
+
+void invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state)
+{
+    if (av->scb.first)
+        av->scb.first(av, friend_number, state, av->scb.second);
 }
 
 ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error)
@@ -966,6 +981,94 @@ ToxAVCall* call_get(ToxAV* av, uint32_t friend_number)
         return NULL;
     
     return av->calls[friend_number];
+}
+
+void qc_do(ToxAVCall* call)
+{
+    /* Please NOTE: The quality control is rather basic,
+     * advanced algorithms will be applied in the future
+     */
+    switch(call->rtps[audio_index]->tstate) {
+    case rtp_StateBad:
+        LOGGER_DEBUG("Suggesting lower bitrate for audio...");
+        call->time_audio_good = 0;
+        call->last_bad_audio_bit_rate = call->audio_bit_rate;
+        invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_LOWER_AUDIO_BITRATE);
+        break;
+    case rtp_StateGood:
+        if (call->time_audio_good == 0)
+            call->time_audio_good = current_time_monotonic();
+        else if (current_time_monotonic() - call->time_audio_good >= 30000 && 
+            64 > call->audio_bit_rate)
+            if (call->last_bad_audio_bit_rate > call->audio_bit_rate) {
+                if (current_time_monotonic() - call->time_audio_good >= 45000)
+                    invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE);
+                call->last_bad_audio_bit_rate = 0;
+            } else
+                invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE);
+        break;
+    case rtp_StateNormal:
+        call->time_audio_good = 0;
+        break;
+    }
+    
+    switch(call->rtps[video_index]->tstate) {
+    case rtp_StateBad:
+        LOGGER_DEBUG("Suggesting lower bitrate for video...");
+        call->time_video_good = 0;
+        call->last_bad_video_bit_rate = call->video_bit_rate;
+        invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_LOWER_VIDEO_BITRATE);
+        break;
+    case rtp_StateGood:
+        if (call->time_video_good == 0)
+            call->time_video_good = current_time_monotonic();
+        else if (current_time_monotonic() - call->time_video_good >= 30000)
+            if (call->last_bad_video_bit_rate > call->video_bit_rate) {
+                if (current_time_monotonic() - call->time_video_good >= 45000)
+                    invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE);
+                call->last_bad_video_bit_rate = 0;
+            } else
+                invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE);
+        break;
+    case rtp_StateNormal:
+        call->time_video_good = 0;
+        break;
+    }
+    
+}
+
+void call_remove(ToxAVCall* call)
+{
+    if (call == NULL)
+        return;
+    
+    uint32_t friend_id = call->friend_id;
+    ToxAV* av = call->av;
+    
+    ToxAVCall* prev = call->prev;
+    ToxAVCall* next = call->next;
+    
+    free(call);
+    
+    if (prev)
+        prev->next = next;
+    else if (next)
+        av->calls_head = next->friend_id;
+    else goto CLEAR;
+    
+    if (next)
+        next->prev = prev;
+    else if (prev)
+        av->calls_tail = prev->friend_id;
+    else goto CLEAR;
+    
+    av->calls[friend_id] = NULL;
+    return;
+    
+CLEAR:
+    av->calls_head = av->calls_tail = 0;
+    free(av->calls);
+    av->calls = NULL;
 }
 
 bool call_prepare_transmission(ToxAVCall* call)
@@ -1088,38 +1191,4 @@ void call_kill_transmission(ToxAVCall* call)
     pthread_mutex_destroy(call->mutex_audio_sending);
     pthread_mutex_destroy(call->mutex_video_sending);
     pthread_mutex_destroy(call->mutex_decoding);
-}
-
-void call_remove(ToxAVCall* call)
-{
-    if (call == NULL)
-        return;
-    
-    uint32_t friend_id = call->friend_id;
-    ToxAV* av = call->av;
-    
-    ToxAVCall* prev = call->prev;
-    ToxAVCall* next = call->next;
-    
-    free(call);
-    
-    if (prev)
-        prev->next = next;
-    else if (next)
-        av->calls_head = next->friend_id;
-    else goto CLEAR;
-    
-    if (next)
-        next->prev = prev;
-    else if (prev)
-        av->calls_tail = prev->friend_id;
-    else goto CLEAR;
-    
-    av->calls[friend_id] = NULL;
-    return;
-    
-CLEAR:
-    av->calls_head = av->calls_tail = 0;
-    free(av->calls);
-    av->calls = NULL;
 }
