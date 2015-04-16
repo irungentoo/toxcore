@@ -39,6 +39,10 @@
 /* Time until connection to friend gets killed (if it doesn't get locked withing that time) */
 #define TCP_CONNECTION_ANNOUNCE_TIMEOUT (TCP_CONNECTION_TIMEOUT)
 
+/* The amount of recommended connections for each friend
+   NOTE: Must be equal or smaller than MAX_FRIEND_TCP_CONNECTIONS */
+#define RECOMMENDED_FRIEND_TCP_CONNECTIONS 3
+
 typedef struct {
     uint8_t status;
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */

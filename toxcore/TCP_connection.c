@@ -515,6 +515,24 @@ static int rm_tcp_connection_from_conn(TCP_Connection_to *con_to, int tcp_connec
     return -1;
 }
 
+/* return number of online connections on success.
+ * return -1 on failure.
+ */
+static unsigned int online_tcp_connection_from_conn(TCP_Connection_to *con_to)
+{
+    unsigned int i, count = 0;
+
+    for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
+        if (con_to->connections[i].tcp_connection) {
+            if (con_to->connections[i].status == TCP_CONNECTIONS_STATUS_ONLINE) {
+                ++count;
+            }
+        }
+    }
+
+    return count;
+}
+
 /* return index on success.
  * return -1 on failure.
  */
@@ -856,16 +874,20 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
     if (tcp_connections_number != -1) {
         return add_tcp_number_relay_connection(tcp_c, connections_number, tcp_connections_number);
     } else {
-        int tcp_connections_number = add_tcp_relay(tcp_c, ip_port, relay_pk);
-
-        if (add_tcp_connection_to_conn(con_to, tcp_connections_number) == -1) {
+        if (online_tcp_connection_from_conn(con_to) >= RECOMMENDED_FRIEND_TCP_CONNECTIONS) {
             return -1;
         }
+
+        int tcp_connections_number = add_tcp_relay(tcp_c, ip_port, relay_pk);
 
         TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
         if (!tcp_con)
             return -1;
+
+        if (add_tcp_connection_to_conn(con_to, tcp_connections_number) == -1) {
+            return -1;
+        }
 
         return 0;
     }
@@ -946,22 +968,37 @@ static void do_tcp_conns(TCP_Connections *tcp_c)
 
 static void kill_nonused_tcp(TCP_Connections *tcp_c)
 {
-    unsigned int i, num_online = 0;
+    if (tcp_c->tcp_connections_length == 0)
+        return;
+
+    unsigned int i, num_online = 0, num_kill = 0, to_kill[tcp_c->tcp_connections_length];
 
     for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
         TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
 
         if (tcp_con) {
             if (tcp_con->status == TCP_CONN_CONNECTED) {
-                if (!tcp_con->lock_count && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)
-                        && num_online >= MAX_FRIEND_TCP_CONNECTIONS) {
-                    kill_tcp_relay_connection(tcp_c, i);
-                    continue;
+                if (!tcp_con->lock_count && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
+                    to_kill[num_kill] = i;
+                    ++num_kill;
                 }
 
                 ++num_online;
             }
         }
+    }
+
+    if (num_online <= RECOMMENDED_FRIEND_TCP_CONNECTIONS) {
+        return;
+    } else {
+        unsigned int n = num_online - RECOMMENDED_FRIEND_TCP_CONNECTIONS;
+
+        if (n < num_kill)
+            num_kill = n;
+    }
+
+    for (i = 0; i < num_kill; ++i) {
+        kill_tcp_relay_connection(tcp_c, to_kill[i]);
     }
 }
 
