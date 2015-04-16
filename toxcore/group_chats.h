@@ -150,7 +150,7 @@ typedef struct {
     uint64_t    peer_sync_timer;
     uint64_t    time_connected;
     bool        confirmed;  /* true if we have successfully handshaked with this peer */
-    bool        verified; /* true if this peer's invite certificate is legitimate */
+    bool        verified; /* true if we have validated peer's invite certificate */
 } GC_GroupPeer;
 
 typedef struct {

@@ -528,8 +528,10 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
 
     uint32_t i;
 
-    for (i = 0; i < num_peers; i++)
-        peer_add(m, groupnumber, &peers[i], &addrs[i]);
+    for (i = 0; i < num_peers; i++) {
+        if (peer_in_chat(chat, addrs[i].public_key) == -1)
+            peer_add(m, groupnumber, &peers[i], &addrs[i]);
+    }
 
     free(addrs);
     free(peers);
@@ -815,6 +817,8 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
         return -1;
     }
 
+    chat->group[peernumber].verified = true;
+
     ++chat->gcc[peernumber].recv_message_id;
     gc_send_message_ack(chat, peernumber, message_id, 0);
 
@@ -930,7 +934,6 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
     if (peer_in_chat(chat, peer.addr.public_key) != -1)
         return gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
 
-    peer.verified = true;
     int peernumber = peer_add(m, groupnumber, &peer, NULL);
 
     if (peernumber == -1) {
@@ -938,6 +941,8 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const u
         gc_invite_response_reject(chat, ipp, public_key, GJ_INVITE_FAILED);
         return -1;
     }
+
+    chat->group[peernumber].verified = true;
 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
@@ -976,7 +981,6 @@ static int send_gc_broadcast_packet(GC_Chat *chat, const uint8_t *data, uint32_t
 
     uint8_t packet[length + GC_BROADCAST_ENC_HEADER_SIZE];
     uint32_t packet_len = make_gc_broadcast_header(chat, data, length, packet, bc_type);
-
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
@@ -999,6 +1003,9 @@ static int handle_gc_ping(Messenger *m, int groupnumber, IP_Port ipp, const uint
         return -1;
 
     if (!peernumber_valid(chat, peernumber))
+        return -1;
+
+    if (!chat->group[peernumber].verified)
         return -1;
 
     ipport_copy(&chat->group[peernumber].addr.ip_port, &ipp);
@@ -1139,8 +1146,10 @@ static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
-        send_lossless_group_packet(chat, i, data, len, GP_NEW_PEER);
-        send_gc_peer_request(chat, i);
+        if (!chat->group[i].confirmed) {
+            send_lossless_group_packet(chat, i, data, len, GP_NEW_PEER);
+            send_gc_peer_request(chat, i);
+        }
     }
 
     return 0;
@@ -1183,7 +1192,9 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
         return -1;
     }
 
-    peer.verified = true;
+    if (peer.nick_len == 0)
+        return -1;
+
     ipport_copy(&peer.addr.ip_port, &ipp);
     memcpy(peer.addr.public_key, sender_pk, EXT_PUBLIC_KEY);
 
@@ -1214,6 +1225,7 @@ int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, 
         ++chat->gcc[peernumber].recv_message_id;
     }
 
+    chat->group[peernumber].verified = true;
     chat->group[peernumber].confirmed = true;
 
     return 0;
@@ -2242,7 +2254,7 @@ static void do_peer_connections(Messenger *m, int groupnumber)
             gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
         } else {
             try_gc_peer_sync(chat, i);
-            gcc_resend_packets(m, chat, i);
+            gcc_resend_packets(m, chat, i);   // This function may delete the peer
         }
         if (i >= chat->numpeers)
             break;
@@ -2260,11 +2272,13 @@ static void ping_group(GC_Chat *chat)
     U32_to_bytes(data + EXT_PUBLIC_KEY, chat->numpeers);
 
     uint32_t length = EXT_PUBLIC_KEY + sizeof(uint32_t);
+    uint32_t i;
 
-    size_t i;
-
-    for (i = 1; i < chat->numpeers; ++i)
-        send_lossy_group_packet(chat, chat->group[i].addr.ip_port, chat->group[i].addr.public_key, data, length, GP_PING);
+    for (i = 1; i < chat->numpeers; ++i) {
+        if (chat->group[i].verified)
+            send_lossy_group_packet(chat, chat->group[i].addr.ip_port, chat->group[i].addr.public_key,
+                                    data, length, GP_PING);
+    }
 
     chat->last_sent_ping_time = unix_time();
 }
