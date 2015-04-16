@@ -36,6 +36,8 @@
 
 #define MAX_FRIEND_TCP_CONNECTIONS 4
 
+/* Time until connection to friend gets killed (if it doesn't get locked withing that time) */
+#define TCP_CONNECTION_ANNOUNCE_TIMEOUT (TCP_CONNECTION_TIMEOUT)
 
 typedef struct {
     uint8_t status;
@@ -53,6 +55,7 @@ typedef struct {
 typedef struct {
     uint8_t status;
     TCP_Client_Connection *connection;
+    uint64_t connected_time;
     uint32_t lock_count;
 } TCP_con;
 

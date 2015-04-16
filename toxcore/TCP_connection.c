@@ -26,6 +26,7 @@
 #endif
 
 #include "TCP_connection.h"
+#include "util.h"
 
 /* Set the size of the array to num.
  *
@@ -451,7 +452,9 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number)
                 send_disconnect_request(tcp_con->connection, con_to->connections[i].connection_id);
             }
 
-            --tcp_con->lock_count;
+            if (con_to->connections[i].status == TCP_CONNECTIONS_STATUS_ONLINE) {
+                --tcp_con->lock_count;
+            }
         }
     }
 
@@ -522,6 +525,11 @@ static int set_tcp_connection_status(TCP_Connection_to *con_to, int tcp_connecti
 
     for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         if (con_to->connections[i].tcp_connection == (tcp_connections_number + 1)) {
+
+            if (con_to->connections[i].status == status) {
+                return -1;
+            }
+
             con_to->connections[i].status = status;
             con_to->connections[i].connection_id = connection_id;
             return i;
@@ -621,10 +629,12 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
         if (set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_REGISTERED, connection_id) == -1)
             return -1;
 
+        --tcp_con->lock_count;
     } else if (status == 2) {
         if (set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_ONLINE, connection_id) == -1)
             return -1;
 
+        ++tcp_con->lock_count;
     }
 
     return 0;
@@ -725,20 +735,30 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
     if (!tcp_con)
         return -1;
 
-    unsigned int i;
+    unsigned int i, sent = 0;
 
     for (i = 0; i < tcp_c->connections_length; ++i) {
         TCP_Connection_to *con_to = get_connection(tcp_c, i);
 
         if (con_to) {
             if (tcp_connection_in_conn(con_to, tcp_connections_number)) {
-                send_tcp_relay_routing_request(tcp_c, tcp_connections_number, con_to->public_key);
+                if (send_tcp_relay_routing_request(tcp_c, tcp_connections_number, con_to->public_key) == 0) {
+                    ++sent;
+                }
             }
         }
     }
 
     tcp_relay_set_callbacks(tcp_c, tcp_connections_number);
     tcp_con->status = TCP_CONN_CONNECTED;
+
+    /* If this connection isn't used by any connection, we don't need to wait for them to come online. */
+    if (sent) {
+        tcp_con->connected_time = unix_time();
+    } else {
+        tcp_con->connected_time = 0;
+    }
+
     return 0;
 }
 
@@ -810,10 +830,10 @@ int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_numb
     if (add_tcp_connection_to_conn(con_to, tcp_connections_number) == -1)
         return -1;
 
-    ++tcp_con->lock_count;
-
     if (tcp_con->status == TCP_CONN_CONNECTED) {
-        send_tcp_relay_routing_request(tcp_c, tcp_connections_number, con_to->public_key);
+        if (send_tcp_relay_routing_request(tcp_c, tcp_connections_number, con_to->public_key) == 0) {
+            tcp_con->connected_time = unix_time();
+        }
     }
 
     return 0;
@@ -847,7 +867,6 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
         if (!tcp_con)
             return -1;
 
-        ++tcp_con->lock_count;
         return 0;
     }
 }
@@ -934,7 +953,8 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
 
         if (tcp_con) {
             if (tcp_con->status == TCP_CONN_CONNECTED) {
-                if (!tcp_con->lock_count && num_online >= MAX_FRIEND_TCP_CONNECTIONS) {
+                if (!tcp_con->lock_count && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)
+                        && num_online >= MAX_FRIEND_TCP_CONNECTIONS) {
                     kill_tcp_relay_connection(tcp_c, i);
                     continue;
                 }
