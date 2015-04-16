@@ -670,11 +670,15 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     if (!tcp_con)
         return -1;
 
-    uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
-    memcpy(relay_pk, tcp_con->connection->public_key, crypto_box_PUBLICKEYBYTES);
+    /* TODO: optimize */
+    int connections_number = find_tcp_connection_to(tcp_c, public_key);
 
-    if (tcp_c->tcp_oob_callback)
-        tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
+    if (connections_number == -1) {
+        if (tcp_c->tcp_oob_callback)
+            tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
+    } else {
+        return tcp_data_callback(object, connections_number, 0, data, length);
+    }
 
     return 0;
 }
