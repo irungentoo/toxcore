@@ -2185,10 +2185,10 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data, data_length, 1)) == -1)
                 break;
 
-            int i;
+            int j;
 
-            for (i = 0; i < n; i++) {
-                add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].public_key);
+            for (j = 0; j < n; j++) {
+                friend_add_tcp_relay(m->fr_c, m->friendlist[i].friendcon_id, nodes[j].ip_port, nodes[j].public_key);
             }
 
             break;
