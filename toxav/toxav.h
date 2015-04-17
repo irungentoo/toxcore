@@ -215,11 +215,11 @@ typedef enum TOXAV_CALL_STATE {
     /**
      * AV core suggests you to lower bitrate for audio.
      */
-    TOXAV_CALL_STATE_LOWER_AUDIO_BITRATE = 32,
+    TOXAV_CALL_STATE_DECREASE_AUDIO_BITRATE = 32,
     /**
      * AV core suggests you to lower bitrate for video.
      */
-    TOXAV_CALL_STATE_LOWER_VIDEO_BITRATE = 64,
+    TOXAV_CALL_STATE_DECREASE_VIDEO_BITRATE = 64,
     /**
      * AV core suggests you to increase bitrate for audio.
      */

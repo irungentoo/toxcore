@@ -293,7 +293,7 @@ void cs_do(CSession *cs)
         /* The maximum for 120 ms 48 KHz audio */
         int16_t tmp[5760];
         
-        if ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
+        while ((msg = jbuf_read(cs->j_buf, &success)) || success == 2) {
             LOGGED_UNLOCK(cs->queue_mutex);
             
             if (success == 2) {
@@ -327,7 +327,8 @@ void cs_do(CSession *cs)
                 if (!reconfigure_audio_decoder(cs, cs->last_packet_sampling_rate, cs->last_packet_channel_count)) {
                     LOGGER_WARNING("Failed to reconfigure decoder!");
                     rtp_free_msg(NULL, msg);
-                    goto DONE;
+                    continue;
+//                     goto DONE;
                 }
                 
                 rc = opus_decode(cs->audio_decoder, msg->data + 4, msg->length - 4, tmp, 5760, 0);
@@ -337,7 +338,6 @@ void cs_do(CSession *cs)
             if (rc < 0) {
                 LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
             } else if (cs->acb.first) {
-                cs->last_packet_channel_count = 2;
                 cs->last_packet_frame_duration = (rc * 1000) / cs->last_packet_sampling_rate * cs->last_packet_channel_count;
                 
                 cs->acb.first(cs->av, cs->friend_id, tmp, rc * cs->last_packet_channel_count,
@@ -347,7 +347,7 @@ void cs_do(CSession *cs)
             
             LOGGED_LOCK(cs->queue_mutex);
         }
-        DONE:;
+//         DONE:;
     }
     
     /********************* VIDEO *********************/

@@ -26,6 +26,7 @@
 #include "../toxav/toxav.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
+#include "../toxcore/network.h" /* current_time_monotonic() */
 
 #define LOGGING
 #include "../toxcore/logger.h"
@@ -84,6 +85,9 @@ typedef struct {
     bool incoming;
     uint32_t state;
     uint32_t abitrate;
+    pthread_mutex_t arb_mutex[1];
+    RingBuffer* arb; /* Audio ring buffer */
+    
 } CallControl;
 
 struct toxav_thread_data {
@@ -94,6 +98,32 @@ struct toxav_thread_data {
 
 const char* vdout = "AV Test"; /* Video output */
 PaStream* adout = NULL; /* Audio output */
+
+
+typedef struct {
+    uint16_t size;
+    int16_t data[];
+} frame;
+
+void* pa_write_thread (void* d) 
+{
+    /* The purpose of this thread is to make sure Pa_WriteStream will not block 
+     * toxav_iterate thread
+     */
+    CallControl* cc = d;
+    
+    while (Pa_IsStreamActive(adout)) {
+        frame* f;
+        pthread_mutex_lock(cc->arb_mutex);
+        if (rb_read(cc->arb, (void**)&f)) {
+            pthread_mutex_unlock(cc->arb_mutex);
+            Pa_WriteStream(adout, f->data, f->size);
+            free(f);
+        } else
+            pthread_mutex_unlock(cc->arb_mutex);
+    }
+}
+
 
 /** 
  * Callbacks 
@@ -106,15 +136,38 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
 void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
     ((CallControl*)user_data)->state = state;
+    uint32_t abitrate = ((CallControl*)user_data)->abitrate;
     
     if (state & TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE) {
-        uint32_t bitrate = ((CallControl*)user_data)->abitrate;
         
-        if (bitrate < 64) {
-            printf("Changing bitrate to: %d\n", 64);
-            toxav_set_audio_bit_rate(av, friend_number, 64, 0);
-        }
-    } else if (state & TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE) {
+//         /* NOTE: I'm using values 8, 16, 24, 48, 64. You can use whatever OPUS supports. */
+//         switch (abitrate) {
+//         case 8:  abitrate = 16; break;
+//         case 16: abitrate = 24; break;
+//         case 24: abitrate = 48; break;
+//         case 48: abitrate = 64; break;
+//         default: return;
+//         }
+//         
+//         printf("Increasing bitrate to: %d\n", abitrate);
+//         toxav_set_audio_bit_rate(av, friend_number, abitrate, 0);
+        
+    } else if (state & TOXAV_CALL_STATE_DECREASE_AUDIO_BITRATE) {
+//         /* NOTE: I'm using values 8, 16, 24, 48, 64. You can use whatever OPUS supports. */
+//         switch (abitrate) {
+//         case 16: abitrate = 8;  break;
+//         case 24: abitrate = 16; break;
+//         case 48: abitrate = 24; break;
+//         case 64: abitrate = 48; break;
+//         default: return;
+//         }
+//         
+//         printf("Decreasing bitrate to: %d\n", abitrate);
+//         toxav_set_audio_bit_rate(av, friend_number, abitrate, 0);
+//         
+    }
+    
+    if (state & TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE) {
         
     } else {
         printf("Handling CALL STATE callback: %d\n", state);
@@ -158,7 +211,16 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint32_t sampling_rate,
                                     void *user_data)
 {
-    Pa_WriteStream(adout, pcm, sample_count/channels);
+    CallControl* cc = user_data;
+    frame* f = malloc(sizeof(frame) + sample_count * sizeof(int16_t));
+    memcpy(f->data, pcm, sample_count);
+    f->size = sample_count/channels;
+    
+    pthread_mutex_lock(cc->arb_mutex);
+    free(rb_write(cc->arb, f));
+    pthread_mutex_unlock(cc->arb_mutex);
+    
+//     Pa_WriteStream(adout, pcm, sample_count/channels);
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -220,6 +282,7 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     *BobAV = toxav_new(Bob, &rc);
     assert(rc == TOXAV_ERR_NEW_OK);
     
+    
     /* Alice */
     toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
@@ -255,7 +318,9 @@ void* iterate_toxav (void * data)
         int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
         
 //         cvWaitKey(10);
-        c_sleep(10);
+        printf("\rSleeping for: %d    ", rc);
+        fflush(stdout);
+        c_sleep(rc);
     }
     
     data_cast->sig = 1;
@@ -330,6 +395,7 @@ int print_help (const char* name)
 
 int main (int argc, char** argv)
 {
+    freopen("/dev/zero", "w", stderr);
     Pa_Initialize();
     
     struct stat st;
@@ -669,7 +735,13 @@ int main (int argc, char** argv)
 		memset(&AliceCC, 0, sizeof(CallControl));
         memset(&BobCC, 0, sizeof(CallControl));
         
-        AliceCC.abitrate = BobCC.abitrate = 8;
+        pthread_mutex_init(AliceCC.arb_mutex, NULL);
+        pthread_mutex_init(BobCC.arb_mutex, NULL);
+        
+        AliceCC.arb = rb_new(16);
+        BobCC.arb = rb_new(16);
+        
+        AliceCC.abitrate = BobCC.abitrate = 16;
         
         { /* Call */
             TOXAV_ERR_CALL rc;
@@ -704,21 +776,6 @@ int main (int argc, char** argv)
         }
         
         
-        int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
-        
-        struct PaStreamParameters output;
-        output.device = audio_out_dev_idx;
-        output.channelCount = af_info.channels;
-        output.sampleFormat = paInt16;
-        output.suggestedLatency = audio_dev->defaultHighOutputLatency;
-        output.hostApiSpecificStreamInfo = NULL;
-        
-        PaError err = Pa_OpenStream(&adout, NULL, &output, af_info.samplerate, frame_size, paNoFlag, NULL, NULL);
-        assert(err == paNoError);
-        
-        err = Pa_StartStream(adout);
-        assert(err == paNoError);
-        
         int16_t PCM[5760];
         
         time_t start_time = time(NULL);
@@ -736,8 +793,25 @@ int main (int argc, char** argv)
         pthread_create(&dect, NULL, iterate_toxav, &data);
         pthread_detach(dect);
         
+        
+        int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
+        
+        struct PaStreamParameters output;
+        output.device = audio_out_dev_idx;
+        output.channelCount = af_info.channels;
+        output.sampleFormat = paInt16;
+        output.suggestedLatency = audio_dev->defaultHighOutputLatency;
+        output.hostApiSpecificStreamInfo = NULL;
+        
+        PaError err = Pa_OpenStream(&adout, NULL, &output, af_info.samplerate, frame_size, paNoFlag, NULL, NULL);
+        assert(err == paNoError);
+        
+        err = Pa_StartStream(adout);
+        assert(err == paNoError);
+        
         printf("Sample rate %d\n", af_info.samplerate);
 		while ( start_time + expected_time > time(NULL) ) {
+            uint64_t enc_start_time = current_time_monotonic();
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
                 TOXAV_ERR_SEND_FRAME rc;
@@ -746,9 +820,10 @@ int main (int argc, char** argv)
                 }
             }
             iterate_tox(bootstrap, AliceAV, BobAV);
-            c_sleep(53);
+            c_sleep(abs(audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
 		}
-    
+        
+        Pa_StopStream(adout);
         
 		printf("Played file in: %lu\n", time(NULL) - start_time);
         
@@ -772,7 +847,15 @@ int main (int argc, char** argv)
         while(data.sig != 1)
             pthread_yield();
         
-        Pa_StopStream(adout);
+        pthread_mutex_destroy(AliceCC.arb_mutex);
+        pthread_mutex_destroy(BobCC.arb_mutex);
+        
+        void* f = NULL;
+        while(rb_read(AliceCC.arb, &f)) 
+            free(f);
+        
+        while(rb_read(BobCC.arb, &f)) 
+            free(f);
         
 		printf("Success!");
 	}

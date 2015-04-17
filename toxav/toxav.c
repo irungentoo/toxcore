@@ -249,8 +249,8 @@ void toxav_iterate(ToxAV* av)
     }
     LOGGED_UNLOCK(av->mutex);
     
-//     av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
-    av->interval = rc < 5 ? 1: rc - 5;
+    av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
+//     av->interval = rc < 5 ? 1: rc - 5;
     av->dmsst += current_time_monotonic() - start;
     
     if (++av->dmssc == 3) {
@@ -993,7 +993,7 @@ void qc_do(ToxAVCall* call)
         LOGGER_DEBUG("Suggesting lower bitrate for audio...");
         call->time_audio_good = 0;
         call->last_bad_audio_bit_rate = call->audio_bit_rate;
-        invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_LOWER_AUDIO_BITRATE);
+        invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_DECREASE_AUDIO_BITRATE);
         break;
     case rtp_StateGood:
         if (call->time_audio_good == 0)
@@ -1017,7 +1017,7 @@ void qc_do(ToxAVCall* call)
         LOGGER_DEBUG("Suggesting lower bitrate for video...");
         call->time_video_good = 0;
         call->last_bad_video_bit_rate = call->video_bit_rate;
-        invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_LOWER_VIDEO_BITRATE);
+        invoke_call_state(call->av, call->friend_id, TOXAV_CALL_STATE_DECREASE_VIDEO_BITRATE);
         break;
     case rtp_StateGood:
         if (call->time_video_good == 0)
