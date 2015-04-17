@@ -63,7 +63,7 @@ enum {
 #define PACKET_ID_LOSSY_GROUPCHAT 199
 
 /* Max number of tcp relays sent to friends */
-#define MAX_SHARED_RELAYS 16
+#define MAX_SHARED_RELAYS (RECOMMENDED_FRIEND_TCP_CONNECTIONS)
 
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160

@@ -901,10 +901,10 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
  */
 unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num)
 {
-    unsigned int i, copied = 0;
+    unsigned int i, copied = 0, r = rand();
 
     for (i = 0; (i < tcp_c->tcp_connections_length) && (copied < max_num); ++i) {
-        TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
+        TCP_con *tcp_con = get_tcp_connection(tcp_c, (i + r) % tcp_c->tcp_connections_length);
 
         if (!tcp_con) {
             continue;

@@ -755,11 +755,23 @@ static int send_user_istyping(const Messenger *m, int32_t friendnumber, uint8_t 
 
 static int send_relays(const Messenger *m, int32_t friendnumber)
 {
+    if (friend_not_valid(m, friendnumber))
+        return 0;
+
     Node_format nodes[MAX_SHARED_RELAYS];
     uint8_t data[1024];
     int n, length;
 
     n = copy_connected_tcp_relays(m->net_crypto, nodes, MAX_SHARED_RELAYS);
+
+    unsigned int i;
+
+    for (i = 0; i < n; ++i) {
+        /* Associated the relays being sent with this connection.
+           On receiving the peer will do the same which will establish the connection. */
+        friend_add_tcp_relay(m->fr_c, m->friendlist[friendnumber].friendcon_id, nodes[i].ip_port, nodes[i].public_key);
+    }
+
     length = pack_nodes(data, sizeof(data), nodes, n);
 
     int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_SHARE_RELAYS, data, length, 0);
@@ -1914,6 +1926,7 @@ static int handle_status(void *object, int i, uint8_t status)
         m->friendlist[i].userstatus_sent = 0;
         m->friendlist[i].statusmessage_sent = 0;
         m->friendlist[i].user_istyping_sent = 0;
+        m->friendlist[i].share_relays_lastsent = 0;
     } else { /* Went offline. */
         if (m->friendlist[i].status == FRIEND_ONLINE) {
             set_friend_status(m, i, FRIEND_CONFIRMED);
