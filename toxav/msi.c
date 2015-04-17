@@ -88,10 +88,10 @@ static int invoke_callback(MSICall* call, MSICallbackID cb);
 static MSICall *get_call ( MSISession *session, uint32_t friend_id );
 MSICall *new_call ( MSISession *session, uint32_t friend_id );
 void kill_call ( MSICall *call );
-void on_peer_status(Messenger *m, int friend_id, uint8_t status, void *data);
+void on_peer_status(Messenger *m, uint32_t friend_id, uint8_t status, void *data);
 void handle_push ( MSICall *call, const MSIMessage *msg );
 void handle_pop ( MSICall *call, const MSIMessage *msg );
-void handle_msi_packet ( Messenger *m, int friend_id, const uint8_t *data, uint16_t length, void *object );
+void handle_msi_packet ( Messenger *m, uint32_t friend_id, const uint8_t *data, uint16_t length, void *object );
 
 
 /**
@@ -572,7 +572,7 @@ CLEAR_CONTAINER:
     free(call);
     session->calls = NULL;
 }
-void on_peer_status(Messenger *m, int friend_id, uint8_t status, void *data)
+void on_peer_status(Messenger* m, uint32_t friend_id, uint8_t status, void* data)
 {
     (void)m;
     MSISession *session = data;
@@ -744,7 +744,7 @@ void handle_pop ( MSICall *call, const MSIMessage *msg )
     
     kill_call ( call );
 }
-void handle_msi_packet ( Messenger *m, int friend_id, const uint8_t *data, uint16_t length, void *object )
+void handle_msi_packet ( Messenger* m, uint32_t friend_id, const uint8_t* data, uint16_t length, void* object )
 {
     LOGGER_DEBUG("Got msi message");
     

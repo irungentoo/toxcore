@@ -45,15 +45,16 @@
 
 #define c_sleep(x) usleep(1000*x)
 
-void print_online(Tox *tox, int friendnumber, uint8_t status, void *userdata)
+void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
-    if (status == 1)
+    if (status)
         printf("\nOther went online.\n");
     else
         printf("\nOther went offline.\n");
 }
 
-void print_message(Tox *tox, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
+void print_message(Tox *tox, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
+                   void *userdata)
 {
     int master = *((int *)userdata);
     write(master, string, length);
@@ -62,7 +63,7 @@ void print_message(Tox *tox, int friendnumber, const uint8_t *string, uint16_t l
 
 int main(int argc, char *argv[])
 {
-    uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
+    uint8_t ipv6enabled = 1; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
     if (argvoffset < 0)
@@ -94,14 +95,14 @@ int main(int argc, char *argv[])
         printf("error setting flags\n");
     }
 
-    Tox *tox = tox_new(0);
-    tox_callback_connection_status(tox, print_online, NULL);
+    Tox *tox = tox_new(0, 0, 0, 0);
+    tox_callback_friend_connection_status(tox, print_online, NULL);
     tox_callback_friend_message(tox, print_message, master);
 
 
     uint16_t port = atoi(argv[argvoffset + 2]);
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    int res = tox_bootstrap_from_address(tox, argv[argvoffset + 1], port, binary_string);
+    int res = tox_bootstrap(tox, argv[argvoffset + 1], port, binary_string, 0);
     free(binary_string);
 
     if (!res) {
@@ -109,11 +110,11 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_get_address(tox, address);
+    uint8_t address[TOX_ADDRESS_SIZE];
+    tox_self_get_address(tox, address);
     uint32_t i;
 
-    for (i = 0; i < TOX_FRIEND_ADDRESS_SIZE; i++) {
+    for (i = 0; i < TOX_ADDRESS_SIZE; i++) {
         printf("%02X", address[i]);
     }
 
@@ -125,10 +126,10 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    int num = tox_add_friend(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    uint32_t num = tox_friend_add(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"), 0);
     free(bin_id);
 
-    if (num < 0) {
+    if (num == UINT32_MAX) {
         printf("\nSomething went wrong when adding friend.\n");
         return 1;
     }
@@ -136,22 +137,22 @@ int main(int argc, char *argv[])
     uint8_t notconnected = 1;
 
     while (1) {
-        if (tox_isconnected(tox) && notconnected) {
+        if (tox_self_get_connection_status(tox) && notconnected) {
             printf("\nDHT connected.\n");
             notconnected = 0;
         }
 
-        while (tox_get_friend_connection_status(tox, num) == 1) {
+        while (tox_friend_get_connection_status(tox, num, 0)) {
             uint8_t buf[TOX_MAX_MESSAGE_LENGTH];
             ret = read(*master, buf, sizeof(buf));
 
             if (ret <= 0)
                 break;
 
-            tox_send_message(tox, num, buf, ret);
+            tox_friend_send_message(tox, num, TOX_MESSAGE_TYPE_NORMAL, buf, ret, 0);
         }
 
-        tox_do(tox);
+        tox_iterate(tox);
         c_sleep(1);
     }
 

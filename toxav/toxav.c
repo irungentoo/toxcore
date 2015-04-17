@@ -904,7 +904,7 @@ ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error)
         goto END;
     }
     
-    if (m_get_friend_connectionstatus(av->m, friend_number) != 1) {
+    if (m_get_friend_connectionstatus(av->m, friend_number) < 1) {
         rc = TOXAV_ERR_CALL_FRIEND_NOT_CONNECTED;
         goto END;
     }

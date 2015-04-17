@@ -55,10 +55,10 @@ typedef struct _Status {
 /* My default settings */
 static ToxAvCSettings muhcaps;
 
-void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        tox_add_friend_norequest(m, public_key);
+        tox_friend_add_norequest(m, public_key, 0);
     }
 }
 
@@ -232,7 +232,7 @@ void register_callbacks(ToxAv *av, void *data)
  */
 #define CALL_AND_START_LOOP(AliceCallType, BobCallType) \
 { int step = 0, running = 1; while (running) {\
-    tox_do(bootstrap_node); tox_do(Alice); tox_do(Bob); \
+    tox_iterate(bootstrap_node); tox_iterate(Alice); tox_iterate(Bob); \
     toxav_do(status_control.Bob.av); toxav_do(status_control.Alice.av); \
     switch ( step ) {\
         case 0: /* Alice */  printf("Alice is calling...\n");\
@@ -250,33 +250,35 @@ if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) 
 START_TEST(test_AV_flows)
 {
     long long unsigned int cur_time = time(NULL);
-    Tox *bootstrap_node = tox_new(0);
-    Tox *Alice = tox_new(0);
-    Tox *Bob = tox_new(0);
+    Tox *bootstrap_node = tox_new(0, 0, 0, 0);
+    Tox *Alice = tox_new(0, 0, 0, 0);
+    Tox *Bob = tox_new(0, 0, 0, 0);
 
     ck_assert_msg(bootstrap_node || Alice || Bob, "Failed to create 3 tox instances");
 
     uint32_t to_compare = 974536;
     tox_callback_friend_request(Alice, accept_friend_request, &to_compare);
-    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-    tox_get_address(Alice, address);
-    int test = tox_add_friend(Bob, address, (uint8_t *)"gentoo", 7);
+    uint8_t address[TOX_ADDRESS_SIZE];
+    tox_self_get_address(Alice, address);
+    uint32_t test = tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, 0);
 
     ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
 
     uint8_t off = 1;
 
     while (1) {
-        tox_do(bootstrap_node);
-        tox_do(Alice);
-        tox_do(Bob);
+        tox_iterate(bootstrap_node);
+        tox_iterate(Alice);
+        tox_iterate(Bob);
 
-        if (tox_isconnected(bootstrap_node) && tox_isconnected(Alice) && tox_isconnected(Bob) && off) {
+        if (tox_self_get_connection_status(bootstrap_node) && tox_self_get_connection_status(Alice)
+                && tox_self_get_connection_status(Bob)
+                && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;
         }
 
-        if (tox_get_friend_connection_status(Alice, 0) == 1 && tox_get_friend_connection_status(Bob, 0) == 1)
+        if (tox_friend_get_connection_status(Alice, 0, 0) && tox_friend_get_connection_status(Bob, 0, 0))
             break;
 
         c_sleep(20);
@@ -483,9 +485,9 @@ START_TEST(test_AV_flows)
         int running = 1;
 
         while (running) {
-            tox_do(bootstrap_node);
-            tox_do(Alice);
-            tox_do(Bob);
+            tox_iterate(bootstrap_node);
+            tox_iterate(Alice);
+            tox_iterate(Bob);
 
             switch ( step ) {
                 case 0: /* Alice */
@@ -524,9 +526,9 @@ START_TEST(test_AV_flows)
         int running = 1;
 
         while (running) {
-            tox_do(bootstrap_node);
-            tox_do(Alice);
-            tox_do(Bob);
+            tox_iterate(bootstrap_node);
+            tox_iterate(Alice);
+            tox_iterate(Bob);
 
             toxav_do(status_control.Alice.av);
             toxav_do(status_control.Bob.av);
@@ -569,9 +571,9 @@ START_TEST(test_AV_flows)
         int running = 1;
 
         while (running) {
-            tox_do(bootstrap_node);
-            tox_do(Alice);
-            tox_do(Bob);
+            tox_iterate(bootstrap_node);
+            tox_iterate(Alice);
+            tox_iterate(Bob);
 
             toxav_do(status_control.Alice.av);
             toxav_do(status_control.Bob.av);

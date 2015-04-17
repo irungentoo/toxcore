@@ -78,8 +78,8 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
 
     for (i = 0; i < CLIENT_ID_SIZE; ++i) {
 
-        distance1 = abs(((int8_t *)id)[i] ^ ((int8_t *)id1)[i]);
-        distance2 = abs(((int8_t *)id)[i] ^ ((int8_t *)id2)[i]);
+        distance1 = id[i] ^ id1[i];
+        distance2 = id[i] ^ id2[i];
 
         if (distance1 < distance2)
             return 1;

@@ -23,9 +23,11 @@
 #endif
 
 #include "group.h"
+#include "../toxcore/util.h"
 #include "../toxcore/logger.h"
 
 #define GROUP_JBUF_SIZE 6
+#define GROUP_JBUF_DEAD_SECONDS 4
 
 typedef struct {
     uint16_t sequnum;
@@ -39,6 +41,7 @@ typedef struct {
     uint32_t capacity;
     uint16_t bottom;
     uint16_t top;
+    uint64_t last_queued_time;
 } Group_JitterBuffer;
 
 static Group_JitterBuffer *create_queue(unsigned int capacity)
@@ -90,11 +93,19 @@ static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
 
     unsigned int num = sequnum % q->size;
 
+    if (!is_timeout(q->last_queued_time, GROUP_JBUF_DEAD_SECONDS)) {
+        if ((uint32_t)(sequnum - q->bottom) > (1 << 15)) {
+            /* Drop old packet. */
+            return -1;
+        }
+    }
+
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
         clear_queue(q);
         q->bottom = sequnum - q->capacity;
         q->queue[num] = pk;
         q->top = sequnum + 1;
+        q->last_queued_time = unix_time();
         return 0;
     }
 
@@ -106,6 +117,7 @@ static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
     if ((sequnum - q->bottom) >= (q->top - q->bottom))
         q->top = sequnum + 1;
 
+    q->last_queued_time = unix_time();
     return 0;
 }
 

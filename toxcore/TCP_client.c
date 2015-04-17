@@ -346,6 +346,18 @@ static _Bool add_priority(TCP_Client_Connection *con, const uint8_t *packet, uin
     return 1;
 }
 
+static void wipe_priority_list(TCP_Client_Connection *con)
+{
+    TCP_Priority_List *p = con->priority_queue_start;
+
+    while (p) {
+        TCP_Priority_List *pp = p;
+        p = p->next;
+        free(pp);
+    }
+
+}
+
 /* return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
@@ -948,6 +960,7 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
     if (TCP_connection == NULL)
         return;
 
+    wipe_priority_list(TCP_connection);
     kill_sock(TCP_connection->sock);
     memset(TCP_connection, 0, sizeof(TCP_Client_Connection));
     free(TCP_connection);

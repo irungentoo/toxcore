@@ -194,19 +194,10 @@ void new_symmetric_key(uint8_t *key)
     randombytes(key, crypto_box_KEYBYTES);
 }
 
-static uint8_t base_nonce[crypto_box_NONCEBYTES];
-static uint8_t nonce_set = 0;
-
 /* Gives a nonce guaranteed to be different from previous ones.*/
 void new_nonce(uint8_t *nonce)
 {
-    if (nonce_set == 0) {
-        random_nonce(base_nonce);
-        nonce_set = 1;
-    }
-
-    increment_nonce(base_nonce);
-    memcpy(nonce, base_nonce, crypto_box_NONCEBYTES);
+    random_nonce(nonce);
 }
 
 /* Create a request to peer.

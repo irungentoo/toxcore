@@ -211,21 +211,21 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint32_t sampling_rate,
                                     void *user_data)
 {
-    CallControl* cc = user_data;
-    frame* f = malloc(sizeof(frame) + sample_count * sizeof(int16_t));
-    memcpy(f->data, pcm, sample_count);
-    f->size = sample_count/channels;
+//     CallControl* cc = user_data;
+//     frame* f = malloc(sizeof(frame) + sample_count * sizeof(int16_t));
+//     memcpy(f->data, pcm, sample_count);
+//     f->size = sample_count/channels;
+//     
+//     pthread_mutex_lock(cc->arb_mutex);
+//     free(rb_write(cc->arb, f));
+//     pthread_mutex_unlock(cc->arb_mutex);
     
-    pthread_mutex_lock(cc->arb_mutex);
-    free(rb_write(cc->arb, f));
-    pthread_mutex_unlock(cc->arb_mutex);
-    
-//     Pa_WriteStream(adout, pcm, sample_count/channels);
+    Pa_WriteStream(adout, pcm, sample_count/channels);
 }
-void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        tox_add_friend_norequest(m, public_key);
+        assert(tox_friend_add_norequest(m, public_key, NULL) != ~0);
     }
 }
 
@@ -237,11 +237,17 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     Tox* Alice;
     Tox* Bob;
     
-    *bootstrap = tox_new(0);
-    Alice = tox_new(0);
-    Bob = tox_new(0);
-    
-    assert(bootstrap && Alice && Bob);
+    {
+        TOX_ERR_NEW error;
+        *bootstrap = tox_new(NULL, NULL, 0, &error);
+        assert(error == TOX_ERR_NEW_OK);
+        
+        Alice = tox_new(NULL, NULL, 0, &error);
+        assert(error == TOX_ERR_NEW_OK);
+        
+        Bob = tox_new(NULL, NULL, 0, &error);
+        assert(error == TOX_ERR_NEW_OK);
+    }
     
     printf("Created 3 instances of Tox\n");
     
@@ -249,26 +255,30 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     long long unsigned int cur_time = time(NULL);
     
     uint32_t to_compare = 974536;
-    uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
+    uint8_t address[TOX_ADDRESS_SIZE];
     
     tox_callback_friend_request(Alice, t_accept_friend_request_cb, &to_compare);
-    tox_get_address(Alice, address);
+    tox_self_get_address(Alice, address);
     
-    assert(tox_add_friend(Bob, address, (uint8_t *)"gentoo", 7) >= 0);
+    
+    assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != ~0);
     
     uint8_t off = 1;
     
     while (1) {
-        tox_do(*bootstrap);
-        tox_do(Alice);
-        tox_do(Bob);
+        tox_iterate(*bootstrap);
+        tox_iterate(Alice);
+        tox_iterate(Bob);
         
-        if (tox_isconnected(*bootstrap) && tox_isconnected(Alice) && tox_isconnected(Bob) && off) {
+        if (tox_self_get_connection_status(*bootstrap) && 
+            tox_self_get_connection_status(Alice) && 
+            tox_self_get_connection_status(Bob) && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;
         }
         
-        if (tox_get_friend_connection_status(Alice, 0) == 1 && tox_get_friend_connection_status(Bob, 0) == 1)
+        if (tox_friend_get_connection_status(Alice, 0, NULL) == TOX_CONNECTION_UDP && 
+            tox_friend_get_connection_status(Bob, 0, NULL) == TOX_CONNECTION_UDP)
             break;
         
         c_sleep(20);
@@ -300,11 +310,11 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
 }
 int iterate_tox(Tox* bootstrap, ToxAV* AliceAV, ToxAV* BobAV)
 {
-    tox_do(bootstrap);
-    tox_do(toxav_get_tox(AliceAV));
-    tox_do(toxav_get_tox(BobAV));
+    tox_iterate(bootstrap);
+    tox_iterate(toxav_get_tox(AliceAV));
+    tox_iterate(toxav_get_tox(BobAV));
     
-    return MIN(tox_do_interval(toxav_get_tox(AliceAV)), tox_do_interval(toxav_get_tox(BobAV)));
+    return MIN(tox_iteration_interval(toxav_get_tox(AliceAV)), tox_iteration_interval(toxav_get_tox(BobAV)));
 }
 void* iterate_toxav (void * data)
 {   

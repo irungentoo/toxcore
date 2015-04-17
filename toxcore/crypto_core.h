@@ -122,7 +122,7 @@ void new_nonce(uint8_t *nonce);
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
 #define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
-#define CRYPTO_PACKET_FAKEID        156
+#define CRYPTO_PACKET_DHTPK         156
 #define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
 
 /* Create a request to peer.

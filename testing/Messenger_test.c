@@ -56,17 +56,18 @@
 
 #endif
 
-void print_message(Messenger *m, int friendnumber, const uint8_t *string, uint16_t length, void *userdata)
+void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
+                   void *userdata)
 {
-    printf("Message with length %u received from %u: %s \n", length, friendnumber, string);
-    m_sendmessage(m, friendnumber, (uint8_t *)"Test1", 6);
+    printf("Message with length %lu received from %u: %s \n", length, friendnumber, string);
+    m_send_message_generic(m, friendnumber, type, (uint8_t *)"Test1", 6, 0);
 }
 
 /* FIXME needed as print_request has to match the interface expected by
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
 
-void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     printf("Friend request received from: \n");
     printf("ClientID: ");
@@ -79,7 +80,7 @@ void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data,
         printf("%hhX", public_key[j]);
     }
 
-    printf("\nOf length: %u with data: %s \n", length, data);
+    printf("\nOf length: %lu with data: %s \n", length, data);
 
     if (length != sizeof("Install Gentoo")) {
         return;
@@ -112,7 +113,7 @@ int main(int argc, char *argv[])
 
     Messenger_Options options = {0};
     options.ipv6enabled = ipv6enabled;
-    m = new_messenger(&options);
+    m = new_messenger(&options, 0);
 
     if ( !m ) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
@@ -184,7 +185,7 @@ int main(int argc, char *argv[])
         getname(m, num, name);
         printf("%s\n", name);
 
-        m_sendmessage(m, num, (uint8_t *)"Test", 5);
+        m_send_message_generic(m, num, MESSAGE_NORMAL, (uint8_t *)"Test", 5, 0);
         do_messenger(m);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");

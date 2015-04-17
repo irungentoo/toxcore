@@ -57,7 +57,7 @@
 
 /* Onion data packet ids. */
 #define ONION_DATA_FRIEND_REQ CRYPTO_PACKET_FRIEND_REQ
-#define ONION_DATA_DHTPK CRYPTO_PACKET_FAKEID
+#define ONION_DATA_DHTPK CRYPTO_PACKET_DHTPK
 
 typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
@@ -157,6 +157,9 @@ typedef struct {
     } Onion_Data_Handlers[256];
 
     uint64_t last_packet_recv;
+
+    unsigned int onion_connected;
+    _Bool UDP_connected;
 } Onion_Client;
 
 
@@ -278,8 +281,9 @@ void kill_onion_client(Onion_Client *onion_c);
 
 
 /*  return 0 if we are not connected to the network.
- *  return 1 if we are.
+ *  return 1 if we are connected with TCP only.
+ *  return 2 if we are also connected with UDP.
  */
-int onion_isconnected(const Onion_Client *onion_c);
+unsigned int onion_connection_status(const Onion_Client *onion_c);
 
 #endif

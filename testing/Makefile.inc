@@ -106,21 +106,6 @@ tox_shell_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         -lutil
 
 
-noinst_PROGRAMS +=      test_avatars
-
-test_avatars_SOURCES =   ../testing/test_avatars.c
-
-test_avatars_CFLAGS =    $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS)
-
-test_avatars_LDADD =    $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
-                        libtoxcore.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS)
-
-
 noinst_PROGRAMS +=      irc_syncbot
 
 irc_syncbot_SOURCES =   ../testing/irc_syncbot.c

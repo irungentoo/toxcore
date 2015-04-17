@@ -58,10 +58,10 @@ typedef struct _Status {
 
 Status status_control;
 
-void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        tox_add_friend_norequest(m, public_key);
+        tox_friend_add_norequest(m, public_key, 0);
     }
 }
 
@@ -264,12 +264,12 @@ START_TEST(test_AV_three_calls)
 // void test_AV_three_calls()
 {
     long long unsigned int cur_time = time(NULL);
-    Tox *bootstrap_node = tox_new(0);
-    Tox *caller = tox_new(0);
+    Tox *bootstrap_node = tox_new(0, 0, 0, 0);
+    Tox *caller = tox_new(0, 0, 0, 0);
     Tox *callees[3] = {
-        tox_new(0),
-        tox_new(0),
-        tox_new(0),
+        tox_new(0, 0, 0, 0),
+        tox_new(0, 0, 0, 0),
+        tox_new(0, 0, 0, 0),
     };
 
 
@@ -284,37 +284,37 @@ START_TEST(test_AV_three_calls)
     for ( i = 0; i < 3; i ++ ) {
         uint32_t to_compare = 974536;
         tox_callback_friend_request(callees[i], accept_friend_request, &to_compare);
-        uint8_t address[TOX_FRIEND_ADDRESS_SIZE];
-        tox_get_address(callees[i], address);
+        uint8_t address[TOX_ADDRESS_SIZE];
+        tox_self_get_address(callees[i], address);
 
-        int test = tox_add_friend(caller, address, (uint8_t *)"gentoo", 7);
+        uint32_t test = tox_friend_add(caller, address, (uint8_t *)"gentoo", 7, 0);
         ck_assert_msg( test == i, "Failed to add friend error code: %i", test);
     }
 
     uint8_t off = 1;
 
     while (1) {
-        tox_do(bootstrap_node);
-        tox_do(caller);
+        tox_iterate(bootstrap_node);
+        tox_iterate(caller);
 
         for (i = 0; i < 3; i ++) {
-            tox_do(callees[i]);
+            tox_iterate(callees[i]);
         }
 
 
-        if (tox_isconnected(bootstrap_node) &&
-                tox_isconnected(caller) &&
-                tox_isconnected(callees[0]) &&
-                tox_isconnected(callees[1]) &&
-                tox_isconnected(callees[2]) && off) {
+        if (tox_self_get_connection_status(bootstrap_node) &&
+                tox_self_get_connection_status(caller) &&
+                tox_self_get_connection_status(callees[0]) &&
+                tox_self_get_connection_status(callees[1]) &&
+                tox_self_get_connection_status(callees[2]) && off) {
             printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
             off = 0;
         }
 
 
-        if (tox_get_friend_connection_status(caller, 0) == 1 &&
-                tox_get_friend_connection_status(caller, 1) == 1 &&
-                tox_get_friend_connection_status(caller, 2) == 1 )
+        if (tox_friend_get_connection_status(caller, 0, 0) &&
+                tox_friend_get_connection_status(caller, 1, 0) &&
+                tox_friend_get_connection_status(caller, 2, 0) )
             break;
 
         c_sleep(20);
@@ -351,11 +351,11 @@ START_TEST(test_AV_three_calls)
     while (call_running[0] || call_running[1] || call_running[2]) {
         pthread_mutex_lock(&muhmutex);
 
-        tox_do(bootstrap_node);
-        tox_do(caller);
-        tox_do(callees[0]);
-        tox_do(callees[1]);
-        tox_do(callees[2]);
+        tox_iterate(bootstrap_node);
+        tox_iterate(caller);
+        tox_iterate(callees[0]);
+        tox_iterate(callees[1]);
+        tox_iterate(callees[2]);
 
         for ( i = 0; i < 3; i++ )
             toxav_do(status_control.calls[0].Caller.av);

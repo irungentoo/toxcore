@@ -25,6 +25,7 @@
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+#include "../toxcore/Messenger.h"
 
 #include "rtp.h"
 #include <stdlib.h>
@@ -77,11 +78,9 @@ RTPMessage *msg_parse ( const uint8_t *data, int length );
 uint8_t *parse_header_out ( const RTPHeader* header, uint8_t* payload );
 uint8_t *parse_ext_header_out ( const RTPExtHeader* header, uint8_t* payload );
 void build_header ( RTPSession* session, RTPHeader* header );
-void send_rtcp_report ( RTCPSession* session, Messenger* m, int32_t friendnumber );
-int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object );
-int handle_rtcp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object );
-
-
+void send_rtcp_report ( RTCPSession* session, Messenger* m, uint32_t friendnumber );
+int handle_rtp_packet ( Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object );
+int handle_rtcp_packet ( Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object );
 
 
 RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
@@ -121,7 +120,7 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
         return NULL;
     }
     
-    retu->rtcp_session->prefix = 222 + payload_type % 192;
+    retu->rtcp_session->prefix = payload_type + 2;
     retu->rtcp_session->pl_stats = rb_new(4);
     retu->rtcp_session->rtp_session = retu;
     
@@ -201,15 +200,15 @@ int rtp_start_receiving(RTPSession* session)
     if (session == NULL)
         return -1;
     
-    if (custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix,
+    if (m_callback_rtp_packet(session->m, session->dest, session->prefix,
         handle_rtp_packet, session) == -1) {
         LOGGER_WARNING("Failed to register rtp receive handler");
         return -1;
     }
-    if (custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp_session->prefix,
+    if (m_callback_rtp_packet(session->m, session->dest, session->rtcp_session->prefix,
         handle_rtcp_packet, session->rtcp_session) == -1) {
         LOGGER_WARNING("Failed to register rtcp receive handler");
-        custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
+        m_callback_rtp_packet(session->m, session->dest, session->prefix, NULL, NULL);
         return -1;
     }
     
@@ -220,8 +219,8 @@ int rtp_stop_receiving(RTPSession* session)
     if (session == NULL)
         return -1;
     
-    custom_lossy_packet_registerhandler(session->m, session->dest, session->prefix, NULL, NULL);
-    custom_lossy_packet_registerhandler(session->m, session->dest, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
+    m_callback_rtp_packet(session->m, session->dest, session->prefix, NULL, NULL);
+    m_callback_rtp_packet(session->m, session->dest, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
     
     return 0;
 }
@@ -250,6 +249,7 @@ int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )
     }
 
     memcpy ( it, data, length );
+    
     
     if ( -1 == send_custom_lossy_packet(session->m, session->dest, parsed, parsed_len) ) {
         LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
@@ -514,7 +514,7 @@ void build_header ( RTPSession *session, RTPHeader *header )
 
     header->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
 }
-void send_rtcp_report(RTCPSession* session, Messenger* m, int32_t friendnumber)
+void send_rtcp_report(RTCPSession* session, Messenger* m, uint32_t friendnumber)
 {
     if (session->last_expected_packets == 0)
         return;
@@ -538,7 +538,7 @@ void send_rtcp_report(RTCPSession* session, Messenger* m, int32_t friendnumber)
         session->last_sent_report_ts = current_time_monotonic();
     }
 }
-int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
+int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {
     RTPSession *session = object;
     RTPMessage *msg;
@@ -574,7 +574,7 @@ int handle_rtp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data,
     queue_message(session, msg);
     return 0;
 }
-int handle_rtcp_packet ( Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length, void *object )
+int handle_rtcp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {
     if (length < 9)
         return -1;
