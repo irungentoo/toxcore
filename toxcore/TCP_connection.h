@@ -43,6 +43,9 @@
    NOTE: Must be at most (MAX_FRIEND_TCP_CONNECTIONS / 2) */
 #define RECOMMENDED_FRIEND_TCP_CONNECTIONS (MAX_FRIEND_TCP_CONNECTIONS / 2)
 
+/* Number of TCP connections used for onion purposes. */
+#define NUM_ONION_TCP_CONNECTIONS RECOMMENDED_FRIEND_TCP_CONNECTIONS
+
 typedef struct {
     uint8_t status;
     uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
@@ -61,6 +64,7 @@ typedef struct {
     TCP_Client_Connection *connection;
     uint64_t connected_time;
     uint32_t lock_count;
+    _Bool onion;
 } TCP_con;
 
 typedef struct {
@@ -83,6 +87,8 @@ typedef struct {
     void *tcp_onion_callback_object;
 
     TCP_Proxy_Info proxy_info;
+
+    uint16_t onion_num_conns;
 } TCP_Connections;
 
 /* Send a packet to the TCP connection.
@@ -100,7 +106,7 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
  * return TCP connection number on success.
  * return -1 on failure.
  */
-int get_random_tcp_conn_number(TCP_Connections *tcp_c);
+int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c);
 
 /* Send an onion packet via the TCP relay corresponding to tcp_connections_number.
  *

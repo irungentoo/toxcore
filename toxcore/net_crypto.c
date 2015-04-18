@@ -1785,7 +1785,7 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
 int get_random_tcp_con_number(Net_Crypto *c)
 {
     pthread_mutex_lock(&c->tcp_mutex);
-    int ret = get_random_tcp_conn_number(c->tcp_c);
+    int ret = get_random_tcp_onion_conn_number(c->tcp_c);
     pthread_mutex_unlock(&c->tcp_mutex);
 
     return ret;

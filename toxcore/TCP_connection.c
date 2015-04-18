@@ -274,13 +274,14 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
  * return TCP connection number on success.
  * return -1 on failure.
  */
-int get_random_tcp_conn_number(TCP_Connections *tcp_c)
+int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c)
 {
     unsigned int i, r = rand();
 
     for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
-        if (tcp_c->tcp_connections[(i + r) % tcp_c->tcp_connections_length].status == TCP_CONN_CONNECTED) {
-            return ((i + r) % tcp_c->tcp_connections_length);
+        unsigned int index = ((i + r) % tcp_c->tcp_connections_length);
+        if (tcp_c->tcp_connections[index].onion && tcp_c->tcp_connections[index].status == TCP_CONN_CONNECTED) {
+            return index;
         }
     }
 
@@ -579,6 +580,10 @@ static int kill_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connections
         }
     }
 
+    if (tcp_con->onion) {
+        --tcp_c->onion_num_conns;
+    }
+
     kill_TCP_connection(tcp_con->connection);
 
     return wipe_tcp_connection(tcp_c, tcp_connections_number);
@@ -775,6 +780,11 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
         tcp_con->connected_time = unix_time();
     } else {
         tcp_con->connected_time = 0;
+    }
+
+    if (tcp_c->onion_num_conns < NUM_ONION_TCP_CONNECTIONS) {
+        tcp_con->onion = 1;
+        ++tcp_c->onion_num_conns;
     }
 
     return 0;
@@ -978,7 +988,7 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
 
         if (tcp_con) {
             if (tcp_con->status == TCP_CONN_CONNECTED) {
-                if (!tcp_con->lock_count && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
+                if (!tcp_con->onion && !tcp_con->lock_count && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
                     to_kill[num_kill] = i;
                     ++num_kill;
                 }
