@@ -589,6 +589,47 @@ static int kill_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connections
     return wipe_tcp_connection(tcp_c, tcp_connections_number);
 }
 
+static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connections_number)
+{
+    TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
+
+    if (!tcp_con)
+        return -1;
+
+    IP_Port ip_port = tcp_con->connection->ip_port;
+    uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
+    memcpy(relay_pk, tcp_con->connection->public_key, crypto_box_PUBLICKEYBYTES);
+    kill_TCP_connection(tcp_con->connection);
+    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->dht->self_public_key, tcp_c->dht->self_secret_key,
+                          &tcp_c->proxy_info);
+
+    if (!tcp_con->connection) {
+        kill_tcp_relay_connection(tcp_c, tcp_connections_number);
+        return -1;
+    }
+
+    unsigned int i;
+
+    for (i = 0; i < tcp_c->connections_length; ++i) {
+        TCP_Connection_to *con_to = get_connection(tcp_c, i);
+
+        if (con_to) {
+            set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_NONE, 0);
+        }
+    }
+
+    if (tcp_con->onion) {
+        --tcp_c->onion_num_conns;
+        tcp_con->onion = 0;
+    }
+
+    tcp_con->lock_count = 0;
+    tcp_con->connected_time = 0;
+    tcp_con->status = TCP_CONN_VALID;
+
+    return 0;
+}
+
 /* Send a TCP routing request.
  *
  * return 0 on success.
@@ -965,7 +1006,12 @@ static void do_tcp_conns(TCP_Connections *tcp_c)
             tcp_con = get_tcp_connection(tcp_c, i);
 
             if (tcp_con->connection->status == TCP_CLIENT_DISCONNECTED) {
-                kill_tcp_relay_connection(tcp_c, i);
+                if (tcp_con->status == TCP_CONN_CONNECTED) {
+                    reconnect_tcp_relay_connection(tcp_c, i);
+                } else {
+                    kill_tcp_relay_connection(tcp_c, i);
+                }
+
                 continue;
             }
 
