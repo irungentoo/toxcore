@@ -29,26 +29,16 @@
 
 #include "crypto_core.h"
 
+#if crypto_box_PUBLICKEYBYTES != 32
+#error crypto_box_PUBLICKEYBYTES is required to be 32 bytes for public_key_cmp to work,
+#endif
 
-/* Use this instead of memcmp; not vulnerable to timing attacks.
+/* compare 2 public keys of length crypto_box_PUBLICKEYBYTES, not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length)
+int public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
-    if (length == 16) {
-        return crypto_verify_16(mem1, mem2);
-    } else if (length == 32) {
-        return crypto_verify_32(mem1, mem2);
-    }
-
-    unsigned int check = 0;
-    size_t i;
-
-    for (i = 0; i < length; ++i) {
-        check |= mem1[i] ^ mem2[i];
-    }
-
-    return (1 & ((check - 1) >> 8)) - 1;
+    return crypto_verify_32(pk1, pk2);
 }
 
 /*  return a random number.

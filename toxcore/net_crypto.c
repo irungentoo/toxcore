@@ -341,7 +341,7 @@ static int handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t 
         return -1;
 
     if (expected_real_pk)
-        if (crypto_cmp(cookie_plain, expected_real_pk, crypto_box_PUBLICKEYBYTES) != 0)
+        if (public_key_cmp(cookie_plain, expected_real_pk) != 0)
             return -1;
 
     uint8_t cookie_hash[crypto_hash_sha512_BYTES];
