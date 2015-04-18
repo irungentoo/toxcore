@@ -485,18 +485,17 @@ bool toxav_send_audio_frame(ToxAV *av, uint32_t friend_number,
 /**
  * The function type for the `receive_video_frame` callback.
  *
- * Each plane contains (width * height) pixels. The Alpha plane can be NULL, in
- * which case every pixel should be assumed fully opaque.
- *
  * @param friend_number The friend number of the friend who sent a video frame.
  * @param width Width of the frame in pixels.
  * @param height Height of the frame in pixels.
- * @param planes Plane data. To access Y (Luminance) plane use index 0,
- *                           To access U (Chroma) plane use index 1,
- *                           To access V (Chroma) plane use index 2.
- *               The size of plane data is derived from width and height where
- *               Y = width * height, U = (width/2) * (height/2) and V = (width/2) * (height/2).
- * @param stride Strides data. Indexing is the same as in 'planes' param.
+ * @param y 
+ * @param u 
+ * @param v Plane data.
+ *          The size of plane data is derived from width and height where
+ *          Y = width * height, U = (width/2) * (height/2) and V = (width/2) * (height/2).
+ * @param ystride
+ * @param ustride
+ * @param vstride Strides data. Indexing is the same as in 'planes' param.
  */
 typedef void toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                           uint16_t width, uint16_t height,
