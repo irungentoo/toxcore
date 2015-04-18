@@ -213,6 +213,8 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
     unsigned int i;
     int ret = -1;
 
+    _Bool limit_reached = 0;
+
     for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         uint32_t tcp_con_num = con_to->connections[i].tcp_connection;
         uint8_t status = con_to->connections[i].status;
@@ -228,6 +230,10 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
 
             ret = send_data(tcp_con->connection, connection_id, packet, length);
 
+            if (ret == 0) {
+                limit_reached = 1;
+            }
+
             if (ret == 1) {
                 break;
             }
@@ -236,7 +242,10 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
 
     if (ret == 1) {
         return 0;
-    } else {
+    } else if (!limit_reached) {
+        ret = 0;
+
+        /* Send oob packets to all relays tied to the connection. */
         for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
             uint32_t tcp_con_num = con_to->connections[i].tcp_connection;
             uint8_t status = con_to->connections[i].status;
@@ -250,19 +259,19 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
                     continue;
                 }
 
-                ret = send_oob_packet(tcp_con->connection, con_to->public_key, packet, length);
-
-                if (ret == 1) {
-                    break;
+                if (send_oob_packet(tcp_con->connection, con_to->public_key, packet, length) == 1) {
+                    ret += 1;
                 }
             }
         }
 
-        if (ret == 1) {
+        if (ret >= 1) {
             return 0;
         } else {
             return -1;
         }
+    } else {
+        return -1;
     }
 }
 
@@ -280,6 +289,7 @@ int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c)
 
     for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
         unsigned int index = ((i + r) % tcp_c->tcp_connections_length);
+
         if (tcp_c->tcp_connections[index].onion && tcp_c->tcp_connections[index].status == TCP_CONN_CONNECTED) {
             return index;
         }
