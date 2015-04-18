@@ -200,8 +200,6 @@ typedef struct {
     uint32_t current_sleep_time;
 
     BS_LIST ip_port_list;
-
-    TCP_Proxy_Info proxy_info;
 } Net_Crypto;
 
 

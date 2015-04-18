@@ -978,7 +978,7 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
     return copied;
 }
 
-TCP_Connections *new_tcp_connections(DHT *dht)
+TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info)
 {
     if (dht == NULL)
         return NULL;
@@ -989,6 +989,8 @@ TCP_Connections *new_tcp_connections(DHT *dht)
         return NULL;
 
     temp->dht = dht;
+    temp->proxy_info = *proxy_info;
+
     return temp;
 }
 

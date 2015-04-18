@@ -185,7 +185,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
  */
 unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
-TCP_Connections *new_tcp_connections(DHT *dht);
+TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info);
 void do_tcp_connections(TCP_Connections *tcp_c);
 void kill_tcp_connections(TCP_Connections *tcp_c);
 

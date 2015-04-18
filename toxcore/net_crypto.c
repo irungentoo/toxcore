@@ -2346,7 +2346,7 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
-    temp->tcp_c = new_tcp_connections(dht);
+    temp->tcp_c = new_tcp_connections(dht, proxy_info);
 
     if (temp->tcp_c == NULL) {
         free(temp);
@@ -2376,8 +2376,6 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO_DATA, &udp_handle_packet, temp);
 
     bs_list_init(&temp->ip_port_list, sizeof(IP_Port), 8);
-
-    temp->proxy_info = *proxy_info;
 
     return temp;
 }
