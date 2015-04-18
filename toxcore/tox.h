@@ -368,7 +368,7 @@ struct Tox_Options {
      * exceed 255 characters, and be in a NUL-terminated C string format
      * (255 chars + 1 NUL byte).
      *
-     * This member is ignored (it can be NULL) if proxy_enabled is false.
+     * This member is ignored (it can be NULL) if proxy_type is TOX_PROXY_TYPE_NONE.
      */
     const char *proxy_host;
 
@@ -376,7 +376,7 @@ struct Tox_Options {
      * The port to use to connect to the proxy server.
      *
      * Ports must be in the range (1, 65535). The value is ignored if
-     * proxy_enabled is false.
+     * proxy_type is TOX_PROXY_TYPE_NONE.
      */
     uint16_t proxy_port;
 
@@ -1628,7 +1628,7 @@ typedef enum TOX_ERR_FILE_SEND {
  * a file name, not a path with directory names.
  *
  * If a non-zero file size is provided, this can be used by both sides to
- * determine the sending progress. File size can be set to zero for streaming
+ * determine the sending progress. File size can be set to UINT64_MAX for streaming
  * data of unknown size.
  *
  * File transmission occurs in chunks, which are requested through the
