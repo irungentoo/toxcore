@@ -493,10 +493,6 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
 
     uint32_t msg_id = ++m->friendlist[friendnumber].message_id;
 
-    if (msg_id == 0) {
-        msg_id = ++m->friendlist[friendnumber].message_id; // Otherwise, false error
-    }
-
     add_receipt(m, friendnumber, packet_num, msg_id);
 
     if (message_id)
@@ -1362,7 +1358,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -2;
 
-    if (filenumber > MAX_CONCURRENT_FILE_PIPES)
+    if (filenumber >= MAX_CONCURRENT_FILE_PIPES)
         return -3;
 
     struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[filenumber];
