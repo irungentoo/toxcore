@@ -250,7 +250,6 @@ void toxav_iterate(ToxAV* av)
     LOGGED_UNLOCK(av->mutex);
     
     av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
-//     av->interval = rc < 5 ? 1: rc - 5;
     av->dmsst += current_time_monotonic() - start;
     
     if (++av->dmssc == 3) {
@@ -864,8 +863,6 @@ int callback_capabilites(void* toxav_inst, MSICall* call)
 {
     ToxAV* toxav = toxav_inst;
     LOGGED_LOCK(toxav->mutex);
-    
-    /* TODO modify cs? */
     
     invoke_call_state(toxav, call->friend_id, call->peer_capabilities);
     

@@ -371,7 +371,8 @@ void cs_do(CSession *cs)
             for (; dest; dest = vpx_codec_get_frame(cs->v_decoder, &iter)) {
                 if (cs->vcb.first) 
                     cs->vcb.first(cs->av, cs->friend_id, dest->d_w, dest->d_h, 
-                                  (const uint8_t**)dest->planes, dest->stride, cs->vcb.second);
+                                  (const uint8_t*)dest->planes[0], (const uint8_t*)dest->planes[1], (const uint8_t*)dest->planes[2],
+                                  dest->stride[0], dest->stride[1], dest->stride[2], cs->vcb.second);
                 
                 vpx_img_free(dest);
             }

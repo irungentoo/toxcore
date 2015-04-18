@@ -500,7 +500,8 @@ bool toxav_send_audio_frame(ToxAV *av, uint32_t friend_number,
  */
 typedef void toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                           uint16_t width, uint16_t height,
-                                          uint8_t const *planes[], int32_t const stride[],
+                                          uint8_t const *y, uint8_t const *u, uint8_t const *v, 
+                                          int32_t ystride, int32_t ustride, int32_t vstride,
                                           void *user_data);
 /**
  * Set the callback for the `receive_video_frame` event. Pass NULL to unset.
