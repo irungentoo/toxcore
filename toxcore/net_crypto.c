@@ -407,9 +407,14 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         uint8_t direct_connected = 0;
         crypto_connection_status(c, crypt_connection_id, &direct_connected);
 
-        if (direct_connected && (uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length) {
-            pthread_mutex_unlock(&conn->mutex);
-            return 0;
+        if (direct_connected) {
+            if ((uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length) {
+                pthread_mutex_unlock(&conn->mutex);
+                return 0;
+            } else {
+                pthread_mutex_unlock(&conn->mutex);
+                return -1;
+            }
         }
 
         //TODO: a better way of sending packets directly to confirm the others ip.
@@ -417,7 +422,6 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
             if ((uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length)
                 direct_send_attempt = 1;
         }
-
     }
 
     pthread_mutex_unlock(&conn->mutex);
