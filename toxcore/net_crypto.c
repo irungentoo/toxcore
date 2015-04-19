@@ -35,7 +35,16 @@
 
 static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_connection_id)
 {
-    return (uint32_t)crypt_connection_id >= c->crypto_connections_length;
+    if ((uint32_t)crypt_connection_id >= c->crypto_connections_length)
+        return 1;
+
+    if (c->crypto_connections == NULL)
+        return 1;
+
+    if (c->crypto_connections[crypt_connection_id].status == CRYPTO_CONN_NO_CONNECTION)
+        return 1;
+
+    return 0;
 }
 
 /* cookie timeout in seconds */
@@ -1085,13 +1094,26 @@ static int send_kill_packet(Net_Crypto *c, int crypt_connection_id)
                                    &kill_packet, sizeof(kill_packet));
 }
 
+static void connection_kill(Net_Crypto *c, int crypt_connection_id)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == 0)
+        return;
+
+    if (conn->connection_status_callback) {
+        conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 0);
+    }
+
+    crypto_kill(c, crypt_connection_id);
+}
+
 /* Handle a received data packet.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_id, const uint8_t *packet,
-                                     uint16_t length)
+static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length)
 {
     if (length > MAX_CRYPTO_PACKET_SIZE || length <= CRYPTO_DATA_PACKET_MIN_SIZE)
         return -1;
@@ -1128,7 +1150,7 @@ static int handle_data_packet_helper(const Net_Crypto *c, int crypt_connection_i
     }
 
     if (real_data[0] == PACKET_ID_KILL) {
-        conn->killed = 1;
+        connection_kill(c, crypt_connection_id);
         return 0;
     }
 
@@ -1243,19 +1265,19 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
                                             packet, length, conn->public_key) != 0)
                     return -1;
 
-                encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
+                if (public_key_cmp(dht_public_key, conn->dht_public_key) == 0) {
+                    encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
 
-                if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
-                    if (create_send_handshake(c, crypt_connection_id, cookie, dht_public_key) != 0)
-                        return -1;
+                    if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
+                        if (create_send_handshake(c, crypt_connection_id, cookie, dht_public_key) != 0)
+                            return -1;
+                    }
+
+                    conn->status = CRYPTO_CONN_NOT_CONFIRMED;
+                } else {
+                    if (conn->dht_pk_callback)
+                        conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key);
                 }
-
-                conn->status = CRYPTO_CONN_NOT_CONFIRMED;
-                /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-                set_connection_dht_public_key(c, crypt_connection_id, dht_public_key);
-
-                if (conn->dht_pk_callback)
-                    conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key);
 
             } else {
                 return -1;
@@ -1397,24 +1419,6 @@ static int getcryptconnection_id(const Net_Crypto *c, const uint8_t *public_key)
     return -1;
 }
 
-/* Get crypto connection id from public key of peer.
- *
- *  return -1 if there are no connections like we are looking for.
- *  return id if it found it.
- */
-static int getcryptconnection_id_dht_pubkey(const Net_Crypto *c, const uint8_t *dht_public_key)
-{
-    uint32_t i;
-
-    for (i = 0; i < c->crypto_connections_length; ++i) {
-        if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION && c->crypto_connections[i].dht_public_key_set)
-            if (memcmp(dht_public_key, c->crypto_connections[i].dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
-                return i;
-    }
-
-    return -1;
-}
-
 /* Add a source to the crypto connection.
  * This is to be used only when we have received a packet from that source.
  *
@@ -1488,30 +1492,28 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const 
     int crypt_connection_id = getcryptconnection_id(c, n_c.public_key);
 
     if (crypt_connection_id != -1) {
-        int ret = -1;
         Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
-        if (conn != 0 && (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT)) {
-            memcpy(conn->recv_nonce, n_c.recv_nonce, crypto_box_NONCEBYTES);
-            memcpy(conn->peersessionpublic_key, n_c.peersessionpublic_key, crypto_box_PUBLICKEYBYTES);
-            encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
+        if (public_key_cmp(n_c.dht_public_key, conn->dht_public_key) != 0) {
+            connection_kill(c, crypt_connection_id);
+        } else {
+            int ret = -1;
 
-            crypto_connection_add_source(c, crypt_connection_id, source);
+            if (conn && (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT)) {
+                memcpy(conn->recv_nonce, n_c.recv_nonce, crypto_box_NONCEBYTES);
+                memcpy(conn->peersessionpublic_key, n_c.peersessionpublic_key, crypto_box_PUBLICKEYBYTES);
+                encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
 
-            if (create_send_handshake(c, crypt_connection_id, n_c.cookie, n_c.dht_public_key) == 0) {
-                conn->status = CRYPTO_CONN_NOT_CONFIRMED;
-                /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-                set_connection_dht_public_key(c, crypt_connection_id, n_c.dht_public_key);
+                crypto_connection_add_source(c, crypt_connection_id, source);
 
-                if (conn->dht_pk_callback)
-                    conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, n_c.dht_public_key);
-
-                ret = 0;
+                if (create_send_handshake(c, crypt_connection_id, n_c.cookie, n_c.dht_public_key) == 0) {
+                    ret = 0;
+                }
             }
-        }
 
-        free(n_c.cookie);
-        return ret;
+            free(n_c.cookie);
+            return ret;
+        }
     }
 
     int ret = c->new_connection_callback(c->new_connection_callback_object, &n_c);
@@ -1534,28 +1536,33 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
     if (crypt_connection_id == -1)
         return -1;
 
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    Crypto_Connection *conn = &c->crypto_connections[crypt_connection_id];
 
-    if (conn == 0)
+    if (n_c->cookie_length != COOKIE_LENGTH)
         return -1;
 
-    conn->connection_number_tcp = -1;
+    pthread_mutex_lock(&c->tcp_mutex);
+    conn->connection_number_tcp = new_tcp_connection_to(c->tcp_c, n_c->dht_public_key, crypt_connection_id);
+    pthread_mutex_unlock(&c->tcp_mutex);
+
+    if (conn->connection_number_tcp == -1)
+        return -1;
+
     memcpy(conn->public_key, n_c->public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(conn->recv_nonce, n_c->recv_nonce, crypto_box_NONCEBYTES);
     memcpy(conn->peersessionpublic_key, n_c->peersessionpublic_key, crypto_box_PUBLICKEYBYTES);
     random_nonce(conn->sent_nonce);
     crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
     encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
-
-    if (n_c->cookie_length != COOKIE_LENGTH)
-        return -1;
-
-    if (create_send_handshake(c, crypt_connection_id, n_c->cookie, n_c->dht_public_key) != 0)
-        return -1;
-
     conn->status = CRYPTO_CONN_NOT_CONFIRMED;
-    /* Status needs to be CRYPTO_CONN_NOT_CONFIRMED for this to work. */
-    set_connection_dht_public_key(c, crypt_connection_id, n_c->dht_public_key);
+
+    if (create_send_handshake(c, crypt_connection_id, n_c->cookie, n_c->dht_public_key) != 0) {
+        pthread_mutex_lock(&c->tcp_mutex);
+        kill_tcp_connection_to(c->tcp_c, conn->connection_number_tcp);
+        pthread_mutex_unlock(&c->tcp_mutex);
+        return -1;
+    }
+    memcpy(conn->dht_public_key, n_c->dht_public_key, crypto_box_PUBLICKEYBYTES);
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
@@ -1568,7 +1575,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
  * return -1 on failure.
  * return connection id on success.
  */
-int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key)
+int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const uint8_t *dht_public_key)
 {
     int crypt_connection_id = getcryptconnection_id(c, real_public_key);
 
@@ -1580,82 +1587,40 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key)
     if (crypt_connection_id == -1)
         return -1;
 
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    Crypto_Connection *conn = &c->crypto_connections[crypt_connection_id];
 
     if (conn == 0)
         return -1;
 
-    conn->connection_number_tcp = -1;
+    pthread_mutex_lock(&c->tcp_mutex);
+    conn->connection_number_tcp = new_tcp_connection_to(c->tcp_c, dht_public_key, crypt_connection_id);
+    pthread_mutex_unlock(&c->tcp_mutex);
+
+    if (conn->connection_number_tcp == -1)
+        return -1;
+
     memcpy(conn->public_key, real_public_key, crypto_box_PUBLICKEYBYTES);
     random_nonce(conn->sent_nonce);
     crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
     conn->status = CRYPTO_CONN_COOKIE_REQUESTING;
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
-    return crypt_connection_id;
-}
+    memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
 
-/* Copy friends DHT public key into dht_key.
- *
- * return 0 on failure (no key copied).
- * return 1 on success (key copied).
- */
-unsigned int get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key)
-{
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    conn->cookie_request_number = random_64b();
+    uint8_t cookie_request[COOKIE_REQUEST_LENGTH];
 
-    if (conn == 0)
-        return 0;
-
-    if (conn->dht_public_key_set == 0)
-        return 0;
-
-    memcpy(dht_public_key, conn->dht_public_key, crypto_box_PUBLICKEYBYTES);
-    return 1;
-}
-
-
-/* Set the DHT public key of the crypto connection.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key)
-{
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
-
-    if (conn == 0)
-        return -1;
-
-    if (conn->dht_public_key_set == 1 && memcmp(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
-        return -1;
-
-    if (conn->dht_public_key_set == 1) {
+    if (create_cookie_request(c, cookie_request, conn->dht_public_key, conn->cookie_request_number,
+                              conn->shared_key) != sizeof(cookie_request)
+            || new_temp_packet(c, crypt_connection_id, cookie_request, sizeof(cookie_request)) != 0) {
         pthread_mutex_lock(&c->tcp_mutex);
         kill_tcp_connection_to(c->tcp_c, conn->connection_number_tcp);
         pthread_mutex_unlock(&c->tcp_mutex);
-        conn->connection_number_tcp = -1;
+        conn->status = CRYPTO_CONN_NO_CONNECTION;
+        return -1;
     }
 
-    memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
-    conn->dht_public_key_set = 1;
-
-    if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
-        conn->cookie_request_number = random_64b();
-        uint8_t cookie_request[COOKIE_REQUEST_LENGTH];
-
-        if (create_cookie_request(c, cookie_request, conn->dht_public_key, conn->cookie_request_number,
-                                  conn->shared_key) != sizeof(cookie_request))
-            return -1;
-
-        if (new_temp_packet(c, crypt_connection_id, cookie_request, sizeof(cookie_request)) != 0)
-            return -1;
-    }//TODO
-
-    pthread_mutex_lock(&c->tcp_mutex);
-    conn->connection_number_tcp = new_tcp_connection_to(c->tcp_c, conn->dht_public_key, crypt_connection_id);
-    pthread_mutex_unlock(&c->tcp_mutex);
-    return 0;
+    return crypt_connection_id;
 }
 
 /* Set the direct ip of the crypto connection.
@@ -1899,8 +1864,10 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
 }
 
 
-/* Set the function for this friend that will be callbacked with object and number
- * when that friend gives us his DHT temporary public key.
+/* Set the function for this friend that will be callbacked with object and number if
+ * the friend sends us a different dht public key than we have associated to him.
+ *
+ * If this function is called, the connection should be recreated with the new public key.
  *
  * object and number will be passed as argument to this function.
  *
@@ -2391,7 +2358,7 @@ static void kill_timedout(Net_Crypto *c)
         if (conn == 0)
             return;
 
-        if (conn->status == CRYPTO_CONN_NO_CONNECTION || conn->status == CRYPTO_CONN_TIMED_OUT)
+        if (conn->status == CRYPTO_CONN_NO_CONNECTION)
             continue;
 
         if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING || conn->status == CRYPTO_CONN_HANDSHAKE_SENT
@@ -2399,19 +2366,8 @@ static void kill_timedout(Net_Crypto *c)
             if (conn->temp_packet_num_sent < MAX_NUM_SENDPACKET_TRIES)
                 continue;
 
-            conn->killed = 1;
+            connection_kill(c, i);
 
-        }
-
-        if (conn->killed) {
-            if (conn->connection_status_callback) {
-                conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 0);
-                crypto_kill(c, i);
-                continue;
-            }
-
-            conn->status = CRYPTO_CONN_TIMED_OUT;
-            continue;
         }
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {

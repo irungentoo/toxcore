@@ -160,7 +160,7 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
 
     unsigned int i;
 
-    uint16_t index = friend_con->tcp_relay_counter;
+    uint16_t index = friend_con->tcp_relay_counter % FRIEND_MAX_STORED_TCP_RELAYS;
 
     for (i = 0; i < FRIEND_MAX_STORED_TCP_RELAYS; ++i) {
         if (friend_con->tcp_relays[i].ip_port.ip.family != 0
@@ -169,8 +169,8 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
         }
     }
 
-    friend_con->tcp_relays[index % FRIEND_MAX_STORED_TCP_RELAYS].ip_port = ip_port;
-    memcpy(friend_con->tcp_relays[index % FRIEND_MAX_STORED_TCP_RELAYS].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    friend_con->tcp_relays[index].ip_port = ip_port;
+    memcpy(friend_con->tcp_relays[index].public_key, public_key, crypto_box_PUBLICKEYBYTES);
     ++friend_con->tcp_relay_counter;
 
     return add_tcp_relay_peer(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port, public_key);
@@ -233,19 +233,14 @@ static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
     friend_con->dht_ip_port_lastrecv = unix_time();
 }
 
-/* Callback for dht public key changes. */
-static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
+static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_public_key)
 {
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
     if (!friend_con)
         return;
 
     friend_con->dht_pk_lastrecv = unix_time();
-
-    if (memcmp(friend_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
-        return;
 
     if (friend_con->dht_lock) {
         if (DHT_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock) != 0) {
@@ -256,16 +251,32 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
         friend_con->dht_lock = 0;
     }
 
-    DHT_addfriend(fr_c->dht, dht_public_key, dht_ip_callback, object, number, &friend_con->dht_lock);
+    DHT_addfriend(fr_c->dht, dht_public_key, dht_ip_callback, fr_c, friendcon_id, &friend_con->dht_lock);
+    memcpy(friend_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
+}
 
-    if (friend_con->crypt_connection_id == -1) {
-        friend_new_connection(fr_c, number);
+/* Callback for dht public key changes. */
+static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
+{
+    Friend_Connections *fr_c = object;
+    Friend_Conn *friend_con = get_conn(fr_c, number);
+
+    if (!friend_con)
+        return;
+
+    if (memcmp(friend_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        return;
+
+    change_dht_pk(fr_c, number, dht_public_key);
+
+    /* if pk changed, create a new connection.*/
+    if (friend_con->crypt_connection_id != -1) {
+        crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
+        friend_con->crypt_connection_id = -1;
     }
 
-    set_connection_dht_public_key(fr_c->net_crypto, friend_con->crypt_connection_id, dht_public_key);
+    friend_new_connection(fr_c, number);
     onion_set_friend_DHT_pubkey(fr_c->onion_c, friend_con->onion_friendnum, dht_public_key);
-
-    memcpy(friend_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
 }
 
 static int handle_status(void *object, int number, uint8_t status)
@@ -385,6 +396,11 @@ static int handle_new_connections(void *object, New_Connection *n_c)
             return -1;
 
         int id = accept_crypto_connection(fr_c->net_crypto, n_c);
+
+        if (id == -1) {
+            return -1;
+        }
+
         connection_status_handler(fr_c->net_crypto, id, &handle_status, fr_c, friendcon_id);
         connection_data_handler(fr_c->net_crypto, id, &handle_packet, fr_c, friendcon_id);
         connection_lossy_data_handler(fr_c->net_crypto, id, &handle_lossy_packet, fr_c, friendcon_id);
@@ -397,7 +413,9 @@ static int handle_new_connections(void *object, New_Connection *n_c)
             friend_con->dht_ip_port_lastrecv = unix_time();
         }
 
-        dht_pk_callback(fr_c, friendcon_id, n_c->dht_public_key);
+        if (memcmp(friend_con->dht_temp_pk, n_c->dht_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+            change_dht_pk(fr_c, friendcon_id, n_c->dht_public_key);
+        }
 
         nc_dht_pk_callback(fr_c->net_crypto, id, &dht_pk_callback, fr_c, friendcon_id);
         return 0;
@@ -417,7 +435,12 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
         return -1;
     }
 
-    int id = new_crypto_connection(fr_c->net_crypto, friend_con->real_public_key);
+    /* If dht_temp_pk does not contains a pk. */
+    if (!friend_con->dht_lock) {
+        return -1;
+    }
+
+    int id = new_crypto_connection(fr_c->net_crypto, friend_con->real_public_key, friend_con->dht_temp_pk);
 
     if (id == -1)
         return -1;
@@ -712,7 +735,6 @@ void do_friend_connections(Friend_Connections *fr_c)
 
                 if (friend_con->dht_lock) {
                     if (friend_new_connection(fr_c, i) == 0) {
-                        set_connection_dht_public_key(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_temp_pk);
                         set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port);
                         connect_to_saved_tcp_relays(fr_c, i, (MAX_FRIEND_TCP_CONNECTIONS / 2)); /* Only fill it half up. */
                     }

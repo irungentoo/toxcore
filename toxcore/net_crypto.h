@@ -34,7 +34,6 @@
 #define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
 #define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets, we have received one from the other
 #define CRYPTO_CONN_ESTABLISHED 4
-#define CRYPTO_CONN_TIMED_OUT 5
 
 /* Maximum size of receiving and sending packet buffers. */
 #define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
@@ -107,11 +106,9 @@ typedef struct {
                      * 2 if we are sending handshake packets
                      * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
                      * 4 if the connection is established.
-                     * 5 if the connection is timed out.
                      */
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
-    uint8_t dht_public_key_set; /* True if the dht public key is set, false if it isn't. */
 
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
@@ -149,8 +146,6 @@ typedef struct {
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
     uint32_t packets_sent;
-
-    uint8_t killed; /* set to 1 to kill the connection. */
 
     /* TCP_connection connection_number */
     unsigned int connection_number_tcp;
@@ -225,21 +220,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
  * return -1 on failure.
  * return connection id on success.
  */
-int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key);
-
-/* Copy friends DHT public key into dht_key.
- *
- * return 0 on failure (no key copied).
- * return 1 on success (key copied).
- */
-unsigned int get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
-
-/* Set the DHT public key of the crypto connection.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key);
+int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const uint8_t *dht_public_key);
 
 /* Set the direct ip of the crypto connection.
  *
@@ -285,8 +266,10 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
                                   int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
                                   int id);
 
-/* Set the function for this friend that will be callbacked with object and number
- * when that friend gives us his DHT temporary public key.
+/* Set the function for this friend that will be callbacked with object and number if
+ * the friend sends us a different dht public key than we have associated to him.
+ *
+ * If this function is called, the connection should be recreated with the new public key.
  *
  * object and number will be passed as argument to this function.
  *
