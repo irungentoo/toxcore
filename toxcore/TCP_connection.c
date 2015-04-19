@@ -1072,7 +1072,6 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
 
 void do_tcp_connections(TCP_Connections *tcp_c)
 {
-    //TODO reconnect to TCP relays if disconnects happen.
     do_tcp_conns(tcp_c);
     kill_nonused_tcp(tcp_c);
 }

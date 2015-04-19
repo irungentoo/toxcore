@@ -1566,6 +1566,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
         pthread_mutex_unlock(&c->tcp_mutex);
         return -1;
     }
+
     memcpy(conn->dht_public_key, n_c->dht_public_key, crypto_box_PUBLICKEYBYTES);
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
