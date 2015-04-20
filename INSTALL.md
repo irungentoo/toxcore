@@ -171,15 +171,21 @@ Different: libvpx (webm) libopus pkgconfig gettext
 (the libintl, from gettext, built into OS X 10.5 is missing libintl_setlocale, but the Macports build has it)
 
 Verify where libintl is on your system: (MacPorts puts it in /opt/local)
-$ for d in /usr/local/lib /opt/local/lib /usr/lib /lib; do ls -l $d/libintl.*; done
+```
+for d in /usr/local/lib /opt/local/lib /usr/lib /lib; do ls -l $d/libintl.*; done
+```
 
 Check if that copy has libintl_setlocale:
+```
 nm /opt/local/lib/libintl.8.dylib | grep _libintl_setlocale
+```
 
 Certain other tools may not be installed, or outdated, and should also be installed from MacPorts for simplicity: git cmake
 
 If libsodium was installed with MacPorts, you may want to symlink the copy in /opt/local/lib to /usr/local/lib. That way you don't need special configure switches for toxcore to find libsodium, and every time MacPorts updates libsodium, the new version will be linked to toxcore every time you build:
+```
 ln -s /opt/local/lib/libsodium.dylib /usr/local/lib/libsodium.dylib
+```
 
 Much of the build can then be done as for other platforms: git clone, and so on. Differences will be noted with (OS X 10.5 specific)
 
@@ -217,7 +223,9 @@ There is also a shell script called "osx_build_script_toxcore.txt" which automat
 
 If after running ./configure you get an error about core being unable to find libsodium (and you have installed it) run the following in place of ./configure;
 
+```
 ./configure --with-libsodium-headers=/usr/local/include/ --with-libsodium-libs=/usr/local/lib
+```
 
 Ensure you set the locations correctly depending on where you installed libsodium on your computer.
 
