@@ -25,6 +25,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 /** \page av Public audio/video API for Tox clients.
  * 
  * Unlike the Core API, this API is fully thread-safe. The library will ensure
@@ -527,5 +531,9 @@ typedef void toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
  * Set the callback for the `receive_audio_frame` event. Pass NULL to unset.
  */
 void toxav_callback_receive_audio_frame(ToxAV *av, toxav_receive_audio_frame_cb *function, void *user_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* TOXAV_H */
