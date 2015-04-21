@@ -92,9 +92,6 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
     if (!gconn)
         return -1;
 
-    if (!LOSSLESS_PACKET(packet_type))
-        return -1;
-
     /* check if send_ary is full */
     if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (uint16_t) (gconn->send_ary_start - 1))
         return -1;
@@ -190,29 +187,13 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
     if (!gconn)
         return -1;
 
-    int ret = -1;
     const uint8_t *public_key = chat->group[peernum].addr.public_key;
     const uint8_t *data = gconn->recv_ary[idx].data;
     uint32_t length = gconn->recv_ary[idx].data_length;
 
-    switch (gconn->recv_ary[idx].packet_type) {
-        case GP_BROADCAST:
-            ret = handle_gc_broadcast(m, groupnum, chat->group[peernum].addr.ip_port, public_key, peernum, data, length);
-            break;
-        case GP_SYNC_REQUEST:
-            ret = handle_gc_sync_request(m, groupnum, public_key, peernum, data, length);
-            break;
-        case GP_SYNC_RESPONSE:
-            ret = handle_gc_sync_response(m, groupnum, public_key, data, length);
-            break;
-        case GP_NEW_PEER:
-            ret = handle_gc_new_peer(m, groupnum, public_key, chat->group[peernum].addr.ip_port, data, length,
-                                     gconn->recv_ary[idx].message_id);
-            break;
-        case GP_PEER_REQUEST:
-            ret = handle_gc_peer_request(m, groupnum, public_key, peernum, data, length);
-            break;
-    }
+    int ret = handle_gc_lossless_helper(m, groupnum, chat->group[peernum].addr.ip_port, public_key, peernum,
+                                        data, length, gconn->recv_ary[idx].message_id,
+                                        gconn->recv_ary[idx].packet_type);
 
     rm_from_ary(gconn->recv_ary, idx);
 

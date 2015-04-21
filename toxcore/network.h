@@ -120,12 +120,14 @@ typedef int sock_t;
 #define NET_PACKET_ONION_RECV_2 54
 #define NET_PACKET_ONION_RECV_1 55
 
-#define NET_PACKET_GC_MESSAGE 92            /* Group chat packet ID */
-#define NET_PACKET_GCA_ANNOUNCE 93          /* Group announce announcement packet ID */
-#define NET_PACKET_GCA_GET_NODES 94         /* Group announce get nodes request packet ID */
-#define NET_PACKET_GCA_SEND_NODES 95        /* Group announce send nodes packet ID */
-#define NET_PACKET_GCA_PING_REQUEST 96      /* Group announce ping request packet ID */
-#define NET_PACKET_GCA_PING_RESPONSE 97     /* Group announce ping response packet ID */
+#define NET_PACKET_GC_HS             90  /* Group chat handshake packet ID */
+#define NET_PACKET_GC_LOSSLESS       91  /* Group chat lossless message ID */
+#define NET_PACKET_GC_LOSSY          92  /* Group chat lossy message ID */
+#define NET_PACKET_GCA_ANNOUNCE      93  /* Group announce announcement packet ID */
+#define NET_PACKET_GCA_GET_NODES     94  /* Group announce get nodes request packet ID */
+#define NET_PACKET_GCA_SEND_NODES    95  /* Group announce send nodes packet ID */
+#define NET_PACKET_GCA_PING_REQUEST  96  /* Group announce ping request packet ID */
+#define NET_PACKET_GCA_PING_RESPONSE 97  /* Group announce ping response packet ID */
 
 /* Only used for bootstrap nodes */
 #define BOOTSTRAP_INFO_PACKET_ID 245

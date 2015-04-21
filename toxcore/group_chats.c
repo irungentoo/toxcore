@@ -57,6 +57,30 @@ static int group_delete(GC_Session *c, GC_Chat *chat);
 static int get_nick_peernumber(const GC_Chat *chat, const uint8_t *nick, uint16_t length);
 static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat);
 
+enum {
+    GP_BROADCAST,
+    GP_PEER_REQUEST,
+    GP_INVITE_RESPONSE,
+    GP_SYNC_REQUEST,
+    GP_SYNC_RESPONSE,
+    GP_FRIEND_INVITE,
+    GP_NEW_PEER,
+} GROUP_LOSSLESS_PACKET_TYPE;
+
+enum {
+    GP_PING,
+    GP_MESSAGE_ACK,
+    GP_INVITE_REQUEST,
+    GP_INVITE_RESPONSE_REJECT
+} GROUP_LOSSY_PACKET_TYPE;
+
+enum {
+    GH_HANDSHAKE_START,
+    GH_HANDSHAKE_RESP,
+    GH_HANDSHAKE_ACK
+} GROUP_HS_PACKET_TYPE;
+
+
 // for debugging
 static void print_peer(const GC_GroupPeer *peer)
 {
@@ -376,7 +400,7 @@ static int unwrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, u
  */
 static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, const uint8_t *recv_pk,
                              uint8_t *packet, const uint8_t *data, uint32_t length, uint64_t message_id,
-                             uint8_t packet_type, uint32_t chat_id_hash)
+                             uint8_t packet_type, uint32_t chat_id_hash, uint8_t packet_id)
 {
     if (length + MIN_GC_PACKET_SIZE > MAX_GC_PACKET_SIZE)
         return -1;
@@ -397,7 +421,7 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *self_sk, con
         return -1;
     }
 
-    packet[0] = NET_PACKET_GC_MESSAGE;
+    packet[0] = packet_id;
     U32_to_bytes(packet + 1, chat_id_hash);
     memcpy(packet + 1 + HASH_ID_BYTES, self_pk, EXT_PUBLIC_KEY);
     memcpy(packet + 1 + HASH_ID_BYTES + EXT_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
@@ -417,7 +441,7 @@ static int send_lossy_group_packet(const GC_Chat *chat, IP_Port ip_port, const u
 
     uint8_t packet[MAX_GC_PACKET_SIZE];
     int len = wrap_group_packet(chat->self_public_key, chat->self_secret_key, public_key, packet, data, length,
-                                0, packet_type, chat->chat_id_hash);
+                                0, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSY);
     if (len == -1)
         return -1;
 
@@ -436,7 +460,7 @@ static int send_lossless_group_packet(GC_Chat *chat, uint32_t peernumber, const 
     uint64_t message_id = chat->gcc[peernumber].send_message_id;
     uint8_t packet[MAX_GC_PACKET_SIZE];
     int len = wrap_group_packet(chat->self_public_key, chat->self_secret_key, chat->group[peernumber].addr.public_key,
-                                packet, data, length, message_id, packet_type, chat->chat_id_hash);
+                                packet, data, length, message_id, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSLESS);
     if (len == -1) {
         fprintf(stderr, "wrap packet failed %d\n", len);
         return -1;
@@ -470,8 +494,8 @@ static int send_gc_sync_response(GC_Chat *chat, uint32_t peernumber, const uint8
 
 static int send_gc_self_join(const GC_Session *c, GC_Chat *chat);
 
-int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key, const uint8_t *data,
-                            uint32_t length)
+static int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key, const uint8_t *data,
+                                   uint32_t length)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
@@ -559,8 +583,8 @@ int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public
 
 static void self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *peer);
 
-int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *public_key,
-                           int peernumber, const uint8_t *data, uint32_t length)
+static int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *public_key,
+                                  uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
@@ -568,9 +592,6 @@ int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *p
         return -1;
 
     if (chat->connection_state != CS_CONNECTED)
-        return -1;
-
-    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     if (!ext_pk_equal(public_key, data))
@@ -775,7 +796,7 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, IP_Port ipp,
         return -1;
 
     if (chat->connection_state == CS_CONNECTED)
-        return -1;
+        return 0;
 
     if (!ext_pk_equal(public_key, data + SEMI_INVITE_CERT_SIGNED_SIZE)) {
         fprintf(stderr, "ext_pk_equal failed\n");
@@ -838,7 +859,7 @@ static int handle_gc_invite_response_reject(Messenger *m, int groupnumber, const
         return -1;
 
     if (chat->connection_state == CS_CONNECTED)
-        return -1;
+        return 0;
 
     if (length != EXT_PUBLIC_KEY + 1)
         return -1;
@@ -994,7 +1015,7 @@ static int send_gc_broadcast_packet(GC_Chat *chat, const uint8_t *data, uint32_t
 }
 
 static int handle_gc_ping(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
-                          int peernumber, const uint8_t *data, uint32_t length)
+                          uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
     if (!ext_pk_equal(sender_pk, data))
         return -1;
@@ -1002,9 +1023,6 @@ static int handle_gc_ping(Messenger *m, int groupnumber, IP_Port ipp, const uint
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (!chat)
-        return -1;
-
-    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     if (!chat->group[peernumber].verified)
@@ -1082,8 +1100,8 @@ void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest)
     memcpy(dest, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 }
 
-int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, int peernumber,
-                           const uint8_t *data, uint32_t length)
+static int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, uint32_t peernumber,
+                                  const uint8_t *data, uint32_t length)
 {
     if (!ext_pk_equal(public_key, data))
         return -1;
@@ -1092,9 +1110,6 @@ int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
-        return -1;
-
-    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     GC_GroupPeer self;
@@ -1159,8 +1174,8 @@ static int send_gc_self_join(const GC_Session *c, GC_Chat *chat)
 
 static int verify_cert_integrity(const uint8_t *certificate);
 
-int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, IP_Port ipp, const uint8_t *data,
-                       uint32_t length, uint64_t message_id)
+static int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, IP_Port ipp,
+                              const uint8_t *data, uint32_t length, uint64_t message_id)
 {
     if (!ext_pk_equal(data, sender_pk))
         return -1;
@@ -1567,12 +1582,9 @@ int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id,
  *
  * Return -1 if error or we fail to send a packet in case of a request response.
  */
-static int handle_gc_message_ack(GC_Chat *chat, const uint8_t *sender_pk, int peernumber,
+static int handle_gc_message_ack(GC_Chat *chat, const uint8_t *sender_pk, uint32_t peernumber,
                                  const uint8_t *data, uint32_t length)
 {
-    if (!peernumber_valid(chat, peernumber))
-        return -1;
-
     if (!ext_pk_equal(sender_pk, data))
         return -1;
 
@@ -1612,8 +1624,8 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
     return 0;
 }
 
-int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
-                        const uint8_t *data, uint32_t length)
+static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
+                              uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
     GC_Session *c = m->group_handler;
 
@@ -1626,9 +1638,6 @@ int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_
         return -1;
 
     if (chat->connection_state != CS_CONNECTED)
-        return -1;
-
-    if (!peernumber_valid(chat, peernumber))
         return -1;
 
     if (!ext_pk_equal(sender_pk, data))
@@ -1671,11 +1680,44 @@ int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_
     return -1;
 }
 
-/* If we receive a group chat packet we call this function so it can be handled.
+int handle_gc_lossless_helper(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
+                              uint32_t peernumber, const uint8_t *data, uint16_t length, uint64_t message_id,
+                              uint8_t packet_type)
+{
+    int ret = -1;
+
+    switch (packet_type) {
+        case GP_BROADCAST:
+            ret = handle_gc_broadcast(m, groupnumber, ipp, sender_pk, peernumber, data, length);
+            break;
+        case GP_NEW_PEER:
+            ret = handle_gc_new_peer(m, groupnumber, sender_pk, ipp, data, length, message_id);
+            break;
+        case GP_PEER_REQUEST:
+            ret = handle_gc_peer_request(m, groupnumber, sender_pk, peernumber, data, length);
+            break;
+        case GP_SYNC_REQUEST:
+            ret = handle_gc_sync_request(m, groupnumber, sender_pk, peernumber, data, length);
+            break;
+        case GP_SYNC_RESPONSE:
+            ret = handle_gc_sync_response(m, groupnumber, sender_pk, data, length);
+            break;
+        case GP_INVITE_RESPONSE:
+            ret = handle_gc_invite_response(m, groupnumber, ipp, sender_pk, data, length, message_id);
+            break;
+        default:
+            break;
+    }
+
+    return ret;
+}
+
+/* Handles lossless groupchat message packets.
+ *
  * return non-negative value if packet is handled correctly.
- * return -1 if it didn't handle the packet or if the packet was shit.
+ * return -1 on failure.
  */
-static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *packet, uint16_t length)
+static int handle_gc_lossless_message(void *object, IP_Port ipp, const uint8_t *packet, uint16_t length)
 {
     if (length < MIN_GC_PACKET_SIZE || length > MAX_GC_PACKET_SIZE)
         return -1;
@@ -1701,38 +1743,75 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
     if (len <= 0)
         return -1;
 
-    chat->self_last_rcvd_ping = unix_time();   /* consider any received packet a keepalive */
-
-    int lossless = -1;
     int peernumber = peer_in_chat(chat, sender_pk);
 
-    /* Handle a lossless packet.
-     *
-     * peernumber may be -1 for lossless GP_NEW_PEER and GP_INVITE_RESPONSE packets
-     * which act like a handshake. These are acked immediately in their respective handlers.
-     * If peernumber has reset our connection we reset theirs and ack immediately.
-     */
-    if (peernumber >= 0 && LOSSLESS_PACKET(packet_type) && !peer_connection_was_reset(chat, peernumber, message_id)) {
-        lossless = gcc_handle_recv_message(chat, peernumber, data, len, packet_type, message_id);
+    if (!peernumber_valid(chat, peernumber))
+        return -1;
 
-        if (lossless == -1)
-            return -1;
+    int lossless_ret = gcc_handle_recv_message(chat, peernumber, data, len, packet_type, message_id);
 
-        /* Duplicate packet */
-        if (lossless == 0)
-            return gc_send_message_ack(chat, peernumber, message_id, 0);
+    if (lossless_ret == -1)
+        return -1;
 
-        /* request missing packet */
-        if (lossless == 1)
-            return gc_send_message_ack(chat, peernumber, 0, chat->gcc[peernumber].recv_message_id + 1);
+    /* Duplicate packet */
+    if (lossless_ret == 0)
+        return gc_send_message_ack(chat, peernumber, message_id, 0);
+
+    /* request missing packet */
+    if (lossless_ret == 1)
+        return gc_send_message_ack(chat, peernumber, 0, chat->gcc[peernumber].recv_message_id + 1);
+
+    int ret = handle_gc_lossless_helper(m, chat->groupnumber, ipp, sender_pk, peernumber, data, len,
+                                        packet_type, message_id);
+
+    if (lossless_ret == 2 && ret != -1) {
+        gc_send_message_ack(chat, peernumber, message_id, 0);
+        gcc_check_recv_ary(m, chat->groupnumber, peernumber);
     }
 
+    if (ret != -1)
+        chat->self_last_rcvd_ping = unix_time();   /* consider any received packet a keepalive */
+
+    return ret;
+}
+
+/* Handles lossy groupchat message packets.
+ *
+ * return non-negative value if packet is handled correctly.
+ * return -1 on failure.
+ */
+static int handle_gc_lossy_message(void *object, IP_Port ipp, const uint8_t *packet, uint16_t length)
+{
+    if (length < MIN_GC_PACKET_SIZE || length > MAX_GC_PACKET_SIZE)
+        return -1;
+
+    uint32_t chat_id_hash;
+    bytes_to_U32(&chat_id_hash, packet + 1);
+
+    Messenger *m = object;
+    GC_Chat* chat = get_chat_by_hash(m->group_handler, chat_id_hash);
+
+    if (!chat) {
+        fprintf(stderr, "get_chat_by_hash failed (type %u)\n", packet[0]);
+        return -1;
+    }
+
+    uint8_t sender_pk[EXT_PUBLIC_KEY];
+    uint8_t data[MAX_GC_PACKET_SIZE];
+    uint8_t packet_type;
+
+    int len = unwrap_group_packet(chat->self_public_key, chat->self_secret_key, sender_pk, data, 0,
+                                  &packet_type, packet, length);
+    if (len <= 0)
+        return -1;
+
     int ret = -1;
+    int peernumber = peer_in_chat(chat, sender_pk);
+
+    if (peernumber == -1)
+        return -1;
 
     switch (packet_type) {
-        case GP_BROADCAST:
-            ret = handle_gc_broadcast(m, chat->groupnumber, ipp, sender_pk, peernumber, data, len);
-            break;
         case GP_MESSAGE_ACK:
             ret = handle_gc_message_ack(chat, sender_pk, peernumber, data, len);
             break;
@@ -1742,32 +1821,28 @@ static int handle_groupchatpacket(void *object, IP_Port ipp, const uint8_t *pack
         case GP_INVITE_REQUEST:
             ret = handle_gc_invite_request(m, chat->groupnumber, ipp, sender_pk, data, len);
             break;
-        case GP_INVITE_RESPONSE:
-            ret = handle_gc_invite_response(m, chat->groupnumber, ipp, sender_pk, data, len, message_id);
-            break;
         case GP_INVITE_RESPONSE_REJECT:
             ret = handle_gc_invite_response_reject(m, chat->groupnumber, sender_pk, data, len);
             break;
-        case GP_SYNC_REQUEST:
-            ret = handle_gc_sync_request(m, chat->groupnumber, sender_pk, peernumber, data, len);
-            break;
-        case GP_SYNC_RESPONSE:
-            ret = handle_gc_sync_response(m, chat->groupnumber, sender_pk, data, len);
-            break;
-        case GP_NEW_PEER:
-            ret = handle_gc_new_peer(m, chat->groupnumber, sender_pk, ipp, data, len, message_id);
-            break;
-        case GP_PEER_REQUEST:
-            ret = handle_gc_peer_request(m, chat->groupnumber, sender_pk, peernumber, data, length);
+        default:
             break;
     }
 
-    if (lossless == 2 && ret != -1 && peernumber_valid(chat, peernumber)) {
-        gc_send_message_ack(chat, peernumber, message_id, 0);
-        gcc_check_recv_ary(m, chat->groupnumber, peernumber);
-    }
+    if (ret != -1)
+        chat->self_last_rcvd_ping = unix_time();
 
     return ret;
+
+}
+
+/* Handles groupchat handshake packets.
+ *
+ * return non-negative value if packet is handled correctly.
+ * return -1 on failure.
+ */
+static int handle_gc_handshake(void *object, IP_Port ipp, const uint8_t *packet, uint16_t length)
+{
+
 }
 
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
@@ -2749,7 +2824,9 @@ GC_Session *new_groupchats(Messenger* m)
 
     c->messenger = m;
     c->announce = m->group_announce;
-    networking_registerhandler(m->net, NET_PACKET_GC_MESSAGE, &handle_groupchatpacket, m);
+    networking_registerhandler(m->net, NET_PACKET_GC_HS, &handle_gc_handshake, m);
+    networking_registerhandler(m->net, NET_PACKET_GC_LOSSLESS, &handle_gc_lossless_message, m);
+    networking_registerhandler(m->net, NET_PACKET_GC_LOSSY, &handle_gc_lossy_message, m);
 
     return c;
 }
@@ -2811,7 +2888,11 @@ void kill_groupchats(GC_Session *c)
     }
 
     kill_gca(c->announce);
-    networking_registerhandler(c->messenger->net, NET_PACKET_GC_MESSAGE, NULL, NULL);
+
+    networking_registerhandler(c->messenger->net, NET_PACKET_GC_LOSSY, NULL, NULL);
+    networking_registerhandler(c->messenger->net, NET_PACKET_GC_LOSSLESS, NULL, NULL);
+    networking_registerhandler(c->messenger->net, NET_PACKET_GC_HS, NULL, NULL);
+
     free(c);
 }
 

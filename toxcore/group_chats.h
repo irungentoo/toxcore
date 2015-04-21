@@ -49,11 +49,6 @@ typedef struct Messenger Messenger;
 #define INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 #define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
-/* Return 1 if type is type is a lossless packet type, 0 otherwise */
-#define LOSSLESS_PACKET(type) ( (type == GP_BROADCAST) || (type == GP_SYNC_RESPONSE) ||\
-                                (type == GP_SYNC_REQUEST) || (type == GP_NEW_PEER) ||\
-                                (type == GP_INVITE_RESPONSE) || (type == GP_PEER_REQUEST) )
-
 enum {
     GC_BAN,
     GC_PROMOTE_OP,
@@ -89,14 +84,6 @@ enum {
 } GROUP_STATUS;
 
 enum {
-    GJ_NICK_TAKEN,
-    GJ_GROUP_FULL,
-    GJ_INVITES_DISABLED,
-    GJ_INVITE_FAILED,
-    GJ_INVALID
-} GROUP_JOIN_REJECTED;
-
-enum {
     CS_NONE,
     CS_FAILED,
     CS_DISCONNECTED,
@@ -104,6 +91,14 @@ enum {
     CS_CONNECTED,
     CS_INVALID
 } GROUP_CONNECTION_STATE;
+
+enum {
+    GJ_NICK_TAKEN,
+    GJ_GROUP_FULL,
+    GJ_INVITES_DISABLED,
+    GJ_INVITE_FAILED,
+    GJ_INVALID
+} GROUP_JOIN_REJECTED;
 
 enum {
     GM_STATUS,
@@ -115,20 +110,6 @@ enum {
     GM_OP_CERTIFICATE,
     GM_PEER_EXIT
 } GROUP_BROADCAST_TYPE;
-
-enum {
-    GP_BROADCAST,
-    GP_PEER_REQUEST,
-    GP_INVITE_REQUEST,
-    GP_INVITE_RESPONSE,
-    GP_INVITE_RESPONSE_REJECT,
-    GP_SYNC_REQUEST,
-    GP_SYNC_RESPONSE,
-    GP_FRIEND_INVITE,
-    GP_NEW_PEER,
-    GP_PING,
-    GP_MESSAGE_ACK
-} GROUP_PACKET_TYPE;
 
 typedef struct GC_PeerAddress {
     uint8_t     public_key[EXT_PUBLIC_KEY];
@@ -480,16 +461,8 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
  */
 int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id);
 
-/* lossless Packet handlers */
-int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk, int peernumber,
-                        const uint8_t *data, uint32_t length);
-int handle_gc_sync_request(const Messenger *m, int groupnumber, const uint8_t *public_key,
-                           int peernumber, const uint8_t *data, uint32_t length);
-int handle_gc_new_peer(Messenger *m, int groupnumber, const uint8_t *sender_pk, IP_Port ipp, const uint8_t *data,
-                       uint32_t length, uint64_t message_id);
-int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key,
-                            const uint8_t *data, uint32_t length);
-int handle_gc_peer_request(Messenger *m, int groupnumber, const uint8_t *public_key, int peernumber,
-                           const uint8_t *data, uint32_t length);
+int handle_gc_lossless_helper(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
+                              uint32_t peernumber, const uint8_t *data, uint16_t length, uint64_t message_id,
+                              uint8_t packet_type);
 
 #endif  /* GROUP_CHATS_H */
