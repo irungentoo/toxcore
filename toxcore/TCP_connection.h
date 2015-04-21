@@ -99,6 +99,7 @@ typedef struct {
 
     TCP_Proxy_Info proxy_info;
 
+    _Bool onion_status;
     uint16_t onion_num_conns;
 } TCP_Connections;
 
@@ -126,6 +127,15 @@ int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c);
  */
 int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *data,
                            uint16_t length);
+
+/* Set if we want TCP_connection to allocate some connection for onion use.
+ *
+ * If status is 1, allocate some connections. if status is 0, don't.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status);
 
 /* Send an oob packet via the TCP relay corresponding to tcp_connections_number.
  *

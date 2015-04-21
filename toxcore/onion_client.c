@@ -1425,7 +1425,6 @@ void do_onion_client(Onion_Client *onion_c)
             ++onion_c->onion_connected;
         }
 
-        onion_c->UDP_connected = DHT_non_lan_connected(onion_c->dht);
     } else {
         populate_path_nodes_tcp(onion_c);
 
@@ -1434,10 +1433,20 @@ void do_onion_client(Onion_Client *onion_c)
         }
     }
 
+    onion_c->UDP_connected = DHT_non_lan_connected(onion_c->dht);
+
+    if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS)) {
+        set_tcp_onion_status(onion_c->c->tcp_c, !onion_c->UDP_connected);
+    }
+
     if (onion_connection_status(onion_c)) {
         for (i = 0; i < onion_c->num_friends; ++i) {
             do_friend(onion_c, i);
         }
+    }
+
+    if (onion_c->last_run == 0) {
+        onion_c->first_run = unix_time();
     }
 
     onion_c->last_run = unix_time();

@@ -997,7 +997,7 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
         tcp_con->connected_time = 0;
     }
 
-    if (tcp_c->onion_num_conns < NUM_ONION_TCP_CONNECTIONS) {
+    if (tcp_c->onion_status && tcp_c->onion_num_conns < NUM_ONION_TCP_CONNECTIONS) {
         tcp_con->onion = 1;
         ++tcp_c->onion_num_conns;
     }
@@ -1154,6 +1154,73 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
     }
 
     return copied;
+}
+
+/* Set if we want TCP_connection to allocate some connection for onion use.
+ *
+ * If status is 1, allocate some connections. if status is 0, don't.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status)
+{
+    if (tcp_c->onion_status == status)
+        return -1;
+
+    if (status) {
+        unsigned int i;
+
+        for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
+            TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
+
+            if (tcp_con) {
+                if (tcp_con->status == TCP_CONN_CONNECTED && !tcp_con->onion) {
+                    ++tcp_c->onion_num_conns;
+                    tcp_con->onion = 1;
+                }
+            }
+
+            if (tcp_c->onion_num_conns >= NUM_ONION_TCP_CONNECTIONS)
+                break;
+        }
+
+        if (tcp_c->onion_num_conns < NUM_ONION_TCP_CONNECTIONS) {
+            unsigned int wakeup = NUM_ONION_TCP_CONNECTIONS - tcp_c->onion_num_conns;
+
+            for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
+                TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
+
+                if (tcp_con) {
+                    if (tcp_con->status == TCP_CONN_SLEEPING) {
+                        tcp_con->unsleep = 1;
+                    }
+                }
+
+                if (!wakeup)
+                    break;
+            }
+        }
+
+        tcp_c->onion_status = 1;
+    } else {
+        unsigned int i;
+
+        for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
+            TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
+
+            if (tcp_con) {
+                if (tcp_con->onion) {
+                    --tcp_c->onion_num_conns;
+                    tcp_con->onion = 0;
+                }
+            }
+        }
+
+        tcp_c->onion_status = 0;
+    }
+
+    return 0;
 }
 
 TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info)
