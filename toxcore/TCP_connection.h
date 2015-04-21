@@ -28,7 +28,12 @@
 
 #define TCP_CONN_NONE 0
 #define TCP_CONN_VALID 1
+
+/* NOTE: only used by TCP_con */
 #define TCP_CONN_CONNECTED 2
+
+/* Connection is not connected but can be quickly reconnected in case it is needed. */
+#define TCP_CONN_SLEEPING 3
 
 #define TCP_CONNECTIONS_STATUS_NONE 0
 #define TCP_CONNECTIONS_STATUS_REGISTERED 1
@@ -64,7 +69,13 @@ typedef struct {
     TCP_Client_Connection *connection;
     uint64_t connected_time;
     uint32_t lock_count;
+    uint32_t sleep_count;
     _Bool onion;
+
+    /* Only used when connection is sleeping. */
+    IP_Port ip_port;
+    uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
+    _Bool unsleep; /* set to 1 to unsleep connection. */
 } TCP_con;
 
 typedef struct {
@@ -152,6 +163,18 @@ int new_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_key, int
  * return -1 on failure.
  */
 int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
+
+/* Set connection status.
+ *
+ * status of 1 means we are using the connection.
+ * status of 0 means we are not using it.
+ *
+ * Unused tcp connections will be disconnected from but kept in case they are needed.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, _Bool status);
 
 /* Add a TCP relay tied to a connection.
  *

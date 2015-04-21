@@ -1798,6 +1798,30 @@ static void do_tcp(Net_Crypto *c)
     pthread_mutex_lock(&c->tcp_mutex);
     do_tcp_connections(c->tcp_c);
     pthread_mutex_unlock(&c->tcp_mutex);
+
+    uint32_t i;
+
+    for (i = 0; i < c->crypto_connections_length; ++i) {
+        Crypto_Connection *conn = get_crypto_connection(c, i);
+
+        if (conn == 0)
+            return;
+
+        if (conn->status == CRYPTO_CONN_ESTABLISHED) {
+            uint8_t direct_connected = 0;
+            crypto_connection_status(c, i, &direct_connected);
+
+            if (direct_connected) {
+                pthread_mutex_lock(&c->tcp_mutex);
+                set_tcp_connection_to_status(c->tcp_c, conn->connection_number_tcp, 0);
+                pthread_mutex_unlock(&c->tcp_mutex);
+            } else {
+                pthread_mutex_lock(&c->tcp_mutex);
+                set_tcp_connection_to_status(c->tcp_c, conn->connection_number_tcp, 1);
+                pthread_mutex_unlock(&c->tcp_mutex);
+            }
+        }
+    }
 }
 
 /* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
