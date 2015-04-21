@@ -12,6 +12,10 @@ libtoxav_la_SOURCES = ../toxav/rtp.h \
                       ../toxav/group.c \
                       ../toxav/codec.h \
                       ../toxav/codec.c \
+                      ../toxav/audio.h \
+                      ../toxav/audio.c \
+                      ../toxav/video.h \
+                      ../toxav/video.c \
                       ../toxav/toxav.h \
                       ../toxav/toxav.c
 

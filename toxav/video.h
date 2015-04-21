@@ -1,4 +1,4 @@
-/**  codec.h
+/**  video.h
  *
  *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
@@ -19,17 +19,8 @@
  *
  */
 
-#ifndef CODEC_H
-#define CODEC_H
-
-#include "toxav.h"
-#include "rtp.h"
-
-#include "../toxcore/util.h"
-
-#include <stdio.h>
-#include <math.h>
-#include <pthread.h>
+#ifndef VIDEO_H
+#define VIDEO_H
 
 #include <vpx/vpx_decoder.h>
 #include <vpx/vpx_encoder.h>
@@ -39,21 +30,19 @@
 #define VIDEO_CODEC_DECODER_INTERFACE (vpx_codec_vp8_dx())
 #define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
 
-/* Audio encoding/decoding */
-#include <opus.h>
+#include <pthread.h>
 
-typedef struct CSession_s {
+#include "toxav.h"
 
-    /* VIDEO
-        *
-        *
-        */
+#include "../toxcore/util.h"
 
-    /* video encoding */
+typedef struct VCSession_s {
+    
+    /* encoding */
     vpx_codec_ctx_t v_encoder[1];
     uint32_t frame_counter;
 
-    /* video decoding */
+    /* decoding */
     vpx_codec_ctx_t v_decoder[1];
     void *vbuf_raw; /* Un-decoded data */    
 
@@ -71,55 +60,22 @@ typedef struct CSession_s {
     uint8_t *split_video_frame;
     const uint8_t *processing_video_frame;
     uint16_t processing_video_frame_size;
-
-
-
-    /* AUDIO
-        *
-        *
-        */
-
-    /* audio encoding */
-    OpusEncoder *audio_encoder;
-    int32_t last_encoding_sampling_rate;
-    int32_t last_encoding_channel_count;
-    int32_t last_encoding_bitrate;
     
-    /* audio decoding */
-    OpusDecoder *audio_decoder;
-    int32_t last_packet_channel_count;
-    int32_t last_packet_sampling_rate;
-    int32_t last_packet_frame_duration;
-    int32_t last_decoding_sampling_rate;
-    int32_t last_decoding_channel_count;
-    uint64_t last_decoder_reconfiguration;
-    struct JitterBuffer_s *j_buf;
-
-
-    /* OTHER
-        *
-        *
-        */
+    
     ToxAV *av;
     int32_t friend_id;
     
-    PAIR(toxav_receive_audio_frame_cb *, void *) acb; /* Audio frame receive callback */
     PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
     
     pthread_mutex_t queue_mutex[1];
-} CSession;
+} VCSession;
 
+VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb *cb, void *cb_data, uint32_t mvfpsz);
+void vc_kill(VCSession* vc);
+void vc_do(VCSession* vc);
+void vc_init_video_splitter_cycle(VCSession* vc);
+int vc_update_video_splitter_cycle(VCSession* vc, const uint8_t* payload, uint16_t length);
+const uint8_t *vc_iterate_split_video_frame(VCSession* vc, uint16_t *size);
+int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height);
 
-void cs_do(CSession *cs);
-/* Make sure to be called BEFORE corresponding rtp_new */
-CSession *cs_new(uint32_t peer_mvfpsz);
-/* Make sure to be called AFTER corresponding rtp_kill */
-void cs_kill(CSession *cs);
-
-void cs_init_video_splitter_cycle(CSession *cs);
-int cs_update_video_splitter_cycle(CSession* cs, const uint8_t* payload, uint16_t length);
-const uint8_t *cs_iterate_split_video_frame(CSession *cs, uint16_t *size);
-
-int cs_reconfigure_video_encoder(CSession* cs, int32_t bitrate, uint16_t width, uint16_t height);
-int cs_reconfigure_audio_encoder(CSession* cs, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
-#endif /* CODEC_H */
+#endif /* VIDEO_H */

@@ -499,7 +499,7 @@ bool toxav_send_audio_frame(ToxAV *av, uint32_t friend_number,
  *          Y = width * height, U = (width/2) * (height/2) and V = (width/2) * (height/2).
  * @param ystride
  * @param ustride
- * @param vstride Strides data. Indexing is the same as in 'planes' param.
+ * @param vstride Strides data.
  */
 typedef void toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                           uint16_t width, uint16_t height,

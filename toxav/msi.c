@@ -188,7 +188,7 @@ int msi_invite ( MSISession *session, MSICall **call, uint32_t friend_id, uint8_
     msg.capabilities.value = capabilities;
     
     msg.vfpsz.exists = true;
-    msg.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
+    msg.vfpsz.value = VIDEOFRAME_PIECE_SIZE;
     
     send_message ( (*call)->session->messenger, (*call)->friend_id, &msg );
     
@@ -238,7 +238,7 @@ int msi_answer ( MSICall* call, uint8_t capabilities )
     msg.capabilities.value = capabilities;
     
     msg.vfpsz.exists = true;
-    msg.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
+    msg.vfpsz.value = VIDEOFRAME_PIECE_SIZE;
     
     send_message ( session->messenger, call->friend_id, &msg );
     
@@ -349,6 +349,12 @@ int msg_parse_in ( MSIMessage *dest, const uint8_t *data, uint16_t length )
             case IDVFPSZ:
                 CHECK_SIZE(it, size_constraint, 2);
                 SET_UINT16(it, dest->vfpsz);
+                dest->vfpsz = ntohs(dest->vfpsz);
+                
+                if (dest->vfpsz.value > 1200) {
+                    LOGGER_ERROR("Invalid vfpsz param");
+                    return -1;
+                }
                 break;
                 
             default:
@@ -419,8 +425,9 @@ int send_message ( Messenger* m, uint32_t friend_id, const MSIMessage *msg )
     }
     
     if (msg->vfpsz.exists) {
-        it = msg_parse_header_out(IDVFPSZ, it, &msg->vfpsz.value,
-                                  sizeof(msg->vfpsz.value), &size);
+        uint16_t nb_vfpsz = htons(msg->vfpsz);
+        it = msg_parse_header_out(IDVFPSZ, it, &nb_vfpsz,
+                                  sizeof(nb_vfpsz), &size);
     }
     
     if ( it == parsed ) {
@@ -620,7 +627,7 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
             goto FAILURE;
         }
         
-        call->peer_vfpsz = ntohs(msg->vfpsz.value);
+        call->peer_vfpsz = msg->vfpsz.value;
     }
     
     
@@ -645,7 +652,7 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
                  * is not terminated on our side. We can assume that
                  * in this case we can automatically answer the re-call.
                  */
-                if (call->peer_vfpsz != ntohs(msg->vfpsz.value)) {
+                if (call->peer_vfpsz != msg->vfpsz.value) {
                     LOGGER_WARNING("Friend sent invalid parameters for re-call");
                     call->error = msi_EInvalidParam;
                     invoke_callback(call, msi_OnError);
@@ -661,7 +668,7 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
                 msg.capabilities.value = call->self_capabilities;
                 
                 msg.vfpsz.exists = true;
-                msg.vfpsz.value = htons(VIDEOFRAME_PIECE_SIZE);
+                msg.vfpsz.value = VIDEOFRAME_PIECE_SIZE;
                 
                 send_message ( call->session->messenger, call->friend_id, &msg );
                 

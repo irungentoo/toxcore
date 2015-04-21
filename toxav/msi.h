@@ -25,7 +25,8 @@
 #include <inttypes.h>
 #include <pthread.h>
 
-#include "codec.h"
+#include "audio.h"
+#include "video.h"
 #include "../toxcore/Messenger.h"
 
 /** Preconfigured value for video splitting */

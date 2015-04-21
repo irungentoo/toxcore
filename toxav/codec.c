@@ -328,7 +328,6 @@ void cs_do(CSession *cs)
                     LOGGER_WARNING("Failed to reconfigure decoder!");
                     rtp_free_msg(NULL, msg);
                     continue;
-//                     goto DONE;
                 }
                 
                 rc = opus_decode(cs->audio_decoder, msg->data + 4, msg->length - 4, tmp, 5760, 0);
@@ -347,7 +346,6 @@ void cs_do(CSession *cs)
             
             LOGGED_LOCK(cs->queue_mutex);
         }
-//         DONE:;
     }
     
     /********************* VIDEO *********************/
@@ -497,12 +495,12 @@ void cs_kill(CSession *cs)
      * the callback is unregistered before cs_kill is called.
      */
     
-    vpx_codec_destroy(cs->v_encoder);
-    vpx_codec_destroy(cs->v_decoder);
     opus_encoder_destroy(cs->audio_encoder);
     opus_decoder_destroy(cs->audio_decoder);
-    rb_free(cs->vbuf_raw);
     jbuf_free(cs->j_buf);
+    vpx_codec_destroy(cs->v_encoder);
+    vpx_codec_destroy(cs->v_decoder);
+    rb_free(cs->vbuf_raw);
     free(cs->frame_buf);
     free(cs->split_video_frame);
     
@@ -600,7 +598,7 @@ void queue_message(RTPSession *session, RTPMessage *msg)
 {
     CSession *cs = session->cs;
 
-    if (!cs) 
+    if (!cs)
 		return;
 	
     /* Audio */

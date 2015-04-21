@@ -69,9 +69,11 @@ typedef struct RTCPSession_s {
 
 
 
+/* These are defined externally */
+void ac_queue_message(void *acp, RTPMessage *msg);
+void vc_queue_message(void *vcp, RTPMessage *msg);
 
-/* queue_message() is defined in codec.c */
-void queue_message(RTPSession *session, RTPMessage *msg);
+
 RTPHeader *parse_header_in ( const uint8_t *payload, int length );
 RTPExtHeader *parse_ext_header_in ( const uint8_t *payload, uint16_t length );
 RTPMessage *msg_parse ( const uint8_t *data, int length );
@@ -395,6 +397,10 @@ RTPExtHeader *parse_ext_header_in ( const uint8_t *payload, uint16_t length )
 }
 RTPMessage *msg_parse ( const uint8_t *data, int length )
 {
+    /* TODO: data dynamic, [0] 
+     * TODO: dummy payload type
+     * TODO: parse header before allocating message
+     */
     RTPMessage *retu = calloc(1, sizeof (RTPMessage));
 
     retu->header = parse_header_in ( data, length ); /* It allocates memory and all */
@@ -540,6 +546,7 @@ void send_rtcp_report(RTCPSession* session, Messenger* m, uint32_t friendnumber)
 }
 int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {
+    /* TODO on message callback */
     RTPSession *session = object;
     RTPMessage *msg;
 
@@ -570,8 +577,20 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
     }
 
     session->rtcp_session->last_received_packets ++;
-
-    queue_message(session, msg);
+    
+    /* Check if this session can handle the packet */
+    if (session->payload_type != session->prefix % 128) {
+        LOGGER_WARNING("Friend %d sent invalid payload type!", session->dest);
+        rtp_free_msg(msg);
+        return -1;
+    }
+    
+    /* Handle */
+    if (session->payload_type == rtp_TypeAudio % 128)
+        ac_queue_message(session->cs, msg);
+    else /* It can only be video */
+        vc_queue_message(session->cs, msg);
+    
     return 0;
 }
 int handle_rtcp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )

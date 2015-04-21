@@ -1170,17 +1170,18 @@ void call_kill_transmission(ToxAVCall* call)
     
     call->active = 0;
     
-    rtp_kill(call->rtps[audio_index]);
-    call->rtps[audio_index] = NULL;
-    rtp_kill(call->rtps[video_index]);
-    call->rtps[video_index] = NULL;
-    
     LOGGED_LOCK(call->mutex_audio_sending);
     LOGGED_UNLOCK(call->mutex_audio_sending);
     LOGGED_LOCK(call->mutex_video_sending);
     LOGGED_UNLOCK(call->mutex_video_sending);
     LOGGED_LOCK(call->mutex_decoding);
     LOGGED_UNLOCK(call->mutex_decoding);
+    
+    
+    rtp_kill(call->rtps[audio_index]);
+    call->rtps[audio_index] = NULL;
+    rtp_kill(call->rtps[video_index]);
+    call->rtps[video_index] = NULL;
     
     cs_kill(call->cs);
     call->cs = NULL;

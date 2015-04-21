@@ -77,8 +77,8 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 0
-#define TEST_TRANSFER_V 1
+#define TEST_TRANSFER_A 1
+#define TEST_TRANSFER_V 0
 
 
 typedef struct {
@@ -320,21 +320,28 @@ int iterate_tox(Tox* bootstrap, ToxAV* AliceAV, ToxAV* BobAV)
 void* iterate_toxav (void * data)
 {
     struct toxav_thread_data* data_cast = data;
-    
-//     cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
+#if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
+    cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
+#endif
     
     while (data_cast->sig == 0) {
         toxav_iterate(data_cast->AliceAV);
         toxav_iterate(data_cast->BobAV);
         int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
         
-//         cvWaitKey(rc);
+#if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
+        cvWaitKey(rc);
+#else
         c_sleep(rc);
+#endif
     }
     
     data_cast->sig = 1;
     
-//     cvDestroyWindow(vdout);
+#if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
+    cvDestroyWindow(vdout);
+#endif
+    
     pthread_exit(NULL);
 }
 
