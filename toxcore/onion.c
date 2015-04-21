@@ -35,8 +35,8 @@
 #define SEND_2 ONION_SEND_2
 #define SEND_1 ONION_SEND_1
 
-/* Change symmetric keys every hour to make paths expire eventually. */
-#define KEY_REFRESH_INTERVAL (60 * 60)
+/* Change symmetric keys every 2 hours to make paths expire eventually. */
+#define KEY_REFRESH_INTERVAL (2 * 60 * 60)
 static void change_symmetric_key(Onion *onion)
 {
     if (is_timeout(onion->timestamp, KEY_REFRESH_INTERVAL)) {
