@@ -921,11 +921,13 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     /* TODO: optimize */
     int connections_number = find_tcp_connection_to(tcp_c, public_key);
 
-    if (connections_number == -1) {
+    TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
+
+    if (con_to && tcp_connection_in_conn(con_to, tcp_connections_number)) {
+        return tcp_data_callback(object, connections_number, 0, data, length);
+    } else {
         if (tcp_c->tcp_oob_callback)
             tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
-    } else {
-        return tcp_data_callback(object, connections_number, 0, data, length);
     }
 
     return 0;
