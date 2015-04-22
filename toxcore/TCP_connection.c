@@ -830,8 +830,6 @@ static int tcp_response_callback(void *object, uint8_t connection_id, const uint
     if (connections_number == -1)
         return -1;
 
-    set_tcp_connection_number(tcp_con->connection, connection_id, connections_number);
-
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
     if (con_to == NULL)
@@ -839,6 +837,8 @@ static int tcp_response_callback(void *object, uint8_t connection_id, const uint
 
     if (set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_REGISTERED, connection_id) == -1)
         return -1;
+
+    set_tcp_connection_number(tcp_con->connection, connection_id, connections_number);
 
     return 0;
 }
