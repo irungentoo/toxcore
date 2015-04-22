@@ -1511,6 +1511,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const 
                 crypto_connection_add_source(c, crypt_connection_id, source);
 
                 if (create_send_handshake(c, crypt_connection_id, n_c.cookie, n_c.dht_public_key) == 0) {
+                    conn->status = CRYPTO_CONN_NOT_CONFIRMED;
                     ret = 0;
                 }
             }
