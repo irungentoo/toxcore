@@ -36,6 +36,7 @@
 #define GROUPCHAT_CALLBACK_INDEX 1
 
 #define PACKET_ID_ALIVE 16
+#define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_FRIEND_REQUESTS 18
 
 /* Interval between the sending of ping packets. */
@@ -48,6 +49,13 @@
 #define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT
 
 #define FRIEND_MAX_STORED_TCP_RELAYS (MAX_FRIEND_TCP_CONNECTIONS * 4)
+
+/* Max number of tcp relays sent to friends */
+#define MAX_SHARED_RELAYS (RECOMMENDED_FRIEND_TCP_CONNECTIONS)
+
+/* Interval between the sending of tcp relay information */
+#define SHARE_RELAYS_INTERVAL (5 * 60)
+
 
 enum {
     FRIENDCONN_STATUS_NONE,
@@ -68,6 +76,7 @@ typedef struct {
     int crypt_connection_id;
 
     uint64_t ping_lastrecv, ping_lastsent;
+    uint64_t share_relays_lastsent;
 
     struct {
         int (*status_callback)(void *object, int id, uint8_t status);

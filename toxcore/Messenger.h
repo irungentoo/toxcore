@@ -42,8 +42,7 @@ enum {
     MESSAGE_ACTION
 };
 
-/* NOTE: Packet ids below 20 must never be used. */
-#define PACKET_ID_SHARE_RELAYS 23
+/* NOTE: Packet ids below 24 must never be used. */
 #define PACKET_ID_ONLINE 24
 #define PACKET_ID_OFFLINE 25
 #define PACKET_ID_NICKNAME 48
@@ -61,9 +60,6 @@ enum {
 #define PACKET_ID_DIRECT_GROUPCHAT 98
 #define PACKET_ID_MESSAGE_GROUPCHAT 99
 #define PACKET_ID_LOSSY_GROUPCHAT 199
-
-/* Max number of tcp relays sent to friends */
-#define MAX_SHARED_RELAYS (RECOMMENDED_FRIEND_TCP_CONNECTIONS)
 
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
@@ -109,9 +105,6 @@ enum {
 
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;
-
-/* Interval between the sending of tcp relay information */
-#define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
 
 enum {
     CONNECTION_NONE,
@@ -199,7 +192,6 @@ typedef struct {
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t last_seen_time;
-    uint64_t share_relays_lastsent;
     uint8_t last_connection_udp_tcp;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     unsigned int num_sending_files;

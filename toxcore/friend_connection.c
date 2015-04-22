@@ -198,6 +198,43 @@ static void connect_to_saved_tcp_relays(Friend_Connections *fr_c, int friendcon_
     }
 }
 
+static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
+{
+    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+
+    if (!friend_con)
+        return 0;
+
+    Node_format nodes[MAX_SHARED_RELAYS];
+    uint8_t data[1024];
+    int n, length;
+
+    n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
+
+    unsigned int i;
+
+    for (i = 0; i < n; ++i) {
+        /* Associated the relays being sent with this connection.
+           On receiving the peer will do the same which will establish the connection. */
+        friend_add_tcp_relay(fr_c, friendcon_id, nodes[i].ip_port, nodes[i].public_key);
+    }
+
+    length = pack_nodes(data + 1, sizeof(data) - 1, nodes, n);
+
+    if (length <= 0)
+        return 0;
+
+    data[0] = PACKET_ID_SHARE_RELAYS;
+    ++length;
+
+    if (write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, data, length, 0) != -1) {
+        friend_con->share_relays_lastsent = unix_time();
+        return 1;
+    }
+
+    return 0;
+}
+
 /* callback for recv TCP relay nodes. */
 static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key)
 {
@@ -293,6 +330,7 @@ static int handle_status(void *object, int number, uint8_t status)
         call_cb = 1;
         friend_con->status = FRIENDCONN_STATUS_CONNECTED;
         friend_con->ping_lastrecv = unix_time();
+        friend_con->share_relays_lastsent = 0;
         onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     } else {  /* Went offline. */
         if (friend_con->status != FRIENDCONN_STATUS_CONNECTING) {
@@ -326,18 +364,30 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
+    if (!friend_con)
+        return -1;
+
     if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
         if (fr_c->fr_request_callback)
             fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
 
         return 0;
-    }
-
-    if (!friend_con)
-        return -1;
-
-    if (data[0] == PACKET_ID_ALIVE) {
+    } else if (data[0] == PACKET_ID_ALIVE) {
         friend_con->ping_lastrecv = unix_time();
+        return 0;
+    } else if (data[0] == PACKET_ID_SHARE_RELAYS) {
+        Node_format nodes[MAX_SHARED_RELAYS];
+        int n;
+
+        if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data + 1, length - 1, 1)) == -1)
+            return -1;
+
+        int j;
+
+        for (j = 0; j < n; j++) {
+            friend_add_tcp_relay(fr_c, number, nodes[j].ip_port, nodes[j].public_key);
+        }
+
         return 0;
     }
 
@@ -743,6 +793,10 @@ void do_friend_connections(Friend_Connections *fr_c)
             } else if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
                 if (friend_con->ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
                     send_ping(fr_c, i);
+                }
+
+                if (friend_con->share_relays_lastsent + SHARE_RELAYS_INTERVAL < temp_time) {
+                    send_relays(fr_c, i);
                 }
 
                 if (friend_con->ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
