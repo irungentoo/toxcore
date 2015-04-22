@@ -36,6 +36,8 @@
 
 #include "../toxcore/util.h"
 
+struct RTPMessage_s;
+
 typedef struct VCSession_s {
     
     /* encoding */
@@ -76,6 +78,7 @@ void vc_do(VCSession* vc);
 void vc_init_video_splitter_cycle(VCSession* vc);
 int vc_update_video_splitter_cycle(VCSession* vc, const uint8_t* payload, uint16_t length);
 const uint8_t *vc_iterate_split_video_frame(VCSession* vc, uint16_t *size);
+int vc_queue_message(void *vcp, struct RTPMessage_s *msg);
 int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height);
 
 #endif /* VIDEO_H */

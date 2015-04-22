@@ -77,8 +77,8 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 1
-#define TEST_TRANSFER_V 0
+#define TEST_TRANSFER_A 0
+#define TEST_TRANSFER_V 1
 
 
 typedef struct {
@@ -328,6 +328,9 @@ void* iterate_toxav (void * data)
         toxav_iterate(data_cast->AliceAV);
         toxav_iterate(data_cast->BobAV);
         int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
+        
+        printf("\rIteration interval: %d            ", rc);
+        fflush(stdout);
         
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
         cvWaitKey(rc);

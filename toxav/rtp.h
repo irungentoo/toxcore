@@ -42,11 +42,13 @@
 #define MAX_RTP_SIZE 65535
 
 /**
- * Payload type identifier. Also used as rtp callback prefix.
+ * Payload type identifier. Also used as rtp callback prefix. (Not dummies)
  */
 enum {
     rtp_TypeAudio = 192,
-    rtp_TypeVideo
+    rtp_TypeVideo,
+    rtp_TypeDummyAudio,
+    rtp_TypeDummyVideo,
 };
 
 typedef enum {
@@ -79,7 +81,7 @@ typedef struct {
 /**
  * Standard rtp message.
  */
-typedef struct {
+typedef struct RTPMessage_s {
     RTPHeader    *header;
     RTPExtHeader *ext_header;
 
@@ -91,34 +93,36 @@ typedef struct {
  * RTP control session.
  */
 typedef struct {
-    uint8_t               version;
-    uint8_t               padding;
-    uint8_t               extension;
-    uint8_t               cc;
-    uint8_t               marker;
-    uint8_t               payload_type;
-    uint16_t              sequnum;   /* Sending sequence number */
-    uint16_t              rsequnum;  /* Receiving sequence number */
-    uint32_t              rtimestamp;
-    uint32_t              ssrc;
-    uint32_t             *csrc;
+    uint8_t  version;
+    uint8_t  padding;
+    uint8_t  extension;
+    uint8_t  cc;
+    uint8_t  marker;
+    uint8_t  payload_type;
+    uint16_t sequnum;   /* Sending sequence number */
+    uint16_t rsequnum;  /* Receiving sequence number */
+    uint32_t rtimestamp;
+    uint32_t ssrc;
+    uint32_t *csrc;
 
     /* If some additional data must be sent via message
      * apply it here. Only by allocating this member you will be
      * automatically placing it within a message.
      */
-    RTPExtHeader         *ext_header;
+    RTPExtHeader *ext_header;
 
     /* Msg prefix for core to know when recving */
-    uint8_t               prefix;
+    uint8_t prefix;
 
-    int                   dest;
-
+    Messenger *m;
+    int friend_id;
+    RTPTransmissionState tstate;
     struct RTCPSession_s *rtcp_session;
-    struct CSession_s    *cs;
-    Messenger            *m;
+
     
-    RTPTransmissionState  tstate;
+    void *cs;
+    int (*mcb) (void*, RTPMessage* msg);
+    
 } RTPSession;
 
 /**

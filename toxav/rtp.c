@@ -68,12 +68,6 @@ typedef struct RTCPSession_s {
 } RTCPSession;
 
 
-
-/* These are defined externally */
-void ac_queue_message(void *acp, RTPMessage *msg);
-void vc_queue_message(void *vcp, RTPMessage *msg);
-
-
 RTPHeader *parse_header_in ( const uint8_t *payload, int length );
 RTPExtHeader *parse_ext_header_in ( const uint8_t *payload, uint16_t length );
 RTPMessage *msg_parse ( const uint8_t *data, int length );
@@ -100,7 +94,7 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num )
     
     retu->tstate = rtp_StateNormal;
     retu->m = messenger;
-    retu->dest = friend_num;
+    retu->friend_id = friend_num;
 
     if ( !(retu->csrc = calloc(1, sizeof(uint32_t))) ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
@@ -155,7 +149,7 @@ void rtp_do(RTPSession *session)
         return;
     
     if (current_time_monotonic() - session->rtcp_session->last_sent_report_ts >= RTCP_REPORT_INTERVAL_MS) {
-        send_rtcp_report(session->rtcp_session, session->m, session->dest);
+        send_rtcp_report(session->rtcp_session, session->m, session->friend_id);
     }
     
     if (rb_full(session->rtcp_session->pl_stats)) {
@@ -202,15 +196,15 @@ int rtp_start_receiving(RTPSession* session)
     if (session == NULL)
         return -1;
     
-    if (m_callback_rtp_packet(session->m, session->dest, session->prefix,
+    if (m_callback_rtp_packet(session->m, session->friend_id, session->prefix,
         handle_rtp_packet, session) == -1) {
         LOGGER_WARNING("Failed to register rtp receive handler");
         return -1;
     }
-    if (m_callback_rtp_packet(session->m, session->dest, session->rtcp_session->prefix,
+    if (m_callback_rtp_packet(session->m, session->friend_id, session->rtcp_session->prefix,
         handle_rtcp_packet, session->rtcp_session) == -1) {
         LOGGER_WARNING("Failed to register rtcp receive handler");
-        m_callback_rtp_packet(session->m, session->dest, session->prefix, NULL, NULL);
+        m_callback_rtp_packet(session->m, session->friend_id, session->prefix, NULL, NULL);
         return -1;
     }
     
@@ -221,8 +215,8 @@ int rtp_stop_receiving(RTPSession* session)
     if (session == NULL)
         return -1;
     
-    m_callback_rtp_packet(session->m, session->dest, session->prefix, NULL, NULL);
-    m_callback_rtp_packet(session->m, session->dest, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
+    m_callback_rtp_packet(session->m, session->friend_id, session->prefix, NULL, NULL);
+    m_callback_rtp_packet(session->m, session->friend_id, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
     
     return 0;
 }
@@ -253,7 +247,7 @@ int rtp_send_msg ( RTPSession *session, const uint8_t *data, uint16_t length )
     memcpy ( it, data, length );
     
     
-    if ( -1 == send_custom_lossy_packet(session->m, session->dest, parsed, parsed_len) ) {
+    if ( -1 == send_custom_lossy_packet(session->m, session->friend_id, parsed, parsed_len) ) {
         LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
         return -1;
     }
@@ -546,7 +540,6 @@ void send_rtcp_report(RTCPSession* session, Messenger* m, uint32_t friendnumber)
 }
 int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {
-    /* TODO on message callback */
     RTPSession *session = object;
     RTPMessage *msg;
 
@@ -578,20 +571,12 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
 
     session->rtcp_session->last_received_packets ++;
     
-    /* Check if this session can handle the packet */
-    if (session->payload_type != session->prefix % 128) {
-        LOGGER_WARNING("Friend %d sent invalid payload type!", session->dest);
-        rtp_free_msg(msg);
-        return -1;
+    if (session->mcb)
+        return session->mcb (session->cs, msg);
+    else {
+        rtp_free_msg(session, msg);
+        return 0;
     }
-    
-    /* Handle */
-    if (session->payload_type == rtp_TypeAudio % 128)
-        ac_queue_message(session->cs, msg);
-    else /* It can only be video */
-        vc_queue_message(session->cs, msg);
-    
-    return 0;
 }
 int handle_rtcp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {

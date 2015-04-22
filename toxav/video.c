@@ -24,6 +24,7 @@
 
 #include "video.h"
 #include "msi.h"
+#include "rtp.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/network.h"
@@ -78,7 +79,9 @@ VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb* c
     
     vc->linfts = current_time_monotonic();
     vc->lcfd = 60;
-    
+    vc->vcb.first = cb;
+    vc->vcb.second = cb_data;
+    vc->friend_id = friend_id;
     vc->peer_video_frame_piece_size = mvfpsz;
     
     return vc;
@@ -187,35 +190,25 @@ const uint8_t* vc_iterate_split_video_frame(VCSession* vc, uint16_t* size)
 
     return vc->split_video_frame;
 }
-int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height)
-{
-    if (!vc)
-        return;
-    
-    vpx_codec_enc_cfg_t cfg = *vc->v_encoder[0].config.enc;
-    if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
-        return 0; /* Nothing changed */
-    
-    cfg.rc_target_bitrate = bitrate;
-    cfg.g_w = width;
-    cfg.g_h = height;
-    
-    int rc = vpx_codec_enc_config_set(vc->v_encoder, &cfg);
-    if ( rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
-        return -1;
-    }
-
-    return 0;
-}
-/* Called from RTP */
-void vc_queue_message(void* vcp, RTPMessage *msg)
+int vc_queue_message(void* vcp, struct RTPMessage_s *msg)
 {
     /* This function does the reconstruction of video packets. 
      * See more info about video splitting in docs
      */
     if (!vcp || !msg)
-        return;
+        return -1;
+    
+    if ((msg->header->marker_payloadt & 0x7f) == rtp_TypeDummyVideo % 128) {
+        LOGGER_WARNING("Got dummy!");
+        rtp_free_msg(NULL, msg);
+        return 0;
+    }
+    
+    if ((msg->header->marker_payloadt & 0x7f) != rtp_TypeVideo % 128) {
+        LOGGER_WARNING("Invalid payload type!");
+        rtp_free_msg(NULL, msg);
+        return -1;
+    }
     
     VCSession* vc = vcp;
     
@@ -233,7 +226,7 @@ void vc_queue_message(void* vcp, RTPMessage *msg)
             Payload *p = malloc(sizeof(Payload) + vc->frame_size);
 
             if (p) {
-                LOGGED_LOCK(vc->queue_mutex);
+                pthread_mutex_lock(vc->queue_mutex);
 
                 if (rb_full(vc->vbuf_raw)) {
                     LOGGER_DEBUG("Dropped video frame");
@@ -251,7 +244,7 @@ void vc_queue_message(void* vcp, RTPMessage *msg)
                 vc->linfts = current_time_monotonic();
                 
                 rb_write(vc->vbuf_raw, p);
-                LOGGED_UNLOCK(vc->queue_mutex);
+                pthread_mutex_unlock(vc->queue_mutex);
             } else {
                 LOGGER_WARNING("Allocation failed! Program might misbehave!");
                 goto end;
@@ -288,7 +281,30 @@ void vc_queue_message(void* vcp, RTPMessage *msg)
 
 end:
     rtp_free_msg(NULL, msg);
+    return 0;
 }
+int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height)
+{
+    if (!vc)
+        return;
+    
+    vpx_codec_enc_cfg_t cfg = *vc->v_encoder[0].config.enc;
+    if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
+        return 0; /* Nothing changed */
+    
+    cfg.rc_target_bitrate = bitrate;
+    cfg.g_w = width;
+    cfg.g_h = height;
+    
+    int rc = vpx_codec_enc_config_set(vc->v_encoder, &cfg);
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+
+    return 0;
+}
+
 
 
 bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bitrate)

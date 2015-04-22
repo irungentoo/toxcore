@@ -10,8 +10,6 @@ libtoxav_la_SOURCES = ../toxav/rtp.h \
                       ../toxav/msi.c \
                       ../toxav/group.h \
                       ../toxav/group.c \
-                      ../toxav/codec.h \
-                      ../toxav/codec.c \
                       ../toxav/audio.h \
                       ../toxav/audio.c \
                       ../toxav/video.h \

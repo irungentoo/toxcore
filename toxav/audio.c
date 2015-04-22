@@ -83,6 +83,7 @@ ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *c
      * do error correction with opus */
     ac->last_packet_frame_duration = 120;
     ac->last_packet_sampling_rate = 48000;
+    ac->last_packet_channel_count = 1;
     
     ac->av = av;
     ac->friend_id = friend_id;
@@ -119,7 +120,7 @@ void ac_do(ACSession* ac)
         return;
     
     /* Enough space for the maximum frame size (120 ms 48 KHz audio) */
-    int16_t tmp[5760];
+    int16_t tmp[5760 * 2];
     
     RTPMessage *msg;
     int rc = 0;
@@ -130,9 +131,8 @@ void ac_do(ACSession* ac)
         
         if (rc == 2) {
             LOGGER_DEBUG("OPUS correction");
-            rc = opus_decode(ac->decoder, NULL, 0, tmp,
-                            (ac->last_packet_sampling_rate * ac->last_packet_frame_duration / 1000) /
-                                ac->last_packet_channel_count, 1);
+            int fs = (ac->last_packet_sampling_rate * ac->last_packet_frame_duration) / 1000;
+            rc = opus_decode(ac->decoder, NULL, 0, tmp, fs, 1);
         } else {
             /* Get values from packet and decode. */
             /* NOTE: This didn't work very well
@@ -152,10 +152,9 @@ void ac_do(ACSession* ac)
             
             ac->last_packet_channel_count = opus_packet_get_nb_channels(msg->data + 4);
             
-            /* 
-                * NOTE: even though OPUS supports decoding mono frames with stereo decoder and vice versa,
-                * it didn't work quite well.
-                */
+            /** NOTE: even though OPUS supports decoding mono frames with stereo decoder and vice versa,
+              * it didn't work quite well.
+              */
             if (!reconfigure_audio_decoder(ac, ac->last_packet_sampling_rate, ac->last_packet_channel_count)) {
                 LOGGER_WARNING("Failed to reconfigure decoder!");
                 rtp_free_msg(NULL, msg);
@@ -169,7 +168,7 @@ void ac_do(ACSession* ac)
         if (rc < 0) {
             LOGGER_WARNING("Decoding error: %s", opus_strerror(rc));
         } else if (ac->acb.first) {
-            ac->last_packet_frame_duration = (rc * 1000) / ac->last_packet_sampling_rate * ac->last_packet_channel_count;
+            ac->last_packet_frame_duration = (rc * 1000) / ac->last_packet_sampling_rate;
             
             ac->acb.first(ac->av, ac->friend_id, tmp, rc * ac->last_packet_channel_count,
                           ac->last_packet_channel_count, ac->last_packet_sampling_rate, ac->acb.second);
@@ -178,6 +177,37 @@ void ac_do(ACSession* ac)
         return;
     }
     pthread_mutex_unlock(ac->queue_mutex);
+}
+int ac_queue_message(void* acp, struct RTPMessage_s *msg)
+{
+    if (!acp || !msg)
+        return -1;
+    
+    if ((msg->header->marker_payloadt & 0x7f) == rtp_TypeDummyAudio % 128) {
+        LOGGER_WARNING("Got dummy!");
+        rtp_free_msg(NULL, msg);
+        return 0;
+    }
+    
+    if ((msg->header->marker_payloadt & 0x7f) != rtp_TypeAudio % 128) {
+        LOGGER_WARNING("Invalid payload type!");
+        rtp_free_msg(NULL, msg);
+        return -1;
+    }
+    
+    ACSession* ac = acp;
+    
+    pthread_mutex_lock(ac->queue_mutex);
+    int rc = jbuf_write(ac->j_buf, msg);
+    pthread_mutex_unlock(ac->queue_mutex);
+    
+    if (rc == -1) {
+        LOGGER_WARNING("Could not queue the message!");
+        rtp_free_msg(NULL, msg);
+        return -1;
+    }
+    
+    return 0;
 }
 int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels)
 {
@@ -210,21 +240,7 @@ int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate
     LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
     return 0;
 }
-/* called from rtp */
-void ac_queue_message(void* acp, RTPMessage *msg)
-{
-    if (!acp || !msg)
-        return;
-    
-    ACSession* ac = acp;
 
-    pthread_mutex_lock(ac->queue_mutex);
-    int ret = jbuf_write(ac->j_buf, msg);
-    pthread_mutex_unlock(ac->queue_mutex);
-
-    if (ret == -1)
-        rtp_free_msg(NULL, msg);
-}
 
 
 /* JITTER BUFFER WORK */

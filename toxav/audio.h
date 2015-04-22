@@ -29,6 +29,8 @@
 
 #include "../toxcore/util.h"
 
+struct RTPMessage_s;
+
 typedef struct ACSession_s {
     /* encoding */
     OpusEncoder *encoder;
@@ -56,5 +58,6 @@ typedef struct ACSession_s {
 ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *cb, void *cb_data);
 void ac_kill(ACSession* ac);
 void ac_do(ACSession* ac);
+int ac_queue_message(void *acp, struct RTPMessage_s *msg);
 int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
 #endif /* AUDIO_H */
