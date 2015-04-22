@@ -1565,6 +1565,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
         pthread_mutex_lock(&c->tcp_mutex);
         kill_tcp_connection_to(c->tcp_c, conn->connection_number_tcp);
         pthread_mutex_unlock(&c->tcp_mutex);
+        conn->status = CRYPTO_CONN_NO_CONNECTION;
         return -1;
     }
 
