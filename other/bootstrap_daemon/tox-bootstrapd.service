@@ -4,9 +4,6 @@ After=network.target
 
 [Service]
 Type=forking
-PermissionsStartOnly=true
-ExecStartPre=-/bin/mkdir /var/run/tox-bootstrapd -p
-ExecStartPre=/bin/chown tox-bootstrapd:tox-bootstrapd -R /var/run/tox-bootstrapd
 WorkingDirectory=/var/lib/tox-bootstrapd
 ExecStart=/usr/local/bin/tox-bootstrapd /etc/tox-bootstrapd.conf
 User=tox-bootstrapd
