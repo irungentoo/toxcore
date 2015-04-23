@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=forking
 WorkingDirectory=/var/lib/tox-bootstrapd
-ExecStart=/usr/local/bin/tox-bootstrapd /etc/tox-bootstrapd.conf
+ExecStart=/usr/bin/tox-bootstrapd /etc/tox-bootstrapd.conf
 User=tox-bootstrapd
 Group=tox-bootstrapd
 PIDFile=/var/run/tox-bootstrapd/tox-bootstrapd.pid
