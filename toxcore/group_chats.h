@@ -124,15 +124,16 @@ typedef struct {
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
     uint8_t     status;
-    uint8_t     ignore;
     uint8_t     role;
 
-    /* info we set ourselves */
-    uint32_t    peer_pk_hash;    /* 32-bit hash of public_key */
+    /* info we set ourself */
+    uint8_t     shared_key[crypto_box_KEYBYTES];
+    uint32_t    public_key_hash;
     uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
     uint64_t    time_connected;
+    uint8_t     ignore;
     bool        confirmed;  /* true if we have successfully handshaked with this peer */
     bool        verified; /* true if we have validated peer's invite certificate */
 } GC_GroupPeer;
