@@ -433,14 +433,19 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
         return -1;
 
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
-        uint8_t direct_connected = 0;
+        _Bool direct_connected = 0;
+        unsigned int num_online_relays = 0;
         crypto_connection_status(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                 m->friendlist[friendnumber].friendcon_id), &direct_connected);
+                                 m->friendlist[friendnumber].friendcon_id), &direct_connected, &num_online_relays);
 
         if (direct_connected) {
             return CONNECTION_UDP;
         } else {
-            return CONNECTION_TCP;
+            if (num_online_relays) {
+                return CONNECTION_TCP;
+            } else {
+                return CONNECTION_UNKNOWN;
+            }
         }
     } else {
         return CONNECTION_NONE;
@@ -850,6 +855,14 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
 
     if (ret == -1)
         return;
+
+    if (ret == CONNECTION_UNKNOWN) {
+        if (last_connection_udp_tcp == CONNECTION_UDP) {
+            return;
+        } else {
+            ret = CONNECTION_TCP;
+        }
+    }
 
     if (last_connection_udp_tcp != ret) {
         if (m->friend_connectionstatuschange)

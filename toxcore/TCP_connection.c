@@ -1124,6 +1124,19 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
     }
 }
 
+/* return number of online tcp relays tied to the connection on success.
+ * return 0 on failure.
+ */
+unsigned int tcp_connection_to_online_tcp_relays(TCP_Connections *tcp_c, int connections_number)
+{
+    TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
+
+    if (!con_to)
+        return 0;
+
+    return online_tcp_connection_from_conn(con_to);
+}
+
 /* Copy a maximum of max_num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
  *

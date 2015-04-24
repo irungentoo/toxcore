@@ -404,8 +404,8 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     //TODO: on bad networks, direct connections might not last indefinitely.
     if (conn->ip_port.ip.family != 0) {
-        uint8_t direct_connected = 0;
-        crypto_connection_status(c, crypt_connection_id, &direct_connected);
+        _Bool direct_connected = 0;
+        crypto_connection_status(c, crypt_connection_id, &direct_connected, NULL);
 
         if (direct_connected) {
             if ((uint32_t)sendpacket(c->dht->net, conn->ip_port, data, length) == length) {
@@ -1446,7 +1446,7 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
             conn->ip_port = source;
         }
 
-        conn->direct_lastrecv_time = current_time_monotonic();
+        conn->direct_lastrecv_time = unix_time();
         return 0;
     } else if (source.ip.family == TCP_FAMILY) {
         if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, source.ip.ip6.uint32[0]) == 0)
@@ -1646,7 +1646,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         return -1;
 
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
-        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > current_time_monotonic()) {
+        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > unix_time()) {
             if (LAN_ip(ip_port.ip) == 0 && LAN_ip(conn->ip_port.ip) == 0 && conn->ip_port.port == ip_port.port)
                 return -1;
         }
@@ -1810,8 +1810,8 @@ static void do_tcp(Net_Crypto *c)
             return;
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
-            uint8_t direct_connected = 0;
-            crypto_connection_status(c, i, &direct_connected);
+            _Bool direct_connected = 0;
+            crypto_connection_status(c, i, &direct_connected, NULL);
 
             if (direct_connected) {
                 pthread_mutex_lock(&c->tcp_mutex);
@@ -1966,7 +1966,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
         return -1;
 
     pthread_mutex_lock(&conn->mutex);
-    conn->direct_lastrecv_time = current_time_monotonic();
+    conn->direct_lastrecv_time = unix_time();
     pthread_mutex_unlock(&conn->mutex);
     return 0;
 }
@@ -2290,18 +2290,26 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 /* return one of CRYPTO_CONN_* values indicating the state of the connection.
  *
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
+ * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, uint8_t *direct_connected)
+unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, _Bool *direct_connected,
+                                      unsigned int *online_tcp_relays)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == 0)
         return CRYPTO_CONN_NO_CONNECTION;
 
-    *direct_connected = 0;
+    if (direct_connected) {
+        *direct_connected = 0;
 
-    if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > current_time_monotonic())
-        *direct_connected = 1;
+        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > unix_time())
+            *direct_connected = 1;
+    }
+
+    if (online_tcp_relays) {
+        *online_tcp_relays = tcp_connection_to_online_tcp_relays(c->tcp_c, conn->connection_number_tcp);
+    }
 
     return conn->status;
 }

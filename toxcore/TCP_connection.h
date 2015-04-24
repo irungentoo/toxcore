@@ -186,6 +186,11 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
  */
 int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, _Bool status);
 
+/* return number of online tcp relays tied to the connection on success.
+ * return 0 on failure.
+ */
+unsigned int tcp_connection_to_online_tcp_relays(TCP_Connections *tcp_c, int connections_number);
+
 /* Add a TCP relay tied to a connection.
  *
  * NOTE: This can only be used during the tcp_oob_callback.

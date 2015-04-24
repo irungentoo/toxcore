@@ -60,7 +60,7 @@
 #define MAX_NUM_SENDPACKET_TRIES 8
 
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
-#define UDP_DIRECT_TIMEOUT ((MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL) / 2)
+#define UDP_DIRECT_TIMEOUT ((MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL) / 1000)
 
 #define PACKET_ID_PADDING 0 /* Denotes padding */
 #define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
@@ -360,13 +360,13 @@ unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, u
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
-
 /* return one of CRYPTO_CONN_* values indicating the state of the connection.
  *
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
+ * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, uint8_t *direct_connected);
-
+unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, _Bool *direct_connected,
+                                      unsigned int *online_tcp_relays);
 
 /* Generate our public and private keys.
  *  Only call this function the first time the program starts.
