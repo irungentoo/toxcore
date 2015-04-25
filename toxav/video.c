@@ -65,15 +65,15 @@ VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb* c
     if ( !(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE)) )
         goto BASE_CLEANUP;
     
-    int rc = vpx_codec_dec_init_ver(vc->v_decoder, VIDEO_CODEC_DECODER_INTERFACE, 
+    int rc = vpx_codec_dec_init_ver(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, 
                                     NULL, 0, VPX_DECODER_ABI_VERSION);
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
         goto BASE_CLEANUP;
     }
     
-    if (!create_video_encoder(vc->v_encoder, 500000)) {
-        vpx_codec_destroy(vc->v_decoder);
+    if (!create_video_encoder(vc->encoder, 500000)) {
+        vpx_codec_destroy(vc->decoder);
         goto BASE_CLEANUP;
     }
     
@@ -99,8 +99,8 @@ void vc_kill(VCSession* vc)
     if (!vc)
         return;
     
-    vpx_codec_destroy(vc->v_encoder);
-    vpx_codec_destroy(vc->v_decoder);
+    vpx_codec_destroy(vc->encoder);
+    vpx_codec_destroy(vc->decoder);
     rb_free(vc->vbuf_raw);
     free(vc->split_video_frame);
     free(vc->frame_buf);
@@ -122,17 +122,17 @@ void vc_do(VCSession* vc)
     if (rb_read(vc->vbuf_raw, (void**)&p)) {
         pthread_mutex_unlock(vc->queue_mutex);
         
-        rc = vpx_codec_decode(vc->v_decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
+        rc = vpx_codec_decode(vc->decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
         free(p);
         
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
         } else {
             vpx_codec_iter_t iter = NULL;
-            vpx_image_t *dest = vpx_codec_get_frame(vc->v_decoder, &iter);
+            vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
             
             /* Play decoded images */
-            for (; dest; dest = vpx_codec_get_frame(vc->v_decoder, &iter)) {
+            for (; dest; dest = vpx_codec_get_frame(vc->decoder, &iter)) {
                 if (vc->vcb.first) 
                     vc->vcb.first(vc->av, vc->friend_id, dest->d_w, dest->d_h, 
                                   (const uint8_t*)dest->planes[0], (const uint8_t*)dest->planes[1], (const uint8_t*)dest->planes[2],
@@ -157,7 +157,7 @@ void vc_init_video_splitter_cycle(VCSession* vc)
 int vc_update_video_splitter_cycle(VCSession* vc, const uint8_t* payload, uint16_t length)
 {
     if (!vc)
-        return;
+        return 0;
 
     vc->processing_video_frame = payload;
     vc->processing_video_frame_size = length;
@@ -198,15 +198,15 @@ int vc_queue_message(void* vcp, struct RTPMessage_s *msg)
     if (!vcp || !msg)
         return -1;
     
-    if ((msg->header->marker_payloadt & 0x7f) == rtp_TypeDummyVideo % 128) {
+    if ((msg->header->marker_payloadt & 0x7f) == (rtp_TypeVideo + 2) % 128) {
         LOGGER_WARNING("Got dummy!");
-        rtp_free_msg(NULL, msg);
+        rtp_free_msg(msg);
         return 0;
     }
     
     if ((msg->header->marker_payloadt & 0x7f) != rtp_TypeVideo % 128) {
         LOGGER_WARNING("Invalid payload type!");
-        rtp_free_msg(NULL, msg);
+        rtp_free_msg(msg);
         return -1;
     }
     
@@ -280,15 +280,15 @@ int vc_queue_message(void* vcp, struct RTPMessage_s *msg)
         vc->frame_size = framebuf_new_length;
 
 end:
-    rtp_free_msg(NULL, msg);
+    rtp_free_msg(msg);
     return 0;
 }
 int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height)
 {
     if (!vc)
-        return;
+        return -1;
     
-    vpx_codec_enc_cfg_t cfg = *vc->v_encoder[0].config.enc;
+    vpx_codec_enc_cfg_t cfg = *vc->encoder[0].config.enc;
     if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
@@ -296,7 +296,7 @@ int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint1
     cfg.g_w = width;
     cfg.g_h = height;
     
-    int rc = vpx_codec_enc_config_set(vc->v_encoder, &cfg);
+    int rc = vpx_codec_enc_config_set(vc->encoder, &cfg);
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;

@@ -38,6 +38,12 @@ typedef struct ACSession_s {
     int32_t last_encoding_channel_count;
     int32_t last_encoding_bitrate;
     
+    /* Testing encoder for dynamic bitrate streaming */
+    OpusEncoder *test_encoder;
+    int32_t last_test_encoding_sampling_rate;
+    int32_t last_test_encoding_channel_count;
+    int32_t last_test_encoding_bitrate;
+    
     /* decoding */
     OpusDecoder *decoder;
     int32_t last_packet_channel_count;
@@ -60,4 +66,5 @@ void ac_kill(ACSession* ac);
 void ac_do(ACSession* ac);
 int ac_queue_message(void *acp, struct RTPMessage_s *msg);
 int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
+int ac_reconfigure_test_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
 #endif /* AUDIO_H */

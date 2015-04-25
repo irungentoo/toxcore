@@ -39,7 +39,7 @@
 } while(0)
 
 #define MAX_SEQU_NUM 65535
-#define MAX_RTP_SIZE 65535
+#define MAX_RTP_SIZE 1500
 
 /**
  * Payload type identifier. Also used as rtp callback prefix. (Not dummies)
@@ -47,8 +47,6 @@
 enum {
     rtp_TypeAudio = 192,
     rtp_TypeVideo,
-    rtp_TypeDummyAudio,
-    rtp_TypeDummyVideo,
 };
 
 typedef enum {
@@ -85,8 +83,8 @@ typedef struct RTPMessage_s {
     RTPHeader    *header;
     RTPExtHeader *ext_header;
 
-    uint8_t       data[MAX_RTP_SIZE];
     uint32_t      length;
+    uint8_t       data[];
 } RTPMessage;
 
 /**
@@ -128,7 +126,7 @@ typedef struct {
 /**
  * Must be called before calling any other rtp function.
  */
-RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num );
+RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) );
 
 /**
  * Terminate the session.
@@ -141,7 +139,7 @@ void rtp_kill ( RTPSession* session );
 void rtp_do(RTPSession *session);
 
 /**
- * By default rtp is not in receiving state
+ * By default rtp is in receiving state
  */
 int rtp_start_receiving (RTPSession *session);
 
@@ -153,12 +151,12 @@ int rtp_stop_receiving (RTPSession *session);
 /**
  * Sends msg to RTPSession::dest
  */
-int rtp_send_msg ( RTPSession* session, const uint8_t* data, uint16_t length );
+int rtp_send_data ( RTPSession* session, const uint8_t* data, uint16_t length, bool dummy );
 
 /**
  * Dealloc msg.
  */
-void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
+void rtp_free_msg ( RTPMessage *msg );
 
 
 #endif /* RTP_H */

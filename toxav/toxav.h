@@ -217,22 +217,6 @@ typedef enum TOXAV_CALL_STATE {
      */
     TOXAV_CALL_STATE_END = 16,
     /**
-     * AV core suggests you to lower bitrate for audio.
-     */
-    TOXAV_CALL_STATE_DECREASE_AUDIO_BITRATE = 32,
-    /**
-     * AV core suggests you to lower bitrate for video.
-     */
-    TOXAV_CALL_STATE_DECREASE_VIDEO_BITRATE = 64,
-    /**
-     * AV core suggests you to increase bitrate for audio.
-     */
-    TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE = 128,
-    /**
-     * AV core suggests you to increase bitrate for video.
-     */
-    TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE = 256,
-    /**
      * Set by the AV core if an error occurred on the remote end.
      */
     TOXAV_CALL_STATE_ERROR = 32768
@@ -349,6 +333,24 @@ typedef enum TOXAV_ERR_BIT_RATE {
     TOXAV_ERR_BIT_RATE_FRIEND_NOT_IN_CALL
 } TOXAV_ERR_BIT_RATE;
 /**
+ * The function type for the `audio_bitrate_control` callback.
+ * 
+ * @param friend_number The friend number of the friend for which to set the
+ * audio bit rate.
+ * @param good Is the stream good enough to keep the said bitrate. Upon failed
+ * non forceful bit rate setup this will be set to false and 'bit_rate'
+ * will be set to the bit rate that failed, otherwise 'good' will be set to
+ * true with 'bit_rate' set to new bit rate. If the stream becomes bad, 
+ * the 'good' wil be set to false with 'bit_rate' set to the current bit rate.
+ * This callback will never be called when the stream is good.
+ * @param bit_rate The bit rate in Kb/sec.
+ */
+typedef void toxav_audio_bitrate_control_cb(ToxAV *av, uint32_t friend_number, bool good, uint32_t bit_rate, void *user_data);
+/**
+ * Set the callback for the `audio_bitrate_control` event. Pass NULL to unset.
+ */
+void toxav_callback_audio_bitrate_control(ToxAV *av, toxav_audio_bitrate_control_cb *function, void *user_data);
+/**
  * Set the audio bit rate to be used in subsequent audio frames.
  *
  * @param friend_number The friend number of the friend for which to set the
@@ -358,7 +360,25 @@ typedef enum TOXAV_ERR_BIT_RATE {
  *
  * @see toxav_call for the valid bit rates.
  */
-bool toxav_set_audio_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, TOXAV_ERR_BIT_RATE *error);
+bool toxav_set_audio_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, bool force, TOXAV_ERR_BIT_RATE *error);
+/**
+ * The function type for the `video_bitrate_control` callback.
+ * 
+ * @param friend_number The friend number of the friend for which to set the
+ * video bit rate.
+ * @param good Is the stream good enough to keep the said bitrate. Upon failed
+ * non forceful bit rate setup this will be set to false and 'bit_rate'
+ * will be set to the bit rate that failed, otherwise 'good' will be set to
+ * true with 'bit_rate' set to new bit rate. If the stream becomes bad, 
+ * the 'good' wil be set to false with 'bit_rate' set to the current bit rate.
+ * This callback will never be called when the stream is good.
+ * @param bit_rate The bit rate in Kb/sec.
+ */
+typedef void toxav_video_bitrate_control_cb(ToxAV *av, uint32_t friend_number, bool good, uint32_t bit_rate, void *user_data);
+/**
+ * Set the callback for the `video_bitrate_control` event. Pass NULL to unset.
+ */
+void toxav_callback_video_bitrate_control(ToxAV *av, toxav_video_bitrate_control_cb *function, void *user_data);
 /**
  * Set the video bit rate to be used in subsequent video frames.
  *
@@ -369,7 +389,7 @@ bool toxav_set_audio_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t audio_
  *
  * @see toxav_call for the valid bit rates.
  */
-bool toxav_set_video_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t video_bit_rate, TOXAV_ERR_BIT_RATE *error);
+bool toxav_set_video_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t video_bit_rate, bool force, TOXAV_ERR_BIT_RATE *error);
 /*******************************************************************************
  * 
  * :: A/V sending
@@ -409,17 +429,6 @@ typedef enum TOXAV_ERR_SEND_FRAME {
 	TOXAV_ERR_SEND_FRAME_RTP_FAILED
 } TOXAV_ERR_SEND_FRAME;
 /**
- * The function type for the `video_frame_request` callback.
- *
- * @param friend_number The friend number of the friend for which the next video
- * frame should be sent.
- */
-typedef void toxav_video_frame_request_cb(ToxAV *av, uint32_t friend_number, void *user_data);
-/**
- * Set the callback for the `video_frame_request` event. Pass NULL to unset.
- */
-void toxav_callback_video_frame_request(ToxAV *av, toxav_video_frame_request_cb *function, void *user_data);
-/**
  * Send a video frame to a friend.
  *
  * This is called in response to receiving the `video_frame_request` event.
@@ -440,17 +449,6 @@ bool toxav_send_video_frame(ToxAV *av, uint32_t friend_number,
                             uint16_t width, uint16_t height,
                             uint8_t const *y, uint8_t const *u, uint8_t const *v,
                             TOXAV_ERR_SEND_FRAME *error);
-/**
- * The function type for the `audio_frame_request` callback.
- *
- * @param friend_number The friend number of the friend for which the next audio
- * frame should be sent.
- */
-typedef void toxav_audio_frame_request_cb(ToxAV *av, uint32_t friend_number, void *user_data);
-/**
- * Set the callback for the `audio_frame_request` event. Pass NULL to unset.
- */
-void toxav_callback_audio_frame_request(ToxAV *av, toxav_audio_frame_request_cb *function, void *user_data);
 /**
  * Send an audio frame to a friend.
  *

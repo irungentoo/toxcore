@@ -41,11 +41,11 @@ struct RTPMessage_s;
 typedef struct VCSession_s {
     
     /* encoding */
-    vpx_codec_ctx_t v_encoder[1];
+    vpx_codec_ctx_t encoder[1];
     uint32_t frame_counter;
 
     /* decoding */
-    vpx_codec_ctx_t v_decoder[1];
+    vpx_codec_ctx_t decoder[1];
     void *vbuf_raw; /* Un-decoded data */    
 
     /* Data handling */

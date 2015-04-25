@@ -33,8 +33,9 @@ static int jbuf_write(struct JitterBuffer *q, RTPMessage *m);
 static RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success);
 
 OpusEncoder* create_audio_encoder (int32_t bitrate, int32_t sampling_rate, int32_t channel_count);
+bool reconfigure_audio_encoder(OpusEncoder** e, int32_t new_br, int32_t new_sr, uint8_t new_ch,
+                               int32_t *old_br, int32_t *old_sr, int32_t *old_ch);
 bool reconfigure_audio_decoder(ACSession* ac, int32_t sampling_rate, int8_t channels);
-
 
 
 ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *cb, void *cb_data)
@@ -71,9 +72,19 @@ ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *c
     if (ac->encoder == NULL)
         goto DECODER_CLEANUP;
     
+    ac->test_encoder = create_audio_encoder(48000, 48000, 2);
+    if (ac->test_encoder == NULL) {
+        opus_encoder_destroy(ac->encoder);
+        goto DECODER_CLEANUP;
+    }
+    
     ac->last_encoding_bitrate = 48000;
     ac->last_encoding_sampling_rate = 48000;
     ac->last_encoding_channel_count = 2;
+    
+    ac->last_test_encoding_bitrate = 48000;
+    ac->last_test_encoding_sampling_rate = 48000;
+    ac->last_test_encoding_channel_count = 2;
     
     ac->last_decoding_channel_count = 2;
     ac->last_decoding_sampling_rate = 48000;
@@ -141,7 +152,7 @@ void ac_do(ACSession* ac)
                 cs->last_packet_sampling_rate = rc;
             } else {
                 LOGGER_WARNING("Failed to load packet values!");
-                rtp_free_msg(NULL, msg);
+                rtp_free_msg(msg);
                 continue;
             }*/
             
@@ -157,12 +168,12 @@ void ac_do(ACSession* ac)
               */
             if (!reconfigure_audio_decoder(ac, ac->last_packet_sampling_rate, ac->last_packet_channel_count)) {
                 LOGGER_WARNING("Failed to reconfigure decoder!");
-                rtp_free_msg(NULL, msg);
+                rtp_free_msg(msg);
                 continue;
             }
             
             rc = opus_decode(ac->decoder, msg->data + 4, msg->length - 4, tmp, 5760, 0);
-            rtp_free_msg(NULL, msg);
+            rtp_free_msg(msg);
         }
         
         if (rc < 0) {
@@ -183,15 +194,15 @@ int ac_queue_message(void* acp, struct RTPMessage_s *msg)
     if (!acp || !msg)
         return -1;
     
-    if ((msg->header->marker_payloadt & 0x7f) == rtp_TypeDummyAudio % 128) {
+    if ((msg->header->marker_payloadt & 0x7f) == (rtp_TypeAudio + 2) % 128) {
         LOGGER_WARNING("Got dummy!");
-        rtp_free_msg(NULL, msg);
+        rtp_free_msg(msg);
         return 0;
     }
     
     if ((msg->header->marker_payloadt & 0x7f) != rtp_TypeAudio % 128) {
         LOGGER_WARNING("Invalid payload type!");
-        rtp_free_msg(NULL, msg);
+        rtp_free_msg(msg);
         return -1;
     }
     
@@ -203,7 +214,7 @@ int ac_queue_message(void* acp, struct RTPMessage_s *msg)
     
     if (rc == -1) {
         LOGGER_WARNING("Could not queue the message!");
-        rtp_free_msg(NULL, msg);
+        rtp_free_msg(msg);
         return -1;
     }
     
@@ -211,33 +222,20 @@ int ac_queue_message(void* acp, struct RTPMessage_s *msg)
 }
 int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels)
 {
-    if (!ac)
-        return;
-    
-    /* Values are checked in toxav.c */
-    if (ac->last_encoding_sampling_rate != sampling_rate || ac->last_encoding_channel_count != channels) {
-        OpusEncoder* new_encoder = create_audio_encoder(bitrate, sampling_rate, channels);
-        if (new_encoder == NULL)
-            return -1;
-        
-        opus_encoder_destroy(ac->encoder);
-        ac->encoder = new_encoder;
-    } else if (ac->last_encoding_bitrate == bitrate)
-        return 0; /* Nothing changed */
-    else {
-        int status = opus_encoder_ctl(ac->encoder, OPUS_SET_BITRATE(bitrate));
-        
-        if ( status != OPUS_OK ) {
-            LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(status));
-            return -1;
-        }
-    }
-
-    ac->last_encoding_bitrate = bitrate;
-    ac->last_encoding_sampling_rate = sampling_rate;
-    ac->last_encoding_channel_count = channels;
+    if (!ac || !reconfigure_audio_encoder(&ac->encoder, bitrate, sampling_rate, channels, 
+        &ac->last_encoding_bitrate, &ac->last_encoding_sampling_rate, &ac->last_encoding_channel_count))
+        return -1;
     
     LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
+    return 0;
+}
+int ac_reconfigure_test_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels)
+{
+    if (!ac || !reconfigure_audio_encoder(&ac->test_encoder, bitrate, sampling_rate, channels, 
+        &ac->last_encoding_bitrate, &ac->last_encoding_sampling_rate, &ac->last_encoding_channel_count))
+        return -1;
+    
+    LOGGER_DEBUG ("Reconfigured test audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
     return 0;
 }
 
@@ -277,7 +275,7 @@ static void jbuf_clear(struct JitterBuffer *q)
 {
     for (; q->bottom != q->top; ++q->bottom) {
         if (q->queue[q->bottom % q->size]) {
-            rtp_free_msg(NULL, q->queue[q->bottom % q->size]);
+            rtp_free_msg(q->queue[q->bottom % q->size]);
             q->queue[q->bottom % q->size] = NULL;
         }
     }
@@ -371,6 +369,34 @@ OpusEncoder* create_audio_encoder (int32_t bitrate, int32_t sampling_rate, int32
 FAILURE:
     opus_encoder_destroy(rc);
     return NULL;
+}
+bool reconfigure_audio_encoder(OpusEncoder** e, int32_t new_br, int32_t new_sr, uint8_t new_ch, 
+                               int32_t* old_br, int32_t* old_sr, int32_t* old_ch)
+{
+    /* Values are checked in toxav.c */
+    if (*old_sr != new_sr || *old_ch != new_ch) {
+        OpusEncoder* new_encoder = create_audio_encoder(new_br, new_sr, new_ch);
+        if (new_encoder == NULL)
+            return false;
+        
+        opus_encoder_destroy(*e);
+        *e = new_encoder;
+    } else if (*old_br == new_br)
+        return true; /* Nothing changed */
+    else {
+        int status = opus_encoder_ctl(*e, OPUS_SET_BITRATE(new_br));
+        
+        if ( status != OPUS_OK ) {
+            LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(status));
+            return false;
+        }
+    }
+
+    *old_br = new_br;
+    *old_sr = new_sr;
+    *old_ch = new_ch;
+    
+    return true;
 }
 bool reconfigure_audio_decoder(ACSession* ac, int32_t sampling_rate, int8_t channels)
 {

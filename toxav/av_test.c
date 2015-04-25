@@ -186,7 +186,7 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     unsigned long int i, j;
     for (i = 0; i < height; ++i) {
         for (j = 0; j < width; ++j) {
-            uint8_t *point = (void*)img_data + 3 * ((i * width) + j);
+            uint8_t *point = (uint8_t*) img_data + 3 * ((i * width) + j);
             int yx = y[(i * ystride) + j];
             int ux = u[((i / 2) * ustride) + (j / 2)];
             int vx = v[((i / 2) * vstride) + (j / 2)];
@@ -226,7 +226,7 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        assert(tox_friend_add_norequest(m, public_key, NULL) != ~0);
+        assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
     }
 }
 
@@ -262,7 +262,7 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     tox_self_get_address(Alice, address);
     
     
-    assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != ~0);
+    assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
     
     uint8_t off = 1;
     
@@ -563,7 +563,7 @@ int main (int argc, char** argv)
                 } \
             } \
              \
-            iterate(bootstrap, AliceAV, BobAV); \
+            iterate_tox(bootstrap, AliceAV, BobAV); \
         } \
         printf("Success!\n");\
     } while(0)
