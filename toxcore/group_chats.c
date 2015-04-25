@@ -51,7 +51,8 @@
 #define MAX_GC_PACKET_SIZE 65507
 
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
-static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_PeerAddress *addr);
+static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *public_key);
+static int peer_update(Messenger *m, int groupnumber, GC_GroupPeer *peer, uint32_t peernumber);
 static int group_delete(GC_Session *c, GC_Chat *chat);
 static int get_nick_peernumber(const GC_Chat *chat, const uint8_t *nick, uint16_t length);
 static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat);
@@ -491,8 +492,8 @@ static int send_gc_sync_response(GC_Chat *chat, uint32_t peernumber, const uint8
 static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
                                      uint8_t hs_type);
 
-static int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key, const uint8_t *data,
-                                   uint32_t length)
+static int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t *public_key, uint32_t peernumber,
+                                   const uint8_t *data, uint32_t length)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
@@ -559,7 +560,8 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, const uint8_t 
         sync_gc_announced_nodes(c, chat);
 
     self_gc_connected(chat);
-    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
+    gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key,
+                              CHAT_ID(chat->chat_public_key));
 
     if (c->self_join)
         (*c->self_join)(m, groupnumber, c->self_join_userdata);
@@ -852,8 +854,8 @@ static int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t 
 /* Return -1 if fail
  * Return 0 if success
  */
-int handle_gc_invite_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
-                             uint32_t peernumber, const uint8_t *data, uint32_t length)
+int handle_gc_invite_request(Messenger *m, int groupnumber, const uint8_t *public_key, uint32_t peernumber,
+                             const uint8_t *data, uint32_t length)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
@@ -1010,7 +1012,6 @@ static int handle_bc_change_status(Messenger *m, int groupnumber, uint32_t peern
         return -1;
 
     chat->group[peernumber].status = status;
-    chat->group[peernumber].last_update_time = unix_time();
 
     if (c->status_change)
         (*c->status_change)(m, groupnumber, peernumber, status, c->status_change_userdata);
@@ -1114,8 +1115,8 @@ static int send_gc_peer_exchange(const GC_Session *c, GC_Chat *chat, uint32_t pe
 
 static int verify_cert_integrity(const uint8_t *certificate);
 
-static int handle_gc_peer_info_response(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
-                                        const uint8_t *data, uint32_t length)
+static int handle_gc_peer_info_response(Messenger *m, int groupnumber, const uint8_t *sender_pk,
+                                        uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
     if (!ext_pk_equal(data, sender_pk))
         return -1;
@@ -1149,17 +1150,12 @@ static int handle_gc_peer_info_response(Messenger *m, int groupnumber, IP_Port i
         return -1;
     }
 
-    if (peer.nick_len == 0)
-        return -1;
-
-    ipport_copy(&peer.addr.ip_port, &ipp);
-
-    int peernumber = peer_add(m, groupnumber, &peer, NULL);
-
-    if (peernumber == -1) {
+    if (peer_update(m, groupnumber, &peer, peernumber) == -1) {
         fprintf(stderr, "peer_add() failed in handle_gc_peer_info_request\n");
         return -1;
     }
+
+    memcpy(chat->group[peernumber].addr.public_key, sender_pk, EXT_PUBLIC_KEY);  // TODO: remove this
 
     if (c->peer_join && !chat->group[peernumber].confirmed
         && chat->group[0].time_connected != chat->group[peernumber].time_connected)
@@ -1283,7 +1279,6 @@ static int handle_bc_change_nick(Messenger *m, int groupnumber, uint32_t peernum
 
     memcpy(chat->group[peernumber].nick, nick, length);
     chat->group[peernumber].nick_len = length;
-    chat->group[peernumber].last_update_time = unix_time();
 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
@@ -1545,8 +1540,8 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore)
 }
 
 
-static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
-                              uint32_t peernumber, const uint8_t *data, uint32_t length)
+static int handle_gc_broadcast(Messenger *m, int groupnumber, const uint8_t *sender_pk, uint32_t peernumber,
+                               const uint8_t *data, uint32_t length)
 {
     GC_Session *c = m->group_handler;
 
@@ -1602,6 +1597,7 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
 }
 
 /* Decrypts data of length using self secret key and sender's public key.
+ * data must have room for GC_PLAIN_HS_REQ_PACKET_SIZE bytes.
  *
  * Returns length of plaintext data on success.
  * Returns -1 on failure.
@@ -1609,16 +1605,15 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, IP_Port ipp, const
 static int unwrap_handshake_request_packet(const uint8_t *self_sk, uint8_t *sender_pk, uint8_t *data,
                                            const uint8_t *packet, uint16_t length)
 {
-    uint8_t plain[GC_PLAIN_HS_REQ_PACKET_SIZE];
     uint8_t nonce[crypto_box_NONCEBYTES];
     memcpy(sender_pk, packet + 1 + HASH_ID_BYTES, ENC_PUBLIC_KEY);
     memcpy(nonce, packet + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY, crypto_box_NONCEBYTES);
 
     int len = decrypt_data(sender_pk, self_sk, nonce,
                            packet + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES,
-                           length - (1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES), plain);
+                           length - (1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES), data);
 
-    if (len != sizeof(plain)) {
+    if (len != GC_PLAIN_HS_REQ_PACKET_SIZE) {
         fprintf(stderr, "decrypt handshake request failed (len: %d)\n", len);
         return -1;
     }
@@ -1626,7 +1621,8 @@ static int unwrap_handshake_request_packet(const uint8_t *self_sk, uint8_t *send
     return len;
 }
 
-/* Encrypts data of length using the peer's shared key a new nonce.
+/* Encrypts data of length using the peer's shared key a new nonce. Packet must have room
+ * for GC_ENCRYPTED_HS_REQ_PACKET_SIZE bytes.
  *
  * Adds plaintext header consisting of: packet identifier, chat_id_hash, self public key, nonce.
  *
@@ -1669,16 +1665,7 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
     if (!chat)
         return -1;
 
-    GC_GroupPeer peer;
-    memset(&peer, 0, sizeof(GC_GroupPeer));
-
-    ipport_copy(&peer.addr.ip_port, &ipp);
-    memcpy(&peer.addr.public_key, public_key, ENC_PUBLIC_KEY);
-
-    if (peer_in_chat(chat, public_key) != -1)
-        return -1;
-
-    int peernumber = peer_add(m, groupnumber, &peer, NULL);
+    int peernumber = peer_add(m, groupnumber, &ipp, public_key);
 
     if (peernumber == -1)
         return -1;
@@ -1687,11 +1674,9 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
     U32_to_bytes(data, chat->group[0].public_key_hash);
     memcpy(data + HASH_ID_BYTES, &hs_type, sizeof(uint8_t));
     uint32_t length = HASH_ID_BYTES + sizeof(uint8_t);
-
     uint8_t packet[GC_ENCRYPTED_HS_REQ_PACKET_SIZE];
     int enc_len = wrap_handshake_request_packet(chat->self_public_key, chat->group[peernumber].shared_key,
                                                 packet, data, length, chat->chat_id_hash);
-
     if (enc_len != sizeof(packet)) {
         fprintf(stderr, "wrap_handshake_request_packet failed (len: %d\n)", enc_len);
         return -1;
@@ -1781,20 +1766,10 @@ int handle_gc_handshake_request_packet(void *object, IP_Port ipp, const uint8_t 
 
     int peer_exists = peer_in_chat(chat, sender_pk);
 
-    if (peer_exists != -1) {
-        gcc_peer_cleanup(&chat->gcc[peer_exists]);
-        chat->group[peer_exists].confirmed = false;
-        chat->group[peer_exists].verified = false;
-        chat->group[peer_exists].nick_len = 0;
-    }
+    if (peer_exists != -1)
+        gc_peer_delete(m, chat->groupnumber, peer_exists, NULL, 0);
 
-    GC_GroupPeer peer;
-    memset(&peer, 0, sizeof(GC_GroupPeer));
-
-    ipport_copy(&peer.addr.ip_port, &ipp);
-    memcpy(&peer.addr.public_key, sender_pk, ENC_PUBLIC_KEY);
-
-    int peernumber = peer_add(m, chat->groupnumber, &peer, NULL);
+    int peernumber = peer_add(m, chat->groupnumber, &ipp, sender_pk);
 
     if (peernumber == -1) {
         fprintf(stderr, "peer_add failed in handle_gc_handshake_request\n");
@@ -1812,10 +1787,10 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, IP_Port ipp, const 
 
     switch (packet_type) {
         case GP_BROADCAST:
-            ret = handle_gc_broadcast(m, groupnumber, ipp, sender_pk, peernumber, data, length);
+            ret = handle_gc_broadcast(m, groupnumber, sender_pk, peernumber, data, length);
             break;
         case GP_PEER_INFO_RESPONSE:
-            ret = handle_gc_peer_info_response(m, groupnumber, ipp, sender_pk, data, length);
+            ret = handle_gc_peer_info_response(m, groupnumber, sender_pk, peernumber, data, length);
             break;
         case GP_PEER_INFO_REQUEST:
             ret = handle_gc_peer_info_request(m, groupnumber, sender_pk, peernumber, data, length);
@@ -1824,10 +1799,10 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, IP_Port ipp, const 
             ret = handle_gc_sync_request(m, groupnumber, sender_pk, peernumber, data, length);
             break;
         case GP_SYNC_RESPONSE:
-            ret = handle_gc_sync_response(m, groupnumber, sender_pk, data, length);
+            ret = handle_gc_sync_response(m, groupnumber, sender_pk, peernumber, data, length);
             break;
         case GP_INVITE_REQUEST:
-            ret = handle_gc_invite_request(m, groupnumber, ipp, sender_pk, peernumber, data, length);
+            ret = handle_gc_invite_request(m, groupnumber, sender_pk, peernumber, data, length);
             break;
         case GP_INVITE_RESPONSE:
             ret = handle_gc_invite_response(m, groupnumber, sender_pk, peernumber, data, length);
@@ -2306,7 +2281,6 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
     }
 
     memcpy(chat->group[trg].role_certificate, certificate, ROLE_CERT_SIGNED_SIZE);
-    chat->group[trg].last_update_time = unix_time();
 
     return src;
 }
@@ -2372,27 +2346,12 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
     return 0;
 }
 
-static int peer_update(GC_Chat *chat, GC_GroupPeer *peer, uint32_t peernumber)
-{
-    if (!peernumber_valid(chat, peernumber))
-        return -1;
-
-    peer->time_connected = chat->group[peernumber].time_connected;
-    peer->public_key_hash = chat->group[peernumber].public_key_hash;
-    peer->verified = chat->group[peernumber].verified;
-    peer->confirmed = chat->group[peernumber].confirmed;
-    memcpy(peer->shared_key, chat->group[peernumber].shared_key, crypto_box_KEYBYTES);
-    memcpy(&(chat->group[peernumber]), peer, sizeof(GC_GroupPeer));
-
-    return peernumber;
-}
-
-/* Add peer to groupnumber's group list.
+/* Updates peernumber's peer info
  *
- * Return peernumber if success.
- * Return -1 if fail.
+ * Returns peernumber on success.
+ * Returns -1 on failure.
  */
-static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_PeerAddress *addr)
+static int peer_update(Messenger *m, int groupnumber, GC_GroupPeer *peer, uint32_t peernumber)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
@@ -2400,26 +2359,53 @@ static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_
     if (chat == NULL)
         return -1;
 
-    peer->last_rcvd_ping = unix_time();
-    peer->last_update_time = unix_time();
+    /* TODO: this state preserving shouldn't be necessary */
+    peer->ignore = chat->group[peernumber].ignore;
+    peer->time_connected = chat->group[peernumber].time_connected;
+    peer->public_key_hash = chat->group[peernumber].public_key_hash;
+    peer->last_rcvd_ping = chat->group[peernumber].last_rcvd_ping;
+    peer->verified = chat->group[peernumber].verified;
+    peer->confirmed = chat->group[peernumber].confirmed;
+    ipport_copy(&peer->addr.ip_port, &chat->group[peernumber].addr.ip_port);
+    memcpy(peer->addr.public_key, chat->group[peernumber].addr.public_key, EXT_PUBLIC_KEY);
+    memcpy(peer->shared_key, chat->group[peernumber].shared_key, crypto_box_KEYBYTES);
 
-    if (addr)
-        copy_gc_peer_addr(&peer->addr, addr);
-
-    int nick_num = get_nick_peernumber(chat, peer->nick, peer->nick_len);
-    int peernumber = peer_in_chat(chat, peer->addr.public_key);
-
-    if (nick_num != -1 && peernumber != nick_num)   // duplicate nick
+    if (peer->nick_len == 0)
         return -1;
 
-    if (peernumber >= 0) {
-        peernumber = peer_update(chat, peer, peernumber);
+    int nick_num = get_nick_peernumber(chat, peer->nick, peer->nick_len);
 
-        if (peernumber != -1 && c->peerlist_update)
+    if (nick_num != -1 && nick_num != peernumber) {   /* duplicate nick */
+        if (c->peerlist_update)
             (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
-        return peernumber;
+        gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
+        return -1;
     }
+
+    memcpy(&chat->group[peernumber], peer, sizeof(GC_GroupPeer));
+
+    if (c->peerlist_update)
+        (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
+
+    return peernumber;
+}
+
+/* Adds a new peer to groupnumber's peer list.
+ *
+ * Return peernumber if success.
+ * Return -1 if fail.
+ */
+static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *public_key)
+{
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (peer_in_chat(chat, public_key) != -1)
+        return -1;
 
     GC_Connection *tmp_gcc = realloc(chat->gcc, sizeof(GC_Connection) * (chat->numpeers + 1));
 
@@ -2431,19 +2417,22 @@ static int peer_add(Messenger *m, int groupnumber, GC_GroupPeer *peer, const GC_
     if (tmp_group == NULL)
         return -1;
 
-    peernumber = chat->numpeers++;
+    int peernumber = chat->numpeers++;
 
-    memcpy(&(tmp_group[peernumber]), peer, sizeof(GC_GroupPeer));
-    memset(&(tmp_gcc[peernumber]), 0, sizeof(GC_Connection));
+    memset(&tmp_group[peernumber], 0, sizeof(GC_GroupPeer));
+    memset(&tmp_gcc[peernumber], 0, sizeof(GC_Connection));
 
     chat->gcc = tmp_gcc;
     chat->group = tmp_group;
 
-    encrypt_precompute(chat->group[peernumber].addr.public_key, chat->self_secret_key,
-                       chat->group[peernumber].shared_key);
+    if (ipp)
+        ipport_copy(&chat->group[peernumber].addr.ip_port, ipp);
 
+    encrypt_precompute(public_key, chat->self_secret_key, chat->group[peernumber].shared_key);
+    memcpy(chat->group[peernumber].addr.public_key, public_key, ENC_PUBLIC_KEY);
+    chat->group[peernumber].last_rcvd_ping = unix_time();
     chat->group[peernumber].time_connected = unix_time();
-    chat->group[peernumber].public_key_hash = jenkins_hash(peer->addr.public_key, ENC_PUBLIC_KEY);
+    chat->group[peernumber].public_key_hash = jenkins_hash(public_key, ENC_PUBLIC_KEY);
 
     chat->gcc[peernumber].send_message_id = 1;
     chat->gcc[peernumber].send_ary_start = 1;
@@ -2466,7 +2455,6 @@ static void self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer 
     peer->nick_len = chat->group[0].nick_len;
     peer->status = chat->group[0].status;
     peer->role = chat->group[0].role;
-    peer->confirmed = true;
 }
 
 static void do_peer_connections(Messenger *m, int groupnumber)
@@ -2485,6 +2473,7 @@ static void do_peer_connections(Messenger *m, int groupnumber)
             try_gc_peer_sync(chat, i);
             gcc_resend_packets(m, chat, i);   // This function may delete the peer
         }
+
         if (i >= chat->numpeers)
             break;
     }
@@ -2578,9 +2567,9 @@ void do_gc(GC_Session *c)
                     break;
                 }
 
-                if (is_timeout(chat->self_last_rcvd_ping, GROUP_GET_NEW_NODES_INTERVAL)) {
+                if (is_timeout(chat->last_get_nodes_attempt, GROUP_GET_NEW_NODES_INTERVAL)) {
                     ++chat->get_nodes_attempts;
-                    chat->self_last_rcvd_ping = unix_time();
+                    chat->last_get_nodes_attempt = unix_time();
                     gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
                                                CHAT_ID(chat->chat_public_key));
                 }
@@ -2708,15 +2697,11 @@ static int create_new_group(GC_Session *c, bool founder)
     memcpy(chat->topic, " ", 1);
     chat->topic_len = 1;
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
-    chat->self_last_rcvd_ping = unix_time();
+    chat->last_get_nodes_attempt = unix_time();
     chat->last_sent_ping_time = unix_time();
     chat->announce_search_timer = unix_time();
 
-    GC_GroupPeer self;
-    memset(&self, 0, sizeof(GC_GroupPeer));
-
     if (founder) {
-        self.verified = true;
         chat->credentials = new_groupcredentials(chat);
 
         if (chat->credentials == NULL) {
@@ -2727,16 +2712,16 @@ static int create_new_group(GC_Session *c, bool founder)
 
     create_extended_keypair(chat->self_public_key, chat->self_secret_key);
 
-    memcpy(self.nick, m->name, m->name_length);
-    memcpy(self.addr.public_key, chat->self_public_key, EXT_PUBLIC_KEY);
-    self.nick_len = m->name_length;
-    self.status = m->userstatus;
-    self.role = GR_FOUNDER ? founder : GR_USER;
-
-    if (peer_add(m, groupnumber, &self, NULL) != 0) {    /* you are always peernumber/index 0 */
+    if (peer_add(m, groupnumber, NULL, chat->self_public_key) != 0) {    /* you are always peernumber/index 0 */
         group_delete(c, chat);
         return -1;
     }
+
+    memcpy(chat->group[0].nick, m->name, m->name_length);
+    chat->group[0].nick_len = m->name_length;
+    chat->group[0].status = m->userstatus;
+    chat->group[0].role = GR_FOUNDER ? founder : GR_USER;
+    chat->group[0].verified = founder ? true : false;
 
     return groupnumber;
 }
@@ -2761,7 +2746,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->connection_state = CS_DISCONNECTED;
     chat->net = m->net;
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
-    chat->self_last_rcvd_ping = unix_time();
+    chat->last_get_nodes_attempt = unix_time();
     chat->last_sent_ping_time = unix_time();
     chat->announce_search_timer = unix_time();
 
@@ -2774,20 +2759,16 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->group_name_len = ntohs(save->group_name_len);
     chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 
-    GC_GroupPeer self;
-    memset(&self, 0, sizeof(GC_GroupPeer));
-
-    memcpy(self.invite_certificate, save->self_invite_cert, INVITE_CERT_SIGNED_SIZE);
-    memcpy(self.role_certificate, save->self_role_cert, ROLE_CERT_SIGNED_SIZE);
-    memcpy(self.nick, save->self_nick, MAX_GC_NICK_SIZE);
-    memcpy(self.addr.public_key, chat->self_public_key, EXT_PUBLIC_KEY);
-    self.nick_len = ntohs(save->self_nick_len);
-    self.role = save->self_role;
-    self.status = save->self_status;
-    self.verified = (bool) save->self_verified;
-
-    if (peer_add(m, groupnumber, &self, NULL) != 0)
+    if (peer_add(m, groupnumber, NULL, save->self_public_key) != 0)
         return -1;
+
+    memcpy(chat->group[0].invite_certificate, save->self_invite_cert, INVITE_CERT_SIGNED_SIZE);
+    memcpy(chat->group[0].role_certificate, save->self_role_cert, ROLE_CERT_SIGNED_SIZE);
+    memcpy(chat->group[0].nick, save->self_nick, MAX_GC_NICK_SIZE);
+    chat->group[0].nick_len = ntohs(save->self_nick_len);
+    chat->group[0].role = save->self_role;
+    chat->group[0].status = save->self_status;
+    chat->group[0].verified = (bool) save->self_verified;
 
     uint16_t i, num = 0, num_addrs = ntohs(save->num_addrs);
 
@@ -2882,7 +2863,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
             break;
 
     chat->connection_state = CS_DISCONNECTED;
-    chat->self_last_rcvd_ping = chat->num_addrs > 0 ? unix_time() : 0;  /* Reconnect using saved peers or DHT */
+    chat->last_get_nodes_attempt = chat->num_addrs > 0 ? unix_time() : 0;  /* Reconnect using saved peers or DHT */
     chat->last_sent_ping_time = unix_time();
     chat->last_join_attempt = unix_time() + 3;  /* Delay reconnection in case of heavy lag for part signal */
     chat->announce_search_timer = unix_time();

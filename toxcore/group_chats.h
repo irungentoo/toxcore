@@ -129,7 +129,6 @@ typedef struct {
     /* info we set ourself */
     uint8_t     shared_key[crypto_box_KEYBYTES];
     uint32_t    public_key_hash;
-    uint64_t    last_update_time; /* updates when nick, role, status, verified, ip_port change or banned */
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
     uint64_t    time_connected;
@@ -176,9 +175,9 @@ typedef struct GC_Chat {
     uint8_t     connection_state;
     uint64_t    last_join_attempt;
     uint8_t     get_nodes_attempts;
+    uint64_t    last_get_nodes_attempt;
     uint64_t    last_peer_join_time;    /* last time a peer joined the group */
     uint64_t    last_sent_ping_time;
-    uint64_t    self_last_rcvd_ping;
     uint64_t    announce_search_timer;
 
     /* Holder for IP/keys received from announcement requests and loaded from saved groups */
