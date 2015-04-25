@@ -1647,7 +1647,12 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
 
     if (!ipport_equal(&ip_port, &conn->ip_port)) {
         if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_time) > unix_time()) {
-            if (LAN_ip(ip_port.ip) == 0 && LAN_ip(conn->ip_port.ip) == 0 && conn->ip_port.port == ip_port.port)
+            /* We already know a LAN ip, no need to switch. */
+            if (LAN_ip(conn->ip_port.ip) == 0)
+                return -1;
+
+            /* Prefer ipv6. */
+            if (conn->ip_port.ip.family == AF_INET6 && ip_port.ip.family == AF_INET)
                 return -1;
         }
 
