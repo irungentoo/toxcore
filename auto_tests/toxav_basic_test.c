@@ -55,7 +55,7 @@ typedef struct _Status {
 /* My default settings */
 static ToxAvCSettings muhcaps;
 
-void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+void accept_friend_request(Tox *m, const uint8_t *public_key, uint32_t nospam, const uint8_t *data, size_t length, void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
         tox_friend_add_norequest(m, public_key, 0);

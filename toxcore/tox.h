@@ -226,6 +226,11 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
 #define TOX_ADDRESS_SIZE                (TOX_PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
 /**
+ * Maximim length of nospam description in bytes.
+ */
+#define TOX_MAX_NOSPAM_DESCRIPTION_LENGTH 128
+
+/**
  * Maximum length of a nickname in bytes.
  */
 #define TOX_MAX_NAME_LENGTH             128
@@ -680,11 +685,52 @@ void tox_iterate(Tox *tox);
  *
  ******************************************************************************/
 
+/**
+ * Multiple nospam values can be used to have different addresses at the same time.
+ * This can help to block friend request spam for one address
+ * leaving other addresses valid.
+ * Also this can help to distinguish friend requests by nospam values they used.
+ *
+ * Every non zero 32-bit unsigned integer can be used as nospam value.
+ *
+ * It's also possible to block all friend requests by
+ * removing all nospam values from nospam set.
+ *
+ * Each nospam value can have a description, that can help
+ * user to distinguish friend requests.
+ */
+
+typedef enum TOX_ERR_NOSPAM {
+    TOX_ERR_NOSPAM_OK,
+
+    /**
+     * Nospam number is not in nospam set.
+     */
+    TOX_ERR_NOSPAM_NOT_FOUND,
+
+    /**
+     * Impossible to add new nospam value to nospam set.
+     */
+    TOX_ERR_NOSPAM_TOO_MANY,
+
+    /**
+     * Nospam value is already in nospam set.
+     */
+    TOX_ERR_NOSPAM_ALREADY_EXISTS,
+
+    /**
+     * Description is greater then TOX_MAX_NOSPAM_DESCRIPTION_LENGTH.
+     */
+    TOX_ERR_NOSPAM_DESCRIPTION_TOO_LONG
+} TOX_ERR_NOSPAM;
 
 /**
  * Writes the Tox friend address of the client to a byte array. The address is
  * not in human-readable format. If a client wants to display the address,
  * formatting is required.
+ *
+ * This is old API function and can write an address that will not pass
+ * antispam check. This function will work correctly if only old API is used.
  *
  * @param address A memory region of at least TOX_ADDRESS_SIZE bytes. If this
  *   parameter is NULL, this function has no effect.
@@ -692,18 +738,95 @@ void tox_iterate(Tox *tox);
  */
 void tox_self_get_address(const Tox *tox, uint8_t *address);
 
+/**
+ * Writes the Tox friend address of the client with nospam value to a byte array.
+ * If nospam is not in registered nospam set then behaviour is undefined.
+ *
+ * @param address A memory region of at least TOX_ADDRESS_SIZE bytes. If this
+ *   parameter is NULL, this function has no effect.
+ * @param nospam a 32bit unsigned non zero integer that will be used as nospam value.
+ * @see TOX_ADDRESS_SIZE for the address format.
+ */
+void tox_self_get_address_nospam(const Tox *tox, uint32_t nospam, uint8_t *address);
 
 /**
  * Set the 4-byte nospam part of the address.
  *
- * @param nospam Any 32 bit unsigned integer.
+ * This is old API function and will set only one nospam.
+ *
+ * @param nospam Any 32-bit unsigned integer.
  */
 void tox_self_set_nospam(Tox *tox, uint32_t nospam);
 
 /**
  * Get the 4-byte nospam part of the address.
+ *
+ * This is old API function and can return nospam value that will not pass
+ * antispam check. This function will work correctly if only old API is used.
  */
 uint32_t tox_self_get_nospam(const Tox *tox);
+
+
+/**
+ * Can be used to generate random nospam numbers.
+ * @return random non-zero unsigned 32-bit integer.
+ */
+uint32_t tox_self_generate_nospam(const Tox *tox);
+
+/**
+ * Updates nospam set.
+ * Zero can't be used as nospam value to filter spam.
+ * If nospam is 0 then new_nospam is added to nospam set.
+ * If nospam is not 0 then the nospam value is changed to new_nospam.
+ * If new_nospam is 0 then nospam is removed from nospam set.
+ *
+ * @param nospam Any 32-bit unsigned integer.
+ * @param new_nospam Any-32 bit unsigned integer.
+ * @returns true on success and false on failure. error is set according to result.
+ */
+bool tox_self_update_nospam(Tox *tox, uint32_t nospam, uint32_t new_nospam, TOX_ERR_NOSPAM *error);
+
+/**
+ * Set description for nospam.
+ * Description should be utf-8 string.
+ * length should not be greater then TOX_MAX_NOSPAM_DESCRIPTION_LENGTH.
+ *
+ * @param nospam 32-bit unsigned non-zero integer.
+ * @param description utf-8 string.
+ * @param length length of the string in bytes.
+ */
+bool tox_self_set_nospam_description(Tox *tox, uint32_t nospam, const uint8_t *description, size_t length,
+                                     TOX_ERR_NOSPAM *error);
+
+/**
+ * Writes description. Length of the description can be found with
+ * tox_self_get_nospam_description_length.
+ *
+ * @param nospam 32-bit unsigned non-zero integer.
+ * @param description allocated buffer.
+ * @see tox_self_get_nospam_description_length to find the size of description buffer.
+ */
+bool tox_self_get_nospam_description(const Tox *tox, uint32_t nospam,
+                                        uint8_t *description, TOX_ERR_NOSPAM *error);
+
+/**
+ * @return length of description in bytes on success and 0 on failure.
+ */
+size_t tox_self_get_nospam_description_length(const Tox *tox, uint32_t nospam, TOX_ERR_NOSPAM *error);
+
+/**
+ * Writes nospam set to nospams.
+ * Amount of enteries can be found with tox_self_get_nospam_list_length.
+ * This call can't fail.
+ * @see tox_self_get_nospam_list_length to find the length of nospam list.
+ */
+void tox_self_get_nospam_list(const Tox *tox, uint32_t *nospams);
+
+/**
+ * This call can't fail.
+ * @return the amount of entries in nospam set.
+ */
+size_t tox_self_get_nospam_list_length(const Tox *tox);
 
 /**
  * Copy the Tox Public Key (long term public key) from the Tox object.
@@ -1341,11 +1464,12 @@ void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *func
  * The function type for the `friend_request` callback.
  *
  * @param public_key The Public Key of the user who sent the friend request.
+ * @param nospam value that request used as nospam.
  * @param message The message they sent along with the request.
  * @param length The size of the message byte array.
  */
-typedef void tox_friend_request_cb(Tox *tox, const uint8_t *public_key, const uint8_t *message, size_t length,
-                                   void *user_data);
+typedef void tox_friend_request_cb(Tox *tox, const uint8_t *public_key, uint32_t nospam,
+                                       const uint8_t *message, size_t length, void *user_data);
 
 /**
  * Set the callback for the `friend_request` event. Pass NULL to unset.
