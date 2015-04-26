@@ -95,7 +95,6 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num, vo
     retu->ssrc      = random_int();
     retu->payload_type = payload_type % 128;
     
-    retu->tstate = rtp_StateNormal;
     retu->m = messenger;
     retu->friend_id = friend_num;
 
@@ -156,10 +155,10 @@ void rtp_kill ( RTPSession *session )
     /* And finally free session */
     free ( session );
 }
-void rtp_do(RTPSession *session)
+int rtp_do(RTPSession *session)
 {
     if (!session || !session->rtcp_session)
-        return;
+        return rtp_StateNormal;
     
     if (current_time_monotonic() - session->rtcp_session->last_sent_report_ts >= RTCP_REPORT_INTERVAL_MS) {
         send_rtcp_report(session->rtcp_session, session->m, session->friend_id);
@@ -182,7 +181,7 @@ void rtp_do(RTPSession *session)
         if (!rb_empty(session->rtcp_session->pl_stats)) {
             for (i = 0; reports[i] != NULL; i ++)
                 free(reports[i]);
-            return; /* As some reports are timed out, we need more */
+            return rtp_StateNormal; /* As some reports are timed out, we need more */
         }
         
         /* We have 4 on-time reports so we can proceed */
@@ -194,16 +193,16 @@ void rtp_do(RTPSession *session)
         }
         
         if (quality <= 90) {
-            session->tstate = rtp_StateBad;
             LOGGER_WARNING("Stream quality: BAD");
+            return rtp_StateBad;
         } else if (quality >= 99) {
-            session->tstate = rtp_StateGood;
             LOGGER_DEBUG("Stream quality: GOOD");
+            return rtp_StateGood;
         } else {
-            session->tstate = rtp_StateNormal;
             LOGGER_DEBUG("Stream quality: NORMAL");
         }
     }
+    return rtp_StateNormal;
 }
 int rtp_start_receiving(RTPSession* session)
 {
@@ -267,7 +266,7 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
     header->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
     
     uint32_t parsed_len = length + header->length + 1;
-    assert(parsed_len + (session->ext_header ? session->ext_header->length * size_32 : 0) > MAX_RTP_SIZE );
+    assert(parsed_len + (session->ext_header ? session->ext_header->length * size_32 : 0) < MAX_RTP_SIZE );
 
     parsed[0] = session->prefix;
     it = parse_header_out ( header, parsed + 1 );
@@ -485,7 +484,7 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
         return -1;
     }
     
-    RTPHeader* header = parse_header_in ( data, length );
+    RTPHeader* header = parse_header_in ( data + 1, length );
 
     if ( !header ) {
         LOGGER_WARNING("Could not parse message: Header failed to extract!");
@@ -494,7 +493,7 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
     
     RTPExtHeader* ext_header = NULL;
     
-    uint16_t from_pos = header->length;
+    uint16_t from_pos = header->length + 1;
     uint16_t msg_length = length - from_pos;
 
     if ( GET_FLAG_EXTENSION ( header ) ) {

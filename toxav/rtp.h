@@ -49,11 +49,11 @@ enum {
     rtp_TypeVideo,
 };
 
-typedef enum {
+enum {
     rtp_StateBad = -1,
     rtp_StateNormal,
     rtp_StateGood,
-} RTPTransmissionState;
+};
 
 /** 
  * Standard rtp header.
@@ -114,7 +114,6 @@ typedef struct {
 
     Messenger *m;
     int friend_id;
-    RTPTransmissionState tstate;
     struct RTCPSession_s *rtcp_session;
 
     
@@ -136,7 +135,7 @@ void rtp_kill ( RTPSession* session );
 /**
  * Do periodical rtp work.
  */
-void rtp_do(RTPSession *session);
+int rtp_do(RTPSession *session);
 
 /**
  * By default rtp is in receiving state

@@ -77,14 +77,13 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 0
-#define TEST_TRANSFER_V 1
+#define TEST_TRANSFER_A 1
+#define TEST_TRANSFER_V 0
 
 
 typedef struct {
     bool incoming;
     uint32_t state;
-    uint32_t abitrate;
     pthread_mutex_t arb_mutex[1];
     RingBuffer* arb; /* Audio ring buffer */
     
@@ -137,43 +136,8 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
 }
 void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
+    printf("Handling CALL STATE callback: %d\n", state);
     ((CallControl*)user_data)->state = state;
-    uint32_t abitrate = ((CallControl*)user_data)->abitrate;
-    
-    if (state & TOXAV_CALL_STATE_INCREASE_AUDIO_BITRATE) {
-        
-//         /* NOTE: I'm using values 8, 16, 24, 48, 64. You can use whatever OPUS supports. */
-//         switch (abitrate) {
-//         case 8:  abitrate = 16; break;
-//         case 16: abitrate = 24; break;
-//         case 24: abitrate = 48; break;
-//         case 48: abitrate = 64; break;
-//         default: return;
-//         }
-//         
-//         printf("Increasing bitrate to: %d\n", abitrate);
-//         toxav_set_audio_bit_rate(av, friend_number, abitrate, 0);
-        
-    } else if (state & TOXAV_CALL_STATE_DECREASE_AUDIO_BITRATE) {
-//         /* NOTE: I'm using values 8, 16, 24, 48, 64. You can use whatever OPUS supports. */
-//         switch (abitrate) {
-//         case 16: abitrate = 8;  break;
-//         case 24: abitrate = 16; break;
-//         case 48: abitrate = 24; break;
-//         case 64: abitrate = 48; break;
-//         default: return;
-//         }
-//         
-//         printf("Decreasing bitrate to: %d\n", abitrate);
-//         toxav_set_audio_bit_rate(av, friend_number, abitrate, 0);
-//         
-    } else if (state & TOXAV_CALL_STATE_INCREASE_VIDEO_BITRATE) {
-        
-    } else if (state & TOXAV_CALL_STATE_DECREASE_VIDEO_BITRATE) {
-        
-    } else {
-        printf("Handling CALL STATE callback: %d\n", state);
-    }
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint16_t width, uint16_t height,
@@ -222,6 +186,22 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     pthread_mutex_lock(cc->arb_mutex);
     free(rb_write(cc->arb, f));
     pthread_mutex_unlock(cc->arb_mutex);
+}
+void t_toxav_audio_bitrate_control_cb(ToxAV *av, uint32_t friend_number, 
+                                      bool good, uint32_t bit_rate, void *user_data)
+{
+    if (good)
+        printf ("Set new audio bitrate to: %d\n", bit_rate);
+    else
+        printf ("The network is overly saturated with audio bitrate at: %d\n", bit_rate);
+}
+void t_toxav_video_bitrate_control_cb(ToxAV *av, uint32_t friend_number, 
+                                      bool good, uint32_t bit_rate, void *user_data)
+{
+    if (good)
+        printf ("Set new video bitrate to: %d", bit_rate);
+    else
+        printf ("The network is overly saturated with video bitrate at: %d", bit_rate);
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
@@ -299,12 +279,17 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
     toxav_callback_receive_video_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
     toxav_callback_receive_audio_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
+    toxav_callback_audio_bitrate_control(*AliceAV, t_toxav_audio_bitrate_control_cb, AliceCC);
+    toxav_callback_video_bitrate_control(*AliceAV, t_toxav_video_bitrate_control_cb, AliceCC);
     
     /* Bob */
     toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
     toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
     toxav_callback_receive_video_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
     toxav_callback_receive_audio_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
+    toxav_callback_audio_bitrate_control(*BobAV, t_toxav_audio_bitrate_control_cb, BobCC);
+    toxav_callback_video_bitrate_control(*BobAV, t_toxav_video_bitrate_control_cb, BobCC);
+    
     
     printf("Created 2 instances of ToxAV\n");
     printf("All set after %llu seconds!\n", time(NULL) - cur_time);
@@ -760,11 +745,9 @@ int main (int argc, char** argv)
         AliceCC.arb = rb_new(16);
         BobCC.arb = rb_new(16);
         
-        AliceCC.abitrate = BobCC.abitrate = 48;
-        
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, AliceCC.abitrate, 0, &rc);
+            toxav_call(AliceAV, 0, 48, 0, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -777,7 +760,7 @@ int main (int argc, char** argv)
 		
 		{ /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, BobCC.abitrate, 0, &rc);
+            toxav_answer(BobAV, 0, 48, 0, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
@@ -794,7 +777,6 @@ int main (int argc, char** argv)
             exit(1);
         }
         
-        
         int16_t PCM[5760];
         
         time_t start_time = time(NULL);
@@ -802,7 +784,7 @@ int main (int argc, char** argv)
         
         
         /* Start decode thread */
-        struct toxav_thread_data data = { 
+        struct toxav_thread_data data = {
             .AliceAV = AliceAV,
             .BobAV = BobAV,
             .sig = 0
@@ -826,6 +808,8 @@ int main (int argc, char** argv)
         
         err = Pa_StartStream(adout);
         assert(err == paNoError);
+        
+        assert(toxav_set_audio_bit_rate(AliceAV, 0, 64, false, NULL));
         
         /* Start write thread */
         pthread_t t;
