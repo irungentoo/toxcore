@@ -187,14 +187,13 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
     if (!gconn)
         return -1;
 
-    const uint8_t *public_key = chat->group[peernum].addr.public_key;
+    const uint8_t *public_key = gconn->addr.public_key;
     const uint8_t *data = gconn->recv_ary[idx].data;
     uint32_t length = gconn->recv_ary[idx].data_length;
 
-    int ret = handle_gc_lossless_helper(m, groupnum, chat->group[peernum].addr.ip_port, public_key, peernum,
+    int ret = handle_gc_lossless_helper(m, groupnum, gconn->addr.ip_port, public_key, peernum,
                                         data, length, gconn->recv_ary[idx].message_id,
                                         gconn->recv_ary[idx].packet_type);
-
     rm_from_ary(gconn->recv_ary, idx);
 
     if (ret == -1) {
@@ -260,7 +259,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 
         // FIXME: if this function is called less than once per second this won't be reliable
         if (delta > 1 && POWER_OF_2(delta)) {
-            sendpacket(chat->net, chat->group[peernum].addr.ip_port, gconn->send_ary[i].data,
+            sendpacket(chat->net, gconn->addr.ip_port, gconn->send_ary[i].data,
                        gconn->send_ary[i].data_length);
             continue;
         }

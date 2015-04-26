@@ -1811,7 +1811,7 @@ uint32_t tox_group_count_groups(const Tox *tox)
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, uint8_t ignore)
+int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool ignore)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);

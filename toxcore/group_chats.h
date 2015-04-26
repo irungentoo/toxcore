@@ -117,24 +117,12 @@ typedef struct GC_PeerAddress {
 } GC_PeerAddress;
 
 typedef struct {
-    /* info we get from peer */
-    GC_PeerAddress   addr;
     uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
     uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
     uint8_t     status;
     uint8_t     role;
-
-    /* info we set ourself */
-    uint8_t     shared_key[crypto_box_KEYBYTES];
-    uint32_t    public_key_hash;
-    uint64_t    last_rcvd_ping;
-    uint64_t    peer_sync_timer;
-    uint64_t    time_connected;
-    uint8_t     ignore;
-    bool        confirmed;  /* true if we have successfully handshaked with this peer */
-    bool        verified; /* true if we have validated peer's invite certificate */
 } GC_GroupPeer;
 
 typedef struct {
@@ -263,7 +251,7 @@ int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *m
 /* Return -1 if fail
  * Return 0 if success
  */
-int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, uint8_t ignore);
+int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore);
 
 /* Return -1 if fail
  * Return 0 if success

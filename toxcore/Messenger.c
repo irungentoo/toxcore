@@ -35,6 +35,7 @@
 #include "network.h"
 #include "util.h"
 #include "group_chats.h"
+#include "group_connection.h"
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
@@ -2607,7 +2608,7 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             temp.self_nick_len = htons(c->chats[i].group[0].nick_len);
             temp.self_role = c->chats[i].group[0].role;
             temp.self_status = c->chats[i].group[0].status;
-            temp.self_verified = (uint8_t) c->chats[i].group[0].verified;
+            temp.self_verified = (uint8_t) c->chats[i].gcc[0].verified;
 
             uint16_t num_addrs = gc_copy_peer_addrs(&c->chats[i], temp.addrs, GROUP_SAVE_MAX_PEERS);
             temp.num_addrs = htons(num_addrs);

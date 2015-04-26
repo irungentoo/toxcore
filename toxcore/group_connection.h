@@ -46,6 +46,16 @@ typedef struct GC_Connection {
 
     uint64_t recv_message_id;
     struct GC_Message_Ary recv_ary[GCC_BUFFER_SIZE];
+
+    GC_PeerAddress   addr;
+    uint8_t     shared_key[crypto_box_KEYBYTES];
+    uint32_t    public_key_hash;
+    uint64_t    last_rcvd_ping;
+    uint64_t    peer_sync_timer;
+    uint64_t    time_added;
+    bool        ignore;
+    bool        confirmed;  /* true if we have successfully handshaked with this peer */
+    bool        verified;   /* true if we have validated peer's invite certificate */
 } GC_Connection;
 
 

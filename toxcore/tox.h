@@ -2372,7 +2372,7 @@ uint32_t tox_group_count_groups(const Tox *tox);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, uint8_t ignore);
+int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool ignore);
 
 #ifdef __cplusplus
 }
