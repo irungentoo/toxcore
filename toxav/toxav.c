@@ -592,17 +592,22 @@ bool toxav_set_video_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t video_
         goto END;
     }
     
-    if (call->video_bit_rate == video_bit_rate && call->vba.active && call->vba.bit_rate == video_bit_rate) {
+    if (call->video_bit_rate == video_bit_rate || call->vba.active || call->vba.bit_rate == video_bit_rate) {
         pthread_mutex_unlock(av->mutex);
         goto END;
     }
     
     pthread_mutex_lock(call->mutex);
-    if (force) {
-        call->video_bit_rate = video_bit_rate;
-    } else {
+    
+    if (video_bit_rate > call->video_bit_rate && !force)
         ba_set(&call->vba, video_bit_rate);
+    else {
+        call->video_bit_rate = video_bit_rate;
+        
+        if (!force && av->vbcb.first) 
+            av->vbcb.first (av, call->friend_id, true, video_bit_rate, av->vbcb.second);
     }
+    
     pthread_mutex_unlock(call->mutex);
     pthread_mutex_unlock(av->mutex);
     
@@ -644,16 +649,21 @@ bool toxav_set_audio_bit_rate(ToxAV* av, uint32_t friend_number, uint32_t audio_
         goto END;
     }
     
-    if (call->audio_bit_rate == audio_bit_rate && call->aba.active && call->aba.bit_rate == audio_bit_rate) {
+    if (call->audio_bit_rate == audio_bit_rate || call->aba.active || call->aba.bit_rate == audio_bit_rate) {
         pthread_mutex_unlock(av->mutex);
         goto END;
     }
     
     pthread_mutex_lock(call->mutex);
-    if (force) {
-        call->audio_bit_rate = audio_bit_rate;
-    } else
+    
+    if (audio_bit_rate > call->audio_bit_rate && !force)
         ba_set(&call->aba, audio_bit_rate);
+    else {
+        call->audio_bit_rate = audio_bit_rate;
+        
+        if (!force && av->abcb.first) 
+            av->abcb.first (av, call->friend_id, true, audio_bit_rate, av->abcb.second);
+    }
     
     pthread_mutex_unlock(call->mutex);
     pthread_mutex_unlock(av->mutex);
@@ -692,7 +702,7 @@ bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
         goto END;
     }
     
-    if ( vc_reconfigure_encoder(call->video.second, call->video_bit_rate, width, height) != 0 ) {
+    if ( vc_reconfigure_encoder(call->video.second, call->video_bit_rate * 1000, width, height) != 0 ) {
         pthread_mutex_unlock(call->mutex_video);
         rc = TOXAV_ERR_SEND_FRAME_INVALID;
         goto END;
@@ -753,6 +763,69 @@ bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
                 }
             }
         }
+    }
+    
+    if (ba_shoud_send_dummy(&call->vba)) {
+        if ( vc_reconfigure_test_encoder(call->video.second, call->vba.bit_rate * 1000, width, height) != 0 ) {
+            pthread_mutex_unlock(call->mutex_video);
+            rc = TOXAV_ERR_SEND_FRAME_INVALID;
+            goto END;
+        }
+        
+        /* FIXME use the same image as before */
+        vpx_image_t img;
+        img.w = img.h = img.d_w = img.d_h = 0;
+        vpx_img_alloc(&img, VPX_IMG_FMT_VPXI420, width, height, 1);
+        
+        /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes." 
+         * http://fourcc.org/yuv.php#IYUV
+         */
+        memcpy(img.planes[VPX_PLANE_Y], y, width * height);
+        memcpy(img.planes[VPX_PLANE_U], u, (width/2) * (height/2));
+        memcpy(img.planes[VPX_PLANE_V], v, (width/2) * (height/2));
+        
+        int vrc = vpx_codec_encode(call->video.second->test_encoder, &img, 
+                                   call->video.second->test_frame_counter, 1, 0, MAX_ENCODE_TIME_US);
+        
+        vpx_img_free(&img);
+        if ( vrc != VPX_CODEC_OK) {
+            pthread_mutex_unlock(call->mutex_video);
+            LOGGER_ERROR("Could not encode video frame: %s\n", vpx_codec_err_to_string(vrc));
+            rc = TOXAV_ERR_SEND_FRAME_INVALID;
+            goto END;
+        }
+        
+        call->video.second->test_frame_counter++;
+        
+        vpx_codec_iter_t iter = NULL;
+        const vpx_codec_cx_pkt_t *pkt;
+        
+        /* Send the encoded data as dummy packets */
+        while ( (pkt = vpx_codec_get_cx_data(call->video.second->test_encoder, &iter)) ) {
+            if (pkt->kind == VPX_CODEC_CX_FRAME_PKT) {
+                
+                int parts = pkt->data.frame.sz / 1300;
+                int i;
+                for (i = 0; i < parts; i++) {
+                    if (rtp_send_data(call->video.first, pkt->data.frame.buf + i * 1300, 1300, true) < 0) {
+                        pthread_mutex_unlock(call->mutex_video);
+                        LOGGER_WARNING("Could not send video frame: %s\n", strerror(errno));
+                        goto END;
+                    }
+                }
+                
+                if (pkt->data.frame.sz % 1300) {
+                    if (rtp_send_data(call->video.first, pkt->data.frame.buf + parts * 1300, pkt->data.frame.sz % 1300, true) < 0) {
+                        pthread_mutex_unlock(call->mutex_video);
+                        LOGGER_WARNING("Could not send video frame: %s\n", strerror(errno));
+                        goto END;
+                    }
+                }
+            }
+        }
+        
+        if (call->vba.end_time == ~0)
+            call->vba.end_time = current_time_monotonic() + BITRATE_CHANGE_TESTING_TIME_MS;
     }
     
     pthread_mutex_unlock(call->mutex_video);
@@ -824,8 +897,8 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
 		}
 		
 		
-		/* For bitrate measurement; send dummy packet */
-		if (ba_shoud_send_dummy(&call->aba)) {
+        /* For bitrate measurement; send dummy packet */
+        if (ba_shoud_send_dummy(&call->aba)) {
             sampling_rate = ntohl(sampling_rate);
             if (ac_reconfigure_test_encoder(call->audio.second, call->audio_bit_rate * 1000, sampling_rate, channels) != 0) {
                 /* FIXME should the bitrate changing fail here? */
@@ -837,7 +910,7 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
             sampling_rate = htonl(sampling_rate);
             memcpy(dest, &sampling_rate, sizeof(sampling_rate));
             vrc = opus_encode(call->audio.second->test_encoder, pcm, sample_count,
-                              dest + sizeof(sampling_rate), sizeof(dest) - sizeof(sampling_rate));
+                                dest + sizeof(sampling_rate), sizeof(dest) - sizeof(sampling_rate));
             
             if (vrc < 0) {
                 LOGGER_WARNING("Failed to encode frame %s", opus_strerror(vrc));
@@ -850,9 +923,12 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
                 LOGGER_WARNING("Failed to send audio packet");
                 rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
             }
+            
+            if (call->aba.end_time == ~0)
+                call->aba.end_time = current_time_monotonic() + BITRATE_CHANGE_TESTING_TIME_MS;
         }
-        
     }
+    
     
     pthread_mutex_unlock(call->mutex_audio);
     
@@ -1219,7 +1295,7 @@ void ba_set(ToxAvBitrateAdapter* ba, uint32_t bit_rate)
 {
     ba->bit_rate = bit_rate;
     ba->next_send = current_time_monotonic();
-    ba->end_time = ba->next_send + BITRATE_CHANGE_TESTING_TIME_MS;
+    ba->end_time = ~0;
     ba->next_send_interval = 1000;
     ba->active = true;
 }

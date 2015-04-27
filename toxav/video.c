@@ -76,6 +76,11 @@ VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb* c
         vpx_codec_destroy(vc->decoder);
         goto BASE_CLEANUP;
     }
+    if (!create_video_encoder(vc->test_encoder, 500000)) {
+        vpx_codec_destroy(vc->encoder);
+        vpx_codec_destroy(vc->decoder);
+        goto BASE_CLEANUP;
+    }
     
     vc->linfts = current_time_monotonic();
     vc->lcfd = 60;
@@ -100,6 +105,7 @@ void vc_kill(VCSession* vc)
         return;
     
     vpx_codec_destroy(vc->encoder);
+    vpx_codec_destroy(vc->test_encoder);
     vpx_codec_destroy(vc->decoder);
     rb_free(vc->vbuf_raw);
     free(vc->split_video_frame);
@@ -288,7 +294,7 @@ int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint1
     if (!vc)
         return -1;
     
-    vpx_codec_enc_cfg_t cfg = *vc->encoder[0].config.enc;
+    vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
     if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
@@ -299,6 +305,27 @@ int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint1
     int rc = vpx_codec_enc_config_set(vc->encoder, &cfg);
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        return -1;
+    }
+
+    return 0;
+}
+int vc_reconfigure_test_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height)
+{
+    if (!vc)
+        return -1;
+    
+    vpx_codec_enc_cfg_t cfg = *vc->test_encoder->config.enc;
+    if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
+        return 0; /* Nothing changed */
+    
+    cfg.rc_target_bitrate = bitrate;
+    cfg.g_w = width;
+    cfg.g_h = height;
+    
+    int rc = vpx_codec_enc_config_set(vc->test_encoder, &cfg);
+    if ( rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set test encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
 

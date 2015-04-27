@@ -42,7 +42,9 @@ typedef struct VCSession_s {
     
     /* encoding */
     vpx_codec_ctx_t encoder[1];
+    vpx_codec_ctx_t test_encoder[1];
     uint32_t frame_counter;
+    uint32_t test_frame_counter;
 
     /* decoding */
     vpx_codec_ctx_t decoder[1];
@@ -80,5 +82,6 @@ int vc_update_video_splitter_cycle(VCSession* vc, const uint8_t* payload, uint16
 const uint8_t *vc_iterate_split_video_frame(VCSession* vc, uint16_t *size);
 int vc_queue_message(void *vcp, struct RTPMessage_s *msg);
 int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height);
+int vc_reconfigure_test_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height);
 
 #endif /* VIDEO_H */

@@ -193,13 +193,13 @@ int rtp_do(RTPSession *session)
         }
         
         if (quality <= 90) {
-            LOGGER_WARNING("Stream quality: BAD");
+            LOGGER_WARNING("Stream quality: BAD (%d)", quality);
             return rtp_StateBad;
         } else if (quality >= 99) {
-            LOGGER_DEBUG("Stream quality: GOOD");
+            LOGGER_DEBUG("Stream quality: GOOD (%d)", quality);
             return rtp_StateGood;
         } else {
-            LOGGER_DEBUG("Stream quality: NORMAL");
+            LOGGER_DEBUG("Stream quality: NORMAL (%d)", quality);
         }
     }
     return rtp_StateNormal;

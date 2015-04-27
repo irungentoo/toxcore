@@ -77,8 +77,8 @@
 #define TEST_REJECT 0
 #define TEST_CANCEL 0
 #define TEST_MUTE_UNMUTE 0
-#define TEST_TRANSFER_A 1
-#define TEST_TRANSFER_V 0
+#define TEST_TRANSFER_A 0
+#define TEST_TRANSFER_V 1
 
 
 typedef struct {
@@ -218,20 +218,28 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     Tox* Alice;
     Tox* Bob;
     
+    struct Tox_Options opts;
+    tox_options_default(&opts);
+    
+    opts.end_port = 0;
+    
     {
         TOX_ERR_NEW error;
-        *bootstrap = tox_new(NULL, NULL, 0, &error);
+        
+        opts.start_port = 33445;
+        *bootstrap = tox_new(&opts, NULL, 0, &error);
         assert(error == TOX_ERR_NEW_OK);
         
-        Alice = tox_new(NULL, NULL, 0, &error);
+        opts.start_port = 33455;
+        Alice = tox_new(&opts, NULL, 0, &error);
         assert(error == TOX_ERR_NEW_OK);
         
-        Bob = tox_new(NULL, NULL, 0, &error);
+        opts.start_port = 33465;
+        Bob = tox_new(&opts, NULL, 0, &error);
         assert(error == TOX_ERR_NEW_OK);
     }
     
     printf("Created 3 instances of Tox\n");
-    
     printf("Preparing network...\n");
     long long unsigned int cur_time = time(NULL);
     
@@ -768,7 +776,8 @@ int main (int argc, char** argv)
             }
         }
         
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        while (AliceCC.state == 0)
+            iterate_tox(bootstrap, AliceAV, BobAV);
 		
         /* Open audio file */
         af_handle = sf_open(af_name, SFM_READ, &af_info);
@@ -809,7 +818,7 @@ int main (int argc, char** argv)
         err = Pa_StartStream(adout);
         assert(err == paNoError);
         
-        assert(toxav_set_audio_bit_rate(AliceAV, 0, 64, false, NULL));
+        toxav_set_audio_bit_rate(AliceAV, 0, 64, false, NULL);
         
         /* Start write thread */
         pthread_t t;
@@ -874,7 +883,7 @@ int main (int argc, char** argv)
         
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 0, 5000000, &rc);
+            toxav_call(AliceAV, 0, 0, 3000, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -887,7 +896,7 @@ int main (int argc, char** argv)
         
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 0, 5000000, &rc);
+            toxav_answer(BobAV, 0, 0, 500, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
@@ -899,8 +908,8 @@ int main (int argc, char** argv)
         
         /* Start decode thread */
         struct toxav_thread_data data = { 
-            .AliceAV = AliceAV, 
-            .BobAV = BobAV, 
+            .AliceAV = AliceAV,
+            .BobAV = BobAV,
             .sig = 0
         };
         
@@ -913,6 +922,8 @@ int main (int argc, char** argv)
             printf("Failed to open video file: %s\n", vf_name);
             exit(1);
         }
+        
+        toxav_set_video_bit_rate(AliceAV, 0, 5000, false, NULL);
         
         time_t start_time = time(NULL);
         while(start_time + 90 > time(NULL)) {
