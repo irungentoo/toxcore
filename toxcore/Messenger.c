@@ -1765,15 +1765,6 @@ static int friend_already_added(const uint8_t *real_pk, void *data)
     return -1;
 }
 
-/* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
-static void LANdiscovery(Messenger *m)
-{
-    if (m->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(TOX_PORT_DEFAULT), m->dht);
-        m->last_LANdiscovery = unix_time();
-    }
-}
-
 /* Run this at startup. */
 Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 {
@@ -1842,7 +1833,6 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     m->options = *options;
     friendreq_init(&(m->fr), m->fr_c);
-    LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
 
@@ -2308,7 +2298,6 @@ void do_messenger(Messenger *m)
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
     do_friends(m);
-    LANdiscovery(m);
     connection_status_cb(m);
 
 #ifdef LOGGING

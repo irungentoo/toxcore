@@ -758,8 +758,18 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c)
     temp->onion_c = onion_c;
 
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
+    LANdiscovery_init(temp->dht);
 
     return temp;
+}
+
+/* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
+static void LANdiscovery(Friend_Connections *fr_c)
+{
+    if (fr_c->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+        send_LANdiscovery(htons(TOX_PORT_DEFAULT), fr_c->dht);
+        fr_c->last_LANdiscovery = unix_time();
+    }
 }
 
 /* main friend_connections loop. */
@@ -809,6 +819,8 @@ void do_friend_connections(Friend_Connections *fr_c)
             }
         }
     }
+
+    LANdiscovery(fr_c);
 }
 
 /* Free everything related with friend_connections. */
@@ -823,5 +835,6 @@ void kill_friend_connections(Friend_Connections *fr_c)
         kill_friend_connection(fr_c, i);
     }
 
+    LANdiscovery_kill(fr_c->dht);
     free(fr_c);
 }

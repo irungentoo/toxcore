@@ -109,6 +109,8 @@ typedef struct {
 
     int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len);
     void *fr_request_object;
+
+    uint64_t last_LANdiscovery;
 } Friend_Connections;
 
 /* return friendcon_id corresponding to the real public key on success.
