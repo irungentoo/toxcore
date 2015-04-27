@@ -381,28 +381,35 @@ static int unwrap_group_packet(const uint8_t *shared_key, uint8_t *data, uint64_
 {
     uint8_t plain[MAX_GC_PACKET_SIZE];
     uint8_t nonce[crypto_box_NONCEBYTES];
-    memcpy(nonce, packet + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY, crypto_box_NONCEBYTES);
+    memcpy(nonce, packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY, crypto_box_NONCEBYTES);
 
     int len = decrypt_data_symmetric(shared_key, nonce,
-                                     packet + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES,
-                                     length - (1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES),
+                                     packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES,
+                                     length - (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES),
                                      plain);
     if (len <= 0) {
         fprintf(stderr, "decrypt failed: len %d\n", len);
         return -1;
     }
 
+    uint32_t header_len = sizeof(uint8_t);
     *packet_type = plain[0];
-    bytes_to_U64(message_id, plain + 1);
-    len = len - 1 - MESSAGE_ID_BYTES;
-    memcpy(data, plain + 1 + MESSAGE_ID_BYTES, len);
+    len -= sizeof(uint8_t);
+
+    if (message_id != NULL) {
+        bytes_to_U64(message_id, plain + sizeof(uint8_t));
+        len -= MESSAGE_ID_BYTES;
+        header_len += MESSAGE_ID_BYTES;
+    }
+
+    memcpy(data, plain + header_len, len);
 
     return len;
 }
 
 /* Encrypts data of length using the peer's shared key and a new nonce.
  *
- * Adds encrypted header consisting of: packet type, message_id
+ * Adds encrypted header consisting of: packet type, message_id (only for lossless packets)
  * Adds plaintext header consisting of: packet identifier, chat_id_hash, self public encryption key, nonce.
  *
  * Returns length of encrypted packet on success.
@@ -415,16 +422,22 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, 
     if (length + MIN_GC_PACKET_SIZE > MAX_GC_PACKET_SIZE)
         return -1;
 
+    uint32_t enc_header_len = sizeof(uint8_t);
     uint8_t plain[MAX_GC_PACKET_SIZE];
     plain[0] = packet_type;
-    U64_to_bytes(plain + 1, message_id);
-    memcpy(plain + 1 + MESSAGE_ID_BYTES, data, length);
+
+    if (packet_id == NET_PACKET_GC_LOSSLESS) {
+        U64_to_bytes(plain + sizeof(uint8_t), message_id);
+        enc_header_len += MESSAGE_ID_BYTES;
+    }
+
+    memcpy(plain + enc_header_len, data, length);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    uint8_t encrypt[1 + MESSAGE_ID_BYTES + length + crypto_box_MACBYTES];
-    int len = encrypt_data_symmetric(shared_key, nonce, plain, length + 1 + MESSAGE_ID_BYTES, encrypt);
+    uint8_t encrypt[enc_header_len + length + crypto_box_MACBYTES];
+    int len = encrypt_data_symmetric(shared_key, nonce, plain, length + enc_header_len, encrypt);
 
     if (len != sizeof(encrypt)) {
         fprintf(stderr, "encrypt failed. packet type: %d, len: %d\n", packet_type, len);
@@ -432,10 +445,10 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, 
     }
 
     packet[0] = packet_id;
-    U32_to_bytes(packet + 1, chat_id_hash);
-    memcpy(packet + 1 + HASH_ID_BYTES, self_pk, ENC_PUBLIC_KEY);
-    memcpy(packet + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, len);
+    U32_to_bytes(packet + sizeof(uint8_t), chat_id_hash);
+    memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES, self_pk, ENC_PUBLIC_KEY);
+    memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
+    memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, len);
 
     return 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + len;
 }
@@ -1890,10 +1903,8 @@ static int handle_gc_lossy_message(void *object, IP_Port ipp, const uint8_t *pac
 
     uint8_t data[MAX_GC_PACKET_SIZE];
     uint8_t packet_type;
-    uint64_t message_id;
 
-    int len = unwrap_group_packet(chat->gcc[peernumber].shared_key, data, &message_id, &packet_type,
-                                  packet, length);
+    int len = unwrap_group_packet(chat->gcc[peernumber].shared_key, data, NULL, &packet_type, packet, length);
     if (len <= 0)
         return -1;
 
