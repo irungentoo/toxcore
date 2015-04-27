@@ -30,6 +30,7 @@
 typedef struct Messenger Messenger;
 
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
+#define HASH_ID_BYTES (sizeof(uint32_t))
 #define MAX_GC_NICK_SIZE 128
 #define MAX_GC_TOPIC_SIZE 512
 #define MAX_GC_GROUP_NAME_SIZE 48
@@ -449,8 +450,7 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
  */
 int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id);
 
-int handle_gc_lossless_helper(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *sender_pk,
-                              uint32_t peernumber, const uint8_t *data, uint16_t length, uint64_t message_id,
-                              uint8_t packet_type);
+int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                              uint16_t length, uint64_t message_id, uint8_t packet_type);
 
 #endif  /* GROUP_CHATS_H */

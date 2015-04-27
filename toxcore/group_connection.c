@@ -191,8 +191,7 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
     const uint8_t *data = gconn->recv_ary[idx].data;
     uint32_t length = gconn->recv_ary[idx].data_length;
 
-    int ret = handle_gc_lossless_helper(m, groupnum, gconn->addr.ip_port, public_key, peernum,
-                                        data, length, gconn->recv_ary[idx].message_id,
+    int ret = handle_gc_lossless_helper(m, groupnum, peernum, data, length, gconn->recv_ary[idx].message_id,
                                         gconn->recv_ary[idx].packet_type);
     rm_from_ary(gconn->recv_ary, idx);
 
