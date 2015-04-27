@@ -109,19 +109,30 @@ static GC_Chat *get_chat_by_hash(GC_Session *c, uint32_t hash)
     return NULL;
 }
 
-/* Check if peer with public_key is in peer array.
+/* Returns the jenkins hash of a 32 byte public encryption key */
+static uint32_t get_peer_key_hash(const uint8_t *public_key)
+{
+    return jenkins_hash(public_key, ENC_PUBLIC_KEY);
+}
+
+/* Returns the jenkins hash of a 32 byte chat_id */
+static uint32_t get_chat_id_hash(const uint8_t *chat_id)
+{
+    return jenkins_hash(chat_id, CHAT_ID_SIZE);
+}
+
+/* Check if peer with public_key is in peer list.
  *
  * return peer number if peer is in chat.
  * return -1 if peer is not in chat.
  *
- * TODO: make this more efficient.
  */
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *public_key)
 {
-    uint32_t i;
+    uint32_t i, h = get_peer_key_hash(public_key);
 
     for (i = 0; i < chat->numpeers; ++i) {
-        if (memcmp(ENC_KEY(chat->gcc[i].addr.public_key), ENC_KEY(public_key), ENC_PUBLIC_KEY) == 0)
+        if (chat->gcc[i].public_key_hash == h)
             return i;
     }
 
@@ -189,7 +200,7 @@ static void clear_gc_addrs_list(GC_Chat *chat)
  * This will clear previous entries. */
 void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
 {
-    uint32_t chat_id_hash = jenkins_hash(chat_id, CHAT_ID_SIZE);
+    uint32_t chat_id_hash = get_chat_id_hash(chat_id);
     GC_Chat *chat = get_chat_by_hash(announce->group_handler, chat_id_hash);
 
     if (chat == NULL)
@@ -1704,7 +1715,7 @@ int handle_gc_handshake_request_packet(void *object, IP_Port ipp, const uint8_t 
     uint32_t public_key_hash;
     bytes_to_U32(&public_key_hash, data);
 
-    if (public_key_hash != jenkins_hash(sender_pk, ENC_PUBLIC_KEY))
+    if (public_key_hash != get_peer_key_hash(sender_pk))
         return -1;
 
     int peer_exists = peer_in_chat(chat, sender_pk);
@@ -2382,7 +2393,7 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
     memcpy(chat->gcc[peernumber].addr.public_key, public_key, ENC_PUBLIC_KEY);
     chat->gcc[peernumber].last_rcvd_ping = unix_time();
     chat->gcc[peernumber].time_added = unix_time();
-    chat->gcc[peernumber].public_key_hash = jenkins_hash(public_key, ENC_PUBLIC_KEY);
+    chat->gcc[peernumber].public_key_hash = get_peer_key_hash(public_key);
     chat->gcc[peernumber].send_message_id = 1;
     chat->gcc[peernumber].send_ary_start = 1;
     chat->gcc[peernumber].recv_message_id = 0;
@@ -2705,7 +2716,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     memcpy(chat->self_secret_key, save->self_secret_key, EXT_SECRET_KEY);
     chat->topic_len = ntohs(save->topic_len);
     chat->group_name_len = ntohs(save->group_name_len);
-    chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
+    chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
 
     if (peer_add(m, groupnumber, NULL, save->self_public_key) != 0)
         return -1;
@@ -2754,7 +2765,7 @@ int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length)
     memcpy(chat->chat_public_key, chat->credentials->chat_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->group_name, group_name, length);
     chat->group_name_len = length;
-    chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
+    chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
 
     if (make_founder_certificates(chat) == -1) {
         group_delete(c, chat);
@@ -2790,7 +2801,7 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id)
         return -1;
 
     expand_chat_id(chat->chat_public_key, chat_id);
-    chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
+    chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
 
     if (chat->num_addrs == 0)
         gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key, CHAT_ID(chat->chat_public_key));
@@ -2870,7 +2881,7 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
         return -1;
 
     expand_chat_id(chat->chat_public_key, chat_id);
-    chat->chat_id_hash = jenkins_hash(CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
+    chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
 
     if (send_gc_handshake_request(c->messenger, groupnumber, node.ip_port, node.public_key,
                                   GH_INVITE_REQUEST) == -1)
