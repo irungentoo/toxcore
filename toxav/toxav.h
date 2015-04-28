@@ -333,23 +333,23 @@ typedef enum TOXAV_ERR_BIT_RATE {
     TOXAV_ERR_BIT_RATE_FRIEND_NOT_IN_CALL
 } TOXAV_ERR_BIT_RATE;
 /**
- * The function type for the `audio_bitrate_control` callback.
+ * The function type for the `audio_bit_rate_status` callback.
  * 
  * @param friend_number The friend number of the friend for which to set the
  * audio bit rate.
- * @param good Is the stream good enough to keep the said bitrate. Upon failed
- * non forceful bit rate setup this will be set to false and 'bit_rate'
- * will be set to the bit rate that failed, otherwise 'good' will be set to
- * true with 'bit_rate' set to new bit rate. If the stream becomes bad, 
- * the 'good' wil be set to false with 'bit_rate' set to the current bit rate.
- * This callback will never be called when the stream is good.
+ * @param stable Is the stream stable enough to keep the bit rate. 
+ * Upon successful, non forceful, bit rate change, this is set to 
+ * true and 'bit_rate' is set to new bit rate.
+ * The stable is set to false with bit_rate set to the unstable
+ * bit rate when either current stream is unstable with said bit rate
+ * or the non forceful change failed.
  * @param bit_rate The bit rate in Kb/sec.
  */
-typedef void toxav_audio_bitrate_control_cb(ToxAV *av, uint32_t friend_number, bool good, uint32_t bit_rate, void *user_data);
+typedef void toxav_audio_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, bool stable, uint32_t bit_rate, void *user_data);
 /**
- * Set the callback for the `audio_bitrate_control` event. Pass NULL to unset.
+ * Set the callback for the `audio_bit_rate_status` event. Pass NULL to unset.
  */
-void toxav_callback_audio_bitrate_control(ToxAV *av, toxav_audio_bitrate_control_cb *function, void *user_data);
+void toxav_callback_audio_bit_rate_status(ToxAV *av, toxav_audio_bit_rate_status_cb *function, void *user_data);
 /**
  * Set the audio bit rate to be used in subsequent audio frames.
  *
@@ -362,23 +362,23 @@ void toxav_callback_audio_bitrate_control(ToxAV *av, toxav_audio_bitrate_control
  */
 bool toxav_set_audio_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, bool force, TOXAV_ERR_BIT_RATE *error);
 /**
- * The function type for the `video_bitrate_control` callback.
+ * The function type for the `video_bit_rate_status` callback.
  * 
  * @param friend_number The friend number of the friend for which to set the
  * video bit rate.
- * @param good Is the stream good enough to keep the said bitrate. Upon failed
- * non forceful bit rate setup this will be set to false and 'bit_rate'
- * will be set to the bit rate that failed, otherwise 'good' will be set to
- * true with 'bit_rate' set to new bit rate. If the stream becomes bad, 
- * the 'good' wil be set to false with 'bit_rate' set to the current bit rate.
- * This callback will never be called when the stream is good.
+ * @param stable Is the stream stable enough to keep the bit rate. 
+ * Upon successful, non forceful, bit rate change, this is set to 
+ * true and 'bit_rate' is set to new bit rate.
+ * The stable is set to false with bit_rate set to the unstable
+ * bit rate when either current stream is unstable with said bit rate
+ * or the non forceful change failed.
  * @param bit_rate The bit rate in Kb/sec.
  */
-typedef void toxav_video_bitrate_control_cb(ToxAV *av, uint32_t friend_number, bool good, uint32_t bit_rate, void *user_data);
+typedef void toxav_video_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, bool stable, uint32_t bit_rate, void *user_data);
 /**
- * Set the callback for the `video_bitrate_control` event. Pass NULL to unset.
+ * Set the callback for the `video_bit_rate_status` event. Pass NULL to unset.
  */
-void toxav_callback_video_bitrate_control(ToxAV *av, toxav_video_bitrate_control_cb *function, void *user_data);
+void toxav_callback_video_bit_rate_status(ToxAV *av, toxav_video_bit_rate_status_cb *function, void *user_data);
 /**
  * Set the video bit rate to be used in subsequent video frames.
  *

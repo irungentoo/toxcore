@@ -38,6 +38,9 @@
 
 struct RTPMessage_s;
 
+/*
+ * Base Video Codec session type.
+ */
 typedef struct VCSession_s {
     
     /* encoding */
@@ -65,23 +68,46 @@ typedef struct VCSession_s {
     const uint8_t *processing_video_frame;
     uint16_t processing_video_frame_size;
     
-    
     ToxAV *av;
-    int32_t friend_id;
+    uint32_t friend_number;
     
     PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
     
     pthread_mutex_t queue_mutex[1];
 } VCSession;
 
-VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb *cb, void *cb_data, uint32_t mvfpsz);
+/*
+ * Create new Video Codec session.
+ */
+VCSession* vc_new(ToxAV* av, uint32_t friend_number, toxav_receive_video_frame_cb *cb, void *cb_data, uint32_t mvfpsz);
+/*
+ * Kill the Video Codec session.
+ */
 void vc_kill(VCSession* vc);
+/*
+ * Do periodic work. Work is consisted out of decoding only.
+ */
 void vc_do(VCSession* vc);
+/*
+ * Set new video splitting cycle. This is requirement in order to send video packets.
+ */
 void vc_init_video_splitter_cycle(VCSession* vc);
+/*
+ * Update the video splitter cycle with new data.
+ */
 int vc_update_video_splitter_cycle(VCSession* vc, const uint8_t* payload, uint16_t length);
+/*
+ * Iterate over splitted cycle.
+ */
 const uint8_t *vc_iterate_split_video_frame(VCSession* vc, uint16_t *size);
+/*
+ * Queue new rtp message.
+ */
 int vc_queue_message(void *vcp, struct RTPMessage_s *msg);
-int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height);
-int vc_reconfigure_test_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height);
+/*
+ * Set new values to the encoders.
+ */
+int vc_reconfigure_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height);
+int vc_reconfigure_test_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height);
 
 #endif /* VIDEO_H */

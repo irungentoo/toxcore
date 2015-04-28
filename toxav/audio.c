@@ -31,14 +31,14 @@ static void jbuf_clear(struct JitterBuffer *q);
 static void jbuf_free(struct JitterBuffer *q);
 static int jbuf_write(struct JitterBuffer *q, RTPMessage *m);
 static RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success);
-
-OpusEncoder* create_audio_encoder (int32_t bitrate, int32_t sampling_rate, int32_t channel_count);
+OpusEncoder* create_audio_encoder (int32_t bit_rate, int32_t sampling_rate, int32_t channel_count);
 bool reconfigure_audio_encoder(OpusEncoder** e, int32_t new_br, int32_t new_sr, uint8_t new_ch,
                                int32_t *old_br, int32_t *old_sr, int32_t *old_ch);
 bool reconfigure_audio_decoder(ACSession* ac, int32_t sampling_rate, int8_t channels);
 
 
-ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *cb, void *cb_data)
+
+ACSession* ac_new(ToxAV* av, uint32_t friend_number, toxav_receive_audio_frame_cb *cb, void *cb_data)
 {
     ACSession *ac = calloc(sizeof(ACSession), 1);
     
@@ -78,11 +78,11 @@ ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *c
         goto DECODER_CLEANUP;
     }
     
-    ac->last_encoding_bitrate = 48000;
+    ac->last_encoding_bit_rate = 48000;
     ac->last_encoding_sampling_rate = 48000;
     ac->last_encoding_channel_count = 2;
     
-    ac->last_test_encoding_bitrate = 48000;
+    ac->last_test_encoding_bit_rate = 48000;
     ac->last_test_encoding_sampling_rate = 48000;
     ac->last_test_encoding_channel_count = 2;
     
@@ -97,7 +97,7 @@ ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *c
     ac->last_packet_channel_count = 1;
     
     ac->av = av;
-    ac->friend_id = friend_id;
+    ac->friend_number = friend_number;
     ac->acb.first = cb;
     ac->acb.second = cb_data;
     
@@ -181,7 +181,7 @@ void ac_do(ACSession* ac)
         } else if (ac->acb.first) {
             ac->last_packet_frame_duration = (rc * 1000) / ac->last_packet_sampling_rate;
             
-            ac->acb.first(ac->av, ac->friend_id, tmp, rc * ac->last_packet_channel_count,
+            ac->acb.first(ac->av, ac->friend_number, tmp, rc * ac->last_packet_channel_count,
                           ac->last_packet_channel_count, ac->last_packet_sampling_rate, ac->acb.second);
         }
         
@@ -220,28 +220,27 @@ int ac_queue_message(void* acp, struct RTPMessage_s *msg)
     
     return 0;
 }
-int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels)
+int ac_reconfigure_encoder(ACSession* ac, int32_t bit_rate, int32_t sampling_rate, uint8_t channels)
 {
-    if (!ac || !reconfigure_audio_encoder(&ac->encoder, bitrate, sampling_rate, channels, 
-        &ac->last_encoding_bitrate, &ac->last_encoding_sampling_rate, &ac->last_encoding_channel_count))
+    if (!ac || !reconfigure_audio_encoder(&ac->encoder, bit_rate, sampling_rate, channels, 
+        &ac->last_encoding_bit_rate, &ac->last_encoding_sampling_rate, &ac->last_encoding_channel_count))
         return -1;
     
-    LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
+    LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bit_rate, sampling_rate, channels);
     return 0;
 }
-int ac_reconfigure_test_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels)
+int ac_reconfigure_test_encoder(ACSession* ac, int32_t bit_rate, int32_t sampling_rate, uint8_t channels)
 {
-    if (!ac || !reconfigure_audio_encoder(&ac->test_encoder, bitrate, sampling_rate, channels, 
-        &ac->last_encoding_bitrate, &ac->last_encoding_sampling_rate, &ac->last_encoding_channel_count))
+    if (!ac || !reconfigure_audio_encoder(&ac->test_encoder, bit_rate, sampling_rate, channels, 
+        &ac->last_encoding_bit_rate, &ac->last_encoding_sampling_rate, &ac->last_encoding_channel_count))
         return -1;
     
-    LOGGER_DEBUG ("Reconfigured test audio encoder br: %d sr: %d cc:%d", bitrate, sampling_rate, channels);
+    LOGGER_DEBUG ("Reconfigured test audio encoder br: %d sr: %d cc:%d", bit_rate, sampling_rate, channels);
     return 0;
 }
 
 
 
-/* JITTER BUFFER WORK */
 struct JitterBuffer {
     RTPMessage **queue;
     uint32_t     size;
@@ -340,7 +339,7 @@ static RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
     *success = 0;
     return NULL;
 }
-OpusEncoder* create_audio_encoder (int32_t bitrate, int32_t sampling_rate, int32_t channel_count)
+OpusEncoder* create_audio_encoder (int32_t bit_rate, int32_t sampling_rate, int32_t channel_count)
 {
     int status = OPUS_OK;
     OpusEncoder* rc = opus_encoder_create(sampling_rate, channel_count, OPUS_APPLICATION_AUDIO, &status);
@@ -350,7 +349,7 @@ OpusEncoder* create_audio_encoder (int32_t bitrate, int32_t sampling_rate, int32
         return NULL;
     }
     
-    status = opus_encoder_ctl(rc, OPUS_SET_BITRATE(bitrate));
+    status = opus_encoder_ctl(rc, OPUS_SET_BITRATE(bit_rate));
     
     if ( status != OPUS_OK ) {
         LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(status));

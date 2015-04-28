@@ -31,18 +31,21 @@
 
 struct RTPMessage_s;
 
+/*
+ * Base Audio Codec session type.
+ */
 typedef struct ACSession_s {
     /* encoding */
     OpusEncoder *encoder;
     int32_t last_encoding_sampling_rate;
     int32_t last_encoding_channel_count;
-    int32_t last_encoding_bitrate;
+    int32_t last_encoding_bit_rate;
     
-    /* Testing encoder for dynamic bitrate streaming */
+    /* Testing encoder for dynamic bit rate streaming */
     OpusEncoder *test_encoder;
     int32_t last_test_encoding_sampling_rate;
     int32_t last_test_encoding_channel_count;
-    int32_t last_test_encoding_bitrate;
+    int32_t last_test_encoding_bit_rate;
     
     /* decoding */
     OpusDecoder *decoder;
@@ -57,14 +60,30 @@ typedef struct ACSession_s {
     pthread_mutex_t queue_mutex[1];
     
     ToxAV* av;
-    uint32_t friend_id;
+    uint32_t friend_number;
     PAIR(toxav_receive_audio_frame_cb *, void *) acb; /* Audio frame receive callback */
 } ACSession;
 
-ACSession* ac_new(ToxAV* av, uint32_t friend_id, toxav_receive_audio_frame_cb *cb, void *cb_data);
+/*
+ * Create new Audio Codec session.
+ */
+ACSession* ac_new(ToxAV* av, uint32_t friend_number, toxav_receive_audio_frame_cb *cb, void *cb_data);
+/*
+ * Kill the Audio Codec session.
+ */
 void ac_kill(ACSession* ac);
+/*
+ * Do periodic work. Work is consisted out of decoding only.
+ */
 void ac_do(ACSession* ac);
+/*
+ * Queue new rtp message.
+ */
 int ac_queue_message(void *acp, struct RTPMessage_s *msg);
-int ac_reconfigure_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
-int ac_reconfigure_test_encoder(ACSession* ac, int32_t bitrate, int32_t sampling_rate, uint8_t channels);
+/*
+ * Set new values to the encoders.
+ */
+int ac_reconfigure_encoder(ACSession* ac, int32_t bit_rate, int32_t sampling_rate, uint8_t channels);
+int ac_reconfigure_test_encoder(ACSession* ac, int32_t bit_rate, int32_t sampling_rate, uint8_t channels);
+
 #endif /* AUDIO_H */

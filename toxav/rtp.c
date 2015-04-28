@@ -78,11 +78,11 @@ int handle_rtcp_packet ( Messenger *m, uint32_t friendnumber, const uint8_t *dat
 void send_rtcp_report ( RTCPSession* session, Messenger* m, uint32_t friendnumber );
 
 
-RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) )
+RTPSession *rtp_new ( int payload_type, Messenger *m, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) )
 {
     assert(mcb);
     assert(cs);
-    assert(messenger);
+    assert(m);
     
     RTPSession *retu = calloc(1, sizeof(RTPSession));
 
@@ -95,8 +95,8 @@ RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num, vo
     retu->ssrc      = random_int();
     retu->payload_type = payload_type % 128;
     
-    retu->m = messenger;
-    retu->friend_id = friend_num;
+    retu->m = m;
+    retu->friend_number = friend_num;
 
     if ( !(retu->csrc = calloc(1, sizeof(uint32_t))) ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
@@ -161,7 +161,7 @@ int rtp_do(RTPSession *session)
         return rtp_StateNormal;
     
     if (current_time_monotonic() - session->rtcp_session->last_sent_report_ts >= RTCP_REPORT_INTERVAL_MS) {
-        send_rtcp_report(session->rtcp_session, session->m, session->friend_id);
+        send_rtcp_report(session->rtcp_session, session->m, session->friend_number);
     }
     
     if (rb_full(session->rtcp_session->pl_stats)) {
@@ -209,15 +209,15 @@ int rtp_start_receiving(RTPSession* session)
     if (session == NULL)
         return -1;
     
-    if (m_callback_rtp_packet(session->m, session->friend_id, session->prefix,
+    if (m_callback_rtp_packet(session->m, session->friend_number, session->prefix,
         handle_rtp_packet, session) == -1) {
         LOGGER_WARNING("Failed to register rtp receive handler");
         return -1;
     }
-    if (m_callback_rtp_packet(session->m, session->friend_id, session->rtcp_session->prefix,
+    if (m_callback_rtp_packet(session->m, session->friend_number, session->rtcp_session->prefix,
         handle_rtcp_packet, session->rtcp_session) == -1) {
         LOGGER_WARNING("Failed to register rtcp receive handler");
-        m_callback_rtp_packet(session->m, session->friend_id, session->prefix, NULL, NULL);
+        m_callback_rtp_packet(session->m, session->friend_number, session->prefix, NULL, NULL);
         return -1;
     }
     
@@ -228,8 +228,8 @@ int rtp_stop_receiving(RTPSession* session)
     if (session == NULL)
         return -1;
     
-    m_callback_rtp_packet(session->m, session->friend_id, session->prefix, NULL, NULL);
-    m_callback_rtp_packet(session->m, session->friend_id, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
+    m_callback_rtp_packet(session->m, session->friend_number, session->prefix, NULL, NULL);
+    m_callback_rtp_packet(session->m, session->friend_number, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
     
     return 0;
 }
@@ -243,7 +243,8 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
     uint8_t parsed[MAX_RTP_SIZE];
     uint8_t *it;
 
-    RTPHeader header[1];
+    RTPHeader header[1] = {0};
+    
     ADD_FLAG_VERSION ( header, session->version );
     ADD_FLAG_PADDING ( header, session->padding );
     ADD_FLAG_EXTENSION ( header, session->extension );
@@ -278,12 +279,11 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
 
     memcpy(it, data, length);
     
-    if ( -1 == send_custom_lossy_packet(session->m, session->friend_id, parsed, parsed_len) ) {
+    if ( -1 == send_custom_lossy_packet(session->m, session->friend_number, parsed, parsed_len) ) {
         LOGGER_WARNING("Failed to send full packet (len: %d)! std error: %s", length, strerror(errno));
         return -1;
     }
     
-    /* Set sequ number */
     session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
     return 0;
 }
@@ -297,7 +297,6 @@ void rtp_free_msg ( RTPMessage *msg )
     free ( msg->header );
     free ( msg );
 }
-
 
 
 
@@ -322,12 +321,7 @@ RTPHeader *parse_header_in ( const uint8_t *payload, int length )
 
     retu->flags = *it;
     ++it;
-
-    /* This indicates if the first 2 bits are valid.
-     * Now it may happen that this is out of order but
-     * it cuts down chances of parsing some invalid value
-     */
-
+    
     if ( GET_FLAG_VERSION(retu) != RTP_VERSION ) {
         /* Deallocate */
         LOGGER_WARNING("Invalid version!");
@@ -335,15 +329,10 @@ RTPHeader *parse_header_in ( const uint8_t *payload, int length )
         return NULL;
     }
 
-    /*
-     * Added a check for the size of the header little sooner so
-     * I don't need to parse the other stuff if it's bad
-     */
     uint8_t cc = GET_FLAG_CSRCC ( retu );
     int total = 12 /* Minimum header len */ + ( cc * 4 );
 
     if ( length < total ) {
-        /* Deallocate */
         LOGGER_WARNING("Length invalid!");
         free(retu);
         return NULL;
@@ -355,9 +344,10 @@ RTPHeader *parse_header_in ( const uint8_t *payload, int length )
 
 
     memcpy(&retu->timestamp, it, sizeof(retu->timestamp));
-    retu->timestamp = ntohl(retu->timestamp);
     it += 4;
     memcpy(&retu->ssrc, it, sizeof(retu->ssrc));
+    
+    retu->timestamp = ntohl(retu->timestamp);
     retu->ssrc = ntohl(retu->ssrc);
 
     uint8_t x;
@@ -380,34 +370,31 @@ RTPExtHeader *parse_ext_header_in ( const uint8_t *payload, uint16_t length )
         return NULL;
     }
 
-    uint16_t ext_length;
-    memcpy(&ext_length, it, sizeof(ext_length));
-    ext_length = ntohs(ext_length);
+    memcpy(&retu->length, it, sizeof(retu->length));
+    retu->length = ntohs(retu->length);
     it += 2;
-
-
-    if ( length < ( ext_length * sizeof(uint32_t) ) ) {
+    
+    if ( length < ( retu->length * sizeof(uint32_t) ) ) {
         LOGGER_WARNING("Length invalid!");
         free(retu);
         return NULL;
     }
-
-    retu->length  = ext_length;
+    
     memcpy(&retu->type, it, sizeof(retu->type));
     retu->type = ntohs(retu->type);
+    
     it += 2;
-
-    if ( !(retu->table = calloc(ext_length, sizeof (uint32_t))) ) {
+    
+    if ( !(retu->table = calloc(retu->length, sizeof (uint32_t))) ) {
         LOGGER_WARNING("Alloc failed! Program might misbehave!");
         free(retu);
         return NULL;
     }
 
     uint16_t x;
-
-    for ( x = 0; x < ext_length; x++ ) {
+    for ( x = 0; x < retu->length; x++ ) {
         it += 4;
-        memcpy(&(retu->table[x]), it, sizeof(retu->table[x]));
+        memcpy(retu->table + x, it, sizeof(*retu->table));
         retu->table[x] = ntohl(retu->table[x]);
     }
 
@@ -432,7 +419,6 @@ uint8_t *parse_header_out ( const RTPHeader *header, uint8_t *payload )
     ++it;
     *it = header->marker_payloadt;
     ++it;
-
 
     timestamp = htonl(header->timestamp);
     memcpy(it, &timestamp, sizeof(timestamp));
@@ -579,7 +565,6 @@ int handle_rtcp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* dat
     report->received_packets = ntohl(report->received_packets);
     report->expected_packets = ntohl(report->expected_packets);
     
-    /* Invalid values */
     if (report->expected_packets == 0 || report->received_packets > report->expected_packets) {
         LOGGER_WARNING("Malformed rtcp report! %d %d", report->expected_packets, report->received_packets);
         free(report);

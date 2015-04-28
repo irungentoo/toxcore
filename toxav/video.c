@@ -35,15 +35,14 @@
 #define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
 #define VIDEOFRAME_HEADER_SIZE 0x2
 
-/* FIXME: Might not be enough? NOTE: I think it is enough */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
 typedef struct { uint16_t size; uint8_t data[]; } Payload;
 
-bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bitrate);
+bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate);
 
 
-VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb* cb, void* cb_data, uint32_t mvfpsz)
+VCSession* vc_new(ToxAV* av, uint32_t friend_number, toxav_receive_video_frame_cb* cb, void* cb_data, uint32_t mvfpsz)
 {
     VCSession *vc = calloc(sizeof(VCSession), 1);
     
@@ -86,7 +85,7 @@ VCSession* vc_new(ToxAV* av, uint32_t friend_id, toxav_receive_video_frame_cb* c
     vc->lcfd = 60;
     vc->vcb.first = cb;
     vc->vcb.second = cb_data;
-    vc->friend_id = friend_id;
+    vc->friend_number = friend_number;
     vc->peer_video_frame_piece_size = mvfpsz;
     
     return vc;
@@ -140,7 +139,7 @@ void vc_do(VCSession* vc)
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(vc->decoder, &iter)) {
                 if (vc->vcb.first) 
-                    vc->vcb.first(vc->av, vc->friend_id, dest->d_w, dest->d_h, 
+                    vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h, 
                                   (const uint8_t*)dest->planes[0], (const uint8_t*)dest->planes[1], (const uint8_t*)dest->planes[2],
                                   dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb.second);
                 
@@ -289,16 +288,16 @@ end:
     rtp_free_msg(msg);
     return 0;
 }
-int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height)
+int vc_reconfigure_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height)
 {
     if (!vc)
         return -1;
     
     vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
-    if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
+    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
-    cfg.rc_target_bitrate = bitrate;
+    cfg.rc_target_bitrate = bit_rate;
     cfg.g_w = width;
     cfg.g_h = height;
     
@@ -310,16 +309,16 @@ int vc_reconfigure_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint1
 
     return 0;
 }
-int vc_reconfigure_test_encoder(VCSession* vc, int32_t bitrate, uint16_t width, uint16_t height)
+int vc_reconfigure_test_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height)
 {
     if (!vc)
         return -1;
     
     vpx_codec_enc_cfg_t cfg = *vc->test_encoder->config.enc;
-    if (cfg.rc_target_bitrate == bitrate && cfg.g_w == width && cfg.g_h == height)
+    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
-    cfg.rc_target_bitrate = bitrate;
+    cfg.rc_target_bitrate = bit_rate;
     cfg.g_w = width;
     cfg.g_h = height;
     
@@ -334,7 +333,7 @@ int vc_reconfigure_test_encoder(VCSession* vc, int32_t bitrate, uint16_t width, 
 
 
 
-bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bitrate)
+bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate)
 {
     assert(dest);
     
@@ -354,7 +353,7 @@ bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bitrate)
         return false;
     }
     
-    cfg.rc_target_bitrate = bitrate;
+    cfg.rc_target_bitrate = bit_rate;
     cfg.g_w = 800;
     cfg.g_h = 600;
     cfg.g_pass = VPX_RC_ONE_PASS;

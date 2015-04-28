@@ -70,13 +70,6 @@
 #define YUV2B(Y, U, V) CLIP(( 298 * C(Y) + 516 * D(U)              + 128) >> 8)
 
 
-/* Enable/disable tests */
-#define TEST_REGULAR_AV 0
-#define TEST_REGULAR_A 0
-#define TEST_REGULAR_V 0
-#define TEST_REJECT 0
-#define TEST_CANCEL 0
-#define TEST_MUTE_UNMUTE 0
 #define TEST_TRANSFER_A 0
 #define TEST_TRANSFER_V 1
 
@@ -126,7 +119,7 @@ void* pa_write_thread (void* d)
 }
 
 
-/** 
+/**
  * Callbacks 
  */
 void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
@@ -187,21 +180,21 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     free(rb_write(cc->arb, f));
     pthread_mutex_unlock(cc->arb_mutex);
 }
-void t_toxav_audio_bitrate_control_cb(ToxAV *av, uint32_t friend_number, 
-                                      bool good, uint32_t bit_rate, void *user_data)
+void t_toxav_audio_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, 
+                                      bool stable, uint32_t bit_rate, void *user_data)
 {
-    if (good)
-        printf ("Set new audio bitrate to: %d\n", bit_rate);
+    if (stable)
+        printf ("Set new audio bit rate to: %d\n", bit_rate);
     else
-        printf ("The network is overly saturated with audio bitrate at: %d\n", bit_rate);
+        printf ("The network is overly saturated with audio bit rate at: %d\n", bit_rate);
 }
-void t_toxav_video_bitrate_control_cb(ToxAV *av, uint32_t friend_number, 
-                                      bool good, uint32_t bit_rate, void *user_data)
+void t_toxav_video_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, 
+                                      bool stable, uint32_t bit_rate, void *user_data)
 {
-    if (good)
-        printf ("Set new video bitrate to: %d", bit_rate);
+    if (stable)
+        printf ("Set new video bit rate to: %d", bit_rate);
     else
-        printf ("The network is overly saturated with video bitrate at: %d", bit_rate);
+        printf ("The network is overly saturated with video bit rate at: %d", bit_rate);
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
@@ -287,16 +280,16 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
     toxav_callback_receive_video_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
     toxav_callback_receive_audio_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
-    toxav_callback_audio_bitrate_control(*AliceAV, t_toxav_audio_bitrate_control_cb, AliceCC);
-    toxav_callback_video_bitrate_control(*AliceAV, t_toxav_video_bitrate_control_cb, AliceCC);
+    toxav_callback_audio_bit_rate_status(*AliceAV, t_toxav_audio_bit_rate_status_cb, AliceCC);
+    toxav_callback_video_bit_rate_status(*AliceAV, t_toxav_video_bit_rate_status_cb, AliceCC);
     
     /* Bob */
     toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
     toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
     toxav_callback_receive_video_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
     toxav_callback_receive_audio_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
-    toxav_callback_audio_bitrate_control(*BobAV, t_toxav_audio_bitrate_control_cb, BobCC);
-    toxav_callback_video_bitrate_control(*BobAV, t_toxav_video_bitrate_control_cb, BobCC);
+    toxav_callback_audio_bit_rate_status(*BobAV, t_toxav_audio_bit_rate_status_cb, BobCC);
+    toxav_callback_video_bit_rate_status(*BobAV, t_toxav_video_bit_rate_status_cb, BobCC);
     
     
     printf("Created 2 instances of ToxAV\n");
@@ -513,232 +506,7 @@ int main (int argc, char** argv)
     
     initialize_tox(&bootstrap, &AliceAV, &AliceCC, &BobAV, &BobCC);
     
-#define REGULAR_CALL_FLOW(A_BR, V_BR) \
-	do { \
-        memset(&AliceCC, 0, sizeof(CallControl)); \
-        memset(&BobCC, 0, sizeof(CallControl)); \
-        \
-        TOXAV_ERR_CALL rc; \
-        toxav_call(AliceAV, 0, A_BR, V_BR, &rc); \
-        \
-        if (rc != TOXAV_ERR_CALL_OK) { \
-            printf("toxav_call failed: %d\n", rc); \
-            exit(1); \
-        } \
-        \
-        \
-        long long unsigned int start_time = time(NULL); \
-        \
-        \
-        while (BobCC.state != TOXAV_CALL_STATE_END) { \
-            \
-            if (BobCC.incoming) { \
-                TOXAV_ERR_ANSWER rc; \
-                toxav_answer(BobAV, 0, A_BR, V_BR, &rc); \
-                \
-                if (rc != TOXAV_ERR_ANSWER_OK) { \
-                    printf("toxav_answer failed: %d\n", rc); \
-                    exit(1); \
-                } \
-                BobCC.incoming = false; \
-            } else { \
-                /* TODO rtp */ \
-                \
-                if (time(NULL) - start_time == 5) { \
-                    \
-                    TOXAV_ERR_CALL_CONTROL rc; \
-                    toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc); \
-                    \
-                    if (rc != TOXAV_ERR_CALL_CONTROL_OK) { \
-                        printf("toxav_call_control failed: %d\n", rc); \
-                        exit(1); \
-                    } \
-                } \
-            } \
-             \
-            iterate_tox(bootstrap, AliceAV, BobAV); \
-        } \
-        printf("Success!\n");\
-    } while(0)
-    
-    if (TEST_REGULAR_AV) {
-		printf("\nTrying regular call (Audio and Video)...\n");
-		REGULAR_CALL_FLOW(48, 4000);
-	}
-	
-    if (TEST_REGULAR_A) {
-		printf("\nTrying regular call (Audio only)...\n");
-		REGULAR_CALL_FLOW(48, 0);
-	}
-	
-	if (TEST_REGULAR_V) {
-		printf("\nTrying regular call (Video only)...\n");
-		REGULAR_CALL_FLOW(0, 4000);
-	}
-	
-#undef REGULAR_CALL_FLOW
-    
-    if (TEST_REJECT) { /* Alice calls; Bob rejects */
-        printf("\nTrying reject flow...\n");
-        
-        memset(&AliceCC, 0, sizeof(CallControl));
-        memset(&BobCC, 0, sizeof(CallControl));
-        
-        {
-            TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 48, 0, &rc);
-            
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
-        
-        /* Reject */
-        {
-            TOXAV_ERR_CALL_CONTROL rc;
-            toxav_call_control(BobAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
-            
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        while (AliceCC.state != TOXAV_CALL_STATE_END)
-            iterate_tox(bootstrap, AliceAV, BobAV);
-        
-        printf("Success!\n");
-    }
-    
-    if (TEST_CANCEL) { /* Alice calls; Alice cancels while ringing */
-        printf("\nTrying cancel (while ringing) flow...\n");
-        
-        memset(&AliceCC, 0, sizeof(CallControl));
-        memset(&BobCC, 0, sizeof(CallControl));
-        
-        {
-            TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 48, 0, &rc);
-            
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
-        
-        /* Cancel */
-        {
-            TOXAV_ERR_CALL_CONTROL rc;
-            toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
-            
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        /* Alice will not receive end state */
-        while (BobCC.state != TOXAV_CALL_STATE_END)
-            iterate_tox(bootstrap, AliceAV, BobAV);
-        
-        printf("Success!\n");
-    }
-    
-    if (TEST_MUTE_UNMUTE) { /* Check Mute-Unmute etc */
-        printf("\nTrying mute functionality...\n");
-        
-        memset(&AliceCC, 0, sizeof(CallControl));
-        memset(&BobCC, 0, sizeof(CallControl));
-        
-        /* Assume sending audio and video */
-        {
-            TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 48, 1000, &rc);
-            
-            if (rc != TOXAV_ERR_CALL_OK) {
-                printf("toxav_call failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
-        
-        /* At first try all stuff while in invalid state */
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
-        
-        {
-            TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 48, 4000, &rc);
-            
-            if (rc != TOXAV_ERR_ANSWER_OK) {
-                printf("toxav_answer failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        
-        /* Pause and Resume */
-        printf("Pause and Resume\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_PAUSED);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state & (TOXAV_CALL_STATE_SENDING_A | TOXAV_CALL_STATE_SENDING_V));
-        
-        /* Mute/Unmute single */
-        printf("Mute/Unmute single\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
-        
-        /* Mute/Unmute both */
-        printf("Mute/Unmute both\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_V);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_V);
-        
-        {
-            TOXAV_ERR_CALL_CONTROL rc;
-            toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
-            
-            if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-                printf("toxav_call_control failed: %d\n", rc);
-                exit(1);
-            }
-        }
-        
-        iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_END);
-        
-        printf("Success!\n");
-    }
-    
-    if (TEST_TRANSFER_A) { /* Audio encoding/decoding and transfer */
+    if (TEST_TRANSFER_A) {
         SNDFILE* af_handle;
         SF_INFO af_info;
         

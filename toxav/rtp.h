@@ -113,10 +113,9 @@ typedef struct {
     uint8_t prefix;
 
     Messenger *m;
-    int friend_id;
+    int friend_number;
     struct RTCPSession_s *rtcp_session;
 
-    
     void *cs;
     int (*mcb) (void*, RTPMessage* msg);
     
@@ -125,33 +124,27 @@ typedef struct {
 /**
  * Must be called before calling any other rtp function.
  */
-RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) );
-
+RTPSession *rtp_new ( int payload_type, Messenger *m, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) );
 /**
  * Terminate the session.
  */
 void rtp_kill ( RTPSession* session );
-
 /**
  * Do periodical rtp work.
  */
 int rtp_do(RTPSession *session);
-
 /**
  * By default rtp is in receiving state
  */
 int rtp_start_receiving (RTPSession *session);
-
 /**
  * Pause rtp receiving mode.
  */
 int rtp_stop_receiving (RTPSession *session);
-
 /**
  * Sends msg to RTPSession::dest
  */
 int rtp_send_data ( RTPSession* session, const uint8_t* data, uint16_t length, bool dummy );
-
 /**
  * Dealloc msg.
  */

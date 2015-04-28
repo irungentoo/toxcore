@@ -21,8 +21,8 @@ AUTOTEST_LDADD = \
 
 
 if BUILD_AV
-TESTS += toxav_basic_test toxav_many_test
-check_PROGRAMS += toxav_basic_test toxav_many_test
+TESTS += toxav_basic_test #toxav_many_test
+check_PROGRAMS += toxav_basic_test #toxav_many_test
 AUTOTEST_LDADD += libtoxav.la
 endif
 
@@ -90,11 +90,11 @@ toxav_basic_test_CFLAGS = $(AUTOTEST_CFLAGS)
 toxav_basic_test_LDADD = $(AUTOTEST_LDADD) $(AV_LIBS)
 
 
-toxav_many_test_SOURCES = ../auto_tests/toxav_many_test.c
+#toxav_many_test_SOURCES = ../auto_tests/toxav_many_test.c
 
-toxav_many_test_CFLAGS = $(AUTOTEST_CFLAGS)
+#toxav_many_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
-toxav_many_test_LDADD = $(AUTOTEST_LDADD)
+#toxav_many_test_LDADD = $(AUTOTEST_LDADD)
 endif
 
 endif
