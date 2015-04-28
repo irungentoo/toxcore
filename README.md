@@ -29,7 +29,7 @@ We want Tox to be as simple as possible while remaining as secure as possible.
 The goal of this project is to create a configuration-free P2P Skype replacement. “Configuration-free” means that the user will simply have to open the program and will be capable of adding people and communicating with them without having to set up an account. There are many so-called Skype replacements, but all of them are either hard to configure for the normal user or suffer from being way too centralized.
 
 ## TODO:
-- [TODO](/docs/TODO)
+- [TODO](/docs/TODO.md)
 
 
 ## Documentation:
