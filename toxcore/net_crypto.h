@@ -26,7 +26,7 @@
 
 #include "DHT.h"
 #include "LAN_discovery.h"
-#include "TCP_client.h"
+#include "TCP_connection.h"
 #include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
@@ -34,7 +34,6 @@
 #define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
 #define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets, we have received one from the other
 #define CRYPTO_CONN_ESTABLISHED 4
-#define CRYPTO_CONN_TIMED_OUT 5
 
 /* Maximum size of receiving and sending packet buffers. */
 #define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
@@ -61,7 +60,7 @@
 #define MAX_NUM_SENDPACKET_TRIES 8
 
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
-#define UDP_DIRECT_TIMEOUT ((MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL) / 2)
+#define UDP_DIRECT_TIMEOUT ((MAX_NUM_SENDPACKET_TRIES * CRYPTO_SEND_PACKET_INTERVAL) / 1000)
 
 #define PACKET_ID_PADDING 0 /* Denotes padding */
 #define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
@@ -72,11 +71,6 @@
 
 #define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
-
-#define STATUS_TCP_NULL      0
-#define STATUS_TCP_OFFLINE   1
-#define STATUS_TCP_INVISIBLE 2 /* we know the other peer is connected to this relay but he isn't appearing online */
-#define STATUS_TCP_ONLINE    3
 
 /* All packets starting with a byte in this range are considered lossy packets. */
 #define PACKET_ID_LOSSY_RANGE_START 192
@@ -112,11 +106,9 @@ typedef struct {
                      * 2 if we are sending handshake packets
                      * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
                      * 4 if the connection is established.
-                     * 5 if the connection is timed out.
                      */
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
-    uint8_t dht_public_key_set; /* True if the dht public key is set, false if it isn't. */
 
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
@@ -155,15 +147,8 @@ typedef struct {
     long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
     uint32_t packets_sent;
 
-    uint8_t killed; /* set to 1 to kill the connection. */
-
-    uint8_t status_tcp[MAX_TCP_CONNECTIONS]; /* set to one of STATUS_TCP_* */
-    uint8_t con_number_tcp[MAX_TCP_CONNECTIONS];
-    unsigned int last_relay_sentto;
-    unsigned int num_tcp_online;
-
-    Node_format tcp_relays[MAX_TCP_RELAYS_PEER];
-    uint16_t num_tcp_relays;
+    /* TCP_connection connection_number */
+    unsigned int connection_number_tcp;
 
     uint8_t maximum_speed_reached;
 
@@ -186,10 +171,9 @@ typedef struct {
 
 typedef struct {
     DHT *dht;
+    TCP_Connections *tcp_c;
 
     Crypto_Connection *crypto_connections;
-    TCP_Client_Connection *tcp_connections_new[MAX_TCP_CONNECTIONS];
-    TCP_Client_Connection *tcp_connections[MAX_TCP_CONNECTIONS];
     pthread_mutex_t tcp_mutex;
 
     pthread_mutex_t connections_mutex;
@@ -211,11 +195,6 @@ typedef struct {
     uint32_t current_sleep_time;
 
     BS_LIST ip_port_list;
-
-    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
-    void *tcp_onion_callback_object;
-
-    TCP_Proxy_Info proxy_info;
 } Net_Crypto;
 
 
@@ -241,21 +220,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
  * return -1 on failure.
  * return connection id on success.
  */
-int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key);
-
-/* Copy friends DHT public key into dht_key.
- *
- * return 0 on failure (no key copied).
- * return 1 on success (key copied).
- */
-unsigned int get_connection_dht_key(const Net_Crypto *c, int crypt_connection_id, uint8_t *dht_public_key);
-
-/* Set the DHT public key of the crypto connection.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-int set_connection_dht_public_key(Net_Crypto *c, int crypt_connection_id, const uint8_t *dht_public_key);
+int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const uint8_t *dht_public_key);
 
 /* Set the direct ip of the crypto connection.
  *
@@ -301,8 +266,10 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
                                   int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
                                   int id);
 
-/* Set the function for this friend that will be callbacked with object and number
- * when that friend gives us his DHT temporary public key.
+/* Set the function for this friend that will be callbacked with object and number if
+ * the friend sends us a different dht public key than we have associated to him.
+ *
+ * If this function is called, the connection should be recreated with the new public key.
  *
  * object and number will be passed as argument to this function.
  *
@@ -364,11 +331,6 @@ int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  */
 int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
 
-/* Set the function to be called when an onion response packet is received by one of the TCP connections.
- */
-void tcp_onion_response_handler(Net_Crypto *c, int (*tcp_onion_callback)(void *object, const uint8_t *data,
-                                uint16_t length), void *object);
-
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
  * return TCP connection number on success.
@@ -389,7 +351,7 @@ int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const ui
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
-unsigned int copy_connected_tcp_relays(const Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
+unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
 
 /* Kill a crypto connection.
  *
@@ -398,13 +360,13 @@ unsigned int copy_connected_tcp_relays(const Net_Crypto *c, Node_format *tcp_rel
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
-
 /* return one of CRYPTO_CONN_* values indicating the state of the connection.
  *
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
+ * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, uint8_t *direct_connected);
-
+unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, _Bool *direct_connected,
+                                      unsigned int *online_tcp_relays);
 
 /* Generate our public and private keys.
  *  Only call this function the first time the program starts.

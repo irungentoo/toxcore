@@ -433,14 +433,19 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
         return -1;
 
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
-        uint8_t direct_connected = 0;
+        _Bool direct_connected = 0;
+        unsigned int num_online_relays = 0;
         crypto_connection_status(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                 m->friendlist[friendnumber].friendcon_id), &direct_connected);
+                                 m->friendlist[friendnumber].friendcon_id), &direct_connected, &num_online_relays);
 
         if (direct_connected) {
             return CONNECTION_UDP;
         } else {
-            return CONNECTION_TCP;
+            if (num_online_relays) {
+                return CONNECTION_TCP;
+            } else {
+                return CONNECTION_UNKNOWN;
+            }
         }
     } else {
         return CONNECTION_NONE;
@@ -492,10 +497,6 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
         return -4;
 
     uint32_t msg_id = ++m->friendlist[friendnumber].message_id;
-
-    if (msg_id == 0) {
-        msg_id = ++m->friendlist[friendnumber].message_id; // Otherwise, false error
-    }
 
     add_receipt(m, friendnumber, packet_num, msg_id);
 
@@ -753,25 +754,6 @@ static int send_user_istyping(const Messenger *m, int32_t friendnumber, uint8_t 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing), 0);
 }
 
-static int send_relays(const Messenger *m, int32_t friendnumber)
-{
-    Node_format nodes[MAX_SHARED_RELAYS];
-    uint8_t data[1024];
-    int n, length;
-
-    n = copy_connected_tcp_relays(m->net_crypto, nodes, MAX_SHARED_RELAYS);
-    length = pack_nodes(data, sizeof(data), nodes, n);
-
-    int ret = write_cryptpacket_id(m, friendnumber, PACKET_ID_SHARE_RELAYS, data, length, 0);
-
-    if (ret == 1)
-        m->friendlist[friendnumber].share_relays_lastsent = unix_time();
-
-    return ret;
-}
-
-
-
 static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, const uint8_t *status, uint16_t length)
 {
     if (friend_not_valid(m, friendnumber))
@@ -873,6 +855,14 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
 
     if (ret == -1)
         return;
+
+    if (ret == CONNECTION_UNKNOWN) {
+        if (last_connection_udp_tcp == CONNECTION_UDP) {
+            return;
+        } else {
+            ret = CONNECTION_TCP;
+        }
+    }
 
     if (last_connection_udp_tcp != ret) {
         if (m->friend_connectionstatuschange)
@@ -1350,7 +1340,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -2;
 
-    if (filenumber > MAX_CONCURRENT_FILE_PIPES)
+    if (filenumber >= MAX_CONCURRENT_FILE_PIPES)
         return -3;
 
     struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[filenumber];
@@ -1775,15 +1765,6 @@ static int friend_already_added(const uint8_t *real_pk, void *data)
     return -1;
 }
 
-/* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
-static void LANdiscovery(Messenger *m)
-{
-    if (m->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(TOX_PORT_DEFAULT), m->dht);
-        m->last_LANdiscovery = unix_time();
-    }
-}
-
 /* Run this at startup. */
 Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 {
@@ -1852,7 +1833,6 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     m->options = *options;
     friendreq_init(&(m->fr), m->fr_c);
-    LANdiscovery_init(m->dht);
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
 
@@ -2178,22 +2158,6 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
             break;
         }
 
-        case PACKET_ID_SHARE_RELAYS: {
-            Node_format nodes[MAX_SHARED_RELAYS];
-            int n;
-
-            if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data, data_length, 1)) == -1)
-                break;
-
-            int i;
-
-            for (i = 0; i < n; i++) {
-                add_tcp_relay(m->net_crypto, nodes[i].ip_port, nodes[i].public_key);
-            }
-
-            break;
-        }
-
         default: {
             handle_custom_lossless_packet(object, i, temp, len);
             break;
@@ -2249,10 +2213,6 @@ void do_friends(Messenger *m)
             if (m->friendlist[i].user_istyping_sent == 0) {
                 if (send_user_istyping(m, i, m->friendlist[i].user_istyping))
                     m->friendlist[i].user_istyping_sent = 1;
-            }
-
-            if (m->friendlist[i].share_relays_lastsent + FRIEND_SHARE_RELAYS_INTERVAL < temp_time) {
-                send_relays(m, i);
             }
 
             check_friend_tcp_udp(m, i);
@@ -2338,7 +2298,6 @@ void do_messenger(Messenger *m)
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
     do_friends(m);
-    LANdiscovery(m);
     connection_status_cb(m);
 
 #ifdef LOGGING

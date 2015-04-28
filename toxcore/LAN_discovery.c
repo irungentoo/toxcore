@@ -336,3 +336,8 @@ void LANdiscovery_init(DHT *dht)
 {
     networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
 }
+
+void LANdiscovery_kill(DHT *dht)
+{
+    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, NULL, NULL);
+}

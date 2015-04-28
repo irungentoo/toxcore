@@ -28,14 +28,28 @@
 
 #define TCP_CONN_NONE 0
 #define TCP_CONN_VALID 1
+
+/* NOTE: only used by TCP_con */
 #define TCP_CONN_CONNECTED 2
+
+/* Connection is not connected but can be quickly reconnected in case it is needed. */
+#define TCP_CONN_SLEEPING 3
 
 #define TCP_CONNECTIONS_STATUS_NONE 0
 #define TCP_CONNECTIONS_STATUS_REGISTERED 1
 #define TCP_CONNECTIONS_STATUS_ONLINE 2
 
-#define MAX_FRIEND_TCP_CONNECTIONS 4
+#define MAX_FRIEND_TCP_CONNECTIONS 6
 
+/* Time until connection to friend gets killed (if it doesn't get locked withing that time) */
+#define TCP_CONNECTION_ANNOUNCE_TIMEOUT (TCP_CONNECTION_TIMEOUT)
+
+/* The amount of recommended connections for each friend
+   NOTE: Must be at most (MAX_FRIEND_TCP_CONNECTIONS / 2) */
+#define RECOMMENDED_FRIEND_TCP_CONNECTIONS (MAX_FRIEND_TCP_CONNECTIONS / 2)
+
+/* Number of TCP connections used for onion purposes. */
+#define NUM_ONION_TCP_CONNECTIONS RECOMMENDED_FRIEND_TCP_CONNECTIONS
 
 typedef struct {
     uint8_t status;
@@ -53,7 +67,15 @@ typedef struct {
 typedef struct {
     uint8_t status;
     TCP_Client_Connection *connection;
+    uint64_t connected_time;
     uint32_t lock_count;
+    uint32_t sleep_count;
+    _Bool onion;
+
+    /* Only used when connection is sleeping. */
+    IP_Port ip_port;
+    uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
+    _Bool unsleep; /* set to 1 to unsleep connection. */
 } TCP_con;
 
 typedef struct {
@@ -76,6 +98,9 @@ typedef struct {
     void *tcp_onion_callback_object;
 
     TCP_Proxy_Info proxy_info;
+
+    _Bool onion_status;
+    uint16_t onion_num_conns;
 } TCP_Connections;
 
 /* Send a packet to the TCP connection.
@@ -93,7 +118,7 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
  * return TCP connection number on success.
  * return -1 on failure.
  */
-int get_random_tcp_conn_number(TCP_Connections *tcp_c);
+int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c);
 
 /* Send an onion packet via the TCP relay corresponding to tcp_connections_number.
  *
@@ -102,6 +127,15 @@ int get_random_tcp_conn_number(TCP_Connections *tcp_c);
  */
 int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *data,
                            uint16_t length);
+
+/* Set if we want TCP_connection to allocate some connection for onion use.
+ *
+ * If status is 1, allocate some connections. if status is 0, don't.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status);
 
 /* Send an oob packet via the TCP relay corresponding to tcp_connections_number.
  *
@@ -140,6 +174,23 @@ int new_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_key, int
  */
 int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
 
+/* Set connection status.
+ *
+ * status of 1 means we are using the connection.
+ * status of 0 means we are not using it.
+ *
+ * Unused tcp connections will be disconnected from but kept in case they are needed.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, _Bool status);
+
+/* return number of online tcp relays tied to the connection on success.
+ * return 0 on failure.
+ */
+unsigned int tcp_connection_to_online_tcp_relays(TCP_Connections *tcp_c, int connections_number);
+
 /* Add a TCP relay tied to a connection.
  *
  * NOTE: This can only be used during the tcp_oob_callback.
@@ -172,7 +223,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
  */
 unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
-TCP_Connections *new_tcp_connections(DHT *dht);
+TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info);
 void do_tcp_connections(TCP_Connections *tcp_c);
 void kill_tcp_connections(TCP_Connections *tcp_c);
 

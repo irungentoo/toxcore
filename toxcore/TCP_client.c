@@ -87,7 +87,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_con
     const int written = snprintf((char *)TCP_conn->last_packet, MAX_PACKET_SIZE, "%s%s:%hu%s%s:%hu%s", one, ip, port, two,
                                  ip, port, three);
 
-    if (written < 0) {
+    if (written < 0 || MAX_PACKET_SIZE < written) {
         return 0;
     }
 
