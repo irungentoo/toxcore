@@ -93,7 +93,7 @@ uint32_t toxav_iteration_interval(ToxAV const *av);
 /**
  * Main loop for the session. This function needs to be called in intervals of
  * toxav_iteration_interval() milliseconds. It is best called in the same loop
- * as tox_iteration.
+ * as tox_iterate.
  */
 void toxav_iterate(ToxAV *av);
 /*******************************************************************************
