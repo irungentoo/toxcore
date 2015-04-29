@@ -246,6 +246,19 @@ int gc_get_numpeers(const GC_Chat *chat)
     return chat->numpeers;
 }
 
+/* Returns the number of confirmed peers in peerlist */
+static uint32_t get_gc_confirmed_numpeers(const GC_Chat *chat)
+{
+    uint32_t i, count = 0;
+
+    for (i = 0; i < chat->numpeers; ++i) {
+        if (chat->gcc[i].confirmed)
+            ++count;
+    }
+
+    return count;
+}
+
 /* Packs number of peer addresses into data of maxlength length.
  * Note: Only the encryption part of the public key is packed.
  *
@@ -371,7 +384,8 @@ static int unpack_gc_peer(GC_GroupPeer *peer, const uint8_t *data, uint16_t leng
     return len_processed;
 }
 
-/* Decrypts data using the peer's shared key and a nonce
+/* Decrypts data using the peer's shared key and a nonce.
+ * message_id should be set to NULL for lossy packets.
  *
  * Returns length of the plaintext data on success.
  * Returns -1 on failure.
@@ -571,6 +585,9 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
             send_gc_handshake_request(m, groupnumber, addrs[i].ip_port, addrs[i].public_key, GH_PEER_INFO_EXCHANGE);
     }
 
+    for (i = 0; i < chat->numpeers; ++i)
+        chat->gcc[i].peer_sync_timer = 0;
+
     free(addrs);
 
     if (c->peerlist_update)
@@ -609,7 +626,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     bytes_to_U32(&req_num_peers, data);
 
     /* Sync request is not necessary */
-    if (req_num_peers > 0 && req_num_peers >= chat->numpeers) {
+    if (req_num_peers > 0 && req_num_peers >= get_gc_confirmed_numpeers(chat)) {
         fprintf(stderr, "sync request from %s rejected\n", chat->group[peernumber].nick);
         return 0;
     }
@@ -677,7 +694,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
  */
 static bool check_gc_sync_status(const GC_Chat *chat, uint32_t peernumber, uint32_t other_num_peers)
 {
-    if (chat->numpeers >= other_num_peers) {
+    if (get_gc_confirmed_numpeers(chat) >= other_num_peers) {
         chat->gcc[peernumber].peer_sync_timer = 0;
         return false;
     }
@@ -1625,7 +1642,7 @@ static int wrap_handshake_request_packet(const uint8_t *self_pk, const uint8_t *
 
 /* Initiates a handshake request with a peer.
  *
- * Returns sent packet size on success.
+ * Returns peernumber of newly added peer on success.
  * Returns -1 on failure.
  */
 static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
@@ -1655,7 +1672,13 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
         return -1;
     }
 
-    return sendpacket(chat->net, ipp, packet, enc_len);
+    if (gcc_add_send_ary(chat, packet, enc_len, peernumber, -1) == -1)
+        return -1;
+
+    if (sendpacket(chat->net, ipp, packet, enc_len) == -1)
+        return -1;
+
+    return peernumber;
 }
 
 static int send_gc_handshake_response(GC_Chat *chat, uint32_t peernumber, uint8_t hs_type)
@@ -1743,10 +1766,12 @@ int handle_gc_handshake_request_packet(void *object, IP_Port ipp, const uint8_t 
         return -1;
     }
 
-    memcpy(SIG_PK(chat->gcc[peernumber].addr.public_key), data + HASH_ID_BYTES, SIG_PUBLIC_KEY);
-
     uint8_t hs_type;
+    memcpy(SIG_PK(chat->gcc[peernumber].addr.public_key), data + HASH_ID_BYTES, SIG_PUBLIC_KEY);
     memcpy(&hs_type, data + HASH_ID_BYTES + SIG_PUBLIC_KEY, sizeof(uint8_t));
+
+    gc_send_message_ack(chat, peernumber, 1, 0);
+    ++chat->gcc[peernumber].recv_message_id;
 
     return send_gc_handshake_response(chat, peernumber, hs_type);
 }
@@ -2458,7 +2483,9 @@ static void ping_group(GC_Chat *chat)
     uint32_t length = HASH_ID_BYTES + sizeof(uint32_t);
     uint8_t data[length];
     U32_to_bytes(data, chat->gcc[0].public_key_hash);
-    U32_to_bytes(data + HASH_ID_BYTES, chat->numpeers);
+
+    uint32_t num_confirmed_peers = get_gc_confirmed_numpeers(chat);
+    U32_to_bytes(data + HASH_ID_BYTES, num_confirmed_peers);
 
     uint32_t i;
 
@@ -2708,17 +2735,19 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     if (groupnumber == -1)
         return -1;
 
+    uint64_t tm = unix_time();
+
     Messenger *m = c->messenger;
     GC_Chat *chat = &c->chats[groupnumber];
 
     chat->groupnumber = groupnumber;
     chat->numpeers = 0;
-    chat->connection_state = CS_DISCONNECTED;
+    chat->connection_state = save->self_verified ? CS_CONNECTED : CS_DISCONNECTED;
     chat->net = m->net;
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
-    chat->last_get_nodes_attempt = unix_time();
-    chat->last_sent_ping_time = unix_time();
-    chat->announce_search_timer = unix_time();
+    chat->last_get_nodes_attempt = tm;
+    chat->last_sent_ping_time = tm;
+    chat->announce_search_timer = tm;
 
     memcpy(chat->group_name, save->group_name, MAX_GC_GROUP_NAME_SIZE);
     memcpy(chat->topic, save->topic, MAX_GC_TOPIC_SIZE);
@@ -2743,11 +2772,25 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     uint16_t i, num = 0, num_addrs = ntohs(save->num_addrs);
 
     for (i = 0; i < num_addrs && i < MAX_GC_PEER_ADDRS; ++i) {
-        if (ipport_isset(&save->addrs[i].ip_port))
-            chat->addr_list[num++] = save->addrs[i];
+        if (ipport_isset(&save->addrs[i].ip_port)) {
+            chat->addr_list[num] = save->addrs[i];
+
+            if (save->self_verified) {
+                int peernumber = send_gc_handshake_request(c->messenger, groupnumber, save->addrs[i].ip_port,
+                                                           save->addrs[i].public_key, GH_PEER_INFO_EXCHANGE);
+                if (peernumber != -1)
+                    chat->gcc[peernumber].peer_sync_timer = tm - (GROUP_PEER_SYNC_TIMER + num);
+            }
+
+            ++num;
+        }
     }
 
     chat->num_addrs = num;
+
+    if (chat->connection_state == CS_CONNECTED)
+        gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key,
+                                  CHAT_ID(chat->chat_public_key));
 
     return groupnumber;
 }
@@ -2835,7 +2878,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
     chat->connection_state = CS_DISCONNECTED;
     chat->last_get_nodes_attempt = chat->num_addrs > 0 ? unix_time() : 0;  /* Reconnect using saved peers or DHT */
     chat->last_sent_ping_time = unix_time();
-    chat->last_join_attempt = unix_time() + 3;  /* Delay reconnection in case of heavy lag for part signal */
+    chat->last_join_attempt = unix_time() + 1;
     chat->announce_search_timer = unix_time();
     chat->get_nodes_attempts = 0;
 }
