@@ -243,7 +243,8 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
     uint8_t parsed[MAX_RTP_SIZE];
     uint8_t *it;
 
-    RTPHeader header[1] = {0};
+    RTPHeader header[1];
+    memset(header, 0, sizeof(header));
     
     ADD_FLAG_VERSION ( header, session->version );
     ADD_FLAG_PADDING ( header, session->padding );
@@ -463,6 +464,9 @@ uint8_t *parse_ext_header_out ( const RTPExtHeader *header, uint8_t *payload )
 }
 int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {
+    (void) m;
+    (void) friendnumber;
+    
     RTPSession *session = object;
 
     if ( !session || length < 13 || length > MAX_RTP_SIZE ) {
@@ -553,6 +557,9 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
 }
 int handle_rtcp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object )
 {
+    (void) m;
+    (void) friendnumber;
+    
     if (length < 9)
         return -1;
     

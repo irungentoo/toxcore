@@ -224,7 +224,7 @@ void toxav_iterate(ToxAV* av)
     }
     
     uint64_t start = current_time_monotonic();
-    uint32_t rc = 500;
+    int32_t rc = 500;
     
     ToxAVCall* i = av->calls[av->calls_head];
     for (; i; i = i->next) {
@@ -292,7 +292,7 @@ void toxav_iterate(ToxAV* av)
             
             if (i->msi_call->self_capabilities & msi_CapRVideo && 
                 i->msi_call->peer_capabilities & msi_CapSVideo)
-                rc = MIN(i->video.second->lcfd, rc);
+                rc = MIN(i->video.second->lcfd, (uint32_t) rc);
             
             uint32_t fid = i->friend_number;
             
@@ -821,7 +821,7 @@ bool toxav_send_video_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
             }
         }
         
-        if (call->vba.end_time == ~0)
+        if (call->vba.end_time == (uint64_t) ~0)
             call->vba.end_time = current_time_monotonic() + BITRATE_CHANGE_TESTING_TIME_MS;
     }
     
@@ -921,7 +921,7 @@ bool toxav_send_audio_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
                 rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
             }
             
-            if (call->aba.end_time == ~0)
+            if (call->aba.end_time == (uint64_t) ~0)
                 call->aba.end_time = current_time_monotonic() + BITRATE_CHANGE_TESTING_TIME_MS;
         }
     }
@@ -1056,6 +1056,7 @@ bool audio_bit_rate_invalid(uint32_t bit_rate)
 
 bool video_bit_rate_invalid(uint32_t bit_rate)
 {
+    (void) bit_rate;
     /* TODO: If anyone knows the answer to this one please fill it up */
     return false;
 }
@@ -1123,7 +1124,7 @@ ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error)
         av->calls = tmp;
         
         /* Set fields in between to null */
-        int32_t i = av->calls_tail + 1;
+        uint32_t i = av->calls_tail + 1;
         for (; i < friend_number; i ++)
             av->calls[i] = NULL;
         

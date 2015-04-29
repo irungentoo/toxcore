@@ -49,11 +49,19 @@ typedef struct {
  */
 void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
 {
+    (void) av;
+    (void) friend_number;
+    (void) audio_enabled;
+    (void) video_enabled;
+    
     printf("Handling CALL callback\n");
     ((CallControl*)user_data)->incoming = true;
 }
 void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
+    (void) av;
+    (void) friend_number;
+    
     printf("Handling CALL STATE callback: %d\n", state);
     ((CallControl*)user_data)->state = state;
 }
@@ -92,6 +100,8 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
 }
 void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
+    (void) userdata;
+    
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
         assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
     }
@@ -433,6 +443,9 @@ Suite *tox_suite(void)
 }
 int main(int argc, char *argv[])
 {
+    (void) argc;
+    (void) argv;
+    
     Suite *tox = tox_suite();
     SRunner *test_runner = srunner_create(tox);
 
