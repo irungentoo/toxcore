@@ -35,6 +35,9 @@
 #include "util.h"
 #include "Messenger.h"
 
+#define GROUP_MAX_PADDING 8
+#define GROUP_PACKET_PADDING_LENGTH(length) (((MAX_GC_PACKET_SIZE - (length)) % GROUP_MAX_PADDING))
+
 #define GC_PLAIN_HS_REQ_PACKET_SIZE (HASH_ID_BYTES + SIG_PUBLIC_KEY + sizeof(uint8_t))
 
 #define GC_ENCRYPTED_HS_REQ_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY\
@@ -57,21 +60,21 @@ static int get_nick_peernumber(const GC_Chat *chat, const uint8_t *nick, uint16_
 static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat);
 
 enum {
-    /* lossy packets */
-    GP_PING,
-    GP_MESSAGE_ACK,
-    GP_INVITE_RESPONSE_REJECT,
+    /* lossy packets (ID 0 is reserved) */
+    GP_PING = 1,
+    GP_MESSAGE_ACK = 2,
+    GP_INVITE_RESPONSE_REJECT = 3,
 
     /* lossless packets */
-    GP_BROADCAST,
-    GP_PEER_INFO_REQUEST,
-    GP_PEER_INFO_RESPONSE,
-    GP_INVITE_REQUEST,
-    GP_INVITE_RESPONSE,
-    GP_SYNC_REQUEST,
-    GP_SYNC_RESPONSE,
-    GP_FRIEND_INVITE,
-    GP_HANDSHAKE_RESPONSE
+    GP_BROADCAST = 10,
+    GP_PEER_INFO_REQUEST = 11,
+    GP_PEER_INFO_RESPONSE = 12,
+    GP_INVITE_REQUEST = 13,
+    GP_INVITE_RESPONSE = 14,
+    GP_SYNC_REQUEST = 15,
+    GP_SYNC_RESPONSE = 16,
+    GP_FRIEND_INVITE = 17,
+    GP_HANDSHAKE_RESPONSE = 18,
 } GROUP_PACKET_TYPE;
 
 enum {
@@ -392,17 +395,27 @@ static int unwrap_group_packet(const uint8_t *shared_key, uint8_t *data, uint64_
         return -1;
     }
 
+    /* remove padding */
+    uint8_t *real_plain = plain;
+    while (real_plain[0] == 0) {
+        ++real_plain;
+        --len;
+
+        if (len == 0)
+            return -1;
+    }
+
     uint32_t header_len = sizeof(uint8_t);
-    *packet_type = plain[0];
+    *packet_type = real_plain[0];
     len -= sizeof(uint8_t);
 
     if (message_id != NULL) {
-        bytes_to_U64(message_id, plain + sizeof(uint8_t));
+        bytes_to_U64(message_id, real_plain + sizeof(uint8_t));
         len -= MESSAGE_ID_BYTES;
         header_len += MESSAGE_ID_BYTES;
     }
 
-    memcpy(data, plain + header_len, len);
+    memcpy(data, real_plain + header_len, len);
 
     return len;
 }
@@ -419,28 +432,34 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, 
                              const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type,
                              uint32_t chat_id_hash, uint8_t packet_id)
 {
-    if (length + MIN_GC_PACKET_SIZE > MAX_GC_PACKET_SIZE)
+    uint16_t padding_len = GROUP_PACKET_PADDING_LENGTH(length);
+
+    if (length + padding_len + MIN_GC_PACKET_SIZE > MAX_GC_PACKET_SIZE)
         return -1;
 
-    uint32_t enc_header_len = sizeof(uint8_t);
     uint8_t plain[MAX_GC_PACKET_SIZE];
-    plain[0] = packet_type;
+    memset(plain, 0, padding_len);
+
+    uint32_t enc_header_len = sizeof(uint8_t);
+    plain[padding_len] = packet_type;
 
     if (packet_id == NET_PACKET_GC_LOSSLESS) {
-        U64_to_bytes(plain + sizeof(uint8_t), message_id);
+        U64_to_bytes(plain + padding_len + sizeof(uint8_t), message_id);
         enc_header_len += MESSAGE_ID_BYTES;
     }
 
-    memcpy(plain + enc_header_len, data, length);
+    memcpy(plain + padding_len + enc_header_len, data, length);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    uint8_t encrypt[enc_header_len + length + crypto_box_MACBYTES];
-    int len = encrypt_data_symmetric(shared_key, nonce, plain, length + enc_header_len, encrypt);
+    uint16_t plain_len = padding_len + enc_header_len + length;
+    uint8_t encrypt[plain_len + crypto_box_MACBYTES];
 
-    if (len != sizeof(encrypt)) {
-        fprintf(stderr, "encrypt failed. packet type: %d, len: %d\n", packet_type, len);
+    int enc_len = encrypt_data_symmetric(shared_key, nonce, plain, plain_len, encrypt);
+
+    if (enc_len != sizeof(encrypt)) {
+        fprintf(stderr, "encrypt failed. packet type: %d, enc_len: %d\n", packet_type, enc_len);
         return -1;
     }
 
@@ -448,9 +467,9 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, 
     U32_to_bytes(packet + sizeof(uint8_t), chat_id_hash);
     memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES, self_pk, ENC_PUBLIC_KEY);
     memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, len);
+    memcpy(packet + sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES, encrypt, enc_len);
 
-    return 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + len;
+    return 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + enc_len;
 }
 
 static int send_lossy_group_packet(const GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length,
