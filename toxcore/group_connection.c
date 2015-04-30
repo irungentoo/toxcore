@@ -256,7 +256,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
         uint64_t delta = gconn->send_ary[i].last_send_try - gconn->send_ary[i].time_added;
         gconn->send_ary[i].last_send_try = tm;
 
-        // FIXME: if this function is called less than once per second this won't be reliable
+        /* if this occurrs less than once per second this won't be reliable */
         if (delta > 1 && POWER_OF_2(delta)) {
             sendpacket(chat->net, gconn->addr.ip_port, gconn->send_ary[i].data,
                        gconn->send_ary[i].data_length);
