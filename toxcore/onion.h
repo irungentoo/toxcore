@@ -53,6 +53,8 @@ typedef struct {
 #define ONION_MAX_DATA_SIZE (ONION_MAX_PACKET_SIZE - (ONION_SEND_1 + 1))
 #define ONION_RESPONSE_MAX_DATA_SIZE (ONION_MAX_PACKET_SIZE - (1 + ONION_RETURN_3))
 
+#define ONION_PATH_LENGTH 3
+
 typedef struct {
     uint8_t shared_key1[crypto_box_BEFORENMBYTES];
     uint8_t shared_key2[crypto_box_BEFORENMBYTES];
@@ -76,7 +78,7 @@ typedef struct {
 
 /* Create a new onion path.
  *
- * Create a new onion path out of nodes (nodes is a list of 3 nodes)
+ * Create a new onion path out of nodes (nodes is a list of ONION_PATH_LENGTH nodes)
  *
  * new_path must be an empty memory location of atleast Onion_Path size.
  *

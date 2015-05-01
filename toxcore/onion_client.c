@@ -190,7 +190,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
             continue;
         }
 
-        if (ipport_equal(&onion_paths->paths[i].ip_port1, &nodes[2].ip_port)) {
+        if (ipport_equal(&onion_paths->paths[i].ip_port1, &nodes[ONION_PATH_LENGTH - 1].ip_port)) {
             return i;
         }
     }
@@ -215,9 +215,9 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
     if ((onion_paths->last_path_success[pathnum] + ONION_PATH_TIMEOUT < onion_paths->last_path_used[pathnum]
             && onion_paths->last_path_used_times[pathnum] >= ONION_PATH_MAX_NO_RESPONSE_USES)
             || is_timeout(onion_paths->path_creation_time[pathnum], ONION_PATH_MAX_LIFETIME)) {
-        Node_format nodes[3];
+        Node_format nodes[ONION_PATH_LENGTH];
 
-        if (random_nodes_path_onion(onion_c, nodes, 3) != 3)
+        if (random_nodes_path_onion(onion_c, nodes, ONION_PATH_LENGTH) != ONION_PATH_LENGTH)
             return -1;
 
         int n = is_path_used(onion_paths, nodes);
@@ -267,13 +267,12 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
         onion_paths->last_path_success[path_num % NUMBER_ONION_PATHS] = unix_time();
         onion_paths->last_path_used_times[path_num % NUMBER_ONION_PATHS] = 0;
 
-        unsigned int path_len = 3;
-        Node_format nodes[path_len];
+        Node_format nodes[ONION_PATH_LENGTH];
 
-        if (onion_path_to_nodes(nodes, path_len, &onion_paths->paths[path_num % NUMBER_ONION_PATHS]) == 0) {
+        if (onion_path_to_nodes(nodes, ONION_PATH_LENGTH, &onion_paths->paths[path_num % NUMBER_ONION_PATHS]) == 0) {
             unsigned int i;
 
-            for (i = 0; i < path_len; ++i) {
+            for (i = 0; i < ONION_PATH_LENGTH; ++i) {
                 onion_add_path_node(onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
         }
