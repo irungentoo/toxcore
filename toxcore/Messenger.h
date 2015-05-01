@@ -27,7 +27,6 @@
 #define MESSENGER_H
 
 #include "friend_requests.h"
-#include "LAN_discovery.h"
 #include "friend_connection.h"
 
 #define MAX_NAME_LENGTH 128

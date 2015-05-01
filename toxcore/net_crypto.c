@@ -1547,12 +1547,13 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
         return -1;
 
     pthread_mutex_lock(&c->tcp_mutex);
-    conn->connection_number_tcp = new_tcp_connection_to(c->tcp_c, n_c->dht_public_key, crypt_connection_id);
+    int connection_number_tcp = new_tcp_connection_to(c->tcp_c, n_c->dht_public_key, crypt_connection_id);
     pthread_mutex_unlock(&c->tcp_mutex);
 
-    if (conn->connection_number_tcp == -1)
+    if (connection_number_tcp == -1)
         return -1;
 
+    conn->connection_number_tcp = connection_number_tcp;
     memcpy(conn->public_key, n_c->public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(conn->recv_nonce, n_c->recv_nonce, crypto_box_NONCEBYTES);
     memcpy(conn->peersessionpublic_key, n_c->peersessionpublic_key, crypto_box_PUBLICKEYBYTES);
@@ -1600,12 +1601,13 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
         return -1;
 
     pthread_mutex_lock(&c->tcp_mutex);
-    conn->connection_number_tcp = new_tcp_connection_to(c->tcp_c, dht_public_key, crypt_connection_id);
+    int connection_number_tcp = new_tcp_connection_to(c->tcp_c, dht_public_key, crypt_connection_id);
     pthread_mutex_unlock(&c->tcp_mutex);
 
-    if (conn->connection_number_tcp == -1)
+    if (connection_number_tcp == -1)
         return -1;
 
+    conn->connection_number_tcp = connection_number_tcp;
     memcpy(conn->public_key, real_public_key, crypto_box_PUBLICKEYBYTES);
     random_nonce(conn->sent_nonce);
     crypto_box_keypair(conn->sessionpublic_key, conn->sessionsecret_key);
