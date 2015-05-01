@@ -113,7 +113,7 @@ static int find(const BS_LIST *list, const uint8_t *data)
  */
 static int resize(BS_LIST *list, uint32_t new_size)
 {
-    uint8_t *p;
+    void *p;
 
     p = realloc(list->data, list->element_size * new_size);
 
