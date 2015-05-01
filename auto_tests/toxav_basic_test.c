@@ -9,7 +9,6 @@
 #include <check.h>
 #include <stdlib.h>
 #include <time.h>
-#include <assert.h>
 
 #include <vpx/vpx_image.h>
 
@@ -103,7 +102,7 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
     (void) userdata;
     
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
+        ck_assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
     }
 }
 
@@ -133,13 +132,13 @@ START_TEST(test_AV_flows)
         TOX_ERR_NEW error;
         
         bootstrap = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
         
         Alice = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
         
         Bob = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
     }
     
     printf("Created 3 instances of Tox\n");
@@ -153,7 +152,7 @@ START_TEST(test_AV_flows)
     tox_self_get_address(Alice, address);
     
     
-    assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
     
     uint8_t off = 1;
     
@@ -178,10 +177,10 @@ START_TEST(test_AV_flows)
     {
         TOXAV_ERR_NEW error;
         AliceAV = toxav_new(Alice, &error);
-        assert(error == TOXAV_ERR_NEW_OK);
+        ck_assert(error == TOXAV_ERR_NEW_OK);
         
         BobAV = toxav_new(Bob, &error);
-        assert(error == TOXAV_ERR_NEW_OK);
+        ck_assert(error == TOXAV_ERR_NEW_OK);
     }
     
     toxav_callback_call(AliceAV, t_toxav_call_cb, &AliceCC);
@@ -208,7 +207,7 @@ START_TEST(test_AV_flows)
         \
         if (rc != TOXAV_ERR_CALL_OK) { \
             printf("toxav_call failed: %d\n", rc); \
-            exit(1); \
+            ck_assert(0); \
         } \
         \
         \
@@ -223,7 +222,7 @@ START_TEST(test_AV_flows)
                 \
                 if (rc != TOXAV_ERR_ANSWER_OK) { \
                     printf("toxav_answer failed: %d\n", rc); \
-                    exit(1); \
+                    ck_assert(0); \
                 } \
                 BobCC.incoming = false; \
             } else { \
@@ -236,7 +235,7 @@ START_TEST(test_AV_flows)
                     \
                     if (rc != TOXAV_ERR_CALL_CONTROL_OK) { \
                         printf("toxav_call_control failed: %d\n", rc); \
-                        exit(1); \
+                        ck_assert(0); \
                     } \
                 } \
             } \
@@ -275,7 +274,7 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
@@ -289,7 +288,7 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
                 printf("toxav_call_control failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
@@ -311,7 +310,7 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
@@ -325,7 +324,7 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
                 printf("toxav_call_control failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
@@ -349,7 +348,7 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
@@ -357,10 +356,10 @@ START_TEST(test_AV_flows)
             iterate_tox(bootstrap, Alice, Bob);
         
         /* At first try all stuff while in invalid state */
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
-        assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
+        ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
+        ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
+        ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
+        ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_HIDE_VIDEO, NULL));
         
         {
             TOXAV_ERR_ANSWER rc;
@@ -368,7 +367,7 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
@@ -376,36 +375,36 @@ START_TEST(test_AV_flows)
         
         /* Pause and Resume */
         printf("Pause and Resume\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state == TOXAV_CALL_STATE_PAUSED);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
+        ck_assert(BobCC.state == TOXAV_CALL_STATE_PAUSED);
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state & (TOXAV_CALL_STATE_SENDING_A | TOXAV_CALL_STATE_SENDING_V));
+        ck_assert(BobCC.state & (TOXAV_CALL_STATE_SENDING_A | TOXAV_CALL_STATE_SENDING_V));
         
         /* Mute/Unmute single */
         printf("Mute/Unmute single\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
+        ck_assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
+        ck_assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
         
         /* Mute/Unmute both */
         printf("Mute/Unmute both\n");
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
+        ck_assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_A);
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_HIDE_VIDEO, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_V);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
+        ck_assert(BobCC.state ^ TOXAV_CALL_STATE_RECEIVING_V);
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_AUDIO, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
-        assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO, NULL));
+        ck_assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_A);
+        ck_assert(toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_TOGGLE_HIDE_VIDEO, NULL));
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_V);
+        ck_assert(BobCC.state & TOXAV_CALL_STATE_RECEIVING_V);
         
         {
             TOXAV_ERR_CALL_CONTROL rc;
@@ -413,12 +412,12 @@ START_TEST(test_AV_flows)
             
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
                 printf("toxav_call_control failed: %d\n", rc);
-                exit(1);
+                ck_assert(0);
             }
         }
         
         iterate_tox(bootstrap, Alice, Bob);
-        assert(BobCC.state == TOXAV_CALL_STATE_END);
+        ck_assert(BobCC.state == TOXAV_CALL_STATE_END);
         
         printf("Success!\n");
     }

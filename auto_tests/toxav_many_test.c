@@ -9,9 +9,10 @@
 #include <check.h>
 #include <stdlib.h>
 #include <time.h>
-#include <assert.h>
 
 #include <vpx/vpx_image.h>
+
+#include "helpers.h"
 
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
@@ -97,7 +98,7 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
 {
     (void) userdata;
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
+        ck_assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
     }
 }
 
@@ -110,7 +111,7 @@ ToxAV* setup_av_instance(Tox* tox, CallControl *CC)
     TOXAV_ERR_NEW error;
     
     ToxAV* av = toxav_new(tox, &error);
-    assert(error == TOXAV_ERR_NEW_OK);
+    ck_assert(error == TOXAV_ERR_NEW_OK);
     
     toxav_callback_call(av, t_toxav_call_cb, CC);
     toxav_callback_call_state(av, t_toxav_call_state_cb, CC);
@@ -137,7 +138,7 @@ void* call_thread(void* pd)
         
         if (rc != TOXAV_ERR_CALL_OK) {
             printf("toxav_call failed: %d\n", rc);
-            exit(1);
+            ck_assert(0);
         }
     }
     
@@ -150,7 +151,7 @@ void* call_thread(void* pd)
         
         if (rc != TOXAV_ERR_ANSWER_OK) {
             printf("toxav_answer failed: %d\n", rc);
-            exit(1);
+            ck_assert(0);
         }
     }
     
@@ -167,7 +168,7 @@ void* call_thread(void* pd)
     memset(video_v, 0, sizeof(video_v));
     
     time_t start_time = time(NULL);
-    while(time(NULL) - start_time < 9) {
+    while(time(NULL) - start_time < 4) {
         toxav_iterate(AliceAV);
         toxav_iterate(BobAV);
         
@@ -186,11 +187,13 @@ void* call_thread(void* pd)
         
         if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
             printf("toxav_call_control failed: %d\n", rc);
-            exit(1);
+            ck_assert(0);
         }
     }
     
     c_sleep(30);
+    
+    printf ("Closing thread\n");
     pthread_exit(NULL);
 }
 
@@ -206,19 +209,19 @@ START_TEST(test_AV_three_calls)
         TOX_ERR_NEW error;
         
         bootstrap = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
         
         Alice = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
         
         Bobs[0] = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
         
         Bobs[1] = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
         
         Bobs[2] = tox_new(NULL, NULL, 0, &error);
-        assert(error == TOX_ERR_NEW_OK);
+        ck_assert(error == TOX_ERR_NEW_OK);
     }
     
     printf("Created 5 instances of Tox\n");
@@ -232,9 +235,9 @@ START_TEST(test_AV_three_calls)
     tox_self_get_address(Alice, address);
     
     
-    assert(tox_friend_add(Bobs[0], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
-    assert(tox_friend_add(Bobs[1], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
-    assert(tox_friend_add(Bobs[2], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[0], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[1], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[2], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
     
     uint8_t off = 1;
     
@@ -302,7 +305,7 @@ START_TEST(test_AV_three_calls)
     (void) pthread_detach(tids[2]);
     
     time_t start_time = time(NULL);
-    while (time(NULL) - start_time < 10) {
+    while (time(NULL) - start_time < 5) {
         tox_iterate(Alice);
         tox_iterate(Bobs[0]);
         tox_iterate(Bobs[1]);
@@ -314,6 +317,7 @@ START_TEST(test_AV_three_calls)
     (void) pthread_join(tids[1], NULL);
     (void) pthread_join(tids[2], NULL);
     
+    printf ("Killing all instances\n");
     toxav_kill(BobsAV[0]);
     toxav_kill(BobsAV[1]);
     toxav_kill(BobsAV[2]);

@@ -87,6 +87,7 @@ VCSession* vc_new(ToxAV* av, uint32_t friend_number, toxav_receive_video_frame_c
     vc->vcb.second = cb_data;
     vc->friend_number = friend_number;
     vc->peer_video_frame_piece_size = mvfpsz;
+    vc->av = av;
     
     return vc;
     
@@ -294,7 +295,7 @@ int vc_reconfigure_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint
         return -1;
     
     vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
-    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
+    if (cfg.rc_target_bitrate == (uint32_t) bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
     cfg.rc_target_bitrate = bit_rate;
@@ -315,7 +316,7 @@ int vc_reconfigure_test_encoder(VCSession* vc, int32_t bit_rate, uint16_t width,
         return -1;
     
     vpx_codec_enc_cfg_t cfg = *vc->test_encoder->config.enc;
-    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
+    if (cfg.rc_target_bitrate == (uint32_t) bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
     cfg.rc_target_bitrate = bit_rate;

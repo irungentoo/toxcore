@@ -37,7 +37,7 @@ extern "C" {
 /**
  * The type of the Tox Audio/Video subsystem object.
  */
-typedef struct toxAV ToxAV;
+typedef struct ToxAV ToxAV;
 #ifndef TOX_DEFINED
 #define TOX_DEFINED
 /**
@@ -92,8 +92,8 @@ Tox *toxav_get_tox(ToxAV *av);
 uint32_t toxav_iteration_interval(ToxAV const *av);
 /**
  * Main loop for the session. This function needs to be called in intervals of
- * toxav_iteration_interval() milliseconds. It is best called in the same loop
- * as tox_iterate.
+ * toxav_iteration_interval() milliseconds. It is best called in the separate 
+ * thread from tox_iterate.
  */
 void toxav_iterate(ToxAV *av);
 /*******************************************************************************
@@ -153,10 +153,11 @@ void toxav_callback_call(ToxAV *av, toxav_call_cb *function, void *user_data);
 typedef enum TOXAV_ERR_ANSWER {
     TOXAV_ERR_ANSWER_OK,
     /**
-     * A resource allocation error occurred while trying to create the structures
-     * required for the call.
+     * Failed to initialize codecs for call session. Note that codec initiation
+     * will fail if there is no receive callback registered for either audio or
+     * video.
      */
-    TOXAV_ERR_ANSWER_MALLOC,
+    TOXAV_ERR_ANSWER_CODEC_INITIALIZATION,
     /**
      * The friend number did not designate a valid friend.
      */
@@ -174,8 +175,8 @@ typedef enum TOXAV_ERR_ANSWER {
 /**
  * Accept an incoming call.
  *
- * If an allocation error occurs while answering a call, both participants will
- * receive TOXAV_CALL_STATE_ERROR and the call will end.
+ * If answering fails for any reason, the call will still be pending and it is
+ * possible to try and answer it later.
  *
  * @param friend_number The friend number of the friend that is calling.
  * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
@@ -217,7 +218,8 @@ typedef enum TOXAV_CALL_STATE {
      */
     TOXAV_CALL_STATE_END = 16,
     /**
-     * Set by the AV core if an error occurred on the remote end.
+     * Set by the AV core if an error occurred on the remote end. This call 
+     * state will never be triggered in combination with other call states.
      */
     TOXAV_CALL_STATE_ERROR = 32768
 } TOXAV_CALL_STATE;
@@ -266,10 +268,10 @@ typedef enum TOXAV_CALL_CONTROL {
      * Request that the friend stops sending video. Regardless of the friend's
      * compliance, this will cause the `receive_video_frame` event to stop being
      * triggered on receiving an video frame from the friend. If the video was
-     * already muted, calling this control will notify client to start sending
+     * already hidden, calling this control will notify client to start sending
      * video again.
      */
-    TOXAV_CALL_CONTROL_TOGGLE_MUTE_VIDEO,
+    TOXAV_CALL_CONTROL_TOGGLE_HIDE_VIDEO
 } TOXAV_CALL_CONTROL;
 typedef enum TOXAV_ERR_CALL_CONTROL {
     TOXAV_ERR_CALL_CONTROL_OK,
@@ -287,20 +289,11 @@ typedef enum TOXAV_ERR_CALL_CONTROL {
      */
     TOXAV_ERR_CALL_CONTROL_NOT_PAUSED,
     /**
-     * Attempted to resume a call that was paused by the other party. Also set if
-     * the client attempted to send a system-only control.
-     */
-    TOXAV_ERR_CALL_CONTROL_DENIED,
-    /**
      * The call was already paused on this client. It is valid to pause if the
      * other party paused the call. The call will resume after both parties sent
      * the RESUME control.
      */
-    TOXAV_ERR_CALL_CONTROL_ALREADY_PAUSED,
-    /**
-     * Tried to unmute a call that was not already muted.
-     */
-    TOXAV_ERR_CALL_CONTROL_NOT_MUTED
+    TOXAV_ERR_CALL_CONTROL_ALREADY_PAUSED
 } TOXAV_ERR_CALL_CONTROL;
 /**
  * Sends a call control command to a friend.
@@ -351,7 +344,12 @@ typedef void toxav_audio_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, b
  */
 void toxav_callback_audio_bit_rate_status(ToxAV *av, toxav_audio_bit_rate_status_cb *function, void *user_data);
 /**
- * Set the audio bit rate to be used in subsequent audio frames.
+ * Set the audio bit rate to be used in subsequent audio frames. If the passed 
+ * bit rate is the same as the current bit rate this function will return true 
+ * without calling a callback. If there is an active non forceful setup with the
+ * passed audio bit rate and the new set request is forceful, the bit rate is 
+ * forcefully set and the previous non forceful request is cancelled. The active
+ * non forceful setup will be canceled in favour of new non forceful setup.
  *
  * @param friend_number The friend number of the friend for which to set the
  * audio bit rate.
@@ -380,7 +378,12 @@ typedef void toxav_video_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, b
  */
 void toxav_callback_video_bit_rate_status(ToxAV *av, toxav_video_bit_rate_status_cb *function, void *user_data);
 /**
- * Set the video bit rate to be used in subsequent video frames.
+ * Set the video bit rate to be used in subsequent video frames. If the passed 
+ * bit rate is the same as the current bit rate this function will return true 
+ * without calling a callback. If there is an active non forceful setup with the
+ * passed bit rate and the new set request is forceful, the bit rate is 
+ * forcefully set and the previous non forceful request is cancelled. The active
+ * non forceful setup will be canceled in favour of new non forceful setup.
  *
  * @param friend_number The friend number of the friend for which to set the
  * video bit rate.
@@ -414,11 +417,6 @@ typedef enum TOXAV_ERR_SEND_FRAME {
      */
     TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL,
     /**
-     * No video frame had been requested through the `video_frame_request` event,
-     * but the client tried to send one, anyway.
-     */
-    TOXAV_ERR_SEND_FRAME_NOT_REQUESTED,
-    /**
      * One of the frame parameters was invalid. E.g. the resolution may be too
      * small or too large, or the audio sampling rate may be unsupported.
      */
@@ -430,8 +428,6 @@ typedef enum TOXAV_ERR_SEND_FRAME {
 } TOXAV_ERR_SEND_FRAME;
 /**
  * Send a video frame to a friend.
- *
- * This is called in response to receiving the `video_frame_request` event.
  *
  * Y - plane should be of size: height * width
  * U - plane should be of size: (height/2) * (width/2)
@@ -452,8 +448,6 @@ bool toxav_send_video_frame(ToxAV *av, uint32_t friend_number,
 /**
  * Send an audio frame to a friend.
  *
- * This is called in response to receiving the `audio_frame_request` event.
- *
  * The expected format of the PCM data is: [s1c1][s1c2][...][s2c1][s2c2][...]...
  * Meaning: sample 1 for channel 1, sample 1 for channel 2, ...
  * For mono audio, this has no meaning, every sample is subsequent. For stereo,
@@ -467,9 +461,7 @@ bool toxav_send_video_frame(ToxAV *av, uint32_t friend_number,
  * @param sample_count Number of samples in this frame. Valid numbers here are
  * ((sample rate) * (audio length) / 1000), where audio length can be
  * 2.5, 5, 10, 20, 40 or 60 millseconds.
- * @param channels Number of audio channels. Must be at least 1 for mono.
- * For voice over IP, more than 2 channels (stereo) typically doesn't make
- * sense, but up to 255 channels are supported.
+ * @param channels Number of audio channels. Supported values are 1 and 2.
  * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
  * rates are 8000, 12000, 16000, 24000, or 48000.
  */
