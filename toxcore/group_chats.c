@@ -47,9 +47,8 @@
  * broadcast_type, public key, timestamp, message_id
  */
 #define GC_BROADCAST_ENC_HEADER_SIZE (1 + HASH_ID_BYTES + TIME_STAMP_SIZE)
-
 #define MESSAGE_ID_BYTES (sizeof(uint64_t))
-#define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + MESSAGE_ID_BYTES + crypto_box_MACBYTES)
+#define MIN_GC_PACKET_SIZE (1 + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES)
 #define MAX_GC_PACKET_SIZE 65507
 
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
@@ -1734,6 +1733,8 @@ static int handle_gc_handshake_response(Messenger *m, int groupnumber, uint32_t 
     }
 }
 
+#define GC_NEW_PEER_CONNECTION_LIMIT 5
+
 /* Handles handshake request packets.
  * Peer is added to peerlist and a lossless connection is established.
  *
@@ -1754,10 +1755,15 @@ int handle_gc_handshake_request_packet(void *object, IP_Port ipp, const uint8_t 
     Messenger *m = object;
     GC_Chat* chat = get_chat_by_hash(m->group_handler, chat_id_hash);
 
-    if (!chat) {
-        fprintf(stderr, "get_chat_by_hash failed in handle_gc_handshake_request_packet\n");
+    if (!chat)
+        return -1;
+
+    if (chat->connection_O_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
+        chat->block_handshakes = true;
         return -1;
     }
+
+    ++chat->connection_O_metre;
 
     uint8_t sender_pk[ENC_PUBLIC_KEY];
     uint8_t data[GC_PLAIN_HS_REQ_PACKET_SIZE];
@@ -2535,6 +2541,23 @@ static void search_gc_announce(GC_Session *c, GC_Chat *chat)
     }
 }
 
+static void do_new_connection_cooldown(GC_Chat *chat)
+{
+    if (chat->connection_O_metre == 0)
+        return;
+
+    uint64_t tm = unix_time();
+
+    if (chat->connection_cooldown_timer < tm) {
+        chat->connection_cooldown_timer = tm;
+        --chat->connection_O_metre;
+
+        if (chat->connection_O_metre == 0) {
+            chat->block_handshakes = false;
+        }
+    }
+}
+
 #define GROUP_JOIN_ATTEMPT_INTERVAL 3
 #define GROUP_GET_NEW_NODES_INTERVAL 15
 #define GROUP_MAX_GET_NODES_ATTEMPTS 3
@@ -2561,8 +2584,8 @@ void do_gc(GC_Session *c)
             case CS_CONNECTED: {
                 ping_group(chat);
                 do_peer_connections(c->messenger, i);
+                do_new_connection_cooldown(chat);
                 search_gc_announce(c, chat);
-
                 break;
             }
 

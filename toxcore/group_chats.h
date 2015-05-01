@@ -169,6 +169,11 @@ typedef struct GC_Chat {
     uint64_t    last_sent_ping_time;
     uint64_t    announce_search_timer;
 
+    /* keeps track of frequency of new inbound connections */
+    uint8_t     connection_O_metre;
+    uint64_t    connection_cooldown_timer;
+    bool        block_handshakes;
+
     /* Holder for IP/keys received from announcement requests and loaded from saved groups */
     GC_PeerAddress addr_list[MAX_GC_PEER_ADDRS];
     uint16_t    num_addrs;
