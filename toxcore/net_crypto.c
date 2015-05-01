@@ -1439,10 +1439,10 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
 
     if (source.ip.family == AF_INET || source.ip.family == AF_INET6) {
         if (!ipport_equal(&source, &conn->ip_port)) {
-            if (!bs_list_add(&c->ip_port_list, &source, crypt_connection_id))
+            if (!bs_list_add(&c->ip_port_list, (uint8_t *)&source, crypt_connection_id))
                 return -1;
 
-            bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+            bs_list_remove(&c->ip_port_list, (uint8_t *)&conn->ip_port, crypt_connection_id);
             conn->ip_port = source;
         }
 
@@ -1658,8 +1658,8 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
                 return -1;
         }
 
-        if (bs_list_add(&c->ip_port_list, &ip_port, crypt_connection_id)) {
-            bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        if (bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
+            bs_list_remove(&c->ip_port_list, (uint8_t *)&conn->ip_port, crypt_connection_id);
             conn->ip_port = ip_port;
             conn->direct_lastrecv_time = 0;
             return 0;
@@ -1933,7 +1933,7 @@ int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(
  */
 static int crypto_id_ip_port(const Net_Crypto *c, IP_Port ip_port)
 {
-    return bs_list_find(&c->ip_port_list, &ip_port);
+    return bs_list_find(&c->ip_port_list, (uint8_t *)&ip_port);
 }
 
 #define CRYPTO_MIN_PACKET_SIZE (1 + sizeof(uint16_t) + crypto_box_MACBYTES)
@@ -2282,7 +2282,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
         kill_tcp_connection_to(c->tcp_c, conn->connection_number_tcp);
         pthread_mutex_unlock(&c->tcp_mutex);
 
-        bs_list_remove(&c->ip_port_list, &conn->ip_port, crypt_connection_id);
+        bs_list_remove(&c->ip_port_list, (uint8_t *)&conn->ip_port, crypt_connection_id);
         clear_temp_packet(c, crypt_connection_id);
         clear_buffer(&conn->send_array);
         clear_buffer(&conn->recv_array);

@@ -45,7 +45,7 @@
  *  < 0  : no match, returns index (return value is INDEX(index)) where
  *         the data should be inserted
  */
-static int find(const BS_LIST *list, const void *data)
+static int find(const BS_LIST *list, const uint8_t *data)
 {
     //should work well, but could be improved
     if (list->n == 0) {
@@ -113,7 +113,7 @@ static int find(const BS_LIST *list, const void *data)
  */
 static int resize(BS_LIST *list, uint32_t new_size)
 {
-    void *p;
+    uint8_t *p;
 
     p = realloc(list->data, list->element_size * new_size);
 
@@ -162,7 +162,7 @@ void bs_list_free(BS_LIST *list)
     free(list->ids);
 }
 
-int bs_list_find(const BS_LIST *list, const void *data)
+int bs_list_find(const BS_LIST *list, const uint8_t *data)
 {
     int r = find(list, data);
 
@@ -174,7 +174,7 @@ int bs_list_find(const BS_LIST *list, const void *data)
     return list->ids[r];
 }
 
-int bs_list_add(BS_LIST *list, const void *data, int id)
+int bs_list_add(BS_LIST *list, const uint8_t *data, int id)
 {
     //find where the new element should be inserted
     //see: return value of find()
@@ -214,7 +214,7 @@ int bs_list_add(BS_LIST *list, const void *data, int id)
     return 1;
 }
 
-int bs_list_remove(BS_LIST *list, const void *data, int id)
+int bs_list_remove(BS_LIST *list, const uint8_t *data, int id)
 {
     int i = find(list, data);
 
