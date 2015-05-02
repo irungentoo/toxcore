@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 #define min(a,b) ((a)>(b)?(b):(a))
-#define PEERCOUNT   12
+#define PEERCOUNT   30
 
 
 void do_messenger_cycle(Messenger **peers, int peercount)
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     for (i=0; i<PEERCOUNT; i++) {
         do_messenger_cycle(tox, PEERCOUNT);
         int res = gc_group_join(tox[i]->group_handler, chatid);
-        idle_n_secs(3, tox, PEERCOUNT);   // comment this out to spam invites as fast as possible
+        //idle_n_secs(1, tox, PEERCOUNT);   // comment this out to spam invites as fast as possible
 
         if (res<0)
             printf("Get nodes request failed\n");

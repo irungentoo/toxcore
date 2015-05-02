@@ -120,7 +120,7 @@ typedef int sock_t;
 #define NET_PACKET_ONION_RECV_2 54
 #define NET_PACKET_ONION_RECV_1 55
 
-#define NET_PACKET_GC_HS_REQUEST     90  /* Group chat handshake request packet ID */
+#define NET_PACKET_GC_HANDSHAKE      90  /* Group chat handshake packet ID */
 #define NET_PACKET_GC_LOSSLESS       91  /* Group chat lossless packet ID */
 #define NET_PACKET_GC_LOSSY          92  /* Group chat lossy packet ID */
 #define NET_PACKET_GCA_ANNOUNCE      93  /* Group announce announcement packet ID */
