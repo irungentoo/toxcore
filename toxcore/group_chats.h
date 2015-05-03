@@ -165,7 +165,6 @@ typedef struct GC_Chat {
     uint64_t    last_join_attempt;
     uint8_t     get_nodes_attempts;
     uint64_t    last_get_nodes_attempt;
-    uint64_t    last_peer_join_time;    /* last time a peer joined the group */
     uint64_t    last_sent_ping_time;
     uint64_t    announce_search_timer;
 

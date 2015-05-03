@@ -38,7 +38,7 @@
 #define GROUP_MAX_PADDING 8
 #define GROUP_PACKET_PADDING_LENGTH(length) (((MAX_GC_PACKET_SIZE - (length)) % GROUP_MAX_PADDING))
 
-#define GC_PLAIN_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + SIG_PUBLIC_KEY + sizeof(uint8_t))
+#define GC_PLAIN_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + SIG_PUBLIC_KEY + sizeof(uint8_t))
 #define GC_ENCRYPTED_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES\
                                      + GC_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
 
@@ -916,13 +916,6 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
     if (chat->connection_state != CS_CONNECTED)
         return -1;
 
-    uint64_t tm = unix_time();
-
-    if (chat->last_peer_join_time == tm)
-        return -1;
-
-    chat->last_peer_join_time = tm;
-
     if (chat->numpeers >= chat->maxpeers) {
         send_gc_invite_response_reject(chat, peernumber, GJ_GROUP_FULL);
         return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
@@ -931,9 +924,12 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
     if (data[0] != GC_INVITE)
         return -1;
 
+    GC_Connection *gconn = &chat->gcc[peernumber];
+    gcc_handle_ack(gconn, 1);   /* invite request is an implied handshake response ack */
+
     if (crypto_sign_verify_detached(data + SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    SIG_PK(chat->gcc[peernumber].addr.public_key)) != 0) {
+                                    SIG_PK(gconn->addr.public_key)) != 0) {
         fprintf(stderr, "handle_gc_invite_request sign_verify failed!\n");
         return -1;
     }
@@ -963,7 +959,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
         return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
     }
 
-    chat->gcc[peernumber].verified = true;
+    gconn->verified = true;
 
     return send_gc_invite_response(chat, peernumber, response, response_len);
 }
@@ -1118,6 +1114,8 @@ static int handle_gc_peer_info_request(Messenger *m, int groupnumber, uint32_t p
 
     if (chat == NULL)
         return -1;
+
+    gcc_handle_ack(&chat->gcc[peernumber], 1);   /* peer info request is an implied handshake response ack */
 
     return send_self_to_peer(c, chat, peernumber);
 }
@@ -1667,11 +1665,22 @@ static int wrap_group_handshake_packet(const uint8_t *self_pk, const uint8_t *se
  * Returns size of packet sent on success.
  * Returns -1 on failure.
  */
-static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint16_t length,
-                                    uint8_t handshake_type)
+static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t handshake_type, uint8_t request_type)
 {
     if (id_equal(chat->self_public_key, chat->gcc[peernumber].addr.public_key))
         return -1;
+
+    uint8_t data[GC_PLAIN_HS_PACKET_SIZE];
+    data[0] = handshake_type;
+    uint16_t length = sizeof(uint8_t);
+    U32_to_bytes(data + length, chat->gcc[0].public_key_hash);
+    length += HASH_ID_BYTES;
+    memcpy(data + length, chat->gcc[peernumber].session_public_key, ENC_PUBLIC_KEY);
+    length += ENC_PUBLIC_KEY;
+    memcpy(data + length, SIG_SK(chat->self_public_key), SIG_PUBLIC_KEY);
+    length += SIG_PUBLIC_KEY;
+    memcpy(data + length, &request_type, sizeof(uint8_t));
+    length += sizeof(uint8_t);
 
     uint8_t packet[GC_ENCRYPTED_HS_PACKET_SIZE];
     int enc_len = wrap_group_handshake_packet(chat->self_public_key, chat->self_secret_key,
@@ -1704,32 +1713,10 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
     if (peernumber == -1)
         return -1;
 
-    uint8_t data[GC_PLAIN_HS_PACKET_SIZE];
-    data[0] = GH_REQUEST;
-    U32_to_bytes(data + sizeof(uint8_t), chat->gcc[0].public_key_hash);
-    memcpy(data + sizeof(uint8_t) + HASH_ID_BYTES, SIG_SK(chat->self_public_key), SIG_PUBLIC_KEY);
-    memcpy(data + sizeof(uint8_t) + HASH_ID_BYTES + SIG_PUBLIC_KEY, &request_type, sizeof(uint8_t));
-
-    if (send_gc_handshake_packet(chat, peernumber, data, GC_PLAIN_HS_PACKET_SIZE, GH_REQUEST) == -1)
+    if (send_gc_handshake_packet(chat, peernumber, GH_REQUEST, request_type) == -1)
         return -1;
 
     return peernumber;
-}
-
-/* Sends a handshake response to peernumber.
- *
- * Returns size of packet sent on success.
- * Returns -1 on failure.
- */
-static int send_gc_handshake_response(GC_Chat *chat, uint32_t peernumber, uint8_t request_type)
-{
-    uint8_t data[GC_PLAIN_HS_PACKET_SIZE];
-    data[0] = GH_RESPONSE;
-    U32_to_bytes(data + sizeof(uint8_t), chat->gcc[0].public_key_hash);
-    memcpy(data + sizeof(uint8_t) + HASH_ID_BYTES, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
-    memcpy(data + sizeof(uint8_t) + HASH_ID_BYTES + SIG_PUBLIC_KEY, &request_type, sizeof(uint8_t));
-
-    return send_gc_handshake_packet(chat, peernumber, data, GC_PLAIN_HS_PACKET_SIZE, GH_RESPONSE);
 }
 
 /* Handles a handshake response packet and takes appropriate action depending on the value of request_type.
@@ -1750,11 +1737,17 @@ static int handle_gc_handshake_response(Messenger *m, int groupnumber, const uin
     if (peernumber == -1)
         return -1;
 
-    gc_send_message_ack(chat, peernumber, 1, 0);
-    ++chat->gcc[peernumber].recv_message_id;
+    GC_Connection *gconn = &chat->gcc[peernumber];
 
-    memcpy(SIG_PK(chat->gcc[peernumber].addr.public_key), data, SIG_PUBLIC_KEY);
-    uint8_t request_type = data[SIG_PUBLIC_KEY];
+    gcc_handle_ack(gconn, 1);
+    ++gconn->recv_message_id;
+
+    uint8_t sender_session_pk[ENC_PUBLIC_KEY];
+    memcpy(sender_session_pk, data, ENC_PUBLIC_KEY);
+    encrypt_precompute(sender_session_pk, gconn->session_secret_key, gconn->shared_key);
+
+    memcpy(SIG_PK(chat->gcc[peernumber].addr.public_key), data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
+    uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
 
     switch (request_type) {
         case HS_INVITE_REQUEST:
@@ -1762,6 +1755,7 @@ static int handle_gc_handshake_response(Messenger *m, int groupnumber, const uin
         case HS_PEER_INFO_EXCHANGE:
             return send_gc_peer_exchange(m->group_handler, chat, peernumber);
         default:
+            fprintf(stderr, "Warning: received invalid request type in handle_gc_handshake_response\n");
             return -1;
     }
 }
@@ -1801,13 +1795,18 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
         return -1;
     }
 
-    memcpy(SIG_PK(chat->gcc[peernumber].addr.public_key), data, SIG_PUBLIC_KEY);
-    uint8_t request_type = data[SIG_PUBLIC_KEY];
+    GC_Connection *gconn = &chat->gcc[peernumber];
 
-    gc_send_message_ack(chat, peernumber, 1, 0);
-    ++chat->gcc[peernumber].recv_message_id;
+    uint8_t sender_session_pk[ENC_PUBLIC_KEY];
+    memcpy(sender_session_pk, data, ENC_PUBLIC_KEY);
+    encrypt_precompute(sender_session_pk, gconn->session_secret_key, gconn->shared_key);
 
-    return send_gc_handshake_response(chat, peernumber, request_type);
+    memcpy(SIG_PK(gconn->addr.public_key), data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
+    uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
+
+    ++gconn->recv_message_id;
+
+    return send_gc_handshake_packet(chat, peernumber, GH_RESPONSE, request_type);
 }
 
 static int handle_gc_handshake_packet(void *object, IP_Port ipp, const uint8_t *packet, uint16_t length)
@@ -2485,17 +2484,19 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
     chat->gcc = tmp_gcc;
     chat->group = tmp_group;
 
-    if (ipp)
-        ipport_copy(&chat->gcc[peernumber].addr.ip_port, ipp);
+    GC_Connection *gconn = &chat->gcc[peernumber];
 
-    encrypt_precompute(public_key, chat->self_secret_key, chat->gcc[peernumber].shared_key);
-    memcpy(chat->gcc[peernumber].addr.public_key, public_key, ENC_PUBLIC_KEY);
-    chat->gcc[peernumber].last_rcvd_ping = unix_time();
-    chat->gcc[peernumber].time_added = unix_time();
-    chat->gcc[peernumber].public_key_hash = get_peer_key_hash(public_key);
-    chat->gcc[peernumber].send_message_id = 1;
-    chat->gcc[peernumber].send_ary_start = 1;
-    chat->gcc[peernumber].recv_message_id = 0;
+    if (ipp)
+        ipport_copy(&gconn->addr.ip_port, ipp);
+
+    crypto_box_keypair(gconn->session_public_key, gconn->session_secret_key);
+    memcpy(gconn->addr.public_key, public_key, ENC_PUBLIC_KEY);  /* we get the sig key in the handshake */
+    gconn->public_key_hash = get_peer_key_hash(public_key);
+    gconn->last_rcvd_ping = unix_time();
+    gconn->time_added = unix_time();
+    gconn->send_message_id = 1;
+    gconn->send_ary_start = 1;
+    gconn->recv_message_id = 0;
 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);

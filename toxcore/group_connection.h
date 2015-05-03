@@ -39,22 +39,25 @@ struct GC_Message_Ary {
 };
 
 typedef struct GC_Connection {
-    uint64_t send_message_id;
+    uint64_t send_message_id;   /* message_id of the next message we send to peer */
 
     uint16_t send_ary_start;   /* send_ary index of oldest item */
     struct GC_Message_Ary send_ary[GCC_BUFFER_SIZE];
 
-    uint64_t recv_message_id;
+    uint64_t recv_message_id;   /* message_id of peer's last message to us */
     struct GC_Message_Ary recv_ary[GCC_BUFFER_SIZE];
 
-    GC_PeerAddress   addr;
-    uint8_t     shared_key[crypto_box_KEYBYTES];
-    uint32_t    public_key_hash;
+    GC_PeerAddress   addr;   /* holds peer's extended real public key and ip_port */
+    uint32_t    public_key_hash;   /* hash of peer's real encryption public key */
+    uint8_t     session_public_key[ENC_PUBLIC_KEY];   /* self session public key for this peer */
+    uint8_t     session_secret_key[ENC_SECRET_KEY];   /* self session secret key for this peer */
+    uint8_t     shared_key[crypto_box_BEFORENMBYTES];  /* made with our session sk and peer's session pk */
+
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
     uint64_t    time_added;
     bool        ignore;
-    bool        confirmed;  /* true if we have successfully handshaked with this peer */
+    bool        confirmed;  /* true if this peer has given us their info */
     bool        verified;   /* true if we have validated peer's invite certificate */
 } GC_Connection;
 
