@@ -52,24 +52,6 @@ static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
     return 1;
 }
 
-static int add_online_friend(Messenger *m, int32_t friendnumber)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    ++m->numonline_friends;
-    return 0;
-}
-
-
-static int remove_online_friend(Messenger *m, int32_t friendnumber)
-{
-    if (friend_not_valid(m, friendnumber))
-        return -1;
-
-    --m->numonline_friends;
-    return 0;
-}
 /* Set the size of the friend list to numfriends.
  *
  *  return -1 if realloc fails.
@@ -398,9 +380,6 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
-
-    if (m->friendlist[friendnumber].status == FRIEND_ONLINE)
-        remove_online_friend(m, friendnumber);
 
     clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
@@ -884,10 +863,7 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
     if (is_online != was_online) {
         if (was_online) {
             break_files(m, friendnumber);
-            remove_online_friend(m, friendnumber);
             clear_receipts(m, friendnumber);
-        } else {
-            add_online_friend(m, friendnumber);
         }
 
         m->friendlist[friendnumber].status = status;
@@ -2736,12 +2712,6 @@ uint32_t count_friendlist(const Messenger *m)
     }
 
     return ret;
-}
-
-/* Return the number of online friends in the instance m. */
-uint32_t get_num_online_friends(const Messenger *m)
-{
-    return m->numonline_friends;
 }
 
 /* Copy a list of valid friend IDs into the array out_list.
