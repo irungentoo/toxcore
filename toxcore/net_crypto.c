@@ -1634,10 +1634,12 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
 
 /* Set the direct ip of the crypto connection.
  *
+ * Connected is 0 if we are not sure we are connected to that person, 1 if we are sure.
+ *
  * return -1 on failure.
  * return 0 on success.
  */
-int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, _Bool connected)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -1661,7 +1663,13 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port)
         if (bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
             bs_list_remove(&c->ip_port_list, (uint8_t *)&conn->ip_port, crypt_connection_id);
             conn->ip_port = ip_port;
-            conn->direct_lastrecv_time = 0;
+
+            if (connected) {
+                conn->direct_lastrecv_time = unix_time();
+            } else {
+                conn->direct_lastrecv_time = 0;
+            }
+
             return 0;
         }
     }

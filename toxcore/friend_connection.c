@@ -265,7 +265,7 @@ static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
         friend_new_connection(fr_c, number);
     }
 
-    set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port);
+    set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port, 1);
     friend_con->dht_ip_port = ip_port;
     friend_con->dht_ip_port_lastrecv = unix_time();
 }
@@ -458,7 +458,7 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         friend_con->crypt_connection_id = id;
 
         if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
-            set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port);
+            set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
         } else {
             friend_con->dht_ip_port = n_c->source;
             friend_con->dht_ip_port_lastrecv = unix_time();
@@ -796,7 +796,7 @@ void do_friend_connections(Friend_Connections *fr_c)
 
                 if (friend_con->dht_lock) {
                     if (friend_new_connection(fr_c, i) == 0) {
-                        set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port);
+                        set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
                         connect_to_saved_tcp_relays(fr_c, i, (MAX_FRIEND_TCP_CONNECTIONS / 2)); /* Only fill it half up. */
                     }
                 }
