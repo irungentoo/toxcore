@@ -460,7 +460,7 @@ int toxav_prepare_video_frame ( ToxAv *av, int32_t call_index, uint8_t *dest, in
         return av_ErrorInvalidState;
     }
 
-    if (cs_set_video_encoder_resolution(call->cs, input->d_w, input->d_h) < 0) {
+    if (cs_set_video_encoder_resolution(call->cs, input->w, input->h) < 0) {
         pthread_mutex_unlock(call->mutex);
         return av_ErrorSettingVideoResolution;
     }
