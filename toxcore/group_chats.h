@@ -51,6 +51,12 @@ typedef struct Messenger Messenger;
 #define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
 enum {
+    GI_PUBLIC,
+    GI_PRIVATE,
+    GI_INVALID
+} GROUP_PRIVACY_STATUS;
+
+enum {
     GC_BAN,
     GC_PROMOTE_OP,
     GC_REVOKE_OP,
@@ -146,6 +152,7 @@ typedef struct GC_Chat {
     Networking_Core *net;
     GC_GroupPeer    *group;
 
+    uint8_t     privacy_status;
     uint32_t    numpeers;
     uint16_t    maxpeers;
     int         groupnumber;
@@ -223,6 +230,7 @@ struct SAVED_GROUP {
     uint16_t  group_name_len;
     uint8_t   topic[MAX_GC_TOPIC_SIZE];
     uint16_t  topic_len;
+    uint8_t   privacy_status;
 
     uint8_t   self_public_key[EXT_PUBLIC_KEY];
     uint8_t   self_secret_key[EXT_SECRET_KEY];
@@ -378,12 +386,12 @@ void kill_groupchats(GC_Session *c);
  */
 int gc_group_load(GC_Session *c, struct SAVED_GROUP *save);
 
-/* Creates a new group and announces it
+/* Creates a new group.
  *
  * Return groupnumber on success
  * Return -1 on failure
  */
-int gc_group_add(GC_Session *c, const uint8_t *group_name, uint16_t length);
+int gc_group_add(GC_Session *c, uint8_t privacy_status, const uint8_t *group_name, uint16_t length);
 
 /* Sends an invite request to an existing group using the chat_id
  * The two keys must be either both null or both nonnull, and if the latter they'll be

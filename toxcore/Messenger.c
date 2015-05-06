@@ -2599,6 +2599,7 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             memcpy(temp.topic, c->chats[i].topic, MAX_GC_TOPIC_SIZE);
             temp.group_name_len = htons(c->chats[i].group_name_len);
             temp.topic_len = htons(c->chats[i].topic_len);
+            temp.privacy_status = c->chats[i].privacy_status;
 
             memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);

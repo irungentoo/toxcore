@@ -195,18 +195,6 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
     unsigned int m_error;
     Messenger *m = new_messenger(&m_options, &m_error);
 
-    /*if (!new_groupchats(m)) {
-        kill_messenger(m);
-
-        if (m_error == MESSENGER_ERROR_PORT) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
-        } else {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        }
-
-        return NULL;
-    }
-    */
     if (data && length && messenger_load(m, data, length) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
     } else {
@@ -219,7 +207,6 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
 void tox_kill(Tox *tox)
 {
     Messenger *m = tox;
-    //kill_groupchats(m->group_chat_object);
     kill_groupchats(m->group_handler);
     kill_messenger(m);
     logger_kill_global();
@@ -352,7 +339,6 @@ void tox_iterate(Tox *tox)
 {
     Messenger *m = tox;
     do_messenger(m);
-    //do_groupchats(m->group_chat_object);
 }
 
 void tox_self_get_address(const Tox *tox, uint8_t *address)
@@ -1355,15 +1341,18 @@ void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t
 }
 
 /* Adds a new groupchat to group chats array.
+ *
+ * privacy status must be one of TOX_GROUP_PRIVACY_STATUS.
+ *
  * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length)
+int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATUS privacy_status, const uint8_t *group_name, uint16_t length)
 {
     Messenger *m = tox;
-    return gc_group_add(m->group_handler, group_name, length);
+    return gc_group_add(m->group_handler, privacy_status, group_name, length);
 }
 
 /* Joins a groupchat using the supplied chat_id

@@ -2020,8 +2020,16 @@ uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 
-/**************** GROUPCHAT FUNCTIONS *****************/
+/**************** GROUPCHAT API *****************/
 
+
+typedef enum {
+    /* Anyone may join the group via the chat_id */
+    TOX_GP_PUBLIC,
+
+    /* A friend invite is required to join the group */
+    TOX_GP_PRIVATE
+} TOX_GROUP_PRIVACY_STATUS;
 
 /* Group roles are hierarchical where each role has a set of privileges plus
  * all the privileges of the roles below it.
@@ -2153,12 +2161,15 @@ void tox_callback_group_peerlist_update(Tox *tox, void (*function)(Tox *m, int, 
 void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t, void *), void *userdata);
 
 /* Adds a new groupchat to group chats array.
+ *
+ * privacy status must be one of TOX_GROUP_PRIVACY_STATUS.
+ *
  * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new(Tox *tox, const uint8_t *group_name, uint16_t length);
+int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATUS privacy_status, const uint8_t *group_name, uint16_t length);
 
 /* Joins a groupchat using the supplied chat_id
  *
