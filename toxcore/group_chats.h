@@ -118,6 +118,11 @@ enum {
     GM_PEER_EXIT
 } GROUP_BROADCAST_TYPE;
 
+enum {
+    HJ_PUBLIC,
+    HJ_PRIVATE
+} GROUP_HANDSHAKE_JOIN_TYPE;
+
 typedef struct GC_PeerAddress {
     uint8_t     public_key[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
@@ -174,6 +179,7 @@ typedef struct GC_Chat {
     uint64_t    last_get_nodes_attempt;
     uint64_t    last_sent_ping_time;
     uint64_t    announce_search_timer;
+    uint8_t     join_type;
 
     /* keeps track of frequency of new inbound connections */
     uint8_t     connection_O_metre;
@@ -393,9 +399,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save);
  */
 int gc_group_add(GC_Session *c, uint8_t privacy_status, const uint8_t *group_name, uint16_t length);
 
-/* Sends an invite request to an existing group using the chat_id
- * The two keys must be either both null or both nonnull, and if the latter they'll be
- * used instead of generating new ones
+/* Sends an invite request to a public group using the chat_id.
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.

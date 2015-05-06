@@ -87,6 +87,7 @@ enum {
     HS_PEER_INFO_EXCHANGE
 } GROUP_HANDSHAKE_REQUEST_TYPE;
 
+
 // for debugging
 static void print_peer(const GC_GroupPeer *peer, const GC_Connection *gconn)
 {
@@ -587,7 +588,7 @@ static int send_gc_sync_response(GC_Chat *chat, uint32_t peernumber, const uint8
 }
 
 static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
-                                     uint8_t request_type, uint8_t public);
+                                     uint8_t request_type, uint8_t join_type);
 
 static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                    uint32_t length)
@@ -647,13 +648,15 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
     for (i = 0; i < num_peers; i++) {
         if (peer_in_chat(chat, addrs[i].public_key) == -1)
             send_gc_handshake_request(m, groupnumber, addrs[i].ip_port, addrs[i].public_key,
-                                      HS_PEER_INFO_EXCHANGE, 0);
+                                      HS_PEER_INFO_EXCHANGE, chat->join_type);
     }
 
     for (i = 0; i < chat->numpeers; ++i)
         chat->gcc[i].peer_sync_timer = 0;
 
     free(addrs);
+
+    group_announce_request(c, chat);
 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
@@ -665,8 +668,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
 
     if (chat->num_addrs > 0)
         sync_gc_announced_nodes(c, chat);
-
-    group_announce_request(c, chat);
 
     if (c->self_join)
         (*c->self_join)(m, groupnumber, c->self_join_userdata);
@@ -825,7 +826,7 @@ static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat)
     for (i = 0; i < chat->num_addrs; ++i) {
         if (peer_in_chat(chat, chat->addr_list[i].public_key) == -1)
             send_gc_handshake_request(c->messenger, chat->groupnumber, chat->addr_list[i].ip_port,
-                                      chat->addr_list[i].public_key, HS_PEER_INFO_EXCHANGE, 1);
+                                      chat->addr_list[i].public_key, HS_PEER_INFO_EXCHANGE, HJ_PUBLIC);
     }
 
     return 0;
@@ -905,7 +906,6 @@ static int handle_gc_invite_response(Messenger *m, int groupnumber, uint32_t pee
     chat->gcc[peernumber].verified = true;
     chat->connection_state = CS_CONNECTED;
 
-    group_announce_request(m->group_handler, chat);
     send_gc_peer_exchange(m->group_handler, chat, peernumber);
 
     return send_gc_sync_request(chat, peernumber, 0);
@@ -1713,7 +1713,7 @@ static int wrap_group_handshake_packet(const uint8_t *self_pk, const uint8_t *se
  * Returns -1 on failure.
  */
 static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t handshake_type,
-                                    uint8_t request_type, uint8_t public)
+                                    uint8_t request_type, uint8_t join_type)
 {
     if (id_equal(chat->self_public_key, chat->gcc[peernumber].addr.public_key))
         return -1;
@@ -1729,7 +1729,7 @@ static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t 
     length += SIG_PUBLIC_KEY;
     memcpy(data + length, &request_type, sizeof(uint8_t));
     length += sizeof(uint8_t);
-    memcpy(data + length, &public, sizeof(uint8_t));
+    memcpy(data + length, &join_type, sizeof(uint8_t));
     length += sizeof(uint8_t);
 
     uint8_t packet[GC_ENCRYPTED_HS_PACKET_SIZE];
@@ -1747,15 +1747,15 @@ static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t 
 
 /* Initiates a handshake request with a peer.
  *
- * Request type should be one of GROUP_HANDSHAKE_REQUEST_TYPE.
+ * request_type should be one of GROUP_HANDSHAKE_REQUEST_TYPE.
  *
- * public should be true if we found the peer via the DHT, false in any other case.
+ * join_type should be HJ_PUBLIC if we found the group via DHT, otherwise HJ_PRIVATE.
  *
  * Returns peernumber of newly added peer on success.
  * Returns -1 on failure.
  */
 static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
-                                     uint8_t request_type, uint8_t public)
+                                     uint8_t request_type, uint8_t join_type)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
@@ -1767,7 +1767,7 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
     if (peernumber == -1)
         return -1;
 
-    if (send_gc_handshake_packet(chat, peernumber, GH_REQUEST, request_type, public) == -1)
+    if (send_gc_handshake_packet(chat, peernumber, GH_REQUEST, request_type, join_type) == -1)
         return -1;
 
     return peernumber;
@@ -1861,9 +1861,9 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
 
     memcpy(SIG_PK(gconn->addr.public_key), data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
     uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
-    uint8_t public = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY + 1];
+    uint8_t join_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY + 1];
 
-    if (public && chat->privacy_status != GI_PUBLIC) {
+    if (join_type == HJ_PUBLIC && chat->privacy_status != GI_PUBLIC) {
         gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
         return -1;
     }
@@ -2719,7 +2719,8 @@ void do_gc(GC_Session *c)
             case CS_DISCONNECTED: {
                 if (chat->num_addrs && is_timeout(chat->last_join_attempt, GROUP_JOIN_ATTEMPT_INTERVAL)) {
                     send_gc_handshake_request(c->messenger, i, chat->addr_list[chat->addrs_idx].ip_port,
-                                              chat->addr_list[chat->addrs_idx].public_key, HS_INVITE_REQUEST, 1);
+                                              chat->addr_list[chat->addrs_idx].public_key, HS_INVITE_REQUEST,
+                                              chat->join_type);
 
                     chat->last_join_attempt = unix_time();
                     chat->addrs_idx = (chat->addrs_idx + 1) % chat->num_addrs;
@@ -2883,6 +2884,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 
     chat->groupnumber = groupnumber;
     chat->numpeers = 0;
+    chat->join_type = HJ_PRIVATE;
     chat->connection_state = save->self_verified ? CS_CONNECTED : CS_DISCONNECTED;
     chat->net = m->net;
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
@@ -2919,7 +2921,8 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 
             if (save->self_verified) {
                 int peernumber = send_gc_handshake_request(c->messenger, groupnumber, save->addrs[i].ip_port,
-                                                           save->addrs[i].public_key, HS_PEER_INFO_EXCHANGE, 0);
+                                                           save->addrs[i].public_key, HS_PEER_INFO_EXCHANGE,
+                                                           chat->join_type);
                 if (peernumber != -1)
                     chat->gcc[peernumber].peer_sync_timer = tm - (GROUP_PEER_SYNC_TIMER + num);
             }
@@ -2964,6 +2967,7 @@ int gc_group_add(GC_Session *c, uint8_t privacy_status, const uint8_t *group_nam
     chat->group_name_len = length;
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->privacy_status = privacy_status;
+    chat->join_type = HJ_PRIVATE;
 
     if (make_founder_certificates(chat) == -1) {
         group_delete(c, chat);
@@ -2978,9 +2982,7 @@ int gc_group_add(GC_Session *c, uint8_t privacy_status, const uint8_t *group_nam
     return groupnumber;
 }
 
-/* Sends an invite request to an existing group using the chat_id
- * The two keys must be either both null or both nonnull, and if the latter they'll be
- * used instead of generating new ones
+/* Sends an invite request to a public group using the chat_id.
  *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
@@ -2999,6 +3001,7 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id)
 
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
+    chat->join_type = HJ_PUBLIC;
 
     if (chat->num_addrs == 0)
         group_get_nodes_request(c, chat);
@@ -3079,9 +3082,10 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
 
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
+    chat->join_type = HJ_PRIVATE;
 
     if (send_gc_handshake_request(c->messenger, groupnumber, node.ip_port, node.public_key,
-                                  HS_INVITE_REQUEST, 0) == -1)
+                                  HS_INVITE_REQUEST, chat->join_type) == -1)
         return -1;
 
     return groupnumber;

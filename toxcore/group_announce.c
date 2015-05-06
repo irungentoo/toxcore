@@ -500,8 +500,10 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_
 {
     DHT *dht = announce->dht;
 
-    if (!gca_self_announce_set(announce, chat_id, self_public_key))
-        add_gca_self_announce(announce, chat_id, self_public_key, self_secret_key);
+    if (gca_self_announce_set(announce, chat_id, self_public_key))
+        return;
+
+    add_gca_self_announce(announce, chat_id, self_public_key, self_secret_key);
 
     /* packet contains: type, chat_id, node, timestamp, signature */
     uint8_t data[1 + CHAT_ID_SIZE + sizeof(GC_Announce_Node) + TIME_STAMP_SIZE + SIGNATURE_SIZE];
@@ -921,6 +923,7 @@ static void renew_gca_self_announces(GC_Announce *announce)
 
         if (is_timeout(announce->self_announce[i].last_rcvd_ping, SELF_ANNOUNCE_TIMEOUT)) {
             announce->self_announce[i].last_rcvd_ping = unix_time();
+            announce->self_announce[i].is_set = false;
             gca_send_announce_request(announce, announce->self_announce[i].self_public_key,
                                       announce->self_announce[i].self_secret_key,
                                       announce->self_announce[i].chat_id);
