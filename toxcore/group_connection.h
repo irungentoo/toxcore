@@ -56,6 +56,7 @@ typedef struct GC_Connection {
     uint64_t    last_rcvd_ping;
     uint64_t    peer_sync_timer;
     uint64_t    time_added;
+    bool        pending_sync_request;
     bool        ignore;
     bool        confirmed;  /* true if this peer has given us their info */
     bool        verified;   /* true if we have validated peer's invite certificate */
@@ -100,7 +101,7 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum);
 
 void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber);
 
-/* called when a peer leaves the group or we want to reset the lossless connection */
+/* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn);
 
 /* called on group exit */

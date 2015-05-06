@@ -172,7 +172,7 @@ static void self_gc_connected(GC_Chat *chat)
  */
 static int group_announce_request(GC_Session *c, const GC_Chat *chat)
 {
-    if (chat->privacy_status != GP_PUBLIC)
+    if (chat->privacy_status != GI_PUBLIC)
         return 0;
 
     return gca_send_announce_request(c->announce, chat->self_public_key, chat->self_secret_key,
@@ -186,7 +186,7 @@ static int group_announce_request(GC_Session *c, const GC_Chat *chat)
  */
 static int group_get_nodes_request(GC_Session *c, const GC_Chat *chat)
 {
-    if (chat->privacy_status != GP_PUBLIC)
+    if (chat->privacy_status != GI_PUBLIC)
         return 0;
 
     return gca_send_get_nodes_request(c->announce, chat->self_public_key, chat->self_secret_key,
@@ -568,6 +568,11 @@ static int send_lossless_group_packet(GC_Chat *chat, uint32_t peernumber, const 
  */
 static int send_gc_sync_request(GC_Chat *chat, uint32_t peernumber, uint32_t num_peers)
 {
+    if (chat->gcc[peernumber].pending_sync_request)
+        return -1;
+
+    chat->gcc[peernumber].pending_sync_request = true;
+
     uint32_t length = HASH_ID_BYTES + sizeof(uint32_t);
     uint8_t data[length];
     U32_to_bytes(data, chat->gcc[0].public_key_hash);
@@ -592,6 +597,11 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
 
     if (chat == NULL)
         return -1;
+
+    if (!chat->gcc[peernumber].pending_sync_request)
+        return -1;
+
+    chat->gcc[peernumber].pending_sync_request = false;
 
     uint32_t len = 0;
 
@@ -1853,7 +1863,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
     uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
     uint8_t public = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY + 1];
 
-    if (public && chat->privacy_status != GP_PUBLIC) {
+    if (public && chat->privacy_status != GI_PUBLIC) {
         gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
         return -1;
     }

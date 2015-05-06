@@ -270,7 +270,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
     }
 }
 
-/* called when a peer leaves the group or we want to reset the lossless connection */
+/* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn)
 {
     if (!gconn)
@@ -289,10 +289,6 @@ void gcc_peer_cleanup(GC_Connection *gconn)
             gconn->recv_ary[i].data = NULL;
         }
     }
-
-    gconn->send_message_id = 1;
-    gconn->send_ary_start = 1;
-    gconn->recv_message_id = 0;
 }
 
 /* called on group exit */
