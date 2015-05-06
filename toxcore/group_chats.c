@@ -75,6 +75,7 @@ enum {
     GP_SYNC_REQUEST = 15,
     GP_SYNC_RESPONSE = 16,
     GP_FRIEND_INVITE = 17,
+    GP_HS_RESPONSE_ACK = 18
 } GROUP_PACKET_TYPE;
 
 enum {
@@ -523,7 +524,10 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, 
 static int send_lossy_group_packet(const GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length,
                                    uint8_t packet_type)
 {
-    if (length == 0)
+    if (!chat->gcc[peernumber].handshaked)
+        return -1;
+
+    if (!data || length == 0)
         return -1;
 
     if (id_equal(chat->self_public_key, chat->gcc[peernumber].addr.public_key))
@@ -543,6 +547,9 @@ static int send_lossy_group_packet(const GC_Chat *chat, uint32_t peernumber, con
 static int send_lossless_group_packet(GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length,
                                       uint8_t packet_type)
 {
+    if (!chat->gcc[peernumber].handshaked)
+        return -1;
+
     if (!data || length == 0)
         return -1;
 
@@ -760,40 +767,37 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
 /* Checks if our peerlist is out of sync with peernumber.
  * Returns true if we set a sync request.
  */
-static bool check_gc_sync_status(const GC_Chat *chat, uint32_t peernumber, uint32_t other_num_peers)
+static void check_gc_sync_status(const GC_Chat *chat, uint32_t peernumber, uint32_t other_num_peers)
 {
     if (get_gc_confirmed_numpeers(chat) >= other_num_peers) {
         chat->gcc[peernumber].peer_sync_timer = 0;
-        return false;
+        return;
     }
 
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
         if (chat->gcc[i].peer_sync_timer != 0)
-            return false;
+            return;
     }
 
     chat->gcc[peernumber].peer_sync_timer = unix_time();
-
-    return true;
 }
 
 /* Checks if we have a pending sync request with peernumber and sends a sync request
  * if the timer is up.
  */
 #define GROUP_PEER_SYNC_TIMER (GROUP_PING_INTERVAL * 2)
-static int try_gc_peer_sync(GC_Chat *chat, uint32_t peernumber)
+static void try_gc_peer_sync(GC_Chat *chat, uint32_t peernumber)
 {
     if (chat->gcc[peernumber].peer_sync_timer == 0)
-        return -1;
+        return;
 
     if (!is_timeout(chat->gcc[peernumber].peer_sync_timer, GROUP_PEER_SYNC_TIMER))
-        return -1;
+        return;
 
-    chat->gcc[peernumber].peer_sync_timer = 0;
-
-    return send_gc_sync_request(chat, peernumber, chat->numpeers);
+    if (send_gc_sync_request(chat, peernumber, chat->numpeers) != -1)
+        chat->gcc[peernumber].peer_sync_timer = 0;
 }
 
 static int send_gc_peer_info_request(GC_Chat *chat, uint32_t peernumber);
@@ -972,7 +976,6 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
         return -1;
 
     GC_Connection *gconn = &chat->gcc[peernumber];
-    gcc_handle_ack(gconn, 1);   /* invite request is an implied handshake response ack */
 
     if (crypto_sign_verify_detached(data + SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE, data,
                                     SEMI_INVITE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
@@ -1161,8 +1164,6 @@ static int handle_gc_peer_info_request(Messenger *m, int groupnumber, uint32_t p
 
     if (chat == NULL)
         return -1;
-
-    gcc_handle_ack(&chat->gcc[peernumber], 1);   /* peer info request is an implied handshake response ack */
 
     return send_self_to_peer(c, chat, peernumber);
 }
@@ -1562,6 +1563,7 @@ int gc_send_message_ack(const GC_Chat *chat, uint32_t peernumber, uint64_t read_
 /* If packet contains a non-zero request_id we try to resend its respective packet.
  * If packet contains a non-zero read_id we remove the packet from our send array.
  *
+ * Returns non-negative value on success.
  * Return -1 if error or we fail to send a packet in case of a request response.
  */
 static int handle_gc_message_ack(GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length)
@@ -1588,6 +1590,39 @@ static int handle_gc_message_ack(GC_Chat *chat, uint32_t peernumber, const uint8
     }
 
     return -1;
+}
+
+/* Sends a handshake response ack to peernumber.
+ *
+ * Returns non-negative value on success.
+ * Returns -1 on failure.
+ */
+static int gc_send_hs_response_ack(GC_Chat *chat, uint32_t peernumber)
+{
+    uint32_t length = HASH_ID_BYTES;
+    uint8_t data[length];
+    U32_to_bytes(data, chat->gcc[0].public_key_hash);
+
+    return send_lossless_group_packet(chat, peernumber, data, length, GP_HS_RESPONSE_ACK);
+}
+
+/* Handles a handshake response ack.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int handle_gc_hs_response_ack(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                     uint32_t length)
+{
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    GC_Connection *gconn = &chat->gcc[peernumber];
+    gconn->handshaked = true;
+
+    return gcc_handle_ack(gconn, 1);
 }
 
 int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore)
@@ -1793,15 +1828,19 @@ static int handle_gc_handshake_response(Messenger *m, int groupnumber, const uin
 
     GC_Connection *gconn = &chat->gcc[peernumber];
 
-    gcc_handle_ack(gconn, 1);
-    ++gconn->recv_message_id;
-
     uint8_t sender_session_pk[ENC_PUBLIC_KEY];
     memcpy(sender_session_pk, data, ENC_PUBLIC_KEY);
     encrypt_precompute(sender_session_pk, gconn->session_secret_key, gconn->shared_key);
 
     memcpy(SIG_PK(chat->gcc[peernumber].addr.public_key), data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
     uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
+
+    /* This packet is an implied handshake request acknowledgement */
+    gcc_handle_ack(gconn, 1);
+    ++gconn->recv_message_id;
+
+    gconn->handshaked = true;
+    gc_send_hs_response_ack(chat, peernumber);
 
     switch (request_type) {
         case HS_INVITE_REQUEST:
@@ -1934,6 +1973,8 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber
             return handle_gc_invite_request(m, groupnumber, peernumber, data, length);
         case GP_INVITE_RESPONSE:
             return handle_gc_invite_response(m, groupnumber, peernumber, data, length);
+        case GP_HS_RESPONSE_ACK:
+            return handle_gc_hs_response_ack(m, groupnumber, peernumber, data, length);
         default:
             fprintf(stderr, "Warning: handling invalid lossless group packet type %u\n", packet_type);
             return -1;
@@ -1976,6 +2017,9 @@ static int handle_gc_lossless_message(void *object, IP_Port ipp, const uint8_t *
     int len = unwrap_group_packet(chat->gcc[peernumber].shared_key, data, &message_id, &packet_type, packet, length);
 
     if (len <= 0)
+        return -1;
+
+    if (packet_type != GP_HS_RESPONSE_ACK && !chat->gcc[peernumber].handshaked)
         return -1;
 
     uint32_t sender_pk_hash;
@@ -2050,6 +2094,9 @@ static int handle_gc_lossy_message(void *object, IP_Port ipp, const uint8_t *pac
     int peernumber = peer_in_chat(chat, sender_pk);
 
     if (!peernumber_valid(chat, peernumber))
+        return -1;
+
+    if (!chat->gcc[peernumber].handshaked)
         return -1;
 
     uint8_t data[MAX_GC_PACKET_SIZE];
@@ -2924,7 +2971,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
                                                            save->addrs[i].public_key, HS_PEER_INFO_EXCHANGE,
                                                            chat->join_type);
                 if (peernumber != -1)
-                    chat->gcc[peernumber].peer_sync_timer = tm - (GROUP_PEER_SYNC_TIMER + num);
+                    chat->gcc[peernumber].peer_sync_timer = (tm - GROUP_PEER_SYNC_TIMER) + num;
             }
 
             ++num;

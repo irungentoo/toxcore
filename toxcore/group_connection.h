@@ -58,6 +58,7 @@ typedef struct GC_Connection {
     uint64_t    time_added;
     bool        pending_sync_request;
     bool        ignore;
+    bool        handshaked; /* true if we've successfully handshaked with this peer */
     bool        confirmed;  /* true if this peer has given us their info */
     bool        verified;   /* true if we have validated peer's invite certificate */
 } GC_Connection;
