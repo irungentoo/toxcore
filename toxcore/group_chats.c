@@ -774,7 +774,7 @@ static void check_gc_sync_status(const GC_Chat *chat, uint32_t peernumber, uint3
 /* Checks if we have a pending sync request with peernumber and sends a sync request
  * if the timer is up.
  */
-#define GROUP_PEER_SYNC_TIMER (GROUP_PING_INTERVAL * 2)
+#define GROUP_PEER_SYNC_TIMER (GC_PING_INTERVAL * 2)
 static void try_gc_peer_sync(GC_Chat *chat, uint32_t peernumber)
 {
     if (chat->gcc[peernumber].peer_sync_timer == 0)
@@ -2480,6 +2480,16 @@ static void self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer 
     peer->role = chat->group[0].role;
 }
 
+/* Returns true if we haven't received a ping from this peer after T.
+ * T depends on whether or not the peer has been confirmed.
+ */
+static bool peer_timed_out(const GC_Chat *chat, uint32_t peernumber)
+{
+    return is_timeout(chat->gcc[peernumber].last_rcvd_ping, chat->gcc[peernumber].confirmed
+                                                            ? GC_CONFIRMED_PEER_TIMEOUT
+                                                            : GC_UNCONFRIMED_PEER_TIMEOUT);
+}
+
 static void do_peer_connections(Messenger *m, int groupnumber)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2490,7 +2500,7 @@ static void do_peer_connections(Messenger *m, int groupnumber)
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
-        if (is_timeout(chat->gcc[i].last_rcvd_ping, GROUP_PEER_TIMEOUT)) {
+        if (peer_timed_out(chat, i)) {
             gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
         } else {
             try_gc_peer_sync(chat, i);
@@ -2505,7 +2515,7 @@ static void do_peer_connections(Messenger *m, int groupnumber)
 
 static void ping_group(GC_Chat *chat)
 {
-    if (!is_timeout(chat->last_sent_ping_time, GROUP_PING_INTERVAL))
+    if (!is_timeout(chat->last_sent_ping_time, GC_PING_INTERVAL))
         return;
 
     uint32_t length = HASH_ID_BYTES + sizeof(uint32_t);
@@ -2536,8 +2546,9 @@ static void search_gc_announce(GC_Session *c, GC_Chat *chat)
         return;
 
     chat->announce_search_timer = unix_time();
+    uint32_t cnumpeers = get_gc_confirmed_numpeers(chat);
 
-    if (random_int_range(chat->numpeers) == 0) {
+    if (random_int_range(cnumpeers) == 0) {
         /* DHT response/sync procedure is handled in gc_update_addrs() */
         group_get_nodes_request(c, chat);
     }
@@ -2743,12 +2754,12 @@ static int create_new_group(GC_Session *c, bool founder)
         return -1;
     }
 
-    chat->self_public_key_hash = get_peer_key_hash(chat->self_public_key);
-
     memcpy(chat->group[0].nick, m->name, m->name_length);
     chat->group[0].nick_len = m->name_length;
     chat->group[0].status = m->userstatus;
     chat->group[0].role = GR_FOUNDER ? founder : GR_USER;
+    chat->gcc[0].confirmed = true;
+    chat->self_public_key_hash = chat->gcc[0].public_key_hash;
 
     return groupnumber;
 }
@@ -2772,8 +2783,8 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 
     chat->groupnumber = groupnumber;
     chat->numpeers = 0;
-    chat->join_type = HJ_PRIVATE;
     chat->connection_state = CS_CONNECTED;
+    chat->join_type = HJ_PRIVATE;
     chat->net = m->net;
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
     chat->last_get_nodes_attempt = tm;
@@ -2799,6 +2810,8 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->group[0].nick_len = ntohs(save->self_nick_len);
     chat->group[0].role = save->self_role;
     chat->group[0].status = save->self_status;
+    chat->gcc[0].confirmed = true;
+    chat->gcc[0].time_added = tm;
 
     uint16_t i, num = 0, num_addrs = ntohs(save->num_addrs);
 
@@ -2817,7 +2830,6 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     }
 
     chat->num_addrs = num;
-
     group_announce_request(c, chat);
 
     return groupnumber;
