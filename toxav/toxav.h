@@ -192,11 +192,6 @@ bool toxav_answer(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, ui
  ******************************************************************************/
 typedef enum TOXAV_CALL_STATE {
     /**
-     * Not sending nor receiving anything, meaning, one of the sides requested pause.
-     * The call will be resumed once the side that initiated pause resumes it.
-     */
-    TOXAV_CALL_STATE_PAUSED = 0,
-    /**
      * The flag that marks that friend is sending audio.
      */
     TOXAV_CALL_STATE_SENDING_A = 1,
@@ -214,9 +209,10 @@ typedef enum TOXAV_CALL_STATE {
     TOXAV_CALL_STATE_RECEIVING_V = 8,
     /**
      * The call has finished. This is the final state after which no more state
-     * transitions can occur for the call.
+     * transitions can occur for the call. This call state will never be 
+     * triggered in combination with other call states.
      */
-    TOXAV_CALL_STATE_END = 16,
+    TOXAV_CALL_STATE_FINISHED = 16,
     /**
      * Set by the AV core if an error occurred on the remote end. This call 
      * state will never be triggered in combination with other call states.

@@ -38,7 +38,6 @@
     /*LOGGER_DEBUG("Unlocked mutex: %p", mutex);*/\
 } while(0)
 
-#define MAX_SEQU_NUM 65535
 #define MAX_RTP_SIZE 1500
 
 /**

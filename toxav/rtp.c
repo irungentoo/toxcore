@@ -285,7 +285,7 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
         return -1;
     }
     
-    session->sequnum = session->sequnum >= MAX_SEQU_NUM ? 0 : session->sequnum + 1;
+    session->sequnum ++;
     return 0;
 }
 void rtp_free_msg ( RTPMessage *msg )

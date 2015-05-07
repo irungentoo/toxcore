@@ -292,7 +292,7 @@ START_TEST(test_AV_flows)
             }
         }
         
-        while (AliceCC.state != TOXAV_CALL_STATE_END)
+        while (AliceCC.state != TOXAV_CALL_STATE_FINISHED)
             iterate_tox(bootstrap, Alice, Bob);
         
         printf("Success!\n");
@@ -329,7 +329,7 @@ START_TEST(test_AV_flows)
         }
         
         /* Alice will not receive end state */
-        while (BobCC.state != TOXAV_CALL_STATE_END)
+        while (BobCC.state != TOXAV_CALL_STATE_FINISHED)
             iterate_tox(bootstrap, Alice, Bob);
         
         printf("Success!\n");
