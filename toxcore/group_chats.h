@@ -162,11 +162,13 @@ typedef struct GC_Chat {
     uint16_t    maxpeers;
     int         groupnumber;
 
-    /* The chat_id used to join the group is the signature portion of the key */
+    /* The chat_id used to join the group is the signature portion of this key */
     uint8_t     chat_public_key[EXT_PUBLIC_KEY];
     uint32_t    chat_id_hash;   /* 32-bit hash of the chat_id */
+
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
+    uint32_t    self_public_key_hash;
 
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
