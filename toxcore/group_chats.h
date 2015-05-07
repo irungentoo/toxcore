@@ -46,10 +46,6 @@ typedef struct Messenger Messenger;
 /* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
 #define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
 
-/* CERT_TYPE + INVITEE + TIME_STAMP_SIZE + INVITEE_SIGNATURE + INVITER + TIME_STAMP_SIZE + INVITER_SIGNATURE */
-#define INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
-#define SEMI_INVITE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
-
 enum {
     GI_PUBLIC,
     GI_PRIVATE,
@@ -61,7 +57,6 @@ enum {
     GC_PROMOTE_OP,
     GC_REVOKE_OP,
     GC_SILENCE,
-    GC_INVITE,
     GC_INVALID
 } GROUP_CERTIFICATE;
 
@@ -129,12 +124,11 @@ typedef struct GC_PeerAddress {
 } GC_PeerAddress;
 
 typedef struct {
-    uint8_t     invite_certificate[INVITE_CERT_SIGNED_SIZE];
+    uint8_t     role;
     uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
     uint8_t     status;
-    uint8_t     role;
 } GC_GroupPeer;
 
 typedef struct {
@@ -242,13 +236,11 @@ struct SAVED_GROUP {
 
     uint8_t   self_public_key[EXT_PUBLIC_KEY];
     uint8_t   self_secret_key[EXT_SECRET_KEY];
-    uint8_t   self_invite_cert[INVITE_CERT_SIGNED_SIZE];
     uint8_t   self_role_cert[ROLE_CERT_SIGNED_SIZE];
     uint8_t   self_nick[MAX_GC_NICK_SIZE];
     uint16_t  self_nick_len;
     uint8_t   self_role;
     uint8_t   self_status;
-    uint8_t   self_verified;
 
     uint16_t  num_addrs;
     GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];

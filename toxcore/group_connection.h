@@ -60,7 +60,6 @@ typedef struct GC_Connection {
     bool        ignore;
     bool        handshaked; /* true if we've successfully handshaked with this peer */
     bool        confirmed;  /* true if this peer has given us their info */
-    bool        verified;   /* true if we have validated peer's invite certificate */
 } GC_Connection;
 
 
