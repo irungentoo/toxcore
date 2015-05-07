@@ -249,7 +249,6 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
         for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
             uint32_t tcp_con_num = con_to->connections[i].tcp_connection;
             uint8_t status = con_to->connections[i].status;
-            uint8_t connection_id = con_to->connections[i].connection_id;
 
             if (tcp_con_num && status == TCP_CONNECTIONS_STATUS_REGISTERED) {
                 tcp_con_num -= 1;
