@@ -304,16 +304,18 @@ void do_to_ping(PING *ping)
     if (!ip_isset(&ping->to_ping[0].ip_port.ip))
         return;
 
-    ping->last_to_ping = unix_time();
     uint32_t i;
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip))
-            return;
+            break;
 
         send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);
     }
+
+    if (i != 0)
+        ping->last_to_ping = unix_time();
 }
 
 
