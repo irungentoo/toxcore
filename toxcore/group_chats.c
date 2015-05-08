@@ -219,7 +219,7 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
     uint16_t num = 0;
 
     for (i = 1; i < chat->numpeers && i < max_addrs; ++i) {
-        if (ipport_isset(&chat->gcc[i].addr.ip_port))
+        if (chat->gcc[i].confirmed)
             addrs[num++] = chat->gcc[i].addr;
     }
 
@@ -582,6 +582,7 @@ static int send_gc_sync_response(GC_Chat *chat, uint32_t peernumber, const uint8
     return send_lossless_group_packet(chat, peernumber, data, length, GP_SYNC_RESPONSE);
 }
 
+static int send_gc_peer_exchange(const GC_Session *c, GC_Chat *chat, uint32_t peernumber);
 static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp, const uint8_t *public_key,
                                      uint8_t request_type, uint8_t join_type);
 
@@ -651,8 +652,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
 
     free(addrs);
 
-    group_announce_request(c, chat);
-
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
@@ -660,6 +659,8 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
         return 0;
 
     self_gc_connected(chat);
+    send_gc_peer_exchange(c, chat, peernumber);
+    group_announce_request(c, chat);
 
     if (chat->num_addrs > 0)
         sync_gc_announced_nodes(c, chat);
@@ -849,24 +850,20 @@ static int send_gc_invite_response(GC_Chat *chat, uint32_t peernumber, const uin
     return send_lossless_group_packet(chat, peernumber, data, length, GP_INVITE_RESPONSE);
 }
 
-static int send_gc_peer_exchange(const GC_Session *c, GC_Chat *chat, uint32_t peernumber);
-
 /* Return -1 if fail
  * Return 0 if success
  */
 static int handle_gc_invite_response(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                      uint32_t length)
 {
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
         return -1;
 
     if (chat->connection_state == CS_CONNECTED)
         return 0;
-
-    chat->connection_state = CS_CONNECTED;
-    send_gc_peer_exchange(m->group_handler, chat, peernumber);
 
     return send_gc_sync_request(chat, peernumber, 0);
 }
@@ -1718,6 +1715,9 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (!chat)
+        return -1;
+
+    if (id_equal(chat->self_public_key, public_key))
         return -1;
 
     int peernumber = peer_add(m, groupnumber, &ipp, public_key);
@@ -2783,7 +2783,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 
     chat->groupnumber = groupnumber;
     chat->numpeers = 0;
-    chat->connection_state = CS_CONNECTED;
+    chat->connection_state = CS_DISCONNECTED;
     chat->join_type = HJ_PRIVATE;
     chat->net = m->net;
     chat->maxpeers = MAX_GROUP_NUM_PEERS;
@@ -2811,26 +2811,15 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->group[0].role = save->self_role;
     chat->group[0].status = save->self_status;
     chat->gcc[0].confirmed = true;
-    chat->gcc[0].time_added = tm;
 
     uint16_t i, num = 0, num_addrs = ntohs(save->num_addrs);
 
     for (i = 0; i < num_addrs && i < MAX_GC_PEER_ADDRS; ++i) {
-        if (ipport_isset(&save->addrs[i].ip_port)) {
-            chat->addr_list[num] = save->addrs[i];
-
-            int peernumber = send_gc_handshake_request(c->messenger, groupnumber, save->addrs[i].ip_port,
-                                                       save->addrs[i].public_key, HS_PEER_INFO_EXCHANGE,
-                                                       chat->join_type);
-            if (peernumber != -1)
-                chat->gcc[peernumber].peer_sync_timer = (tm - GROUP_PEER_SYNC_TIMER) + num;
-
-            ++num;
-        }
+        if (ipport_isset(&save->addrs[i].ip_port))
+            chat->addr_list[num++] = save->addrs[i];
     }
 
     chat->num_addrs = num;
-    group_announce_request(c, chat);
 
     return groupnumber;
 }
