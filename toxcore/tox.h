@@ -426,6 +426,12 @@ struct Tox_Options {
      */
     uint16_t end_port;
 
+
+    /**
+     * The port to use for the TCP server. If 0, the tcp server is disabled.
+     */
+    uint16_t tcp_port;
+
 };
 
 

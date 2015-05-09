@@ -152,6 +152,7 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
         m_options.udp_disabled = !options->udp_enabled;
         m_options.port_range[0] = options->start_port;
         m_options.port_range[1] = options->end_port;
+        m_options.tcp_server_port = options->tcp_port;
 
         switch (options->proxy_type) {
             case TOX_PROXY_TYPE_HTTP:
@@ -1205,9 +1206,15 @@ uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 
 uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 {
-    /* TCP server not yet implemented in clients. */
-    SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
-    return 0;
+    const Messenger *m = tox;
+
+    if (m->tcp_server) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
+        return m->options.tcp_server_port;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+        return 0;
+    }
 }
 
 #include "tox_old_code.h"
