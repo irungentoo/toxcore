@@ -1,6 +1,17 @@
-##Instructions 
+#Instructions
 
-This instruction primarily tested on Linux but, may be, will work on other POSIX-compliant systems.
+- [For `systemd` users](#systemd)
+  - [Troubleshooting](#systemd-troubleshooting)
+<br>
+- [For `init.d` users](#initd)
+  - [Troubleshooting](#initd-troubleshooting)
+
+
+These instructions are primarily tested on Debian Linux, Wheezy for init.d and Jessie for systemd, but they should work on other POSIX-compliant systems too.
+
+
+<a name="systemd" />
+##For `systemd` users:
 
 For security reasons we run the daemon under its own user.
 
@@ -9,21 +20,91 @@ Create a new user by executing the following:
 sudo useradd --home-dir /var/lib/tox-bootstrapd --create-home --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
 ```
 
-Copy `tox-bootstrapd.conf` file to where `CFGFILE` variable from `tox-bootstrapd.sh` tells (for `init.d` users) or `ExecStart=` from `tox-bootstrap.service` ( for `systemd` users). By default it's `/etc/tox-bootstrapd.conf`.
+Restrict access to home directory:
+```sh
+sudo chmod 700 /var/lib/tox-bootstrapd
+```
 
-Go over everything in `tox-bootstrapd.conf`. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd.sh` (`init.d`) or `PIDFile=` from `tox-bootstrap.service` AND file in `ExecStartPre`(`systemd`).
+Copy `tox-bootstrapd.conf` file to where `ExecStart=` from `tox-bootstrapd.service` points to. By default it's `/etc/tox-bootstrapd.conf`.
+```sh
+sudo cp tox-bootstrapd.conf /etc/tox-bootstrapd.conf
+```
 
+Go over everything in the copied `tox-bootstrapd.conf` file. Set options you want and add actual working nodes to the `bootstrap_nodes` list, instead of the example ones, if you want your node to connect to the Tox network. Make sure `pid_file_path` matches `PIDFile=` from `tox-bootstrapd.service`.
+
+Copy `tox-bootstrapd.service` to `/etc/systemd/system/`:
+```sh
+sudo cp tox-bootstrapd.service /etc/systemd/system/
+```
+
+You must uncomment the next line in tox-bootstrapd.service, if you want to use port number < 1024 
+
+    #CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+and, possibly, install `libcap2-bin` or `libcap2` package, depending of your distribution.
+
+Reload systemd units definitions, enable service for automatic start (if needed), start it and verify it's running: 
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable tox-bootstrapd.service
+sudo systemctl start tox-bootstrapd.service
+sudo systemctl status tox-bootstrapd.service
+```
+
+Get your public key and check that the daemon initialized correctly:
+```sh
+sudo grep "tox-bootstrapd" /var/log/syslog
+```
+
+<a name="systemd-troubleshooting" />
+###Troubleshooting:
+
+- Check daemon's status:
+```sh
+sudo systemctl status tox-bootstrapd.service
+```
+
+- Check the log for errors:
+```sh
+sudo grep "tox-bootstrapd" /var/log/syslog
+# or
+sudo journalctl --pager-end
+# or
+sudo journalctl -f _SYSTEMD_UNIT=tox-bootstrapd.service
+```
+
+- Make sure tox-bootstrapd user has write permission for keys and pid files.
+
+- Make sure tox-bootstrapd has read permission for the config file.
+
+- Make sure tox-bootstrapd location matches its path in tox-bootstrapd.service file.
+
+
+<a name="initd" />
+##For `init.d` users
+
+For security reasons we run the daemon under its own user.
+
+Create a new user by executing the following:
+```sh
+sudo useradd --home-dir /var/lib/tox-bootstrapd --create-home --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
+```
 
 Restrict access to home directory:
 ```sh
 sudo chmod 700 /var/lib/tox-bootstrapd
 ```
 
-##For `init.d` users:
+Copy `tox-bootstrapd.conf` file to where `CFGFILE` variable from `tox-bootstrapd.sh` points to. By default it's `/etc/tox-bootstrapd.conf`.
+```sh
+sudo cp tox-bootstrapd.conf /etc/tox-bootstrapd.conf
+```
 
-Look at the variable declarations in the beginning of `tox-bootstrapd.sh` init script to see if you need to change anything for it to work for you. The default values must be fine for most users and we assume that you use those next.
+Go over everything in the copied `tox-bootstrapd.conf` file. Set options you want and add actual working nodes to the `bootstrap_nodes` list, instead of the example ones, if you want your node to connect to the Tox network. Make sure `pid_file_path` matches `PIDFILE` from `tox-bootstrapd.sh`.
 
-Copy `tox-bootstrapd.sh` init file to `/etc/init.d/tox-bootstrapd` (note the disappearance of ".sh" ending).
+Look at the variable declarations in the beginning of `tox-bootstrapd.sh` init script to see if you need to change anything for it to work on your system. The default values must be fine for most users and we assume that you use those next.
+
+Copy `tox-bootstrapd.sh` init script to `/etc/init.d/tox-bootstrapd` (note the disappearance of ".sh" ending):
 ```sh
 sudo cp tox-bootstrapd.sh /etc/init.d/tox-bootstrapd
 ```
@@ -33,18 +114,10 @@ Set permissions for the init system to run the script:
 sudo chmod 755 /etc/init.d/tox-bootstrapd
 ```
 
-Make the init system aware of the script:
+Make the init system aware of the script, start the daemon and verify it's running:
 ```sh
 sudo update-rc.d tox-bootstrapd defaults
-```
-
-Start the daemon:
-```sh
 sudo service tox-bootstrapd start
-```
-
-Verify it's running:
-```sh
 sudo service tox-bootstrapd status
 ```
 
@@ -53,56 +126,23 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-##For `systemd` users:
-
-Copy tox-bootstrap.service to /etc/systemd/system/:
-```sh
-sudo cp tox-bootstrap.service /etc/systemd/system/
-```
-
-Make sure, that path to `chown` and `mkdir` is correct in `tox-bootstrap.service` (they may be different in some distributions, by default  `/bin/chown` and `/bin/mkdir`) 
-
-You must uncomment the next line in tox-bootstrap.service, if you want to use port number <1024 
-	
-	#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-
-and, possibly, install `libcap2-bin` or `libcap2` package, depending of your distribution.
-
-
-Reload systemd units definitions, enable service for automatic start (if needed), and start it: 
-```sh
-sudo systemctl daemon-reload
-sudo systemctl enable tox-bootstrap.service
-sudo systemctl start tox-bootstrap.service
-```
+<a name="initd-troubleshooting" />
 ###Troubleshooting:
 
 - Check daemon's status:
 ```sh
-#init.d
 sudo service tox-bootstrapd status
-
-#systemd
-sudo systemctl status tox-bootstrap.service 
 ```
 
 - Check the log for errors: 
 ```sh
-#init.d
 sudo grep "tox-bootstrapd" /var/log/syslog
-
-#systemd
-sudo journalctl -f _SYSTEMD_UNIT=tox-bootstrap.service
 ```
 
-`init.d`:
 - Check that variables in the beginning of `/etc/init.d/tox-bootstrapd` are valid.
 
-
-Common:
-
-- Make sure tox-bootstrapd user has write permission for keys and pid files (in systemd pid file insured by unit definition).
+- Make sure tox-bootstrapd user has write permission for keys and pid files.
 
 - Make sure tox-bootstrapd has read permission for the config file.
 
-- Make sure tox-bootstrapd location matches its path in init scripts, if you specified non-default `--prefix`, when building. 
+- Make sure tox-bootstrapd location matches its path in the `/etc/init.d/tox-bootstrapd` init script.
