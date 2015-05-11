@@ -121,16 +121,16 @@ static GC_Chat *get_chat_by_hash(GC_Session *c, uint32_t hash)
 /* Returns the jenkins hash of a 32 byte public encryption key */
 static uint32_t get_peer_key_hash(const uint8_t *public_key)
 {
-    return jenkins_hash(public_key, ENC_PUBLIC_KEY);
+    return jenkins_one_at_a_time_hash(public_key, ENC_PUBLIC_KEY);
 }
 
-/* Returns the jenkins hash of a 32 byte chat_id */
+/* Returns the jenkins hash of a 32 byte chat_id. */
 static uint32_t get_chat_id_hash(const uint8_t *chat_id)
 {
-    return jenkins_hash(chat_id, CHAT_ID_SIZE);
+    return jenkins_one_at_a_time_hash(chat_id, CHAT_ID_SIZE);
 }
 
-/* Check if peer with public_key is in peer list.
+/* Check if peer with the encryption public key is in peer list.
  *
  * return peer number if peer is in chat.
  * return -1 if peer is not in chat.
@@ -138,10 +138,10 @@ static uint32_t get_chat_id_hash(const uint8_t *chat_id)
  */
 static int peer_in_chat(const GC_Chat *chat, const uint8_t *public_key)
 {
-    uint32_t i, h = get_peer_key_hash(public_key);
+    uint32_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
-        if (chat->gcc[i].public_key_hash == h)
+        if (memcmp(chat->gcc[i].addr.public_key, public_key, ENC_PUBLIC_KEY) == 0)
             return i;
     }
 
@@ -2535,11 +2535,10 @@ static void ping_group(GC_Chat *chat)
     chat->last_sent_ping_time = unix_time();
 }
 
-#define GROUP_SEARCH_ANNOUNCE_INTERVAL 300
-
 /* Searches the DHT for nodes belonging to the group periodically in case of a split group.
  * The search frequency is relative to the number of peers in the group.
  */
+#define GROUP_SEARCH_ANNOUNCE_INTERVAL 300
 static void search_gc_announce(GC_Session *c, GC_Chat *chat)
 {
     if (!is_timeout(chat->announce_search_timer, GROUP_SEARCH_ANNOUNCE_INTERVAL))

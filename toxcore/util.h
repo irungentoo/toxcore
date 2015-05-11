@@ -103,6 +103,6 @@ void U16_to_bytes(uint8_t *dest, uint16_t value);
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
 /* Returns a 32-bit hash of key of size len */
-uint32_t jenkins_hash(const uint8_t *key, size_t len);
+uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len);
 
 #endif /* UTIL_H */
