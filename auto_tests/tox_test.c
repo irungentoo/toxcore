@@ -809,7 +809,7 @@ loop_top:
 }
 END_TEST
 
-#define TCP_RELAY_PORT 33445
+#define TCP_RELAY_PORT 33448
 
 START_TEST(test_many_clients_tcp)
 {
@@ -833,8 +833,8 @@ START_TEST(test_many_clients_tcp)
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
-        tox_add_tcp_relay(toxes[i], "::1", TCP_RELAY_PORT, dpk, 0);
-        tox_bootstrap(toxes[i], "::1", 33445, dpk, 0);
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], "::1", TCP_RELAY_PORT, dpk, 0), "add relay error");
+        ck_assert_msg(tox_bootstrap(toxes[i], "::1", 33445, dpk, 0), "Bootstrap error");
     }
 
     {
