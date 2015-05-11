@@ -1204,7 +1204,7 @@ static void populate_path_nodes_tcp(Onion_Client *onion_c)
     unsigned int i;
 
     for (i = 0; i < num_nodes; ++i) {
-        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
+        onion_add_bs_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
     }
 }
 
