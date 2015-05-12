@@ -113,7 +113,7 @@ int callback_capabilites(void* toxav_inst, MSICall* call);
 
 bool audio_bit_rate_invalid(uint32_t bit_rate);
 bool video_bit_rate_invalid(uint32_t bit_rate);
-void invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state);
+bool invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state);
 ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error);
 ToxAVCall* call_get(ToxAV* av, uint32_t friend_number);
 ToxAVCall* call_remove(ToxAVCall* call);
@@ -998,6 +998,11 @@ int callback_invite(void* toxav_inst, MSICall* call)
     if (toxav->ccb.first)
         toxav->ccb.first(toxav, call->friend_number, call->peer_capabilities & msi_CapSAudio, 
                          call->peer_capabilities & msi_CapSVideo, toxav->ccb.second);
+    else {
+        /* No handler to capture the call request, send failure */
+        pthread_mutex_unlock(toxav->mutex);
+        return -1;
+    }
     
     pthread_mutex_unlock(toxav->mutex);
     return 0;
@@ -1018,12 +1023,15 @@ int callback_start(void* toxav_inst, MSICall* call)
     
     if (!call_prepare_transmission(av_call)) {
         callback_error(toxav_inst, call);
-        call_remove(av_call);
         pthread_mutex_unlock(toxav->mutex);
         return -1;
     }
     
-    invoke_call_state(toxav, call->friend_number, call->peer_capabilities);
+    if (!invoke_call_state(toxav, call->friend_number, call->peer_capabilities)) {
+        callback_error(toxav_inst, call);
+        pthread_mutex_unlock(toxav->mutex);
+        return -1;
+    }
     
     pthread_mutex_unlock(toxav->mutex);
     return 0;
@@ -1083,10 +1091,13 @@ bool video_bit_rate_invalid(uint32_t bit_rate)
     return false;
 }
 
-void invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state)
+bool invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state)
 {
     if (av->scb.first)
         av->scb.first(av, friend_number, state, av->scb.second);
+    else
+        return false;
+    return true;
 }
 
 ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error)

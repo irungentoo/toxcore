@@ -205,6 +205,12 @@ int msi_hangup ( MSICall* call )
     MSISession* session = call->session;
     pthread_mutex_lock(session->mutex);
     
+    if ( call->state == msi_CallInactive ) {
+        LOGGER_ERROR("Call is in invalid state!");
+        pthread_mutex_unlock(session->mutex);
+        return -1;
+    }
+    
     MSIMessage msg;
     msg_init(&msg, requ_pop);
     

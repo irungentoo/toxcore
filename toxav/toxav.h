@@ -190,7 +190,7 @@ bool toxav_answer(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, ui
  * :: Call state graph
  *
  ******************************************************************************/
-typedef enum TOXAV_CALL_STATE {
+enum TOXAV_CALL_STATE {
     /**
      * The flag that marks that friend is sending audio.
      */
@@ -218,7 +218,7 @@ typedef enum TOXAV_CALL_STATE {
      * state will never be triggered in combination with other call states.
      */
     TOXAV_CALL_STATE_ERROR = 32768
-} TOXAV_CALL_STATE;
+};
 /**
  * The function type for the `call_state` callback.
  *
