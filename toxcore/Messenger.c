@@ -2216,6 +2216,11 @@ void do_friends(Messenger *m)
                     m->friendlist[i].user_istyping_sent = 1;
             }
 
+            if (m->friendlist[i].tcp_server_sent == 0) {
+                if (send_user_tcp_server(m, i))
+                    m->friendlist[i].tcp_server_sent = 1;
+            }
+
             check_friend_tcp_udp(m, i);
             do_receipts(m, i);
             do_reqchunk_filecb(m, i);
@@ -2285,6 +2290,15 @@ void do_messenger(Messenger *m)
 
         for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
             add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
+        }
+
+        if (m->tcp_server) {
+            /* Add self tcp server. */
+            IP_Port local_ip_port;
+            local_ip_port.port = m->options.tcp_server_port;
+            local_ip_port.ip.family = AF_INET;
+            local_ip_port.ip.ip4.uint32 = INADDR_LOOPBACK;
+            add_tcp_relay(m->net_crypto, local_ip_port, m->tcp_server->public_key);
         }
     }
 

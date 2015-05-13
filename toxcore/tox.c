@@ -239,31 +239,6 @@ void tox_get_savedata(const Tox *tox, uint8_t *data)
     }
 }
 
-static int address_to_ip(Messenger *m, const char *address, IP_Port *ip_port, IP_Port *ip_port_v4)
-{
-    if (!addr_parse_ip(address, &ip_port->ip)) {
-        if (m->options.udp_disabled) { /* Disable DNS when udp is disabled. */
-            return -1;
-        }
-
-        IP *ip_extra = NULL;
-        ip_init(&ip_port->ip, m->options.ipv6enabled);
-
-        if (m->options.ipv6enabled && ip_port_v4) {
-            /* setup for getting BOTH: an IPv6 AND an IPv4 address */
-            ip_port->ip.family = AF_UNSPEC;
-            ip_reset(&ip_port_v4->ip);
-            ip_extra = &ip_port_v4->ip;
-        }
-
-        if (!addr_resolve(address, &ip_port->ip, ip_extra)) {
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
 bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error)
 {
     if (!address || !public_key) {
