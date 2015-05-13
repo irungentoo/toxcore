@@ -13,6 +13,7 @@
 #include "../toxcore/TCP_client.h"
 
 #include "../toxcore/util.h"
+#include "../toxcore/network.h"
 
 #include "helpers.h"
 
@@ -32,10 +33,11 @@ START_TEST(test_basic)
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(TOX_ENABLE_IPV6_DEFAULT, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
 
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     struct sockaddr_in6 addr6_loopback = {0};
     addr6_loopback.sin6_family = AF_INET6;
@@ -43,6 +45,15 @@ START_TEST(test_basic)
     addr6_loopback.sin6_addr = in6addr_loopback;
 
     int ret = connect(sock, (struct sockaddr *)&addr6_loopback, sizeof(addr6_loopback));
+#else
+    sock_t sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    struct sockaddr_in addr4_loopback = {0};
+    addr4_loopback.sin_family = AF_INET;
+    addr4_loopback.sin_port = htons(ports[rand() % NUM_PORTS]);
+    addr4_loopback.sin_addr.s_addr = htonl(0x7F000001);
+
+    int ret = connect(sock, (struct sockaddr *)&addr4_loopback, sizeof(addr4_loopback));
+#endif
     ck_assert_msg(ret == 0, "Failed to connect to TCP relay server");
 
     uint8_t f_public_key[crypto_box_PUBLICKEYBYTES];
@@ -133,6 +144,7 @@ struct sec_TCP_con {
 struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 {
     struct sec_TCP_con *sec_c = malloc(sizeof(struct sec_TCP_con));
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     struct sockaddr_in6 addr6_loopback = {0};
     addr6_loopback.sin6_family = AF_INET6;
@@ -140,6 +152,15 @@ struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     addr6_loopback.sin6_addr = in6addr_loopback;
 
     int ret = connect(sock, (struct sockaddr *)&addr6_loopback, sizeof(addr6_loopback));
+#else
+    sock_t sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    struct sockaddr_in addr4_loopback = {0};
+    addr4_loopback.sin_family = AF_INET;
+    addr4_loopback.sin_port = htons(ports[rand() % NUM_PORTS]);
+    addr4_loopback.sin_addr.s_addr = htonl(0x7F000001);
+
+    int ret = connect(sock, (struct sockaddr *)&addr4_loopback, sizeof(addr4_loopback));
+#endif
     ck_assert_msg(ret == 0, "Failed to connect to TCP relay server");
 
     uint8_t f_secret_key[crypto_box_SECRETKEYBYTES];
@@ -214,7 +235,7 @@ START_TEST(test_some)
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(TOX_ENABLE_IPV6_DEFAULT, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
 
@@ -380,7 +401,7 @@ START_TEST(test_client)
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(TOX_ENABLE_IPV6_DEFAULT, NUM_PORTS, ports, self_public_key, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
 
@@ -390,8 +411,13 @@ START_TEST(test_client)
     IP_Port ip_port_tcp_s;
 
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
+#else
+    ip_port_tcp_s.ip.family = AF_INET;
+    ip_port_tcp_s.ip.ip4.in_addr.s_addr = htonl(0x7F000001);
+#endif
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn);
@@ -488,8 +514,13 @@ START_TEST(test_client_invalid)
     IP_Port ip_port_tcp_s;
 
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
+#else
+    ip_port_tcp_s.ip.family = AF_INET;
+    ip_port_tcp_s.ip.ip4.in_addr.s_addr = htonl(0x7F000001);
+#endif
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn);
