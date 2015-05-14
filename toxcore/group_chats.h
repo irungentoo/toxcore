@@ -133,11 +133,6 @@ typedef struct {
 } GC_GroupPeer;
 
 typedef struct {
-    uint8_t     public_key[EXT_PUBLIC_KEY];
-    uint8_t     role;
-} GC_ChatOps;
-
-typedef struct {
     uint32_t    maxpeers;
     uint16_t    group_name_len;
     uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];

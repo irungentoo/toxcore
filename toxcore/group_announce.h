@@ -33,7 +33,7 @@ typedef struct GC_Session GC_Session;
 #define MAX_GCA_SENT_NODES 4
 
 typedef struct {
-    uint8_t public_key[EXT_PUBLIC_KEY];
+    uint8_t public_key[ENC_PUBLIC_KEY];
     IP_Port ip_port;
 } GC_Announce_Node;
 
@@ -43,8 +43,8 @@ struct GC_AnnounceRequest {
     uint64_t req_id;
     uint64_t time_added;
     uint8_t chat_id[CHAT_ID_SIZE];
-    uint8_t self_public_key[EXT_PUBLIC_KEY];
-    uint8_t self_secret_key[EXT_SECRET_KEY];
+    uint8_t self_public_key[ENC_PUBLIC_KEY];
+    uint8_t self_secret_key[ENC_SECRET_KEY];
     bool ready;
 };
 
@@ -64,8 +64,8 @@ struct GC_AnnouncedNode {
  */
 struct GC_AnnouncedSelf {
     uint8_t chat_id[CHAT_ID_SIZE];
-    uint8_t self_public_key[EXT_PUBLIC_KEY];
-    uint8_t self_secret_key[EXT_SECRET_KEY];
+    uint8_t self_public_key[ENC_PUBLIC_KEY];
+    uint8_t self_secret_key[ENC_SECRET_KEY];
     uint64_t last_rcvd_ping;
     bool is_set;
 };
@@ -81,28 +81,32 @@ struct GC_Announce {
 /* Initiate the process of announcing a group to the DHT.
  *
  * announce: announce object we're operating on.
- * self_public_key: extended (encryption+signature) public key of the node announcing its presence
- * self_secret_key: signing private key of the same node
- * chat_id: chat_id of the group (public signature key)
+ * self_public_key: encryption public key of the peer announcing its presence
+ * self_secret_key: encryption secret key of the peer
+ * chat_id: chat_id of the group (chat public signature key)
  *
- * return -1 in case of error
- * return number of send packets otherwise
+ * Returns a non-negative value on success.
+ * Returns -1 on failure.
  */
 int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_key,
                               const uint8_t *self_secret_key, const uint8_t *chat_id);
 
-/* Sends an announcement packet to the node specified as public_key with ipp */
+/* Creates a DHT request for nodes that hold announcements for chat_id.
+ *
+ * Returns a non-negative value on success.
+ * Returns -1 on failure.
+ */
 int gca_send_get_nodes_request(GC_Announce *announce, const uint8_t *self_public_key,
                                const uint8_t *self_secret_key, const uint8_t *chat_id);
 
-/* Retrieve nodes with chat_id.
+/* Retrieves nodes for chat_id (nodes must already be obtained via gca_send_announce_request).
  *
  * returns 0 if no nodes found or request in progress.
  * returns the number of nodes otherwise.
  */
 size_t gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
 
-/* Do some periodic work, currently removes expired announcements */
+/* Main group announce loop: Pings nodes and checks timeouts. */
 void do_gca(GC_Announce *announce);
 
 /* Removes peer with public_key in chat_id's group from requests list */
@@ -113,6 +117,7 @@ void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id);
 
 GC_Announce *new_gca(DHT *dht);
 
+/* Called when associated Messenger object is killed. */
 void kill_gca(GC_Announce *announce);
 
 /* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)

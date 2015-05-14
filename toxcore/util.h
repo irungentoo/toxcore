@@ -58,9 +58,6 @@ int is_timeout(uint64_t timestamp, uint64_t timeout);
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
 
-/* compares two extended public keys */
-bool ext_pk_equal(const uint8_t *dest, const uint8_t *src);
-
 /* compares two group chat_id's */
 bool chat_id_equal(const uint8_t *dest, const uint8_t *src);
 

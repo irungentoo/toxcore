@@ -63,11 +63,6 @@ bool id_equal(const uint8_t *dest, const uint8_t *src)
     return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
 }
 
-bool ext_pk_equal(const uint8_t *dest, const uint8_t *src)
-{
-    return memcmp(dest, src, EXT_PUBLIC_KEY) == 0;
-}
-
 bool chat_id_equal(const uint8_t *dest, const uint8_t *src)
 {
     return memcmp(dest, src, CHAT_ID_SIZE) == 0;

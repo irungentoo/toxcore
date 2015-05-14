@@ -49,23 +49,6 @@ void create_extended_keypair(uint8_t *pk, uint8_t *sk)
     crypto_sign_ed25519_sk_to_curve25519(sk, sk + ENC_SECRET_KEY);
 }
 
-/* Sign input data
- * Add a timestamp and signature at the end of the data
- *
- * Return -1 if fail, 0 if success
- */
-int sign_data(const uint8_t *data, uint32_t length, const uint8_t *ext_secret_key, uint8_t *output)
-{
-    memcpy(output, data, length);
-    U64_to_bytes(output + length, unix_time());
-    uint32_t mlen = length + sizeof(uint64_t);
-
-    if (crypto_sign_detached(output + mlen, NULL, output, mlen, SIG_SK(ext_secret_key)) != 0)
-        return -1;
-
-    return 0;
-}
-
 /* Use this instead of memcmp; not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */

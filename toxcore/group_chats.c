@@ -261,7 +261,7 @@ void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
 
     for (i = 0; i < chat->num_addrs; ++i) {
         ipport_copy(&chat->addr_list[i].ip_port, &nodes[i].ip_port);
-        memcpy(chat->addr_list[i].public_key, nodes[i].public_key, EXT_PUBLIC_KEY);
+        memcpy(chat->addr_list[i].public_key, nodes[i].public_key, ENC_PUBLIC_KEY);
     }
 
     /* If we're already connected this is part of the DHT sync procedure */
@@ -1827,9 +1827,7 @@ static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t 
 }
 
 /* Initiates a handshake request with a peer.
- *
  * request_type should be one of GROUP_HANDSHAKE_REQUEST_TYPE.
- *
  * join_type should be HJ_PUBLIC if we found the group via DHT, otherwise HJ_PRIVATE.
  *
  * Returns peernumber of newly added peer on success.
@@ -1948,9 +1946,11 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
 
     uint8_t sender_session_pk[ENC_PUBLIC_KEY];
     memcpy(sender_session_pk, data, ENC_PUBLIC_KEY);
+
     encrypt_precompute(sender_session_pk, gconn->session_secret_key, gconn->shared_key);
 
     memcpy(SIG_PK(gconn->addr.public_key), data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
+
     uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
     uint8_t join_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY + 1];
 
@@ -2380,7 +2380,7 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
      * Note: Attempts to circumvent certficiates by modifying this code
      * will not have any effect on other peers in the group.
      */
-    if (ext_pk_equal(target_pk, chat->self_public_key)) {
+    if (memcmp(target_pk, chat->self_public_key, EXT_PUBLIC_KEY) == 0) {
         if (chat->group[0].role == GR_FOUNDER)
             return -1;
 
