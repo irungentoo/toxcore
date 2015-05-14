@@ -44,7 +44,7 @@
 /* Size of the client_id in bytes. */
 #define CLIENT_ID_SIZE ENC_PUBLIC_KEY // For consistency
 
-/* Use asserts wisely, since real siganture size might vary if libsodium changes it */
+/* Maximum size of a signature (may be smaller) */
 #define SIGNATURE_SIZE crypto_sign_BYTES
 
 /* Maximum number of clients stored per friend. */

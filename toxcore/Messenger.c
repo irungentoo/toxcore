@@ -2593,12 +2593,21 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             struct SAVED_GROUP temp;
             memset(&temp, 0, sizeof(struct SAVED_GROUP));
 
+            temp.group_name_len = htons(c->chats[i].shared_state.group_name_len);
+            memcpy(temp.group_name, c->chats[i].shared_state.group_name, MAX_GC_GROUP_NAME_SIZE);
+            temp.privacy_state = c->chats[i].shared_state.privacy_state;
+            temp.maxpeers = htons(c->chats[i].shared_state.maxpeers);
+            temp.passwd_len = htons(c->chats[i].shared_state.passwd_len);
+            memcpy(temp.passwd, c->chats[i].shared_state.passwd, MAX_GC_PASSWD_SIZE);
+            memcpy(temp.sstate_signature, c->chats[i].shared_state_sig, SIGNATURE_SIZE);
+
             memcpy(temp.chat_public_key, c->chats[i].chat_public_key, EXT_PUBLIC_KEY);
-            memcpy(temp.group_name, c->chats[i].group_name, MAX_GC_GROUP_NAME_SIZE);
-            memcpy(temp.topic, c->chats[i].topic, MAX_GC_TOPIC_SIZE);
-            temp.group_name_len = htons(c->chats[i].group_name_len);
+            memcpy(temp.chat_secret_key, c->chats[i].chat_secret_key, EXT_SECRET_KEY);  /* empty for non-founders */
             temp.topic_len = htons(c->chats[i].topic_len);
-            temp.privacy_status = c->chats[i].privacy_status;
+            memcpy(temp.topic, c->chats[i].topic, MAX_GC_TOPIC_SIZE);
+
+            uint16_t num_addrs = gc_copy_peer_addrs(&c->chats[i], temp.addrs, GROUP_SAVE_MAX_PEERS);
+            temp.num_addrs = htons(num_addrs);
 
             memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);
@@ -2607,9 +2616,6 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             temp.self_nick_len = htons(c->chats[i].group[0].nick_len);
             temp.self_role = c->chats[i].group[0].role;
             temp.self_status = c->chats[i].group[0].status;
-
-            uint16_t num_addrs = gc_copy_peer_addrs(&c->chats[i], temp.addrs, GROUP_SAVE_MAX_PEERS);
-            temp.num_addrs = htons(num_addrs);
 
             memcpy(data + num * sizeof(struct SAVED_GROUP), &temp, sizeof(struct SAVED_GROUP));
             num++;

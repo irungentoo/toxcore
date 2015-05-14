@@ -31,13 +31,15 @@ typedef struct Messenger Messenger;
 
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define HASH_ID_BYTES (sizeof(uint32_t))
+
 #define MAX_GC_NICK_SIZE 128
 #define MAX_GC_TOPIC_SIZE 512
 #define MAX_GC_GROUP_NAME_SIZE 48
 #define MAX_GC_MESSAGE_SIZE 1368
 #define MAX_GC_PART_MESSAGE_SIZE 128
-#define MAX_GROUP_NUM_PEERS 1000   // temporary?
 #define MAX_GC_PEER_ADDRS 30
+#define MAX_GC_PASSWD_SIZE 32
+
 #define GC_PING_INTERVAL 30
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
 #define GC_UNCONFRIMED_PEER_TIMEOUT (GC_PING_INTERVAL)
@@ -49,7 +51,7 @@ enum {
     GI_PUBLIC,
     GI_PRIVATE,
     GI_INVALID
-} GROUP_PRIVACY_STATUS;
+} GROUP_PRIVACY_STATE;
 
 enum {
     GC_BAN,
@@ -135,28 +137,32 @@ typedef struct {
     uint8_t     role;
 } GC_ChatOps;
 
-/* For founder needs */
 typedef struct {
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
-    uint8_t     chat_secret_key[EXT_SECRET_KEY];
-    uint64_t    creation_time;
-    GC_ChatOps  *ops;
-} GC_ChatCredentials;
+    uint32_t    maxpeers;
+    uint16_t    group_name_len;
+    uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
+    uint8_t     privacy_state;   /* GI_PUBLIC (uses DHT) or GI_PRIVATE (invite only) */
+    uint16_t    passwd_len;
+    uint8_t     passwd[MAX_GC_PASSWD_SIZE];
+} GC_SharedState;
 
 typedef struct GC_Announce GC_Announce;
 typedef struct GC_Connection GC_Connection;
 
 typedef struct GC_Chat {
     Networking_Core *net;
-    GC_GroupPeer    *group;
 
-    uint8_t     privacy_status;
+    GC_GroupPeer    *group;
+    GC_Connection   *gcc;
+
+    GC_SharedState  shared_state;
+    uint8_t     shared_state_sig[SIGNATURE_SIZE];   /* Signed by founder using the chat secret key */
+
     uint32_t    numpeers;
-    uint16_t    maxpeers;
     int         groupnumber;
 
-    /* The chat_id used to join the group is the signature portion of this key */
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];  /* the chat_id is the sig portion */
+    uint8_t     chat_secret_key[EXT_SECRET_KEY];  /* only used by the founder */
     uint32_t    chat_id_hash;   /* 32-bit hash of the chat_id */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
@@ -165,8 +171,6 @@ typedef struct GC_Chat {
 
     uint8_t     topic[MAX_GC_TOPIC_SIZE];
     uint16_t    topic_len;
-    uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
-    uint16_t    group_name_len;
 
     uint8_t     connection_state;
     uint64_t    last_join_attempt;
@@ -174,7 +178,7 @@ typedef struct GC_Chat {
     uint64_t    last_get_nodes_attempt;
     uint64_t    last_sent_ping_time;
     uint64_t    announce_search_timer;
-    uint8_t     join_type;
+    uint8_t     join_type;   /* How we joined the group */
 
     /* keeps track of frequency of new inbound connections */
     uint8_t     connection_O_metre;
@@ -185,9 +189,6 @@ typedef struct GC_Chat {
     GC_PeerAddress addr_list[MAX_GC_PEER_ADDRS];
     uint16_t    num_addrs;
     uint16_t    addrs_idx;
-
-    GC_ChatCredentials *credentials;
-    GC_Connection      *gcc;
 } GC_Chat;
 
 typedef struct GC_Session {
@@ -226,13 +227,24 @@ typedef struct GC_Session {
 #define GROUP_SAVE_MAX_PEERS MAX_GC_PEER_ADDRS
 
 struct SAVED_GROUP {
-    uint8_t   chat_public_key[EXT_PUBLIC_KEY];
-    uint8_t   group_name[MAX_GC_GROUP_NAME_SIZE];
+    /* Group shared state */
     uint16_t  group_name_len;
-    uint8_t   topic[MAX_GC_TOPIC_SIZE];
-    uint16_t  topic_len;
-    uint8_t   privacy_status;
+    uint8_t   group_name[MAX_GC_GROUP_NAME_SIZE];
+    uint8_t   privacy_state;
+    uint16_t  maxpeers;
+    uint16_t  passwd_len;
+    uint8_t   passwd[MAX_GC_PASSWD_SIZE];
+    uint8_t   sstate_signature[SIGNATURE_SIZE];
 
+    /* Other group info */
+    uint8_t   chat_public_key[EXT_PUBLIC_KEY];
+    uint8_t   chat_secret_key[EXT_SECRET_KEY];
+    uint16_t  topic_len;
+    uint8_t   topic[MAX_GC_TOPIC_SIZE];
+    uint16_t  num_addrs;
+    GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];
+
+    /* self info */
     uint8_t   self_public_key[EXT_PUBLIC_KEY];
     uint8_t   self_secret_key[EXT_SECRET_KEY];
     uint8_t   self_role_cert[ROLE_CERT_SIGNED_SIZE];
@@ -240,9 +252,6 @@ struct SAVED_GROUP {
     uint16_t  self_nick_len;
     uint8_t   self_role;
     uint8_t   self_status;
-
-    uint16_t  num_addrs;
-    GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];
 };
 
 /* Return -1 if fail
@@ -390,7 +399,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save);
  * Return groupnumber on success
  * Return -1 on failure
  */
-int gc_group_add(GC_Session *c, uint8_t privacy_status, const uint8_t *group_name, uint16_t length);
+int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name, uint16_t length);
 
 /* Sends an invite request to a public group using the chat_id.
  *
