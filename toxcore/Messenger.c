@@ -2216,11 +2216,6 @@ void do_friends(Messenger *m)
                     m->friendlist[i].user_istyping_sent = 1;
             }
 
-            if (m->friendlist[i].tcp_server_sent == 0) {
-                if (send_user_tcp_server(m, i))
-                    m->friendlist[i].tcp_server_sent = 1;
-            }
-
             check_friend_tcp_udp(m, i);
             do_receipts(m, i);
             do_reqchunk_filecb(m, i);
