@@ -274,16 +274,16 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore);
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
 
- /* Return topic length. */
+ /* Copies topic to topicbuffer and returns the topic length. */
 int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
 
- /* Return topic length. */
+ /* Returns topic length. */
 uint16_t gc_get_topic_size(const GC_Chat *chat);
 
-/* Returns group_name length */
+/* Copies group name to groupname and returns the group_name length */
 int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
 
-/* Returns group_name length */
+/* Returns group name length */
 uint16_t gc_get_group_name_size(const GC_Chat *chat);
 
 /* Return 0 if success
@@ -292,7 +292,7 @@ uint16_t gc_get_group_name_size(const GC_Chat *chat);
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
-/* Return nick length */
+/* Copies your own nick to nick and returns nick length */
 uint16_t gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
 
 /* Return your own nick length */
@@ -304,8 +304,10 @@ uint8_t gc_get_self_role(const GC_Chat *chat);
 /* Return your own status */
 uint8_t gc_get_self_status(const GC_Chat *chat);
 
-/* Return -1 on error.
- * Return nick length if success
+/* Copies peernumber's nick to namebuffer.
+ *
+ * Returns nick length on success.
+ * Returns -1 on failure.
  */
 int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
 
