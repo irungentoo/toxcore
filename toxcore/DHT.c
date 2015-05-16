@@ -146,7 +146,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
  */
 void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
 {
-    return get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
+    get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
@@ -154,7 +154,7 @@ void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *clien
  */
 void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
 {
-    return get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, client_id);
+    get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, client_id);
 }
 
 void to_net_family(IP *ip)

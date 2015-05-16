@@ -346,6 +346,13 @@ int set_socket_nonblock(sock_t sock);
  */
 int set_socket_nosigpipe(sock_t sock);
 
+/* Enable SO_REUSEADDR on socket.
+ *
+ * return 1 on success
+ * return 0 on failure
+ */
+int set_socket_reuseaddr(sock_t sock);
+
 /* Set socket to dual (IPv4 + IPv6 socket)
  *
  * return 1 on success
@@ -375,7 +382,7 @@ void networking_poll(Networking_Core *net);
  * return Networking_Core object if no problems
  * return NULL if there are problems.
  *
- * If error is non NULL it is set to 0 if no issues, 1 if bind failed, 2 if other.
+ * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
 Networking_Core *new_networking(IP ip, uint16_t port);
 Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);

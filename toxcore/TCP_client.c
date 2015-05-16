@@ -87,7 +87,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_con
     const int written = snprintf((char *)TCP_conn->last_packet, MAX_PACKET_SIZE, "%s%s:%hu%s%s:%hu%s", one, ip, port, two,
                                  ip, port, three);
 
-    if (written < 0) {
+    if (written < 0 || MAX_PACKET_SIZE < written) {
         return 0;
     }
 
@@ -344,6 +344,18 @@ static _Bool add_priority(TCP_Client_Connection *con, const uint8_t *packet, uin
 
     con->priority_queue_end = new;
     return 1;
+}
+
+static void wipe_priority_list(TCP_Client_Connection *con)
+{
+    TCP_Priority_List *p = con->priority_queue_start;
+
+    while (p) {
+        TCP_Priority_List *pp = p;
+        p = p->next;
+        free(pp);
+    }
+
 }
 
 /* return 1 on success.
@@ -948,6 +960,7 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
     if (TCP_connection == NULL)
         return;
 
+    wipe_priority_list(TCP_connection);
     kill_sock(TCP_connection->sock);
     memset(TCP_connection, 0, sizeof(TCP_Client_Connection));
     free(TCP_connection);

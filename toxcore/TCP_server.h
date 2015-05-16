@@ -85,7 +85,7 @@ typedef struct TCP_Priority_List TCP_Priority_List;
 struct TCP_Priority_List {
     TCP_Priority_List *next;
     uint16_t size, sent;
-    uint8_t data[0];
+    uint8_t data[];
 };
 
 typedef struct TCP_Secure_Connection {

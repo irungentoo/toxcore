@@ -36,6 +36,7 @@
 #define GROUPCHAT_CALLBACK_INDEX 1
 
 #define PACKET_ID_ALIVE 16
+#define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_FRIEND_REQUESTS 18
 
 /* Interval between the sending of ping packets. */
@@ -46,6 +47,14 @@
 
 /* Time before friend is removed from the DHT after last hearing about him. */
 #define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT
+
+#define FRIEND_MAX_STORED_TCP_RELAYS (MAX_FRIEND_TCP_CONNECTIONS * 4)
+
+/* Max number of tcp relays sent to friends */
+#define MAX_SHARED_RELAYS (RECOMMENDED_FRIEND_TCP_CONNECTIONS)
+
+/* Interval between the sending of tcp relay information */
+#define SHARE_RELAYS_INTERVAL (5 * 60)
 
 
 enum {
@@ -61,12 +70,13 @@ typedef struct {
     uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
     uint16_t dht_lock;
     IP_Port dht_ip_port;
-    uint64_t dht_ping_lastrecv, dht_ip_port_lastrecv;
+    uint64_t dht_pk_lastrecv, dht_ip_port_lastrecv;
 
     int onion_friendnum;
     int crypt_connection_id;
 
     uint64_t ping_lastrecv, ping_lastsent;
+    uint64_t share_relays_lastsent;
 
     struct {
         int (*status_callback)(void *object, int id, uint8_t status);
@@ -83,6 +93,9 @@ typedef struct {
     } callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
 
     uint16_t lock_count;
+
+    Node_format tcp_relays[FRIEND_MAX_STORED_TCP_RELAYS];
+    uint16_t tcp_relay_counter;
 } Friend_Conn;
 
 
@@ -96,6 +109,8 @@ typedef struct {
 
     int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len);
     void *fr_request_object;
+
+    uint64_t last_LANdiscovery;
 } Friend_Connections;
 
 /* return friendcon_id corresponding to the real public key on success.
@@ -126,6 +141,13 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
 /* Set temp dht key for connection.
  */
 void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk);
+
+/* Add a TCP relay associated to the friend.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
 
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.

@@ -27,7 +27,6 @@
 #define MESSENGER_H
 
 #include "friend_requests.h"
-#include "LAN_discovery.h"
 #include "friend_connection.h"
 #include "group_chats.h"
 #include "group_announce.h"
@@ -43,8 +42,7 @@ enum {
     MESSAGE_ACTION
 };
 
-/* NOTE: Packet ids below 20 must never be used. */
-#define PACKET_ID_SHARE_RELAYS 23
+/* NOTE: Packet ids below 24 must never be used. */
 #define PACKET_ID_ONLINE 24
 #define PACKET_ID_OFFLINE 25
 #define PACKET_ID_NICKNAME 48
@@ -59,9 +57,6 @@ enum {
 #define PACKET_ID_FILE_DATA 82
 #define PACKET_ID_INVITE_GROUPCHAT 96
 #define PACKET_ID_ONLINE_PACKET 97
-
-/* Max number of tcp relays sent to friends */
-#define MAX_SHARED_RELAYS 16
 
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
@@ -108,13 +103,11 @@ enum {
 /* Default start timeout in seconds between friend requests. */
 #define FRIENDREQUEST_TIMEOUT 5;
 
-/* Interval between the sending of tcp relay information */
-#define FRIEND_SHARE_RELAYS_INTERVAL (5 * 60)
-
 enum {
     CONNECTION_NONE,
     CONNECTION_TCP,
-    CONNECTION_UDP
+    CONNECTION_UDP,
+    CONNECTION_UNKNOWN
 };
 
 /* USERSTATUS -
@@ -197,7 +190,6 @@ typedef struct {
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
     uint64_t last_seen_time;
-    uint64_t share_relays_lastsent;
     uint8_t last_connection_udp_tcp;
     struct File_Transfers file_sending[MAX_CONCURRENT_FILE_PIPES];
     unsigned int num_sending_files;
@@ -236,10 +228,6 @@ struct Messenger {
 
     Friend *friendlist;
     uint32_t numfriends;
-
-    uint32_t numonline_friends;
-
-    uint64_t last_LANdiscovery;
 
     GC_Session *group_handler;
     GC_Announce *group_announce;
@@ -785,9 +773,6 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length);
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */
 uint32_t count_friendlist(const Messenger *m);
-
-/* Return the number of online friends in the instance m. */
-uint32_t get_num_online_friends(const Messenger *m);
 
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.

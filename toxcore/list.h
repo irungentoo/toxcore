@@ -34,7 +34,7 @@ typedef struct {
     uint32_t n; //number of elements
     uint32_t capacity; //number of elements memory is allocated for
     uint32_t element_size; //size of the elements
-    void *data; //array of elements
+    uint8_t *data; //array of elements
     int *ids; //array of element ids
 } BS_LIST;
 
@@ -56,7 +56,7 @@ void bs_list_free(BS_LIST *list);
  *  >= 0 : id associated with data
  *  -1   : failure
  */
-int bs_list_find(const BS_LIST *list, const void *data);
+int bs_list_find(const BS_LIST *list, const uint8_t *data);
 
 /* Add an element with associated id to the list
  *
@@ -64,7 +64,7 @@ int bs_list_find(const BS_LIST *list, const void *data);
  *  1 : success
  *  0 : failure (data already in list)
  */
-int bs_list_add(BS_LIST *list, const void *data, int id);
+int bs_list_add(BS_LIST *list, const uint8_t *data, int id);
 
 /* Remove element from the list
  *
@@ -72,7 +72,7 @@ int bs_list_add(BS_LIST *list, const void *data, int id);
  *  1 : success
  *  0 : failure (element not found or id does not match)
  */
-int bs_list_remove(BS_LIST *list, const void *data, int id);
+int bs_list_remove(BS_LIST *list, const uint8_t *data, int id);
 
 /* Removes the memory overhead
  *

@@ -35,8 +35,8 @@
 #define SEND_2 ONION_SEND_2
 #define SEND_1 ONION_SEND_1
 
-/* Change symmetric keys every hour to make paths expire eventually. */
-#define KEY_REFRESH_INTERVAL (60 * 60)
+/* Change symmetric keys every 2 hours to make paths expire eventually. */
+#define KEY_REFRESH_INTERVAL (2 * 60 * 60)
 static void change_symmetric_key(Onion *onion)
 {
     if (is_timeout(onion->timestamp, KEY_REFRESH_INTERVAL)) {
@@ -104,7 +104,7 @@ static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data
 
 /* Create a new onion path.
  *
- * Create a new onion path out of nodes (nodes is a list of 3 nodes)
+ * Create a new onion path out of nodes (nodes is a list of ONION_PATH_LENGTH nodes)
  *
  * new_path must be an empty memory location of atleast Onion_Path size.
  *
@@ -148,7 +148,7 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
  */
 int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_Path *path)
 {
-    if (num_nodes < 3)
+    if (num_nodes < ONION_PATH_LENGTH)
         return -1;
 
     nodes[0].ip_port = path->ip_port1;

@@ -46,10 +46,10 @@
  */
 void create_extended_keypair(uint8_t *pk, uint8_t *sk);
 
-/* Use this instead of memcmp; not vulnerable to timing attacks.
+/* compare 2 public keys of length crypto_box_PUBLICKEYBYTES, not vulnerable to timing attacks.
    returns 0 if both mem locations of length are equal,
    return -1 if they are not. */
-int crypto_cmp(const uint8_t *mem1, const uint8_t *mem2, size_t length);
+int public_key_cmp(const uint8_t *pk1, const uint8_t *pk2);
 
 /*  return a random number.
  *

@@ -78,8 +78,6 @@ typedef struct  {
     uint64_t ping_response_id;
     uint64_t ping_request_id;
 
-    void *net_crypto_pointer;
-    uint32_t net_crypto_location;
     struct {
         uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
         uint8_t public_key[crypto_box_PUBLICKEYBYTES];
@@ -96,6 +94,10 @@ typedef struct  {
 
     int (*onion_callback)(void *object, const uint8_t *data, uint16_t length);
     void *onion_callback_object;
+
+    /* Can be used by user. */
+    void *custom_object;
+    uint32_t custom_uint;
 } TCP_Client_Connection;
 
 /* Create new TCP connection to ip_port/public_key
