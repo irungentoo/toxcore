@@ -936,7 +936,7 @@ static int send_request_packet(Net_Crypto *c, int crypt_connection_id)
  * return -1 on failure.
  * return number of packets sent on success.
  */
-static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint16_t max_num)
+static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32_t max_num)
 {
     if (max_num == 0)
         return -1;
@@ -2094,10 +2094,14 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->last_packets_left_set = temp_time;
             }
 
-            int ret = send_requested_packets(c, i, conn->packets_left);
+            int ret = send_requested_packets(c, i, ~0);
 
             if (ret != -1) {
-                conn->packets_left -= ret;
+                if (ret < conn->packets_left) {
+                    conn->packets_left -= ret;
+                } else {
+                    conn->packets_left = 0;
+                }
             }
 
             if (conn->packet_send_rate > CRYPTO_PACKET_MIN_RATE * 1.5) {
