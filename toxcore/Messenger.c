@@ -2200,7 +2200,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
         }
 
         case PACKET_ID_INVITE_GROUPCHAT: {
-            if (data_length < 1 + EXT_PUBLIC_KEY)
+            if (data_length <= 1 + CHAT_ID_SIZE)
                 break;
 
             if (m->group_invite)

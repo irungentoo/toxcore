@@ -497,13 +497,15 @@ static int unwrap_group_packet(const uint8_t *shared_key, uint8_t *data, uint64_
         return -1;
     }
 
+    int min_plain_len = message_id != NULL ? 1 + MESSAGE_ID_BYTES : 1;
+
     /* remove padding */
     uint8_t *real_plain = plain;
     while (real_plain[0] == 0) {
         ++real_plain;
         --plain_len;
 
-        if (plain_len == 0)
+        if (plain_len < min_plain_len)
             return -1;
     }
 
@@ -1095,7 +1097,7 @@ int gc_set_self_status(GC_Chat *chat, uint8_t status_type)
 static int handle_bc_change_status(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                    uint32_t length)
 {
-    if (length == 0)
+    if (length != sizeof(uint8_t))
         return -1;
 
     GC_Session *c = m->group_handler;
