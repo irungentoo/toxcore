@@ -676,6 +676,8 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
     uint32_t i, n = 1;
     uint32_t requested = 0;
 
+    uint64_t temp_time = current_time_monotonic();
+
     for (i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
         if (length == 0)
             break;
@@ -684,7 +686,11 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
 
         if (n == data[0]) {
             if (send_array->buffer[num]) {
-                send_array->buffer[num]->sent = 0;
+                uint64_t sent_time = send_array->buffer[num]->sent_time;
+
+                if ((sent_time + DEFAULT_PING_CONNECTION) < temp_time) {
+                    send_array->buffer[num]->sent_time = 0;
+                }
             }
 
             ++data;
@@ -788,12 +794,12 @@ static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)
         uint8_t send_failed = 0;
 
         if (ret == 1) {
-            if (!dt->sent) {
+            if (!dt->sent_time) {
                 if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
                                             dt->length) != 0) {
                     send_failed = 1;
                 } else {
-                    dt->sent = 1;
+                    dt->sent_time = 1;
                 }
             }
         }
@@ -831,7 +837,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     }
 
     Packet_Data dt;
-    dt.sent = 0;
+    dt.sent_time = 0;
     dt.length = length;
     memcpy(dt.data, data, length);
     pthread_mutex_lock(&conn->mutex);
@@ -849,7 +855,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         Packet_Data *dt1 = NULL;
 
         if (get_data_pointer(&conn->send_array, &dt1, packet_num) == 1)
-            dt1->sent = 1;
+            dt1->sent_time = 1;
     } else {
         conn->maximum_speed_reached = 1;
         LOGGER_ERROR("send_data_packet failed\n");
@@ -946,6 +952,7 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
     if (conn == 0)
         return -1;
 
+    uint64_t temp_time = current_time_monotonic();
     uint32_t i, num_sent = 0, array_size = num_packets_array(&conn->send_array);
 
     for (i = 0; i < array_size; ++i) {
@@ -959,13 +966,13 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
             continue;
         }
 
-        if (dt->sent) {
+        if (dt->sent_time) {
             continue;
         }
 
         if (send_data_packet_helper(c, crypt_connection_id, conn->recv_array.buffer_start, packet_num, dt->data,
                                     dt->length) == 0) {
-            dt->sent = 1;
+            dt->sent_time = temp_time;
             ++num_sent;
         }
 
