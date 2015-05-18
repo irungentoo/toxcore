@@ -82,8 +82,11 @@
    at the dT defined in net_crypto.c */
 #define CONGESTION_QUEUE_ARRAY_SIZE 24
 
+/* Connection ping in ms. TODO: calculate it per connection. */
+#define DEFAULT_PING_CONNECTION 50
+
 typedef struct {
-    _Bool sent;
+    uint64_t sent_time;
     uint16_t length;
     uint8_t data[MAX_CRYPTO_DATA_SIZE];
 } Packet_Data;
@@ -146,6 +149,7 @@ typedef struct {
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
     uint32_t packets_sent;
+    uint64_t last_congestion_event;
 
     /* TCP_connection connection_number */
     unsigned int connection_number_tcp;
