@@ -158,17 +158,12 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
     if (!friend_con)
         return -1;
 
-    /* Local ip means that they are hosting a TCP relay. */
-    if (Local_ip(ip_port.ip)) {
+    /* Local ip and same pk means that they are hosting a TCP relay. */
+    if (Local_ip(ip_port.ip) && memcmp(friend_con->dht_temp_pk, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
         if (friend_con->dht_ip_port.ip.family != 0) {
             ip_port.ip = friend_con->dht_ip_port.ip;
         } else {
-            if (memcmp(friend_con->dht_temp_pk, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
-                friend_con->hosting_tcp_relay = 0;
-                return 0;
-            } else {
-                return -1;
-            }
+            friend_con->hosting_tcp_relay = 0;
         }
     }
 
