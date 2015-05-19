@@ -510,20 +510,18 @@ static uint8_t candidates_create_new(const Assoc *assoc, hash_t hash, const uint
 
 static void client_id_self_update(Assoc *assoc)
 {
-    if (assoc->self_hash || !assoc->self_client_id)
+    if (assoc->self_hash)
         return;
 
-    if (!assoc->self_hash) {
-        size_t i, sum = 0;
+    size_t i, sum = 0;
 
-        for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++)
-            sum |= assoc->self_client_id[i];
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++)
+        sum |= assoc->self_client_id[i];
 
-        if (!sum)
-            return;
+    if (!sum)
+        return;
 
-        assoc->self_hash = id_hash(assoc, assoc->self_client_id);
-    }
+    assoc->self_hash = id_hash(assoc, assoc->self_client_id);
 
     LOGGER_DEBUG("id is now set, purging cache of self-references");
 
@@ -532,7 +530,7 @@ static void client_id_self_update(Assoc *assoc)
      */
     bucket_t b_id = candidates_id_bucket(assoc, assoc->self_client_id);
     candidates_bucket *cnd_bckt = &assoc->candidates[b_id];
-    size_t i, pos = assoc->self_hash % assoc->candidates_bucket_size;
+    size_t pos = assoc->self_hash % assoc->candidates_bucket_size;
 
     for (i = 0; i < HASH_COLLIDE_COUNT; pos = hash_collide(assoc, pos), i++) {
         Client_entry *entry = &cnd_bckt->list[pos];
