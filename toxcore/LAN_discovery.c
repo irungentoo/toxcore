@@ -227,17 +227,42 @@ static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
     return ip;
 }
 
-/*  return 0 if ip is a LAN ip.
- *  return -1 if it is not.
- */
-int LAN_ip(IP ip)
+/* Is IP a local ip or not. */
+_Bool Local_ip(IP ip)
 {
     if (ip.family == AF_INET) {
         IP4 ip4 = ip.ip4;
 
         /* Loopback. */
         if (ip4.uint8[0] == 127)
-            return 0;
+            return 1;
+    } else {
+        /* embedded IPv4-in-IPv6 */
+        if (IPV6_IPV4_IN_V6(ip.ip6)) {
+            IP ip4;
+            ip4.family = AF_INET;
+            ip4.ip4.uint32 = ip.ip6.uint32[3];
+            return Local_ip(ip4);
+        }
+
+        /* localhost in IPv6 (::1) */
+        if (ip.ip6.uint64[0] == 0 && ip.ip6.uint32[2] == 0 && ip.ip6.uint32[3] == htonl(1))
+            return 1;
+    }
+
+    return 0;
+}
+
+/*  return 0 if ip is a LAN ip.
+ *  return -1 if it is not.
+ */
+int LAN_ip(IP ip)
+{
+    if (Local_ip(ip))
+        return 0;
+
+    if (ip.family == AF_INET) {
+        IP4 ip4 = ip.ip4;
 
         /* 10.0.0.0 to 10.255.255.255 range. */
         if (ip4.uint8[0] == 10)
@@ -276,10 +301,6 @@ int LAN_ip(IP ip)
             ip4.ip4.uint32 = ip.ip6.uint32[3];
             return LAN_ip(ip4);
         }
-
-        /* localhost in IPv6 (::1) */
-        if (ip.ip6.uint64[0] == 0 && ip.ip6.uint32[2] == 0 && ip.ip6.uint32[3] == htonl(1))
-            return 0;
     }
 
     return -1;
