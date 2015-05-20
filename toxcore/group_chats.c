@@ -174,6 +174,26 @@ static void self_gc_connected(GC_Chat *chat)
     chat->gcc[0].time_added = unix_time();
 }
 
+/* Sets the password for the group (locally only).
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int set_gc_password(GC_Chat *chat, const uint8_t *passwd, uint16_t length)
+{
+    if (passwd == NULL)
+        return -1;
+
+    if (length == 0 || length > MAX_GC_PASSWD_SIZE)
+        return -1;
+
+    chat->shared_state.passwd_len = length;
+    memcpy(chat->shared_state.passwd, passwd, length);
+
+    return 0;
+}
+
+
 /* Sends an announce request to the DHT if group is public.
  *
  * Returns non-negative value on success.
@@ -891,7 +911,8 @@ static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat)
     return 0;
 }
 
-/* Send invite request to peernumber.
+/* Send invite request to peernumber. Invite packet contains your nick and the group password.
+ * If no group password is necessary the password field will be ignored by the invitee.
  *
  * Return -1 if fail
  * Return 0 if success
@@ -905,6 +926,8 @@ static int send_gc_invite_request(GC_Chat *chat, uint32_t peernumber)
     length += sizeof(uint16_t);
     memcpy(data + length, chat->group[0].nick, chat->group[0].nick_len);
     length += chat->group[0].nick_len;
+    memcpy(data + length, chat->shared_state.passwd, MAX_GC_PASSWD_SIZE);
+    length += MAX_GC_PASSWD_SIZE;
 
     return send_lossless_group_packet(chat, peernumber, data, length, GP_INVITE_REQUEST);
 }
@@ -976,13 +999,18 @@ static int send_gc_invite_response_reject(GC_Chat *chat, uint32_t peernumber, ui
     return send_lossy_group_packet(chat, peernumber, data, length, GP_INVITE_RESPONSE_REJECT);
 }
 
-/* Return -1 if fail
- * Return 0 if success
+/* Handles an invite request.
+ *
+ * Verifies that the invitee's nick is not already taken, and that the correct password has
+ * been supplied if the group is password protected.
+ *
+ * Returns non-negative value on success.
+ * Returns -1 on failure.
  */
 int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                              uint32_t length)
 {
-    if (length <= sizeof(uint16_t))
+    if (length <= sizeof(uint16_t) + MAX_GC_PASSWD_SIZE)
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -994,9 +1022,11 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
     if (chat->connection_state != CS_CONNECTED)
         return -1;
 
+    uint8_t invite_error = GJ_INVITE_FAILED;
+
     if (chat->numpeers >= chat->shared_state.maxpeers) {
-        send_gc_invite_response_reject(chat, peernumber, GJ_GROUP_FULL);
-        return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
+        invite_error = GJ_GROUP_FULL;
+        goto failed_invite;
     }
 
     GC_Connection *gconn = &chat->gcc[peernumber];
@@ -1006,17 +1036,36 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
     nick_len = MIN(nick_len, MAX_GC_NICK_SIZE);
 
     if (length - sizeof(uint16_t) < nick_len)
-        return -1;
+        goto failed_invite;
 
     uint8_t nick[MAX_GC_NICK_SIZE];
     memcpy(nick, data + sizeof(uint16_t), nick_len);
 
     if (get_nick_peernumber(chat, nick, nick_len) != -1) {
-        send_gc_invite_response_reject(chat, peernumber, GJ_NICK_TAKEN);
-        return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
+        invite_error = GJ_NICK_TAKEN;
+        goto failed_invite;
+    }
+
+    if (length - sizeof(uint16_t) - nick_len < MAX_GC_PASSWD_SIZE)
+        goto failed_invite;
+
+    if (chat->shared_state.passwd_len > 0) {
+        uint8_t passwd[MAX_GC_PASSWD_SIZE];
+        memcpy(passwd, data, MAX_GC_PASSWD_SIZE);
+
+        if (memcmp(chat->shared_state.passwd, passwd, chat->shared_state.passwd_len) != 0) {
+            invite_error = GJ_INVALID_PASSWORD;
+            goto failed_invite;
+        }
     }
 
     return send_gc_invite_response(chat, peernumber);
+
+failed_invite:
+    send_gc_invite_response_reject(chat, peernumber, invite_error);
+    gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
+
+    return -1;
 }
 
 /* Creates packet with broadcast header info followed by data of length.
@@ -1147,6 +1196,13 @@ void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest)
     memcpy(dest, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 }
 
+/* Sends self peer info to peernumber. If the group is password protected the request
+ * will contain the group password, which the recipient will validate in the respective
+ * group message handler.
+ *
+ * Returns non-negative value on success.
+ * Returns -1 on failure.
+ */
 static int send_self_to_peer(const GC_Session *c, GC_Chat *chat, uint32_t peernumber)
 {
     GC_GroupPeer self;
@@ -1155,7 +1211,8 @@ static int send_self_to_peer(const GC_Session *c, GC_Chat *chat, uint32_t peernu
     uint8_t data[MAX_GC_PACKET_SIZE];
     U32_to_bytes(data, chat->self_public_key_hash);
     memcpy(data + HASH_ID_BYTES, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
-    uint32_t length = HASH_ID_BYTES + SIG_PUBLIC_KEY;
+    memcpy(data + HASH_ID_BYTES + SIG_PUBLIC_KEY, chat->shared_state.passwd, MAX_GC_PASSWD_SIZE);
+    uint32_t length = HASH_ID_BYTES + SIG_PUBLIC_KEY + MAX_GC_PASSWD_SIZE;
 
     int packed_len = pack_gc_peer(data + length, sizeof(data) - length, &self);
     length += packed_len;
@@ -1200,10 +1257,16 @@ static int send_gc_peer_exchange(const GC_Session *c, GC_Chat *chat, uint32_t pe
     return (ret1 == -1 || ret2 == -1) ? -1 : 0;
 }
 
+/* Updates peernumber's info and sets them as a confirmed peer.
+ * If the group is password protected the password must first be validated.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
 static int handle_gc_peer_info_response(Messenger *m, int groupnumber, uint32_t peernumber,
                                         const uint8_t *data, uint32_t length)
 {
-    if (length <= SIG_PUBLIC_KEY)
+    if (length <= SIG_PUBLIC_KEY + MAX_GC_PASSWD_SIZE)
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -1218,10 +1281,19 @@ static int handle_gc_peer_info_response(Messenger *m, int groupnumber, uint32_t 
     if (chat->numpeers >= chat->shared_state.maxpeers)
         return -1;
 
+    if (chat->shared_state.passwd_len > 0) {
+        uint8_t passwd[MAX_GC_PASSWD_SIZE];
+        memcpy(passwd, data + SIG_PUBLIC_KEY, sizeof(passwd));
+
+        if (memcmp(chat->shared_state.passwd, passwd, chat->shared_state.passwd_len) != 0)
+            return -1;
+    }
+
     GC_GroupPeer peer;
     memset(&peer, 0, sizeof(GC_GroupPeer));
 
-    if (unpack_gc_peer(&peer, data + SIG_PUBLIC_KEY, length - SIG_PUBLIC_KEY) == -1) {
+    if (unpack_gc_peer(&peer, data + SIG_PUBLIC_KEY + MAX_GC_PASSWD_SIZE,
+                       length - SIG_PUBLIC_KEY - MAX_GC_PASSWD_SIZE) == -1) {
         fprintf(stderr, "unpack_gc_peer failed in handle_gc_peer_info_request\n");
         return -1;
     }
@@ -3047,10 +3119,12 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
 
 /* Sends an invite request to a public group using the chat_id.
  *
+ * If the group is not password protected passwd should be set to NULL and passwd_len should be 0.
+ *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id)
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len)
 {
     int groupnumber = create_new_group(c, false);
 
@@ -3065,6 +3139,9 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id)
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->join_type = HJ_PUBLIC;
+
+    if (passwd != NULL && set_gc_password(chat, passwd, passwd_len) == -1)
+        return -1;
 
     if (chat->num_addrs == 0)
         group_get_nodes_request(c, chat);
@@ -3124,7 +3201,7 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
+int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const uint8_t *passwd, uint16_t passwd_len)
 {
     uint8_t chat_id[CHAT_ID_SIZE];
     memcpy(chat_id, data, CHAT_ID_SIZE);
@@ -3146,6 +3223,9 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length)
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->join_type = HJ_PRIVATE;
+
+    if (passwd != NULL && set_gc_password(chat, passwd, passwd_len) == -1)
+        return -1;
 
     if (send_gc_handshake_request(c->messenger, groupnumber, node.ip_port, node.public_key,
                                   HS_INVITE_REQUEST, chat->join_type) == -1)

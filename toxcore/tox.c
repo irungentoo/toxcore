@@ -1342,28 +1342,30 @@ void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t
 
 /* Adds a new groupchat to group chats array.
  *
- * privacy status must be one of TOX_GROUP_PRIVACY_STATUS.
+ * privacy status must be one of TOX_GROUP_PRIVACY_STATE.
  *
  * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATUS privacy_status, const uint8_t *group_name, uint16_t length)
+int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, uint16_t length)
 {
     Messenger *m = tox;
-    return gc_group_add(m->group_handler, privacy_status, group_name, length);
+    return gc_group_add(m->group_handler, privacy_state, group_name, length);
 }
 
-/* Joins a groupchat using the supplied chat_id
+/* Joins a groupchat using the supplied chat_id.
+ *
+ * passwd should be set to NULL if the group is not password protected.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new_join(Tox *tox, const uint8_t *chat_id)
+int tox_group_new_join(Tox *tox, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len)
 {
     Messenger *m = tox;
-    return gc_group_join(m->group_handler, chat_id);
+    return gc_group_join(m->group_handler, chat_id, passwd, passwd_len);
 }
 
 /* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, certificates
@@ -1384,15 +1386,17 @@ int tox_group_reconnect(Tox *tox, int groupnumber)
 }
 
 /* Joins a group using the invite data received in a friend's group invite.
- * Length should be TOX_GROUP_INVITE_DATA_SIZE.
+ *
+ * If the group is not password protected passwd should be set to NULL and passwd_len should be 0.
  *
  * Return groupnumber on success.
  * Return -1 on failure
  */
-int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length)
+int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length, const uint8_t *passwd,
+                            uint16_t passwd_len)
 {
     Messenger *m = tox;
-    return gc_accept_invite(m->group_handler, invite_data, length);
+    return gc_accept_invite(m->group_handler, invite_data, length, passwd, passwd_len);
 }
 
 /* Invites friendnumber to groupnumber.

@@ -98,7 +98,7 @@ enum {
 enum {
     GJ_NICK_TAKEN,
     GJ_GROUP_FULL,
-    GJ_INVITES_DISABLED,
+    GJ_INVALID_PASSWORD,
     GJ_INVITE_FAILED,
     GJ_INVALID
 } GROUP_JOIN_REJECTED;
@@ -400,10 +400,12 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
 
 /* Sends an invite request to a public group using the chat_id.
  *
+ * If the group is not password protected passwd should be set to NULL and passwd_len should be 0.
+ *
  * Return groupnumber on success.
  * Reutrn -1 on failure.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id);
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len);
 
 /* Resets chat saving all self state and attempts to reconnect to group */
 void gc_rejoin_group(GC_Session *c, GC_Chat *chat);
@@ -413,7 +415,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat);
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length);
+int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const uint8_t *passwd, uint16_t passwd_len);
 
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
  *

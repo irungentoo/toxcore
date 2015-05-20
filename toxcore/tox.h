@@ -2257,7 +2257,7 @@ typedef enum {
 
     /* A friend invite is required to join the group */
     TOX_GP_PRIVATE
-} TOX_GROUP_PRIVACY_STATUS;
+} TOX_GROUP_PRIVACY_STATE;
 
 /* Group roles are hierarchical where each role has a set of privileges plus
  * all the privileges of the roles below it.
@@ -2390,21 +2390,24 @@ void tox_callback_group_rejected(Tox *tox, void (*function)(Tox *m, int, uint8_t
 
 /* Adds a new groupchat to group chats array.
  *
- * privacy status must be one of TOX_GROUP_PRIVACY_STATUS.
+ * privacy_state must be one of TOX_GROUP_PRIVACY_STATE.
  *
  * group_name is required and length must not exceed TOX_MAX_GROUP_NAME_LENGTH bytes.
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATUS privacy_status, const uint8_t *group_name, uint16_t length);
+int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, uint16_t length);
 
-/* Joins a groupchat using the supplied chat_id
+
+/* Joins a groupchat using the supplied chat_id.
+ *
+ * If the group is not password protected passwd should be set to NULL and passwd_len should be 0
  *
  * Return groupnumber on success.
  * Return -1 on failure.
  */
-int tox_group_new_join(Tox *tox, const uint8_t *chat_id);
+int tox_group_new_join(Tox *tox, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len);
 
 /* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, certificates
  *
@@ -2415,10 +2418,13 @@ int tox_group_reconnect(Tox *tox, int groupnumber);
 
 /* Joins a group using the invite data received in a friend's group invite.
  *
+ * If the group is not password protected passwd should be set to NULL and passwd_len should be 0.
+ *
  * Return groupnumber on success.
  * Return -1 on failure
  */
-int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length);
+int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, uint16_t length, const uint8_t *passwd,
+                            uint16_t passwd_len);
 
 /* Invites friendnumber to groupnumber.
  *
