@@ -163,9 +163,15 @@ void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
     uint8_t req[len];
     unsigned int i;
 
+    unsigned int spaces = 0;
+
     for (i = 0; i < (len - 1); ++i) {
-        if (msg[i + 1] == ':') {
-            break;
+        if (msg[i + 1] == ' ') {
+            ++spaces;
+        } else {
+            if (spaces >= 3 && msg[i + 1] == ':') {
+                break;
+            }
         }
 
         req[i] = msg[i + 1];
@@ -227,17 +233,17 @@ Tox *init_tox(int argc, char *argv[])
     tox_callback_group_message(tox, &copy_groupmessage, 0);
     tox_callback_group_action(tox, &copy_groupmessage, 0);
 
-    uint16_t port = atoi(argv[argvoffset + 2]);
-    unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    tox_bootstrap(tox, argv[argvoffset + 1], port, binary_string, 0);
-    free(binary_string);
-
     char temp_id[128];
     printf("\nEnter the address of irc_syncbots master (38 bytes HEX format):\n");
 
     if (scanf("%s", temp_id) != 1) {
         exit (1);
     }
+
+    uint16_t port = atoi(argv[argvoffset + 2]);
+    unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
+    tox_bootstrap(tox, argv[argvoffset + 1], port, binary_string, 0);
+    free(binary_string);
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
     uint32_t num = tox_friend_add(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo") - 1, 0);
