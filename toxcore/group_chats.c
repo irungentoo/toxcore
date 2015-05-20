@@ -47,6 +47,8 @@
 #define GC_PACKED_SHARED_STATE_SIZE (sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
                                      + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE)
 
+#define GC_SHARED_STATE_ENC_PACKET_SIZE (HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
+
 /* Header information attached to all broadcast messages. broadcast_type, public key hash, timestamp */
 #define GC_BROADCAST_ENC_HEADER_SIZE (1 + HASH_ID_BYTES + TIME_STAMP_SIZE)
 
@@ -179,16 +181,18 @@ static void self_gc_connected(GC_Chat *chat)
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-static int set_gc_password(GC_Chat *chat, const uint8_t *passwd, uint16_t length)
+static int set_gc_password_local(GC_Chat *chat, const uint8_t *passwd, uint16_t length)
 {
-    if (passwd == NULL)
+    if (length > MAX_GC_PASSWD_SIZE)
         return -1;
 
-    if (length == 0 || length > MAX_GC_PASSWD_SIZE)
-        return -1;
-
-    chat->shared_state.passwd_len = length;
-    memcpy(chat->shared_state.passwd, passwd, length);
+    if (!passwd || length == 0) {
+        chat->shared_state.passwd_len = 0;
+        memset(chat->shared_state.passwd, 0, MAX_GC_PASSWD_SIZE);
+    } else {
+        chat->shared_state.passwd_len = length;
+        memcpy(chat->shared_state.passwd, passwd, length);
+    }
 
     return 0;
 }
@@ -495,6 +499,44 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     return len_processed;
 }
 
+/* Creates a shared state packet and puts it in data.
+ * Packet includes self pk hash, shared state signature, and packed shared state info.
+ * data must have room for at least GC_SHARED_STATE_ENC_PACKET_SIZE bytes.
+ *
+ * Returns packet length on success.
+ * Returns -1 on failure.
+ */
+static int make_gc_shared_state_packet(const GC_Chat *chat, uint8_t *data)
+{
+    U32_to_bytes(data, chat->self_public_key_hash);
+    memcpy(data + HASH_ID_BYTES, chat->shared_state_sig, SIGNATURE_SIZE);
+    uint32_t packed_len = pack_gc_shared_state(data + HASH_ID_BYTES + SIGNATURE_SIZE, &chat->shared_state);
+
+    if (packed_len != GC_PACKED_SHARED_STATE_SIZE)
+        return -1;
+
+    return HASH_ID_BYTES + SIGNATURE_SIZE + packed_len;
+}
+
+/* Creates a signature for the group's packed shared state. This should only be called by the founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int sign_gc_shared_state(GC_Chat *chat)
+{
+    if (chat->group[0].role != GR_FOUNDER)
+        return -1;
+
+    uint8_t shared_state[GC_PACKED_SHARED_STATE_SIZE];
+    uint32_t packed_len = pack_gc_shared_state(shared_state, &chat->shared_state);
+
+    if (packed_len != GC_PACKED_SHARED_STATE_SIZE)
+        return -1;
+
+    return crypto_sign_detached(chat->shared_state_sig, NULL, shared_state, packed_len, SIG_SK(chat->chat_secret_key));
+}
+
 /* Decrypts data using the peer's shared key and a nonce.
  * message_id should be set to NULL for lossy packets.
  *
@@ -761,7 +803,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
     return 0;
 }
 
-static int send_gc_shared_state(GC_Chat *chat, uint32_t peernumber);
+static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber);
 
 static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                   uint32_t length)
@@ -790,7 +832,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     U32_to_bytes(response, chat->self_public_key_hash);
     uint32_t len = HASH_ID_BYTES;
 
-    if (send_gc_shared_state(chat, peernumber) == -1)
+    if (send_peer_shared_state(chat, peernumber) == -1)
         return -1;
 
     /* Response packet contains: topic len, topic, peer list */
@@ -1033,7 +1075,9 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
 
     uint16_t nick_len;
     bytes_to_U16(&nick_len, data);
-    nick_len = MIN(nick_len, MAX_GC_NICK_SIZE);
+
+    if (nick_len > MAX_GC_NICK_SIZE)
+        goto failed_invite;
 
     if (length - sizeof(uint16_t) < nick_len)
         goto failed_invite;
@@ -1051,7 +1095,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
 
     if (chat->shared_state.passwd_len > 0) {
         uint8_t passwd[MAX_GC_PASSWD_SIZE];
-        memcpy(passwd, data, MAX_GC_PASSWD_SIZE);
+        memcpy(passwd, data + sizeof(uint16_t) + nick_len, MAX_GC_PASSWD_SIZE);
 
         if (memcmp(chat->shared_state.passwd, passwd, chat->shared_state.passwd_len) != 0) {
             invite_error = GJ_INVALID_PASSWORD;
@@ -1315,26 +1359,46 @@ static int handle_gc_peer_info_response(Messenger *m, int groupnumber, uint32_t 
     return 0;
 }
 
-/* Sends the group's shared state along with its signature to peernumber.
+/* Sends the group shared state and its signature to peernumber.
  *
  * Returns a non-negative integer on success.
  * Returns -1 on failure.
  */
-static int send_gc_shared_state(GC_Chat *chat, uint32_t peernumber)
+static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber)
 {
     if (chat->shared_state.group_name_len == 0)
         return -1;
 
-    uint32_t length = HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE;
-    uint8_t packet[length];
-    U32_to_bytes(packet, chat->self_public_key_hash);
-    memcpy(packet + HASH_ID_BYTES, chat->shared_state_sig, SIGNATURE_SIZE);
-    uint32_t packed_len = pack_gc_shared_state(packet + HASH_ID_BYTES + SIGNATURE_SIZE, &chat->shared_state);
+    uint8_t packet[GC_SHARED_STATE_ENC_PACKET_SIZE];
+    int length = make_gc_shared_state_packet(chat, packet);
 
-    if (packed_len != GC_PACKED_SHARED_STATE_SIZE)
+    if (length != GC_SHARED_STATE_ENC_PACKET_SIZE)
         return -1;
 
     return send_lossless_group_packet(chat, peernumber, packet, length, GP_SHARED_STATE);
+}
+
+/* Sends the group shared state and signature to all confirmed peers.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure
+ */
+static int broadcast_gc_shared_state(GC_Chat *chat)
+{
+    uint8_t packet[GC_SHARED_STATE_ENC_PACKET_SIZE];
+    int packet_len = make_gc_shared_state_packet(chat, packet);
+
+    if (packet_len != GC_SHARED_STATE_ENC_PACKET_SIZE)
+        return -1;
+
+    uint32_t i;
+
+    for (i = 1; i < chat->numpeers; ++i) {
+        if (chat->gcc[i].confirmed)
+            send_lossless_group_packet(chat, i, packet, packet_len, GP_SHARED_STATE);
+    }
+
+    return 0;
 }
 
 /* Handles a shared state packet.
@@ -1351,11 +1415,7 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     if (chat == NULL)
         return -1;
 
-    /* Founder always has the most up to date shared state */
-    if (chat->group[0].role == GR_FOUNDER)
-        return 0;
-
-    if (length != SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
+    if (length != GC_SHARED_STATE_ENC_PACKET_SIZE - HASH_ID_BYTES)
         goto on_error;
 
     uint8_t signature[SIGNATURE_SIZE];
@@ -1366,6 +1426,10 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     if (crypto_sign_verify_detached(signature, ss_data, GC_PACKED_SHARED_STATE_SIZE,
                                     SIG_PK(chat->chat_public_key)) == -1)
         goto on_error;
+
+    /* Founder always has the most up to date shared state */
+    if (chat->group[0].role == GR_FOUNDER)
+        return 0;
 
     unpack_gc_shared_state(&chat->shared_state, ss_data);
     memcpy(chat->shared_state_sig, signature, SIGNATURE_SIZE);
@@ -1584,6 +1648,34 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
         return -1;
 
     return send_gc_broadcast_packet(chat, message, length, type);
+}
+
+/* Sets the group password and distributes the new shared state to the group.
+ *
+ * This function requires that the shared state be re-signed and will only work for the group founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passwd_len)
+{
+    if (chat->group[0].role != GR_FOUNDER)
+        return -2;
+
+    uint16_t oldlen = chat->shared_state.passwd_len;
+    uint8_t oldpasswd[oldlen];
+    memcpy(oldpasswd, chat->shared_state.passwd, oldlen);
+
+    if (set_gc_password_local(chat, passwd, passwd_len) == -1)
+        return -1;
+
+    if (sign_gc_shared_state(chat) == -1) {
+        set_gc_password_local(chat, oldpasswd, oldlen);
+        return -1;
+    }
+
+    return broadcast_gc_shared_state(chat);
 }
 
 static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
@@ -2980,7 +3072,7 @@ static int create_new_group(GC_Session *c, bool founder)
     memcpy(chat->group[0].nick, m->name, m->name_length);
     chat->group[0].nick_len = m->name_length;
     chat->group[0].status = m->userstatus;
-    chat->group[0].role = GR_FOUNDER ? founder : GR_USER;
+    chat->group[0].role = founder ? GR_FOUNDER : GR_USER;
     chat->gcc[0].confirmed = true;
     chat->self_public_key_hash = chat->gcc[0].public_key_hash;
 
@@ -3066,13 +3158,7 @@ static int init_gc_shared_state(GC_Chat *chat, uint8_t privacy_state, const uint
     chat->shared_state.maxpeers = MAX_GC_NUM_PEERS;
     chat->shared_state.privacy_state = privacy_state;
 
-    uint8_t shared_state[GC_PACKED_SHARED_STATE_SIZE];
-    uint32_t packed_len = pack_gc_shared_state(shared_state, &chat->shared_state);
-
-    if (packed_len != GC_PACKED_SHARED_STATE_SIZE)
-        return -1;
-
-    return crypto_sign_detached(chat->shared_state_sig, NULL, shared_state, packed_len, SIG_SK(chat->chat_secret_key));
+    return sign_gc_shared_state(chat);
 }
 
 /* Creates a new group.
@@ -3140,8 +3226,13 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, 
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->join_type = HJ_PUBLIC;
 
-    if (passwd != NULL && set_gc_password(chat, passwd, passwd_len) == -1)
-        return -1;
+    if (passwd != NULL) {
+        if (passwd_len == 0)
+            return -1;
+
+        if (set_gc_password_local(chat, passwd, passwd_len) == -1)
+            return -1;
+    }
 
     if (chat->num_addrs == 0)
         group_get_nodes_request(c, chat);
@@ -3218,20 +3309,29 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const 
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
-        return -1;
+        goto on_error;
 
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->join_type = HJ_PRIVATE;
 
-    if (passwd != NULL && set_gc_password(chat, passwd, passwd_len) == -1)
-        return -1;
+    if (passwd != NULL) {
+        if (passwd_len == 0)
+            goto on_error;
+
+        if (set_gc_password_local(chat, passwd, passwd_len) == -1)
+            goto on_error;
+    }
 
     if (send_gc_handshake_request(c->messenger, groupnumber, node.ip_port, node.public_key,
                                   HS_INVITE_REQUEST, chat->join_type) == -1)
-        return -1;
+        goto on_error;
 
     return groupnumber;
+
+on_error:
+    group_delete(c, chat);
+    return -1;
 }
 
 GC_Session *new_groupchats(Messenger* m)

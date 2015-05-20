@@ -97,7 +97,7 @@ int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum);
+int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernum);
 
 void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber);
 

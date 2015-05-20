@@ -1814,3 +1814,24 @@ int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool
 
     return gc_toggle_ignore(chat, peernumber, ignore);
 }
+
+/* Allows the group founder to set a password for group joins.
+ * If passwd is NULL or length is 0 password protection will be disabled.
+ * length must be no larger than TOX_MAX_GROUP_PASSWD_SIZE.
+ *
+ * Password protection does not hide the group or its members from the DHT.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uint16_t length)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_founder_set_password(chat, passwd, length);
+}

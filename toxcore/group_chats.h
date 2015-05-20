@@ -338,6 +338,16 @@ int gc_get_numpeers(const GC_Chat *chat);
  */
 uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 
+/* Sets the group password and distributes the new shared state to the group.
+ *
+ * This function requires that the shared state be re-signed and will only work for the group founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passwd_len);
+
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 

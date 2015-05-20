@@ -109,12 +109,6 @@ extern "C" {
  * memory, the length may have become invalid, and the call to
  * tox_self_get_name may cause undefined behaviour.
  */
-// Start. Check this section.
-#define TOX_MAX_GROUP_TOPIC_LENGTH 512
-#define TOX_MAX_GROUP_PART_LENGTH 128
-#define TOX_MAX_GROUP_NAME_LENGTH 48
-#define TOX_GROUP_CHAT_ID_SIZE 32
-// End
 
 /**
  * The Tox instance type. All the state associated with a connection is held
@@ -2250,6 +2244,11 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 /**************** GROUPCHAT API *****************/
 
+#define TOX_MAX_GROUP_TOPIC_LENGTH 512
+#define TOX_MAX_GROUP_PART_LENGTH 128
+#define TOX_MAX_GROUP_NAME_LENGTH 48
+#define TOX_MAX_GROUP_PASSWD_SIZE 32
+#define TOX_GROUP_CHAT_ID_SIZE 32
 
 typedef enum {
     /* Anyone may join the group via the chat_id */
@@ -2295,7 +2294,7 @@ typedef enum {
 typedef enum {
     TOX_GJ_NICK_TAKEN,
     TOX_GJ_GROUP_FULL,
-    TOX_GJ_INVITES_DISABLED,
+    TOX_GJ_INCORRECT_PASSWORD,
     TOX_GJ_INVITE_FAILED
 } TOX_GROUP_JOIN_REJECTED;
 
@@ -2618,6 +2617,17 @@ uint32_t tox_group_count_groups(const Tox *tox);
  * Return -1 on failure.
  */
 int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool ignore);
+
+
+/* Allows the group founder to set a password for group joins.
+ * If passwd is NULL or length is 0 password protection will be disabled.
+ * length must be no larger than TOX_MAX_GROUP_PASSWD_SIZE.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uint16_t length);
 
 #ifdef __cplusplus
 }

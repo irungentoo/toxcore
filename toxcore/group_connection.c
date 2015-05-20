@@ -212,7 +212,7 @@ static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gcc_check_recv_ary(Messenger *m, int groupnum, int peernum)
+int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernum)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnum);
 
