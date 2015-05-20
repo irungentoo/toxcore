@@ -158,6 +158,15 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
     if (!friend_con)
         return -1;
 
+    /* Local ip and same pk means that they are hosting a TCP relay. */
+    if (Local_ip(ip_port.ip) && memcmp(friend_con->dht_temp_pk, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (friend_con->dht_ip_port.ip.family != 0) {
+            ip_port.ip = friend_con->dht_ip_port.ip;
+        } else {
+            friend_con->hosting_tcp_relay = 0;
+        }
+    }
+
     unsigned int i;
 
     uint16_t index = friend_con->tcp_relay_counter % FRIEND_MAX_STORED_TCP_RELAYS;
@@ -268,6 +277,11 @@ static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
     set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port, 1);
     friend_con->dht_ip_port = ip_port;
     friend_con->dht_ip_port_lastrecv = unix_time();
+
+    if (friend_con->hosting_tcp_relay) {
+        friend_add_tcp_relay(fr_c, number, ip_port, friend_con->dht_temp_pk);
+        friend_con->hosting_tcp_relay = 0;
+    }
 }
 
 static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_public_key)
@@ -317,6 +331,7 @@ static int handle_status(void *object, int number, uint8_t status)
 
         friend_con->status = FRIENDCONN_STATUS_CONNECTING;
         friend_con->crypt_connection_id = -1;
+        friend_con->hosting_tcp_relay = 0;
     }
 
     if (call_cb) {

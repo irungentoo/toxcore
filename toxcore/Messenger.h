@@ -70,6 +70,7 @@ typedef struct {
     uint8_t udp_disabled;
     TCP_Proxy_Info proxy_info;
     uint16_t port_range[2];
+    uint16_t tcp_server_port;
 } Messenger_Options;
 
 
@@ -219,6 +220,7 @@ struct Messenger {
 
     Friend_Connections *fr_c;
 
+    TCP_Server *tcp_server;
     Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
@@ -727,6 +729,7 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
 enum {
     MESSENGER_ERROR_NONE,
     MESSENGER_ERROR_PORT,
+    MESSENGER_ERROR_TCP_SERVER,
     MESSENGER_ERROR_OTHER
 };
 
