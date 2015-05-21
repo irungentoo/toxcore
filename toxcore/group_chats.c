@@ -706,10 +706,11 @@ static int send_gc_sync_request(GC_Chat *chat, uint32_t peernumber, uint32_t num
 
     chat->gcc[peernumber].pending_sync_request = true;
 
-    uint32_t length = HASH_ID_BYTES + sizeof(uint32_t);
+    uint32_t length = HASH_ID_BYTES + sizeof(uint32_t) + MAX_GC_PASSWD_SIZE;
     uint8_t data[length];
     U32_to_bytes(data, chat->self_public_key_hash);
     U32_to_bytes(data + HASH_ID_BYTES, num_peers);
+    memcpy(data + HASH_ID_BYTES + sizeof(uint32_t), chat->shared_state.passwd, MAX_GC_PASSWD_SIZE);
 
     return send_lossless_group_packet(chat, peernumber, data, length, GP_SYNC_REQUEST);
 }
@@ -813,10 +814,18 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
 
 static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber);
 
+/* Handles a sync request packet and sends a response containing the topic, topic len, and peer list.
+ * Additionally sends the group shared state in a separate packet.
+ *
+ * If the group is password protected the password in the request data must first be verified.
+ *
+ * Returns non-negative value on success.
+ * Returns -1 on failure.
+ */
 static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                   uint32_t length)
 {
-    if (length != sizeof(uint32_t))
+    if (length != sizeof(uint32_t) + MAX_GC_PASSWD_SIZE)
         return -1;
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -834,6 +843,14 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     if (req_num_peers > 0 && req_num_peers >= get_gc_confirmed_numpeers(chat)) {
         fprintf(stderr, "sync request from %s rejected\n", chat->group[peernumber].nick);
         return 0;
+    }
+
+    if (chat->shared_state.passwd_len > 0) {
+        uint8_t passwd[MAX_GC_PASSWD_SIZE];
+        memcpy(passwd, data + sizeof(uint32_t), MAX_GC_PASSWD_SIZE);
+
+        if (memcmp(chat->shared_state.passwd, passwd, chat->shared_state.passwd_len) != 0)
+            return -1;
     }
 
     uint8_t response[MAX_GC_PACKET_SIZE];
@@ -1447,9 +1464,6 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
 
     if (version < chat->shared_state.version)
         goto on_error;
-
-    if (version == chat->shared_state.version)
-        return 0;
 
     unpack_gc_shared_state(&chat->shared_state, ss_data);
     memcpy(chat->shared_state_sig, signature, SIGNATURE_SIZE);
