@@ -2551,6 +2551,7 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             temp.passwd_len = htons(c->chats[i].shared_state.passwd_len);
             memcpy(temp.passwd, c->chats[i].shared_state.passwd, MAX_GC_PASSWD_SIZE);
             memcpy(temp.sstate_signature, c->chats[i].shared_state_sig, SIGNATURE_SIZE);
+            temp.sstate_version = htonl(c->chats[i].shared_state.version);
 
             memcpy(temp.chat_public_key, c->chats[i].chat_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.chat_secret_key, c->chats[i].chat_secret_key, EXT_SECRET_KEY);  /* empty for non-founders */

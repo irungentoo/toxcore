@@ -139,6 +139,7 @@ typedef struct {
     uint8_t     privacy_state;   /* GI_PUBLIC (uses DHT) or GI_PRIVATE (invite only) */
     uint16_t    passwd_len;
     uint8_t     passwd[MAX_GC_PASSWD_SIZE];
+    uint32_t    version;
 } GC_SharedState;
 
 typedef struct GC_Announce GC_Announce;
@@ -230,6 +231,7 @@ struct SAVED_GROUP {
     uint16_t  passwd_len;
     uint8_t   passwd[MAX_GC_PASSWD_SIZE];
     uint8_t   sstate_signature[SIGNATURE_SIZE];
+    uint32_t  sstate_version;
 
     /* Other group info */
     uint8_t   chat_public_key[EXT_PUBLIC_KEY];

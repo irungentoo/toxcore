@@ -45,7 +45,7 @@
                                      + GC_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
 
 #define GC_PACKED_SHARED_STATE_SIZE (sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
-                                     + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE)
+                                     + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE + sizeof(uint32_t))
 
 #define GC_SHARED_STATE_ENC_PACKET_SIZE (HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
 
@@ -469,6 +469,8 @@ static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared
     packed_len += sizeof(uint16_t);
     memcpy(data + packed_len, shared_state->passwd, MAX_GC_PASSWD_SIZE);
     packed_len += MAX_GC_PASSWD_SIZE;
+    U32_to_bytes(data + packed_len, shared_state->version);
+    packed_len += sizeof(uint32_t);
 
     return packed_len;
 }
@@ -495,6 +497,8 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     len_processed += sizeof(uint16_t);
     memcpy(shared_state->passwd, data + len_processed, MAX_GC_PASSWD_SIZE);
     len_processed += MAX_GC_PASSWD_SIZE;
+    bytes_to_U32(&shared_state->version, data + len_processed);
+    len_processed += sizeof(uint32_t);
 
     return len_processed;
 }
@@ -518,7 +522,8 @@ static int make_gc_shared_state_packet(const GC_Chat *chat, uint8_t *data)
     return HASH_ID_BYTES + SIGNATURE_SIZE + packed_len;
 }
 
-/* Creates a signature for the group's packed shared state. This should only be called by the founder.
+/* Creates a signature for the group's packed shared state and increments version.
+ * This should only be called by the founder.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
@@ -527,6 +532,9 @@ static int sign_gc_shared_state(GC_Chat *chat)
 {
     if (chat->group[0].role != GR_FOUNDER)
         return -1;
+
+    if (chat->shared_state.version != UINT32_MAX)   /* improbable, but an overflow would break everything */
+        ++chat->shared_state.version;
 
     uint8_t shared_state[GC_PACKED_SHARED_STATE_SIZE];
     uint32_t packed_len = pack_gc_shared_state(shared_state, &chat->shared_state);
@@ -1156,7 +1164,7 @@ static int send_gc_broadcast_packet(GC_Chat *chat, const uint8_t *data, uint32_t
 
 static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
-    if (length != sizeof(uint32_t))
+    if (length != sizeof(uint32_t) * 2)
         return -1;
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1169,10 +1177,17 @@ static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, co
 
     chat->gcc[peernumber].last_rcvd_ping = unix_time();
 
-    uint32_t other_num_peers;
+    uint32_t other_num_peers, sstate_version;
     bytes_to_U32(&other_num_peers, data);
+    bytes_to_U32(&sstate_version, data + sizeof(uint32_t));
 
     check_gc_sync_status(chat, peernumber, other_num_peers);
+
+    if (sstate_version < chat->shared_state.version)
+        send_peer_shared_state(chat, peernumber);
+    else if (sstate_version > chat->shared_state.version)
+        send_gc_sync_request(chat, peernumber, 0);
+
     return 0;
 }
 
@@ -1427,8 +1442,13 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
                                     SIG_PK(chat->chat_public_key)) == -1)
         goto on_error;
 
-    /* Founder always has the most up to date shared state */
-    if (chat->group[0].role == GR_FOUNDER)
+    uint32_t version;
+    bytes_to_U32(&version, data + length - sizeof(uint32_t));
+
+    if (version < chat->shared_state.version)
+        goto on_error;
+
+    if (version == chat->shared_state.version)
         return 0;
 
     unpack_gc_shared_state(&chat->shared_state, ss_data);
@@ -2860,18 +2880,19 @@ static void do_peer_connections(Messenger *m, int groupnumber)
     }
 }
 
-
+/* Ping packet includes your confirmed peer count and shared state version for syncing purposes */
 static void ping_group(GC_Chat *chat)
 {
     if (!is_timeout(chat->last_sent_ping_time, GC_PING_INTERVAL))
         return;
 
-    uint32_t length = HASH_ID_BYTES + sizeof(uint32_t);
+    uint32_t length = HASH_ID_BYTES + sizeof(uint32_t) * 2;
     uint8_t data[length];
-    U32_to_bytes(data, chat->self_public_key_hash);
 
     uint32_t num_confirmed_peers = get_gc_confirmed_numpeers(chat);
+    U32_to_bytes(data, chat->self_public_key_hash);
     U32_to_bytes(data + HASH_ID_BYTES, num_confirmed_peers);
+    U32_to_bytes(data + HASH_ID_BYTES + sizeof(uint32_t), chat->shared_state.version);
 
     uint32_t i;
 
@@ -3112,6 +3133,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->shared_state.passwd_len = ntohs(save->passwd_len);
     memcpy(chat->shared_state.passwd, save->passwd, MAX_GC_PASSWD_SIZE);
     memcpy(chat->shared_state_sig, save->sstate_signature, SIGNATURE_SIZE);
+    chat->shared_state.version = ntohl(save->sstate_version);
 
     memcpy(chat->chat_public_key, save->chat_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->chat_secret_key, save->chat_secret_key, EXT_SECRET_KEY);
