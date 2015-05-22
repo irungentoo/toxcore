@@ -35,6 +35,7 @@
 #include <crypto_hash_sha512.h>
 #include <crypto_verify_16.h>
 #include <crypto_verify_32.h>
+#include <crypto_scalarmult_curve25519.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 

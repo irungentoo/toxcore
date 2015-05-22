@@ -332,6 +332,7 @@ START_TEST(test_one)
     tox_self_set_name(tox1, name, sizeof(name), 0);
     ck_assert_msg(tox_self_get_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
 
+    tox_self_get_address(tox1, address);
     size_t save_size = tox_get_savedata_size(tox1);
     uint8_t data[save_size];
     tox_get_savedata(tox1, data);
@@ -344,6 +345,9 @@ START_TEST(test_one)
 
     ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
 
+    uint8_t address2[TOX_ADDRESS_SIZE];
+    tox_self_get_address(tox2, address2);
+    ck_assert_msg(memcmp(address2, address, TOX_ADDRESS_SIZE) == 0, "Wrong address.");
     uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
     tox_self_get_name(tox2, new_name);
     ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");

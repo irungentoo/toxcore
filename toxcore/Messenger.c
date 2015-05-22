@@ -2636,13 +2636,11 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
-                load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
-#ifdef ENABLE_ASSOC_DHT
+                load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + crypto_box_PUBLICKEYBYTES);
 
-                if (m->dht->assoc)
-                    Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
-
-#endif
+                if (memcmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+                    return -1;
+                }
             } else
                 return -1;    /* critical */
 
