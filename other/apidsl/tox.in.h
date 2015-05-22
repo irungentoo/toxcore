@@ -340,6 +340,24 @@ enum class PROXY_TYPE {
   SOCKS5,
 }
 
+/**
+ * Type of savedata to create the Tox instance from.
+ */
+enum class SAVEDATA_TYPE {
+  /**
+   * No savedata.
+   */
+  NONE,
+  /**
+   * Savedata is one that was obtained from ${savedata.get}
+   */
+  TOX_SAVE,
+  /**
+   * Savedata is a secret key of length ${SECRET_KEY_SIZE}
+   */
+  SECRET_KEY,
+}
+
 
 static class options {
   /**
@@ -416,6 +434,23 @@ static class options {
      * The port to use for the TCP server. If 0, the tcp server is disabled.
      */
     uint16_t tcp_port;
+
+    namespace savedata {
+      /**
+       * The type of savedata to load from.
+       */
+      SAVEDATA_TYPE type;
+
+      /**
+       * The savedata.
+       */
+      const uint8_t[length] data;
+
+      /**
+       * The length of the savedata.
+       */
+      size_t length;
+    }
   }
 
 
@@ -474,21 +509,15 @@ static class options {
  * This function will bring the instance into a valid state. Running the event
  * loop with a new instance will operate correctly.
  *
- * If the data parameter is not NULL, this function will load the Tox instance
- * from a byte array previously filled by ${savedata.get}.
- *
  * If loading failed or succeeded only partially, the new or partially loaded
  * instance is returned and an error code is set.
  *
  * @param options An options object as described above. If this parameter is
  *   NULL, the default options are used.
- * @param data A byte array containing data previously stored by ${savedata.get}.
- * @param length The length of the byte array data. If this parameter is 0, the
- *   data parameter is ignored.
  *
  * @see $iterate for the event loop.
  */
-static this new(const options_t *options, const uint8_t[length] data) {
+static this new(const options_t *options) {
   NULL,
   /**
    * The function was unable to allocate enough memory to store the internal

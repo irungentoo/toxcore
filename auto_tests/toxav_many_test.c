@@ -264,12 +264,12 @@ START_TEST(test_AV_three_calls)
 // void test_AV_three_calls()
 {
     long long unsigned int cur_time = time(NULL);
-    Tox *bootstrap_node = tox_new(0, 0, 0, 0);
-    Tox *caller = tox_new(0, 0, 0, 0);
+    Tox *bootstrap_node = tox_new(0, 0);
+    Tox *caller = tox_new(0, 0);
     Tox *callees[3] = {
-        tox_new(0, 0, 0, 0),
-        tox_new(0, 0, 0, 0),
-        tox_new(0, 0, 0, 0),
+        tox_new(0, 0),
+        tox_new(0, 0),
+        tox_new(0, 0),
     };
 
 

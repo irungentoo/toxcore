@@ -222,7 +222,7 @@ Tox *init_tox(int argc, char *argv[])
         exit(0);
     }
 
-    Tox *tox = tox_new(0, 0, 0, 0);
+    Tox *tox = tox_new(0, 0);
 
     if (!tox)
         exit(1);

@@ -286,8 +286,8 @@ void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *use
 
 START_TEST(test_one)
 {
-    Tox *tox1 = tox_new(0, 0, 0, 0);
-    Tox *tox2 = tox_new(0, 0, 0, 0);
+    Tox *tox1 = tox_new(0, 0);
+    Tox *tox2 = tox_new(0, 0);
 
     {
         TOX_ERR_GET_PORT error;
@@ -340,7 +340,12 @@ START_TEST(test_one)
     tox_kill(tox2);
     TOX_ERR_NEW err_n;
 
-    tox2 = tox_new(0, data, save_size, &err_n);
+    struct Tox_Options options;
+    tox_options_default(&options);
+    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+    options.savedata_data = data;
+    options.savedata_length = save_size;
+    tox2 = tox_new(&options, &err_n);
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
 
     ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
@@ -361,11 +366,11 @@ START_TEST(test_few_clients)
 {
     long long unsigned int con_time, cur_time = time(NULL);
     TOX_ERR_NEW t_n_error;
-    Tox *tox1 = tox_new(0, 0, 0, &t_n_error);
+    Tox *tox1 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
-    Tox *tox2 = tox_new(0, 0, 0, &t_n_error);
+    Tox *tox2 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
-    Tox *tox3 = tox_new(0, 0, 0, &t_n_error);
+    Tox *tox3 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
 
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
@@ -745,7 +750,7 @@ START_TEST(test_many_clients)
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES; ++i) {
-        toxes[i] = tox_new(0, 0, 0, 0);
+        toxes[i] = tox_new(0, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }
@@ -832,7 +837,7 @@ START_TEST(test_many_clients_tcp)
             opts.udp_enabled = 0;
         }
 
-        toxes[i] = tox_new(&opts, 0, 0, 0);
+        toxes[i] = tox_new(&opts, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
@@ -926,7 +931,7 @@ START_TEST(test_many_clients_tcp_b)
             opts.udp_enabled = 0;
         }
 
-        toxes[i] = tox_new(&opts, 0, 0, 0);
+        toxes[i] = tox_new(&opts, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
@@ -1062,7 +1067,7 @@ START_TEST(test_many_group)
     uint32_t to_comp = 234212;
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
-        toxes[i] = tox_new(0, 0, 0, 0);
+        toxes[i] = tox_new(0, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request, &to_comp);
         tox_callback_group_invite(toxes[i], &print_group_invite_callback, &to_comp);
