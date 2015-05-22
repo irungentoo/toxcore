@@ -82,8 +82,11 @@
    at the dT defined in net_crypto.c */
 #define CONGESTION_QUEUE_ARRAY_SIZE 24
 
+/* Connection ping in ms. TODO: calculate it per connection. */
+#define DEFAULT_PING_CONNECTION 50
+
 typedef struct {
-    _Bool sent;
+    uint64_t sent_time;
     uint16_t length;
     uint8_t data[MAX_CRYPTO_DATA_SIZE];
 } Packet_Data;
@@ -146,6 +149,7 @@ typedef struct {
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
     uint32_t packets_sent;
+    uint64_t last_congestion_event;
 
     /* TCP_connection connection_number */
     unsigned int connection_number_tcp;
@@ -224,10 +228,12 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
 
 /* Set the direct ip of the crypto connection.
  *
+ * Connected is 0 if we are not sure we are connected to that person, 1 if we are sure.
+ *
  * return -1 on failure.
  * return 0 on success.
  */
-int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port);
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, _Bool connected);
 
 /* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
  *
@@ -378,10 +384,10 @@ void new_keys(Net_Crypto *c);
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys);
 
-/* Load the public and private keys from the keys array.
- *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
+/* Load the secret key.
+ * Length must be crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, const uint8_t *keys);
+void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.

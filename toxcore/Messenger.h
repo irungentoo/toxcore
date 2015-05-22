@@ -27,7 +27,6 @@
 #define MESSENGER_H
 
 #include "friend_requests.h"
-#include "LAN_discovery.h"
 #include "friend_connection.h"
 
 #define MAX_NAME_LENGTH 128
@@ -71,6 +70,7 @@ typedef struct {
     uint8_t udp_disabled;
     TCP_Proxy_Info proxy_info;
     uint16_t port_range[2];
+    uint16_t tcp_server_port;
 } Messenger_Options;
 
 
@@ -220,6 +220,7 @@ struct Messenger {
 
     Friend_Connections *fr_c;
 
+    TCP_Server *tcp_server;
     Friend_Requests fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
@@ -231,8 +232,6 @@ struct Messenger {
 
     Friend *friendlist;
     uint32_t numfriends;
-
-    uint32_t numonline_friends;
 
 #define NUM_SAVED_TCP_RELAYS 8
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger
@@ -730,6 +729,7 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
 enum {
     MESSENGER_ERROR_NONE,
     MESSENGER_ERROR_PORT,
+    MESSENGER_ERROR_TCP_SERVER,
     MESSENGER_ERROR_OTHER
 };
 
@@ -771,9 +771,6 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length);
  * You should use this to determine how much memory to allocate
  * for copy_friendlist. */
 uint32_t count_friendlist(const Messenger *m);
-
-/* Return the number of online friends in the instance m. */
-uint32_t get_num_online_friends(const Messenger *m);
 
 /* Copy a list of valid friend IDs into the array out_list.
  * If out_list is NULL, returns 0.

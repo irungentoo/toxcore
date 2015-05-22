@@ -50,10 +50,10 @@ typedef enum {
  * Supported capabilities
  */
 typedef enum {
-    msi_CapSAudio = 1, /* sending audio */
-    msi_CapSVideo = 2, /* sending video */
-    msi_CapRAudio = 4, /* receiving audio */
-    msi_CapRVideo = 8, /* receiving video */
+    msi_CapSAudio = 4,  /* sending audio */
+    msi_CapSVideo = 8,  /* sending video */
+    msi_CapRAudio = 16, /* receiving audio */
+    msi_CapRVideo = 32, /* receiving video */
 } MSICapabilities;
 
 

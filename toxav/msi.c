@@ -683,7 +683,7 @@ void handle_push ( MSICall *call, const MSIMessage *msg )
             
             /* Only act if capabilities changed */
             if ( call->peer_capabilities != msg->capabilities.value) {
-                LOGGER_INFO("Friend is changing capabilities");
+                LOGGER_INFO("Friend is changing capabilities to: %u", msg->capabilities.value);
                 
                 call->peer_capabilities = msg->capabilities.value;
                 if ( invoke_callback(call, msi_OnCapabilities) == -1 )

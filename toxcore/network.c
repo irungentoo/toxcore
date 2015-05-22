@@ -813,7 +813,7 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
         return;
 
     memcpy(target, source, sizeof(IP_Port));
-};
+}
 
 /* ip_ntoa
  *   converts ip into a string

@@ -71,7 +71,7 @@ typedef struct VCSession_s {
     ToxAV *av;
     uint32_t friend_number;
     
-    PAIR(toxav_receive_video_frame_cb *, void *) vcb; /* Video frame receive callback */
+    PAIR(toxav_video_receive_frame_cb *, void *) vcb; /* Video frame receive callback */
     
     pthread_mutex_t queue_mutex[1];
 } VCSession;
@@ -79,7 +79,7 @@ typedef struct VCSession_s {
 /*
  * Create new Video Codec session.
  */
-VCSession* vc_new(ToxAV* av, uint32_t friend_number, toxav_receive_video_frame_cb *cb, void *cb_data, uint32_t mvfpsz);
+VCSession* vc_new(ToxAV* av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data, uint32_t mvfpsz);
 /*
  * Kill the Video Codec session.
  */

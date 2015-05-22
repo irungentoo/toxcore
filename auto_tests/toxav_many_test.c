@@ -63,8 +63,8 @@ void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, vo
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v, 
-                                    int32_t ystride, int32_t ustride, int32_t vstride,
+                                    uint8_t const *y, uint8_t const *u, uint8_t const *v, uint8_t const *a,
+                                    int32_t ystride, int32_t ustride, int32_t vstride, int32_t stride,
                                     void *user_data)
 {
     (void) av;
@@ -115,8 +115,8 @@ ToxAV* setup_av_instance(Tox* tox, CallControl *CC)
     
     toxav_callback_call(av, t_toxav_call_cb, CC);
     toxav_callback_call_state(av, t_toxav_call_state_cb, CC);
-    toxav_callback_receive_video_frame(av, t_toxav_receive_video_frame_cb, CC);
-    toxav_callback_receive_audio_frame(av, t_toxav_receive_audio_frame_cb, CC);
+    toxav_callback_video_receive_frame(av, t_toxav_receive_video_frame_cb, CC);
+    toxav_callback_audio_receive_frame(av, t_toxav_receive_audio_frame_cb, CC);
     
     return av;
 }
@@ -161,22 +161,24 @@ void* call_thread(void* pd)
     uint8_t video_y[800*600];
     uint8_t video_u[800*600 / 2];
     uint8_t video_v[800*600 / 2];
+    uint8_t video_a[800*600];
     
     memset(PCM, 0, sizeof(PCM));
     memset(video_y, 0, sizeof(video_y));
     memset(video_u, 0, sizeof(video_u));
     memset(video_v, 0, sizeof(video_v));
+    memset(video_a, 0, sizeof(video_a));
     
     time_t start_time = time(NULL);
     while(time(NULL) - start_time < 4) {
         toxav_iterate(AliceAV);
         toxav_iterate(BobAV);
         
-        toxav_send_audio_frame(AliceAV, friend_number, PCM, 960, 1, 48000, NULL);
-        toxav_send_audio_frame(BobAV, 0, PCM, 960, 1, 48000, NULL);
+        toxav_audio_send_frame(AliceAV, friend_number, PCM, 960, 1, 48000, NULL);
+        toxav_audio_send_frame(BobAV, 0, PCM, 960, 1, 48000, NULL);
         
-        toxav_send_video_frame(AliceAV, friend_number, 800, 600, video_y, video_u, video_v, NULL);
-        toxav_send_video_frame(BobAV, 0, 800, 600, video_y, video_u, video_v, NULL);
+        toxav_video_send_frame(AliceAV, friend_number, 800, 600, video_y, video_u, video_v, video_a, NULL);
+        toxav_video_send_frame(BobAV, 0, 800, 600, video_y, video_u, video_v, video_a, NULL);
         
         c_sleep(10);
     }

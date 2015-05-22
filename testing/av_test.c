@@ -134,10 +134,15 @@ void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, vo
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v, 
-                                    int32_t ystride, int32_t ustride, int32_t vstride,
+                                    uint8_t const *y, uint8_t const *u, uint8_t const *v, uint8_t const *a,
+                                    int32_t ystride, int32_t ustride, int32_t vstride, int32_t astride,
                                     void *user_data)
 {
+    ystride = abs(ystride);
+    ustride = abs(ustride);
+    vstride = abs(vstride);
+    astride = abs(astride);
+    
     uint16_t *img_data = malloc(height * width * 6);
     
     unsigned long int i, j;
@@ -278,18 +283,18 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
     /* Alice */
     toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
-    toxav_callback_receive_video_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
-    toxav_callback_receive_audio_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
-    toxav_callback_audio_bit_rate_status(*AliceAV, t_toxav_audio_bit_rate_status_cb, AliceCC);
+    toxav_callback_video_receive_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
+    toxav_callback_audio_receive_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
     toxav_callback_video_bit_rate_status(*AliceAV, t_toxav_video_bit_rate_status_cb, AliceCC);
+    toxav_callback_audio_bit_rate_status(*AliceAV, t_toxav_audio_bit_rate_status_cb, AliceCC);
     
     /* Bob */
     toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
     toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
-    toxav_callback_receive_video_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
-    toxav_callback_receive_audio_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
-    toxav_callback_audio_bit_rate_status(*BobAV, t_toxav_audio_bit_rate_status_cb, BobCC);
+    toxav_callback_video_receive_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
+    toxav_callback_audio_receive_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
     toxav_callback_video_bit_rate_status(*BobAV, t_toxav_video_bit_rate_status_cb, BobCC);
+    toxav_callback_audio_bit_rate_status(*BobAV, t_toxav_audio_bit_rate_status_cb, BobCC);
     
     
     printf("Created 2 instances of ToxAV\n");
@@ -364,7 +369,7 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     }
     
     
-    int rc = toxav_send_video_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL);
+    int rc = toxav_video_send_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL, NULL);
     free(planes[0]);
     free(planes[1]);
     free(planes[2]);
@@ -586,7 +591,7 @@ int main (int argc, char** argv)
         err = Pa_StartStream(adout);
         assert(err == paNoError);
         
-        toxav_set_audio_bit_rate(AliceAV, 0, 64, false, NULL);
+        toxav_audio_bit_rate_set(AliceAV, 0, 64, false, NULL);
         
         /* Start write thread */
         pthread_t t;
@@ -599,7 +604,7 @@ int main (int argc, char** argv)
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
             if (count > 0) {
                 TOXAV_ERR_SEND_FRAME rc;
-                if (toxav_send_audio_frame(AliceAV, 0, PCM, count/af_info.channels, af_info.channels, af_info.samplerate, &rc) == false) {
+                if (toxav_audio_send_frame(AliceAV, 0, PCM, count/af_info.channels, af_info.channels, af_info.samplerate, &rc) == false) {
                     printf("Error sending frame of size %ld: %d\n", count, rc);
                 }
             }
@@ -691,7 +696,7 @@ int main (int argc, char** argv)
             exit(1);
         }
         
-        toxav_set_video_bit_rate(AliceAV, 0, 5000, false, NULL);
+        toxav_video_bit_rate_set(AliceAV, 0, 5000, false, NULL);
         
         time_t start_time = time(NULL);
         while(start_time + 90 > time(NULL)) {

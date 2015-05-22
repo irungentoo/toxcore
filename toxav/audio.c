@@ -38,7 +38,7 @@ bool reconfigure_audio_decoder(ACSession* ac, int32_t sampling_rate, int8_t chan
 
 
 
-ACSession* ac_new(ToxAV* av, uint32_t friend_number, toxav_receive_audio_frame_cb *cb, void *cb_data)
+ACSession* ac_new(ToxAV* av, uint32_t friend_number, toxav_audio_receive_frame_cb *cb, void *cb_data)
 {
     ACSession *ac = calloc(sizeof(ACSession), 1);
     
