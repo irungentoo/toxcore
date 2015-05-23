@@ -233,7 +233,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
  * return -1 on failure.
  * return 0 on success.
  */
-int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, _Bool connected);
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, bool connected);
 
 /* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
  *
@@ -293,7 +293,7 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
 /* Return 1 if max speed was reached for this connection (no more data can be physically through the pipe).
  * Return 0 if it wasn't reached.
  */
-_Bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
+bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
 
 /* Sends a lossless cryptopacket.
  *
@@ -371,7 +371,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, _Bool *direct_connected,
+unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
                                       unsigned int *online_tcp_relays);
 
 /* Generate our public and private keys.

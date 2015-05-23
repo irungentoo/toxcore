@@ -61,12 +61,12 @@ typedef struct {
     Payload **packets;
 } PayloadBuffer;
 
-static _Bool buffer_full(const PayloadBuffer *b)
+static bool buffer_full(const PayloadBuffer *b)
 {
     return (b->end + 1) % b->size == b->start;
 }
 
-static _Bool buffer_empty(const PayloadBuffer *b)
+static bool buffer_empty(const PayloadBuffer *b)
 {
     return b->end == b->start;
 }

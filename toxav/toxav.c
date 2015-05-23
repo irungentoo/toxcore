@@ -68,7 +68,7 @@ typedef struct _ToxAvCall {
     pthread_mutex_t mutex_do[1];
     RTPSession *crtps[2]; /** Audio is first and video is second */
     CSSession *cs;
-    _Bool active;
+    bool active;
 } ToxAvCall;
 
 struct _ToxAv {

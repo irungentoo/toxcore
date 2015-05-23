@@ -3,6 +3,7 @@
 #endif
 
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -190,9 +191,9 @@ void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, 
 }
 
 uint64_t max_sending;
-_Bool m_send_reached;
+bool m_send_reached;
 uint8_t sending_num;
-_Bool file_sending_done;
+bool file_sending_done;
 void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
                             void *user_data)
 {
@@ -244,7 +245,7 @@ void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_numb
 
 
 uint8_t num;
-_Bool file_recv;
+bool file_recv;
 void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
                 size_t length, void *user_data)
 {
