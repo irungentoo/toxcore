@@ -467,7 +467,7 @@ static int add_gca_self_announce(GC_Announce *announce, const uint8_t *chat_id, 
     return -1;
 }
 
-/* Removes all instances of chat_id from self_announce */
+/* Removes all instances of chat_id from self_announce. */
 static void remove_gca_self_announce(GC_Announce *announce, const uint8_t *chat_id)
 {
     size_t i;
@@ -751,7 +751,10 @@ int handle_gca_get_nodes_response(void *ancp, IP_Port ipp, const uint8_t *packet
     return 0;
 }
 
-/* Get group chat online members, which you searched for with get_announced_nodes_request */
+/* Retrieves nodes for chat_id (nodes must already be obtained via gca_send_announce_request).
+ *
+ * returns the number of nodes found.
+ */
 size_t gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes)
 {
     size_t i, j, k = 0;
@@ -984,10 +987,7 @@ void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id)
             memset(&announce->announcements[i], 0, sizeof(struct GC_AnnouncedNode));
     }
 
-    for (i = 0; i < MAX_GCA_SELF_ANNOUNCEMENTS; ++i) {
-        if (announce->self_announce[i].is_set && chat_id_equal(announce->self_announce[i].chat_id, chat_id))
-            memset(&announce->self_announce[i], 0, sizeof(struct GC_AnnouncedSelf));
-    }
+    remove_gca_self_announce(announce, chat_id);
 }
 
 GC_Announce *new_gca(DHT *dht)

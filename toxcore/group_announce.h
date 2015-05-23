@@ -101,8 +101,7 @@ int gca_send_get_nodes_request(GC_Announce *announce, const uint8_t *self_public
 
 /* Retrieves nodes for chat_id (nodes must already be obtained via gca_send_announce_request).
  *
- * returns 0 if no nodes found or request in progress.
- * returns the number of nodes otherwise.
+ * returns the number of nodes found.
  */
 size_t gca_get_requested_nodes(GC_Announce *announce, const uint8_t *chat_id, GC_Announce_Node *nodes);
 
@@ -112,7 +111,7 @@ void do_gca(GC_Announce *announce);
 /* Removes peer with public_key in chat_id's group from requests list */
 void gca_peer_cleanup(GC_Announce *announce, const uint8_t *chat_id, const uint8_t *peer_pk);
 
-/* Cleans up announcements related to chat_id (call on group exit) */
+/* Cleans up announcements related to chat_id (call on group exit or when privacy state is set to private) */
 void gca_cleanup(GC_Announce *announce, const uint8_t *chat_id);
 
 GC_Announce *new_gca(DHT *dht);

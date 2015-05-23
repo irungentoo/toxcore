@@ -1656,6 +1656,32 @@ int tox_group_get_topic_size(const Tox *tox, int groupnumber)
     return gc_get_group_name_size(chat);
 }
 
+/* Returns groupnumber's privacy state on success.
+ * Returns TOX_GP_INVALID on error.
+ */
+TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return TOX_GP_INVALID;
+
+    return gc_get_privacy_state(chat);
+}
+
+/* Allows the group founder to set the privacy state to one of TOX_GROUP_PRIVACY_STATE.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int tox_group_set_privacy_state(Tox *tox, int groupnumber, TOX_GROUP_PRIVACY_STATE new_privacy_state)
+{
+    Messenger *m = tox;
+    return gc_founder_set_privacy_state(m, groupnumber, new_privacy_state);
+}
+
 /* Sets your status for groupnumber.
  *
  * Return 0 on success.
@@ -1815,7 +1841,7 @@ int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool
     return gc_toggle_ignore(chat, peernumber, ignore);
 }
 
-/* Allows the group founder to set a password for group joins.
+/* Allows the group founder to set a password for the group.
  * If passwd is NULL or length is 0 password protection will be disabled.
  * length must be no larger than TOX_MAX_GROUP_PASSWD_SIZE.
  *

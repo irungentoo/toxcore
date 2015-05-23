@@ -288,6 +288,9 @@ int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
 /* Returns group name length */
 uint16_t gc_get_group_name_size(const GC_Chat *chat);
 
+/* Returns group privacy state */
+uint8_t gc_get_privacy_state(const GC_Chat *chat);
+
 /* Return 0 if success
  * Return -1 if fail
  * Return -2 if nick is taken by another group member
@@ -349,6 +352,16 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
  * Returns -2 if caller is not the group founder.
  */
 int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passwd_len);
+
+/* Sets the group privacy state and distributes the new shared state to the group.
+ *
+ * This function requires that the shared state be re-signed and will only work for the group founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_privacy_state);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);

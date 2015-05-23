@@ -539,10 +539,17 @@ static int sign_gc_shared_state(GC_Chat *chat)
     uint8_t shared_state[GC_PACKED_SHARED_STATE_SIZE];
     uint32_t packed_len = pack_gc_shared_state(shared_state, &chat->shared_state);
 
-    if (packed_len != GC_PACKED_SHARED_STATE_SIZE)
+    if (packed_len != GC_PACKED_SHARED_STATE_SIZE) {
+        --chat->shared_state.version;
         return -1;
+    }
 
-    return crypto_sign_detached(chat->shared_state_sig, NULL, shared_state, packed_len, SIG_SK(chat->chat_secret_key));
+    int ret = crypto_sign_detached(chat->shared_state_sig, NULL, shared_state, packed_len, SIG_SK(chat->chat_secret_key));
+
+    if (ret != 0)
+        --chat->shared_state.version;
+
+    return ret;
 }
 
 /* Decrypts data using the peer's shared key and a nonce.
@@ -1433,6 +1440,17 @@ static int broadcast_gc_shared_state(GC_Chat *chat)
     return 0;
 }
 
+/* If privacy state has been set to public we announce ourselves to the DHT.
+ * If privacy state has been set to private we remove our self announcement.
+ */
+static void handle_privacy_state_change(GC_Session *c, const GC_Chat *chat, uint8_t new_privacy_state)
+{
+    if (new_privacy_state == GI_PUBLIC)
+        group_announce_request(c, chat);
+    else if (new_privacy_state == GI_PRIVATE)
+        gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
+}
+
 /* Handles a shared state packet.
  *
  * Returns a non-negative value on success.
@@ -1465,8 +1483,13 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     if (version < chat->shared_state.version)
         goto on_error;
 
+    uint8_t old_privacy_state = chat->shared_state.privacy_state;
+
     unpack_gc_shared_state(&chat->shared_state, ss_data);
     memcpy(chat->shared_state_sig, signature, SIGNATURE_SIZE);
+
+    if (old_privacy_state != chat->shared_state.privacy_state)
+        handle_privacy_state_change(c, chat, chat->shared_state.privacy_state);
 
     return 0;
 
@@ -1708,6 +1731,54 @@ int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passw
         set_gc_password_local(chat, oldpasswd, oldlen);
         return -1;
     }
+
+    return broadcast_gc_shared_state(chat);
+}
+
+/* Returns group privacy state */
+uint8_t gc_get_privacy_state(const GC_Chat *chat)
+{
+    return chat->shared_state.privacy_state;
+}
+
+/* Sets the group privacy state and distributes the new shared state to the group.
+ *
+ * This function requires that the shared state be re-signed and will only work for the group founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_privacy_state)
+{
+    if (new_privacy_state >= GI_INVALID)
+        return -1;
+
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (chat->group[0].role != GR_FOUNDER)
+        return -2;
+
+    uint8_t old_privacy_state = chat->shared_state.privacy_state;
+
+    if (new_privacy_state == old_privacy_state)
+        return 0;
+
+    chat->shared_state.privacy_state = new_privacy_state;
+
+    if (sign_gc_shared_state(chat) == -1) {
+        chat->shared_state.privacy_state = old_privacy_state;
+        return -1;
+    }
+
+    if (new_privacy_state == GI_PRIVATE)
+        gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
+    else
+        group_announce_request(c, chat);
 
     return broadcast_gc_shared_state(chat);
 }

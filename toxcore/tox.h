@@ -2254,8 +2254,10 @@ typedef enum {
     /* Anyone may join the group via the chat_id */
     TOX_GP_PUBLIC,
 
-    /* A friend invite is required to join the group */
-    TOX_GP_PRIVATE
+    /* A friend invite is required to join the group and the group is hidden from the DHT */
+    TOX_GP_PRIVATE,
+
+    TOX_GP_INVALID
 } TOX_GROUP_PRIVACY_STATE;
 
 /* Group roles are hierarchical where each role has a set of privileges plus
@@ -2534,7 +2536,7 @@ int tox_group_get_topic_size(const Tox *tox, int groupnumber);
  * Return group name's length on success.
  * Return -1 on failure.
  */
- int tox_group_get_group_name(const Tox *tox, int groupnumber, uint8_t *groupname);
+int tox_group_get_group_name(const Tox *tox, int groupnumber, uint8_t *groupname);
 
 
 /* Gets groupnumber's group name's size in bytes.
@@ -2542,7 +2544,12 @@ int tox_group_get_topic_size(const Tox *tox, int groupnumber);
  * Return group name's length on success.
  * Return -1 on failure.
  */
- int tox_group_get_group_name_size(const Tox *tox, int groupnumber);
+int tox_group_get_group_name_size(const Tox *tox, int groupnumber);
+
+/* Returns groupnumber's privacy state on success.
+ * Returns TOX_GP_INVALID on error.
+ */
+TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, int groupnumber);
 
 /* Sets your status for groupnumber.
  *
@@ -2628,6 +2635,14 @@ int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool
  * Returns -2 if caller is not the group founder.
  */
 int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uint16_t length);
+
+/* Allows the group founder to set the privacy state to one of TOX_GROUP_PRIVACY_STATE.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int tox_group_set_privacy_state(Tox *tox, int groupnumber, TOX_GROUP_PRIVACY_STATE new_privacy_state);
 
 #ifdef __cplusplus
 }
