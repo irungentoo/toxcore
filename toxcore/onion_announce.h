@@ -25,7 +25,7 @@
 
 #include "onion.h"
 
-#define ONION_ANNOUNCE_MAX_ENTRIES 64
+#define ONION_ANNOUNCE_MAX_ENTRIES 96
 #define ONION_ANNOUNCE_TIMEOUT 300
 #define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
 

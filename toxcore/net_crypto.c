@@ -2359,6 +2359,8 @@ void new_keys(Net_Crypto *c)
 
 /* Save the public and private keys to the keys array.
  * Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
+ *
+ * TODO: Save only secret key.
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys)
 {
@@ -2366,13 +2368,13 @@ void save_keys(const Net_Crypto *c, uint8_t *keys)
     memcpy(keys + crypto_box_PUBLICKEYBYTES, c->self_secret_key, crypto_box_SECRETKEYBYTES);
 }
 
-/* Load the public and private keys from the keys array.
- * Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
+/* Load the secret key.
+ * Length must be crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, const uint8_t *keys)
+void load_secret_key(Net_Crypto *c, const uint8_t *sk)
 {
-    memcpy(c->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
-    memcpy(c->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
+    memcpy(c->self_secret_key, sk, crypto_box_SECRETKEYBYTES);
+    crypto_scalarmult_curve25519_base(c->self_public_key, c->self_secret_key);
 }
 
 /* Run this to (re)initialize net_crypto.

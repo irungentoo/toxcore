@@ -121,37 +121,51 @@ void tox_options_free(struct Tox_Options *options)
     free(options);
 }
 
-Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t length, TOX_ERR_NEW *error)
+Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 {
     if (!logger_get_global())
         logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
 
-    if (data == NULL && length != 0) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_NULL);
-        return NULL;
-    }
-
-    if (data && length) {
-        if (length < TOX_ENC_SAVE_MAGIC_LENGTH) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-            return NULL;
-        }
-
-        if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
-            return NULL;
-        }
-    }
-
     Messenger_Options m_options = {0};
+
+    _Bool load_savedata_sk = 0, load_savedata_tox = 0;
 
     if (options == NULL) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     } else {
+        if (options->savedata_type != TOX_SAVEDATA_TYPE_NONE) {
+            if (options->savedata_data == NULL || options->savedata_length == 0) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+                return NULL;
+            }
+        }
+
+        if (options->savedata_type == TOX_SAVEDATA_TYPE_SECRET_KEY) {
+            if (options->savedata_length != TOX_SECRET_KEY_SIZE) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+                return NULL;
+            }
+
+            load_savedata_sk = 1;
+        } else if (options->savedata_type == TOX_SAVEDATA_TYPE_TOX_SAVE) {
+            if (options->savedata_length < TOX_ENC_SAVE_MAGIC_LENGTH) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+                return NULL;
+            }
+
+            if (memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
+                return NULL;
+            }
+
+            load_savedata_tox = 1;
+        }
+
         m_options.ipv6enabled = options->ipv6_enabled;
         m_options.udp_disabled = !options->udp_enabled;
         m_options.port_range[0] = options->start_port;
         m_options.port_range[1] = options->end_port;
+        m_options.tcp_server_port = options->tcp_port;
 
         switch (options->proxy_type) {
             case TOX_PROXY_TYPE_HTTP:
@@ -195,8 +209,11 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
     unsigned int m_error;
     Messenger *m = new_messenger(&m_options, &m_error);
 
-    if (data && length && messenger_load(m, data, length) == -1) {
+    if (load_savedata_tox && messenger_load(m, options->savedata_data, options->savedata_length) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+    } else if (load_savedata_sk) {
+        load_secret_key(m->net_crypto, options->savedata_data);
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     }
@@ -226,31 +243,6 @@ void tox_get_savedata(const Tox *tox, uint8_t *data)
     }
 }
 
-static int address_to_ip(Messenger *m, const char *address, IP_Port *ip_port, IP_Port *ip_port_v4)
-{
-    if (!addr_parse_ip(address, &ip_port->ip)) {
-        if (m->options.udp_disabled) { /* Disable DNS when udp is disabled. */
-            return -1;
-        }
-
-        IP *ip_extra = NULL;
-        ip_init(&ip_port->ip, m->options.ipv6enabled);
-
-        if (m->options.ipv6enabled && ip_port_v4) {
-            /* setup for getting BOTH: an IPv6 AND an IPv4 address */
-            ip_port->ip.family = AF_UNSPEC;
-            ip_reset(&ip_port_v4->ip);
-            ip_extra = &ip_port_v4->ip;
-        }
-
-        if (!addr_resolve(address, &ip_port->ip, ip_extra)) {
-            return -1;
-        }
-    }
-
-    return 0;
-}
-
 bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error)
 {
     if (!address || !public_key) {
@@ -258,23 +250,53 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
         return 0;
     }
 
-    Messenger *m = tox;
-    bool ret = tox_add_tcp_relay(tox, address, port, public_key, error);
-
-    if (!ret) {
+    if (port == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
         return 0;
     }
 
-    if (m->options.udp_disabled) {
-        return ret;
-    } else { /* DHT only works on UDP. */
-        if (DHT_bootstrap_from_address(m->dht, address, m->options.ipv6enabled, htons(port), public_key) == 0) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-            return 0;
+    struct addrinfo *root, *info;
+
+    if (getaddrinfo(address, NULL, NULL, &root) != 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        return 0;
+    }
+
+    info = root;
+
+    unsigned int count = 0;
+
+    do {
+        IP_Port ip_port;
+        ip_port.port = htons(port);
+        ip_port.ip.family = info->ai_family;
+
+        if (info->ai_socktype && info->ai_socktype != SOCK_DGRAM) {
+            continue;
         }
 
+        if (info->ai_family == AF_INET) {
+            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
+        } else if (info->ai_family == AF_INET6) {
+            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
+        } else {
+            continue;
+        }
+
+        Messenger *m = tox;
+        onion_add_bs_path_node(m->onion_c, ip_port, public_key);
+        DHT_bootstrap(m->dht, ip_port, public_key);
+        ++count;
+    } while ((info = info->ai_next));
+
+    freeaddrinfo(root);
+
+    if (count) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        return 0;
     }
 }
 
@@ -286,25 +308,53 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
         return 0;
     }
 
-    Messenger *m = tox;
-    IP_Port ip_port, ip_port_v4;
-
     if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
         return 0;
     }
 
-    if (address_to_ip(m, address, &ip_port, &ip_port_v4) == -1) {
+    struct addrinfo *root, *info;
+
+    if (getaddrinfo(address, NULL, NULL, &root) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
 
-    ip_port.port = htons(port);
-    add_tcp_relay(m->net_crypto, ip_port, public_key);
-    onion_add_bs_path_node(m->onion_c, ip_port, public_key); //TODO: move this
+    info = root;
 
-    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
-    return 1;
+    unsigned int count = 0;
+
+    do {
+        IP_Port ip_port;
+        ip_port.port = htons(port);
+        ip_port.ip.family = info->ai_family;
+
+        if (info->ai_socktype && info->ai_socktype != SOCK_STREAM) {
+            continue;
+        }
+
+        if (info->ai_family == AF_INET) {
+            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
+        } else if (info->ai_family == AF_INET6) {
+            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
+        } else {
+            continue;
+        }
+
+        Messenger *m = tox;
+        add_tcp_relay(m->net_crypto, ip_port, public_key);
+        ++count;
+    } while ((info = info->ai_next));
+
+    freeaddrinfo(root);
+
+    if (count) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
+        return 1;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        return 0;
+    }
 }
 
 TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
@@ -1192,9 +1242,15 @@ uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 
 uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 {
-    /* TCP server not yet implemented in clients. */
-    SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
-    return 0;
+    const Messenger *m = tox;
+
+    if (m->tcp_server) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
+        return m->options.tcp_server_port;
+    } else {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+        return 0;
+    }
 }
 
 /**************** GROUPCHAT FUNCTIONS *****************/

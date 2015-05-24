@@ -1838,6 +1838,27 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return NULL;
     }
 
+    if (options->tcp_server_port) {
+        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_public_key,
+                                       m->dht->self_secret_key, m->onion);
+
+        if (m->tcp_server == NULL) {
+            kill_friend_connections(m->fr_c);
+            kill_onion(m->onion);
+            kill_onion_announce(m->onion_a);
+            kill_onion_client(m->onion_c);
+            kill_DHT(m->dht);
+            kill_net_crypto(m->net_crypto);
+            kill_networking(m->net);
+            free(m);
+
+            if (error)
+                *error = MESSENGER_ERROR_TCP_SERVER;
+
+            return NULL;
+        }
+    }
+
     m->options = *options;
     friendreq_init(&(m->fr), m->fr_c);
     set_nospam(&(m->fr), random_int());
@@ -1856,6 +1877,10 @@ void kill_messenger(Messenger *m)
         return;
 
     uint32_t i;
+
+    if (m->tcp_server) {
+        kill_TCP_server(m->tcp_server);
+    }
 
     kill_friend_connections(m->fr_c);
     kill_onion(m->onion);
@@ -2291,6 +2316,15 @@ void do_messenger(Messenger *m)
         for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
             add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
         }
+
+        if (m->tcp_server) {
+            /* Add self tcp server. */
+            IP_Port local_ip_port;
+            local_ip_port.port = m->options.tcp_server_port;
+            local_ip_port.ip.family = AF_INET;
+            local_ip_port.ip.ip4.uint32 = INADDR_LOOPBACK;
+            add_tcp_relay(m->net_crypto, local_ip_port, m->tcp_server->public_key);
+        }
     }
 
     unix_time_update();
@@ -2298,6 +2332,10 @@ void do_messenger(Messenger *m)
     if (!m->options.udp_disabled) {
         networking_poll(m->net);
         do_DHT(m->dht);
+    }
+
+    if (m->tcp_server) {
+        do_TCP_server(m->tcp_server);
     }
 
     do_net_crypto(m->net_crypto);
@@ -2707,13 +2745,11 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
                 set_nospam(&(m->fr), *(uint32_t *)data);
-                load_keys(m->net_crypto, &data[sizeof(uint32_t)]);
-#ifdef ENABLE_ASSOC_DHT
+                load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + crypto_box_PUBLICKEYBYTES);
 
-                if (m->dht->assoc)
-                    Assoc_self_client_id_changed(m->dht->assoc, m->net_crypto->self_public_key);
-
-#endif
+                if (memcmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+                    return -1;
+                }
             } else
                 return -1;    /* critical */
 

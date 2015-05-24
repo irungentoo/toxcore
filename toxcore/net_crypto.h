@@ -384,10 +384,10 @@ void new_keys(Net_Crypto *c);
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys);
 
-/* Load the public and private keys from the keys array.
- *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
+/* Load the secret key.
+ * Length must be crypto_box_SECRETKEYBYTES.
  */
-void load_keys(Net_Crypto *c, const uint8_t *keys);
+void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.

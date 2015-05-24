@@ -286,8 +286,8 @@ void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *use
 
 START_TEST(test_one)
 {
-    Tox *tox1 = tox_new(0, 0, 0, 0);
-    Tox *tox2 = tox_new(0, 0, 0, 0);
+    Tox *tox1 = tox_new(0, 0);
+    Tox *tox2 = tox_new(0, 0);
 
     {
         TOX_ERR_GET_PORT error;
@@ -332,6 +332,7 @@ START_TEST(test_one)
     tox_self_set_name(tox1, name, sizeof(name), 0);
     ck_assert_msg(tox_self_get_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
 
+    tox_self_get_address(tox1, address);
     size_t save_size = tox_get_savedata_size(tox1);
     uint8_t data[save_size];
     tox_get_savedata(tox1, data);
@@ -339,11 +340,19 @@ START_TEST(test_one)
     tox_kill(tox2);
     TOX_ERR_NEW err_n;
 
-    tox2 = tox_new(0, data, save_size, &err_n);
+    struct Tox_Options options;
+    tox_options_default(&options);
+    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+    options.savedata_data = data;
+    options.savedata_length = save_size;
+    tox2 = tox_new(&options, &err_n);
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
 
     ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
 
+    uint8_t address2[TOX_ADDRESS_SIZE];
+    tox_self_get_address(tox2, address2);
+    ck_assert_msg(memcmp(address2, address, TOX_ADDRESS_SIZE) == 0, "Wrong address.");
     uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
     tox_self_get_name(tox2, new_name);
     ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");
@@ -357,11 +366,11 @@ START_TEST(test_few_clients)
 {
     long long unsigned int con_time, cur_time = time(NULL);
     TOX_ERR_NEW t_n_error;
-    Tox *tox1 = tox_new(0, 0, 0, &t_n_error);
+    Tox *tox1 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
-    Tox *tox2 = tox_new(0, 0, 0, &t_n_error);
+    Tox *tox2 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
-    Tox *tox3 = tox_new(0, 0, 0, &t_n_error);
+    Tox *tox3 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
 
     ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
@@ -741,7 +750,7 @@ START_TEST(test_many_clients)
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES; ++i) {
-        toxes[i] = tox_new(0, 0, 0, 0);
+        toxes[i] = tox_new(0, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
     }
@@ -809,6 +818,196 @@ loop_top:
 }
 END_TEST
 
+#define TCP_RELAY_PORT 33448
+
+START_TEST(test_many_clients_tcp)
+{
+    long long unsigned int cur_time = time(NULL);
+    Tox *toxes[NUM_TOXES];
+    uint32_t i, j;
+    uint32_t to_comp = 974536;
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        struct Tox_Options opts;
+        tox_options_default(&opts);
+
+        if (i == 0) {
+            opts.tcp_port = TCP_RELAY_PORT;
+        } else {
+            opts.udp_enabled = 0;
+        }
+
+        toxes[i] = tox_new(&opts, 0);
+        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
+        uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
+        tox_self_get_dht_id(toxes[0], dpk);
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], "::1", TCP_RELAY_PORT, dpk, 0), "add relay error");
+        ck_assert_msg(tox_bootstrap(toxes[i], "::1", 33445, dpk, 0), "Bootstrap error");
+    }
+
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+        ck_assert_msg(tox_self_get_tcp_port(toxes[0], &error) == TCP_RELAY_PORT,
+                      "First Tox instance did not bind to tcp port %u.\n", TCP_RELAY_PORT);
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
+    struct {
+        uint16_t tox1;
+        uint16_t tox2;
+    } pairs[NUM_FRIENDS];
+
+    uint8_t address[TOX_ADDRESS_SIZE];
+
+    for (i = 0; i < NUM_FRIENDS; ++i) {
+loop_top:
+        pairs[i].tox1 = rand() % NUM_TOXES;
+        pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+
+        for (j = 0; j < i; ++j) {
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+                goto loop_top;
+        }
+
+        tox_self_get_address(toxes[pairs[i].tox1], address);
+
+        TOX_ERR_FRIEND_ADD test;
+        uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (uint8_t *)"Gentoo", 7, &test);
+
+        if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {
+            goto loop_top;
+        }
+
+        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
+    }
+
+    while (1) {
+        uint16_t counter = 0;
+
+        for (i = 0; i < NUM_TOXES; ++i) {
+            for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
+                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP)
+                    ++counter;
+        }
+
+        if (counter == NUM_FRIENDS * 2) {
+            break;
+        }
+
+        for (i = 0; i < NUM_TOXES; ++i) {
+            tox_iterate(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        tox_kill(toxes[i]);
+    }
+
+    printf("test_many_clients_tcp succeeded, took %llu seconds\n", time(NULL) - cur_time);
+}
+END_TEST
+
+#define NUM_TCP_RELAYS 3
+
+START_TEST(test_many_clients_tcp_b)
+{
+    long long unsigned int cur_time = time(NULL);
+    Tox *toxes[NUM_TOXES];
+    uint32_t i, j;
+    uint32_t to_comp = 974536;
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        struct Tox_Options opts;
+        tox_options_default(&opts);
+
+        if (i < NUM_TCP_RELAYS) {
+            opts.tcp_port = TCP_RELAY_PORT + i;
+        } else {
+            opts.udp_enabled = 0;
+        }
+
+        toxes[i] = tox_new(&opts, 0);
+        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
+        uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
+        tox_self_get_dht_id(toxes[(i % NUM_TCP_RELAYS)], dpk);
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], "::1", TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, 0), "add relay error");
+        tox_self_get_dht_id(toxes[0], dpk);
+        ck_assert_msg(tox_bootstrap(toxes[i], "::1", 33445, dpk, 0), "Bootstrap error");
+    }
+
+    {
+        TOX_ERR_GET_PORT error;
+        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+        ck_assert_msg(tox_self_get_tcp_port(toxes[0], &error) == TCP_RELAY_PORT,
+                      "First Tox instance did not bind to tcp port %u.\n", TCP_RELAY_PORT);
+        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
+    }
+
+    struct {
+        uint16_t tox1;
+        uint16_t tox2;
+    } pairs[NUM_FRIENDS];
+
+    uint8_t address[TOX_ADDRESS_SIZE];
+
+    for (i = 0; i < NUM_FRIENDS; ++i) {
+loop_top:
+        pairs[i].tox1 = rand() % NUM_TOXES;
+        pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+
+        for (j = 0; j < i; ++j) {
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+                goto loop_top;
+        }
+
+        tox_self_get_address(toxes[pairs[i].tox1], address);
+
+        TOX_ERR_FRIEND_ADD test;
+        uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (uint8_t *)"Gentoo", 7, &test);
+
+        if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {
+            goto loop_top;
+        }
+
+        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
+    }
+
+    while (1) {
+        uint16_t counter = 0;
+
+        for (i = 0; i < NUM_TOXES; ++i) {
+            for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
+                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP)
+                    ++counter;
+        }
+
+        if (counter == NUM_FRIENDS * 2) {
+            break;
+        }
+
+        for (i = 0; i < NUM_TOXES; ++i) {
+            tox_iterate(toxes[i]);
+        }
+
+        c_sleep(50);
+    }
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        tox_kill(toxes[i]);
+    }
+
+    printf("test_many_clients_tcp_b succeeded, took %llu seconds\n", time(NULL) - cur_time);
+}
+END_TEST
+
+
 #define NUM_GROUP_TOX 32
 
 void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
@@ -868,7 +1067,7 @@ START_TEST(test_many_group)
     uint32_t to_comp = 234212;
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
-        toxes[i] = tox_new(0, 0, 0, 0);
+        toxes[i] = tox_new(0, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request, &to_comp);
         tox_callback_group_invite(toxes[i], &print_group_invite_callback, &to_comp);
@@ -996,6 +1195,8 @@ Suite *tox_suite(void)
     DEFTESTCASE(one);
     DEFTESTCASE_SLOW(few_clients, 50);
     DEFTESTCASE_SLOW(many_clients, 150);
+    DEFTESTCASE_SLOW(many_clients_tcp, 20);
+    DEFTESTCASE_SLOW(many_clients_tcp_b, 20);
     DEFTESTCASE_SLOW(many_group, 100);
     return s;
 }

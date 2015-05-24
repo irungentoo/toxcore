@@ -942,7 +942,17 @@ static Tox *load_data()
             return 0;
         }
 
-        Tox *m = tox_new(0, data, size, NULL);
+        struct Tox_Options options;
+
+        tox_options_default(&options);
+
+        options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+
+        options.savedata_data = data;
+
+        options.savedata_length = size;
+
+        Tox *m = tox_new(&options, NULL);
 
         if (fclose(data_file) < 0) {
             perror("[!] fclose failed");
@@ -953,7 +963,7 @@ static Tox *load_data()
         return m;
     }
 
-    return tox_new(0, 0, 0, NULL);
+    return tox_new(NULL, NULL);
 }
 
 static int save_data(Tox *m)

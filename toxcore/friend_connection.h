@@ -96,6 +96,8 @@ typedef struct {
 
     Node_format tcp_relays[FRIEND_MAX_STORED_TCP_RELAYS];
     uint16_t tcp_relay_counter;
+
+    _Bool hosting_tcp_relay;
 } Friend_Conn;
 
 

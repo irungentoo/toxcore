@@ -250,9 +250,9 @@ if (status_control.Alice.status == Ended && status_control.Bob.status == Ended) 
 START_TEST(test_AV_flows)
 {
     long long unsigned int cur_time = time(NULL);
-    Tox *bootstrap_node = tox_new(0, 0, 0, 0);
-    Tox *Alice = tox_new(0, 0, 0, 0);
-    Tox *Bob = tox_new(0, 0, 0, 0);
+    Tox *bootstrap_node = tox_new(0, 0);
+    Tox *Alice = tox_new(0, 0);
+    Tox *Bob = tox_new(0, 0);
 
     ck_assert_msg(bootstrap_node || Alice || Bob, "Failed to create 3 tox instances");
 
