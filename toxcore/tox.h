@@ -2551,6 +2551,26 @@ int tox_group_get_group_name_size(const Tox *tox, int groupnumber);
  */
 TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, int groupnumber);
 
+/* Allows the group founder to set the privacy state to one of TOX_GROUP_PRIVACY_STATE.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int tox_group_set_privacy_state(Tox *tox, int groupnumber, TOX_GROUP_PRIVACY_STATE new_privacy_state);
+
+/* Returns the group peer limit on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_peer_limit(const Tox *tox, int groupnumber);
+
+/* Allows the group founder to set the peer limit to maxpeers.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int tox_group_set_peer_limit(Tox *tox, int groupnumber, uint32_t maxpeers);
+
 /* Sets your status for groupnumber.
  *
  * Return 0 on success.
@@ -2635,14 +2655,6 @@ int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool
  * Returns -2 if caller is not the group founder.
  */
 int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uint16_t length);
-
-/* Allows the group founder to set the privacy state to one of TOX_GROUP_PRIVACY_STATE.
- *
- * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller is not the group founder.
- */
-int tox_group_set_privacy_state(Tox *tox, int groupnumber, TOX_GROUP_PRIVACY_STATE new_privacy_state);
 
 #ifdef __cplusplus
 }

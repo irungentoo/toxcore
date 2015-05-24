@@ -1682,6 +1682,36 @@ int tox_group_set_privacy_state(Tox *tox, int groupnumber, TOX_GROUP_PRIVACY_STA
     return gc_founder_set_privacy_state(m, groupnumber, new_privacy_state);
 }
 
+/* Returns the group peer limit on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_peer_limit(const Tox *tox, int groupnumber)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_get_max_peers(chat);
+}
+
+/* Allows the group founder to set the peer limit to maxpeers.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int tox_group_set_peer_limit(Tox *tox, int groupnumber, uint32_t maxpeers)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_founder_set_max_peers(chat, groupnumber, maxpeers);
+}
+
 /* Sets your status for groupnumber.
  *
  * Return 0 on success.

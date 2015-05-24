@@ -60,7 +60,9 @@
 #define MIN_GC_LOSSY_PACKET_SIZE (MIN_GC_LOSSLESS_PACKET_SIZE - MESSAGE_ID_BYTES)
 
 #define MAX_GC_PACKET_SIZE 65507
-#define MAX_GC_NUM_PEERS 512
+
+/* approximation of the sync response packet size limit */
+#define MAX_GC_NUM_PEERS ((MAX_GC_PACKET_SIZE - MAX_GC_TOPIC_SIZE) / (ENC_PUBLIC_KEY + sizeof(IP_Port)))
 
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *public_key);
@@ -205,6 +207,9 @@ static int set_gc_password_local(GC_Chat *chat, const uint8_t *passwd, uint16_t 
  */
 static int group_announce_request(GC_Session *c, const GC_Chat *chat)
 {
+    if (chat->shared_state.version == 0)
+        return -1;
+
     if (chat->shared_state.privacy_state != GI_PUBLIC)
         return 0;
 
@@ -329,7 +334,7 @@ static uint32_t get_gc_confirmed_numpeers(const GC_Chat *chat)
 }
 
 /* Packs number of peer addresses into data of maxlength length.
- * Note: Only the encryption part of the public key is packed.
+ * Note: Only the encryption public key is packed.
  *
  * Return length of packed peer addresses on success.
  * Return -1 on failure.
@@ -873,13 +878,13 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     memcpy(response + len, chat->topic, chat->topic_len);
     len += chat->topic_len;
 
-    int peer_addr_size = sizeof(GC_PeerAddress) * (chat->numpeers - 1);
+    size_t packed_addrs_size = (ENC_PUBLIC_KEY + sizeof(IP_Port)) * (chat->numpeers - 1);   /* approx. */
 
     /* This is the technical limit to the number of peers you can have in a group (TODO: split packet?) */
-    if ((HASH_ID_BYTES + peer_addr_size + sizeof(uint16_t) + chat->topic_len) > MAX_GC_PACKET_SIZE)
+    if ((HASH_ID_BYTES + packed_addrs_size + sizeof(uint16_t) + chat->topic_len) > MAX_GC_PACKET_SIZE)
         return -1;
 
-    GC_PeerAddress *peer_addrs = calloc(1, peer_addr_size);
+    GC_PeerAddress *peer_addrs = calloc(1, sizeof(GC_PeerAddress) * (chat->numpeers - 1));
 
     if (peer_addrs == NULL)
         return -1;
@@ -900,8 +905,9 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     U32_to_bytes(response + len, num);
     len += sizeof(uint32_t);
 
-    int addrs_len = pack_gc_addresses(response + len, sizeof(GC_PeerAddress) * num, peer_addrs, num);
+    int addrs_len = pack_gc_addresses(response + len, sizeof(response) - len, peer_addrs, num);
     len += addrs_len;
+
     free(peer_addrs);
 
     if (addrs_len <= 0) {
@@ -1098,7 +1104,7 @@ int handle_gc_invite_request(Messenger *m, int groupnumber, uint32_t peernumber,
 
     uint8_t invite_error = GJ_INVITE_FAILED;
 
-    if (chat->numpeers >= chat->shared_state.maxpeers) {
+    if (get_gc_confirmed_numpeers(chat) >= chat->shared_state.maxpeers) {
         invite_error = GJ_GROUP_FULL;
         goto failed_invite;
     }
@@ -1316,6 +1322,9 @@ static int handle_gc_peer_info_request(Messenger *m, int groupnumber, uint32_t p
     if (chat == NULL)
         return -1;
 
+    if (!chat->gcc[peernumber].confirmed && get_gc_confirmed_numpeers(chat) >= chat->shared_state.maxpeers)
+        return -1;
+
     return send_self_to_peer(c, chat, peernumber);
 }
 
@@ -1361,7 +1370,7 @@ static int handle_gc_peer_info_response(Messenger *m, int groupnumber, uint32_t 
     if (chat->connection_state != CS_CONNECTED)
         return -1;
 
-    if (chat->numpeers >= chat->shared_state.maxpeers)
+    if (!chat->gcc[peernumber].confirmed && get_gc_confirmed_numpeers(chat) >= chat->shared_state.maxpeers)
         return -1;
 
     if (chat->shared_state.passwd_len > 0) {
@@ -1405,7 +1414,7 @@ static int handle_gc_peer_info_response(Messenger *m, int groupnumber, uint32_t 
  */
 static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber)
 {
-    if (chat->shared_state.group_name_len == 0)
+    if (chat->shared_state.version == 0)
         return -1;
 
     uint8_t packet[GC_SHARED_STATE_ENC_PACKET_SIZE];
@@ -1498,7 +1507,7 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
 on_error:
     gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 
-    if (chat->shared_state.group_name_len == 0) {
+    if (chat->shared_state.version == 0) {
         chat->connection_state = CS_DISCONNECTED;
         return -1;
     }
@@ -1779,6 +1788,41 @@ int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_priv
         gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
     else
         group_announce_request(c, chat);
+
+    return broadcast_gc_shared_state(chat);
+}
+
+/* Returns the group peer limit. */
+uint32_t gc_get_max_peers(const GC_Chat *chat)
+{
+    return chat->shared_state.maxpeers;
+}
+
+/* Sets the peer limit to maxpeers and distributes the new shared state to the group.
+ *
+ * This function requires that the shared state be re-signed and will only work for the group founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
+ */
+int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers)
+{
+    if (chat->group[0].role != GR_FOUNDER)
+        return -2;
+
+    maxpeers = MIN(maxpeers, MAX_GC_NUM_PEERS);
+    uint32_t old_maxpeers = chat->shared_state.maxpeers;
+
+    if (maxpeers == chat->shared_state.maxpeers)
+        return 0;
+
+    chat->shared_state.maxpeers = maxpeers;
+
+    if (sign_gc_shared_state(chat) == -1) {
+        chat->shared_state.maxpeers = old_maxpeers;
+        return -1;
+    }
 
     return broadcast_gc_shared_state(chat);
 }
@@ -2236,6 +2280,9 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
         return -1;
 
     if (chat->connection_state == CS_FAILED)
+        return -1;
+
+    if (chat->shared_state.version == 0)
         return -1;
 
     if (chat->connection_O_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
@@ -3060,7 +3107,7 @@ void do_gc(GC_Session *c)
                     self_gc_connected(chat);
 
                     /* If we can't get an invite we assume the group is empty */
-                    if (chat->shared_state.group_name_len == 0 || group_announce_request(c, chat) == -1) {
+                    if (chat->shared_state.version == 0 || group_announce_request(c, chat) == -1) {
                         if (c->rejected)
                             (*c->rejected)(c->messenger, i, GJ_INVITE_FAILED, c->rejected_userdata);
 
