@@ -516,6 +516,8 @@ static class options {
  *   NULL, the default options are used.
  *
  * @see $iterate for the event loop.
+ *
+ * @return A new Tox instance pointer on success or NULL on failure.
  */
 static this new(const options_t *options) {
   NULL,
