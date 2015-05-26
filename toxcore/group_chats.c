@@ -3474,6 +3474,9 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
 {
     send_gc_self_exit(chat, NULL, 0);
 
+    clear_gc_addrs_list(chat);
+    chat->num_addrs = gc_copy_peer_addrs(chat, chat->addr_list, MAX_GC_PEER_ADDRS);
+
     uint32_t i;
 
     /* Remove all peers except self. Numpeers decrements with each call to gc_peer_delete */
