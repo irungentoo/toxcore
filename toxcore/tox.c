@@ -1299,15 +1299,15 @@ void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t,
     gc_callback_action(m, function, userdata);
 }
 
-/* Set the callback for group operator certificates.
+/* Set the callback for group moderation events where type is one of TOX_GROUP_MOD_TYPE.
  *
- *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, uint8_t certificate_type, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, TOX_GROUP_MOD_TYPE type, void *userdata)
  */
-void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t, uint8_t, void *),
-                                       void *userdata)
+void tox_callback_group_moderation(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t,
+                                   TOX_GROUP_MOD_TYPE, void *), void *userdata)
 {
     Messenger *m = tox;
-    gc_callback_op_certificate(m, function, userdata);
+    gc_callback_moderation(m, function, userdata);
 }
 
 /* Set the callback for group peer nickname changes.
@@ -1756,6 +1756,7 @@ int tox_group_get_peer_limit(const Tox *tox, int groupnumber)
  *
  * Returns 0 on success.
  * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
  */
 int tox_group_set_peer_limit(Tox *tox, int groupnumber, uint32_t maxpeers)
 {
@@ -1946,4 +1947,16 @@ int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uin
         return -1;
 
     return gc_founder_set_password(chat, passwd, length);
+}
+
+/* Kicks peernumber from the group.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have permission to kick.
+ */
+int tox_group_op_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
+{
+    Messenger *m = tox;
+    return gc_op_kick_peer(m, groupnumber, peernumber);
 }

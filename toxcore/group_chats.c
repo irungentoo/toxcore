@@ -35,8 +35,8 @@
 #include "util.h"
 #include "Messenger.h"
 
-#define GROUP_MAX_PADDING 8
-#define GROUP_PACKET_PADDING_LENGTH(length) (((MAX_GC_PACKET_SIZE - (length)) % GROUP_MAX_PADDING))
+#define GC_MAX_PACKET_PADDING 8
+#define GC_PACKET_PADDING_LENGTH(length) (((MAX_GC_PACKET_SIZE - (length)) % GC_MAX_PACKET_PADDING))
 
 #define GC_PLAIN_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + SIG_PUBLIC_KEY\
                                  + sizeof(uint8_t) + sizeof(uint8_t))
@@ -62,7 +62,7 @@
 #define MAX_GC_PACKET_SIZE 65507
 
 /* approximation of the sync response packet size limit */
-#define MAX_GC_NUM_PEERS ((MAX_GC_PACKET_SIZE - MAX_GC_TOPIC_SIZE) / (ENC_PUBLIC_KEY + sizeof(IP_Port)))
+#define MAX_GC_NUM_PEERS ((MAX_GC_PACKET_SIZE - MAX_GC_TOPIC_SIZE - sizeof(uint16_t)) / (ENC_PUBLIC_KEY + sizeof(IP_Port)))
 
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *public_key);
@@ -618,7 +618,7 @@ static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, 
                              const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type,
                              uint32_t chat_id_hash, uint8_t packet_id)
 {
-    uint16_t padding_len = GROUP_PACKET_PADDING_LENGTH(length);
+    uint16_t padding_len = GC_PACKET_PADDING_LENGTH(length);
 
     if (length + padding_len + MIN_GC_LOSSLESS_PACKET_SIZE > MAX_GC_PACKET_SIZE)
         return -1;
@@ -1700,22 +1700,6 @@ uint16_t gc_get_group_name_size(const GC_Chat *chat)
     return chat->shared_state.group_name_len;
 }
 
-/* Sends a plain message or an action, depending on type.
- *
- * Returns non-negative value on success.
- * Returns -1 on failure.
- */
-int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type)
-{
-    if (length > MAX_GC_MESSAGE_SIZE || length == 0)
-        return -1;
-
-    if (chat->group[0].role >= GR_OBSERVER)
-        return -1;
-
-    return send_gc_broadcast_packet(chat, message, length, type);
-}
-
 /* Sets the group password and distributes the new shared state to the group.
  *
  * This function requires that the shared state be re-signed and will only work for the group founder.
@@ -1827,6 +1811,22 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers)
     return broadcast_gc_shared_state(chat);
 }
 
+/* Sends a plain message or an action, depending on type.
+ *
+ * Returns non-negative value on success.
+ * Returns -1 on failure.
+ */
+int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type)
+{
+    if (length > MAX_GC_MESSAGE_SIZE || length == 0)
+        return -1;
+
+    if (chat->group[0].role >= GR_OBSERVER)
+        return -1;
+
+    return send_gc_broadcast_packet(chat, message, length, type);
+}
+
 static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                              uint32_t length, uint8_t type)
 {
@@ -1851,6 +1851,11 @@ static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber,
     return 0;
 }
 
+/* Sends a private message to peernumber.
+ *
+ * Returns non-negative value on success.
+ * Returns -1 on failure.
+ */
 int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length)
 {
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
@@ -1887,6 +1892,77 @@ static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t pee
         (*c->private_message)(m, groupnumber, peernumber, data, length, c->private_message_userdata);
 
     return 0;
+}
+
+static int handle_bc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                  uint32_t length)
+{
+    if (length != ENC_PUBLIC_KEY)
+        return -1;
+
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (chat->group[peernumber].role >= GR_USER)
+        return -1;
+
+    uint8_t target_pk[ENC_PUBLIC_KEY];
+    memcpy(target_pk, data, ENC_PUBLIC_KEY);
+
+    int target_peernumber = peer_in_chat(chat, target_pk);
+
+    if (!peernumber_valid(chat, target_peernumber))
+        return -1;
+
+    if (target_peernumber == 0) {
+        group_delete(c, chat);
+        return 0;
+    }
+
+    if (chat->group[target_peernumber].role == GR_FOUNDER)
+        return 0;
+
+    chat->gcc[target_peernumber].confirmed = false;  /* prevents the normal peer exit callback */
+
+    if (c->moderation)
+        (*c->moderation)(m, groupnumber, peernumber, target_peernumber, MOD_KICK, c->moderation_userdata);
+
+    return gc_peer_delete(m, groupnumber, target_peernumber, NULL, 0);
+}
+
+/* Instructs all other peers to remove peernumber from their peerlist.
+ *
+ * Returns a 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if the caller does not have kick permissions.
+ */
+int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
+{
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (peernumber == 0)
+        return -1;
+
+    if (chat->group[0].role >= GR_USER || chat->group[peernumber].role == GR_FOUNDER)
+        return -2;
+
+    if (!peernumber_valid(chat, peernumber))
+        return -1;
+
+    uint32_t length = ENC_PUBLIC_KEY;
+    uint8_t packet[length];
+    memcpy(packet, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
+
+    if (send_gc_broadcast_packet(chat, packet, length, GM_OP_KICK_PEER) == -1)
+        return -1;
+
+    return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 }
 
 static int make_role_cert(const uint8_t *secret_key, const uint8_t *public_key, const uint8_t *target_pub_key,
@@ -1936,9 +2012,6 @@ static int handle_bc_op_certificate(Messenger *m, int groupnumber, uint32_t peer
         return -1;
 
     uint8_t cert_type = data[0];
-
-    if (c->op_certificate)
-        (*c->op_certificate)(m, groupnumber, peernumber, target_peernum, cert_type, c->op_certificate_userdata);
 
     return 0;
 }
@@ -2085,6 +2158,8 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
             return handle_bc_op_certificate(m, groupnumber, peernumber, message, m_len);
         case GM_PEER_EXIT:
             return handle_bc_peer_exit(m, groupnumber, peernumber, message, m_len);
+        case GM_OP_KICK_PEER:
+            return handle_bc_op_kick_peer(m, groupnumber, peernumber, message, m_len);
         default:
             fprintf(stderr, "Warning: handle_gc_broadcast received an invalid broadcast type %u\n", broadcast_type);
             return -1;
@@ -2584,12 +2659,12 @@ void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint32
     c->action_userdata = userdata;
 }
 
-void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint32_t, uint8_t,
-                               void *), void *userdata)
+void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint32_t, unsigned int,
+                            void *), void *userdata)
 {
     GC_Session *c = m->group_handler;
-    c->op_certificate = function;
-    c->op_certificate_userdata = userdata;
+    c->moderation = function;
+    c->moderation_userdata = userdata;
 }
 
 void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,

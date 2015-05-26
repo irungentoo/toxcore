@@ -2308,16 +2308,27 @@ typedef enum {
  * - OP may issue bans, promotions and demotions to all roles below founder.
  * - USER may talk, stream A/V, and change the group topic.
  * - OBSERVER cannot interact with the group but may observe.
- * - BANNED is dropped from the group.
  */
 typedef enum {
     TOX_GR_FOUNDER,
     TOX_GR_OP,
     TOX_GR_USER,
     TOX_GR_OBSERVER,
-    TOX_GR_BANNED,
     TOX_GR_INVALID
 } TOX_GROUP_ROLE;
+
+typedef enum {
+    /* Peer has been kicked from the group */
+    TOX_MOD_KICK,
+
+    /* Peer has been silenced */
+    TOX_MOD_SILENCE,
+
+    /* Peer has been banned from the group */
+    TOX_MOD_BAN,
+
+    TOX_MOD_INVALID,
+} TOX_GROUP_MOD_TYPE;
 
 /* parallel to TOX_USERSTATUS */
 typedef enum {
@@ -2326,13 +2337,6 @@ typedef enum {
     TOX_GS_BUSY,
     TOX_GS_INVALID
 } TOX_GROUP_STATUS;
-
-typedef enum {
-    TOX_GC_BAN,
-    TOX_GC_PROMOTE_OP,
-    TOX_GC_REVOKE_OP,
-    TOX_GC_SILENCE
-} TOX_GROUP_OP_CERTIFICATE;
 
 typedef enum {
     TOX_GJ_NICK_TAKEN,
@@ -2370,12 +2374,12 @@ void tox_callback_group_private_message(Tox *tox, void (*function)(Tox *m, int, 
 void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t, const uint8_t *, uint16_t,
                                void *), void *userdata);
 
-/* Set the callback for group operator certificates.
+/* Set the callback for group moderation events.
  *
- *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, uint8_t certificate_type, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, TOX_GROUP_MOD_TYPE type, void *userdata)
  */
-void tox_callback_group_op_certificate(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t, uint8_t, void *),
-                                       void *userdata);
+void tox_callback_group_moderation(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t,
+                                   TOX_GROUP_MOD_TYPE, void *), void *userdata);
 
 /* Set the callback for group peer nickname changes.
  *
@@ -2609,6 +2613,7 @@ int tox_group_get_peer_limit(const Tox *tox, int groupnumber);
  *
  * Returns 0 on success.
  * Returns -1 on failure.
+ * Returns -2 if caller is not the group founder.
  */
 int tox_group_set_peer_limit(Tox *tox, int groupnumber, uint32_t maxpeers);
 
@@ -2696,6 +2701,14 @@ int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool
  * Returns -2 if caller is not the group founder.
  */
 int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uint16_t length);
+
+/* Kicks peernumber from the group.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have permission to kick.
+ */
+int tox_group_op_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber);
 
 #ifdef __cplusplus
 }

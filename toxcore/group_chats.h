@@ -61,6 +61,13 @@ enum {
     GC_INVALID
 } GROUP_CERTIFICATE;
 
+enum {
+    MOD_KICK,
+    MOD_SILENCE,
+    MOD_BAN,
+    MOD_INVALID
+} GROUP_MODERATION_TYPE;
+
 /* Group roles are hierarchical where each role has a set of privileges plus
  * all the privileges of the roles below it.
  *
@@ -68,14 +75,12 @@ enum {
  * - OP may issue bans, promotions and demotions to all roles below founder.
  * - USER may talk, stream A/V, and change the group topic.
  * - OBSERVER cannot interact with the group but may observe.
- * - BANNED is dropped from the group.
  */
 enum {
     GR_FOUNDER,
     GR_OP,
     GR_USER,
     GR_OBSERVER,
-    GR_BANNED,
     GR_INVALID
 } GROUP_ROLE;
 
@@ -111,7 +116,8 @@ enum {
     GM_ACTION_MESSAGE,
     GM_PRVT_MESSAGE,
     GM_OP_CERTIFICATE,
-    GM_PEER_EXIT
+    GM_PEER_EXIT,
+    GM_OP_KICK_PEER,
 } GROUP_BROADCAST_TYPE;
 
 enum {
@@ -200,8 +206,8 @@ typedef struct GC_Session {
     void *private_message_userdata;
     void (*action)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *action_userdata;
-    void (*op_certificate)(Messenger *m, int, uint32_t, uint32_t, uint8_t, void *);
-    void *op_certificate_userdata;
+    void (*moderation)(Messenger *m, int, uint32_t, uint32_t, unsigned int, void *);
+    void *moderation_userdata;
     void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
     void *nick_change_userdata;
     void (*status_change)(Messenger *m, int, uint32_t, uint8_t, void *);
@@ -376,6 +382,14 @@ int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_priv
  */
 int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
 
+/* Instructs all other peers to remove peernumber from their peerlist.
+ *
+ * Returns a non-negative value on success.
+ * Returns -1 on failure.
+ * Returns -2 if the caller does not have kick permissions.
+ */
+int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber);
+
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
@@ -388,8 +402,8 @@ void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, in
 void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
                         void *), void *userdata);
 
-void gc_callback_op_certificate(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint32_t, uint8_t,
-                               void *), void *userdata);
+void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint32_t, unsigned int,
+                            void *), void *userdata);
 
 void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
                              uint16_t, void *), void *userdata);
