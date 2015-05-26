@@ -2582,6 +2582,7 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             struct SAVED_GROUP temp;
             memset(&temp, 0, sizeof(struct SAVED_GROUP));
 
+            memcpy(temp.founder_public_key, c->chats[i].shared_state.founder_public_key, ENC_PUBLIC_KEY);
             temp.group_name_len = htons(c->chats[i].shared_state.group_name_len);
             memcpy(temp.group_name, c->chats[i].shared_state.group_name, MAX_GC_GROUP_NAME_SIZE);
             temp.privacy_state = c->chats[i].shared_state.privacy_state;

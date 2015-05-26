@@ -44,7 +44,7 @@
 #define GC_ENCRYPTED_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES\
                                      + GC_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
 
-#define GC_PACKED_SHARED_STATE_SIZE (sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
+#define GC_PACKED_SHARED_STATE_SIZE (ENC_PUBLIC_KEY + sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
                                      + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE + sizeof(uint32_t))
 
 #define GC_SHARED_STATE_ENC_PACKET_SIZE (HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
@@ -160,6 +160,27 @@ static int peer_in_chat(const GC_Chat *chat, const uint8_t *public_key)
     return -1;
 }
 
+/* Validates the group role that the peer with public_key gave to you.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int validate_gc_peer_role(const GC_Chat *chat, uint8_t role, const uint8_t *public_key)
+{
+    if (role >= GR_INVALID)
+        return -1;
+
+    if (role == GR_FOUNDER) {
+        if (memcmp(chat->shared_state.founder_public_key, public_key, ENC_PUBLIC_KEY) == 0)
+            return 0;
+
+        return -1;
+    }
+
+    return 0;
+    // TODO: ops/moderators
+}
+
 /* Returns true if peernumber exists */
 static bool peernumber_valid(const GC_Chat *chat, int peernumber)
 {
@@ -271,7 +292,8 @@ static void clear_gc_addrs_list(GC_Chat *chat)
 }
 
 /* Updates chat_id's addr_list when we get a nodes request reply from DHT.
- * This will clear previous entries. */
+ * This will clear previous entries.
+ */
 void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
 {
     uint32_t chat_id_hash = get_chat_id_hash(chat_id);
@@ -462,6 +484,8 @@ static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared
 {
     uint32_t packed_len = 0;
 
+    memcpy(data + packed_len, shared_state->founder_public_key, ENC_PUBLIC_KEY);
+    packed_len += ENC_PUBLIC_KEY;
     U32_to_bytes(data + packed_len, shared_state->maxpeers);
     packed_len += sizeof(uint32_t);
     U16_to_bytes(data + packed_len, shared_state->group_name_len);
@@ -489,6 +513,8 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
 {
     uint32_t len_processed = 0;
 
+    memcpy(shared_state->founder_public_key, data + len_processed, ENC_PUBLIC_KEY);
+    len_processed += ENC_PUBLIC_KEY;
     bytes_to_U32(&shared_state->maxpeers, data + len_processed);
     len_processed += sizeof(uint32_t);
     bytes_to_U16(&shared_state->group_name_len, data + len_processed);
@@ -1349,7 +1375,7 @@ static int send_gc_peer_exchange(const GC_Session *c, GC_Chat *chat, uint32_t pe
     return (ret1 == -1 || ret2 == -1) ? -1 : 0;
 }
 
-/* Updates peernumber's info and sets them as a confirmed peer.
+/* Updates peernumber's info, validates their group role, and sets them as a confirmed peer.
  * If the group is password protected the password must first be validated.
  *
  * Returns 0 on success.
@@ -1387,6 +1413,11 @@ static int handle_gc_peer_info_response(Messenger *m, int groupnumber, uint32_t 
     if (unpack_gc_peer(&peer, data + SIG_PUBLIC_KEY + MAX_GC_PASSWD_SIZE,
                        length - SIG_PUBLIC_KEY - MAX_GC_PASSWD_SIZE) == -1) {
         fprintf(stderr, "unpack_gc_peer failed in handle_gc_peer_info_request\n");
+        return -1;
+    }
+
+    if (validate_gc_peer_role(chat, peer.role, chat->gcc[peernumber].addr.public_key) == -1) {
+        fprintf(stderr, "failed to validate peer role\n");
         return -1;
     }
 
@@ -1853,7 +1884,7 @@ static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber,
 
 /* Sends a private message to peernumber.
  *
- * Returns non-negative value on success.
+ * Returns 0 on success.
  * Returns -1 on failure.
  */
 int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length)
@@ -1870,7 +1901,10 @@ int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *m
     uint8_t packet[length + GC_BROADCAST_ENC_HEADER_SIZE];
     uint32_t packet_len = make_gc_broadcast_header(chat, message, length, packet, GM_PRVT_MESSAGE);
 
-    return send_lossless_group_packet(chat, peernumber, packet, packet_len, GP_BROADCAST);
+    if (send_lossless_group_packet(chat, peernumber, packet, packet_len, GP_BROADCAST) == -1)
+        return -1;
+
+    return 0;
 }
 
 static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
@@ -1941,6 +1975,7 @@ static int handle_bc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernu
  */
 int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
 {
+    GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
@@ -1961,6 +1996,11 @@ int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
 
     if (send_gc_broadcast_packet(chat, packet, length, GM_OP_KICK_PEER) == -1)
         return -1;
+
+    chat->gcc[peernumber].confirmed = false;
+
+    if (c->moderation)
+        (*c->moderation)(m, groupnumber, 0, peernumber, MOD_KICK, c->moderation_userdata);
 
     return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 }
@@ -3333,6 +3373,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->last_sent_ping_time = tm;
     chat->announce_search_timer = tm;
 
+    memcpy(chat->shared_state.founder_public_key, save->founder_public_key, ENC_PUBLIC_KEY);
     chat->shared_state.group_name_len = ntohs(save->group_name_len);
     memcpy(chat->shared_state.group_name, save->group_name, MAX_GC_GROUP_NAME_SIZE);
     chat->shared_state.privacy_state = save->privacy_state;
@@ -3382,6 +3423,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 static int init_gc_shared_state(GC_Chat *chat, uint8_t privacy_state, const uint8_t *group_name,
                                 uint16_t name_length)
 {
+    memcpy(chat->shared_state.founder_public_key, chat->self_public_key, ENC_PUBLIC_KEY);
     memcpy(chat->shared_state.group_name, group_name, name_length);
     chat->shared_state.group_name_len = name_length;
     chat->shared_state.maxpeers = MAX_GC_NUM_PEERS;

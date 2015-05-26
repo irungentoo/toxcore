@@ -139,6 +139,7 @@ typedef struct {
 } GC_GroupPeer;
 
 typedef struct {
+    uint8_t     founder_public_key[ENC_PUBLIC_KEY];
     uint32_t    maxpeers;
     uint16_t    group_name_len;
     uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
@@ -230,14 +231,15 @@ typedef struct GC_Session {
 
 struct SAVED_GROUP {
     /* Group shared state */
+    uint8_t   founder_public_key[ENC_PUBLIC_KEY];
+    uint16_t  maxpeers;
     uint16_t  group_name_len;
     uint8_t   group_name[MAX_GC_GROUP_NAME_SIZE];
     uint8_t   privacy_state;
-    uint16_t  maxpeers;
     uint16_t  passwd_len;
     uint8_t   passwd[MAX_GC_PASSWD_SIZE];
-    uint8_t   sstate_signature[SIGNATURE_SIZE];
     uint32_t  sstate_version;
+    uint8_t   sstate_signature[SIGNATURE_SIZE];
 
     /* Other group info */
     uint8_t   chat_public_key[EXT_PUBLIC_KEY];
