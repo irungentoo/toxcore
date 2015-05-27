@@ -864,6 +864,11 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
         if (was_online) {
             break_files(m, friendnumber);
             clear_receipts(m, friendnumber);
+        } else {
+            m->friendlist[friendnumber].name_sent = 0;
+            m->friendlist[friendnumber].userstatus_sent = 0;
+            m->friendlist[friendnumber].statusmessage_sent = 0;
+            m->friendlist[friendnumber].user_istyping_sent = 0;
         }
 
         m->friendlist[friendnumber].status = status;
@@ -1891,10 +1896,6 @@ static int handle_status(void *object, int i, uint8_t status)
 
     if (status) { /* Went online. */
         send_online_packet(m, i);
-        m->friendlist[i].name_sent = 0;
-        m->friendlist[i].userstatus_sent = 0;
-        m->friendlist[i].statusmessage_sent = 0;
-        m->friendlist[i].user_istyping_sent = 0;
     } else { /* Went offline. */
         if (m->friendlist[i].status == FRIEND_ONLINE) {
             set_friend_status(m, i, FRIEND_CONFIRMED);
