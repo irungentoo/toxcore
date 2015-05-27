@@ -385,12 +385,12 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
-    kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
 
     if (friend_con_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
         send_offline_packet(m, m->friendlist[friendnumber].friendcon_id);
     }
 
+    kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
 
