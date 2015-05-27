@@ -164,6 +164,10 @@ START_TEST(test_keys)
     ck_assert_msg(ret, "generic failure 5: %u", decerr);
     ck_assert_msg(memcmp(out2, string, 44) == 0, "decryption 2 failed");
 
+    ret = tox_pass_decrypt(encrypted2, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, NULL, 0, out2, &decerr);
+    ck_assert_msg(!ret, "Decrypt succeeded with wrong pass");
+    ck_assert_msg(decerr != TOX_ERR_DECRYPTION_FAILED, "Bad error code %u", decerr);
+
     // test that pass_decrypt can decrypt things from pass_key_encrypt
     ret = tox_pass_decrypt(encrypted, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, "123qweasdzxc", 12, out1, &decerr);
     ck_assert_msg(ret, "generic failure 6: %u", decerr);
