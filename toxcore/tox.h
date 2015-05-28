@@ -1596,7 +1596,7 @@ enum TOX_FILE_KIND {
     TOX_FILE_KIND_DATA,
 
     /**
-     * Avatar filename. This consists of tox_hash(image).
+     * Avatar file_id. This consists of tox_hash(image).
      * Avatar data. This consists of the image data.
      *
      * Avatars can be sent at any time the client wishes. Generally, a client will
