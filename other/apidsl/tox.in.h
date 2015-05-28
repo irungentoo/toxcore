@@ -1512,7 +1512,7 @@ namespace file {
      */
     DATA,
     /**
-     * Avatar filename. This consists of $hash(image).
+     * Avatar file_id. This consists of $hash(image).
      * Avatar data. This consists of the image data.
      *
      * Avatars can be sent at any time the client wishes. Generally, a client will
