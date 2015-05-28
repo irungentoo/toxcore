@@ -1596,6 +1596,13 @@ enum TOX_FILE_KIND {
     TOX_FILE_KIND_DATA,
 
     /**
+     * Arbitrary file data for an already existing transfer request. Toxcore treats
+     * this file the same as any file type, so it's up to the client to decide how 
+     * to handle it. E.g. resuming an existing file with tox_file_seek(); or simply
+     * starting a new file like normal.
+     */
+    TOX_FILE_KIND_EXISTING,
+    /**
      * Avatar filename. This consists of tox_hash(image).
      * Avatar data. This consists of the image data.
      *
