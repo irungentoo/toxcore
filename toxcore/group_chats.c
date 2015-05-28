@@ -45,7 +45,8 @@
                                      + GC_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
 
 #define GC_PACKED_SHARED_STATE_SIZE (ENC_PUBLIC_KEY + sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
-                                     + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE + sizeof(uint32_t))
+                                     + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE\
+                                     + GC_MOD_LIST_HASH_SIZE + sizeof(uint32_t))
 
 #define GC_SHARED_STATE_ENC_PACKET_SIZE (HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
 
@@ -160,6 +161,21 @@ static int peer_in_chat(const GC_Chat *chat, const uint8_t *public_key)
     return -1;
 }
 
+/* Returns mod_list index for peernumber.
+ * Returns -1 if peernumber is not a moderator.
+ */
+static int get_mod_list_index(const GC_Chat *chat, uint32_t peernumber)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->num_mods; ++i) {
+        if (memcmp(chat->mod_list[i], SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY) == 0)
+            return i;
+    }
+
+    return -1;
+}
+
 /* Validates the group role that the peer with public_key gave to you.
  *
  * Returns 0 on success.
@@ -178,7 +194,76 @@ static int validate_gc_peer_role(const GC_Chat *chat, uint8_t role, const uint8_
     }
 
     return 0;
-    // TODO: ops/moderators
+    // TODO: moderators
+}
+
+/* Adds peernumber to the moderator list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int add_gc_moderator(GC_Chat *chat, uint32_t peernumber)
+{
+    if (chat->num_mods >= MAX_GC_MODERATORS)
+        return -1;
+
+    uint8_t **tmp_list = realloc(chat->mod_list, sizeof(uint8_t *) * (chat->num_mods + 1));
+
+    if (tmp_list == NULL)
+        return -1;
+
+    tmp_list[chat->num_mods] = malloc(sizeof(uint8_t) * SIG_PUBLIC_KEY);
+
+    if (tmp_list[chat->num_mods] == NULL)
+        return -1;
+
+    memcpy(tmp_list[chat->num_mods], SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY);
+    chat->mod_list = tmp_list;
+    ++chat->num_mods;
+
+    chat->group[peernumber].role = GR_MODERATOR;
+
+    return 0;
+}
+
+/* Removes peernumber from the moderator list and sets their new role.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int remove_gc_moderator(GC_Chat *chat, uint32_t peernumber, uint8_t role)
+{
+    if (chat->num_mods == 0)
+        return -1;
+
+    int idx = get_mod_list_index(chat, peernumber);
+
+    if (idx == -1)
+        return -1;
+
+    chat->group[peernumber].role = role;
+
+    free(chat->mod_list[idx]);
+    --chat->num_mods;
+
+    if (chat->num_mods == 0) {
+        free(chat->mod_list);
+        chat->mod_list = NULL;
+        return 0;
+    }
+
+    if (idx != chat->num_mods)
+        memcpy(chat->mod_list[idx], chat->mod_list[chat->num_mods], SIG_PUBLIC_KEY);
+
+    uint8_t **tmp_list = realloc(chat->mod_list, sizeof(uint8_t *) * (chat->num_mods));
+    chat->mod_list = tmp_list;
+
+    if (chat->mod_list == NULL) {
+        chat->num_mods = 0;
+        return -1;
+    }
+
+    return 0;
 }
 
 /* Returns true if peernumber exists */
@@ -498,6 +583,8 @@ static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared
     packed_len += sizeof(uint16_t);
     memcpy(data + packed_len, shared_state->passwd, MAX_GC_PASSWD_SIZE);
     packed_len += MAX_GC_PASSWD_SIZE;
+    memcpy(data + packed_len, shared_state->mod_list_hash, GC_MOD_LIST_HASH_SIZE);
+    packed_len += GC_MOD_LIST_HASH_SIZE;
     U32_to_bytes(data + packed_len, shared_state->version);
     packed_len += sizeof(uint32_t);
 
@@ -528,6 +615,8 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     len_processed += sizeof(uint16_t);
     memcpy(shared_state->passwd, data + len_processed, MAX_GC_PASSWD_SIZE);
     len_processed += MAX_GC_PASSWD_SIZE;
+    memcpy(shared_state->mod_list_hash, data + len_processed, GC_MOD_LIST_HASH_SIZE);
+    len_processed += GC_MOD_LIST_HASH_SIZE;
     bytes_to_U32(&shared_state->version, data + len_processed);
     len_processed += sizeof(uint32_t);
 
@@ -1759,6 +1848,158 @@ int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passw
     return broadcast_gc_shared_state(chat);
 }
 
+/* If role is GR_MODERATOR peernumber is promoted to moderator and added to mod_list.
+ * If role is GR_USER or GR_OBSERVER peernumber is demoted to respective role and removed from mod_list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int set_peer_moderator(GC_Chat *chat, uint32_t peernumber, uint8_t role)
+{
+    if (role == GR_FOUNDER || role >= GR_INVALID)
+        return -1;
+
+    if (role == GR_MODERATOR) {
+        if (chat->group[peernumber].role <= GR_MODERATOR)
+            return -1;
+
+        if (add_gc_moderator(chat, peernumber) == -1)
+            return -1;
+
+        return 0;
+    }
+
+    return remove_gc_moderator(chat, peernumber, role);
+}
+
+static uint8_t map_gc_role_mod_event(uint8_t role)
+{
+    if (role == GR_MODERATOR)
+        return MV_MODERATOR;
+
+    if (role == GR_USER)
+        return MV_USER;
+
+    if (role == GR_OBSERVER)
+        return MV_OBSERVER;
+
+    return MV_INVALID;
+}
+
+static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                               uint32_t length)
+{
+    if (length != sizeof(uint8_t) + ENC_PUBLIC_KEY)
+        return -1;
+
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (chat->group[peernumber].role >= GR_USER)
+        return -1;
+
+    uint8_t role = data[0];
+
+    if (role == GR_FOUNDER || role >= GR_INVALID)
+        return -1;
+
+    uint8_t target_pk[ENC_PUBLIC_KEY];
+    memcpy(target_pk, data + sizeof(uint8_t), ENC_PUBLIC_KEY);
+
+    int target_peernum = peer_in_chat(chat, target_pk);
+
+    if (target_peernum == -1)
+        return -1;
+
+    /* Promote a user or observer to moderator, or demote a moderator to user or observer */
+    if (role == GR_MODERATOR || (role >= GR_USER && chat->group[target_peernum].role == GR_MODERATOR)) {
+        if (chat->group[peernumber].role != GR_FOUNDER)
+            return -1;
+
+        if (set_peer_moderator(chat, target_peernum, role) == -1)
+            return -1;
+
+        uint8_t mod_event = map_gc_role_mod_event(role);
+
+        if (c->moderation)
+            (*c->moderation)(m, groupnumber, peernumber, target_peernum, mod_event, c->moderation_userdata);
+
+        return 0;
+    }
+
+    /* Promote an observer to user */
+    if (chat->group[target_peernum].role == GR_OBSERVER && role == GR_USER) {
+        return -1;
+    }
+
+    /* Demote a peer to observer */
+    if (role == GR_OBSERVER) {
+        return -1;
+    }
+
+    return -1;
+}
+
+static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
+{
+    uint32_t length = sizeof(uint8_t) + ENC_PUBLIC_KEY;
+    uint8_t data[length];
+    data[0] = role;
+    memcpy(data + sizeof(uint8_t), chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
+
+    return send_gc_broadcast_packet(chat, data, length, GM_SET_ROLE);
+}
+
+/* Sets the role of peernumber. role must be one of: GR_MODERATOR, GR_USER, GR_OBSERVER
+ *
+ * If the mod_list is changed a new hash of the updated mod_list will be created
+ * and the new shared state will be re-signed and re-distributed to the group.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have the required permissions.
+ */
+int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
+{
+    if (role != GR_MODERATOR && role != GR_USER && role != GR_OBSERVER)
+        return -1;
+
+    if (peernumber == 0 || !peernumber_valid(chat, peernumber))
+        return -1;
+
+    if (chat->group[0].role >= GR_USER)
+        return -2;
+
+    if (chat->group[peernumber].role == GR_FOUNDER)
+        return -2;
+
+    /* Promote peer to moderator or demote moderator to user or observer */
+    if (role == GR_MODERATOR || (role >= GR_USER && chat->group[peernumber].role == GR_MODERATOR)) {
+        if (chat->group[0].role != GR_FOUNDER)
+            return -2;
+
+        if (set_peer_moderator(chat, peernumber, role) == -1) {
+            fprintf(stderr, "failed to set peer moderator\n");
+            return -1;
+        }
+
+        // TODO: mod_list hash
+
+        if (sign_gc_shared_state(chat) == -1)
+            return -1;
+
+        if (broadcast_gc_shared_state(chat) == -1)
+            return -1;
+    } else {
+        return -1; // TODO other roles
+    }
+
+    return send_gc_peer_role(chat, peernumber, role);
+}
+
 /* Returns group privacy state */
 uint8_t gc_get_privacy_state(const GC_Chat *chat)
 {
@@ -1928,10 +2169,10 @@ static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t pee
     return 0;
 }
 
-static int handle_bc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
-                                  uint32_t length)
+static int handle_bc_mod_event(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                               uint32_t length)
 {
-    if (length != ENC_PUBLIC_KEY)
+    if (length != sizeof(uint8_t) + ENC_PUBLIC_KEY)
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -1943,37 +2184,54 @@ static int handle_bc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernu
     if (chat->group[peernumber].role >= GR_USER)
         return -1;
 
-    uint8_t target_pk[ENC_PUBLIC_KEY];
-    memcpy(target_pk, data, ENC_PUBLIC_KEY);
+    uint8_t mod_event = data[0];
 
-    int target_peernumber = peer_in_chat(chat, target_pk);
-
-    if (!peernumber_valid(chat, target_peernumber))
+    if (mod_event != MV_KICK)  // TODO: other types
         return -1;
 
-    if (target_peernumber == 0) {
+    uint8_t target_pk[ENC_PUBLIC_KEY];
+    memcpy(target_pk, data + sizeof(uint8_t), ENC_PUBLIC_KEY);
+
+    int target_peernum = peer_in_chat(chat, target_pk);
+
+    if (!peernumber_valid(chat, target_peernum))
+        return -1;
+
+    if (chat->group[target_peernum].role == GR_FOUNDER)
+        return 0;
+
+    if (chat->group[target_peernum].role == GR_MODERATOR && chat->group[peernumber].role != GR_FOUNDER)
+        return 0;
+
+    if (target_peernum == 0) {
         group_delete(c, chat);
         return 0;
     }
 
-    if (chat->group[target_peernumber].role == GR_FOUNDER)
-        return 0;
-
-    chat->gcc[target_peernumber].confirmed = false;  /* prevents the normal peer exit callback */
-
     if (c->moderation)
-        (*c->moderation)(m, groupnumber, peernumber, target_peernumber, MOD_KICK, c->moderation_userdata);
+        (*c->moderation)(m, groupnumber, peernumber, target_peernum, MV_KICK, c->moderation_userdata);
 
-    return gc_peer_delete(m, groupnumber, target_peernumber, NULL, 0);
+    chat->gcc[target_peernum].confirmed = false;  /* prevents the normal peer exit callback */
+
+    return gc_peer_delete(m, groupnumber, target_peernum, NULL, 0);
 }
 
-/* Instructs all other peers to remove peernumber from their peerlist.
+static int send_gc_mod_event(GC_Chat *chat, uint32_t peernumber, uint8_t mod_event)
+{
+    uint32_t length = sizeof(uint8_t) + ENC_PUBLIC_KEY;
+    uint8_t packet[length];
+    packet[0] = mod_event;
+    memcpy(packet + sizeof(uint8_t), chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
+    return send_gc_broadcast_packet(chat, packet, length, GM_MOD_EVENT);
+}
+
+/* Instructs all peers to remove peernumber from their peerlist.
  *
- * Returns a 0 on success.
+ * Returns 0 on success.
  * Returns -1 on failure.
  * Returns -2 if the caller does not have kick permissions.
  */
-int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
+int send_gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1981,26 +2239,17 @@ int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
     if (chat == NULL)
         return -1;
 
-    if (peernumber == 0)
-        return -1;
-
     if (chat->group[0].role >= GR_USER || chat->group[peernumber].role == GR_FOUNDER)
         return -2;
+
+    if (peernumber == 0)
+        return -1;
 
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
-    uint32_t length = ENC_PUBLIC_KEY;
-    uint8_t packet[length];
-    memcpy(packet, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
-
-    if (send_gc_broadcast_packet(chat, packet, length, GM_OP_KICK_PEER) == -1)
+    if (send_gc_mod_event(chat, peernumber, MV_KICK) == -1)
         return -1;
-
-    chat->gcc[peernumber].confirmed = false;
-
-    if (c->moderation)
-        (*c->moderation)(m, groupnumber, 0, peernumber, MOD_KICK, c->moderation_userdata);
 
     return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 }
@@ -2015,7 +2264,7 @@ int gc_send_op_certificate(GC_Chat *chat, uint32_t peernumber, uint8_t cert_type
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
-    if (chat->group[0].role > GR_OP)
+    if (chat->group[0].role > GR_MODERATOR)
         return -1;
 
     uint8_t certificate[ROLE_CERT_SIGNED_SIZE];
@@ -2198,8 +2447,10 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
             return handle_bc_op_certificate(m, groupnumber, peernumber, message, m_len);
         case GM_PEER_EXIT:
             return handle_bc_peer_exit(m, groupnumber, peernumber, message, m_len);
-        case GM_OP_KICK_PEER:
-            return handle_bc_op_kick_peer(m, groupnumber, peernumber, message, m_len);
+        case GM_MOD_EVENT:
+            return handle_bc_mod_event(m, groupnumber, peernumber, message, m_len);
+        case GM_SET_ROLE:
+            return handle_bc_peer_role(m, groupnumber, peernumber, message, m_len);
         default:
             fprintf(stderr, "Warning: handle_gc_broadcast received an invalid broadcast type %u\n", broadcast_type);
             return -1;
@@ -2850,7 +3101,7 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
         return -1;
 
     /* Issuer is not an OP or founder */
-    if (chat->group[src].role > GR_OP)
+    if (chat->group[src].role > GR_MODERATOR)
         return -1;
 
     /* Check if certificate is for us.
@@ -2863,14 +3114,14 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
 
         switch (cert_type) {
             case GC_PROMOTE_OP:
-                if (chat->group[0].role == GR_OP)
+                if (chat->group[0].role == GR_MODERATOR)
                     return -1;
 
-                chat->group[0].role = GR_OP;
+                chat->group[0].role = GR_MODERATOR;
                 break;
 
             case GC_REVOKE_OP:
-                if (chat->group[0].role != GR_OP)
+                if (chat->group[0].role != GR_MODERATOR)
                     return -1;
 
                 chat->group[0].role = GR_USER;
@@ -2904,14 +3155,14 @@ static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certi
 
     switch (cert_type) {
         case GC_PROMOTE_OP:
-            if (chat->group[trg].role == GR_OP)
+            if (chat->group[trg].role == GR_MODERATOR)
                 return -1;
 
-            chat->group[trg].role = GR_OP;
+            chat->group[trg].role = GR_MODERATOR;
             break;
 
         case GC_REVOKE_OP:
-            if (chat->group[trg].role != GR_OP)
+            if (chat->group[trg].role != GR_MODERATOR)
                 return -1;
 
             chat->group[trg].role = GR_USER;
@@ -3380,8 +3631,9 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->shared_state.maxpeers = ntohs(save->maxpeers);
     chat->shared_state.passwd_len = ntohs(save->passwd_len);
     memcpy(chat->shared_state.passwd, save->passwd, MAX_GC_PASSWD_SIZE);
-    memcpy(chat->shared_state_sig, save->sstate_signature, SIGNATURE_SIZE);
+    memcpy(chat->shared_state.mod_list_hash, save->mod_list_hash, GC_MOD_LIST_HASH_SIZE);
     chat->shared_state.version = ntohl(save->sstate_version);
+    memcpy(chat->shared_state_sig, save->sstate_signature, SIGNATURE_SIZE);
 
     memcpy(chat->chat_public_key, save->chat_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->chat_secret_key, save->chat_secret_key, EXT_SECRET_KEY);

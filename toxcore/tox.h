@@ -24,6 +24,9 @@
 #ifndef TOX_H
 #define TOX_H
 
+#ifndef DHT_GROUPCHATS
+#define DHT_GROUPCHATS
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -2302,33 +2305,42 @@ typedef enum {
 } TOX_GROUP_PRIVACY_STATE;
 
 /* Group roles are hierarchical where each role has a set of privileges plus
- * all the privileges of the roles below it.
- *
- * - FOUNDER is all-powerful. Cannot be demoted or banned.
- * - OP may issue bans, promotions and demotions to all roles below founder.
- * - USER may talk, stream A/V, and change the group topic.
- * - OBSERVER cannot interact with the group but may observe.
- */
+ * all the privileges of the roles below it. */
 typedef enum {
+    /* All-powerful. Cannot be demoted or banned. */
     TOX_GR_FOUNDER,
-    TOX_GR_OP,
+
+    /* May kick, silence and ban peers below this role. */
+    TOX_GR_MODERATOR,
+
+    /* May talk, stream A/V, and change the group topic. */
     TOX_GR_USER,
+
+    /* May not interact with the group in any way but may observe. */
     TOX_GR_OBSERVER,
+
     TOX_GR_INVALID
 } TOX_GROUP_ROLE;
 
+/* Used for moderation event notifications with tox_callback_group_moderation */
 typedef enum {
     /* Peer has been kicked from the group */
-    TOX_MOD_KICK,
-
-    /* Peer has been silenced */
-    TOX_MOD_SILENCE,
+    TOX_GROUP_MOD_EVENT_KICK,
 
     /* Peer has been banned from the group */
-    TOX_MOD_BAN,
+    TOX_GROUP_MOD_EVENT_BAN,
 
-    TOX_MOD_INVALID,
-} TOX_GROUP_MOD_TYPE;
+    /* User or mod has been demoted to observer */
+    TOX_GROUP_MOD_EVENT_OBSERVER,
+
+    /* Observer has been promoted to user or moderator has been demoted to user */
+    TOX_GROUP_MOD_EVENT_USER,
+
+    /* User or observer has been promoted to a moderator */
+    TOX_GROUP_MOD_EVENT_MODERATOR,
+
+    TOX_GROUP_MOD_EVENT_INVALID,
+} TOX_GROUP_MOD_EVENT;
 
 /* parallel to TOX_USERSTATUS */
 typedef enum {
@@ -2376,10 +2388,10 @@ void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t,
 
 /* Set the callback for group moderation events.
  *
- *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, TOX_GROUP_MOD_TYPE type, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, TOX_GROUP_MOD_EVENT type, void *userdata)
  */
 void tox_callback_group_moderation(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t,
-                                   TOX_GROUP_MOD_TYPE, void *), void *userdata);
+                                   TOX_GROUP_MOD_EVENT, void *), void *userdata);
 
 /* Set the callback for group peer nickname changes.
  *
@@ -2710,8 +2722,20 @@ int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uin
  */
 int tox_group_op_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber);
 
+/* Sets peernumber's role.
+ * role must be one of: TOX_GR_USER, TOX_GR_OBSERVER, TOX_GR_MODERATOR.
+ *
+ * This function will always fail if the caller is not a moderator or founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have required permissions for the action.
+ */
+int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif  /* DHT_GROUPCHATS */
+#endif  /* TOX_H */

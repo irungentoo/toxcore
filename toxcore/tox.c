@@ -1299,12 +1299,12 @@ void tox_callback_group_action(Tox *tox, void (*function)(Tox *m, int, uint32_t,
     gc_callback_action(m, function, userdata);
 }
 
-/* Set the callback for group moderation events where type is one of TOX_GROUP_MOD_TYPE.
+/* Set the callback for group moderation events where type is one of TOX_GROUP_MOD_EVENT.
  *
- *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, TOX_GROUP_MOD_TYPE type, void *userdata)
+ *  function(Tox *m, int groupnumber, uint32_t source_peernum, uint32_t target_peernum, TOX_GROUP_MOD_EVENT type, void *userdata)
  */
 void tox_callback_group_moderation(Tox *tox, void (*function)(Tox *m, int, uint32_t, uint32_t,
-                                   TOX_GROUP_MOD_TYPE, void *), void *userdata)
+                                   TOX_GROUP_MOD_EVENT, void *), void *userdata)
 {
     Messenger *m = tox;
     gc_callback_moderation(m, function, userdata);
@@ -1958,5 +1958,25 @@ int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uin
 int tox_group_op_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
 {
     Messenger *m = tox;
-    return gc_op_kick_peer(m, groupnumber, peernumber);
+    return send_gc_kick_peer(m, groupnumber, peernumber);
+}
+
+/* Sets peernumber's role.
+ * role must be one of: TOX_GR_USER, TOX_GR_OBSERVER, TOX_GR_MODERATOR.
+ *
+ * This function will always fail if the caller is not a moderator or founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have required permissions for the action.
+ */
+int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_set_peer_role(chat, peernumber, role);
 }

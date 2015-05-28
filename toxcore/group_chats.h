@@ -39,7 +39,9 @@ typedef struct Messenger Messenger;
 #define MAX_GC_PART_MESSAGE_SIZE 128
 #define MAX_GC_PEER_ADDRS 30
 #define MAX_GC_PASSWD_SIZE 32
+#define MAX_GC_MODERATORS 128
 
+#define GC_MOD_LIST_HASH_SIZE 32
 #define GC_PING_INTERVAL 30
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
 #define GC_UNCONFRIMED_PEER_TIMEOUT (GC_PING_INTERVAL)
@@ -62,11 +64,13 @@ enum {
 } GROUP_CERTIFICATE;
 
 enum {
-    MOD_KICK,
-    MOD_SILENCE,
-    MOD_BAN,
-    MOD_INVALID
-} GROUP_MODERATION_TYPE;
+    MV_KICK,
+    MV_BAN,
+    MV_OBSERVER,
+    MV_USER,
+    MV_MODERATOR,
+    MV_INVALID
+} GROUP_MODERATION_EVENT;
 
 /* Group roles are hierarchical where each role has a set of privileges plus
  * all the privileges of the roles below it.
@@ -78,7 +82,7 @@ enum {
  */
 enum {
     GR_FOUNDER,
-    GR_OP,
+    GR_MODERATOR,
     GR_USER,
     GR_OBSERVER,
     GR_INVALID
@@ -117,7 +121,8 @@ enum {
     GM_PRVT_MESSAGE,
     GM_OP_CERTIFICATE,
     GM_PEER_EXIT,
-    GM_OP_KICK_PEER,
+    GM_MOD_EVENT,
+    GM_SET_ROLE
 } GROUP_BROADCAST_TYPE;
 
 enum {
@@ -146,6 +151,7 @@ typedef struct {
     uint8_t     privacy_state;   /* GI_PUBLIC (uses DHT) or GI_PRIVATE (invite only) */
     uint16_t    passwd_len;
     uint8_t     passwd[MAX_GC_PASSWD_SIZE];
+    uint8_t     mod_list_hash[GC_MOD_LIST_HASH_SIZE];
     uint32_t    version;
 } GC_SharedState;
 
@@ -159,14 +165,17 @@ typedef struct GC_Chat {
     GC_Connection   *gcc;
 
     GC_SharedState  shared_state;
-    uint8_t     shared_state_sig[SIGNATURE_SIZE];   /* Signed by founder using the chat secret key */
+    uint8_t     shared_state_sig[SIGNATURE_SIZE];    /* Signed by founder using the chat secret key */
+
+    uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
+    uint16_t    num_mods;
 
     uint32_t    numpeers;
     int         groupnumber;
 
-    uint8_t     chat_public_key[EXT_PUBLIC_KEY];  /* the chat_id is the sig portion */
-    uint8_t     chat_secret_key[EXT_SECRET_KEY];  /* only used by the founder */
-    uint32_t    chat_id_hash;   /* 32-bit hash of the chat_id */
+    uint8_t     chat_public_key[EXT_PUBLIC_KEY];    /* the chat_id is the sig portion */
+    uint8_t     chat_secret_key[EXT_SECRET_KEY];    /* only used by the founder */
+    uint32_t    chat_id_hash;    /* 32-bit hash of the chat_id */
 
     uint8_t     self_public_key[EXT_PUBLIC_KEY];
     uint8_t     self_secret_key[EXT_SECRET_KEY];
@@ -238,6 +247,7 @@ struct SAVED_GROUP {
     uint8_t   privacy_state;
     uint16_t  passwd_len;
     uint8_t   passwd[MAX_GC_PASSWD_SIZE];
+    uint8_t   mod_list_hash[GC_MOD_LIST_HASH_SIZE];
     uint32_t  sstate_version;
     uint8_t   sstate_signature[SIGNATURE_SIZE];
 
@@ -354,6 +364,17 @@ int gc_get_numpeers(const GC_Chat *chat);
  */
 uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 
+/* Sets the role of peernumber. role must be one of: GR_MODERATOR, GR_USER, GR_OBSERVER
+ *
+ * If the mod_list is changed a new hash of the updated mod_list will be created
+ * and the new shared state will be re-signed and re-distributed to the group.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have the required permissions.
+ */
+int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);
+
 /* Sets the group password and distributes the new shared state to the group.
  *
  * This function requires that the shared state be re-signed and will only work for the group founder.
@@ -384,13 +405,13 @@ int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_priv
  */
 int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
 
-/* Instructs all other peers to remove peernumber from their peerlist.
+/* Instructs all peers to remove peernumber from their peerlist.
  *
- * Returns a non-negative value on success.
+ * Returns a 0 on success.
  * Returns -1 on failure.
  * Returns -2 if the caller does not have kick permissions.
  */
-int gc_op_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber);
+int send_gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
