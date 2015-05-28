@@ -1424,7 +1424,7 @@ int tox_group_new_join(Tox *tox, const uint8_t *chat_id, const uint8_t *passwd, 
     return gc_group_join(m->group_handler, chat_id, passwd, passwd_len);
 }
 
-/* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, certificates
+/* Reconnects to groupnumber's group and maintains your own state, i.e. status, keys, role
  *
  * Return 0 on success.
  * Return -1 on failure or if already connected to the group.
@@ -1535,23 +1535,6 @@ int tox_group_action_send(const Tox *tox, int groupnumber, const uint8_t *messag
         return -1;
 
     return gc_send_message(chat, message, length, GM_ACTION_MESSAGE);
-}
-
-/* Issues a groupchat operator certificate for peernumber to groupnumber.
- * type must be a TOX_GROUP_OP_CERTIFICATE.
- *
- * Return 0 on success.
- * Return -1 on failure.
- */
-int tox_group_op_certificate_send(const Tox *tox, int groupnumber, uint32_t peernumber, uint8_t type)
-{
-    const Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    return gc_send_op_certificate(chat, peernumber, type);
 }
 
 /* Sets your name for groupnumber. length should be no larger than TOX_MAX_NAME_LENGTH bytes.

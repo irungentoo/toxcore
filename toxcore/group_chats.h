@@ -46,22 +46,11 @@ typedef struct Messenger Messenger;
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
 #define GC_UNCONFRIMED_PEER_TIMEOUT (GC_PING_INTERVAL)
 
-/* CERT_TYPE + TARGET + SOURCE + TIME_STAMP_SIZE + SOURCE_SIGNATURE */
-#define ROLE_CERT_SIGNED_SIZE (1 + EXT_PUBLIC_KEY + EXT_PUBLIC_KEY + TIME_STAMP_SIZE + SIGNATURE_SIZE)
-
 enum {
     GI_PUBLIC,
     GI_PRIVATE,
     GI_INVALID
 } GROUP_PRIVACY_STATE;
-
-enum {
-    GC_BAN,
-    GC_PROMOTE_OP,
-    GC_REVOKE_OP,
-    GC_SILENCE,
-    GC_INVALID
-} GROUP_CERTIFICATE;
 
 enum {
     MV_KICK,
@@ -119,7 +108,6 @@ enum {
     GM_PLAIN_MESSAGE,
     GM_ACTION_MESSAGE,
     GM_PRVT_MESSAGE,
-    GM_OP_CERTIFICATE,
     GM_PEER_EXIT,
     GM_MOD_EVENT,
     GM_SET_ROLE
@@ -137,7 +125,6 @@ typedef struct GC_PeerAddress {
 
 typedef struct {
     uint8_t     role;
-    uint8_t     role_certificate[ROLE_CERT_SIGNED_SIZE];
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
     uint8_t     status;
@@ -262,17 +249,11 @@ struct SAVED_GROUP {
     /* self info */
     uint8_t   self_public_key[EXT_PUBLIC_KEY];
     uint8_t   self_secret_key[EXT_SECRET_KEY];
-    uint8_t   self_role_cert[ROLE_CERT_SIGNED_SIZE];
     uint8_t   self_nick[MAX_GC_NICK_SIZE];
     uint16_t  self_nick_len;
     uint8_t   self_role;
     uint8_t   self_status;
 };
-
-/* Return -1 if fail
- * Return 0 if success
- */
-int gc_send_op_certificate(GC_Chat *chat, uint32_t peernumber, uint8_t cert_type);
 
 /* Return -1 if fail
  * Return 0 if success

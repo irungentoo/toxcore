@@ -108,7 +108,6 @@ static void print_peer(const GC_GroupPeer *peer, const GC_Connection *gconn)
     fprintf(stderr, "ENC PK: %s\n", id_toa(gconn->addr.public_key));
     fprintf(stderr, "SIG PK: %s\n", id_toa(SIG_PK(gconn->addr.public_key)));
     fprintf(stderr, "IP: %s\n", ip_ntoa(&gconn->addr.ip_port.ip));
-    fprintf(stderr, "Role cert: %s\n", id_toa(peer->role_certificate));   // Only print first 32 bytes
     fprintf(stderr, "Nick: %s\n", peer->nick);
     fprintf(stderr, "Nick len: %u\n", peer->nick_len);
     fprintf(stderr, "Status: %u\n", peer->status);
@@ -503,10 +502,9 @@ int unpack_gc_addresses(GC_PeerAddress *addrs, uint16_t max_num_addrs, uint16_t 
 }
 
 /* Size of peer data that we pack for transfer (nick length must be accounted for separately).
- * packed data includes: signed role cert, nick, nick length, status, role
+ * packed data includes: nick, nick length, status, role
  */
-#define PACKED_GC_PEER_SIZE (ROLE_CERT_SIGNED_SIZE + MAX_GC_NICK_SIZE + sizeof(uint16_t) + sizeof(uint8_t)\
-                             + sizeof(uint8_t))
+#define PACKED_GC_PEER_SIZE (MAX_GC_NICK_SIZE + sizeof(uint16_t) + sizeof(uint8_t) + sizeof(uint8_t))
 
 /* Packs peer info into data of maxlength length.
  *
@@ -520,8 +518,6 @@ static int pack_gc_peer(uint8_t *data, uint16_t length, const GC_GroupPeer *peer
 
     uint32_t packed_len = 0;
 
-    memcpy(data + packed_len, peer->role_certificate, ROLE_CERT_SIGNED_SIZE);
-    packed_len += ROLE_CERT_SIGNED_SIZE;
     U16_to_bytes(data + packed_len, peer->nick_len);
     packed_len += sizeof(uint16_t);
     memcpy(data + packed_len, peer->nick, MAX_GC_NICK_SIZE);
@@ -546,8 +542,6 @@ static int unpack_gc_peer(GC_GroupPeer *peer, const uint8_t *data, uint16_t leng
 
     uint32_t len_processed = 0;
 
-    memcpy(peer->role_certificate, data + len_processed, ROLE_CERT_SIGNED_SIZE);
-    len_processed += ROLE_CERT_SIGNED_SIZE;
     bytes_to_U16(&peer->nick_len, data + len_processed);
     len_processed += sizeof(uint16_t);
     peer->nick_len = MIN(MAX_GC_NICK_SIZE, peer->nick_len);
@@ -2254,57 +2248,6 @@ int send_gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
     return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 }
 
-static int make_role_cert(const uint8_t *secret_key, const uint8_t *public_key, const uint8_t *target_pub_key,
-                          uint8_t *certificate, uint8_t cert_type);
-/* Return -1 if fail
- * Return 0 if success
- */
-int gc_send_op_certificate(GC_Chat *chat, uint32_t peernumber, uint8_t cert_type)
-{
-    if (!peernumber_valid(chat, peernumber))
-        return -1;
-
-    if (chat->group[0].role > GR_MODERATOR)
-        return -1;
-
-    uint8_t certificate[ROLE_CERT_SIGNED_SIZE];
-    if (make_role_cert(chat->self_secret_key, chat->self_public_key, chat->gcc[peernumber].addr.public_key,
-                       certificate, cert_type) == -1)
-        return -1;
-
-    return send_gc_broadcast_packet(chat, certificate, ROLE_CERT_SIGNED_SIZE, GM_OP_CERTIFICATE);
-
-}
-
-static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certificate);
-
-static int handle_bc_op_certificate(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
-{
-    if (length != ROLE_CERT_SIGNED_SIZE)
-        return -1;
-
-    GC_Session *c = m->group_handler;
-    GC_Chat *chat = gc_get_group(c, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    if (process_role_cert(m, groupnumber, data) == -1)
-        return -1;
-
-    uint8_t target_pk[EXT_PUBLIC_KEY];
-    memcpy(target_pk, CERT_TARGET_KEY(data), EXT_PUBLIC_KEY);
-
-    int target_peernum = peer_in_chat(chat, target_pk);
-
-    if (target_peernum == -1)
-        return -1;
-
-    uint8_t cert_type = data[0];
-
-    return 0;
-}
-
 #define VALID_GC_MESSAGE_ACK(a, b) (((a) == 0) || ((b) == 0))
 
 /* If read_id is non-zero sends a read-receipt for read_id's packet.
@@ -2443,8 +2386,6 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
             return handle_bc_message(m, groupnumber, peernumber, message, m_len, broadcast_type);
         case GM_PRVT_MESSAGE:
             return handle_bc_private_message(m, groupnumber, peernumber, message, m_len);
-        case GM_OP_CERTIFICATE:
-            return handle_bc_op_certificate(m, groupnumber, peernumber, message, m_len);
         case GM_PEER_EXIT:
             return handle_bc_peer_exit(m, groupnumber, peernumber, message, m_len);
         case GM_MOD_EVENT:
@@ -3018,180 +2959,6 @@ void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int, uint
     c->rejected_userdata = userdata;
 }
 
-/* Sign a certificate.
- * Add signer public key, time stamp and signature in the end of the data
- * Return -1 if fail, 0 if success
- */
-static int sign_certificate(const uint8_t *data, uint32_t length, const uint8_t *secret_key,
-                            const uint8_t *public_key, uint8_t *certificate)
-{
-    memcpy(certificate, data, length);
-    memcpy(certificate + length, public_key, EXT_PUBLIC_KEY);
-    U64_to_bytes(certificate + length + EXT_PUBLIC_KEY, unix_time());
-    uint32_t mlen = length + EXT_PUBLIC_KEY + TIME_STAMP_SIZE;
-
-    if (crypto_sign_detached(certificate + mlen, NULL, certificate, mlen, SIG_SK(secret_key)) != 0)
-        return -1;
-
-    return 0;
-}
-
-/* Make role certificate.
- *
- * Return 0 on success.
- * Return -1 on failure.
- */
-static int make_role_cert(const uint8_t *secret_key, const uint8_t *public_key, const uint8_t *target_pub_key,
-                          uint8_t *certificate, uint8_t cert_type)
-{
-    if (cert_type >= GC_INVALID)
-        return -1;
-
-    uint8_t buf[ROLE_CERT_SIGNED_SIZE];
-    buf[0] = cert_type;
-    memcpy(buf + 1, target_pub_key, EXT_PUBLIC_KEY);
-
-    return sign_certificate(buf, 1 + EXT_PUBLIC_KEY, secret_key, public_key, certificate);
-}
-
-/* Return -1 if certificate is corrupted
- * Return 0 if certificate is consistent
- */
-static int verify_cert_integrity(const uint8_t *certificate)
-{
-    uint8_t cert_type = certificate[0];
-
-    if (cert_type >= GC_INVALID)
-        return -1;
-
-    uint8_t source_pk[SIG_PUBLIC_KEY];
-    memcpy(source_pk, SIG_PK(CERT_SOURCE_KEY(certificate)), SIG_PUBLIC_KEY);
-
-    if (crypto_sign_verify_detached(certificate + ROLE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    certificate, ROLE_CERT_SIGNED_SIZE - SIGNATURE_SIZE,
-                                    source_pk) != 0)
-        return -1;
-
-
-    return 0;
-}
-
-/* Return -1 if cert isn't issued by ops or if target is a founder or we don't know the source
- * Return issuer peer number in other cases
- * Add roles or ban depending on the cert and save the cert in role_cert arrays (works for ourself and peers)
- */
-static int process_role_cert(Messenger *m, int groupnumber, const uint8_t *certificate)
-{
-    GC_Session *c = m->group_handler;
-    GC_Chat *chat = gc_get_group(c, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    uint8_t cert_type = certificate[0];
-
-    uint8_t source_pk[EXT_PUBLIC_KEY];
-    uint8_t target_pk[EXT_PUBLIC_KEY];
-    memcpy(source_pk, CERT_SOURCE_KEY(certificate), EXT_PUBLIC_KEY);
-    memcpy(target_pk, CERT_TARGET_KEY(certificate), EXT_PUBLIC_KEY);
-
-    int src = peer_in_chat(chat, source_pk);
-
-    if (src == -1)
-        return -1;
-
-    /* Issuer is not an OP or founder */
-    if (chat->group[src].role > GR_MODERATOR)
-        return -1;
-
-    /* Check if certificate is for us.
-     * Note: Attempts to circumvent certficiates by modifying this code
-     * will not have any effect on other peers in the group.
-     */
-    if (memcmp(target_pk, chat->self_public_key, EXT_PUBLIC_KEY) == 0) {
-        if (chat->group[0].role == GR_FOUNDER)
-            return -1;
-
-        switch (cert_type) {
-            case GC_PROMOTE_OP:
-                if (chat->group[0].role == GR_MODERATOR)
-                    return -1;
-
-                chat->group[0].role = GR_MODERATOR;
-                break;
-
-            case GC_REVOKE_OP:
-                if (chat->group[0].role != GR_MODERATOR)
-                    return -1;
-
-                chat->group[0].role = GR_USER;
-                break;
-
-            case GC_SILENCE:
-                chat->group[0].role = GR_OBSERVER;
-                break;
-
-            case GC_BAN: {
-                group_delete(c, chat);
-                break;
-            }
-
-            default:
-                return -1;
-        }
-
-        memcpy(chat->group[0].role_certificate, certificate, ROLE_CERT_SIGNED_SIZE);
-
-        return src;
-    }
-
-    int trg = peer_in_chat(chat, target_pk);
-
-    if (trg == -1)
-        return -1;
-
-    if (chat->group[trg].role == GR_FOUNDER)
-        return -1;
-
-    switch (cert_type) {
-        case GC_PROMOTE_OP:
-            if (chat->group[trg].role == GR_MODERATOR)
-                return -1;
-
-            chat->group[trg].role = GR_MODERATOR;
-            break;
-
-        case GC_REVOKE_OP:
-            if (chat->group[trg].role != GR_MODERATOR)
-                return -1;
-
-            chat->group[trg].role = GR_USER;
-            break;
-
-        case GC_SILENCE:
-            chat->group[trg].role = GR_OBSERVER;
-            break;
-
-        case GC_BAN:
-            /* TODO: how do we prevent the peer from simply rejoining? */
-           // gc_peer_delete(m, groupnumber, trg, NULL, 0);
-            return -1;
-
-        default:
-            return -1;
-    }
-
-    memcpy(chat->group[trg].role_certificate, certificate, ROLE_CERT_SIGNED_SIZE);
-
-    return src;
-}
-
-static int process_chain_trust(GC_Chat *chat)
-{
-    // TODO !!!??!
-    return -1;
-}
-
 /* Deletets peernumber from group.
  *
  * Return 0 on success.
@@ -3339,7 +3106,6 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
 static void self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *peer)
 {
     memset(peer, 0, sizeof(GC_GroupPeer));
-    memcpy(peer->role_certificate, chat->group[0].role_certificate, ROLE_CERT_SIGNED_SIZE);
     memcpy(peer->nick, chat->group[0].nick, chat->group[0].nick_len);
     peer->nick_len = chat->group[0].nick_len;
     peer->status = chat->group[0].status;
@@ -3648,7 +3414,6 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     if (peer_add(m, groupnumber, NULL, save->self_public_key) != 0)
         return -1;
 
-    memcpy(chat->group[0].role_certificate, save->self_role_cert, ROLE_CERT_SIGNED_SIZE);
     memcpy(chat->group[0].nick, save->self_nick, MAX_GC_NICK_SIZE);
     chat->group[0].nick_len = ntohs(save->self_nick_len);
     chat->group[0].role = save->self_role;

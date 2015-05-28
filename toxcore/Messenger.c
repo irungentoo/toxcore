@@ -2603,7 +2603,6 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
 
             memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);
-            memcpy(temp.self_role_cert, c->chats[i].group[0].role_certificate, ROLE_CERT_SIGNED_SIZE);
             memcpy(temp.self_nick, c->chats[i].group[0].nick, MAX_GC_NICK_SIZE);
             temp.self_nick_len = htons(c->chats[i].group[0].nick_len);
             temp.self_role = c->chats[i].group[0].role;
