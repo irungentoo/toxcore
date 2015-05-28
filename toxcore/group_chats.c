@@ -345,6 +345,24 @@ static void expand_chat_id(uint8_t *dest, const uint8_t *chat_id)
     memcpy(dest + ENC_PUBLIC_KEY, chat_id, SIG_PUBLIC_KEY);
 }
 
+static void pack_gc_mod_list(GC_Chat *chat, uint8_t *data);
+
+/* Creates a new mod_list hash and puts it in hash.
+ * hash must have room for at least GC_MOD_LIST_HASH_SIZE bytes.
+ */
+static void make_mod_list_hash(GC_Chat *chat, uint8_t *hash)
+{
+    if (chat->num_mods == 0) {
+        memset(hash, 0, GC_MOD_LIST_HASH_SIZE);
+        return;
+    }
+
+    uint8_t data[chat->num_mods * SIG_PUBLIC_KEY];
+    pack_gc_mod_list(chat, data);
+
+    crypto_hash_sha256(hash, data, sizeof(data));
+}
+
 /* copies GC_PeerAddress info from src to dest */
 static void copy_gc_peer_addr(GC_PeerAddress *dest, const GC_PeerAddress *src)
 {
@@ -499,6 +517,17 @@ int unpack_gc_addresses(GC_PeerAddress *addrs, uint16_t max_num_addrs, uint16_t 
         *processed_data_len = len_processed;
 
     return num;
+}
+
+/* Packs mod_list into data.
+ * data must have room for num_mods * SIG_PUBLIC_KEY bytes.
+ */
+static void pack_gc_mod_list(GC_Chat *chat, uint8_t *data)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->num_mods; ++i)
+        memcpy(&data[i * SIG_PUBLIC_KEY], chat->mod_list[i], SIG_PUBLIC_KEY);
 }
 
 /* Size of peer data that we pack for transfer (nick length must be accounted for separately).
@@ -1970,20 +1999,25 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
     if (chat->group[peernumber].role == GR_FOUNDER)
         return -2;
 
-    /* Promote peer to moderator or demote moderator to user or observer */
+    /* Promote user or observer to moderator, or demote moderator to user or observer */
     if (role == GR_MODERATOR || (role >= GR_USER && chat->group[peernumber].role == GR_MODERATOR)) {
         if (chat->group[0].role != GR_FOUNDER)
             return -2;
 
-        if (set_peer_moderator(chat, peernumber, role) == -1) {
-            fprintf(stderr, "failed to set peer moderator\n");
+        if (set_peer_moderator(chat, peernumber, role) == -1)
+            return -1;
+
+        uint8_t old_hash[GC_MOD_LIST_HASH_SIZE];
+        memcpy(old_hash, chat->shared_state.mod_list_hash, GC_MOD_LIST_HASH_SIZE);
+
+        uint8_t new_hash[GC_MOD_LIST_HASH_SIZE];
+        make_mod_list_hash(chat, new_hash);
+        memcpy(chat->shared_state.mod_list_hash, new_hash, GC_MOD_LIST_HASH_SIZE);
+
+        if (sign_gc_shared_state(chat) == -1) {
+            memcpy(chat->shared_state.mod_list_hash, old_hash, GC_MOD_LIST_HASH_SIZE);
             return -1;
         }
-
-        // TODO: mod_list hash
-
-        if (sign_gc_shared_state(chat) == -1)
-            return -1;
 
         if (broadcast_gc_shared_state(chat) == -1)
             return -1;
