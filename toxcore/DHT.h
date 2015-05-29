@@ -37,7 +37,7 @@
 /* Size of the group chat_id */
 #define CHAT_ID_SIZE SIG_PUBLIC_KEY
 
-/* Long keys for group chats */
+/* Extended keys for group chats */
 #define EXT_SECRET_KEY (ENC_SECRET_KEY + SIG_SECRET_KEY)
 #define EXT_PUBLIC_KEY (ENC_PUBLIC_KEY + SIG_PUBLIC_KEY)
 

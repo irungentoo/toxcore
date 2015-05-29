@@ -245,6 +245,8 @@ struct SAVED_GROUP {
     uint8_t   topic[MAX_GC_TOPIC_SIZE];
     uint16_t  num_addrs;
     GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];
+    uint16_t  num_mods;
+    uint8_t   mod_list[SIG_PUBLIC_KEY * MAX_GC_MODERATORS];
 
     /* self info */
     uint8_t   self_public_key[EXT_PUBLIC_KEY];
@@ -498,9 +500,6 @@ uint32_t gc_count_groups(const GC_Session *c);
  */
 GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
 
-int process_group_packet(Messenger *m, int groupnumber, IP_Port ipp, int peernumber, const uint8_t *sender_pk,
-                         const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type, bool is_lossess);
-
 /* Deletets peernumber from group.
  *
  * Return 0 on success.
@@ -511,6 +510,11 @@ int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uin
 /* Updates chat_id's addr_list when we get a nodes request reply from DHT.
  * This will clear previous entries. */
 void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id);
+
+/* Packs mod_list into data.
+ * data must have room for num_mods * SIG_PUBLIC_KEY bytes.
+ */
+void pack_gc_mod_list(const GC_Chat *chat, uint8_t *data);
 
 /* Copies up to max_addrs peer addresses from chat into addrs.
  *

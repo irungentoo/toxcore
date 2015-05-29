@@ -2601,6 +2601,9 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             uint16_t num_addrs = gc_copy_peer_addrs(&c->chats[i], temp.addrs, GROUP_SAVE_MAX_PEERS);
             temp.num_addrs = htons(num_addrs);
 
+            temp.num_mods = htons(c->chats[i].num_mods);
+            pack_gc_mod_list(&c->chats[i], temp.mod_list);
+
             memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);
             memcpy(temp.self_nick, c->chats[i].group[0].nick, MAX_GC_NICK_SIZE);

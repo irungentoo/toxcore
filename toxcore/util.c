@@ -182,6 +182,25 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     return length == 0 ? 0 : -1;
 };
 
+/* frees and nulls all pointers in a uint8_t pointer array, as well as the array itself. */
+void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items)
+{
+    if (ary == NULL)
+        return;
+
+    size_t i;
+
+    for (i = 0; i < n_items; ++i) {
+        if (ary[i] != NULL) {
+            free(ary[i]);
+            ary[i] = NULL;
+        }
+    }
+
+    free(ary);
+    ary = NULL;
+}
+
 /* Converts 8 bytes to uint64_t */
 inline void bytes_to_U64(uint64_t *dest, const uint8_t *bytes)
 {

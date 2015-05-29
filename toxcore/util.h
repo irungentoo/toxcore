@@ -79,6 +79,9 @@ typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32
 int load_state(load_state_callback_func load_state_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
+/* frees and nulls all pointers in a uint8_t pointer array, as well as the array itself. */
+void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items);
+
 /* Converts 8 bytes to uint64_t */
 void bytes_to_U64(uint64_t *dest, const uint8_t *bytes);
 
