@@ -2979,7 +2979,10 @@ static int handle_gc_lossless_message(void *object, IP_Port ipp, const uint8_t *
         return -1;
     }
 
-    if (lossless_ret == 2 && peer_in_chat(chat, sender_pk) != -1) {   /* check again in case peer was deleted */
+    /* we need to get the peernumber again because it may have changed */
+    peernumber = peer_in_chat(chat, sender_pk);
+
+    if (lossless_ret == 2 && peernumber != -1) {
         gc_send_message_ack(chat, peernumber, message_id, 0);
         gcc_check_recv_ary(m, chat->groupnumber, peernumber);
     }
@@ -3288,6 +3291,7 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
     gconn->send_message_id = 1;
     gconn->send_ary_start = 1;
     gconn->recv_message_id = 0;
+    chat->group[peernumber].role = GR_INVALID;
 
     if (c->peerlist_update)
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
