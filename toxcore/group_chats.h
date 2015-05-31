@@ -41,6 +41,7 @@ typedef struct Messenger Messenger;
 #define MAX_GC_PASSWD_SIZE 32
 #define MAX_GC_MODERATORS 128
 
+#define GC_MOD_LIST_ENTRY_SIZE SIG_PUBLIC_KEY
 #define GC_MOD_LIST_HASH_SIZE crypto_hash_sha256_BYTES
 #define GC_PING_INTERVAL 30
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
@@ -246,7 +247,7 @@ struct SAVED_GROUP {
     uint16_t  num_addrs;
     GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];
     uint16_t  num_mods;
-    uint8_t   mod_list[SIG_PUBLIC_KEY * MAX_GC_MODERATORS];
+    uint8_t   mod_list[GC_MOD_LIST_ENTRY_SIZE * MAX_GC_MODERATORS];
 
     /* self info */
     uint8_t   self_public_key[EXT_PUBLIC_KEY];
@@ -355,6 +356,7 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
  * Returns 0 on success.
  * Returns -1 on failure.
  * Returns -2 if caller does not have the required permissions.
+ * Returns -3 if mod list is full.
  */
 int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);
 

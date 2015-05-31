@@ -1938,7 +1938,7 @@ int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uin
  * Returns -1 on failure.
  * Returns -2 if caller does not have permission to kick.
  */
-int tox_group_op_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
+int tox_group_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
 {
     Messenger *m = tox;
     return send_gc_kick_peer(m, groupnumber, peernumber);
@@ -1952,6 +1952,7 @@ int tox_group_op_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
  * Returns 0 on success.
  * Returns -1 on failure.
  * Returns -2 if caller does not have required permissions for the action.
+ * Returns -3 if promoting a peer to moderator fails due to a full moderator list.
  */
 int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role)
 {
@@ -1962,4 +1963,21 @@ int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_
         return -1;
 
     return gc_set_peer_role(chat, peernumber, role);
+}
+
+/* Allows the group founder to remove all offline moderators from the moderator list.
+ * This function may be useful in response to the moderator list being full.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int tox_group_prune_moderator_list(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_founder_prune_mod_list(chat);
 }
