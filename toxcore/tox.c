@@ -214,6 +214,8 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
         if (m_error == MESSENGER_ERROR_PORT) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
+        } else if (m_error == MESSENGER_ERROR_TCP_SERVER) {
+            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
         } else {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         }
