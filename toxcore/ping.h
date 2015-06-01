@@ -4,7 +4,7 @@
  * This file is donated to the Tox Project.
  * Copyright 2013  plutooo
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2014 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

@@ -5,7 +5,7 @@
  *
  * NOTE: This code has to be perfect. We don't mess around with encryption.
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

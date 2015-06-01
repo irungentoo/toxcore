@@ -2,7 +2,7 @@
  *
  * An implementation of the DHT as seen in http://wiki.tox.im/index.php/DHT
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

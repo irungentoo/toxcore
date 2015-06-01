@@ -2,7 +2,7 @@
  *
  * Miscellaneous functions and data structures for doing random things.
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2014 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

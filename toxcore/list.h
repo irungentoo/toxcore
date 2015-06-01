@@ -4,7 +4,7 @@
  * -Allows for finding ids associated with data such as IPs or public keys in a short time
  * -Should only be used if there are relatively few add/remove calls to the list
  *
- *  Copyright (C) 2014 Tox project All Rights Reserved.
+ *  Copyright (C) 2014-2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
