@@ -390,13 +390,21 @@ int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_priv
  */
 int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
 
+/* Removes all offline mods from the mod_list.
+ * This function should only be called by the founder.
+ *
+ * Returns the number of mods that were removed on success.
+ * Returns -1 on failure.
+ */
+int gc_founder_prune_mod_list(GC_Chat *chat);
+
 /* Instructs all peers to remove peernumber from their peerlist.
  *
  * Returns a 0 on success.
  * Returns -1 on failure.
  * Returns -2 if the caller does not have kick permissions.
  */
-int send_gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber);
+int gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);

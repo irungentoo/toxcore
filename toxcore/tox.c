@@ -1941,7 +1941,7 @@ int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uin
 int tox_group_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
 {
     Messenger *m = tox;
-    return send_gc_kick_peer(m, groupnumber, peernumber);
+    return gc_kick_peer(m, groupnumber, peernumber);
 }
 
 /* Sets peernumber's role.
@@ -1968,7 +1968,7 @@ int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_
 /* Allows the group founder to remove all offline moderators from the moderator list.
  * This function may be useful in response to the moderator list being full.
  *
- * Returns 0 on success.
+ * Returns the number of removed moderators on success.
  * Returns -1 on failure.
  */
 int tox_group_prune_moderator_list(Tox *tox, int groupnumber)

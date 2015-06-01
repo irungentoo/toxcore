@@ -143,66 +143,34 @@ static uint32_t get_chat_id_hash(const uint8_t *chat_id)
     return jenkins_one_at_a_time_hash(chat_id, CHAT_ID_SIZE);
 }
 
-/* Creates a new mod_list hash and puts it in hash.
- * hash must have room for at least GC_MOD_LIST_HASH_SIZE bytes.
- */
-static void make_mod_list_hash(GC_Chat *chat, uint8_t *hash)
-{
-    if (chat->num_mods == 0) {
-        memset(hash, 0, GC_MOD_LIST_HASH_SIZE);
-        return;
-    }
-
-    uint8_t data[chat->num_mods * GC_MOD_LIST_ENTRY_SIZE];
-    pack_gc_mod_list(chat, data);
-    crypto_hash_sha256(hash, data, sizeof(data));
-}
-
-/* Check if peer with the encryption public key is in peer list.
+/* Check if peer with the public encryption key is in peer list.
  *
- * return peer number if peer is in chat.
+ * return peernumber if peer is in chat.
  * return -1 if peer is not in chat.
- *
  */
-static int peer_in_chat(const GC_Chat *chat, const uint8_t *public_key)
+static int get_peernum_of_enc_pk(const GC_Chat *chat, const uint8_t *public_enc_key)
 {
     uint32_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
-        if (memcmp(chat->gcc[i].addr.public_key, public_key, ENC_PUBLIC_KEY) == 0)
+        if (memcmp(chat->gcc[i].addr.public_key, public_enc_key, ENC_PUBLIC_KEY) == 0)
             return i;
     }
 
     return -1;
 }
 
-/* Check if peer with the signature public key is in peer list.
+/* Check if peer with the public signature key is in peer list.
  *
- * return peer number if peer is in chat.
+ * return peernumber if peer is in chat.
  * return -1 if peer is not in chat.
- *
  */
-static int get_peernum_of_sig_key(const GC_Chat *chat, const uint8_t *public_sig_key)
+static int get_peernum_of_sig_pk(const GC_Chat *chat, const uint8_t *public_sig_key)
 {
     uint32_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
         if (memcmp(SIG_PK(chat->gcc[i].addr.public_key), public_sig_key, SIG_PUBLIC_KEY) == 0)
-            return i;
-    }
-
-    return -1;
-}
-
-/* Returns mod_list index for peernumber.
- * Returns -1 if peernumber is not a moderator.
- */
-static int get_mod_list_index(const GC_Chat *chat, uint32_t peernumber)
-{
-    uint16_t i;
-
-    for (i = 0; i < chat->num_mods; ++i) {
-        if (memcmp(chat->mod_list[i], SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY) == 0)
             return i;
     }
 
@@ -227,7 +195,7 @@ static int validate_gc_peer_role(const GC_Chat *chat, uint32_t peernumber)
     }
 
     if (chat->group[peernumber].role == GR_MODERATOR) {
-        if (get_mod_list_index(chat, peernumber) == -1)
+        if (mod_list_get_index(chat, peernumber) == -1)
             return -1;
     }
 
@@ -236,71 +204,15 @@ static int validate_gc_peer_role(const GC_Chat *chat, uint32_t peernumber)
     return 0;
 }
 
-/* Removes moderator at idx position in mod_list.
- *
- * Returns 0 on success.
- * Returns -1 on failure.
- */
-static int remove_moderator_index(GC_Chat *chat, size_t idx)
-{
-    if (chat->num_mods == 0)
-        return -1;
-
-    --chat->num_mods;
-
-    if (chat->num_mods == 0) {
-        free(chat->mod_list);
-        chat->mod_list = NULL;
-        return 0;
-    }
-
-    if (idx != chat->num_mods)
-        memcpy(chat->mod_list[idx], chat->mod_list[chat->num_mods], GC_MOD_LIST_ENTRY_SIZE);
-
-    free(chat->mod_list[chat->num_mods]);
-    chat->mod_list[chat->num_mods] = NULL;
-
-    uint8_t **tmp_list = realloc(chat->mod_list, sizeof(uint8_t *) * (chat->num_mods));
-    chat->mod_list = tmp_list;
-
-    if (chat->mod_list == NULL) {
-        chat->num_mods = 0;
-        return -1;
-    }
-
-    return 0;
-}
-
-/* Removes peernumber from the moderator list and sets their new role.
- *
- * Returns 0 on success.
- * Returns -1 on failure.
- */
-static int remove_peer_moderator(GC_Chat *chat, uint32_t peernumber, uint8_t role)
-{
-    if (chat->num_mods == 0)
-        return -1;
-
-    int idx = get_mod_list_index(chat, peernumber);
-
-    if (idx == -1)
-        return -1;
-
-    chat->group[peernumber].role = role;
-
-    return remove_moderator_index(chat, idx);
-}
-
 static int sign_gc_shared_state(GC_Chat *chat);
 static int broadcast_gc_mod_list(GC_Chat *chat);
 static int broadcast_gc_shared_state(GC_Chat *chat);
 
 /* Removes all offline mods from the mod_list.
- *
  * This function should only be called by the founder.
  *
- * Returns 0 on success.
- * Returns -1 if no mod was removed.
+ * Returns the number of mods that were removed on success.
+ * Returns -1 on failure.
  */
 int gc_founder_prune_mod_list(GC_Chat *chat)
 {
@@ -308,13 +220,13 @@ int gc_founder_prune_mod_list(GC_Chat *chat)
         return -1;
 
     if (chat->num_mods == 0)
-        return -1;
+        return 0;
 
     size_t prunelist[chat->num_mods];
     size_t i, prunecount = 0;
 
     for (i = 0; i < chat->num_mods; ++i) {
-        if (get_peernum_of_sig_key(chat, chat->mod_list[i]) == -1) {
+        if (get_peernum_of_sig_pk(chat, chat->mod_list[i]) == -1) {
             prunelist[prunecount] = i;
             ++prunecount;
         }
@@ -323,14 +235,14 @@ int gc_founder_prune_mod_list(GC_Chat *chat)
     size_t real_prunecount = 0;
 
     for (i = 0; i < prunecount; ++i) {
-        if (remove_moderator_index(chat, prunelist[i]) != -1)
+        if (mod_list_remove_index(chat, prunelist[i]) != -1)
             ++real_prunecount;
     }
 
     if (real_prunecount == 0)
         return 0;
 
-    make_mod_list_hash(chat, chat->shared_state.mod_list_hash);
+    mod_list_make_hash(chat, chat->shared_state.mod_list_hash);
 
     if (sign_gc_shared_state(chat) == -1)
         return -1;
@@ -341,37 +253,7 @@ int gc_founder_prune_mod_list(GC_Chat *chat)
     if (broadcast_gc_mod_list(chat) == -1)
         return -1;
 
-    return 0;
-}
-
-/* Adds peernumber to the mod_list.
- *
- * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if the mod list is full.
- */
-static int add_peer_moderator(GC_Chat *chat, uint32_t peernumber)
-{
-    if (chat->num_mods >= MAX_GC_MODERATORS)
-        return -2;
-
-    uint8_t **tmp_list = realloc(chat->mod_list, sizeof(uint8_t *) * (chat->num_mods + 1));
-
-    if (tmp_list == NULL)
-        return -1;
-
-    tmp_list[chat->num_mods] = malloc(sizeof(uint8_t) * GC_MOD_LIST_ENTRY_SIZE);
-
-    if (tmp_list[chat->num_mods] == NULL)
-        return -1;
-
-    memcpy(tmp_list[chat->num_mods], SIG_PK(chat->gcc[peernumber].addr.public_key), GC_MOD_LIST_ENTRY_SIZE);
-    chat->mod_list = tmp_list;
-    ++chat->num_mods;
-
-    chat->group[peernumber].role = GR_MODERATOR;
-
-    return 0;
+    return real_prunecount;
 }
 
 /* Returns true if peernumber exists */
@@ -608,59 +490,6 @@ static int unpack_gc_addresses(GC_PeerAddress *addrs, uint16_t max_num_addrs, ui
         *processed_data_len = len_processed;
 
     return num;
-}
-
-/* Unpacks data into mod_list.
- * data should contain num_mods entries of size GC_MOD_LIST_ENTRY_SIZE.
- *
- * Returns length of unpacked data on success.
- * Returns -1 on failure.
- */
-static int unpack_gc_mod_list(GC_Chat *chat, const uint8_t *data, uint32_t length, uint16_t num_mods)
-{
-    if (length != num_mods * GC_MOD_LIST_ENTRY_SIZE)
-        return -1;
-
-    free_uint8_t_pointer_array(chat->mod_list, chat->num_mods);
-    chat->num_mods = 0;
-    chat->mod_list = NULL;
-
-    if (num_mods == 0)
-        return 0;
-
-    uint8_t **tmp_list = malloc(sizeof(uint8_t *) * num_mods);
-
-    if (tmp_list == NULL)
-        return -1;
-
-    uint32_t unpacked_len = 0;
-    uint16_t i;
-
-    for (i = 0; i < num_mods; ++i) {
-        tmp_list[i] = malloc(sizeof(uint8_t) * GC_MOD_LIST_ENTRY_SIZE);
-
-        if (tmp_list[i] == NULL)
-            return -1;
-
-        memcpy(tmp_list[i], &data[i * GC_MOD_LIST_ENTRY_SIZE], GC_MOD_LIST_ENTRY_SIZE);
-        unpacked_len += GC_MOD_LIST_ENTRY_SIZE;
-    }
-
-    chat->mod_list = tmp_list;
-    chat->num_mods = num_mods;
-
-    return unpacked_len;
-}
-
-/* Packs mod_list into data.
- * data must have room for num_mods * GC_MOD_LIST_ENTRY_SIZE bytes.
- */
-void pack_gc_mod_list(const GC_Chat *chat, uint8_t *data)
-{
-    uint16_t i;
-
-    for (i = 0; i < chat->num_mods && i < MAX_GC_MODERATORS; ++i)
-        memcpy(&data[i * GC_MOD_LIST_ENTRY_SIZE], chat->mod_list[i], GC_MOD_LIST_ENTRY_SIZE);
 }
 
 /* Size of peer data that we pack for transfer (nick length must be accounted for separately).
@@ -1066,7 +895,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
     uint32_t i;
 
     for (i = 0; i < num_peers; i++) {
-        if (peer_in_chat(chat, addrs[i].public_key) == -1)
+        if (get_peernum_of_enc_pk(chat, addrs[i].public_key) == -1)
             send_gc_handshake_request(m, groupnumber, addrs[i].ip_port, addrs[i].public_key,
                                       HS_PEER_INFO_EXCHANGE, chat->join_type);
     }
@@ -1256,7 +1085,7 @@ static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat)
     uint16_t i;
 
     for (i = 0; i < chat->num_addrs; ++i) {
-        if (peer_in_chat(chat, chat->addr_list[i].public_key) == -1)
+        if (get_peernum_of_enc_pk(chat, chat->addr_list[i].public_key) == -1)
             send_gc_handshake_request(c->messenger, chat->groupnumber, chat->addr_list[i].ip_port,
                                       chat->addr_list[i].public_key, HS_PEER_INFO_EXCHANGE, HJ_PUBLIC);
     }
@@ -1820,11 +1649,11 @@ static int handle_gc_mod_list(Messenger *m, int groupnumber, uint32_t peernumber
     if (num_mods > MAX_GC_MODERATORS)
         goto on_error;
 
-    if (unpack_gc_mod_list(chat, data + sizeof(uint16_t), length - sizeof(uint16_t), num_mods) == -1)
+    if (mod_list_unpack(chat, data + sizeof(uint16_t), length - sizeof(uint16_t), num_mods) == -1)
         goto on_error;
 
     uint8_t mod_list_hash[GC_MOD_LIST_HASH_SIZE];
-    make_mod_list_hash(chat, mod_list_hash);
+    mod_list_make_hash(chat, mod_list_hash);
 
     if (memcmp(mod_list_hash, chat->shared_state.mod_list_hash, GC_MOD_LIST_HASH_SIZE) != 0)
         goto on_error;
@@ -1864,7 +1693,7 @@ static uint32_t make_gc_mod_list_packet(GC_Chat *chat, uint8_t *data, uint32_t l
 
     if (mod_list_size > 0) {
         uint8_t packed_mod_list[mod_list_size];
-        pack_gc_mod_list(chat, packed_mod_list);
+        mod_list_pack(chat, packed_mod_list);
         memcpy(data + HASH_ID_BYTES + sizeof(uint16_t), packed_mod_list, mod_list_size);
     }
 
@@ -2142,10 +1971,10 @@ static int set_peer_moderator(GC_Chat *chat, uint32_t peernumber, uint8_t role)
         if (chat->group[peernumber].role <= GR_MODERATOR)
             return -1;
 
-        return add_peer_moderator(chat, peernumber);
+        return mod_list_add_peer(chat, peernumber);
     }
 
-    return remove_peer_moderator(chat, peernumber, role);
+    return mod_list_remove_peer(chat, peernumber, role);
 }
 
 /* Returns a role's respective moderation event type.
@@ -2188,7 +2017,7 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
     uint8_t target_pk[ENC_PUBLIC_KEY];
     memcpy(target_pk, data + sizeof(uint8_t), ENC_PUBLIC_KEY);
 
-    int target_peernum = peer_in_chat(chat, target_pk);
+    int target_peernum = get_peernum_of_enc_pk(chat, target_pk);
 
     if (target_peernum == -1)
         return -1;
@@ -2279,7 +2108,7 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
         uint8_t old_hash[GC_MOD_LIST_HASH_SIZE];
         memcpy(old_hash, chat->shared_state.mod_list_hash, GC_MOD_LIST_HASH_SIZE);
 
-        make_mod_list_hash(chat, chat->shared_state.mod_list_hash);
+        mod_list_make_hash(chat, chat->shared_state.mod_list_hash);
 
         if (sign_gc_shared_state(chat) == -1) {
             memcpy(chat->shared_state.mod_list_hash, old_hash, GC_MOD_LIST_HASH_SIZE);
@@ -2489,7 +2318,7 @@ static int handle_bc_mod_event(Messenger *m, int groupnumber, uint32_t peernumbe
     uint8_t target_pk[ENC_PUBLIC_KEY];
     memcpy(target_pk, data + sizeof(uint8_t), ENC_PUBLIC_KEY);
 
-    int target_peernum = peer_in_chat(chat, target_pk);
+    int target_peernum = get_peernum_of_enc_pk(chat, target_pk);
 
     if (!peernumber_valid(chat, target_peernum))
         return -1;
@@ -2506,7 +2335,7 @@ static int handle_bc_mod_event(Messenger *m, int groupnumber, uint32_t peernumbe
         if (chat->group[peernumber].role != GR_FOUNDER)
             return -1;
 
-        if (remove_peer_moderator(chat, target_peernum, GR_USER) == -1)
+        if (mod_list_remove_peer(chat, target_peernum, GR_USER) == -1)
             return -1;
     }
 
@@ -2533,7 +2362,7 @@ static int send_gc_mod_event(GC_Chat *chat, uint32_t peernumber, uint8_t mod_eve
  * Returns -1 on failure.
  * Returns -2 if the caller does not have kick permissions.
  */
-int send_gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
+int gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2854,7 +2683,7 @@ static int handle_gc_handshake_response(Messenger *m, int groupnumber, const uin
     if (!chat)
         return -1;
 
-    int peernumber = peer_in_chat(chat, sender_pk);
+    int peernumber = get_peernum_of_enc_pk(chat, sender_pk);
 
     if (peernumber == -1)
         return -1;
@@ -2919,7 +2748,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
 
     ++chat->connection_O_metre;
 
-    int peer_exists = peer_in_chat(chat, sender_pk);
+    int peer_exists = get_peernum_of_enc_pk(chat, sender_pk);
 
     if (peer_exists != -1)
         gc_peer_delete(m, groupnumber, peer_exists, NULL, 0);
@@ -3054,7 +2883,7 @@ static int handle_gc_lossless_message(void *object, IP_Port ipp, const uint8_t *
     uint8_t sender_pk[ENC_PUBLIC_KEY];
     memcpy(sender_pk, packet + 1 + HASH_ID_BYTES, ENC_PUBLIC_KEY);
 
-    int peernumber = peer_in_chat(chat, sender_pk);
+    int peernumber = get_peernum_of_enc_pk(chat, sender_pk);
 
     if (!peernumber_valid(chat, peernumber))
         return -1;
@@ -3109,7 +2938,7 @@ static int handle_gc_lossless_message(void *object, IP_Port ipp, const uint8_t *
     }
 
     /* we need to get the peernumber again because it may have changed */
-    peernumber = peer_in_chat(chat, sender_pk);
+    peernumber = get_peernum_of_enc_pk(chat, sender_pk);
 
     if (lossless_ret == 2 && peernumber != -1) {
         gc_send_message_ack(chat, peernumber, message_id, 0);
@@ -3146,7 +2975,7 @@ static int handle_gc_lossy_message(void *object, IP_Port ipp, const uint8_t *pac
     uint8_t sender_pk[ENC_PUBLIC_KEY];
     memcpy(sender_pk, packet + 1 + HASH_ID_BYTES, ENC_PUBLIC_KEY);
 
-    int peernumber = peer_in_chat(chat, sender_pk);
+    int peernumber = get_peernum_of_enc_pk(chat, sender_pk);
 
     if (!peernumber_valid(chat, peernumber))
         return -1;
@@ -3386,7 +3215,7 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
     if (chat == NULL)
         return -1;
 
-    if (peer_in_chat(chat, public_key) != -1)
+    if (get_peernum_of_enc_pk(chat, public_key) != -1)
         return -1;
 
     GC_Connection *tmp_gcc = realloc(chat->gcc, sizeof(GC_Connection) * (chat->numpeers + 1));
@@ -3734,7 +3563,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     memcpy(chat->topic, save->topic, MAX_GC_TOPIC_SIZE);
 
     uint16_t num_mods = ntohs(save->num_mods);
-    if (unpack_gc_mod_list(chat, save->mod_list, num_mods * GC_MOD_LIST_ENTRY_SIZE, num_mods) == -1)
+    if (mod_list_unpack(chat, save->mod_list, num_mods * GC_MOD_LIST_ENTRY_SIZE, num_mods) == -1)
         return -1;
 
     memcpy(chat->self_public_key, save->self_public_key, EXT_PUBLIC_KEY);
@@ -3984,9 +3813,7 @@ static int group_delete(GC_Session* c, GC_Chat *chat)
     if (c == NULL)
         return -1;
 
-    free_uint8_t_pointer_array(chat->mod_list, chat->num_mods);
-    chat->mod_list = NULL;
-
+    mod_list_cleanup(chat);
     gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
     gcc_cleanup(chat);
 

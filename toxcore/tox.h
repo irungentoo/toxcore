@@ -2729,7 +2729,7 @@ int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_
 /* Allows the group founder to remove all offline moderators from the moderator list.
  * This function may be useful in response to the moderator list being full.
  *
- * Returns 0 on success.
+ * Returns the number of removed moderators on success.
  * Returns -1 on failure.
  */
 int tox_group_prune_moderator_list(Tox *tox, int groupnumber);

@@ -35,6 +35,7 @@
 #include "network.h"
 #include "util.h"
 #include "group_chats.h"
+#include "group_moderation.h"
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
@@ -2602,7 +2603,7 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             temp.num_addrs = htons(num_addrs);
 
             temp.num_mods = htons(c->chats[i].num_mods);
-            pack_gc_mod_list(&c->chats[i], temp.mod_list);
+            mod_list_pack(&c->chats[i], temp.mod_list);
 
             memcpy(temp.self_public_key, c->chats[i].self_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.self_secret_key, c->chats[i].self_secret_key, EXT_SECRET_KEY);
