@@ -2006,7 +2006,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 #define PACKET_RESEND_MULTIPLIER 2
 
 /* Timeout for increasing speed after congestion event (in ms). */
-#define CONGESTION_EVENT_TIMEOUT 4000
+#define CONGESTION_EVENT_TIMEOUT 2000
 
 static void send_crypto_packets(Net_Crypto *c)
 {
@@ -2086,7 +2086,7 @@ static void send_crypto_packets(Net_Crypto *c)
                                              PACKET_COUNTER_AVERAGE_INTERVAL));
 
                 if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
-                    conn->packet_send_rate = min_speed * 1.2;
+                    conn->packet_send_rate = min_speed * 1.25;
                 } else {
                     conn->packet_send_rate = min_speed;
                 }
