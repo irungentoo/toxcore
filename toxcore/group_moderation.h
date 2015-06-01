@@ -25,6 +25,29 @@
 #ifndef GROUP_MODERATION_H
 #define GROUP_MODERATION_H
 
+enum {
+    SA_BAN,
+    SA_OBSERVER
+} GROUP_SANCTION_TYPE;
+
+struct GC_Ban {
+    IP_Port     ip_port;
+    uint8_t     nick[MAX_GC_NICK_SIZE];
+};
+
+/* Holds data pertaining to peer who has been banned or given an observer role */
+struct GC_Sanction {
+    uint8_t     public_sig_key[SIG_PUBLIC_KEY];   /* public signature key of the mod who set the sanction */
+    uint8_t     signature[SIGNATURE_SIZE];
+    uint64_t    time_added;
+
+    uint8_t     type;
+    union {
+        struct GC_Ban    ban_info;
+        uint8_t          target_pk[ENC_PUBLIC_KEY];
+    };
+};
+
 /* Unpacks data into the moderator list.
  * data should contain num_mods entries of size GC_MOD_LIST_ENTRY_SIZE.
  *

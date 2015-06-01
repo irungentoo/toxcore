@@ -31,6 +31,7 @@
 #include "group_chats.h"
 #include "group_announce.h"
 #include "group_connection.h"
+#include "group_moderation.h"
 #include "LAN_discovery.h"
 #include "util.h"
 #include "Messenger.h"
@@ -44,7 +45,7 @@
 #define GC_ENCRYPTED_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES\
                                      + GC_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
 
-#define GC_PACKED_SHARED_STATE_SIZE (ENC_PUBLIC_KEY + sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
+#define GC_PACKED_SHARED_STATE_SIZE (EXT_PUBLIC_KEY + sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
                                      + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE\
                                      + GC_MOD_LIST_HASH_SIZE + sizeof(uint32_t))
 
@@ -219,14 +220,14 @@ int gc_founder_prune_mod_list(GC_Chat *chat)
     if (chat->group[0].role != GR_FOUNDER)
         return -1;
 
-    if (chat->num_mods == 0)
+    if (chat->moderation.num_mods == 0)
         return 0;
 
-    size_t prunelist[chat->num_mods];
+    size_t prunelist[chat->moderation.num_mods];
     size_t i, prunecount = 0;
 
-    for (i = 0; i < chat->num_mods; ++i) {
-        if (get_peernum_of_sig_pk(chat, chat->mod_list[i]) == -1) {
+    for (i = 0; i < chat->moderation.num_mods; ++i) {
+        if (get_peernum_of_sig_pk(chat, chat->moderation.mod_list[i]) == -1) {
             prunelist[prunecount] = i;
             ++prunecount;
         }
@@ -554,8 +555,8 @@ static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared
 {
     uint32_t packed_len = 0;
 
-    memcpy(data + packed_len, shared_state->founder_public_key, ENC_PUBLIC_KEY);
-    packed_len += ENC_PUBLIC_KEY;
+    memcpy(data + packed_len, shared_state->founder_public_key, EXT_PUBLIC_KEY);
+    packed_len += EXT_PUBLIC_KEY;
     U32_to_bytes(data + packed_len, shared_state->maxpeers);
     packed_len += sizeof(uint32_t);
     U16_to_bytes(data + packed_len, shared_state->group_name_len);
@@ -585,8 +586,8 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
 {
     uint32_t len_processed = 0;
 
-    memcpy(shared_state->founder_public_key, data + len_processed, ENC_PUBLIC_KEY);
-    len_processed += ENC_PUBLIC_KEY;
+    memcpy(shared_state->founder_public_key, data + len_processed, EXT_PUBLIC_KEY);
+    len_processed += EXT_PUBLIC_KEY;
     bytes_to_U32(&shared_state->maxpeers, data + len_processed);
     len_processed += sizeof(uint32_t);
     bytes_to_U16(&shared_state->group_name_len, data + len_processed);
@@ -1689,7 +1690,7 @@ static uint32_t make_gc_mod_list_packet(GC_Chat *chat, uint8_t *data, uint32_t l
         return 0;
 
     U32_to_bytes(data, chat->self_public_key_hash);
-    U16_to_bytes(data + HASH_ID_BYTES, chat->num_mods);
+    U16_to_bytes(data + HASH_ID_BYTES, chat->moderation.num_mods);
 
     if (mod_list_size > 0) {
         uint8_t packed_mod_list[mod_list_size];
@@ -1707,7 +1708,7 @@ static uint32_t make_gc_mod_list_packet(GC_Chat *chat, uint8_t *data, uint32_t l
  */
 static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber)
 {
-    size_t mod_list_size = chat->num_mods * GC_MOD_LIST_ENTRY_SIZE;
+    size_t mod_list_size = chat->moderation.num_mods * GC_MOD_LIST_ENTRY_SIZE;
     uint32_t length = HASH_ID_BYTES + sizeof(uint16_t) + mod_list_size;
     uint8_t packet[length];
 
@@ -1726,7 +1727,7 @@ static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber)
  */
 static int broadcast_gc_mod_list(GC_Chat *chat)
 {
-    size_t mod_list_size = chat->num_mods * GC_MOD_LIST_ENTRY_SIZE;
+    size_t mod_list_size = chat->moderation.num_mods * GC_MOD_LIST_ENTRY_SIZE;
     uint32_t length = HASH_ID_BYTES + sizeof(uint16_t) + mod_list_size;
     uint8_t packet[length];
 
@@ -3546,7 +3547,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->last_sent_ping_time = tm;
     chat->announce_search_timer = tm;
 
-    memcpy(chat->shared_state.founder_public_key, save->founder_public_key, ENC_PUBLIC_KEY);
+    memcpy(chat->shared_state.founder_public_key, save->founder_public_key, EXT_PUBLIC_KEY);
     chat->shared_state.group_name_len = ntohs(save->group_name_len);
     memcpy(chat->shared_state.group_name, save->group_name, MAX_GC_GROUP_NAME_SIZE);
     chat->shared_state.privacy_state = save->privacy_state;
@@ -3601,7 +3602,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 static int init_gc_shared_state(GC_Chat *chat, uint8_t privacy_state, const uint8_t *group_name,
                                 uint16_t name_length)
 {
-    memcpy(chat->shared_state.founder_public_key, chat->self_public_key, ENC_PUBLIC_KEY);
+    memcpy(chat->shared_state.founder_public_key, chat->self_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->shared_state.group_name, group_name, name_length);
     chat->shared_state.group_name_len = name_length;
     chat->shared_state.maxpeers = MAX_GC_NUM_PEERS;

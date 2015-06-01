@@ -67,8 +67,8 @@ int mod_list_unpack(GC_Chat *chat, const uint8_t *data, uint32_t length, uint16_
         unpacked_len += GC_MOD_LIST_ENTRY_SIZE;
     }
 
-    chat->mod_list = tmp_list;
-    chat->num_mods = num_mods;
+    chat->moderation.mod_list = tmp_list;
+    chat->moderation.num_mods = num_mods;
 
     return unpacked_len;
 }
@@ -80,8 +80,8 @@ void mod_list_pack(const GC_Chat *chat, uint8_t *data)
 {
     uint16_t i;
 
-    for (i = 0; i < chat->num_mods && i < MAX_GC_MODERATORS; ++i)
-        memcpy(&data[i * GC_MOD_LIST_ENTRY_SIZE], chat->mod_list[i], GC_MOD_LIST_ENTRY_SIZE);
+    for (i = 0; i < chat->moderation.num_mods && i < MAX_GC_MODERATORS; ++i)
+        memcpy(&data[i * GC_MOD_LIST_ENTRY_SIZE], chat->moderation.mod_list[i], GC_MOD_LIST_ENTRY_SIZE);
 }
 
 /* Creates a new moderator list hash and puts it in hash.
@@ -91,12 +91,12 @@ void mod_list_pack(const GC_Chat *chat, uint8_t *data)
  */
 void mod_list_make_hash(GC_Chat *chat, uint8_t *hash)
 {
-    if (chat->num_mods == 0) {
+    if (chat->moderation.num_mods == 0) {
         memset(hash, 0, GC_MOD_LIST_HASH_SIZE);
         return;
     }
 
-    uint8_t data[chat->num_mods * GC_MOD_LIST_ENTRY_SIZE];
+    uint8_t data[chat->moderation.num_mods * GC_MOD_LIST_ENTRY_SIZE];
     mod_list_pack(chat, data);
     crypto_hash_sha256(hash, data, sizeof(data));
 }
@@ -108,8 +108,8 @@ int mod_list_get_index(const GC_Chat *chat, uint32_t peernumber)
 {
     uint16_t i;
 
-    for (i = 0; i < chat->num_mods; ++i) {
-        if (memcmp(chat->mod_list[i], SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY) == 0)
+    for (i = 0; i < chat->moderation.num_mods; ++i) {
+        if (memcmp(chat->moderation.mod_list[i], SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY) == 0)
             return i;
     }
 
@@ -123,28 +123,27 @@ int mod_list_get_index(const GC_Chat *chat, uint32_t peernumber)
  */
 int mod_list_remove_index(GC_Chat *chat, size_t index)
 {
-    if (chat->num_mods == 0)
+    if (chat->moderation.num_mods == 0)
         return -1;
 
-    --chat->num_mods;
-
-    if (chat->num_mods == 0) {
-        free(chat->mod_list);
-        chat->mod_list = NULL;
+    if (chat->moderation.num_mods - 1 == 0) {
+        mod_list_cleanup(chat);
         return 0;
     }
 
-    if (index != chat->num_mods)
-        memcpy(chat->mod_list[index], chat->mod_list[chat->num_mods], GC_MOD_LIST_ENTRY_SIZE);
+    --chat->moderation.num_mods;
 
-    free(chat->mod_list[chat->num_mods]);
-    chat->mod_list[chat->num_mods] = NULL;
+    if (index != chat->moderation.num_mods)
+        memcpy(chat->moderation.mod_list[index], chat->moderation.mod_list[chat->moderation.num_mods], GC_MOD_LIST_ENTRY_SIZE);
 
-    uint8_t **tmp_list = realloc(chat->mod_list, sizeof(uint8_t *) * (chat->num_mods));
-    chat->mod_list = tmp_list;
+    free(chat->moderation.mod_list[chat->moderation.num_mods]);
+    chat->moderation.mod_list[chat->moderation.num_mods] = NULL;
 
-    if (chat->mod_list == NULL) {
-        chat->num_mods = 0;
+    uint8_t **tmp_list = realloc(chat->moderation.mod_list, sizeof(uint8_t *) * (chat->moderation.num_mods));
+    chat->moderation.mod_list = tmp_list;
+
+    if (chat->moderation.mod_list == NULL) {
+        chat->moderation.num_mods = 0;
         return -1;
     }
 
@@ -158,7 +157,7 @@ int mod_list_remove_index(GC_Chat *chat, size_t index)
  */
 int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber, uint8_t role)
 {
-    if (chat->num_mods == 0)
+    if (chat->moderation.num_mods == 0)
         return -1;
 
     if (role <= GR_MODERATOR)
@@ -182,23 +181,23 @@ int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber, uint8_t role)
  */
 int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber)
 {
-    if (chat->num_mods >= MAX_GC_MODERATORS)
+    if (chat->moderation.num_mods >= MAX_GC_MODERATORS)
         return -2;
 
-    uint8_t **tmp_list = realloc(chat->mod_list, sizeof(uint8_t *) * (chat->num_mods + 1));
+    uint8_t **tmp_list = realloc(chat->moderation.mod_list, sizeof(uint8_t *) * (chat->moderation.num_mods + 1));
 
     if (tmp_list == NULL)
         return -1;
 
-    tmp_list[chat->num_mods] = malloc(sizeof(uint8_t) * GC_MOD_LIST_ENTRY_SIZE);
+    tmp_list[chat->moderation.num_mods] = malloc(sizeof(uint8_t) * GC_MOD_LIST_ENTRY_SIZE);
 
-    if (tmp_list[chat->num_mods] == NULL)
+    if (tmp_list[chat->moderation.num_mods] == NULL)
         return -1;
 
     chat->group[peernumber].role = GR_MODERATOR;
-    memcpy(tmp_list[chat->num_mods], SIG_PK(chat->gcc[peernumber].addr.public_key), GC_MOD_LIST_ENTRY_SIZE);
-    chat->mod_list = tmp_list;
-    ++chat->num_mods;
+    memcpy(tmp_list[chat->moderation.num_mods], SIG_PK(chat->gcc[peernumber].addr.public_key), GC_MOD_LIST_ENTRY_SIZE);
+    chat->moderation.mod_list = tmp_list;
+    ++chat->moderation.num_mods;
 
     return 0;
 }
@@ -206,7 +205,7 @@ int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber)
 /* Frees all memory associated with the moderator list and sets num_mods to 0. */
 void mod_list_cleanup(GC_Chat *chat)
 {
-    free_uint8_t_pointer_array(chat->mod_list, chat->num_mods);
-    chat->num_mods = 0;
-    chat->mod_list = NULL;
+    free_uint8_t_pointer_array(chat->moderation.mod_list, chat->moderation.num_mods);
+    chat->moderation.num_mods = 0;
+    chat->moderation.mod_list = NULL;
 }

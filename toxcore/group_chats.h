@@ -119,6 +119,13 @@ enum {
     HJ_PRIVATE
 } GROUP_HANDSHAKE_JOIN_TYPE;
 
+typedef struct GC_Moderation {
+    struct GC_Sanction *sanctions;
+    uint16_t    num_sanctions;
+    uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
+    uint16_t    num_mods;
+} GC_Moderation;
+
 typedef struct GC_PeerAddress {
     uint8_t     public_key[EXT_PUBLIC_KEY];
     IP_Port     ip_port;
@@ -132,7 +139,7 @@ typedef struct {
 } GC_GroupPeer;
 
 typedef struct {
-    uint8_t     founder_public_key[ENC_PUBLIC_KEY];
+    uint8_t     founder_public_key[EXT_PUBLIC_KEY];
     uint32_t    maxpeers;
     uint16_t    group_name_len;
     uint8_t     group_name[MAX_GC_GROUP_NAME_SIZE];
@@ -151,12 +158,9 @@ typedef struct GC_Chat {
 
     GC_GroupPeer    *group;
     GC_Connection   *gcc;
-
+    GC_Moderation   moderation;
     GC_SharedState  shared_state;
     uint8_t     shared_state_sig[SIGNATURE_SIZE];    /* Signed by founder using the chat secret key */
-
-    uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
-    uint16_t    num_mods;
 
     uint32_t    numpeers;
     int         groupnumber;
