@@ -357,6 +357,23 @@ START_TEST(test_one)
     tox_self_get_name(tox2, new_name);
     ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");
 
+    uint8_t sk[TOX_SECRET_KEY_SIZE];
+    tox_self_get_secret_key(tox2, sk);
+    tox_kill(tox2);
+
+    tox_options_default(&options);
+    options.savedata_type = TOX_SAVEDATA_TYPE_SECRET_KEY;
+    options.savedata_data = sk;
+    options.savedata_length = sizeof(sk);
+    tox2 = tox_new(&options, &err_n);
+    ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
+    uint8_t address3[TOX_ADDRESS_SIZE];
+    tox_self_get_address(tox2, address3);
+    ck_assert_msg(memcmp(address3, address, TOX_PUBLIC_KEY_SIZE) == 0, "Wrong public key.");
+    uint8_t pk[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_public_key(tox2, pk);
+    ck_assert_msg(memcmp(pk, address, TOX_PUBLIC_KEY_SIZE) == 0, "Wrong public key.");
+
     tox_kill(tox1);
     tox_kill(tox2);
 }
@@ -1194,7 +1211,7 @@ Suite *tox_suite(void)
 
     DEFTESTCASE(one);
     DEFTESTCASE_SLOW(few_clients, 50);
-    DEFTESTCASE_SLOW(many_clients, 150);
+    DEFTESTCASE_SLOW(many_clients, 80);
     DEFTESTCASE_SLOW(many_clients_tcp, 20);
     DEFTESTCASE_SLOW(many_clients_tcp_b, 20);
     DEFTESTCASE_SLOW(many_group, 100);
