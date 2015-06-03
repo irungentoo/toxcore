@@ -1651,6 +1651,7 @@ namespace file {
 
 
   error for get {
+    NULL,
     /**
      * The friend_number passed did not designate a valid friend.
      */

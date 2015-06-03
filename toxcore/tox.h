@@ -1781,6 +1781,11 @@ typedef enum TOX_ERR_FILE_GET {
     TOX_ERR_FILE_GET_OK,
 
     /**
+     * One of the arguments to the function was NULL when it was not expected.
+     */
+    TOX_ERR_FILE_GET_NULL,
+
+    /**
      * The friend_number passed did not designate a valid friend.
      */
     TOX_ERR_FILE_GET_FRIEND_NOT_FOUND,
