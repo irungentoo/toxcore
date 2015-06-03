@@ -26,8 +26,9 @@
 #endif
 
 #include "Messenger.h"
-#include "logger.h"
 #include "group_chats.h"
+#include "group_moderation.h"
+#include "logger.h"
 
 #include "../toxencryptsave/defines.h"
 
@@ -1932,16 +1933,82 @@ int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uin
     return gc_founder_set_password(chat, passwd, length);
 }
 
-/* Kicks peernumber from the group.
+/* Removes peernumber from the group.
+ * Peer will be added to the ban list if set_ban is true.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if caller does not have permission to kick.
+ * Returns -2 if caller does not have permission to kick/ban.
  */
-int tox_group_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber)
+int tox_group_remove_peer(Tox *tox, int groupnumber, uint32_t peernumber, bool set_ban)
 {
     Messenger *m = tox;
-    return gc_kick_peer(m, groupnumber, peernumber);
+    return gc_remove_peer(m, groupnumber, peernumber, set_ban);
+}
+
+/* Removes the entry with ban_id from the ban list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have unban permissions.
+ */
+int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint32_t ban_id)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_remove_ban(chat, ban_id);
+}
+
+/* Use this function to determine how much memory to allocate for tox_group_get_ban_list().
+ *
+ * Returns the size of the ban list on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_ban_list_size(Tox *tox, int groupnumber)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return sanctions_list_num_banned(chat) * sizeof(struct Tox_Group_Ban);
+}
+
+/* Gets the group ban list. ban_list must have room for num_banned Tox_Group_Ban items.
+ *
+ * - tox_group_get_num_banned should be used to allocate the required memory for ban_list.
+ * - The caller is responsible for freeing ban_list.
+ *
+ * Returns the number of ban list entries on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_list)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type != SA_BAN)
+            continue;
+
+        memcpy(ban_list[i].nick, chat->moderation.sanctions[i].ban_info.nick, MAX_GC_NICK_SIZE);
+        ban_list[i].nick_len = chat->moderation.sanctions[i].ban_info.nick_len;
+        ban_list[i].time_set = chat->moderation.sanctions[i].time_set;
+        ban_list[i].ip_address = ip_ntoa(&chat->moderation.sanctions[i].ban_info.ip_port.ip);
+        ban_list[i].id = chat->moderation.sanctions[i].ban_info.id;
+    }
+
+    return chat->moderation.num_sanctions;
 }
 
 /* Sets peernumber's role.

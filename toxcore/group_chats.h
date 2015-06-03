@@ -110,7 +110,8 @@ enum {
     GM_ACTION_MESSAGE,
     GM_PRVT_MESSAGE,
     GM_PEER_EXIT,
-    GM_MOD_EVENT,
+    GM_REMOVE_PEER,
+    GM_REMOVE_BAN,
     GM_SET_ROLE
 } GROUP_BROADCAST_TYPE;
 
@@ -122,6 +123,7 @@ enum {
 typedef struct GC_Moderation {
     struct GC_Sanction *sanctions;
     uint16_t    num_sanctions;
+
     uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
     uint16_t    num_mods;
 } GC_Moderation;
@@ -403,12 +405,13 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
 int gc_founder_prune_mod_list(GC_Chat *chat);
 
 /* Instructs all peers to remove peernumber from their peerlist.
+ * If set_ban is true peer will be added to the ban list.
  *
- * Returns a 0 on success.
+ * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if the caller does not have kick permissions.
+ * Returns -2 if the caller does not have kick/ban permissions.
  */
-int gc_kick_peer(Messenger *m, int groupnumber, uint32_t peernumber);
+int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_ban);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);

@@ -2357,6 +2357,16 @@ typedef enum {
     TOX_GJ_INVITE_FAILED
 } TOX_GROUP_JOIN_REJECTED;
 
+/* Stores an entry from the group ban list. This should be used with the tox_group_get_ban_list() function. */
+struct Tox_Group_Ban {
+    const char  *ip_address;
+    uint8_t      nick[TOX_MAX_GROUP_NAME_LENGTH];
+    uint16_t     nick_len;
+    uint64_t     time_set;
+
+    /* Uniquely identifies a ban entry. Use this to remove an entry from the ban list. */
+    uint32_t     id;
+};
 
 /* Set the callback for group invites from friends.
  *
@@ -2706,13 +2716,39 @@ int tox_group_toggle_ignore(Tox *tox, int groupnumber, uint32_t peernumber, bool
  */
 int tox_group_set_password(Tox *tox, int groupnumber, const uint8_t *passwd, uint16_t length);
 
-/* Kicks peernumber from the group.
+/* Removes peernumber from the group.
+ * Peer will be added to the ban list if set_ban is true.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if caller does not have permission to kick.
+ * Returns -2 if caller does not have permission to kick/ban.
  */
-int tox_group_kick_peer(Tox *tox, int groupnumber, uint32_t peernumber);
+int tox_group_remove_peer(Tox *tox, int groupnumber, uint32_t peernumber, bool set_ban);
+
+/* Removes the entry with ban_id from the ban list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have unban permissions.
+ */
+int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint32_t ban_id);
+
+/* Use this function to determine how much memory to allocate for tox_group_get_ban_list().
+ *
+ * Returns the size of the ban list on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_ban_list_size(Tox *tox, int groupnumber);
+
+/* Gets the group ban list. ban_list must have room for num_banned Tox_Group_Ban items.
+ *
+ * - tox_group_get_num_banned should be used to allocate the required memory for ban_list.
+ * - The caller is responsible for freeing memory allocated for ban_list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_list);
 
 /* Sets peernumber's role.
  * role must be one of: TOX_GR_USER, TOX_GR_OBSERVER, TOX_GR_MODERATOR.

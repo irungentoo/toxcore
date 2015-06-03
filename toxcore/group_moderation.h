@@ -25,27 +25,34 @@
 #ifndef GROUP_MODERATION_H
 #define GROUP_MODERATION_H
 
+#define MAX_GC_SANCTIONS 64
+
 enum {
     SA_BAN,
-    SA_OBSERVER
+    SA_OBSERVER,
+    SA_INVALID
 } GROUP_SANCTION_TYPE;
 
 struct GC_Ban {
     IP_Port     ip_port;
     uint8_t     nick[MAX_GC_NICK_SIZE];
+    uint16_t    nick_len;
+    uint32_t    id;
 };
 
-/* Holds data pertaining to peer who has been banned or given an observer role */
+/* Holds data pertaining to a peer who has been banned or demoted to observer. */
 struct GC_Sanction {
-    uint8_t     public_sig_key[SIG_PUBLIC_KEY];   /* public signature key of the mod who set the sanction */
-    uint8_t     signature[SIGNATURE_SIZE];
-    uint64_t    time_added;
+    uint8_t     public_sig_key[SIG_PUBLIC_KEY];
+    uint64_t    time_set;
 
     uint8_t     type;
     union {
-        struct GC_Ban    ban_info;
-        uint8_t          target_pk[ENC_PUBLIC_KEY];
+        struct GC_Ban ban_info;    /* Used if type is SA_BAN */
+        uint8_t       target_pk[ENC_PUBLIC_KEY];    /* Used if type is SA_OBSERVER */
     };
+
+    /* Signature of all above packed data signed by public_sig_key */
+    uint8_t     signature[SIGNATURE_SIZE];
 };
 
 /* Unpacks data into the moderator list.
@@ -71,7 +78,7 @@ void mod_list_make_hash(GC_Chat *chat, uint8_t *hash);
 /* Returns moderator list index for peernumber.
  * Returns -1 if peernumber is not in the list.
  */
-int mod_list_get_index(const GC_Chat *chat, uint32_t peernumber);
+int mod_list_index_of_peernum(const GC_Chat *chat, uint32_t peernumber);
 
 /* Removes moderator at index-th position in the moderator list.
  *
@@ -97,5 +104,55 @@ int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber);
 
 /* Frees all memory associated with the moderator list and sets num_mods to 0. */
 void mod_list_cleanup(GC_Chat *chat);
+
+/* Packs num_sanctions sanctions into data of maxlength length.
+ *
+ * Returns length of packed data on success.
+ * Returns -1 on failure.
+ */
+int sanctions_list_pack(uint8_t *data, uint16_t length, struct GC_Sanction *sanctions, uint16_t num_sanctions);
+
+/* Unpack data of length into sanctions of size max_sanctions.
+ * Put the length of the data processed in processed_data_len/
+ *
+ * Returns number of unpacked entries on success.
+ * Returns -1 on failure.
+ */
+int sanctions_list_unpack(struct GC_Sanction *sanctions, uint16_t max_sanctions, const uint8_t *data,
+                         uint16_t length, uint16_t *processed_data_len);
+
+/* Validates all sanctions list entries.
+ *
+ * Returns 0 if all entries are valid.
+ * Returns -1 if one ore more entries are invalid.
+ */
+int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction *sanctions, uint16_t num_sanctions);
+
+/* Validates entry and adds it to the sanctions list.
+ * Entries must be unique.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction);
+
+/* Creates a new sanction entry for peernumber where type is one GROUP_SANCTION_TYPE.
+ * New entry is signed and placed in the sanctions list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t type);
+
+/* Returns the number of sanctions list entries that are of type SA_BAN */
+uint16_t sanctions_list_num_banned(const GC_Chat *chat);
+
+/* Returns true if the IP address is in the ban list. */
+bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
+
+/* Returns true if peernumber is in the observer list. */
+bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber);
+
+void sanctions_list_cleanup(GC_Chat *chat);
 
 #endif /* GROUP_MODERATION_H */
