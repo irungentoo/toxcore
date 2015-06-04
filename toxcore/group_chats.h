@@ -356,12 +356,9 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 
 /* Sets the role of peernumber. role must be one of: GR_MODERATOR, GR_USER, GR_OBSERVER
  *
- * If the mod_list is changed a new hash of the updated mod_list will be created
- * and the new shared state will be re-signed and re-distributed to the group.
- *
  * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if caller does not have the required permissions.
+ * Returns -2 if caller does not have the required permissions for the action.
  * Returns -3 if mod list is full.
  */
 int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);

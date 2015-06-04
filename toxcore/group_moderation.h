@@ -87,14 +87,14 @@ int mod_list_index_of_peernum(const GC_Chat *chat, uint32_t peernumber);
  */
 int mod_list_remove_index(GC_Chat *chat, size_t index);
 
-/* Removes peernumber from the moderator list and assigns their new role.
+/* Removes peernumber from the moderator list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber, uint8_t role);
+int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber);
 
-/* Adds peernumber to the moderator list and assigns role.
+/* Adds peernumber to the moderator list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
@@ -124,7 +124,7 @@ int sanctions_list_unpack(struct GC_Sanction *sanctions, uint16_t max_sanctions,
 /* Validates all sanctions list entries.
  *
  * Returns 0 if all entries are valid.
- * Returns -1 if one ore more entries are invalid.
+ * Returns -1 if one or more entries are invalid.
  */
 int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction *sanctions, uint16_t num_sanctions);
 
@@ -152,6 +152,27 @@ bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
 
 /* Returns true if peernumber is in the observer list. */
 bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber);
+
+/* Removes observer entry for public key from sanctions list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure or if entry was not found.
+ */
+int sanctions_list_remove_observer(GC_Chat *chat, const uint8_t *public_key);
+
+/* Removes ban entry with ban_id from sanctions list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure or if entry was not found
+ */
+int sanctions_list_remove_ban(GC_Chat *chat, uint32_t ban_id);
+
+/* Replaces all sanctions list signatures made by public_sig_key with the caller's.
+ * This is called whenever the founder demotes a moderator.
+ *
+ * Returns the number of entries re-signed.
+ */
+uint16_t sanctions_list_replace_sig(GC_Chat *chat, const uint8_t *public_sig_key);
 
 void sanctions_list_cleanup(GC_Chat *chat);
 

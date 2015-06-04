@@ -165,17 +165,14 @@ int mod_list_remove_index(GC_Chat *chat, size_t index)
     return 0;
 }
 
-/* Removes peernumber from the moderator list and assigns their new role.
+/* Removes peernumber from the moderator list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber, uint8_t role)
+int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber)
 {
     if (chat->moderation.num_mods == 0)
-        return -1;
-
-    if (role <= GR_MODERATOR)
         return -1;
 
     int idx = mod_list_index_of_peernum(chat, peernumber);
@@ -183,12 +180,10 @@ int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber, uint8_t role)
     if (idx == -1)
         return -1;
 
-    chat->group[peernumber].role = role;
-
     return mod_list_remove_index(chat, idx);
 }
 
-/* Adds peernumber to the moderator list and assigns role.
+/* Adds peernumber to the moderator list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
@@ -211,7 +206,6 @@ int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber)
     if (tmp_list[chat->moderation.num_mods] == NULL)
         return -1;
 
-    chat->group[peernumber].role = GR_MODERATOR;
     memcpy(tmp_list[chat->moderation.num_mods], SIG_PK(chat->gcc[peernumber].addr.public_key), GC_MOD_LIST_ENTRY_SIZE);
     chat->moderation.mod_list = tmp_list;
     ++chat->moderation.num_mods;
@@ -394,6 +388,26 @@ int sanctions_list_remove_ban(GC_Chat *chat, uint32_t ban_id)
     return -1;
 }
 
+/* Removes observer entry for public key from sanctions list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure or if entry was not found.
+ */
+int sanctions_list_remove_observer(GC_Chat *chat, const uint8_t *public_key)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type != SA_OBSERVER)
+            continue;
+
+        if (memcmp(public_key, chat->moderation.sanctions[i].target_pk, ENC_PUBLIC_KEY) == 0)
+            return sanctions_list_remove_index(chat, i);
+    }
+
+    return -1;
+}
+
 /* Returns true if the IP address is in the ban list.
  * All sanctions list entries are assumed to be verified
  */
@@ -438,8 +452,10 @@ bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber)
  */
 static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction *sanction)
 {
-    if (!mod_list_verify_sig_pk(chat, sanction->public_sig_key))
+    if (!mod_list_verify_sig_pk(chat, sanction->public_sig_key)) {
+        fprintf(stderr, "mod_list_verify_sig_pk failed\n");
         return -1;
+    }
 
     if (sanction->type >= SA_INVALID)
         return -1;
@@ -457,7 +473,7 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
 /* Validates all sanctions list entries.
  *
  * Returns 0 if all entries are valid.
- * Returns -1 if one ore more entries are invalid.
+ * Returns -1 if one or more entries are invalid.
  */
 int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction *sanctions, uint16_t num_sanctions)
 {
@@ -502,7 +518,6 @@ int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanct
     }
 
     memcpy(&tmp_list[index], sanction, sizeof(struct GC_Sanction));
-
     chat->moderation.sanctions = tmp_list;
     ++chat->moderation.num_sanctions;
 
@@ -562,8 +577,10 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanc
     if (sanctions_list_sign_entry(chat, sanction) == -1)
         return -1;
 
-    if (sanctions_list_add_entry(chat, peernumber, sanction) == -1)
+    if (sanctions_list_add_entry(chat, peernumber, sanction) == -1) {
+        fprintf(stderr, "sanctions_list_add_entry failed in sanctions_list_make_entry\n");
         return -1;
+    }
 
     return 0;
 }
@@ -581,11 +598,34 @@ uint16_t sanctions_list_num_banned(const GC_Chat *chat)
     return count;
 }
 
+/* Replaces all sanctions list signatures made by public_sig_key with the caller's.
+ * This is called whenever the founder demotes a moderator.
+ *
+ * Returns the number of entries re-signed.
+ */
+uint16_t sanctions_list_replace_sig(GC_Chat *chat, const uint8_t *public_sig_key)
+{
+    uint16_t i, count = 0;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (memcmp(chat->moderation.sanctions[i].public_sig_key, public_sig_key, SIG_PUBLIC_KEY) != 0)
+            continue;
+
+        memcpy(chat->moderation.sanctions[i].public_sig_key, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
+
+        if (sanctions_list_sign_entry(chat, &chat->moderation.sanctions[i]) != -1)
+            ++count;
+    }
+
+    return count;
+}
+
 void sanctions_list_cleanup(GC_Chat *chat)
 {
     if (chat->moderation.sanctions)
         free(chat->moderation.sanctions);
 
+    ban_id_base = 0;
     chat->moderation.sanctions = NULL;
     chat->moderation.num_sanctions = 0;
 }

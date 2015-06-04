@@ -1806,7 +1806,7 @@ uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber)
  * Returns a TOX_GROUP_ROLE on success.
  * Returns TOX_GR_INVALID on failure.
  */
-uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
+uint8_t tox_group_get_peer_role(const Tox *tox, int groupnumber, uint32_t peernumber)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1815,6 +1815,27 @@ uint8_t tox_group_get_role(const Tox *tox, int groupnumber, uint32_t peernumber)
         return TOX_GR_INVALID;
 
     return gc_get_role(chat, peernumber);
+}
+
+/* Sets peernumber's role.
+ * role must be one of: TOX_GR_USER, TOX_GR_OBSERVER, TOX_GR_MODERATOR.
+ *
+ * This function will always fail if the caller is not a moderator or founder.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have required permissions for the action.
+ * Returns -3 if promoting a peer to moderator fails due to a full moderator list.
+ */
+int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role)
+{
+    Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    return gc_set_peer_role(chat, peernumber, role);
 }
 
 /* Get your own group role in groupnumber's group chat.
@@ -1981,7 +2002,7 @@ int tox_group_get_ban_list_size(Tox *tox, int groupnumber)
 
 /* Gets the group ban list. ban_list must have room for num_banned Tox_Group_Ban items.
  *
- * - tox_group_get_num_banned should be used to allocate the required memory for ban_list.
+ * - tox_group_get_num_banned() should be used to allocate the required memory for ban_list.
  * - The caller is responsible for freeing ban_list.
  *
  * Returns the number of ban list entries on success.
@@ -2009,27 +2030,6 @@ int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_
     }
 
     return chat->moderation.num_sanctions;
-}
-
-/* Sets peernumber's role.
- * role must be one of: TOX_GR_USER, TOX_GR_OBSERVER, TOX_GR_MODERATOR.
- *
- * This function will always fail if the caller is not a moderator or founder.
- *
- * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller does not have required permissions for the action.
- * Returns -3 if promoting a peer to moderator fails due to a full moderator list.
- */
-int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role)
-{
-    Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    return gc_set_peer_role(chat, peernumber, role);
 }
 
 /* Allows the group founder to remove all offline moderators from the moderator list.
