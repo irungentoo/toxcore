@@ -98,7 +98,6 @@ int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber);
  *
  * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if the mod list is full.
  */
 int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber);
 

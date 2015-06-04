@@ -45,7 +45,7 @@ typedef struct Messenger Messenger;
 #define GC_MOD_LIST_HASH_SIZE crypto_hash_sha256_BYTES
 #define GC_PING_INTERVAL 30
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
-#define GC_UNCONFRIMED_PEER_TIMEOUT (GC_PING_INTERVAL)
+#define GC_UNCONFRIMED_PEER_TIMEOUT GC_PING_INTERVAL
 
 enum {
     GI_PUBLIC,
@@ -392,14 +392,6 @@ int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_priv
  * Returns -2 if caller is not the group founder.
  */
 int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
-
-/* Removes all offline mods from the mod_list.
- * This function should only be called by the founder.
- *
- * Returns the number of mods that were removed on success.
- * Returns -1 on failure.
- */
-int gc_founder_prune_mod_list(GC_Chat *chat);
 
 /* Instructs all peers to remove peernumber from their peerlist.
  * If set_ban is true peer will be added to the ban list.

@@ -187,12 +187,11 @@ int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber)
  *
  * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if the mod list is full.
  */
 int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber)
 {
     if (chat->moderation.num_mods >= MAX_GC_MODERATORS)
-        return -2;
+        return -1;
 
     uint8_t **tmp_list = realloc(chat->moderation.mod_list, sizeof(uint8_t *) * (chat->moderation.num_mods + 1));
 
@@ -512,10 +511,8 @@ int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanct
     size_t index = chat->moderation.num_sanctions;
     struct GC_Sanction *tmp_list = realloc(chat->moderation.sanctions, sizeof(struct GC_Sanction) * (index + 1));
 
-    if (tmp_list == NULL) {
-        chat->moderation.num_sanctions = 0;
+    if (tmp_list == NULL)
         return -1;
-    }
 
     memcpy(&tmp_list[index], sanction, sizeof(struct GC_Sanction));
     chat->moderation.sanctions = tmp_list;
@@ -543,10 +540,19 @@ static int sanctions_list_sign_entry(const GC_Chat *chat, struct GC_Sanction *sa
 }
 
 /* Gets a unique ID for each new ban. */
-static uint32_t ban_id_base = 0;
-static uint32_t get_new_ban_id(void)
+static uint32_t get_new_ban_id(const GC_Chat *chat)
 {
-    return ban_id_base++;
+    uint16_t i, new_id = 0;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type != SA_BAN)
+            continue;
+
+        if (chat->moderation.sanctions[i].ban_info.id >= new_id)
+            new_id = chat->moderation.sanctions[i].ban_info.id + 1;
+    }
+
+    return new_id;
 }
 
 /* Creates a new sanction entry for peernumber where type is one GROUP_SANCTION_TYPE.
@@ -563,7 +569,7 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanc
         ipport_copy(&sanction->ban_info.ip_port, &chat->gcc[peernumber].addr.ip_port);
         memcpy(sanction->ban_info.nick, chat->group[peernumber].nick, MAX_GC_NICK_SIZE);
         sanction->ban_info.nick_len = chat->group[peernumber].nick_len;
-        sanction->ban_info.id = get_new_ban_id();
+        sanction->ban_info.id = get_new_ban_id(chat);
     } else if (type == SA_OBSERVER) {
         memcpy(sanction->target_pk, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
     } else {
@@ -625,7 +631,6 @@ void sanctions_list_cleanup(GC_Chat *chat)
     if (chat->moderation.sanctions)
         free(chat->moderation.sanctions);
 
-    ban_id_base = 0;
     chat->moderation.sanctions = NULL;
     chat->moderation.num_sanctions = 0;
 }

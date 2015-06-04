@@ -211,58 +211,6 @@ static int validate_gc_peer_role(const GC_Chat *chat, uint32_t peernumber)
     return 0;
 }
 
-static int sign_gc_shared_state(GC_Chat *chat);
-static int broadcast_gc_mod_list(GC_Chat *chat);
-static int broadcast_gc_shared_state(GC_Chat *chat);
-
-/* Removes all offline mods from the mod_list.
- * This function should only be called by the founder.
- *
- * Returns the number of mods that were removed on success.
- * Returns -1 on failure.
- */
-int gc_founder_prune_mod_list(GC_Chat *chat)
-{
-    if (chat->group[0].role != GR_FOUNDER)
-        return -1;
-
-    if (chat->moderation.num_mods == 0)
-        return 0;
-
-    size_t prunelist[chat->moderation.num_mods];
-    size_t i, prunecount = 0;
-
-    for (i = 0; i < chat->moderation.num_mods; ++i) {
-        if (get_peernum_of_sig_pk(chat, chat->moderation.mod_list[i]) == -1) {
-            prunelist[prunecount] = i;
-            ++prunecount;
-        }
-    }
-
-    size_t real_prunecount = 0;
-
-    for (i = 0; i < prunecount; ++i) {
-        if (mod_list_remove_index(chat, prunelist[i]) != -1)
-            ++real_prunecount;
-    }
-
-    if (real_prunecount == 0)
-        return 0;
-
-    mod_list_make_hash(chat, chat->shared_state.mod_list_hash);
-
-    if (sign_gc_shared_state(chat) == -1)
-        return -1;
-
-    if (broadcast_gc_shared_state(chat) == -1)
-        return -1;
-
-    if (broadcast_gc_mod_list(chat) == -1)
-        return -1;
-
-    return real_prunecount;
-}
-
 /* Returns true if peernumber exists */
 static bool peernumber_valid(const GC_Chat *chat, int peernumber)
 {
@@ -435,6 +383,61 @@ static uint32_t get_gc_confirmed_numpeers(const GC_Chat *chat)
     }
 
     return count;
+}
+
+static int sign_gc_shared_state(GC_Chat *chat);
+static int broadcast_gc_mod_list(GC_Chat *chat);
+static int broadcast_gc_shared_state(GC_Chat *chat);
+static int update_gc_sanctions_list(GC_Chat *chat, const uint8_t *public_sig_key);
+
+/* Removes the first found offline mod from the mod list.
+ * Re-broadcasts the shared state and moderator list on success, as well
+ * as the updated sanctions list if necessary.
+ *
+ * TODO: Make this smarter in who to remove (e.g. the mod who hasn't been seen online in the longest time)
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure or if no mods were removed.
+ */
+static int prune_gc_mod_list(GC_Chat *chat)
+{
+    if (chat->moderation.num_mods == 0)
+        return 0;
+
+    const uint8_t *public_sig_key = NULL;
+    size_t i;
+
+    for (i = 0; i < chat->moderation.num_mods; ++i) {
+        if (get_peernum_of_sig_pk(chat, chat->moderation.mod_list[i]) == -1) {
+            public_sig_key = chat->moderation.mod_list[i];
+
+            if (mod_list_remove_index(chat, i) == -1) {
+                public_sig_key = NULL;
+                continue;
+            }
+
+            break;
+        }
+    }
+
+    if (public_sig_key == NULL)
+        return -1;
+
+    mod_list_make_hash(chat, chat->shared_state.mod_list_hash);
+
+    if (sign_gc_shared_state(chat) == -1)
+        return -1;
+
+    if (broadcast_gc_shared_state(chat) == -1)
+        return -1;
+
+    if (broadcast_gc_mod_list(chat) == -1)
+        return -1;
+
+    if (update_gc_sanctions_list(chat,  public_sig_key) == -1)
+        return -1;
+
+    return 0;
 }
 
 /* Packs number of peer addresses into data of maxlength length.
@@ -1742,6 +1745,11 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
 on_error:
     gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 
+    if (chat->shared_state.version == 0) {
+        chat->connection_state = CS_DISCONNECTED;
+        return -1;
+    }
+
     if (chat->numpeers <= 1)
         return -1;
 
@@ -2212,7 +2220,6 @@ static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, struct GC_Sanct
  *
  * Returns 0 on success.
  * Returns -1 on failure.
- * Returns -2 if the mod list is full.
  */
 int founder_gc_set_moderator(GC_Chat *chat, uint32_t peernumber, bool add_mod)
 {
@@ -2220,10 +2227,11 @@ int founder_gc_set_moderator(GC_Chat *chat, uint32_t peernumber, bool add_mod)
         return -1;
 
     if (add_mod) {
-        int ret = mod_list_add_peer(chat, peernumber);
+        if (chat->moderation.num_mods >= MAX_GC_MODERATORS)
+            prune_gc_mod_list(chat);
 
-        if (ret != 0)
-            return ret;
+        if (mod_list_add_peer(chat, peernumber) == -1)
+            return -1;
     } else {
         if (mod_list_remove_peer(chat, peernumber) == -1)
             return -1;
@@ -2255,7 +2263,6 @@ int founder_gc_set_moderator(GC_Chat *chat, uint32_t peernumber, bool add_mod)
  * Returns 0 on success.
  * Returns -1 on failure.
  * Returns -2 if caller does not have the required permissions for the action.
- * Returns -3 if mod list is full.
  */
 int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
 {
@@ -2292,13 +2299,8 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
     }
 
     if (role == GR_MODERATOR) {
-        int ret = founder_gc_set_moderator(chat, peernumber, true);
-
-        if (ret == -1)
+        if (founder_gc_set_moderator(chat, peernumber, true) == -1)
             return -1;
-
-        if (ret == -2)
-            return -3;
     } else if (role == GR_OBSERVER) {
         if (sanctions_list_make_entry(chat, peernumber, &sanction, SA_OBSERVER) == -1) {
             fprintf(stderr, "sanctions_list_make_entry failed in gc_set_peer_role\n");

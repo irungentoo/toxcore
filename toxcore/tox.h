@@ -2667,7 +2667,6 @@ uint8_t tox_group_get_peer_role(const Tox *tox, int groupnumber, uint32_t peernu
  * Returns 0 on success.
  * Returns -1 on failure.
  * Returns -2 if caller does not have required permissions for the action.
- * Returns -3 if promoting a peer to moderator fails due to a full moderator list.
  */
 int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role);
 
@@ -2761,14 +2760,6 @@ int tox_group_get_ban_list_size(Tox *tox, int groupnumber);
  * Returns -1 on failure.
  */
 int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_list);
-
-/* Allows the group founder to remove all offline moderators from the moderator list.
- * This function may be useful in response to the moderator list being full.
- *
- * Returns the number of removed moderators on success.
- * Returns -1 on failure.
- */
-int tox_group_prune_moderator_list(Tox *tox, int groupnumber);
 
 #ifdef __cplusplus
 }
