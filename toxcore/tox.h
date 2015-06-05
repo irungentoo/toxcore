@@ -352,6 +352,29 @@ typedef enum TOX_PROXY_TYPE {
 
 
 /**
+ * Type of savedata to create the Tox instance from.
+ */
+typedef enum TOX_SAVEDATA_TYPE {
+
+    /**
+     * No savedata.
+     */
+    TOX_SAVEDATA_TYPE_NONE,
+
+    /**
+     * Savedata is one that was obtained from tox_get_savedata
+     */
+    TOX_SAVEDATA_TYPE_TOX_SAVE,
+
+    /**
+     * Savedata is a secret key of length TOX_SECRET_KEY_SIZE
+     */
+    TOX_SAVEDATA_TYPE_SECRET_KEY,
+
+} TOX_SAVEDATA_TYPE;
+
+
+/**
  * This struct contains all the startup options for Tox. You can either allocate
  * this object yourself, and pass it to tox_options_default, or call
  * tox_options_new to get a new default options object.
@@ -431,6 +454,24 @@ struct Tox_Options {
      * The port to use for the TCP server. If 0, the tcp server is disabled.
      */
     uint16_t tcp_port;
+
+
+    /**
+     * The type of savedata to load from.
+     */
+    TOX_SAVEDATA_TYPE savedata_type;
+
+
+    /**
+     * The savedata.
+     */
+    const uint8_t *savedata_data;
+
+
+    /**
+     * The length of the savedata.
+     */
+    size_t savedata_length;
 
 };
 
@@ -561,21 +602,17 @@ typedef enum TOX_ERR_NEW {
  * This function will bring the instance into a valid state. Running the event
  * loop with a new instance will operate correctly.
  *
- * If the data parameter is not NULL, this function will load the Tox instance
- * from a byte array previously filled by tox_get_savedata.
- *
  * If loading failed or succeeded only partially, the new or partially loaded
  * instance is returned and an error code is set.
  *
  * @param options An options object as described above. If this parameter is
  *   NULL, the default options are used.
- * @param data A byte array containing data previously stored by tox_get_savedata.
- * @param length The length of the byte array data. If this parameter is 0, the
- *   data parameter is ignored.
  *
  * @see tox_iterate for the event loop.
+ *
+ * @return A new Tox instance pointer on success or NULL on failure.
  */
-Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t length, TOX_ERR_NEW *error);
+Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error);
 
 /**
  * Releases all resources associated with the Tox instance and disconnects from
@@ -642,13 +679,8 @@ typedef enum TOX_ERR_BOOTSTRAP {
  * Sends a "get nodes" request to the given bootstrap node with IP, port, and
  * public key to setup connections.
  *
- * This function will attempt to connect to the node using UDP and TCP at the
- * same time.
- *
- * Tox will use the node as a TCP relay in case Tox_Options.udp_enabled was
- * false, and also to connect to friends that are in TCP-only mode. Tox will
- * also use the TCP connection when NAT hole punching is slow, and later switch
- * to UDP if hole punching succeeds.
+ * This function will attempt to connect to the node using UDP. You must use
+ * this function even if Tox_Options.udp_enabled was set to false.
  *
  * @param address The hostname or IP address (IPv4 or IPv6) of the node.
  * @param port The port on the host on which the bootstrap Tox instance is
@@ -1559,7 +1591,7 @@ enum TOX_FILE_KIND {
     TOX_FILE_KIND_DATA,
 
     /**
-     * Avatar filename. This consists of tox_hash(image).
+     * Avatar file_id. This consists of tox_hash(image).
      * Avatar data. This consists of the image data.
      *
      * Avatars can be sent at any time the client wishes. Generally, a client will
@@ -1747,6 +1779,11 @@ typedef enum TOX_ERR_FILE_GET {
      * The function returned successfully.
      */
     TOX_ERR_FILE_GET_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
+     */
+    TOX_ERR_FILE_GET_NULL,
 
     /**
      * The friend_number passed did not designate a valid friend.

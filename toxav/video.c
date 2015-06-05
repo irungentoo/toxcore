@@ -141,9 +141,8 @@ void vc_do(VCSession* vc)
             for (; dest; dest = vpx_codec_get_frame(vc->decoder, &iter)) {
                 if (vc->vcb.first) 
                     vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h, 
-                                  (const uint8_t*)dest->planes[0], (const uint8_t*)dest->planes[1], 
-                                  (const uint8_t*)dest->planes[2], (const uint8_t*)dest->planes[3],
-                                  dest->stride[0], dest->stride[1], dest->stride[2], dest->stride[3], vc->vcb.second);
+                                  (const uint8_t*)dest->planes[0], (const uint8_t*)dest->planes[1], (const uint8_t*)dest->planes[2],
+                                  dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb.second);
                 
                 vpx_img_free(dest);
             }

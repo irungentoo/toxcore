@@ -56,9 +56,7 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
 }
 void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
-    (void) av;
-    
-    printf("Handling CALL STATE callback: %d\n", state);
+    printf("Handling CALL STATE callback: %d %p\n", state, av);
     ((CallControl*)user_data)[friend_number].state = state;
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
@@ -188,7 +186,7 @@ void* call_thread(void* pd)
         toxav_call_control(AliceAV, friend_number, TOXAV_CALL_CONTROL_CANCEL, &rc);
         
         if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-            printf("toxav_call_control failed: %d\n", rc);
+            printf("toxav_call_control failed: %d %p %p\n", rc, AliceAV, BobAV);
             ck_assert(0);
         }
     }
@@ -210,19 +208,19 @@ START_TEST(test_AV_three_calls)
     {
         TOX_ERR_NEW error;
         
-        bootstrap = tox_new(NULL, NULL, 0, &error);
+        bootstrap = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
         
-        Alice = tox_new(NULL, NULL, 0, &error);
+        Alice = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
         
-        Bobs[0] = tox_new(NULL, NULL, 0, &error);
+        Bobs[0] = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
         
-        Bobs[1] = tox_new(NULL, NULL, 0, &error);
+        Bobs[1] = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
         
-        Bobs[2] = tox_new(NULL, NULL, 0, &error);
+        Bobs[2] = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
     }
     

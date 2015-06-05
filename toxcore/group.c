@@ -1149,7 +1149,7 @@ int group_new_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_n
  * return 0 on success
  * return -1 on failure
  */
-int group_kill_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_num)
+static int group_kill_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_num)
 {
     uint8_t packet[GROUP_MESSAGE_KILL_PEER_LENGTH];
 

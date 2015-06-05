@@ -807,7 +807,7 @@ END:
     return rc == TOXAV_ERR_SEND_FRAME_OK;
 }
 
-bool toxav_video_send_frame(ToxAV* av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t* y, const uint8_t* u, const uint8_t* v, const uint8_t* a,TOXAV_ERR_SEND_FRAME* error)
+bool toxav_video_send_frame(ToxAV* av, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t* y, const uint8_t* u, const uint8_t* v, TOXAV_ERR_SEND_FRAME* error)
 {
     TOXAV_ERR_SEND_FRAME rc = TOXAV_ERR_SEND_FRAME_OK;
     ToxAVCall* call;
@@ -851,10 +851,6 @@ bool toxav_video_send_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
         memcpy(img.planes[VPX_PLANE_Y], y, width * height);
         memcpy(img.planes[VPX_PLANE_U], u, (width/2) * (height/2));
         memcpy(img.planes[VPX_PLANE_V], v, (width/2) * (height/2));
-        
-        /* TODO LOL */
-        if (a && img.planes[VPX_PLANE_ALPHA])
-            memcpy(img.planes[VPX_PLANE_ALPHA], a, width * height);
         
         int vrc = vpx_codec_encode(call->video.second->encoder, &img, 
                                    call->video.second->frame_counter, 1, 0, MAX_ENCODE_TIME_US);

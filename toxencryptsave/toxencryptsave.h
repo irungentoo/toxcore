@@ -143,7 +143,7 @@ typedef enum TOX_ERR_DECRYPTION {
  *
  * returns true on success
  */
-bool tox_pass_encrypt(const uint8_t *data, size_t data_len, uint8_t *passphrase, size_t pplength, uint8_t *out,
+bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passphrase, size_t pplength, uint8_t *out,
                       TOX_ERR_ENCRYPTION *error);
 
 
@@ -155,7 +155,7 @@ bool tox_pass_encrypt(const uint8_t *data, size_t data_len, uint8_t *passphrase,
  *
  * returns true on success
  */
-bool tox_pass_decrypt(const uint8_t *data, size_t length, uint8_t *passphrase, size_t pplength, uint8_t *out,
+bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphrase, size_t pplength, uint8_t *out,
                       TOX_ERR_DECRYPTION *error);
 
 
@@ -183,13 +183,13 @@ typedef struct {
  *
  * returns true on success
  */
-bool tox_derive_key_from_pass(uint8_t *passphrase, size_t pplength, TOX_PASS_KEY *out_key,
+bool tox_derive_key_from_pass(const uint8_t *passphrase, size_t pplength, TOX_PASS_KEY *out_key,
                               TOX_ERR_KEY_DERIVATION *error);
 
 /* Same as above, except use the given salt for deterministic key derivation.
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  */
-bool tox_derive_key_with_salt(uint8_t *passphrase, size_t pplength, uint8_t *salt, TOX_PASS_KEY *out_key,
+bool tox_derive_key_with_salt(const uint8_t *passphrase, size_t pplength, const uint8_t *salt, TOX_PASS_KEY *out_key,
                               TOX_ERR_KEY_DERIVATION *error);
 
 /* This retrieves the salt used to encrypt the given data, which can then be passed to

@@ -121,33 +121,46 @@ void tox_options_free(struct Tox_Options *options)
     free(options);
 }
 
-Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t length, TOX_ERR_NEW *error)
+Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 {
     if (!logger_get_global())
         logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
 
-    if (data == NULL && length != 0) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_NULL);
-        return NULL;
-    }
-
-    if (data && length) {
-        if (length < TOX_ENC_SAVE_MAGIC_LENGTH) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-            return NULL;
-        }
-
-        if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
-            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
-            return NULL;
-        }
-    }
-
     Messenger_Options m_options = {0};
+
+    _Bool load_savedata_sk = 0, load_savedata_tox = 0;
 
     if (options == NULL) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     } else {
+        if (options->savedata_type != TOX_SAVEDATA_TYPE_NONE) {
+            if (options->savedata_data == NULL || options->savedata_length == 0) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+                return NULL;
+            }
+        }
+
+        if (options->savedata_type == TOX_SAVEDATA_TYPE_SECRET_KEY) {
+            if (options->savedata_length != TOX_SECRET_KEY_SIZE) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+                return NULL;
+            }
+
+            load_savedata_sk = 1;
+        } else if (options->savedata_type == TOX_SAVEDATA_TYPE_TOX_SAVE) {
+            if (options->savedata_length < TOX_ENC_SAVE_MAGIC_LENGTH) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+                return NULL;
+            }
+
+            if (memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
+                return NULL;
+            }
+
+            load_savedata_tox = 1;
+        }
+
         m_options.ipv6enabled = options->ipv6_enabled;
         m_options.udp_disabled = !options->udp_enabled;
         m_options.port_range[0] = options->start_port;
@@ -201,6 +214,8 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
 
         if (m_error == MESSENGER_ERROR_PORT) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
+        } else if (m_error == MESSENGER_ERROR_TCP_SERVER) {
+            SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
         } else {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         }
@@ -208,8 +223,11 @@ Tox *tox_new(const struct Tox_Options *options, const uint8_t *data, size_t leng
         return NULL;
     }
 
-    if (data && length && messenger_load(m, data, length) == -1) {
+    if (load_savedata_tox && messenger_load(m, options->savedata_data, options->savedata_length) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
+    } else if (load_savedata_sk) {
+        load_secret_key(m->net_crypto, options->savedata_data);
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     }
@@ -993,6 +1011,11 @@ void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function
 bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t *file_id,
                           TOX_ERR_FILE_GET *error)
 {
+    if (!file_id) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NULL);
+        return 0;
+    }
+
     const Messenger *m = tox;
     int ret = file_get_id(m, friend_number, file_number, file_id);
 

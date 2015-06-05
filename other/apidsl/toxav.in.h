@@ -562,10 +562,9 @@ namespace video {
    * @param y Y (Luminance) plane data.
    * @param u U (Chroma) plane data.
    * @param v V (Chroma) plane data.
-   * @param a A (Alpha) plane data.
    */
   bool send_frame(uint32_t friend_number, uint16_t width, uint16_t height,
-                  const uint8_t *y, const uint8_t *u, const uint8_t *v, const uint8_t *a) with error for send_frame;
+                  const uint8_t *y, const uint8_t *u, const uint8_t *v) with error for send_frame;
 }
 /*******************************************************************************
  * 
@@ -603,19 +602,17 @@ namespace video {
      *          Y = MAX(width, abs(ystride)) * height, 
      *          U = MAX(width/2, abs(ustride)) * (height/2) and 
      *          V = MAX(width/2, abs(vstride)) * (height/2).
-     *          A = MAX(width, abs(astride)) * height.
      * @param ystride
      * @param ustride
-     * @param vstride
-     * @param astride Strides data. Strides represent padding for each plane
+     * @param vstride Strides data. Strides represent padding for each plane
      *                that may or may not be present. You must handle strides in
      *                your image processing code. Strides are negative if the 
      *                image is bottom-up hence why you MUST abs() it when
      *                calculating plane buffer size.
      */
     typedef void(uint32_t friend_number, uint16_t width, uint16_t height,
-                 const uint8_t *y, const uint8_t *u, const uint8_t *v, const uint8_t *a, 
-                 int32_t ystride, int32_t ustride, int32_t vstride, int32_t astride);
+                 const uint8_t *y, const uint8_t *u, const uint8_t *v,
+                 int32_t ystride, int32_t ustride, int32_t vstride);
   }
 }
 

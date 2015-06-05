@@ -131,13 +131,13 @@ START_TEST(test_AV_flows)
     {
         TOX_ERR_NEW error;
         
-        bootstrap = tox_new(NULL, NULL, 0, &error);
+        bootstrap = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
         
-        Alice = tox_new(NULL, NULL, 0, &error);
+        Alice = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
         
-        Bob = tox_new(NULL, NULL, 0, &error);
+        Bob = tox_new(NULL, &error);
         ck_assert(error == TOX_ERR_NEW_OK);
     }
     
