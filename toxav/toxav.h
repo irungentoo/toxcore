@@ -630,4 +630,9 @@ typedef void toxav_video_receive_frame_cb(ToxAV *toxAV, uint32_t friend_number, 
  *
  */
 void toxav_callback_video_receive_frame(ToxAV *toxAV, toxav_video_receive_frame_cb *callback, void *user_data);
+
+#ifdef __cplusplus
+}
 #endif
+    
+#endif /* TOXAV_H */

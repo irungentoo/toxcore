@@ -618,5 +618,8 @@ namespace video {
 
 }
 %{
+#ifdef __cplusplus
+}
 #endif
+#endif /* TOXAV_H */
 %}
