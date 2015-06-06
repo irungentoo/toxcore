@@ -795,6 +795,14 @@ START_TEST(test_many_clients)
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
+    unsigned int num_f = 0;
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        num_f += tox_self_get_friend_list_size();
+    }
+
+    ck_assert_msg(num_f == NUM_FRIENDS * 2, "bad num friends");
+
     for (i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
         pairs[i].tox1 = rand() % NUM_TOXES;
