@@ -478,6 +478,12 @@ START_TEST(test_few_clients)
 
     printf("tox clients messaging succeeded\n");
 
+    unsigned int save_size1 = tox_get_savedata_size(tox2);
+    ck_assert_msg(save_size1 != 0 && save_size1 < 4096, "save is invalid size %u", save_size1);
+    printf("%u\n", save_size1);
+    uint8_t save1[save_size1];
+    tox_get_savedata(tox2, save1);
+
     tox_callback_friend_name(tox3, print_nickchange, &to_compare);
     TOX_ERR_SET_INFO err_n;
     bool succ = tox_self_set_name(tox2, (uint8_t *)"Gentoo", sizeof("Gentoo"), &err_n);
@@ -798,10 +804,10 @@ START_TEST(test_many_clients)
     unsigned int num_f = 0;
 
     for (i = 0; i < NUM_TOXES; ++i) {
-        num_f += tox_self_get_friend_list_size();
+        num_f += tox_self_get_friend_list_size(toxes[i]);
     }
 
-    ck_assert_msg(num_f == NUM_FRIENDS * 2, "bad num friends");
+    ck_assert_msg(num_f == 0, "bad num friends: %u", num_f);
 
     for (i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
@@ -824,6 +830,12 @@ loop_top:
 
         ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        num_f += tox_self_get_friend_list_size(toxes[i]);
+    }
+
+    ck_assert_msg(num_f == NUM_FRIENDS * 2, "bad num friends: %u", num_f);
 
     while (1) {
         uint16_t counter = 0;

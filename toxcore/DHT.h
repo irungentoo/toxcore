@@ -214,10 +214,8 @@ typedef struct {
     // Used after loading of file (tox_load), but no longer needed after connect (tox_connect)
     // Unsure if friends_list and num_friends could just be used instead?
     int has_loaded_friends_clients; // Whether or not we have loaded on the first do_DHT
-    DHT_Friend    *loaded_friends_list;
-    uint32_t       loaded_num_friends;
-    Client_data   *loaded_clients_list;
-    uint32_t       loaded_num_clients;
+    Node_format   *loaded_nodes_list;
+    uint32_t       loaded_num_nodes;
 
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;
