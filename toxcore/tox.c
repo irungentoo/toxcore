@@ -1999,7 +1999,7 @@ int tox_group_get_ban_list_size(Tox *tox, int groupnumber)
     return sanctions_list_num_banned(chat) * sizeof(struct Tox_Group_Ban);
 }
 
-/* Gets the group ban list. ban_list must have room for num_banned Tox_Group_Ban items.
+/* Gets the group ban list.
  *
  * - tox_group_get_num_banned() should be used to allocate the required memory for ban_list.
  * - The caller is responsible for freeing ban_list.
