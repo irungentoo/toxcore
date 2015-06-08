@@ -2359,7 +2359,7 @@ typedef enum {
 
 /* Stores an entry from the group ban list. This should be used with the tox_group_get_ban_list() function. */
 struct Tox_Group_Ban {
-    const char  *ip_address;
+    // TODO: IP address string
     uint8_t      nick[TOX_MAX_GROUP_NAME_LENGTH];
     uint16_t     nick_len;
     uint64_t     time_set;
