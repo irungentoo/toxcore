@@ -2244,16 +2244,15 @@ DHT *new_DHT(Networking_Core *net)
 
 void do_DHT(DHT *dht)
 {
-    // Load friends/clients if first call to do_DHT
-    if (dht->has_loaded_friends_clients) {
-        dht->has_loaded_friends_clients = 0;
-        DHT_connect_after_load(dht);
-    }
-
     unix_time_update();
 
     if (dht->last_run == unix_time()) {
         return;
+    }
+
+    // Load friends/clients if first call to do_DHT
+    if (dht->loaded_num_nodes) {
+        DHT_connect_after_load(dht);
     }
 
     do_Close(dht);
@@ -2287,7 +2286,7 @@ void kill_DHT(DHT *dht)
 }
 
 /* new DHT format for load/save, more robust and forward compatible */
-
+//TODO: Move this closer to Messenger.
 #define DHT_STATE_COOKIE_GLOBAL 0x159000d
 
 #define DHT_STATE_COOKIE_TYPE      0x11ce
@@ -2376,6 +2375,9 @@ void DHT_save(DHT *dht, uint8_t *data)
     z_state_save_subheader(old_data, num * sizeof(Node_format), DHT_STATE_TYPE_NODES);
 }
 
+/* Bootstrap from this number of nodes every time DHT_connect_after_load() is called */
+#define SAVE_BOOTSTAP_FREQUENCY 8
+
 /* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set */
 int DHT_connect_after_load(DHT *dht)
 {
@@ -2385,16 +2387,21 @@ int DHT_connect_after_load(DHT *dht)
     if (!dht->loaded_nodes_list)
         return -1;
 
-    unsigned int i;
-
-    for (i = 0; i < dht->loaded_num_nodes; ++i) {
-        DHT_bootstrap(dht, dht->loaded_nodes_list[i].ip_port, dht->loaded_nodes_list[i].public_key);
+    /* DHT is connected, stop. */
+    if (DHT_non_lan_connected(dht)) {
+        free(dht->loaded_nodes_list);
+        dht->loaded_nodes_list = NULL;
+        dht->loaded_num_nodes = 0;
+        return 0;
     }
 
-    // Loaded lists were allocd, free them
-    free(dht->loaded_nodes_list);
-    dht->loaded_nodes_list = NULL;
-    dht->loaded_num_nodes = 0;
+    unsigned int i;
+
+    for (i = 0; i < dht->loaded_num_nodes && i < SAVE_BOOTSTAP_FREQUENCY; ++i) {
+        unsigned int index = dht->loaded_nodes_index % dht->loaded_num_nodes;
+        DHT_bootstrap(dht, dht->loaded_nodes_list[index].ip_port, dht->loaded_nodes_list[index].public_key);
+        ++dht->loaded_nodes_index;
+    }
 
     return 0;
 }
@@ -2422,7 +2429,6 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
 
                 dht->loaded_num_nodes = num;
 
-                dht->has_loaded_friends_clients = 1;
             } /* localize declarations */
 
             break;
