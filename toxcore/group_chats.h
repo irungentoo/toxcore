@@ -42,7 +42,7 @@ typedef struct Messenger Messenger;
 #define MAX_GC_MODERATORS 128
 
 #define GC_MOD_LIST_ENTRY_SIZE SIG_PUBLIC_KEY
-#define GC_MOD_LIST_HASH_SIZE crypto_hash_sha256_BYTES
+#define GC_MODERATION_HASH_SIZE crypto_hash_sha256_BYTES
 #define GC_PING_INTERVAL 30
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
 #define GC_UNCONFRIMED_PEER_TIMEOUT GC_PING_INTERVAL
@@ -120,8 +120,16 @@ enum {
     HJ_PRIVATE
 } GROUP_HANDSHAKE_JOIN_TYPE;
 
+struct GC_Sanction_Creds {
+    uint32_t    version;
+    uint8_t     hash[GC_MODERATION_HASH_SIZE];    /* hash of all sanctions list signatures + version */
+    uint8_t     sig_pk[SIG_PUBLIC_KEY];    /* Last mod to have modified the sanctions list*/
+    uint8_t     sig[SIGNATURE_SIZE];    /* signature of hash, signed by sig_pk */
+};
+
 typedef struct GC_Moderation {
     struct GC_Sanction *sanctions;
+    struct GC_Sanction_Creds sanction_creds;
     uint16_t    num_sanctions;
 
     uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
@@ -148,7 +156,7 @@ typedef struct {
     uint8_t     privacy_state;   /* GI_PUBLIC (uses DHT) or GI_PRIVATE (invite only) */
     uint16_t    passwd_len;
     uint8_t     passwd[MAX_GC_PASSWD_SIZE];
-    uint8_t     mod_list_hash[GC_MOD_LIST_HASH_SIZE];
+    uint8_t     mod_list_hash[GC_MODERATION_HASH_SIZE];
     uint32_t    version;
 } GC_SharedState;
 
@@ -241,7 +249,7 @@ struct SAVED_GROUP {
     uint8_t   privacy_state;
     uint16_t  passwd_len;
     uint8_t   passwd[MAX_GC_PASSWD_SIZE];
-    uint8_t   mod_list_hash[GC_MOD_LIST_HASH_SIZE];
+    uint8_t   mod_list_hash[GC_MODERATION_HASH_SIZE];
     uint32_t  sstate_version;
     uint8_t   sstate_signature[SIGNATURE_SIZE];
 
@@ -401,6 +409,14 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
  * Returns -2 if the caller does not have kick/ban permissions.
  */
 int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_ban);
+
+/* Instructs all peers to remove ban_id from their ban list.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ * Returns -2 if caller does not have unban permissions.
+ */
+int gc_remove_ban(GC_Chat *chat, uint16_t ban_id);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);

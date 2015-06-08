@@ -2365,7 +2365,7 @@ struct Tox_Group_Ban {
     uint64_t     time_set;
 
     /* Uniquely identifies a ban entry. Use this to remove an entry from the ban list. */
-    uint32_t     id;
+    uint16_t     id;
 };
 
 /* Set the callback for group invites from friends.
@@ -2742,7 +2742,7 @@ int tox_group_remove_peer(Tox *tox, int groupnumber, uint32_t peernumber, bool s
  * Returns -1 on failure.
  * Returns -2 if caller does not have unban permissions.
  */
-int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint32_t ban_id);
+int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint16_t ban_id);
 
 /* Use this function to determine how much memory to allocate for tox_group_get_ban_list().
  *

@@ -1972,7 +1972,7 @@ int tox_group_remove_peer(Tox *tox, int groupnumber, uint32_t peernumber, bool s
  * Returns -1 on failure.
  * Returns -2 if caller does not have unban permissions.
  */
-int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint32_t ban_id)
+int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint16_t ban_id)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2015,18 +2015,20 @@ int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_
     if (chat == NULL)
         return -1;
 
-    uint16_t i;
+    uint16_t i, count = 0;
 
     for (i = 0; i < chat->moderation.num_sanctions; ++i) {
         if (chat->moderation.sanctions[i].type != SA_BAN)
             continue;
 
-        memcpy(ban_list[i].nick, chat->moderation.sanctions[i].ban_info.nick, MAX_GC_NICK_SIZE);
-        ban_list[i].nick_len = chat->moderation.sanctions[i].ban_info.nick_len;
-        ban_list[i].time_set = chat->moderation.sanctions[i].time_set;
-        ban_list[i].ip_address = ip_ntoa(&chat->moderation.sanctions[i].ban_info.ip_port.ip);
-        ban_list[i].id = chat->moderation.sanctions[i].ban_info.id;
+        memcpy(ban_list[count].nick, chat->moderation.sanctions[i].ban_info.nick, MAX_GC_NICK_SIZE);
+        ban_list[count].nick_len = chat->moderation.sanctions[i].ban_info.nick_len;
+        ban_list[count].time_set = chat->moderation.sanctions[i].time_set;
+        ban_list[count].ip_address = ip_ntoa(&chat->moderation.sanctions[i].ban_info.ip_port.ip);
+        ban_list[count].id = chat->moderation.sanctions[i].ban_info.id;
+
+        ++count;
     }
 
-    return chat->moderation.num_sanctions;
+    return count;
 }

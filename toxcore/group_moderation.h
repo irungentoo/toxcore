@@ -26,6 +26,7 @@
 #define GROUP_MODERATION_H
 
 #define MAX_GC_SANCTIONS 64
+#define GC_SANCTIONS_CREDENTIALS_SIZE (sizeof(uint32_t) + GC_MODERATION_HASH_SIZE + SIG_PUBLIC_KEY + SIGNATURE_SIZE)
 
 enum {
     SA_BAN,
@@ -37,7 +38,7 @@ struct GC_Ban {
     IP_Port     ip_port;
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
-    uint32_t    id;
+    uint16_t    id;
 };
 
 /* Holds data pertaining to a peer who has been banned or demoted to observer. */
@@ -101,39 +102,62 @@ int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber);
  */
 int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber);
 
+/* Returns true if the public signature key belongs to a moderator or the founder */
+bool mod_list_verify_sig_pk(const GC_Chat *chat, const uint8_t *sig_pk);
+
 /* Frees all memory associated with the moderator list and sets num_mods to 0. */
 void mod_list_cleanup(GC_Chat *chat);
 
-/* Packs num_sanctions sanctions into data of maxlength length.
+/* Packs num_sanctions sanctions into data of maxlength length. Additionally packs the
+ * sanctions list credentials into creds if creds is non-NULL.
  *
  * Returns length of packed data on success.
  * Returns -1 on failure.
  */
-int sanctions_list_pack(uint8_t *data, uint16_t length, struct GC_Sanction *sanctions, uint16_t num_sanctions);
+int sanctions_list_pack(uint8_t *data, uint16_t length, struct GC_Sanction *sanctions,
+                        struct GC_Sanction_Creds *creds, uint16_t num_sanctions);
 
-/* Unpack data of length into sanctions of size max_sanctions.
- * Put the length of the data processed in processed_data_len/
+/* Unpack max_sanctions sanctions from data into sanctions, and unpacks credentials into creds.
+ * Put the length of the data processed in processed_data_len.
  *
  * Returns number of unpacked entries on success.
  * Returns -1 on failure.
  */
-int sanctions_list_unpack(struct GC_Sanction *sanctions, uint16_t max_sanctions, const uint8_t *data,
-                         uint16_t length, uint16_t *processed_data_len);
+int sanctions_list_unpack(struct GC_Sanction *sanctions, struct GC_Sanction_Creds *creds, uint16_t max_sanctions,
+                          const uint8_t *data, uint16_t length, uint16_t *processed_data_len);
 
-/* Validates all sanctions list entries.
+/* Packs sanction list credentials into data.
+ * data must have room for GC_SANCTIONS_CREDENTIALS_SIZE bytes.
+ *
+ * Returns length of packed data.
+ */
+uint16_t sanctions_creds_pack(struct GC_Sanction_Creds *creds, uint8_t *data, uint16_t length);
+
+/* Unpacks sanctions credentials into creds from data.
+ * data must have room for GC_SANCTIONS_CREDENTIALS_SIZE bytes.
+ *
+ * Returns the length of the data processed.
+ */
+uint16_t sanctions_creds_unpack(struct GC_Sanction_Creds *creds, const uint8_t *data, uint16_t length);
+
+/* Validates all sanctions list entries as well as the list itself.
  *
  * Returns 0 if all entries are valid.
  * Returns -1 if one or more entries are invalid.
  */
-int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction *sanctions, uint16_t num_sanctions);
+int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction_Creds *creds,
+                                   struct GC_Sanction *sanctions, uint16_t num_sanctions);
 
-/* Validates entry and adds it to the sanctions list.
+/* Adds an entry to the sanctions list. The entry is first validated and the resulting
+ * new sanction list is compared against the new credentials.
+ *
  * Entries must be unique.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction);
+int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction,
+                             struct GC_Sanction_Creds *creds);
 
 /* Creates a new sanction entry for peernumber where type is one GROUP_SANCTION_TYPE.
  * New entry is signed and placed in the sanctions list.
@@ -152,19 +176,22 @@ bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
 /* Returns true if peernumber is in the observer list. */
 bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber);
 
-/* Removes observer entry for public key from sanctions list.
+/* Removes observer entry for public key from sanction list.
+ * If creds is NULL we make new credentials (this should only be done by a moderator or founder)
  *
  * Returns 0 on success.
  * Returns -1 on failure or if entry was not found.
  */
-int sanctions_list_remove_observer(GC_Chat *chat, const uint8_t *public_key);
+int sanctions_list_remove_observer(GC_Chat *chat, const uint8_t *public_key, struct GC_Sanction_Creds *creds);
 
-/* Removes ban entry with ban_id from sanctions list.
+/* Removes ban entry with ban_id from sanction list.
+ * If creds is NULL we make new credentials (this should only be done by a moderator or founder)
+ *
  *
  * Returns 0 on success.
  * Returns -1 on failure or if entry was not found
  */
-int sanctions_list_remove_ban(GC_Chat *chat, uint32_t ban_id);
+int sanctions_list_remove_ban(GC_Chat *chat, uint16_t ban_id, struct GC_Sanction_Creds *creds);
 
 /* Replaces all sanctions list signatures made by public_sig_key with the caller's.
  * This is called whenever the founder demotes a moderator.
@@ -172,6 +199,16 @@ int sanctions_list_remove_ban(GC_Chat *chat, uint32_t ban_id);
  * Returns the number of entries re-signed.
  */
 uint16_t sanctions_list_replace_sig(GC_Chat *chat, const uint8_t *public_sig_key);
+
+/* Creates a new sanction list hash and puts it in hash.
+ *
+ * The hash is derived from the signature of all entries plus the version number.
+ * hash must have room for at least GC_MODERATION_HASH_SIZE bytes.
+ *
+ * If num_sanctions is 0 the hash is zeroed.
+ */
+void sanctions_list_make_hash(struct GC_Sanction *sanctions, uint32_t new_version,
+                              uint16_t num_sanctions, uint8_t *hash);
 
 void sanctions_list_cleanup(GC_Chat *chat);
 

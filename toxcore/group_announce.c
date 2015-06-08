@@ -526,10 +526,8 @@ int gca_send_announce_request(GC_Announce *announce, const uint8_t *self_public_
 
     int node_len = pack_gca_nodes(data + 1 + CHAT_ID_SIZE, sizeof(GC_Announce_Node), &self_node, 1);
 
-    if (node_len <= 0) {
-        fprintf(stderr, "pack_gca_nodes failed in gca_send_announce_request (%d)\n", node_len);
+    if (node_len <= 0)
         return -1;
-    }
 
     uint32_t length = 1 + CHAT_ID_SIZE + node_len;
 

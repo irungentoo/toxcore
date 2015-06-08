@@ -47,7 +47,7 @@
 
 #define GC_PACKED_SHARED_STATE_SIZE (EXT_PUBLIC_KEY + sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
                                      + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE\
-                                     + GC_MOD_LIST_HASH_SIZE + sizeof(uint32_t))
+                                     + GC_MODERATION_HASH_SIZE + sizeof(uint32_t))
 
 #define GC_SHARED_STATE_ENC_PACKET_SIZE (HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
 
@@ -189,24 +189,36 @@ static int validate_gc_peer_role(const GC_Chat *chat, uint32_t peernumber)
     if (chat->group[peernumber].role >= GR_INVALID)
         return -1;
 
-    if (chat->group[peernumber].role == GR_FOUNDER) {
-        if (memcmp(chat->shared_state.founder_public_key, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY) != 0)
+    switch (chat->group[peernumber].role) {
+        case GR_FOUNDER: {
+            if (memcmp(chat->shared_state.founder_public_key, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY) != 0)
+                return -1;
+
+            break;
+        }
+        case GR_MODERATOR: {
+            if (mod_list_index_of_peernum(chat, peernumber) == -1)
+                return -1;
+
+            break;
+        }
+        case GR_USER: {
+            if (sanctions_list_is_observer(chat, peernumber))
+                return -1;
+
+            break;
+        }
+        case GR_OBSERVER: {
+            /* Don't validate self as this is called when we don't have the sanctions list yet */
+            if (!sanctions_list_is_observer(chat, peernumber) && peernumber != 0)
+                return -1;
+
+            break;
+        }
+        default: {
             return -1;
-
-        return 0;
+        }
     }
-
-    if (chat->group[peernumber].role == GR_MODERATOR) {
-        if (mod_list_index_of_peernum(chat, peernumber) == -1)
-            return -1;
-
-        return 0;
-    }
-
-    if (sanctions_list_is_observer(chat, peernumber))
-        chat->group[peernumber].role == GR_OBSERVER;
-    else
-        chat->group[peernumber].role = GR_USER;
 
     return 0;
 }
@@ -578,8 +590,8 @@ static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared
     packed_len += sizeof(uint16_t);
     memcpy(data + packed_len, shared_state->passwd, MAX_GC_PASSWD_SIZE);
     packed_len += MAX_GC_PASSWD_SIZE;
-    memcpy(data + packed_len, shared_state->mod_list_hash, GC_MOD_LIST_HASH_SIZE);
-    packed_len += GC_MOD_LIST_HASH_SIZE;
+    memcpy(data + packed_len, shared_state->mod_list_hash, GC_MODERATION_HASH_SIZE);
+    packed_len += GC_MODERATION_HASH_SIZE;
     U32_to_bytes(data + packed_len, shared_state->version);
     packed_len += sizeof(uint32_t);
 
@@ -610,8 +622,8 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     len_processed += sizeof(uint16_t);
     memcpy(shared_state->passwd, data + len_processed, MAX_GC_PASSWD_SIZE);
     len_processed += MAX_GC_PASSWD_SIZE;
-    memcpy(shared_state->mod_list_hash, data + len_processed, GC_MOD_LIST_HASH_SIZE);
-    len_processed += GC_MOD_LIST_HASH_SIZE;
+    memcpy(shared_state->mod_list_hash, data + len_processed, GC_MODERATION_HASH_SIZE);
+    len_processed += GC_MODERATION_HASH_SIZE;
     bytes_to_U32(&shared_state->version, data + len_processed);
     len_processed += sizeof(uint32_t);
 
@@ -808,7 +820,7 @@ static int send_lossless_group_packet(GC_Chat *chat, uint32_t peernumber, const 
     int len = wrap_group_packet(chat->self_public_key, chat->gcc[peernumber].shared_key, packet, data,
                                 length, message_id, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSLESS);
     if (len == -1) {
-        fprintf(stderr, "wrap_group_packet (type: %u, len: %d)\n", packet_type, len);
+        fprintf(stderr, "wrap_group_packet failed (type: %u, len: %d)\n", packet_type, len);
         return -1;
     }
 
@@ -1034,10 +1046,8 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     return send_gc_sync_response(chat, peernumber, response, len);
 }
 
-/* Checks if our peerlist is out of sync with peernumber.
- * Returns true if we set a sync request.
- */
-static void check_gc_sync_status(const GC_Chat *chat, uint32_t peernumber, uint32_t other_num_peers)
+/* Checks if our peerlist is out of sync with peernumber and initiates a sync request if necessary. */
+static void check_gc_peerlist_sync(const GC_Chat *chat, uint32_t peernumber, uint32_t other_num_peers)
 {
     if (get_gc_confirmed_numpeers(chat) >= other_num_peers) {
         chat->gcc[peernumber].peer_sync_timer = 0;
@@ -1319,9 +1329,13 @@ static void send_gc_packet_all_peers(GC_Chat *chat, uint8_t *data, uint32_t leng
     }
 }
 
+/* Handles a ping packet. The packet contains sync information including peernumber's confirmed peer count,
+ * shared state version and sanction credentials version.
+ */
+#define GC_PING_PACKET_DATA_SIZE (sizeof(uint32_t) * 3)
 static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
-    if (length != sizeof(uint32_t) * 2)
+    if (length != GC_PING_PACKET_DATA_SIZE)
         return -1;
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1334,16 +1348,19 @@ static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, co
 
     chat->gcc[peernumber].last_rcvd_ping = unix_time();
 
-    uint32_t other_num_peers, sstate_version;
+    uint32_t other_num_peers, sstate_version, screds_version;
     bytes_to_U32(&other_num_peers, data);
     bytes_to_U32(&sstate_version, data + sizeof(uint32_t));
+    bytes_to_U32(&screds_version, data + (sizeof(uint32_t) * 2));
 
-    check_gc_sync_status(chat, peernumber, other_num_peers);
+    check_gc_peerlist_sync(chat, peernumber, other_num_peers);
 
     if (sstate_version < chat->shared_state.version)
-        send_peer_shared_state(chat, peernumber);
+        return send_peer_shared_state(chat, peernumber);
     else if (sstate_version > chat->shared_state.version)
-        send_gc_sync_request(chat, peernumber, 0);
+        return send_gc_sync_request(chat, peernumber, 0);
+    else if (screds_version > chat->moderation.sanction_creds.version)
+        return send_gc_sync_request(chat, peernumber, 0);
 
     return 0;
 }
@@ -1576,7 +1593,7 @@ static int broadcast_gc_shared_state(GC_Chat *chat)
 /* If privacy state has been set to public we announce ourselves to the DHT.
  * If privacy state has been set to private we remove our self announcement.
  */
-static void handle_privacy_state_change(GC_Session *c, const GC_Chat *chat, uint8_t new_privacy_state)
+static void do_gc_privacy_state_change(GC_Session *c, const GC_Chat *chat, uint8_t new_privacy_state)
 {
     if (new_privacy_state == GI_PUBLIC)
         group_announce_request(c, chat);
@@ -1622,7 +1639,7 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     memcpy(chat->shared_state_sig, signature, SIGNATURE_SIZE);
 
     if (old_privacy_state != chat->shared_state.privacy_state)
-        handle_privacy_state_change(c, chat, chat->shared_state.privacy_state);
+        do_gc_privacy_state_change(c, chat, chat->shared_state.privacy_state);
 
     return 0;
 
@@ -1671,10 +1688,10 @@ static int handle_gc_mod_list(Messenger *m, int groupnumber, uint32_t peernumber
     if (mod_list_unpack(chat, data + sizeof(uint16_t), length - sizeof(uint16_t), num_mods) == -1)
         goto on_error;
 
-    uint8_t mod_list_hash[GC_MOD_LIST_HASH_SIZE];
+    uint8_t mod_list_hash[GC_MODERATION_HASH_SIZE];
     mod_list_make_hash(chat, mod_list_hash);
 
-    if (memcmp(mod_list_hash, chat->shared_state.mod_list_hash, GC_MOD_LIST_HASH_SIZE) != 0)
+    if (memcmp(mod_list_hash, chat->shared_state.mod_list_hash, GC_MODERATION_HASH_SIZE) != 0)
         goto on_error;
 
     /* Validate our own role */
@@ -1718,12 +1735,13 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
     if (num_sanctions > MAX_GC_SANCTIONS)
         goto on_error;
 
+    struct GC_Sanction_Creds creds;
     struct GC_Sanction *sanctions = malloc(num_sanctions * sizeof(struct GC_Sanction));
 
     if (sanctions == NULL)
         return -1;
 
-    int unpacked_num = sanctions_list_unpack(sanctions, num_sanctions, data + sizeof(uint16_t),
+    int unpacked_num = sanctions_list_unpack(sanctions, &creds, num_sanctions, data + sizeof(uint16_t),
                                              length - sizeof(uint16_t), NULL);
     if (unpacked_num != num_sanctions) {
         fprintf(stderr, "sanctions_list_unpack failed in handle_gc_sanctions_list: %d\n", unpacked_num);
@@ -1731,14 +1749,21 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
         goto on_error;
     }
 
-    if (sanctions_list_check_integrity(chat, sanctions, num_sanctions) == -1) {
+    if (sanctions_list_check_integrity(chat, &creds, sanctions, num_sanctions) == -1) {
         fprintf(stderr, "sanctions_list_check_integrity failed in handle_gc_sanctions_list\n");
         free(sanctions);
         goto on_error;
     }
 
+    sanctions_list_cleanup(chat);
+
+    memcpy(&chat->moderation.sanction_creds, &creds, sizeof(struct GC_Sanction_Creds));
     chat->moderation.sanctions = sanctions;
     chat->moderation.num_sanctions = num_sanctions;
+
+    /* We cannot verify our own observer role on the initial sync so we do it now */
+    if (chat->group[0].role == GR_OBSERVER && !sanctions_list_is_observer(chat, 0))
+        chat->group[0].role = GR_USER;
 
     return 0;
 
@@ -1802,7 +1827,7 @@ static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber)
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-static int make_gc_sanctions_list_packet(const GC_Chat *chat, uint8_t *data, uint32_t maxlen)
+static int make_gc_sanctions_list_packet(GC_Chat *chat, uint8_t *data, uint32_t maxlen)
 {
     if (maxlen < HASH_ID_BYTES + sizeof(uint16_t))
         return -1;
@@ -1812,8 +1837,8 @@ static int make_gc_sanctions_list_packet(const GC_Chat *chat, uint8_t *data, uin
     uint32_t length = HASH_ID_BYTES + sizeof(uint16_t);
 
     int packed_len = sanctions_list_pack(data + length, maxlen - length, chat->moderation.sanctions,
-                                         chat->moderation.num_sanctions);
-    if (packed_len == -1)
+                                         &chat->moderation.sanction_creds, chat->moderation.num_sanctions);
+    if (packed_len < 0)
         return -1;
 
     return length + packed_len;
@@ -2149,6 +2174,8 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
     if (chat->group[target_peernum].role == GR_FOUNDER || chat->group[target_peernum].role == role)
         return -1;
 
+    struct GC_Sanction_Creds creds;
+
     /* Remove target from contradicting lists */
     if (chat->group[target_peernum].role == GR_MODERATOR) {
         if (chat->group[peernumber].role != GR_FOUNDER)
@@ -2159,7 +2186,12 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
             return -1;
         }
     } else if (chat->group[target_peernum].role == GR_OBSERVER) {
-        if (sanctions_list_remove_observer(chat, target_pk) == -1) {
+        uint16_t unpacked_len = sanctions_creds_unpack(&creds, data + 1 + ENC_PUBLIC_KEY, length - 1 - ENC_PUBLIC_KEY);
+
+        if (unpacked_len != GC_SANCTIONS_CREDENTIALS_SIZE)
+            return -1;
+
+        if (sanctions_list_remove_observer(chat, target_pk, &creds) == -1) {
             fprintf(stderr, "sanctions_list_remove_observer failed in handle_bc_peer_role a\n");
             return -1;
         }
@@ -2175,11 +2207,12 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
         }
     } else if (role == GR_OBSERVER) {
         struct GC_Sanction sanction;
-        if (sanctions_list_unpack(&sanction, 1, data + 1 + ENC_PUBLIC_KEY,
+
+        if (sanctions_list_unpack(&sanction, &creds, 1, data + 1 + ENC_PUBLIC_KEY,
                                   length - 1 - ENC_PUBLIC_KEY, NULL) != 1)
             return -1;
 
-        if (sanctions_list_add_entry(chat, target_peernum, &sanction) == -1)
+        if (sanctions_list_add_entry(chat, target_peernum, &sanction, &creds) == -1)
             return -1;
     }
 
@@ -2192,7 +2225,19 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
     return 0;
 }
 
-static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t role)
+/* Sends a peer role packet.
+ *
+ * If peernumber's role has been set to GR_OBSERVER the packet will contain
+ * the sanction data as well as the new sanctions list credentials.
+ *
+ * If peernumber has been removed from the observer list the packet will contain
+ * new credentials.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t role,
+                             uint8_t prev_role)
 {
     uint8_t data[MAX_GC_PACKET_SIZE];
     data[0] = role;
@@ -2203,9 +2248,16 @@ static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, struct GC_Sanct
         if (sanction == NULL)
             return -1;
 
-        int packed_len = sanctions_list_pack(data + length, sizeof(data) - length, sanction, 1);
+        int packed_len = sanctions_list_pack(data + length, sizeof(data) - length, sanction,
+                                             &chat->moderation.sanction_creds, 1);
+        if (packed_len < 0)
+            return -1;
 
-        if (packed_len == -1)
+        length += packed_len;
+    } else if (prev_role == GR_OBSERVER) {
+        uint16_t packed_len = sanctions_creds_pack(&chat->moderation.sanction_creds, data + length,
+                                                  sizeof(data) - length);
+        if (packed_len != GC_SANCTIONS_CREDENTIALS_SIZE)
             return -1;
 
         length += packed_len;
@@ -2240,18 +2292,18 @@ int founder_gc_set_moderator(GC_Chat *chat, uint32_t peernumber, bool add_mod)
             return -1;
     }
 
-    uint8_t old_hash[GC_MOD_LIST_HASH_SIZE];
-    memcpy(old_hash, chat->shared_state.mod_list_hash, GC_MOD_LIST_HASH_SIZE);
+    uint8_t old_hash[GC_MODERATION_HASH_SIZE];
+    memcpy(old_hash, chat->shared_state.mod_list_hash, GC_MODERATION_HASH_SIZE);
 
     mod_list_make_hash(chat, chat->shared_state.mod_list_hash);
 
     if (sign_gc_shared_state(chat) == -1) {
-        memcpy(chat->shared_state.mod_list_hash, old_hash, GC_MOD_LIST_HASH_SIZE);
+        memcpy(chat->shared_state.mod_list_hash, old_hash, GC_MODERATION_HASH_SIZE);
         return -1;
     }
 
     if (broadcast_gc_shared_state(chat) == -1) {
-        memcpy(chat->shared_state.mod_list_hash, old_hash, GC_MOD_LIST_HASH_SIZE);
+        memcpy(chat->shared_state.mod_list_hash, old_hash, GC_MODERATION_HASH_SIZE);
         return -1;
     }
 
@@ -2294,7 +2346,7 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
         if (founder_gc_set_moderator(chat, peernumber, false) == -1)
             return -1;
     } else if (chat->group[peernumber].role == GR_OBSERVER) {
-        if (sanctions_list_remove_observer(chat, chat->gcc[peernumber].addr.public_key) == -1)
+        if (sanctions_list_remove_observer(chat, chat->gcc[peernumber].addr.public_key, NULL) == -1)
             return -1;
     }
 
@@ -2308,9 +2360,10 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
         }
     }
 
+    uint8_t prev_role = chat->group[peernumber].role;
     chat->group[peernumber].role = role;
 
-    return send_gc_peer_role(chat, peernumber, &sanction, role);
+    return send_gc_peer_role(chat, peernumber, &sanction, role, prev_role);
 }
 
 /* Returns group privacy state */
@@ -2508,6 +2561,9 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
     if (chat->group[target_peernum].role == GR_FOUNDER)
         return -1;
 
+    if (chat->group[target_peernum].role <= GR_MODERATOR && chat->group[peernumber].role != GR_FOUNDER)
+        return -1;
+
     uint8_t mod_event = data[0];
 
     if (mod_event != MV_KICK && mod_event != MV_BAN)
@@ -2518,32 +2574,54 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
         return 0;
     }
 
-    if (chat->group[target_peernum].role == GR_MODERATOR) {
-        if (chat->group[peernumber].role != GR_FOUNDER)
-            return -1;
-
-        if (mod_list_remove_peer(chat, target_peernum) == -1)
-            return -1;
-    } else if (chat->group[target_peernum].role == GR_OBSERVER) {
-        sanctions_list_remove_observer(chat, chat->gcc[target_peernum].addr.public_key);
-    }
+    struct GC_Sanction_Creds creds;
 
     if (mod_event == MV_BAN) {
         struct GC_Sanction sanction;
-        if (sanctions_list_unpack(&sanction, 1, data + 1 + ENC_PUBLIC_KEY, length - 1 - ENC_PUBLIC_KEY, NULL) != 1)
+
+        if (sanctions_list_unpack(&sanction, &creds, 1, data + 1 + ENC_PUBLIC_KEY,
+                                  length - 1 - ENC_PUBLIC_KEY, NULL) != 1)
             return -1;
 
-        if (sanctions_list_add_entry(chat, peernumber, &sanction) == -1)
+        if (sanctions_list_add_entry(chat, peernumber, &sanction, &creds) == -1) {
+            fprintf(stderr, "sanctions_list_add_entry failed in remove peer\n");
             return -1;
+        }
+    }
+
+    if (chat->group[target_peernum].role == GR_MODERATOR) {
+        if (mod_list_remove_peer(chat, target_peernum) == -1)
+            return -1;
+    } else if (chat->group[target_peernum].role == GR_OBSERVER) {
+        if (mod_event != MV_BAN) {
+            if (sanctions_creds_unpack(&creds, data + 1 + ENC_PUBLIC_KEY, length - 1 - ENC_PUBLIC_KEY)
+                                     != GC_SANCTIONS_CREDENTIALS_SIZE)
+                return -1;
+        }
+
+        if (sanctions_list_remove_observer(chat, chat->gcc[target_peernum].addr.public_key, &creds) == -1)
+            fprintf(stderr, "sanctions_list_remove_observer failed in remove peer handler\n");
     }
 
     if (c->moderation)
         (*c->moderation)(m, groupnumber, peernumber, target_peernum, mod_event, c->moderation_userdata);
 
-    return gc_peer_delete(m, groupnumber, target_peernum, NULL, 0);
+    if (gc_peer_delete(m, groupnumber, target_peernum, NULL, 0) == -1)
+        return -1;
+
+    return 0;
 }
 
-static int send_gc_remove_peer(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t mod_event)
+/* Sends a packet to instruct all peers to remove peernumber from their peerlist.
+ *
+ * If mod_event is MV_BAN an updated sanctions list along with new credentials will be added to
+ * the ban list. Otherwise if send_new_creds is true new credentials will be sent.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int send_gc_remove_peer(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction,
+                               uint8_t mod_event, bool send_new_creds)
 {
     uint32_t length = 1 + ENC_PUBLIC_KEY;
     uint8_t packet[MAX_GC_PACKET_SIZE];
@@ -2551,12 +2629,20 @@ static int send_gc_remove_peer(GC_Chat *chat, uint32_t peernumber, struct GC_San
     memcpy(packet + 1, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
 
     if (mod_event == MV_BAN) {
-        int packed_len = sanctions_list_pack(packet + length, sizeof(packet) - length, sanction, 1);
-
-        if (packed_len == -1) {
+        int packed_len = sanctions_list_pack(packet + length, sizeof(packet) - length, sanction,
+                                             &chat->moderation.sanction_creds, 1);
+        if (packed_len < 0) {
             fprintf(stderr, "sanctions_list_pack failed in send_gc_remove_peer\n");
             return -1;
         }
+
+        length += packed_len;
+    } else if (send_new_creds) {
+        struct GC_Sanction_Creds creds;
+        uint16_t packed_len = sanctions_creds_pack(&creds, packet + length, sizeof(packet) - length);
+
+        if (packed_len != GC_SANCTIONS_CREDENTIALS_SIZE)
+            return -1;
 
         length += packed_len;
     }
@@ -2594,12 +2680,10 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
     if (peernumber == 0)
         return -1;
 
-    if (chat->group[peernumber].role == GR_MODERATOR) {
-        /* this first removes their moderator status and broadcasts the updated shared state */
+    if (chat->group[peernumber].role == GR_MODERATOR || chat->group[peernumber].role == GR_OBSERVER) {
+        /* this first removes peer from any lists they're on and broadcasts new lists to group */
         if (gc_set_peer_role(chat, peernumber, GR_USER) == -1)
             return -1;
-    } else if (chat->group[peernumber].role == GR_OBSERVER) {
-        sanctions_list_remove_observer(chat, chat->gcc[peernumber].addr.public_key);
     }
 
     uint8_t mod_event = set_ban ? MV_BAN : MV_KICK;
@@ -2612,16 +2696,21 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
         }
     }
 
-    if (send_gc_remove_peer(chat, peernumber, &sanction, mod_event) == -1)
+    bool send_new_creds = !set_ban && chat->group[peernumber].role == GR_OBSERVER;
+
+    if (send_gc_remove_peer(chat, peernumber, &sanction, mod_event, send_new_creds) == -1)
         return -1;
 
-    return gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
+    if (gc_peer_delete(m, groupnumber, peernumber, NULL, 0) == -1)
+        return -1;
+
+    return 0;
 }
 
 static int handle_bc_remove_ban(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                 uint32_t length)
 {
-    if (length != sizeof(uint32_t))
+    if (length < sizeof(uint16_t))
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -2633,20 +2722,39 @@ static int handle_bc_remove_ban(Messenger *m, int groupnumber, uint32_t peernumb
     if (chat->group[peernumber].role >= GR_USER)
         return -1;
 
-    uint32_t ban_id;
-    bytes_to_U32(&ban_id, data);
+    uint16_t ban_id;
+    bytes_to_U16(&ban_id, data);
 
-    if (sanctions_list_remove_ban(chat, ban_id) == -1)
+    struct GC_Sanction_Creds creds;
+    uint16_t unpacked_len = sanctions_creds_unpack(&creds, data + sizeof(uint16_t), length - sizeof(uint16_t));
+
+    if (unpacked_len != GC_SANCTIONS_CREDENTIALS_SIZE)
+        return -1;
+
+    if (sanctions_list_remove_ban(chat, ban_id, &creds) == -1)
         fprintf(stderr, "sanctions_list_remove_ban failed in handle_bc_remove_ban\n");
 
     return 0;
 }
 
-static int send_gc_remove_ban(GC_Chat *chat, uint32_t ban_id)
+/* Sends a packet instructing all peers to remove a ban entry from the sanctions list.
+ * Additionally sends updated sanctions credentials.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int send_gc_remove_ban(GC_Chat *chat, uint16_t ban_id)
 {
-    uint32_t length = sizeof(uint32_t);
-    uint8_t packet[length];
-    U32_to_bytes(packet, ban_id);
+    uint8_t packet[sizeof(uint16_t) + GC_SANCTIONS_CREDENTIALS_SIZE];
+    U16_to_bytes(packet, ban_id);
+    uint32_t length = sizeof(uint16_t);
+
+    uint16_t packed_len = sanctions_creds_pack(&chat->moderation.sanction_creds, packet + length,
+                                              sizeof(packet) - length);
+    if (packed_len != GC_SANCTIONS_CREDENTIALS_SIZE)
+        return -1;
+
+    length += packed_len;
 
     return send_gc_broadcast_message(chat, packet, length, GM_REMOVE_BAN);
 }
@@ -2657,12 +2765,12 @@ static int send_gc_remove_ban(GC_Chat *chat, uint32_t ban_id)
  * Returns -1 on failure.
  * Returns -2 if caller does not have unban permissions.
  */
-int gc_remove_ban(GC_Chat *chat, uint32_t ban_id)
+int gc_remove_ban(GC_Chat *chat, uint16_t ban_id)
 {
     if (chat->group[0].role >= GR_USER)
         return -2;
 
-    if (sanctions_list_remove_ban(chat, ban_id) == -1)
+    if (sanctions_list_remove_ban(chat, ban_id, NULL) == -1)
         return -1;
 
     return send_gc_remove_ban(chat, ban_id);
@@ -3014,7 +3122,11 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
     if (chat->shared_state.version == 0)
         return -1;
 
-    if (sanctions_list_ip_banned(chat, &ipp))
+    uint8_t public_sig_key[SIG_PUBLIC_KEY];
+    memcpy(public_sig_key, data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
+
+    /* Check if IP is banned and make sure they aren't a moderator or founder */
+    if (sanctions_list_ip_banned(chat, &ipp) && !mod_list_verify_sig_pk(chat, public_sig_key))
         return -1;
 
     if (chat->connection_O_metre >= GC_NEW_PEER_CONNECTION_LIMIT) {
@@ -3043,7 +3155,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ip
 
     encrypt_precompute(sender_session_pk, gconn->session_secret_key, gconn->shared_key);
 
-    memcpy(SIG_PK(gconn->addr.public_key), data + ENC_PUBLIC_KEY, SIG_PUBLIC_KEY);
+    memcpy(SIG_PK(gconn->addr.public_key), public_sig_key, SIG_PUBLIC_KEY);
 
     uint8_t request_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY];
     uint8_t join_type = data[ENC_PUBLIC_KEY + SIG_PUBLIC_KEY + 1];
@@ -3577,19 +3689,22 @@ static void do_peer_connections(Messenger *m, int groupnumber)
     }
 }
 
-/* Ping packet includes your confirmed peer count and shared state version for syncing purposes */
+/* Ping packet includes your confirmed peer count, shared state version
+ * and sanctions list version for syncing purposes
+ */
 static void ping_group(GC_Chat *chat)
 {
     if (!is_timeout(chat->last_sent_ping_time, GC_PING_INTERVAL))
         return;
 
-    uint32_t length = HASH_ID_BYTES + sizeof(uint32_t) * 2;
+    uint32_t length = HASH_ID_BYTES + GC_PING_PACKET_DATA_SIZE;
     uint8_t data[length];
 
     uint32_t num_confirmed_peers = get_gc_confirmed_numpeers(chat);
     U32_to_bytes(data, chat->self_public_key_hash);
     U32_to_bytes(data + HASH_ID_BYTES, num_confirmed_peers);
     U32_to_bytes(data + HASH_ID_BYTES + sizeof(uint32_t), chat->shared_state.version);
+    U32_to_bytes(data + HASH_ID_BYTES + (sizeof(uint32_t) * 2), chat->moderation.sanction_creds.version);
 
     uint32_t i;
 
@@ -3831,7 +3946,7 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->shared_state.maxpeers = ntohs(save->maxpeers);
     chat->shared_state.passwd_len = ntohs(save->passwd_len);
     memcpy(chat->shared_state.passwd, save->passwd, MAX_GC_PASSWD_SIZE);
-    memcpy(chat->shared_state.mod_list_hash, save->mod_list_hash, GC_MOD_LIST_HASH_SIZE);
+    memcpy(chat->shared_state.mod_list_hash, save->mod_list_hash, GC_MODERATION_HASH_SIZE);
     chat->shared_state.version = ntohl(save->sstate_version);
     memcpy(chat->shared_state_sig, save->sstate_signature, SIGNATURE_SIZE);
 
