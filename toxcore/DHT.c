@@ -2245,8 +2245,8 @@ DHT *new_DHT(Networking_Core *net)
 void do_DHT(DHT *dht)
 {
     // Load friends/clients if first call to do_DHT
-    if (dht->has_loaded_friends_clients == 0) {
-        dht->has_loaded_friends_clients = 1;
+    if (dht->has_loaded_friends_clients) {
+        dht->has_loaded_friends_clients = 0;
         DHT_connect_after_load(dht);
     }
 
@@ -2296,10 +2296,18 @@ void kill_DHT(DHT *dht)
 /* Get the size of the DHT (for saving). */
 uint32_t DHT_size(const DHT *dht)
 {
-    uint32_t num = 0, i;
+    uint32_t num = 0, i, j;
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
         num += (dht->close_clientlist[i].assoc4.timestamp != 0) + (dht->close_clientlist[i].assoc6.timestamp != 0);
+    }
+
+    for (i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
+        DHT_Friend *fr = &dht->friends_list[i];
+
+        for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+            num += (fr->client_list[j].assoc4.timestamp != 0) + (fr->client_list[j].assoc6.timestamp != 0);
+        }
     }
 
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
@@ -2324,34 +2332,48 @@ void DHT_save(DHT *dht, uint8_t *data)
     *(uint32_t *)data = DHT_STATE_COOKIE_GLOBAL;
     data += sizeof(uint32_t);
 
-    uint32_t num = 0, i;
+    uint32_t num, i, j;
 
-    //TODO: don't only save close nodes.
-    for (i = 0; i < LCLIENT_LIST; ++i) {
-        num += (dht->close_clientlist[i].assoc4.timestamp != 0) + (dht->close_clientlist[i].assoc6.timestamp != 0);
+    uint8_t *old_data = data;
+
+    /* get right offset. we write the actual header later. */
+    data = z_state_save_subheader(data, 0, 0);
+
+    Node_format *clients = (Node_format *)data;
+
+    for (num = 0, i = 0; i < LCLIENT_LIST; ++i) {
+        if (dht->close_clientlist[i].assoc4.timestamp != 0) {
+            memcpy(clients[num].public_key, dht->close_clientlist[i].client_id, crypto_box_PUBLICKEYBYTES);
+            clients[num].ip_port = dht->close_clientlist[i].assoc4.ip_port;
+            ++num;
+        }
+
+        if (dht->close_clientlist[i].assoc6.timestamp != 0) {
+            memcpy(clients[num].public_key, dht->close_clientlist[i].client_id, crypto_box_PUBLICKEYBYTES);
+            clients[num].ip_port = dht->close_clientlist[i].assoc6.ip_port;
+            ++num;
+        }
     }
 
-    len = num * sizeof(Node_format);
-    type = DHT_STATE_TYPE_NODES;
-    data = z_state_save_subheader(data, len, type);
+    for (i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
+        DHT_Friend *fr = &dht->friends_list[i];
 
-    if (num) {
-        Node_format *clients = (Node_format *)data;
-
-        for (num = 0, i = 0; i < LCLIENT_LIST; ++i) {
-            if (dht->close_clientlist[i].assoc4.timestamp != 0) {
-                memcpy(&clients[num].public_key, &dht->close_clientlist[i].client_id, crypto_box_PUBLICKEYBYTES);
-                clients[num].ip_port = dht->close_clientlist[i].assoc4.ip_port;
+        for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
+            if (fr->client_list[j].assoc4.timestamp != 0) {
+                memcpy(clients[num].public_key, fr->client_list[j].client_id, crypto_box_PUBLICKEYBYTES);
+                clients[num].ip_port = fr->client_list[j].assoc4.ip_port;
                 ++num;
             }
 
-            if (dht->close_clientlist[i].assoc6.timestamp != 0) {
-                memcpy(&clients[num].public_key, &dht->close_clientlist[i].client_id, crypto_box_PUBLICKEYBYTES);
-                clients[num].ip_port = dht->close_clientlist[i].assoc6.ip_port;
+            if (fr->client_list[j].assoc6.timestamp != 0) {
+                memcpy(clients[num].public_key, fr->client_list[j].client_id, crypto_box_PUBLICKEYBYTES);
+                clients[num].ip_port = fr->client_list[j].assoc6.ip_port;
                 ++num;
             }
         }
     }
+
+    z_state_save_subheader(old_data, num * sizeof(Node_format), DHT_STATE_TYPE_NODES);
 }
 
 /* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set */
