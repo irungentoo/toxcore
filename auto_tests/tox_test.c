@@ -835,7 +835,7 @@ loop_top:
         num_f += tox_self_get_friend_list_size(toxes[i]);
     }
 
-    ck_assert_msg(num_f == NUM_FRIENDS * 2, "bad num friends: %u", num_f);
+    ck_assert_msg(num_f == NUM_FRIENDS, "bad num friends: %u", num_f);
 
     while (1) {
         uint16_t counter = 0;
