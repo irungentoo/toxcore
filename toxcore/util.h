@@ -40,15 +40,12 @@
                                         static unsigned stat_buffer_counter_##name=0;
 #define STATIC_BUFFER_GETBUF(name,len)  (&stat_buffer_##name[(len)*(stat_buffer_counter_##name++%STATIC_BUFFER_COPIES)])
 
-/* Macros for long keys and cert handle */
+/* Macros for groupchat extended keys */
 #define ENC_KEY(key) (key)
 #define SIG_PK(key) (key + ENC_PUBLIC_KEY)
 #define SIG_SK(key) (key + ENC_SECRET_KEY)
 #define CHAT_ID(key) (key + ENC_PUBLIC_KEY)
-#define CERT_SOURCE_KEY(cert) (cert + 1 + EXT_PUBLIC_KEY)
-#define CERT_TARGET_KEY(cert) (cert + 1)
-#define CERT_INVITER_KEY(cert) (cert + SEMI_INVITE_CERT_SIGNED_SIZE)
-#define CERT_INVITEE_KEY(cert) (cert + 1)
+
 
 void unix_time_update();
 uint64_t unix_time();

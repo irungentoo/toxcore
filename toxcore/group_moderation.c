@@ -101,15 +101,15 @@ void mod_list_make_hash(GC_Chat *chat, uint8_t *hash)
     crypto_hash_sha256(hash, data, sizeof(data));
 }
 
-/* Returns moderator list index for peernumber.
- * Returns -1 if peernumber is not in the list.
+/* Returns moderator list index for public_sig_key.
+ * Returns -1 if key is not in the list.
  */
-int mod_list_index_of_peernum(const GC_Chat *chat, uint32_t peernumber)
+int mod_list_index_of_sig_pk(const GC_Chat *chat, const uint8_t *public_sig_key)
 {
     uint16_t i;
 
     for (i = 0; i < chat->moderation.num_mods; ++i) {
-        if (memcmp(chat->moderation.mod_list[i], SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY) == 0)
+        if (memcmp(chat->moderation.mod_list[i], public_sig_key, SIG_PUBLIC_KEY) == 0)
             return i;
     }
 
@@ -168,17 +168,17 @@ int mod_list_remove_index(GC_Chat *chat, size_t index)
     return 0;
 }
 
-/* Removes peernumber from the moderator list.
+/* Removes public_sig_key from the moderator list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber)
+int mod_list_remove_entry(GC_Chat *chat, const uint8_t *public_sig_key)
 {
     if (chat->moderation.num_mods == 0)
         return -1;
 
-    int idx = mod_list_index_of_peernum(chat, peernumber);
+    int idx = mod_list_index_of_sig_pk(chat, public_sig_key);
 
     if (idx == -1)
         return -1;
@@ -186,12 +186,12 @@ int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber)
     return mod_list_remove_index(chat, idx);
 }
 
-/* Adds peernumber to the moderator list.
+/* Adds a mod to the moderator list. mod_data must be GC_MOD_LIST_ENTRY_SIZE bytes.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber)
+int mod_list_add_entry(GC_Chat *chat, const uint8_t *mod_data)
 {
     if (chat->moderation.num_mods >= MAX_GC_MODERATORS)
         return -1;
@@ -208,7 +208,7 @@ int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber)
     if (tmp_list[chat->moderation.num_mods] == NULL)
         return -1;
 
-    memcpy(tmp_list[chat->moderation.num_mods], SIG_PK(chat->gcc[peernumber].addr.public_key), GC_MOD_LIST_ENTRY_SIZE);
+    memcpy(tmp_list[chat->moderation.num_mods], mod_data, GC_MOD_LIST_ENTRY_SIZE);
     chat->moderation.mod_list = tmp_list;
     ++chat->moderation.num_mods;
 
@@ -662,10 +662,10 @@ bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port)
     return false;
 }
 
-/* Returns true if peernumber is in the observer list.
+/* Returns true if public key is in the observer list.
  * All sanction list entries are assumed to be verified.
  */
-bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber)
+bool sanctions_list_is_observer(const GC_Chat *chat, const uint8_t *public_key)
 {
     uint16_t i;
 
@@ -673,8 +673,7 @@ bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber)
         if (chat->moderation.sanctions[i].type != SA_OBSERVER)
             continue;
 
-        if (memcmp(chat->moderation.sanctions[i].target_pk, chat->gcc[peernumber].addr.public_key,
-                   ENC_PUBLIC_KEY) == 0)
+        if (memcmp(chat->moderation.sanctions[i].target_pk, public_key, ENC_PUBLIC_KEY) == 0)
             return true;
     }
 
@@ -682,12 +681,12 @@ bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber)
 }
 
 /* Returns true if sanction already exists in the sanctions list. */
-static bool sanctions_list_entry_exists(const GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction)
+static bool sanctions_list_entry_exists(const GC_Chat *chat, struct GC_Sanction *sanction)
 {
     if (sanction->type == SA_BAN) {
-        return sanctions_list_ip_banned(chat, &chat->gcc[peernumber].addr.ip_port);
+        return sanctions_list_ip_banned(chat, &sanction->ban_info.ip_port);
     } else if (sanction->type == SA_OBSERVER) {
-        return sanctions_list_is_observer(chat, peernumber);
+        return sanctions_list_is_observer(chat, sanction->target_pk);
     }
 
     return false;
@@ -701,8 +700,7 @@ static bool sanctions_list_entry_exists(const GC_Chat *chat, uint32_t peernumber
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction,
-                             struct GC_Sanction_Creds *creds)
+int sanctions_list_add_entry(GC_Chat *chat, struct GC_Sanction *sanction, struct GC_Sanction_Creds *creds)
 {
     if (chat->moderation.num_sanctions >= MAX_GC_SANCTIONS)
         return -1;   // TODO: remove oldest entry and continue
@@ -712,7 +710,7 @@ int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanct
         return -1;
     }
 
-    if (sanctions_list_entry_exists(chat, peernumber, sanction))
+    if (sanctions_list_entry_exists(chat, sanction))
         return -1;
 
     /* Operate on a copy of the list in case something goes wrong. */
@@ -814,7 +812,7 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanc
     if (sanctions_list_sign_entry(chat, sanction) == -1)
         return -1;
 
-    if (sanctions_list_add_entry(chat, peernumber, sanction, NULL) == -1) {
+    if (sanctions_list_add_entry(chat, sanction, NULL) == -1) {
         fprintf(stderr, "sanctions_list_add_entry failed in sanctions_list_make_entry\n");
         return -1;
     }

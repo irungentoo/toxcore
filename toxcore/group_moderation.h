@@ -76,10 +76,10 @@ void mod_list_pack(const GC_Chat *chat, uint8_t *data);
  */
 void mod_list_make_hash(GC_Chat *chat, uint8_t *hash);
 
-/* Returns moderator list index for peernumber.
- * Returns -1 if peernumber is not in the list.
+/* Returns moderator list index for public_sig_key.
+ * Returns -1 if key is not in the list.
  */
-int mod_list_index_of_peernum(const GC_Chat *chat, uint32_t peernumber);
+int mod_list_index_of_sig_pk(const GC_Chat *chat, const uint8_t *public_sig_key);
 
 /* Removes moderator at index-th position in the moderator list.
  *
@@ -88,19 +88,19 @@ int mod_list_index_of_peernum(const GC_Chat *chat, uint32_t peernumber);
  */
 int mod_list_remove_index(GC_Chat *chat, size_t index);
 
-/* Removes peernumber from the moderator list.
+/* Removes public_sig_key from the moderator list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int mod_list_remove_peer(GC_Chat *chat, uint32_t peernumber);
+int mod_list_remove_entry(GC_Chat *chat, const uint8_t *public_sig_key);
 
-/* Adds peernumber to the moderator list.
+/* Adds a mod to the moderator list. mod_data must be GC_MOD_LIST_ENTRY_SIZE bytes.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int mod_list_add_peer(GC_Chat *chat, uint32_t peernumber);
+int mod_list_add_entry(GC_Chat *chat, const uint8_t *mod_data);
 
 /* Returns true if the public signature key belongs to a moderator or the founder */
 bool mod_list_verify_sig_pk(const GC_Chat *chat, const uint8_t *sig_pk);
@@ -156,8 +156,7 @@ int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction_Creds
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-int sanctions_list_add_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction,
-                             struct GC_Sanction_Creds *creds);
+int sanctions_list_add_entry(GC_Chat *chat, struct GC_Sanction *sanction, struct GC_Sanction_Creds *creds);
 
 /* Creates a new sanction entry for peernumber where type is one GROUP_SANCTION_TYPE.
  * New entry is signed and placed in the sanctions list.
@@ -173,8 +172,8 @@ uint16_t sanctions_list_num_banned(const GC_Chat *chat);
 /* Returns true if the IP address is in the ban list. */
 bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
 
-/* Returns true if peernumber is in the observer list. */
-bool sanctions_list_is_observer(const GC_Chat *chat, uint32_t peernumber);
+/* Returns true if public key is in the observer list. */
+bool sanctions_list_is_observer(const GC_Chat *chat, const uint8_t *public_key);
 
 /* Removes observer entry for public key from sanction list.
  * If creds is NULL we make new credentials (this should only be done by a moderator or founder)

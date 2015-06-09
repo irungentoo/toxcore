@@ -197,20 +197,20 @@ static int validate_gc_peer_role(const GC_Chat *chat, uint32_t peernumber)
             break;
         }
         case GR_MODERATOR: {
-            if (mod_list_index_of_peernum(chat, peernumber) == -1)
+            if (mod_list_index_of_sig_pk(chat, SIG_PK(chat->gcc[peernumber].addr.public_key)) == -1)
                 return -1;
 
             break;
         }
         case GR_USER: {
-            if (sanctions_list_is_observer(chat, peernumber))
+            if (sanctions_list_is_observer(chat, chat->gcc[peernumber].addr.public_key))
                 return -1;
 
             break;
         }
         case GR_OBSERVER: {
             /* Don't validate self as this is called when we don't have the sanctions list yet */
-            if (!sanctions_list_is_observer(chat, peernumber) && peernumber != 0)
+            if (!sanctions_list_is_observer(chat, chat->gcc[peernumber].addr.public_key) && peernumber != 0)
                 return -1;
 
             break;
@@ -2159,12 +2159,14 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
         return -1;
 
     uint8_t role = data[0];
+    uint32_t len_processed = 1;
 
     if (role == GR_FOUNDER || role >= GR_INVALID)
         return -1;
 
     uint8_t target_pk[ENC_PUBLIC_KEY];
-    memcpy(target_pk, data + 1, ENC_PUBLIC_KEY);
+    memcpy(target_pk, data + len_processed, ENC_PUBLIC_KEY);
+    len_processed += ENC_PUBLIC_KEY;
 
     int target_peernum = get_peernum_of_enc_pk(chat, target_pk);
 
@@ -2181,12 +2183,22 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
         if (chat->group[peernumber].role != GR_FOUNDER)
             return -1;
 
-        if (mod_list_remove_peer(chat, target_peernum) != 0) {
-            fprintf(stderr, "mod_list_remove_peer failed in handle_bc_peer_role a\n");
+        if (length < len_processed + SIG_PUBLIC_KEY)
+            return -1;
+
+        uint8_t target_sig_pk[SIG_PUBLIC_KEY];
+        memcpy(target_sig_pk, data + len_processed, SIG_PUBLIC_KEY);
+        len_processed += SIG_PUBLIC_KEY;
+
+        if (mod_list_remove_entry(chat, target_sig_pk) != 0) {
+            fprintf(stderr, "mod_list_remove_entry failed in handle_bc_peer_role a\n");
             return -1;
         }
+
+        chat->group[target_peernum].role = GR_USER;
     } else if (chat->group[target_peernum].role == GR_OBSERVER) {
-        uint16_t unpacked_len = sanctions_creds_unpack(&creds, data + 1 + ENC_PUBLIC_KEY, length - 1 - ENC_PUBLIC_KEY);
+        uint16_t unpacked_len = sanctions_creds_unpack(&creds, data + len_processed, length - len_processed);
+        len_processed += unpacked_len;
 
         if (unpacked_len != GC_SANCTIONS_CREDENTIALS_SIZE)
             return -1;
@@ -2195,25 +2207,37 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
             fprintf(stderr, "sanctions_list_remove_observer failed in handle_bc_peer_role a\n");
             return -1;
         }
+
+        chat->group[target_peernum].role = GR_USER;
     }
 
     if (role == GR_MODERATOR) {
         if (chat->group[peernumber].role != GR_FOUNDER)
             return -1;
 
-        if (mod_list_add_peer(chat, target_peernum) != 0) {
-            fprintf(stderr, "mod_list_add_peer failed in handle_bc_peer_role b\n");
+        if (length < len_processed + GC_MOD_LIST_ENTRY_SIZE)
+            return -1;
+
+        uint8_t mod_data[GC_MOD_LIST_ENTRY_SIZE];
+        memcpy(mod_data, data + len_processed, GC_MOD_LIST_ENTRY_SIZE);
+        len_processed += GC_MOD_LIST_ENTRY_SIZE;
+
+        if (mod_list_add_entry(chat, mod_data) != 0) {
+            fprintf(stderr, "mod_list_add_entry failed in handle_bc_peer_role b\n");
             return -1;
         }
     } else if (role == GR_OBSERVER) {
+        uint16_t unpacked_len = 0;
         struct GC_Sanction sanction;
 
-        if (sanctions_list_unpack(&sanction, &creds, 1, data + 1 + ENC_PUBLIC_KEY,
-                                  length - 1 - ENC_PUBLIC_KEY, NULL) != 1)
+        if (sanctions_list_unpack(&sanction, &creds, 1, data + len_processed, length - len_processed,
+                                  &unpacked_len) != 1)
             return -1;
 
-        if (sanctions_list_add_entry(chat, target_peernum, &sanction, &creds) == -1)
+        if (sanctions_list_add_entry(chat, &sanction, &creds) == -1)
             return -1;
+
+        len_processed += unpacked_len;
     }
 
     chat->group[target_peernum].role = role;
@@ -2225,7 +2249,7 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
     return 0;
 }
 
-/* Sends a peer role packet.
+/* Sends a peer role packet. TODO: split this spaghetti up into separate functions/packets.
  *
  * If peernumber's role has been set to GR_OBSERVER the packet will contain
  * the sanction data as well as the new sanctions list credentials.
@@ -2233,16 +2257,26 @@ static int handle_bc_peer_role(Messenger *m, int groupnumber, uint32_t peernumbe
  * If peernumber has been removed from the observer list the packet will contain
  * new credentials.
  *
+ * If peernumber has been added or removed from the moderation list the packet will contain required mod data.
+ *
  * Returns 0 on success.
  * Returns -1 on failure.
  */
 static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t role,
                              uint8_t prev_role)
 {
+    if (prev_role == role)
+        return -1;
+
     uint8_t data[MAX_GC_PACKET_SIZE];
     data[0] = role;
     memcpy(data + 1, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
     uint32_t length = 1 + ENC_PUBLIC_KEY;
+
+    if (prev_role == GR_MODERATOR) {
+        memcpy(data + length, SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY);
+        length += SIG_PUBLIC_KEY;
+    }
 
     if (role == GR_OBSERVER) {
         if (sanction == NULL)
@@ -2261,6 +2295,11 @@ static int send_gc_peer_role(GC_Chat *chat, uint32_t peernumber, struct GC_Sanct
             return -1;
 
         length += packed_len;
+    }
+
+    if (role == GR_MODERATOR) {
+        memcpy(data + length, SIG_PK(chat->gcc[peernumber].addr.public_key), SIG_PUBLIC_KEY);
+        length += SIG_PUBLIC_KEY;
     }
 
     return send_gc_broadcast_message(chat, data, length, GM_SET_ROLE);
@@ -2282,10 +2321,10 @@ int founder_gc_set_moderator(GC_Chat *chat, uint32_t peernumber, bool add_mod)
         if (chat->moderation.num_mods >= MAX_GC_MODERATORS)
             prune_gc_mod_list(chat);
 
-        if (mod_list_add_peer(chat, peernumber) == -1)
+        if (mod_list_add_entry(chat, SIG_PK(chat->gcc[peernumber].addr.public_key)) == -1)
             return -1;
     } else {
-        if (mod_list_remove_peer(chat, peernumber) == -1)
+        if (mod_list_remove_entry(chat, SIG_PK(chat->gcc[peernumber].addr.public_key)) == -1)
             return -1;
 
         if (update_gc_sanctions_list(chat,  SIG_PK(chat->gcc[peernumber].addr.public_key)) == -1)
@@ -2583,14 +2622,14 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
                                   length - 1 - ENC_PUBLIC_KEY, NULL) != 1)
             return -1;
 
-        if (sanctions_list_add_entry(chat, peernumber, &sanction, &creds) == -1) {
+        if (sanctions_list_add_entry(chat, &sanction, &creds) == -1) {
             fprintf(stderr, "sanctions_list_add_entry failed in remove peer\n");
             return -1;
         }
     }
 
     if (chat->group[target_peernum].role == GR_MODERATOR) {
-        if (mod_list_remove_peer(chat, target_peernum) == -1)
+        if (mod_list_remove_entry(chat, SIG_PK(chat->gcc[target_peernum].addr.public_key)) == -1)
             return -1;
     } else if (chat->group[target_peernum].role == GR_OBSERVER) {
         if (mod_event != MV_BAN) {
@@ -3002,7 +3041,7 @@ static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t 
     length += HASH_ID_BYTES;
     memcpy(data + length, chat->gcc[peernumber].session_public_key, ENC_PUBLIC_KEY);
     length += ENC_PUBLIC_KEY;
-    memcpy(data + length, SIG_SK(chat->self_public_key), SIG_PUBLIC_KEY);
+    memcpy(data + length, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
     length += SIG_PUBLIC_KEY;
     memcpy(data + length, &request_type, sizeof(uint8_t));
     length += sizeof(uint8_t);
