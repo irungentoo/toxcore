@@ -1983,9 +1983,7 @@ int tox_group_remove_ban_entry(Tox *tox, int groupnumber, uint16_t ban_id)
     return gc_remove_ban(chat, ban_id);
 }
 
-/* Use this function to determine how much memory to allocate for tox_group_get_ban_list().
- *
- * Returns the size of the ban list on success.
+/* Returns the number of ban list entries on success.
  * Returns -1 on failure.
  */
 int tox_group_get_ban_list_size(Tox *tox, int groupnumber)
@@ -1996,15 +1994,15 @@ int tox_group_get_ban_list_size(Tox *tox, int groupnumber)
     if (chat == NULL)
         return -1;
 
-    return sanctions_list_num_banned(chat) * sizeof(struct Tox_Group_Ban);
+    return sanctions_list_num_banned(chat);
 }
 
 /* Gets the group ban list.
  *
- * - tox_group_get_num_banned() should be used to allocate the required memory for ban_list.
+ * - tox_group_get_ban_list_size() should be used to allocate the required memory for ban_list.
  * - The caller is responsible for freeing ban_list.
  *
- * Returns the number of ban list entries on success.
+ * Returns 0 on success.
  * Returns -1 on failure.
  */
 int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_list)
@@ -2029,5 +2027,5 @@ int tox_group_get_ban_list(Tox *tox, int groupnumber, struct Tox_Group_Ban *ban_
         ++count;
     }
 
-    return count;
+    return 0;
 }
