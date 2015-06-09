@@ -2326,8 +2326,6 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data)
 {
-    uint32_t len;
-    uint16_t type;
     *(uint32_t *)data = DHT_STATE_COOKIE_GLOBAL;
     data += sizeof(uint32_t);
 
