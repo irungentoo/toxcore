@@ -140,6 +140,14 @@ uint16_t sanctions_creds_pack(struct GC_Sanction_Creds *creds, uint8_t *data, ui
  */
 uint16_t sanctions_creds_unpack(struct GC_Sanction_Creds *creds, const uint8_t *data, uint16_t length);
 
+/* Updates sanction list credentials: increment version, replace sig_pk with your own,
+ * update hash to reflect new sanction list, and sign new hash signature.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int sanctions_list_make_creds(GC_Chat *chat);
+
 /* Validates all sanctions list entries as well as the list itself.
  *
  * Returns 0 if all entries are valid.

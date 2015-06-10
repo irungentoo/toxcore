@@ -1359,6 +1359,9 @@ static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, co
         return send_peer_shared_state(chat, peernumber);
     else if (sstate_version > chat->shared_state.version)
         return send_gc_sync_request(chat, peernumber, 0);
+
+    if (screds_version < chat->moderation.sanctions_creds.version)
+        return send_peer_sanctions_list(chat, peernumber);
     else if (screds_version > chat->moderation.sanctions_creds.version)
         return send_gc_sync_request(chat, peernumber, 0);
 
@@ -1631,7 +1634,7 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     bytes_to_U32(&version, data + length - sizeof(uint32_t));
 
     if (version < chat->shared_state.version)
-        goto on_error;
+        return 0;
 
     uint8_t old_privacy_state = chat->shared_state.privacy_state;
 
@@ -1764,10 +1767,12 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
             chat->group[0].role = GR_USER;
     }
 
-
     return 0;
 
 on_error:
+    if (chat->moderation.sanctions_creds.version > 0)
+        return 0;
+
     gc_peer_delete(m, groupnumber, peernumber, NULL, 0);
 
     if (chat->shared_state.version == 0) {
@@ -2611,24 +2616,21 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
     if (chat->group[peernumber].role >= GR_USER)
         return -1;
 
+    uint8_t mod_event = data[0];
+
+    if (mod_event != MV_KICK && mod_event != MV_BAN)
+        return -1;
+
     uint8_t target_pk[ENC_PUBLIC_KEY];
     memcpy(target_pk, data + 1, ENC_PUBLIC_KEY);
 
     int target_peernum = get_peernum_of_enc_pk(chat, target_pk);
 
-    if (!peernumber_valid(chat, target_peernum))
-        return -1;
-
-    if (chat->group[target_peernum].role == GR_FOUNDER)
-        return -1;
-
-    if (chat->group[target_peernum].role <= GR_MODERATOR && chat->group[peernumber].role != GR_FOUNDER)
-        return -1;
-
-    uint8_t mod_event = data[0];
-
-    if (mod_event != MV_KICK && mod_event != MV_BAN)
-        return -1;
+    if (target_peernum != -1) {
+        /* Even if they're offline or this guard is removed a ban on a mod or founder won't work */
+        if (chat->group[target_peernum].role != GR_USER)
+            return -1;
+    }
 
     if (target_peernum == 0) {
         group_delete(c, chat);
@@ -2650,19 +2652,8 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
         }
     }
 
-    if (chat->group[target_peernum].role == GR_MODERATOR) {
-        if (mod_list_remove_entry(chat, SIG_PK(chat->gcc[target_peernum].addr.public_key)) == -1)
-            return -1;
-    } else if (chat->group[target_peernum].role == GR_OBSERVER) {
-        if (mod_event != MV_BAN) {
-            if (sanctions_creds_unpack(&creds, data + 1 + ENC_PUBLIC_KEY, length - 1 - ENC_PUBLIC_KEY)
-                                     != GC_SANCTIONS_CREDENTIALS_SIZE)
-                return -1;
-        }
-
-        if (sanctions_list_remove_observer(chat, chat->gcc[target_peernum].addr.public_key, &creds) == -1)
-            fprintf(stderr, "sanctions_list_remove_observer failed in remove peer handler\n");
-    }
+    if (target_peernum == -1)   /* we don't need to/can't kick a peer that isn't in our peerlist */
+        return 0;
 
     if (c->moderation)
         (*c->moderation)(m, groupnumber, peernumber, target_peernum, mod_event, c->moderation_userdata);
@@ -2676,7 +2667,7 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
 /* Sends a packet to instruct all peers to remove peernumber from their peerlist.
  *
  * If mod_event is MV_BAN an updated sanctions list along with new credentials will be added to
- * the ban list. Otherwise if send_new_creds is true new credentials will be sent.
+ * the ban list.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
@@ -2696,14 +2687,6 @@ static int send_gc_remove_peer(GC_Chat *chat, uint32_t peernumber, struct GC_San
             fprintf(stderr, "sanctions_list_pack failed in send_gc_remove_peer\n");
             return -1;
         }
-
-        length += packed_len;
-    } else if (send_new_creds) {
-        struct GC_Sanction_Creds creds;
-        uint16_t packed_len = sanctions_creds_pack(&creds, packet + length, sizeof(packet) - length);
-
-        if (packed_len != GC_SANCTIONS_CREDENTIALS_SIZE)
-            return -1;
 
         length += packed_len;
     }
@@ -4066,6 +4049,19 @@ static int init_gc_shared_state(GC_Chat *chat, uint8_t privacy_state, const uint
     return sign_gc_shared_state(chat);
 }
 
+/* Inits the sanctions list credentials. This should be called by the group founder on creation.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int init_gc_sanctions_creds(GC_Chat *chat)
+{
+    if (sanctions_list_make_creds(chat) == -1)
+        return -1;
+
+    return 0;
+}
+
 /* Creates a new group.
  *
  * Return groupnumber on success.
@@ -4092,6 +4088,11 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
     create_extended_keypair(chat->chat_public_key, chat->chat_secret_key);
 
     if (init_gc_shared_state(chat, privacy_state, group_name, length) == -1) {
+        group_delete(c, chat);
+        return -1;
+    }
+
+    if (init_gc_sanctions_creds(chat) == -1) {
         group_delete(c, chat);
         return -1;
     }

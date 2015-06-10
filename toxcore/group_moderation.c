@@ -459,7 +459,7 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-static int sanctions_list_make_creds(GC_Chat *chat)
+int sanctions_list_make_creds(GC_Chat *chat)
 {
     struct GC_Sanction_Creds old_creds;
     memcpy(&old_creds, &chat->moderation.sanctions_creds, sizeof(struct GC_Sanction_Creds));
