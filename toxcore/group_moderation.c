@@ -183,7 +183,10 @@ int mod_list_remove_entry(GC_Chat *chat, const uint8_t *public_sig_key)
     if (idx == -1)
         return -1;
 
-    return mod_list_remove_index(chat, idx);
+    if (mod_list_remove_index(chat, idx) == -1)
+        return -1;
+
+    return 0;
 }
 
 /* Adds a mod to the moderator list. mod_data must be GC_MOD_LIST_ENTRY_SIZE bytes.
@@ -459,17 +462,17 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
 static int sanctions_list_make_creds(GC_Chat *chat)
 {
     struct GC_Sanction_Creds old_creds;
-    memcpy(&old_creds, &chat->moderation.sanction_creds, sizeof(struct GC_Sanction_Creds));
+    memcpy(&old_creds, &chat->moderation.sanctions_creds, sizeof(struct GC_Sanction_Creds));
 
-    ++chat->moderation.sanction_creds.version;
+    ++chat->moderation.sanctions_creds.version;
 
-    memcpy(chat->moderation.sanction_creds.sig_pk, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
-    sanctions_list_make_hash(chat->moderation.sanctions, chat->moderation.sanction_creds.version,
-                             chat->moderation.num_sanctions, chat->moderation.sanction_creds.hash);
+    memcpy(chat->moderation.sanctions_creds.sig_pk, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
+    sanctions_list_make_hash(chat->moderation.sanctions, chat->moderation.sanctions_creds.version,
+                             chat->moderation.num_sanctions, chat->moderation.sanctions_creds.hash);
 
-    if (crypto_sign_detached(chat->moderation.sanction_creds.sig, NULL, chat->moderation.sanction_creds.hash,
+    if (crypto_sign_detached(chat->moderation.sanctions_creds.sig, NULL, chat->moderation.sanctions_creds.hash,
                              GC_MODERATION_HASH_SIZE, SIG_SK(chat->self_secret_key)) == -1) {
-        memcpy(&chat->moderation.sanction_creds, &old_creds, sizeof(struct GC_Sanction_Creds));
+        memcpy(&chat->moderation.sanctions_creds, &old_creds, sizeof(struct GC_Sanction_Creds));
         return -1;
     }
 
@@ -497,8 +500,8 @@ static int sanctions_creds_validate(const GC_Chat *chat, struct GC_Sanction *san
     if (memcmp(hash, creds->hash, GC_MODERATION_HASH_SIZE) != 0)
         return -1;
 
-    if ((creds->version < chat->moderation.sanction_creds.version)
-        && !(creds->version == 0 && chat->moderation.sanction_creds.version == UINT32_MAX))
+    if ((creds->version < chat->moderation.sanctions_creds.version)
+        && !(creds->version == 0 && chat->moderation.sanctions_creds.version == UINT32_MAX))
         return -1;
 
     if (crypto_sign_verify_detached(creds->sig, hash, GC_MODERATION_HASH_SIZE, creds->sig_pk) == -1)
@@ -545,7 +548,7 @@ static int sanctions_list_remove_index(GC_Chat *chat, size_t index, struct GC_Sa
             if (sanctions_creds_validate(chat, NULL, creds, 0) == -1)
                 return -1;
 
-            memcpy(&chat->moderation.sanction_creds, creds, sizeof(struct GC_Sanction_Creds));
+            memcpy(&chat->moderation.sanctions_creds, creds, sizeof(struct GC_Sanction_Creds));
         }
 
         sanctions_list_cleanup(chat);
@@ -578,7 +581,7 @@ static int sanctions_list_remove_index(GC_Chat *chat, size_t index, struct GC_Sa
             return -1;
         }
 
-        memcpy(&chat->moderation.sanction_creds, creds, sizeof(struct GC_Sanction_Creds));
+        memcpy(&chat->moderation.sanctions_creds, creds, sizeof(struct GC_Sanction_Creds));
     }
 
     sanctions_list_cleanup(chat);
@@ -739,7 +742,7 @@ int sanctions_list_add_entry(GC_Chat *chat, struct GC_Sanction *sanction, struct
             return -1;
         }
 
-        memcpy(&chat->moderation.sanction_creds, creds, sizeof(struct GC_Sanction_Creds));
+        memcpy(&chat->moderation.sanctions_creds, creds, sizeof(struct GC_Sanction_Creds));
     }
 
     sanctions_list_cleanup(chat);

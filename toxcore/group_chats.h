@@ -112,7 +112,8 @@ enum {
     GM_PEER_EXIT,
     GM_REMOVE_PEER,
     GM_REMOVE_BAN,
-    GM_SET_ROLE
+    GM_SET_MOD,
+    GM_SET_OBSERVER
 } GROUP_BROADCAST_TYPE;
 
 enum {
@@ -129,7 +130,7 @@ struct GC_Sanction_Creds {
 
 typedef struct GC_Moderation {
     struct GC_Sanction *sanctions;
-    struct GC_Sanction_Creds sanction_creds;
+    struct GC_Sanction_Creds sanctions_creds;
     uint16_t    num_sanctions;
 
     uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
