@@ -47,7 +47,7 @@
 #include "util.h"
 
 /* The timeout after which a node is discarded completely. */
-#define KILL_NODE_TIMEOUT 300
+#define KILL_NODE_TIMEOUT (BAD_NODE_TIMEOUT + PING_INTERVAL)
 
 /* Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 20
