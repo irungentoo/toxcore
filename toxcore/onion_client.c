@@ -209,8 +209,11 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
  */
 static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
 {
-    if (pathnum >= NUMBER_ONION_PATHS)
+    if (pathnum == ~0) {
         pathnum = rand() % NUMBER_ONION_PATHS;
+    } else {
+        pathnum = pathnum % NUMBER_ONION_PATHS;
+    }
 
     if ((onion_paths->last_path_success[pathnum] + ONION_PATH_TIMEOUT < onion_paths->last_path_used[pathnum]
             && onion_paths->last_path_used_times[pathnum] >= ONION_PATH_MAX_NO_RESPONSE_USES)
@@ -277,7 +280,7 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
             }
         }
 
-        return path_num % NUMBER_ONION_PATHS;
+        return path_num;
     }
 
     return ~0;
