@@ -206,11 +206,16 @@ static int unwrap_gca_packet(const uint8_t *self_public_key, const uint8_t *self
     return len;
 }
 
-/* Handle all encrypt procedures */
+/* Encrypts data of length and adds a plaintext header containing the packet type,
+ * public encryption key of the sender, and the nonce used to encrypt data.
+ */
 static int wrap_gca_packet(const uint8_t *send_public_key, const uint8_t *send_secret_key,
-                           const uint8_t *recv_public_key, uint8_t *packet, const uint8_t *data,
-                           uint32_t length, uint8_t packet_type)
+                           const uint8_t *recv_public_key, uint8_t *packet, uint32_t packet_size,
+                           const uint8_t *data, uint32_t length, uint8_t packet_type)
 {
+    if (packet_size < length + GCA_HEADER_SIZE + crypto_box_MACBYTES)
+        return -1;
+
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
@@ -225,8 +230,8 @@ static int wrap_gca_packet(const uint8_t *send_public_key, const uint8_t *send_s
     packet[0] = packet_type;
     memcpy(packet + 1, send_public_key, ENC_PUBLIC_KEY);
     memcpy(packet + 1 + ENC_PUBLIC_KEY, nonce, crypto_box_NONCEBYTES);
-
     memcpy(packet + GCA_HEADER_SIZE, encrypt, len);
+
     return GCA_HEADER_SIZE + len;
 }
 
@@ -241,9 +246,9 @@ static int dispatch_packet_announce_request(GC_Announce *announce, const uint8_t
     uint32_t nclosest = get_close_nodes(announce->dht, chat_id, dht_nodes, 0, 1, 1);
     nclosest = MIN(MAX_GCA_SENT_NODES, nclosest);
 
-    uint8_t packet[length + GCA_HEADER_SIZE];
+    uint8_t packet[length + GCA_HEADER_SIZE + crypto_box_MACBYTES];
     uint32_t i;
-    int sent = 0;
+    uint16_t sent = 0;
 
     /* Relay announce request to all nclosest nodes */
     for (i = 0; i < nclosest; i++) {
@@ -251,8 +256,8 @@ static int dispatch_packet_announce_request(GC_Announce *announce, const uint8_t
             continue;
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
-                                            dht_nodes[i].public_key, packet, data, length, NET_PACKET_GCA_ANNOUNCE);
-
+                                            dht_nodes[i].public_key, packet, sizeof(packet), data, length,
+                                            NET_PACKET_GCA_ANNOUNCE);
         if (packet_length == -1)
             continue;
 
@@ -283,9 +288,9 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, const uint8_
     uint32_t nclosest = get_close_nodes(announce->dht, chat_id, dht_nodes, 0, 1, 1);
     nclosest = MIN(MAX_GCA_SENT_NODES, nclosest);
 
-    uint8_t packet[length + GCA_HEADER_SIZE];
+    uint8_t packet[length + GCA_HEADER_SIZE + crypto_box_MACBYTES];
     uint32_t i;
-    int sent = 0;
+    uint16_t sent = 0;
 
     for (i = 0; i < nclosest; i++) {
         if (!self) {
@@ -294,7 +299,8 @@ static int dispatch_packet_get_nodes_request(GC_Announce* announce, const uint8_
         }
 
         int packet_length = wrap_gca_packet(announce->dht->self_public_key, announce->dht->self_secret_key,
-                                            dht_nodes[i].public_key, packet, data, length, NET_PACKET_GCA_GET_NODES);
+                                            dht_nodes[i].public_key, packet, sizeof(packet), data, length,
+                                            NET_PACKET_GCA_GET_NODES);
         if (packet_length == -1)
             continue;
 
@@ -631,9 +637,9 @@ static int send_gca_get_nodes_response(DHT *dht, uint64_t request_id, IP_Port ip
     uint32_t plain_length = 1 + sizeof(uint32_t) + nodes_len + RAND_ID_SIZE;
     U64_to_bytes(data + plain_length - RAND_ID_SIZE, request_id);
 
-    uint8_t packet[plain_length + RAND_ID_SIZE];
-    int packet_length = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, receiver_pk, packet, data,
-                                        plain_length, NET_PACKET_GCA_SEND_NODES);
+    uint8_t packet[plain_length + RAND_ID_SIZE + GCA_HEADER_SIZE + crypto_box_MACBYTES];
+    int packet_length = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, receiver_pk, packet,
+                                        sizeof(packet), data, plain_length, NET_PACKET_GCA_SEND_NODES);
     if (packet_length == -1) {
         fprintf(stderr, "wrap failed in send_gca_get_nodes_response\n");
         return -1;
@@ -829,7 +835,7 @@ static int send_gca_ping_response(DHT *dht, IP_Port ipp, const uint8_t *data, co
     memcpy(response + 1, data + 1, GCA_PING_RESPONSE_PLAIN_SIZE - 1);
 
     uint8_t packet[GCA_PING_RESPONSE_DHT_SIZE];
-    int len = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, rcv_pk, packet,
+    int len = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, rcv_pk, packet, sizeof(packet),
                               response, GCA_PING_RESPONSE_PLAIN_SIZE, NET_PACKET_GCA_PING_RESPONSE);
     if (len == -1)
         return -1;
@@ -888,8 +894,8 @@ static int send_gca_ping_request(DHT *dht, GC_Announce_Node *node, uint64_t ping
     memcpy(data + 1, &ping_id, RAND_ID_SIZE);
 
     uint8_t packet[GCA_PING_REQUEST_DHT_SIZE];
-    int len = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, node->public_key, packet, data,
-                              GCA_PING_REQUEST_PLAIN_SIZE, NET_PACKET_GCA_PING_REQUEST);
+    int len = wrap_gca_packet(dht->self_public_key, dht->self_secret_key, node->public_key, packet,
+                              sizeof(packet), data, GCA_PING_REQUEST_PLAIN_SIZE, NET_PACKET_GCA_PING_REQUEST);
     if (len == -1)
         return -1;
 
