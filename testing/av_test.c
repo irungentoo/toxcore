@@ -70,8 +70,8 @@
 #define YUV2B(Y, U, V) CLIP(( 298 * C(Y) + 516 * D(U)              + 128) >> 8)
 
 
-#define TEST_TRANSFER_A 0
-#define TEST_TRANSFER_V 1
+#define TEST_TRANSFER_A 1
+#define TEST_TRANSFER_V 0
 
 
 typedef struct {
@@ -134,14 +134,13 @@ void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, vo
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v, uint8_t const *a,
-                                    int32_t ystride, int32_t ustride, int32_t vstride, int32_t astride,
+                                    uint8_t const *y, uint8_t const *u, uint8_t const *v,
+                                    int32_t ystride, int32_t ustride, int32_t vstride,
                                     void *user_data)
 {
     ystride = abs(ystride);
     ustride = abs(ustride);
     vstride = abs(vstride);
-    astride = abs(astride);
     
     uint16_t *img_data = malloc(height * width * 6);
     
@@ -177,9 +176,9 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
                                     void *user_data)
 {
     CallControl* cc = user_data;
-    frame* f = malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t));
-    memcpy(f->data, pcm, sample_count * sizeof(int16_t));
-    f->size = sample_count/channels;
+    frame* f = malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t) * channels);
+    memcpy(f->data, pcm, sample_count * sizeof(int16_t) * channels);
+    f->size = sample_count;
     
     pthread_mutex_lock(cc->arb_mutex);
     free(rb_write(cc->arb, f));
@@ -225,15 +224,15 @@ void initialize_tox(Tox** bootstrap, ToxAV** AliceAV, CallControl* AliceCC, ToxA
         TOX_ERR_NEW error;
         
         opts.start_port = 33445;
-        *bootstrap = tox_new(&opts, NULL, 0, &error);
+        *bootstrap = tox_new(&opts, &error);
         assert(error == TOX_ERR_NEW_OK);
         
         opts.start_port = 33455;
-        Alice = tox_new(&opts, NULL, 0, &error);
+        Alice = tox_new(&opts, &error);
         assert(error == TOX_ERR_NEW_OK);
         
         opts.start_port = 33465;
-        Bob = tox_new(&opts, NULL, 0, &error);
+        Bob = tox_new(&opts, &error);
         assert(error == TOX_ERR_NEW_OK);
     }
     
@@ -369,7 +368,7 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     }
     
     
-    int rc = toxav_video_send_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL, NULL);
+    int rc = toxav_video_send_frame(av, friend_number, img->width, img->height, planes[0], planes[1], planes[2], NULL);
     free(planes[0]);
     free(planes[1]);
     free(planes[2]);

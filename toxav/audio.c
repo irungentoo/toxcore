@@ -181,8 +181,8 @@ void ac_do(ACSession* ac)
         } else if (ac->acb.first) {
             ac->last_packet_frame_duration = (rc * 1000) / ac->last_packet_sampling_rate;
             
-            ac->acb.first(ac->av, ac->friend_number, tmp, rc * ac->last_packet_channel_count,
-                          ac->last_packet_channel_count, ac->last_packet_sampling_rate, ac->acb.second);
+            ac->acb.first(ac->av, ac->friend_number, tmp, rc, ac->last_packet_channel_count, 
+                          ac->last_packet_sampling_rate, ac->acb.second);
         }
         
         return;

@@ -66,8 +66,8 @@ void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, vo
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
                                     uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v, uint8_t const *a, 
-                                    int32_t ystride, int32_t ustride, int32_t vstride, int32_t astride,
+                                    uint8_t const *y, uint8_t const *u, uint8_t const *v,
+                                    int32_t ystride, int32_t ustride, int32_t vstride,
                                     void *user_data)
 {
     (void) av;
