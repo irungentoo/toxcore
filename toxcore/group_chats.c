@@ -572,9 +572,12 @@ static int unpack_gc_peer(GC_GroupPeer *peer, const uint8_t *data, uint16_t leng
  *
  * Returns packed data length.
  */
-static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared_state)
+static uint16_t pack_gc_shared_state(uint8_t *data, uint16_t length, const GC_SharedState *shared_state)
 {
-    uint32_t packed_len = 0;
+    if (length < GC_PACKED_SHARED_STATE_SIZE)
+        return 0;
+
+    uint16_t packed_len = 0;
 
     memcpy(data + packed_len, shared_state->founder_public_key, EXT_PUBLIC_KEY);
     packed_len += EXT_PUBLIC_KEY;
@@ -598,14 +601,16 @@ static uint32_t pack_gc_shared_state(uint8_t *data, const GC_SharedState *shared
     return packed_len;
 }
 
-/* Unpacks shared state data into shared_state.
+/* Unpacks shared state data into shared_state. data must contain at least GC_PACKED_SHARED_STATE_SIZE bytes.
  *
- * Returns the length of processed data on success.
- * Returns -1 on failure.
+ * Returns the length of processed data.
  */
-static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8_t *data)
+static uint16_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8_t *data, uint16_t length)
 {
-    uint32_t len_processed = 0;
+    if (length < GC_PACKED_SHARED_STATE_SIZE)
+        return 0;
+
+    uint16_t len_processed = 0;
 
     memcpy(shared_state->founder_public_key, data + len_processed, EXT_PUBLIC_KEY);
     len_processed += EXT_PUBLIC_KEY;
@@ -635,16 +640,21 @@ static uint32_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
  * data must have room for at least GC_SHARED_STATE_ENC_PACKET_SIZE bytes.
  *
  * Returns packet length on success.
- * Returns 0 on failure.
+ * Returns -1 on failure.
  */
-static uint32_t make_gc_shared_state_packet(const GC_Chat *chat, uint8_t *data)
+static int make_gc_shared_state_packet(const GC_Chat *chat, uint8_t *data, uint16_t length)
 {
+    if (length < GC_SHARED_STATE_ENC_PACKET_SIZE)
+        return -1;
+
     U32_to_bytes(data, chat->self_public_key_hash);
     memcpy(data + HASH_ID_BYTES, chat->shared_state_sig, SIGNATURE_SIZE);
-    uint32_t packed_len = pack_gc_shared_state(data + HASH_ID_BYTES + SIGNATURE_SIZE, &chat->shared_state);
+    uint16_t packed_len = pack_gc_shared_state(data + HASH_ID_BYTES + SIGNATURE_SIZE,
+                                               length - HASH_ID_BYTES - SIGNATURE_SIZE,
+                                               &chat->shared_state);
 
     if (packed_len != GC_PACKED_SHARED_STATE_SIZE)
-        return 0;
+        return -1;
 
     return HASH_ID_BYTES + SIGNATURE_SIZE + packed_len;
 }
@@ -664,7 +674,7 @@ static int sign_gc_shared_state(GC_Chat *chat)
         ++chat->shared_state.version;
 
     uint8_t shared_state[GC_PACKED_SHARED_STATE_SIZE];
-    uint32_t packed_len = pack_gc_shared_state(shared_state, &chat->shared_state);
+    uint16_t packed_len = pack_gc_shared_state(shared_state, sizeof(shared_state), &chat->shared_state);
 
     if (packed_len != GC_PACKED_SHARED_STATE_SIZE) {
         --chat->shared_state.version;
@@ -737,12 +747,13 @@ static int unwrap_group_packet(const uint8_t *shared_key, uint8_t *data, uint64_
  * Returns -1 on failure.
  */
 static int wrap_group_packet(const uint8_t *self_pk, const uint8_t *shared_key, uint8_t *packet,
-                             const uint8_t *data, uint32_t length, uint64_t message_id, uint8_t packet_type,
-                             uint32_t chat_id_hash, uint8_t packet_id)
+                             uint32_t packet_size, const uint8_t *data, uint32_t length, uint64_t message_id,
+                             uint8_t packet_type, uint32_t chat_id_hash, uint8_t packet_id)
 {
     uint16_t padding_len = GC_PACKET_PADDING_LENGTH(length);
 
-    if (length + padding_len + MIN_GC_LOSSLESS_PACKET_SIZE > MAX_GC_PACKET_SIZE)
+    if (length + padding_len + crypto_box_MACBYTES + 1 + HASH_ID_BYTES + ENC_PUBLIC_KEY
+               + crypto_box_NONCEBYTES > packet_size)
         return -1;
 
     uint8_t plain[MAX_GC_PACKET_SIZE];
@@ -793,8 +804,8 @@ static int send_lossy_group_packet(const GC_Chat *chat, uint32_t peernumber, con
         return -1;
 
     uint8_t packet[MAX_GC_PACKET_SIZE];
-    int len = wrap_group_packet(chat->self_public_key, chat->gcc[peernumber].shared_key, packet, data,
-                                length, 0, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSY);
+    int len = wrap_group_packet(chat->self_public_key, chat->gcc[peernumber].shared_key, packet, sizeof(packet),
+                                data, length, 0, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSY);
     if (len == -1) {
         fprintf(stderr, "wrap_group_packet failed (type: %u, len: %d)\n", packet_type, len);
         return -1;
@@ -817,8 +828,8 @@ static int send_lossless_group_packet(GC_Chat *chat, uint32_t peernumber, const 
 
     uint64_t message_id = chat->gcc[peernumber].send_message_id;
     uint8_t packet[MAX_GC_PACKET_SIZE];
-    int len = wrap_group_packet(chat->self_public_key, chat->gcc[peernumber].shared_key, packet, data,
-                                length, message_id, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSLESS);
+    int len = wrap_group_packet(chat->self_public_key, chat->gcc[peernumber].shared_key, packet, sizeof(packet),
+                                data, length, message_id, packet_type, chat->chat_id_hash, NET_PACKET_GC_LOSSLESS);
     if (len == -1) {
         fprintf(stderr, "wrap_group_packet failed (type: %u, len: %d)\n", packet_type, len);
         return -1;
@@ -1568,7 +1579,7 @@ static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber)
         return -1;
 
     uint8_t packet[GC_SHARED_STATE_ENC_PACKET_SIZE];
-    uint32_t length = make_gc_shared_state_packet(chat, packet);
+    int length = make_gc_shared_state_packet(chat, packet, sizeof(packet));
 
     if (length != GC_SHARED_STATE_ENC_PACKET_SIZE)
         return -1;
@@ -1584,7 +1595,7 @@ static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber)
 static int broadcast_gc_shared_state(GC_Chat *chat)
 {
     uint8_t packet[GC_SHARED_STATE_ENC_PACKET_SIZE];
-    uint32_t packet_len = make_gc_shared_state_packet(chat, packet);
+    int packet_len = make_gc_shared_state_packet(chat, packet, sizeof(packet));
 
     if (packet_len != GC_SHARED_STATE_ENC_PACKET_SIZE)
         return -1;
@@ -1625,6 +1636,7 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     memcpy(signature, data, SIGNATURE_SIZE);
 
     const uint8_t *ss_data = data + SIGNATURE_SIZE;
+    uint16_t ss_length = length - SIGNATURE_SIZE;
 
     if (crypto_sign_verify_detached(signature, ss_data, GC_PACKED_SHARED_STATE_SIZE,
                                     SIG_PK(chat->chat_public_key)) == -1)
@@ -1638,7 +1650,9 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
 
     uint8_t old_privacy_state = chat->shared_state.privacy_state;
 
-    unpack_gc_shared_state(&chat->shared_state, ss_data);
+    if (unpack_gc_shared_state(&chat->shared_state, ss_data, ss_length) == 0)
+        return -1;
+
     memcpy(chat->shared_state_sig, signature, SIGNATURE_SIZE);
 
     if (old_privacy_state != chat->shared_state.privacy_state)
@@ -1789,12 +1803,12 @@ on_error:
 /* Makes a mod_list packet.
  *
  * Returns length of packet data on success.
- * Returns 0 if data buffer is too small.
+ * Returns -1 on failure.
  */
-static uint32_t make_gc_mod_list_packet(const GC_Chat *chat, uint8_t *data, uint32_t maxlen, size_t mod_list_size)
+static int make_gc_mod_list_packet(const GC_Chat *chat, uint8_t *data, uint32_t maxlen, size_t mod_list_size)
 {
     if (maxlen < HASH_ID_BYTES + sizeof(uint16_t) + mod_list_size)
-        return 0;
+        return -1;
 
     U32_to_bytes(data, chat->self_public_key_hash);
     U16_to_bytes(data + HASH_ID_BYTES, chat->moderation.num_mods);
@@ -1819,7 +1833,7 @@ static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber)
     uint32_t length = HASH_ID_BYTES + sizeof(uint16_t) + mod_list_size;
     uint8_t packet[length];
 
-    uint32_t packet_len = make_gc_mod_list_packet(chat, packet, sizeof(packet), mod_list_size);
+    int packet_len = make_gc_mod_list_packet(chat, packet, sizeof(packet), mod_list_size);
 
     if (packet_len != length)
         return -1;
@@ -1829,7 +1843,7 @@ static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber)
 
 /* Makes a sanctions list packet.
  *
- * Returns 0 on success.
+ * Returns packet length on success.
  * Returns -1 on failure.
  */
 static int make_gc_sanctions_list_packet(GC_Chat *chat, uint8_t *data, uint32_t maxlen)
@@ -1912,7 +1926,7 @@ static int broadcast_gc_mod_list(GC_Chat *chat)
     uint32_t length = HASH_ID_BYTES + sizeof(uint16_t) + mod_list_size;
     uint8_t packet[length];
 
-    uint32_t packet_len = make_gc_mod_list_packet(chat, packet, sizeof(packet), mod_list_size);
+    int packet_len = make_gc_mod_list_packet(chat, packet, sizeof(packet), mod_list_size);
 
     if (packet_len != length)
         return -1;
@@ -3011,8 +3025,12 @@ static int uwrap_group_handshake_packet(const uint8_t *self_sk, uint8_t *sender_
  * Returns -1 on failure.
  */
 static int wrap_group_handshake_packet(const uint8_t *self_pk, const uint8_t *self_sk, const uint8_t *sender_pk,
-                                       uint8_t *packet, const uint8_t *data, uint16_t length, uint32_t chat_id_hash)
+                                       uint8_t *packet, uint32_t packet_size, const uint8_t *data,
+                                       uint16_t length, uint32_t chat_id_hash)
 {
+    if (packet_size < GC_ENCRYPTED_HS_PACKET_SIZE)
+        return -1;
+
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
@@ -3057,8 +3075,8 @@ static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t 
 
     uint8_t packet[GC_ENCRYPTED_HS_PACKET_SIZE];
     int enc_len = wrap_group_handshake_packet(chat->self_public_key, chat->self_secret_key,
-                                              chat->gcc[peernumber].addr.public_key, packet, data, length,
-                                              chat->chat_id_hash);
+                                              chat->gcc[peernumber].addr.public_key, packet, sizeof(packet),
+                                              data, length, chat->chat_id_hash);
     if (enc_len != GC_ENCRYPTED_HS_PACKET_SIZE)
         return -1;
 

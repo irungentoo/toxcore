@@ -258,8 +258,7 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 
         /* if this occurrs less than once per second this won't be reliable */
         if (delta > 1 && POWER_OF_2(delta)) {
-            sendpacket(chat->net, gconn->addr.ip_port, gconn->send_ary[i].data,
-                       gconn->send_ary[i].data_length);
+            sendpacket(chat->net, gconn->addr.ip_port, gconn->send_ary[i].data, gconn->send_ary[i].data_length);
             continue;
         }
 

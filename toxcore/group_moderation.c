@@ -74,7 +74,7 @@ int mod_list_unpack(GC_Chat *chat, const uint8_t *data, uint32_t length, uint16_
 }
 
 /* Packs moderator list into data.
- * data must have room for num_mods * SIG_PUBLIC_KEY bytes..
+ * data must have room for num_mods * GC_MOD_LIST_ENTRY_SIZE bytes.
  */
 void mod_list_pack(const GC_Chat *chat, uint8_t *data)
 {
