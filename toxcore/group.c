@@ -1514,7 +1514,7 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
 
     const uint8_t *d = data;
 
-    while ((length - (d - data)) >= sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2 + 1) {
+    while ((unsigned int)(length - (d - data)) >= sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2 + 1) {
         uint16_t peer_num;
         memcpy(&peer_num, d, sizeof(peer_num));
         peer_num = ntohs(peer_num);
