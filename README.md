@@ -40,4 +40,9 @@ The goal of this project is to create a configuration-free P2P Skype replacement
 
 Additional developer documentation can be found at [Libtoxcore.so](https://libtoxcore.so/)
 
+### TIP4COMMIT
+
+Next accepted commit will receive a Bitcoin donation of:
+[![tip for next commit](http://tip4commit.com/projects/599.svg)](http://tip4commit.com/projects/599)
+
 [String]: https://en.wikipedia.org/wiki/String_(computer_science)
