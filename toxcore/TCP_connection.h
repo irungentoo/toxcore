@@ -81,6 +81,9 @@ typedef struct {
 typedef struct {
     DHT *dht;
 
+    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+
     TCP_Connection_to *connections;
     uint32_t connections_length; /* Length of connections array. */
 
@@ -223,7 +226,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
  */
 unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
-TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info);
+TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info);
 void do_tcp_connections(TCP_Connections *tcp_c);
 void kill_tcp_connections(TCP_Connections *tcp_c);
 

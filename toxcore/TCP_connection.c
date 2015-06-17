@@ -691,7 +691,7 @@ static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connec
     uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
     memcpy(relay_pk, tcp_con->connection->public_key, crypto_box_PUBLICKEYBYTES);
     kill_TCP_connection(tcp_con->connection);
-    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->dht->self_public_key, tcp_c->dht->self_secret_key,
+    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key,
                           &tcp_c->proxy_info);
 
     if (!tcp_con->connection) {
@@ -776,8 +776,8 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
     if (tcp_con->status != TCP_CONN_SLEEPING)
         return -1;
 
-    tcp_con->connection = new_TCP_connection(tcp_con->ip_port, tcp_con->relay_pk, tcp_c->dht->self_public_key,
-                          tcp_c->dht->self_secret_key, &tcp_c->proxy_info);
+    tcp_con->connection = new_TCP_connection(tcp_con->ip_port, tcp_con->relay_pk, tcp_c->self_public_key,
+                          tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (!tcp_con->connection) {
         kill_tcp_relay_connection(tcp_c, tcp_connections_number);
@@ -1025,7 +1025,7 @@ static int add_tcp_relay(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
     TCP_con *tcp_con = &tcp_c->tcp_connections[tcp_connections_number];
 
 
-    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->dht->self_public_key, tcp_c->dht->self_secret_key,
+    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key,
                           &tcp_c->proxy_info);
 
     if (!tcp_con->connection)
@@ -1237,9 +1237,9 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status)
     return 0;
 }
 
-TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info)
+TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info)
 {
-    if (dht == NULL)
+    if (secret_key == NULL)
         return NULL;
 
     TCP_Connections *temp = calloc(1, sizeof(TCP_Connections));
@@ -1247,7 +1247,8 @@ TCP_Connections *new_tcp_connections(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
-    temp->dht = dht;
+    memcpy(temp->self_secret_key, secret_key, crypto_box_SECRETKEYBYTES);
+    crypto_scalarmult_curve25519_base(temp->self_public_key, temp->self_secret_key);
     temp->proxy_info = *proxy_info;
 
     return temp;

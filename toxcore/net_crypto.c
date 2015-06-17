@@ -2392,7 +2392,7 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
-    temp->tcp_c = new_tcp_connections(dht, proxy_info);
+    temp->tcp_c = new_tcp_connections(dht->self_secret_key, proxy_info);
 
     if (temp->tcp_c == NULL) {
         free(temp);
