@@ -2,6 +2,9 @@
 
 - [Installation](#installation)
   - [Unix like](#unix)
+    - [Quick install](#quick-install)
+    - [Build manually](#build-manually)
+      - [Compile toxcore](#compile-toxcore)
   - [OS X](#osx)
     - [Homebrew](#homebrew)
     - [Non-Homebrew](#non-homebrew)
@@ -24,14 +27,31 @@
 <a name="unix" />
 ###Most Unix like OSes:
 
+#### Quick install:
+
+On Gentoo:
+```
+# layman -f && layman -a tox-overlay && emerge net-libs/tox
+```
+
+And you're done `:)`</br>
+If you happen to run some other distro which isn't made for compiling, there are steps below:
+
+#### Build manually
+
 Build dependencies:
 
 Note: package fetching commands may vary by OS.
 
-On Ubuntu:
+On Ubuntu `< 15.04` / Debian `< 8`:
 
 ```bash
 sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
+```
+
+On Ubuntu `>= 15.04` / Debian `>= 8`:
+```bash
+sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm libsodium13 libsodium-dev
 ```
 
 On Fedora:
@@ -55,7 +75,7 @@ Note, if you install from ports select NaCl for performance, and sodium if you w
 
 **For A/V support, also install the dependences listed in the [libtoxav] (#libtoxav) section.**
 
-You should get and install [libsodium](https://github.com/jedisct1/libsodium):
+You should get and install [libsodium](https://github.com/jedisct1/libsodium). If you have installed `libsodium` from repo, ommit this step, and jump directly to [compiling toxcore](#compile-toxcore):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
@@ -88,7 +108,9 @@ echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
 sudo ldconfig
 ```
 
-Then clone this repo and generate makefile:
+##### Compile toxcore
+
+Then clone this repo, generate makefile, and install `toxcore` system-wide:
 ```bash
 git clone git://github.com/irungentoo/toxcore.git
 cd toxcore

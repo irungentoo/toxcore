@@ -109,7 +109,7 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernum);
 void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber);
 
 /* Returns a new unique TCP connection id for peers. */
-int gcc_new_connection_id(const GC_Chat *chat)
+int gcc_new_connection_id(const GC_Chat *chat);
 
 /* Returns true if we have a direct connection with this group connection */
 bool gcc_connection_is_direct(const GC_Connection *gconn);

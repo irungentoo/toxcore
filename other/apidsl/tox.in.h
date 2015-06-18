@@ -516,6 +516,8 @@ static class options {
  *   NULL, the default options are used.
  *
  * @see $iterate for the event loop.
+ *
+ * @return A new Tox instance pointer on success or NULL on failure.
  */
 static this new(const options_t *options) {
   NULL,
@@ -609,13 +611,8 @@ uint8_t[size] savedata {
  * Sends a "get nodes" request to the given bootstrap node with IP, port, and
  * public key to setup connections.
  *
- * This function will attempt to connect to the node using UDP and TCP at the
- * same time.
- *
- * Tox will use the node as a TCP relay in case ${options.this.udp_enabled} was
- * false, and also to connect to friends that are in TCP-only mode. Tox will
- * also use the TCP connection when NAT hole punching is slow, and later switch
- * to UDP if hole punching succeeds.
+ * This function will attempt to connect to the node using UDP. You must use 
+ * this function even if ${options.this.udp_enabled} was set to false.
  *
  * @param address The hostname or IP address (IPv4 or IPv6) of the node.
  * @param port The port on the host on which the bootstrap Tox instance is
@@ -1510,7 +1507,7 @@ namespace file {
      */
     DATA,
     /**
-     * Avatar filename. This consists of $hash(image).
+     * Avatar file_id. This consists of $hash(image).
      * Avatar data. This consists of the image data.
      *
      * Avatars can be sent at any time the client wishes. Generally, a client will
@@ -1654,6 +1651,7 @@ namespace file {
 
 
   error for get {
+    NULL,
     /**
      * The friend_number passed did not designate a valid friend.
      */

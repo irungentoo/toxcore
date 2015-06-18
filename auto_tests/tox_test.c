@@ -286,6 +286,16 @@ void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *use
 
 START_TEST(test_one)
 {
+    {
+        TOX_ERR_OPTIONS_NEW o_err;
+        struct Tox_Options *o1 = tox_options_new(&o_err);
+        struct Tox_Options o2;
+        tox_options_default(&o2);
+        ck_assert_msg(o_err == TOX_ERR_OPTIONS_NEW_OK, "tox_options_new wrong error");
+        ck_assert_msg(memcmp(o1, &o2, sizeof(struct Tox_Options)) == 0, "tox_options_new error");
+        tox_options_free(o1);
+    }
+
     Tox *tox1 = tox_new(0, 0);
     Tox *tox2 = tox_new(0, 0);
 
@@ -356,6 +366,23 @@ START_TEST(test_one)
     uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
     tox_self_get_name(tox2, new_name);
     ck_assert_msg(memcmp(name, new_name, TOX_MAX_NAME_LENGTH) == 0, "Wrong name");
+
+    uint8_t sk[TOX_SECRET_KEY_SIZE];
+    tox_self_get_secret_key(tox2, sk);
+    tox_kill(tox2);
+
+    tox_options_default(&options);
+    options.savedata_type = TOX_SAVEDATA_TYPE_SECRET_KEY;
+    options.savedata_data = sk;
+    options.savedata_length = sizeof(sk);
+    tox2 = tox_new(&options, &err_n);
+    ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
+    uint8_t address3[TOX_ADDRESS_SIZE];
+    tox_self_get_address(tox2, address3);
+    ck_assert_msg(memcmp(address3, address, TOX_PUBLIC_KEY_SIZE) == 0, "Wrong public key.");
+    uint8_t pk[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_public_key(tox2, pk);
+    ck_assert_msg(memcmp(pk, address, TOX_PUBLIC_KEY_SIZE) == 0, "Wrong public key.");
 
     tox_kill(tox1);
     tox_kill(tox2);
@@ -451,6 +478,44 @@ START_TEST(test_few_clients)
 
     printf("tox clients messaging succeeded\n");
 
+    unsigned int save_size1 = tox_get_savedata_size(tox2);
+    ck_assert_msg(save_size1 != 0 && save_size1 < 4096, "save is invalid size %u", save_size1);
+    printf("%u\n", save_size1);
+    uint8_t save1[save_size1];
+    tox_get_savedata(tox2, save1);
+    tox_kill(tox2);
+
+    struct Tox_Options options;
+    tox_options_default(&options);
+    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
+    options.savedata_data = save1;
+    options.savedata_length = save_size1;
+    tox2 = tox_new(&options, NULL);
+    cur_time = time(NULL);
+    off = 1;
+
+    while (1) {
+        tox_iterate(tox1);
+        tox_iterate(tox2);
+        tox_iterate(tox3);
+
+        if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
+                && tox_self_get_connection_status(tox3)) {
+            if (off) {
+                printf("Toxes are online again after reloading, took %llu seconds\n", time(NULL) - cur_time);
+                con_time = time(NULL);
+                off = 0;
+            }
+
+            if (tox_friend_get_connection_status(tox2, 0, 0) == TOX_CONNECTION_UDP
+                    && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP)
+                break;
+        }
+
+        c_sleep(50);
+    }
+
+    printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
     tox_callback_friend_name(tox3, print_nickchange, &to_compare);
     TOX_ERR_SET_INFO err_n;
     bool succ = tox_self_set_name(tox2, (uint8_t *)"Gentoo", sizeof("Gentoo"), &err_n);
@@ -768,6 +833,14 @@ START_TEST(test_many_clients)
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
+    unsigned int num_f = 0;
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        num_f += tox_self_get_friend_list_size(toxes[i]);
+    }
+
+    ck_assert_msg(num_f == 0, "bad num friends: %u", num_f);
+
     for (i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
         pairs[i].tox1 = rand() % NUM_TOXES;
@@ -789,6 +862,12 @@ loop_top:
 
         ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
+
+    for (i = 0; i < NUM_TOXES; ++i) {
+        num_f += tox_self_get_friend_list_size(toxes[i]);
+    }
+
+    ck_assert_msg(num_f == NUM_FRIENDS, "bad num friends: %u", num_f);
 
     while (1) {
         uint16_t counter = 0;
@@ -1193,8 +1272,8 @@ Suite *tox_suite(void)
     Suite *s = suite_create("Tox");
 
     DEFTESTCASE(one);
-    DEFTESTCASE_SLOW(few_clients, 50);
-    DEFTESTCASE_SLOW(many_clients, 150);
+    DEFTESTCASE_SLOW(few_clients, 80);
+    DEFTESTCASE_SLOW(many_clients, 80);
     DEFTESTCASE_SLOW(many_clients_tcp, 20);
     DEFTESTCASE_SLOW(many_clients_tcp_b, 20);
     DEFTESTCASE_SLOW(many_group, 100);
