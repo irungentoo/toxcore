@@ -997,6 +997,11 @@ void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function
 bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t *file_id,
                           TOX_ERR_FILE_GET *error)
 {
+    if (!file_id) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NULL);
+        return 0;
+    }
+
     const Messenger *m = tox;
     int ret = file_get_id(m, friend_number, file_number, file_id);
 

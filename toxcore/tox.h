@@ -682,13 +682,8 @@ typedef enum TOX_ERR_BOOTSTRAP {
  * Sends a "get nodes" request to the given bootstrap node with IP, port, and
  * public key to setup connections.
  *
- * This function will attempt to connect to the node using UDP and TCP at the
- * same time.
- *
- * Tox will use the node as a TCP relay in case Tox_Options.udp_enabled was
- * false, and also to connect to friends that are in TCP-only mode. Tox will
- * also use the TCP connection when NAT hole punching is slow, and later switch
- * to UDP if hole punching succeeds.
+ * This function will attempt to connect to the node using UDP. You must use
+ * this function even if Tox_Options.udp_enabled was set to false.
  *
  * @param address The hostname or IP address (IPv4 or IPv6) of the node.
  * @param port The port on the host on which the bootstrap Tox instance is
@@ -1787,6 +1782,11 @@ typedef enum TOX_ERR_FILE_GET {
      * The function returned successfully.
      */
     TOX_ERR_FILE_GET_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
+     */
+    TOX_ERR_FILE_GET_NULL,
 
     /**
      * The friend_number passed did not designate a valid friend.

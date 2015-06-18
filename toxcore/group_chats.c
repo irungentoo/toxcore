@@ -4075,7 +4075,7 @@ static int create_new_group(GC_Session *c, bool founder)
     Messenger *m = c->messenger;
     GC_Chat *chat = &c->chats[groupnumber];
 
-    chat->tcp_conn = new_tcp_connections(m->dht, &m->options.proxy_info);
+    chat->tcp_conn = new_tcp_connections(m->dht->self_secret_key, &m->options.proxy_info);
 
     if (chat->tcp_conn == NULL) {
         group_delete(c, chat);
