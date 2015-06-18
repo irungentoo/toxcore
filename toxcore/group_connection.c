@@ -258,7 +258,8 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 
         /* if this occurrs less than once per second this won't be reliable */
         if (delta > 1 && POWER_OF_2(delta)) {
-            sendpacket(chat->net, gconn->addr.ip_port, gconn->send_ary[i].data, gconn->send_ary[i].data_length);
+            gcc_send_group_packet(chat, gconn, gconn->send_ary[i].data, gconn->send_ary[i].data_length,
+                                  gconn->send_ary[i].packet_type);
             continue;
         }
 
@@ -267,6 +268,70 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
             return;
         }
     }
+}
+
+/* Sends a packet to the peer associated with gconn.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *packet,
+                          uint16_t length, uint8_t packet_type)
+{
+    if (!packet || length == 0)
+        return -1;
+
+    if (!gconn)
+        return -1;
+
+    bool direct_send_attempt = false;
+
+    if (gconn->addr.ip_port.ip.family != 0) {
+        if (gcc_connection_is_direct(gconn)) {
+            if ((uint16_t) sendpacket(chat->net, gconn->addr.ip_port, packet, length) == length)
+                return 0;
+
+            return -1;
+        }
+
+        if (packet_type != GP_BROADCAST && packet_type != GP_MESSAGE_ACK) {
+            if ((uint16_t) sendpacket(chat->net, gconn->addr.ip_port, packet, length) == length)
+                direct_send_attempt = true;
+        }
+    }
+
+    int ret = send_packet_tcp_connection(chat->tcp_conn, gconn->tcp_connection_num, packet, length);
+
+    if (ret == -1)
+        fprintf(stderr, "send_packet_tcp_connection failed in gcc_send_group_packet\n");
+
+    if (ret == 0 || direct_send_attempt)
+        return 0;
+
+    return -1;
+}
+
+/* Returns a new unique TCP connection id for peers.
+ * TODO: how to handle int overflow?
+ */
+int gcc_new_connection_id(const GC_Chat *chat)
+{
+    int i, new_id = 0;
+
+    for (i = 0; i < chat->numpeers; ++i)
+        if (chat->gcc[i].tcp_id >= new_id)
+            new_id = chat->gcc[i].tcp_id + 1;
+
+    return new_id;
+}
+
+/* Returns true if we have a direct connection with this group connection */
+bool gcc_connection_is_direct(const GC_Connection *gconn)
+{
+    if (!gconn)
+        return false;
+
+    return ((GCC_UDP_DIRECT_TIMEOUT + gconn->last_recv_direct_time) > unix_time());
 }
 
 /* called when a peer leaves the group */

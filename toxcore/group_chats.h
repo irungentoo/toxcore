@@ -26,6 +26,7 @@
 #define GROUP_CHATS_H
 
 #include <stdbool.h>
+#include "TCP_connection.h"
 
 typedef struct Messenger Messenger;
 
@@ -43,7 +44,7 @@ typedef struct Messenger Messenger;
 
 #define GC_MOD_LIST_ENTRY_SIZE SIG_PUBLIC_KEY
 #define GC_MODERATION_HASH_SIZE crypto_hash_sha256_BYTES
-#define GC_PING_INTERVAL 30
+#define GC_PING_INTERVAL 10
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
 #define GC_UNCONFRIMED_PEER_TIMEOUT GC_PING_INTERVAL
 
@@ -117,6 +118,27 @@ enum {
 } GROUP_BROADCAST_TYPE;
 
 enum {
+    /* lossy packets (ID 0 is reserved) */
+    GP_PING = 1,
+    GP_MESSAGE_ACK = 2,
+    GP_INVITE_RESPONSE_REJECT = 3,
+
+    /* lossless packets */
+    GP_BROADCAST = 20,
+    GP_PEER_INFO_REQUEST = 21,
+    GP_PEER_INFO_RESPONSE = 22,
+    GP_INVITE_REQUEST = 23,
+    GP_INVITE_RESPONSE = 24,
+    GP_SYNC_REQUEST = 25,
+    GP_SYNC_RESPONSE = 26,
+    GP_SHARED_STATE = 27,
+    GP_MOD_LIST = 28,
+    GP_SANCTIONS_LIST = 29,
+    GP_FRIEND_INVITE = 30,
+    GP_HS_RESPONSE_ACK = 31,
+} GROUP_PACKET_TYPE;
+
+enum {
     HJ_PUBLIC,
     HJ_PRIVATE
 } GROUP_HANDSHAKE_JOIN_TYPE;
@@ -166,6 +188,7 @@ typedef struct GC_Connection GC_Connection;
 
 typedef struct GC_Chat {
     Networking_Core *net;
+    TCP_Connections *tcp_conn;
 
     GC_GroupPeer    *group;
     GC_Connection   *gcc;

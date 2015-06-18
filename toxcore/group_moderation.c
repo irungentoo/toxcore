@@ -481,7 +481,7 @@ int sanctions_list_make_creds(GC_Chat *chat)
 
 /* Validates sanction list credentials. Verifies that:
  * - the public signature key belongs to a mod or the founder
- * - the signature for the hash was made by the public signature key.
+ * - the signature for the hash was made by the owner of the public signature key.
  * - the received hash matches our own hash of the new sanctions list
  * - the new version is >= our current version
  *
@@ -798,6 +798,9 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanc
     memset(sanction, 0, sizeof(struct GC_Sanction));
 
     if (type == SA_BAN) {
+        if (chat->gcc[peernumber].addr.ip_port.ip.family == TCP_FAMILY)
+            return -1;
+
         ipport_copy(&sanction->ban_info.ip_port, &chat->gcc[peernumber].addr.ip_port);
         memcpy(sanction->ban_info.nick, chat->group[peernumber].nick, MAX_GC_NICK_SIZE);
         sanction->ban_info.nick_len = chat->group[peernumber].nick_len;

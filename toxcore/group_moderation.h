@@ -25,7 +25,7 @@
 #ifndef GROUP_MODERATION_H
 #define GROUP_MODERATION_H
 
-#define MAX_GC_SANCTIONS 64
+#define MAX_GC_SANCTIONS 200
 #define GC_SANCTIONS_CREDENTIALS_SIZE (sizeof(uint32_t) + GC_MODERATION_HASH_SIZE + SIG_PUBLIC_KEY + SIGNATURE_SIZE)
 
 enum {
@@ -52,7 +52,7 @@ struct GC_Sanction {
         uint8_t       target_pk[ENC_PUBLIC_KEY];    /* Used if type is SA_OBSERVER */
     };
 
-    /* Signature of all above packed data signed by public_sig_key */
+    /* Signature of all above packed data signed by the owner of public_sig_key */
     uint8_t     signature[SIGNATURE_SIZE];
 };
 
