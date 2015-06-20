@@ -32,6 +32,15 @@
 extern "C" {
 #endif
 
+
+/*******************************************************************************
+ * `tox.h` SHOULD *NOT* BE EDITED MANUALLY – any changes should be made to   *
+ * `tox.in.h`, located in `other/apidsl/`. For instructions on how to        *
+ * generate `tox.h` from `tox.in.h` please refer to `other/apidsl/README.md` *
+ ******************************************************************************/
+
+
+
 /** \page core Public core API for Tox clients.
  *
  * Every function that can fail takes a function-specific error code pointer
