@@ -3,7 +3,7 @@ This folder contains the input file (``tox.in.h``) that has to be used to genera
 # Minimal requirements
 
 There are some minimal requirements to contribute to ``tox.h``:
-* unix enrironment
+* unix environment
 * ``astyle`` ``>=2.03``
 * [``apidsl``](https://github.com/iphydf/apidsl) (you can use provided service with curl instead)
 
