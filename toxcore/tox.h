@@ -460,7 +460,15 @@ struct Tox_Options {
 
 
     /**
-     * The port to use for the TCP server. If 0, the tcp server is disabled.
+     * The port to use for the TCP server (relay). If 0, the TCP server is
+     * disabled.
+     *
+     * Enabling it is not required for Tox to function properly.
+     *
+     * When enabled, your Tox instance can act as a TCP relay for other Tox
+     * instance. This leads to increased traffic, thus when writing a client
+     * it is recommended to enable TCP server only if the user has an option
+     * to disable it.
      */
     uint16_t tcp_port;
 
