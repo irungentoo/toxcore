@@ -411,8 +411,8 @@ int sanctions_list_unpack(struct GC_Sanction *sanctions, struct GC_Sanction_Cred
  *
  * If num_sanctions is 0 the hash is zeroed.
  */
-void sanctions_list_make_hash(struct GC_Sanction *sanctions, uint32_t new_version,
-                              uint16_t num_sanctions, uint8_t *hash)
+void sanctions_list_make_hash(struct GC_Sanction *sanctions, uint32_t new_version, uint16_t num_sanctions,
+                              uint8_t *hash)
 {
     if (num_sanctions == 0 || sanctions == NULL) {
         memset(hash, 0, GC_MODERATION_HASH_SIZE);
