@@ -67,6 +67,9 @@
 /* approximation of the sync response packet size limit */
 #define MAX_GC_NUM_PEERS ((MAX_GC_PACKET_SIZE - MAX_GC_TOPIC_SIZE - sizeof(uint16_t)) / (ENC_PUBLIC_KEY + sizeof(IP_Port)))
 
+/* Size of a ping packet which contains a peer count, the shared state version, and the sanctions list version */
+#define GC_PING_PACKET_DATA_SIZE (sizeof(uint32_t) * 3)
+
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *public_key);
 static int peer_update(Messenger *m, int groupnumber, GC_GroupPeer *peer, uint32_t peernumber);
@@ -934,8 +937,10 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
                                       HS_PEER_INFO_EXCHANGE, chat->join_type);
     }
 
-    for (i = 0; i < chat->numpeers; ++i)
-        chat->gcc[i].peer_sync_timer = 0;
+    for (i = 0; i < chat->numpeers; ++i) {
+        chat->gcc[i].pending_sync_request = false;
+        chat->gcc[i].pending_state_sync = false;
+    }
 
     free(addrs);
 
@@ -1056,40 +1061,6 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     }
 
     return send_gc_sync_response(chat, peernumber, response, len);
-}
-
-/* Checks if our peerlist is out of sync with peernumber and initiates a sync request if necessary. */
-static void check_gc_peerlist_sync(const GC_Chat *chat, uint32_t peernumber, uint32_t other_num_peers)
-{
-    if (get_gc_confirmed_numpeers(chat) >= other_num_peers) {
-        chat->gcc[peernumber].peer_sync_timer = 0;
-        return;
-    }
-
-    uint32_t i;
-
-    for (i = 1; i < chat->numpeers; ++i) {
-        if (chat->gcc[i].peer_sync_timer != 0)
-            return;
-    }
-
-    chat->gcc[peernumber].peer_sync_timer = unix_time();
-}
-
-/* Checks if we have a pending sync request with peernumber and sends a sync request
- * if the timer is up.
- */
-#define GROUP_PEER_SYNC_TIMER (GC_PING_INTERVAL * 2)
-static void try_gc_peer_sync(GC_Chat *chat, uint32_t peernumber)
-{
-    if (chat->gcc[peernumber].peer_sync_timer == 0)
-        return;
-
-    if (!is_timeout(chat->gcc[peernumber].peer_sync_timer, GROUP_PEER_SYNC_TIMER))
-        return;
-
-    if (send_gc_sync_request(chat, peernumber, chat->numpeers) != -1)
-        chat->gcc[peernumber].peer_sync_timer = 0;
 }
 
 static void self_to_peer(const GC_Session *c, const GC_Chat *chat, GC_GroupPeer *peer);
@@ -1341,41 +1312,62 @@ static void send_gc_packet_all_peers(GC_Chat *chat, uint8_t *data, uint32_t leng
     }
 }
 
-/* Handles a ping packet. The packet contains sync information including peernumber's confirmed peer count,
+/* Compares a peer's group sync info that we received in a ping packet to our own.
+ *
+ * If their info appears to be more recent than ours we will first set a sync request flag.
+ * If the flag is already set we send a sync request to this peer then set the flag back to false.
+ *
+ * This function should only be called from handle_gc_ping().
+ */
+static void do_gc_peer_state_sync(GC_Chat *chat, GC_Connection *gconn, uint32_t peernumber,
+                                  const uint8_t *sync_data, uint32_t length)
+{
+    if (length != GC_PING_PACKET_DATA_SIZE)
+        return;
+
+    uint32_t other_num_peers, sstate_version, screds_version;
+    bytes_to_U32(&other_num_peers, sync_data);
+    bytes_to_U32(&sstate_version, sync_data + sizeof(uint32_t));
+    bytes_to_U32(&screds_version, sync_data + (sizeof(uint32_t) * 2));
+
+    if (other_num_peers > get_gc_confirmed_numpeers(chat)
+        || sstate_version > chat->shared_state.version
+        || screds_version > chat->moderation.sanctions_creds.version) {
+
+        if (gconn->pending_state_sync) {
+            send_gc_sync_request(chat, peernumber, 0);
+            gconn->pending_state_sync = false;
+            return;
+        }
+
+        gconn->pending_state_sync = true;
+        return;
+    }
+
+    gconn->pending_state_sync = false;
+}
+
+/* Handles a ping packet.
+ *
+ * The packet contains sync information including peernumber's confirmed peer count,
  * shared state version and sanction credentials version.
  */
-#define GC_PING_PACKET_DATA_SIZE (sizeof(uint32_t) * 3)
 static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
     if (length != GC_PING_PACKET_DATA_SIZE)
         return -1;
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+    GC_Connection *gconn = &chat->gcc[peernumber];
 
     if (!chat)
         return -1;
 
-    if (!chat->gcc[peernumber].confirmed)
+    if (!gconn->confirmed)
         return -1;
 
-    chat->gcc[peernumber].last_rcvd_ping = unix_time();
-
-    uint32_t other_num_peers, sstate_version, screds_version;
-    bytes_to_U32(&other_num_peers, data);
-    bytes_to_U32(&sstate_version, data + sizeof(uint32_t));
-    bytes_to_U32(&screds_version, data + (sizeof(uint32_t) * 2));
-
-    check_gc_peerlist_sync(chat, peernumber, other_num_peers);
-
-    if (sstate_version < chat->shared_state.version)
-        return send_peer_shared_state(chat, peernumber);
-    else if (sstate_version > chat->shared_state.version)
-        return send_gc_sync_request(chat, peernumber, 0);
-
-    if (screds_version < chat->moderation.sanctions_creds.version)
-        return send_peer_sanctions_list(chat, peernumber);
-    else if (screds_version > chat->moderation.sanctions_creds.version)
-        return send_gc_sync_request(chat, peernumber, 0);
+    do_gc_peer_state_sync(chat, gconn, peernumber, data, length);
+    gconn->last_rcvd_ping = unix_time();
 
     return 0;
 }
@@ -3927,7 +3919,6 @@ static void do_peer_connections(Messenger *m, int groupnumber)
         if (peer_timed_out(chat, i)) {
             gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
         } else {
-            try_gc_peer_sync(chat, i);
             gcc_resend_packets(m, chat, i);   // This function may delete the peer
         }
 

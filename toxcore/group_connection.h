@@ -61,9 +61,9 @@ typedef struct GC_Connection {
     uint64_t    last_recv_direct_time;   /* the last time we received a direct packet from this peer */
 
     uint64_t    last_rcvd_ping;
-    uint64_t    peer_sync_timer;
     uint64_t    time_added;
-    bool        pending_sync_request;
+    bool        pending_sync_request;   /* true if we have sent this peer a sync request and have not received a reply*/
+    bool        pending_state_sync;    /* used for group state syncing */
     bool        ignore;
     bool        handshaked; /* true if we've successfully handshaked with this peer */
     bool        confirmed;  /* true if this peer has given us their info */
