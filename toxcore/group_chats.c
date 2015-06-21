@@ -3352,6 +3352,12 @@ static int handle_gc_handshake_packet(Messenger *m, GC_Chat *chat, IP_Port *ipp,
             return -1;
 
         peernumber = handle_gc_handshake_request(m, chat->groupnumber, ipp, sender_pk, real_data, real_len);
+
+        if (gcc_add_peer_tcp_relays(chat, &chat->gcc[peernumber], data + GC_MIN_PLAIN_HS_PACKET_SIZE,
+                                    plain_len - GC_MIN_PLAIN_HS_PACKET_SIZE) == -1) {
+            fprintf(stderr, "add_peer_tcp_relays failed in handle_gc_handshake_packet\n");
+            return -1;
+        }
     } else if (handshake_type == GH_RESPONSE) {
         peernumber = handle_gc_handshake_response(m, chat->groupnumber, sender_pk, real_data, real_len);
     } else {
@@ -3359,16 +3365,8 @@ static int handle_gc_handshake_packet(Messenger *m, GC_Chat *chat, IP_Port *ipp,
 
     }
 
-    GC_Connection *gconn = &chat->gcc[peernumber];
-
-    if (gcc_add_peer_tcp_relays(chat, gconn, data + GC_MIN_PLAIN_HS_PACKET_SIZE,
-                                plain_len - GC_MIN_PLAIN_HS_PACKET_SIZE) == -1) {
-        fprintf(stderr, "add_peer_tcp_relays failed in handle_gc_handshake_packet\n");
-        return -1;
-    }
-
     if (peernumber > 0 && direct_conn)
-        gconn->last_recv_direct_time = unix_time();
+        chat->gcc[peernumber].last_recv_direct_time = unix_time();
 
     return peernumber;
 }
@@ -4201,6 +4199,36 @@ static int create_new_group(GC_Session *c, bool founder)
     return groupnumber;
 }
 
+/* Initializes group shared state and creates a signature for it using the chat secret key
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+static int init_gc_shared_state(GC_Chat *chat, uint8_t privacy_state, const uint8_t *group_name,
+                                uint16_t name_length)
+{
+    memcpy(chat->shared_state.founder_public_key, chat->self_public_key, EXT_PUBLIC_KEY);
+    memcpy(chat->shared_state.group_name, group_name, name_length);
+    chat->shared_state.group_name_len = name_length;
+    chat->shared_state.maxpeers = MAX_GC_NUM_PEERS;
+    chat->shared_state.privacy_state = privacy_state;
+
+    return sign_gc_shared_state(chat);
+}
+
+/* Inits the sanctions list credentials. This should be called by the group founder on creation.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int init_gc_sanctions_creds(GC_Chat *chat)
+{
+    if (sanctions_list_make_creds(chat) == -1)
+        return -1;
+
+    return 0;
+}
+
 /* Loads a previously saved group and attempts to connect to it.
  *
  * Returns groupnumber on success.
@@ -4265,6 +4293,14 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->gcc[0].confirmed = true;
     memcpy(chat->gcc[0].addr.public_key, chat->self_public_key, EXT_PUBLIC_KEY);
 
+    if (save->self_role == GR_FOUNDER) {
+        if (init_gc_shared_state(chat, save->privacy_state, save->group_name, chat->shared_state.group_name_len) == -1)
+            return -1;
+
+        if (init_gc_sanctions_creds(chat) == -1)
+            return -1;
+    }
+
     uint16_t i, num = 0, num_addrs = ntohs(save->num_addrs);
 
     for (i = 0; i < num_addrs && i < MAX_GC_PEER_ADDRS; ++i) {
@@ -4275,36 +4311,6 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->num_addrs = num;
 
     return groupnumber;
-}
-
-/* Initializes group shared state and creates a signature for it using the chat secret key
- *
- * Return 0 on success.
- * Return -1 on failure.
- */
-static int init_gc_shared_state(GC_Chat *chat, uint8_t privacy_state, const uint8_t *group_name,
-                                uint16_t name_length)
-{
-    memcpy(chat->shared_state.founder_public_key, chat->self_public_key, EXT_PUBLIC_KEY);
-    memcpy(chat->shared_state.group_name, group_name, name_length);
-    chat->shared_state.group_name_len = name_length;
-    chat->shared_state.maxpeers = MAX_GC_NUM_PEERS;
-    chat->shared_state.privacy_state = privacy_state;
-
-    return sign_gc_shared_state(chat);
-}
-
-/* Inits the sanctions list credentials. This should be called by the group founder on creation.
- *
- * Returns 0 on success.
- * Returns -1 on failure.
- */
-static int init_gc_sanctions_creds(GC_Chat *chat)
-{
-    if (sanctions_list_make_creds(chat) == -1)
-        return -1;
-
-    return 0;
 }
 
 /* Creates a new group.
@@ -4559,7 +4565,7 @@ int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *message, uint16_t
 
 void kill_groupchats(GC_Session *c)
 {
-    uint32_t i, j;
+    uint32_t i;
 
     for (i = 0; i < c->num_chats; ++i) {
         if (c->chats[i].connection_state != CS_NONE) {
