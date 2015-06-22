@@ -2003,7 +2003,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 #define REQUEST_PACKETS_COMPARE_CONSTANT (0.125 * 100.0)
 
 /* Multiplier for maximum allowed resends. */
-#define PACKET_RESEND_MULTIPLIER 2
+#define PACKET_RESEND_MULTIPLIER 3
 
 /* Timeout for increasing speed after congestion event (in ms). */
 #define CONGESTION_EVENT_TIMEOUT 2000
