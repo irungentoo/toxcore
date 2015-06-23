@@ -1103,7 +1103,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
 int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
                              uint8_t control_type, uint8_t *data, uint16_t data_length)
 {
-    if (1 + 3 + data_length > MAX_CRYPTO_DATA_SIZE)
+    if ((unsigned int)(1 + 3 + data_length) > MAX_CRYPTO_DATA_SIZE)
         return -1;
 
     uint8_t packet[3 + data_length];
@@ -1435,7 +1435,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
             }
 
             /* TODO: if file is too slow, switch to the next. */
-            if (ft->slots_allocated > free_slots) {
+            if (ft->slots_allocated > (unsigned int)free_slots) {
                 free_slots = 0;
             } else {
                 free_slots -= ft->slots_allocated;
