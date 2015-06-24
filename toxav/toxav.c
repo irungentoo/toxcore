@@ -331,7 +331,7 @@ void toxav_iterate(ToxAV* av)
     av->dmsst += current_time_monotonic() - start;
     
     if (++av->dmssc == 3) {
-        av->dmssa = av->dmsst / 3 + 2 /* NOTE Magic Offset for precission */;
+        av->dmssa = av->dmsst / 3 + 5 /* NOTE Magic Offset for precission */;
         av->dmssc = 0;
         av->dmsst = 0;
     }
@@ -1270,20 +1270,28 @@ bool call_prepare_transmission(ToxAVCall* call)
     
     { /* Prepare audio */
         call->audio.second = ac_new(av, call->friend_number, av->acb.first, av->acb.second);
-        call->audio.first = rtp_new(rtp_TypeAudio, av->m, call->friend_number, call->audio.second, ac_queue_message);
+        if (!call->audio.second) {
+            LOGGER_ERROR("Failed to create audio codec session");
+            goto FAILURE;
+        }
         
-        if ( !call->audio.first || !call->audio.second ) {
-            LOGGER_ERROR("Error while starting audio!\n");
+        call->audio.first = rtp_new(rtp_TypeAudio, av->m, call->friend_number, call->audio.second, ac_queue_message);
+        if (!call->audio.first) {
+            LOGGER_ERROR("Failed to create audio rtp session");;
             goto FAILURE;
         }
     }
     
     { /* Prepare video */
         call->video.second = vc_new(av, call->friend_number, av->vcb.first, av->vcb.second, call->msi_call->peer_vfpsz);
-        call->video.first = rtp_new(rtp_TypeVideo, av->m, call->friend_number, call->video.second, vc_queue_message);
+        if (!call->video.second) {
+            LOGGER_ERROR("Failed to create video codec session");
+            goto FAILURE;
+        }
         
-        if ( !call->video.first || !call->video.second ) {
-            LOGGER_ERROR("Error while starting video!\n");
+        call->video.first = rtp_new(rtp_TypeVideo, av->m, call->friend_number, call->video.second, vc_queue_message);
+        if (!call->video.first) {
+            LOGGER_ERROR("Failed to create video rtp session");
             goto FAILURE;
         }
     }
