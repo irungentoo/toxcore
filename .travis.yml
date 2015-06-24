@@ -32,7 +32,7 @@ before_script:
   - sudo make install > /dev/null
   - cd ..
   #installing vpx
-  - git clone http://git.chromium.org/webm/libvpx.git > /dev/null
+  - git clone https://chromium.googlesource.com/webm/libvpx > /dev/null
   - cd libvpx
   - ./configure --enable-shared > /dev/null
   - make -j3 >/dev/null

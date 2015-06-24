@@ -235,26 +235,26 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length)
 {
-    if (length > crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES &&
-            length <= MAX_CRYPTO_REQUEST_SIZE) {
-        if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
-            memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-            uint8_t nonce[crypto_box_NONCEBYTES];
-            uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
-            memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
-            int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                                    packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
-                                    length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+    if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
+            length > MAX_CRYPTO_REQUEST_SIZE)
+        return -1;
 
-            if (len1 == -1 || len1 == 0)
-                return -1;
+    if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) != 0)
+        return -1;
 
-            request_id[0] = temp[0];
-            --len1;
-            memcpy(data, temp + 1, len1);
-            return len1;
-        }
-    }
+    memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
+    uint8_t nonce[crypto_box_NONCEBYTES];
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+    memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
+    int len1 = decrypt_data(public_key, self_secret_key, nonce,
+                            packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
+                            length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
 
-    return -1;
+    if (len1 == -1 || len1 == 0)
+        return -1;
+
+    request_id[0] = temp[0];
+    --len1;
+    memcpy(data, temp + 1, len1);
+    return len1;
 }

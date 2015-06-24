@@ -220,7 +220,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 
     n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
 
-    unsigned int i;
+    int i;
 
     for (i = 0; i < n; ++i) {
         /* Associated the relays being sent with this connection.

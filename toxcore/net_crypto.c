@@ -659,7 +659,8 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
  * return -1 on failure.
  * return number of requested packets on success.
  */
-static int handle_request_packet(Packets_Array *send_array, const uint8_t *data, uint16_t length)
+static int handle_request_packet(Packets_Array *send_array, const uint8_t *data, uint16_t length,
+                                 uint64_t *latest_send_time, uint64_t rtt_time)
 {
     if (length < 1)
         return -1;
@@ -677,6 +678,7 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
     uint32_t requested = 0;
 
     uint64_t temp_time = current_time_monotonic();
+    uint64_t l_sent_time = ~0;
 
     for (i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
         if (length == 0)
@@ -688,7 +690,7 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
             if (send_array->buffer[num]) {
                 uint64_t sent_time = send_array->buffer[num]->sent_time;
 
-                if ((sent_time + DEFAULT_PING_CONNECTION) < temp_time) {
+                if ((sent_time + rtt_time) < temp_time) {
                     send_array->buffer[num]->sent_time = 0;
                 }
             }
@@ -698,6 +700,11 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
             n = 0;
             ++requested;
         } else {
+            uint64_t sent_time = send_array->buffer[num]->sent_time;
+
+            if (l_sent_time < sent_time)
+                l_sent_time = sent_time;
+
             free(send_array->buffer[num]);
             send_array->buffer[num] = NULL;
         }
@@ -714,6 +721,9 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
             ++n;
         }
     }
+
+    if (*latest_send_time < l_sent_time)
+        *latest_send_time = l_sent_time;
 
     return requested;
 }
@@ -1146,8 +1156,19 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
     buffer_start = ntohl(buffer_start);
     num = ntohl(num);
 
-    if (buffer_start != conn->send_array.buffer_start && clear_buffer_until(&conn->send_array, buffer_start) != 0)
-        return -1;
+    uint64_t rtt_calc_time = 0;
+
+    if (buffer_start != conn->send_array.buffer_start) {
+        Packet_Data *packet_time;
+
+        if (get_data_pointer(&conn->send_array, &packet_time, conn->send_array.buffer_start) == 1) {
+            rtt_calc_time = packet_time->sent_time;
+        }
+
+        if (clear_buffer_until(&conn->send_array, buffer_start) != 0) {
+            return -1;
+        }
+    }
 
     uint8_t *real_data = data + (sizeof(uint32_t) * 2);
     uint16_t real_length = len - (sizeof(uint32_t) * 2);
@@ -1174,7 +1195,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
     }
 
     if (real_data[0] == PACKET_ID_REQUEST) {
-        int requested = handle_request_packet(&conn->send_array, real_data, real_length);
+        int requested = handle_request_packet(&conn->send_array, real_data, real_length, &rtt_calc_time, conn->rtt_time);
 
         if (requested == -1) {
             return -1;
@@ -1224,6 +1245,13 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
 
     } else {
         return -1;
+    }
+
+    if (rtt_calc_time != 0) {
+        uint64_t rtt_time = current_time_monotonic() - rtt_calc_time;
+
+        if (rtt_time < conn->rtt_time)
+            conn->rtt_time = rtt_time;
     }
 
     return 0;
@@ -1580,6 +1608,7 @@ int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
     memcpy(conn->dht_public_key, n_c->dht_public_key, crypto_box_PUBLICKEYBYTES);
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
+    conn->rtt_time = DEFAULT_PING_CONNECTION;
     crypto_connection_add_source(c, crypt_connection_id, n_c->source);
     return crypt_connection_id;
 }
@@ -1621,6 +1650,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
     conn->status = CRYPTO_CONN_COOKIE_REQUESTING;
     conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
     conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
+    conn->rtt_time = DEFAULT_PING_CONNECTION;
     memcpy(conn->dht_public_key, dht_public_key, crypto_box_PUBLICKEYBYTES);
 
     conn->cookie_request_number = random_64b();
@@ -2003,7 +2033,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 #define REQUEST_PACKETS_COMPARE_CONSTANT (0.125 * 100.0)
 
 /* Multiplier for maximum allowed resends. */
-#define PACKET_RESEND_MULTIPLIER 2
+#define PACKET_RESEND_MULTIPLIER 3
 
 /* Timeout for increasing speed after congestion event (in ms). */
 #define CONGESTION_EVENT_TIMEOUT 2000
@@ -2392,7 +2422,7 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
     if (temp == NULL)
         return NULL;
 
-    temp->tcp_c = new_tcp_connections(dht, proxy_info);
+    temp->tcp_c = new_tcp_connections(dht->self_secret_key, proxy_info);
 
     if (temp->tcp_c == NULL) {
         free(temp);
