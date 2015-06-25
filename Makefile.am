@@ -22,7 +22,7 @@ EXTRA_DIST = \
 	$(top_srcdir)/docs/updates/Crypto.md \
 	$(top_srcdir)/docs/updates/Spam-Prevention.md \
 	$(top_srcdir)/docs/updates/Symmetric-NAT-Transversal.md \
-	$(top_srcdir)/other/astyle/README \
+	$(top_srcdir)/other/astyle/README.md \
 	$(top_srcdir)/other/astyle/astylerc \
 	$(top_srcdir)/other/astyle/pre-commit
 
