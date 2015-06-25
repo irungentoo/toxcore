@@ -13,6 +13,7 @@
 #include "../toxcore/onion_announce.h"
 #include "../toxcore/onion_client.h"
 #include "../toxcore/util.h"
+#include "../toxcore/network.h"
 
 #include "helpers.h"
 
@@ -129,8 +130,13 @@ static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, ui
 START_TEST(test_basic)
 {
     IP ip;
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
+#else
+    ip_init(&ip, 0);
+    ip.ip4.uint32 = htonl(0x7F000001);
+#endif
     Onion *onion1 = new_onion(new_DHT(new_networking(ip, 34567)));
     Onion *onion2 = new_onion(new_DHT(new_networking(ip, 34568)));
     ck_assert_msg((onion1 != NULL) && (onion2 != NULL), "Onion failed initializing.");
@@ -269,8 +275,13 @@ typedef struct {
 Onions *new_onions(uint16_t port)
 {
     IP ip;
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
+#else
+    ip_init(&ip, 0);
+    ip.ip4.uint32 = htonl(0x7F000001);
+#endif
     Onions *on = malloc(sizeof(Onions));
     DHT *dht = new_DHT(new_networking(ip, port));
     on->onion = new_onion(dht);
@@ -371,8 +382,13 @@ START_TEST(test_announce)
     }
 
     IP ip;
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
+#else
+    ip_init(&ip, 0);
+    ip.ip4.uint32 = htonl(0x7F000001);
+#endif
 
     for (i = 3; i < NUM_ONIONS; ++i) {
         IP_Port ip_port = {ip, onions[i - 1]->onion->net->port};

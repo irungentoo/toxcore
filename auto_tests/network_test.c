@@ -39,6 +39,7 @@ START_TEST(test_addr_resolv_localhost)
         ck_assert_msg(ip.ip4.uint32 == htonl(0x7F000001), "Expected 127.0.0.1, got %s.", inet_ntoa(ip.ip4.in_addr));
     }
 
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     ip_init(&ip, 1);
     res = addr_resolve(localhost, &ip, NULL);
 
@@ -72,6 +73,7 @@ START_TEST(test_addr_resolv_localhost)
     } else {
         printf("Localhost seems to be split in two.\n");
     }
+#endif
 }
 END_TEST
 

@@ -7,6 +7,7 @@
 
 #include "../toxcore/tox.h"
 #include "../toxcore/DHT.c"
+#include "../toxcore/network.h"
 
 #include "helpers.h"
 
@@ -355,6 +356,7 @@ START_TEST(test_addto_lists_ipv4)
 }
 END_TEST
 
+#if TOX_ENABLE_IPV6_DEFAULT == 1
 START_TEST(test_addto_lists_ipv6)
 {
     IP ip;
@@ -363,13 +365,16 @@ START_TEST(test_addto_lists_ipv6)
 
 }
 END_TEST
+#endif
 
 Suite *dht_suite(void)
 {
     Suite *s = suite_create("DHT");
 
     DEFTESTCASE(addto_lists_ipv4);
+#if TOX_ENABLE_IPV6_DEFAULT == 1
     DEFTESTCASE(addto_lists_ipv6);
+#endif
     return s;
 }
 
