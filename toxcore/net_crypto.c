@@ -2145,7 +2145,7 @@ static void send_crypto_packets(Net_Crypto *c)
             int ret = send_requested_packets(c, i, conn->packets_left * PACKET_RESEND_MULTIPLIER);
 
             if (ret != -1) {
-                if (ret < conn->packets_left) {
+                if ((unsigned int)ret < conn->packets_left) {
                     conn->packets_left -= ret;
                 } else {
                     conn->last_congestion_event = temp_time;
