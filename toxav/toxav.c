@@ -596,6 +596,8 @@ void toxav_callback_audio_bit_rate_status(ToxAV* av, toxav_audio_bit_rate_status
 
 bool toxav_audio_bit_rate_set(ToxAV* av, uint32_t friend_number, uint32_t audio_bit_rate, bool force, TOXAV_ERR_SET_BIT_RATE* error)
 {
+    LOGGER_DEBUG("Setting new audio bitrate to: %d", audio_bit_rate);
+    
     TOXAV_ERR_SET_BIT_RATE rc = TOXAV_ERR_SET_BIT_RATE_OK;
     ToxAVCall* call;
     
@@ -604,7 +606,7 @@ bool toxav_audio_bit_rate_set(ToxAV* av, uint32_t friend_number, uint32_t audio_
         goto END;
     }
     
-    if (audio_bit_rate_invalid(audio_bit_rate)) {
+    if (audio_bit_rate && audio_bit_rate_invalid(audio_bit_rate)) {
         rc = TOXAV_ERR_SET_BIT_RATE_INVALID;
         goto END;
     }
@@ -622,18 +624,39 @@ bool toxav_audio_bit_rate_set(ToxAV* av, uint32_t friend_number, uint32_t audio_
         goto END;
     }
     
+    /* Video sending is turned off; notify peer */
+    if (audio_bit_rate == 0) {
+        call->audio_bit_rate = 0;
+        
+        msi_change_capabilities(call->msi_call, call->msi_call->
+        self_capabilities ^ msi_CapSAudio);
+        pthread_mutex_unlock(av->mutex);
+        goto END;
+    }
     
     pthread_mutex_lock(call->mutex);
     
-    if (audio_bit_rate > call->audio_bit_rate && !force)
-        ba_set(&call->aba, audio_bit_rate);
-    else {
-        /* Cancel any previous non forceful bitrate change request */
-        memset(&call->aba, 0, sizeof(call->aba));
+    if (call->audio_bit_rate == 0) {
+        /* The audio has been turned off before this */
         call->audio_bit_rate = audio_bit_rate;
+        
+        msi_change_capabilities(call->msi_call, call->
+        msi_call->self_capabilities | msi_CapSAudio);
         
         if (!force && av->abcb.first) 
             av->abcb.first (av, call->friend_number, true, audio_bit_rate, av->abcb.second);
+    } else {
+        /* The audio was active before this */
+        if (audio_bit_rate > call->audio_bit_rate && !force)
+            ba_set(&call->aba, audio_bit_rate);
+        else {
+            /* Cancel any previous non forceful bitrate change request */
+            memset(&call->aba, 0, sizeof(call->aba));
+            call->audio_bit_rate = audio_bit_rate;
+            
+            if (!force && av->abcb.first) 
+                av->abcb.first (av, call->friend_number, true, audio_bit_rate, av->abcb.second);
+        }
     }
     
     pthread_mutex_unlock(call->mutex);
@@ -656,6 +679,8 @@ void toxav_callback_video_bit_rate_status(ToxAV* av, toxav_video_bit_rate_status
 
 bool toxav_video_bit_rate_set(ToxAV* av, uint32_t friend_number, uint32_t video_bit_rate, bool force, TOXAV_ERR_SET_BIT_RATE* error)
 {
+    LOGGER_DEBUG("Setting new video bitrate to: %d", video_bit_rate);
+    
     TOXAV_ERR_SET_BIT_RATE rc = TOXAV_ERR_SET_BIT_RATE_OK;
     ToxAVCall* call;
     
@@ -664,7 +689,7 @@ bool toxav_video_bit_rate_set(ToxAV* av, uint32_t friend_number, uint32_t video_
         goto END;
     }
     
-    if (video_bit_rate_invalid(video_bit_rate)) {
+    if (video_bit_rate && video_bit_rate_invalid(video_bit_rate)) {
         rc = TOXAV_ERR_SET_BIT_RATE_INVALID;
         goto END;
     }
@@ -682,17 +707,39 @@ bool toxav_video_bit_rate_set(ToxAV* av, uint32_t friend_number, uint32_t video_
         goto END;
     }
     
+    /* Video sending is turned off; notify peer */
+    if (video_bit_rate == 0) {
+        call->video_bit_rate = 0;
+        
+        msi_change_capabilities(call->msi_call, call->msi_call->
+        self_capabilities ^ msi_CapSVideo);
+        pthread_mutex_unlock(av->mutex);
+        goto END;
+    }
+    
     pthread_mutex_lock(call->mutex);
     
-    if (video_bit_rate > call->video_bit_rate && !force)
-        ba_set(&call->vba, video_bit_rate);
-    else {
-        /* Cancel any previous non forceful bitrate change request */
-        memset(&call->vba, 0, sizeof(call->vba));
+    if (call->video_bit_rate == 0) {
+        /* The video has been turned off before this */
         call->video_bit_rate = video_bit_rate;
+        
+        msi_change_capabilities(call->msi_call, call->
+        msi_call->self_capabilities | msi_CapSVideo);
         
         if (!force && av->vbcb.first) 
             av->vbcb.first (av, call->friend_number, true, video_bit_rate, av->vbcb.second);
+    } else {
+        /* The video was active before this */
+        if (video_bit_rate > call->video_bit_rate && !force)
+            ba_set(&call->vba, video_bit_rate);
+        else {
+            /* Cancel any previous non forceful bitrate change request */
+            memset(&call->vba, 0, sizeof(call->vba));
+            call->video_bit_rate = video_bit_rate;
+            
+            if (!force && av->vbcb.first) 
+                av->vbcb.first (av, call->friend_number, true, video_bit_rate, av->vbcb.second);
+        }
     }
     
     pthread_mutex_unlock(call->mutex);
@@ -720,6 +767,12 @@ bool toxav_audio_send_frame(ToxAV* av, uint32_t friend_number, const int16_t* pc
     if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
         pthread_mutex_unlock(av->mutex);
         rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    if (call->audio_bit_rate == 0) {
+        pthread_mutex_unlock(av->mutex);
+        rc = TOXAV_ERR_SEND_FRAME_BIT_RATE_NOT_SET;
         goto END;
     }
     
@@ -822,6 +875,12 @@ bool toxav_video_send_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
     if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
         pthread_mutex_unlock(av->mutex);
         rc = TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL;
+        goto END;
+    }
+    
+    if (call->video_bit_rate == 0) {
+        pthread_mutex_unlock(av->mutex);
+        rc = TOXAV_ERR_SEND_FRAME_BIT_RATE_NOT_SET;
         goto END;
     }
     

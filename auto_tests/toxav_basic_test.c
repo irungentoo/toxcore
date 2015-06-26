@@ -34,6 +34,7 @@
 #define TEST_REJECT 1
 #define TEST_CANCEL 1
 #define TEST_MUTE_UNMUTE 1
+#define TEST_STOP_RESUME_PAYLOAD 1
 
 
 typedef struct {
@@ -422,6 +423,58 @@ START_TEST(test_AV_flows)
         ck_assert(BobCC.state == TOXAV_CALL_STATE_FINISHED);
         
         printf("Success!\n");
+    }
+    
+    if (TEST_STOP_RESUME_PAYLOAD) { /* Stop and resume audio/video payload */
+        printf("\nTrying stop/resume functionality...\n");
+        
+        memset(&AliceCC, 0, sizeof(CallControl));
+        memset(&BobCC, 0, sizeof(CallControl));
+        
+        /* Assume sending audio and video */
+        {
+            TOXAV_ERR_CALL rc;
+            toxav_call(AliceAV, 0, 48, 0, &rc);
+            
+            if (rc != TOXAV_ERR_CALL_OK) {
+                printf("toxav_call failed: %d\n", rc);
+                ck_assert(0);
+            }
+        }
+        
+        while (!BobCC.incoming)
+            iterate_tox(bootstrap, Alice, Bob);
+        
+        {
+            TOXAV_ERR_ANSWER rc;
+            toxav_answer(BobAV, 0, 48, 0, &rc);
+            
+            if (rc != TOXAV_ERR_ANSWER_OK) {
+                printf("toxav_answer failed: %d\n", rc);
+                ck_assert(0);
+            }
+        }
+        
+        iterate_tox(bootstrap, Alice, Bob);
+        
+        printf("Call started as audio only\n");
+        printf("Turning on video for Alice...\n");
+        ck_assert(toxav_video_bit_rate_set(AliceAV, 0, 1000, false, NULL));
+        
+        iterate_tox(bootstrap, Alice, Bob);
+        ck_assert(BobCC.state & TOXAV_CALL_STATE_SENDING_V);
+        
+        printf("Turning off video for Alice...\n");
+        ck_assert(toxav_video_bit_rate_set(AliceAV, 0, 0, false, NULL));
+        
+        iterate_tox(bootstrap, Alice, Bob);
+        ck_assert(!(BobCC.state & TOXAV_CALL_STATE_SENDING_V));
+        
+        printf("Turning off audio for Alice...\n");
+        ck_assert(toxav_audio_bit_rate_set(AliceAV, 0, 0, false, NULL));
+        
+        iterate_tox(bootstrap, Alice, Bob);
+        ck_assert(!(BobCC.state & TOXAV_CALL_STATE_SENDING_A));
     }
     
     toxav_kill(BobAV);

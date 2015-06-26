@@ -519,6 +519,10 @@ error for send_frame {
    */
   INVALID,
   /**
+   * Bit rate for this payload type was not set up.
+   */
+  BIT_RATE_NOT_SET,
+  /**
    * Failed to push frame through rtp interface.
    */
   RTP_FAILED,
