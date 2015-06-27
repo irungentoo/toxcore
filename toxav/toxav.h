@@ -592,7 +592,9 @@ bool toxav_video_send_frame(ToxAV *toxAV, uint32_t friend_number, uint16_t width
  *
  ******************************************************************************/
 /**
- * The function type for the audio_receive_frame callback.
+ * The function type for the audio_receive_frame callback. The callback can be
+ * called multiple times per single iteration depending on the amount of queued
+ * frames in the buffer.
  *
  * @param friend_number The friend number of the friend who sent an audio frame.
  * @param pcm An array of audio samples (sample_count * channels elements).

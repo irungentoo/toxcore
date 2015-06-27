@@ -578,8 +578,10 @@ namespace video {
 namespace audio {
   event receive_frame {
     /**
-     * The function type for the ${event receive_frame} callback.
-     *
+     * The function type for the ${event receive_frame} callback. The callback can be
+     * called multiple times per single iteration depending on the amount of queued
+     * frames in the buffer.
+     * 
      * @param friend_number The friend number of the friend who sent an audio frame.
      * @param pcm An array of audio samples (sample_count * channels elements).
      * @param sample_count The number of audio samples per channel in the PCM array.
