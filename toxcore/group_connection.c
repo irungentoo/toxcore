@@ -320,34 +320,6 @@ bool gcc_connection_is_direct(const GC_Connection *gconn)
     return ((GCC_UDP_DIRECT_TIMEOUT + gconn->last_recv_direct_time) > unix_time());
 }
 
-/* Adds tcp relays for group peer connection.
- *
- * Returns the number of relays added on success.
- * Returns -1 on failure.
- */
-int gcc_add_peer_tcp_relays(GC_Chat *chat, GC_Connection *gconn, const uint8_t *nodes_data, uint16_t length)
-{
-    if (!gconn)
-        return -1;
-
-    if (length == 0)
-        return 0;
-
-    Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
-    int num_nodes = unpack_nodes(tcp_relays, GCC_MAX_TCP_SHARED_RELAYS, NULL, nodes_data, length, 1);
-
-    if (num_nodes == -1)
-        return -1;
-
-    int i;
-
-    for (i = 0; i < num_nodes; ++i)
-        add_tcp_relay_connection(chat->tcp_conn, gconn->tcp_connection_num, tcp_relays[i].ip_port,
-                                 tcp_relays[i].public_key);
-
-    return num_nodes;
-}
-
 /* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn)
 {

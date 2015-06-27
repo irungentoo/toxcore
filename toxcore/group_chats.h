@@ -122,6 +122,7 @@ enum {
     GP_PING = 1,
     GP_MESSAGE_ACK = 2,
     GP_INVITE_RESPONSE_REJECT = 3,
+    GP_TCP_RELAYS = 4,
 
     /* lossless packets */
     GP_BROADCAST = 20,

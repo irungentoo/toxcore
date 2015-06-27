@@ -40,11 +40,11 @@
 #define GC_MAX_PACKET_PADDING 8
 #define GC_PACKET_PADDING_LENGTH(length) (((MAX_GC_PACKET_SIZE - (length)) % GC_MAX_PACKET_PADDING))
 
-#define GC_MIN_PLAIN_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + SIG_PUBLIC_KEY\
-                                     + sizeof(uint8_t) + sizeof(uint8_t))
+#define GC_PLAIN_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + SIG_PUBLIC_KEY\
+                                 + sizeof(uint8_t) + sizeof(uint8_t))
 
-#define GC_MIN_ENCRYPTED_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES\
-                                         + GC_MIN_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
+#define GC_ENCRYPTED_HS_PACKET_SIZE (sizeof(uint8_t) + HASH_ID_BYTES + ENC_PUBLIC_KEY + crypto_box_NONCEBYTES\
+                                     + GC_PLAIN_HS_PACKET_SIZE + crypto_box_MACBYTES)
 
 #define GC_PACKED_SHARED_STATE_SIZE (EXT_PUBLIC_KEY + sizeof(uint32_t) + MAX_GC_GROUP_NAME_SIZE + sizeof(uint16_t)\
                                      + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE\
@@ -1096,6 +1096,80 @@ static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat)
             send_gc_handshake_request(c->messenger, chat->groupnumber, chat->addr_list[i].ip_port,
                                       chat->addr_list[i].public_key, HS_PEER_INFO_EXCHANGE, HJ_PUBLIC);
     }
+
+    return 0;
+}
+
+/* Shares our TCP relays with peernumber and adds shared relays to our connection with them.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int send_gc_tcp_relays(GC_Chat *chat, uint32_t peernumber)
+{
+    Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
+    unsigned int i, num = tcp_copy_connected_relays(chat->tcp_conn, tcp_relays, GCC_MAX_TCP_SHARED_RELAYS);
+
+    if (num == 0)
+        return 0;
+
+    chat->gcc[peernumber].last_tcp_relays_shared = unix_time();
+
+    uint8_t data[HASH_ID_BYTES + sizeof(tcp_relays)];
+    U32_to_bytes(data, chat->self_public_key_hash);
+    uint32_t length = HASH_ID_BYTES;
+
+    for (i = 0; i < num; ++i)
+        add_tcp_relay_connection(chat->tcp_conn, chat->gcc[peernumber].tcp_connection_num, tcp_relays[i].ip_port,
+                                 tcp_relays[i].public_key);
+
+    int nodes_len = pack_nodes(data + length, sizeof(data) - length, tcp_relays, num);
+
+    if (nodes_len <= 0)
+        return -1;
+
+    length += nodes_len;
+
+    if (send_lossy_group_packet(chat, peernumber, data, length, GP_TCP_RELAYS) == -1)
+        return -1;
+
+    return 0;
+}
+
+/* Adds peernumber's shared TCP relays to our connection with them.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int handle_gc_tcp_relays(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                uint32_t length)
+{
+    if (length == 0)
+        return -1;
+
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (chat->connection_state != CS_CONNECTED)
+        return -1;
+
+    if (!chat->gcc[peernumber].confirmed)
+        return -1;
+
+    Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
+    int num_nodes = unpack_nodes(tcp_relays, GCC_MAX_TCP_SHARED_RELAYS, NULL, data, length, 1);
+
+    if (num_nodes <= 0)
+        return -1;
+
+    int i;
+
+    for (i = 0; i < num_nodes; ++i)
+        add_tcp_relay_connection(chat->tcp_conn, chat->gcc[peernumber].tcp_connection_num, tcp_relays[i].ip_port,
+                                 tcp_relays[i].public_key);
 
     return 0;
 }
@@ -2930,10 +3004,6 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
         return -1;
 
     GC_Session *c = m->group_handler;
-
-    if (!c)
-        return -1;
-
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
@@ -3010,7 +3080,7 @@ static int uwrap_group_handshake_packet(const uint8_t *self_sk, uint8_t *sender_
 }
 
 /* Encrypts data of length using the peer's shared key a new nonce. Packet must have room
- * for GC_MIN_ENCRYPTED_HS_PACKET_SIZE bytes.
+ * for GC_ENCRYPTED_HS_PACKET_SIZE bytes.
  *
  * Adds plaintext header consisting of: packet identifier, chat_id_hash, self public key, nonce.
  *
@@ -3021,7 +3091,7 @@ static int wrap_group_handshake_packet(const uint8_t *self_pk, const uint8_t *se
                                        uint8_t *packet, uint32_t packet_size, const uint8_t *data,
                                        uint16_t length, uint32_t chat_id_hash)
 {
-    if (packet_size < GC_MIN_ENCRYPTED_HS_PACKET_SIZE)
+    if (packet_size != GC_ENCRYPTED_HS_PACKET_SIZE)
         return -1;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
@@ -3056,13 +3126,13 @@ static int wrap_group_handshake_packet(const uint8_t *self_pk, const uint8_t *se
 int make_gc_handshake_packet(GC_Chat *chat, const GC_Connection *gconn, uint8_t handshake_type,
                              uint8_t request_type, uint8_t join_type, uint8_t *packet, size_t packet_size)
 {
-    if (packet_size < GC_MIN_ENCRYPTED_HS_PACKET_SIZE)
+    if (packet_size != GC_ENCRYPTED_HS_PACKET_SIZE)
         return -1;
 
     if (!chat || !gconn)
         return -1;
 
-    uint8_t data[GC_MIN_PLAIN_HS_PACKET_SIZE + (GCC_MAX_TCP_SHARED_RELAYS * sizeof(Node_format))];
+    uint8_t data[GC_PLAIN_HS_PACKET_SIZE];
 
     data[0] = handshake_type;
     uint16_t length = sizeof(uint8_t);
@@ -3077,29 +3147,11 @@ int make_gc_handshake_packet(GC_Chat *chat, const GC_Connection *gconn, uint8_t 
     memcpy(data + length, &join_type, sizeof(uint8_t));
     length += sizeof(uint8_t);
 
-    int nodes_len = 0;
-
-    if (handshake_type == GH_REQUEST) {
-        Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
-        unsigned int i, num = tcp_copy_connected_relays(chat->tcp_conn, tcp_relays, GCC_MAX_TCP_SHARED_RELAYS);
-
-        for (i = 0; i < num; ++i)
-            add_tcp_relay_connection(chat->tcp_conn, gconn->tcp_connection_num, tcp_relays[i].ip_port,
-                                     tcp_relays[i].public_key);
-
-        nodes_len = pack_nodes(data + length, sizeof(data) - length, tcp_relays, num);
-
-        if (nodes_len < 0)
-            return -1;
-
-        length += nodes_len;
-    }
-
     int enc_len = wrap_group_handshake_packet(chat->self_public_key, chat->self_secret_key,
                                               gconn->addr.public_key, packet, packet_size,
                                               data, length, chat->chat_id_hash);
 
-    if (enc_len != GC_MIN_ENCRYPTED_HS_PACKET_SIZE + nodes_len)
+    if (enc_len != GC_ENCRYPTED_HS_PACKET_SIZE)
         return -1;
 
     return enc_len;
@@ -3115,10 +3167,10 @@ static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t 
 {
     GC_Connection *gconn = &chat->gcc[peernumber];
 
-    uint8_t packet[MAX_GC_PACKET_SIZE];
+    uint8_t packet[GC_ENCRYPTED_HS_PACKET_SIZE];
     int length = make_gc_handshake_packet(chat, gconn, handshake_type, request_type, join_type, packet, sizeof(packet));
 
-    if (length < GC_MIN_ENCRYPTED_HS_PACKET_SIZE)
+    if (length != sizeof(packet))
         return -1;
 
     if (gcc_add_send_ary(chat, packet, length, peernumber, -1) == -1)
@@ -3315,7 +3367,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port *i
 static int handle_gc_handshake_packet(Messenger *m, GC_Chat *chat, IP_Port *ipp, const uint8_t *packet,
                                       uint16_t length, bool direct_conn)
 {
-    if (length < GC_MIN_ENCRYPTED_HS_PACKET_SIZE || length > MAX_GC_PACKET_SIZE)
+    if (length != GC_ENCRYPTED_HS_PACKET_SIZE)
         return -1;
 
     uint8_t sender_pk[ENC_PUBLIC_KEY];
@@ -3344,12 +3396,6 @@ static int handle_gc_handshake_packet(Messenger *m, GC_Chat *chat, IP_Port *ipp,
             return -1;
 
         peernumber = handle_gc_handshake_request(m, chat->groupnumber, ipp, sender_pk, real_data, real_len);
-
-        if (gcc_add_peer_tcp_relays(chat, &chat->gcc[peernumber], data + GC_MIN_PLAIN_HS_PACKET_SIZE,
-                                    plain_len - GC_MIN_PLAIN_HS_PACKET_SIZE) == -1) {
-            fprintf(stderr, "add_peer_tcp_relays failed in handle_gc_handshake_packet\n");
-            return -1;
-        }
     } else if (handshake_type == GH_RESPONSE) {
         peernumber = handle_gc_handshake_response(m, chat->groupnumber, sender_pk, real_data, real_len);
     } else {
@@ -3527,6 +3573,9 @@ static int handle_gc_lossy_message(Messenger *m, GC_Chat *chat, const uint8_t *p
             break;
         case GP_INVITE_RESPONSE_REJECT:
             ret = handle_gc_invite_response_reject(m, chat->groupnumber, real_data, len);
+            break;
+        case GP_TCP_RELAYS:
+            ret = handle_gc_tcp_relays(m, chat->groupnumber, peernumber, real_data, len);
             break;
         default:
             fprintf(stderr, "Warning: handling invalid lossy group packet type %u\n", packet_type);
@@ -3916,6 +3965,11 @@ static void do_peer_connections(Messenger *m, int groupnumber)
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
+        if (chat->gcc[i].confirmed) {
+            if (is_timeout(chat->gcc[i].last_tcp_relays_shared, GCC_TCP_SHARED_RELAYS_TIMEOUT))
+                send_gc_tcp_relays(chat, i);
+        }
+
         if (peer_timed_out(chat, i)) {
             gc_peer_delete(m, groupnumber, i, (uint8_t *) "Timed out", 9);
         } else {

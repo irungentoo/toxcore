@@ -27,8 +27,14 @@
 
 #include "group_chats.h"
 
-#define GCC_BUFFER_SIZE 8192    /* must fit inside an uint16 */
+/* Max number of messages to store in the send/recv arrays (must fit inside an uint16) */
+#define GCC_BUFFER_SIZE 8192
+
+/* Max number of TCP relays we share with a peer */
 #define GCC_MAX_TCP_SHARED_RELAYS 3
+
+/* The time between attempts to share our TCP relays with a peer */
+#define GCC_TCP_SHARED_RELAYS_TIMEOUT 300
 
 /* The time before the direct UDP connection is considered dead */
 #define GCC_UDP_DIRECT_TIMEOUT (GC_PING_INTERVAL * 2 + 2)
@@ -59,6 +65,7 @@ typedef struct GC_Connection {
 
     int         tcp_connection_num;
     uint64_t    last_recv_direct_time;   /* the last time we received a direct packet from this peer */
+    uint64_t    last_tcp_relays_shared;  /* the last time we tried to send this peer our tcp relays */
 
     uint64_t    last_rcvd_ping;
     uint64_t    time_added;
@@ -110,13 +117,6 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber);
 
 /* Returns true if we have a direct connection with this group connection */
 bool gcc_connection_is_direct(const GC_Connection *gconn);
-
-/* Adds tcp relays for group peer connection.
- *
- * Returns the number of relays added on success.
- * Returns -1 on failure.
- */
-int gcc_add_peer_tcp_relays(GC_Chat *chat, GC_Connection *gconn, const uint8_t *nodes_data, uint16_t length);
 
 /* Sends a packet to the peer associated with gconn.
  *
