@@ -237,7 +237,8 @@ typedef enum TOXAV_ERR_CALL {
  *
  * It is the client's responsibility to stop ringing after a certain timeout,
  * if such behaviour is desired. If the client does not stop ringing, the
- * library will not stop until the friend is disconnected.
+ * library will not stop until the friend is disconnected. Audio and video 
+ * receiving are both enabled by default.
  *
  * @param friend_number The friend number of the friend that should be called.
  * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
@@ -288,7 +289,8 @@ typedef enum TOXAV_ERR_ANSWER {
  * Accept an incoming call.
  *
  * If answering fails for any reason, the call will still be pending and it is
- * possible to try and answer it later.
+ * possible to try and answer it later. Audio and video receiving are both
+ * enabled by default.
  *
  * @param friend_number The friend number of the friend that is calling.
  * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
@@ -636,6 +638,8 @@ typedef void toxav_video_receive_frame_cb(ToxAV *toxAV, uint32_t friend_number, 
  *
  */
 void toxav_callback_video_receive_frame(ToxAV *toxAV, toxav_video_receive_frame_cb *callback, void *user_data);
+
+#include "toxav_old.h"
 
 #ifdef __cplusplus
 }

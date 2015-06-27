@@ -15,7 +15,9 @@ libtoxav_la_SOURCES = ../toxav/rtp.h \
                       ../toxav/video.h \
                       ../toxav/video.c \
                       ../toxav/toxav.h \
-                      ../toxav/toxav.c
+                      ../toxav/toxav.c \
+                      ../toxav/toxav_old.h \
+                      ../toxav/toxav_old.c
 
 
 libtoxav_la_CFLAGS = -I../toxcore \
