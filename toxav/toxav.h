@@ -302,36 +302,36 @@ bool toxav_answer(ToxAV *toxAV, uint32_t friend_number, uint32_t audio_bit_rate,
  * :: Call state graph
  *
  ******************************************************************************/
-enum TOXAV_CALL_STATE {
+enum TOXAV_FRIEND_CALL_STATE {
   /**
    * Set by the AV core if an error occurred on the remote end or if friend 
    * timed out. This is the final state after which no more state
    * transitions can occur for the call. This call state will never be triggered
    * in combination with other call states.
    */
-  TOXAV_CALL_STATE_ERROR = 1,
+  TOXAV_FRIEND_CALL_STATE_ERROR = 1,
   /**
    * The call has finished. This is the final state after which no more state
    * transitions can occur for the call. This call state will never be 
    * triggered in combination with other call states.
    */
-  TOXAV_CALL_STATE_FINISHED = 2,
+  TOXAV_FRIEND_CALL_STATE_FINISHED = 2,
   /**
    * The flag that marks that friend is sending audio.
    */
-  TOXAV_CALL_STATE_SENDING_A = 4,
+  TOXAV_FRIEND_CALL_STATE_SENDING_A = 4,
   /**
    * The flag that marks that friend is sending video.
    */
-  TOXAV_CALL_STATE_SENDING_V = 8,
+  TOXAV_FRIEND_CALL_STATE_SENDING_V = 8,
   /**
    * The flag that marks that friend is receiving audio.
    */
-  TOXAV_CALL_STATE_RECEIVING_A = 16,
+  TOXAV_FRIEND_CALL_STATE_RECEIVING_A = 16,
   /**
    * The flag that marks that friend is receiving video.
    */
-  TOXAV_CALL_STATE_RECEIVING_V = 32,
+  TOXAV_FRIEND_CALL_STATE_RECEIVING_V = 32,
 };
 
 

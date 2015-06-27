@@ -1115,7 +1115,7 @@ int callback_end(void* toxav_inst, MSICall* call)
     ToxAV* toxav = toxav_inst;
     pthread_mutex_lock(toxav->mutex);
     
-    invoke_call_state(toxav, call->friend_number, TOXAV_CALL_STATE_FINISHED);
+    invoke_call_state(toxav, call->friend_number, TOXAV_FRIEND_CALL_STATE_FINISHED);
     
     call_kill_transmission(call->av_call);
     call_remove(call->av_call);
@@ -1129,7 +1129,7 @@ int callback_error(void* toxav_inst, MSICall* call)
     ToxAV* toxav = toxav_inst;
     pthread_mutex_lock(toxav->mutex);
     
-    invoke_call_state(toxav, call->friend_number, TOXAV_CALL_STATE_ERROR);
+    invoke_call_state(toxav, call->friend_number, TOXAV_FRIEND_CALL_STATE_ERROR);
     
     call_kill_transmission(call->av_call);
     call_remove(call->av_call);

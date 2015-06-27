@@ -296,7 +296,7 @@ bool answer(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_
  * :: Call state graph
  *
  ******************************************************************************/
-bitmask CALL_STATE {
+bitmask FRIEND_CALL_STATE {
   /**
    * Set by the AV core if an error occurred on the remote end or if friend 
    * timed out. This is the final state after which no more state

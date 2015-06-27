@@ -627,7 +627,7 @@ int main (int argc, char** argv)
         }
         
         iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_FINISHED);
+        assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 		
         /* Stop decode thread */
         data.sig = -1;
@@ -721,7 +721,7 @@ int main (int argc, char** argv)
         }
         
         iterate_tox(bootstrap, AliceAV, BobAV);
-        assert(BobCC.state == TOXAV_CALL_STATE_FINISHED);
+        assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
         
         /* Stop decode thread */
         printf("Stopping decode thread\n");
