@@ -1112,7 +1112,7 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
             return -1;
         }
 
-        int tcp_connections_number = add_tcp_relay(tcp_c, ip_port, relay_pk);
+        int tcp_connections_number = add_tcp_relay_instance(tcp_c, ip_port, relay_pk);
 
         TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
