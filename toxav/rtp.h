@@ -1,6 +1,6 @@
 /**  rtp.h
  *
- *   Copyright (C) 2013 Tox project All Rights Reserved.
+ *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *   This file is part of Tox.
  *
@@ -19,25 +19,45 @@
  *
  */
 
-#ifndef __TOXRTP
-#define __TOXRTP
+#ifndef RTP_H
+#define RTP_H
 
 #define RTP_VERSION 2
-#include <inttypes.h>
-// #include <pthread.h>
 
 #include "../toxcore/Messenger.h"
 
-#define MAX_SEQU_NUM 65535
-#define MAX_RTP_SIZE 65535
+#define LOGGED_LOCK(mutex) do { \
+    /*LOGGER_DEBUG("Locking mutex: %p", mutex);*/\
+    pthread_mutex_lock(mutex);\
+    /*LOGGER_DEBUG("Locked mutex: %p", mutex);*/\
+} while(0)
 
-typedef enum {
-    rtp_ErrorSending = -40
-} RTPError;
+#define LOGGED_UNLOCK(mutex) do { \
+    /*LOGGER_DEBUG("Unlocking mutex: %p", mutex);*/\
+    pthread_mutex_unlock(mutex);\
+    /*LOGGER_DEBUG("Unlocked mutex: %p", mutex);*/\
+} while(0)
+
+#define MAX_RTP_SIZE 1500
+
 /**
- * Standard rtp header
+ * Payload type identifier. Also used as rtp callback prefix. (Not dummies)
  */
-typedef struct _RTPHeader {
+enum {
+    rtp_TypeAudio = 192,
+    rtp_TypeVideo,
+};
+
+enum {
+    rtp_StateBad = -1,
+    rtp_StateNormal,
+    rtp_StateGood,
+};
+
+/** 
+ * Standard rtp header.
+ */
+typedef struct {
     uint8_t  flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
     uint8_t  marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
     uint16_t sequnum;           /* Sequence Number */
@@ -45,83 +65,89 @@ typedef struct _RTPHeader {
     uint32_t ssrc;              /* SSRC */
     uint32_t csrc[16];          /* CSRC's table */
     uint32_t length;            /* Length of the header in payload string. */
-
 } RTPHeader;
-
-/**
+/** 
  * Standard rtp extension header.
  */
-typedef struct _RTPExtHeader {
+typedef struct {
     uint16_t  type;          /* Extension profile */
     uint16_t  length;        /* Number of extensions */
     uint32_t *table;         /* Extension's table */
-
 } RTPExtHeader;
 
 /**
  * Standard rtp message.
  */
-typedef struct _RTPMessage {
+typedef struct RTPMessage_s {
     RTPHeader    *header;
     RTPExtHeader *ext_header;
 
-    uint8_t       data[MAX_RTP_SIZE];
     uint32_t      length;
-
-    struct _RTPMessage   *next;
+    uint8_t       data[];
 } RTPMessage;
 
 /**
  * RTP control session.
  */
-typedef struct _RTPSession {
-    uint8_t         version;
-    uint8_t         padding;
-    uint8_t         extension;
-    uint8_t         cc;
-    uint8_t         marker;
-    uint8_t         payload_type;
-    uint16_t        sequnum;   /* Set when sending */
-    uint16_t        rsequnum;  /* Check when recving msg */
-    uint32_t        timestamp;
-    uint32_t        ssrc;
-    uint32_t       *csrc;
+typedef struct {
+    uint8_t  version;
+    uint8_t  padding;
+    uint8_t  extension;
+    uint8_t  cc;
+    uint8_t  marker;
+    uint8_t  payload_type;
+    uint16_t sequnum;   /* Sending sequence number */
+    uint16_t rsequnum;  /* Receiving sequence number */
+    uint32_t rtimestamp;
+    uint32_t ssrc;
+    uint32_t *csrc;
 
     /* If some additional data must be sent via message
      * apply it here. Only by allocating this member you will be
      * automatically placing it within a message.
      */
-    RTPExtHeader   *ext_header;
+    RTPExtHeader *ext_header;
 
     /* Msg prefix for core to know when recving */
-    uint8_t         prefix;
+    uint8_t prefix;
 
-    int             dest;
+    Messenger *m;
+    int friend_number;
+    struct RTCPSession_s *rtcp_session;
 
-    struct _CSSession *cs;
-
+    void *cs;
+    int (*mcb) (void*, RTPMessage* msg);
+    
 } RTPSession;
 
 /**
  * Must be called before calling any other rtp function.
  */
-RTPSession *rtp_new ( int payload_type, Messenger *messenger, int friend_num );
-
+RTPSession *rtp_new ( int payload_type, Messenger *m, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) );
 /**
  * Terminate the session.
  */
-void rtp_kill ( RTPSession *session, Messenger *messenger );
-
+void rtp_kill ( RTPSession* session );
 /**
- * Sends msg to _RTPSession::dest
+ * Do periodical rtp work.
  */
-int rtp_send_msg ( RTPSession *session, Messenger *messenger, const uint8_t *data, uint16_t length );
-
+int rtp_do(RTPSession *session);
+/**
+ * By default rtp is in receiving state
+ */
+int rtp_start_receiving (RTPSession *session);
+/**
+ * Pause rtp receiving mode.
+ */
+int rtp_stop_receiving (RTPSession *session);
+/**
+ * Sends msg to RTPSession::dest
+ */
+int rtp_send_data ( RTPSession* session, const uint8_t* data, uint16_t length, bool dummy );
 /**
  * Dealloc msg.
  */
-void rtp_free_msg ( RTPSession *session, RTPMessage *msg );
+void rtp_free_msg ( RTPMessage *msg );
 
 
-
-#endif /* __TOXRTP */
+#endif /* RTP_H */

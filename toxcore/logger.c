@@ -200,12 +200,12 @@ void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, con
 #endif
 
     static const char *logger_format =
-        "%s  "   /* Logger id string */
-        "%-16s"  /* Time string of format: %m:%d %H:%M:%S */
-        "%u  "   /* Thread id */
-        "%-5s  " /* Logger lever string */
-        "%-20s " /* File:line string */
-        "- %s"   /* Output message */
+        "%s  "          /* Logger id string */
+        "%-16s"         /* Time string of format: %m:%d %H:%M:%S */
+        "%-12u "        /* Thread id */
+        "%-5s  "        /* Logger lever string */
+        "%-20s "        /* File:line string */
+        "- %s"          /* Output message */
         WIN_CR "\n";    /* Every new print new line */
 
 
