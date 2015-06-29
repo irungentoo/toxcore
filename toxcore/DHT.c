@@ -1,6 +1,6 @@
 /* DHT.c
  *
- * An implementation of the DHT as seen in http://wiki.tox.im/index.php/DHT
+ * An implementation of the DHT as seen in docs/updates/DHT.md
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -1180,30 +1180,6 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-/*
- * Send get nodes requests with client_id to max_num peers in list of length length
- */
-/*
-static void get_bunchnodes(DHT *dht, Client_data *list, uint16_t length, uint16_t max_num, uint8_t *client_id)
-{
-    uint32_t i, num = 0;
-
-    for (i = 0; i < length; ++i) {
-        IPPTsPng *assoc;
-        uint32_t a;
-
-        for (a = 0, assoc = &list[i].assoc6; a < 2; a++, assoc = &list[i].assoc4)
-            if (ipport_isset(&(assoc->ip_port)) &&
-                    !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
-                getnodes(dht, assoc->ip_port, list[i].client_id, client_id, NULL);
-                ++num;
-
-                if (num >= max_num)
-                    return;
-            }
-    }
-}
-*/
 int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count)
 {
@@ -1283,8 +1259,6 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *
     }
 
 #endif
-    /*this isn't really useful anymore.
-    get_bunchnodes(dht, dht->close_clientlist, LCLIENT_LIST, MAX_FRIEND_CLIENTS, client_id);*/
 
     return 0;
 }

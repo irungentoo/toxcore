@@ -1,6 +1,6 @@
 /* DHT.h
  *
- * An implementation of the DHT as seen in http://wiki.tox.im/index.php/DHT
+ * An implementation of the DHT as seen in docs/updates/DHT.md
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *

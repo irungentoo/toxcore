@@ -423,6 +423,8 @@ static int find_tcp_connection_relay(TCP_Connections *tcp_c, const uint8_t *rela
 
 /* Create a new TCP connection to public_key.
  *
+ * public_key must be the counterpart to the secret key that the other peer used with new_tcp_connections().
+ *
  * id is the id in the callbacks for that connection.
  *
  * return connections_number on success.
@@ -1006,7 +1008,7 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
     return 0;
 }
 
-static int add_tcp_relay(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk)
+static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk)
 {
     if (ip_port.ip.family == TCP_INET) {
         ip_port.ip.family = AF_INET;
@@ -1036,7 +1038,7 @@ static int add_tcp_relay(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
     return tcp_connections_number;
 }
 
-/* Add a TCP relay to the instance.
+/* Add a TCP relay to the TCP_Connections instance.
  *
  * return 0 on success.
  * return -1 on failure.
@@ -1048,7 +1050,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
     if (tcp_connections_number != -1)
         return -1;
 
-    if (add_tcp_relay(tcp_c, ip_port, relay_pk) == -1)
+    if (add_tcp_relay_instance(tcp_c, ip_port, relay_pk) == -1)
         return -1;
 
     return 0;
@@ -1089,6 +1091,8 @@ int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_numb
 
 /* Add a TCP relay tied to a connection.
  *
+ * This should be called with the same relay by two peers who want to create a TCP connection with each other.
+ *
  * return 0 on success.
  * return -1 on failure.
  */
@@ -1108,7 +1112,7 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
             return -1;
         }
 
-        int tcp_connections_number = add_tcp_relay(tcp_c, ip_port, relay_pk);
+        int tcp_connections_number = add_tcp_relay_instance(tcp_c, ip_port, relay_pk);
 
         TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -1237,6 +1241,13 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status)
     return 0;
 }
 
+/* Returns a new TCP_Connections object associated with the secret_key.
+ *
+ * In order for others to connect to this instance new_tcp_connection_to() must be called with the
+ * public_key associated with secret_key.
+ *
+ * Returns NULL on failure.
+ */
 TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info)
 {
     if (secret_key == NULL)

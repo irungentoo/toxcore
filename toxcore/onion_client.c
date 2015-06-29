@@ -219,7 +219,7 @@ static _Bool path_timed_out(Onion_Client_Paths *onion_paths, uint32_t pathnum)
  */
 static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
 {
-    if (pathnum == ~0) {
+    if (pathnum == UINT32_MAX) {
         pathnum = rand() % NUMBER_ONION_PATHS;
     } else {
         pathnum = pathnum % NUMBER_ONION_PATHS;
