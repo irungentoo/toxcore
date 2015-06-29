@@ -700,13 +700,15 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
             n = 0;
             ++requested;
         } else {
-            uint64_t sent_time = send_array->buffer[num]->sent_time;
+            if (send_array->buffer[num]) {
+                uint64_t sent_time = send_array->buffer[num]->sent_time;
 
-            if (l_sent_time < sent_time)
-                l_sent_time = sent_time;
+                if (l_sent_time < sent_time)
+                    l_sent_time = sent_time;
 
-            free(send_array->buffer[num]);
-            send_array->buffer[num] = NULL;
+                free(send_array->buffer[num]);
+                send_array->buffer[num] = NULL;
+            }
         }
 
         if (n == 255) {
