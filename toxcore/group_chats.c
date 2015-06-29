@@ -1113,8 +1113,6 @@ static int send_gc_tcp_relays(GC_Chat *chat, uint32_t peernumber)
     if (num == 0)
         return 0;
 
-    chat->gcc[peernumber].last_tcp_relays_shared = unix_time();
-
     uint8_t data[HASH_ID_BYTES + sizeof(tcp_relays)];
     U32_to_bytes(data, chat->self_public_key_hash);
     uint32_t length = HASH_ID_BYTES;
@@ -1133,6 +1131,7 @@ static int send_gc_tcp_relays(GC_Chat *chat, uint32_t peernumber)
     if (send_lossy_group_packet(chat, peernumber, data, length, GP_TCP_RELAYS) == -1)
         return -1;
 
+    chat->gcc[peernumber].last_tcp_relays_shared = unix_time();
     return 0;
 }
 
@@ -4045,6 +4044,9 @@ static void do_new_connection_cooldown(GC_Chat *chat)
 
 static void do_group_tcp(GC_Chat *chat)
 {
+    if (!chat->tcp_conn)
+        return;
+
     do_tcp_connections(chat->tcp_conn);
 
     uint32_t i;
@@ -4184,7 +4186,7 @@ static int get_new_group_index(GC_Session *c)
 
 static int init_gc_tcp_connection(Messenger *m, GC_Chat *chat)
 {
-    chat->tcp_conn = new_tcp_connections(m->dht->self_secret_key, &m->options.proxy_info);
+    chat->tcp_conn = new_tcp_connections(chat->self_secret_key, &m->options.proxy_info);
 
     if (chat->tcp_conn == NULL)
         return -1;
@@ -4211,6 +4213,8 @@ static int create_new_group(GC_Session *c, bool founder)
     Messenger *m = c->messenger;
     GC_Chat *chat = &c->chats[groupnumber];
 
+    create_extended_keypair(chat->self_public_key, chat->self_secret_key);
+
     if (init_gc_tcp_connection(m, chat) == -1) {
         group_delete(c, chat);
         return -1;
@@ -4225,8 +4229,6 @@ static int create_new_group(GC_Session *c, bool founder)
     chat->last_get_nodes_attempt = unix_time();
     chat->last_sent_ping_time = unix_time();
     chat->announce_search_timer = unix_time();
-
-    create_extended_keypair(chat->self_public_key, chat->self_secret_key);
 
     if (peer_add(m, groupnumber, NULL, chat->self_public_key) != 0) {    /* you are always peernumber/index 0 */
         group_delete(c, chat);

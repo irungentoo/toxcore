@@ -302,9 +302,6 @@ int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const
 
     int ret = send_packet_tcp_connection(chat->tcp_conn, gconn->tcp_connection_num, packet, length);
 
-    if (ret == -1)
-        fprintf(stderr, "send_packet_tcp_connection failed in gcc_send_group_packet\n");
-
     if (ret == 0 || direct_send_attempt)
         return 0;
 
