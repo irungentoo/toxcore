@@ -939,8 +939,8 @@ static sock_t new_listening_TCP_socket(int family, uint16_t port)
     return sock;
 }
 
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *public_key,
-                           const uint8_t *secret_key, Onion *onion)
+TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
+                           Onion *onion)
 {
     if (num_sockets == 0 || ports == NULL)
         return NULL;
@@ -1015,8 +1015,8 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
         set_callback_handle_recv_1(onion, &handle_onion_recv_1, temp);
     }
 
-    memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(temp->secret_key, secret_key, crypto_box_SECRETKEYBYTES);
+    crypto_scalarmult_curve25519_base(temp->public_key, temp->secret_key);
 
     bs_list_init(&temp->accepted_key_list, crypto_box_PUBLICKEYBYTES, 8);
 
