@@ -543,9 +543,10 @@ typedef enum TOXAV_ERR_SEND_FRAME {
    */
   TOXAV_ERR_SEND_FRAME_INVALID,
   /**
-   * Bit rate for this payload type was not set up.
+   * Either friend turned off audio or video receiving or we turned off sending
+   * for the said payload.
    */
-  TOXAV_ERR_SEND_FRAME_BIT_RATE_NOT_SET,
+  TOXAV_ERR_SEND_FRAME_PAYLOAD_TYPE_DISABLED,
   /**
    * Failed to push frame through rtp interface.
    */

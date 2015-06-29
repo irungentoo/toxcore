@@ -216,7 +216,8 @@ void iterate();
  *
  * It is the client's responsibility to stop ringing after a certain timeout,
  * if such behaviour is desired. If the client does not stop ringing, the
- * library will not stop until the friend is disconnected.
+ * library will not stop until the friend is disconnected. Audio and video 
+ * receiving are both enabled by default.
  *
  * @param friend_number The friend number of the friend that should be called.
  * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
@@ -262,7 +263,8 @@ event call {
  * Accept an incoming call.
  *
  * If answering fails for any reason, the call will still be pending and it is
- * possible to try and answer it later.
+ * possible to try and answer it later. Audio and video receiving are both
+ * enabled by default.
  *
  * @param friend_number The friend number of the friend that is calling.
  * @param audio_bit_rate Audio bit rate in Kb/sec. Set this to 0 to disable
@@ -519,9 +521,10 @@ error for send_frame {
    */
   INVALID,
   /**
-   * Bit rate for this payload type was not set up.
+   * Either friend turned off audio or video receiving or we turned off sending
+   * for the said payload.
    */
-  BIT_RATE_NOT_SET,
+  PAYLOAD_TYPE_DISABLED,
   /**
    * Failed to push frame through rtp interface.
    */

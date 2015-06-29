@@ -221,6 +221,7 @@ int rtp_start_receiving(RTPSession* session)
         return -1;
     }
     
+    LOGGER_DEBUG("Started receiving on session: %p", session);
     return 0;
 }
 int rtp_stop_receiving(RTPSession* session)
@@ -231,6 +232,7 @@ int rtp_stop_receiving(RTPSession* session)
     m_callback_rtp_packet(session->m, session->friend_number, session->prefix, NULL, NULL);
     m_callback_rtp_packet(session->m, session->friend_number, session->rtcp_session->prefix, NULL, NULL); /* RTCP */
     
+    LOGGER_DEBUG("Stopped receiving on session: %p", session);
     return 0;
 }
 int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, bool dummy )
