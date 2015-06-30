@@ -884,7 +884,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
         return -1;
 
     if (!chat->gcc[peernumber].pending_sync_request)
-        return -1;
+        return 0;
 
     chat->gcc[peernumber].pending_sync_request = false;
 
@@ -3482,7 +3482,7 @@ static int handle_gc_lossless_message(Messenger *m, GC_Chat *chat, const uint8_t
     const uint8_t *real_data = data + HASH_ID_BYTES;
     uint16_t real_len = len - HASH_ID_BYTES;
 
-    int lossless_ret = gcc_handle_recv_message(chat, peernumber, data, real_len, packet_type, message_id);
+    int lossless_ret = gcc_handle_recv_message(chat, peernumber, real_data, real_len, packet_type, message_id);
 
     if (lossless_ret == -1) {
         fprintf(stderr, "failed to handle packet %lu (type %u)\n", message_id, packet_type);
