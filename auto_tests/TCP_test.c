@@ -508,6 +508,33 @@ START_TEST(test_client_invalid)
 }
 END_TEST
 
+#include "../toxcore/TCP_connection.h"
+
+START_TEST(test_tcp_connection)
+{
+    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(self_public_key, self_secret_key);
+    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
+    ck_assert_msg(memcmp(tcp_s->public_key, self_public_key, crypto_box_PUBLICKEYBYTES) == 0, "Wrong public key");
+
+    TCP_Proxy_Info proxy_info;
+    proxy_info.proxy_type = TCP_PROXY_NONE;
+    crypto_box_keypair(self_public_key, self_secret_key);
+    TCP_Connections *tc_1 = new_tcp_connections(self_secret_key, &proxy_info);
+    ck_assert_msg(memcmp(tc_1->self_public_key, self_public_key, crypto_box_PUBLICKEYBYTES) == 0, "Wrong public key");
+
+    crypto_box_keypair(self_public_key, self_secret_key);
+    TCP_Connections *tc_2 = new_tcp_connections(self_secret_key, &proxy_info);
+    ck_assert_msg(memcmp(tc_2->self_public_key, self_public_key, crypto_box_PUBLICKEYBYTES) == 0, "Wrong public key");
+
+
+    kill_TCP_server(tcp_s);
+    kill_tcp_connections(tc_1);
+    kill_tcp_connections(tc_2);
+}
+END_TEST
+
 Suite *TCP_suite(void)
 {
     Suite *s = suite_create("TCP");
@@ -516,6 +543,7 @@ Suite *TCP_suite(void)
     DEFTESTCASE_SLOW(some, 10);
     DEFTESTCASE_SLOW(client, 10);
     DEFTESTCASE_SLOW(client_invalid, 15);
+    DEFTESTCASE_SLOW(tcp_connection, 20);
     return s;
 }
 
