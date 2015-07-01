@@ -22,7 +22,7 @@
  * This file contains the group chats code for the backwards compatibility.
  */
 
-#include "toxav_old.h"
+#include "toxav.h"
 #include "group.h"
 
 /* Create a new toxav group.
