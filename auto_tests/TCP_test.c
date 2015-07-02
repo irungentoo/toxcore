@@ -510,8 +510,29 @@ END_TEST
 
 #include "../toxcore/TCP_connection.h"
 
+_Bool tcp_data_callback_called;
+static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t length)
+{
+    if (object != (void *)120397)
+        return -1;
+
+    if (id != 123)
+        return -1;
+
+    if (length != 6)
+        return -1;
+
+    if (memcmp(data, "Gentoo", length) != 0)
+        return -1;
+
+    tcp_data_callback_called = 1;
+    return 0;
+}
+
+
 START_TEST(test_tcp_connection)
 {
+    unix_time_update();
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
@@ -528,6 +549,51 @@ START_TEST(test_tcp_connection)
     TCP_Connections *tc_2 = new_tcp_connections(self_secret_key, &proxy_info);
     ck_assert_msg(memcmp(tc_2->self_public_key, self_public_key, crypto_box_PUBLICKEYBYTES) == 0, "Wrong public key");
 
+    IP_Port ip_port_tcp_s;
+
+    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.ip.family = AF_INET6;
+    ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
+
+    int connection = new_tcp_connection_to(tc_1, tc_2->self_public_key, 123);
+    ck_assert_msg(connection == 0, "Connection id wrong");
+    ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_s->public_key) == 0,
+                  "Could not add tcp relay to connection\n");
+
+    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    connection = new_tcp_connection_to(tc_2, tc_1->self_public_key, 123);
+    ck_assert_msg(connection == 0, "Connection id wrong");
+    ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_s->public_key) == 0,
+                  "Could not add tcp relay to connection\n");
+
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_tcp_connections(tc_1);
+    do_tcp_connections(tc_2);
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_tcp_connections(tc_1);
+    do_tcp_connections(tc_2);
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_tcp_connections(tc_1);
+    do_tcp_connections(tc_2);
+
+    int ret = send_packet_tcp_connection(tc_1, 0, "Gentoo", 6);
+    ck_assert_msg(ret == 0, "could not send packet.");
+    set_packet_tcp_connection_callback(tc_2, &tcp_data_callback, (void *) 120397);
+
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+
+    do_tcp_connections(tc_1);
+    do_tcp_connections(tc_2);
+
+    ck_assert_msg(tcp_data_callback_called, "could not recv packet.");
 
     kill_TCP_server(tcp_s);
     kill_tcp_connections(tc_1);
