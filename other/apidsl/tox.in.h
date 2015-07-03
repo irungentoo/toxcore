@@ -25,6 +25,9 @@
 #ifndef TOX_H
 #define TOX_H
 
+#ifndef DHT_GROUPCHATS
+#define DHT_GROUPCHATS
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -627,7 +630,7 @@ uint8_t[size] savedata {
  * Sends a "get nodes" request to the given bootstrap node with IP, port, and
  * public key to setup connections.
  *
- * This function will attempt to connect to the node using UDP. You must use 
+ * This function will attempt to connect to the node using UDP. You must use
  * this function even if ${options.this.udp_enabled} was set to false.
  *
  * @param address The hostname or IP address (IPv4 or IPv6) of the node.
@@ -1938,20 +1941,6 @@ namespace file {
 
 /*******************************************************************************
  *
- * :: Group chat management
- *
- ******************************************************************************/
-
-
-/******************************************************************************
- *
- * :: Group chat message sending and receiving
- *
- ******************************************************************************/
-
-
-/*******************************************************************************
- *
  * :: Low-level custom packet sending and receiving
  *
  ******************************************************************************/
@@ -2111,6 +2100,239 @@ inline namespace self {
 
 }
 
+/*******************************************************************************
+ *
+ * :: Group numeric constants
+ *
+ ****************************************************************************/
+
+namespace group {
+  /**
+   * Maximum length of a group topic.
+   */
+  const MAX_TOPIC_LENGTH = 512;
+
+  /**
+   * Maximum length of a peer part message.
+   */
+  const MAX_PART_LENGTH = 128;
+
+  /**
+   * Maximum length of a group name.
+   */
+  const MAX_GROUP_NAME_LENGTH = 48;
+
+  /**
+   * Maximum length of a group password.
+   */
+  const MAX_PASSWD_SIZE = 32;
+
+  /**
+   * Number of bytes in a group Chat ID.
+   */
+  const CHAT_ID_SIZE = 32;
+}
+
+/*******************************************************************************
+ *
+ * :: Group chat management
+ *
+ ******************************************************************************/
+
+
+namespace group {
+
+  static class group_ban {
+
+  /**
+   * This struct stores an entry from the group ban list. This should be used with
+   * the tox_group_get_ban_list() function.
+   */
+    struct this {
+      /**
+       * Contains the last known nick of the banned peer.
+       */
+      const uint8_t[nick_len] nick;
+
+      /**
+       * The length of the nick.
+       */
+      size_t nick_len;
+
+      /**
+       * A timestamp of when this ban was set.
+       */
+      uint64_t time_set;
+
+      /**
+       * Uniquely identifies a ban entry. This is useful for removing entries from the ban list.
+       */
+      uint16_t id;
+    }
+
+  }
+
+  enum class PRIVACY_STATE {
+    /**
+     * The group is considered to be public. Anyone may join the group using the Chat ID.
+     *
+     * If the group is in this state, even if the Chat ID is never explicitly shared
+     * with someone outside of the group, information including the Chat ID, IP addresses,
+     * and peer ID's (but not Tox ID's) is visible to anyone with access to a node
+     * storing a DHT entry for the given group.
+     */
+    PUBLIC,
+
+    /**
+     * The group is considered to be private. The only way to join the group is by having
+     * someone in your contact list send you an invite.
+     *
+     * If the group is in this state, no group information (mentioned above) is present in the DHT;
+     * the DHT is not used for any purpose at all. If a public group is set to private,
+     * all DHT information related to the group will expire shortly.
+     */
+    PRIVATE,
+
+    /**
+     * The group privacy state is invalid.
+     */
+    INVALID,
+  }
+
+  /**
+   * Represents group roles.
+   *
+   * Roles are are hierarchical in that each role has a set of privileges plus all the privileges
+   * of the roles below it.
+   */
+  enum class ROLE {
+    /**
+     * May kick and ban all other peers as well as set their role to anything (except founder).
+     * Founders may also set the group password, toggle the privacy state, and set the peer limit.
+     */
+    FOUNDER,
+
+    /**
+     * May kick, silence and ban peers below this role.
+     */
+    MODERATOR,
+
+    /**
+     * May communicate in any way with other peers and change the group topic.
+     */
+    USER,
+
+    /**
+     * May observe the group; they may not interact with the rest of the group.
+     */
+    OBSERVER,
+
+    /**
+     * The group role is invalid.
+     */
+    INVALID,
+  }
+
+  /**
+   * Represents peer statuses; parallel to TOX_USER_STATUS.
+   */
+  enum class STATUS {
+    /**
+     * The peer is available.
+     */
+    NONE,
+
+    /**
+     * The peer is marked as away.
+     */
+    AWAY,
+
+    /**
+     * The peer is marked as busy.
+     */
+    BUSY,
+
+    /**
+     * The peer status is invalid.
+     */
+    INVALID,
+  }
+}
+
+/******************************************************************************
+ *
+ * :: Group chat message sending and receiving
+ *
+ ******************************************************************************/
+
+
+/******************************************************************************
+ *
+ * :: Group chat events
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  /**
+   * Represents moderation events. These should be used with tox_callback_group_moderation().
+   */
+  enum class MOD_EVENT {
+    /**
+     * A peer has been kicked from the group.
+     */
+    KICK,
+
+    /**
+     * A peer has been banned from the group.
+     */
+    BAN,
+
+    /**
+     * A peer as been given the TOX_GROUP_ROLE_OBSERVER role.
+     */
+    OBSERVER,
+
+    /**
+     * A peer has been given the TOX_GROUP_ROLE_USER role.
+     */
+    USER,
+
+    /**
+     * A peer has been given the TOX_GROUP_ROLE_MODERATOR role.
+     */
+    MODERATOR,
+  }
+
+  /**
+   * Represents types of failed group join attempts. These are used in the tox_callback_group_rejected
+   * callback when a peer fails to join a group.
+   */
+  enum class JOIN_REJECTED {
+    /**
+     * You are using the same nick as someone who is already in the group.
+     */
+    NICK_TAKEN,
+
+    /**
+     * The group peer limit has been reached.
+     */
+    PEER_LIMIT,
+
+    /**
+     * You have supplied the incorrect group password in your join attempt.
+     */
+    INVALID_PASSWORD,
+
+    /**
+     * The join attempt failed due to an unspecified error. This often occurs when the group is
+     * not found in the DHT.
+     */
+    UNKNOWN,
+  }
+
+}
+
 } // class tox
 
 %{
@@ -2120,5 +2342,6 @@ inline namespace self {
 }
 #endif
 
+#endif
 #endif
 %}

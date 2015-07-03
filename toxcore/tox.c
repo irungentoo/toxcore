@@ -1702,7 +1702,7 @@ int tox_group_get_topic_size(const Tox *tox, int groupnumber)
 }
 
 /* Returns groupnumber's privacy state on success.
- * Returns TOX_GP_INVALID on error.
+ * Returns TOX_GROUP_PRIVACY_STATE_INVALID on error.
  */
 TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, int groupnumber)
 {
@@ -1710,7 +1710,7 @@ TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, int groupnum
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
-        return TOX_GP_INVALID;
+        return TOX_GROUP_PRIVACY_STATE_INVALID;
 
     return gc_get_privacy_state(chat);
 }
@@ -1777,7 +1777,7 @@ int tox_group_set_status(Tox *tox, int groupnumber, uint8_t status_type)
 /* Get peernumber's status in groupnumber's group chat.
  *
  * Returns a TOX_GROUP_STATUS on success.
- * Returns TOX_GS_INVALID on failure.
+ * Returns TOX_GROUP_STATUS_INVALID on failure.
  */
 uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumber)
 {
@@ -1785,7 +1785,7 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
-        return TOX_GS_INVALID;
+        return TOX_GROUP_STATUS_INVALID;
 
     return gc_get_status(chat, peernumber);
 }
@@ -1793,7 +1793,7 @@ uint8_t tox_group_get_status(const Tox *tox, int groupnumber, uint32_t peernumbe
 /* Get your own group status in groupnumber's group chat.
  *
  * Returns a TOX_GROUP_STATUS on success.
- * Returns TOX_GS_INVALID on failure.
+ * Returns TOX_GROUP_STATUS_INVALID on failure.
  */
 uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber)
 {
@@ -1801,7 +1801,7 @@ uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber)
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
-        return TOX_GS_INVALID;
+        return TOX_GROUP_STATUS_INVALID;
 
     return gc_get_self_status(chat);
 }
@@ -1809,7 +1809,7 @@ uint8_t tox_group_get_self_status(const Tox *tox, int groupnumber)
 /* Get peernumber's group role in groupnumber's group chat.
  *
  * Returns a TOX_GROUP_ROLE on success.
- * Returns TOX_GR_INVALID on failure.
+ * Returns TOX_GROUP_ROLE_INVALID on failure.
  */
 uint8_t tox_group_get_peer_role(const Tox *tox, int groupnumber, uint32_t peernumber)
 {
@@ -1817,7 +1817,7 @@ uint8_t tox_group_get_peer_role(const Tox *tox, int groupnumber, uint32_t peernu
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
-        return TOX_GR_INVALID;
+        return TOX_GROUP_ROLE_INVALID;
 
     return gc_get_role(chat, peernumber);
 }
@@ -1845,7 +1845,7 @@ int tox_group_set_peer_role(Tox *tox, int groupnumber, uint32_t peernumber, TOX_
 /* Get your own group role in groupnumber's group chat.
  *
  * Return a TOX_GROUP_ROLE on success.
- * Return TOX_GR_INVALID on failure.
+ * Return TOX_GROUP_ROLE_INVALID on failure.
  */
 uint8_t tox_group_get_self_role(const Tox *tox, int groupnumber)
 {
@@ -1853,7 +1853,7 @@ uint8_t tox_group_get_self_role(const Tox *tox, int groupnumber)
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL)
-        return TOX_GR_INVALID;
+        return TOX_GROUP_ROLE_INVALID;
 
     return gc_get_self_role(chat);
 }

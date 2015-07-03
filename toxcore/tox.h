@@ -2307,84 +2307,203 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 /**************** GROUPCHAT API *****************/
 
+/**
+ * Maximum length of a group topic.
+ */
 #define TOX_MAX_GROUP_TOPIC_LENGTH 512
+
+/**
+ * Maximum length of a peer part message.
+ */
 #define TOX_MAX_GROUP_PART_LENGTH 128
+
+/**
+ * Maximum length of a group name.
+ */
 #define TOX_MAX_GROUP_NAME_LENGTH 48
+
+/**
+ * Maximum length of a group password.
+ */
 #define TOX_MAX_GROUP_PASSWD_SIZE 32
+
+/**
+ * Number of bytes in a group Chat ID.
+ */
 #define TOX_GROUP_CHAT_ID_SIZE 32
 
+/**
+ * Represents the privacy state of the group.
+ *
+ * Note: This is completely unrelated to password protection.
+ */
 typedef enum {
-    /* Anyone may join the group via the chat_id */
-    TOX_GP_PUBLIC,
+    /**
+     * The group is considered to be public. Anyone may join the group using the Chat ID.
+     *
+     * If the group is in this state, even if the Chat ID is never explicitly shared
+     * with someone outside of the group, information including the Chat ID, IP addresses,
+     * and peer ID's (but not Tox ID's) is visible to anyone with access to a node
+     * storing a DHT entry for the given group.
+     */
+    TOX_GROUP_PRIVACY_STATE_PUBLIC,
 
-    /* A friend invite is required to join the group and the group is hidden from the DHT */
-    TOX_GP_PRIVATE,
+    /**
+     * The group is considered to be private. The only way to join the group is by having
+     * someone in your contact list send you an invite.
+     *
+     * If the group is in this state, no group information (mentioned above) is present in the DHT;
+     * the DHT is not used for any purpose at all. If a public group is set to private,
+     * all DHT information related to the group will expire shortly.
+     */
+    TOX_GROUP_PRIVACY_STATE_PRIVATE,
 
-    TOX_GP_INVALID
+    /**
+     * The group privacy state is invalid.
+     */
+    TOX_GROUP_PRIVACY_STATE_INVALID
 } TOX_GROUP_PRIVACY_STATE;
 
-/* Group roles are hierarchical where each role has a set of privileges plus
- * all the privileges of the roles below it. */
+/**
+ * Represents group roles.
+ *
+ * Roles are are hierarchical in that each role has a set of privileges plus all the privileges
+ * of the roles below it.
+ */
 typedef enum {
-    /* All-powerful. Cannot be demoted or banned. */
-    TOX_GR_FOUNDER,
+    /**
+     * May kick and ban all other peers as well as set their role to anything (except founder).
+     * Founders may also set the group password, toggle the privacy state, and set the peer limit.
+     */
+    TOX_GROUP_ROLE_FOUNDER,
 
-    /* May kick, silence and ban peers below this role. */
-    TOX_GR_MODERATOR,
+    /**
+     * May kick, silence and ban peers below this role.
+     */
+    TOX_GROUP_ROLE_MODERATOR,
 
-    /* May talk, stream A/V, and change the group topic. */
-    TOX_GR_USER,
+    /**
+     * May communicate in any way with other peers and change the group topic.
+     */
+    TOX_GROUP_ROLE_USER,
 
-    /* May not interact with the group in any way but may observe. */
-    TOX_GR_OBSERVER,
+    /**
+     * May observe the group; they may not interact with the rest of the group.
+     */
+    TOX_GROUP_ROLE_OBSERVER,
 
-    TOX_GR_INVALID
+    /**
+     * The group role is invalid.
+     */
+    TOX_GROUP_ROLE_INVALID
 } TOX_GROUP_ROLE;
 
-/* Used for moderation event notifications with tox_callback_group_moderation */
+/**
+ * Represents moderation events. These should be used with tox_callback_group_moderation().
+ */
 typedef enum {
-    /* Peer has been kicked from the group */
+    /**
+     * A peer has been kicked from the group.
+     */
     TOX_GROUP_MOD_EVENT_KICK,
 
-    /* Peer has been banned from the group */
+    /**
+     * A peer has been banned from the group.
+     */
     TOX_GROUP_MOD_EVENT_BAN,
 
-    /* User or mod has been demoted to observer */
+    /**
+     * A peer as been given the TOX_GROUP_ROLE_OBSERVER role.
+     */
     TOX_GROUP_MOD_EVENT_OBSERVER,
 
-    /* Observer has been promoted to user or moderator has been demoted to user */
+    /**
+     * A peer has been given the TOX_GROUP_ROLE_USER role.
+     */
     TOX_GROUP_MOD_EVENT_USER,
 
-    /* User or observer has been promoted to a moderator */
+    /**
+     * A peer has been given the TOX_GROUP_ROLE_MODERATOR role.
+     */
     TOX_GROUP_MOD_EVENT_MODERATOR,
-
-    TOX_GROUP_MOD_EVENT_INVALID,
 } TOX_GROUP_MOD_EVENT;
 
-/* parallel to TOX_USERSTATUS */
+/**
+ * Represents peer statuses; parallel to TOX_USER_STATUS.
+ */
 typedef enum {
-    TOX_GS_NONE,
-    TOX_GS_AWAY,
-    TOX_GS_BUSY,
-    TOX_GS_INVALID
+    /**
+     * The peer is available.
+     */
+    TOX_GROUP_STATUS_NONE,
+
+    /**
+     * The peer is marked as away.
+     */
+    TOX_GROUP_STATUS_AWAY,
+
+    /**
+     * The peer is marked as busy.
+     */
+    TOX_GROUP_STATUS_BUSY,
+
+    /**
+     * The peer status is invalid.
+     */
+    TOX_GROUP_STATUS_INVALID,
 } TOX_GROUP_STATUS;
 
+/**
+ * Represents types of failed group join attempts. These are used in the tox_callback_group_rejected
+ * callback when a peer fails to join a group.
+ */
 typedef enum {
-    TOX_GJ_NICK_TAKEN,
-    TOX_GJ_GROUP_FULL,
-    TOX_GJ_INCORRECT_PASSWORD,
-    TOX_GJ_INVITE_FAILED
+    /**
+     * You are using the same nick as someone who is already in the group.
+     */
+    TOX_GROUP_JOIN_REJECTED_NICK_TAKEN,
+
+    /**
+     * The group peer limit has been reached.
+     */
+    TOX_GROUP_JOIN_REJECTED_PEER_LIMIT,
+
+    /**
+     * You have supplied the incorrect group password in your join attempt.
+     */
+    TOX_GROUP_JOIN_REJECTED_INVALID_PASSWORD,
+
+    /**
+     * The join attempt failed due to an unspecified error. This often occurs when the group is
+     * not found in the DHT.
+     */
+    TOX_GROUP_JOIN_REJECTED_UNKNOWN
 } TOX_GROUP_JOIN_REJECTED;
 
-/* Stores an entry from the group ban list. This should be used with the tox_group_get_ban_list() function. */
+/**
+ * This struct stores an entry from the group ban list. This should be used with
+ * the tox_group_get_ban_list() function.
+ */
 struct Tox_Group_Ban {
-    // TODO: IP address string
-    uint8_t      nick[TOX_MAX_GROUP_NAME_LENGTH];
-    uint16_t     nick_len;
-    uint64_t     time_set;
+    /**
+     * Contains the last known nick of the banned peer.
+     */
+    uint8_t nick[TOX_MAX_GROUP_NAME_LENGTH];
 
-    /* Uniquely identifies a ban entry. Use this to remove an entry from the ban list. */
-    uint16_t     id;
+    /**
+     * The length of the nick.
+     */
+    uint16_t nick_len;
+
+    /**
+     * A timestamp of when this ban was set.
+     */
+    uint64_t time_set;
+
+    /**
+     * Uniquely identifies a ban entry. This is useful for removing entries from the ban list.
+     */
+    uint16_t id;
 };
 
 /* Set the callback for group invites from friends.
@@ -2625,7 +2744,7 @@ int tox_group_get_group_name(const Tox *tox, int groupnumber, uint8_t *groupname
 int tox_group_get_group_name_size(const Tox *tox, int groupnumber);
 
 /* Returns groupnumber's privacy state on success.
- * Returns TOX_GP_INVALID on error.
+ * Returns TOX_GROUP_PRIVACY_STATE_INVALID on error.
  */
 TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, int groupnumber);
 
