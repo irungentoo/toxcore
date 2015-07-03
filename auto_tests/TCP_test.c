@@ -566,6 +566,8 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_s->public_key) == 0,
                   "Could not add tcp relay to connection\n");
 
+    ck_assert_msg(new_tcp_connection_to(tc_2, tc_1->self_public_key, 123) == -1, "Managed to readd same connection\n");
+
     c_sleep(50);
     do_TCP_server(tcp_s);
     c_sleep(50);
@@ -594,6 +596,9 @@ START_TEST(test_tcp_connection)
     do_tcp_connections(tc_2);
 
     ck_assert_msg(tcp_data_callback_called, "could not recv packet.");
+    ck_assert_msg(tcp_connection_to_online_tcp_relays(tc_1, 0) == 1, "Wrong number of connected relays");
+    ck_assert_msg(kill_tcp_connection_to(tc_1, 0) == 0, "could not kill connection to\n");
+    ck_assert_msg(kill_tcp_connection_to(tc_2, 0) == 0, "could not kill connection to\n");
 
     kill_TCP_server(tcp_s);
     kill_tcp_connections(tc_1);
