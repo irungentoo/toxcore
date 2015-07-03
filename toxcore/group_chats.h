@@ -237,29 +237,29 @@ typedef struct GC_Session {
 
     uint32_t num_chats;
 
-    void (*message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void (*message)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *message_userdata;
-    void (*private_message)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void (*private_message)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *private_message_userdata;
-    void (*action)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void (*action)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *action_userdata;
-    void (*moderation)(Messenger *m, int, uint32_t, uint32_t, unsigned int, void *);
+    void (*moderation)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int, void *);
     void *moderation_userdata;
-    void (*nick_change)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void (*nick_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *nick_change_userdata;
-    void (*status_change)(Messenger *m, int, uint32_t, uint8_t, void *);
+    void (*status_change)(Messenger *m, uint32_t, uint32_t, unsigned int, void *);
     void *status_change_userdata;
-    void (*topic_change)(Messenger *m, int, uint32_t, const uint8_t *,  uint16_t, void *);
+    void (*topic_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *,  size_t, void *);
     void *topic_change_userdata;
-    void (*peer_join)(Messenger *m, int, uint32_t, void *);
+    void (*peer_join)(Messenger *m, uint32_t, uint32_t, void *);
     void *peer_join_userdata;
-    void (*peer_exit)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t, void *);
+    void (*peer_exit)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *peer_exit_userdata;
-    void (*self_join)(Messenger *m, int, void *);
+    void (*self_join)(Messenger *m, uint32_t, void *);
     void *self_join_userdata;
-    void (*peerlist_update)(Messenger *m, int, void *);
+    void (*peerlist_update)(Messenger *m, uint32_t, void *);
     void *peerlist_update_userdata;
-    void (*rejected)(Messenger *m, int, uint8_t, void *);
+    void (*rejected)(Messenger *m, uint32_t, unsigned int, void *);
     void *rejected_userdata;
 } GC_Session;
 
@@ -297,34 +297,48 @@ struct SAVED_GROUP {
     uint8_t   self_status;
 };
 
-/* Return -1 if fail
- * Return 0 if success
+/* Sends a plain message or an action, depending on type.
+ *
+ * Returns 0 on success.
+ * Returns -1 if the message is too long.
+ * Returns -2 if the sender has the observer role.
+ * Returns -3 if the packet fails to send.
  */
 int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Sends a private message to peernumber.
+ *
+ * Returns 0 on success.
+ * Returns -1 if the message is too long.
+ * Returns -2 if the peernumber is invalid.
+ * Returns -3 if the sender has the observer role.
+ * Returns -4 if the packet fails to send.
  */
 int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Toggles ignore for peernumber.
+ *
+ * Returns 0 on success.
+ * Returns -1 if the peernumber is invalid.
  */
 int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Sets the group topic.
+ *
+ * Returns -1 if the topic is too long.
+ * Returns -2 if the caller has the observer role.
+ * Returns -3 if the packet fails to send.
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
 
  /* Copies topic to topicbuffer and returns the topic length. */
-int gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
+uint16_t gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
 
  /* Returns topic length. */
 uint16_t gc_get_topic_size(const GC_Chat *chat);
 
 /* Copies group name to groupname and returns the group_name length */
-int gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
+uint16_t gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
 
 /* Returns group name length */
 uint16_t gc_get_group_name_size(const GC_Chat *chat);
@@ -335,9 +349,14 @@ uint8_t gc_get_privacy_state(const GC_Chat *chat);
 /* Returns the group peer limit. */
 uint32_t gc_get_max_peers(const GC_Chat *chat);
 
-/* Return 0 if success
- * Return -1 if fail
- * Return -2 if nick is taken by another group member
+/*
+ * Sets your own nick.
+ *
+ * Returns 0 on success.
+ * Returns -1 if groupnumber is invalid.
+ * Returns -2 if the length is too long or nick is empty.
+ * Returns -3 if the nick is already taken.
+ * Returns -4 if the packet fails to send.
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
@@ -356,17 +375,20 @@ uint8_t gc_get_self_status(const GC_Chat *chat);
 /* Copies peernumber's nick to namebuffer.
  *
  * Returns nick length on success.
- * Returns -1 on failure.
+ * Returns -1 if peernumber is invalid.
  */
 int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
 
-/* Return -1 on error.
- * Return nick length if success
+/* Returns peernumber's nick length.
+ * Returns -1 if peernumber is invalid.
  */
 int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peernumber);
 
-/* Return -1 if fail
- * Return 0 if success
+/* Sets the caller's status to status_type
+ *
+ * Returns 0 on success.
+ * Returns -1 if the status type is invalid.
+ * Returns -2 if the packet failed to send.
  */
 int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
@@ -380,7 +402,7 @@ uint32_t gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE]
                           uint32_t num_peers);
 
 /* Returns number of peers in chat */
-int gc_get_numpeers(const GC_Chat *chat);
+uint32_t gc_get_numpeers(const GC_Chat *chat);
 
 /* Returns peernumber's group role.
  * Returns GR_INVALID on failure.
@@ -390,9 +412,10 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 /* Sets the role of peernumber. role must be one of: GR_MODERATOR, GR_USER, GR_OBSERVER
  *
  * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller does not have the required permissions for the action.
- * Returns -3 if mod list is full.
+ * Returns -1 if the peernumber is invalid.
+ * Returns -2 if caller does not have sufficient permissions for the action.
+ * Returns -3 if the role assignment is invalid.
+ * Returns -4 if the role failed to be set.
  */
 int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);
 
@@ -401,8 +424,9 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);
  * This function requires that the shared state be re-signed and will only work for the group founder.
  *
  * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller is not the group founder.
+ * Returns -1 if the caller does not have sufficient permissions for the action.
+ * Returns -2 if the password failed to be set.
+ * Returns -3 if the packet failed to send.
  */
 int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passwd_len);
 
@@ -411,8 +435,11 @@ int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passw
  * This function requires that the shared state be re-signed and will only work for the group founder.
  *
  * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller is not the group founder.
+ * Returns -1 if groupnumber is invalid.
+ * Returns -2 if the privacy state is an invalid type.
+ * Returns -3 if the caller does not have sufficient permissions for this action.
+ * Returns -4 if the privacy state fails to set.
+ * Returns -5 if the packet fails to send.
  */
 int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_privacy_state);
 
@@ -421,8 +448,9 @@ int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_priv
  * This function requires that the shared state be re-signed and will only work for the group founder.
  *
  * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller is not the group founder.
+ * Returns -1 if the caller does not have sufficient permissions for this action.
+ * Returns -2 if the peer limit could not be set.
+ * Returns -3 if the packet failed to send.
  */
 int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
 
@@ -430,53 +458,58 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
  * If set_ban is true peer will be added to the ban list.
  *
  * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if the caller does not have kick/ban permissions.
+ * Returns -1 if the groupnumber is invalid.
+ * Returns -2 if the peernumber is invalid.
+ * Returns -3 if the caller does not have sufficient permissions for this action.
+ * Returns -4 if the action failed.
+ * Returns -5 if the packet failed to send.
  */
 int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_ban);
 
 /* Instructs all peers to remove ban_id from their ban list.
  *
  * Returns 0 on success.
- * Returns -1 on failure.
- * Returns -2 if caller does not have unban permissions.
+ * Returns -1 if the caller does not have sufficient permissions for this action.
+ * Returns -2 if the entry could not be removed.
+ * Returns -3 if the packet failed to send.
  */
 int gc_remove_ban(GC_Chat *chat, uint16_t ban_id);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
-void gc_callback_message(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
+void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
                          void *), void *userdata);
 
-void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
-                                 uint16_t, void *), void *userdata);
+void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                                 size_t, void *), void *userdata);
 
-void gc_callback_action(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
+void gc_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
                         void *), void *userdata);
 
-void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint32_t, unsigned int,
+void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,
                             void *), void *userdata);
 
-void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
-                             uint16_t, void *), void *userdata);
+void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                             size_t, void *), void *userdata);
 
-void gc_callback_status_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, uint8_t, void *),
+void gc_callback_status_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *),
                                void *userdata);
 
-void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *,
-                              uint16_t, void *), void *userdata);
+void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                              size_t, void *), void *userdata);
 
-void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, int, uint32_t, void *), void *userdata);
+void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata);
 
-void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, int, uint32_t, const uint8_t *, uint16_t,
+void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
                            void *), void *userdata);
 
-void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, int, void *), void *userdata);
+void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, uint32_t, void *), void *userdata);
 
-void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, int, void *), void *userdata);
+void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, uint32_t, void *), void *userdata);
 
-void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, int, uint8_t type, void *), void *userdata);
+void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int type, void *),
+                          void *userdata);
 
 /* This is the main loop. */
 void do_gc(GC_Session* c);
@@ -498,8 +531,12 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save);
 
 /* Creates a new group.
  *
- * Return groupnumber on success
- * Return -1 on failure
+ * Return groupnumber on success.
+ * Return -1 if the group has no name or the name is too long.
+ * Return -2 if the privacy state is an invalid type.
+ * Return -3 if the the group object fails to initialize.
+ * Return -4 if the group state fails to initialize.
+ * Return -5 if the group fails to announce to the DHT.
  */
 int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name, uint16_t length);
 
@@ -508,7 +545,8 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
  * If the group is not password protected passwd should be set to NULL and passwd_len should be 0.
  *
  * Return groupnumber on success.
- * Reutrn -1 on failure.
+ * Reutrn -1 if the group object fails to initialize.
+ * Return -2 if there is an error setting the group password.
  */
 int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len);
 
@@ -518,21 +556,24 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat);
 /* Joins a group using the invite data received in a friend's group invite.
  *
  * Return groupnumber on success.
- * Return -1 on failure.
+ * Return -1 if the invite data is malformed.
+ * Return -2 if the group object fails to initialize.
+ * Return -3 if there is an error setting the password.
  */
 int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const uint8_t *passwd, uint16_t passwd_len);
 
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
  *
  * Return 0 on success.
- * Return -1 on fail.
+ * Return -1 on failure to create the invite data.
+ * Return -2 if the packet fails to send.
  */
 int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnum);
 
 /* Sends parting message to group and deletes group.
  *
  * Return 0 on success.
- * Return -1 on failure.
+ * Return -1 if the group instance failed delete.
  */
 int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *partmessage, uint16_t length);
 
