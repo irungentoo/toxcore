@@ -2142,7 +2142,7 @@ namespace group {
 
 namespace group {
 
-  static class group_ban {
+  static class group_Ban {
 
   /**
    * This struct stores an entry from the group ban list. This should be used with
@@ -2152,7 +2152,7 @@ namespace group {
       /**
        * Contains the last known nick of the banned peer.
        */
-      const uint8_t[nick_len] nick;
+      uint8_t[nick_len] nick;
 
       /**
        * The length of the nick.
@@ -2266,6 +2266,61 @@ namespace group {
  ******************************************************************************/
 
 
+namespace group {
+
+  /**
+   * This event is triggered when you receive a group invite from a friend.
+   */
+  event invite {
+    /**
+     * @param friendnumber The friendnumber of the contact who invited you.
+     * @param invite_data The invite data. This is used to accept the invite with tox_group_accept_invite().
+     * @param length The length of invite_data.
+     */
+    typedef void(int32_t friendnumber, const uint8_t[length] invite_data);
+  }
+
+  /**
+   * This event is triggered when you receive a group message.
+   */
+  event message {
+    /**
+     * @param groupnumber The groupnumber of the group the message is intended for.
+     * @param peernumber The peernumber of the peer who sent the message.
+     * @param message The message data.
+     * @param length The length of the message.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+  }
+
+  /**
+   * This event is triggered when you receive a private message.
+   */
+  event private_message {
+    /**
+     * @param groupnumber The groupnumber of the group the private message is intended for.
+     * @param peernumber The peernumber of the peer who sent the private message.
+     * @param message The message data.
+     * @param length The length of the message.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+  }
+
+  /**
+   * This event is triggered when you receive an action message.
+   */
+  event action {
+    /**
+     * @param groupnumber The groupnumber of the group the action message is intended for.
+     * @param peernumber The peernumber of the peer who sent the action.
+     * @param message The action message data.
+     * @param length The length of the action message.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+  }
+}
+
+
 /******************************************************************************
  *
  * :: Group chat events
@@ -2331,12 +2386,122 @@ namespace group {
     UNKNOWN,
   }
 
+  /**
+   * This event is triggered when a moderator or founder executes a moderation event.
+   */
+  event moderation {
+    /**
+     * Used to alert the client of a moderation event.
+     *
+     * @param groupnumber The groupnumber of the group the event is intended for.
+     * @param source_peernum The peernumber of the peer who initiated the event.
+     * @param target_peernum The peernumber of the peer who is the target of the event.
+     * @param type The type of event (one of TOX_GROUP_MOD_EVENT).
+     */
+    typedef void(uint32_t groupnumber, uint32_t source_peernum, uint32_t target_peernum, MOD_EVENT type);
+  }
+
+  /**
+   * This event is triggered when a peer changes their nick.
+   */
+  event nick_change {
+    /**
+     * @param groupnumber The groupnumber of the group the nick change is intended for.
+     * @param peernumber The peernumber of the peer who has changed their nick.
+     * @param nick The nick data.
+     * @param length The length of the nick.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] nick);
+  }
+
+  /**
+   * This event is triggered when a peer changes their status.
+   */
+  event status_change {
+    /**
+     * @param groupnumber The groupnumber of the group the status change is intended for.
+     * @param peernumber The peernumber of the peer who has changed their status.
+     * @param status The new status of the peer.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, STATUS status);
+  }
+
+  /**
+   * This event is triggered when a peer changes the group topic.
+   */
+  event topic_change {
+    /**
+     * @param groupnumber The groupnumber of the group the topic change is intended for.
+     * @param peernumber The peernumber of the peer who changed the topic.
+     * @param topic The topic data.
+     * @param length The topic length.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
+  }
+
+  /**
+   * This event is triggered when a peer joins the group. Do not use this to update the peer list; use
+   * tox_callback_group_peerlist_update() instead.
+   */
+  event peer_join {
+    /**
+     * @param groupnumber The groupnumber of the group in which a new peer has joined.
+     * @param peernumber The peernumber of the new peer.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber);
+  }
+
+  /**
+   * This event is triggered when a peer exits the group. Do not use this to update the peer list; use
+   * tox_callback_group_peerlist_update() instead.
+   */
+  event peer_exit {
+    /**
+     * @param groupnumber The groupnumber of the group in which a peer has left.
+     * @param peernumber The peernumber of the peer who left the group.
+     * @param part_message The parting message data.
+     * @param length The length of the parting message.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_PART_LENGTH] part_message);
+  }
+
+  /**
+   * This event is triggered when the client has successfully joined a group. Use this to initialize
+   * any group information the client may need.
+   */
+  event self_join {
+    /**
+     * @param groupnumber The groupnumber of the group that the client has joined.
+     */
+    typedef void(uint32_t groupnumber);
+  }
+
+  /**
+   * This event is triggered when the peer list changes. tox_group_get_names() should be used to update
+   * the client's peer list.
+   */
+  event peerlist_update {
+    /**
+     * @param groupnumber The groupnumber of the group that must be updated.
+     */
+    typedef void(uint32_t groupnumber);
+  }
+
+  /**
+   * This event is triggered when the client fails to join a group.
+   */
+  event rejected {
+    /**
+     * @param groupnumber The groupnumber of the group for which the join has failed.
+     * @param type The type of group rejection.
+     */
+    typedef void(uint32_t groupnumber, JOIN_REJECTED type);
+  }
 }
 
 } // class tox
 
 %{
-#include "tox_old.h"
 
 #ifdef __cplusplus
 }
