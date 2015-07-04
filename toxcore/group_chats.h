@@ -237,12 +237,10 @@ typedef struct GC_Session {
 
     uint32_t num_chats;
 
-    void (*message)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void (*message)(Messenger *m, uint32_t, uint32_t, unsigned int, const uint8_t *, size_t, void *);
     void *message_userdata;
     void (*private_message)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *private_message_userdata;
-    void (*action)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
-    void *action_userdata;
     void (*moderation)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int, void *);
     void *moderation_userdata;
     void (*nick_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
@@ -301,8 +299,9 @@ struct SAVED_GROUP {
  *
  * Returns 0 on success.
  * Returns -1 if the message is too long.
- * Returns -2 if the sender has the observer role.
- * Returns -3 if the packet fails to send.
+ * Returns -2 if the message pointer is NULL or length is zero.
+ * Returns -3 if the sender has the observer role.
+ * Returns -4 if the packet fails to send.
  */
 int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
 
@@ -310,9 +309,10 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
  *
  * Returns 0 on success.
  * Returns -1 if the message is too long.
- * Returns -2 if the peernumber is invalid.
- * Returns -3 if the sender has the observer role.
- * Returns -4 if the packet fails to send.
+ * Returns -2 if the message pointer is NULL or length is zero.
+ * Returns -3 if the peernumber is invalid.
+ * Returns -4 if the sender has the observer role.
+ * Returns -5 if the packet fails to send.
  */
 int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length);
 
@@ -478,14 +478,11 @@ int gc_remove_ban(GC_Chat *chat, uint16_t ban_id);
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
-void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
-                         void *), void *userdata);
+void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int,
+                         const uint8_t *, size_t, void *), void *userdata);
 
 void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
                                  size_t, void *), void *userdata);
-
-void gc_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
-                        void *), void *userdata);
 
 void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,
                             void *), void *userdata);

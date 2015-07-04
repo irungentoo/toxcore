@@ -14,7 +14,7 @@
 #include <stdlib.h>
 
 #define min(a,b) ((a)>(b)?(b):(a))
-#define PEERCOUNT   30
+#define PEERCOUNT   20
 
 
 void do_messenger_cycle(Messenger **peers, int peercount)
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
             numconnected+=DHT_isconnected(tox[i]->dht);
         printf("%d\n", numconnected);
 
-        if (numconnected>PEERCOUNT*min(PEERCOUNT-1,LCLIENT_LIST))
+        if (numconnected>=PEERCOUNT*min(PEERCOUNT-1,LCLIENT_LIST))
             break;
 
         /* TODO: busy wait might be slightly more efficient here */
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     for (i=0; i<PEERCOUNT; i++) {
         do_messenger_cycle(tox, PEERCOUNT);
         int res = gc_group_join(tox[i]->group_handler, chatid, NULL, 0);
-        //idle_n_secs(1, tox, PEERCOUNT);   // comment this out to spam invites as fast as possible
+        idle_n_secs(1, tox, PEERCOUNT);   // comment this out to spam invites as fast as possible
 
         if (res<0)
             printf("Get nodes request failed\n");

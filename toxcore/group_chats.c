@@ -2643,25 +2643,28 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers)
  *
  * Returns 0 on success.
  * Returns -1 if the message is too long.
- * Returns -2 if the sender has the observer role.
- * Returns -3 if the packet fails to send.
+ * Returns -2 if the message pointer is NULL or length is zero.
+ * Returns -3 if the sender has the observer role.
+ * Returns -4 if the packet fails to send.
  */
 int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type)
 {
     if (length > MAX_GC_MESSAGE_SIZE)
         return -1;
 
-    if (chat->group[0].role >= GR_OBSERVER)
+    if (message == NULL || length == 0)
         return -2;
 
-    if (send_gc_broadcast_message(chat, message, length, type) == -1)
+    if (chat->group[0].role >= GR_OBSERVER)
         return -3;
+
+    if (send_gc_broadcast_message(chat, message, length, type) == -1)
+        return -4;
 
     return 0;
 }
 
-static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
-                             uint32_t length, uint8_t type)
+static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
 {
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
@@ -2675,11 +2678,10 @@ static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber,
     if (chat->gcc[peernumber].ignore || chat->group[peernumber].role >= GR_OBSERVER)
         return 0;
 
-    if (type == GM_PLAIN_MESSAGE && c->message) {
-        (*c->message)(m, groupnumber, peernumber, data, length, c->message_userdata);
-    } else if (type == GM_ACTION_MESSAGE && c->action) {
-        (*c->action)(m, groupnumber, peernumber, data, length, c->action_userdata);
-    }
+    unsigned int type = 0; // TODO
+
+    if (c->message)
+        (*c->message)(m, groupnumber, peernumber, type, data, length, c->message_userdata);
 
     return 0;
 }
@@ -2688,26 +2690,30 @@ static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber,
  *
  * Returns 0 on success.
  * Returns -1 if the message is too long.
- * Returns -2 if the peernumber is invalid.
- * Returns -3 if the sender has the observer role.
- * Returns -4 if the packet fails to send.
+ * Returns -2 if the message pointer is NULL or length is zero.
+ * Returns -3 if the peernumber is invalid.
+ * Returns -4 if the sender has the observer role.
+ * Returns -5 if the packet fails to send.
  */
 int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *message, uint16_t length)
 {
     if (length > MAX_GC_MESSAGE_SIZE)
         return -1;
 
-    if (!peernumber_valid(chat, peernumber))
+    if (message == NULL || length == 0)
         return -2;
 
-    if (chat->group[0].role >= GR_OBSERVER)
+    if (!peernumber_valid(chat, peernumber))
         return -3;
+
+    if (chat->group[0].role >= GR_OBSERVER)
+        return -4;
 
     uint8_t packet[length + GC_BROADCAST_ENC_HEADER_SIZE];
     uint32_t packet_len = make_gc_broadcast_header(chat, message, length, packet, GM_PRVT_MESSAGE);
 
     if (send_lossless_group_packet(chat, peernumber, packet, packet_len, GP_BROADCAST) == -1)
-        return -4;
+        return -5;
 
     return 0;
 }
@@ -3093,9 +3099,7 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
         case GM_CHANGE_TOPIC:
             return handle_bc_change_topic(m, groupnumber, peernumber, message, m_len);
         case GM_PLAIN_MESSAGE:
-        /* fallthrough */
-        case GM_ACTION_MESSAGE:
-            return handle_bc_message(m, groupnumber, peernumber, message, m_len, broadcast_type);
+            return handle_bc_message(m, groupnumber, peernumber, message, m_len);
         case GM_PRVT_MESSAGE:
             return handle_bc_private_message(m, groupnumber, peernumber, message, m_len);
         case GM_PEER_EXIT:
@@ -3746,8 +3750,8 @@ int handle_gc_udp_packet(void *object, IP_Port ipp, const uint8_t *packet, uint1
     return -1;
 }
 
-void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
-                         void *), void *userdata)
+void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int,
+                         const uint8_t *, size_t, void *), void *userdata)
 {
     GC_Session *c = m->group_handler;
     c->message = function;
@@ -3760,14 +3764,6 @@ void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, ui
     GC_Session *c = m->group_handler;
     c->private_message = function;
     c->private_message_userdata = userdata;
-}
-
-void gc_callback_action(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
-                        void *), void *userdata)
-{
-    GC_Session *c = m->group_handler;
-    c->action = function;
-    c->action_userdata = userdata;
 }
 
 void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,

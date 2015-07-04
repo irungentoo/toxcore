@@ -2102,7 +2102,7 @@ inline namespace self {
 
 /*******************************************************************************
  *
- * :: Group numeric constants
+ * :: Group chat numeric constants
  *
  ****************************************************************************/
 
@@ -2110,27 +2110,27 @@ namespace group {
   /**
    * Maximum length of a group topic.
    */
-  const MAX_TOPIC_LENGTH = 512;
+  const MAX_TOPIC_LENGTH          = 512;
 
   /**
    * Maximum length of a peer part message.
    */
-  const MAX_PART_LENGTH = 128;
+  const MAX_PART_LENGTH           = 128;
 
   /**
    * Maximum length of a group name.
    */
-  const MAX_GROUP_NAME_LENGTH = 48;
+  const MAX_GROUP_NAME_LENGTH     = 48;
 
   /**
    * Maximum length of a group password.
    */
-  const MAX_PASSWD_SIZE = 32;
+  const MAX_PASSWD_SIZE           = 32;
 
   /**
    * Number of bytes in a group Chat ID.
    */
-  const CHAT_ID_SIZE = 32;
+  const CHAT_ID_SIZE              = 32;
 }
 
 /*******************************************************************************
@@ -2141,36 +2141,6 @@ namespace group {
 
 
 namespace group {
-
-  static class group_Ban {
-
-  /**
-   * This struct stores an entry from the group ban list. This should be used with
-   * the tox_group_get_ban_list() function.
-   */
-    struct this {
-      /**
-       * Contains the last known nick of the banned peer.
-       */
-      uint8_t[nick_len] nick;
-
-      /**
-       * The length of the nick.
-       */
-      size_t nick_len;
-
-      /**
-       * A timestamp of when this ban was set.
-       */
-      uint64_t time_set;
-
-      /**
-       * Uniquely identifies a ban entry. This is useful for removing entries from the ban list.
-       */
-      uint16_t id;
-    }
-
-  }
 
   enum class PRIVACY_STATE {
     /**
@@ -2234,51 +2204,122 @@ namespace group {
   }
 
   /**
-   * Represents peer statuses; parallel to TOX_USER_STATUS.
+   * This event is triggered when the peer list changes. tox_group_get_names() should be used to update
+   * the client's peer list.
    */
-  enum class STATUS {
+  event peerlist_update {
     /**
-     * The peer is available.
+     * @param groupnumber The groupnumber of the group that must be updated.
      */
-    NONE,
+    typedef void(uint32_t groupnumber);
+  }
+
+}
+
+/******************************************************************************
+ *
+ * :: Group chat message sending
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  namespace send {
+    /**
+     * Send a text chat message to the entire group.
+     *
+     * This function creates a group message packet and pushes it into the send
+     * queue.
+     *
+     * The message length may not exceed TOX_MAX_MESSAGE_LENGTH. Larger messages
+     * must be split by the client and sent as separate messages. Other clients can
+     * then reassemble the fragments. Messages may not be empty.
+     *
+     * @param groupnumber The groupnumber of the group the message is intended for.
+     * @param type Message type (normal, action, ...).
+     * @param message A non-NULL pointer to the first element of a byte array
+     *   containing the message text.
+     * @param length Length of the message to be sent.
+     *
+     * @return true on success.
+     */
+    bool message(uint32_t groupnumber, MESSAGE_TYPE type, const uint8_t[length <= MAX_MESSAGE_LENGTH] message) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      GROUP_NOT_FOUND,
+      /**
+       * Message length exceeded $MAX_MESSAGE_LENGTH
+       */
+      TOO_LONG,
+      /**
+       * The message pointer is null or length is zero.
+       */
+      EMPTY,
+      /**
+       * The sender does not have the required permissions to send group messages.
+       */
+      PERMISSIONS,
+      /**
+       * Packet failed to send.
+       */
+      SEND_FAIL,
+    }
 
     /**
-     * The peer is marked as away.
+     * Send a text chat message to the specified peer in the specified group.
+     *
+     * This function creates a group private message packet and pushes it into the send
+     * queue.
+     *
+     * The message length may not exceed TOX_MAX_MESSAGE_LENGTH. Larger messages
+     * must be split by the client and sent as separate messages. Other clients can
+     * then reassemble the fragments. Messages may not be empty.
+     *
+     * @param groupnumber The groupnumber of the group the message is intended for.
+     * @param peernumber The peernumber of the peer the message is intended for.
+     * @param message A non-NULL pointer to the first element of a byte array
+     *   containing the message text.
+     * @param length Length of the message to be sent.
+     *
+     * @return true on success.
      */
-    AWAY,
-
-    /**
-     * The peer is marked as busy.
-     */
-    BUSY,
-
-    /**
-     * The peer status is invalid.
-     */
-    INVALID,
+    bool private_message(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      GROUP_NOT_FOUND,
+      /**
+       * The peer number passed did not designate a valid peer.
+       */
+      PEER_NOT_FOUND,
+      /**
+       * Message length exceeded $MAX_MESSAGE_LENGTH
+       */
+      TOO_LONG,
+      /**
+       * The message pointer is null or length is zero.
+       */
+      EMPTY,
+      /**
+       * The sender does not have the required permissions to send group messages.
+       */
+      PERMISSIONS,
+      /**
+       * Packet failed to send.
+       */
+      SEND_FAIL,
+    }
   }
 }
 
 /******************************************************************************
  *
- * :: Group chat message sending and receiving
+ * :: Group chat message receiving
  *
  ******************************************************************************/
 
-
 namespace group {
-
-  /**
-   * This event is triggered when you receive a group invite from a friend.
-   */
-  event invite {
-    /**
-     * @param friendnumber The friendnumber of the contact who invited you.
-     * @param invite_data The invite data. This is used to accept the invite with tox_group_accept_invite().
-     * @param length The length of invite_data.
-     */
-    typedef void(int32_t friendnumber, const uint8_t[length] invite_data);
-  }
 
   /**
    * This event is triggered when you receive a group message.
@@ -2290,7 +2331,7 @@ namespace group {
      * @param message The message data.
      * @param length The length of the message.
      */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+    typedef void(uint32_t groupnumber, uint32_t peernumber, MESSAGE_TYPE type, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
   /**
@@ -2306,58 +2347,15 @@ namespace group {
     typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
-  /**
-   * This event is triggered when you receive an action message.
-   */
-  event action {
-    /**
-     * @param groupnumber The groupnumber of the group the action message is intended for.
-     * @param peernumber The peernumber of the peer who sent the action.
-     * @param message The action message data.
-     * @param length The length of the action message.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
-  }
 }
-
 
 /******************************************************************************
  *
- * :: Group chat events
+ * :: Group chat invites and joins
  *
  ******************************************************************************/
 
 namespace group {
-
-  /**
-   * Represents moderation events. These should be used with tox_callback_group_moderation().
-   */
-  enum class MOD_EVENT {
-    /**
-     * A peer has been kicked from the group.
-     */
-    KICK,
-
-    /**
-     * A peer has been banned from the group.
-     */
-    BAN,
-
-    /**
-     * A peer as been given the TOX_GROUP_ROLE_OBSERVER role.
-     */
-    OBSERVER,
-
-    /**
-     * A peer has been given the TOX_GROUP_ROLE_USER role.
-     */
-    USER,
-
-    /**
-     * A peer has been given the TOX_GROUP_ROLE_MODERATOR role.
-     */
-    MODERATOR,
-  }
 
   /**
    * Represents types of failed group join attempts. These are used in the tox_callback_group_rejected
@@ -2387,56 +2385,15 @@ namespace group {
   }
 
   /**
-   * This event is triggered when a moderator or founder executes a moderation event.
+   * This event is triggered when you receive a group invite from a friend.
    */
-  event moderation {
+  event invite {
     /**
-     * Used to alert the client of a moderation event.
-     *
-     * @param groupnumber The groupnumber of the group the event is intended for.
-     * @param source_peernum The peernumber of the peer who initiated the event.
-     * @param target_peernum The peernumber of the peer who is the target of the event.
-     * @param type The type of event (one of TOX_GROUP_MOD_EVENT).
+     * @param friendnumber The friendnumber of the contact who invited you.
+     * @param invite_data The invite data. This is used to accept the invite with tox_group_accept_invite().
+     * @param length The length of invite_data.
      */
-    typedef void(uint32_t groupnumber, uint32_t source_peernum, uint32_t target_peernum, MOD_EVENT type);
-  }
-
-  /**
-   * This event is triggered when a peer changes their nick.
-   */
-  event nick_change {
-    /**
-     * @param groupnumber The groupnumber of the group the nick change is intended for.
-     * @param peernumber The peernumber of the peer who has changed their nick.
-     * @param nick The nick data.
-     * @param length The length of the nick.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] nick);
-  }
-
-  /**
-   * This event is triggered when a peer changes their status.
-   */
-  event status_change {
-    /**
-     * @param groupnumber The groupnumber of the group the status change is intended for.
-     * @param peernumber The peernumber of the peer who has changed their status.
-     * @param status The new status of the peer.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, STATUS status);
-  }
-
-  /**
-   * This event is triggered when a peer changes the group topic.
-   */
-  event topic_change {
-    /**
-     * @param groupnumber The groupnumber of the group the topic change is intended for.
-     * @param peernumber The peernumber of the peer who changed the topic.
-     * @param topic The topic data.
-     * @param length The topic length.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
+    typedef void(int32_t friendnumber, const uint8_t[length] invite_data);
   }
 
   /**
@@ -2477,17 +2434,6 @@ namespace group {
   }
 
   /**
-   * This event is triggered when the peer list changes. tox_group_get_names() should be used to update
-   * the client's peer list.
-   */
-  event peerlist_update {
-    /**
-     * @param groupnumber The groupnumber of the group that must be updated.
-     */
-    typedef void(uint32_t groupnumber);
-  }
-
-  /**
    * This event is triggered when the client fails to join a group.
    */
   event rejected {
@@ -2499,6 +2445,133 @@ namespace group {
   }
 }
 
+/******************************************************************************
+ *
+ * :: Group chat state events
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  /**
+   * Represents peer statuses; parallel to TOX_USER_STATUS.
+   */
+  enum class STATUS {
+    /**
+     * The peer is available.
+     */
+    NONE,
+
+    /**
+     * The peer is marked as away.
+     */
+    AWAY,
+
+    /**
+     * The peer is marked as busy.
+     */
+    BUSY,
+
+    /**
+     * The peer status is invalid.
+     */
+    INVALID,
+  }
+
+  /**
+   * This event is triggered when a peer changes their nick.
+   */
+  event nick_change {
+    /**
+     * @param groupnumber The groupnumber of the group the nick change is intended for.
+     * @param peernumber The peernumber of the peer who has changed their nick.
+     * @param nick The nick data.
+     * @param length The length of the nick.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] nick);
+  }
+
+  /**
+   * This event is triggered when a peer changes their status.
+   */
+  event status_change {
+    /**
+     * @param groupnumber The groupnumber of the group the status change is intended for.
+     * @param peernumber The peernumber of the peer who has changed their status.
+     * @param status The new status of the peer.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, STATUS status);
+  }
+
+  /**
+   * This event is triggered when a peer changes the group topic.
+   */
+  event topic_change {
+    /**
+     * @param groupnumber The groupnumber of the group the topic change is intended for.
+     * @param peernumber The peernumber of the peer who changed the topic.
+     * @param topic The topic data.
+     * @param length The topic length.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
+  }
+}
+
+/*******************************************************************************
+ *
+ * :: Group chat moderation
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  /**
+   * Represents moderation events. These should be used with tox_callback_group_moderation().
+   */
+  enum class MOD_EVENT {
+    /**
+     * A peer has been kicked from the group.
+     */
+    KICK,
+
+    /**
+     * A peer has been banned from the group.
+     */
+    BAN,
+
+    /**
+     * A peer as been given the TOX_GROUP_ROLE_OBSERVER role.
+     */
+    OBSERVER,
+
+    /**
+     * A peer has been given the TOX_GROUP_ROLE_USER role.
+     */
+    USER,
+
+    /**
+     * A peer has been given the TOX_GROUP_ROLE_MODERATOR role.
+     */
+    MODERATOR,
+  }
+
+  /**
+   * This event is triggered when a moderator or founder executes a moderation event.
+   */
+  event moderation {
+    /**
+     * Used to alert the client of a moderation event.
+     *
+     * @param groupnumber The groupnumber of the group the event is intended for.
+     * @param source_peernum The peernumber of the peer who initiated the event.
+     * @param target_peernum The peernumber of the peer who is the target of the event.
+     * @param type The type of event (one of TOX_GROUP_MOD_EVENT).
+     */
+    typedef void(uint32_t groupnumber, uint32_t source_peernum, uint32_t target_peernum, MOD_EVENT type);
+  }
+
+}
+
 } // class tox
 
 %{
@@ -2507,6 +2580,6 @@ namespace group {
 }
 #endif
 
-#endif
-#endif
+#endif /* DHT_GROUPCHATS */
+#endif /* TOX_H */
 %}

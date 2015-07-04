@@ -1279,12 +1279,6 @@ void tox_callback_group_private_message(Tox *tox, tox_group_private_message_cb *
     gc_callback_private_message(m, function, userdata);
 }
 
-void tox_callback_group_action(Tox *tox, tox_group_action_cb *function, void *userdata)
-{
-    Messenger *m = tox;
-    gc_callback_action(m, function, userdata);
-}
-
 void tox_callback_group_moderation(Tox *tox, tox_group_moderation_cb *function, void *userdata)
 {
     Messenger *m = tox;
@@ -1392,7 +1386,8 @@ int tox_group_delete(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage,
     return gc_group_exit(m->group_handler, chat, partmessage, length);
 }
 
-int tox_group_message_send(const Tox *tox, uint32_t groupnumber, const uint8_t *message, size_t length)
+int tox_group_message_send(const Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumber, const uint8_t *message,
+                           size_t length)
 {
     const Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1400,7 +1395,7 @@ int tox_group_message_send(const Tox *tox, uint32_t groupnumber, const uint8_t *
     if (chat == NULL)
         return -1;
 
-    return gc_send_message(chat, message, length, GM_PLAIN_MESSAGE);
+    return gc_send_message(chat, message, length, type);
 }
 
 int tox_group_private_message_send(const Tox *tox, uint32_t groupnumber, uint32_t peernumber, const uint8_t *message,
@@ -1413,17 +1408,6 @@ int tox_group_private_message_send(const Tox *tox, uint32_t groupnumber, uint32_
         return -1;
 
     return gc_send_private_message(chat, peernumber, message, length);
-}
-
-int tox_group_action_send(const Tox *tox, uint32_t groupnumber, const uint8_t *message, size_t length)
-{
-    const Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    return gc_send_message(chat, message, length, GM_ACTION_MESSAGE);
 }
 
 int tox_group_set_self_name(Tox *tox, uint32_t groupnumber, const uint8_t *name, size_t length)
@@ -1725,29 +1709,4 @@ int tox_group_get_ban_list_size(Tox *tox, uint32_t groupnumber)
         return -1;
 
     return sanctions_list_num_banned(chat);
-}
-
-int tox_group_get_ban_list(Tox *tox, uint32_t groupnumber, struct Tox_Group_Ban *ban_list)
-{
-    Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL)
-        return -1;
-
-    uint16_t i, count = 0;
-
-    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
-        if (chat->moderation.sanctions[i].type != SA_BAN)
-            continue;
-
-        memcpy(ban_list[count].nick, chat->moderation.sanctions[i].ban_info.nick, MAX_GC_NICK_SIZE);
-        ban_list[count].nick_len = chat->moderation.sanctions[i].ban_info.nick_len;
-        ban_list[count].time_set = chat->moderation.sanctions[i].time_set;
-        ban_list[count].id = chat->moderation.sanctions[i].ban_info.id;
-
-        ++count;
-    }
-
-    return 0;
 }
