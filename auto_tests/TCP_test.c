@@ -598,6 +598,14 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(tcp_data_callback_called, "could not recv packet.");
     ck_assert_msg(tcp_connection_to_online_tcp_relays(tc_1, 0) == 1, "Wrong number of connected relays");
     ck_assert_msg(kill_tcp_connection_to(tc_1, 0) == 0, "could not kill connection to\n");
+
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+    do_tcp_connections(tc_1);
+    do_tcp_connections(tc_2);
+
+    ck_assert_msg(send_packet_tcp_connection(tc_1, 0, "Gentoo", 6) == -1, "could send packet.");
     ck_assert_msg(kill_tcp_connection_to(tc_2, 0) == 0, "could not kill connection to\n");
 
     kill_TCP_server(tcp_s);
