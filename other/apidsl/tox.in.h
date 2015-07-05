@@ -2135,10 +2135,9 @@ namespace group {
 
 /*******************************************************************************
  *
- * :: Group chat management
+ * :: Group chat state enumerators
  *
- ******************************************************************************/
-
+ ****************************************************************************/
 
 namespace group {
 
@@ -2170,6 +2169,31 @@ namespace group {
   }
 
   /**
+   * Represents peer statuses; parallel to TOX_USER_STATUS.
+   */
+  enum class STATUS {
+    /**
+     * The peer is available.
+     */
+    NONE,
+
+    /**
+     * The peer is marked as away.
+     */
+    AWAY,
+
+    /**
+     * The peer is marked as busy.
+     */
+    BUSY,
+
+    /**
+     * The peer status is invalid.
+     */
+    INVALID,
+  }
+
+  /**
    * Represents group roles.
    *
    * Roles are are hierarchical in that each role has a set of privileges plus all the privileges
@@ -2188,12 +2212,12 @@ namespace group {
     MODERATOR,
 
     /**
-     * May communicate in any way with other peers and change the group topic.
+     * May communicate with other peers and change the group topic.
      */
     USER,
 
     /**
-     * May observe the group; they may not interact with the rest of the group.
+     * May observe the group; may not interact with other peers or with the group.
      */
     OBSERVER,
 
@@ -2202,6 +2226,150 @@ namespace group {
      */
     INVALID,
   }
+
+}
+
+/*******************************************************************************
+ *
+ * :: Group chat instance management
+ *
+ ******************************************************************************/
+
+
+namespace group {
+
+  /**
+   * Creates a new group chat.
+   *
+   * This function creates a new group chat object adds it to the chats array.
+   *
+   * @param privacy_state The privacy state of the group. If this is set to $PRIVACY_STATE_PUBLIC
+   *   the group will attempt to announce itself to the DHT and anyone with the Chat ID may join.
+   *   Otherwise a friend invite will be required to join the group.
+   * @param group_name The name of the group. The name must be non-NULL.
+   * @param length The length of the group name. This must be greater than zero and no larger than
+   *   $MAX_GROUP_NAME_LENGTH.
+   *
+   * @return true on success.
+   */
+  bool new(PRIVACY_STATE privacy_state, const uint8_t[length <= MAX_GROUP_NAME_LENGTH] group_name) {
+    /**
+     * The group name exceeded $MAX_GROUP_NAME_LENGTH.
+     */
+    TOO_LONG,
+    /**
+     * group_name is NULL or length is zero.
+     */
+    EMPTY,
+    /**
+     * the privacy state is an invalid type.
+     */
+    PRIVACY,
+    /**
+     * The group instance failed to initialize.
+     */
+    INIT,
+    /**
+     * The group state failed to initialize. This would usually indicate that something went wrong
+     * related to cryptographic signing.
+     */
+    STATE,
+    /**
+     * The group failed to announce to the DHT. This indicates a network related error.
+     */
+    ANNOUNCE,
+  }
+
+  /**
+   * Joins a group chat with specified Chat ID.
+   *
+   * This function creates a new group chat object, adds it to the chats array, and sends
+   * a DHT announcement to find peers in the group associated with chat_id. Once a peer has been
+   * found a join attempt will automatically be initiated.
+   *
+   * @param chat_id The Chat ID of the group you wish to join.
+   * @param length The length of the Chat ID. This must be equal to $CHAT_ID_SIZE.
+   * @param passwd The password required to join the group. Set to NULL if no password is required.
+   * @param passwd_length The length of the password. Set to 0 if no password is required.
+   *   passwd_length must be no larger than $MAX_PASSWD_SIZE.
+   *
+   * @return true on success.
+   */
+  bool join(const uint8_t[length <= CHAT_ID_SIZE] chat_id, const uint8_t[passwd_length <= MAX_PASSWD_SIZE] passwd) {
+    /**
+     * The group instance failed to initialize.
+     */
+    INIT,
+    /**
+     * chat_id is NULL or length is not equal to $CHAT_ID_SIZE.
+     */
+    BAD_CHAT_ID,
+    /**
+     * Indicates a password related error. This may occur if passwd is non-NULL but passwd_length is zero,
+     * or if the password is too long.
+     */
+    BAD_PASSWD,
+  }
+
+  /**
+   * Reconnects to a group.
+   *
+   * This function disconnects from all peers in the group then attempts to reconnect with the group.
+   * The caller's state is not changed (i.e. name, status, role, chat public key etc.)
+   *
+   * @param groupnumber The groupnumber of the group we wish to reconnect to.
+   *
+   * @return true on success.
+   */
+  bool reconnect(uint32_t groupnumber) {
+    /**
+     * The group number passed did not designate a valid group.
+     */
+    NOGROUP,
+  }
+
+  /**
+   * Leaves a group.
+   *
+   * This function sends a parting packet containing a custom (non-obligatory) message to all
+   * peers in a group and deletes the group from the chat array. All group state information is permanently
+   * lost including keys and role credentials.
+   *
+   * @param groupnumber The groupnumber of the group we wish to leave.
+   * @param message The parting message to be sent to all the peers. Set to NULL if we do not wish to
+   *   send a parting message.
+   * @param length The length of the parting message. Set to 0 if we do not wish to send a parting message.
+   *
+   * @return true if the group chat instance is successfully deleted.
+   */
+  bool leave(uint32_t groupnumber, const uint8_t[length <= MAX_PART_LENGTH] message) {
+    /**
+     * The group number passed did not designate a valid group.
+     */
+    NOGROUP,
+    /**
+     * Message length exceeded $MAX_PART_LENGTH
+     */
+    TOO_LONG,
+    /**
+     * The parting packet failed to send.
+     */
+    SEND_FAIL,
+    /**
+     * The group chat instance failed to be deleted. This may occur due to memory related errors.
+     */
+    DELETE_FAIL,
+  }
+
+}
+
+/*******************************************************************************
+ *
+ * :: Group chat state management
+ *
+ ******************************************************************************/
+
+namespace group {
 
   /**
    * This event is triggered when the peer list changes. tox_group_get_names() should be used to update
@@ -2215,6 +2383,7 @@ namespace group {
   }
 
 }
+
 
 /******************************************************************************
  *
@@ -2247,9 +2416,9 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      GROUP_NOT_FOUND,
+      NOGROUP,
       /**
-       * Message length exceeded $MAX_MESSAGE_LENGTH
+       * Message length exceeded $MAX_MESSAGE_LENGTH.
        */
       TOO_LONG,
       /**
@@ -2257,7 +2426,7 @@ namespace group {
        */
       EMPTY,
       /**
-       * The sender does not have the required permissions to send group messages.
+       * The caller does not have the required permissions to send group messages.
        */
       PERMISSIONS,
       /**
@@ -2288,13 +2457,13 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      GROUP_NOT_FOUND,
+      NOGROUP,
       /**
        * The peer number passed did not designate a valid peer.
        */
-      PEER_NOT_FOUND,
+      NOPEER,
       /**
-       * Message length exceeded $MAX_MESSAGE_LENGTH
+       * Message length exceeded $MAX_MESSAGE_LENGTH.
        */
       TOO_LONG,
       /**
@@ -2302,7 +2471,7 @@ namespace group {
        */
       EMPTY,
       /**
-       * The sender does not have the required permissions to send group messages.
+       * The caller does not have the required permissions to send group messages.
        */
       PERMISSIONS,
       /**
@@ -2351,46 +2520,76 @@ namespace group {
 
 /******************************************************************************
  *
- * :: Group chat invites and joins
+ * :: Group chat inviting and join/part events
  *
  ******************************************************************************/
 
 namespace group {
 
-  /**
-   * Represents types of failed group join attempts. These are used in the tox_callback_group_rejected
-   * callback when a peer fails to join a group.
-   */
-  enum class JOIN_REJECTED {
-    /**
-     * You are using the same nick as someone who is already in the group.
-     */
-    NICK_TAKEN,
+  namespace invite {
 
     /**
-     * The group peer limit has been reached.
+     * Invite a friend to a group.
+     *
+     * This function creates an invite request packet and pushes it to the send queue.
+     *
+     * @param groupnumber The groupnumber of the group the message is intended for.
+     * @param friendnumber The friendnumber of the friend the invite is intended for.
+     *
+     * @return true on success.
      */
-    PEER_LIMIT,
+    bool friend(uint32_t groupnumber, int32_t friendnumber) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * Creation of the invite packet failed. This indicates a network related error.
+       */
+      INVITE_FAIL,
+      /**
+       * Packet failed to send or friend number did not designate a valid friend.
+       */
+      SEND_FAIL,
+    }
 
     /**
-     * You have supplied the incorrect group password in your join attempt.
+     * Accept an invite to a group chat that the client previously received from a friend. The invite
+     * is only valid while the inviter is present in the group.
+     *
+     * @param invite_data The invite data received from the `${event invite}` event.
+     * @param length The length of the invite data.
+     * @param passwd The password required to join the group. Set to NULL if no password is required.
+     * @param passwd_length The length of the password. Set to 0 if no password is required.
+     *   passwd_length must be no larger than $MAX_PASSWD_SIZE.
+     *
+     * @return true on success
      */
-    INVALID_PASSWORD,
-
-    /**
-     * The join attempt failed due to an unspecified error. This often occurs when the group is
-     * not found in the DHT.
-     */
-    UNKNOWN,
+    bool accept(const uint8_t[length] invite_data, const uint8_t[passwd_length <= MAX_PASSWD_SIZE] passwd) {
+      /**
+       * The invite data is not in the expected format.
+       */
+      BAD_INVITE,
+      /**
+       * The group instance failed to initialize.
+       */
+      INIT_FAILED,
+      /**
+       * Indicates a password related error. This may occur if passwd is non-NULL but passwd_length is zero,
+       * or if the password is too long.
+       */
+      BAD_PASSWD,
+    }
   }
 
   /**
-   * This event is triggered when you receive a group invite from a friend.
+   * This event is triggered when you receive a group invite from a friend. The client must store
+   * invite_data which is used to join the group via the tox_group_invite_accept() function.
    */
   event invite {
     /**
      * @param friendnumber The friendnumber of the contact who invited you.
-     * @param invite_data The invite data. This is used to accept the invite with tox_group_accept_invite().
+     * @param invite_data The invite data.
      * @param length The length of invite_data.
      */
     typedef void(int32_t friendnumber, const uint8_t[length] invite_data);
@@ -2434,6 +2633,33 @@ namespace group {
   }
 
   /**
+   * Represents types of failed group join attempts. These are used in the tox_callback_group_rejected
+   * callback when a peer fails to join a group.
+   */
+  enum class JOIN_REJECTED {
+    /**
+     * You are using the same nick as someone who is already in the group.
+     */
+    NICK_TAKEN,
+
+    /**
+     * The group peer limit has been reached.
+     */
+    PEER_LIMIT,
+
+    /**
+     * You have supplied the incorrect group password in your join attempt.
+     */
+    INVALID_PASSWORD,
+
+    /**
+     * The join attempt failed due to an unspecified error. This often occurs when the group is
+     * not found in the DHT.
+     */
+    UNKNOWN,
+  }
+
+  /**
    * This event is triggered when the client fails to join a group.
    */
   event rejected {
@@ -2447,36 +2673,11 @@ namespace group {
 
 /******************************************************************************
  *
- * :: Group chat state events
+ * :: Group chat info events
  *
  ******************************************************************************/
 
 namespace group {
-
-  /**
-   * Represents peer statuses; parallel to TOX_USER_STATUS.
-   */
-  enum class STATUS {
-    /**
-     * The peer is available.
-     */
-    NONE,
-
-    /**
-     * The peer is marked as away.
-     */
-    AWAY,
-
-    /**
-     * The peer is marked as busy.
-     */
-    BUSY,
-
-    /**
-     * The peer status is invalid.
-     */
-    INVALID,
-  }
 
   /**
    * This event is triggered when a peer changes their nick.
@@ -2519,6 +2720,118 @@ namespace group {
 
 /*******************************************************************************
  *
+ * :: Group chat founder controls (these only work for the group founder)
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  namespace founder {
+
+    /**
+     * Set or unset the group password.
+     *
+     * This function sets the groups password, creates a new group shared state including the change,
+     * and distributes it to the rest of the group.
+     *
+     * @param groupnumber The groupnumber of the group for which we wish to set the password.
+     * @param passwd The password we want to set. Set passwd to NULL to unset the password.
+     * @param length The length of the password. length must be no longer than $MAX_PASSWD_SIZE.
+     *
+     * @return true on success.
+     */
+    bool set_password(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWD_SIZE] passwd) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The caller does not have the required permissions to set the password.
+       */
+      PERMISSIONS,
+      /**
+       * Password length exceeded $MAX_PASSWD_SIZE.
+       */
+      TOO_LONG,
+      /**
+       * The packet failed to send.
+       */
+      FAIL_SEND,
+    }
+
+    /**
+     * Set the group privacy state.
+     *
+     * This function sets the group's privacy state, creates a new group shared state
+     * including the change, and distributes it to the rest of the group.
+     * If an attempt is made to set the privacy state to the same state that the group is already
+     * in the function call will be successful and no action will be taken.
+     *
+     * @param groupnumber The groupnumber of the group for which we wish to change the privacy state.
+     * @param privacy_state The privacy state we wish to set the group to.
+     *
+     * @return true on success.
+     */
+    bool set_privacy_state(uint32_t groupnumber, PRIVACY_STATE privacy_state) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * privacy_state is an invalid type.
+       */
+      INVALID,
+      /**
+       * The caller does not have the required permissions to set the privacy state.
+       */
+      PERMISSIONS,
+      /**
+       * The privacy state could not be set. This may occur due to an error related to
+       * cryptographic signing of the new shared state.
+       */
+      FAIL_SET,
+      /**
+       * The packet failed to send.
+       */
+      FAIL_SEND,
+    }
+
+    /**
+     * Set the group peer limit.
+     *
+     * This function sets a limit for the number of peers who may be in the group, creates a new
+     * group shared state including the change, and distributes it to the rest of the group.
+     *
+     * @param groupnumber The groupnumber of the group for which we wish to set the peer limit.
+     * @param max_peers
+     *
+     * @return true on success.
+     */
+    bool set_peer_limit(uint32_t groupnumber, uint32_t max_peers) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The caller does not have the required permissions to set the privacy state.
+       */
+      PERMISSIONS,
+      /**
+       * The peer limit could not be set. This may occur due to an error related to
+       * cryptographic signing of the new shared state.
+       */
+      FAIL_SET,
+      /**
+       * The packet failed to send.
+       */
+      FAIL_SEND,
+    }
+  }
+
+}
+
+/*******************************************************************************
+ *
  * :: Group chat moderation
  *
  ******************************************************************************/
@@ -2526,7 +2839,134 @@ namespace group {
 namespace group {
 
   /**
-   * Represents moderation events. These should be used with tox_callback_group_moderation().
+   * Ignore or unignore a peer.
+   *
+   * @param groupnumber The groupnumber of the group the in which you wish to ignore a peer.
+   * @param peernumber The peernumber of the peer who shall be ignored or unignored.
+   * @ignore True to ignore the peer, false to unignore the peer.
+   *
+   * @return true on success.
+   */
+  bool toggle_ignore(uint32_t groupnumber, uint32_t peernumber, bool ignore) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The peer number passed did not designate a valid peer.
+       */
+      NOPEER,
+  }
+
+  namespace mod {
+
+    /**
+     * Set a peer's role.
+     *
+     * This function will first remove the peer's previous role and then assign them a new role.
+     * It will also send a packet to the rest of the group, requesting that they perform
+     * the role reassignment. Note: peers cannot be set to the founder role.
+     *
+     * @param groupnumber The groupnumber of the group the in which you wish set the peer's role.
+     * @param peernumber The peernumber of the peer whose role you wish to set.
+     * @param role The role you wish to set the peer to.
+     *
+     * @return true on success.
+     */
+    bool set_role(uint32_t groupnumber, uint32_t peernumber, ROLE role) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The peer number passed did not designate a valid peer. Note: you cannot set your own role.
+       */
+      NOPEER,
+      /**
+       * The caller does not have the required permissions for this action.
+       */
+      PERMISSIONS,
+      /**
+       * The role assignment is invalid. This will occur if you try to set a peer's role to
+       * the role they already have.
+       */
+      ASSIGNMENT,
+      /**
+       * The role was not successfully set. This may occur if something goes wrong with role setting,
+       * or if the packet fails to send.
+       */
+      FAIL_ACTION,
+    }
+
+    /**
+     * Kick/ban a peer.
+     *
+     * This function will remove a peer from the caller's peer list and optionally add their IP address
+     * to the ban list. It will also send a packet to all group members requesting them
+     * to do the same.
+     *
+     * @param groupnumber The groupnumber of the group the ban is intended for.
+     * @param peernumber The peernumber of the peer who will be kicked and/or added to the ban list.
+     * @param set_ban Set to true if a ban shall be set on the peer's IP address.
+     *
+     * @return true on success.
+     */
+    bool remove_peer(uint32_t groupnumber, uint32_t peernumber, bool set_ban) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The peer number passed did not designate a valid peer.
+       */
+      NOPEER,
+      /**
+       * The caller does not have the required permissions for this action.
+       */
+      PERMISSIONS,
+      /**
+       * The peer failed to be removed from the group and/or added to the ban list.
+       */
+      FAIL_ACTION,
+      /**
+       * The packet failed to send.
+       */
+      FAIL_SEND,
+    }
+
+    /**
+     * Removes a ban.
+     *
+     * This function removes a ban entry from the ban list and sends a packet to the rest of
+     * the group requesting that they do the same.
+     *
+     * @param groupnumber The groupnumber of the group in which the ban is to be removed.
+     * @param ban_id The ID of the ban entry that shall be removed.
+     *
+     * @return true on success
+     */
+    bool remove_ban(uint32_t groupnumber, uint16_t ban_id) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The caller does not have the required permissions for this action.
+       */
+      PERMISSIONS,
+      /**
+       * The ban entry could not be removed. This may occur if ban_id does not correspond to a ban entry.
+       */
+      FAIL_ACTION,
+      /**
+       * The packet failed to send.
+       */
+      FAIL_SEND,
+    }
+  }
+
+  /**
+   * Represents moderation events. These should be used with the `${event moderation}` event.
    */
   enum class MOD_EVENT {
     /**
@@ -2540,17 +2980,17 @@ namespace group {
     BAN,
 
     /**
-     * A peer as been given the TOX_GROUP_ROLE_OBSERVER role.
+     * A peer as been given the $OBSERVER role.
      */
     OBSERVER,
 
     /**
-     * A peer has been given the TOX_GROUP_ROLE_USER role.
+     * A peer has been given the $USER role.
      */
     USER,
 
     /**
-     * A peer has been given the TOX_GROUP_ROLE_MODERATOR role.
+     * A peer has been given the $MODERATOR role.
      */
     MODERATOR,
   }
@@ -2565,7 +3005,7 @@ namespace group {
      * @param groupnumber The groupnumber of the group the event is intended for.
      * @param source_peernum The peernumber of the peer who initiated the event.
      * @param target_peernum The peernumber of the peer who is the target of the event.
-     * @param type The type of event (one of TOX_GROUP_MOD_EVENT).
+     * @param type The type of event (one of $MOD_EVENT).
      */
     typedef void(uint32_t groupnumber, uint32_t source_peernum, uint32_t target_peernum, MOD_EVENT type);
   }

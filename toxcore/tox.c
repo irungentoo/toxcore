@@ -1333,19 +1333,21 @@ void tox_callback_group_rejected(Tox *tox, tox_group_rejected_cb *function, void
     gc_callback_rejected(m, function, userdata);
 }
 
-int tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length)
+bool tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length,
+                   TOX_ERR_GROUP_NEW *error)
 {
     Messenger *m = tox;
     return gc_group_add(m->group_handler, privacy_state, group_name, length);
 }
 
-int tox_group_new_join(Tox *tox, const uint8_t *chat_id, const uint8_t *passwd, size_t passwd_len)
+bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8_t *passwd, size_t passwd_length,
+                    TOX_ERR_GROUP_JOIN *error)
 {
     Messenger *m = tox;
-    return gc_group_join(m->group_handler, chat_id, passwd, passwd_len);
+    return gc_group_join(m->group_handler, chat_id, length, passwd, passwd_length);
 }
 
-int tox_group_reconnect(Tox *tox, uint32_t groupnumber)
+bool tox_group_reconnect(Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_RECONNECT *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1357,14 +1359,14 @@ int tox_group_reconnect(Tox *tox, uint32_t groupnumber)
     return 0;
 }
 
-int tox_group_accept_invite(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *passwd,
-                            size_t passwd_len)
+bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *passwd,
+                            size_t passwd_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
 {
     Messenger *m = tox;
-    return gc_accept_invite(m->group_handler, invite_data, length, passwd, passwd_len);
+    return gc_accept_invite(m->group_handler, invite_data, length, passwd, passwd_length);
 }
 
-int tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumber)
+bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumber, TOX_ERR_GROUP_INVITE_FRIEND *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1375,7 +1377,7 @@ int tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumber
     return gc_invite_friend(m->group_handler, chat, friendnumber);
 }
 
-int tox_group_delete(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage, size_t length)
+bool tox_group_leave(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage, size_t length, TOX_ERR_GROUP_LEAVE *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1386,8 +1388,8 @@ int tox_group_delete(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage,
     return gc_group_exit(m->group_handler, chat, partmessage, length);
 }
 
-int tox_group_message_send(const Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumber, const uint8_t *message,
-                           size_t length)
+bool tox_group_send_message(Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumber, const uint8_t *message,
+                            size_t length, TOX_ERR_GROUP_SEND_MESSAGE *error)
 {
     const Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1398,8 +1400,8 @@ int tox_group_message_send(const Tox *tox, TOX_MESSAGE_TYPE type, uint32_t group
     return gc_send_message(chat, message, length, type);
 }
 
-int tox_group_private_message_send(const Tox *tox, uint32_t groupnumber, uint32_t peernumber, const uint8_t *message,
-                                   size_t length)
+bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const uint8_t *message,
+                                   size_t length, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE *error)
 {
     const Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1526,10 +1528,11 @@ TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, uint32_t gro
     return gc_get_privacy_state(chat);
 }
 
-int tox_group_set_privacy_state(Tox *tox, uint32_t groupnumber, TOX_GROUP_PRIVACY_STATE new_privacy_state)
+bool tox_group_founder_set_privacy_state(Tox *tox, uint32_t groupnumber, TOX_GROUP_PRIVACY_STATE privacy_state,
+                                         TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE *error)
 {
     Messenger *m = tox;
-    return gc_founder_set_privacy_state(m, groupnumber, new_privacy_state);
+    return gc_founder_set_privacy_state(m, groupnumber, privacy_state);
 }
 
 int tox_group_get_peer_limit(const Tox *tox, uint32_t groupnumber)
@@ -1543,7 +1546,7 @@ int tox_group_get_peer_limit(const Tox *tox, uint32_t groupnumber)
     return gc_get_max_peers(chat);
 }
 
-int tox_group_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t maxpeers)
+bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t maxpeers, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1598,7 +1601,8 @@ uint8_t tox_group_get_peer_role(const Tox *tox, uint32_t groupnumber, uint32_t p
     return gc_get_role(chat, peernumber);
 }
 
-int tox_group_set_peer_role(Tox *tox, uint32_t groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role)
+bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peernumber, TOX_GROUP_ROLE role,
+                           TOX_ERR_GROUP_MOD_SET_ROLE *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1661,7 +1665,7 @@ uint32_t tox_group_count_groups(const Tox *tox)
     return gc_count_groups(m->group_handler);
 }
 
-int tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peernumber, bool ignore)
+bool tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peernumber, bool ignore, TOX_ERR_GROUP_TOGGLE_IGNORE *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1672,7 +1676,8 @@ int tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peernumber,
     return gc_toggle_ignore(chat, peernumber, ignore);
 }
 
-int tox_group_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *passwd, size_t length)
+bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *passwd, size_t length,
+                                   TOX_ERR_GROUP_FOUNDER_SET_PASSWORD *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1683,13 +1688,14 @@ int tox_group_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *passwd
     return gc_founder_set_password(chat, passwd, length);
 }
 
-int tox_group_remove_peer(Tox *tox, uint32_t groupnumber, uint32_t peernumber, bool set_ban)
+bool tox_group_mod_remove_peer(Tox *tox, uint32_t groupnumber, uint32_t peernumber, bool set_ban,
+                              TOX_ERR_GROUP_MOD_REMOVE_PEER *error)
 {
     Messenger *m = tox;
     return gc_remove_peer(m, groupnumber, peernumber, set_ban);
 }
 
-int tox_group_remove_ban_entry(Tox *tox, uint32_t groupnumber, uint16_t ban_id)
+bool tox_group_mod_remove_ban(Tox *tox, uint32_t groupnumber, uint16_t ban_id, TOX_ERR_GROUP_MOD_REMOVE_BAN *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);

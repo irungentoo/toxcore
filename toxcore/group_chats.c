@@ -226,7 +226,7 @@ static void self_gc_connected(GC_Chat *chat)
 /* Sets the password for the group (locally only).
  *
  * Returns 0 on success.
- * Returns -1 on failure.
+ * Returns -1 if the password is too long.
  */
 static int set_gc_password_local(GC_Chat *chat, const uint8_t *passwd, uint16_t length)
 {
@@ -2011,12 +2011,21 @@ static int broadcast_gc_mod_list(GC_Chat *chat)
     return 0;
 }
 
+/* Sends a parting signal to the group.
+ *
+ * Returns 0 on success.
+ * Returns -1 if the message is too long.
+ * Returns -2 if the packet failed to send.
+ */
 static int send_gc_self_exit(GC_Chat *chat, const uint8_t *partmessage, uint32_t length)
 {
     if (length > MAX_GC_PART_MESSAGE_SIZE)
-        length = MAX_GC_PART_MESSAGE_SIZE;
+        return -1;
 
-    return send_gc_broadcast_message(chat, partmessage, length, GM_PEER_EXIT);
+    if (send_gc_broadcast_message(chat, partmessage, length, GM_PEER_EXIT) == -1)
+        return -2;
+
+    return 0;
 }
 
 static int handle_bc_peer_exit(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
@@ -2217,7 +2226,7 @@ uint16_t gc_get_group_name_size(const GC_Chat *chat)
  *
  * Returns 0 on success.
  * Returns -1 if the caller does not have sufficient permissions for the action.
- * Returns -2 if the password failed to be set.
+ * Returns -2 if the password is too long.
  * Returns -3 if the packet failed to send.
  */
 int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passwd_len)
@@ -2867,7 +2876,7 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
 
     if (chat->group[peernumber].role == GR_MODERATOR || chat->group[peernumber].role == GR_OBSERVER) {
         /* this first removes peer from any lists they're on and broadcasts new lists to group */
-        if (gc_set_peer_role(chat, peernumber, GR_USER) == -1)
+        if (gc_set_peer_role(chat, peernumber, GR_USER) < 0)
             return -4;
     }
 
@@ -4423,40 +4432,44 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
 /* Creates a new group.
  *
  * Return groupnumber on success.
- * Return -1 if the group has no name or the name is too long.
- * Return -2 if the privacy state is an invalid type.
- * Return -3 if the the group object fails to initialize.
- * Return -4 if the group state fails to initialize.
- * Return -5 if the group fails to announce to the DHT.
+ * Return -1 if the group name is too long.
+ * Return -2 if the group name is empty.
+ * Return -3 if the privacy state is an invalid type.
+ * Return -4 if the the group object fails to initialize.
+ * Return -5 if the group state fails to initialize.
+ * Return -6 if the group fails to announce to the DHT.
  */
 int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name, uint16_t length)
 {
-    if (length > MAX_GC_GROUP_NAME_SIZE || length == 0)
+    if (length > MAX_GC_GROUP_NAME_SIZE)
         return -1;
 
-    if (privacy_state >= GI_INVALID)
+    if (length == 0 || group_name == NULL)
         return -2;
+
+    if (privacy_state >= GI_INVALID)
+        return -3;
 
     int groupnumber = create_new_group(c, true);
 
     if (groupnumber == -1)
-        return -3;
+        return -4;
 
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
     if (chat == NULL)
-        return -3;
+        return -4;
 
     create_extended_keypair(chat->chat_public_key, chat->chat_secret_key);
 
     if (init_gc_shared_state(chat, privacy_state, group_name, length) == -1) {
         group_delete(c, chat);
-        return -4;
+        return -5;
     }
 
     if (init_gc_sanctions_creds(chat) == -1) {
         group_delete(c, chat);
-        return -4;
+        return -5;
     }
 
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
@@ -4465,7 +4478,7 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
 
     if (group_announce_request(c, chat) == -1) {
         group_delete(c, chat);
-        return -5;
+        return -6;
     }
 
     return groupnumber;
@@ -4477,9 +4490,10 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
  *
  * Return groupnumber on success.
  * Reutrn -1 if the group object fails to initialize.
- * Return -2 if there is an error setting the group password.
+ * Return -2 if chat_id is NULL or length is not equal to CHAT_ID_SIZE.
+ * Return -3 if there is an error setting the group password.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len)
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, uint16_t length, const uint8_t *passwd, uint16_t passwd_len)
 {
     int groupnumber = create_new_group(c, false);
 
@@ -4491,16 +4505,19 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, 
     if (chat == NULL)
         return -1;
 
+    if (chat_id == NULL || length != CHAT_ID_SIZE)
+        return -2;
+
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->join_type = HJ_PUBLIC;
 
     if (passwd != NULL) {
         if (passwd_len == 0)
-            return -2;
+            return -3;
 
         if (set_gc_password_local(chat, passwd, passwd_len) == -1)
-            return -2;
+            return -3;
     }
 
     if (chat->num_addrs == 0)
@@ -4677,16 +4694,18 @@ static int group_delete(GC_Session* c, GC_Chat *chat)
 /* Sends parting message to group and deletes group.
  *
  * Return 0 on success.
- * Return -1 if the group instance failed delete.
+ * Return -1 if the parting message is too long.
+ * Return -2 if the parting message failed to send.
+ * Return -3 if the group instance failed delete.
  */
 int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *message, uint16_t length)
 {
-    send_gc_self_exit(chat, message, length);
+    int ret = send_gc_self_exit(chat, message, length);
 
     if (group_delete(c, chat) == -1)
-        return -1;
+        ret = -3;
 
-    return 0;
+    return ret;
 }
 
 void kill_groupchats(GC_Session *c)

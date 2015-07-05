@@ -425,7 +425,7 @@ int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);
  *
  * Returns 0 on success.
  * Returns -1 if the caller does not have sufficient permissions for the action.
- * Returns -2 if the password failed to be set.
+ * Returns -2 if the password is too long.
  * Returns -3 if the packet failed to send.
  */
 int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passwd_len);
@@ -529,11 +529,12 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save);
 /* Creates a new group.
  *
  * Return groupnumber on success.
- * Return -1 if the group has no name or the name is too long.
- * Return -2 if the privacy state is an invalid type.
- * Return -3 if the the group object fails to initialize.
- * Return -4 if the group state fails to initialize.
- * Return -5 if the group fails to announce to the DHT.
+ * Return -1 if the group name is too long.
+ * Return -2 if the group name is empty.
+ * Return -3 if the privacy state is an invalid type.
+ * Return -4 if the the group object fails to initialize.
+ * Return -5 if the group state fails to initialize.
+ * Return -6 if the group fails to announce to the DHT.
  */
 int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name, uint16_t length);
 
@@ -543,9 +544,10 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
  *
  * Return groupnumber on success.
  * Reutrn -1 if the group object fails to initialize.
- * Return -2 if there is an error setting the group password.
+ * Return -2 if chat_id is NULL or length is not equal to CHAT_ID_SIZE.
+ * Return -3 if there is an error setting the group password.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len);
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, uint16_t length, const uint8_t *passwd, uint16_t passwd_len);
 
 /* Resets chat saving all self state and attempts to reconnect to group */
 void gc_rejoin_group(GC_Session *c, GC_Chat *chat);
@@ -570,9 +572,11 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnum);
 /* Sends parting message to group and deletes group.
  *
  * Return 0 on success.
- * Return -1 if the group instance failed delete.
+ * Return -1 if the parting message is too long.
+ * Return -2 if the parting message failed to send.
+ * Return -3 if the group instance failed delete.
  */
-int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *partmessage, uint16_t length);
+int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *message, uint16_t length);
 
 /* Count number of active groups.
  *
