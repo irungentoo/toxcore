@@ -2351,13 +2351,13 @@ namespace group {
        */
       TOO_LONG,
       /**
-       * The length given to the set function is zero.
+       * The length given to the set function is zero or name is a NULL pointer.
        */
-      NO_LENGTH,
+      INVALID,
       /**
-       * The pointer given to the set function is NULL.
+       * The name is already taken by another peer in the group.
        */
-      NULL_PTR,
+      DUPLICATE,
       /**
        * The packet failed to send.
        */
@@ -2578,6 +2578,10 @@ namespace group {
        * The topic length exceeded maximum permissible size of $MAX_TOPIC_LENGTH.
        */
       TOO_LONG,
+      /**
+       * The caller does not have the required permissions to set the topic.
+       */
+      PERMISSIONS,
       /**
        * The packet failed to send.
        */

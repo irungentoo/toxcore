@@ -1492,23 +1492,23 @@ static int handle_bc_change_status(Messenger *m, int groupnumber, uint32_t peern
 }
 
 /* Returns peernumber's status.
- * Returns GS_INVALID on failure.
+ * Returns (uint8_t) -1 on failure.
  */
 uint8_t gc_get_status(const GC_Chat *chat, uint32_t peernumber)
 {
     if (!peernumber_valid(chat, peernumber))
-        return GS_INVALID;
+        return (uint8_t) -1;
 
     return chat->group[peernumber].status;
 }
 
 /* Returns peernumber's group role.
- * Returns GR_INVALID on failure.
+ * Returns (uint8_t) -1 on failure.
  */
 uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber)
 {
     if (!peernumber_valid(chat, peernumber))
-        return GR_INVALID;
+        return (uint8_t) -1;
 
     return chat->group[peernumber].role;
 }
@@ -2174,11 +2174,10 @@ int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length)
     return 0;
 }
 
- /* Copies topic to topicbuffer and returns the topic length. */
-uint16_t gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer)
+ /* Copies topic to topicbuffer. */
+void gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer)
 {
     memcpy(topicbuffer, chat->topic, chat->topic_len);
-    return chat->topic_len;
 }
 
  /* Returns topic length. */
@@ -2211,11 +2210,10 @@ static int handle_bc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
     return 0;
 }
 
-/* Copies group name to groupname and returns the group name length */
-uint16_t gc_get_group_name(const GC_Chat *chat, uint8_t *groupname)
+/* Copies group name to groupname */
+void gc_get_group_name(const GC_Chat *chat, uint8_t *groupname)
 {
     memcpy(groupname, chat->shared_state.group_name, chat->shared_state.group_name_len);
-    return chat->shared_state.group_name_len;
 }
 
 /* Returns group name length */

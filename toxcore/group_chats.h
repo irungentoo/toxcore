@@ -331,14 +331,14 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore);
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
 
- /* Copies topic to topicbuffer and returns the topic length. */
-uint16_t gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
+ /* Copies topic to topicbuffer. */
+void gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
 
  /* Returns topic length. */
 uint16_t gc_get_topic_size(const GC_Chat *chat);
 
-/* Copies group name to groupname and returns the group_name length */
-uint16_t gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
+/* Copies group name to groupname. */
+void gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
 
 /* Returns group name length */
 uint16_t gc_get_group_name_size(const GC_Chat *chat);
@@ -394,7 +394,7 @@ int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peernumber);
 int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
 
 /* Returns peernumber's status.
- * Returns GS_INVALID on failure.
+ * Returns (uint8_t) -1 on failure.
  */
 uint8_t gc_get_status(const GC_Chat *chat, uint32_t peernumber);
 
@@ -406,7 +406,7 @@ uint32_t gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE]
 uint32_t gc_get_numpeers(const GC_Chat *chat);
 
 /* Returns peernumber's group role.
- * Returns GR_INVALID on failure.
+ * Returns (uint8_t) -1 on failure.
  */
 uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 
