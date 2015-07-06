@@ -2998,6 +2998,9 @@ typedef enum TOX_ERR_GROUP_STATE_INFO {
 /**
  * Return the number of peers in the group designated by groupnumber. If group number
  * is invalid, the return value is unspecified.
+ *
+ * All values below the return value of this function are valid peer numbers, and all values
+ * equal to or greater than the return value are invalid.
  */
 uint32_t tox_group_get_number_peers(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_INFO *error);
 
@@ -3224,12 +3227,17 @@ typedef enum TOX_ERR_GROUP_INVITE_FRIEND {
     TOX_ERR_GROUP_INVITE_FRIEND_NOGROUP,
 
     /**
+     * The friend number passed did not designate a valid friend.
+     */
+    TOX_ERR_GROUP_INVITE_FRIEND_NOFRIEND,
+
+    /**
      * Creation of the invite packet failed. This indicates a network related error.
      */
     TOX_ERR_GROUP_INVITE_FRIEND_INVITE_FAIL,
 
     /**
-     * Packet failed to send or friend number did not designate a valid friend.
+     * Packet failed to send.
      */
     TOX_ERR_GROUP_INVITE_FRIEND_SEND_FAIL,
 
@@ -3787,6 +3795,83 @@ typedef void tox_group_moderation_cb(Tox *tox, uint32_t groupnumber, uint32_t so
  * This event is triggered when a moderator or founder executes a moderation event.
  */
 void tox_callback_group_moderation(Tox *tox, tox_group_moderation_cb *callback, void *user_data);
+
+
+/*******************************************************************************
+ *
+ * :: Group chat ban list queries
+ *
+ ******************************************************************************/
+
+
+
+/**
+ * Error codes for group ban list queries.
+ */
+typedef enum TOX_ERR_GROUP_BAN_QUERY {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_GROUP_BAN_QUERY_OK,
+
+    /**
+     * The group number passed did not designate a valid group.
+     */
+    TOX_ERR_GROUP_BAN_QUERY_NOGROUP,
+
+    /**
+     * The ban_id does not designate a valid ban list entry.
+     */
+    TOX_ERR_GROUP_BAN_QUERY_BAD_ID,
+
+} TOX_ERR_GROUP_BAN_QUERY;
+
+
+/**
+ * Return the number of entries in the ban list for the group designated by groupnumber.
+ * If the group number is invalid, the return value is unspecified.
+ */
+size_t tox_group_ban_get_list_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_BAN_QUERY *error);
+
+/**
+ * Copy a list of valid ban list ID's into an array.
+ *
+ * Call tox_group_ban_get_list_size to determine the number of elements to allocate.
+ *
+ * @param list A memory region with enough space to hold the ban list. If
+ *   this parameter is NULL, this function has no effect.
+ *
+ * @return true on success.
+ */
+bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list, TOX_ERR_GROUP_BAN_QUERY *error);
+
+/**
+ * Return the length of the name for the ban list entry designated by ban_id in the
+ * group designated by groupnumber. If either groupnumber or ban_id are invalid,
+ * the return value is unspecified.
+ */
+size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
+                                   TOX_ERR_GROUP_BAN_QUERY *error);
+
+/**
+ * Write the name of the ban entry designated by ban_id in the group designated by groupnumber
+ * to a byte array.
+ *
+ * Call tox_group_ban_get_name_size to find out how much memory to allocate for the result.
+ *
+ * @return true on success.
+ */
+bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint16_t ban_id, uint8_t *name,
+                            TOX_ERR_GROUP_BAN_QUERY *error);
+
+/**
+ * Return a time stamp indicating the time the ban was set, for the ban list entry
+ * designated by ban_id, in the group designated by groupnumber. If either groupnumber or
+ * ban_id are invalid, the return value is unspecified.
+ */
+uint64_t tox_group_ban_get_time_set(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
+                                    TOX_ERR_GROUP_BAN_QUERY *error);
 
 
 #ifdef __cplusplus

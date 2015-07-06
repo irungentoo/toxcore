@@ -1883,9 +1883,12 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumbe
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_INVITE_FAIL);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_NOFRIEND);
             return 0;
         case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_INVITE_FAIL);
+            return 0;
+        case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_SEND_FAIL);
             return 0;
     }
@@ -2129,4 +2132,105 @@ bool tox_group_mod_remove_ban(Tox *tox, uint32_t groupnumber, uint16_t ban_id, T
 
     /* can't happen */
     return 0;
+}
+
+size_t tox_group_ban_get_list_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_BAN_QUERY *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_OK);
+    return sanctions_list_num_banned(chat);
+}
+
+bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list, TOX_ERR_GROUP_BAN_QUERY *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        return 0;
+    }
+
+    int ret = sanctions_list_get_ban_list(chat, list);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_BAD_ID);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_OK);
+    return 1;
+}
+
+size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
+                                   TOX_ERR_GROUP_BAN_QUERY *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        return -1;
+    }
+
+    uint16_t ret = sanctions_list_get_ban_nick_length(chat, ban_id);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_BAD_ID);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_OK);
+    return ret;
+}
+
+bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint16_t ban_id, uint8_t *name,
+                            TOX_ERR_GROUP_BAN_QUERY *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        return 0;
+    }
+
+    int ret = sanctions_list_get_ban_nick(chat, ban_id, name);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_BAD_ID);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_OK);
+    return 1;
+}
+
+uint64_t tox_group_ban_get_time_set(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
+                                    TOX_ERR_GROUP_BAN_QUERY *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        return -1;
+    }
+
+    uint64_t ret = sanctions_list_get_ban_time_set(chat, ban_id);
+
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_BAD_ID);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_OK);
+    return ret;
 }

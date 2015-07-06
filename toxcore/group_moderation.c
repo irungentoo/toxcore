@@ -647,24 +647,6 @@ int sanctions_list_remove_observer(GC_Chat *chat, const uint8_t *public_key, str
     return -1;
 }
 
-/* Returns true if the IP address is in the ban list.
- * All sanction list entries are assumed to be valid.
- */
-bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port)
-{
-    uint16_t i;
-
-    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
-        if (chat->moderation.sanctions[i].type != SA_BAN)
-            continue;
-
-        if (ip_equal(&chat->moderation.sanctions[i].ban_info.ip_port.ip, &ip_port->ip))
-            return true;
-    }
-
-    return false;
-}
-
 /* Returns true if public key is in the observer list.
  * All sanction list entries are assumed to be verified.
  */
@@ -826,19 +808,6 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanc
     return sanctions_list_make_creds(chat);
 }
 
-/* Returns the number of sanction list entries that are of type SA_BAN */
-uint16_t sanctions_list_num_banned(const GC_Chat *chat)
-{
-    uint16_t i, count = 0;
-
-    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
-        if (chat->moderation.sanctions[i].type == SA_BAN)
-            ++count;
-    }
-
-    return count;
-}
-
 /* Replaces all sanction list signatures made by public_sig_key with the caller's.
  * This is called whenever the founder demotes a moderator.
  *
@@ -873,4 +842,113 @@ void sanctions_list_cleanup(GC_Chat *chat)
 
     chat->moderation.sanctions = NULL;
     chat->moderation.num_sanctions = 0;
+}
+
+
+/********* Ban list queries *********/
+
+
+/* Returns true if the IP address is in the ban list.
+ * All sanction list entries are assumed to be valid.
+ */
+bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type != SA_BAN)
+            continue;
+
+        if (ip_equal(&chat->moderation.sanctions[i].ban_info.ip_port.ip, &ip_port->ip))
+            return true;
+    }
+
+    return false;
+}
+
+/* Returns the number of sanction list entries that are of type SA_BAN */
+uint16_t sanctions_list_num_banned(const GC_Chat *chat)
+{
+    uint16_t i, count = 0;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type == SA_BAN)
+            ++count;
+    }
+
+    return count;
+}
+
+/* Fills list with all valid ban ID's.
+ *
+ * Returns 0 on success.
+ * Returns -1 if ban_id does not exist.
+ */
+int sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list)
+{
+    uint16_t i, count = 0;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type == SA_BAN) {
+            list[count++] = chat->moderation.sanctions[i].ban_info.id;
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+/* Returns the nick length of the ban entry associted with ban_id on success.
+ * Returns 0 if ban_id does not exist.
+ */
+uint16_t sanctions_list_get_ban_nick_length(const GC_Chat *chat, uint16_t ban_id)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type == SA_BAN) {
+            if (chat->moderation.sanctions[i].ban_info.id == ban_id)
+                return chat->moderation.sanctions[i].ban_info.nick_len;
+        }
+    }
+
+    return 0;
+}
+
+/* Copies the nick associated with ban_id to nick.
+ *
+ * Returns 0 on success.
+ * Returns -1 if ban_id does not exist.
+ */
+int sanctions_list_get_ban_nick(const GC_Chat *chat, uint16_t ban_id, uint8_t *nick)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type == SA_BAN) {
+            if (chat->moderation.sanctions[i].ban_info.id == ban_id) {
+                memcpy(nick, chat->moderation.sanctions[i].ban_info.nick, MAX_GC_NICK_SIZE);
+                return 0;
+            }
+        }
+    }
+
+    return -1;
+}
+
+/* Returns a timestamp indicating when the ban designated by ban_id was set.
+ * Returns 0 if ban_id does not exist.
+ */
+uint64_t sanctions_list_get_ban_time_set(const GC_Chat *chat, uint16_t ban_id)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type == SA_BAN) {
+            if (chat->moderation.sanctions[i].ban_info.id == ban_id)
+                return chat->moderation.sanctions[i].time_set;
+        }
+    }
+
+    return 0;
 }

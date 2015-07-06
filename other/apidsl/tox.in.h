@@ -2708,6 +2708,9 @@ namespace group {
     /**
      * Return the number of peers in the group designated by groupnumber. If group number
      * is invalid, the return value is unspecified.
+     *
+     * All values below the return value of this function are valid peer numbers, and all values
+     * equal to or greater than the return value are invalid.
      */
     get(uint32_t groupnumber) with error for state_info;
   }
@@ -2909,11 +2912,15 @@ namespace group {
        */
       NOGROUP,
       /**
+       * The friend number passed did not designate a valid friend.
+       */
+      NOFRIEND,
+      /**
        * Creation of the invite packet failed. This indicates a network related error.
        */
       INVITE_FAIL,
       /**
-       * Packet failed to send or friend number did not designate a valid friend.
+       * Packet failed to send.
        */
       SEND_FAIL,
     }
@@ -3329,6 +3336,84 @@ namespace group {
     typedef void(uint32_t groupnumber, uint32_t source_peernum, uint32_t target_peernum, MOD_EVENT type);
   }
 
+}
+
+
+/*******************************************************************************
+ *
+ * :: Group chat ban list queries
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  namespace ban {
+
+    /**
+     * Error codes for group ban list queries.
+     */
+    error for query {
+        /**
+         * The group number passed did not designate a valid group.
+         */
+        NOGROUP,
+        /**
+         * The ban_id does not designate a valid ban list entry.
+         */
+        BAD_ID,
+    }
+
+    uint16_t[size] list {
+
+      /**
+       * Return the number of entries in the ban list for the group designated by groupnumber.
+       * If the group number is invalid, the return value is unspecified.
+       */
+      size(uint32_t groupnumber) with error for query;
+
+      /**
+       * Copy a list of valid ban list ID's into an array.
+       *
+       * Call $size to determine the number of elements to allocate.
+       *
+       * @param list A memory region with enough space to hold the ban list. If
+       *   this parameter is NULL, this function has no effect.
+       *
+       * @return true on success.
+       */
+      get(uint32_t groupnumber) with error for query;
+    }
+
+    uint8_t[length <= MAX_NAME_LENGTH] name {
+
+      /**
+       * Return the length of the name for the ban list entry designated by ban_id in the
+       * group designated by groupnumber. If either groupnumber or ban_id are invalid,
+       * the return value is unspecified.
+       */
+      size(uint32_t groupnumber, uint16_t ban_id) with error for query;
+
+      /**
+       * Write the name of the ban entry designated by ban_id in the group designated by groupnumber
+       * to a byte array.
+       *
+       * Call $size to find out how much memory to allocate for the result.
+       *
+       * @return true on success.
+       */
+      get(uint32_t groupnumber, uint16_t ban_id) with error for query;
+    }
+
+    uint64_t time_set {
+
+      /**
+       * Return a time stamp indicating the time the ban was set, for the ban list entry
+       * designated by ban_id, in the group designated by groupnumber. If either groupnumber or
+       * ban_id are invalid, the return value is unspecified.
+       */
+      get(uint32_t groupnumber, uint16_t ban_id) with error for query;
+    }
+  }
 }
 
 } // class tox

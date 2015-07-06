@@ -41,8 +41,12 @@ static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
 
-// friend_not_valid determines if the friendnumber passed is valid in the Messenger object
-static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
+/* determines if the friendnumber passed is valid in the Messenger object.
+ *
+ * Returns 1 if friendnumber does not designate a valid friend.
+ * Returns 0 otherwise.
+ */
+uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
 {
     if ((unsigned int)friendnumber < m->numfriends) {
         if (m->friendlist[friendnumber].status != 0) {

@@ -174,12 +174,6 @@ int sanctions_list_add_entry(GC_Chat *chat, struct GC_Sanction *sanction, struct
  */
 int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t type);
 
-/* Returns the number of sanctions list entries that are of type SA_BAN */
-uint16_t sanctions_list_num_banned(const GC_Chat *chat);
-
-/* Returns true if the IP address is in the ban list. */
-bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
-
 /* Returns true if public key is in the observer list. */
 bool sanctions_list_is_observer(const GC_Chat *chat, const uint8_t *public_key);
 
@@ -218,5 +212,40 @@ void sanctions_list_make_hash(struct GC_Sanction *sanctions, uint32_t new_versio
                               uint16_t num_sanctions, uint8_t *hash);
 
 void sanctions_list_cleanup(GC_Chat *chat);
+
+
+
+/********* Ban list queries *********/
+
+
+/* Returns true if the IP address is in the ban list. */
+bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
+
+/* Returns the number of sanctions list entries that are of type SA_BAN */
+uint16_t sanctions_list_num_banned(const GC_Chat *chat);
+
+/* Fills list with all valid ban ID's.
+ *
+ * Returns 0 on success.
+ * Returns -1 if ban_id does not exist.
+ */
+int sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list);
+
+/* Returns the nick length of the ban entry associted with ban_id on success.
+ * Returns 0 if ban_id does not exist.
+ */
+uint16_t sanctions_list_get_ban_nick_length(const GC_Chat *chat, uint16_t ban_id);
+
+/* Copies the nick associated with ban_id to nick.
+ *
+ * Returns 0 on success.
+ * Returns -1 if ban_id does not exist.
+ */
+int sanctions_list_get_ban_nick(const GC_Chat *chat, uint16_t ban_id, uint8_t *nick);
+
+/* Returns a timestamp indicating when the ban designated by ban_id was set.
+ * Returns 0 if ban_id does not exist.
+ */
+uint64_t sanctions_list_get_ban_time_set(const GC_Chat *chat, uint16_t ban_id);
 
 #endif /* GROUP_MODERATION_H */

@@ -347,20 +347,6 @@ void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
         sync_gc_announced_nodes(announce->group_handler, chat);
 }
 
-/* Returns number of peers */
-uint32_t gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[],
-                          uint32_t num_peers)
-{
-    uint32_t i;
-
-    for (i = 0; i < chat->numpeers && i < num_peers; i++) {
-        memcpy(nicks[i], chat->group[i].nick, chat->group[i].nick_len);
-        lengths[i] = chat->group[i].nick_len;
-    }
-
-    return i;
-}
-
 uint32_t gc_get_numpeers(const GC_Chat *chat)
 {
     return chat->numpeers;
@@ -4554,11 +4540,15 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
  *
  * Return 0 on success.
- * Return -1 on failure to create the invite data.
- * Return -2 if the packet fails to send.
+ * Return -1 if friendnumber does not exist.
+ * Return -2 on failure to create the invite data.
+ * Return -3 if the packet fails to send.
  */
 int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
 {
+    if (friend_not_valid(c->messenger, friendnumber))
+        return -1;
+
     uint8_t packet[MAX_GC_PACKET_SIZE];
     packet[0] = GP_FRIEND_INVITE;
 

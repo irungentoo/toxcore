@@ -398,10 +398,6 @@ int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
  */
 uint8_t gc_get_status(const GC_Chat *chat, uint32_t peernumber);
 
-/* Returns number of peers */
-uint32_t gc_get_peernames(const GC_Chat *chat, uint8_t nicks[][MAX_GC_NICK_SIZE], uint16_t lengths[],
-                          uint32_t num_peers);
-
 /* Returns number of peers in chat */
 uint32_t gc_get_numpeers(const GC_Chat *chat);
 
@@ -565,8 +561,9 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const 
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
  *
  * Return 0 on success.
- * Return -1 on failure to create the invite data.
- * Return -2 if the packet fails to send.
+ * Return -1 if friendnumber does not exist.
+ * Return -2 on failure to create the invite data.
+ * Return -3 if the packet fails to send.
  */
 int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnum);
 
