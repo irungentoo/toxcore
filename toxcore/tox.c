@@ -1817,9 +1817,12 @@ bool tox_group_send_message(Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumbe
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_EMPTY);
             return 0;
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_BAD_TYPE);
             return 0;
         case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
+            return 0;
+        case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_SEND_FAIL);
             return 0;
     }

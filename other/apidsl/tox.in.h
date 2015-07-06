@@ -2177,7 +2177,7 @@ namespace group {
     FOUNDER,
 
     /**
-     * May kick, silence and ban peers below this role.
+     * May kick, ban and set the user and observer roles for peers below this role.
      */
     MODERATOR,
 
@@ -2187,7 +2187,7 @@ namespace group {
     USER,
 
     /**
-     * May observe the group; may not interact with other peers or with the group.
+     * May observe the group and ignore peers; may not communicate with other peers or with the group.
      */
     OBSERVER,
   }
@@ -2367,7 +2367,7 @@ namespace group {
     uint8_t[length <= MAX_NAME_LENGTH] name {
 
       /**
-       * Set the client's nickname for the group instance.
+       * Set the client's nickname for the group instance designated by groupnumber.
        *
        * Nickname length cannot exceed $MAX_NAME_LENGTH. If length is 0 or name is a NULL
        * pointer the function call will fail.
@@ -2380,7 +2380,8 @@ namespace group {
       set(uint32_t groupnumber) with error for self_name;
 
       /**
-       * Return the length of the current nickname for the group instance as passed to $set.
+       * Return the length of the client's current nickname for the group instance designated
+       * by groupnumber as passed to $set.
        *
        * If no nickname was set before calling this function, the name is empty,
        * and this function returns 0.
@@ -2495,7 +2496,7 @@ namespace group {
        * parameter.
        *
        * The data written to `name` is equal to the data received by the last
-       * `${event name}` callback.
+       * `${event name}` or `${event peerlist_update}' callback.
        *
        * @param groupnumber The group number of the group we wish to query.
        * @param peernumber The peer number of the peer whose name we want to retrieve.
@@ -2619,6 +2620,7 @@ namespace group {
      * `${event topic}` callback.
      *
      * @param topic A valid memory region large enough to store the topic.
+     *   If this parameter is NULL, this function has no effect.
      *
      * @return true on success.
      */
@@ -2663,6 +2665,7 @@ namespace group {
      * parameter.
      *
      * @param name A valid memory region large enough to store the name.
+     *   If this parameter is NULL, this function call has no effect.
      *
      * @return true on success.
      */
@@ -2687,6 +2690,7 @@ namespace group {
      * `chat_id` should have room for at least $CHAT_ID_SIZE bytes.
      *
      * @param chat_id A valid memory region large enough to store the Chat ID.
+     *   If this parameter is NULL, this function call has no effect.
      *
      * @return true on success.
      */
@@ -2741,12 +2745,12 @@ namespace group {
   }
 
   /**
-   * This event is triggered when the peer list changes. This should be used to update the client's
-   * peer list.
+   * This callback is triggered when a peer joins or leaves the group and should be used to
+   * retrieve up to date information about the peer list for the client.
    */
   event peerlist_update {
     /**
-     * @param groupnumber The groupnumber of the group that must be updated.
+     * @param groupnumber The groupnumber of the group that must have its peer list updated.
      */
     typedef void(uint32_t groupnumber);
   }
@@ -2793,6 +2797,10 @@ namespace group {
        * The message pointer is null or length is zero.
        */
       EMPTY,
+      /**
+       * The message type is invalid.
+       */
+      BAD_TYPE,
       /**
        * The caller does not have the required permissions to send group messages.
        */
@@ -3388,7 +3396,7 @@ namespace group {
 
       /**
        * Return the length of the name for the ban list entry designated by ban_id in the
-       * group designated by groupnumber. If either groupnumber or ban_id are invalid,
+       * group designated by groupnumber. If either groupnumber or ban_id is invalid,
        * the return value is unspecified.
        */
       size(uint32_t groupnumber, uint16_t ban_id) with error for query;
@@ -3409,7 +3417,7 @@ namespace group {
       /**
        * Return a time stamp indicating the time the ban was set, for the ban list entry
        * designated by ban_id, in the group designated by groupnumber. If either groupnumber or
-       * ban_id are invalid, the return value is unspecified.
+       * ban_id is invalid, the return value is unspecified.
        */
       get(uint32_t groupnumber, uint16_t ban_id) with error for query;
     }

@@ -300,8 +300,9 @@ struct SAVED_GROUP {
  * Returns 0 on success.
  * Returns -1 if the message is too long.
  * Returns -2 if the message pointer is NULL or length is zero.
- * Returns -3 if the sender has the observer role.
- * Returns -4 if the packet fails to send.
+ * Returns -3 if the message type is invalid.
+ * Returns -4 if the sender has the observer role.
+ * Returns -5 if the packet fails to send.
  */
 int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type);
 
@@ -331,8 +332,8 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore);
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
 
- /* Copies topic to topicbuffer. */
-void gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer);
+ /* Copies the group topic to topic. */
+void gc_get_topic(const GC_Chat *chat, uint8_t *topic);
 
  /* Returns topic length. */
 uint16_t gc_get_topic_size(const GC_Chat *chat);
@@ -362,7 +363,7 @@ uint32_t gc_get_max_peers(const GC_Chat *chat);
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
 /* Copies your own nick to nick and returns nick length */
-uint16_t gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
+void gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
 
 /* Return your own nick length */
 uint16_t gc_get_self_nick_size(const GC_Chat *chat);
@@ -373,12 +374,12 @@ uint8_t gc_get_self_role(const GC_Chat *chat);
 /* Return your own status */
 uint8_t gc_get_self_status(const GC_Chat *chat);
 
-/* Copies peernumber's nick to namebuffer.
+/* Copies peernumber's nick to name.
  *
- * Returns nick length on success.
+ * Returns 0 on success.
  * Returns -1 if peernumber is invalid.
  */
-int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer);
+int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *name);
 
 /* Returns peernumber's nick length.
  * Returns -1 if peernumber is invalid.

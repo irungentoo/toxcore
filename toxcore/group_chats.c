@@ -1502,7 +1502,8 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber)
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest)
 {
-    memcpy(dest, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
+    if (dest)
+        memcpy(dest, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
 }
 
 /* Sends self peer info to peernumber. If the group is password protected the request
@@ -2063,10 +2064,10 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
 }
 
 /* Copies your own nick to nick and returns nick length */
-uint16_t gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
+void gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
 {
-    memcpy(nick, chat->group[0].nick, chat->group[0].nick_len);
-    return chat->group[0].nick_len;
+    if (nick)
+        memcpy(nick, chat->group[0].nick, chat->group[0].nick_len);
 }
 
 /* Return your own nick length */
@@ -2087,18 +2088,20 @@ uint8_t gc_get_self_status(const GC_Chat *chat)
     return chat->group[0].status;
 }
 
-/* Copies peernumber's nick to namebuffer.
+/* Copies peernumber's nick to name.
  *
- * Returns nick length on success.
+ * Returns 0 on success.
  * Returns -1 if peernumber is invalid.
  */
-int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *namebuffer)
+int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *name)
 {
     if (!peernumber_valid(chat, peernumber))
         return -1;
 
-    memcpy(namebuffer, chat->group[peernumber].nick, chat->group[peernumber].nick_len);
-    return chat->group[peernumber].nick_len;
+    if (name)
+        memcpy(name, chat->group[peernumber].nick, chat->group[peernumber].nick_len);
+
+    return 0;
 }
 
 /* Returns peernumber's nick length.
@@ -2160,10 +2163,11 @@ int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length)
     return 0;
 }
 
- /* Copies topic to topicbuffer. */
-void gc_get_topic(const GC_Chat *chat, uint8_t *topicbuffer)
+ /* Copies the group topic to topic. */
+void gc_get_topic(const GC_Chat *chat, uint8_t *topic)
 {
-    memcpy(topicbuffer, chat->topic, chat->topic_len);
+    if (topic)
+        memcpy(topic, chat->topic, chat->topic_len);
 }
 
  /* Returns topic length. */
@@ -2199,7 +2203,8 @@ static int handle_bc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
 /* Copies group name to groupname */
 void gc_get_group_name(const GC_Chat *chat, uint8_t *groupname)
 {
-    memcpy(groupname, chat->shared_state.group_name, chat->shared_state.group_name_len);
+    if (groupname)
+        memcpy(groupname, chat->shared_state.group_name, chat->shared_state.group_name_len);
 }
 
 /* Returns group name length */
@@ -2641,8 +2646,9 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers)
  * Returns 0 on success.
  * Returns -1 if the message is too long.
  * Returns -2 if the message pointer is NULL or length is zero.
- * Returns -3 if the sender has the observer role.
- * Returns -4 if the packet fails to send.
+ * Returns -3 if the message type is invalid.
+ * Returns -4 if the sender has the observer role.
+ * Returns -5 if the packet fails to send.
  */
 int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint8_t type)
 {
@@ -2652,16 +2658,20 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
     if (message == NULL || length == 0)
         return -2;
 
-    if (chat->group[0].role >= GR_OBSERVER)
+    if (type != GM_PLAIN_MESSAGE && type != GM_ACTION_MESSAGE)
         return -3;
 
-    if (send_gc_broadcast_message(chat, message, length, type) == -1)
+    if (chat->group[0].role >= GR_OBSERVER)
         return -4;
+
+    if (send_gc_broadcast_message(chat, message, length, type) == -1)
+        return -5;
 
     return 0;
 }
 
-static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
+static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                             uint32_t length, uint8_t type)
 {
     if (length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
@@ -2675,10 +2685,13 @@ static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber,
     if (chat->gcc[peernumber].ignore || chat->group[peernumber].role >= GR_OBSERVER)
         return 0;
 
-    unsigned int type = 0; // TODO
+    if (type != GM_PLAIN_MESSAGE && type != GM_ACTION_MESSAGE)
+        return -1;
+
+    unsigned int cb_type = (type == GM_PLAIN_MESSAGE) ? MESSAGE_NORMAL : MESSAGE_ACTION;
 
     if (c->message)
-        (*c->message)(m, groupnumber, peernumber, type, data, length, c->message_userdata);
+        (*c->message)(m, groupnumber, peernumber, cb_type, data, length, c->message_userdata);
 
     return 0;
 }
@@ -3095,8 +3108,10 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
             return handle_bc_nick_change(m, groupnumber, peernumber, message, m_len);
         case GM_CHANGE_TOPIC:
             return handle_bc_change_topic(m, groupnumber, peernumber, message, m_len);
+        case GM_ACTION_MESSAGE:
+        /* fallthrough */
         case GM_PLAIN_MESSAGE:
-            return handle_bc_message(m, groupnumber, peernumber, message, m_len);
+            return handle_bc_message(m, groupnumber, peernumber, message, m_len, broadcast_type);
         case GM_PRVT_MESSAGE:
             return handle_bc_private_message(m, groupnumber, peernumber, message, m_len);
         case GM_PEER_EXIT:

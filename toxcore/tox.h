@@ -2369,7 +2369,7 @@ typedef enum TOX_GROUP_ROLE {
     TOX_GROUP_ROLE_FOUNDER,
 
     /**
-     * May kick, silence and ban peers below this role.
+     * May kick, ban and set the user and observer roles for peers below this role.
      */
     TOX_GROUP_ROLE_MODERATOR,
 
@@ -2379,7 +2379,7 @@ typedef enum TOX_GROUP_ROLE {
     TOX_GROUP_ROLE_USER,
 
     /**
-     * May observe the group; may not interact with other peers or with the group.
+     * May observe the group and ignore peers; may not communicate with other peers or with the group.
      */
     TOX_GROUP_ROLE_OBSERVER,
 
@@ -2618,7 +2618,7 @@ typedef enum TOX_ERR_GROUP_SELF_NAME {
 
 
 /**
- * Set the client's nickname for the group instance.
+ * Set the client's nickname for the group instance designated by groupnumber.
  *
  * Nickname length cannot exceed TOX_MAX_NAME_LENGTH. If length is 0 or name is a NULL
  * pointer the function call will fail.
@@ -2632,7 +2632,8 @@ bool tox_group_self_set_name(Tox *tox, uint32_t groupnumber, const uint8_t *name
                              TOX_ERR_GROUP_SELF_NAME *error);
 
 /**
- * Return the length of the current nickname for the group instance as passed to tox_group_self_set_name.
+ * Return the length of the client's current nickname for the group instance designated
+ * by groupnumber as passed to tox_group_self_set_name.
  *
  * If no nickname was set before calling this function, the name is empty,
  * and this function returns 0.
@@ -2754,7 +2755,7 @@ size_t tox_group_peer_get_name_size(const Tox *tox, uint32_t groupnumber, uint32
  * parameter.
  *
  * The data written to `name` is equal to the data received by the last
- * `group_peer_name` callback.
+ * `group_peer_name` or `group_peerlist_update' callback.
  *
  * @param groupnumber The group number of the group we wish to query.
  * @param peernumber The peer number of the peer whose name we want to retrieve.
@@ -2890,6 +2891,7 @@ size_t tox_group_get_topic_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GR
  * `group_topic` callback.
  *
  * @param topic A valid memory region large enough to store the topic.
+ *   If this parameter is NULL, this function has no effect.
  *
  * @return true on success.
  */
@@ -2943,6 +2945,7 @@ size_t tox_group_get_name_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GRO
  * parameter.
  *
  * @param name A valid memory region large enough to store the name.
+ *   If this parameter is NULL, this function call has no effect.
  *
  * @return true on success.
  */
@@ -2972,6 +2975,7 @@ typedef enum TOX_ERR_GROUP_CHAT_ID {
  * `chat_id` should have room for at least TOX_GROUP_CHAT_ID_SIZE bytes.
  *
  * @param chat_id A valid memory region large enough to store the Chat ID.
+ *   If this parameter is NULL, this function call has no effect.
  *
  * @return true on success.
  */
@@ -3023,7 +3027,7 @@ TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, uint32_t gro
 uint32_t tox_group_get_peer_limit(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_INFO *error);
 
 /**
- * @param groupnumber The groupnumber of the group that must be updated.
+ * @param groupnumber The groupnumber of the group that must have its peer list updated.
  */
 typedef void tox_group_peerlist_update_cb(Tox *tox, uint32_t groupnumber, void *user_data);
 
@@ -3031,8 +3035,8 @@ typedef void tox_group_peerlist_update_cb(Tox *tox, uint32_t groupnumber, void *
 /**
  * Set the callback for the `group_peerlist_update` event. Pass NULL to unset.
  *
- * This event is triggered when the peer list changes. This should be used to update the client's
- * peer list.
+ * This callback is triggered when a peer joins or leaves the group and should be used to
+ * retrieve up to date information about the peer list for the client.
  */
 void tox_callback_group_peerlist_update(Tox *tox, tox_group_peerlist_update_cb *callback, void *user_data);
 
@@ -3066,6 +3070,11 @@ typedef enum TOX_ERR_GROUP_SEND_MESSAGE {
      * The message pointer is null or length is zero.
      */
     TOX_ERR_GROUP_SEND_MESSAGE_EMPTY,
+
+    /**
+     * The message type is invalid.
+     */
+    TOX_ERR_GROUP_SEND_MESSAGE_BAD_TYPE,
 
     /**
      * The caller does not have the required permissions to send group messages.
@@ -3848,7 +3857,7 @@ bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list
 
 /**
  * Return the length of the name for the ban list entry designated by ban_id in the
- * group designated by groupnumber. If either groupnumber or ban_id are invalid,
+ * group designated by groupnumber. If either groupnumber or ban_id is invalid,
  * the return value is unspecified.
  */
 size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
@@ -3868,7 +3877,7 @@ bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint16_t ban_i
 /**
  * Return a time stamp indicating the time the ban was set, for the ban list entry
  * designated by ban_id, in the group designated by groupnumber. If either groupnumber or
- * ban_id are invalid, the return value is unspecified.
+ * ban_id is invalid, the return value is unspecified.
  */
 uint64_t tox_group_ban_get_time_set(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
                                     TOX_ERR_GROUP_BAN_QUERY *error);
