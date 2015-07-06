@@ -354,9 +354,10 @@ uint32_t gc_get_max_peers(const GC_Chat *chat);
  *
  * Returns 0 on success.
  * Returns -1 if groupnumber is invalid.
- * Returns -2 if the length is too long or nick is empty.
- * Returns -3 if the nick is already taken.
- * Returns -4 if the packet fails to send.
+ * Returns -2 if the length is too long.
+ * Returns -3 if the length is zero or nick is a NULL pointer.
+ * Returns -4 if the nick is already taken.
+ * Returns -5 if the packet fails to send.
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 

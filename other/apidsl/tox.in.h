@@ -2161,36 +2161,6 @@ namespace group {
      * all DHT information related to the group will expire shortly.
      */
     PRIVATE,
-
-    /**
-     * The group privacy state is invalid.
-     */
-    INVALID,
-  }
-
-  /**
-   * Represents peer statuses; parallel to TOX_USER_STATUS.
-   */
-  enum class STATUS {
-    /**
-     * The peer is available.
-     */
-    NONE,
-
-    /**
-     * The peer is marked as away.
-     */
-    AWAY,
-
-    /**
-     * The peer is marked as busy.
-     */
-    BUSY,
-
-    /**
-     * The peer status is invalid.
-     */
-    INVALID,
   }
 
   /**
@@ -2220,11 +2190,6 @@ namespace group {
      * May observe the group; may not interact with other peers or with the group.
      */
     OBSERVER,
-
-    /**
-     * The group role is invalid.
-     */
-    INVALID,
   }
 
 }
@@ -2365,15 +2330,412 @@ namespace group {
 
 /*******************************************************************************
  *
- * :: Group chat state management
+ * :: Group user-visible client information (nickname/status/role)
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  inline namespace self {
+
+    /**
+     * Error codes for self name getting, setting and size functions.
+     */
+    error for self_name {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The name length exceeded maximum permissible size of $MAX_NAME_LENGTH.
+       */
+      TOO_LONG,
+      /**
+       * The length given to the set function is zero.
+       */
+      NO_LENGTH,
+      /**
+       * The pointer given to the set function is NULL.
+       */
+      NULL_PTR,
+      /**
+       * The packet failed to send.
+       */
+      SEND_FAIL,
+    }
+
+    uint8_t[length <= MAX_NAME_LENGTH] name {
+
+      /**
+       * Set the client's nickname for the group instance.
+       *
+       * Nickname length cannot exceed $MAX_NAME_LENGTH. If length is 0 or name is a NULL
+       * pointer the function call will fail.
+       *
+       * @param name A byte array containing the new nickname.
+       * @param length The size of the name byte array.
+       *
+       * @return true on success.
+       */
+      set(uint32_t groupnumber) with error for self_name;
+
+      /**
+       * Return the length of the current nickname for the group instance as passed to $set.
+       *
+       * If no nickname was set before calling this function, the name is empty,
+       * and this function returns 0.
+       *
+       * @see threading for concurrency implications.
+       */
+      size(uint32_t groupnumber) with error for self_name;
+
+      /**
+       * Write the nickname set by $set to a byte array.
+       *
+       * If no nickname was set before calling this function, the name is empty,
+       * and this function has no effect.
+       *
+       * Call $size to find out how much memory to allocate for
+       * the result.
+       *
+       * @param name A valid memory location large enough to hold the nickname.
+       *   If this parameter is NULL, the function has no effect.
+       *
+       * @returns true on success.
+       */
+      get(uint32_t groupnumber) with error for self_name;
+    }
+
+    /**
+     * Error codes for self status/role getting and setting.
+     */
+    error for self_info {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * An invalid type was passed to the set function
+       */
+      INVALID,
+      /**
+       * The packet failed to send.
+       */
+      SEND_FAIL,
+    }
+
+    USER_STATUS status {
+
+      /**
+       * Set the client's status for the group instance. Status must be a $USER_STATUS.
+       *
+       * @return true on succcess.
+       */
+      set(uint32_t groupnumber) with error for self_info;
+
+      /**
+       * returns the client's status for the group instance on success.
+       * return value is unspecified on failure.
+       */
+      get(uint32_t groupnumber) with error for self_info;
+    }
+
+    ROLE role {
+
+      /**
+       * Returns the client's role for the group instance on success.
+       * return value is unspecified on failure.
+       */
+      get(uint32_t groupnumber) with error for self_info;
+    }
+  }
+
+}
+
+/*******************************************************************************
+ *
+ * :: Peer-specific group state queries (can also be received through callbacks)
+ *
+ ******************************************************************************/
+
+namespace group {
+
+  namespace peer {
+
+    /**
+     * Error codes for peer info queries.
+     */
+    error for query {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The peer number passed did not designate a valid peer.
+       */
+      NOPEER,
+    }
+
+    uint8_t[length <= MAX_NAME_LENGTH] name {
+
+      /**
+       * Return the length of the peer's name. If the group number or peer number is invalid, the
+       * return value is unspecified.
+       *
+       * The return value is equal to the `length` argument received by the last
+       * `${event name}` callback.
+       */
+      size(uint32_t groupnumber, uint32_t peernumber) with error for query;
+
+      /**
+       * Write the name of the peer designated by the given peer number to a byte
+       * array.
+       *
+       * Call $size to determine the allocation size for the `name`
+       * parameter.
+       *
+       * The data written to `name` is equal to the data received by the last
+       * `${event name}` callback.
+       *
+       * @param groupnumber The group number of the group we wish to query.
+       * @param peernumber The peer number of the peer whose name we want to retrieve.
+       * @param name A valid memory region large enough to store the friend's name.
+       *
+       * @return true on success.
+       */
+      get(uint32_t groupnumber, uint32_t  peernumber) with error for query;
+    }
+
+    USER_STATUS status {
+
+      /**
+       * Return the peer's user status (away/busy/...). If the peer number or group number is
+       * invalid, the return value is unspecified.
+       *
+       * The status returned is equal to the last status received through the
+       * `${event status}` callback.
+       */
+      get(uint32_t groupnumber, uint32_t peernumber) with error for query;
+    }
+
+    ROLE role {
+      /**
+       * Return the peer's role (user/moderator/founder...). If the peer number or group number is
+       * invalid, the return value is unspecified.
+       *
+       * The role returned is equal to the last role received through the
+       * `${event moderation}` callback.
+       */
+      get(uint32_t groupnumber, uint32_t peernumber) with error for query;
+    }
+
+    /**
+     * This event is triggered when a peer changes their nick.
+     */
+    event name {
+      /**
+       * @param groupnumber The groupnumber of the group the nick change is intended for.
+       * @param peernumber The peernumber of the peer who has changed their nick.
+       * @param nick The nick data.
+       * @param length The length of the nick.
+       */
+      typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] nick);
+    }
+
+    /**
+     * This event is triggered when a peer changes their status.
+     */
+    event status {
+      /**
+       * @param groupnumber The groupnumber of the group the status change is intended for.
+       * @param peernumber The peernumber of the peer who has changed their status.
+       * @param status The new status of the peer.
+       */
+      typedef void(uint32_t groupnumber, uint32_t peernumber, USER_STATUS status);
+    }
+  }
+
+}
+
+
+/******************************************************************************
+ *
+ * :: Group chat state queries.
  *
  ******************************************************************************/
 
 namespace group {
 
   /**
-   * This event is triggered when the peer list changes. tox_group_get_names() should be used to update
-   * the client's peer list.
+   * Error codes for group topic setting/queries.
+   */
+  error for topic {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+      /**
+       * The topic length exceeded maximum permissible size of $MAX_TOPIC_LENGTH.
+       */
+      TOO_LONG,
+      /**
+       * The packet failed to send.
+       */
+      SEND_FAIL,
+  }
+
+  uint8_t[length <= MAX_TOPIC_LENGTH] topic {
+
+    /**
+     * Set the group topic and broadcast it to the rest of the group.
+     *
+     * topic length cannot be longer than $MAX_TOPIC_LENGTH. If length is 0 or topic is NULL
+     * the topic will be unset.
+     *
+     * @returns true on success.
+     */
+    set(uint32_t groupnumber) with error for topic;
+
+    /**
+     * Return the length of the group topic. If the group number is invalid, the
+     * return value is unspecified.
+     *
+     * The return value is equal to the `length` argument received by the last
+     * `${event topic}` callback.
+     */
+    size(uint32_t groupnumber) with error for topic;
+
+    /**
+     * Write the topic designated by the given group number to a byte array.
+     *
+     * Call $size to determine the allocation size for the `topic`
+     * parameter.
+     *
+     * The data written to `topic` is equal to the data received by the last
+     * `${event topic}` callback.
+     *
+     * @param topic A valid memory region large enough to store the topic.
+     *
+     * @return true on success.
+     */
+    get(uint32_t groupnumber) with error for topic;
+  }
+
+  /**
+   * This event is triggered when a peer changes the group topic.
+   */
+  event topic {
+    /**
+     * @param groupnumber The groupnumber of the group the topic change is intended for.
+     * @param peernumber The peernumber of the peer who changed the topic.
+     * @param topic The topic data.
+     * @param length The topic length.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
+  }
+
+
+  /**
+   * Error codes for group name queries.
+   */
+  error for name {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+  }
+
+  uint8_t[length <= MAX_TOPIC_LENGTH] name {
+    /**
+     * Return the length of the group name. If the group number is invalid, the
+     * return value is unspecified.
+     */
+    size(uint32_t groupnumber) with error for name;
+
+    /**
+     * Write the name designated by the given group number to a byte array.
+     *
+     * Call $size to determine the allocation size for the `name`
+     * parameter.
+     *
+     * @param name A valid memory region large enough to store the name.
+     *
+     * @return true on success.
+     */
+    get(uint32_t groupnumber) with error for name;
+  }
+
+  /**
+   * Error codes for group chat_id retrieval.
+   */
+  error for chat_id {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+  }
+
+  uint8_t[length] chat_id {
+
+    /**
+     * Write the Chat ID designated by the given group number to a byte array.
+     *
+     * `chat_id` should have room for at least $CHAT_ID_SIZE bytes.
+     *
+     * @param chat_id A valid memory region large enough to store the Chat ID.
+     *
+     * @return true on success.
+     */
+    get(uint32_t groupnumber) with error for chat_id;
+  }
+
+  /**
+   * Error codes for misc. group state queries.
+   */
+  error for state_info {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      NOGROUP,
+  }
+
+  uint32_t number_peers {
+
+    /**
+     * Return the number of peers in the group designated by groupnumber. If group number
+     * is invalid, the return value is unspecified.
+     */
+    get(uint32_t groupnumber) with error for state_info;
+  }
+
+  uint32_t number_groups {
+    /**
+     * Return the number of groups in the Tox chats array.
+     */
+     get();
+  }
+
+  PRIVACY_STATE privacy_state {
+
+    /**
+     * Return the privacy state of the group designated by groupnumber. If group number
+     * is invalid, the return value is unspecified.
+     */
+    get(uint32_t groupnumber) with error for state_info;
+  }
+
+  uint32_t peer_limit {
+
+    /**
+     * Return the maximum number of peers allowed for the group designated by groupnumber. If
+     * group number is invalid, the return value is unspecified.
+     */
+    get(uint32_t groupnumber) with error for state_info;
+  }
+
+  /**
+   * This event is triggered when the peer list changes. This should be used to update the client's
+   * peer list.
    */
   event peerlist_update {
     /**
@@ -2383,7 +2745,6 @@ namespace group {
   }
 
 }
-
 
 /******************************************************************************
  *
@@ -2400,7 +2761,7 @@ namespace group {
      * This function creates a group message packet and pushes it into the send
      * queue.
      *
-     * The message length may not exceed TOX_MAX_MESSAGE_LENGTH. Larger messages
+     * The message length may not exceed $MAX_MESSAGE_LENGTH. Larger messages
      * must be split by the client and sent as separate messages. Other clients can
      * then reassemble the fragments. Messages may not be empty.
      *
@@ -2441,7 +2802,7 @@ namespace group {
      * This function creates a group private message packet and pushes it into the send
      * queue.
      *
-     * The message length may not exceed TOX_MAX_MESSAGE_LENGTH. Larger messages
+     * The message length may not exceed $MAX_MESSAGE_LENGTH. Larger messages
      * must be split by the client and sent as separate messages. Other clients can
      * then reassemble the fragments. Messages may not be empty.
      *
@@ -2636,7 +2997,7 @@ namespace group {
    * Represents types of failed group join attempts. These are used in the tox_callback_group_rejected
    * callback when a peer fails to join a group.
    */
-  enum class JOIN_REJECTED {
+  enum class JOIN_FAIL {
     /**
      * You are using the same nick as someone who is already in the group.
      */
@@ -2662,61 +3023,15 @@ namespace group {
   /**
    * This event is triggered when the client fails to join a group.
    */
-  event rejected {
+  event join_fail {
     /**
      * @param groupnumber The groupnumber of the group for which the join has failed.
      * @param type The type of group rejection.
      */
-    typedef void(uint32_t groupnumber, JOIN_REJECTED type);
+    typedef void(uint32_t groupnumber, JOIN_FAIL type);
   }
 }
 
-/******************************************************************************
- *
- * :: Group chat info events
- *
- ******************************************************************************/
-
-namespace group {
-
-  /**
-   * This event is triggered when a peer changes their nick.
-   */
-  event nick_change {
-    /**
-     * @param groupnumber The groupnumber of the group the nick change is intended for.
-     * @param peernumber The peernumber of the peer who has changed their nick.
-     * @param nick The nick data.
-     * @param length The length of the nick.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] nick);
-  }
-
-  /**
-   * This event is triggered when a peer changes their status.
-   */
-  event status_change {
-    /**
-     * @param groupnumber The groupnumber of the group the status change is intended for.
-     * @param peernumber The peernumber of the peer who has changed their status.
-     * @param status The new status of the peer.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, STATUS status);
-  }
-
-  /**
-   * This event is triggered when a peer changes the group topic.
-   */
-  event topic_change {
-    /**
-     * @param groupnumber The groupnumber of the group the topic change is intended for.
-     * @param peernumber The peernumber of the peer who changed the topic.
-     * @param topic The topic data.
-     * @param length The topic length.
-     */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
-  }
-}
 
 /*******************************************************************************
  *

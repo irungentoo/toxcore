@@ -2042,9 +2042,10 @@ static int handle_bc_peer_exit(Messenger *m, int groupnumber, uint32_t peernumbe
  *
  * Returns 0 on success.
  * Returns -1 if groupnumber is invalid.
- * Returns -2 if the length is too long or nick is empty.
- * Returns -3 if the nick is already taken.
- * Returns -4 if the packet fails to send.
+ * Returns -2 if the length is too long.
+ * Returns -3 if the length is zero or nick is a NULL pointer.
+ * Returns -4 if the nick is already taken.
+ * Returns -5 if the packet fails to send.
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length)
 {
@@ -2054,11 +2055,14 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
     if (chat == NULL)
         return -1;
 
-    if (length > MAX_GC_NICK_SIZE || length == 0 || !nick)
+    if (length > MAX_GC_NICK_SIZE)
         return -2;
 
-    if (get_nick_peernumber(chat, nick, length) != -1)
+    if (length == 0 || nick == NULL)
         return -3;
+
+    if (get_nick_peernumber(chat, nick, length) != -1)
+        return -4;
 
     memcpy(chat->group[0].nick, nick, length);
     chat->group[0].nick_len = length;
@@ -2067,7 +2071,7 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
         (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
     if (send_gc_broadcast_message(chat, nick, length, GM_CHANGE_NICK) == -1)
-        return -4;
+        return -5;
 
     return 0;
 }
