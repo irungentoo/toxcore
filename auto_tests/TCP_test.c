@@ -619,22 +619,23 @@ _Bool tcp_oobdata_callback_called;
 static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigned int id, const uint8_t *data,
                                 uint16_t length)
 {
-    if (object != (void *)120397)
-        return -1;
-
     if (length != 6)
         return -1;
 
     if (memcmp(data, "Gentoo", length) != 0)
         return -1;
 
-    tcp_oobdata_callback_called = 1;
+    if (tcp_send_oob_packet(object, id, public_key, data, length) == 0)
+        tcp_oobdata_callback_called = 1;
+
     return 0;
 }
 
 START_TEST(test_tcp_connection2)
 {
     tcp_oobdata_callback_called = 0;
+    tcp_data_callback_called = 0;
+
     unix_time_update();
     uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
@@ -683,7 +684,8 @@ START_TEST(test_tcp_connection2)
 
     int ret = send_packet_tcp_connection(tc_1, 0, "Gentoo", 6);
     ck_assert_msg(ret == 0, "could not send packet.");
-    set_oob_packet_tcp_connection_callback(tc_2, &tcp_oobdata_callback, (void *) 120397);
+    set_oob_packet_tcp_connection_callback(tc_2, &tcp_oobdata_callback, tc_2);
+    set_packet_tcp_connection_callback(tc_1, &tcp_data_callback, (void *) 120397);
 
     c_sleep(50);
     do_TCP_server(tcp_s);
@@ -693,6 +695,15 @@ START_TEST(test_tcp_connection2)
     do_tcp_connections(tc_2);
 
     ck_assert_msg(tcp_oobdata_callback_called, "could not recv packet.");
+
+    c_sleep(50);
+    do_TCP_server(tcp_s);
+    c_sleep(50);
+
+    do_tcp_connections(tc_1);
+    do_tcp_connections(tc_2);
+
+    ck_assert_msg(tcp_data_callback_called, "could not recv packet.");
     ck_assert_msg(kill_tcp_connection_to(tc_1, 0) == 0, "could not kill connection to\n");
 
     kill_TCP_server(tcp_s);
