@@ -2208,7 +2208,7 @@ namespace group {
    *
    * This function creates a new group chat object adds it to the chats array.
    *
-   * @param privacy_state The privacy state of the group. If this is set to $PRIVACY_STATE_PUBLIC
+   * @param privacy_state The privacy state of the group. If this is set to TOX_GROUP_PRIVACY_STATE_PUBLIC,
    *   the group will attempt to announce itself to the DHT and anyone with the Chat ID may join.
    *   Otherwise a friend invite will be required to join the group.
    * @param group_name The name of the group. The name must be non-NULL.
@@ -2227,7 +2227,7 @@ namespace group {
      */
     EMPTY,
     /**
-     * the privacy state is an invalid type.
+     * $PRIVACY_STATE is an invalid type.
      */
     PRIVACY,
     /**
@@ -2235,7 +2235,7 @@ namespace group {
      */
     INIT,
     /**
-     * The group state failed to initialize. This would usually indicate that something went wrong
+     * The group state failed to initialize. This usually indicates that something went wrong
      * related to cryptographic signing.
      */
     STATE,
@@ -2250,36 +2250,34 @@ namespace group {
    *
    * This function creates a new group chat object, adds it to the chats array, and sends
    * a DHT announcement to find peers in the group associated with chat_id. Once a peer has been
-   * found a join attempt will automatically be initiated.
+   * found a join attempt will be initiated.
    *
-   * @param chat_id The Chat ID of the group you wish to join.
-   * @param length The length of the Chat ID. This must be equal to $CHAT_ID_SIZE.
+   * @param chat_id The Chat ID of the group you wish to join. This must be $CHAT_ID_SIZE bytes.
    * @param password The password required to join the group. Set to NULL if no password is required.
-   * @param password_length The length of the password. Set to 0 if no password is required.
-   *   password_length must be no larger than $MAX_PASSWD_SIZE.
+   * @param password_length The length of the password. If length is equal to zero,
+   *   the password parameter is ignored. password_length must be no larger than $MAX_PASSWD_SIZE.
    *
    * @return true on success.
    */
-  bool join(const uint8_t[length <= CHAT_ID_SIZE] chat_id, const uint8_t[password_length <= MAX_PASSWD_SIZE] password) {
+  bool join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[password_length <= MAX_PASSWD_SIZE] password) {
     /**
      * The group instance failed to initialize.
      */
     INIT,
     /**
-     * chat_id is NULL or length is not equal to $CHAT_ID_SIZE.
+     * The chat_id pointer is set to NULL.
      */
     BAD_CHAT_ID,
     /**
-     * Indicates a password related error. This may occur if password is non-NULL but password_length is zero,
-     * or if the password is too long.
+     * Password length exceeded $MAX_PASSWD_SIZE.
      */
-    BAD_PASSWD,
+    TOO_LONG,
   }
 
   /**
    * Reconnects to a group.
    *
-   * This function disconnects from all peers in the group then attempts to reconnect with the group.
+   * This function disconnects from all peers in the group, then attempts to reconnect with the group.
    * The caller's state is not changed (i.e. name, status, role, chat public key etc.)
    *
    * @param groupnumber The groupnumber of the group we wish to reconnect to.
@@ -2290,15 +2288,15 @@ namespace group {
     /**
      * The group number passed did not designate a valid group.
      */
-    NOGROUP,
+    GROUP_NOT_FOUND,
   }
 
   /**
    * Leaves a group.
    *
    * This function sends a parting packet containing a custom (non-obligatory) message to all
-   * peers in a group and deletes the group from the chat array. All group state information is permanently
-   * lost including keys and role credentials.
+   * peers in a group, and deletes the group from the chat array. All group state information is permanently
+   * lost, including keys and role credentials.
    *
    * @param groupnumber The groupnumber of the group we wish to leave.
    * @param message The parting message to be sent to all the peers. Set to NULL if we do not wish to
@@ -2311,9 +2309,9 @@ namespace group {
     /**
      * The group number passed did not designate a valid group.
      */
-    NOGROUP,
+    GROUP_NOT_FOUND,
     /**
-     * Message length exceeded $MAX_PART_LENGTH
+     * Message length exceeded $MAX_PART_LENGTH.
      */
     TOO_LONG,
     /**
@@ -2345,9 +2343,9 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
-       * The name length exceeded maximum permissible size of $MAX_NAME_LENGTH.
+       * Name length exceeded $MAX_NAME_LENGTH.
        */
       TOO_LONG,
       /**
@@ -2367,10 +2365,10 @@ namespace group {
     uint8_t[length <= MAX_NAME_LENGTH] name {
 
       /**
-       * Set the client's nickname for the group instance designated by groupnumber.
+       * Set the client's nickname for the group instance designated by the given group number.
        *
-       * Nickname length cannot exceed $MAX_NAME_LENGTH. If length is 0 or name is a NULL
-       * pointer the function call will fail.
+       * Nickname length cannot exceed $MAX_NAME_LENGTH. If length is equal to zero or name is a NULL
+       * pointer, the function call will fail.
        *
        * @param name A byte array containing the new nickname.
        * @param length The size of the name byte array.
@@ -2396,8 +2394,7 @@ namespace group {
        * If no nickname was set before calling this function, the name is empty,
        * and this function has no effect.
        *
-       * Call $size to find out how much memory to allocate for
-       * the result.
+       * Call $size to find out how much memory to allocate for the result.
        *
        * @param name A valid memory location large enough to hold the nickname.
        *   If this parameter is NULL, the function has no effect.
@@ -2414,9 +2411,9 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
-       * An invalid type was passed to the set function
+       * An invalid type was passed to the set function.
        */
       INVALID,
       /**
@@ -2470,11 +2467,11 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The peer number passed did not designate a valid peer.
        */
-      NOPEER,
+      PEER_NOT_FOUND,
     }
 
     uint8_t[length <= MAX_NAME_LENGTH] name {
@@ -2492,11 +2489,10 @@ namespace group {
        * Write the name of the peer designated by the given peer number to a byte
        * array.
        *
-       * Call $size to determine the allocation size for the `name`
-       * parameter.
+       * Call $size to determine the allocation size for the `name` parameter.
        *
        * The data written to `name` is equal to the data received by the last
-       * `${event name}` or `${event peerlist_update}' callback.
+       * `${event name}` callback.
        *
        * @param groupnumber The group number of the group we wish to query.
        * @param peernumber The peer number of the peer whose name we want to retrieve.
@@ -2531,16 +2527,16 @@ namespace group {
     }
 
     /**
-     * This event is triggered when a peer changes their nick.
+     * This event is triggered when a peer changes their nickname.
      */
     event name {
       /**
-       * @param groupnumber The groupnumber of the group the nick change is intended for.
-       * @param peernumber The peernumber of the peer who has changed their nick.
-       * @param nick The nick data.
-       * @param length The length of the nick.
+       * @param groupnumber The groupnumber of the group the name change is intended for.
+       * @param peernumber The peernumber of the peer who has changed their name.
+       * @param name The name data.
+       * @param length The length of the name.
        */
-      typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] nick);
+      typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] name);
     }
 
     /**
@@ -2574,9 +2570,9 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
-       * The topic length exceeded maximum permissible size of $MAX_TOPIC_LENGTH.
+       * Topic length exceeded $MAX_TOPIC_LENGTH.
        */
       TOO_LONG,
       /**
@@ -2594,8 +2590,8 @@ namespace group {
     /**
      * Set the group topic and broadcast it to the rest of the group.
      *
-     * topic length cannot be longer than $MAX_TOPIC_LENGTH. If length is 0 or topic is NULL
-     * the topic will be unset.
+     * topic length cannot be longer than $MAX_TOPIC_LENGTH. If length is equal to zero or
+     * topic is set to NULL, the topic will be unset.
      *
      * @returns true on success.
      */
@@ -2613,8 +2609,7 @@ namespace group {
     /**
      * Write the topic designated by the given group number to a byte array.
      *
-     * Call $size to determine the allocation size for the `topic`
-     * parameter.
+     * Call $size to determine the allocation size for the `topic` parameter.
      *
      * The data written to `topic` is equal to the data received by the last
      * `${event topic}` callback.
@@ -2648,7 +2643,7 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
   }
 
   uint8_t[length <= MAX_TOPIC_LENGTH] name {
@@ -2659,12 +2654,11 @@ namespace group {
     size(uint32_t groupnumber) with error for name;
 
     /**
-     * Write the name designated by the given group number to a byte array.
+     * Write the name of the group designated by the given group number to a byte array.
      *
-     * Call $size to determine the allocation size for the `name`
-     * parameter.
+     * Call $size to determine the allocation size for the `name` parameter.
      *
-     * @param name A valid memory region large enough to store the name.
+     * @param name A valid memory region large enough to store the group name.
      *   If this parameter is NULL, this function call has no effect.
      *
      * @return true on success.
@@ -2673,13 +2667,13 @@ namespace group {
   }
 
   /**
-   * Error codes for group chat_id retrieval.
+   * Error codes for group Chat ID retrieval.
    */
   error for chat_id {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
   }
 
   uint8_t[length] chat_id {
@@ -2704,17 +2698,17 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
   }
 
   uint32_t number_peers {
 
     /**
-     * Return the number of peers in the group designated by groupnumber. If group number
+     * Return the number of peers in the group designated by the given group number. If group number
      * is invalid, the return value is unspecified.
      *
      * All values below the return value of this function are valid peer numbers, and all values
-     * equal to or greater than the return value are invalid.
+     * equal to or greater than the return value are invalid peer numbers.
      */
     get(uint32_t groupnumber) with error for state_info;
   }
@@ -2729,7 +2723,7 @@ namespace group {
   PRIVACY_STATE privacy_state {
 
     /**
-     * Return the privacy state of the group designated by groupnumber. If group number
+     * Return the privacy state of the group designated by the given group number. If group number
      * is invalid, the return value is unspecified.
      */
     get(uint32_t groupnumber) with error for state_info;
@@ -2738,14 +2732,14 @@ namespace group {
   uint32_t peer_limit {
 
     /**
-     * Return the maximum number of peers allowed for the group designated by groupnumber. If
-     * group number is invalid, the return value is unspecified.
+     * Return the maximum number of peers allowed for the group designated by the given group number.
+     * If the group number is invalid, the return value is unspecified.
      */
     get(uint32_t groupnumber) with error for state_info;
   }
 
   /**
-   * This callback is triggered when a peer joins or leaves the group and should be used to
+   * This callback is triggered when a peer joins or leaves the group, and should be used to
    * retrieve up to date information about the peer list for the client.
    */
   event peerlist_update {
@@ -2788,7 +2782,7 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * Message length exceeded $MAX_MESSAGE_LENGTH.
        */
@@ -2833,11 +2827,11 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The peer number passed did not designate a valid peer.
        */
-      NOPEER,
+      PEER_NOT_FOUND,
       /**
        * Message length exceeded $MAX_MESSAGE_LENGTH.
        */
@@ -2918,7 +2912,7 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The friend number passed did not designate a valid friend.
        */
@@ -2940,8 +2934,8 @@ namespace group {
      * @param invite_data The invite data received from the `${event invite}` event.
      * @param length The length of the invite data.
      * @param password The password required to join the group. Set to NULL if no password is required.
-     * @param password_length The length of the password. Set to 0 if no password is required.
-     *   password_length must be no larger than $MAX_PASSWD_SIZE.
+     * @param password_length The length of the password. If length is equal to zero, the password
+     *    parameter will be ignored. password_length must be no larger than $MAX_PASSWD_SIZE.
      *
      * @return true on success
      */
@@ -2955,16 +2949,15 @@ namespace group {
        */
       INIT_FAILED,
       /**
-       * Indicates a password related error. This may occur if password is non-NULL but password_length is zero,
-       * or if the password is too long.
+       * Password length exceeded $MAX_PASSWD_SIZE.
        */
-      BAD_PASSWD,
+      TOO_LONG,
     }
   }
 
   /**
    * This event is triggered when you receive a group invite from a friend. The client must store
-   * invite_data which is used to join the group via the tox_group_invite_accept() function.
+   * invite_data which is used to join the group via tox_group_invite_accept.
    */
   event invite {
     /**
@@ -2977,7 +2970,7 @@ namespace group {
 
   /**
    * This event is triggered when a peer joins the group. Do not use this to update the peer list; use
-   * tox_callback_group_peerlist_update() instead.
+   * tox_callback_group_peerlist_update instead.
    */
   event peer_join {
     /**
@@ -2989,7 +2982,7 @@ namespace group {
 
   /**
    * This event is triggered when a peer exits the group. Do not use this to update the peer list; use
-   * tox_callback_group_peerlist_update() instead.
+   * tox_callback_group_peerlist_update instead.
    */
   event peer_exit {
     /**
@@ -3018,9 +3011,9 @@ namespace group {
    */
   enum class JOIN_FAIL {
     /**
-     * You are using the same nick as someone who is already in the group.
+     * You are using the same nickname as someone who is already in the group.
      */
-    NICK_TAKEN,
+    NAME_TAKEN,
 
     /**
      * The group peer limit has been reached.
@@ -3078,7 +3071,7 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The caller does not have the required permissions to set the password.
        */
@@ -3098,8 +3091,9 @@ namespace group {
      *
      * This function sets the group's privacy state, creates a new group shared state
      * including the change, and distributes it to the rest of the group.
+     *
      * If an attempt is made to set the privacy state to the same state that the group is already
-     * in the function call will be successful and no action will be taken.
+     * in, the function call will be successful and no action will be taken.
      *
      * @param groupnumber The groupnumber of the group for which we wish to change the privacy state.
      * @param privacy_state The privacy state we wish to set the group to.
@@ -3110,9 +3104,9 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
-       * privacy_state is an invalid type.
+       * $PRIVACY_STATE is an invalid type.
        */
       INVALID,
       /**
@@ -3137,7 +3131,7 @@ namespace group {
      * group shared state including the change, and distributes it to the rest of the group.
      *
      * @param groupnumber The groupnumber of the group for which we wish to set the peer limit.
-     * @param max_peers
+     * @param max_peers The maximum number of peers to allow in the group.
      *
      * @return true on success.
      */
@@ -3145,7 +3139,7 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The caller does not have the required permissions to set the privacy state.
        */
@@ -3185,11 +3179,11 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The peer number passed did not designate a valid peer.
        */
-      NOPEER,
+      PEER_NOT_FOUND,
   }
 
   namespace mod {
@@ -3211,11 +3205,11 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The peer number passed did not designate a valid peer. Note: you cannot set your own role.
        */
-      NOPEER,
+      PEER_NOT_FOUND,
       /**
        * The caller does not have the required permissions for this action.
        */
@@ -3249,17 +3243,17 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The peer number passed did not designate a valid peer.
        */
-      NOPEER,
+      PEER_NOT_FOUND,
       /**
        * The caller does not have the required permissions for this action.
        */
       PERMISSIONS,
       /**
-       * The peer failed to be removed from the group. If a ban was, set this error indicates
+       * The peer failed to be removed from the group. If a ban was set, this error indicates
        * that the ban entry could not be created. This may either be due to the entry containing
        * invalid peer information, or a failure to cryptographically authenticate the entry.
        */
@@ -3273,7 +3267,7 @@ namespace group {
     /**
      * Removes a ban.
      *
-     * This function removes a ban entry from the ban list and sends a packet to the rest of
+     * This function removes a ban entry from the ban list, and sends a packet to the rest of
      * the group requesting that they do the same.
      *
      * @param groupnumber The groupnumber of the group in which the ban is to be removed.
@@ -3285,13 +3279,14 @@ namespace group {
       /**
        * The group number passed did not designate a valid group.
        */
-      NOGROUP,
+      GROUP_NOT_FOUND,
       /**
        * The caller does not have the required permissions for this action.
        */
       PERMISSIONS,
       /**
-       * The ban entry could not be removed. This may occur if ban_id does not correspond to a ban entry.
+       * The ban entry could not be removed. This may occur if ban_id does not designate
+       * a valid ban entry.
        */
       FAIL_ACTION,
       /**
@@ -3336,8 +3331,6 @@ namespace group {
    */
   event moderation {
     /**
-     * Used to alert the client of a moderation event.
-     *
      * @param groupnumber The groupnumber of the group the event is intended for.
      * @param source_peernum The peernumber of the peer who initiated the event.
      * @param target_peernum The peernumber of the peer who is the target of the event.
@@ -3366,7 +3359,7 @@ namespace group {
         /**
          * The group number passed did not designate a valid group.
          */
-        NOGROUP,
+        GROUP_NOT_FOUND,
         /**
          * The ban_id does not designate a valid ban list entry.
          */
@@ -3376,8 +3369,8 @@ namespace group {
     uint16_t[size] list {
 
       /**
-       * Return the number of entries in the ban list for the group designated by groupnumber.
-       * If the group number is invalid, the return value is unspecified.
+       * Return the number of entries in the ban list for the group designated by
+       * the given group number. If the group number is invalid, the return value is unspecified.
        */
       size(uint32_t groupnumber) with error for query;
 
@@ -3397,15 +3390,15 @@ namespace group {
     uint8_t[length <= MAX_NAME_LENGTH] name {
 
       /**
-       * Return the length of the name for the ban list entry designated by ban_id in the
-       * group designated by groupnumber. If either groupnumber or ban_id is invalid,
+       * Return the length of the name for the ban list entry designated by ban_id, in the
+       * group designated by the given group number. If either groupnumber or ban_id is invalid,
        * the return value is unspecified.
        */
       size(uint32_t groupnumber, uint16_t ban_id) with error for query;
 
       /**
-       * Write the name of the ban entry designated by ban_id in the group designated by groupnumber
-       * to a byte array.
+       * Write the name of the ban entry designated by ban_id in the group designated by the
+       * given group number to a byte array.
        *
        * Call $size to find out how much memory to allocate for the result.
        *
@@ -3418,8 +3411,8 @@ namespace group {
 
       /**
        * Return a time stamp indicating the time the ban was set, for the ban list entry
-       * designated by ban_id, in the group designated by groupnumber. If either groupnumber or
-       * ban_id is invalid, the return value is unspecified.
+       * designated by ban_id, in the group designated by the given group number.
+       * If either groupnumber or ban_id is invalid, the return value is unspecified.
        */
       get(uint32_t groupnumber, uint16_t ban_id) with error for query;
     }

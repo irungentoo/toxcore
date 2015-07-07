@@ -1367,11 +1367,11 @@ bool tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_
     return 0;
 }
 
-bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8_t *password, size_t password_length,
+bool tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t password_length,
                     TOX_ERR_GROUP_JOIN *error)
 {
     Messenger *m = tox;
-    int ret = gc_group_join(m->group_handler, chat_id, length, password, password_length);
+    int ret = gc_group_join(m->group_handler, chat_id, password, password_length);
 
     switch (ret) {
         case 0:
@@ -1384,7 +1384,7 @@ bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_BAD_CHAT_ID);
             return 0;
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_BAD_PASSWD);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_TOO_LONG);
             return 0;
     }
 
@@ -1398,7 +1398,7 @@ bool tox_group_reconnect(Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_RECONNECT
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_RECONNECT_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1413,7 +1413,7 @@ bool tox_group_leave(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage,
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1449,7 +1449,7 @@ bool tox_group_self_set_name(Tox *tox, uint32_t groupnumber, const uint8_t *name
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_NOGROUP);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_GROUP_NOT_FOUND);
             return 0;
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_TOO_LONG);
@@ -1475,7 +1475,7 @@ size_t tox_group_self_get_name_size(const Tox *tox, uint32_t groupnumber, TOX_ER
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1489,7 +1489,7 @@ bool tox_group_self_get_name(const Tox *tox, uint32_t groupnumber, uint8_t *name
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1504,7 +1504,7 @@ bool tox_group_self_set_status(Tox *tox, uint32_t groupnumber, TOX_USER_STATUS s
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_INFO_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_INFO_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1532,7 +1532,7 @@ TOX_USER_STATUS tox_group_self_get_status(const Tox *tox, uint32_t groupnumber, 
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_INFO_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_INFO_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1546,7 +1546,7 @@ TOX_GROUP_ROLE tox_group_self_get_role(const Tox *tox, uint32_t groupnumber, TOX
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_INFO_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_INFO_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1560,14 +1560,14 @@ size_t tox_group_peer_get_name_size(const Tox *tox, uint32_t groupnumber, uint32
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
         return -1;
     }
 
     int ret = gc_get_peer_nick_size(chat, peernumber);
 
     if (ret == -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOPEER);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
         return -1;
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_OK);
@@ -1582,14 +1582,14 @@ bool tox_group_peer_get_name(const Tox *tox, uint32_t groupnumber, uint32_t peer
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
         return 0;
     }
 
     int ret = gc_get_peer_nick(chat, peernumber, name);
 
     if (ret == -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOPEER);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
         return 0;
     }
 
@@ -1604,14 +1604,14 @@ TOX_USER_STATUS tox_group_peer_get_status(const Tox *tox, uint32_t groupnumber, 
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
         return -1;
     }
 
     uint8_t ret = gc_get_status(chat, peernumber);
 
     if (ret == (uint8_t) -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOPEER);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
         return -1;
     }
 
@@ -1626,14 +1626,14 @@ TOX_GROUP_ROLE tox_group_peer_get_role(const Tox *tox, uint32_t groupnumber, uin
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_GROUP_NOT_FOUND);
         return -1;
     }
 
     uint8_t ret = gc_get_role(chat, peernumber);
 
     if (ret == (uint8_t) -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_NOPEER);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_PEER_QUERY_PEER_NOT_FOUND);
         return -1;
     }
 
@@ -1647,7 +1647,7 @@ bool tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, s
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1678,7 +1678,7 @@ size_t tox_group_get_topic_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GR
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1692,7 +1692,7 @@ bool tox_group_get_topic(const Tox *tox, uint32_t groupnumber, uint8_t *topic, T
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1707,7 +1707,7 @@ size_t tox_group_get_name_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GRO
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NAME_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NAME_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1721,7 +1721,7 @@ bool tox_group_get_name(const Tox *tox, uint32_t groupnumber, uint8_t *groupname
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NAME_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NAME_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1736,7 +1736,7 @@ bool tox_group_get_chat_id(const Tox *tox, uint32_t groupnumber, uint8_t *chat_i
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_CHAT_ID_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_CHAT_ID_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1751,7 +1751,7 @@ uint32_t tox_group_get_number_peers(const Tox *tox, uint32_t groupnumber, TOX_ER
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1771,7 +1771,7 @@ TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, uint32_t gro
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1785,7 +1785,7 @@ uint32_t tox_group_get_peer_limit(const Tox *tox, uint32_t groupnumber, TOX_ERR_
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -1800,7 +1800,7 @@ bool tox_group_send_message(Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumbe
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1838,7 +1838,7 @@ bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t pee
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1855,7 +1855,7 @@ bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t pee
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY);
             return 0;
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_NOPEER);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PEER_NOT_FOUND);
             return 0;
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS);
@@ -1875,7 +1875,7 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumbe
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1917,7 +1917,7 @@ bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_INIT_FAILED);
             return 0;
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_BAD_PASSWD);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_TOO_LONG);
             return 0;
     }
 
@@ -1932,7 +1932,7 @@ bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -1968,7 +1968,7 @@ bool tox_group_founder_set_privacy_state(Tox *tox, uint32_t groupnumber, TOX_GRO
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_NOGROUP);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_GROUP_NOT_FOUND);
             return 0;
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_INVALID);
@@ -1994,7 +1994,7 @@ bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t m
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -2025,14 +2025,14 @@ bool tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peernumber
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOGGLE_IGNORE_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOGGLE_IGNORE_GROUP_NOT_FOUND);
         return 0;
     }
 
     int ret = gc_toggle_ignore(chat, peernumber, ignore);
 
     if (ret == -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOGGLE_IGNORE_NOPEER);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOGGLE_IGNORE_PEER_NOT_FOUND);
         return 0;
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOGGLE_IGNORE_OK);
@@ -2047,7 +2047,7 @@ bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peernumber,
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -2058,7 +2058,7 @@ bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peernumber,
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_NOPEER);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PEER_NOT_FOUND);
             return 0;
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PERMISSIONS);
@@ -2086,10 +2086,10 @@ bool tox_group_mod_remove_peer(Tox *tox, uint32_t groupnumber, uint32_t peernumb
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_NOGROUP);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_GROUP_NOT_FOUND);
             return 0;
         case -2:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_NOPEER);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_PEER_NOT_FOUND);
             return 0;
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_PERMISSIONS);
@@ -2112,7 +2112,7 @@ bool tox_group_mod_remove_ban(Tox *tox, uint32_t groupnumber, uint16_t ban_id, T
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_BAN_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_BAN_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -2143,7 +2143,7 @@ size_t tox_group_ban_get_list_size(const Tox *tox, uint32_t groupnumber, TOX_ERR
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -2157,7 +2157,7 @@ bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -2173,7 +2173,7 @@ size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint16_
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_GROUP_NOT_FOUND);
         return -1;
     }
 
@@ -2195,7 +2195,7 @@ bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint16_t ban_i
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_GROUP_NOT_FOUND);
         return 0;
     }
 
@@ -2217,7 +2217,7 @@ uint64_t tox_group_ban_get_time_set(const Tox *tox, uint32_t groupnumber, uint16
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_NOGROUP);
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_GROUP_NOT_FOUND);
         return -1;
     }
 

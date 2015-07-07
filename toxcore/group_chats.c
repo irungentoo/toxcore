@@ -4493,10 +4493,10 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
  *
  * Return groupnumber on success.
  * Reutrn -1 if the group object fails to initialize.
- * Return -2 if chat_id is NULL or length is not equal to CHAT_ID_SIZE.
+ * Return -2 if chat_id is NULL.
  * Return -3 if there is an error setting the group password.
  */
-int gc_group_join(GC_Session *c, const uint8_t *chat_id, uint16_t length, const uint8_t *passwd, uint16_t passwd_len)
+int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len)
 {
     int groupnumber = create_new_group(c, false);
 
@@ -4508,17 +4508,14 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id, uint16_t length, const 
     if (chat == NULL)
         return -1;
 
-    if (chat_id == NULL || length != CHAT_ID_SIZE)
+    if (chat_id == NULL)
         return -2;
 
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
     chat->join_type = HJ_PUBLIC;
 
-    if (passwd != NULL) {
-        if (passwd_len == 0)
-            return -3;
-
+    if (passwd != NULL && passwd_len > 0) {
         if (set_gc_password_local(chat, passwd, passwd_len) == -1)
             return -3;
     }
@@ -4620,11 +4617,8 @@ int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const 
     chat->join_type = HJ_PRIVATE;
     chat->last_join_attempt = unix_time();
 
-    if (passwd != NULL) {
+    if (passwd != NULL && passwd_len > 0) {
         err = -3;
-
-        if (passwd_len == 0)
-            goto on_error;
 
         if (set_gc_password_local(chat, passwd, passwd_len) == -1)
             goto on_error;
