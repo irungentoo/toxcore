@@ -2254,13 +2254,13 @@ namespace group {
    *
    * @param chat_id The Chat ID of the group you wish to join.
    * @param length The length of the Chat ID. This must be equal to $CHAT_ID_SIZE.
-   * @param passwd The password required to join the group. Set to NULL if no password is required.
-   * @param passwd_length The length of the password. Set to 0 if no password is required.
-   *   passwd_length must be no larger than $MAX_PASSWD_SIZE.
+   * @param password The password required to join the group. Set to NULL if no password is required.
+   * @param password_length The length of the password. Set to 0 if no password is required.
+   *   password_length must be no larger than $MAX_PASSWD_SIZE.
    *
    * @return true on success.
    */
-  bool join(const uint8_t[length <= CHAT_ID_SIZE] chat_id, const uint8_t[passwd_length <= MAX_PASSWD_SIZE] passwd) {
+  bool join(const uint8_t[length <= CHAT_ID_SIZE] chat_id, const uint8_t[password_length <= MAX_PASSWD_SIZE] password) {
     /**
      * The group instance failed to initialize.
      */
@@ -2270,7 +2270,7 @@ namespace group {
      */
     BAD_CHAT_ID,
     /**
-     * Indicates a password related error. This may occur if passwd is non-NULL but passwd_length is zero,
+     * Indicates a password related error. This may occur if password is non-NULL but password_length is zero,
      * or if the password is too long.
      */
     BAD_PASSWD,
@@ -2357,7 +2357,7 @@ namespace group {
       /**
        * The name is already taken by another peer in the group.
        */
-      DUPLICATE,
+      TAKEN,
       /**
        * The packet failed to send.
        */
@@ -2939,13 +2939,13 @@ namespace group {
      *
      * @param invite_data The invite data received from the `${event invite}` event.
      * @param length The length of the invite data.
-     * @param passwd The password required to join the group. Set to NULL if no password is required.
-     * @param passwd_length The length of the password. Set to 0 if no password is required.
-     *   passwd_length must be no larger than $MAX_PASSWD_SIZE.
+     * @param password The password required to join the group. Set to NULL if no password is required.
+     * @param password_length The length of the password. Set to 0 if no password is required.
+     *   password_length must be no larger than $MAX_PASSWD_SIZE.
      *
      * @return true on success
      */
-    bool accept(const uint8_t[length] invite_data, const uint8_t[passwd_length <= MAX_PASSWD_SIZE] passwd) {
+    bool accept(const uint8_t[length] invite_data, const uint8_t[password_length <= MAX_PASSWD_SIZE] password) {
       /**
        * The invite data is not in the expected format.
        */
@@ -2955,7 +2955,7 @@ namespace group {
        */
       INIT_FAILED,
       /**
-       * Indicates a password related error. This may occur if passwd is non-NULL but passwd_length is zero,
+       * Indicates a password related error. This may occur if password is non-NULL but password_length is zero,
        * or if the password is too long.
        */
       BAD_PASSWD,
@@ -3028,7 +3028,7 @@ namespace group {
     PEER_LIMIT,
 
     /**
-     * You have supplied the incorrect group password in your join attempt.
+     * You have supplied an invalid password.
      */
     INVALID_PASSWORD,
 
@@ -3069,12 +3069,12 @@ namespace group {
      * and distributes it to the rest of the group.
      *
      * @param groupnumber The groupnumber of the group for which we wish to set the password.
-     * @param passwd The password we want to set. Set passwd to NULL to unset the password.
+     * @param password The password we want to set. Set password to NULL to unset the password.
      * @param length The length of the password. length must be no longer than $MAX_PASSWD_SIZE.
      *
      * @return true on success.
      */
-    bool set_password(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWD_SIZE] passwd) {
+    bool set_password(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWD_SIZE] password) {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -3259,7 +3259,9 @@ namespace group {
        */
       PERMISSIONS,
       /**
-       * The peer failed to be removed from the group and/or added to the ban list.
+       * The peer failed to be removed from the group. If a ban was, set this error indicates
+       * that the ban entry could not be created. This may either be due to the entry containing
+       * invalid peer information, or a failure to cryptographically authenticate the entry.
        */
       FAIL_ACTION,
       /**

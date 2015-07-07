@@ -2471,7 +2471,7 @@ typedef enum TOX_ERR_GROUP_JOIN {
     TOX_ERR_GROUP_JOIN_BAD_CHAT_ID,
 
     /**
-     * Indicates a password related error. This may occur if passwd is non-NULL but passwd_length is zero,
+     * Indicates a password related error. This may occur if password is non-NULL but password_length is zero,
      * or if the password is too long.
      */
     TOX_ERR_GROUP_JOIN_BAD_PASSWD,
@@ -2488,13 +2488,13 @@ typedef enum TOX_ERR_GROUP_JOIN {
  *
  * @param chat_id The Chat ID of the group you wish to join.
  * @param length The length of the Chat ID. This must be equal to TOX_GROUP_CHAT_ID_SIZE.
- * @param passwd The password required to join the group. Set to NULL if no password is required.
- * @param passwd_length The length of the password. Set to 0 if no password is required.
- *   passwd_length must be no larger than TOX_GROUP_MAX_PASSWD_SIZE.
+ * @param password The password required to join the group. Set to NULL if no password is required.
+ * @param password_length The length of the password. Set to 0 if no password is required.
+ *   password_length must be no larger than TOX_GROUP_MAX_PASSWD_SIZE.
  *
  * @return true on success.
  */
-bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8_t *passwd, size_t passwd_length,
+bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8_t *password, size_t password_length,
                     TOX_ERR_GROUP_JOIN *error);
 
 typedef enum TOX_ERR_GROUP_RECONNECT {
@@ -2607,7 +2607,7 @@ typedef enum TOX_ERR_GROUP_SELF_NAME {
     /**
      * The name is already taken by another peer in the group.
      */
-    TOX_ERR_GROUP_SELF_NAME_DUPLICATE,
+    TOX_ERR_GROUP_SELF_NAME_TAKEN,
 
     /**
      * The packet failed to send.
@@ -3283,7 +3283,7 @@ typedef enum TOX_ERR_GROUP_INVITE_ACCEPT {
     TOX_ERR_GROUP_INVITE_ACCEPT_INIT_FAILED,
 
     /**
-     * Indicates a password related error. This may occur if passwd is non-NULL but passwd_length is zero,
+     * Indicates a password related error. This may occur if password is non-NULL but password_length is zero,
      * or if the password is too long.
      */
     TOX_ERR_GROUP_INVITE_ACCEPT_BAD_PASSWD,
@@ -3297,14 +3297,14 @@ typedef enum TOX_ERR_GROUP_INVITE_ACCEPT {
  *
  * @param invite_data The invite data received from the `group_invite` event.
  * @param length The length of the invite data.
- * @param passwd The password required to join the group. Set to NULL if no password is required.
- * @param passwd_length The length of the password. Set to 0 if no password is required.
- *   passwd_length must be no larger than TOX_GROUP_MAX_PASSWD_SIZE.
+ * @param password The password required to join the group. Set to NULL if no password is required.
+ * @param password_length The length of the password. Set to 0 if no password is required.
+ *   password_length must be no larger than TOX_GROUP_MAX_PASSWD_SIZE.
  *
  * @return true on success
  */
-bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *passwd,
-                             size_t passwd_length, TOX_ERR_GROUP_INVITE_ACCEPT *error);
+bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
+                             size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error);
 
 /**
  * @param friendnumber The friendnumber of the contact who invited you.
@@ -3387,7 +3387,7 @@ typedef enum TOX_GROUP_JOIN_FAIL {
     TOX_GROUP_JOIN_FAIL_PEER_LIMIT,
 
     /**
-     * You have supplied the incorrect group password in your join attempt.
+     * You have supplied an invalid password.
      */
     TOX_GROUP_JOIN_FAIL_INVALID_PASSWORD,
 
@@ -3460,12 +3460,12 @@ typedef enum TOX_ERR_GROUP_FOUNDER_SET_PASSWORD {
  * and distributes it to the rest of the group.
  *
  * @param groupnumber The groupnumber of the group for which we wish to set the password.
- * @param passwd The password we want to set. Set passwd to NULL to unset the password.
+ * @param password The password we want to set. Set password to NULL to unset the password.
  * @param length The length of the password. length must be no longer than TOX_GROUP_MAX_PASSWD_SIZE.
  *
  * @return true on success.
  */
-bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *passwd, size_t length,
+bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *password, size_t length,
                                     TOX_ERR_GROUP_FOUNDER_SET_PASSWORD *error);
 
 typedef enum TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE {
@@ -3682,7 +3682,9 @@ typedef enum TOX_ERR_GROUP_MOD_REMOVE_PEER {
     TOX_ERR_GROUP_MOD_REMOVE_PEER_PERMISSIONS,
 
     /**
-     * The peer failed to be removed from the group and/or added to the ban list.
+     * The peer failed to be removed from the group. If a ban was, set this error indicates
+     * that the ban entry could not be created. This may either be due to the entry containing
+     * invalid peer information, or a failure to cryptographically authenticate the entry.
      */
     TOX_ERR_GROUP_MOD_REMOVE_PEER_FAIL_ACTION,
 

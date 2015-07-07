@@ -362,7 +362,7 @@ uint32_t gc_get_max_peers(const GC_Chat *chat);
  */
 int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
-/* Copies your own nick to nick and returns nick length */
+/* Copies your own nick to nick */
 void gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
 
 /* Return your own nick length */

@@ -430,7 +430,7 @@ void sanctions_list_make_hash(struct GC_Sanction *sanctions, uint32_t new_versio
     crypto_hash_sha256(hash, data, sizeof(data));
 }
 
-/* Verifies that sanction was assigned by a current mod or group founder.
+/* Verifies that sanction contains valid info and was assigned by a current mod or group founder.
  *
  * Returns 0 on success.
  * Returns -1 on failure.
@@ -443,14 +443,31 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
     if (sanction->type >= SA_INVALID)
         return -1;
 
+    if (sanction->time_set == 0)
+        return -1;
+
+    if (sanction->type == SA_BAN) {
+        if (sanction->ban_info.nick_len == 0 || sanction->ban_info.nick_len > MAX_GC_NICK_SIZE)
+            return -1;
+
+        if (!ipport_isset(&sanction->ban_info.ip_port))
+            return -1;
+
+        if (sanction->ban_info.ip_port.ip.family == TCP_FAMILY)
+            return -1;
+    }
+
     uint8_t packed_data[sizeof(struct GC_Sanction)];
     int packed_len = sanctions_list_pack(packed_data, sizeof(packed_data), sanction, NULL, 1);
 
     if (packed_len <= SIGNATURE_SIZE)
         return -1;
 
-    return crypto_sign_verify_detached(sanction->signature, packed_data, packed_len - SIGNATURE_SIZE,
-                                       sanction->public_sig_key);
+    if (crypto_sign_verify_detached(sanction->signature, packed_data, packed_len - SIGNATURE_SIZE,
+                                    sanction->public_sig_key) == -1)
+        return -1;
+
+    return 0;
 }
 
 /* Updates sanction list credentials: increment version, replace sig_pk with your own,
@@ -886,6 +903,9 @@ uint16_t sanctions_list_num_banned(const GC_Chat *chat)
  */
 int sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list)
 {
+    if (!list)
+        return 0;
+
     uint16_t i, count = 0;
 
     for (i = 0; i < chat->moderation.num_sanctions; ++i) {

@@ -1367,11 +1367,11 @@ bool tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_
     return 0;
 }
 
-bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8_t *passwd, size_t passwd_length,
+bool tox_group_join(Tox *tox, const uint8_t *chat_id, size_t length, const uint8_t *password, size_t password_length,
                     TOX_ERR_GROUP_JOIN *error)
 {
     Messenger *m = tox;
-    int ret = gc_group_join(m->group_handler, chat_id, length, passwd, passwd_length);
+    int ret = gc_group_join(m->group_handler, chat_id, length, password, password_length);
 
     switch (ret) {
         case 0:
@@ -1458,7 +1458,7 @@ bool tox_group_self_set_name(Tox *tox, uint32_t groupnumber, const uint8_t *name
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_INVALID);
             return 0;
         case -4:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_DUPLICATE);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_TAKEN);
             return 0;
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SEND_FAIL);
@@ -1900,11 +1900,11 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumbe
     return 0;
 }
 
-bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *passwd,
-                            size_t passwd_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
+bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
+                            size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
 {
     Messenger *m = tox;
-    int ret = gc_accept_invite(m->group_handler, invite_data, length, passwd, passwd_length);
+    int ret = gc_accept_invite(m->group_handler, invite_data, length, password, password_length);
 
     switch (ret) {
         case 0:
@@ -1925,7 +1925,7 @@ bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length
     return 0;
 }
 
-bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *passwd, size_t length,
+bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *password, size_t length,
                                    TOX_ERR_GROUP_FOUNDER_SET_PASSWORD *error)
 {
     Messenger *m = tox;
@@ -1936,7 +1936,7 @@ bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_
         return 0;
     }
 
-    int ret = gc_founder_set_password(chat, passwd, length);
+    int ret = gc_founder_set_password(chat, password, length);
 
     switch (ret) {
         case 0:
