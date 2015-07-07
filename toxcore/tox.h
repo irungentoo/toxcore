@@ -1283,7 +1283,7 @@ void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback, void *user
 size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
 
 /**
- * Write the name of the friend designated by the given friend number to a byte
+ * Write the status message of the friend designated by the given friend number to a byte
  * array.
  *
  * Call tox_friend_get_status_message_size to determine the allocation size for the `status_name`
@@ -1292,7 +1292,7 @@ size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number
  * The data written to `status_message` is equal to the data received by the last
  * `friend_status_message` callback.
  *
- * @param name A valid memory region large enough to store the friend's name.
+ * @param status_message A valid memory region large enough to store the friend's status message.
  */
 bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8_t *status_message,
                                    TOX_ERR_FRIEND_QUERY *error);
