@@ -896,26 +896,18 @@ uint16_t sanctions_list_num_banned(const GC_Chat *chat)
     return count;
 }
 
-/* Fills list with all valid ban ID's.
- *
- * Returns 0 on success.
- * Returns -1 if ban_id does not exist.
- */
-int sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list)
+/* Fills list with all valid ban ID's. */
+void sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list)
 {
     if (!list)
-        return 0;
+        return;
 
     uint16_t i, count = 0;
 
     for (i = 0; i < chat->moderation.num_sanctions; ++i) {
-        if (chat->moderation.sanctions[i].type == SA_BAN) {
+        if (chat->moderation.sanctions[i].type == SA_BAN)
             list[count++] = chat->moderation.sanctions[i].ban_info.id;
-            return 0;
-        }
     }
-
-    return -1;
 }
 
 /* Returns the nick length of the ban entry associted with ban_id on success.

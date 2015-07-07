@@ -2161,13 +2161,7 @@ bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list
         return 0;
     }
 
-    int ret = sanctions_list_get_ban_list(chat, list);
-
-    if (ret == -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_BAD_ID);
-        return 0;
-    }
-
+    sanctions_list_get_ban_list(chat, list);
     SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_BAN_QUERY_OK);
     return 1;
 }

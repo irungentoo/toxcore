@@ -224,12 +224,8 @@ bool sanctions_list_ip_banned(const GC_Chat *chat, IP_Port *ip_port);
 /* Returns the number of sanctions list entries that are of type SA_BAN */
 uint16_t sanctions_list_num_banned(const GC_Chat *chat);
 
-/* Fills list with all valid ban ID's.
- *
- * Returns 0 on success.
- * Returns -1 if ban_id does not exist.
- */
-int sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list);
+/* Fills list with all valid ban ID's. */
+void sanctions_list_get_ban_list(const GC_Chat *chat, uint16_t *list);
 
 /* Returns the nick length of the ban entry associted with ban_id on success.
  * Returns 0 if ban_id does not exist.
