@@ -1,7 +1,6 @@
 /* net_crypto.c
  *
  * Functions for the core network crypto.
- * See also: http://wiki.tox.im/index.php/DHT
  *
  * NOTE: This code has to be perfect. We don't mess around with encryption.
  *

@@ -467,7 +467,7 @@ make install
 
 <a name="Clients" />
 ####Clients:
-While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](http://wiki.tox.im/client)
+While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](https://wiki.tox.chat/doku.php?id=clients)
 
 
 
