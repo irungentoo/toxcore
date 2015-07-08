@@ -2125,7 +2125,7 @@ namespace group {
   /**
    * Maximum length of a group password.
    */
-  const MAX_PASSWD_SIZE           = 32;
+  const MAX_PASSWORD_SIZE         = 32;
 
   /**
    * Number of bytes in a group Chat ID.
@@ -2255,11 +2255,11 @@ namespace group {
    * @param chat_id The Chat ID of the group you wish to join. This must be $CHAT_ID_SIZE bytes.
    * @param password The password required to join the group. Set to NULL if no password is required.
    * @param password_length The length of the password. If length is equal to zero,
-   *   the password parameter is ignored. password_length must be no larger than $MAX_PASSWD_SIZE.
+   *   the password parameter is ignored. password_length must be no larger than $MAX_PASSWORD_SIZE.
    *
    * @return true on success.
    */
-  bool join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[password_length <= MAX_PASSWD_SIZE] password) {
+  bool join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[password_length <= MAX_PASSWORD_SIZE] password) {
     /**
      * The group instance failed to initialize.
      */
@@ -2269,7 +2269,7 @@ namespace group {
      */
     BAD_CHAT_ID,
     /**
-     * Password length exceeded $MAX_PASSWD_SIZE.
+     * Password length exceeded $MAX_PASSWORD_SIZE.
      */
     TOO_LONG,
   }
@@ -2317,7 +2317,7 @@ namespace group {
     /**
      * The parting packet failed to send.
      */
-    SEND_FAIL,
+    FAIL_SEND,
     /**
      * The group chat instance failed to be deleted. This may occur due to memory related errors.
      */
@@ -2337,9 +2337,19 @@ namespace group {
   inline namespace self {
 
     /**
-     * Error codes for self name getting, setting and size functions.
+     * General error codes for self state get and size functions.
      */
-    error for self_name {
+    error for self_query {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      GROUP_NOT_FOUND,
+    }
+
+    /**
+     * Error codes for self name setting.
+     */
+    error for self_name_set {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -2359,7 +2369,7 @@ namespace group {
       /**
        * The packet failed to send.
        */
-      SEND_FAIL,
+      FAIL_SEND,
     }
 
     uint8_t[length <= MAX_NAME_LENGTH] name {
@@ -2375,7 +2385,7 @@ namespace group {
        *
        * @return true on success.
        */
-      set(uint32_t groupnumber) with error for self_name;
+      set(uint32_t groupnumber) with error for self_name_set;
 
       /**
        * Return the length of the client's current nickname for the group instance designated
@@ -2386,7 +2396,7 @@ namespace group {
        *
        * @see threading for concurrency implications.
        */
-      size(uint32_t groupnumber) with error for self_name;
+      size(uint32_t groupnumber) with error for self_query;
 
       /**
        * Write the nickname set by $set to a byte array.
@@ -2401,13 +2411,13 @@ namespace group {
        *
        * @returns true on success.
        */
-      get(uint32_t groupnumber) with error for self_name;
+      get(uint32_t groupnumber) with error for self_query;
     }
 
     /**
-     * Error codes for self status/role getting and setting.
+     * Error codes for self status setting.
      */
-    error for self_info {
+    error for self_status_set {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -2419,7 +2429,7 @@ namespace group {
       /**
        * The packet failed to send.
        */
-      SEND_FAIL,
+      FAIL_SEND,
     }
 
     USER_STATUS status {
@@ -2429,13 +2439,13 @@ namespace group {
        *
        * @return true on succcess.
        */
-      set(uint32_t groupnumber) with error for self_info;
+      set(uint32_t groupnumber) with error for self_status_set;
 
       /**
        * returns the client's status for the group instance on success.
        * return value is unspecified on failure.
        */
-      get(uint32_t groupnumber) with error for self_info;
+      get(uint32_t groupnumber) with error for self_query;
     }
 
     ROLE role {
@@ -2444,7 +2454,7 @@ namespace group {
        * Returns the client's role for the group instance on success.
        * return value is unspecified on failure.
        */
-      get(uint32_t groupnumber) with error for self_info;
+      get(uint32_t groupnumber) with error for self_query;
     }
   }
 
@@ -2564,9 +2574,19 @@ namespace group {
 namespace group {
 
   /**
-   * Error codes for group topic setting/queries.
+   * General error codes for group state get and size functions.
    */
-  error for topic {
+  error for state_queries {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      GROUP_NOT_FOUND,
+  }
+
+  /**
+   * Error codes for group topic setting.
+   */
+  error for topic_set {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -2582,7 +2602,7 @@ namespace group {
       /**
        * The packet failed to send.
        */
-      SEND_FAIL,
+      FAIL_SEND,
   }
 
   uint8_t[length <= MAX_TOPIC_LENGTH] topic {
@@ -2595,7 +2615,7 @@ namespace group {
      *
      * @returns true on success.
      */
-    set(uint32_t groupnumber) with error for topic;
+    set(uint32_t groupnumber) with error for topic_set;
 
     /**
      * Return the length of the group topic. If the group number is invalid, the
@@ -2604,7 +2624,7 @@ namespace group {
      * The return value is equal to the `length` argument received by the last
      * `${event topic}` callback.
      */
-    size(uint32_t groupnumber) with error for topic;
+    size(uint32_t groupnumber) with error for state_queries;
 
     /**
      * Write the topic designated by the given group number to a byte array.
@@ -2619,7 +2639,7 @@ namespace group {
      *
      * @return true on success.
      */
-    get(uint32_t groupnumber) with error for topic;
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   /**
@@ -2635,23 +2655,12 @@ namespace group {
     typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
   }
 
-
-  /**
-   * Error codes for group name queries.
-   */
-  error for name {
-      /**
-       * The group number passed did not designate a valid group.
-       */
-      GROUP_NOT_FOUND,
-  }
-
   uint8_t[length <= MAX_TOPIC_LENGTH] name {
     /**
      * Return the length of the group name. If the group number is invalid, the
      * return value is unspecified.
      */
-    size(uint32_t groupnumber) with error for name;
+    size(uint32_t groupnumber) with error for state_queries;
 
     /**
      * Write the name of the group designated by the given group number to a byte array.
@@ -2663,17 +2672,7 @@ namespace group {
      *
      * @return true on success.
      */
-    get(uint32_t groupnumber) with error for name;
-  }
-
-  /**
-   * Error codes for group Chat ID retrieval.
-   */
-  error for chat_id {
-      /**
-       * The group number passed did not designate a valid group.
-       */
-      GROUP_NOT_FOUND,
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   uint8_t[length] chat_id {
@@ -2688,17 +2687,7 @@ namespace group {
      *
      * @return true on success.
      */
-    get(uint32_t groupnumber) with error for chat_id;
-  }
-
-  /**
-   * Error codes for misc. group state queries.
-   */
-  error for state_info {
-      /**
-       * The group number passed did not designate a valid group.
-       */
-      GROUP_NOT_FOUND,
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   uint32_t number_peers {
@@ -2710,7 +2699,7 @@ namespace group {
      * All values below the return value of this function are valid peer numbers, and all values
      * equal to or greater than the return value are invalid peer numbers.
      */
-    get(uint32_t groupnumber) with error for state_info;
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   uint32_t number_groups {
@@ -2731,7 +2720,7 @@ namespace group {
      *
      * See the `Group chat founder controls` section for the respective set function.
      */
-    get(uint32_t groupnumber) with error for state_info;
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   /**
@@ -2756,7 +2745,7 @@ namespace group {
      *
      * See the `Group chat founder controls` section for the respective set function.
      */
-    get(uint32_t groupnumber) with error for state_info;
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   /**
@@ -2770,13 +2759,13 @@ namespace group {
     typedef void(uint32_t groupnumber, uint32_t peer_limit);
   }
 
-  uint8_t[password_length <= MAX_PASSWD_SIZE] password {
+  uint8_t[password_length <= MAX_PASSWORD_SIZE] password {
 
     /**
      * Return the length of the group password. If the group number is invalid, the
      * return value is unspecified.
      */
-    size(uint32_t groupnumber) with error for state_info;
+    size(uint32_t groupnumber) with error for state_queries;
 
     /**
      * Write the password for the group designated by the given group number to a byte array.
@@ -2793,7 +2782,7 @@ namespace group {
      *
      * @return true on success.
      */
-    get(uint32_t groupnumber) with error for state_info;
+    get(uint32_t groupnumber) with error for state_queries;
   }
 
   /**
@@ -2805,7 +2794,7 @@ namespace group {
      * @param password The new group password.
      * @param length The length of the password.
      */
-    typedef void(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWD_SIZE] password);
+    typedef void(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWORD_SIZE] password);
   }
 
   /**
@@ -2872,7 +2861,7 @@ namespace group {
       /**
        * Packet failed to send.
        */
-      SEND_FAIL,
+      FAIL_SEND,
     }
 
     /**
@@ -2917,7 +2906,7 @@ namespace group {
       /**
        * Packet failed to send.
        */
-      SEND_FAIL,
+      FAIL_SEND,
     }
   }
 }
@@ -2931,12 +2920,13 @@ namespace group {
 namespace group {
 
   /**
-   * This event is triggered when you receive a group message.
+   * This event is triggered when the client receives a group message.
    */
   event message {
     /**
      * @param groupnumber The groupnumber of the group the message is intended for.
      * @param peernumber The peernumber of the peer who sent the message.
+     * @param type The type of message (normal, action, ...).
      * @param message The message data.
      * @param length The length of the message.
      */
@@ -2944,7 +2934,7 @@ namespace group {
   }
 
   /**
-   * This event is triggered when you receive a private message.
+   * This event is triggered when the client receives a private message.
    */
   event private_message {
     /**
@@ -2986,7 +2976,7 @@ namespace group {
       /**
        * The friend number passed did not designate a valid friend.
        */
-      NOFRIEND,
+      FRIEND_NOT_FOUND,
       /**
        * Creation of the invite packet failed. This indicates a network related error.
        */
@@ -2994,7 +2984,7 @@ namespace group {
       /**
        * Packet failed to send.
        */
-      SEND_FAIL,
+      FAIL_SEND,
     }
 
     /**
@@ -3005,11 +2995,11 @@ namespace group {
      * @param length The length of the invite data.
      * @param password The password required to join the group. Set to NULL if no password is required.
      * @param password_length The length of the password. If length is equal to zero, the password
-     *    parameter will be ignored. password_length must be no larger than $MAX_PASSWD_SIZE.
+     *    parameter will be ignored. password_length must be no larger than $MAX_PASSWORD_SIZE.
      *
      * @return true on success
      */
-    bool accept(const uint8_t[length] invite_data, const uint8_t[password_length <= MAX_PASSWD_SIZE] password) {
+    bool accept(const uint8_t[length] invite_data, const uint8_t[password_length <= MAX_PASSWORD_SIZE] password) {
       /**
        * The invite data is not in the expected format.
        */
@@ -3019,19 +3009,19 @@ namespace group {
        */
       INIT_FAILED,
       /**
-       * Password length exceeded $MAX_PASSWD_SIZE.
+       * Password length exceeded $MAX_PASSWORD_SIZE.
        */
       TOO_LONG,
     }
   }
 
   /**
-   * This event is triggered when you receive a group invite from a friend. The client must store
+   * This event is triggered when the client receives a group invite from a friend. The client must store
    * invite_data which is used to join the group via tox_group_invite_accept.
    */
   event invite {
     /**
-     * @param friendnumber The friendnumber of the contact who invited you.
+     * @param friendnumber The friendnumber of the contact who sent the invite.
      * @param invite_data The invite data.
      * @param length The length of invite_data.
      */
@@ -3108,9 +3098,9 @@ namespace group {
   event join_fail {
     /**
      * @param groupnumber The groupnumber of the group for which the join has failed.
-     * @param type The type of group rejection.
+     * @param fail_type The type of group rejection.
      */
-    typedef void(uint32_t groupnumber, JOIN_FAIL type);
+    typedef void(uint32_t groupnumber, JOIN_FAIL fail_type);
   }
 }
 
@@ -3133,11 +3123,11 @@ namespace group {
      *
      * @param groupnumber The groupnumber of the group for which we wish to set the password.
      * @param password The password we want to set. Set password to NULL to unset the password.
-     * @param length The length of the password. length must be no longer than $MAX_PASSWD_SIZE.
+     * @param length The length of the password. length must be no longer than $MAX_PASSWORD_SIZE.
      *
      * @return true on success.
      */
-    bool set_password(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWD_SIZE] password) {
+    bool set_password(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWORD_SIZE] password) {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -3147,7 +3137,7 @@ namespace group {
        */
       PERMISSIONS,
       /**
-       * Password length exceeded $MAX_PASSWD_SIZE.
+       * Password length exceeded $MAX_PASSWORD_SIZE.
        */
       TOO_LONG,
       /**
@@ -3211,7 +3201,7 @@ namespace group {
        */
       GROUP_NOT_FOUND,
       /**
-       * The caller does not have the required permissions to set the privacy state.
+       * The caller does not have the required permissions to set the peer limit.
        */
       PERMISSIONS,
       /**
@@ -3402,11 +3392,11 @@ namespace group {
   event moderation {
     /**
      * @param groupnumber The groupnumber of the group the event is intended for.
-     * @param source_peernum The peernumber of the peer who initiated the event.
-     * @param target_peernum The peernumber of the peer who is the target of the event.
-     * @param type The type of event (one of $MOD_EVENT).
+     * @param source_peer_number The peernumber of the peer who initiated the event.
+     * @param target_peer_number The peernumber of the peer who is the target of the event.
+     * @param mod_type The type of event.
      */
-    typedef void(uint32_t groupnumber, uint32_t source_peernum, uint32_t target_peernum, MOD_EVENT type);
+    typedef void(uint32_t groupnumber, uint32_t source_peer_number, uint32_t target_peer_number, MOD_EVENT mod_type);
   }
 
 }
