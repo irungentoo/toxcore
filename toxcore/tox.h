@@ -2818,7 +2818,7 @@ void tox_callback_group_peer_status(Tox *tox, tox_group_peer_status_cb *callback
 
 /*******************************************************************************
  *
- * :: Group chat state queries.
+ * :: Group chat state queries and events.
  *
  ******************************************************************************/
 
@@ -3010,15 +3010,93 @@ uint32_t tox_group_get_number_groups(const Tox *tox);
 /**
  * Return the privacy state of the group designated by the given group number. If group number
  * is invalid, the return value is unspecified.
+ *
+ * The value returned is equal to the data received by the last
+ * `group_privacy_state` callback.
+ *
+ * See the `Group chat founder controls` section for the respective set function.
  */
 TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, uint32_t groupnumber,
         TOX_ERR_GROUP_STATE_INFO *error);
 
 /**
+ * @param groupnumber The groupnumber of the group the topic change is intended for.
+ * @param privacy_state The new privacy state.
+ */
+typedef void tox_group_privacy_state_cb(Tox *tox, uint32_t groupnumber, TOX_GROUP_PRIVACY_STATE privacy_state,
+                                        void *user_data);
+
+
+/**
+ * Set the callback for the `group_privacy_state` event. Pass NULL to unset.
+ *
+ * This event is triggered when the group founder changes the privacy state.
+ */
+void tox_callback_group_privacy_state(Tox *tox, tox_group_privacy_state_cb *callback, void *user_data);
+
+/**
  * Return the maximum number of peers allowed for the group designated by the given group number.
  * If the group number is invalid, the return value is unspecified.
+ *
+ * The value returned is equal to the data received by the last
+ * `group_peer_limit` callback.
+ *
+ * See the `Group chat founder controls` section for the respective set function.
  */
 uint32_t tox_group_get_peer_limit(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_INFO *error);
+
+/**
+ * @param groupnumber The groupnumber of the group for which the peer limit has changed.
+ * @param peer_limit The new peer limit for the group.
+ */
+typedef void tox_group_peer_limit_cb(Tox *tox, uint32_t groupnumber, uint32_t peer_limit, void *user_data);
+
+
+/**
+ * Set the callback for the `group_peer_limit` event. Pass NULL to unset.
+ *
+ * This event is triggered when the group founder changes the maximum peer limit.
+ */
+void tox_callback_group_peer_limit(Tox *tox, tox_group_peer_limit_cb *callback, void *user_data);
+
+/**
+ * Return the length of the group password. If the group number is invalid, the
+ * return value is unspecified.
+ */
+size_t tox_group_get_password_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_INFO *error);
+
+/**
+ * Write the password for the group designated by the given group number to a byte array.
+ *
+ * Call tox_group_get_password_size to determine the allocation size for the `password` parameter.
+ *
+ * The data received is equal to the data received by the last
+ * `group_password` callback.
+ *
+ * See the `Group chat founder controls` section for the respective set function.
+ *
+ * @param password A valid memory region large enough to store the group password.
+ *   If this parameter is NULL, this function call has no effect.
+ *
+ * @return true on success.
+ */
+bool tox_group_get_password(const Tox *tox, uint32_t groupnumber, uint8_t *password, TOX_ERR_GROUP_STATE_INFO *error);
+
+/**
+ * @param groupnumber The groupnumber of the group for which the password has changed.
+ * @param password The new group password.
+ * @param length The length of the password.
+ */
+typedef void tox_group_password_cb(Tox *tox, uint32_t groupnumber, const uint8_t *password, size_t length,
+                                   void *user_data);
+
+
+/**
+ * Set the callback for the `group_password` event. Pass NULL to unset.
+ *
+ * This event is triggered when the group founder changes the group password.
+ */
+void tox_callback_group_password(Tox *tox, tox_group_password_cb *callback, void *user_data);
 
 /**
  * @param groupnumber The groupnumber of the group that must have its peer list updated.

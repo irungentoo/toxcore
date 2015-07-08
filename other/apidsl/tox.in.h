@@ -2557,7 +2557,7 @@ namespace group {
 
 /******************************************************************************
  *
- * :: Group chat state queries.
+ * :: Group chat state queries and events.
  *
  ******************************************************************************/
 
@@ -2725,8 +2725,24 @@ namespace group {
     /**
      * Return the privacy state of the group designated by the given group number. If group number
      * is invalid, the return value is unspecified.
+     *
+     * The value returned is equal to the data received by the last
+     * `${event privacy_state}` callback.
+     *
+     * See the `Group chat founder controls` section for the respective set function.
      */
     get(uint32_t groupnumber) with error for state_info;
+  }
+
+  /**
+   * This event is triggered when the group founder changes the privacy state.
+   */
+  event privacy_state {
+    /**
+     * @param groupnumber The groupnumber of the group the topic change is intended for.
+     * @param privacy_state The new privacy state.
+     */
+    typedef void(uint32_t groupnumber, PRIVACY_STATE privacy_state);
   }
 
   uint32_t peer_limit {
@@ -2734,8 +2750,62 @@ namespace group {
     /**
      * Return the maximum number of peers allowed for the group designated by the given group number.
      * If the group number is invalid, the return value is unspecified.
+     *
+     * The value returned is equal to the data received by the last
+     * `${event peer_limit}` callback.
+     *
+     * See the `Group chat founder controls` section for the respective set function.
      */
     get(uint32_t groupnumber) with error for state_info;
+  }
+
+  /**
+   * This event is triggered when the group founder changes the maximum peer limit.
+   */
+  event peer_limit {
+    /**
+     * @param groupnumber The groupnumber of the group for which the peer limit has changed.
+     * @param peer_limit The new peer limit for the group.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peer_limit);
+  }
+
+  uint8_t[password_length <= MAX_PASSWD_SIZE] password {
+
+    /**
+     * Return the length of the group password. If the group number is invalid, the
+     * return value is unspecified.
+     */
+    size(uint32_t groupnumber) with error for state_info;
+
+    /**
+     * Write the password for the group designated by the given group number to a byte array.
+     *
+     * Call $size to determine the allocation size for the `password` parameter.
+     *
+     * The data received is equal to the data received by the last
+     * `${event password}` callback.
+     *
+     * See the `Group chat founder controls` section for the respective set function.
+     *
+     * @param password A valid memory region large enough to store the group password.
+     *   If this parameter is NULL, this function call has no effect.
+     *
+     * @return true on success.
+     */
+    get(uint32_t groupnumber) with error for state_info;
+  }
+
+  /**
+   * This event is triggered when the group founder changes the group password.
+   */
+  event password {
+    /**
+     * @param groupnumber The groupnumber of the group for which the password has changed.
+     * @param password The new group password.
+     * @param length The length of the password.
+     */
+    typedef void(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWD_SIZE] password);
   }
 
   /**

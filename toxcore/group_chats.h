@@ -249,6 +249,12 @@ typedef struct GC_Session {
     void *status_change_userdata;
     void (*topic_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *,  size_t, void *);
     void *topic_change_userdata;
+    void (*peer_limit)(Messenger *m, uint32_t, uint32_t, void *);
+    void *peer_limit_userdata;
+    void (*privacy_state)(Messenger *m, uint32_t, unsigned int, void *);
+    void *privacy_state_userdata;
+    void (*password)(Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void *password_userdata;
     void (*peer_join)(Messenger *m, uint32_t, uint32_t, void *);
     void *peer_join_userdata;
     void (*peer_exit)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
@@ -343,6 +349,12 @@ void gc_get_group_name(const GC_Chat *chat, uint8_t *groupname);
 
 /* Returns group name length */
 uint16_t gc_get_group_name_size(const GC_Chat *chat);
+
+/* Copies the group password to password */
+void gc_get_password(const GC_Chat *chat, uint8_t *password);
+
+/* Returns the group password length */
+uint16_t gc_get_password_size(const GC_Chat *chat);
 
 /* Returns group privacy state */
 uint8_t gc_get_privacy_state(const GC_Chat *chat);
@@ -476,6 +488,8 @@ int gc_remove_ban(GC_Chat *chat, uint16_t ban_id);
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
+
+
 void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int,
                          const uint8_t *, size_t, void *), void *userdata);
 
@@ -494,6 +508,13 @@ void gc_callback_status_change(Messenger *m, void (*function)(Messenger *m, uint
 void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
                               size_t, void *), void *userdata);
 
+void gc_callback_peer_limit(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata);
+
+void gc_callback_privacy_state(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *), void *userdata);
+
+void gc_callback_password(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
+                          void *userdata);
+
 void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata);
 
 void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
@@ -506,7 +527,7 @@ void gc_callback_peerlist_update(Messenger *m, void (*function)(Messenger *m, ui
 void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int type, void *),
                           void *userdata);
 
-/* This is the main loop. */
+/* The main loop. */
 void do_gc(GC_Session* c);
 
 /* Returns a NULL pointer if fail.

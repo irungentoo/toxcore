@@ -1667,15 +1667,68 @@ static int broadcast_gc_shared_state(GC_Chat *chat)
     return 0;
 }
 
-/* If privacy state has been set to public we announce ourselves to the DHT.
- * If privacy state has been set to private we remove our self announcement.
+/* Compares old_shared_state with the chat instance's current shared state and triggers the
+ * appropriate callback depending on what piece of state information changed. Also
+ * handles DHT announcement/removal if the privacy state changed.
+ *
+ * The initial retrieval of the shared state on group join will be ignored by this function.
  */
-static void do_gc_privacy_state_change(GC_Session *c, const GC_Chat *chat, uint8_t new_privacy_state)
+static void do_gc_shared_state_changes(GC_Session *c, const GC_Chat *chat, const GC_SharedState *old_shared_state)
 {
-    if (new_privacy_state == GI_PUBLIC)
-        group_announce_request(c, chat);
-    else if (new_privacy_state == GI_PRIVATE)
-        gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
+    if (old_shared_state->version == 0)
+        return;
+
+    /* Max peers changed */
+    if (chat->shared_state.maxpeers != old_shared_state->maxpeers) {
+        if (c->peer_limit)
+            (*c->peer_limit)(c->messenger, chat->groupnumber, chat->shared_state.maxpeers, c->peer_limit_userdata);
+
+        return;
+    }
+
+    /* privacy state changed */
+    if (chat->shared_state.privacy_state != old_shared_state->privacy_state) {
+        if (c->privacy_state)
+            (*c->privacy_state)(c->messenger, chat->groupnumber, chat->shared_state.privacy_state,
+                                c->privacy_state_userdata);
+
+        if (chat->shared_state.privacy_state == GI_PUBLIC)
+            group_announce_request(c, chat);
+        else if (chat->shared_state.privacy_state == GI_PRIVATE)
+            gca_cleanup(c->announce, CHAT_ID(chat->chat_public_key));
+
+        return;
+    }
+
+    /* password changed */
+    if (chat->shared_state.passwd_len != old_shared_state->passwd_len
+        || memcmp(chat->shared_state.passwd, old_shared_state->passwd, old_shared_state->passwd_len) != 0) {
+
+        if (c->password)
+            (*c->password)(c->messenger, chat->groupnumber, chat->shared_state.passwd,
+                           chat->shared_state.passwd_len, c->password_userdata);
+
+        return;
+    }
+}
+
+/* Checks that all shared state values are legal.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int validate_gc_shared_state(const GC_SharedState *state)
+{
+    if (state->maxpeers > MAX_GC_NUM_PEERS)
+        return -1;
+
+    if (state->passwd_len > MAX_GC_PASSWD_SIZE)
+        return -1;
+
+    if (state->group_name_len == 0 || state->group_name_len > MAX_GC_GROUP_NAME_SIZE)
+        return -1;
+
+    return 0;
 }
 
 /* Handles a shared state packet.
@@ -1711,15 +1764,19 @@ static int handle_gc_shared_state(Messenger *m, int groupnumber, uint32_t peernu
     if (version < chat->shared_state.version)
         return 0;
 
-    uint8_t old_privacy_state = chat->shared_state.privacy_state;
+    GC_SharedState old_shared_state, new_shared_state;
+    memcpy(&old_shared_state, &chat->shared_state, sizeof(GC_SharedState));
 
-    if (unpack_gc_shared_state(&chat->shared_state, ss_data, ss_length) == 0)
+    if (unpack_gc_shared_state(&new_shared_state, ss_data, ss_length) == 0)
         return -1;
 
+    if (validate_gc_shared_state(&new_shared_state) == -1)
+        return -1;
+
+    memcpy(&chat->shared_state, &new_shared_state, sizeof(GC_SharedState));
     memcpy(chat->shared_state_sig, signature, SIGNATURE_SIZE);
 
-    if (old_privacy_state != chat->shared_state.privacy_state)
-        do_gc_privacy_state_change(c, chat, chat->shared_state.privacy_state);
+    do_gc_shared_state_changes(c, chat, &old_shared_state);
 
     return 0;
 
@@ -2211,6 +2268,19 @@ void gc_get_group_name(const GC_Chat *chat, uint8_t *groupname)
 uint16_t gc_get_group_name_size(const GC_Chat *chat)
 {
     return chat->shared_state.group_name_len;
+}
+
+/* Copies the group password to password */
+void gc_get_password(const GC_Chat *chat, uint8_t *password)
+{
+    if (password)
+        memcpy(password, chat->shared_state.passwd, chat->shared_state.passwd_len);
+}
+
+/* Returns the group password length */
+uint16_t gc_get_password_size(const GC_Chat *chat)
+{
+    return chat->shared_state.passwd_len;
 }
 
 /* Sets the group password and distributes the new shared state to the group.
@@ -3808,6 +3878,28 @@ void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, uint3
     GC_Session *c = m->group_handler;
     c->topic_change = function;
     c->topic_change_userdata = userdata;
+}
+
+void gc_callback_peer_limit(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata)
+{
+    GC_Session *c = m->group_handler;
+    c->peer_limit = function;
+    c->peer_limit_userdata = userdata;
+}
+
+void gc_callback_privacy_state(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *), void *userdata)
+{
+    GC_Session *c = m->group_handler;
+    c->privacy_state = function;
+    c->privacy_state_userdata = userdata;
+}
+
+void gc_callback_password(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
+                          void *userdata)
+{
+    GC_Session *c = m->group_handler;
+    c->password = function;
+    c->password_userdata = userdata;
 }
 
 void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata)

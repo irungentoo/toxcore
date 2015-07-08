@@ -1303,6 +1303,24 @@ void tox_callback_group_topic(Tox *tox, tox_group_topic_cb *function, void *user
     gc_callback_topic_change(m, function, userdata);
 }
 
+void tox_callback_group_privacy_state(Tox *tox, tox_group_privacy_state_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    gc_callback_privacy_state(m, function, user_data);
+}
+
+void tox_callback_group_peer_limit(Tox *tox, tox_group_peer_limit_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    gc_callback_peer_limit(m, function, user_data);
+}
+
+void tox_callback_group_password(Tox *tox, tox_group_password_cb *function, void *user_data)
+{
+    Messenger *m = tox;
+    gc_callback_password(m, function, user_data);
+}
+
 void tox_callback_group_peer_join(Tox *tox, tox_group_peer_join_cb *function, void *userdata)
 {
     Messenger *m = tox;
@@ -1791,6 +1809,35 @@ uint32_t tox_group_get_peer_limit(const Tox *tox, uint32_t groupnumber, TOX_ERR_
 
     SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_OK);
     return gc_get_max_peers(chat);
+}
+
+size_t tox_group_get_password_size(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_INFO *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_GROUP_NOT_FOUND);
+        return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_OK);
+    return gc_get_password_size(chat);
+}
+
+bool tox_group_get_password(const Tox *tox, uint32_t groupnumber, uint8_t *password, TOX_ERR_GROUP_STATE_INFO *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_GROUP_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_STATE_INFO_OK);
+    gc_get_password(chat, password);
+    return 1;
 }
 
 bool tox_group_send_message(Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumber, const uint8_t *message,
