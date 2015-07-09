@@ -105,7 +105,11 @@ cd ..
 
 If your default prefix is /usr/local and you happen to get an error that says "error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory", then you can try running ```sudo ldconfig```. If that doesn't fix it, run:
 ```
-echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf // also just adding to /etc/ld.so.conf works
+echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallibs.conf 
+
+OR in the event you have  no locallibs.conf file  run:
+
+echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf 
 sudo ldconfig
 ```
 
