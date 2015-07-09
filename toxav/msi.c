@@ -82,7 +82,7 @@ typedef struct {
 void msg_init (MSIMessage *dest, MSIRequest request);
 int msg_parse_in ( MSIMessage *dest, const uint8_t *data, uint16_t length );
 uint8_t *msg_parse_header_out ( MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len, uint16_t *length );
-int send_message ( Messenger* m, uint32_t friend_number, const MSIMessage *msg );
+static int send_message ( Messenger* m, uint32_t friend_number, const MSIMessage *msg );
 int send_error ( Messenger* m, uint32_t friend_number, MSIError error );
 static int invoke_callback(MSICall* call, MSICallbackID cb);
 static MSICall *get_call ( MSISession *session, uint32_t friend_number );
