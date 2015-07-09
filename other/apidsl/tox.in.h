@@ -627,7 +627,7 @@ uint8_t[size] savedata {
  * Sends a "get nodes" request to the given bootstrap node with IP, port, and
  * public key to setup connections.
  *
- * This function will attempt to connect to the node using UDP. You must use 
+ * This function will attempt to connect to the node using UDP. You must use
  * this function even if ${options.this.udp_enabled} was set to false.
  *
  * @param address The hostname or IP address (IPv4 or IPv6) of the node.
@@ -1209,7 +1209,7 @@ namespace friend {
         with error for query;
 
     /**
-     * Write the name of the friend designated by the given friend number to a byte
+     * Write the status message of the friend designated by the given friend number to a byte
      * array.
      *
      * Call $size to determine the allocation size for the `status_name`
@@ -1218,7 +1218,7 @@ namespace friend {
      * The data written to `status_message` is equal to the data received by the last
      * `${event status_message}` callback.
      *
-     * @param name A valid memory region large enough to store the friend's name.
+     * @param status_message A valid memory region large enough to store the friend's status message.
      */
     get(uint32_t friend_number)
         with error for query;
