@@ -341,8 +341,10 @@ enum TOXAV_FRIEND_CALL_STATE {
  * The function type for the call_state callback.
  *
  * @param friend_number The friend number for which the call state changed.
- * @param state The new call state which is guaranteed to be different than 
- * the previous state. The state is set to 0 when the call is paused.
+ * @param state The bitmask of the new call state which is guaranteed to be
+ * different than the previous state. The state is set to 0 when the call is
+ * paused. The bitmask represents all the activities currently performed by the
+ * friend.
  */
 typedef void toxav_call_state_cb(ToxAV *toxAV, uint32_t friend_number, uint32_t state, void *user_data);
 /**
@@ -597,7 +599,7 @@ bool toxav_video_send_frame(ToxAV *toxAV, uint32_t friend_number, uint16_t width
 /**
  * The function type for the audio_receive_frame callback. The callback can be
  * called multiple times per single iteration depending on the amount of queued
- * frames in the buffer.
+ * frames in the buffer. The received format is the same as in send function.
  *
  * @param friend_number The friend number of the friend who sent an audio frame.
  * @param pcm An array of audio samples (sample_count * channels elements).
