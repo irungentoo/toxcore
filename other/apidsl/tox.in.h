@@ -2254,12 +2254,12 @@ namespace group {
    *
    * @param chat_id The Chat ID of the group you wish to join. This must be $CHAT_ID_SIZE bytes.
    * @param password The password required to join the group. Set to NULL if no password is required.
-   * @param password_length The length of the password. If length is equal to zero,
-   *   the password parameter is ignored. password_length must be no larger than $MAX_PASSWORD_SIZE.
+   * @param length The length of the password. If length is equal to zero,
+   *   the password parameter is ignored. length must be no larger than $MAX_PASSWORD_SIZE.
    *
    * @return true on success.
    */
-  bool join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[password_length <= MAX_PASSWORD_SIZE] password) {
+  bool join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[length <= MAX_PASSWORD_SIZE] password) {
     /**
      * The group instance failed to initialize.
      */
@@ -2759,7 +2759,7 @@ namespace group {
     typedef void(uint32_t groupnumber, uint32_t peer_limit);
   }
 
-  uint8_t[password_length <= MAX_PASSWORD_SIZE] password {
+  uint8_t[length <= MAX_PASSWORD_SIZE] password {
 
     /**
      * Return the length of the group password. If the group number is invalid, the
@@ -2994,7 +2994,7 @@ namespace group {
      * @param invite_data The invite data received from the `${event invite}` event.
      * @param length The length of the invite data.
      * @param password The password required to join the group. Set to NULL if no password is required.
-     * @param password_length The length of the password. If length is equal to zero, the password
+     * @param password_length The length of the password. If password_length is equal to zero, the password
      *    parameter will be ignored. password_length must be no larger than $MAX_PASSWORD_SIZE.
      *
      * @return true on success
@@ -3371,17 +3371,17 @@ namespace group {
     BAN,
 
     /**
-     * A peer as been given the $OBSERVER role.
+     * A peer as been given the observer role.
      */
     OBSERVER,
 
     /**
-     * A peer has been given the $USER role.
+     * A peer has been given the user role.
      */
     USER,
 
     /**
-     * A peer has been given the $MODERATOR role.
+     * A peer has been given the moderator role.
      */
     MODERATOR,
   }

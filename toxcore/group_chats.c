@@ -315,13 +315,17 @@ static void clear_gc_addrs_list(GC_Chat *chat)
      chat->num_addrs = 0;
 }
 
-/* Updates chat_id's addr_list when we get a nodes request reply from DHT.
- * This will clear previous entries.
+/* This callback is triggered when we receive a get nodes response from DHT.
+ * The respective chat_id's addr_list will be updated with the newly announced nodes.
+ *
+ * Note: All previous entries are cleared.
  */
-void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
+static void update_gc_addresses_cb(GC_Announce *announce, const uint8_t *chat_id, void *object)
 {
+    GC_Session *c = object;
+
     uint32_t chat_id_hash = get_chat_id_hash(chat_id);
-    GC_Chat *chat = get_chat_by_hash(announce->group_handler, chat_id_hash);
+    GC_Chat *chat = get_chat_by_hash(c, chat_id_hash);
 
     if (chat == NULL)
         return;
@@ -335,7 +339,7 @@ void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
     if (chat->num_addrs == 0)
         return;
 
-    size_t i;
+    uint16_t i;
 
     for (i = 0; i < chat->num_addrs; ++i) {
         ipport_copy(&chat->addr_list[i].ip_port, &nodes[i].ip_port);
@@ -344,7 +348,14 @@ void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id)
 
     /* If we're already connected this is part of the DHT sync procedure */
     if (chat->connection_state == CS_CONNECTED)
-        sync_gc_announced_nodes(announce->group_handler, chat);
+        sync_gc_announced_nodes(c, chat);
+}
+
+void group_callback_update_addresses(GC_Announce *announce, void (*function)(GC_Announce *, const uint8_t *, void *),
+                                     void *object)
+{
+    announce->update_addresses = function;
+    announce->update_addresses_obj = object;
 }
 
 uint32_t gc_get_numpeers(const GC_Chat *chat)
@@ -4184,7 +4195,7 @@ static void search_gc_announce(GC_Session *c, GC_Chat *chat)
     uint32_t cnumpeers = get_gc_confirmed_numpeers(chat);
 
     if (random_int_range(cnumpeers) == 0) {
-        /* DHT response/sync procedure is handled in gc_update_addrs() */
+        /* DHT response/sync procedure is handled in gc_update_addresses_cb() */
         group_get_nodes_request(c, chat);
     }
 }
@@ -4742,6 +4753,7 @@ GC_Session *new_groupchats(Messenger* m)
     networking_registerhandler(m->net, NET_PACKET_GC_LOSSLESS, &handle_gc_udp_packet, m);
     networking_registerhandler(m->net, NET_PACKET_GC_LOSSY, &handle_gc_udp_packet, m);
     networking_registerhandler(m->net, NET_PACKET_GC_HANDSHAKE, &handle_gc_udp_packet, m);
+    group_callback_update_addresses(c->announce, update_gc_addresses_cb, c);
 
     return c;
 }
@@ -4813,10 +4825,11 @@ void kill_groupchats(GC_Session *c)
         }
     }
 
-    kill_gca(c->announce);
     networking_registerhandler(c->messenger->net, NET_PACKET_GC_LOSSY, NULL, NULL);
     networking_registerhandler(c->messenger->net, NET_PACKET_GC_LOSSLESS, NULL, NULL);
     networking_registerhandler(c->messenger->net, NET_PACKET_GC_HANDSHAKE, NULL, NULL);
+    group_callback_update_addresses(c->announce, NULL, NULL);
+    kill_gca(c->announce);
     free(c);
 }
 

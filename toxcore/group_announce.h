@@ -72,7 +72,9 @@ struct GC_AnnouncedSelf {
 
 struct GC_Announce {
     DHT *dht;
-    GC_Session *group_handler;
+    void (*update_addresses)(GC_Announce *, const uint8_t *, void *);
+    void *update_addresses_obj;
+
     struct GC_AnnouncedNode announcements[MAX_GCA_ANNOUNCED_NODES];
     struct GC_AnnounceRequest requests[MAX_GCA_SELF_REQUESTS];
     struct GC_AnnouncedSelf self_announce[MAX_GCA_SELF_ANNOUNCEMENTS];

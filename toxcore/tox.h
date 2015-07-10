@@ -2487,12 +2487,12 @@ typedef enum TOX_ERR_GROUP_JOIN {
  *
  * @param chat_id The Chat ID of the group you wish to join. This must be TOX_GROUP_CHAT_ID_SIZE bytes.
  * @param password The password required to join the group. Set to NULL if no password is required.
- * @param password_length The length of the password. If length is equal to zero,
- *   the password parameter is ignored. password_length must be no larger than TOX_GROUP_MAX_PASSWORD_SIZE.
+ * @param length The length of the password. If length is equal to zero,
+ *   the password parameter is ignored. length must be no larger than TOX_GROUP_MAX_PASSWORD_SIZE.
  *
  * @return true on success.
  */
-bool tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t password_length,
+bool tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t length,
                     TOX_ERR_GROUP_JOIN *error);
 
 typedef enum TOX_ERR_GROUP_RECONNECT {
@@ -3354,7 +3354,7 @@ typedef enum TOX_ERR_GROUP_INVITE_ACCEPT {
  * @param invite_data The invite data received from the `group_invite` event.
  * @param length The length of the invite data.
  * @param password The password required to join the group. Set to NULL if no password is required.
- * @param password_length The length of the password. If length is equal to zero, the password
+ * @param password_length The length of the password. If password_length is equal to zero, the password
  *    parameter will be ignored. password_length must be no larger than TOX_GROUP_MAX_PASSWORD_SIZE.
  *
  * @return true on success
@@ -3829,17 +3829,17 @@ typedef enum TOX_GROUP_MOD_EVENT {
     TOX_GROUP_MOD_EVENT_BAN,
 
     /**
-     * A peer as been given the TOX_GROUP_MOD_EVENT_OBSERVER role.
+     * A peer as been given the observer role.
      */
     TOX_GROUP_MOD_EVENT_OBSERVER,
 
     /**
-     * A peer has been given the TOX_GROUP_MOD_EVENT_USER role.
+     * A peer has been given the user role.
      */
     TOX_GROUP_MOD_EVENT_USER,
 
     /**
-     * A peer has been given the TOX_GROUP_MOD_EVENT_MODERATOR role.
+     * A peer has been given the moderator role.
      */
     TOX_GROUP_MOD_EVENT_MODERATOR,
 

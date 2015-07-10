@@ -348,8 +348,8 @@ static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node 
             }
         }
 
-        if (announce->requests[i].ready)
-            gc_update_addrs(announce, announce->requests[i].chat_id);
+        if (announce->requests[i].ready && announce->update_addresses)
+            (*announce->update_addresses)(announce, announce->requests[i].chat_id, announce->update_addresses_obj);
 
         return i;
     }

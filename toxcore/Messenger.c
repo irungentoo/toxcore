@@ -1827,8 +1827,6 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return NULL;
     }
 
-    m->group_announce->group_handler = m->group_handler;
-
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
     m->onion_c =  new_onion_client(m->net_crypto);

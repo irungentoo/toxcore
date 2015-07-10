@@ -616,10 +616,6 @@ GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
  */
 int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
 
-/* Updates chat_id's addr_list when we get a nodes request reply from DHT.
- * This will clear previous entries. */
-void gc_update_addrs(GC_Announce *announce, const uint8_t *chat_id);
-
 /* Packs mod_list into data.
  * data must have room for num_mods * SIG_PUBLIC_KEY bytes.
  */
