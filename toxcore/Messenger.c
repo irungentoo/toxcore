@@ -1803,8 +1803,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
-        kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
+        kill_DHT(m->dht);
         kill_networking(m->net);
         free(m);
         return NULL;
@@ -1818,8 +1818,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
-            kill_DHT(m->dht);
             kill_net_crypto(m->net_crypto);
+            kill_DHT(m->dht);
             kill_networking(m->net);
             free(m);
 
