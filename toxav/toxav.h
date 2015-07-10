@@ -329,11 +329,11 @@ enum TOXAV_FRIEND_CALL_STATE {
   /**
    * The flag that marks that friend is receiving audio.
    */
-  TOXAV_FRIEND_CALL_STATE_RECEIVING_A = 16,
+  TOXAV_FRIEND_CALL_STATE_ACCEPTING_A = 16,
   /**
    * The flag that marks that friend is receiving video.
    */
-  TOXAV_FRIEND_CALL_STATE_RECEIVING_V = 32,
+  TOXAV_FRIEND_CALL_STATE_ACCEPTING_V = 32,
 };
 
 

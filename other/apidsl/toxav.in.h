@@ -323,11 +323,11 @@ bitmask FRIEND_CALL_STATE {
   /**
    * The flag that marks that friend is receiving audio.
    */
-  RECEIVING_A,
+  ACCEPTING_A,
   /**
    * The flag that marks that friend is receiving video.
    */
-  RECEIVING_V,
+  ACCEPTING_V,
 }
 event call_state {
  /**
