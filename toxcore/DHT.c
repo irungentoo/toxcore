@@ -2297,6 +2297,8 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
     return data;
 }
 
+#define MAX_SAVED_DHT_NODES ((DHT_FAKE_FRIEND_NUMBER * MAX_FRIEND_CLIENTS) + LCLIENT_LIST)
+
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data)
 {
@@ -2310,7 +2312,7 @@ void DHT_save(DHT *dht, uint8_t *data)
     /* get right offset. we write the actual header later. */
     data = z_state_save_subheader(data, 0, 0);
 
-    Node_format *clients = (Node_format *)data;
+    Node_format clients[MAX_SAVED_DHT_NODES];
 
     for (num = 0, i = 0; i < LCLIENT_LIST; ++i) {
         if (dht->close_clientlist[i].assoc4.timestamp != 0) {
@@ -2344,7 +2346,7 @@ void DHT_save(DHT *dht, uint8_t *data)
         }
     }
 
-    z_state_save_subheader(old_data, num * sizeof(Node_format), DHT_STATE_TYPE_NODES);
+    z_state_save_subheader(old_data, pack_nodes(data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
 }
 
 /* Bootstrap from this number of nodes every time DHT_connect_after_load() is called */
@@ -2381,25 +2383,27 @@ int DHT_connect_after_load(DHT *dht)
 static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     DHT *dht = outer;
-    uint32_t num, i;
+    int i;
 
     switch (type) {
         case DHT_STATE_TYPE_NODES:
             if ((length % sizeof(Node_format)) != 0)
                 break;
 
-            { /* localize declarations */
-                num = length / sizeof(Node_format);
-                Node_format *client_list = (Node_format *)data;
-
+            {
                 free(dht->loaded_nodes_list);
                 // Copy to loaded_clients_list
-                dht->loaded_nodes_list = calloc(num, sizeof(Node_format));
+                dht->loaded_nodes_list = calloc(MAX_SAVED_DHT_NODES, sizeof(Node_format));
 
-                for (i = 0; i < num; i++)
-                    memcpy(&(dht->loaded_nodes_list[i]), &(client_list[i]), sizeof(Node_format));
+                int num = unpack_nodes(dht->loaded_nodes_list, MAX_SAVED_DHT_NODES, NULL, data, length, 0);
 
-                dht->loaded_num_nodes = num;
+                Node_format *client_list = (Node_format *)data;
+
+                if (num > 0) {
+                    dht->loaded_num_nodes = num;
+                } else {
+                    dht->loaded_num_nodes = 0;
+                }
 
             } /* localize declarations */
 
