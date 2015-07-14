@@ -2739,13 +2739,15 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
     if (message == NULL || length == 0)
         return -2;
 
-    if (type != GM_PLAIN_MESSAGE && type != GM_ACTION_MESSAGE)
+    if (type != GC_MESSAGE_TYPE_NORMAL && type != GC_MESSAGE_TYPE_ACTION)
         return -3;
 
     if (chat->group[0].role >= GR_OBSERVER)
         return -4;
 
-    if (send_gc_broadcast_message(chat, message, length, type) == -1)
+    uint8_t packet_type = type == GC_MESSAGE_TYPE_NORMAL ? GM_PLAIN_MESSAGE : GM_ACTION_MESSAGE;
+
+    if (send_gc_broadcast_message(chat, message, length, packet_type) == -1)
         return -5;
 
     return 0;

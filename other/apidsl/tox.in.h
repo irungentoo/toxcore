@@ -2215,9 +2215,9 @@ namespace group {
    * @param length The length of the group name. This must be greater than zero and no larger than
    *   $MAX_GROUP_NAME_LENGTH.
    *
-   * @return true on success.
+   * @return groupnumber on success, UINT32_MAX on failure.
    */
-  bool new(PRIVACY_STATE privacy_state, const uint8_t[length <= MAX_GROUP_NAME_LENGTH] group_name) {
+  uint32_t new(PRIVACY_STATE privacy_state, const uint8_t[length <= MAX_GROUP_NAME_LENGTH] group_name) {
     /**
      * The group name exceeded $MAX_GROUP_NAME_LENGTH.
      */
@@ -2257,9 +2257,9 @@ namespace group {
    * @param length The length of the password. If length is equal to zero,
    *   the password parameter is ignored. length must be no larger than $MAX_PASSWORD_SIZE.
    *
-   * @return true on success.
+   * @return groupnumber on success, UINT32_MAX on failure.
    */
-  bool join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[length <= MAX_PASSWORD_SIZE] password) {
+  uint32_t join(const uint8_t[CHAT_ID_SIZE] chat_id, const uint8_t[length <= MAX_PASSWORD_SIZE] password) {
     /**
      * The group instance failed to initialize.
      */
@@ -2997,9 +2997,9 @@ namespace group {
      * @param password_length The length of the password. If password_length is equal to zero, the password
      *    parameter will be ignored. password_length must be no larger than $MAX_PASSWORD_SIZE.
      *
-     * @return true on success
+     * @return the groupnumber on success, UINT32_MAX on failure.
      */
-    bool accept(const uint8_t[length] invite_data, const uint8_t[password_length <= MAX_PASSWORD_SIZE] password) {
+    uint32_t accept(const uint8_t[length] invite_data, const uint8_t[password_length <= MAX_PASSWORD_SIZE] password) {
       /**
        * The invite data is not in the expected format.
        */

@@ -1810,8 +1810,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     if (m->group_announce == NULL) {
         kill_networking(m->net);
-        kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
+        kill_DHT(m->dht);
         free(m);
         return NULL;
     }
@@ -1820,8 +1820,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     if (m->group_handler == NULL) {
         kill_networking(m->net);
-        kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
+        kill_DHT(m->dht);
         kill_gca(m->group_announce);
         free(m);
         return NULL;

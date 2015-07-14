@@ -1351,7 +1351,7 @@ void tox_callback_group_join_fail(Tox *tox, tox_group_join_fail_cb *function, vo
     gc_callback_rejected(m, function, userdata);
 }
 
-bool tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length,
+uint32_t tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length,
                    TOX_ERR_GROUP_NEW *error)
 {
     Messenger *m = tox;
@@ -1360,32 +1360,32 @@ bool tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_
     switch (ret) {
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_OK);
-            return 1;
+            return ret;
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_TOO_LONG);
-            return 0;
+            return UINT32_MAX;
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_EMPTY);
-            return 0;
+            return UINT32_MAX;
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_PRIVACY);
-            return 0;
+            return UINT32_MAX;
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_INIT);
-            return 0;
+            return UINT32_MAX;
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_STATE);
-            return 0;
+            return UINT32_MAX;
         case -6:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_ANNOUNCE);
-            return 0;
+            return UINT32_MAX;
     }
 
     /* can't happen */
-    return 0;
+    return UINT32_MAX;
 }
 
-bool tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t length,
+uint32_t tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t length,
                     TOX_ERR_GROUP_JOIN *error)
 {
     Messenger *m = tox;
@@ -1394,20 +1394,20 @@ bool tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, s
     switch (ret) {
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_OK);
-            return 1;
+            return ret;
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_INIT);
-            return 0;
+            return UINT32_MAX;
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_BAD_CHAT_ID);
-            return 0;
+            return UINT32_MAX;
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_TOO_LONG);
-            return 0;
+            return UINT32_MAX;
     }
 
     /* can't happen */
-    return 0;
+    return UINT32_MAX;
 }
 
 bool tox_group_reconnect(Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_RECONNECT *error)
@@ -1842,7 +1842,7 @@ bool tox_group_get_password(const Tox *tox, uint32_t groupnumber, uint8_t *passw
     return 1;
 }
 
-bool tox_group_send_message(Tox *tox, TOX_MESSAGE_TYPE type, uint32_t groupnumber, const uint8_t *message,
+bool tox_group_send_message(Tox *tox, uint32_t groupnumber, TOX_MESSAGE_TYPE type, const uint8_t *message,
                             size_t length, TOX_ERR_GROUP_SEND_MESSAGE *error)
 {
     const Messenger *m = tox;
@@ -1949,8 +1949,8 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumbe
     return 0;
 }
 
-bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
-                             size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
+uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
+                                size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
 {
     Messenger *m = tox;
     int ret = gc_accept_invite(m->group_handler, invite_data, length, password, password_length);
@@ -1958,20 +1958,20 @@ bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length
     switch (ret) {
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_OK);
-            return 1;
+            return ret;
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_BAD_INVITE);
-            return 0;
+            return UINT32_MAX;
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_INIT_FAILED);
-            return 0;
+            return UINT32_MAX;
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_TOO_LONG);
-            return 0;
+            return UINT32_MAX;
     }
 
     /* can't happen */
-    return 0;
+    return UINT32_MAX;
 }
 
 bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_t *password, size_t length,

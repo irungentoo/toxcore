@@ -2448,10 +2448,10 @@ typedef enum TOX_ERR_GROUP_NEW {
  * @param length The length of the group name. This must be greater than zero and no larger than
  *   TOX_GROUP_MAX_GROUP_NAME_LENGTH.
  *
- * @return true on success.
+ * @return groupnumber on success, UINT32_MAX on failure.
  */
-bool tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length,
-                   TOX_ERR_GROUP_NEW *error);
+uint32_t tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length,
+                       TOX_ERR_GROUP_NEW *error);
 
 typedef enum TOX_ERR_GROUP_JOIN {
 
@@ -2490,10 +2490,10 @@ typedef enum TOX_ERR_GROUP_JOIN {
  * @param length The length of the password. If length is equal to zero,
  *   the password parameter is ignored. length must be no larger than TOX_GROUP_MAX_PASSWORD_SIZE.
  *
- * @return true on success.
+ * @return groupnumber on success, UINT32_MAX on failure.
  */
-bool tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t length,
-                    TOX_ERR_GROUP_JOIN *error);
+uint32_t tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t length,
+                        TOX_ERR_GROUP_JOIN *error);
 
 typedef enum TOX_ERR_GROUP_RECONNECT {
 
@@ -3357,10 +3357,10 @@ typedef enum TOX_ERR_GROUP_INVITE_ACCEPT {
  * @param password_length The length of the password. If password_length is equal to zero, the password
  *    parameter will be ignored. password_length must be no larger than TOX_GROUP_MAX_PASSWORD_SIZE.
  *
- * @return true on success
+ * @return the groupnumber on success, UINT32_MAX on failure.
  */
-bool tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
-                             size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error);
+uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
+                                 size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error);
 
 /**
  * @param friendnumber The friendnumber of the contact who sent the invite.

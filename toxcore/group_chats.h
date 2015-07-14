@@ -36,7 +36,7 @@ typedef struct Messenger Messenger;
 #define MAX_GC_NICK_SIZE 128
 #define MAX_GC_TOPIC_SIZE 512
 #define MAX_GC_GROUP_NAME_SIZE 48
-#define MAX_GC_MESSAGE_SIZE 1368
+#define MAX_GC_MESSAGE_SIZE 1372
 #define MAX_GC_PART_MESSAGE_SIZE 128
 #define MAX_GC_PEER_ADDRS 30
 #define MAX_GC_PASSWD_SIZE 32
@@ -143,6 +143,11 @@ enum {
     HJ_PUBLIC,
     HJ_PRIVATE
 } GROUP_HANDSHAKE_JOIN_TYPE;
+
+enum {
+    GC_MESSAGE_TYPE_NORMAL,
+    GC_MESSAGE_TYPE_ACTION,
+} GROUP_MESSAGE_TYPE;
 
 struct GC_Sanction_Creds {
     uint32_t    version;
