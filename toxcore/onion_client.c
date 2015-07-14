@@ -1452,11 +1452,14 @@ void do_onion_client(Onion_Client *onion_c)
         }
     }
 
-    onion_c->UDP_connected = DHT_non_lan_connected(onion_c->dht);
+    _Bool UDP_connected = DHT_non_lan_connected(onion_c->dht);
 
     if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS)) {
-        set_tcp_onion_status(onion_c->c->tcp_c, !onion_c->UDP_connected);
+        set_tcp_onion_status(onion_c->c->tcp_c, !UDP_connected);
     }
+
+    onion_c->UDP_connected = UDP_connected
+                             || get_random_tcp_onion_conn_number(onion_c->c->tcp_c) == -1; /* Check if connected to any TCP relays. */
 
     if (onion_connection_status(onion_c)) {
         for (i = 0; i < onion_c->num_friends; ++i) {

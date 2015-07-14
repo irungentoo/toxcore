@@ -1212,7 +1212,7 @@ namespace friend {
         with error for query;
 
     /**
-     * Write the name of the friend designated by the given friend number to a byte
+     * Write the status message of the friend designated by the given friend number to a byte
      * array.
      *
      * Call $size to determine the allocation size for the `status_name`
@@ -1221,7 +1221,7 @@ namespace friend {
      * The data written to `status_message` is equal to the data received by the last
      * `${event status_message}` callback.
      *
-     * @param name A valid memory region large enough to store the friend's name.
+     * @param status_message A valid memory region large enough to store the friend's status message.
      */
     get(uint32_t friend_number)
         with error for query;

@@ -3,8 +3,7 @@
 
 With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures their users full privacy and secure message delivery.<br /> <br />
 
-[**Website**](http://utox.org) **|** [**Wiki**](https://wiki.tox.im/) **|** [**Blog**](https://blog.tox.im/) **|** [**FAQ**](https://wiki.tox.im/FAQ) **|** [**Binaries/Downloads**](https://wiki.tox.im/Binaries) **|** [**Clients**](https://wiki.tox.im/Client) **|** [**Compiling**](/INSTALL.md) **|** 
-[**API**](https://libtoxcore.so/)  **|** **IRC Channel:** [#tox@freenode](https://webchat.freenode.net/?channels=tox)
+[**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://wiki.tox.chat/doku.php?id=developers:binaries) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md) **|** **IRC Channel:** [#tox@freenode](https://webchat.freenode.net/?channels=tox)
 
 
 ## The Complex Stuff:
@@ -38,4 +37,3 @@ The goal of this project is to create a configuration-free P2P Skype replacement
 - [DHT Protocol](/docs/updates/DHT.md)<br />
 - [Crypto](/docs/updates/Crypto.md)<br />
 
-Additional developer documentation can be found at [Libtoxcore.so](https://libtoxcore.so/)

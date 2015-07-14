@@ -386,6 +386,9 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
+    if (m->friend_connectionstatuschange_internal)
+        m->friend_connectionstatuschange_internal(m, friendnumber, 0, m->friend_connectionstatuschange_internal_userdata);
+
     clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
@@ -1340,9 +1343,6 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (ft->status != FILESTATUS_TRANSFERRING)
         return -4;
 
-    if (ft->paused != FILE_PAUSE_NOT)
-        return -4;
-
     if (length > MAX_FILE_DATA_SIZE)
         return -5;
 
@@ -1354,7 +1354,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         return -5;
     }
 
-    if (position != ft->transferred) {
+    if (position != ft->transferred || (ft->requested <= position && ft->size != 0)) {
         return -7;
     }
 
@@ -1480,10 +1480,11 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
 
             ++ft->slots_allocated;
 
-            if (m->file_reqchunk)
-                (*m->file_reqchunk)(m, friendnumber, i, ft->requested, length, m->file_reqchunk_userdata);
-
+            uint64_t position = ft->requested;
             ft->requested += length;
+
+            if (m->file_reqchunk)
+                (*m->file_reqchunk)(m, friendnumber, i, position, length, m->file_reqchunk_userdata);
 
             --free_slots;
 
@@ -1839,8 +1840,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_onion_client(m->onion_c);
         kill_gca(m->group_announce);
         kill_groupchats(m->group_handler);
-        kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
+        kill_DHT(m->dht);
         kill_networking(m->net);
         free(m);
         return NULL;
@@ -1854,8 +1855,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
-            kill_DHT(m->dht);
             kill_net_crypto(m->net_crypto);
+            kill_DHT(m->dht);
             kill_networking(m->net);
             free(m);
 
