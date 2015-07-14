@@ -60,7 +60,7 @@ On Fedora:
 dnf groupinstall "Development Tools"
 dnf install libtool autoconf automake check check-devel
 ```
-Using  dnf install @"Development Tools"  is also valid and slightly shorter / cleaner way, also @"Rpm Development Tools"  would carry the remaining dependencies listed here.
+Using ``dnf install @"Development Tools"`` is also valid and slightly shorter / cleaner way. ``@"Rpm Development Tools"``  would carry the remaining dependencies listed here.
 
 On SunOS:
 
@@ -74,7 +74,7 @@ pkg install net-im/tox
 ```
 Note, if you install from ports select NaCl for performance, and sodium if you want it to be portable.
 
-**For A/V support, also install the dependences listed in the [libtoxav] (#libtoxav) section.**
+**For A/V support, also install the dependences listed in the [libtoxav](#libtoxav) section.** Note that you have to install those dependencies **before** compiling `toxcore`.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium). If you have installed `libsodium` from repo, ommit this step, and jump directly to [compiling toxcore](#compile-toxcore):
 ```bash
@@ -103,12 +103,16 @@ sudo make install
 cd ..
 ```
 
-If your default prefix is /usr/local and you happen to get an error that says "error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory", then you can try running ```sudo ldconfig```. If that doesn't fix it, run:
+If your default prefix is ``/usr/local`` and you happen to get an error that says ``"error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory"``, then you can try running ``sudo ldconfig``. If that doesn't fix it, run:
+
+```bash
+echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
+sudo ldconfig
 ```
-echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallibs.conf 
 
-OR in the event you have  no locallibs.conf file  run:
+You may run into a situation where there is no ``/etc/ld.so.conf.d`` directory. You could either create it manually, or append path to local library to ``ld.so.conf``:
 
+```bash
 echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf 
 sudo ldconfig
 ```
