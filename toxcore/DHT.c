@@ -207,26 +207,26 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
         }
 
         if (ipv6 == 0) {
-            uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
 
             if (packed_length + size > length)
                 return -1;
 
             data[packed_length] = net_family;
-            memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip4, sizeof(IP4));
-            memcpy(data + packed_length + 1 + sizeof(IP4), &nodes[i].ip_port.port, sizeof(uint16_t));
-            memcpy(data + packed_length + 1 + sizeof(IP4) + sizeof(uint16_t), nodes[i].public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip4, SIZE_IP4);
+            memcpy(data + packed_length + 1 + SIZE_IP4, &nodes[i].ip_port.port, sizeof(uint16_t));
+            memcpy(data + packed_length + 1 + SIZE_IP4 + sizeof(uint16_t), nodes[i].public_key, crypto_box_PUBLICKEYBYTES);
             packed_length += size;
         } else if (ipv6 == 1) {
-            uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
 
             if (packed_length + size > length)
                 return -1;
 
             data[packed_length] = net_family;
-            memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip6, sizeof(IP6));
-            memcpy(data + packed_length + 1 + sizeof(IP6), &nodes[i].ip_port.port, sizeof(uint16_t));
-            memcpy(data + packed_length + 1 + sizeof(IP6) + sizeof(uint16_t), nodes[i].public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(data + packed_length + 1, &nodes[i].ip_port.ip.ip6, SIZE_IP6);
+            memcpy(data + packed_length + 1 + SIZE_IP6, &nodes[i].ip_port.port, sizeof(uint16_t));
+            memcpy(data + packed_length + 1 + SIZE_IP6 + sizeof(uint16_t), nodes[i].public_key, crypto_box_PUBLICKEYBYTES);
             packed_length += size;
         } else {
             return -1;
@@ -275,27 +275,27 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
         }
 
         if (ipv6 == 0) {
-            uint32_t size = 1 + sizeof(IP4) + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
 
             if (len_processed + size > length)
                 return -1;
 
             nodes[num].ip_port.ip.family = host_family;
-            memcpy(&nodes[num].ip_port.ip.ip4, data + len_processed + 1, sizeof(IP4));
-            memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + sizeof(IP4), sizeof(uint16_t));
-            memcpy(nodes[num].public_key, data + len_processed + 1 + sizeof(IP4) + sizeof(uint16_t), crypto_box_PUBLICKEYBYTES);
+            memcpy(&nodes[num].ip_port.ip.ip4, data + len_processed + 1, SIZE_IP4);
+            memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + SIZE_IP4, sizeof(uint16_t));
+            memcpy(nodes[num].public_key, data + len_processed + 1 + SIZE_IP4 + sizeof(uint16_t), crypto_box_PUBLICKEYBYTES);
             len_processed += size;
             ++num;
         } else if (ipv6 == 1) {
-            uint32_t size = 1 + sizeof(IP6) + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
 
             if (len_processed + size > length)
                 return -1;
 
             nodes[num].ip_port.ip.family = host_family;
-            memcpy(&nodes[num].ip_port.ip.ip6, data + len_processed + 1, sizeof(IP6));
-            memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + sizeof(IP6), sizeof(uint16_t));
-            memcpy(nodes[num].public_key, data + len_processed + 1 + sizeof(IP6) + sizeof(uint16_t), crypto_box_PUBLICKEYBYTES);
+            memcpy(&nodes[num].ip_port.ip.ip6, data + len_processed + 1, SIZE_IP6);
+            memcpy(&nodes[num].ip_port.port, data + len_processed + 1 + SIZE_IP6, sizeof(uint16_t));
+            memcpy(nodes[num].public_key, data + len_processed + 1 + SIZE_IP6 + sizeof(uint16_t), crypto_box_PUBLICKEYBYTES);
             len_processed += size;
             ++num;
         } else {
