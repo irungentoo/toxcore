@@ -177,6 +177,9 @@ int to_host_family(IP *ip)
     }
 }
 
+#define PACKED_NODE_SIZE_IP4 (1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
+#define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
@@ -207,7 +210,7 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
         }
 
         if (ipv6 == 0) {
-            uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = PACKED_NODE_SIZE_IP4;
 
             if (packed_length + size > length)
                 return -1;
@@ -218,7 +221,7 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
             memcpy(data + packed_length + 1 + SIZE_IP4 + sizeof(uint16_t), nodes[i].public_key, crypto_box_PUBLICKEYBYTES);
             packed_length += size;
         } else if (ipv6 == 1) {
-            uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = PACKED_NODE_SIZE_IP6;
 
             if (packed_length + size > length)
                 return -1;
@@ -275,7 +278,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
         }
 
         if (ipv6 == 0) {
-            uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = PACKED_NODE_SIZE_IP4;
 
             if (len_processed + size > length)
                 return -1;
@@ -287,7 +290,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
             len_processed += size;
             ++num;
         } else if (ipv6 == 1) {
-            uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES;
+            uint32_t size = PACKED_NODE_SIZE_IP6;
 
             if (len_processed + size > length)
                 return -1;
@@ -2266,26 +2269,30 @@ void kill_DHT(DHT *dht)
 #define DHT_STATE_COOKIE_TYPE      0x11ce
 #define DHT_STATE_TYPE_NODES       4
 
+#define MAX_SAVED_DHT_NODES (((DHT_FAKE_FRIEND_NUMBER * MAX_FRIEND_CLIENTS) + LCLIENT_LIST) * 2)
+
 /* Get the size of the DHT (for saving). */
 uint32_t DHT_size(const DHT *dht)
 {
-    uint32_t num = 0, i, j;
+    uint32_t numv4 = 0, numv6 = 0, i, j;
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
-        num += (dht->close_clientlist[i].assoc4.timestamp != 0) + (dht->close_clientlist[i].assoc6.timestamp != 0);
+        numv4 += (dht->close_clientlist[i].assoc4.timestamp != 0);
+        numv6 += (dht->close_clientlist[i].assoc6.timestamp != 0);
     }
 
     for (i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
         DHT_Friend *fr = &dht->friends_list[i];
 
         for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            num += (fr->client_list[j].assoc4.timestamp != 0) + (fr->client_list[j].assoc6.timestamp != 0);
+            numv4 += (fr->client_list[j].assoc4.timestamp != 0);
+            numv6 += (fr->client_list[j].assoc6.timestamp != 0);
         }
     }
 
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
-    return size32
-           + sizesubhead + sizeof(Node_format) * num;
+
+    return size32 + sizesubhead + (PACKED_NODE_SIZE_IP4 * numv4) + (PACKED_NODE_SIZE_IP6 * numv6);
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
@@ -2297,7 +2304,6 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
     return data;
 }
 
-#define MAX_SAVED_DHT_NODES ((DHT_FAKE_FRIEND_NUMBER * MAX_FRIEND_CLIENTS) + LCLIENT_LIST)
 
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data)
