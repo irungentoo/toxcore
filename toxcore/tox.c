@@ -1357,10 +1357,12 @@ uint32_t tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const ui
     Messenger *m = tox;
     int ret = gc_group_add(m->group_handler, privacy_state, group_name, length);
 
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_OK);
+        return ret;
+    }
+
     switch (ret) {
-        case 0:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_OK);
-            return ret;
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_TOO_LONG);
             return UINT32_MAX;
@@ -1391,10 +1393,12 @@ uint32_t tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *passwor
     Messenger *m = tox;
     int ret = gc_group_join(m->group_handler, chat_id, password, length);
 
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_OK);
+        return ret;
+    }
+
     switch (ret) {
-        case 0:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_OK);
-            return ret;
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_INIT);
             return UINT32_MAX;
@@ -1955,10 +1959,12 @@ uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t le
     Messenger *m = tox;
     int ret = gc_accept_invite(m->group_handler, invite_data, length, password, password_length);
 
+    if (ret >= 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_OK);
+        return ret;
+    }
+
     switch (ret) {
-        case 0:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_OK);
-            return ret;
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_BAD_INVITE);
             return UINT32_MAX;

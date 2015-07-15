@@ -2289,6 +2289,24 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
 /*******************************************************************************
  *
+ * :: Group chats
+ *
+ ******************************************************************************/
+
+
+
+/** \subsection peernumbers Peer number behaviour
+ *
+ * All values between 0 and num_peers-1 are valid peer numbers (i.e. guaranteed to correspond
+ * to a peer in the group). Any value outside of this range is not a valid peer number. A given
+ * peer's peer number is not permanent; it is subject to change every time a peer joins or
+ * leaves the group, with the exception of the client, which is always peer number 0.
+ * The client must ensure that it updates all of its pertinent data structures every time the
+ * `group_peerlist_update` event is triggered.
+ */
+
+/*******************************************************************************
+ *
  * :: Group chat numeric constants
  *
  ******************************************************************************/
@@ -2980,8 +2998,7 @@ bool tox_group_get_chat_id(const Tox *tox, uint32_t groupnumber, uint8_t *chat_i
  * Return the number of peers in the group designated by the given group number. If group number
  * is invalid, the return value is unspecified.
  *
- * All values below the return value of this function are valid peer numbers, and all values
- * equal to or greater than the return value are invalid peer numbers.
+ * @see peernumbers for further information on the implications of the return value.
  */
 uint32_t tox_group_get_number_peers(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_QUERIES *error);
 
@@ -3093,6 +3110,8 @@ typedef void tox_group_peerlist_update_cb(Tox *tox, uint32_t groupnumber, void *
  *
  * This callback is triggered when a peer joins or leaves the group, and should be used to
  * retrieve up to date information about the peer list for the client.
+ *
+ * @see peernumbers for further information.
  */
 void tox_callback_group_peerlist_update(Tox *tox, tox_group_peerlist_update_cb *callback, void *user_data);
 
