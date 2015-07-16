@@ -48,13 +48,13 @@ typedef struct Messenger Messenger;
 #define GC_CONFIRMED_PEER_TIMEOUT (GC_PING_INTERVAL * 4 + 10)
 #define GC_UNCONFRIMED_PEER_TIMEOUT GC_PING_INTERVAL
 
-enum {
+typedef enum GROUP_PRIVACY_STATE {
     GI_PUBLIC,
     GI_PRIVATE,
     GI_INVALID
 } GROUP_PRIVACY_STATE;
 
-enum {
+typedef enum GROUP_MODERATION_EVENT {
     MV_KICK,
     MV_BAN,
     MV_OBSERVER,
@@ -71,7 +71,7 @@ enum {
  * - USER may talk, stream A/V, and change the group topic.
  * - OBSERVER cannot interact with the group but may observe.
  */
-enum {
+typedef enum GROUP_ROLE {
     GR_FOUNDER,
     GR_MODERATOR,
     GR_USER,
@@ -79,14 +79,14 @@ enum {
     GR_INVALID
 } GROUP_ROLE;
 
-enum {
+typedef enum GROUP_STATUS {
     GS_NONE,
     GS_AWAY,
     GS_BUSY,
     GS_INVALID
 } GROUP_STATUS;
 
-enum {
+typedef enum GROUP_CONNECTION_STATE {
     CS_NONE,
     CS_FAILED,
     CS_DISCONNECTED,
@@ -95,7 +95,7 @@ enum {
     CS_INVALID
 } GROUP_CONNECTION_STATE;
 
-enum {
+typedef enum GROUP_JOIN_REJECTED {
     GJ_NICK_TAKEN,
     GJ_GROUP_FULL,
     GJ_INVALID_PASSWORD,
@@ -103,7 +103,7 @@ enum {
     GJ_INVALID
 } GROUP_JOIN_REJECTED;
 
-enum {
+typedef enum GROUP_BROADCAST_TYPE {
     GM_STATUS,
     GM_CHANGE_NICK,
     GM_CHANGE_TOPIC,
@@ -117,7 +117,7 @@ enum {
     GM_SET_OBSERVER
 } GROUP_BROADCAST_TYPE;
 
-enum {
+typedef enum GROUP_PACKET_TYPE {
     /* lossy packets (ID 0 is reserved) */
     GP_PING = 1,
     GP_MESSAGE_ACK = 2,
@@ -139,12 +139,12 @@ enum {
     GP_HS_RESPONSE_ACK = 31,
 } GROUP_PACKET_TYPE;
 
-enum {
+typedef enum GROUP_HANDSHAKE_JOIN_TYPE {
     HJ_PUBLIC,
     HJ_PRIVATE
 } GROUP_HANDSHAKE_JOIN_TYPE;
 
-enum {
+typedef enum GROUP_MESSAGE_TYPE {
     GC_MESSAGE_TYPE_NORMAL,
     GC_MESSAGE_TYPE_ACTION,
 } GROUP_MESSAGE_TYPE;
@@ -403,13 +403,14 @@ int gc_get_peer_nick(const GC_Chat *chat, uint32_t peernumber, uint8_t *name);
  */
 int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peernumber);
 
-/* Sets the caller's status to status_type
+/* Sets the caller's status to status
  *
  * Returns 0 on success.
- * Returns -1 if the status type is invalid.
- * Returns -2 if the packet failed to send.
+ * Returns -1 if the groupnumber is invalid.
+ * Returns -2 if the status type is invalid.
+ * Returns -3 if the packet failed to send.
  */
-int gc_set_self_status(GC_Chat *chat, uint8_t status_type);
+int gc_set_self_status(Messenger *m, int groupnumber, uint8_t status);
 
 /* Returns peernumber's status.
  * Returns (uint8_t) -1 on failure.

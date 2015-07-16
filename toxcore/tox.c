@@ -1524,23 +1524,19 @@ bool tox_group_self_set_status(Tox *tox, uint32_t groupnumber, TOX_USER_STATUS s
                                TOX_ERR_GROUP_SELF_STATUS_SET *error)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_GROUP_NOT_FOUND);
-        return 0;
-    }
-
-    int ret = gc_set_self_status(chat, status);
+    int ret = gc_set_self_status(m, groupnumber, status);
 
     switch (ret) {
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_INVALID);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_GROUP_NOT_FOUND);
             return 0;
         case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_INVALID);
+            return 0;
+        case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_FAIL_SEND);
             return 0;
     }

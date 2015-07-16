@@ -1442,23 +1442,33 @@ static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, co
     return 0;
 }
 
-/* Sets the caller's status to status_type
+/* Sets the caller's status
  *
  * Returns 0 on success.
- * Returns -1 if the status type is invalid.
- * Returns -2 if the packet failed to send.
+ * Returns -1 if the groupnumber is invalid.
+ * Returns -2 if the status type is invalid.
+ * Returns -3 if the packet failed to send.
  */
-int gc_set_self_status(GC_Chat *chat, uint8_t status_type)
+int gc_set_self_status(Messenger *m, int groupnumber, uint8_t status)
 {
-    if (status_type >= GS_INVALID)
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (!chat)
         return -1;
 
-    chat->group[0].status = status_type;
+    if (status >= GS_INVALID)
+        return -2;
+
+    if (c->status_change)
+        (*c->status_change)(m, groupnumber, 0, status, c->status_change_userdata);
+
+    chat->group[0].status = status;
     uint8_t data[1];
     data[0] = chat->group[0].status;
 
     if (send_gc_broadcast_message(chat, data, 1, GM_STATUS) == -1)
-        return -2;
+        return -3;
 
     return 0;
 }
@@ -1480,10 +1490,10 @@ static int handle_bc_change_status(Messenger *m, int groupnumber, uint32_t peern
     if (status >= GS_INVALID)
         return -1;
 
-    chat->group[peernumber].status = status;
-
     if (c->status_change)
         (*c->status_change)(m, groupnumber, peernumber, status, c->status_change_userdata);
+
+    chat->group[peernumber].status = status;
 
     return 0;
 }
@@ -2119,11 +2129,11 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
     if (get_nick_peernumber(chat, nick, length) != -1)
         return -4;
 
+    if (c->nick_change)
+        (*c->nick_change)(m, groupnumber, 0, nick, length, c->nick_change_userdata);
+
     memcpy(chat->group[0].nick, nick, length);
     chat->group[0].nick_len = length;
-
-    if (c->peerlist_update)
-        (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
     if (send_gc_broadcast_message(chat, nick, length, GM_CHANGE_NICK) == -1)
         return -5;
@@ -2201,9 +2211,6 @@ static int handle_bc_nick_change(Messenger *m, int groupnumber, uint32_t peernum
 
     memcpy(chat->group[peernumber].nick, nick, length);
     chat->group[peernumber].nick_len = length;
-
-    if (c->peerlist_update)
-        (*c->peerlist_update)(m, groupnumber, c->peerlist_update_userdata);
 
     return 0;
 }
