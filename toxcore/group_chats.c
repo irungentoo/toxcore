@@ -2564,73 +2564,94 @@ static int mod_gc_set_observer(GC_Chat *chat, uint32_t peernumber, bool add_obs)
 /* Sets the role of peernumber. role must be one of: GR_MODERATOR, GR_USER, GR_OBSERVER
  *
  * Returns 0 on success.
- * Returns -1 if the peernumber is invalid.
- * Returns -2 if caller does not have sufficient permissions for the action.
- * Returns -3 if the role assignment is invalid.
- * Returns -4 if the role failed to be set.
+ * Returns -1 if the groupnumber is invalid.
+ * Returns -2 if the peernumber is invalid.
+ * Returns -3 if caller does not have sufficient permissions for the action.
+ * Returns -4 if the role assignment is invalid.
+ * Returns -5 if the role failed to be set.
  */
-int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role)
+int gc_set_peer_role(Messenger *m, int groupnumber, uint32_t peernumber, uint8_t role)
 {
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
     if (role != GR_MODERATOR && role != GR_USER && role != GR_OBSERVER)
 
     if (peernumber == 0 || !peernumber_valid(chat, peernumber))
-        return -1;
+        return -2;
 
     if (!chat->gcc[peernumber].confirmed)
-        return -1;
+        return -2;
 
     if (chat->group[0].role >= GR_USER)
-        return -2;
+        return -3;
 
     if (chat->group[peernumber].role == GR_FOUNDER)
-        return -2;
+        return -3;
 
     if (chat->group[0].role != GR_FOUNDER && (role == GR_MODERATOR || chat->group[peernumber].role <= GR_MODERATOR))
-        return -2;
+        return -3;
 
     if (chat->group[peernumber].role == role)
-        return -3;
+        return -4;
+
+    uint8_t mod_event = MV_USER;
 
     /* New role must be applied after the old role is removed */
     switch (chat->group[peernumber].role) {
         case GR_MODERATOR: {
             if (founder_gc_set_moderator(chat, peernumber, false) == -1)
-                return -4;
+                return -5;
 
             chat->group[peernumber].role = GR_USER;
 
             if (role == GR_OBSERVER) {
+                mod_event = MV_OBSERVER;
+
                 if (mod_gc_set_observer(chat, peernumber, true) == -1)
-                    return -4;
+                    return -5;
             }
+
             break;
         }
         case GR_OBSERVER: {
             if (mod_gc_set_observer(chat, peernumber, false) == -1)
-                return -4;
+                return -5;
 
             chat->group[peernumber].role = GR_USER;
 
             if (role == GR_MODERATOR) {
+                mod_event = MV_MODERATOR;
+
                 if (founder_gc_set_moderator(chat, peernumber, true) == -1)
-                    return -4;
+                    return -5;
             }
             break;
         }
         case GR_USER: {
             if (role == GR_MODERATOR) {
+                mod_event = MV_MODERATOR;
+
                 if (founder_gc_set_moderator(chat, peernumber, true) == -1)
-                    return -4;
+                    return -5;
             } else if (role == GR_OBSERVER) {
+                mod_event = MV_OBSERVER;
+
                 if (mod_gc_set_observer(chat, peernumber, true) == -1)
-                    return -4;
+                    return -5;
             }
             break;
         }
         default: {
-            return -3;
+            return -4;
         }
     }
+
+    if (c->moderation)
+        (*c->moderation)(m, groupnumber, 0, peernumber, mod_event, c->moderation_userdata);
 
     chat->group[peernumber].role = role;
     return 0;
@@ -2967,7 +2988,7 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
 
     if (chat->group[peernumber].role == GR_MODERATOR || chat->group[peernumber].role == GR_OBSERVER) {
         /* this first removes peer from any lists they're on and broadcasts new lists to group */
-        if (gc_set_peer_role(chat, peernumber, GR_USER) < 0)
+        if (gc_set_peer_role(m, groupnumber, peernumber, GR_USER) < 0)
             return -4;
     }
 
@@ -2988,6 +3009,9 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
 
     if (gc_peer_delete(m, groupnumber, peernumber, NULL, 0) == -1)
         return -4;
+
+    if (c->moderation)
+        (*c->moderation)(m, groupnumber, 0, peernumber, mod_event, c->moderation_userdata);
 
     return 0;
 }

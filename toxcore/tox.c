@@ -2095,29 +2095,25 @@ bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peernumber,
                            TOX_ERR_GROUP_MOD_SET_ROLE *error)
 {
     Messenger *m = tox;
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-
-    if (chat == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_GROUP_NOT_FOUND);
-        return 0;
-    }
-
-    int ret = gc_set_peer_role(chat, peernumber, role);
+    int ret = gc_set_peer_role(m, groupnumber, peernumber, role);
 
     switch (ret) {
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_OK);
             return 1;
         case -1:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PEER_NOT_FOUND);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_GROUP_NOT_FOUND);
             return 0;
         case -2:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PERMISSIONS);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PEER_NOT_FOUND);
             return 0;
         case -3:
-            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_ASSIGNMENT);
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PERMISSIONS);
             return 0;
         case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_ASSIGNMENT);
+            return 0;
+        case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_FAIL_ACTION);
             return 0;
     }

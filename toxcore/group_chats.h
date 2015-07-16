@@ -428,12 +428,13 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peernumber);
 /* Sets the role of peernumber. role must be one of: GR_MODERATOR, GR_USER, GR_OBSERVER
  *
  * Returns 0 on success.
- * Returns -1 if the peernumber is invalid.
- * Returns -2 if caller does not have sufficient permissions for the action.
- * Returns -3 if the role assignment is invalid.
- * Returns -4 if the role failed to be set.
+ * Returns -1 if the groupnumber is invalid.
+ * Returns -2 if the peernumber is invalid.
+ * Returns -3 if caller does not have sufficient permissions for the action.
+ * Returns -4 if the role assignment is invalid.
+ * Returns -5 if the role failed to be set.
  */
-int gc_set_peer_role(GC_Chat *chat, uint32_t peernumber, uint8_t role);
+int gc_set_peer_role(Messenger *m, int groupnumber, uint32_t peernumber, uint8_t role);
 
 /* Sets the group password and distributes the new shared state to the group.
  *
