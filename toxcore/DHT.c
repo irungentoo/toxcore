@@ -180,6 +180,25 @@ int to_host_family(IP *ip)
 #define PACKED_NODE_SIZE_IP4 (1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
 #define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
 
+/* Return packet size of packed node with ip_family on success.
+ * Return -1 on failure.
+ */
+int packed_node_size(uint8_t ip_family)
+{
+    if (ip_family == AF_INET) {
+        return PACKED_NODE_SIZE_IP4;
+    } else if (ip_family == TCP_INET) {
+        return PACKED_NODE_SIZE_IP4;
+    } else if (ip_family == AF_INET6) {
+        return PACKED_NODE_SIZE_IP6;
+    } else if (ip_family == TCP_INET6) {
+        return PACKED_NODE_SIZE_IP6;
+    } else {
+        return -1;
+    }
+}
+
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
@@ -2292,7 +2311,7 @@ uint32_t DHT_size(const DHT *dht)
 
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
 
-    return size32 + sizesubhead + (PACKED_NODE_SIZE_IP4 * numv4) + (PACKED_NODE_SIZE_IP6 * numv6);
+    return size32 + sizesubhead + (packed_node_size(AF_INET) * numv4) + (packed_node_size(AF_INET6) * numv6);
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)

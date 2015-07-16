@@ -153,6 +153,11 @@ typedef struct {
 }
 Node_format;
 
+/* Return packet size of packed node with ip_family on success.
+ * Return -1 on failure.
+ */
+int packed_node_size(uint8_t ip_family);
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
