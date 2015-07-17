@@ -2545,7 +2545,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
-             + sizesubhead + NUM_SAVED_TCP_RELAYS * sizeof(Node_format) //TCP relays
+             + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
              + sizesubhead + NUM_SAVED_PATH_NODES * sizeof(Node_format) //saved path nodes
              ;
 }
@@ -2612,12 +2612,12 @@ void messenger_save(const Messenger *m, uint8_t *data)
     data += len;
 
     Node_format relays[NUM_SAVED_TCP_RELAYS];
-    len = sizeof(relays);
     type = MESSENGER_STATE_TYPE_TCP_RELAY;
-    data = z_state_save_subheader(data, len, type);
-    memset(relays, 0, len);
-    copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
-    memcpy(data, relays, len);
+    uint8_t *temp_data = data;
+    data = z_state_save_subheader(temp_data, 0, type);
+    unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
+    len = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6), relays, num);
+    data = z_state_save_subheader(temp_data, len, type);
     data += len;
 
     Node_format nodes[NUM_SAVED_PATH_NODES];
@@ -2677,11 +2677,11 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_TCP_RELAY: {
-            if (length != sizeof(m->loaded_relays)) {
-                return -1;
+            if (length == 0) {
+                break;
             }
 
-            memcpy(m->loaded_relays, data, length);
+            unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, 0, data, length, 1);
             m->has_added_relays = 0;
 
             break;
