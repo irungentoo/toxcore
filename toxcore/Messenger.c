@@ -2430,6 +2430,7 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_STATUS        6
 #define MESSENGER_STATE_TYPE_TCP_RELAY     10
 #define MESSENGER_STATE_TYPE_PATH_NODE     11
+#define MESSENGER_STATE_TYPE_END           255
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
 #define NUM_SAVED_PATH_NODES 8
@@ -2547,7 +2548,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + 1                                 // status
              + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
              + sizesubhead + NUM_SAVED_PATH_NODES * sizeof(Node_format) //saved path nodes
-             ;
+             + sizesubhead;
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
@@ -2562,6 +2563,8 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 /* Save the messenger in data of size Messenger_size(). */
 void messenger_save(const Messenger *m, uint8_t *data)
 {
+    memset(data, 0, messenger_size(m));
+
     uint32_t len;
     uint16_t type;
     uint32_t *data32, size32 = sizeof(uint32_t);
@@ -2616,9 +2619,13 @@ void messenger_save(const Messenger *m, uint8_t *data)
     uint8_t *temp_data = data;
     data = z_state_save_subheader(temp_data, 0, type);
     unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
-    len = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6), relays, num);
-    data = z_state_save_subheader(temp_data, len, type);
-    data += len;
+    int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6), relays, num);
+
+    if (l > 0) {
+        len = l;
+        data = z_state_save_subheader(temp_data, len, type);
+        data += len;
+    }
 
     Node_format nodes[NUM_SAVED_PATH_NODES];
     len = sizeof(nodes);
@@ -2627,6 +2634,9 @@ void messenger_save(const Messenger *m, uint8_t *data)
     memset(nodes, 0, len);
     onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
     memcpy(data, nodes, len);
+    data += len;
+
+    z_state_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
 }
 
 static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
@@ -2701,6 +2711,15 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
                 onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
 
+            break;
+        }
+
+        case MESSENGER_STATE_TYPE_END: {
+            if (length != 0) {
+                return -1;
+            }
+
+            return -2;
             break;
         }
 

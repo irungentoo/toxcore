@@ -153,8 +153,15 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
         type = lendian_to_host16(cookie_type & 0xFFFF);
 
-        if (-1 == load_state_callback(outer, data, length_sub, type))
+        int ret = load_state_callback(outer, data, length_sub, type);
+
+        if (ret == -1) {
             return -1;
+        }
+
+        /* -2 means end of save. */
+        if (ret == -2)
+            return 0;
 
         data += length_sub;
         length -= length_sub;
