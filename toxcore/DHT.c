@@ -2412,7 +2412,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
 
     switch (type) {
         case DHT_STATE_TYPE_NODES:
-            if ((length % sizeof(Node_format)) != 0)
+            if (length == 0)
                 break;
 
             {
