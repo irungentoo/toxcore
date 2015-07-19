@@ -2547,7 +2547,7 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
              + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
-             + sizesubhead + NUM_SAVED_PATH_NODES * sizeof(Node_format) //saved path nodes
+             + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6) //saved path nodes
              + sizesubhead;
 }
 
@@ -2628,13 +2628,18 @@ void messenger_save(const Messenger *m, uint8_t *data)
     }
 
     Node_format nodes[NUM_SAVED_PATH_NODES];
-    len = sizeof(nodes);
     type = MESSENGER_STATE_TYPE_PATH_NODE;
-    data = z_state_save_subheader(data, len, type);
-    memset(nodes, 0, len);
-    onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
-    memcpy(data, nodes, len);
-    data += len;
+    temp_data = data;
+    data = z_state_save_subheader(data, 0, type);
+    memset(nodes, 0, sizeof(nodes));
+    num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
+    l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6), nodes, num);
+
+    if (l > 0) {
+        len = l;
+        data = z_state_save_subheader(temp_data, len, type);
+        data += len;
+    }
 
     z_state_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
 }
@@ -2704,10 +2709,9 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
                 return -1;
             }
 
-            memcpy(nodes, data, length);
-            uint32_t i;
+            int i, num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, 0, data, length, 0);
 
-            for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
+            for (i = 0; i < num; ++i) {
                 onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
 
