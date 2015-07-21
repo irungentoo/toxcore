@@ -26,6 +26,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "codec.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 
@@ -37,7 +38,6 @@
 
 #include "msi.h"
 #include "rtp.h"
-#include "codec.h"
 
 /* Good quality encode. */
 #define MAX_DECODE_TIME_US 0

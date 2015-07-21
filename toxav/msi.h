@@ -22,9 +22,6 @@
 #ifndef __TOXMSI
 #define __TOXMSI
 
-#include <inttypes.h>
-#include <pthread.h>
-
 #include "codec.h"
 #include "../toxcore/Messenger.h"
 
