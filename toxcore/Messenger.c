@@ -2705,7 +2705,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
         case MESSENGER_STATE_TYPE_PATH_NODE: {
             Node_format nodes[NUM_SAVED_PATH_NODES];
 
-            if (length != sizeof(nodes)) {
+            if (length == 0) {
                 return -1;
             }
 
