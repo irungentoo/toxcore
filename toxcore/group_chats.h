@@ -159,7 +159,7 @@ struct GC_Sanction_Creds {
 typedef struct GC_Moderation {
     struct GC_Sanction *sanctions;
     struct GC_Sanction_Creds sanctions_creds;
-    uint16_t    num_sanctions;
+    uint32_t    num_sanctions;
 
     uint8_t     **mod_list;    /* Array of public signature keys of all the mods */
     uint16_t    num_mods;
@@ -490,7 +490,7 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
  * Returns -2 if the entry could not be removed.
  * Returns -3 if the packet failed to send.
  */
-int gc_remove_ban(GC_Chat *chat, uint16_t ban_id);
+int gc_remove_ban(GC_Chat *chat, uint32_t ban_id);
 
 /* Copies the chat_id to dest */
 void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);

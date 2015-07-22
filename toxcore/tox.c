@@ -2153,7 +2153,7 @@ bool tox_group_mod_remove_peer(Tox *tox, uint32_t groupnumber, uint32_t peernumb
     return 0;
 }
 
-bool tox_group_mod_remove_ban(Tox *tox, uint32_t groupnumber, uint16_t ban_id, TOX_ERR_GROUP_MOD_REMOVE_BAN *error)
+bool tox_group_mod_remove_ban(Tox *tox, uint32_t groupnumber, uint32_t ban_id, TOX_ERR_GROUP_MOD_REMOVE_BAN *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2198,7 +2198,7 @@ size_t tox_group_ban_get_list_size(const Tox *tox, uint32_t groupnumber, TOX_ERR
     return sanctions_list_num_banned(chat);
 }
 
-bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list, TOX_ERR_GROUP_BAN_QUERY *error)
+bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint32_t *list, TOX_ERR_GROUP_BAN_QUERY *error)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2213,7 +2213,7 @@ bool tox_group_ban_get_list(const Tox *tox, uint32_t groupnumber, uint16_t *list
     return 1;
 }
 
-size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
+size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint32_t ban_id,
                                    TOX_ERR_GROUP_BAN_QUERY *error)
 {
     const Messenger *m = tox;
@@ -2235,7 +2235,7 @@ size_t tox_group_ban_get_name_size(const Tox *tox, uint32_t groupnumber, uint16_
     return ret;
 }
 
-bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint16_t ban_id, uint8_t *name,
+bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint32_t ban_id, uint8_t *name,
                             TOX_ERR_GROUP_BAN_QUERY *error)
 {
     const Messenger *m = tox;
@@ -2257,7 +2257,7 @@ bool tox_group_ban_get_name(const Tox *tox, uint32_t groupnumber, uint16_t ban_i
     return 1;
 }
 
-uint64_t tox_group_ban_get_time_set(const Tox *tox, uint32_t groupnumber, uint16_t ban_id,
+uint64_t tox_group_ban_get_time_set(const Tox *tox, uint32_t groupnumber, uint32_t ban_id,
                                     TOX_ERR_GROUP_BAN_QUERY *error)
 {
     const Messenger *m = tox;

@@ -1875,7 +1875,7 @@ on_error:
 static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                     uint32_t length)
 {
-    if (length < sizeof(uint16_t))
+    if (length < sizeof(uint32_t))
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -1884,8 +1884,8 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
     if (chat == NULL)
         return -1;
 
-    uint16_t num_sanctions;
-    bytes_to_U16(&num_sanctions, data);
+    uint32_t num_sanctions;
+    bytes_to_U32(&num_sanctions, data);
 
     if (num_sanctions > MAX_GC_SANCTIONS)
         goto on_error;
@@ -1896,8 +1896,8 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
     if (sanctions == NULL)
         return -1;
 
-    int unpacked_num = sanctions_list_unpack(sanctions, &creds, num_sanctions, data + sizeof(uint16_t),
-                                             length - sizeof(uint16_t), NULL);
+    int unpacked_num = sanctions_list_unpack(sanctions, &creds, num_sanctions, data + sizeof(uint32_t),
+                                             length - sizeof(uint32_t), NULL);
     if (unpacked_num != num_sanctions) {
         fprintf(stderr, "sanctions_list_unpack failed in handle_gc_sanctions_list: %d\n", unpacked_num);
         free(sanctions);
@@ -1989,12 +1989,12 @@ static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber)
  */
 static int make_gc_sanctions_list_packet(GC_Chat *chat, uint8_t *data, uint32_t maxlen)
 {
-    if (maxlen < HASH_ID_BYTES + sizeof(uint16_t))
+    if (maxlen < HASH_ID_BYTES + sizeof(uint32_t))
         return -1;
 
     U32_to_bytes(data, chat->self_public_key_hash);
-    U16_to_bytes(data + HASH_ID_BYTES, chat->moderation.num_sanctions);
-    uint32_t length = HASH_ID_BYTES + sizeof(uint16_t);
+    U32_to_bytes(data + HASH_ID_BYTES, chat->moderation.num_sanctions);
+    uint32_t length = HASH_ID_BYTES + sizeof(uint32_t);
 
     int packed_len = sanctions_list_pack(data + length, maxlen - length, chat->moderation.sanctions,
                                          &chat->moderation.sanctions_creds, chat->moderation.num_sanctions);
@@ -2045,7 +2045,7 @@ static int broadcast_gc_sanctions_list(GC_Chat *chat)
  */
 static int update_gc_sanctions_list(GC_Chat *chat, const uint8_t *public_sig_key)
 {
-    uint16_t num_replaced = sanctions_list_replace_sig(chat, public_sig_key);
+    uint32_t num_replaced = sanctions_list_replace_sig(chat, public_sig_key);
 
     if (num_replaced == 0)
         return 0;
@@ -3019,7 +3019,7 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, bool set_
 static int handle_bc_remove_ban(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                 uint32_t length)
 {
-    if (length < sizeof(uint16_t))
+    if (length < sizeof(uint32_t))
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -3031,11 +3031,11 @@ static int handle_bc_remove_ban(Messenger *m, int groupnumber, uint32_t peernumb
     if (chat->group[peernumber].role >= GR_USER)
         return -1;
 
-    uint16_t ban_id;
-    bytes_to_U16(&ban_id, data);
+    uint32_t ban_id;
+    bytes_to_U32(&ban_id, data);
 
     struct GC_Sanction_Creds creds;
-    uint16_t unpacked_len = sanctions_creds_unpack(&creds, data + sizeof(uint16_t), length - sizeof(uint16_t));
+    uint16_t unpacked_len = sanctions_creds_unpack(&creds, data + sizeof(uint32_t), length - sizeof(uint32_t));
 
     if (unpacked_len != GC_SANCTIONS_CREDENTIALS_SIZE)
         return -1;
@@ -3052,11 +3052,11 @@ static int handle_bc_remove_ban(Messenger *m, int groupnumber, uint32_t peernumb
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-static int send_gc_remove_ban(GC_Chat *chat, uint16_t ban_id)
+static int send_gc_remove_ban(GC_Chat *chat, uint32_t ban_id)
 {
-    uint8_t packet[sizeof(uint16_t) + GC_SANCTIONS_CREDENTIALS_SIZE];
-    U16_to_bytes(packet, ban_id);
-    uint32_t length = sizeof(uint16_t);
+    uint8_t packet[sizeof(uint32_t) + GC_SANCTIONS_CREDENTIALS_SIZE];
+    U32_to_bytes(packet, ban_id);
+    uint32_t length = sizeof(uint32_t);
 
     uint16_t packed_len = sanctions_creds_pack(&chat->moderation.sanctions_creds, packet + length,
                                               sizeof(packet) - length);
@@ -3075,7 +3075,7 @@ static int send_gc_remove_ban(GC_Chat *chat, uint16_t ban_id)
  * Returns -2 if the entry could not be removed.
  * Returns -3 if the packet failed to send.
  */
-int gc_remove_ban(GC_Chat *chat, uint16_t ban_id)
+int gc_remove_ban(GC_Chat *chat, uint32_t ban_id)
 {
     if (chat->group[0].role >= GR_USER)
         return -1;

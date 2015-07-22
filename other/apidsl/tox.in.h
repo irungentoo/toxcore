@@ -2297,7 +2297,7 @@ namespace group {
    * This function disconnects from all peers in the group, then attempts to reconnect with the group.
    * The caller's state is not changed (i.e. name, status, role, chat public key etc.)
    *
-   * @param groupnumber The groupnumber of the group we wish to reconnect to.
+   * @param groupnumber The group number of the group we wish to reconnect to.
    *
    * @return true on success.
    */
@@ -2315,7 +2315,7 @@ namespace group {
    * peers in a group, and deletes the group from the chat array. All group state information is permanently
    * lost, including keys and role credentials.
    *
-   * @param groupnumber The groupnumber of the group we wish to leave.
+   * @param groupnumber The group number of the group we wish to leave.
    * @param message The parting message to be sent to all the peers. Set to NULL if we do not wish to
    *   send a parting message.
    * @param length The length of the parting message. Set to 0 if we do not wish to send a parting message.
@@ -2454,7 +2454,7 @@ namespace group {
       /**
        * Set the client's status for the group instance. Status must be a $USER_STATUS.
        *
-       * @return true on succcess.
+       * @return true on success.
        */
       set(uint32_t groupnumber) with error for self_status_set;
 
@@ -2558,8 +2558,8 @@ namespace group {
      */
     event name {
       /**
-       * @param groupnumber The groupnumber of the group the name change is intended for.
-       * @param peernumber The peernumber of the peer who has changed their name.
+       * @param groupnumber The group number of the group the name change is intended for.
+       * @param peernumber The peer number of the peer who has changed their name.
        * @param name The name data.
        * @param length The length of the name.
        */
@@ -2571,8 +2571,8 @@ namespace group {
      */
     event status {
       /**
-       * @param groupnumber The groupnumber of the group the status change is intended for.
-       * @param peernumber The peernumber of the peer who has changed their status.
+       * @param groupnumber The group number of the group the status change is intended for.
+       * @param peernumber The peer number of the peer who has changed their status.
        * @param status The new status of the peer.
        */
       typedef void(uint32_t groupnumber, uint32_t peernumber, USER_STATUS status);
@@ -2664,8 +2664,8 @@ namespace group {
    */
   event topic {
     /**
-     * @param groupnumber The groupnumber of the group the topic change is intended for.
-     * @param peernumber The peernumber of the peer who changed the topic.
+     * @param groupnumber The group number of the group the topic change is intended for.
+     * @param peernumber The peer number of the peer who changed the topic.
      * @param topic The topic data.
      * @param length The topic length.
      */
@@ -2734,7 +2734,7 @@ namespace group {
      * The value returned is equal to the data received by the last
      * `${event privacy_state}` callback.
      *
-     * See the `Group chat founder controls` section for the respective set function.
+     * @see the `Group chat founder controls` section for the respective set function.
      */
     get(uint32_t groupnumber) with error for state_queries;
   }
@@ -2744,7 +2744,7 @@ namespace group {
    */
   event privacy_state {
     /**
-     * @param groupnumber The groupnumber of the group the topic change is intended for.
+     * @param groupnumber The group number of the group the topic change is intended for.
      * @param privacy_state The new privacy state.
      */
     typedef void(uint32_t groupnumber, PRIVACY_STATE privacy_state);
@@ -2759,7 +2759,7 @@ namespace group {
      * The value returned is equal to the data received by the last
      * `${event peer_limit}` callback.
      *
-     * See the `Group chat founder controls` section for the respective set function.
+     * @see the `Group chat founder controls` section for the respective set function.
      */
     get(uint32_t groupnumber) with error for state_queries;
   }
@@ -2769,7 +2769,7 @@ namespace group {
    */
   event peer_limit {
     /**
-     * @param groupnumber The groupnumber of the group for which the peer limit has changed.
+     * @param groupnumber The group number of the group for which the peer limit has changed.
      * @param peer_limit The new peer limit for the group.
      */
     typedef void(uint32_t groupnumber, uint32_t peer_limit);
@@ -2791,7 +2791,7 @@ namespace group {
      * The data received is equal to the data received by the last
      * `${event password}` callback.
      *
-     * See the `Group chat founder controls` section for the respective set function.
+     * @see the `Group chat founder controls` section for the respective set function.
      *
      * @param password A valid memory region large enough to store the group password.
      *   If this parameter is NULL, this function call has no effect.
@@ -2806,7 +2806,7 @@ namespace group {
    */
   event password {
     /**
-     * @param groupnumber The groupnumber of the group for which the password has changed.
+     * @param groupnumber The group number of the group for which the password has changed.
      * @param password The new group password.
      * @param length The length of the password.
      */
@@ -2821,7 +2821,7 @@ namespace group {
    */
   event peerlist_update {
     /**
-     * @param groupnumber The groupnumber of the group that must have its peer list updated.
+     * @param groupnumber The group number of the group that must have its peer list updated.
      */
     typedef void(uint32_t groupnumber);
   }
@@ -2847,7 +2847,7 @@ namespace group {
      * must be split by the client and sent as separate messages. Other clients can
      * then reassemble the fragments. Messages may not be empty.
      *
-     * @param groupnumber The groupnumber of the group the message is intended for.
+     * @param groupnumber The group number of the group the message is intended for.
      * @param type Message type (normal, action, ...).
      * @param message A non-NULL pointer to the first element of a byte array
      *   containing the message text.
@@ -2892,8 +2892,8 @@ namespace group {
      * must be split by the client and sent as separate messages. Other clients can
      * then reassemble the fragments. Messages may not be empty.
      *
-     * @param groupnumber The groupnumber of the group the message is intended for.
-     * @param peernumber The peernumber of the peer the message is intended for.
+     * @param groupnumber The group number of the group the message is intended for.
+     * @param peernumber The peer number of the peer the message is intended for.
      * @param message A non-NULL pointer to the first element of a byte array
      *   containing the message text.
      * @param length Length of the message to be sent.
@@ -2942,8 +2942,8 @@ namespace group {
    */
   event message {
     /**
-     * @param groupnumber The groupnumber of the group the message is intended for.
-     * @param peernumber The peernumber of the peer who sent the message.
+     * @param groupnumber The group number of the group the message is intended for.
+     * @param peernumber The peer number of the peer who sent the message.
      * @param type The type of message (normal, action, ...).
      * @param message The message data.
      * @param length The length of the message.
@@ -2956,8 +2956,8 @@ namespace group {
    */
   event private_message {
     /**
-     * @param groupnumber The groupnumber of the group the private message is intended for.
-     * @param peernumber The peernumber of the peer who sent the private message.
+     * @param groupnumber The group number of the group the private message is intended for.
+     * @param peernumber The peer number of the peer who sent the private message.
      * @param message The message data.
      * @param length The length of the message.
      */
@@ -2981,7 +2981,7 @@ namespace group {
      *
      * This function creates an invite request packet and pushes it to the send queue.
      *
-     * @param groupnumber The groupnumber of the group the message is intended for.
+     * @param groupnumber The group number of the group the message is intended for.
      * @param friendnumber The friendnumber of the friend the invite is intended for.
      *
      * @return true on success.
@@ -3052,8 +3052,8 @@ namespace group {
    */
   event peer_join {
     /**
-     * @param groupnumber The groupnumber of the group in which a new peer has joined.
-     * @param peernumber The peernumber of the new peer.
+     * @param groupnumber The group number of the group in which a new peer has joined.
+     * @param peernumber The peer number of the new peer.
      */
     typedef void(uint32_t groupnumber, uint32_t peernumber);
   }
@@ -3064,8 +3064,8 @@ namespace group {
    */
   event peer_exit {
     /**
-     * @param groupnumber The groupnumber of the group in which a peer has left.
-     * @param peernumber The peernumber of the peer who left the group.
+     * @param groupnumber The group number of the group in which a peer has left.
+     * @param peernumber The peer number of the peer who left the group.
      * @param part_message The parting message data.
      * @param length The length of the parting message.
      */
@@ -3078,7 +3078,7 @@ namespace group {
    */
   event self_join {
     /**
-     * @param groupnumber The groupnumber of the group that the client has joined.
+     * @param groupnumber The group number of the group that the client has joined.
      */
     typedef void(uint32_t groupnumber);
   }
@@ -3115,7 +3115,7 @@ namespace group {
    */
   event join_fail {
     /**
-     * @param groupnumber The groupnumber of the group for which the join has failed.
+     * @param groupnumber The group number of the group for which the join has failed.
      * @param fail_type The type of group rejection.
      */
     typedef void(uint32_t groupnumber, JOIN_FAIL fail_type);
@@ -3139,7 +3139,7 @@ namespace group {
      * This function sets the groups password, creates a new group shared state including the change,
      * and distributes it to the rest of the group.
      *
-     * @param groupnumber The groupnumber of the group for which we wish to set the password.
+     * @param groupnumber The group number of the group for which we wish to set the password.
      * @param password The password we want to set. Set password to NULL to unset the password.
      * @param length The length of the password. length must be no longer than $MAX_PASSWORD_SIZE.
      *
@@ -3173,7 +3173,7 @@ namespace group {
      * If an attempt is made to set the privacy state to the same state that the group is already
      * in, the function call will be successful and no action will be taken.
      *
-     * @param groupnumber The groupnumber of the group for which we wish to change the privacy state.
+     * @param groupnumber The group number of the group for which we wish to change the privacy state.
      * @param privacy_state The privacy state we wish to set the group to.
      *
      * @return true on success.
@@ -3208,7 +3208,7 @@ namespace group {
      * This function sets a limit for the number of peers who may be in the group, creates a new
      * group shared state including the change, and distributes it to the rest of the group.
      *
-     * @param groupnumber The groupnumber of the group for which we wish to set the peer limit.
+     * @param groupnumber The group number of the group for which we wish to set the peer limit.
      * @param max_peers The maximum number of peers to allow in the group.
      *
      * @return true on success.
@@ -3247,8 +3247,8 @@ namespace group {
   /**
    * Ignore or unignore a peer.
    *
-   * @param groupnumber The groupnumber of the group the in which you wish to ignore a peer.
-   * @param peernumber The peernumber of the peer who shall be ignored or unignored.
+   * @param groupnumber The group number of the group the in which you wish to ignore a peer.
+   * @param peernumber The peer number of the peer who shall be ignored or unignored.
    * @ignore True to ignore the peer, false to unignore the peer.
    *
    * @return true on success.
@@ -3273,8 +3273,8 @@ namespace group {
      * It will also send a packet to the rest of the group, requesting that they perform
      * the role reassignment. Note: peers cannot be set to the founder role.
      *
-     * @param groupnumber The groupnumber of the group the in which you wish set the peer's role.
-     * @param peernumber The peernumber of the peer whose role you wish to set.
+     * @param groupnumber The group number of the group the in which you wish set the peer's role.
+     * @param peernumber The peer number of the peer whose role you wish to set.
      * @param role The role you wish to set the peer to.
      *
      * @return true on success.
@@ -3311,8 +3311,8 @@ namespace group {
      * to the ban list. It will also send a packet to all group members requesting them
      * to do the same.
      *
-     * @param groupnumber The groupnumber of the group the ban is intended for.
-     * @param peernumber The peernumber of the peer who will be kicked and/or added to the ban list.
+     * @param groupnumber The group number of the group the ban is intended for.
+     * @param peernumber The peer number of the peer who will be kicked and/or added to the ban list.
      * @param set_ban Set to true if a ban shall be set on the peer's IP address.
      *
      * @return true on success.
@@ -3331,9 +3331,12 @@ namespace group {
        */
       PERMISSIONS,
       /**
-       * The peer failed to be removed from the group. If a ban was set, this error indicates
-       * that the ban entry could not be created. This may either be due to the entry containing
-       * invalid peer information, or a failure to cryptographically authenticate the entry.
+       * The peer could not be removed from the group.
+       *
+       * If a ban was set, this error indicates that the ban entry could not be created.
+       * This is usually due to the peer's IP address already occurring in the ban list. It may also
+       * be due to the entry containing invalid peer information, or a failure to cryptographically
+       * authenticate the entry.
        */
       FAIL_ACTION,
       /**
@@ -3348,12 +3351,12 @@ namespace group {
      * This function removes a ban entry from the ban list, and sends a packet to the rest of
      * the group requesting that they do the same.
      *
-     * @param groupnumber The groupnumber of the group in which the ban is to be removed.
+     * @param groupnumber The group number of the group in which the ban is to be removed.
      * @param ban_id The ID of the ban entry that shall be removed.
      *
      * @return true on success
      */
-    bool remove_ban(uint32_t groupnumber, uint16_t ban_id) {
+    bool remove_ban(uint32_t groupnumber, uint32_t ban_id) {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -3409,9 +3412,9 @@ namespace group {
    */
   event moderation {
     /**
-     * @param groupnumber The groupnumber of the group the event is intended for.
-     * @param source_peer_number The peernumber of the peer who initiated the event.
-     * @param target_peer_number The peernumber of the peer who is the target of the event.
+     * @param groupnumber The group number of the group the event is intended for.
+     * @param source_peer_number The peer number of the peer who initiated the event.
+     * @param target_peer_number The peer number of the peer who is the target of the event.
      * @param mod_type The type of event.
      */
     typedef void(uint32_t groupnumber, uint32_t source_peer_number, uint32_t target_peer_number, MOD_EVENT mod_type);
@@ -3444,7 +3447,7 @@ namespace group {
         BAD_ID,
     }
 
-    uint16_t[size] list {
+    uint32_t[size] list {
 
       /**
        * Return the number of entries in the ban list for the group designated by
@@ -3472,7 +3475,7 @@ namespace group {
        * group designated by the given group number. If either groupnumber or ban_id is invalid,
        * the return value is unspecified.
        */
-      size(uint32_t groupnumber, uint16_t ban_id) with error for query;
+      size(uint32_t groupnumber, uint32_t ban_id) with error for query;
 
       /**
        * Write the name of the ban entry designated by ban_id in the group designated by the
@@ -3482,7 +3485,7 @@ namespace group {
        *
        * @return true on success.
        */
-      get(uint32_t groupnumber, uint16_t ban_id) with error for query;
+      get(uint32_t groupnumber, uint32_t ban_id) with error for query;
     }
 
     uint64_t time_set {
@@ -3492,7 +3495,7 @@ namespace group {
        * designated by ban_id, in the group designated by the given group number.
        * If either groupnumber or ban_id is invalid, the return value is unspecified.
        */
-      get(uint32_t groupnumber, uint16_t ban_id) with error for query;
+      get(uint32_t groupnumber, uint32_t ban_id) with error for query;
     }
   }
 }
