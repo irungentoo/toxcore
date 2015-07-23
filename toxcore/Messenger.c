@@ -2706,7 +2706,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             Node_format nodes[NUM_SAVED_PATH_NODES];
 
             if (length == 0) {
-                return -1;
+                break;
             }
 
             int i, num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, 0, data, length, 0);
