@@ -2584,12 +2584,6 @@ void messenger_save(const Messenger *m, uint8_t *data)
     save_keys(m->net_crypto, data + size32);
     data += len;
 
-    len = DHT_size(m->dht);
-    type = MESSENGER_STATE_TYPE_DHT;
-    data = z_state_save_subheader(data, len, type);
-    DHT_save(m->dht, data);
-    data += len;
-
     len = saved_friendslist_size(m);
     type = MESSENGER_STATE_TYPE_FRIENDS;
     data = z_state_save_subheader(data, len, type);
@@ -2612,6 +2606,12 @@ void messenger_save(const Messenger *m, uint8_t *data)
     type = MESSENGER_STATE_TYPE_STATUS;
     data = z_state_save_subheader(data, len, type);
     *data = m->userstatus;
+    data += len;
+
+    len = DHT_size(m->dht);
+    type = MESSENGER_STATE_TYPE_DHT;
+    data = z_state_save_subheader(data, len, type);
+    DHT_save(m->dht, data);
     data += len;
 
     Node_format relays[NUM_SAVED_TCP_RELAYS];
