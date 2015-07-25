@@ -2408,7 +2408,6 @@ int DHT_connect_after_load(DHT *dht)
 static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     DHT *dht = outer;
-    int i;
 
     switch (type) {
         case DHT_STATE_TYPE_NODES:
