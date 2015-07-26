@@ -283,15 +283,7 @@ int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count);
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *
- * !!! Signature changed !!!
- *
- * OLD: IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
- *
- *  return ip if success.
- *  return ip of 0 if failure (This means the friend is either offline or we have not found him yet).
- *  return ip of 1 if friend is not in list.
- *
- * NEW: int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
+ * int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
  *
  *  return -1, -- if client_id does NOT refer to a friend
  *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
