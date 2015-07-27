@@ -182,7 +182,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 #define KEYS_TIMEOUT 600
 typedef struct {
     struct {
-        uint8_t client_id[CLIENT_ID_SIZE];
+        uint8_t public_key[CLIENT_ID_SIZE];
         uint8_t shared_key[crypto_box_BEFORENMBYTES];
         uint32_t times_requested;
         uint8_t  stored; /* 0 if not, 1 if is */
@@ -241,17 +241,18 @@ typedef struct {
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id);
+void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key,
+                    const uint8_t *public_key);
 
-/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
-void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *client_id);
+void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
-/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
-void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *client_id);
+void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
 void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
 

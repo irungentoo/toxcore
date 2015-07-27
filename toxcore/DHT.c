@@ -97,15 +97,15 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id)
+void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *public_key)
 {
     uint32_t i, num = ~0, curr = 0;
 
     for (i = 0; i < MAX_KEYS_PER_SLOT; ++i) {
-        int index = client_id[30] * MAX_KEYS_PER_SLOT + i;
+        int index = public_key[30] * MAX_KEYS_PER_SLOT + i;
 
         if (shared_keys->keys[index].stored) {
-            if (memcmp(client_id, shared_keys->keys[index].client_id, CLIENT_ID_SIZE) == 0) {
+            if (memcmp(public_key, shared_keys->keys[index].public_key, CLIENT_ID_SIZE) == 0) {
                 memcpy(shared_key, shared_keys->keys[index].shared_key, crypto_box_BEFORENMBYTES);
                 ++shared_keys->keys[index].times_requested;
                 shared_keys->keys[index].time_last_requested = unix_time();
@@ -129,31 +129,31 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
         }
     }
 
-    encrypt_precompute(client_id, secret_key, shared_key);
+    encrypt_precompute(public_key, secret_key, shared_key);
 
     if (num != (uint32_t)~0) {
         shared_keys->keys[curr].stored = 1;
         shared_keys->keys[curr].times_requested = 1;
-        memcpy(shared_keys->keys[curr].client_id, client_id, CLIENT_ID_SIZE);
+        memcpy(shared_keys->keys[curr].public_key, public_key, CLIENT_ID_SIZE);
         memcpy(shared_keys->keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
         shared_keys->keys[curr].time_last_requested = unix_time();
     }
 }
 
-/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
-void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
+void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
 {
-    get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, client_id);
+    get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, public_key);
 }
 
-/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
-void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *client_id)
+void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
 {
-    get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, client_id);
+    get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, public_key);
 }
 
 void to_net_family(IP *ip)
