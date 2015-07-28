@@ -2025,7 +2025,7 @@ static int send_peer_sanctions_list(GC_Chat *chat, uint32_t peernumber)
  * Returns 0 on success.
  * Returns -1 on failure.
  */
-static int broadcast_gc_sanctions_list(GC_Chat *chat)
+int broadcast_gc_sanctions_list(GC_Chat *chat)
 {
     uint8_t packet[MAX_GC_PACKET_SIZE];
     int packet_len = make_gc_sanctions_list_packet(chat, packet, sizeof(packet));

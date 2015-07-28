@@ -132,6 +132,25 @@ bool mod_list_verify_sig_pk(const GC_Chat *chat, const uint8_t *sig_pk)
     return false;
 }
 
+/* Returns true if sig_pk is the designated sync moderator, which is defined as the
+ * moderator (or founder) who has the closest signature public key to the Chat ID.
+ */
+bool mod_list_chosen_one(const GC_Chat *chat, const uint8_t *sig_pk)
+{
+    uint16_t i;
+
+    for (i = 0; i < chat->moderation.num_mods; ++i) {
+        if (id_closest(CHAT_ID(chat->chat_public_key), sig_pk, chat->moderation.mod_list[i]) == 2)
+            return false;
+    }
+
+    if (id_closest(CHAT_ID(chat->chat_public_key), sig_pk,
+                   SIG_PK(chat->shared_state.founder_public_key)) == 2)
+        return false;
+
+    return true;
+}
+
 /* Removes moderator at index-th position in the moderator list.
  *
  * Returns 0 on success.
@@ -435,6 +454,7 @@ void sanctions_list_make_hash(struct GC_Sanction *sanctions, uint32_t new_versio
  *
  * Returns 0 on success.
  * Returns -1 on failure.
+ * Returns -2 if sanction type is SA_BAN and the ban_id is a duplicate.
  */
 static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction *sanction)
 {
@@ -456,6 +476,9 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
 
         if (sanction->ban_info.ip_port.ip.family == TCP_FAMILY)
             return -1;
+
+        if (sanctions_list_get_ban_time_set(chat, sanction->ban_info.id) != 0)
+            return -2;
     }
 
     uint8_t packed_data[sizeof(struct GC_Sanction)];
@@ -539,7 +562,7 @@ int sanctions_list_check_integrity(const GC_Chat *chat, struct GC_Sanction_Creds
     uint32_t i;
 
     for (i = 0; i < num_sanctions; ++i) {
-        if (sanctions_list_validate_entry(chat, &sanctions[i]) == -1)
+        if (sanctions_list_validate_entry(chat, &sanctions[i]) != 0)
             return -1;
     }
 
@@ -607,6 +630,22 @@ static int sanctions_list_remove_index(GC_Chat *chat, uint32_t index, struct GC_
     chat->moderation.num_sanctions = new_num;
 
     return 0;
+}
+
+/* Returns a new unique ban ID. */
+static uint32_t get_new_ban_id(const GC_Chat *chat)
+{
+    uint32_t i, new_id = 0;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type != SA_BAN)
+            continue;
+
+        if (chat->moderation.sanctions[i].ban_info.id >= new_id)
+            new_id = chat->moderation.sanctions[i].ban_info.id + 1;
+    }
+
+    return new_id;
 }
 
 /* Removes ban entry with ban_id from sanction list.
@@ -695,6 +734,53 @@ static bool sanctions_list_entry_exists(const GC_Chat *chat, struct GC_Sanction 
     return false;
 }
 
+static int sanctions_list_sign_entry(const GC_Chat *chat, struct GC_Sanction *sanction);
+
+/* Re-signs and re-assigns ban ID's for all sanctions entries with a ban ID equal to ban_id.
+ *
+ * Note: This function does not re-distribute the sanctions list to the group which
+ * you will probably want to do.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int sanctions_list_fix_ban_id(GC_Chat *chat, uint32_t ban_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
+        if (chat->moderation.sanctions[i].type != SA_BAN)
+            continue;
+
+        if (chat->moderation.sanctions[i].ban_info.id != ban_id)
+            continue;
+
+        struct GC_Sanction sanction;
+        memcpy(&sanction, &chat->moderation.sanctions[i], sizeof(struct GC_Sanction));
+
+        sanction.ban_info.id = get_new_ban_id(chat);
+
+        if (sanctions_list_remove_index(chat, i, NULL) == -1)
+            return -1;
+
+        if (sanctions_list_sign_entry(chat, &sanction) == -1)
+            return -1;
+
+        if (sanctions_list_add_entry(chat, &sanction, NULL) == -1) {
+            fprintf(stderr, "sanctions_list_add_entry failed in sanctions_list_fix_ban_id\n");
+            return -1;
+        }
+
+        if (sanctions_list_make_creds(chat) == -1)
+            return -1;
+
+        if (i >= chat->moderation.num_sanctions)
+            break;
+    }
+
+    return 0;
+}
+
 /* Adds an entry to the sanctions list. The entry is first validated and the resulting
  * new sanction list is compared against the new credentials if necessary.
  *
@@ -708,9 +794,26 @@ int sanctions_list_add_entry(GC_Chat *chat, struct GC_Sanction *sanction, struct
     if (chat->moderation.num_sanctions >= MAX_GC_SANCTIONS)
         return -1;   // TODO: remove oldest entry and continue
 
-    if (sanctions_list_validate_entry(chat, sanction) == -1) {
+
+    int ret = sanctions_list_validate_entry(chat, sanction);
+
+    if (ret == -1) {
         fprintf(stderr, "sanctions_list_validate_entry failed in add entry\n");
         return -1;
+    }
+
+    /* Duplicate ban ID: If we are the designated sync mod we re-assign the ID
+     * and re-distribute the fixed sanctions list. Otherwise we ignore it.
+     */
+    if (ret == -2) {
+        if (!mod_list_verify_sig_pk(chat, SIG_PK(chat->self_public_key)))
+            return -1;
+
+        if (!mod_list_chosen_one(chat, SIG_PK(chat->self_public_key)))
+            return -1;
+
+        if (sanctions_list_fix_ban_id(chat, sanction->ban_info.id) == -1)  // indirect recursion
+            return -1;
     }
 
     if (sanctions_list_entry_exists(chat, sanction))
@@ -749,6 +852,11 @@ int sanctions_list_add_entry(GC_Chat *chat, struct GC_Sanction *sanction, struct
     chat->moderation.sanctions = new_list;
     chat->moderation.num_sanctions = index + 1;
 
+    if (ret == -2) {
+        if (broadcast_gc_sanctions_list(chat) == -1)
+            return -1;
+    }
+
     return 0;
 }
 
@@ -768,22 +876,6 @@ static int sanctions_list_sign_entry(const GC_Chat *chat, struct GC_Sanction *sa
 
     return crypto_sign_detached(sanction->signature, NULL, packed_data, packed_len - SIGNATURE_SIZE,
                                 SIG_SK(chat->self_secret_key));
-}
-
-/* Returns a new unique ban ID. */
-static uint32_t get_new_ban_id(const GC_Chat *chat)
-{
-    uint32_t i, new_id = 0;
-
-    for (i = 0; i < chat->moderation.num_sanctions; ++i) {
-        if (chat->moderation.sanctions[i].type != SA_BAN)
-            continue;
-
-        if (chat->moderation.sanctions[i].ban_info.id >= new_id)
-            new_id = chat->moderation.sanctions[i].ban_info.id + 1;
-    }
-
-    return new_id;
 }
 
 /* Creates a new sanction entry for peernumber where type is one GROUP_SANCTION_TYPE.
@@ -823,7 +915,10 @@ int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanc
         return -1;
     }
 
-    return sanctions_list_make_creds(chat);
+    if (sanctions_list_make_creds(chat) == -1)
+        return -1;
+
+    return 0;
 }
 
 /* Replaces all sanction list signatures made by public_sig_key with the caller's.

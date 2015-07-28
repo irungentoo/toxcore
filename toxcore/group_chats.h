@@ -642,4 +642,11 @@ int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id,
 int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                               uint16_t length, uint64_t message_id, uint8_t packet_type);
 
+/* Sends the sanctions list to all peers in group.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+int broadcast_gc_sanctions_list(GC_Chat *chat);
+
 #endif  /* GROUP_CHATS_H */
