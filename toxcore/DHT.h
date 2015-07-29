@@ -104,7 +104,7 @@ typedef struct {
 } IPPTsPng;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[CLIENT_ID_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
 } Client_data;
@@ -353,11 +353,11 @@ int DHT_connect_after_load(DHT *dht);
 
 /* ROUTING FUNCTIONS */
 
-/* Send the given packet to node with client_id.
+/* Send the given packet to node with public_key.
  *
  *  return -1 if failure.
  */
-int route_packet(const DHT *dht, const uint8_t *client_id, const uint8_t *packet, uint16_t length);
+int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packet, uint16_t length);
 
 /* Send the following packet to everyone who tells us they are connected to friend_id.
  *
