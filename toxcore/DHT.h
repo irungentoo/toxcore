@@ -127,7 +127,7 @@ typedef struct {
 #define DHT_FRIEND_MAX_LOCKS 32
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[CLIENT_ID_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */

@@ -2340,7 +2340,7 @@ void do_messenger(Messenger *m)
 
                     LOGGER_TRACE("C[%2u] %s:%u [%3u] %s",
                                  client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                                 last_pinged, ID2String(cptr->client_id));
+                                 last_pinged, ID2String(cptr->public_key));
                 }
         }
 
@@ -2360,7 +2360,7 @@ void do_messenger(Messenger *m)
                 continue;
 
             for (dhtfriend = 0; dhtfriend < m->dht->num_friends; dhtfriend++)
-                if (id_equal(m->friendlist[friend].real_pk, m->dht->friends_list[dhtfriend].client_id)) {
+                if (id_equal(m->friendlist[friend].real_pk, m->dht->friends_list[dhtfriend].public_key)) {
                     m2dht[friend] = dhtfriend;
                     break;
                 }
@@ -2390,7 +2390,7 @@ void do_messenger(Messenger *m)
                              dht2m[friend], friend, msgfptr->name,
                              ID2String(msgfptr->real_pk));
             } else {
-                LOGGER_TRACE("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
+                LOGGER_TRACE("F[--:%2u] %s", friend, ID2String(dhtfptr->public_key));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2408,7 +2408,7 @@ void do_messenger(Messenger *m)
                         LOGGER_TRACE("F[%2u] => C[%2u] %s:%u [%3u] %s",
                                      friend, client, ip_ntoa(&assoc->ip_port.ip),
                                      ntohs(assoc->ip_port.port), last_pinged,
-                                     ID2String(cptr->client_id));
+                                     ID2String(cptr->public_key));
                     }
             }
         }

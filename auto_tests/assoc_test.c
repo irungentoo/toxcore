@@ -124,7 +124,7 @@ START_TEST(test_fillup)
 
     for (i = 0; i < 8; ++i) {
         for (j = 0; j < 8; ++j) {
-            if (id_equal(entri[j]->client_id, closest[i].id))
+            if (id_equal(entri[j]->public_key, closest[i].id))
                 ++good;
         }
     }
