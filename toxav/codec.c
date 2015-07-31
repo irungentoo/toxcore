@@ -307,6 +307,13 @@ static int init_audio_encoder(CSSession *cs)
         LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
         return -1;
     }
+    
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_INBAND_FEC(1));
+
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
 
     rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
 
