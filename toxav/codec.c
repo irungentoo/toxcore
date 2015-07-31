@@ -294,7 +294,7 @@ static int init_audio_encoder(CSSession *cs)
 {
     int rc = OPUS_OK;
     cs->audio_encoder = opus_encoder_create(cs->audio_encoder_sample_rate,
-                                            cs->audio_encoder_channels, OPUS_APPLICATION_AUDIO, &rc);
+                                            cs->audio_encoder_channels, OPUS_APPLICATION_VOIP, &rc);
 
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
