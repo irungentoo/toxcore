@@ -315,6 +315,14 @@ static int init_audio_encoder(CSSession *cs)
         return -1;
     }
 
+    /* Make codec resistant to up to 10% packet loss */
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_PACKET_LOSS_PERC(10));
+
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+
     rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
 
     if ( rc != OPUS_OK ) {
