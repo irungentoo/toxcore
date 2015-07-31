@@ -65,21 +65,21 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 10
 
-/* Compares client_id1 and client_id2 with client_id.
+/* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
- *  return 1 if client_id1 is closer.
- *  return 2 if client_id2 is closer.
+ *  return 1 if pk1 is closer.
+ *  return 2 if pk2 is closer.
  */
-int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2)
+int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 {
     size_t   i;
     uint8_t distance1, distance2;
 
-    for (i = 0; i < CLIENT_ID_SIZE; ++i) {
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
 
-        distance1 = id[i] ^ id1[i];
-        distance2 = id[i] ^ id2[i];
+        distance1 = pk[i] ^ pk1[i];
+        distance2 = pk[i] ^ pk2[i];
 
         if (distance1 < distance2)
             return 1;
@@ -105,7 +105,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
         int index = public_key[30] * MAX_KEYS_PER_SLOT + i;
 
         if (shared_keys->keys[index].stored) {
-            if (memcmp(public_key, shared_keys->keys[index].public_key, CLIENT_ID_SIZE) == 0) {
+            if (memcmp(public_key, shared_keys->keys[index].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
                 memcpy(shared_key, shared_keys->keys[index].shared_key, crypto_box_BEFORENMBYTES);
                 ++shared_keys->keys[index].times_requested;
                 shared_keys->keys[index].time_last_requested = unix_time();
@@ -134,7 +134,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
     if (num != (uint32_t)~0) {
         shared_keys->keys[curr].stored = 1;
         shared_keys->keys[curr].times_requested = 1;
-        memcpy(shared_keys->keys[curr].public_key, public_key, CLIENT_ID_SIZE);
+        memcpy(shared_keys->keys[curr].public_key, public_key, crypto_box_PUBLICKEYBYTES);
         memcpy(shared_keys->keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
         shared_keys->keys[curr].time_last_requested = unix_time();
     }
@@ -391,7 +391,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const u
         if ((ip_port.ip.family == AF_INET) && ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
             /* Initialize client timestamp. */
             list[i].assoc4.timestamp = temp_time;
-            memcpy(list[i].public_key, public_key, CLIENT_ID_SIZE);
+            memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
             LOGGER_DEBUG("coipil[%u]: switching public_key (ipv4)", i);
 
@@ -401,7 +401,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const u
         } else if ((ip_port.ip.family == AF_INET6) && ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
             /* Initialize client timestamp. */
             list[i].assoc6.timestamp = temp_time;
-            memcpy(list[i].public_key, public_key, CLIENT_ID_SIZE);
+            memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
             LOGGER_DEBUG("coipil[%u]: switching public_key (ipv6)", i);
 
