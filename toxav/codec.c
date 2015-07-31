@@ -308,6 +308,7 @@ static int init_audio_encoder(CSSession *cs)
         return -1;
     }
     
+    /* Enable in-band forward error correction in codec */
     rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_INBAND_FEC(1));
 
     if ( rc != OPUS_OK ) {
@@ -323,6 +324,7 @@ static int init_audio_encoder(CSSession *cs)
         return -1;
     }
 
+    /* Set algorithm to the highest complexity, maximizing compression */
     rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
 
     if ( rc != OPUS_OK ) {
