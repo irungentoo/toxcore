@@ -294,7 +294,7 @@ static int init_audio_encoder(CSSession *cs)
 {
     int rc = OPUS_OK;
     cs->audio_encoder = opus_encoder_create(cs->audio_encoder_sample_rate,
-                                            cs->audio_encoder_channels, OPUS_APPLICATION_AUDIO, &rc);
+                                            cs->audio_encoder_channels, OPUS_APPLICATION_VOIP, &rc);
 
     if ( rc != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
@@ -308,6 +308,23 @@ static int init_audio_encoder(CSSession *cs)
         return -1;
     }
 
+    /* Enable in-band forward error correction in codec */
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_INBAND_FEC(1));
+
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+
+    /* Make codec resistant to up to 10% packet loss */
+    rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_PACKET_LOSS_PERC(10));
+
+    if ( rc != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        return -1;
+    }
+
+    /* Set algorithm to the highest complexity, maximizing compression */
     rc = opus_encoder_ctl(cs->audio_encoder, OPUS_SET_COMPLEXITY(10));
 
     if ( rc != OPUS_OK ) {
