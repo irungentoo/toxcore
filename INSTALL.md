@@ -371,7 +371,7 @@ Now we will build libraries needed for audio/video: VPX and Opus.
 
 VPX:
 ```bash
-git clone http://git.chromium.org/webm/libvpx.git
+git clone https://chromium.googlesource.com/webm/libvpx
 cd libvpx
 git checkout tags/v1.3.0
 CROSS="$WINDOWS_TOOLCHAIN"- ./configure --target="$LIB_VPX_TARGET" --prefix="$PREFIX_DIR" --disable-examples --disable-unit-tests --disable-shared --enable-static
