@@ -2316,10 +2316,10 @@ uint32_t DHT_size(const DHT *dht)
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
-    uint32_t *data32 = (uint32_t *)data;
-    data32[0] = len;
-    data32[1] = (DHT_STATE_COOKIE_TYPE << 16) | type;
-    data += sizeof(uint32_t) * 2;
+    host_to_lendian32(data, len);
+    data += sizeof(uint32_t);
+    host_to_lendian32(data, (host_tolendian16(DHT_STATE_COOKIE_TYPE) << 16) | host_tolendian16(type));
+    data += sizeof(uint32_t);
     return data;
 }
 
@@ -2327,7 +2327,7 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 /* Save the DHT in data where data is an array of size DHT_size(). */
 void DHT_save(DHT *dht, uint8_t *data)
 {
-    *(uint32_t *)data = DHT_STATE_COOKIE_GLOBAL;
+    host_to_lendian32(data,  DHT_STATE_COOKIE_GLOBAL);
     data += sizeof(uint32_t);
 
     uint32_t num, i, j;
@@ -2455,9 +2455,10 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
     uint32_t cookie_len = sizeof(uint32_t);
 
     if (length > cookie_len) {
-        uint32_t *data32 = (uint32_t *)data;
+        uint32_t data32;
+        lendian_to_host32(&data32, data);
 
-        if (data32[0] == DHT_STATE_COOKIE_GLOBAL)
+        if (data32 == DHT_STATE_COOKIE_GLOBAL)
             return load_state(dht_load_state_callback, dht, data + cookie_len,
                               length - cookie_len, DHT_STATE_COOKIE_TYPE);
     }
