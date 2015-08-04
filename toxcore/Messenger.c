@@ -2567,9 +2567,8 @@ void messenger_save(const Messenger *m, uint8_t *data)
 
     uint32_t len;
     uint16_t type;
-    uint32_t *data32, size32 = sizeof(uint32_t);
+    uint32_t size32 = sizeof(uint32_t);
 
-    data32 = (uint32_t *)data;
     memset(data, 0, size32);
     data += size32;
     host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
