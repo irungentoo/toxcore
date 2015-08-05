@@ -674,10 +674,10 @@ static int cmp_dht_entry(const void *a, const void *b)
  * return 0 if node can't be stored.
  * return 1 if it can.
  */
-static unsigned int store_node_ok(const Client_data *client, const uint8_t *public_key, const uint8_t *comp_client_id)
+static unsigned int store_node_ok(const Client_data *client, const uint8_t *public_key, const uint8_t *comp_public_key)
 {
     if ((is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
-            || (id_closest(comp_client_id, client->public_key, public_key) == 2)) {
+            || (id_closest(comp_public_key, client->public_key, public_key) == 2)) {
         return 1;
     } else {
         return 0;
@@ -687,13 +687,13 @@ static unsigned int store_node_ok(const Client_data *client, const uint8_t *publ
 /* Replace a first bad (or empty) node with this one
  *  or replace a possibly bad node (tests failed or not done yet)
  *  that is further than any other in the list
- *  from the comp_client_id
+ *  from the comp_public_key
  *  or replace a good node that is further
- *  than any other in the list from the comp_client_id
+ *  than any other in the list from the comp_public_key
  *  and further than public_key.
  *
  * Do not replace any node if the list has no bad or possibly bad nodes
- *  and all nodes in the list are closer to comp_client_id
+ *  and all nodes in the list are closer to comp_public_key
  *  than public_key.
  *
  *  returns True(1) when the item was stored, False(0) otherwise */
@@ -701,17 +701,17 @@ static int replace_all(   Client_data    *list,
                           uint16_t        length,
                           const uint8_t  *public_key,
                           IP_Port         ip_port,
-                          const uint8_t  *comp_client_id )
+                          const uint8_t  *comp_public_key )
 {
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 0;
 
-    memcpy(cmp_public_key, comp_client_id, crypto_box_PUBLICKEYBYTES);
+    memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
     qsort(list, length, sizeof(Client_data), cmp_dht_entry);
 
     Client_data *client = &list[0];
 
-    if (store_node_ok(client, public_key, comp_client_id)) {
+    if (store_node_ok(client, public_key, comp_public_key)) {
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
 
