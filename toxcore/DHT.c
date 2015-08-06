@@ -1163,10 +1163,10 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count)
 {
-    int friend_num = friend_number(dht, client_id);
+    int friend_num = friend_number(dht, public_key);
 
     uint16_t lock_num;
 
@@ -1197,7 +1197,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *
     dht->friends_list = temp;
     DHT_Friend *friend = &dht->friends_list[dht->num_friends];
     memset(friend, 0, sizeof(DHT_Friend));
-    memcpy(friend->public_key, client_id, CLIENT_ID_SIZE);
+    memcpy(friend->public_key, public_key, CLIENT_ID_SIZE);
 
     friend->nat.NATping_id = random_64b();
     ++dht->num_friends;
@@ -1219,7 +1219,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *
 
         Assoc_close_entries close_entries;
         memset(&close_entries, 0, sizeof(close_entries));
-        close_entries.wanted_id = client_id;
+        close_entries.wanted_id = public_key;
         close_entries.count_good = MAX_FRIEND_CLIENTS / 2;
         close_entries.count = MAX_FRIEND_CLIENTS;
         close_entries.result = calloc(MAX_FRIEND_CLIENTS, sizeof(*close_entries.result));
@@ -1234,10 +1234,10 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *
             Client_data *client = &friend->client_list[0];
 
             if (ipport_isset(&client->assoc4.ip_port))
-                getnodes(dht, client->assoc4.ip_port, client->client_id, friend->client_id, NULL);
+                getnodes(dht, client->assoc4.ip_port, client->public_key, friend->public_key, NULL);
 
             if (ipport_isset(&client->assoc6.ip_port))
-                getnodes(dht, client->assoc6.ip_port, client->client_id, friend->client_id, NULL);
+                getnodes(dht, client->assoc6.ip_port, client->public_key, friend->public_key, NULL);
         }
     }
 
@@ -1246,9 +1246,9 @@ int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *
     return 0;
 }
 
-int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count)
+int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
 {
-    int friend_num = friend_number(dht, client_id);
+    int friend_num = friend_number(dht, public_key);
 
     if (friend_num == -1) {
         return -1;
