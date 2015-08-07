@@ -138,7 +138,7 @@ void rtp_kill ( RTPSession *session )
 {
     if ( !session ) return;
 
-	rtp_stop_receiving (session);
+    rtp_stop_receiving (session);
 
     free ( session->ext_header );
     free ( session->csrc );
@@ -153,6 +153,7 @@ void rtp_kill ( RTPSession *session )
     LOGGER_DEBUG("Terminated RTP session: %p", session);
 
     /* And finally free session */
+    free ( session->rtcp_session );
     free ( session );
 }
 int rtp_do(RTPSession *session)

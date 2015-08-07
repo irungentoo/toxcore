@@ -91,7 +91,6 @@ struct toxav_thread_data {
 const char* vdout = "AV Test"; /* Video output */
 PaStream* adout = NULL; /* Audio output */
 
-
 typedef struct {
     uint16_t size;
     int16_t data[];
@@ -117,7 +116,6 @@ void* pa_write_thread (void* d)
         }
     }
 }
-
 
 /**
  * Callbacks 
@@ -206,7 +204,6 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
         assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
     }
 }
-
 
 /**
  */
@@ -374,7 +371,6 @@ int send_opencv_img(ToxAV* av, uint32_t friend_number, const IplImage* img)
     free(planes[2]);
     return rc;
 }
-
 int print_audio_devices()
 {
     int i = 0;
@@ -386,7 +382,6 @@ int print_audio_devices()
     
     return 0;
 }
-
 int print_help (const char* name)
 {
     printf("Usage: %s -[a:v:o:dh]\n"

@@ -117,6 +117,7 @@ void ac_kill(ACSession* ac)
         return;
     
     opus_encoder_destroy(ac->encoder);
+    opus_encoder_destroy(ac->test_encoder);
     opus_decoder_destroy(ac->decoder);
     jbuf_free(ac->j_buf);
     

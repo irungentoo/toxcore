@@ -490,12 +490,12 @@ namespace video {
      *
      * @param friend_number The friend number of the friend for which to set the
      * video bit rate.
-     * @param audio_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
+     * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
      * video sending.
      * @param force True if the bit rate change is forceful.
      * 
      */
-    bool set(uint32_t friend_number, uint32_t audio_bit_rate, bool force) with error for set_bit_rate;
+    bool set(uint32_t friend_number, uint32_t video_bit_rate, bool force) with error for set_bit_rate;
   }
 }
 /*******************************************************************************
