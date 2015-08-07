@@ -1684,6 +1684,9 @@ bool tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, s
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_PERMISSIONS);
             return 0;
         case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_FAIL_CREATE);
+            return 0;
+        case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_FAIL_SEND);
             return 0;
     }

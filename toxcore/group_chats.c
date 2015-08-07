@@ -50,6 +50,9 @@
                                      + sizeof(uint8_t) + sizeof(uint16_t) + MAX_GC_PASSWD_SIZE\
                                      + GC_MODERATION_HASH_SIZE + sizeof(uint32_t))
 
+/* Minimum size of a topic packet; includes topic length, public signature key, and the topic version */
+#define GC_MIN_PACKED_TOPIC_INFO_SIZE (sizeof(uint16_t) + SIG_PUBLIC_KEY + sizeof(uint32_t))
+
 #define GC_SHARED_STATE_ENC_PACKET_SIZE (HASH_ID_BYTES + SIGNATURE_SIZE + GC_PACKED_SHARED_STATE_SIZE)
 
 /* Header information attached to all broadcast messages. broadcast_type, public key hash, timestamp */
@@ -65,10 +68,12 @@
 #define MAX_GC_PACKET_SIZE 65507
 
 /* approximation of the sync response packet size limit */
-#define MAX_GC_NUM_PEERS ((MAX_GC_PACKET_SIZE - MAX_GC_TOPIC_SIZE - sizeof(uint16_t)) / (ENC_PUBLIC_KEY + sizeof(IP_Port)))
+#define MAX_GC_NUM_PEERS (MAX_GC_PACKET_SIZE / (ENC_PUBLIC_KEY + sizeof(IP_Port)))
 
-/* Size of a ping packet which contains a peer count, the shared state version, and the sanctions list version */
-#define GC_PING_PACKET_DATA_SIZE (sizeof(uint32_t) * 3)
+/* Size of a ping packet which contains a peer count, the shared state version,
+ * the sanctions list version and the topic version
+ */
+#define GC_PING_PACKET_DATA_SIZE (sizeof(uint32_t) * 4)
 
 static int groupnumber_valid(const GC_Session *c, int groupnumber);
 static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *public_key);
@@ -380,6 +385,7 @@ static int sign_gc_shared_state(GC_Chat *chat);
 static int broadcast_gc_mod_list(GC_Chat *chat);
 static int broadcast_gc_shared_state(GC_Chat *chat);
 static int update_gc_sanctions_list(GC_Chat *chat, const uint8_t *public_sig_key);
+static int update_gc_topic(GC_Chat *chat, const uint8_t *public_sig_key);
 
 /* Removes the first found offline mod from the mod list.
  * Re-broadcasts the shared state and moderator list on success, as well
@@ -426,6 +432,9 @@ static int prune_gc_mod_list(GC_Chat *chat)
         return -1;
 
     if (update_gc_sanctions_list(chat,  public_sig_key) == -1)
+        return -1;
+
+    if (update_gc_topic(chat, public_sig_key) == -1)
         return -1;
 
     return 0;
@@ -609,6 +618,59 @@ static uint16_t unpack_gc_shared_state(GC_SharedState *shared_state, const uint8
     memcpy(shared_state->mod_list_hash, data + len_processed, GC_MODERATION_HASH_SIZE);
     len_processed += GC_MODERATION_HASH_SIZE;
     bytes_to_U32(&shared_state->version, data + len_processed);
+    len_processed += sizeof(uint32_t);
+
+    return len_processed;
+}
+
+/* Packs topic info into data. data must have room for at least
+ * topic length + GC_MIN_PACKED_TOPIC_INFO_SIZE bytes.
+ *
+ * Returns packed data length.
+ */
+static uint16_t pack_gc_topic_info(uint8_t *data, uint16_t length, const GC_TopicInfo *topic_info)
+{
+    if (length < topic_info->length + GC_MIN_PACKED_TOPIC_INFO_SIZE)
+        return 0;
+
+    uint16_t packed_len = 0;
+
+    U16_to_bytes(data + packed_len, topic_info->length);
+    packed_len += sizeof(uint16_t);
+    memcpy(data + packed_len, topic_info->topic, topic_info->length);
+    packed_len += topic_info->length;
+    memcpy(data + packed_len, topic_info->public_sig_key, SIG_PUBLIC_KEY);
+    packed_len += SIG_PUBLIC_KEY;
+    U32_to_bytes(data + packed_len, topic_info->version);
+    packed_len += sizeof(uint32_t);
+
+    return packed_len;
+}
+
+/* Unpacks topic info into topic_info.
+ *
+ * Returns -1 on failure.
+ * Returns the length of the processed data.
+ */
+static int unpack_gc_topic_info(GC_TopicInfo *topic_info, const uint8_t *data, uint16_t length)
+{
+    if (length < sizeof(uint16_t))
+        return -1;
+
+    uint16_t len_processed = 0;
+
+    bytes_to_U16(&topic_info->length, data + len_processed);
+    len_processed += sizeof(uint16_t);
+    topic_info->length = MIN(topic_info->length, MAX_GC_TOPIC_SIZE);
+
+    if (length - sizeof(uint16_t) < topic_info->length + SIG_PUBLIC_KEY + sizeof(uint32_t))
+        return -1;
+
+    memcpy(topic_info->topic, data + len_processed, topic_info->length);
+    len_processed += topic_info->length;
+    memcpy(topic_info->public_sig_key, data + len_processed, SIG_PUBLIC_KEY);
+    len_processed += SIG_PUBLIC_KEY;
+    bytes_to_U32(&topic_info->version, data + len_processed);
     len_processed += sizeof(uint32_t);
 
     return len_processed;
@@ -871,7 +933,7 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
 static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                    uint32_t length)
 {
-    if (length <= sizeof(uint16_t))
+    if (length <= sizeof(uint32_t))
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -885,24 +947,9 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
 
     chat->gcc[peernumber].pending_sync_request = false;
 
-    uint32_t unpacked_len = 0;
-
-    bytes_to_U16(&(chat->topic_len), data);
-    unpacked_len += sizeof(uint16_t);
-    chat->topic_len = MIN(MAX_GC_TOPIC_SIZE, chat->topic_len);
-
-    if (length - unpacked_len <= chat->topic_len)
-        return -1;
-
-    memcpy(chat->topic, data + unpacked_len, chat->topic_len);
-    unpacked_len += chat->topic_len;
-
-    if (length - unpacked_len <= sizeof(uint32_t))
-        return -1;
-
     uint32_t num_peers;
-    bytes_to_U32(&num_peers, data + unpacked_len);
-    unpacked_len += sizeof(uint32_t);
+    bytes_to_U32(&num_peers, data);
+    uint32_t unpacked_len = sizeof(uint32_t);
 
     if (num_peers == 0 || num_peers > MAX_GC_NUM_PEERS)
         return -1;
@@ -963,9 +1010,10 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, uint32_t peern
 static int send_peer_shared_state(GC_Chat *chat, uint32_t peernumber);
 static int send_peer_mod_list(GC_Chat *chat, uint32_t peernumber);
 static int send_peer_sanctions_list(GC_Chat *chat, uint32_t peernumber);
+static int send_peer_topic(GC_Chat *chat, uint32_t peernumber);
 
-/* Handles a sync request packet and sends a response containing the topic, topic len, and peer list.
- * Additionally sends the group shared state and mod list in two respective separate packets.
+/* Handles a sync request packet and sends a response containing the peer list.
+ * Additionally sends the group topic, shared state, mod list and sanctions list in respective packets.
  *
  * If the group is password protected the password in the request data must first be verified.
  *
@@ -989,7 +1037,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     uint32_t req_num_peers;
     bytes_to_U32(&req_num_peers, data);
 
-    /* Sync request is not necessary */
+    /* Sync is not necessary */
     if (req_num_peers > 0 && req_num_peers >= get_gc_confirmed_numpeers(chat))
         return 0;
 
@@ -1001,6 +1049,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
             return -1;
     }
 
+    /* Do not change the order of these four calls or else */
     if (send_peer_shared_state(chat, peernumber) == -1)
         return -1;
 
@@ -1010,20 +1059,17 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, uint32_t 
     if (send_peer_sanctions_list(chat, peernumber) == -1)
         return -1;
 
+    if (send_peer_topic(chat, peernumber) == -1)
+        return -1;
+
     uint8_t response[MAX_GC_PACKET_SIZE];
     U32_to_bytes(response, chat->self_public_key_hash);
     uint32_t len = HASH_ID_BYTES;
 
-    /* Response packet contains: topic len, topic, peer list */
-    U16_to_bytes(response + len, chat->topic_len);
-    len += sizeof(uint16_t);
-    memcpy(response + len, chat->topic, chat->topic_len);
-    len += chat->topic_len;
-
     size_t packed_addrs_size = (ENC_PUBLIC_KEY + sizeof(IP_Port)) * (chat->numpeers - 1);   /* approx. */
 
     /* This is the technical limit to the number of peers you can have in a group (TODO: split packet?) */
-    if ((HASH_ID_BYTES + packed_addrs_size + sizeof(uint16_t) + chat->topic_len) > MAX_GC_PACKET_SIZE)
+    if (HASH_ID_BYTES + packed_addrs_size > sizeof(response))
         return -1;
 
     GC_PeerAddress *peer_addrs = calloc(1, sizeof(GC_PeerAddress) * (chat->numpeers - 1));
@@ -1395,14 +1441,16 @@ static void do_gc_peer_state_sync(GC_Chat *chat, GC_Connection *gconn, uint32_t 
     if (length != GC_PING_PACKET_DATA_SIZE)
         return;
 
-    uint32_t other_num_peers, sstate_version, screds_version;
+    uint32_t other_num_peers, sstate_version, screds_version, topic_version;
     bytes_to_U32(&other_num_peers, sync_data);
     bytes_to_U32(&sstate_version, sync_data + sizeof(uint32_t));
     bytes_to_U32(&screds_version, sync_data + (sizeof(uint32_t) * 2));
+    bytes_to_U32(&topic_version, sync_data + (sizeof(uint32_t) * 3));
 
     if (other_num_peers > get_gc_confirmed_numpeers(chat)
         || sstate_version > chat->shared_state.version
-        || screds_version > chat->moderation.sanctions_creds.version) {
+        || screds_version > chat->moderation.sanctions_creds.version
+        || topic_version > chat->topic_info.version) {
 
         if (gconn->pending_state_sync) {
             send_gc_sync_request(chat, peernumber, 0);
@@ -1473,7 +1521,7 @@ int gc_set_self_status(Messenger *m, int groupnumber, uint8_t status)
     return 0;
 }
 
-static int handle_bc_change_status(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+static int handle_bc_status(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                    uint32_t length)
 {
     if (length != sizeof(uint8_t))
@@ -2135,7 +2183,7 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
     memcpy(chat->group[0].nick, nick, length);
     chat->group[0].nick_len = length;
 
-    if (send_gc_broadcast_message(chat, nick, length, GM_CHANGE_NICK) == -1)
+    if (send_gc_broadcast_message(chat, nick, length, GM_NICK) == -1)
         return -5;
 
     return 0;
@@ -2193,8 +2241,8 @@ int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peernumber)
     return chat->group[peernumber].nick_len;
 }
 
-static int handle_bc_nick_change(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *nick,
-                                 uint32_t length)
+static int handle_bc_nick(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *nick,
+                          uint32_t length)
 {
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
@@ -2215,46 +2263,156 @@ static int handle_bc_nick_change(Messenger *m, int groupnumber, uint32_t peernum
     return 0;
 }
 
-/* Sets the group topic.
+/* Creates a topic packet and puts it in data. Packet includes the topic, topic length,
+ * public signature key of the setter, topic version, and the signature.
  *
+ * Returns packet length on success.
+ * Returns -1 on failure.
+ */
+static int make_gc_topic_packet(GC_Chat *chat, uint8_t *data, uint16_t length)
+{
+    if (length < HASH_ID_BYTES + SIGNATURE_SIZE + chat->topic_info.length + GC_MIN_PACKED_TOPIC_INFO_SIZE)
+        return -1;
+
+    U32_to_bytes(data, chat->self_public_key_hash);
+    uint16_t data_length = HASH_ID_BYTES;
+
+    memcpy(data + data_length, chat->topic_sig, SIGNATURE_SIZE);
+    data_length += SIGNATURE_SIZE;
+
+    uint16_t packed_len = pack_gc_topic_info(data + data_length, length - data_length, &chat->topic_info);
+    data_length += packed_len;
+
+    if (packed_len != chat->topic_info.length + GC_MIN_PACKED_TOPIC_INFO_SIZE)
+        return -1;
+
+    return data_length;
+}
+
+/* Sends the group topic to peernumber.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int send_peer_topic(GC_Chat *chat, uint32_t peernumber)
+{
+    uint8_t packet[HASH_ID_BYTES + SIGNATURE_SIZE + chat->topic_info.length + GC_MIN_PACKED_TOPIC_INFO_SIZE];
+    int packet_len = make_gc_topic_packet(chat, packet, sizeof(packet));
+
+    if (packet_len != sizeof(packet))
+        return -1;
+
+    if (send_lossless_group_packet(chat, peernumber, packet, packet_len, GP_TOPIC) == -1)
+        return -1;
+
+    return 0;
+}
+
+/* Sends the group topic to all group members.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int broadcast_gc_topic(GC_Chat *chat)
+{
+    uint8_t packet[HASH_ID_BYTES + SIGNATURE_SIZE + chat->topic_info.length + GC_MIN_PACKED_TOPIC_INFO_SIZE];
+    int packet_len = make_gc_topic_packet(chat, packet, sizeof(packet));
+
+    if (packet_len != sizeof(packet))
+        return -1;
+
+    send_gc_packet_all_peers(chat, packet, packet_len, GP_TOPIC);
+    return 0;
+}
+
+/* Sets the group topic and broadcasts it to the group. Setter must be a moderator or founder.
+ *
+ * Returns 0 on success.
  * Returns -1 if the topic is too long.
- * Returns -2 if the caller has the observer role.
- * Returns -3 if the packet fails to send.
+ * Returns -2 if the caller does not have the required permissions to set the topic.
+ * Returns -3 if the packet cannot be created or signing fails.
+ * Returns -4 if the packet fails to send.
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length)
 {
     if (length > MAX_GC_TOPIC_SIZE)
         return -1;
 
-    if (chat->group[0].role >= GR_OBSERVER)
+    if (chat->group[0].role > GR_MODERATOR)
         return -2;
 
-    memcpy(chat->topic, topic, length);
-    chat->topic_len = length;
+    GC_TopicInfo old_topic_info;
+    uint8_t old_topic_sig[SIGNATURE_SIZE];
+    memcpy(&old_topic_info, &chat->topic_info, sizeof(GC_TopicInfo));
+    memcpy(old_topic_sig, chat->topic_sig, SIGNATURE_SIZE);
 
-    if (send_gc_broadcast_message(chat, topic, length, GM_CHANGE_TOPIC) == -1)
-        return -3;
+    if (chat->topic_info.version != UINT32_MAX)   /* TODO: improbable, but an overflow would break everything */
+        ++chat->topic_info.version;
+
+    chat->topic_info.length = length;
+    memcpy(chat->topic_info.topic, topic, length);
+    memcpy(chat->topic_info.public_sig_key, SIG_PK(chat->self_public_key), SIG_PUBLIC_KEY);
+
+    int err = -3;
+    uint8_t packed_topic[length + GC_MIN_PACKED_TOPIC_INFO_SIZE];
+    uint16_t packed_len = pack_gc_topic_info(packed_topic, sizeof(packed_topic), &chat->topic_info);
+
+    if (packed_len != sizeof(packed_topic))
+        goto on_error;
+
+    if (crypto_sign_detached(chat->topic_sig, NULL, packed_topic, packed_len, SIG_SK(chat->self_secret_key)) == -1)
+        goto on_error;
+
+    if (broadcast_gc_topic(chat) == -1) {
+        err = -4;
+        goto on_error;
+    }
 
     return 0;
+
+on_error:
+    memcpy(&chat->topic_info, &old_topic_info, sizeof(GC_TopicInfo));
+    memcpy(chat->topic_sig, old_topic_sig, SIGNATURE_SIZE);
+    return err;
 }
 
  /* Copies the group topic to topic. */
 void gc_get_topic(const GC_Chat *chat, uint8_t *topic)
 {
     if (topic)
-        memcpy(topic, chat->topic, chat->topic_len);
+        memcpy(topic, chat->topic_info.topic, chat->topic_info.length);
 }
 
  /* Returns topic length. */
 uint16_t gc_get_topic_size(const GC_Chat *chat)
 {
-    return chat->topic_len;
+    return chat->topic_info.length;
 }
 
-static int handle_bc_change_topic(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
-                                  uint32_t length)
+/* If public_sig_key is equal to the key of the topic setter, replaces topic credentials
+ * and re-broadcast the updated topic info to the group.
+ *
+ * Returns 0 on success
+ * Returns -1 on failure.
+ */
+static int update_gc_topic(GC_Chat *chat, const uint8_t *public_sig_key)
 {
-    if (length > MAX_GC_TOPIC_SIZE)
+    if (memcmp(public_sig_key, chat->topic_info.public_sig_key, SIG_PUBLIC_KEY) != 0)
+        return 0;
+
+    if (gc_set_topic(chat, chat->topic_info.topic, chat->topic_info.length) != 0)
+        return -1;
+
+    return 0;
+}
+
+static int handle_gc_topic(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                           uint32_t length)
+{
+    if (length > SIGNATURE_SIZE + MAX_GC_TOPIC_SIZE + GC_MIN_PACKED_TOPIC_INFO_SIZE)
+        return -1;
+
+    if (length < SIGNATURE_SIZE + GC_MIN_PACKED_TOPIC_INFO_SIZE)
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -2263,14 +2421,30 @@ static int handle_bc_change_topic(Messenger *m, int groupnumber, uint32_t peernu
     if (chat == NULL)
         return -1;
 
-    if (chat->group[peernumber].role >= GR_OBSERVER)
+    GC_TopicInfo topic_info;
+    int unpacked_len = unpack_gc_topic_info(&topic_info, data + SIGNATURE_SIZE, length - SIGNATURE_SIZE);
+
+    if (unpacked_len == -1)
+        return -1;
+
+    if (!mod_list_verify_sig_pk(chat, topic_info.public_sig_key))
+        return -1;
+
+    uint8_t signature[SIGNATURE_SIZE];
+    memcpy(signature, data, SIGNATURE_SIZE);
+
+    if (crypto_sign_verify_detached(signature, data + SIGNATURE_SIZE, length - SIGNATURE_SIZE,
+                                    topic_info.public_sig_key) == -1)
+        return -1;
+
+    if (topic_info.version < chat->topic_info.version)
         return 0;
 
-    memcpy(chat->topic, data, length);
-    chat->topic_len = length;
+    memcpy(&chat->topic_info, &topic_info, sizeof(GC_TopicInfo));
+    memcpy(chat->topic_sig, signature, SIGNATURE_SIZE);
 
-    if (c->topic_change)
-        (*c->topic_change)(m, groupnumber, peernumber, data, length, c->topic_change_userdata);
+    if (chat->connection_state == CS_CONNECTED && c->topic_change)
+        (*c->topic_change)(m, groupnumber, peernumber, topic_info.topic, topic_info.length, c->topic_change_userdata);
 
     return 0;
 }
@@ -2417,6 +2591,9 @@ int founder_gc_set_moderator(GC_Chat *chat, uint32_t peernumber, bool add_mod)
             return -1;
 
         if (update_gc_sanctions_list(chat,  SIG_PK(chat->gcc[peernumber].addr.public_key)) == -1)
+            return -1;
+
+        if (update_gc_topic(chat, SIG_PK(chat->gcc[peernumber].addr.public_key)) == -1)
             return -1;
     }
 
@@ -3173,7 +3350,10 @@ static int handle_gc_hs_response_ack(Messenger *m, int groupnumber, uint32_t pee
     GC_Connection *gconn = &chat->gcc[peernumber];
     gconn->handshaked = true;
 
-    return gcc_handle_ack(gconn, 1);
+    if (gcc_handle_ack(gconn, 1) == -1)
+        return -1;
+
+    return 0;
 }
 
 /* Toggles ignore for peernumber.
@@ -3217,11 +3397,9 @@ static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumbe
 
     switch (broadcast_type) {
         case GM_STATUS:
-            return handle_bc_change_status(m, groupnumber, peernumber, message, m_len);
-        case GM_CHANGE_NICK:
-            return handle_bc_nick_change(m, groupnumber, peernumber, message, m_len);
-        case GM_CHANGE_TOPIC:
-            return handle_bc_change_topic(m, groupnumber, peernumber, message, m_len);
+            return handle_bc_status(m, groupnumber, peernumber, message, m_len);
+        case GM_NICK:
+            return handle_bc_nick(m, groupnumber, peernumber, message, m_len);
         case GM_ACTION_MESSAGE:
         /* fallthrough */
         case GM_PLAIN_MESSAGE:
@@ -3620,6 +3798,8 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber
             return handle_gc_invite_request(m, groupnumber, peernumber, data, length);
         case GP_INVITE_RESPONSE:
             return handle_gc_invite_response(m, groupnumber, peernumber, data, length);
+        case GP_TOPIC:
+            return handle_gc_topic(m, groupnumber, peernumber, data, length);
         case GP_SHARED_STATE:
             return handle_gc_shared_state(m, groupnumber, peernumber, data, length);
         case GP_MOD_LIST:
@@ -4204,6 +4384,7 @@ static void ping_group(GC_Chat *chat)
     U32_to_bytes(data + HASH_ID_BYTES, num_confirmed_peers);
     U32_to_bytes(data + HASH_ID_BYTES + sizeof(uint32_t), chat->shared_state.version);
     U32_to_bytes(data + HASH_ID_BYTES + (sizeof(uint32_t) * 2), chat->moderation.sanctions_creds.version);
+    U32_to_bytes(data + HASH_ID_BYTES + (sizeof(uint32_t) * 3), chat->topic_info.version);
 
     uint32_t i;
 
@@ -4432,8 +4613,6 @@ static int create_new_group(GC_Session *c, bool founder)
     chat->numpeers = 0;
     chat->connection_state = CS_DISCONNECTED;
     chat->net = m->net;
-    memcpy(chat->topic, " ", 1);
-    chat->topic_len = 1;
     chat->last_get_nodes_attempt = unix_time();
     chat->last_sent_ping_time = unix_time();
     chat->announce_search_timer = unix_time();
@@ -4524,10 +4703,14 @@ int gc_group_load(GC_Session *c, struct SAVED_GROUP *save)
     chat->shared_state.version = ntohl(save->sstate_version);
     memcpy(chat->shared_state_sig, save->sstate_signature, SIGNATURE_SIZE);
 
+    chat->topic_info.length = ntohs(save->topic_len);
+    memcpy(chat->topic_info.topic, save->topic, MAX_GC_TOPIC_SIZE);
+    memcpy(chat->topic_info.public_sig_key, save->topic_public_sig_key, SIG_PUBLIC_KEY);
+    chat->topic_info.version = ntohl(save->topic_version);
+    memcpy(chat->topic_sig, save->topic_signature, SIGNATURE_SIZE);
+
     memcpy(chat->chat_public_key, save->chat_public_key, EXT_PUBLIC_KEY);
     memcpy(chat->chat_secret_key, save->chat_secret_key, EXT_SECRET_KEY);
-    chat->topic_len = ntohs(save->topic_len);
-    memcpy(chat->topic, save->topic, MAX_GC_TOPIC_SIZE);
 
     uint16_t num_mods = ntohs(save->num_mods);
     if (mod_list_unpack(chat, save->mod_list, num_mods * GC_MOD_LIST_ENTRY_SIZE, num_mods) == -1)
@@ -4607,6 +4790,11 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
     }
 
     if (init_gc_sanctions_creds(chat) == -1) {
+        group_delete(c, chat);
+        return -5;
+    }
+
+    if (gc_set_topic(chat, " ", 1) != 0) {
         group_delete(c, chat);
         return -5;
     }

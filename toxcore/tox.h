@@ -2905,6 +2905,11 @@ typedef enum TOX_ERR_GROUP_TOPIC_SET {
     TOX_ERR_GROUP_TOPIC_SET_PERMISSIONS,
 
     /**
+     * The packet could not be created. This error is usually related to cryptographic signing.
+     */
+    TOX_ERR_GROUP_TOPIC_SET_FAIL_CREATE,
+
+    /**
      * The packet failed to send.
      */
     TOX_ERR_GROUP_TOPIC_SET_FAIL_SEND,

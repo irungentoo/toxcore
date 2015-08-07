@@ -105,8 +105,7 @@ typedef enum GROUP_JOIN_REJECTED {
 
 typedef enum GROUP_BROADCAST_TYPE {
     GM_STATUS,
-    GM_CHANGE_NICK,
-    GM_CHANGE_TOPIC,
+    GM_NICK,
     GM_PLAIN_MESSAGE,
     GM_ACTION_MESSAGE,
     GM_PRVT_MESSAGE,
@@ -119,24 +118,25 @@ typedef enum GROUP_BROADCAST_TYPE {
 
 typedef enum GROUP_PACKET_TYPE {
     /* lossy packets (ID 0 is reserved) */
-    GP_PING = 1,
-    GP_MESSAGE_ACK = 2,
-    GP_INVITE_RESPONSE_REJECT = 3,
-    GP_TCP_RELAYS = 4,
+    GP_PING                     = 1,
+    GP_MESSAGE_ACK              = 2,
+    GP_INVITE_RESPONSE_REJECT   = 3,
+    GP_TCP_RELAYS               = 4,
 
     /* lossless packets */
-    GP_BROADCAST = 20,
-    GP_PEER_INFO_REQUEST = 21,
-    GP_PEER_INFO_RESPONSE = 22,
-    GP_INVITE_REQUEST = 23,
-    GP_INVITE_RESPONSE = 24,
-    GP_SYNC_REQUEST = 25,
-    GP_SYNC_RESPONSE = 26,
-    GP_SHARED_STATE = 27,
-    GP_MOD_LIST = 28,
-    GP_SANCTIONS_LIST = 29,
-    GP_FRIEND_INVITE = 30,
-    GP_HS_RESPONSE_ACK = 31,
+    GP_BROADCAST                = 243,
+    GP_PEER_INFO_REQUEST        = 244,
+    GP_PEER_INFO_RESPONSE       = 245,
+    GP_INVITE_REQUEST           = 246,
+    GP_INVITE_RESPONSE          = 247,
+    GP_SYNC_REQUEST             = 248,
+    GP_SYNC_RESPONSE            = 249,
+    GP_TOPIC                    = 250,
+    GP_SHARED_STATE             = 251,
+    GP_MOD_LIST                 = 252,
+    GP_SANCTIONS_LIST           = 253,
+    GP_FRIEND_INVITE            = 254,
+    GP_HS_RESPONSE_ACK          = 255,
 } GROUP_PACKET_TYPE;
 
 typedef enum GROUP_HANDSHAKE_JOIN_TYPE {
@@ -189,6 +189,13 @@ typedef struct {
     uint32_t    version;
 } GC_SharedState;
 
+typedef struct {
+    uint8_t     topic[MAX_GC_TOPIC_SIZE];
+    uint16_t    length;
+    uint8_t     public_sig_key[SIG_PUBLIC_KEY];   /* Public signature key of the topic setter */
+    uint32_t    version;
+} GC_TopicInfo;
+
 typedef struct GC_Announce GC_Announce;
 typedef struct GC_Connection GC_Connection;
 
@@ -199,8 +206,12 @@ typedef struct GC_Chat {
     GC_GroupPeer    *group;
     GC_Connection   *gcc;
     GC_Moderation   moderation;
+
     GC_SharedState  shared_state;
-    uint8_t     shared_state_sig[SIGNATURE_SIZE];    /* Signed by founder using the chat secret key */
+    uint8_t         shared_state_sig[SIGNATURE_SIZE];    /* Signed by founder using the chat secret key */
+
+    GC_TopicInfo    topic_info;
+    uint8_t         topic_sig[SIGNATURE_SIZE];    /* Signed by a moderator or the founder */
 
     uint32_t    numpeers;
     int         groupnumber;
@@ -213,8 +224,6 @@ typedef struct GC_Chat {
     uint8_t     self_secret_key[EXT_SECRET_KEY];
     uint32_t    self_public_key_hash;
 
-    uint8_t     topic[MAX_GC_TOPIC_SIZE];
-    uint16_t    topic_len;
 
     uint8_t     connection_state;
     uint64_t    last_join_attempt;
@@ -287,11 +296,16 @@ struct SAVED_GROUP {
     uint32_t  sstate_version;
     uint8_t   sstate_signature[SIGNATURE_SIZE];
 
+    /* Topic info */
+    uint16_t  topic_len;
+    uint8_t   topic[MAX_GC_TOPIC_SIZE];
+    uint8_t   topic_public_sig_key[SIG_PUBLIC_KEY];
+    uint32_t  topic_version;
+    uint8_t   topic_signature[SIGNATURE_SIZE];
+
     /* Other group info */
     uint8_t   chat_public_key[EXT_PUBLIC_KEY];
     uint8_t   chat_secret_key[EXT_SECRET_KEY];
-    uint16_t  topic_len;
-    uint8_t   topic[MAX_GC_TOPIC_SIZE];
     uint16_t  num_addrs;
     GC_PeerAddress addrs[GROUP_SAVE_MAX_PEERS];
     uint16_t  num_mods;
@@ -335,11 +349,13 @@ int gc_send_private_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *m
  */
 int gc_toggle_ignore(GC_Chat *chat, uint32_t peernumber, bool ignore);
 
-/* Sets the group topic.
+/* Sets the group topic and broadcasts it to the group.
  *
+ * Returns 0 on success. Setter must be a moderator or founder.
  * Returns -1 if the topic is too long.
- * Returns -2 if the caller has the observer role.
- * Returns -3 if the packet fails to send.
+ * Returns -2 if the caller does not have the required permissions to set the topic.
+ * Returns -3 if the packet cannot be created or signing fails.
+ * Returns -4 if the packet fails
  */
 int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length);
 

@@ -2597,10 +2597,14 @@ static uint32_t groups_save(const Messenger *m, uint8_t *data)
             temp.sstate_version = htonl(c->chats[i].shared_state.version);
             memcpy(temp.sstate_signature, c->chats[i].shared_state_sig, SIGNATURE_SIZE);
 
+            temp.topic_len = htons(c->chats[i].topic_info.length);
+            memcpy(temp.topic, c->chats[i].topic_info.topic, MAX_GC_TOPIC_SIZE);
+            memcpy(temp.topic_public_sig_key, c->chats[i].topic_info.public_sig_key, SIG_PUBLIC_KEY);
+            temp.topic_version = htonl(c->chats[i].topic_info.version);
+            memcpy(temp.topic_signature, c->chats[i].topic_sig, SIGNATURE_SIZE);
+
             memcpy(temp.chat_public_key, c->chats[i].chat_public_key, EXT_PUBLIC_KEY);
             memcpy(temp.chat_secret_key, c->chats[i].chat_secret_key, EXT_SECRET_KEY);  /* empty for non-founders */
-            temp.topic_len = htons(c->chats[i].topic_len);
-            memcpy(temp.topic, c->chats[i].topic, MAX_GC_TOPIC_SIZE);
 
             uint16_t num_addrs = gc_copy_peer_addrs(&c->chats[i], temp.addrs, GROUP_SAVE_MAX_PEERS);
             temp.num_addrs = htons(num_addrs);

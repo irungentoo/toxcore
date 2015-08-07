@@ -2617,6 +2617,10 @@ namespace group {
        */
       PERMISSIONS,
       /**
+       * The packet could not be created. This error is usually related to cryptographic signing.
+       */
+      FAIL_CREATE,
+      /**
        * The packet failed to send.
        */
       FAIL_SEND,
