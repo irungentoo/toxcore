@@ -28,8 +28,8 @@
 
 #include <time.h>
 
-/* for CLIENT_ID_SIZE */
-#include "DHT.h"
+/* for crypto_box_PUBLICKEYBYTES */
+#include "crypto_core.h"
 
 #include "util.h"
 
@@ -60,13 +60,13 @@ int is_timeout(uint64_t timestamp, uint64_t timeout)
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src)
 {
-    return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
+    return memcmp(dest, src, crypto_box_PUBLICKEYBYTES) == 0;
 }
 
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
-    memcpy(dest, src, CLIENT_ID_SIZE);
-    return CLIENT_ID_SIZE;
+    memcpy(dest, src, crypto_box_PUBLICKEYBYTES);
+    return crypto_box_PUBLICKEYBYTES;
 }
 
 void host_to_net(uint8_t *num, uint16_t numbytes)
