@@ -343,7 +343,7 @@ static RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
 OpusEncoder* create_audio_encoder (int32_t bit_rate, int32_t sampling_rate, int32_t channel_count)
 {
     int status = OPUS_OK;
-    OpusEncoder* rc = opus_encoder_create(sampling_rate, channel_count, OPUS_APPLICATION_AUDIO, &status);
+    OpusEncoder* rc = opus_encoder_create(sampling_rate, channel_count, OPUS_APPLICATION_VOIP, &status);
     
     if ( status != OPUS_OK ) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(status));
@@ -357,6 +357,26 @@ OpusEncoder* create_audio_encoder (int32_t bit_rate, int32_t sampling_rate, int3
         goto FAILURE;
     }
     
+    /* Enable in-band forward error correction in codec */
+    status = opus_encoder_ctl(rc, OPUS_SET_INBAND_FEC(1));
+
+    if ( status != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(status));
+        goto FAILURE;
+    }
+    
+    /* Make codec resistant to up to 10% packet loss
+     * NOTE This could also be adjusted on the fly, rather than hard-coded,
+     *      with feedback from the receiving client.
+     */
+    status = opus_encoder_ctl(rc, OPUS_SET_PACKET_LOSS_PERC(10));
+
+    if ( status != OPUS_OK ) {
+        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(status));
+        goto FAILURE;
+    }
+    
+    /* Set algorithm to the highest complexity, maximizing compression */
     status = opus_encoder_ctl(rc, OPUS_SET_COMPLEXITY(10));
     
     if ( status != OPUS_OK ) {
