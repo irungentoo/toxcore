@@ -23,10 +23,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "rtp.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 
-#include "rtp.h"
 #include <stdlib.h>
 void queue_message(RTPSession *_session, RTPMessage *_msg);
 

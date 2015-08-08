@@ -29,19 +29,19 @@ typedef struct PING PING;
 /* Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TOPING seconds
  * and are then removed from the list.
- * If the list is full the nodes farthest from our client_id are replaced.
+ * If the list is full the nodes farthest from our public_key are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the
  * network while preventing amplification attacks.
  *
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port);
+int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port);
 void do_to_ping(PING *ping);
 
 PING *new_ping(DHT *dht);
 void kill_ping(PING *ping);
 
-int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id);
+int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key);
 
 #endif /* __PING_H__ */
