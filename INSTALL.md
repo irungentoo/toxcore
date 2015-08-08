@@ -395,7 +395,7 @@ Now we will build sodium crypto library:
 ```bash
 git clone https://github.com/jedisct1/libsodium/
 cd libsodium
-git checkout tags/1.0.0
+git checkout tags/1.0.3
 ./autogen.sh
 ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
 make
