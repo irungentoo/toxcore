@@ -107,7 +107,6 @@ int vc_queue_message(void *vcp, struct RTPMessage_s *msg);
 /*
  * Set new values to the encoders.
  */
-int vc_reconfigure_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height);
-int vc_reconfigure_test_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height);
+int vc_reconfigure_encoder(vpx_codec_ctx_t* vccdc, uint32_t bit_rate, uint16_t width, uint16_t height);
 
 #endif /* VIDEO_H */

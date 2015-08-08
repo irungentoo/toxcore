@@ -70,8 +70,8 @@
 #define YUV2B(Y, U, V) CLIP(( 298 * C(Y) + 516 * D(U)              + 128) >> 8)
 
 
-#define TEST_TRANSFER_A 1
-#define TEST_TRANSFER_V 0
+#define TEST_TRANSFER_A 0
+#define TEST_TRANSFER_V 1
 
 
 typedef struct {
@@ -650,7 +650,7 @@ int main (int argc, char** argv)
         
         { /* Call */
             TOXAV_ERR_CALL rc;
-            toxav_call(AliceAV, 0, 0, 3000, &rc);
+            toxav_call(AliceAV, 0, 0, 2000, &rc);
             
             if (rc != TOXAV_ERR_CALL_OK) {
                 printf("toxav_call failed: %d\n", rc);
@@ -663,7 +663,7 @@ int main (int argc, char** argv)
         
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
-            toxav_answer(BobAV, 0, 0, 500, &rc);
+            toxav_answer(BobAV, 0, 0, 5000, &rc);
             
             if (rc != TOXAV_ERR_ANSWER_OK) {
                 printf("toxav_answer failed: %d\n", rc);
@@ -690,7 +690,7 @@ int main (int argc, char** argv)
             exit(1);
         }
         
-        toxav_video_bit_rate_set(AliceAV, 0, 5000, false, NULL);
+//         toxav_video_bit_rate_set(AliceAV, 0, 5000, false, NULL);
         
         time_t start_time = time(NULL);
         while(start_time + 90 > time(NULL)) {

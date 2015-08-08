@@ -897,7 +897,7 @@ bool toxav_video_send_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
         goto END;
     }
     
-    if ( vc_reconfigure_encoder(call->video.second, call->video_bit_rate * 1000, width, height) != 0 ) {
+    if ( vc_reconfigure_encoder(call->video.second->encoder, call->video_bit_rate * 1000, width, height) != 0 ) {
         pthread_mutex_unlock(call->mutex_video);
         rc = TOXAV_ERR_SEND_FRAME_INVALID;
         goto END;
@@ -962,7 +962,7 @@ bool toxav_video_send_frame(ToxAV* av, uint32_t friend_number, uint16_t width, u
     }
     
     if (ba_shoud_send_dummy(&call->vba)) {
-        if ( vc_reconfigure_test_encoder(call->video.second, call->vba.bit_rate * 1000, width, height) != 0 ) {
+        if ( vc_reconfigure_encoder(call->video.second->test_encoder, call->vba.bit_rate * 1000, width, height) != 0 ) {
             pthread_mutex_unlock(call->mutex_video);
             rc = TOXAV_ERR_SEND_FRAME_INVALID;
             goto END;

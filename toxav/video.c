@@ -289,20 +289,20 @@ end:
     rtp_free_msg(msg);
     return 0;
 }
-int vc_reconfigure_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height)
+int vc_reconfigure_encoder(vpx_codec_ctx_t* vccdc, uint32_t bit_rate, uint16_t width, uint16_t height)
 {
-    if (!vc)
+    if (!vccdc)
         return -1;
     
-    vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
-    if (cfg.rc_target_bitrate == (uint32_t) bit_rate && cfg.g_w == width && cfg.g_h == height)
+    vpx_codec_enc_cfg_t cfg = *vccdc->config.enc;
+    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
     
     cfg.rc_target_bitrate = bit_rate;
     cfg.g_w = width;
     cfg.g_h = height;
     
-    int rc = vpx_codec_enc_config_set(vc->encoder, &cfg);
+    int rc = vpx_codec_enc_config_set(vccdc, &cfg);
     if ( rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
@@ -310,28 +310,6 @@ int vc_reconfigure_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint
 
     return 0;
 }
-int vc_reconfigure_test_encoder(VCSession* vc, int32_t bit_rate, uint16_t width, uint16_t height)
-{
-    if (!vc)
-        return -1;
-    
-    vpx_codec_enc_cfg_t cfg = *vc->test_encoder->config.enc;
-    if (cfg.rc_target_bitrate == (uint32_t) bit_rate && cfg.g_w == width && cfg.g_h == height)
-        return 0; /* Nothing changed */
-    
-    cfg.rc_target_bitrate = bit_rate;
-    cfg.g_w = width;
-    cfg.g_h = height;
-    
-    int rc = vpx_codec_enc_config_set(vc->test_encoder, &cfg);
-    if ( rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to set test encoder control setting: %s", vpx_codec_err_to_string(rc));
-        return -1;
-    }
-
-    return 0;
-}
-
 
 
 bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate)
