@@ -381,6 +381,9 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     if (friend_not_valid(m, friendnumber))
         return -1;
 
+    if (m->friend_connectionstatuschange_internal)
+        m->friend_connectionstatuschange_internal(m, friendnumber, 0, m->friend_connectionstatuschange_internal_userdata);
+
     clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
     friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
@@ -1329,9 +1332,6 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (ft->status != FILESTATUS_TRANSFERRING)
         return -4;
 
-    if (ft->paused != FILE_PAUSE_NOT)
-        return -4;
-
     if (length > MAX_FILE_DATA_SIZE)
         return -5;
 
@@ -1343,7 +1343,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         return -5;
     }
 
-    if (position != ft->transferred) {
+    if (position != ft->transferred || (ft->requested <= position && ft->size != 0)) {
         return -7;
     }
 
@@ -1469,10 +1469,11 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
 
             ++ft->slots_allocated;
 
-            if (m->file_reqchunk)
-                (*m->file_reqchunk)(m, friendnumber, i, ft->requested, length, m->file_reqchunk_userdata);
-
+            uint64_t position = ft->requested;
             ft->requested += length;
+
+            if (m->file_reqchunk)
+                (*m->file_reqchunk)(m, friendnumber, i, position, length, m->file_reqchunk_userdata);
 
             --free_slots;
 
@@ -1805,24 +1806,23 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
-        kill_DHT(m->dht);
         kill_net_crypto(m->net_crypto);
+        kill_DHT(m->dht);
         kill_networking(m->net);
         free(m);
         return NULL;
     }
 
     if (options->tcp_server_port) {
-        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_public_key,
-                                       m->dht->self_secret_key, m->onion);
+        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_secret_key, m->onion);
 
         if (m->tcp_server == NULL) {
             kill_friend_connections(m->fr_c);
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
-            kill_DHT(m->dht);
             kill_net_crypto(m->net_crypto);
+            kill_DHT(m->dht);
             kill_networking(m->net);
             free(m);
 
@@ -2340,7 +2340,7 @@ void do_messenger(Messenger *m)
 
                     LOGGER_TRACE("C[%2u] %s:%u [%3u] %s",
                                  client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                                 last_pinged, ID2String(cptr->client_id));
+                                 last_pinged, ID2String(cptr->public_key));
                 }
         }
 
@@ -2360,7 +2360,7 @@ void do_messenger(Messenger *m)
                 continue;
 
             for (dhtfriend = 0; dhtfriend < m->dht->num_friends; dhtfriend++)
-                if (id_equal(m->friendlist[friend].real_pk, m->dht->friends_list[dhtfriend].client_id)) {
+                if (id_equal(m->friendlist[friend].real_pk, m->dht->friends_list[dhtfriend].public_key)) {
                     m2dht[friend] = dhtfriend;
                     break;
                 }
@@ -2390,7 +2390,7 @@ void do_messenger(Messenger *m)
                              dht2m[friend], friend, msgfptr->name,
                              ID2String(msgfptr->real_pk));
             } else {
-                LOGGER_TRACE("F[--:%2u] %s", friend, ID2String(dhtfptr->client_id));
+                LOGGER_TRACE("F[--:%2u] %s", friend, ID2String(dhtfptr->public_key));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2408,7 +2408,7 @@ void do_messenger(Messenger *m)
                         LOGGER_TRACE("F[%2u] => C[%2u] %s:%u [%3u] %s",
                                      friend, client, ip_ntoa(&assoc->ip_port.ip),
                                      ntohs(assoc->ip_port.port), last_pinged,
-                                     ID2String(cptr->client_id));
+                                     ID2String(cptr->public_key));
                     }
             }
         }
@@ -2430,6 +2430,7 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_STATUS        6
 #define MESSENGER_STATE_TYPE_TCP_RELAY     10
 #define MESSENGER_STATE_TYPE_PATH_NODE     11
+#define MESSENGER_STATE_TYPE_END           255
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
 #define NUM_SAVED_PATH_NODES 8
@@ -2545,9 +2546,9 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
-             + sizesubhead + NUM_SAVED_TCP_RELAYS * sizeof(Node_format) //TCP relays
-             + sizesubhead + NUM_SAVED_PATH_NODES * sizeof(Node_format) //saved path nodes
-             ;
+             + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
+             + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6) //saved path nodes
+             + sizesubhead;
 }
 
 static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
@@ -2562,14 +2563,16 @@ static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t typ
 /* Save the messenger in data of size Messenger_size(). */
 void messenger_save(const Messenger *m, uint8_t *data)
 {
+    memset(data, 0, messenger_size(m));
+
     uint32_t len;
     uint16_t type;
-    uint32_t *data32, size32 = sizeof(uint32_t);
+    uint32_t size32 = sizeof(uint32_t);
 
-    data32 = (uint32_t *)data;
-    data32[0] = 0;
-    data32[1] = MESSENGER_STATE_COOKIE_GLOBAL;
-    data += size32 * 2;
+    memset(data, 0, size32);
+    data += size32;
+    host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
+    data += size32;
 
 #ifdef DEBUG
     assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
@@ -2579,12 +2582,6 @@ void messenger_save(const Messenger *m, uint8_t *data)
     data = z_state_save_subheader(data, len, type);
     *(uint32_t *)data = get_nospam(&(m->fr));
     save_keys(m->net_crypto, data + size32);
-    data += len;
-
-    len = DHT_size(m->dht);
-    type = MESSENGER_STATE_TYPE_DHT;
-    data = z_state_save_subheader(data, len, type);
-    DHT_save(m->dht, data);
     data += len;
 
     len = saved_friendslist_size(m);
@@ -2611,22 +2608,40 @@ void messenger_save(const Messenger *m, uint8_t *data)
     *data = m->userstatus;
     data += len;
 
-    Node_format relays[NUM_SAVED_TCP_RELAYS];
-    len = sizeof(relays);
-    type = MESSENGER_STATE_TYPE_TCP_RELAY;
+    len = DHT_size(m->dht);
+    type = MESSENGER_STATE_TYPE_DHT;
     data = z_state_save_subheader(data, len, type);
-    memset(relays, 0, len);
-    copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
-    memcpy(data, relays, len);
+    DHT_save(m->dht, data);
     data += len;
 
+    Node_format relays[NUM_SAVED_TCP_RELAYS];
+    type = MESSENGER_STATE_TYPE_TCP_RELAY;
+    uint8_t *temp_data = data;
+    data = z_state_save_subheader(temp_data, 0, type);
+    unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
+    int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6), relays, num);
+
+    if (l > 0) {
+        len = l;
+        data = z_state_save_subheader(temp_data, len, type);
+        data += len;
+    }
+
     Node_format nodes[NUM_SAVED_PATH_NODES];
-    len = sizeof(nodes);
     type = MESSENGER_STATE_TYPE_PATH_NODE;
-    data = z_state_save_subheader(data, len, type);
-    memset(nodes, 0, len);
-    onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
-    memcpy(data, nodes, len);
+    temp_data = data;
+    data = z_state_save_subheader(data, 0, type);
+    memset(nodes, 0, sizeof(nodes));
+    num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
+    l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6), nodes, num);
+
+    if (l > 0) {
+        len = l;
+        data = z_state_save_subheader(temp_data, len, type);
+        data += len;
+    }
+
+    z_state_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
 }
 
 static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
@@ -2677,11 +2692,11 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
 
         case MESSENGER_STATE_TYPE_TCP_RELAY: {
-            if (length != sizeof(m->loaded_relays)) {
-                return -1;
+            if (length == 0) {
+                break;
             }
 
-            memcpy(m->loaded_relays, data, length);
+            unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, 0, data, length, 1);
             m->has_added_relays = 0;
 
             break;
@@ -2690,17 +2705,25 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
         case MESSENGER_STATE_TYPE_PATH_NODE: {
             Node_format nodes[NUM_SAVED_PATH_NODES];
 
-            if (length != sizeof(nodes)) {
-                return -1;
+            if (length == 0) {
+                break;
             }
 
-            memcpy(nodes, data, length);
-            uint32_t i;
+            int i, num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, 0, data, length, 0);
 
-            for (i = 0; i < NUM_SAVED_PATH_NODES; ++i) {
+            for (i = 0; i < num; ++i) {
                 onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
             }
 
+            break;
+        }
+
+        case MESSENGER_STATE_TYPE_END: {
+            if (length != 0) {
+                return -1;
+            }
+
+            return -2;
             break;
         }
 
@@ -2725,7 +2748,8 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
     if (length < cookie_len)
         return -1;
 
-    memcpy(data32, data, sizeof(data32));
+    memcpy(data32, data, sizeof(uint32_t));
+    lendian_to_host32(data32 + 1, data + sizeof(uint32_t));
 
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
         return load_state(messenger_load_state_callback, m, data + cookie_len,

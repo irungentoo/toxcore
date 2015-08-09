@@ -23,16 +23,16 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "rtp.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 #include "../toxcore/Messenger.h"
 
-#include "rtp.h"
 #include <stdlib.h>
 #include <assert.h>
 
-#define size_32 4
 #define RTCP_REPORT_INTERVAL_MS 500
+#define RTP_MAX_SIZE 1500
 
 #define ADD_FLAG_VERSION(_h, _v) do { ( _h->flags ) &= 0x3F; ( _h->flags ) |= ( ( ( _v ) << 6 ) & 0xC0 ); } while(0)
 #define ADD_FLAG_PADDING(_h, _v) do { if ( _v > 0 ) _v = 1; ( _h->flags ) &= 0xDF; ( _h->flags ) |= ( ( ( _v ) << 5 ) & 0x20 ); } while(0)
@@ -243,7 +243,7 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
         return -1;
     }
     
-    uint8_t parsed[MAX_RTP_SIZE];
+    uint8_t parsed[RTP_MAX_SIZE];
     uint8_t *it;
 
     RTPHeader header[1];
@@ -268,16 +268,16 @@ int rtp_send_data ( RTPSession *session, const uint8_t *data, uint16_t length, b
     for ( i = 0; i < session->cc; i++ )
         header->csrc[i] = session->csrc[i];
 
-    header->length = 12 /* Minimum header len */ + ( session->cc * size_32 );
+    header->length = 12 /* Minimum header len */ + ( session->cc * 4 );
     
     uint32_t parsed_len = length + header->length + 1;
-    assert(parsed_len + (session->ext_header ? session->ext_header->length * size_32 : 0) < MAX_RTP_SIZE );
+    assert(parsed_len + (session->ext_header ? session->ext_header->length * 4 : 0) < RTP_MAX_SIZE );
 
     parsed[0] = session->prefix;
     it = parse_header_out ( header, parsed + 1 );
     
     if ( session->ext_header ) {
-        parsed_len += ( 4 /* Minimum ext header len */ + session->ext_header->length * size_32 );
+        parsed_len += ( 4 /* Minimum ext header len */ + session->ext_header->length * 4 );
         it = parse_ext_header_out ( session->ext_header, it );
     }
 
@@ -472,7 +472,7 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
     
     RTPSession *session = object;
 
-    if ( !session || length < 13 || length > MAX_RTP_SIZE ) {
+    if ( !session || length < 13 || length > RTP_MAX_SIZE ) {
         LOGGER_WARNING("No session or invalid length of received buffer!");
         return -1;
     }
@@ -493,8 +493,8 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
         ext_header = parse_ext_header_in ( data + from_pos, length );
 
         if ( ext_header ) {
-            msg_length -= ( 4 /* Minimum ext header len */ + ext_header->length * size_32 );
-            from_pos += ( 4 /* Minimum ext header len */ + ext_header->length * size_32 );
+            msg_length -= ( 4 /* Minimum ext header len */ + ext_header->length * 4 );
+            from_pos += ( 4 /* Minimum ext header len */ + ext_header->length * 4 );
         } else { /* Error */
             LOGGER_WARNING("Could not parse message: Ext Header failed to extract!");
             free(header);
@@ -502,7 +502,7 @@ int handle_rtp_packet ( Messenger* m, uint32_t friendnumber, const uint8_t* data
         }
     }
     
-    if (msg_length > MAX_RTP_SIZE) {
+    if (msg_length > RTP_MAX_SIZE) {
         LOGGER_WARNING("Could not parse message: Invalid length!");
         free(header);
         free(ext_header);

@@ -165,6 +165,8 @@ void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oo
 
 /* Create a new TCP connection to public_key.
  *
+ * public_key must be the counterpart to the secret key that the other peer used with new_tcp_connections().
+ *
  * id is the id in the callbacks for that connection.
  *
  * return connections_number on success.
@@ -206,6 +208,8 @@ int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_numb
 
 /* Add a TCP relay tied to a connection.
  *
+ * This should be called with the same relay by two peers who want to create a TCP connection with each other.
+ *
  * return 0 on success.
  * return -1 on failure.
  */
@@ -226,7 +230,15 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
  */
 unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
+/* Returns a new TCP_Connections object associated with the secret_key.
+ *
+ * In order for others to connect to this instance new_tcp_connection_to() must be called with the
+ * public_key associated with secret_key.
+ *
+ * Returns NULL on failure.
+ */
 TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info);
+
 void do_tcp_connections(TCP_Connections *tcp_c);
 void kill_tcp_connections(TCP_Connections *tcp_c);
 

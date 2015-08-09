@@ -55,26 +55,26 @@ struct PING {
 
 
 #define PING_PLAIN_SIZE (1 + sizeof(uint64_t))
-#define DHT_PING_SIZE (1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES + PING_PLAIN_SIZE + crypto_box_MACBYTES)
-#define PING_DATA_SIZE (CLIENT_ID_SIZE + sizeof(IP_Port))
+#define DHT_PING_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + PING_PLAIN_SIZE + crypto_box_MACBYTES)
+#define PING_DATA_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(IP_Port))
 
-int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id)
+int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
     uint64_t  ping_id;
 
-    if (id_equal(client_id, ping->dht->self_public_key))
+    if (id_equal(public_key, ping->dht->self_public_key))
         return 1;
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     // generate key to encrypt ping_id with recipient privkey
-    DHT_get_shared_key_sent(ping->dht, shared_key, client_id);
+    DHT_get_shared_key_sent(ping->dht, shared_key, public_key);
     // Generate random ping_id.
     uint8_t data[PING_DATA_SIZE];
-    id_copy(data, client_id);
-    memcpy(data + CLIENT_ID_SIZE, &ipp, sizeof(IP_Port));
+    id_copy(data, public_key);
+    memcpy(data + crypto_box_PUBLICKEYBYTES, &ipp, sizeof(IP_Port));
     ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
 
     if (ping_id == 0)
@@ -86,13 +86,13 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id)
 
     pk[0] = NET_PACKET_PING_REQUEST;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
-    new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
+    new_nonce(pk + 1 + crypto_box_PUBLICKEYBYTES); // Generate new nonce
 
 
     rc = encrypt_data_symmetric(shared_key,
-                                pk + 1 + CLIENT_ID_SIZE,
+                                pk + 1 + crypto_box_PUBLICKEYBYTES,
                                 ping_plain, sizeof(ping_plain),
-                                pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES);
+                                pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
 
     if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES)
         return 1;
@@ -100,13 +100,13 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *client_id)
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *client_id, uint64_t ping_id,
+static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
                               uint8_t *shared_encryption_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
 
-    if (id_equal(client_id, ping->dht->self_public_key))
+    if (id_equal(public_key, ping->dht->self_public_key))
         return 1;
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
@@ -115,13 +115,13 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *client_id,
 
     pk[0] = NET_PACKET_PING_RESPONSE;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
-    new_nonce(pk + 1 + CLIENT_ID_SIZE); // Generate new nonce
+    new_nonce(pk + 1 + crypto_box_PUBLICKEYBYTES); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data_symmetric(shared_encryption_key,
-                                pk + 1 + CLIENT_ID_SIZE,
+                                pk + 1 + crypto_box_PUBLICKEYBYTES,
                                 ping_plain, sizeof(ping_plain),
-                                pk + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES );
+                                pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES );
 
     if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES)
         return 1;
@@ -148,8 +148,8 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
     // Decrypt ping_id
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     rc = decrypt_data_symmetric(shared_key,
-                                packet + 1 + CLIENT_ID_SIZE,
-                                packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                packet + 1 + crypto_box_PUBLICKEYBYTES,
+                                packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                                 PING_PLAIN_SIZE + crypto_box_MACBYTES,
                                 ping_plain );
 
@@ -189,8 +189,8 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
     uint8_t ping_plain[PING_PLAIN_SIZE];
     // Decrypt ping_id
     rc = decrypt_data_symmetric(shared_key,
-                                packet + 1 + CLIENT_ID_SIZE,
-                                packet + 1 + CLIENT_ID_SIZE + crypto_box_NONCEBYTES,
+                                packet + 1 + crypto_box_PUBLICKEYBYTES,
+                                packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                                 PING_PLAIN_SIZE + crypto_box_MACBYTES,
                                 ping_plain);
 
@@ -211,7 +211,7 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
         return 1;
 
     IP_Port ipp;
-    memcpy(&ipp, data + CLIENT_ID_SIZE, sizeof(IP_Port));
+    memcpy(&ipp, data + crypto_box_PUBLICKEYBYTES, sizeof(IP_Port));
 
     if (!ipport_equal(&ipp, &source))
         return 1;
@@ -220,17 +220,17 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
     return 0;
 }
 
-/* Check if client_id with ip_port is in the list.
+/* Check if public_key with ip_port is in the list.
  *
  * return 1 if it is.
  * return 0 if it isn't.
  */
-static int in_list(const Client_data *list, uint16_t length, const uint8_t *client_id, IP_Port ip_port)
+static int in_list(const Client_data *list, uint16_t length, const uint8_t *public_key, IP_Port ip_port)
 {
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
-        if (id_equal(list[i].client_id, client_id)) {
+        if (id_equal(list[i].public_key, public_key)) {
             const IPPTsPng *ipptp;
 
             if (ip_port.ip.family == AF_INET) {
@@ -250,31 +250,31 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *clie
 /* Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TO_PING seconds
  * and are then removed from the list.
- * If the list is full the nodes farthest from our client_id are replaced.
+ * If the list is full the nodes farthest from our public_key are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the
  * network while preventing amplification attacks.
  *
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
+int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip))
         return -1;
 
-    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, client_id, ip_port))
+    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port))
         return -1;
 
     uint32_t i;
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
-            memcpy(ping->to_ping[i].public_key, client_id, CLIENT_ID_SIZE);
+            memcpy(ping->to_ping[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
             ipport_copy(&ping->to_ping[i].ip_port, &ip_port);
             return 0;
         }
 
-        if (memcmp(ping->to_ping[i].public_key, client_id, CLIENT_ID_SIZE) == 0) {
+        if (memcmp(ping->to_ping[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
             return -1;
         }
     }
@@ -282,8 +282,8 @@ int add_to_ping(PING *ping, const uint8_t *client_id, IP_Port ip_port)
     uint32_t r = rand();
 
     for (i = 0; i < MAX_TO_PING; ++i) {
-        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id) == 2) {
-            memcpy(ping->to_ping[(i + r) % MAX_TO_PING].public_key, client_id, CLIENT_ID_SIZE);
+        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, public_key) == 2) {
+            memcpy(ping->to_ping[(i + r) % MAX_TO_PING].public_key, public_key, crypto_box_PUBLICKEYBYTES);
             ipport_copy(&ping->to_ping[(i + r) % MAX_TO_PING].ip_port, &ip_port);
             return 0;
         }

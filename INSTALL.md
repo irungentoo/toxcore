@@ -57,9 +57,10 @@ sudo apt-get install build-essential libtool autotools-dev automake checkinstall
 On Fedora:
 
 ```bash
-yum groupinstall "Development Tools"
-yum install libtool autoconf automake check check-devel
+dnf groupinstall "Development Tools"
+dnf install libtool autoconf automake check check-devel
 ```
+Using ``dnf install @"Development Tools"`` is also valid and slightly shorter / cleaner way. ``@"Rpm Development Tools"``  would carry the remaining dependencies listed here.
 
 On SunOS:
 
@@ -73,13 +74,13 @@ pkg install net-im/tox
 ```
 Note, if you install from ports select NaCl for performance, and sodium if you want it to be portable.
 
-**For A/V support, also install the dependences listed in the [libtoxav] (#libtoxav) section.**
+**For A/V support, also install the dependences listed in the [libtoxav](#libtoxav) section.** Note that you have to install those dependencies **before** compiling `toxcore`.
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium). If you have installed `libsodium` from repo, ommit this step, and jump directly to [compiling toxcore](#compile-toxcore):
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/1.0.0
+git checkout tags/1.0.3
 ./autogen.sh
 ./configure && make check
 sudo checkinstall --install --pkgname libsodium --pkgversion 1.0.0 --nodoc
@@ -94,7 +95,7 @@ this will install the libs to /usr/local/lib and the headers to /usr/local/inclu
 ```bash
 git clone git://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/1.0.0
+git checkout tags/1.0.3
 ./autogen.sh
 ./configure
 make check
@@ -102,9 +103,17 @@ sudo make install
 cd ..
 ```
 
-If your default prefix is /usr/local and you happen to get an error that says "error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory", then you can try running ```sudo ldconfig```. If that doesn't fix it, run:
-```
+If your default prefix is ``/usr/local`` and you happen to get an error that says ``"error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory"``, then you can try running ``sudo ldconfig``. If that doesn't fix it, run:
+
+```bash
 echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
+sudo ldconfig
+```
+
+You may run into a situation where there is no ``/etc/ld.so.conf.d`` directory. You could either create it manually, or append path to local library to ``ld.so.conf``:
+
+```bash
+echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf 
 sudo ldconfig
 ```
 
@@ -362,7 +371,7 @@ Now we will build libraries needed for audio/video: VPX and Opus.
 
 VPX:
 ```bash
-git clone http://git.chromium.org/webm/libvpx.git
+git clone https://chromium.googlesource.com/webm/libvpx
 cd libvpx
 git checkout tags/v1.3.0
 CROSS="$WINDOWS_TOOLCHAIN"- ./configure --target="$LIB_VPX_TARGET" --prefix="$PREFIX_DIR" --disable-examples --disable-unit-tests --disable-shared --enable-static
@@ -467,7 +476,7 @@ make install
 
 <a name="Clients" />
 ####Clients:
-While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](http://wiki.tox.im/client)
+While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](https://wiki.tox.chat/doku.php?id=clients)
 
 
 

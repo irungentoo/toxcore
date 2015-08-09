@@ -1,6 +1,6 @@
 /* DHT.h
  *
- * An implementation of the DHT as seen in http://wiki.tox.im/index.php/DHT
+ * An implementation of the DHT as seen in docs/updates/DHT.md
  *
  *  Copyright (C) 2013 Tox project All Rights Reserved.
  *
@@ -27,9 +27,6 @@
 #include "crypto_core.h"
 #include "network.h"
 #include "ping_array.h"
-
-/* Size of the client_id in bytes. */
-#define CLIENT_ID_SIZE crypto_box_PUBLICKEYBYTES
 
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -79,17 +76,17 @@ typedef struct {
     uint8_t     routes_requests_ok;
     /* Time which we last checked this.*/
     uint64_t    routes_requests_timestamp;
-    uint8_t     routes_requests_pingedid[CLIENT_ID_SIZE];
+    uint8_t     routes_requests_pingedid[crypto_box_PUBLICKEYBYTES];
     /* Node sends correct send_node (true (1) or false/didn't check (0)) */
     uint8_t     send_nodes_ok;
     /* Time which we last checked this.*/
     uint64_t    send_nodes_timestamp;
-    uint8_t     send_nodes_pingedid[CLIENT_ID_SIZE];
+    uint8_t     send_nodes_pingedid[crypto_box_PUBLICKEYBYTES];
     /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
     uint8_t     testing_requests;
     /* Time which we last checked this.*/
     uint64_t    testing_timestamp;
-    uint8_t     testing_pingedid[CLIENT_ID_SIZE];
+    uint8_t     testing_pingedid[crypto_box_PUBLICKEYBYTES];
 } Hardening;
 
 typedef struct {
@@ -104,7 +101,7 @@ typedef struct {
 } IPPTsPng;
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
 } Client_data;
@@ -127,7 +124,7 @@ typedef struct {
 #define DHT_FRIEND_MAX_LOCKS 32
 
 typedef struct {
-    uint8_t     client_id[CLIENT_ID_SIZE];
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
@@ -153,6 +150,11 @@ typedef struct {
 }
 Node_format;
 
+/* Return packet size of packed node with ip_family on success.
+ * Return -1 on failure.
+ */
+int packed_node_size(uint8_t ip_family);
+
 /* Pack number of nodes into data of maxlength length.
  *
  * return length of packed nodes on success.
@@ -177,7 +179,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 #define KEYS_TIMEOUT 600
 typedef struct {
     struct {
-        uint8_t client_id[CLIENT_ID_SIZE];
+        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
         uint8_t shared_key[crypto_box_BEFORENMBYTES];
         uint32_t times_requested;
         uint8_t  stored; /* 0 if not, 1 if is */
@@ -236,22 +238,23 @@ typedef struct {
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *client_id);
+void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key,
+                    const uint8_t *public_key);
 
-/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
-void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *client_id);
+void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
-/* Copy shared_key to encrypt/decrypt DHT packet from client_id into shared_key
+/* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
-void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *client_id);
+void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
 void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
 
 /* Add a new friend to the friends list.
- * client_id must be CLIENT_ID_SIZE bytes long.
+ * public_key must be crypto_box_PUBLICKEYBYTES bytes long.
  *
  * ip_callback is the callback of a function that will be called when the ip address
  * is found along with arguments data and number.
@@ -262,47 +265,39 @@ void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, con
  *  return 0 if success.
  *  return -1 if failure (friends list is full).
  */
-int DHT_addfriend(DHT *dht, const uint8_t *client_id, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
- * client_id must be CLIENT_ID_SIZE bytes long.
+ * public_key must be crypto_box_PUBLICKEYBYTES bytes long.
  *
  *  return 0 if success.
- *  return -1 if failure (client_id not in friends list).
+ *  return -1 if failure (public_key not in friends list).
  */
-int DHT_delfriend(DHT *dht, const uint8_t *client_id, uint16_t lock_count);
+int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
 
 /* Get ip of friend.
- *  client_id must be CLIENT_ID_SIZE bytes long.
+ *  public_key must be crypto_box_PUBLICKEYBYTES bytes long.
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *
- * !!! Signature changed !!!
+ * int DHT_getfriendip(DHT *dht, uint8_t *public_key, IP_Port *ip_port);
  *
- * OLD: IP_Port DHT_getfriendip(DHT *dht, uint8_t *client_id);
- *
- *  return ip if success.
- *  return ip of 0 if failure (This means the friend is either offline or we have not found him yet).
- *  return ip of 1 if friend is not in list.
- *
- * NEW: int DHT_getfriendip(DHT *dht, uint8_t *client_id, IP_Port *ip_port);
- *
- *  return -1, -- if client_id does NOT refer to a friend
- *  return  0, -- if client_id refers to a friend and we failed to find the friend (yet)
- *  return  1, ip if client_id refers to a friend and we found him
+ *  return -1, -- if public_key does NOT refer to a friend
+ *  return  0, -- if public_key refers to a friend and we failed to find the friend (yet)
+ *  return  1, ip if public_key refers to a friend and we found him
  */
-int DHT_getfriendip(const DHT *dht, const uint8_t *client_id, IP_Port *ip_port);
+int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port);
 
-/* Compares client_id1 and client_id2 with client_id.
+/* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
- *  return 1 if client_id1 is closer.
- *  return 2 if client_id2 is closer.
+ *  return 1 if pk1 is closer.
+ *  return 2 if pk2 is closer.
  */
-int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
+int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 
-/* Get the (maximum MAX_SENT_NODES) closest nodes to client_id we know
+/* Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
  *
  * sa_family = family (IPv4 or IPv6) (0 if we don't care)?
@@ -312,7 +307,7 @@ int id_closest(const uint8_t *id, const uint8_t *id1, const uint8_t *id2);
  * return the number of nodes returned.
  *
  */
-int get_close_nodes(const DHT *dht, const uint8_t *client_id, Node_format *nodes_list, sa_family_t sa_family,
+int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, sa_family_t sa_family,
                     uint8_t is_LAN, uint8_t want_good);
 
 
@@ -355,11 +350,11 @@ int DHT_connect_after_load(DHT *dht);
 
 /* ROUTING FUNCTIONS */
 
-/* Send the given packet to node with client_id.
+/* Send the given packet to node with public_key.
  *
  *  return -1 if failure.
  */
-int route_packet(const DHT *dht, const uint8_t *client_id, const uint8_t *packet, uint16_t length);
+int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packet, uint16_t length);
 
 /* Send the following packet to everyone who tells us they are connected to friend_id.
  *
@@ -402,7 +397,7 @@ int DHT_isconnected(const DHT *dht);
 int DHT_non_lan_connected(const DHT *dht);
 
 
-int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *client_id);
+int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 
 #endif
 

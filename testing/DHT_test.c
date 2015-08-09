@@ -52,14 +52,14 @@
 
 #define PORT 33445
 
-uint8_t zeroes_cid[CLIENT_ID_SIZE];
+uint8_t zeroes_cid[crypto_box_PUBLICKEYBYTES];
 
-void print_client_id(uint8_t *client_id)
+void print_client_id(uint8_t *public_key)
 {
     uint32_t j;
 
-    for (j = 0; j < CLIENT_ID_SIZE; j++) {
-        printf("%02hhX", client_id[j]);
+    for (j = 0; j < crypto_box_PUBLICKEYBYTES; j++) {
+        printf("%02hhX", public_key[j]);
     }
 }
 
@@ -108,11 +108,11 @@ void print_clientlist(DHT *dht)
     for (i = 0; i < LCLIENT_LIST; i++) {
         Client_data *client = &dht->close_clientlist[i];
 
-        if (memcmp(client->client_id, zeroes_cid, CLIENT_ID_SIZE) == 0)
+        if (memcmp(client->public_key, zeroes_cid, crypto_box_PUBLICKEYBYTES) == 0)
             continue;
 
         printf("ClientID: ");
-        print_client_id(client->client_id);
+        print_client_id(client->public_key);
 
         print_assoc(&client->assoc4, 1);
         print_assoc(&client->assoc6, 1);
@@ -129,9 +129,9 @@ void print_friendlist(DHT *dht)
         printf("FRIEND %u\n", k);
         printf("ID: ");
 
-        print_client_id(dht->friends_list[k].client_id);
+        print_client_id(dht->friends_list[k].public_key);
 
-        int friendok = DHT_getfriendip(dht, dht->friends_list[k].client_id, &p_ip);
+        int friendok = DHT_getfriendip(dht, dht->friends_list[k].public_key, &p_ip);
         printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip), ntohs(p_ip.port), friendok);
 
         printf("\nCLIENTS IN LIST:\n\n");
@@ -139,11 +139,11 @@ void print_friendlist(DHT *dht)
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             Client_data *client = &dht->friends_list[k].client_list[i];
 
-            if (memcmp(client->client_id, zeroes_cid, CLIENT_ID_SIZE) == 0)
+            if (memcmp(client->public_key, zeroes_cid, crypto_box_PUBLICKEYBYTES) == 0)
                 continue;
 
             printf("ClientID: ");
-            print_client_id(client->client_id);
+            print_client_id(client->public_key);
 
             print_assoc(&client->assoc4, 0);
             print_assoc(&client->assoc6, 0);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     }
 
     char temp_id[128];
-    printf("\nEnter the client_id of the friend you wish to add (32 bytes HEX format):\n");
+    printf("\nEnter the public_key of the friend you wish to add (32 bytes HEX format):\n");
 
     if (!fgets(temp_id, sizeof(temp_id), stdin))
         exit(0);

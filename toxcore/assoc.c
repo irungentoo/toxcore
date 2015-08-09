@@ -87,7 +87,7 @@ typedef struct candidates_bucket {
 
 struct Assoc {
     hash_t                 self_hash;                          /* hash of self_client_id */
-    uint8_t                self_client_id[CLIENT_ID_SIZE];     /* don't store entries for this */
+    uint8_t                self_client_id[crypto_box_PUBLICKEYBYTES];     /* don't store entries for this */
 
     /* association centralization: clients not in use */
     size_t                 candidates_bucket_bits;
@@ -101,7 +101,7 @@ struct Assoc {
 /*                             HELPER FUNCTIONS                              */
 /*****************************************************************************/
 
-/* the complete distance would be CLIENT_ID_SIZE long...
+/* the complete distance would be crypto_box_PUBLICKEYBYTES long...
  * returns DISTANCE_INDEX_DISTANCE_BITS valid bits */
 static uint64_t id_distance(const Assoc *assoc, void *callback_data, const uint8_t *id_ref, const uint8_t *id_test)
 {
@@ -157,13 +157,13 @@ static Client_entry *dist_index_entry(Assoc *assoc, uint64_t dist_ind)
     return NULL;
 }
 
-/* get actual entry's client_id to a distance_index */
+/* get actual entry's public_key to a distance_index */
 static uint8_t *dist_index_id(Assoc *assoc, uint64_t dist_ind)
 {
     Client_entry *entry = dist_index_entry(assoc, dist_ind);
 
     if (entry)
-        return entry->client.client_id;
+        return entry->client.public_key;
 
     return NULL;
 }
@@ -200,7 +200,7 @@ static hash_t id_hash(const Assoc *assoc, const uint8_t *id)
 {
     uint32_t i, res = 0x19a64e82;
 
-    for (i = 0; i < CLIENT_ID_SIZE; i++)
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++)
         res = ((res << 1) ^ id[i]) + (res >> 31);
 
     /* can't have zero as hash, a) marks an unused spot,
@@ -356,7 +356,7 @@ static uint8_t candidates_search(const Assoc *assoc, const uint8_t *id, hash_t h
         Client_entry *entry = &cnd_bckt->list[pos];
 
         if (entry->hash == hash)
-            if (id_equal(entry->client.client_id, id)) {
+            if (id_equal(entry->client.public_key, id)) {
                 *entryptr = entry;
                 return 1;
             }
@@ -476,7 +476,7 @@ static uint8_t candidates_create_new(const Assoc *assoc, hash_t hash, const uint
         return 0;
 
     entry->hash = hash;
-    id_copy(entry->client.client_id, id);
+    id_copy(entry->client.public_key, id);
 
     if (used)
         entry->used_at = unix_time();
@@ -536,7 +536,7 @@ static void client_id_self_update(Assoc *assoc)
         Client_entry *entry = &cnd_bckt->list[pos];
 
         if (entry->hash == assoc->self_hash)
-            if (id_equal(entry->client.client_id, assoc->self_client_id))
+            if (id_equal(entry->client.public_key, assoc->self_client_id))
                 entry->hash = 0;
     }
 }
@@ -648,7 +648,7 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *state)
                             continue;
                 }
 
-                uint64_t dist = state->distance_absolute_func(assoc, state->custom_data, state->wanted_id, entry->client.client_id);
+                uint64_t dist = state->distance_absolute_func(assoc, state->custom_data, state->wanted_id, entry->client.public_key);
                 uint32_t index = b * assoc->candidates_bucket_size + i;
                 dist_list[index] = (dist << DISTANCE_INDEX_INDEX_BITS) | index;
             }
@@ -914,7 +914,7 @@ void do_Assoc(Assoc *assoc, DHT *dht)
                         continue;
 
                     if (!target_id)
-                        target_id = entry->client.client_id;
+                        target_id = entry->client.public_key;
 
                     if (entry->seen_at) {
                         if (!seen)
@@ -940,9 +940,9 @@ void do_Assoc(Assoc *assoc, DHT *dht)
             IPPTsPng *ippts = seen->seen_family == AF_INET ? &seen->client.assoc4 : &seen->client.assoc6;
 
             LOGGER_DEBUG("[%u] => S[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
-                         idpart2str(seen->client.client_id, 8), ip_ntoa(&ippts->ip_port.ip), htons(ippts->ip_port.port));
+                         idpart2str(seen->client.public_key, 8), ip_ntoa(&ippts->ip_port.ip), htons(ippts->ip_port.port));
 
-            DHT_getnodes(dht, &ippts->ip_port, seen->client.client_id, target_id);
+            DHT_getnodes(dht, &ippts->ip_port, seen->client.public_key, target_id);
             seen->getnodes = unix_time();
         }
 
@@ -950,9 +950,9 @@ void do_Assoc(Assoc *assoc, DHT *dht)
             IP_Port *ipp = heard->heard_family == AF_INET ? &heard->assoc_heard4 : &heard->assoc_heard6;
 
             LOGGER_DEBUG("[%u] => H[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
-                         idpart2str(heard->client.client_id, 8), ip_ntoa(&ipp->ip), htons(ipp->port));
+                         idpart2str(heard->client.public_key, 8), ip_ntoa(&ipp->ip), htons(ipp->port));
 
-            DHT_getnodes(dht, ipp, heard->client.client_id, target_id);
+            DHT_getnodes(dht, ipp, heard->client.public_key, target_id);
             heard->getnodes = unix_time();
         }
 
@@ -976,11 +976,11 @@ void kill_Assoc(Assoc *assoc)
 
 #ifdef LOGGING
 
-static char buffer[CLIENT_ID_SIZE * 2 + 1];
+static char buffer[crypto_box_PUBLICKEYBYTES * 2 + 1];
 static char *idpart2str(uint8_t *id, size_t len)
 {
-    if (len > CLIENT_ID_SIZE)
-        len = CLIENT_ID_SIZE;
+    if (len > crypto_box_PUBLICKEYBYTES)
+        len = crypto_box_PUBLICKEYBYTES;
 
     size_t i;
 
@@ -1012,7 +1012,7 @@ void Assoc_status(const Assoc *assoc)
                 total++;
 
                 LOGGER_TRACE("[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
-                             (int)bid, (int)cid, entry->hash, idpart2str(entry->client.client_id, 8),
+                             (int)bid, (int)cid, entry->hash, idpart2str(entry->client.public_key, 8),
                              entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
                              entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
                              entry->seen_at ? (entry->seen_family == AF_INET ? '4' : (entry->seen_family == AF_INET6 ? '6' : '?')) : '?',

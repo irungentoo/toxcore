@@ -24,10 +24,9 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "msi.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-
-#include "msi.h"
 
 #include <unistd.h>
 #include <string.h>

@@ -25,20 +25,7 @@
 #define RTP_VERSION 2
 
 #include "../toxcore/Messenger.h"
-
-#define LOGGED_LOCK(mutex) do { \
-    /*LOGGER_DEBUG("Locking mutex: %p", mutex);*/\
-    pthread_mutex_lock(mutex);\
-    /*LOGGER_DEBUG("Locked mutex: %p", mutex);*/\
-} while(0)
-
-#define LOGGED_UNLOCK(mutex) do { \
-    /*LOGGER_DEBUG("Unlocking mutex: %p", mutex);*/\
-    pthread_mutex_unlock(mutex);\
-    /*LOGGER_DEBUG("Unlocked mutex: %p", mutex);*/\
-} while(0)
-
-#define MAX_RTP_SIZE 1500
+#include "stdbool.h"
 
 /**
  * Payload type identifier. Also used as rtp callback prefix. (Not dummies)

@@ -18,7 +18,7 @@
 START_TEST(test_basics)
 {
     /* TODO: real test */
-    uint8_t id[CLIENT_ID_SIZE];
+    uint8_t id[crypto_box_PUBLICKEYBYTES];
     Assoc *assoc = new_Assoc_default(id);
     ck_assert_msg(assoc != NULL, "failed to create default assoc");
 
@@ -63,19 +63,19 @@ START_TEST(test_fillup)
 {
     /* TODO: real test */
     int i, j;
-    uint8_t id[CLIENT_ID_SIZE];
+    uint8_t id[crypto_box_PUBLICKEYBYTES];
     //uint32_t a = current_time();
     uint32_t a = 2710106197;
     srand(a);
 
-    for (i = 0; i < CLIENT_ID_SIZE; ++i) {
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         id[i] = rand();
     }
 
     Assoc *assoc = new_Assoc(6, 15, id);
     ck_assert_msg(assoc != NULL, "failed to create default assoc");
     struct entry {
-        uint8_t id[CLIENT_ID_SIZE];
+        uint8_t id[crypto_box_PUBLICKEYBYTES];
         IPPTs ippts_send;
         IP_Port ipp_recv;
     };
@@ -85,7 +85,7 @@ START_TEST(test_fillup)
 
     for (j = 0; j < 128; ++j) {
 
-        for (i = 0; i < CLIENT_ID_SIZE; ++i) {
+        for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
             entries[j].id[i] = rand();
         }
 
@@ -100,7 +100,7 @@ START_TEST(test_fillup)
         entries[j].ipp_recv = ipp;
 
         if (j % 16 == 0) {
-            memcpy(entries[j].id, id, CLIENT_ID_SIZE - 30);
+            memcpy(entries[j].id, id, crypto_box_PUBLICKEYBYTES - 30);
             memcpy(&closest[j / 16], &entries[j], sizeof(struct entry));
 
         }
@@ -124,7 +124,7 @@ START_TEST(test_fillup)
 
     for (i = 0; i < 8; ++i) {
         for (j = 0; j < 8; ++j) {
-            if (id_equal(entri[j]->client_id, closest[i].id))
+            if (id_equal(entri[j]->public_key, closest[i].id))
                 ++good;
         }
     }

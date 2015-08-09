@@ -54,25 +54,25 @@ void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
     }
 }
 
-/* Returns 1 if client_id has a furthest distance to comp_client_id
-   than all client_id's  in the list */
-uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t length, const uint8_t *client_id)
+/* Returns 1 if public_key has a furthest distance to comp_client_id
+   than all public_key's  in the list */
+uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t length, const uint8_t *public_key)
 {
     uint32_t i;
 
     for (i = 0; i < length; ++i)
-        if (id_closest(comp_client_id, client_id, list[i].client_id) == 1)
+        if (id_closest(comp_client_id, public_key, list[i].public_key) == 1)
             return 0;
 
     return 1;
 }
 
-int client_in_list(Client_data *list, uint32_t length, const uint8_t *client_id)
+int client_in_list(Client_data *list, uint32_t length, const uint8_t *public_key)
 {
     int i;
 
     for (i = 0; i < (int)length; ++i)
-        if (id_equal(client_id, list[i].client_id))
+        if (id_equal(public_key, list[i].public_key))
             return i;
 
     return -1;
@@ -85,7 +85,7 @@ void test_addto_lists_update(DHT            *dht,
 {
     int used, test, test1, test2, found;
     IP_Port test_ipp;
-    uint8_t test_id[CLIENT_ID_SIZE];
+    uint8_t test_id[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     // check id update for existing ip_port
@@ -104,7 +104,7 @@ void test_addto_lists_update(DHT            *dht,
     // check ip_port update for existing id
     test = rand() % length;
     test_ipp.port = rand() % TOX_PORT_DEFAULT;
-    id_copy(test_id, list[test].client_id);
+    id_copy(test_id, list[test].public_key);
 
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
@@ -118,7 +118,7 @@ void test_addto_lists_update(DHT            *dht,
     test2 = rand() % (length / 2) + length / 2;
 
     ipport_copy(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port);
-    id_copy(test_id, list[test2].client_id);
+    id_copy(test_id, list[test2].public_key);
 
     if (ipv6) list[test2].assoc6.ip_port.port = -1;
     else list[test2].assoc4.ip_port.port = -1;
@@ -134,7 +134,7 @@ void test_addto_lists_update(DHT            *dht,
     test2 = rand() % (length / 2) + length / 2;
 
     ipport_copy(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port);
-    id_copy(test_id, list[test1].client_id);
+    id_copy(test_id, list[test1].public_key);
 
     if (ipv6) list[test1].assoc6.ip_port.port = -1;
     else list[test1].assoc4.ip_port.port = -1;
@@ -153,10 +153,10 @@ void test_addto_lists_bad(DHT            *dht,
 {
     // check "bad" clients replacement
     int used, test1, test2, test3;
-    uint8_t client_id[CLIENT_ID_SIZE], test_id1[CLIENT_ID_SIZE], test_id2[CLIENT_ID_SIZE], test_id3[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES], test_id1[crypto_box_PUBLICKEYBYTES], test_id2[crypto_box_PUBLICKEYBYTES], test_id3[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
-    randombytes(client_id, sizeof(client_id));
+    randombytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
 
     test1 = rand() % (length / 3);
@@ -164,9 +164,9 @@ void test_addto_lists_bad(DHT            *dht,
     test3 = rand() % (length / 3) + 2 * length / 3;
     ck_assert_msg(!(test1 == test2 || test1 == test3 || test2 == test3), "Wrong test indices are chosen");
 
-    id_copy((uint8_t *)&test_id1, list[test1].client_id);
-    id_copy((uint8_t *)&test_id2, list[test2].client_id);
-    id_copy((uint8_t *)&test_id3, list[test3].client_id);
+    id_copy((uint8_t *)&test_id1, list[test1].public_key);
+    id_copy((uint8_t *)&test_id2, list[test2].public_key);
+    id_copy((uint8_t *)&test_id3, list[test3].public_key);
 
     // mark nodes as "bad"
     if (ipv6) {
@@ -180,10 +180,10 @@ void test_addto_lists_bad(DHT            *dht,
     }
 
     ip_port->port += 1;
-    used = addto_lists(dht, *ip_port, client_id);
+    used = addto_lists(dht, *ip_port, public_key);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
 
-    ck_assert_msg(client_in_list(list, length, client_id) >= 0, "Client id is not in the list");
+    ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Client id is not in the list");
     ck_assert_msg(client_in_list(list, length, test_id2) >= 0, "Wrong bad client removed");
     ck_assert_msg(client_in_list(list, length, test_id3) >= 0, "Wrong bad client removed");
 }
@@ -196,10 +196,10 @@ void test_addto_lists_possible_bad(DHT            *dht,
 {
     // check "possibly bad" clients replacement
     int used, test1, test2, test3;
-    uint8_t client_id[CLIENT_ID_SIZE], test_id1[CLIENT_ID_SIZE], test_id2[CLIENT_ID_SIZE], test_id3[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES], test_id1[crypto_box_PUBLICKEYBYTES], test_id2[crypto_box_PUBLICKEYBYTES], test_id3[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
-    randombytes(client_id, sizeof(client_id));
+    randombytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
 
     test1 = rand() % (length / 3);
@@ -207,9 +207,9 @@ void test_addto_lists_possible_bad(DHT            *dht,
     test3 = rand() % (length / 3) + 2 * length / 3;
     ck_assert_msg(!(test1 == test2 || test1 == test3 || test2 == test3), "Wrong test indices are chosen");
 
-    id_copy((uint8_t *)&test_id1, list[test1].client_id);
-    id_copy((uint8_t *)&test_id2, list[test2].client_id);
-    id_copy((uint8_t *)&test_id3, list[test3].client_id);
+    id_copy((uint8_t *)&test_id1, list[test1].public_key);
+    id_copy((uint8_t *)&test_id2, list[test2].public_key);
+    id_copy((uint8_t *)&test_id3, list[test3].public_key);
 
     // mark nodes as "possibly bad"
     if (ipv6) {
@@ -223,10 +223,10 @@ void test_addto_lists_possible_bad(DHT            *dht,
     }
 
     ip_port->port += 1;
-    used = addto_lists(dht, *ip_port, client_id);
+    used = addto_lists(dht, *ip_port, public_key);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
 
-    ck_assert_msg(client_in_list(list, length, client_id) >= 0, "Client id is not in the list");
+    ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Client id is not in the list");
 
     int inlist_id1 = client_in_list(list, length, test_id1) >= 0;
     int inlist_id2 = client_in_list(list, length, test_id2) >= 0;
@@ -258,28 +258,28 @@ void test_addto_lists_good(DHT            *dht,
                            IP_Port        *ip_port,
                            const uint8_t  *comp_client_id)
 {
-    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     mark_all_good(list, length, ipv6);
 
     // check "good" client id replacement
     do {
-        randombytes(client_id, sizeof(client_id));
-    } while (is_furthest(comp_client_id, list, length, client_id));
+        randombytes(public_key, sizeof(public_key));
+    } while (is_furthest(comp_client_id, list, length, public_key));
 
     ip_port->port += 1;
-    addto_lists(dht, *ip_port, client_id);
-    ck_assert_msg(client_in_list(list, length, client_id) >= 0, "Good client id is not in the list");
+    addto_lists(dht, *ip_port, public_key);
+    ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Good client id is not in the list");
 
     // check "good" client id skip
     do {
-        randombytes(client_id, sizeof(client_id));
-    } while (!is_furthest(comp_client_id, list, length, client_id));
+        randombytes(public_key, sizeof(public_key));
+    } while (!is_furthest(comp_client_id, list, length, public_key));
 
     ip_port->port += 1;
-    addto_lists(dht, *ip_port, client_id);
-    ck_assert_msg(client_in_list(list, length, client_id) == -1, "Good client id is in the list");
+    addto_lists(dht, *ip_port, public_key);
+    ck_assert_msg(client_in_list(list, length, public_key) == -1, "Good client id is in the list");
 }
 
 void test_addto_lists(IP ip)
@@ -291,26 +291,26 @@ void test_addto_lists(IP ip)
     ck_assert_msg(dht != 0, "Failed to create DHT");
 
     IP_Port ip_port = { .ip = ip, .port = TOX_PORT_DEFAULT };
-    uint8_t client_id[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     int i, used;
 
     // check lists filling
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
-        randombytes(client_id, sizeof(client_id));
-        used = addto_lists(dht, ip_port, client_id);
+        randombytes(public_key, sizeof(public_key));
+        used = addto_lists(dht, ip_port, public_key);
         ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing ip_port");
     }
 
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         ip_port.port += 1;
-        used = addto_lists(dht, ip_port, client_id);
-        ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing client_id");
+        used = addto_lists(dht, ip_port, public_key);
+        ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing public_key");
     }
 
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         ip_port.port += 1;
-        randombytes(client_id, sizeof(client_id));
-        used = addto_lists(dht, ip_port, client_id);
+        randombytes(public_key, sizeof(public_key));
+        used = addto_lists(dht, ip_port, public_key);
         ck_assert_msg(used >= 1, "Wrong number of added clients");
     }
 
@@ -333,14 +333,14 @@ void test_addto_lists(IP ip)
 
     for (i = 0; i < dht->num_friends; ++i)
         test_addto_lists_possible_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
-                                      dht->friends_list[i].client_id);
+                                      dht->friends_list[i].public_key);
     */
     // check "good" entries
     test_addto_lists_good(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
 
     for (i = 0; i < dht->num_friends; ++i)
         test_addto_lists_good(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
-                              dht->friends_list[i].client_id);
+                              dht->friends_list[i].public_key);
 
     kill_DHT(dht);
     kill_networking(net);

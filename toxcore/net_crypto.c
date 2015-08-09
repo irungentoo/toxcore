@@ -1,7 +1,6 @@
 /* net_crypto.c
  *
  * Functions for the core network crypto.
- * See also: http://wiki.tox.im/index.php/DHT
  *
  * NOTE: This code has to be perfect. We don't mess around with encryption.
  *
@@ -700,13 +699,15 @@ static int handle_request_packet(Packets_Array *send_array, const uint8_t *data,
             n = 0;
             ++requested;
         } else {
-            uint64_t sent_time = send_array->buffer[num]->sent_time;
+            if (send_array->buffer[num]) {
+                uint64_t sent_time = send_array->buffer[num]->sent_time;
 
-            if (l_sent_time < sent_time)
-                l_sent_time = sent_time;
+                if (l_sent_time < sent_time)
+                    l_sent_time = sent_time;
 
-            free(send_array->buffer[num]);
-            send_array->buffer[num] = NULL;
+                free(send_array->buffer[num]);
+                send_array->buffer[num] = NULL;
+            }
         }
 
         if (n == 255) {
@@ -2033,7 +2034,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 #define REQUEST_PACKETS_COMPARE_CONSTANT (0.125 * 100.0)
 
 /* Multiplier for maximum allowed resends. */
-#define PACKET_RESEND_MULTIPLIER 3
+#define PACKET_RESEND_MULTIPLIER 3.5
 
 /* Timeout for increasing speed after congestion event (in ms). */
 #define CONGESTION_EVENT_TIMEOUT 2000
@@ -2145,7 +2146,7 @@ static void send_crypto_packets(Net_Crypto *c)
             int ret = send_requested_packets(c, i, conn->packets_left * PACKET_RESEND_MULTIPLIER);
 
             if (ret != -1) {
-                if (ret < conn->packets_left) {
+                if ((unsigned int)ret < conn->packets_left) {
                     conn->packets_left -= ret;
                 } else {
                     conn->last_congestion_event = temp_time;
