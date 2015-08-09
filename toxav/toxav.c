@@ -113,7 +113,7 @@ int callback_capabilites(void* toxav_inst, MSICall* call);
 
 bool audio_bit_rate_invalid(uint32_t bit_rate);
 bool video_bit_rate_invalid(uint32_t bit_rate);
-bool invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state);
+bool invoke_call_state_callback(ToxAV* av, uint32_t friend_number, uint32_t state);
 ToxAVCall* call_new(ToxAV* av, uint32_t friend_number, TOXAV_ERR_CALL* error);
 ToxAVCall* call_get(ToxAV* av, uint32_t friend_number);
 ToxAVCall* call_remove(ToxAVCall* call);
@@ -1104,7 +1104,7 @@ int callback_start(void* toxav_inst, MSICall* call)
         return -1;
     }
     
-    if (!invoke_call_state(toxav, call->friend_number, call->peer_capabilities)) {
+    if (!invoke_call_state_callback(toxav, call->friend_number, call->peer_capabilities)) {
         callback_error(toxav_inst, call);
         pthread_mutex_unlock(toxav->mutex);
         return -1;
@@ -1119,10 +1119,12 @@ int callback_end(void* toxav_inst, MSICall* call)
     ToxAV* toxav = toxav_inst;
     pthread_mutex_lock(toxav->mutex);
     
-    invoke_call_state(toxav, call->friend_number, TOXAV_FRIEND_CALL_STATE_FINISHED);
+    invoke_call_state_callback(toxav, call->friend_number, TOXAV_FRIEND_CALL_STATE_FINISHED);
     
-    call_kill_transmission(call->av_call);
-    call_remove(call->av_call);
+    if (call->av_call) {
+        call_kill_transmission(call->av_call);
+        call_remove(call->av_call);
+    }
     
     pthread_mutex_unlock(toxav->mutex);
     return 0;
@@ -1133,10 +1135,12 @@ int callback_error(void* toxav_inst, MSICall* call)
     ToxAV* toxav = toxav_inst;
     pthread_mutex_lock(toxav->mutex);
     
-    invoke_call_state(toxav, call->friend_number, TOXAV_FRIEND_CALL_STATE_ERROR);
+    invoke_call_state_callback(toxav, call->friend_number, TOXAV_FRIEND_CALL_STATE_ERROR);
     
-    call_kill_transmission(call->av_call);
-    call_remove(call->av_call);
+    if (call->av_call) {
+        call_kill_transmission(call->av_call);
+        call_remove(call->av_call);
+    }
     
     pthread_mutex_unlock(toxav->mutex);
     return 0;
@@ -1157,7 +1161,7 @@ int callback_capabilites(void* toxav_inst, MSICall* call)
     else
         rtp_stop_receiving(((ToxAVCall*)call->av_call)->video.first);
     
-    invoke_call_state(toxav, call->friend_number, call->peer_capabilities);
+    invoke_call_state_callback(toxav, call->friend_number, call->peer_capabilities);
     
     pthread_mutex_unlock(toxav->mutex);
     return 0;
@@ -1178,7 +1182,7 @@ bool video_bit_rate_invalid(uint32_t bit_rate)
     return false;
 }
 
-bool invoke_call_state(ToxAV* av, uint32_t friend_number, uint32_t state)
+bool invoke_call_state_callback(ToxAV* av, uint32_t friend_number, uint32_t state)
 {
     if (av->scb.first)
         av->scb.first(av, friend_number, state, av->scb.second);
@@ -1288,6 +1292,10 @@ ToxAVCall* call_remove(ToxAVCall* call)
     ToxAVCall* prev = call->prev;
     ToxAVCall* next = call->next;
     
+    /* Set av call in msi to NULL in order to know if call if ToxAVCall is
+     * removed from the msi call.
+     */
+    call->msi_call->av_call = NULL;
     free(call);
     
     if (prev)
