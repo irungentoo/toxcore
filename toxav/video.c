@@ -324,6 +324,16 @@ bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate)
         return false;
     }
     
+    cfg.rc_target_bitrate = bit_rate;
+    cfg.g_w = 4000;
+    cfg.g_h = 4000;
+    cfg.g_pass = VPX_RC_ONE_PASS;
+    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+    cfg.g_lag_in_frames = 0;
+    cfg.kf_min_dist = 0;
+    cfg.kf_max_dist = 48;
+    cfg.kf_mode = VPX_KF_AUTO;
+    
     rc = vpx_codec_enc_init_ver(dest, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, 
                                 VPX_ENCODER_ABI_VERSION);
     
@@ -331,16 +341,6 @@ bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate)
         LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
         return false;
     }
-    
-    cfg.rc_target_bitrate = bit_rate;
-    cfg.g_w = 800;
-    cfg.g_h = 600;
-    cfg.g_pass = VPX_RC_ONE_PASS;
-    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
-    cfg.g_lag_in_frames = 0;
-    cfg.kf_min_dist = 0;
-    cfg.kf_max_dist = 48;
-    cfg.kf_mode = VPX_KF_AUTO;
     
     rc = vpx_codec_control(dest, VP8E_SET_CPUUSED, 8);
     
