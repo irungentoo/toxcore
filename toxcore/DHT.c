@@ -2422,8 +2422,6 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
 
                 int num = unpack_nodes(dht->loaded_nodes_list, MAX_SAVED_DHT_NODES, NULL, data, length, 0);
 
-                Node_format *client_list = (Node_format *)data;
-
                 if (num > 0) {
                     dht->loaded_num_nodes = num;
                 } else {
