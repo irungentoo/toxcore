@@ -1921,7 +1921,7 @@ bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t pee
     return 0;
 }
 
-bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumber, TOX_ERR_GROUP_INVITE_FRIEND *error)
+bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, uint32_t friend_number, TOX_ERR_GROUP_INVITE_FRIEND *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1931,7 +1931,7 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, int32_t friendnumbe
         return 0;
     }
 
-    int ret = gc_invite_friend(m->group_handler, chat, friendnumber);
+    int ret = gc_invite_friend(m->group_handler, chat, friend_number);
 
     switch (ret) {
         case 0:

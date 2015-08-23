@@ -255,7 +255,7 @@ struct Messenger {
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);
     void *friend_connectionstatuschange_internal_userdata;
 
-    void (*group_invite)(struct Messenger *m, int32_t, const uint8_t *, size_t, void *);
+    void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *group_invite_userdata;
 
     void (*file_sendrequest)(struct Messenger *m, uint32_t, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t,
@@ -553,9 +553,9 @@ void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, uns
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, const uint8_t *data, size_t length, void *userdata)
+ *  Function(Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length, void *userdata)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, size_t, void *),
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                              void *userdata);
 
 /* Send a group invite packet.
@@ -563,7 +563,7 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_
  *  return 0 on success
  *  return -1 on failure
  */
-int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+int send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length);
 
 
 /****************FILE SENDING*****************/

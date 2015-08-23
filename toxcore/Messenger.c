@@ -920,9 +920,9 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
 
 /* Set the callback for group invites.
  *
- *  Function(Messenger *m, int32_t friendnumber, const uint8_t *data, size_t length, void *userdata)
+ *  Function(Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length, void *userdata)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_t, const uint8_t *, size_t, void *),
+void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                              void *userdata)
 {
     m->group_invite = function;
@@ -934,7 +934,7 @@ void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, int32_
  *  return 0 on success
  *  return -1 on failure
  */
-int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
+int send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length)
 {
     if (write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0))
         return 0;
