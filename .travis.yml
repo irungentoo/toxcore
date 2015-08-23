@@ -45,7 +45,7 @@ before_script:
 
 script:
   - autoreconf -i
-  - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --enable-ntox
+  - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --disable-ntox
   - make -j3
   - make check
   - make dist
