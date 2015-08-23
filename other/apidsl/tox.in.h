@@ -2195,11 +2195,12 @@ namespace group {
 
     /**
      * May kick, ban and set the user and observer roles for peers below this role.
+     * May also set the group topic.
      */
     MODERATOR,
 
     /**
-     * May communicate with other peers and change the group topic.
+     * May communicate with other peers normally.
      */
     USER,
 
@@ -2986,11 +2987,11 @@ namespace group {
      * This function creates an invite request packet and pushes it to the send queue.
      *
      * @param groupnumber The group number of the group the message is intended for.
-     * @param friendnumber The friendnumber of the friend the invite is intended for.
+     * @param friend_number The friend number of the friend the invite is intended for.
      *
      * @return true on success.
      */
-    bool friend(uint32_t groupnumber, int32_t friendnumber) {
+    bool friend(uint32_t groupnumber, uint32_t friend_number) {
       /**
        * The group number passed did not designate a valid group.
        */
@@ -3043,11 +3044,11 @@ namespace group {
    */
   event invite {
     /**
-     * @param friendnumber The friendnumber of the contact who sent the invite.
+     * @param friend_number The friend number of the contact who sent the invite.
      * @param invite_data The invite data.
      * @param length The length of invite_data.
      */
-    typedef void(int32_t friendnumber, const uint8_t[length] invite_data);
+    typedef void(uint32_t friend_number, const uint8_t[length] invite_data);
   }
 
   /**
