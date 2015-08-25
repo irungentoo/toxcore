@@ -36,7 +36,7 @@ This document details the groupchat implementation, giving a high level overview
 * Permanent group names (set on creation)
 * Topics (may only be set by moderators and the founder)
 * Password protection
-* Self-repairing (auto-rejoin on disconnect, group split protection etc.)
+* Self-repairing (auto-rejoin on disconnect, group split protection, state syncing)
 * Identity separation from the Tox ID
 * Ability to ignore peers
 * Unique nicknames which can be set on a per-group basis
@@ -66,7 +66,7 @@ The only way to join the group is by having someone in your friend list send you
 
 <a name="Cryptography" />
 ## Cryptography
-Group chats make use of 13 unique keys in total: Two permanent keypairs (encryption and signature), two group keypairs (encryption and signature), one session keypair (encryption), one shared symmetric key (encryption), and one temp DHT keypair (encryption). 
+Groupchats make use of 13 unique keys in total: Two permanent keypairs (encryption and signature), two group keypairs (encryption and signature), one session keypair (encryption), one shared symmetric key (encryption), and one temp DHT keypair (encryption). 
 
 One of the most important security improvements from the old groupchat implementation is the fact that messages are no longer encrypted with a group-wide shared key and relayed between peers. Instead, connections are 1-to-1 (a complete graph), meaning an outbound message is sent once per peer, and encrypted/decrypted using a key unique to each peer. This prevents MITM attacks that were previously possible, thus guaranteeing message integrity. This additionally ensures that private messages are truly private.
 
@@ -78,7 +78,7 @@ All cryptography related operations use the [NaCl/libsodium cryptography library
 ### Permanent keypairs
 When a peer creates or joins a group they generate two permanent keypairs: an encryption keypair and a signature keypair, both of which are unique to the group. The two public keys are the only guaranteed way to identify a peer, and both keypairs will persist for as long as a peer remains in the group (even across client restarts). If a peer exits the group these keypairs will be lost forever.
 
-This encryption keypair is not used for any encryption operations except for the initial handshake when connecting to another peer. For usage details on the signature key, see the Moderation section.
+This encryption keypair is not used for any encryption operations except for the initial handshake when connecting to another peer. For usage details on the signature key, see the [Moderation](#Moderation) section.
 
 <a name="Session keypair" />
 ### Session keypair/shared symmetric key
@@ -94,7 +94,7 @@ The group secret keys are similar to the permanent keypairs in that they will pe
 
 <a name="DHT keypair" />
 ### Temporary DHT keypair
-All group related DHT procedures make use of toxcore's temp DHT keypair. This keypair is generated when the Tox object is initialized and does not persist across client restarts. See the [Announcement/DHT](#Announcement/DHT) section for further details.
+All group related DHT procedures make use of toxcore's temp DHT keypair. This keypair is generated when the Tox object is initialized and does not persist across client restarts. See the [DHT Announcements](#DHT Announcements) section for further details.
 
 <a name="Founders" />
 ## Founders
@@ -107,9 +107,9 @@ The peer who creates the group is the group's founder. Founders have a set of ad
 
 <a name="Shared state" />
 ### Shared state
-A group holds a data structure called the **shared state** which is given to every peer who joins the group. In this structure resides all data pertaining to the group that may only be modifiable by the group founder. This includes things like the group name, the group type, the peer limit, and the password. Additionally, the shared state holds a copy of the group founder's public encryption and signature keys, which is how other peers in the group are able to verify the identity of the group founder.
+Groups contain a data structure called the **shared state** which is given to every peer who joins the group. In this structure resides all data pertaining to the group that must only be modifiable by the group founder. This includes things like the group name, the group type, the peer limit, and the password. Additionally, the shared state holds a copy of the group founder's public encryption and signature keys, which is how other peers in the group are able to verify the identity of the group founder.
 
-The shared state is signed by the founder using the group secret signature key. As the founder is the only peer who holds this secret key, this ensures that the shared state may be shared by untrusted peers, even in the absence of the founder, without being forged or otherwise tampered with.
+The shared state is signed by the founder using the group secret signature key. As the founder is the only peer who holds this secret key, this ensures that the shared state may be safely shared by untrusted peers, even in the absence of the founder.
 
 When the founder modifies the shared state, he increments the shared state version, signs the new shared state data with the group secret signature key, and broadcasts the new shared state data along with its signature to the entire group. When a peer receives this broadcast, he uses the group public signature key to verify that the data was signed with the group secret signature key, and also verifies that the new version is not older than the current version.
 
@@ -125,9 +125,9 @@ When the founder modifies the moderator list, he updates the mod_list_hash, incr
 
 <a name="Sanctions list" />
 ### Sanctions list
-Each peer holds a copy of the **sanctions list**. This list holds two sublists: Banned peers, and peers with the observer role, or the **ban list** and the **observer list** respectively. The ban list contains entries of peers who have been banned, including their last used nickname, IP address, and a unique ID. The sanctions list contains entries of peers who have been demoted to the observer role, including just their public encryption key.
+Each peer holds a copy of the **sanctions list**. This list holds two sublists: Banned peers, and peers with the observer role, or the **ban list** and the **observer list** respectively. The ban list contains entries of peers who have been banned, including their last used nickname, IP address/port, and a unique ID. The sanctions list contains entries of peers who have been demoted to the observer role, including just their public encryption key.
 
-All entries contain additionally contain a timestamp of the time the entry was made, the public signature key of the peer who set the sanction, and a signature of the entry's data, which is signed by the peer who created the entry using their secret signature key. Individual entries are verified by ensuring that the entry's public signature key is present in the moderator list, and then verifying that the entry's data was signed by the owner of that key.
+All entries contain additionally contain a timestamp of the time the entry was made, the public signature key of the peer who set the sanction, and a signature of the entry's data, which is signed by the peer who created the entry using their secret signature key. Individual entries are verified by ensuring that the entry's public signature key belongs to the founder or is present in the moderator list, and then verifying that the entry's data was signed by the owner of that key.
 
 Although each individual entry can be verified, we still need a way to verify that the list as a whole is complete and identical for every peer, otherwise any peer would be able to remove entries arbitrarily, or replace the list with an older version. Therefore each peer holds a copy of the **sanctions list credentials**. This is a data structure that holds the version, a hash (sha256) of all sanctions list entries plus the version, the public signature key of the last peer to have modified the sanctions list, and a signature of the hash, which is created by that key.
 
@@ -145,7 +145,7 @@ Peers send four unsigned 32-bit integers along with their ping packets: Their pe
 
 <a name="Group syncing" />
 ## Group syncing
-In order to prevent entirely separate subgroups with the same chat ID from being created, be it due to network issues or a malicious MITM attempt, it's necessary for groups to periodically search the DHT for announced nodes that match the group's chat ID but are not present in the group. In case an unknown node is found, an attempt will be made to connect with it. If successful, the peer sync mechanism will merge the subgroups shortly. 
+In order to prevent entirely separate subgroups with the same Chat ID from being created, be it due to network issues or a malicious MITM attempt, it's necessary for groups to periodically search the DHT for announced nodes that match the group's Chat ID but are not present in the group. In case an unknown node is found, an attempt will be made to connect with it. If successful, the state sync mechanism will merge the subgroups shortly. 
 
 Since we don't want to spam the DHT with a redundant number of requests that grows linearly with the size of the group, peers will take turns doing the search. Peers decide independently if it's their turn to search. Each peer has the same base timer T, and every interval of T they will do a search with a probability P which is inversely proportionate to the number of peers N. For example, if N=1 then P=1.0. If N=4 then P=0.25. If N=100 then P=0.01 and so on. This guarantees that a given group will do 1 search per T interval on average regardless of its size, and it also ensures that a full spectrum of the network is searched. Moreover, because peers act independently rather than in coordination, malicious peers have little exploit potential (e.g. attempting to stop the group from searching the DHT).
 
@@ -157,7 +157,7 @@ Groupchats make use of the Tox DHT network in order to allow for groups that can
 
 <a name="Announcement requests" />
 ### Announcement requests
-When peers create or successfully join a public group they send an **announcement request**, containing information about the group that they're announcing and themselves to K of their close DHT nodes. The information in this request includes the announcer's group public encryption key and IP address/port, as well as the Chat ID of the group. The DHT attempts to store this announcement in the node that's closest to the Chat ID (**closeness** is calculated by the DHT's close function). DHT nodes can store up to N announcements each, after which they will replace the oldest announcements first. See the [Robustness and redundancy](#Robustness and redundancy) section for details on how DDOS attacks are mitigated.
+When peers create or successfully join a public group they send an **announcement request**, containing information about the group that they're announcing and themselves to K of their close DHT nodes. The information in this request includes the announcer's group public encryption key and IP address/port, as well as the Chat ID of the group. The DHT attempts to store this announcement in the node that's closest to the Chat ID (**closeness** is calculated by the DHT's close function). DHT nodes can store up to N announcements each, after which they will replace the oldest announcements first. See the [Redundancy](#Redundancy) section for details on how DDOS attacks are mitigated.
 
 <a name="Get nodes requests" />
 ### Get nodes requests
