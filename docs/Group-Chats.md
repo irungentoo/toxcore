@@ -17,6 +17,7 @@ This document details the groupchat implementation, giving a high level overview
 - [Moderation](#Moderation)
   - [Moderator list](#Moderator list)
   - [Sanctions list](#Sanctions list)
+- [Topics](#Topics)
 - [State syncing](#State syncing)
 - [Group syncing](#Group syncing)
 - [DHT Announcements](#DHT Announcements)
@@ -58,21 +59,21 @@ Groups can have two types: private and public. The type can be set on creation, 
 
 <a name="Public" />
 ### Public
-Anyone may join the group using the Chat ID. If the group is in this state, even if the Chat ID is never explicitly shared with someone outside of the group, information including the Chat ID, IP addresses, and peer ID's (but not Tox ID's) is visible to anyone with access to a node storing a DHT entry for the given group. See the [DHT Announcements](#DHT Announcements) section for details on how this works.
+Anyone may join the group using the Chat ID. If the group is public, information about peers inside the group, including their IP addresses and group public keys (but not their Tox ID's) is visible to anyone with access to a node storing their DHT announcement. See the [DHT Announcements](#DHT Announcements) section for details.
 
 <a name="Private" />
 ### Private
-The only way to join the group is by having someone in your friend list send you an invite. If the group is in this state, no group information (mentioned in the Public section) is present in the DHT; the DHT is not used for any purpose at all. If a public group is set to private, all DHT information related to the group will expire shortly.
+The only way to join a private group is by having someone in your friend list send you an invite. If the group is private, no peer/group information (mentioned in the Public section) is present in the DHT; the DHT is not used for any purpose at all. If a public group is set to private, all DHT information related to the group will expire within a few minutes.
 
 <a name="Cryptography" />
 ## Cryptography
-Groupchats make use of 13 unique keys in total: Two permanent keypairs (encryption and signature), two group keypairs (encryption and signature), one session keypair (encryption), one shared symmetric key (encryption), and one temp DHT keypair (encryption). 
+Groupchats use the [NaCl/libsodium cryptography library](https://en.wikipedia.org/wiki/NaCl_(software)) for all cryptography related operations. All group communication is end-to-end encrypted. Message confidentiality, integrity, and repudability are guaranteed via [authenticated encryption](https://en.wikipedia.org/wiki/Authenticated_encryption), and [forward secrecy](https://en.wikipedia.org/wiki/Forward_secrecy) is also provided.
 
-One of the most important security improvements from the old groupchat implementation is the fact that messages are no longer encrypted with a group-wide shared key and relayed between peers. Instead, connections are 1-to-1 (a complete graph), meaning an outbound message is sent once per peer, and encrypted/decrypted using a key unique to each peer. This prevents MITM attacks that were previously possible, thus guaranteeing message integrity. This additionally ensures that private messages are truly private.
+One of the most important security improvements from the old groupchat implementation is the removal of a message-relay mechanism that uses a group-wide shared key. Instead, connections are 1-to-1 (a complete graph), meaning an outbound message is sent once per peer, and encrypted/decrypted using a key unique to each peer. This prevents MITM attacks that were previously possible. This additionally ensures that private messages are truly private.
 
-The Tox ID/Tox public key is not used for any purpose. As such, neither peers in a given group nor in the group DHT can be matched with their Tox ID. In other words, there is no way of identifying a peer aside from their IP addresses, nickname, and group public keys. (_Note: group nicknames can be different from the client's main nickname that their friends see_).
+Groups make use of 13 unique keys in total: Two permanent keypairs (encryption and signature), two group keypairs (encryption and signature), one session keypair (encryption), one shared symmetric key (encryption), and one temp DHT keypair (encryption).
 
-All cryptography related operations use the [NaCl/libsodium cryptography library](https://en.wikipedia.org/wiki/NaCl_(software)).
+The Tox ID/Tox public key is not used for any purpose. As such, neither peers in a given group nor in the group DHT can be matched with their Tox ID. In other words, there is no way of identifying a peer aside from their IP address, nickname, and group public key. (_Note: group nicknames can be different from the client's main nickname that their friends see_).
 
 <a name="Permanent keypairs" />
 ### Permanent keypairs
@@ -82,9 +83,9 @@ This encryption keypair is not used for any encryption operations except for the
 
 <a name="Session keypair" />
 ### Session keypair/shared symmetric key
-When two peers establish a connection they each generate a session encryption keypair and share one another's resulting public key. With their own session secret key and the other's session public key, they will both generate the same symmetric encryption key. This symmetric key will be used for all further encryption operations between them for the current session (i.e. until one of them disconnects). 
+When two peers establish a connection they each generate a session encryption keypair and share one another's resulting public key. With their own session secret key and the other's session public key, they will both generate the same symmetric encryption key. This symmetric key will be used for all further encryption operations between them for the current session (i.e. until one of them disconnects).
 
-The purpose of this extra key exchange is to prevent replay attacks in the event that a permanent secret encryption key becomes compromised.
+The purpose of this extra key exchange is to prevent an adversary from decrypting messages from previous sessions in event that a secret encryption key becomes compromised. This is known as forward secrecy.
 
 <a name="Group keypairs" />
 ### Group keypairs
@@ -137,6 +138,14 @@ When the founder kicks, bans or demotes a moderator, he will first go through th
 
 _Note: The sanctions list is not saved to the Tox save file, meaning that if the group ever becomes empty, the sanctions list will be reset. This is in contrast to the shared state and moderator list, which are both saved and will persist even if the group becomes empty._
 
+<a name="Topics" />
+## Topics
+Founders and moderators have the ability to set the **topic**, which is simply an arbitrary string of characters. The integrity of a topic is maintained in a similar manner as sanctions entries, using a data structure called **topic_info**. This is a struct which contains the topic, a version, and the public key of the peer who set it.
+
+When a peer modifies the topic, they will increment the version, sign the new topic+version with their secret signature key, replace the public key with their own, then broadcast the new topic_info data along with the signature to the entire group. When a peer receives this broadcast, they will first check if the public signature key of the setter either belongs to the founder, or is in the moderator list. They will then verify the signature using the setter's public signature key, and finally they will ensure that the version is not older than the current topic version.
+
+If the moderator who set the current topic is kicked, banned, or demoted, the founder will re-sign the topic using his own signature key, and rebroadcast it to the entire group.
+
 <a name="State syncing" />
 ## State syncing
 Peers send four unsigned 32-bit integers along with their ping packets: Their peer count[1], their shared state version, their sanctions credentials version, and their topic version. If a peer receives a ping in which any of these values are greater than their own, this indicates that they may be out of sync with the rest of the group. In this case they will do one of two things: If they already have a sync request flagged for this peer, they will send a sync request. Otherwise they will set the flag and wait until the next ping arrives (this waiting is to correct for false-positives in the case of high network latency). The flag is reset after a sync request is sent, or whenever a ping is received in which all data is in sync.
@@ -145,7 +154,7 @@ Peers send four unsigned 32-bit integers along with their ping packets: Their pe
 
 <a name="Group syncing" />
 ## Group syncing
-In order to prevent entirely separate subgroups with the same Chat ID from being created, be it due to network issues or a malicious MITM attempt, it's necessary for groups to periodically search the DHT for announced nodes that match the group's Chat ID but are not present in the group. In case an unknown node is found, an attempt will be made to connect with it. If successful, the state sync mechanism will merge the subgroups shortly. 
+In order to prevent entirely separate subgroups with the same Chat ID from being created, be it due to network issues or a malicious MITM attempt, it's necessary for groups to periodically search the DHT for announced nodes that match the group's Chat ID but are not present in the group. In case an unknown node is found, an attempt will be made to connect with it. If successful, the state sync mechanism will merge the subgroups shortly.
 
 Since we don't want to spam the DHT with a redundant number of requests that grows linearly with the size of the group, peers will take turns doing the search. Peers decide independently if it's their turn to search. Each peer has the same base timer T, and every interval of T they will do a search with a probability P which is inversely proportionate to the number of peers N. For example, if N=1 then P=1.0. If N=4 then P=0.25. If N=100 then P=0.01 and so on. This guarantees that a given group will do 1 search per T interval on average regardless of its size, and it also ensures that a full spectrum of the network is searched. Moreover, because peers act independently rather than in coordination, malicious peers have little exploit potential (e.g. attempting to stop the group from searching the DHT).
 
@@ -161,12 +170,12 @@ When peers create or successfully join a public group they send an **announcemen
 
 <a name="Get nodes requests" />
 ### Get nodes requests
-When peers attempt to join a public group using the Chat ID they send a **get nodes request**, containing their IP/port, their group public encryption key, and the Chat ID to K of their close nodes. Those nodes will then check if any of their announcement entries match the supplied Chat ID. If not, they will relay the message to K of their own close nodes who will repeat the process (note that the close function guarantees that each successive relay will bring us closer to the Chat ID until we either find one of its entries, or have traversed the entire DHT network). 
+When peers attempt to join a public group using the Chat ID they send a **get nodes request**, containing their IP/port, their group public encryption key, and the Chat ID to K of their close nodes. Those nodes will then check if any of their announcement entries match the supplied Chat ID. If not, they will relay the message to K of their own close nodes who will repeat the process (note that the close function guarantees that each successive relay will bring us closer to the Chat ID until we either find one of its entries, or have traversed the entire DHT network).
 
-Once a node finds an entry with the queried Chat ID it will send a **send nodes response** to the original node who made the query. The response will contain at least one entry (possibly more) which will hold the group public encryption key and the IP address/port of a peer who had previously made an announcement request for Chat ID. With this information the announcer will automatically initiate the handshake protocol and attempt to join the group.
+Once a node finds an entry with the queried Chat ID it will send a **send nodes response** to the original node who made the request. The response will contain at least one entry (possibly more) which will hold the group public encryption key and the IP address/port of a peer who had previously made an announcement request for Chat ID. With this information the requester will automatically initiate the handshake protocol and attempt to join the group.
 
 <a name="Redundancy" />
 ### Redundancy
-DHT nodes will send ping requests to all of their announcement entries periodically in order to ensure that they are still present in the network/group. When a peer goes offline or leaves a group, they no longer respond to these ping requests, and the nodes holding their entries will discard them. 
+DHT nodes will send ping requests to all of their announcement entries periodically in order to ensure that they are still present in the network/group. When a peer goes offline or leaves a group, they no longer respond to these ping requests, and the nodes holding their entries will discard them.
 
 There are scenarios in which an announcement may be dropped from the network, such as if the sole node holding the entry goes offline, or in the case of DDOS attack which attempts to push all old entries out of the DHT. In order to ensure that those announcements are not permanently lost, announcers will periodically check when they last received a ping request for a given announcement. After a certain amount of time without receiving a ping request they will assume that their entry is no longer in the DHT network and re-announce themselves. This ensures that every peer present in a group has an active announcement in the DHT at all times, and it also ensures that a group cannot become 'lost'.
