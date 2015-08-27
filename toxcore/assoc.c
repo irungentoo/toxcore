@@ -87,7 +87,7 @@ typedef struct candidates_bucket {
 
 struct Assoc {
     hash_t                 self_hash;                          /* hash of self_client_id */
-    uint8_t                self_client_id[CLIENT_ID_SIZE];     /* don't store entries for this */
+    uint8_t                self_client_id[crypto_box_PUBLICKEYBYTES];     /* don't store entries for this */
 
     /* association centralization: clients not in use */
     size_t                 candidates_bucket_bits;
@@ -101,7 +101,7 @@ struct Assoc {
 /*                             HELPER FUNCTIONS                              */
 /*****************************************************************************/
 
-/* the complete distance would be CLIENT_ID_SIZE long...
+/* the complete distance would be crypto_box_PUBLICKEYBYTES long...
  * returns DISTANCE_INDEX_DISTANCE_BITS valid bits */
 static uint64_t id_distance(const Assoc *assoc, void *callback_data, const uint8_t *id_ref, const uint8_t *id_test)
 {
@@ -200,7 +200,7 @@ static hash_t id_hash(const Assoc *assoc, const uint8_t *id)
 {
     uint32_t i, res = 0x19a64e82;
 
-    for (i = 0; i < CLIENT_ID_SIZE; i++)
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++)
         res = ((res << 1) ^ id[i]) + (res >> 31);
 
     /* can't have zero as hash, a) marks an unused spot,
@@ -976,11 +976,11 @@ void kill_Assoc(Assoc *assoc)
 
 #ifdef LOGGING
 
-static char buffer[CLIENT_ID_SIZE * 2 + 1];
+static char buffer[crypto_box_PUBLICKEYBYTES * 2 + 1];
 static char *idpart2str(uint8_t *id, size_t len)
 {
-    if (len > CLIENT_ID_SIZE)
-        len = CLIENT_ID_SIZE;
+    if (len > crypto_box_PUBLICKEYBYTES)
+        len = crypto_box_PUBLICKEYBYTES;
 
     size_t i;
 

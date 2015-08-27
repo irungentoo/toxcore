@@ -52,13 +52,13 @@
 
 #define PORT 33445
 
-uint8_t zeroes_cid[CLIENT_ID_SIZE];
+uint8_t zeroes_cid[crypto_box_PUBLICKEYBYTES];
 
 void print_client_id(uint8_t *public_key)
 {
     uint32_t j;
 
-    for (j = 0; j < CLIENT_ID_SIZE; j++) {
+    for (j = 0; j < crypto_box_PUBLICKEYBYTES; j++) {
         printf("%02hhX", public_key[j]);
     }
 }
@@ -108,7 +108,7 @@ void print_clientlist(DHT *dht)
     for (i = 0; i < LCLIENT_LIST; i++) {
         Client_data *client = &dht->close_clientlist[i];
 
-        if (memcmp(client->public_key, zeroes_cid, CLIENT_ID_SIZE) == 0)
+        if (memcmp(client->public_key, zeroes_cid, crypto_box_PUBLICKEYBYTES) == 0)
             continue;
 
         printf("ClientID: ");
@@ -139,7 +139,7 @@ void print_friendlist(DHT *dht)
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             Client_data *client = &dht->friends_list[k].client_list[i];
 
-            if (memcmp(client->public_key, zeroes_cid, CLIENT_ID_SIZE) == 0)
+            if (memcmp(client->public_key, zeroes_cid, crypto_box_PUBLICKEYBYTES) == 0)
                 continue;
 
             printf("ClientID: ");

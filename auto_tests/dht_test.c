@@ -85,7 +85,7 @@ void test_addto_lists_update(DHT            *dht,
 {
     int used, test, test1, test2, found;
     IP_Port test_ipp;
-    uint8_t test_id[CLIENT_ID_SIZE];
+    uint8_t test_id[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     // check id update for existing ip_port
@@ -153,7 +153,7 @@ void test_addto_lists_bad(DHT            *dht,
 {
     // check "bad" clients replacement
     int used, test1, test2, test3;
-    uint8_t public_key[CLIENT_ID_SIZE], test_id1[CLIENT_ID_SIZE], test_id2[CLIENT_ID_SIZE], test_id3[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES], test_id1[crypto_box_PUBLICKEYBYTES], test_id2[crypto_box_PUBLICKEYBYTES], test_id3[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     randombytes(public_key, sizeof(public_key));
@@ -196,7 +196,7 @@ void test_addto_lists_possible_bad(DHT            *dht,
 {
     // check "possibly bad" clients replacement
     int used, test1, test2, test3;
-    uint8_t public_key[CLIENT_ID_SIZE], test_id1[CLIENT_ID_SIZE], test_id2[CLIENT_ID_SIZE], test_id3[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES], test_id1[crypto_box_PUBLICKEYBYTES], test_id2[crypto_box_PUBLICKEYBYTES], test_id3[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     randombytes(public_key, sizeof(public_key));
@@ -258,7 +258,7 @@ void test_addto_lists_good(DHT            *dht,
                            IP_Port        *ip_port,
                            const uint8_t  *comp_client_id)
 {
-    uint8_t public_key[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
 
     mark_all_good(list, length, ipv6);
@@ -291,7 +291,7 @@ void test_addto_lists(IP ip)
     ck_assert_msg(dht != 0, "Failed to create DHT");
 
     IP_Port ip_port = { .ip = ip, .port = TOX_PORT_DEFAULT };
-    uint8_t public_key[CLIENT_ID_SIZE];
+    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     int i, used;
 
     // check lists filling

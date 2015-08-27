@@ -2681,12 +2681,12 @@ void messenger_save(const Messenger *m, uint8_t *data)
 
     uint32_t len;
     uint16_t type;
-    uint32_t *data32, size32 = sizeof(uint32_t);
+    uint32_t size32 = sizeof(uint32_t);
 
-    data32 = (uint32_t *)data;
-    data32[0] = 0;
-    data32[1] = MESSENGER_STATE_COOKIE_GLOBAL;
-    data += size32 * 2;
+    memset(data, 0, size32);
+    data += size32;
+    host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
+    data += size32;
 
 #ifdef DEBUG
     assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
@@ -2872,7 +2872,8 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
     if (length < cookie_len)
         return -1;
 
-    memcpy(data32, data, sizeof(data32));
+    memcpy(data32, data, sizeof(uint32_t));
+    lendian_to_host32(data32 + 1, data + sizeof(uint32_t));
 
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL))
         return load_state(messenger_load_state_callback, m, data + cookie_len,

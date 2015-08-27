@@ -41,12 +41,9 @@
 #define EXT_SECRET_KEY (ENC_SECRET_KEY + SIG_SECRET_KEY)
 #define EXT_PUBLIC_KEY (ENC_PUBLIC_KEY + SIG_PUBLIC_KEY)
 
-/* Size of the client_id in bytes. */
-#define CLIENT_ID_SIZE ENC_PUBLIC_KEY // For consistency
 
 /* Maximum size of a signature (may be smaller) */
 #define SIGNATURE_SIZE crypto_sign_BYTES
-
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
@@ -95,17 +92,17 @@ typedef struct {
     uint8_t     routes_requests_ok;
     /* Time which we last checked this.*/
     uint64_t    routes_requests_timestamp;
-    uint8_t     routes_requests_pingedid[CLIENT_ID_SIZE];
+    uint8_t     routes_requests_pingedid[crypto_box_PUBLICKEYBYTES];
     /* Node sends correct send_node (true (1) or false/didn't check (0)) */
     uint8_t     send_nodes_ok;
     /* Time which we last checked this.*/
     uint64_t    send_nodes_timestamp;
-    uint8_t     send_nodes_pingedid[CLIENT_ID_SIZE];
+    uint8_t     send_nodes_pingedid[crypto_box_PUBLICKEYBYTES];
     /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
     uint8_t     testing_requests;
     /* Time which we last checked this.*/
     uint64_t    testing_timestamp;
-    uint8_t     testing_pingedid[CLIENT_ID_SIZE];
+    uint8_t     testing_pingedid[crypto_box_PUBLICKEYBYTES];
 } Hardening;
 
 typedef struct {

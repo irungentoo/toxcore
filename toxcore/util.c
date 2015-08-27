@@ -28,9 +28,10 @@
 
 #include <time.h>
 
-/* for CLIENT_ID_SIZE */
-#include "DHT.h"
+/* for crypto_box_PUBLICKEYBYTES */
+#include "crypto_core.h"
 
+#include "DHT.h"
 #include "util.h"
 
 
@@ -60,7 +61,7 @@ int is_timeout(uint64_t timestamp, uint64_t timeout)
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src)
 {
-    return memcmp(dest, src, CLIENT_ID_SIZE) == 0;
+    return memcmp(dest, src, crypto_box_PUBLICKEYBYTES) == 0;
 }
 
 bool chat_id_equal(const uint8_t *dest, const uint8_t *src)
@@ -70,20 +71,20 @@ bool chat_id_equal(const uint8_t *dest, const uint8_t *src)
 
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
-    memcpy(dest, src, CLIENT_ID_SIZE);
-    return CLIENT_ID_SIZE;
+    memcpy(dest, src, crypto_box_PUBLICKEYBYTES);
+    return crypto_box_PUBLICKEYBYTES;
 }
 
-STATIC_BUFFER_DEFINE(idtoa, CLIENT_ID_SIZE*2+1);
+STATIC_BUFFER_DEFINE(idtoa, crypto_box_PUBLICKEYBYTES*2+1);
 
 char *id_toa(const uint8_t *id)
 {
     int i;
-    char *str=STATIC_BUFFER_GETBUF(idtoa, CLIENT_ID_SIZE*2+1);
+    char *str=STATIC_BUFFER_GETBUF(idtoa, crypto_box_PUBLICKEYBYTES*2+1);
 
-    str[CLIENT_ID_SIZE*2]=0;
-    for (i=0;i<CLIENT_ID_SIZE;i++)
-        sprintf(str+2*i,"%02x",id[i]);
+    str[crypto_box_PUBLICKEYBYTES*2]=0;
+    for (i = 0;i < crypto_box_PUBLICKEYBYTES; i++)
+        sprintf(str+2*i, "%02x", id[i]);
 
     return str;
 }
