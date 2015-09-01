@@ -11,7 +11,7 @@ Adding a friend
 
 Alice adds Bob to her friends list by adding his 32 byte public key (client_id) to her friends list.  
 2 cases:  
-case 1: Alice adds the public key Bob, then Bob waits for Alice to attempt to connect to him.  
+case 1: Alice adds the public key of Bob, then Bob waits for Alice to attempt to connect to him.  
 case 2: Bob and Alice add their respective public keys to their friends list at the same time.  
     
 case 1:  
