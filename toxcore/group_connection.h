@@ -57,6 +57,8 @@ typedef struct GC_Connection {
     uint64_t recv_message_id;   /* message_id of peer's last message to us */
     struct GC_Message_Ary recv_ary[GCC_BUFFER_SIZE];
 
+    uint32_t    peer_id;    /* Permanent ID (used for the public API) */
+
     GC_PeerAddress   addr;   /* holds peer's extended real public key and ip_port */
     uint32_t    public_key_hash;   /* hash of peer's real encryption public key */
     uint8_t     session_public_key[ENC_PUBLIC_KEY];   /* self session public key for this peer */

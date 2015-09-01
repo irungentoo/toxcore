@@ -2107,15 +2107,6 @@ inline namespace self {
  *
  *****************************************************************************/
 
-/** \subsection peernumbers Peer number behaviour
- *
- * All values between 0 and num_peers-1 are valid peer numbers (i.e. guaranteed to correspond
- * to a peer in the group). Any value outside of this range is not a valid peer number. A given
- * peer's peer number is not permanent; it is subject to change every time a peer joins or
- * leaves the group, with the exception of the client, which is always peer number 0.
- * The client must ensure that it updates all of its pertinent data structures every time the
- * `group_peerlist_update` event is triggered.
- */
 
 /*******************************************************************************
  *
@@ -2224,7 +2215,10 @@ namespace group {
   /**
    * Creates a new group chat.
    *
-   * This function creates a new group chat object adds it to the chats array.
+   * This function creates a new group chat object and adds it to the chats array.
+   *
+   * The client should initiate its peer list with self info after calling this function, as
+   * the peer_join callback will not be triggered.
    *
    * @param privacy_state The privacy state of the group. If this is set to TOX_GROUP_PRIVACY_STATE_PUBLIC,
    *   the group will attempt to announce itself to the DHT and anyone with the Chat ID may join.
@@ -2469,10 +2463,19 @@ namespace group {
     ROLE role {
 
       /**
-       * Returns the client's role for the group instance on success.
+       * returns the client's role for the group instance on success.
        * return value is unspecified on failure.
        */
       get(uint32_t groupnumber) with error for self_query;
+    }
+
+    uint32_t peer_id {
+
+      /**
+       * returns the client's peer id for the group instance on success.
+       * return value is unspecified on failure.
+       */
+       get(uint32_t groupnumber) with error for self_query;
     }
   }
 
@@ -2497,7 +2500,7 @@ namespace group {
        */
       GROUP_NOT_FOUND,
       /**
-       * The peer number passed did not designate a valid peer.
+       * The ID passed did not designate a valid peer.
        */
       PEER_NOT_FOUND,
     }
@@ -2505,16 +2508,16 @@ namespace group {
     uint8_t[length <= MAX_NAME_LENGTH] name {
 
       /**
-       * Return the length of the peer's name. If the group number or peer number is invalid, the
+       * Return the length of the peer's name. If the group number or ID is invalid, the
        * return value is unspecified.
        *
        * The return value is equal to the `length` argument received by the last
        * `${event name}` callback.
        */
-      size(uint32_t groupnumber, uint32_t peernumber) with error for query;
+      size(uint32_t groupnumber, uint32_t peer_id) with error for query;
 
       /**
-       * Write the name of the peer designated by the given peer number to a byte
+       * Write the name of the peer designated by the given ID to a byte
        * array.
        *
        * Call $size to determine the allocation size for the `name` parameter.
@@ -2523,35 +2526,35 @@ namespace group {
        * `${event name}` callback.
        *
        * @param groupnumber The group number of the group we wish to query.
-       * @param peernumber The peer number of the peer whose name we want to retrieve.
+       * @param peer_id The ID of the peer whose name we want to retrieve.
        * @param name A valid memory region large enough to store the friend's name.
        *
        * @return true on success.
        */
-      get(uint32_t groupnumber, uint32_t  peernumber) with error for query;
+      get(uint32_t groupnumber, uint32_t  peer_id) with error for query;
     }
 
     USER_STATUS status {
 
       /**
-       * Return the peer's user status (away/busy/...). If the peer number or group number is
+       * Return the peer's user status (away/busy/...). If the ID or group number is
        * invalid, the return value is unspecified.
        *
        * The status returned is equal to the last status received through the
        * `${event status}` callback.
        */
-      get(uint32_t groupnumber, uint32_t peernumber) with error for query;
+      get(uint32_t groupnumber, uint32_t peer_id) with error for query;
     }
 
     ROLE role {
       /**
-       * Return the peer's role (user/moderator/founder...). If the peer number or group number is
+       * Return the peer's role (user/moderator/founder...). If the ID or group number is
        * invalid, the return value is unspecified.
        *
        * The role returned is equal to the last role received through the
        * `${event moderation}` callback.
        */
-      get(uint32_t groupnumber, uint32_t peernumber) with error for query;
+      get(uint32_t groupnumber, uint32_t peer_id) with error for query;
     }
 
     /**
@@ -2560,11 +2563,11 @@ namespace group {
     event name {
       /**
        * @param groupnumber The group number of the group the name change is intended for.
-       * @param peernumber The peer number of the peer who has changed their name.
+       * @param peer_id The ID of the peer who has changed their name.
        * @param name The name data.
        * @param length The length of the name.
        */
-      typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_NAME_LENGTH] name);
+      typedef void(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_NAME_LENGTH] name);
     }
 
     /**
@@ -2573,10 +2576,10 @@ namespace group {
     event status {
       /**
        * @param groupnumber The group number of the group the status change is intended for.
-       * @param peernumber The peer number of the peer who has changed their status.
+       * @param peer_id The ID of the peer who has changed their status.
        * @param status The new status of the peer.
        */
-      typedef void(uint32_t groupnumber, uint32_t peernumber, USER_STATUS status);
+      typedef void(uint32_t groupnumber, uint32_t peer_id, USER_STATUS status);
     }
   }
 
@@ -2670,11 +2673,11 @@ namespace group {
   event topic {
     /**
      * @param groupnumber The group number of the group the topic change is intended for.
-     * @param peernumber The peer number of the peer who changed the topic.
+     * @param peer_id The ID of the peer who changed the topic.
      * @param topic The topic data.
      * @param length The topic length.
      */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
+    typedef void(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_TOPIC_LENGTH] topic);
   }
 
   uint8_t[length <= MAX_TOPIC_LENGTH] name {
@@ -2708,17 +2711,6 @@ namespace group {
      *   If this parameter is NULL, this function call has no effect.
      *
      * @return true on success.
-     */
-    get(uint32_t groupnumber) with error for state_queries;
-  }
-
-  uint32_t number_peers {
-
-    /**
-     * Return the number of peers in the group designated by the given group number. If group number
-     * is invalid, the return value is unspecified.
-     *
-     * @see peernumbers for further information on the implications of the return value.
      */
     get(uint32_t groupnumber) with error for state_queries;
   }
@@ -2818,19 +2810,6 @@ namespace group {
     typedef void(uint32_t groupnumber, const uint8_t[length <= MAX_PASSWORD_SIZE] password);
   }
 
-  /**
-   * This callback is triggered when a peer joins or leaves the group, and should be used to
-   * retrieve up to date information about the peer list for the client.
-   *
-   * @see peernumbers for further information.
-   */
-  event peerlist_update {
-    /**
-     * @param groupnumber The group number of the group that must have its peer list updated.
-     */
-    typedef void(uint32_t groupnumber);
-  }
-
 }
 
 /******************************************************************************
@@ -2898,20 +2877,20 @@ namespace group {
      * then reassemble the fragments. Messages may not be empty.
      *
      * @param groupnumber The group number of the group the message is intended for.
-     * @param peernumber The peer number of the peer the message is intended for.
+     * @param peer_id The ID of the peer the message is intended for.
      * @param message A non-NULL pointer to the first element of a byte array
      *   containing the message text.
      * @param length Length of the message to be sent.
      *
      * @return true on success.
      */
-    bool private_message(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message) {
+    bool private_message(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_MESSAGE_LENGTH] message) {
       /**
        * The group number passed did not designate a valid group.
        */
       GROUP_NOT_FOUND,
       /**
-       * The peer number passed did not designate a valid peer.
+       * The ID passed did not designate a valid peer.
        */
       PEER_NOT_FOUND,
       /**
@@ -2948,12 +2927,12 @@ namespace group {
   event message {
     /**
      * @param groupnumber The group number of the group the message is intended for.
-     * @param peernumber The peer number of the peer who sent the message.
+     * @param peer_id The ID of the peer who sent the message.
      * @param type The type of message (normal, action, ...).
      * @param message The message data.
      * @param length The length of the message.
      */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, MESSAGE_TYPE type, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+    typedef void(uint32_t groupnumber, uint32_t peer_id, MESSAGE_TYPE type, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
   /**
@@ -2962,11 +2941,11 @@ namespace group {
   event private_message {
     /**
      * @param groupnumber The group number of the group the private message is intended for.
-     * @param peernumber The peer number of the peer who sent the private message.
+     * @param peer_id The ID of the peer who sent the private message.
      * @param message The message data.
      * @param length The length of the message.
      */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+    typedef void(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
 }
@@ -3052,29 +3031,28 @@ namespace group {
   }
 
   /**
-   * This event is triggered when a peer joins the group. Do not use this to update the peer list; use
-   * tox_callback_group_peerlist_update instead.
+   * This event is triggered when a peer other than self joins the group.
    */
   event peer_join {
     /**
      * @param groupnumber The group number of the group in which a new peer has joined.
-     * @param peernumber The peer number of the new peer.
+     * @param peer_id The permanent ID of the new peer. This id should not be relied on for
+     * client behaviour and should be treated as a random value.
      */
-    typedef void(uint32_t groupnumber, uint32_t peernumber);
+    typedef void(uint32_t groupnumber, uint32_t peer_id);
   }
 
   /**
-   * This event is triggered when a peer exits the group. Do not use this to update the peer list; use
-   * tox_callback_group_peerlist_update instead.
+   * This event is triggered when a peer other than self exits the group.
    */
   event peer_exit {
     /**
      * @param groupnumber The group number of the group in which a peer has left.
-     * @param peernumber The peer number of the peer who left the group.
+     * @param peer_id The ID of the peer who left the group.
      * @param part_message The parting message data.
      * @param length The length of the parting message.
      */
-    typedef void(uint32_t groupnumber, uint32_t peernumber, const uint8_t[length <= MAX_PART_LENGTH] part_message);
+    typedef void(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_PART_LENGTH] part_message);
   }
 
   /**
@@ -3253,18 +3231,18 @@ namespace group {
    * Ignore or unignore a peer.
    *
    * @param groupnumber The group number of the group the in which you wish to ignore a peer.
-   * @param peernumber The peer number of the peer who shall be ignored or unignored.
+   * @param peer_id The ID of the peer who shall be ignored or unignored.
    * @ignore True to ignore the peer, false to unignore the peer.
    *
    * @return true on success.
    */
-  bool toggle_ignore(uint32_t groupnumber, uint32_t peernumber, bool ignore) {
+  bool toggle_ignore(uint32_t groupnumber, uint32_t peer_id, bool ignore) {
       /**
        * The group number passed did not designate a valid group.
        */
       GROUP_NOT_FOUND,
       /**
-       * The peer number passed did not designate a valid peer.
+       * The ID passed did not designate a valid peer.
        */
       PEER_NOT_FOUND,
   }
@@ -3279,18 +3257,18 @@ namespace group {
      * the role reassignment. Note: peers cannot be set to the founder role.
      *
      * @param groupnumber The group number of the group the in which you wish set the peer's role.
-     * @param peernumber The peer number of the peer whose role you wish to set.
+     * @param peer_id The ID of the peer whose role you wish to set.
      * @param role The role you wish to set the peer to.
      *
      * @return true on success.
      */
-    bool set_role(uint32_t groupnumber, uint32_t peernumber, ROLE role) {
+    bool set_role(uint32_t groupnumber, uint32_t peer_id, ROLE role) {
       /**
        * The group number passed did not designate a valid group.
        */
       GROUP_NOT_FOUND,
       /**
-       * The peer number passed did not designate a valid peer. Note: you cannot set your own role.
+       * The ID passed did not designate a valid peer. Note: you cannot set your own role.
        */
       PEER_NOT_FOUND,
       /**
@@ -3317,18 +3295,18 @@ namespace group {
      * to do the same.
      *
      * @param groupnumber The group number of the group the ban is intended for.
-     * @param peernumber The peer number of the peer who will be kicked and/or added to the ban list.
+     * @param peer_id The ID of the peer who will be kicked and/or added to the ban list.
      * @param set_ban Set to true if a ban shall be set on the peer's IP address.
      *
      * @return true on success.
      */
-    bool remove_peer(uint32_t groupnumber, uint32_t peernumber, bool set_ban) {
+    bool remove_peer(uint32_t groupnumber, uint32_t peer_id, bool set_ban) {
       /**
        * The group number passed did not designate a valid group.
        */
       GROUP_NOT_FOUND,
       /**
-       * The peer number passed did not designate a valid peer.
+       * The ID passed did not designate a valid peer.
        */
       PEER_NOT_FOUND,
       /**
@@ -3418,8 +3396,8 @@ namespace group {
   event moderation {
     /**
      * @param groupnumber The group number of the group the event is intended for.
-     * @param source_peer_number The peer number of the peer who initiated the event.
-     * @param target_peer_number The peer number of the peer who is the target of the event.
+     * @param source_peer_number The ID of the peer who initiated the event.
+     * @param target_peer_number The ID of the peer who is the target of the event.
      * @param mod_type The type of event.
      */
     typedef void(uint32_t groupnumber, uint32_t source_peer_number, uint32_t target_peer_number, MOD_EVENT mod_type);

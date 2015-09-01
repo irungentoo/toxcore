@@ -29,7 +29,8 @@ This document details the groupchat implementation, giving a high level overview
 ## Features
 * Private messages
 * Action messages (/me)
-* Both public and private groups
+* Public groups (peers may join via a public key)
+* Private groups (peers require a friend invite)
 * Permanence (a group cannot 'die' as long as at least one peer retains their group credentials)
 * Persistence across client restarts
 * Ability to set peer limits
