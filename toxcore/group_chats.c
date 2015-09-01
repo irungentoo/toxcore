@@ -3208,7 +3208,7 @@ int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peer_id, bool set_ban
 
     if (chat->group[peernumber].role == GR_MODERATOR || chat->group[peernumber].role == GR_OBSERVER) {
         /* this first removes peer from any lists they're on and broadcasts new lists to group */
-        if (gc_set_peer_role(m, groupnumber, peernumber, GR_USER) < 0)
+        if (gc_set_peer_role(m, groupnumber, peer_id, GR_USER) < 0)
             return -4;
     }
 
