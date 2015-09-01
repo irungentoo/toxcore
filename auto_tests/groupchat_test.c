@@ -27,6 +27,9 @@ START_TEST(test_text_all)
     Tox *Alice = tox_new(&tox_opts, &error2);
     Tox *Bob = tox_new(&tox_opts, &error3);
 
+    tox_self_set_name(Alice, "alice", strlen("alice"), NULL);
+    tox_self_set_name(Bob, "Bob", strlen("Bob"), NULL);
+
     ck_assert_msg(error1 == TOX_ERR_NEW_OK && error2 == TOX_ERR_NEW_OK && error3 == TOX_ERR_NEW_OK,
                   "tox_new failed (%d %d %d %d)", error1, error2, error3);
     while (1) {
@@ -52,6 +55,10 @@ START_TEST(test_text_all)
 
     ck_assert_msg(new_err == TOX_ERR_GROUP_NEW_OK, "tox_group_new failed %d", new_err);
 
+    TOX_ERR_GROUP_TOPIC_SET topic_err;
+    tox_group_set_topic(Alice, alice_groupnum, "test", 4, &topic_err);
+    ck_assert_msg(topic_err == TOX_ERR_GROUP_TOPIC_SET_OK, "failed to set topic %d", topic_err);
+
     tox_iterate(bootstrap_node);
     tox_iterate(Alice);
     tox_iterate(Bob);
@@ -75,8 +82,10 @@ START_TEST(test_text_all)
         tox_iterate(Alice);
         tox_iterate(Bob);
 
-        if (tox_group_get_number_peers(Alice, alice_groupnum, NULL) == 2
-            && tox_group_get_number_peers(Bob, bob_groupnum, NULL) == 2)
+        uint8_t topic[TOX_GROUP_MAX_TOPIC_LENGTH];
+        tox_group_get_topic(Bob, bob_groupnum, topic, NULL);
+
+        if (memcmp(topic, "test", 4) == 0)
             break;
 
         c_sleep(20);
