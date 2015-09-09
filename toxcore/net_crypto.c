@@ -47,7 +47,7 @@ static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_conn
 }
 
 /* cookie timeout in seconds */
-#define COOKIE_TIMEOUT 10
+#define COOKIE_TIMEOUT 15
 #define COOKIE_DATA_LENGTH (crypto_box_PUBLICKEYBYTES * 2)
 #define COOKIE_CONTENTS_LENGTH (sizeof(uint64_t) + COOKIE_DATA_LENGTH)
 #define COOKIE_LENGTH (crypto_box_NONCEBYTES + COOKIE_CONTENTS_LENGTH + crypto_box_MACBYTES)
