@@ -484,7 +484,7 @@ static int sanctions_list_validate_entry(const GC_Chat *chat, struct GC_Sanction
     uint8_t packed_data[sizeof(struct GC_Sanction)];
     int packed_len = sanctions_list_pack(packed_data, sizeof(packed_data), sanction, NULL, 1);
 
-    if (packed_len <= SIGNATURE_SIZE)
+    if (packed_len <= (int) SIGNATURE_SIZE)
         return -1;
 
     if (crypto_sign_verify_detached(sanction->signature, packed_data, packed_len - SIGNATURE_SIZE,
@@ -871,7 +871,7 @@ static int sanctions_list_sign_entry(const GC_Chat *chat, struct GC_Sanction *sa
     uint8_t packed_data[sizeof(struct GC_Sanction)];
     int packed_len = sanctions_list_pack(packed_data, sizeof(packed_data), sanction, NULL, 1);
 
-    if (packed_len <= SIGNATURE_SIZE)
+    if (packed_len <= (int) SIGNATURE_SIZE)
         return -1;
 
     return crypto_sign_detached(sanction->signature, NULL, packed_data, packed_len - SIGNATURE_SIZE,
