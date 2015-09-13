@@ -2345,7 +2345,7 @@ namespace group {
 
 /*******************************************************************************
  *
- * :: Group user-visible client information (nickname/status/role)
+ * :: Group user-visible client information (nickname/status/role/public key)
  *
  ******************************************************************************/
 
@@ -2482,6 +2482,25 @@ namespace group {
        */
        get(uint32_t groupnumber) with error for self_query;
     }
+
+    uint8_t [length] public_key {
+
+      /**
+       * Write the client's group public key designated by the given group number to a byte array.
+       *
+       * This key will be parmanently tied to the client's identity for this particular group until
+       * the client explicitly leaves the group or gets kicked/banned. This key is the only way for
+       * other peers to reliably identify the client across client restarts.
+       *
+       * `public_key` should have room for at least $PEER_PUBLIC_KEY_SIZE bytes.
+       *
+       * @param public_key A valid memory region large enough to store the public key.
+       *   If this parameter is NULL, this function call has no effect.
+       *
+       * @return true on success.
+       */
+      get(uint32_t groupnumber) with error for self_query;
+    }
   }
 
 }
@@ -2565,7 +2584,8 @@ namespace group {
     uint8_t[length] public_key {
 
       /**
-       * Write the public key with the designated peer_id for the designated group number to public_key.
+       * Write the group public key with the designated peer_id for the designated group number to public_key.
+       *
        * This key will be parmanently tied to a particular peer until they explicitly leave the group or
        * get kicked/banned, and is the only way to reliably identify the same peer across client restarts.
        *

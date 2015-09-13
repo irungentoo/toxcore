@@ -1581,6 +1581,21 @@ uint32_t tox_group_self_get_peer_id(const Tox *tox, uint32_t groupnumber, TOX_ER
     return gc_get_self_peer_id(chat);
 }
 
+bool tox_group_self_get_public_key(const Tox *tox, uint32_t groupnumber, uint8_t *public_key, TOX_ERR_GROUP_SELF_QUERY *error)
+{
+    const Messenger *m = tox;
+    const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_GROUP_NOT_FOUND);
+        return 0;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_QUERY_OK);
+    gc_get_self_public_key(chat, public_key);
+    return 1;
+}
+
 size_t tox_group_peer_get_name_size(const Tox *tox, uint32_t groupnumber, uint32_t peer_id, TOX_ERR_GROUP_PEER_QUERY *error)
 {
     const Messenger *m = tox;

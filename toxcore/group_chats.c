@@ -2212,7 +2212,7 @@ int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_
     return 0;
 }
 
-/* Copies your own nick to nick and returns nick length */
+/* Copies your own nick to nick */
 void gc_get_self_nick(const GC_Chat *chat, uint8_t *nick)
 {
     if (nick)
@@ -2241,6 +2241,13 @@ uint8_t gc_get_self_status(const GC_Chat *chat)
 uint32_t gc_get_self_peer_id(const GC_Chat *chat)
 {
     return chat->gcc[0].peer_id;
+}
+
+/* Copies your own public key to public_key */
+void gc_get_self_public_key(const GC_Chat *chat, uint8_t *public_key)
+{
+    if (public_key)
+        memcpy(public_key, chat->self_public_key, ENC_PUBLIC_KEY);
 }
 
 /* Copies peer_id's nick to name.

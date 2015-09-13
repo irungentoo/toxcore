@@ -2589,7 +2589,7 @@ bool tox_group_leave(Tox *tox, uint32_t groupnumber, const uint8_t *message, siz
 
 /*******************************************************************************
  *
- * :: Group user-visible client information (nickname/status/role)
+ * :: Group user-visible client information (nickname/status/role/public key)
  *
  ******************************************************************************/
 
@@ -2745,6 +2745,23 @@ TOX_GROUP_ROLE tox_group_self_get_role(const Tox *tox, uint32_t groupnumber, TOX
  */
 uint32_t tox_group_self_get_peer_id(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_SELF_QUERY *error);
 
+/**
+ * Write the client's group public key designated by the given group number to a byte array.
+ *
+ * This key will be parmanently tied to the client's identity for this particular group until
+ * the client explicitly leaves the group or gets kicked/banned. This key is the only way for
+ * other peers to reliably identify the client across client restarts.
+ *
+ * `public_key` should have room for at least TOX_GROUP_PEER_PUBLIC_KEY_SIZE bytes.
+ *
+ * @param public_key A valid memory region large enough to store the public key.
+ *   If this parameter is NULL, this function call has no effect.
+ *
+ * @return true on success.
+ */
+bool tox_group_self_get_public_key(const Tox *tox, uint32_t groupnumber, uint8_t *public_key,
+                                   TOX_ERR_GROUP_SELF_QUERY *error);
+
 
 /*******************************************************************************
  *
@@ -2826,7 +2843,8 @@ TOX_GROUP_ROLE tox_group_peer_get_role(const Tox *tox, uint32_t groupnumber, uin
                                        TOX_ERR_GROUP_PEER_QUERY *error);
 
 /**
- * Write the public key with the designated peer_id for the designated group number to public_key.
+ * Write the group public key with the designated peer_id for the designated group number to public_key.
+ *
  * This key will be parmanently tied to a particular peer until they explicitly leave the group or
  * get kicked/banned, and is the only way to reliably identify the same peer across client restarts.
  *

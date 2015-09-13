@@ -408,6 +408,9 @@ uint8_t gc_get_self_status(const GC_Chat *chat);
 /* Returns your own peer id */
 uint32_t gc_get_self_peer_id(const GC_Chat *chat);
 
+/* Copies your own public key to public_key */
+void gc_get_self_public_key(const GC_Chat *chat, uint8_t *public_key);
+
 /* Copies peer_id's nick to name.
  *
  * Returns 0 on success.
