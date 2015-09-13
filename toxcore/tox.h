@@ -2329,6 +2329,11 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
  */
 #define TOX_GROUP_CHAT_ID_SIZE         32
 
+/**
+ * Size of a peer public key.
+ */
+#define TOX_GROUP_PEER_PUBLIC_KEY_SIZE 32
+
 
 /*******************************************************************************
  *
@@ -2743,7 +2748,7 @@ uint32_t tox_group_self_get_peer_id(const Tox *tox, uint32_t groupnumber, TOX_ER
 
 /*******************************************************************************
  *
- * :: Peer-specific group state queries (can also be received through callbacks)
+ * :: Peer-specific group state queries.
  *
  ******************************************************************************/
 
@@ -2819,6 +2824,21 @@ TOX_USER_STATUS tox_group_peer_get_status(const Tox *tox, uint32_t groupnumber, 
  */
 TOX_GROUP_ROLE tox_group_peer_get_role(const Tox *tox, uint32_t groupnumber, uint32_t peer_id,
                                        TOX_ERR_GROUP_PEER_QUERY *error);
+
+/**
+ * Write the public key with the designated peer_id for the designated group number to public_key.
+ * This key will be parmanently tied to a particular peer until they explicitly leave the group or
+ * get kicked/banned, and is the only way to reliably identify the same peer across client restarts.
+ *
+ * `public_key` should have room for at least TOX_GROUP_PEER_PUBLIC_KEY_SIZE bytes.
+ *
+ * @param public_key A valid memory region large enough to store the public key.
+ *   If this parameter is NULL, this function call has no effect.
+ *
+ * @return true on success.
+ */
+bool tox_group_peer_get_public_key(const Tox *tox, uint32_t groupnumber, uint32_t peer_id, uint8_t *public_key,
+                                   TOX_ERR_GROUP_PEER_QUERY *error);
 
 /**
  * @param groupnumber The group number of the group the name change is intended for.
@@ -3392,7 +3412,7 @@ typedef void tox_group_peer_join_cb(Tox *tox, uint32_t groupnumber, uint32_t pee
 /**
  * Set the callback for the `group_peer_join` event. Pass NULL to unset.
  *
- * This event is triggered when a peer joins the group.
+ * This event is triggered when a peer other than self joins the group.
  */
 void tox_callback_group_peer_join(Tox *tox, tox_group_peer_join_cb *callback, void *user_data);
 
@@ -3409,7 +3429,7 @@ typedef void tox_group_peer_exit_cb(Tox *tox, uint32_t groupnumber, uint32_t pee
 /**
  * Set the callback for the `group_peer_exit` event. Pass NULL to unset.
  *
- * This event is triggered when a peer exits the group.
+ * This event is triggered when a peer other than self exits the group.
  */
 void tox_callback_group_peer_exit(Tox *tox, tox_group_peer_exit_cb *callback, void *user_data);
 

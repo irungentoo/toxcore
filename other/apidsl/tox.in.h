@@ -2139,6 +2139,11 @@ namespace group {
    * Number of bytes in a group Chat ID.
    */
   const CHAT_ID_SIZE              = 32;
+
+  /**
+   * Size of a peer public key.
+   */
+  const PEER_PUBLIC_KEY_SIZE      = 32;
 }
 
 /*******************************************************************************
@@ -2483,7 +2488,7 @@ namespace group {
 
 /*******************************************************************************
  *
- * :: Peer-specific group state queries (can also be received through callbacks)
+ * :: Peer-specific group state queries.
  *
  ******************************************************************************/
 
@@ -2555,6 +2560,23 @@ namespace group {
        * `${event moderation}` callback.
        */
       get(uint32_t groupnumber, uint32_t peer_id) with error for query;
+    }
+
+    uint8_t[length] public_key {
+
+      /**
+       * Write the public key with the designated peer_id for the designated group number to public_key.
+       * This key will be parmanently tied to a particular peer until they explicitly leave the group or
+       * get kicked/banned, and is the only way to reliably identify the same peer across client restarts.
+       *
+       * `public_key` should have room for at least $PEER_PUBLIC_KEY_SIZE bytes.
+       *
+       * @param public_key A valid memory region large enough to store the public key.
+       *   If this parameter is NULL, this function call has no effect.
+       *
+       * @return true on success.
+       */
+       get(uint32_t groupnumber, uint32_t peer_id) with error for query;
     }
 
     /**

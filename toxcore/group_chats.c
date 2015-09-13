@@ -2296,6 +2296,24 @@ static int handle_bc_nick(Messenger *m, int groupnumber, uint32_t peernumber, co
     return 0;
 }
 
+/* Copies peer_id's public key to public_key.
+ *
+ * Returns 0 on success.
+ * Returns -1 if peer_id is invalid.
+ */
+int gc_get_peer_public_key(const GC_Chat *chat, uint32_t peer_id, uint8_t *public_key)
+{
+    int peernumber = get_peernumber_of_peer_id(chat, peer_id);
+
+    if (!peernumber_valid(chat, peernumber))
+        return -1;
+
+    if (public_key)
+        memcpy(public_key, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
+
+    return 0;
+}
+
 /* Creates a topic packet and puts it in data. Packet includes the topic, topic length,
  * public signature key of the setter, topic version, and the signature.
  *
