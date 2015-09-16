@@ -113,7 +113,7 @@ typedef enum GROUP_BROADCAST_TYPE {
     GM_REMOVE_PEER,
     GM_REMOVE_BAN,
     GM_SET_MOD,
-    GM_SET_OBSERVER
+    GM_SET_OBSERVER,
 } GROUP_BROADCAST_TYPE;
 
 typedef enum GROUP_PACKET_TYPE {
@@ -124,6 +124,7 @@ typedef enum GROUP_PACKET_TYPE {
     GP_TCP_RELAYS               = 4,
 
     /* lossless packets */
+    GP_CUSTOM_PACKET            = 242,
     GP_BROADCAST                = 243,
     GP_PEER_INFO_REQUEST        = 244,
     GP_PEER_INFO_RESPONSE       = 245,
@@ -255,6 +256,8 @@ typedef struct GC_Session {
     void *message_userdata;
     void (*private_message)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *private_message_userdata;
+    void (*custom_packet)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void *custom_packet_userdata;
     void (*moderation)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int, void *);
     void *moderation_userdata;
     void (*nick_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
@@ -339,6 +342,15 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
  * Returns -5 if the packet fails to send.
  */
 int gc_send_private_message(GC_Chat *chat, uint32_t peer_id, const uint8_t *message, uint16_t length);
+
+/* Sends a custom packet to the group. If lossless is true, the packet will be lossless.
+ *
+ * Returns 0 on success.
+ * Returns -1 if the message is too long.
+ * Returns -2 if the message pointer is NULL or length is zero.
+ * Returns -3 if the sender has the observer role.
+ */
+int gc_send_custom_packet(GC_Chat *chat, bool lossless, const uint8_t *data, uint32_t length);
 
 /* Toggles ignore for peer_id.
  *
@@ -519,6 +531,9 @@ void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, 
 
 void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
                                  size_t, void *), void *userdata);
+
+void gc_callback_custom_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t,
+                               const uint8_t *, size_t, void *), void *userdata);
 
 void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,
                             void *), void *userdata);

@@ -1439,14 +1439,25 @@ static int send_gc_broadcast_message(GC_Chat *chat, const uint8_t *data, uint32_
     return 0;
 }
 
-/* Sends data of length and type to all confirmed peers. */
-static void send_gc_packet_all_peers(GC_Chat *chat, uint8_t *data, uint32_t length, uint8_t type)
+/* Sends a lossless packet of type and length to all confirmed peers. */
+static void send_gc_lossless_packet_all_peers(GC_Chat *chat, const uint8_t *data, uint32_t length, uint8_t type)
 {
     uint32_t i;
 
     for (i = 1; i < chat->numpeers; ++i) {
         if (chat->gcc[i].confirmed)
             send_lossless_group_packet(chat, i, data, length, type);
+    }
+}
+
+/* Sends a lossy packet of type and length to all confirmed peers. */
+static void send_gc_lossy_packet_all_peers(GC_Chat *chat, const uint8_t *data, uint32_t length, uint8_t type)
+{
+    uint32_t i;
+
+    for (i = 1; i < chat->numpeers; ++i) {
+        if (chat->gcc[i].confirmed)
+            send_lossy_group_packet(chat, i, data, length, type);
     }
 }
 
@@ -1755,7 +1766,7 @@ static int broadcast_gc_shared_state(GC_Chat *chat)
     if (packet_len != GC_SHARED_STATE_ENC_PACKET_SIZE)
         return -1;
 
-    send_gc_packet_all_peers(chat, packet, packet_len, GP_SHARED_STATE);
+    send_gc_lossless_packet_all_peers(chat, packet, packet_len, GP_SHARED_STATE);
     return 0;
 }
 
@@ -2104,7 +2115,7 @@ int broadcast_gc_sanctions_list(GC_Chat *chat)
     if (packet_len == -1)
         return -1;
 
-    send_gc_packet_all_peers(chat, packet, packet_len, GP_SANCTIONS_LIST);
+    send_gc_lossless_packet_all_peers(chat, packet, packet_len, GP_SANCTIONS_LIST);
     return 0;
 }
 
@@ -2143,7 +2154,7 @@ static int broadcast_gc_mod_list(GC_Chat *chat)
     if (packet_len != length)
         return -1;
 
-    send_gc_packet_all_peers(chat, packet, packet_len, GP_MOD_LIST);
+    send_gc_lossless_packet_all_peers(chat, packet, packet_len, GP_MOD_LIST);
     return 0;
 }
 
@@ -2379,7 +2390,7 @@ static int broadcast_gc_topic(GC_Chat *chat)
     if (packet_len != sizeof(packet))
         return -1;
 
-    send_gc_packet_all_peers(chat, packet, packet_len, GP_TOPIC);
+    send_gc_lossless_packet_all_peers(chat, packet, packet_len, GP_TOPIC);
     return 0;
 }
 
@@ -3035,7 +3046,7 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
 static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                              uint32_t length, uint8_t type)
 {
-    if (length > MAX_GC_MESSAGE_SIZE || length == 0)
+    if (!data || length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -3095,7 +3106,7 @@ int gc_send_private_message(GC_Chat *chat, uint32_t peer_id, const uint8_t *mess
 static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                      uint32_t length)
 {
-    if (length > MAX_GC_MESSAGE_SIZE || length == 0)
+    if (!data || length > MAX_GC_MESSAGE_SIZE || length == 0)
         return -1;
 
     GC_Session *c = m->group_handler;
@@ -3109,6 +3120,59 @@ static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t pee
 
     if (c->private_message)
         (*c->private_message)(m, groupnumber, chat->gcc[peernumber].peer_id, data, length, c->private_message_userdata);
+
+    return 0;
+}
+
+/* Sends a custom packet to the group. If lossless is true, the packet will be lossless.
+ *
+ * Returns 0 on success.
+ * Returns -1 if the message is too long.
+ * Returns -2 if the message pointer is NULL or length is zero.
+ * Returns -3 if the sender has the observer role.
+ */
+int gc_send_custom_packet(GC_Chat *chat, bool lossless, const uint8_t *data, uint32_t length)
+{
+    if (length > MAX_GC_MESSAGE_SIZE)
+        return -1;
+
+    if (data == NULL || length == 0)
+        return -2;
+
+    if (chat->group[0].role >= GR_OBSERVER)
+        return -3;
+
+    if (lossless) {
+        send_gc_lossless_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
+    } else {
+        send_gc_lossy_packet_all_peers(chat, data, length, GP_CUSTOM_PACKET);
+    }
+
+    return 0;
+}
+
+/* Handles a custom packet.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
+static int handle_gc_custom_packet(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                   uint32_t length)
+{
+    if (!data || length == 0 || length > MAX_GC_PACKET_SIZE)
+        return -1;
+
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL)
+        return -1;
+
+    if (chat->gcc[peernumber].ignore || chat->group[peernumber].role >= GR_OBSERVER)
+        return 0;
+
+    if (c->custom_packet)
+        (*c->custom_packet)(m, groupnumber, chat->gcc[peernumber].peer_id, data, length, c->custom_packet_userdata);
 
     return 0;
 }
@@ -3452,6 +3516,11 @@ int gc_toggle_ignore(GC_Chat *chat, uint32_t peer_id, bool ignore)
     return 0;
 }
 
+/* Handles a broadcast packet.
+ *
+ * Returns 0 on success.
+ * Returns -1 on failure.
+ */
 static int handle_gc_broadcast(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                                uint32_t length)
 {
@@ -3890,6 +3959,8 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber
             return handle_gc_sanctions_list(m, groupnumber, peernumber, data, length);
         case GP_HS_RESPONSE_ACK:
             return handle_gc_hs_response_ack(m, groupnumber, peernumber, data, length);
+        case GP_CUSTOM_PACKET:
+            return handle_gc_custom_packet(m, groupnumber, peernumber, data, length);
         default:
             fprintf(stderr, "Warning: handling invalid lossless group packet type %u\n", packet_type);
             return -1;
@@ -4032,6 +4103,9 @@ static int handle_gc_lossy_message(Messenger *m, GC_Chat *chat, const uint8_t *p
         case GP_TCP_RELAYS:
             ret = handle_gc_tcp_relays(m, chat->groupnumber, peernumber, real_data, len);
             break;
+        case GP_CUSTOM_PACKET:
+            ret = handle_gc_custom_packet(m, chat->groupnumber, peernumber, real_data, len);
+            break;
         default:
             fprintf(stderr, "Warning: handling invalid lossy group packet type %u\n", packet_type);
             return -1;
@@ -4152,6 +4226,14 @@ void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, ui
     GC_Session *c = m->group_handler;
     c->private_message = function;
     c->private_message_userdata = userdata;
+}
+
+void gc_callback_custom_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t,
+                               const uint8_t *, size_t, void *), void *userdata)
+{
+    GC_Session *c = m->group_handler;
+    c->custom_packet = function;
+    c->custom_packet_userdata = userdata;
 }
 
 void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,

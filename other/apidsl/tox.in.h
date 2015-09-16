@@ -2864,7 +2864,7 @@ namespace group {
 
   namespace send {
     /**
-     * Send a text chat message to the entire group.
+     * Send a text chat message to the group.
      *
      * This function creates a group message packet and pushes it into the send
      * queue.
@@ -2952,6 +2952,45 @@ namespace group {
        */
       FAIL_SEND,
     }
+
+    /**
+     * Send a custom packet to the group.
+     *
+     * If lossless is true the packet will be lossless. Lossless packet behaviour is comparable
+     * to TCP (reliability, arrive in order) but with packets instead of a stream.
+     *
+     * If lossless is false, the packet will be lossy. Lossy packets behave like UDP packets,
+     * meaning they might never reach the other side or might arrive more than once (if someone
+     * is messing with the connection) or might arrive in the wrong order.
+     *
+     * Unless latency is an issue or message reliability is not important, it is recommended that you use
+     * lossless custom packets.
+     *
+     * @param groupnumber The group number of the group the message is intended for.
+     * @param lossless True if the packet should be lossless.
+     * @param data A byte array containing the packet data.
+     * @param length The length of the packet data byte array.
+     *
+     * @return true on success.
+     */
+    bool custom_packet(uint32_t groupnumber, bool lossless, const uint8_t[length <= MAX_MESSAGE_LENGTH] data) {
+      /**
+       * The group number passed did not designate a valid group.
+       */
+      GROUP_NOT_FOUND,
+      /**
+       * Message length exceeded $MAX_MESSAGE_LENGTH.
+       */
+      TOO_LONG,
+      /**
+       * The message pointer is null or length is zero.
+       */
+      EMPTY,
+      /**
+       * The caller does not have the required permissions to send group messages.
+       */
+      PERMISSIONS,
+    }
   }
 }
 
@@ -2988,6 +3027,19 @@ namespace group {
      * @param length The length of the message.
      */
     typedef void(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+  }
+
+  /**
+   * This event is triggered when the client receives a custom packet.
+   */
+  event custom_packet {
+    /**
+     * @param groupnumber The group number of the group the custom packet is intended for.
+     * @param peer_id The ID of the peer who sent the custom packet.
+     * @param data The custom packet data.
+     * @param length The length of the data.
+     */
+    typedef void(uint32_t groupnumber, uint32_t peer_id, const uint8_t[length <= MAX_MESSAGE_LENGTH] data);
   }
 
 }

@@ -1952,6 +1952,38 @@ bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t pee
     return 0;
 }
 
+bool tox_group_send_custom_packet(Tox *tox, uint32_t groupnumber, bool lossless, const uint8_t *data,
+                                  size_t length, TOX_ERR_GROUP_SEND_CUSTOM_PACKET *error)
+{
+    const Messenger *m = tox;
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (chat == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_GROUP_NOT_FOUND);
+        return 0;
+    }
+
+    int ret = gc_send_custom_packet(chat, lossless, data, length);
+
+    switch (ret) {
+        case 0:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_OK);
+            return 1;
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_TOO_LONG);
+            return 0;
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY);
+            return 0;
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS);
+            return 0;
+    }
+
+    /* can't happen */
+    return 0;
+}
+
 bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, uint32_t friend_number, TOX_ERR_GROUP_INVITE_FRIEND *error)
 {
     Messenger *m = tox;
