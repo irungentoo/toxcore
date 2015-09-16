@@ -1930,6 +1930,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 break;
 
             set_friend_status(m, i, FRIEND_CONFIRMED);
+            break;
         }
 
         case PACKET_ID_NICKNAME: {
