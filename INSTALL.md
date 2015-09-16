@@ -534,7 +534,7 @@ Install from source (example for most unix-like OS's):
 
 libvpx:
 ```bash
-git clone http://git.chromium.org/webm/libvpx.git
+git clone https://chromium.googlesource.com/webm/libvpx
 cd libvpx
 ./configure
 make -j3
