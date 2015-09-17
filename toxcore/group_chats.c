@@ -1509,10 +1509,11 @@ static int handle_gc_ping(Messenger *m, int groupnumber, uint32_t peernumber, co
         return -1;
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-    GC_Connection *gconn = &chat->gcc[peernumber];
 
-    if (!chat)
+    if (chat == NULL)
         return -1;
+
+    GC_Connection *gconn = &chat->gcc[peernumber];
 
     if (!gconn->confirmed)
         return -1;
@@ -1535,7 +1536,7 @@ int gc_set_self_status(Messenger *m, int groupnumber, uint8_t status)
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
-    if (!chat)
+    if (chat == NULL)
         return -1;
 
     if (status >= GS_INVALID)
@@ -1563,7 +1564,7 @@ static int handle_bc_status(Messenger *m, int groupnumber, uint32_t peernumber, 
     GC_Session *c = m->group_handler;
     GC_Chat *chat = gc_get_group(c, groupnumber);
 
-    if (!chat)
+    if (chat == NULL)
         return -1;
 
     uint8_t status = data[0];
@@ -3723,7 +3724,7 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
-    if (!chat)
+    if (chat == NULL)
         return -1;
 
     if (id_equal(chat->self_public_key, public_key))
@@ -3757,7 +3758,7 @@ static int handle_gc_handshake_response(Messenger *m, int groupnumber, const uin
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
-    if (!chat)
+    if (chat == NULL)
         return -1;
 
     int peernumber = get_peernum_of_enc_pk(chat, sender_pk);
@@ -3821,7 +3822,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port *i
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
-    if (!chat)
+    if (chat == NULL)
         return -1;
 
     if (chat->connection_state == CS_FAILED)
