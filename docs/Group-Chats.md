@@ -15,6 +15,7 @@ This document details the groupchat implementation, giving a high level overview
 - [Founders](#Founders)
   - [Shared state](#Shared state)
 - [Moderation](#Moderation)
+  - [Kicks/bans](#Kicks/bans)
   - [Moderator list](#Moderator list)
   - [Sanctions list](#Sanctions list)
 - [Topics](#Topics)
@@ -68,7 +69,7 @@ The only way to join a private group is by having someone in your friend list se
 
 <a name="Cryptography" />
 ## Cryptography
-Groupchats use the [NaCl/libsodium cryptography library](https://en.wikipedia.org/wiki/NaCl_(software)) for all cryptography related operations. All group communication is end-to-end encrypted. Message confidentiality, integrity, and repudability are guaranteed via [authenticated encryption](https://en.wikipedia.org/wiki/Authenticated_encryption), and [forward secrecy](https://en.wikipedia.org/wiki/Forward_secrecy) is also provided.
+Groupchats use the [NaCl/libsodium cryptography library](https://en.wikipedia.org/wiki/NaCl_(software)) for all cryptography related operations. All group communication is end-to-end encrypted. Message confidentiality, integrity, and repudability are guaranteed via [authenticated encryption](https://en.wikipedia.org/wiki/Authenticated_encryption), and [perfect forward secrecy](https://en.wikipedia.org/wiki/Forward_secrecy) is also provided.
 
 One of the most important security improvements from the old groupchat implementation is the removal of a message-relay mechanism that uses a group-wide shared key. Instead, connections are 1-to-1 (a complete graph), meaning an outbound message is sent once per peer, and encrypted/decrypted using a key unique to each peer. This prevents MITM attacks that were previously possible. This additionally ensures that private messages are truly private.
 
@@ -118,6 +119,10 @@ When the founder modifies the shared state, he increments the shared state versi
 <a name="Moderation" />
 ## Moderation
 The founder has the ability to promote other peers to the moderator role. Moderators have all the privileges of normal users, and additionally have the power to kick, ban, and unban, as well as give peers below the moderator role the roles of user and observer (see the [Group roles](#Group roles) section). Moderators can also modify the group topic. Moderators have no power over one another; only the founder can kick, ban, or change the role of a moderator.
+
+<a name="Kicks/bans" />
+### Kicks/bans
+When a peer is kicked or banned from the group, his chat instance and all its associated data will be destroyed. This includes all public and secret keys. Additionally, the the peer will not receive any notifiactions; it will simply appear to them as if the group is inactive.
 
 <a name="Moderator list" />
 ### Moderator list
