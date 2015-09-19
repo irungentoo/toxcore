@@ -4429,12 +4429,17 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
             return -1;
     }
 
+    int peernumber = chat->numpeers;
+
     GC_Connection *tmp_gcc = realloc(chat->gcc, sizeof(GC_Connection) * (chat->numpeers + 1));
 
     if (tmp_gcc == NULL) {
         kill_tcp_connection_to(chat->tcp_conn, tcp_connection_num);
         return -1;
     }
+
+    memset(&tmp_gcc[peernumber], 0, sizeof(GC_Connection));
+    chat->gcc = tmp_gcc;
 
     GC_GroupPeer *tmp_group = realloc(chat->group, sizeof(GC_GroupPeer) * (chat->numpeers + 1));
 
@@ -4443,12 +4448,8 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
         return -1;
     }
 
-    int peernumber = chat->numpeers++;
-
+    ++chat->numpeers;
     memset(&tmp_group[peernumber], 0, sizeof(GC_GroupPeer));
-    memset(&tmp_gcc[peernumber], 0, sizeof(GC_Connection));
-
-    chat->gcc = tmp_gcc;
     chat->group = tmp_group;
 
     GC_Connection *gconn = &chat->gcc[peernumber];
