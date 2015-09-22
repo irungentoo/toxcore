@@ -21,7 +21,8 @@ libtoxencryptsave_la_SOURCES = ../toxencryptsave/crypto_pwhash_scryptsalsa208sha
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/sse/pwhash_scryptsalsa208sha256_sse.c \
                         ../toxencryptsave/toxencryptsave.h \
-                        ../toxencryptsave/toxencryptsave.c
+                        ../toxencryptsave/toxencryptsave.c \
+                        ../toxencryptsave/defines.h
                         
 
 libtoxencryptsave_la_CFLAGS =   -I$(top_srcdir) \
