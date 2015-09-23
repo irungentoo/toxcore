@@ -51,7 +51,7 @@ sudo systemctl start tox-bootstrapd.service
 sudo systemctl status tox-bootstrapd.service
 ```
 
-Get your public key and check that the daemon initialized correctly:
+Get your public key and check that the daemon initialized correctly: (Your public key will be written in ``/var/log/syslog``.)
 ```sh
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
@@ -121,7 +121,7 @@ sudo service tox-bootstrapd start
 sudo service tox-bootstrapd status
 ```
 
-Get your public key and check that the daemon initialized correctly:
+Get your public key and check that the daemon initialized correctly: (Your public key will be written in ``/var/log/syslog``.)
 ```sh
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
