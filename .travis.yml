@@ -5,6 +5,12 @@ compiler:
   - gcc
   - clang
 
+addons:
+  apt:
+    packages:
+    - yasm
+    - check
+
 before_script:
   - sudo apt-get update -qq
   - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
@@ -17,7 +23,34 @@ before_script:
   - make -j3  >/dev/null
   - sudo make install >/dev/null
   - cd ..
-  - sudo ldconfig
+  #installing libconfig, needed for DHT_bootstrap_daemon
+  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz > /dev/null
+  - tar -xvzf libconfig-1.4.9.tar.gz > /dev/null
+  - cd libconfig-1.4.9
+  - ./configure > /dev/null
+  - make -j3 > /dev/null
+  - sudo make install > /dev/null
+  - cd ..
+  #installing libopus, needed for audio encoding/decoding
+  - wget http://downloads.xiph.org/releases/opus/opus-1.1.tar.gz > /dev/null
+  - tar xzf opus-1.1.tar.gz > /dev/null
+  - cd opus-1.1
+  - ./configure > /dev/null
+  - make -j3 > /dev/null
+  - sudo make install > /dev/null
+  - cd ..
+  #installing vpx
+  - git clone https://chromium.googlesource.com/webm/libvpx > /dev/null
+  - cd libvpx
+  - git checkout tags/v1.3.0
+  - ./configure --enable-shared > /dev/null
+  - make -j3 >/dev/null
+  - sudo make install > /dev/null
+  - cd ..
+  #creating libraries links and updating cache
+  - sudo ldconfig > /dev/null
+  #installing check, needed for unit tests
+  - sudo apt-get install check > /dev/null
 
 script:
   - ./autogen.sh
