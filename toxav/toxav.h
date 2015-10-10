@@ -40,7 +40,7 @@ extern "C" {
  *
  * As in Core API, events are handled by callbacks. One callback can be 
  * registered per event. All events have a callback function type named 
- * `toxav_{event}_cb` and a function to register it named `tox_callback_{event}`. 
+ * `toxav_{event}_cb` and a function to register it named `toxav_callback_{event}`.
  * Passing a NULL callback will result in no callback being registered for that 
  * event. Only one callback per event can be registered, so if a client needs 
  * multiple event listeners, it needs to implement the dispatch functionality 
