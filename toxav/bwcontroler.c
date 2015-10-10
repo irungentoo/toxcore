@@ -200,7 +200,7 @@ int on_update (BWControler *bwc, struct BWCMessage *msg)
 int bwc_handle_data(Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object)
 {
     if (length != sizeof(struct BWCMessage))
-        return;
+        return -1;
 
     /* NOTE the data is mutable */
     return on_update(object, (struct BWCMessage *) data);

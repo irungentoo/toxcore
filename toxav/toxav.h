@@ -87,7 +87,7 @@ typedef struct Tox Tox;
  */
 #ifndef TOXAV_DEFINED
 #define TOXAV_DEFINED
-typedef struct ToxAV_s ToxAV;
+typedef struct ToxAV ToxAV;
 #endif /* TOXAV_DEFINED */
 
 
@@ -510,12 +510,7 @@ typedef enum TOXAV_ERR_BIT_RATE_SET {
 } TOXAV_ERR_BIT_RATE_SET;
 
 /**
- * Set the audio bit rate to be used in subsequent audio frames. If the passed 
- * bit rate is the same as the current bit rate this function will return true 
- * without calling a callback. If there is an active non forceful setup with the
- * passed audio bit rate and the new set request is forceful, the bit rate is 
- * forcefully set and the previous non forceful request is cancelled. The active
- * non forceful setup will be canceled in favour of new non forceful setup.
+ * Set the audio bit rate to be used in subsequent audio/video frames.
  *
  * @param friend_number The friend number of the friend for which to set the
  * audio bit rate.

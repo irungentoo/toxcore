@@ -433,12 +433,7 @@ bool call_control (uint32_t friend_number, CALL_CONTROL control) {
  ******************************************************************************/
 namespace bit_rate {
     /**
-     * Set the audio bit rate to be used in subsequent audio frames. If the passed 
-     * bit rate is the same as the current bit rate this function will return true 
-     * without calling a callback. If there is an active non forceful setup with the
-     * passed audio bit rate and the new set request is forceful, the bit rate is 
-     * forcefully set and the previous non forceful request is cancelled. The active
-     * non forceful setup will be canceled in favour of new non forceful setup.
+     * Set the audio bit rate to be used in subsequent audio/video frames.
      *
      * @param friend_number The friend number.
      * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable

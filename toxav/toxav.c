@@ -63,7 +63,7 @@ typedef struct ToxAVCall_s {
     struct ToxAVCall_s *next;
 } ToxAVCall;
 
-struct ToxAV_s {
+struct ToxAV {
     Messenger *m;
     MSISession *msi;
 
