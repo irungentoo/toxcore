@@ -2,17 +2,24 @@
 #include "config.h"
 #endif
 
+#ifndef HAVE_LIBCHECK
+#   include <assert.h>
+
+#   define ck_assert(X) assert(X);
+#   define START_TEST(NAME) void NAME ()
+#   define END_TEST
+#else
+#   include "helpers.h"
+#endif
+
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <check.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include <vpx/vpx_image.h>
-
-#include "helpers.h"
 
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
@@ -331,8 +338,16 @@ START_TEST(test_AV_three_calls)
 END_TEST
 
 
-
-
+#ifndef HAVE_LIBCHECK
+int main(int argc, char *argv[])
+{
+    (void) argc;
+    (void) argv;
+    
+    test_AV_three_calls();
+    return 0;
+}
+#else
 Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
@@ -362,3 +377,4 @@ int main(int argc, char *argv[])
 
     return number_failed;
 }
+#endif

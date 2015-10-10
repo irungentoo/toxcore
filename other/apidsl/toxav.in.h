@@ -56,12 +56,19 @@ extern "C" {
 /** \subsection threading Threading implications
  *
  * Unlike the Core API, this API is fully thread-safe. The library will ensure
- * the proper synchronisation of parallel calls. 
+ * the proper synchronization of parallel calls. 
  * 
  * A common way to run ToxAV (multiple or single instance) is to have a thread,
  * separate from tox instance thread, running a simple ${toxAV.iterate} loop, 
  * sleeping for ${toxAV.iteration_interval} * milliseconds on each iteration.
  *
+ * An important thing to note is that events are triggered from both tox and
+ * toxav thread (see above). audio and video receive frame events are triggered
+ * from toxav thread while all the other events are triggered from tox thread.
+ * 
+ * Tox thread has priority with mutex mechanisms. Any api function can
+ * fail if mutexes are held by tox thread in which case they will set SYNC
+ * error code.
  */
 
 /**
@@ -232,6 +239,10 @@ bool call(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_ra
    */
   MALLOC,
   /**
+   * Synchronization error occurred.
+   */
+  SYNC,
+  /**
    * The friend number did not designate a valid friend.
    */
   FRIEND_NOT_FOUND,
@@ -273,6 +284,10 @@ event call {
  * video sending.
  */
 bool answer(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate) {
+  /**
+   * Synchronization error occurred.
+   */
+  SYNC,
   /**
    * Failed to initialize codecs for call session. Note that codec initiation
    * will fail if there is no receive callback registered for either audio or
@@ -347,7 +362,7 @@ event call_state {
  *
  ******************************************************************************/
 enum class CALL_CONTROL {
-  /**
+    /**
      * Resume a previously paused call. Only valid if the pause was caused by this
      * client, if not, this control is ignored. Not valid before the call is accepted.
      */
@@ -393,6 +408,10 @@ enum class CALL_CONTROL {
  */
 bool call_control (uint32_t friend_number, CALL_CONTROL control) {
   /**
+   * Synchronization error occurred.
+   */
+  SYNC,
+  /**
    * The friend_number passed did not designate a valid friend.
    */
   FRIEND_NOT_FOUND,
@@ -412,38 +431,7 @@ bool call_control (uint32_t friend_number, CALL_CONTROL control) {
  * :: Controlling bit rates
  *
  ******************************************************************************/
-error for set_bit_rate {
-  /**
-   * The bit rate passed was not one of the supported values.
-   */
-  INVALID,
-  /**
-   * The friend_number passed did not designate a valid friend.
-   */
-  FRIEND_NOT_FOUND,
-  /**
-   * This client is currently not in a call with the friend.
-   */
-  FRIEND_NOT_IN_CALL,
-}
-namespace audio {
-  namespace bit_rate {
-    event status {
-      /**
-       * The function type for the ${event status} callback.
-       * 
-       * @param friend_number The friend number of the friend for which to set the
-       * audio bit rate.
-       * @param stable Is the stream stable enough to keep the bit rate. 
-       * Upon successful, non forceful, bit rate change, this is set to 
-       * true and 'bit_rate' is set to new bit rate.
-       * The stable is set to false with bit_rate set to the unstable
-       * bit rate when either current stream is unstable with said bit rate
-       * or the non forceful change failed.
-       * @param bit_rate The bit rate in Kb/sec.
-       */
-      typedef void(uint32_t friend_number, bool stable, uint32_t bit_rate);
-    }
+namespace bit_rate {
     /**
      * Set the audio bit rate to be used in subsequent audio frames. If the passed 
      * bit rate is the same as the current bit rate this function will return true 
@@ -452,51 +440,43 @@ namespace audio {
      * forcefully set and the previous non forceful request is cancelled. The active
      * non forceful setup will be canceled in favour of new non forceful setup.
      *
-     * @param friend_number The friend number of the friend for which to set the
-     * audio bit rate.
+     * @param friend_number The friend number.
      * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable
-     * audio sending.
-     * @param force True if the bit rate change is forceful.
-     * 
-     */
-    bool set(uint32_t friend_number, uint32_t audio_bit_rate, bool force) with error for set_bit_rate;
-  }
-}
-namespace video {
-  namespace bit_rate {
-    event status {
-      /**
-       * The function type for the ${event status} callback.
-       * 
-       * @param friend_number The friend number of the friend for which to set the
-       * video bit rate.
-       * @param stable Is the stream stable enough to keep the bit rate. 
-       * Upon successful, non forceful, bit rate change, this is set to 
-       * true and 'bit_rate' is set to new bit rate.
-       * The stable is set to false with bit_rate set to the unstable
-       * bit rate when either current stream is unstable with said bit rate
-       * or the non forceful change failed.
-       * @param bit_rate The bit rate in Kb/sec.
-       */
-      typedef void(uint32_t friend_number, bool stable, uint32_t bit_rate);
-    }
-    /**
-     * Set the video bit rate to be used in subsequent video frames. If the passed 
-     * bit rate is the same as the current bit rate this function will return true 
-     * without calling a callback. If there is an active non forceful setup with the
-     * passed video bit rate and the new set request is forceful, the bit rate is 
-     * forcefully set and the previous non forceful request is cancelled. The active
-     * non forceful setup will be canceled in favour of new non forceful setup.
-     *
-     * @param friend_number The friend number of the friend for which to set the
-     * video bit rate.
+     * audio sending. Set to -1 to leave unchanged.
      * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
-     * video sending.
-     * @param force True if the bit rate change is forceful.
+     * video sending. Set to -1 to leave unchanged.
      * 
      */
-    bool set(uint32_t friend_number, uint32_t video_bit_rate, bool force) with error for set_bit_rate;
-  }
+    bool set(uint32_t friend_number, int32_t audio_bit_rate, int32_t video_bit_rate) {
+        /**
+         * Synchronization error occurred.
+         */
+        SYNC,
+        /**
+         * The bit rate passed was not one of the supported values.
+         */
+        INVALID,
+        /**
+         * The friend_number passed did not designate a valid friend.
+         */
+        FRIEND_NOT_FOUND,
+        /**
+         * This client is currently not in a call with the friend.
+         */
+        FRIEND_NOT_IN_CALL,
+    }
+    event status {
+        /**
+         * The function type for the ${event status} callback. The event is triggered
+         * when the network becomes too saturated for current bit rates at which 
+         * point core suggests new bit rates.
+         * 
+         * @param friend_number The friend number.
+         * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
+         * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
+         */
+        typedef void(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate);
+    }
 }
 /*******************************************************************************
  * 

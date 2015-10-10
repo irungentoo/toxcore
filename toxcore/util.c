@@ -234,14 +234,6 @@ bool rb_read(RingBuffer *b, void **p)
     b->start = (b->start + 1) % b->size;
     return true;
 }
-void rb_clear(RingBuffer *b)
-{
-    while (!rb_empty(b)) {
-        void *p;
-        rb_read(b, &p);
-        free(p);
-    }
-}
 RingBuffer *rb_new(int size)
 {
     RingBuffer *buf = calloc(sizeof(RingBuffer), 1);
@@ -257,11 +249,28 @@ RingBuffer *rb_new(int size)
 
     return buf;
 }
-void rb_free(RingBuffer *b)
+void rb_kill(RingBuffer *b)
 {
     if (b) {
-        rb_clear(b);
         free(b->data);
         free(b);
     }
+}
+uint16_t rb_size(const RingBuffer* b)
+{ 
+    if (rb_empty(b))
+        return 0;
+    
+    return
+    b->end > b->start ?
+        b->end - b->start :
+        (b->size - b->start) + b->end;
+}
+uint16_t rb_data(const RingBuffer* b, void** dest)
+{
+    uint16_t i = 0;
+    for (; i < rb_size(b); i++)
+        dest[i] = b->data[(b->start + i) % b->size];
+    
+    return i;
 }

@@ -22,119 +22,88 @@
 #ifndef RTP_H
 #define RTP_H
 
-#define RTP_VERSION 2
-
+#include "bwcontroler.h"
 #include "../toxcore/Messenger.h"
 #include "stdbool.h"
 
 /**
- * Payload type identifier. Also used as rtp callback prefix. (Not dummies)
+ * Payload type identifier. Also used as rtp callback prefix.
  */
 enum {
     rtp_TypeAudio = 192,
     rtp_TypeVideo,
 };
 
-enum {
-    rtp_StateBad = -1,
-    rtp_StateNormal,
-    rtp_StateGood,
-};
+struct RTPHeader {
+    /* Standard RTP header */
+#ifndef WORDS_BIGENDIAN
+    unsigned cc: 4; /* Contributing sources count */
+    unsigned xe: 1; /* Extra header */
+    unsigned pe: 1; /* Padding */
+    unsigned ve: 2; /* Version */
 
-/** 
- * Standard rtp header.
- */
-typedef struct {
-    uint8_t  flags;             /* Version(2),Padding(1), Ext(1), Cc(4) */
-    uint8_t  marker_payloadt;   /* Marker(1), PlayLoad Type(7) */
-    uint16_t sequnum;           /* Sequence Number */
-    uint32_t timestamp;         /* Timestamp */
-    uint32_t ssrc;              /* SSRC */
-    uint32_t csrc[16];          /* CSRC's table */
-    uint32_t length;            /* Length of the header in payload string. */
-} RTPHeader;
-/** 
- * Standard rtp extension header.
- */
-typedef struct {
-    uint16_t  type;          /* Extension profile */
-    uint16_t  length;        /* Number of extensions */
-    uint32_t *table;         /* Extension's table */
-} RTPExtHeader;
+    unsigned pt: 7; /* Payload type */
+    unsigned ma: 1; /* Marker */
+#else
+    unsigned ve: 2; /* Version */
+    unsigned pe: 1; /* Padding */
+    unsigned xe: 1; /* Extra header */
+    unsigned cc: 4; /* Contributing sources count */
 
-/**
- * Standard rtp message.
- */
-typedef struct RTPMessage_s {
-    RTPHeader    *header;
-    RTPExtHeader *ext_header;
+    unsigned ma: 1; /* Marker */
+    unsigned pt: 7; /* Payload type */
+#endif
 
-    uint32_t      length;
-    uint8_t       data[];
-} RTPMessage;
+    uint16_t sequnum;
+    uint32_t timestamp;
+    uint32_t ssrc;
+    uint32_t csrc[16];
+
+    /* Non-standard TOX-specific fields */
+    uint16_t cpart;/* Data offset of the current part */
+    uint16_t tlen; /* Total message lenght */
+} __attribute__ ((packed));
+
+/* Check alignment */
+typedef char __fail_if_misaligned [ sizeof(struct RTPHeader) == 80 ? 1 : -1 ];
+
+struct RTPMessage {
+    uint16_t len;
+
+    struct RTPHeader header;
+    uint8_t data[];
+} __attribute__ ((packed));
+
+/* Check alignment */
+typedef char __fail_if_misaligned [ sizeof(struct RTPMessage) == 82 ? 1 : -1 ];
 
 /**
  * RTP control session.
  */
 typedef struct {
-    uint8_t  version;
-    uint8_t  padding;
-    uint8_t  extension;
-    uint8_t  cc;
-    uint8_t  marker;
     uint8_t  payload_type;
-    uint16_t sequnum;   /* Sending sequence number */
-    uint16_t rsequnum;  /* Receiving sequence number */
+    uint16_t sequnum;      /* Sending sequence number */
+    uint16_t rsequnum;     /* Receiving sequence number */
     uint32_t rtimestamp;
     uint32_t ssrc;
-    uint32_t *csrc;
 
-    /* If some additional data must be sent via message
-     * apply it here. Only by allocating this member you will be
-     * automatically placing it within a message.
-     */
-    RTPExtHeader *ext_header;
-
-    /* Msg prefix for core to know when recving */
-    uint8_t prefix;
+    struct RTPMessage *mp; /* Expected parted message */
 
     Messenger *m;
-    int friend_number;
-    struct RTCPSession_s *rtcp_session;
+    uint32_t friend_number;
 
+    BWControler *bwc;
     void *cs;
-    int (*mcb) (void*, RTPMessage* msg);
-    
+    int (*mcb) (void *, struct RTPMessage *msg);
 } RTPSession;
 
-/**
- * Must be called before calling any other rtp function.
- */
-RTPSession *rtp_new ( int payload_type, Messenger *m, int friend_num, void* cs, int (*mcb) (void*, RTPMessage*) );
-/**
- * Terminate the session.
- */
-void rtp_kill ( RTPSession* session );
-/**
- * Do periodical rtp work.
- */
-int rtp_do(RTPSession *session);
-/**
- * By default rtp is in receiving state
- */
-int rtp_start_receiving (RTPSession *session);
-/**
- * Pause rtp receiving mode.
- */
-int rtp_stop_receiving (RTPSession *session);
-/**
- * Sends msg to RTPSession::dest
- */
-int rtp_send_data ( RTPSession* session, const uint8_t* data, uint16_t length, bool dummy );
-/**
- * Dealloc msg.
- */
-void rtp_free_msg ( RTPMessage *msg );
 
+RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friend_num,
+                     BWControler *bwc, void *cs,
+                     int (*mcb) (void *, struct RTPMessage *));
+void rtp_kill (RTPSession *session);
+int rtp_allow_receiving (RTPSession *session);
+int rtp_stop_receiving (RTPSession *session);
+int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length);
 
 #endif /* RTP_H */

@@ -29,9 +29,6 @@
 #include "video.h"
 #include "../toxcore/Messenger.h"
 
-/** Preconfigured value for video splitting */
-#define VIDEOFRAME_PIECE_SIZE 500
-
 /**
  * Error codes.
  */
@@ -89,13 +86,13 @@ typedef struct MSICall_s {
     uint8_t              peer_capabilities; /* Peer capabilities */
     uint8_t              self_capabilities; /* Self capabilities */
     uint16_t             peer_vfpsz;        /* Video frame piece size */
-    uint32_t             friend_number;         /* Index of this call in MSISession */
+    uint32_t             friend_number;     /* Index of this call in MSISession */
     MSIError             error;             /* Last error */
-    
-    void*                av_call;           /* Pointer to av call handler */
-    
-    struct MSICall_s*    next;
-    struct MSICall_s*    prev;
+
+    void                *av_call;           /* Pointer to av call handler */
+
+    struct MSICall_s    *next;
+    struct MSICall_s    *prev;
 } MSICall;
 
 
@@ -104,7 +101,7 @@ typedef struct MSICall_s {
  * returned the call is considered errored and will be handled
  * as such which means it will be terminated without any notice.
  */
-typedef int msi_action_cb ( void *av, MSICall* call);
+typedef int msi_action_cb (void *av, MSICall *call);
 
 /**
  * Control session struct. Please do not modify outside msi.c
@@ -114,41 +111,41 @@ typedef struct MSISession_s {
     MSICall       **calls;
     uint32_t        calls_tail;
     uint32_t        calls_head;
-    
+
     void           *av;
     Messenger      *messenger;
 
     pthread_mutex_t mutex[1];
-    msi_action_cb* callbacks[7];
+    msi_action_cb *callbacks[7];
 } MSISession;
 
 /**
  * Start the control session.
  */
-MSISession *msi_new ( Messenger *m );
+MSISession *msi_new(Messenger *m);
 /**
  * Terminate control session. NOTE: all calls will be freed
  */
-int msi_kill ( MSISession *session );
+int msi_kill(MSISession *session);
 /**
  * Callback setter.
  */
-void msi_register_callback(MSISession *session, msi_action_cb* callback, MSICallbackID id);
+void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICallbackID id);
 /**
  * Send invite request to friend_number.
  */
-int msi_invite ( MSISession* session, MSICall** call, uint32_t friend_number, uint8_t capabilities );
+int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint8_t capabilities);
 /**
  * Hangup call. NOTE: 'call' will be freed
  */
-int msi_hangup ( MSICall* call );
+int msi_hangup(MSICall *call);
 /**
  * Answer call request.
  */
-int msi_answer ( MSICall* call, uint8_t capabilities );
+int msi_answer(MSICall *call, uint8_t capabilities);
 /**
  * Change capabilities of the call.
  */
-int msi_change_capabilities ( MSICall* call, uint8_t capabilities );
+int msi_change_capabilities(MSICall *call, uint8_t capabilities);
 
 #endif /* MSI_H */

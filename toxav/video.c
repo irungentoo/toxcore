@@ -19,6 +19,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <stdlib.h>
 #include <assert.h>
 
@@ -29,281 +33,166 @@
 #include "../toxcore/logger.h"
 #include "../toxcore/network.h"
 
-/* Good quality encode. */
-#define MAX_DECODE_TIME_US 0
-
-#define MAX_VIDEOFRAME_SIZE 0x40000 /* 256KiB */
-#define VIDEOFRAME_HEADER_SIZE 0x2
-
+#define MAX_DECODE_TIME_US 0 /* Good quality encode. */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
-typedef struct { uint16_t size; uint8_t data[]; } Payload;
 
-bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate);
+bool create_video_encoder (vpx_codec_ctx_t *dest, int32_t bit_rate);
 
-
-VCSession* vc_new(ToxAV* av, uint32_t friend_number, toxav_video_receive_frame_cb* cb, void* cb_data, uint32_t mvfpsz)
+VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
 {
     VCSession *vc = calloc(sizeof(VCSession), 1);
-    
+
     if (!vc) {
         LOGGER_WARNING("Allocation failed! Application might misbehave!");
         return NULL;
     }
-    
+
     if (create_recursive_mutex(vc->queue_mutex) != 0) {
         LOGGER_WARNING("Failed to create recursive mutex!");
         free(vc);
         return NULL;
     }
-    
-    if ( !(vc->frame_buf = calloc(MAX_VIDEOFRAME_SIZE, 1)) )
+
+    if (!(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE)))
         goto BASE_CLEANUP;
-    if ( !(vc->split_video_frame = calloc(VIDEOFRAME_PIECE_SIZE + VIDEOFRAME_HEADER_SIZE, 1)) )
-        goto BASE_CLEANUP;
-    if ( !(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE)) )
-        goto BASE_CLEANUP;
-    
-    int rc = vpx_codec_dec_init_ver(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, 
-                                    NULL, 0, VPX_DECODER_ABI_VERSION);
-    if ( rc != VPX_CODEC_OK) {
+
+    int rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0);
+
+    if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
         goto BASE_CLEANUP;
     }
-    
+
     if (!create_video_encoder(vc->encoder, 500000)) {
         vpx_codec_destroy(vc->decoder);
         goto BASE_CLEANUP;
     }
-    if (!create_video_encoder(vc->test_encoder, 500000)) {
-        vpx_codec_destroy(vc->encoder);
-        vpx_codec_destroy(vc->decoder);
-        goto BASE_CLEANUP;
-    }
-    
+
     vc->linfts = current_time_monotonic();
     vc->lcfd = 60;
     vc->vcb.first = cb;
     vc->vcb.second = cb_data;
     vc->friend_number = friend_number;
-    vc->peer_video_frame_piece_size = mvfpsz;
     vc->av = av;
-    
+
     return vc;
-    
+
 BASE_CLEANUP:
     pthread_mutex_destroy(vc->queue_mutex);
-    rb_free(vc->vbuf_raw);
-    free(vc->split_video_frame);
-    free(vc->frame_buf);
+    rb_kill(vc->vbuf_raw);
     free(vc);
     return NULL;
 }
-void vc_kill(VCSession* vc)
+void vc_kill(VCSession *vc)
 {
     if (!vc)
         return;
-    
+
     vpx_codec_destroy(vc->encoder);
-    vpx_codec_destroy(vc->test_encoder);
     vpx_codec_destroy(vc->decoder);
-    rb_free(vc->vbuf_raw);
-    free(vc->split_video_frame);
-    free(vc->frame_buf);
-    
+
+    void *p;
+
+    while (rb_read(vc->vbuf_raw, (void **)&p))
+        free(p);
+
+    rb_kill(vc->vbuf_raw);
+
     pthread_mutex_destroy(vc->queue_mutex);
-    
+
     LOGGER_DEBUG("Terminated video handler: %p", vc);
     free(vc);
 }
-void vc_do(VCSession* vc)
+void vc_iterate(VCSession *vc)
 {
     if (!vc)
         return;
-    
-    Payload *p;
+
+    struct RTPMessage *p;
     int rc;
-    
+
     pthread_mutex_lock(vc->queue_mutex);
-    if (rb_read(vc->vbuf_raw, (void**)&p)) {
+
+    if (rb_read(vc->vbuf_raw, (void **)&p)) {
         pthread_mutex_unlock(vc->queue_mutex);
-        
-        rc = vpx_codec_decode(vc->decoder, p->data, p->size, NULL, MAX_DECODE_TIME_US);
+
+        rc = vpx_codec_decode(vc->decoder, p->data, p->len, NULL, MAX_DECODE_TIME_US);
         free(p);
-        
-        if (rc != VPX_CODEC_OK) {
+
+        if (rc != VPX_CODEC_OK)
             LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
-        } else {
+        else {
             vpx_codec_iter_t iter = NULL;
             vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
-            
+
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(vc->decoder, &iter)) {
-                if (vc->vcb.first) 
-                    vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h, 
-                                  (const uint8_t*)dest->planes[0], (const uint8_t*)dest->planes[1], (const uint8_t*)dest->planes[2],
+                if (vc->vcb.first)
+                    vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h,
+                                  (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
                                   dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb.second);
-                
+
                 vpx_img_free(dest);
             }
         }
-        
+
         return;
     }
+
     pthread_mutex_unlock(vc->queue_mutex);
 }
-void vc_init_video_splitter_cycle(VCSession* vc)
+int vc_queue_message(void *vcp, struct RTPMessage *msg)
 {
-    if (!vc)
-        return;
-    
-    vc->split_video_frame[0] = vc->frameid_out++;
-    vc->split_video_frame[1] = 0;
-}
-int vc_update_video_splitter_cycle(VCSession* vc, const uint8_t* payload, uint16_t length)
-{
-    if (!vc)
-        return 0;
-
-    vc->processing_video_frame = payload;
-    vc->processing_video_frame_size = length;
-    
-    return ((length - 1) / VIDEOFRAME_PIECE_SIZE) + 1;
-}
-const uint8_t* vc_iterate_split_video_frame(VCSession* vc, uint16_t* size)
-{
-    if (!vc || !size) 
-        return NULL;
-
-    if (vc->processing_video_frame_size > VIDEOFRAME_PIECE_SIZE) {
-        memcpy(vc->split_video_frame + VIDEOFRAME_HEADER_SIZE,
-               vc->processing_video_frame,
-               VIDEOFRAME_PIECE_SIZE);
-
-        vc->processing_video_frame += VIDEOFRAME_PIECE_SIZE;
-        vc->processing_video_frame_size -= VIDEOFRAME_PIECE_SIZE;
-
-        *size = VIDEOFRAME_PIECE_SIZE + VIDEOFRAME_HEADER_SIZE;
-    } else {
-        memcpy(vc->split_video_frame + VIDEOFRAME_HEADER_SIZE,
-               vc->processing_video_frame,
-               vc->processing_video_frame_size);
-
-        *size = vc->processing_video_frame_size + VIDEOFRAME_HEADER_SIZE;
-    }
-
-    vc->split_video_frame[1]++;
-
-    return vc->split_video_frame;
-}
-int vc_queue_message(void* vcp, struct RTPMessage_s *msg)
-{
-    /* This function does the reconstruction of video packets. 
+    /* This function does the reconstruction of video packets.
      * See more info about video splitting in docs
      */
     if (!vcp || !msg)
         return -1;
-    
-    if ((msg->header->marker_payloadt & 0x7f) == (rtp_TypeVideo + 2) % 128) {
+
+    if (msg->header.pt == (rtp_TypeVideo + 2) % 128) {
         LOGGER_WARNING("Got dummy!");
-        rtp_free_msg(msg);
+        free(msg);
         return 0;
     }
-    
-    if ((msg->header->marker_payloadt & 0x7f) != rtp_TypeVideo % 128) {
+
+    if (msg->header.pt != rtp_TypeVideo % 128) {
         LOGGER_WARNING("Invalid payload type!");
-        rtp_free_msg(msg);
+        free(msg);
         return -1;
     }
-    
-    VCSession* vc = vcp;
-    
-    uint8_t *packet = msg->data;
-    uint32_t packet_size = msg->length;
 
-    if (packet_size < VIDEOFRAME_HEADER_SIZE)
-        goto end;
+    VCSession *vc = vcp;
 
-    uint8_t diff = packet[0] - vc->frameid_in;
-
-    if (diff != 0) {
-        if (diff < 225) { /* New frame */
-            /* Flush last frames' data and get ready for this frame */
-            Payload *p = malloc(sizeof(Payload) + vc->frame_size);
-
-            if (p) {
-                pthread_mutex_lock(vc->queue_mutex);
-
-                if (rb_full(vc->vbuf_raw)) {
-                    LOGGER_DEBUG("Dropped video frame");
-                    Payload *tp;
-                    rb_read(vc->vbuf_raw, (void**)&tp);
-                    free(tp);
-                } else {
-                    p->size = vc->frame_size;
-                    memcpy(p->data, vc->frame_buf, vc->frame_size);
-                }
-                
-                /* Calculate time took for peer to send us this frame */
-                uint32_t t_lcfd = current_time_monotonic() - vc->linfts;
-                vc->lcfd = t_lcfd > 100 ? vc->lcfd : t_lcfd;
-                vc->linfts = current_time_monotonic();
-                
-                rb_write(vc->vbuf_raw, p);
-                pthread_mutex_unlock(vc->queue_mutex);
-            } else {
-                LOGGER_WARNING("Allocation failed! Program might misbehave!");
-                goto end;
-            }
-
-            vc->frameid_in = packet[0];
-            memset(vc->frame_buf, 0, vc->frame_size);
-            vc->frame_size = 0;
-
-        } else { /* Old frame; drop */
-            LOGGER_DEBUG("Old packet: %u", packet[0]);
-            goto end;
-        }
+    pthread_mutex_lock(vc->queue_mutex);
+    free(rb_write(vc->vbuf_raw, msg));
+    {
+        /* Calculate time took for peer to send us this frame */
+        uint32_t t_lcfd = current_time_monotonic() - vc->linfts;
+        vc->lcfd = t_lcfd > 100 ? vc->lcfd : t_lcfd;
+        vc->linfts = current_time_monotonic();
     }
+    pthread_mutex_unlock(vc->queue_mutex);
 
-    uint8_t piece_number = packet[1];
-
-    uint32_t length_before_piece = ((piece_number - 1) * vc->peer_video_frame_piece_size);
-    uint32_t framebuf_new_length = length_before_piece + (packet_size - VIDEOFRAME_HEADER_SIZE);
-
-    if (framebuf_new_length > MAX_VIDEOFRAME_SIZE)
-        goto end;
-    
-
-    /* Otherwise it's part of the frame so just process */
-    /* LOGGER_DEBUG("Video Packet: %u %u", packet[0], packet[1]); */
-
-    memcpy(vc->frame_buf + length_before_piece,
-           packet + VIDEOFRAME_HEADER_SIZE,
-           packet_size - VIDEOFRAME_HEADER_SIZE);
-
-    if (framebuf_new_length > vc->frame_size)
-        vc->frame_size = framebuf_new_length;
-
-end:
-    rtp_free_msg(msg);
     return 0;
 }
-int vc_reconfigure_encoder(vpx_codec_ctx_t* vccdc, uint32_t bit_rate, uint16_t width, uint16_t height)
+int vc_reconfigure_encoder(vpx_codec_ctx_t *vccdc, uint32_t bit_rate, uint16_t width, uint16_t height)
 {
     if (!vccdc)
         return -1;
-    
+
     vpx_codec_enc_cfg_t cfg = *vccdc->config.enc;
+
     if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
-    
+
     cfg.rc_target_bitrate = bit_rate;
     cfg.g_w = width;
     cfg.g_h = height;
-    
+
     int rc = vpx_codec_enc_config_set(vccdc, &cfg);
-    if ( rc != VPX_CODEC_OK) {
+
+    if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         return -1;
     }
@@ -312,42 +201,43 @@ int vc_reconfigure_encoder(vpx_codec_ctx_t* vccdc, uint32_t bit_rate, uint16_t w
 }
 
 
-bool create_video_encoder (vpx_codec_ctx_t* dest, int32_t bit_rate)
+bool create_video_encoder (vpx_codec_ctx_t *dest, int32_t bit_rate)
 {
     assert(dest);
-    
+
     vpx_codec_enc_cfg_t  cfg;
     int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
-    
+
     if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
         return false;
     }
-    
+
     cfg.rc_target_bitrate = bit_rate;
-    cfg.g_w = 4000;
-    cfg.g_h = 4000;
+    cfg.g_w = 800;
+    cfg.g_h = 600;
     cfg.g_pass = VPX_RC_ONE_PASS;
-    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+    /* FIXME If we set error resilience the app will crash due to bug in vp8.
+             Perhaps vp9 has solved it?*/
+//     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
     cfg.g_lag_in_frames = 0;
     cfg.kf_min_dist = 0;
     cfg.kf_max_dist = 48;
     cfg.kf_mode = VPX_KF_AUTO;
-    
-    rc = vpx_codec_enc_init_ver(dest, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0, 
-                                VPX_ENCODER_ABI_VERSION);
-    
-    if ( rc != VPX_CODEC_OK) {
+
+    rc = vpx_codec_enc_init(dest, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
+
+    if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
         return false;
     }
-    
+
     rc = vpx_codec_control(dest, VP8E_SET_CPUUSED, 8);
-    
-    if ( rc != VPX_CODEC_OK) {
+
+    if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         vpx_codec_destroy(dest);
     }
-    
+
     return true;
 }

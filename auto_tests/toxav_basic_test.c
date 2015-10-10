@@ -2,11 +2,20 @@
 #include "config.h"
 #endif
 
+#ifndef HAVE_LIBCHECK
+#   include <assert.h>
+
+#   define ck_assert(X) assert(X);
+#   define START_TEST(NAME) void NAME ()
+#   define END_TEST
+#else
+#   include "helpers.h"
+#endif
+
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <check.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -18,7 +27,6 @@
 #include "../toxcore/crypto_core.h"
 #include "../toxav/toxav.h"
 
-#include "helpers.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
@@ -462,19 +470,19 @@ START_TEST(test_AV_flows)
         
         printf("Call started as audio only\n");
         printf("Turning on video for Alice...\n");
-        ck_assert(toxav_video_bit_rate_set(AliceAV, 0, 1000, false, NULL));
+        ck_assert(toxav_bit_rate_set(AliceAV, 0, -1, 1000, NULL));
         
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_V);
         
         printf("Turning off video for Alice...\n");
-        ck_assert(toxav_video_bit_rate_set(AliceAV, 0, 0, false, NULL));
+        ck_assert(toxav_bit_rate_set(AliceAV, 0, -1, 0, NULL));
         
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert(!(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_V));
         
         printf("Turning off audio for Alice...\n");
-        ck_assert(toxav_audio_bit_rate_set(AliceAV, 0, 0, false, NULL));
+        ck_assert(toxav_bit_rate_set(AliceAV, 0, 0, -1, NULL));
         
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert(!(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_A));
@@ -564,7 +572,16 @@ START_TEST(test_AV_flows)
 }
 END_TEST
 
-
+#ifndef HAVE_LIBCHECK
+int main(int argc, char *argv[])
+{
+    (void) argc;
+    (void) argv;
+    
+    test_AV_flows();
+    return 0;
+}
+#else
 Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
@@ -589,3 +606,4 @@ int main(int argc, char *argv[])
 
     return number_failed;
 }
+#endif
