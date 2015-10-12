@@ -82,8 +82,8 @@ AC_ARG_ENABLE([randombytes-stir],
     ]
 )
 
-AC_ARG_ENABLE([logger],
-    [AC_HELP_STRING([--enable-logger], [enable logging (default: auto)]) ],
+AC_ARG_ENABLE([logging],
+    [AC_HELP_STRING([--enable-logging], [enable logging (default: auto)]) ],
     [
         if test "x$enableval" = "xyes"; then
             TOX_LOGGER="yes"

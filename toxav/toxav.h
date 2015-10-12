@@ -431,7 +431,7 @@ typedef enum TOXAV_CALL_CONTROL {
   /**
    * Request that the friend stops sending video. Regardless of the friend's
    * compliance, this will cause the video_receive_frame event to stop being
-   * triggered on receiving an video frame from the friend.
+   * triggered on receiving a video frame from the friend.
    */
   TOXAV_CALL_CONTROL_HIDE_VIDEO,
   /**

@@ -389,7 +389,7 @@ enum class CALL_CONTROL {
     /**
      * Request that the friend stops sending video. Regardless of the friend's
      * compliance, this will cause the ${event video.receive_frame} event to stop being
-     * triggered on receiving an video frame from the friend.
+     * triggered on receiving a video frame from the friend.
      */
     HIDE_VIDEO,
     /**
