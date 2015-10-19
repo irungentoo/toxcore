@@ -510,10 +510,10 @@ typedef enum TOXAV_ERR_BIT_RATE_SET {
 } TOXAV_ERR_BIT_RATE_SET;
 
 /**
- * Set the audio bit rate to be used in subsequent audio/video frames.
+ * Set the bit rate to be used in subsequent audio/video frames.
  *
  * @param friend_number The friend number of the friend for which to set the
- * audio bit rate.
+ * bit rate.
  * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable
  * audio sending. Set to -1 to leave unchanged.
  * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
@@ -529,7 +529,7 @@ bool toxav_bit_rate_set(ToxAV *toxAV, uint32_t friend_number, int32_t audio_bit_
  * point core suggests new bit rates.
  * 
  * @param friend_number The friend number of the friend for which to set the
- * audio bit rate.
+ * bit rate.
  * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
  * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
  */
