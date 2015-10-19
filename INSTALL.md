@@ -78,7 +78,7 @@ Note, if you install from ports select NaCl for performance, and sodium if you w
 
 You should get and install [libsodium](https://github.com/jedisct1/libsodium). If you have installed `libsodium` from repo, ommit this step, and jump directly to [compiling toxcore](#compile-toxcore):
 ```bash
-git clone git://github.com/jedisct1/libsodium.git
+git clone https://github.com/jedisct1/libsodium.git
 cd libsodium
 git checkout tags/1.0.3
 ./autogen.sh
@@ -93,7 +93,7 @@ Or if checkinstall is not easily available for your distribution (e.g., Fedora),
 this will install the libs to /usr/local/lib and the headers to /usr/local/include:
 
 ```bash
-git clone git://github.com/jedisct1/libsodium.git
+git clone https://github.com/jedisct1/libsodium.git
 cd libsodium
 git checkout tags/1.0.3
 ./autogen.sh
@@ -121,7 +121,7 @@ sudo ldconfig
 
 Then clone this repo, generate makefile, and install `toxcore` system-wide:
 ```bash
-git clone git://github.com/irungentoo/toxcore.git
+git clone https://github.com/irungentoo/toxcore.git
 cd toxcore
 autoreconf -i
 ./configure
@@ -153,7 +153,7 @@ brew install libtool automake autoconf libsodium check
 ```
 Then clone this repo and generate makefile:
 ```bash
-git clone git://github.com/irungentoo/toxcore.git
+git clone https://github.com/irungentoo/toxcore.git
 cd toxcore
 autoreconf -i
 ./configure
