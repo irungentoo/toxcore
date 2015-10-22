@@ -85,7 +85,7 @@ typedef enum {
 #define GENERIC_HEADER(header, val_type) \
 typedef struct _MSIHeader##header { \
 val_type value; \
-_Bool exists; \
+bool exists; \
 } MSIHeader##header;
 
 

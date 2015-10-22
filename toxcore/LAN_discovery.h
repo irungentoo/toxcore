@@ -21,10 +21,10 @@
  *
  */
 
-
 #ifndef LAN_DISCOVERY_H
 #define LAN_DISCOVERY_H
 
+#include <stdbool.h>
 
 #include "DHT.h"
 
@@ -41,7 +41,7 @@ void LANdiscovery_init(DHT *dht);
 void LANdiscovery_kill(DHT *dht);
 
 /* Is IP a local ip or not. */
-_Bool Local_ip(IP ip);
+bool Local_ip(IP ip);
 
 /* checks if a given IP isn't routable
  *

@@ -3,6 +3,7 @@
 #endif
 
 #include <sys/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 #include <check.h>
@@ -309,7 +310,7 @@ void kill_onions(Onions *on)
 #define NUM_FIRST 7
 #define NUM_LAST 37
 
-_Bool first_ip, last_ip;
+bool first_ip, last_ip;
 void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
 {
     if (NUM_FIRST == number) {
@@ -325,7 +326,7 @@ void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
     ck_abort_msg("Error.");
 }
 
-_Bool first, last;
+bool first, last;
 uint8_t first_dht_pk[crypto_box_PUBLICKEYBYTES];
 uint8_t last_dht_pk[crypto_box_PUBLICKEYBYTES];
 

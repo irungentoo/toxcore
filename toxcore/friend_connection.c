@@ -314,7 +314,7 @@ static int handle_status(void *object, int number, uint8_t status)
     if (!friend_con)
         return -1;
 
-    _Bool call_cb = 0;
+    bool call_cb = 0;
 
     if (status) {  /* Went online. */
         call_cb = 1;

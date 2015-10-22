@@ -403,7 +403,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     //TODO: on bad networks, direct connections might not last indefinitely.
     if (conn->ip_port.ip.family != 0) {
-        _Bool direct_connected = 0;
+        bool direct_connected = 0;
         crypto_connection_status(c, crypt_connection_id, &direct_connected, NULL);
 
         if (direct_connected) {
@@ -1677,7 +1677,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
  * return -1 on failure.
  * return 0 on success.
  */
-int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, _Bool connected)
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, bool connected)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -1863,7 +1863,7 @@ static void do_tcp(Net_Crypto *c)
             return;
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
-            _Bool direct_connected = 0;
+            bool direct_connected = 0;
             crypto_connection_status(c, i, &direct_connected, NULL);
 
             if (direct_connected) {
@@ -2185,7 +2185,7 @@ static void send_crypto_packets(Net_Crypto *c)
 /* Return 1 if max speed was reached for this connection (no more data can be physically through the pipe).
  * Return 0 if it wasn't reached.
  */
-_Bool max_speed_reached(Net_Crypto *c, int crypt_connection_id)
+bool max_speed_reached(Net_Crypto *c, int crypt_connection_id)
 {
     return reset_max_speed_reached(c, crypt_connection_id) != 0;
 }
@@ -2361,7 +2361,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, _Bool *direct_connected,
+unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
                                       unsigned int *online_tcp_relays)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);

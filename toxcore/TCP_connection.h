@@ -24,6 +24,8 @@
 #ifndef TCP_CONNECTION_H
 #define TCP_CONNECTION_H
 
+#include <stdbool.h>
+
 #include "TCP_client.h"
 
 #define TCP_CONN_NONE 0
@@ -70,12 +72,12 @@ typedef struct {
     uint64_t connected_time;
     uint32_t lock_count;
     uint32_t sleep_count;
-    _Bool onion;
+    bool onion;
 
     /* Only used when connection is sleeping. */
     IP_Port ip_port;
     uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
-    _Bool unsleep; /* set to 1 to unsleep connection. */
+    bool unsleep; /* set to 1 to unsleep connection. */
 } TCP_con;
 
 typedef struct {
@@ -102,7 +104,7 @@ typedef struct {
 
     TCP_Proxy_Info proxy_info;
 
-    _Bool onion_status;
+    bool onion_status;
     uint16_t onion_num_conns;
 } TCP_Connections;
 
@@ -138,7 +140,7 @@ int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_
  * return 0 on success.
  * return -1 on failure.
  */
-int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status);
+int set_tcp_onion_status(TCP_Connections *tcp_c, bool status);
 
 /* Send an oob packet via the TCP relay corresponding to tcp_connections_number.
  *
@@ -189,7 +191,7 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
  * return 0 on success.
  * return -1 on failure.
  */
-int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, _Bool status);
+int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, bool status);
 
 /* return number of online tcp relays tied to the connection on success.
  * return 0 on failure.

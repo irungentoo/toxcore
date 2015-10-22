@@ -128,7 +128,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
     Messenger_Options m_options = {0};
 
-    _Bool load_savedata_sk = 0, load_savedata_tox = 0;
+    bool load_savedata_sk = false, load_savedata_tox = false;
 
     if (options == NULL) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
@@ -261,19 +261,19 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
 {
     if (!address || !public_key) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
-        return 0;
+        return false;
     }
 
     if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
-        return 0;
+        return false;
     }
 
     struct addrinfo *root, *info;
 
     if (getaddrinfo(address, NULL, NULL, &root) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
+        return false;
     }
 
     info = root;
@@ -319,12 +319,12 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
 {
     if (!address || !public_key) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
-        return 0;
+        return false;
     }
 
     if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
-        return 0;
+        return false;
     }
 
     struct addrinfo *root, *info;
