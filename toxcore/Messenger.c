@@ -1264,7 +1264,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     if (ft->status != FILESTATUS_NOT_ACCEPTED)
         return -5;
 
-    if (position > ft->size) {
+    if (position >= ft->size) {
         return -6;
     }
 
@@ -1569,7 +1569,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
             return -1;
         }
 
-        /* seek can only be sent by the receiver to seek before resuming broken tranfers. */
+        /* seek can only be sent by the receiver to seek before resuming broken transfers. */
         if (ft->status != FILESTATUS_NOT_ACCEPTED || !receive_send) {
             return -1;
         }
@@ -1577,7 +1577,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
         memcpy(&position, data, sizeof(position));
         net_to_host((uint8_t *) &position, sizeof(position));
 
-        if (position > ft->size) {
+        if (position >= ft->size) {
             return -1;
         }
 
@@ -2126,6 +2126,11 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
                 file_data = NULL;
             } else {
                 file_data = data + 1;
+            }
+
+            /* Prevent more data than the filesize from being passed to clients. */
+            if ((ft->transferred + file_data_length) > ft->size) {
+                file_data_length = ft->size - ft->transferred;
             }
 
             if (m->file_filedata)
