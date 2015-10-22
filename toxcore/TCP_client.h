@@ -1,7 +1,7 @@
 /*
 * TCP_client.h -- Implementation of the TCP relay client part of Tox.
 *
-*  Copyright (C) 2014 Tox project All Rights Reserved.
+*  Copyright (C) 2014-2015 Tox project All Rights Reserved.
 *
 *  This file is part of Tox.
 *

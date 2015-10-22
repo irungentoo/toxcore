@@ -2,7 +2,7 @@
 * onion_client.c -- Implementation of the client part of docs/Prevent_Tracking.txt
 *                   (The part that uses the onion stuff to connect to the friend)
 *
-*  Copyright (C) 2013 Tox project All Rights Reserved.
+*  Copyright (C) 2013-2015 Tox project All Rights Reserved.
 *
 *  This file is part of Tox.
 *

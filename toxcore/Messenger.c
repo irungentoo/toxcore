@@ -2,7 +2,7 @@
  *
  * An implementation of a simple text chat only messenger on the tox network core.
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

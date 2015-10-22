@@ -1,7 +1,7 @@
 /*
 * onion.c -- Implementation of the onion part of docs/Prevent_Tracking.txt
 *
-*  Copyright (C) 2013 Tox project All Rights Reserved.
+*  Copyright (C) 2013-2015 Tox project All Rights Reserved.
 *
 *  This file is part of Tox.
 *

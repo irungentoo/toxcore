@@ -2,7 +2,7 @@
  *
  * Slightly better groupchats implementation.
  *
- *  Copyright (C) 2014 Tox project All Rights Reserved.
+ *  Copyright (C) 2014-2015 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
