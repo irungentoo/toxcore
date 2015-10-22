@@ -26,7 +26,9 @@
 #define TOX_DEFINED
 typedef struct Messenger Tox;
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE /* implicit declaration warning */
+#endif
 
 #include "codec.h"
 #include "msi.h"
