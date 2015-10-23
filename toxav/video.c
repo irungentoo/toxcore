@@ -36,9 +36,6 @@
 #define MAX_DECODE_TIME_US 0 /* Good quality encode. */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
-
-bool create_video_encoder (vpx_codec_ctx_t *dest, int32_t bit_rate);
-
 VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
 {
     VCSession *vc = calloc(sizeof(VCSession), 1);
@@ -64,9 +61,41 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
         goto BASE_CLEANUP;
     }
 
-    if (!create_video_encoder(vc->encoder, 500000)) {
-        vpx_codec_destroy(vc->decoder);
-        goto BASE_CLEANUP;
+    /* Set encoder to some initial values
+     */
+    vpx_codec_enc_cfg_t  cfg;
+    rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
+
+    if (rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
+        goto BASE_CLEANUP_1;
+    }
+
+    cfg.rc_target_bitrate = 500000;
+    cfg.g_w = 800;
+    cfg.g_h = 600;
+    cfg.g_pass = VPX_RC_ONE_PASS;
+    /* FIXME If we set error resilience the app will crash due to bug in vp8.
+             Perhaps vp9 has solved it?*/
+//     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+    cfg.g_lag_in_frames = 0;
+    cfg.kf_min_dist = 0;
+    cfg.kf_max_dist = 48;
+    cfg.kf_mode = VPX_KF_AUTO;
+
+    rc = vpx_codec_enc_init(vc->encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
+
+    if (rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
+        goto BASE_CLEANUP_1;
+    }
+
+    rc = vpx_codec_control(vc->encoder, VP8E_SET_CPUUSED, 8);
+
+    if (rc != VPX_CODEC_OK) {
+        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        vpx_codec_destroy(vc->encoder);
+        goto BASE_CLEANUP_1;
     }
 
     vc->linfts = current_time_monotonic();
@@ -78,6 +107,8 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
 
     return vc;
 
+BASE_CLEANUP_1:
+    vpx_codec_destroy(vc->decoder);
 BASE_CLEANUP:
     pthread_mutex_destroy(vc->queue_mutex);
     rb_kill(vc->vbuf_raw);
@@ -176,68 +207,61 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
 
     return 0;
 }
-int vc_reconfigure_encoder(vpx_codec_ctx_t *vccdc, uint32_t bit_rate, uint16_t width, uint16_t height)
+int vc_reconfigure_encoder(VCSession* vc, uint32_t bit_rate, uint16_t width, uint16_t height)
 {
-    if (!vccdc)
+    if (!vc)
         return -1;
 
-    vpx_codec_enc_cfg_t cfg = *vccdc->config.enc;
-
+    vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
+    int rc;
+    
     if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
 
-    cfg.rc_target_bitrate = bit_rate;
-    cfg.g_w = width;
-    cfg.g_h = height;
+    if (cfg.g_w == width && cfg.g_h == height)
+    {
+        /* Only bit rate changed */
+        cfg.rc_target_bitrate = bit_rate;
+        
+        rc = vpx_codec_enc_config_set(vc->encoder, &cfg);
+        
+        if (rc != VPX_CODEC_OK) {
+            LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+            return -1;
+        }
+    }
+    else
+    {
+        /* Resolution is changed, must reinitialize encoder since libvpx v1.4 doesn't support
+         * reconfiguring encoder to use resolutions greater than initially set.
+         */
+        
+        LOGGER_DEBUG("Have to reinitialize vpx encoder on session %p", vc);
+        
+        cfg.rc_target_bitrate = bit_rate;
+        cfg.g_w = width;
+        cfg.g_h = height;
 
-    int rc = vpx_codec_enc_config_set(vccdc, &cfg);
+        vpx_codec_ctx_t new_c;
+        
+        rc = vpx_codec_enc_init(&new_c, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
-    if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
-        return -1;
+        if (rc != VPX_CODEC_OK) {
+            LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
+            return -1;
+        }
+
+        rc = vpx_codec_control(&new_c, VP8E_SET_CPUUSED, 8);
+
+        if (rc != VPX_CODEC_OK) {
+            LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+            vpx_codec_destroy(&new_c);
+            return -1;
+        }
+        
+        vpx_codec_destroy(vc->encoder);
+        memcpy(vc->encoder, &new_c, sizeof(new_c));
     }
 
     return 0;
-}
-
-
-bool create_video_encoder (vpx_codec_ctx_t *dest, int32_t bit_rate)
-{
-    assert(dest);
-
-    vpx_codec_enc_cfg_t  cfg;
-    int rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
-
-    if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
-        return false;
-    }
-
-    cfg.rc_target_bitrate = bit_rate;
-    cfg.g_w = 800;
-    cfg.g_h = 600;
-    cfg.g_pass = VPX_RC_ONE_PASS;
-    /* FIXME If we set error resilience the app will crash due to bug in vp8.
-             Perhaps vp9 has solved it?*/
-//     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
-    cfg.g_lag_in_frames = 0;
-    cfg.kf_min_dist = 0;
-    cfg.kf_max_dist = 48;
-    cfg.kf_mode = VPX_KF_AUTO;
-
-    rc = vpx_codec_enc_init(dest, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
-
-    if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
-        return false;
-    }
-
-    rc = vpx_codec_control(dest, VP8E_SET_CPUUSED, 8);
-
-    if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
-        vpx_codec_destroy(dest);
-    }
-
-    return true;
 }

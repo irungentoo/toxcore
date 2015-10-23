@@ -62,6 +62,6 @@ VCSession *vc_new(ToxAV* av, uint32_t friend_number, toxav_video_receive_frame_c
 void vc_kill(VCSession *vc);
 void vc_iterate(VCSession *vc);
 int vc_queue_message(void *vcp, struct RTPMessage *msg);
-int vc_reconfigure_encoder(vpx_codec_ctx_t *vccdc, uint32_t bit_rate, uint16_t width, uint16_t height);
+int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height);
 
 #endif /* VIDEO_H */
