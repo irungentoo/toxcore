@@ -445,6 +445,7 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, TOXAV_CALL_CONTROL co
                 goto END;
             }
 
+            call->msi_call = NULL;
             /* No mather the case, terminate the call */
             call_kill_transmission(call);
             call_remove(call);
@@ -1037,8 +1038,8 @@ ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, TOXAV_ERR_CALL *error)
 
         av->calls_tail = av->calls_head = friend_number;
 
-    } else if (av->calls_tail < friend_number) { /* Appending */
-        void *tmp = realloc(av->calls, sizeof(ToxAVCall *) * friend_number + 1);
+    } else if (av->calls_tail <= friend_number) { /* Appending */
+        void *tmp = realloc(av->calls, sizeof(ToxAVCall *) * (friend_number + 1));
 
         if (tmp == NULL) {
             free(call);
@@ -1097,7 +1098,10 @@ ToxAVCall *call_remove(ToxAVCall *call)
     /* Set av call in msi to NULL in order to know if call if ToxAVCall is
      * removed from the msi call.
      */
-    call->msi_call->av_call = NULL;
+    if (call->msi_call) {
+        call->msi_call->av_call = NULL;
+    }
+
     free(call);
 
     if (prev)

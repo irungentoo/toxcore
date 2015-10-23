@@ -528,7 +528,7 @@ MSICall *new_call (MSISession *session, uint32_t friend_number)
         session->calls_tail = session->calls_head = friend_number;
 
     } else if (session->calls_tail < friend_number) { /* Appending */
-        void *tmp = realloc(session->calls, sizeof(MSICall *) * friend_number + 1);
+        void *tmp = realloc(session->calls, sizeof(MSICall *) * (friend_number + 1));
 
         if (tmp == NULL) {
             free(rc);
