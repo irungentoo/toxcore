@@ -440,12 +440,16 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, TOXAV_CALL_CONTROL co
 
         case TOXAV_CALL_CONTROL_CANCEL: {
             /* Hang up */
+            pthread_mutex_lock(call->mutex);
             if (msi_hangup(call->msi_call) != 0) {
                 rc = TOXAV_ERR_CALL_CONTROL_SYNC;
+                    pthread_mutex_unlock(call->mutex);
                 goto END;
             }
 
             call->msi_call = NULL;
+            pthread_mutex_unlock(call->mutex);
+
             /* No mather the case, terminate the call */
             call_kill_transmission(call);
             call_remove(call);
