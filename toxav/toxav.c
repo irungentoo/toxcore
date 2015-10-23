@@ -1038,7 +1038,7 @@ ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, TOXAV_ERR_CALL *error)
 
         av->calls_tail = av->calls_head = friend_number;
 
-    } else if (av->calls_tail <= friend_number) { /* Appending */
+    } else if (av->calls_tail < friend_number) { /* Appending */
         void *tmp = realloc(av->calls, sizeof(ToxAVCall *) * (friend_number + 1));
 
         if (tmp == NULL) {
