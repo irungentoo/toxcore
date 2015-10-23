@@ -493,6 +493,10 @@ error for send_frame {
    */
   FRIEND_NOT_IN_CALL,
   /**
+   * Synchronization error occurred.
+   */
+  SYNC,
+  /**
    * One of the frame parameters was invalid. E.g. the resolution may be too
    * small or too large, or the audio sampling rate may be unsupported.
    */

@@ -649,7 +649,11 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
         goto END;
     }
 
-    pthread_mutex_lock(av->mutex);
+    if (pthread_mutex_trylock(av->mutex) != 0) {
+        rc = TOXAV_ERR_SEND_FRAME_SYNC;
+        goto END;
+    }
+    
     call = call_get(av, friend_number);
 
     if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
@@ -728,7 +732,11 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
         goto END;
     }
 
-    pthread_mutex_lock(av->mutex);
+    if (pthread_mutex_trylock(av->mutex) != 0) {
+        rc = TOXAV_ERR_SEND_FRAME_SYNC;
+        goto END;
+    }
+    
     call = call_get(av, friend_number);
 
     if (call == NULL || !call->active || call->msi_call->state != msi_CallActive) {
