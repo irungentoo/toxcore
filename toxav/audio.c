@@ -228,7 +228,6 @@ int ac_reconfigure_encoder(ACSession *ac, int32_t bit_rate, int32_t sampling_rat
                                           &ac->le_channel_count))
         return -1;
 
-    LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", bit_rate, sampling_rate, channels);
     return 0;
 }
 
@@ -409,6 +408,7 @@ bool reconfigure_audio_encoder(OpusEncoder **e, int32_t new_br, int32_t new_sr, 
     *old_sr = new_sr;
     *old_ch = new_ch;
 
+    LOGGER_DEBUG ("Reconfigured audio encoder br: %d sr: %d cc:%d", new_br, new_sr, new_ch);
     return true;
 }
 bool reconfigure_audio_decoder(ACSession *ac, int32_t sampling_rate, int8_t channels)
