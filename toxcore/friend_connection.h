@@ -40,10 +40,10 @@
 #define PACKET_ID_FRIEND_REQUESTS 18
 
 /* Interval between the sending of ping packets. */
-#define FRIEND_PING_INTERVAL 7
+#define FRIEND_PING_INTERVAL 8
 
 /* If no packets are received from friend in this time interval, kill the connection. */
-#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 3)
+#define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 4)
 
 /* Time before friend is removed from the DHT after last hearing about him. */
 #define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT
