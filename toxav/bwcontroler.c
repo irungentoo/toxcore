@@ -138,14 +138,9 @@ void bwc_add_recv(BWControler *bwc, uint32_t bytes)
 
 
 struct BWCMessage {
-    uint8_t core_type; /* Aligner for payload type which is always 196 */
-
     uint32_t lost;
     uint32_t recv;
-} __attribute__((packed));
-
-/* Check alignment */
-typedef char __fail_if_misaligned [ sizeof(struct BWCMessage) == 9 ? 1 : -1 ];
+};
 
 void send_update(BWControler *bwc)
 {
@@ -159,15 +154,18 @@ void send_update(BWControler *bwc)
         
         if (bwc->cycle.lost)
         {
-            LOGGER_DEBUG ("%p Sent update", bwc);
+            LOGGER_DEBUG ("%p Sent update rcv: %u lost: %u",
+                          bwc, bwc->cycle.recv, bwc->cycle.lost);
 
-            struct BWCMessage msg;
-            msg.core_type = BWC_PACKET_ID;
-            msg.lost = htonl(bwc->cycle.lost);
-            msg.recv = htonl(bwc->cycle.recv);
+            uint8_t p_msg[sizeof(struct BWCMessage) + 1];
+            struct BWCMessage* b_msg = (struct BWCMessage*)(p_msg + 1);
+            
+            p_msg[0] = BWC_PACKET_ID;
+            b_msg->lost = htonl(bwc->cycle.lost);
+            b_msg->recv = htonl(bwc->cycle.recv);
 
-            if (-1 == send_custom_lossy_packet(bwc->m, bwc->friend_number, (uint8_t *)&msg, sizeof(msg)))
-                LOGGER_WARNING("BWC send failed (len: %d)! std error: %s", sizeof(msg), strerror(errno));
+            if (-1 == send_custom_lossy_packet(bwc->m, bwc->friend_number, p_msg, sizeof(p_msg)))
+                LOGGER_WARNING("BWC send failed (len: %d)! std error: %s", sizeof(p_msg), strerror(errno));
         }
         
         bwc->cycle.lsu = current_time_monotonic();
@@ -199,9 +197,9 @@ int on_update (BWControler *bwc, struct BWCMessage *msg)
 }
 int bwc_handle_data(Messenger* m, uint32_t friendnumber, const uint8_t* data, uint16_t length, void* object)
 {
-    if (length != sizeof(struct BWCMessage))
+    if (length - 1 != sizeof(struct BWCMessage))
         return -1;
 
     /* NOTE the data is mutable */
-    return on_update(object, (struct BWCMessage *) data);
+    return on_update(object, (struct BWCMessage *) (data + 1));
 }
