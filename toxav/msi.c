@@ -99,7 +99,7 @@ void msi_register_callback (MSISession *session, msi_action_cb *callback, MSICal
 {
     if (!session)
         return;
-    
+
     pthread_mutex_lock(session->mutex);
     session->callbacks[id] = callback;
     pthread_mutex_unlock(session->mutex);
@@ -142,7 +142,7 @@ int msi_kill (MSISession *session)
     }
 
     m_callback_msi_packet((struct Messenger *) session->messenger, NULL, NULL);
-    
+
     if (pthread_mutex_trylock(session->mutex) != 0) {
         LOGGER_ERROR ("Failed to aquire lock on msi mutex");
         return -1;
@@ -171,7 +171,7 @@ int msi_invite (MSISession *session, MSICall **call, uint32_t friend_number, uin
 {
     if (!session)
         return -1;
-    
+
     LOGGER_DEBUG("Session: %p Inviting friend: %u", session, friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
@@ -212,11 +212,11 @@ int msi_hangup (MSICall *call)
 {
     if (!call || !call->session)
         return -1;
-    
+
     LOGGER_DEBUG("Session: %p Hanging up call with friend: %u", call->session, call->friend_number);
 
     MSISession *session = call->session;
-    
+
     if (pthread_mutex_trylock(session->mutex) != 0) {
         LOGGER_ERROR ("Failed to aquire lock on msi mutex");
         return -1;
@@ -278,7 +278,7 @@ int msi_change_capabilities(MSICall *call, uint8_t capabilities)
 {
     if (!call || !call->session)
         return -1;
-    
+
     LOGGER_DEBUG("Session: %p Trying to change capabilities to friend %u", call->session, call->friend_number);
 
     MSISession *session = call->session;
@@ -619,19 +619,18 @@ void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *
             break;
     }
 }
-void handle_init (MSICall* call, const MSIMessage* msg)
+void handle_init (MSICall *call, const MSIMessage *msg)
 {
     assert(call);
     LOGGER_DEBUG("Session: %p Handling 'init' friend: %d", call->session, call->friend_number);
-    
+
     if (!msg->capabilities.exists) {
         LOGGER_WARNING("Session: %p Invalid capabilities on 'init'");
         call->error = msi_EInvalidMessage;
         goto FAILURE;
     }
-    
-    switch (call->state)
-    {
+
+    switch (call->state) {
         case msi_CallInactive: {
             /* Call requested */
             call->peer_capabilities = msg->capabilities.value;
@@ -641,7 +640,7 @@ void handle_init (MSICall* call, const MSIMessage* msg)
                 goto FAILURE;
         }
         break;
-        
+
         case msi_CallActive: {
             /* If peer sent init while the call is already
              * active it's probable that he is trying to
@@ -649,9 +648,9 @@ void handle_init (MSICall* call, const MSIMessage* msg)
              * on our side. We can assume that in this case
              * we can automatically answer the re-call.
              */
-            
+
             LOGGER_INFO("Friend is recalling us");
-            
+
             MSIMessage msg;
             msg_init(&msg, requ_push);
 
@@ -665,7 +664,7 @@ void handle_init (MSICall* call, const MSIMessage* msg)
              */
         }
         break;
-        
+
         default: {
             LOGGER_WARNING("Session: %p Invalid state on 'init'");
             call->error = msi_EInvalidState;
@@ -673,7 +672,7 @@ void handle_init (MSICall* call, const MSIMessage* msg)
         }
         break;
     }
-    
+
     return;
 FAILURE:
     send_error(call->session->messenger, call->friend_number, call->error);
@@ -746,33 +745,33 @@ void handle_pop (MSICall *call, const MSIMessage *msg)
         invoke_callback(call, msi_OnError);
 
     } else switch (call->state) {
-        case msi_CallInactive: {
-            LOGGER_ERROR("Handling what should be impossible case");
-            abort();
-        }
-        break;
+            case msi_CallInactive: {
+                LOGGER_ERROR("Handling what should be impossible case");
+                abort();
+            }
+            break;
 
-        case msi_CallActive: {
-            /* Hangup */
-            LOGGER_INFO("Friend hung up on us");
-            invoke_callback(call, msi_OnEnd);
-        }
-        break;
+            case msi_CallActive: {
+                /* Hangup */
+                LOGGER_INFO("Friend hung up on us");
+                invoke_callback(call, msi_OnEnd);
+            }
+            break;
 
-        case msi_CallRequesting: {
-            /* Reject */
-            LOGGER_INFO("Friend rejected our call");
-            invoke_callback(call, msi_OnEnd);
-        }
-        break;
+            case msi_CallRequesting: {
+                /* Reject */
+                LOGGER_INFO("Friend rejected our call");
+                invoke_callback(call, msi_OnEnd);
+            }
+            break;
 
-        case msi_CallRequested: {
-            /* Cancel */
-            LOGGER_INFO("Friend canceled call invite");
-            invoke_callback(call, msi_OnEnd);
+            case msi_CallRequested: {
+                /* Cancel */
+                LOGGER_INFO("Friend canceled call invite");
+                invoke_callback(call, msi_OnEnd);
+            }
+            break;
         }
-        break;
-    }
 
     kill_call (call);
 }
@@ -814,9 +813,11 @@ void handle_msi_packet (Messenger *m, uint32_t friend_number, const uint8_t *dat
         case requ_init:
             handle_init(call, &msg);
             break;
+
         case requ_push:
             handle_push(call, &msg);
             break;
+
         case requ_pop:
             handle_pop(call, &msg); /* always kills the call */
             break;

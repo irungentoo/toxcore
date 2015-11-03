@@ -209,18 +209,19 @@ bool rb_empty(const RingBuffer *b)
 {
     return b->end == b->start;
 }
-void* rb_write(RingBuffer *b, void *p)
+void *rb_write(RingBuffer *b, void *p)
 {
-    void* rc = NULL;
+    void *rc = NULL;
+
     if ((b->end + 1) % b->size == b->start) /* full */
         rc = b->data[b->start];
-    
+
     b->data[b->end] = p;
     b->end = (b->end + 1) % b->size;
 
-    if (b->end == b->start) 
+    if (b->end == b->start)
         b->start = (b->start + 1) % b->size;
-    
+
     return rc;
 }
 bool rb_read(RingBuffer *b, void **p)
@@ -229,7 +230,7 @@ bool rb_read(RingBuffer *b, void **p)
         *p = NULL;
         return false;
     }
-    
+
     *p = b->data[b->start];
     b->start = (b->start + 1) % b->size;
     return true;
@@ -256,21 +257,22 @@ void rb_kill(RingBuffer *b)
         free(b);
     }
 }
-uint16_t rb_size(const RingBuffer* b)
-{ 
+uint16_t rb_size(const RingBuffer *b)
+{
     if (rb_empty(b))
         return 0;
-    
+
     return
-    b->end > b->start ?
+        b->end > b->start ?
         b->end - b->start :
         (b->size - b->start) + b->end;
 }
-uint16_t rb_data(const RingBuffer* b, void** dest)
+uint16_t rb_data(const RingBuffer *b, void **dest)
 {
     uint16_t i = 0;
+
     for (; i < rb_size(b); i++)
         dest[i] = b->data[(b->start + i) % b->size];
-    
+
     return i;
 }

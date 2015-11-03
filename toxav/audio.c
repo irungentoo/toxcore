@@ -76,11 +76,11 @@ ACSession *ac_new(ToxAV *av, uint32_t friend_number, toxav_audio_receive_frame_c
 
     if (ac->encoder == NULL)
         goto DECODER_CLEANUP;
-    
+
     ac->le_bit_rate = 48000;
     ac->le_sample_rate = 48000;
     ac->le_channel_count = 2;
-    
+
     ac->ld_channel_count = 2;
     ac->ld_sample_rate = 48000;
     ac->ldrts = 0; /* Make it possible to reconfigure straight away */
@@ -126,7 +126,7 @@ void ac_iterate(ACSession *ac)
         return;
 
     /* TODO fix this and jitter buffering */
-    
+
     /* Enough space for the maximum frame size (120 ms 48 KHz stereo audio) */
     int16_t tmp[5760 * 2];
 
@@ -221,9 +221,9 @@ int ac_queue_message(void *acp, struct RTPMessage *msg)
 }
 int ac_reconfigure_encoder(ACSession *ac, int32_t bit_rate, int32_t sampling_rate, uint8_t channels)
 {
-    if (!ac || !reconfigure_audio_encoder(&ac->encoder, bit_rate, 
+    if (!ac || !reconfigure_audio_encoder(&ac->encoder, bit_rate,
                                           sampling_rate, channels,
-                                          &ac->le_bit_rate, 
+                                          &ac->le_bit_rate,
                                           &ac->le_sample_rate,
                                           &ac->le_channel_count))
         return -1;

@@ -189,17 +189,18 @@ bool chloss (const RTPSession *session, const struct RTPHeader *header)
 {
     if (ntohl(header->timestamp) < session->rtimestamp) {
         uint16_t hosq, lost = 0;
-        
+
         hosq = ntohs(header->sequnum);
-        
-        lost = (hosq > session->rsequnum) ? 
-            (session->rsequnum + 65535) - hosq :
-            session->rsequnum - hosq;
-        
+
+        lost = (hosq > session->rsequnum) ?
+               (session->rsequnum + 65535) - hosq :
+               session->rsequnum - hosq;
+
         puts ("Lost packet");
+
         while (lost --)
-            bwc_add_lost(session->bwc ,0);
-        
+            bwc_add_lost(session->bwc , 0);
+
         return true;
     }
 
@@ -251,7 +252,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
     }
 
     bwc_feed_avg(session->bwc, length);
-    
+
     if (ntohs(header->tlen) == length - sizeof (struct RTPHeader)) {
         /* The message is sent in single part */
 
@@ -267,7 +268,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
         }
 
         bwc_add_recv(session->bwc, length);
-        
+
         /* Invoke processing of active multiparted message */
         if (session->mp) {
             if (session->mcb)
@@ -341,11 +342,11 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                 /* Measure missing parts of the old message */
                 bwc_add_lost(session->bwc,
                              (session->mp->header.tlen - session->mp->len) +
-                             
+
                              /* Must account sizes of rtp headers too */
                              ((session->mp->header.tlen - session->mp->len) /
-                             MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
-                
+                              MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
+
                 /* Push the previous message for processing */
                 if (session->mcb)
                     session->mcb (session->cs, session->mp);

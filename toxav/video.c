@@ -207,43 +207,40 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
 
     return 0;
 }
-int vc_reconfigure_encoder(VCSession* vc, uint32_t bit_rate, uint16_t width, uint16_t height)
+int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height)
 {
     if (!vc)
         return -1;
 
     vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
     int rc;
-    
+
     if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
         return 0; /* Nothing changed */
 
-    if (cfg.g_w == width && cfg.g_h == height)
-    {
+    if (cfg.g_w == width && cfg.g_h == height) {
         /* Only bit rate changed */
         cfg.rc_target_bitrate = bit_rate;
-        
+
         rc = vpx_codec_enc_config_set(vc->encoder, &cfg);
-        
+
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
             return -1;
         }
-    }
-    else
-    {
+    } else {
         /* Resolution is changed, must reinitialize encoder since libvpx v1.4 doesn't support
          * reconfiguring encoder to use resolutions greater than initially set.
          */
-        
+
         LOGGER_DEBUG("Have to reinitialize vpx encoder on session %p", vc);
-        
+
         cfg.rc_target_bitrate = bit_rate;
         cfg.g_w = width;
         cfg.g_h = height;
 
         vpx_codec_ctx_t new_c;
-        
+
         rc = vpx_codec_enc_init(&new_c, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
         if (rc != VPX_CODEC_OK) {
@@ -258,7 +255,7 @@ int vc_reconfigure_encoder(VCSession* vc, uint32_t bit_rate, uint16_t width, uin
             vpx_codec_destroy(&new_c);
             return -1;
         }
-        
+
         vpx_codec_destroy(vc->encoder);
         memcpy(vc->encoder, &new_c, sizeof(new_c));
     }
