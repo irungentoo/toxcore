@@ -878,9 +878,9 @@ void Assoc_self_client_id_changed(Assoc *assoc, const uint8_t *id)
     }
 }
 
-#ifdef LOGGING
+#ifdef TOX_LOGGER
 static char *idpart2str(uint8_t *id, size_t len);
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
 
 /* refresh buckets */
 void do_Assoc(Assoc *assoc, DHT *dht)
@@ -974,7 +974,7 @@ void kill_Assoc(Assoc *assoc)
     }
 }
 
-#ifdef LOGGING
+#ifdef TOX_LOGGER
 
 static char buffer[crypto_box_PUBLICKEYBYTES * 2 + 1];
 static char *idpart2str(uint8_t *id, size_t len)
@@ -1028,4 +1028,4 @@ void Assoc_status(const Assoc *assoc)
     }
 }
 
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */

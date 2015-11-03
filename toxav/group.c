@@ -20,7 +20,7 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+#endif /* HAVE_CONFIG_H */
 
 #include "group.h"
 #include "../toxcore/util.h"
@@ -54,7 +54,7 @@ static Group_JitterBuffer *create_queue(unsigned int capacity)
 
     Group_JitterBuffer *q;
 
-    if ( !(q = calloc(sizeof(Group_JitterBuffer), 1)) ) return NULL;
+    if (!(q = calloc(sizeof(Group_JitterBuffer), 1))) return NULL;
 
     if (!(q->queue = calloc(sizeof(Group_Audio_Packet *), size))) {
         free(q);
@@ -190,7 +190,7 @@ static int recreate_encoder(Group_AV *group_av)
     group_av->audio_encoder = opus_encoder_create(group_av->audio_sample_rate, group_av->audio_channels,
                               OPUS_APPLICATION_AUDIO, &rc);
 
-    if ( rc != OPUS_OK ) {
+    if (rc != OPUS_OK) {
         LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
         group_av->audio_encoder = NULL;
         return -1;
@@ -198,7 +198,7 @@ static int recreate_encoder(Group_AV *group_av)
 
     rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_BITRATE(group_av->audio_bitrate));
 
-    if ( rc != OPUS_OK ) {
+    if (rc != OPUS_OK) {
         LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
         opus_encoder_destroy(group_av->audio_encoder);
         group_av->audio_encoder = NULL;
@@ -207,7 +207,7 @@ static int recreate_encoder(Group_AV *group_av)
 
     rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_COMPLEXITY(10));
 
-    if ( rc != OPUS_OK ) {
+    if (rc != OPUS_OK) {
         LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
         opus_encoder_destroy(group_av->audio_encoder);
         group_av->audio_encoder = NULL;
@@ -306,7 +306,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
             int rc;
             peer_av->audio_decoder = opus_decoder_create(sample_rate, channels, &rc);
 
-            if ( rc != OPUS_OK ) {
+            if (rc != OPUS_OK) {
                 LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
                 free(pk);
                 return -1;

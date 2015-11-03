@@ -33,7 +33,7 @@ BUILD_TESTS="yes"
 BUILD_AV="yes"
 BUILD_TESTING="yes"
 
-LOGGING="no"
+TOX_LOGGER="no"
 LOGGING_OUTNAM="libtoxcore.log"
 
 NCURSES_FOUND="no"
@@ -82,13 +82,13 @@ AC_ARG_ENABLE([randombytes-stir],
     ]
 )
 
-AC_ARG_ENABLE([log],
-    [AC_HELP_STRING([--enable-log], [enable logging (default: auto)]) ],
+AC_ARG_ENABLE([logging],
+    [AC_HELP_STRING([--enable-logging], [enable logging (default: auto)]) ],
     [
         if test "x$enableval" = "xyes"; then
-            LOGGING="yes"
+            TOX_LOGGER="yes"
             
-            AC_DEFINE([LOGGING], [], [If logging enabled])
+            AC_DEFINE([TOX_LOGGER], [], [If logging enabled])
             AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
             AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
         fi
@@ -99,7 +99,7 @@ AC_ARG_WITH(log-level,
     AC_HELP_STRING([--with-log-level=LEVEL],
                    [Logger levels: TRACE; DEBUG; INFO; WARNING; ERROR ]),
     [
-        if test "x$LOGGING" = "xno"; then
+        if test "x$TOX_LOGGER" = "xno"; then
             AC_MSG_WARN([Logging disabled!])
         else
             if test "x$withval" = "xTRACE"; then
@@ -127,7 +127,7 @@ AC_ARG_WITH(log-path,
     AC_HELP_STRING([--with-log-path=DIR],
                    [Path of logger output]),
     [
-        if test "x$LOGGING" = "xno"; then
+        if test "x$TOX_LOGGER" = "xno"; then
             AC_MSG_WARN([Logging disabled!])
         else
             AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$withval""/""$LOGGING_OUTNAM"], [Output of logger])
