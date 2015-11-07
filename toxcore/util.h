@@ -30,6 +30,7 @@
 #include <pthread.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 #define POWER_OF_2(x) (((x) != 0) && (((x) & ((~(x)) + 1)) == (x)))
 
 /* Enlarges static buffers returned by id_toa and ip_ntoa so that
@@ -98,7 +99,19 @@ void U32_to_bytes(uint8_t *dest, uint32_t value);
 /* Convert uint16_t to byte string of size 2 */
 void U16_to_bytes(uint8_t *dest, uint16_t value);
 
+/* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
+
+/* Ring buffer */
+typedef struct RingBuffer RingBuffer;
+bool rb_full(const RingBuffer *b);
+bool rb_empty(const RingBuffer *b);
+void *rb_write(RingBuffer *b, void *p);
+bool rb_read(RingBuffer *b, void **p);
+RingBuffer *rb_new(int size);
+void rb_kill(RingBuffer *b);
+uint16_t rb_size(const RingBuffer *b);
+uint16_t rb_data(const RingBuffer *b, void **dest);
 
 /* Returns a 32-bit hash of key of size len */
 uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len);

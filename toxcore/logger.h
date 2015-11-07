@@ -43,7 +43,7 @@ typedef enum {
     LOG_ERROR
 } LOG_LEVEL;
 
-typedef struct logger Logger;
+typedef struct Logger Logger;
 
 /**
  * Set 'level' as the lowest printable level. If id == NULL, random number is used.
@@ -66,21 +66,22 @@ void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, con
 
 
 /* To do some checks or similar only when logging, use this */
-#ifdef LOGGING
+#ifdef TOX_LOGGER
 #   define LOGGER_SCOPE(__SCOPE_DO__) do { __SCOPE_DO__ } while(0)
 #   define LOGGER_WRITE(log, level, format, ...) \
-            logger_write(log, level, __FILE__, __LINE__, format, ##__VA_ARGS__ )
+            logger_write(log, level, __FILE__, __LINE__, format, ##__VA_ARGS__)
 #else
+/* #   warning "Logging disabled" */
 #   define LOGGER_SCOPE(__SCOPE_DO__) do {} while(0)
 #   define LOGGER_WRITE(log, level, format, ...) do {} while(0)
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
 
 /* To log with an logger */
-#define LOGGER_TRACE_(log, format, ...) LOGGER_WRITE(log, LOG_TRACE, format, ##__VA_ARGS__ )
-#define LOGGER_DEBUG_(log, format, ...) LOGGER_WRITE(log, LOG_DEBUG, format, ##__VA_ARGS__ )
-#define LOGGER_INFO_(log, format, ...) LOGGER_WRITE(log, LOG_INFO, format, ##__VA_ARGS__ )
-#define LOGGER_WARNING_(log, format, ...) LOGGER_WRITE(log, LOG_WARNING, format, ##__VA_ARGS__ )
-#define LOGGER_ERROR_(log, format, ...) LOGGER_WRITE(log, LOG_ERROR, format, ##__VA_ARGS__ )
+#define LOGGER_TRACE_(log, format, ...) LOGGER_WRITE(log, LOG_TRACE, format, ##__VA_ARGS__)
+#define LOGGER_DEBUG_(log, format, ...) LOGGER_WRITE(log, LOG_DEBUG, format, ##__VA_ARGS__)
+#define LOGGER_INFO_(log, format, ...) LOGGER_WRITE(log, LOG_INFO, format, ##__VA_ARGS__)
+#define LOGGER_WARNING_(log, format, ...) LOGGER_WRITE(log, LOG_WARNING, format, ##__VA_ARGS__)
+#define LOGGER_ERROR_(log, format, ...) LOGGER_WRITE(log, LOG_ERROR, format, ##__VA_ARGS__)
 
 /* To log with the global logger */
 #define LOGGER_TRACE(format, ...) LOGGER_TRACE_(NULL, format, ##__VA_ARGS__)

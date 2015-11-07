@@ -2278,7 +2278,7 @@ static void connection_status_cb(Messenger *m)
 }
 
 
-#ifdef LOGGING
+#ifdef TOX_LOGGER
 #define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60UL
 static time_t lastdump = 0;
 static char IDString[crypto_box_PUBLICKEYBYTES * 2 + 1];
@@ -2356,7 +2356,7 @@ void do_messenger(Messenger *m)
     do_friends(m);
     connection_status_cb(m);
 
-#ifdef LOGGING
+#ifdef TOX_LOGGER
 
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
 
@@ -2455,7 +2455,7 @@ void do_messenger(Messenger *m)
         }
     }
 
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
 }
 
 /* new messenger format for load/save, more robust and forward compatible */

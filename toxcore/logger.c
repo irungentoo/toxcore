@@ -44,7 +44,7 @@
 #endif
 
 
-struct logger {
+struct Logger {
     FILE *log_file;
     LOG_LEVEL level;
     uint64_t start_time; /* Time when lib loaded */
@@ -87,7 +87,7 @@ char *strtime(char *dest, size_t max_len)
  */
 Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
 {
-#ifndef LOGGING /* Disabled */
+#ifndef TOX_LOGGER /* Disabled */
     return NULL;
 #endif
 
@@ -96,7 +96,7 @@ Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
     if (!retu)
         return NULL;
 
-    if ( pthread_mutex_init(retu->mutex, NULL) != 0 ) {
+    if (pthread_mutex_init(retu->mutex, NULL) != 0) {
         free(retu);
         return NULL;
     }
@@ -110,7 +110,7 @@ Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
 
     if (!(retu->tstr = calloc(16, sizeof (char))) ||
             !(retu->posstr = calloc(300, sizeof (char))) ||
-            !(retu->msg = calloc(4096, sizeof (char))) )
+            !(retu->msg = calloc(4096, sizeof (char))))
         goto FAILURE;
 
     if (id) {
@@ -147,7 +147,7 @@ FAILURE:
 
 void logger_kill(Logger *log)
 {
-#ifndef LOGGING /* Disabled */
+#ifndef TOX_LOGGER /* Disabled */
     return;
 #endif
 
@@ -160,7 +160,7 @@ void logger_kill(Logger *log)
     free(log->posstr);
     free(log->msg);
 
-    if (fclose(log->log_file) != 0 )
+    if (fclose(log->log_file) != 0)
         perror("Could not close log file");
 
     pthread_mutex_unlock(log->mutex);
@@ -177,7 +177,7 @@ void logger_kill_global(void)
 
 void logger_set_global(Logger *log)
 {
-#ifndef LOGGING /* Disabled */
+#ifndef TOX_LOGGER /* Disabled */
     return;
 #endif
 
@@ -186,7 +186,7 @@ void logger_set_global(Logger *log)
 
 Logger *logger_get_global(void)
 {
-#ifndef LOGGING /* Disabled */
+#ifndef TOX_LOGGER /* Disabled */
     return NULL;
 #endif
 
@@ -195,17 +195,17 @@ Logger *logger_get_global(void)
 
 void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...)
 {
-#ifndef LOGGING /* Disabled */
+#ifndef TOX_LOGGER /* Disabled */
     return;
 #endif
 
     static const char *logger_format =
-        "%s  "   /* Logger id string */
-        "%-16s"  /* Time string of format: %m:%d %H:%M:%S */
-        "%u  "   /* Thread id */
-        "%-5s  " /* Logger lever string */
-        "%-20s " /* File:line string */
-        "- %s"   /* Output message */
+        "%s  "          /* Logger id string */
+        "%-16s"         /* Time string of format: %m:%d %H:%M:%S */
+        "%-12u "        /* Thread id */
+        "%-5s  "        /* Logger lever string */
+        "%-20s "        /* File:line string */
+        "- %s"          /* Output message */
         WIN_CR "\n";    /* Every new print new line */
 
 
