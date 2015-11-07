@@ -4461,7 +4461,7 @@ static int peer_add(Messenger *m, int groupnumber, IP_Port *ipp, const uint8_t *
     crypto_box_keypair(gconn->session_public_key, gconn->session_secret_key);
     memcpy(gconn->addr.public_key, public_key, ENC_PUBLIC_KEY);  /* we get the sig key in the handshake */
     gconn->public_key_hash = get_peer_key_hash(public_key);
-    gconn->last_rcvd_ping = unix_time();
+    gconn->last_rcvd_ping = unix_time() + (rand() % GC_PING_INTERVAL);
     gconn->time_added = unix_time();
     gconn->send_message_id = 1;
     gconn->send_ary_start = 1;
