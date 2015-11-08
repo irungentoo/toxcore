@@ -97,8 +97,8 @@ void do_Assoc(Assoc *assoc, DHT *dht);
 /* destroy */
 void kill_Assoc(Assoc *assoc);
 
-#ifdef LOGGING
+#ifdef TOX_LOGGER
 void Assoc_status(const Assoc *assoc);
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
 
 #endif /* !__ASSOC_H__ */

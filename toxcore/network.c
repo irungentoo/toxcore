@@ -266,7 +266,7 @@ uint64_t current_time_monotonic(void)
 }
 
 /* In case no logging */
-#ifndef LOGGING
+#ifndef TOX_LOGGER
 #define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__)
 #else
 #define data_0(__buflen__, __buffer__) __buflen__ > 4 ? ntohl(*(uint32_t *)&__buffer__[1]) : 0
@@ -287,7 +287,7 @@ uint64_t current_time_monotonic(void)
                  __buffer__[0], __message__, (size_t)__res__, (!__res__ ? '!' : '>'), __buflen__, \
                  ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__));
 
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
 
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
@@ -615,9 +615,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
     }
 
     if (ip.family == AF_INET6) {
-#ifdef LOGGING
+#ifdef TOX_LOGGER
         int is_dualstack =
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
             set_socket_dualstack(temp->sock);
         LOGGER_DEBUG( "Dual-stack socket: %s",
                       is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses" );
@@ -628,9 +628,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
-#ifdef LOGGING
+#ifdef TOX_LOGGER
         int res =
-#endif /* LOGGING */
+#endif /* TOX_LOGGER */
             setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
 
         LOGGER_DEBUG(res < 0 ? "Failed to activate local multicast membership. (%u, %s)" :
