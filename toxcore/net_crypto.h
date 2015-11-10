@@ -81,9 +81,10 @@
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
    at the dT defined in net_crypto.c */
 #define CONGESTION_QUEUE_ARRAY_SIZE 24
+#define CONGESTION_LAST_SENT_ARRAY_SIZE (CONGESTION_QUEUE_ARRAY_SIZE * 2)
 
 /* Default connection ping in ms. */
-#define DEFAULT_PING_CONNECTION 200
+#define DEFAULT_PING_CONNECTION 1000
 
 typedef struct {
     uint64_t sent_time;
@@ -147,7 +148,7 @@ typedef struct {
     uint64_t last_packets_left_set;
 
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
-    long signed int last_num_packets_sent[CONGESTION_QUEUE_ARRAY_SIZE];
+    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE];
     uint32_t packets_sent;
     uint64_t last_congestion_event;
     uint64_t rtt_time;
