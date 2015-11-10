@@ -196,7 +196,7 @@ bool chloss (const RTPSession *session, const struct RTPHeader *header)
                (session->rsequnum + 65535) - hosq :
                session->rsequnum - hosq;
 
-        puts ("Lost packet");
+        fprintf (stderr, "Lost packet\n");
 
         while (lost --)
             bwc_add_lost(session->bwc , 0);
