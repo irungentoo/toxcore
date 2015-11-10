@@ -6,7 +6,7 @@ AC_INIT([tox], [0.0.0])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([1.10 -Wall subdir-objects tar-ustar])
+AM_INIT_AUTOMAKE([foreign 1.10 -Wall subdir-objects tar-ustar])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -87,7 +87,7 @@ AC_ARG_ENABLE([logging],
     [
         if test "x$enableval" = "xyes"; then
             TOX_LOGGER="yes"
-            
+
             AC_DEFINE([TOX_LOGGER], [], [If logging enabled])
             AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
             AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
@@ -104,16 +104,16 @@ AC_ARG_WITH(log-level,
         else
             if test "x$withval" = "xTRACE"; then
                 AC_DEFINE([LOGGER_LEVEL], [LOG_TRACE], [LOG_LEVEL value])
-            
+
             elif test "x$withval" = "xDEBUG"; then
                 AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
-            
+
             elif test "x$withval" = "xINFO"; then
                 AC_DEFINE([LOGGER_LEVEL], [LOG_INFO], [LOG_LEVEL value])
-            
+
             elif test "x$withval" = "xWARNING"; then
                 AC_DEFINE([LOGGER_LEVEL], [LOG_WARNING], [LOG_LEVEL value])
-                
+
             elif test "x$withval" = "xERROR"; then
                 AC_DEFINE([LOGGER_LEVEL], [LOG_ERROR], [LOG_LEVEL value])
             else
