@@ -119,8 +119,10 @@ typedef struct {
     uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */
     uint32_t temp_packet_num_sent;
 
-    IP_Port ip_port; /* The ip and port to contact this guy directly.*/
-    uint64_t direct_lastrecv_time; /* The Time at which we last received a direct packet in ms. */
+    IP_Port ip_portv4; /* The ip and port to contact this guy directly.*/
+    IP_Port ip_portv6;
+    uint64_t direct_lastrecv_timev4; /* The Time at which we last received a direct packet in ms. */
+    uint64_t direct_lastrecv_timev6;
 
     Packets_Array send_array;
     Packets_Array recv_array;
