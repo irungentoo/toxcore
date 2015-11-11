@@ -39,7 +39,7 @@
 #define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
 
 /* Minimum packet rate per second. */
-#define CRYPTO_PACKET_MIN_RATE 8.0
+#define CRYPTO_PACKET_MIN_RATE 4.0
 
 /* Minimum packet queue max length. */
 #define CRYPTO_MIN_QUEUE_LENGTH 64

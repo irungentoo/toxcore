@@ -2130,7 +2130,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 double send_array_ratio = (((double)npackets) / min_speed);
 
                 //TODO: Improve formula?
-                if (send_array_ratio > 2.0 && CRYPTO_MIN_QUEUE_LENGTH * 3 < npackets) {
+                if (send_array_ratio > 2.0 && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
                     conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / 2.0));
                 } else if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
                     conn->packet_send_rate = min_speed * 1.2;
