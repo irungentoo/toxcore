@@ -14,8 +14,8 @@ libtoxav_la_SOURCES = ../toxav/rtp.h \
                     ../toxav/audio.c \
                     ../toxav/video.h \
                     ../toxav/video.c \
-                    ../toxav/bwcontroler.h \
-                    ../toxav/bwcontroler.c \
+                    ../toxav/bwcontroller.h \
+                    ../toxav/bwcontroller.c \
                     ../toxav/toxav.h \
                     ../toxav/toxav.c \
                     ../toxav/toxav_old.c
