@@ -2105,6 +2105,12 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 /* Timeout for increasing speed after congestion event (in ms). */
 #define CONGESTION_EVENT_TIMEOUT 1000
 
+/* If the send queue is SEND_QUEUE_RATIO times larger than the
+ * calculated link speed the packet send speed will be reduced
+ * by a value depending on this number.
+ */
+#define SEND_QUEUE_RATIO 2.0
+
 static void send_crypto_packets(Net_Crypto *c)
 {
     uint32_t i;
@@ -2196,8 +2202,8 @@ static void send_crypto_packets(Net_Crypto *c)
                 double send_array_ratio = (((double)npackets) / min_speed);
 
                 //TODO: Improve formula?
-                if (send_array_ratio > 2.0 && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
-                    conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / 2.0));
+                if (send_array_ratio > SEND_QUEUE_RATIO && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
+                    conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / SEND_QUEUE_RATIO));
                 } else if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
                     conn->packet_send_rate = min_speed * 1.2;
                 } else {
