@@ -513,7 +513,7 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, TOXAV_CALL_CONTROL co
                     goto END;
                 }
 
-                rtp_allow_receiving(call->audio.first);
+                rtp_allow_receiving(call->video.first);
             } else {
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto END;
