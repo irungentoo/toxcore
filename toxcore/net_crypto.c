@@ -2141,6 +2141,9 @@ static void send_crypto_packets(Net_Crypto *c)
                 double request_packet_interval = (REQUEST_PACKETS_COMPARE_CONSTANT / (((double)num_packets_array(
                                                       &conn->recv_array) + 1.0) / (conn->packet_recv_rate + 1.0)));
 
+                if (request_packet_interval < PACKET_COUNTER_AVERAGE_INTERVAL)
+                    request_packet_interval = PACKET_COUNTER_AVERAGE_INTERVAL;
+
                 if (temp_time - conn->last_request_packet_sent > (uint64_t)request_packet_interval) {
                     if (send_request_packet(c, i) == 0) {
                         conn->last_request_packet_sent = temp_time;
