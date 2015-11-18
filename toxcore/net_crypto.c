@@ -2129,7 +2129,7 @@ static void send_crypto_packets(Net_Crypto *c)
         }
 
         if ((conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED)
-                && ((CRYPTO_SEND_PACKET_INTERVAL / 4) + conn->last_request_packet_sent) < temp_time) {
+                && ((CRYPTO_SEND_PACKET_INTERVAL) + conn->last_request_packet_sent) < temp_time) {
             if (send_request_packet(c, i) == 0) {
                 conn->last_request_packet_sent = temp_time;
             }
@@ -2141,8 +2141,17 @@ static void send_crypto_packets(Net_Crypto *c)
                 double request_packet_interval = (REQUEST_PACKETS_COMPARE_CONSTANT / (((double)num_packets_array(
                                                       &conn->recv_array) + 1.0) / (conn->packet_recv_rate + 1.0)));
 
+                double request_packet_interval2 = ((CRYPTO_PACKET_MIN_RATE / conn->packet_recv_rate) *
+                                                   (double)CRYPTO_SEND_PACKET_INTERVAL) + (double)PACKET_COUNTER_AVERAGE_INTERVAL;
+
+                if (request_packet_interval2 < request_packet_interval)
+                    request_packet_interval = request_packet_interval2;
+
                 if (request_packet_interval < PACKET_COUNTER_AVERAGE_INTERVAL)
                     request_packet_interval = PACKET_COUNTER_AVERAGE_INTERVAL;
+
+                if (request_packet_interval > CRYPTO_SEND_PACKET_INTERVAL)
+                    request_packet_interval = CRYPTO_SEND_PACKET_INTERVAL;
 
                 if (temp_time - conn->last_request_packet_sent > (uint64_t)request_packet_interval) {
                     if (send_request_packet(c, i) == 0) {
