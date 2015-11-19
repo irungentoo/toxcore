@@ -124,6 +124,8 @@ typedef struct {
     uint64_t direct_lastrecv_timev4; /* The Time at which we last received a direct packet in ms. */
     uint64_t direct_lastrecv_timev6;
 
+    uint64_t last_tcp_sent; /* Time the last TCP packet was sent. */
+
     Packets_Array send_array;
     Packets_Array recv_array;
 

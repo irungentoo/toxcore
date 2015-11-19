@@ -501,6 +501,14 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     int ret = send_packet_tcp_connection(c->tcp_c, conn->connection_number_tcp, data, length);
     pthread_mutex_unlock(&c->tcp_mutex);
 
+    pthread_mutex_lock(&conn->mutex);
+
+    if (ret == 0) {
+        conn->last_tcp_sent = current_time_monotonic();
+    }
+
+    pthread_mutex_unlock(&conn->mutex);
+
     if (ret == 0 || direct_send_attempt) {
         return 0;
     }
@@ -2190,40 +2198,48 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 unsigned int n_p_pos = conn->last_sendqueue_counter % CONGESTION_LAST_SENT_ARRAY_SIZE;
                 conn->last_num_packets_sent[n_p_pos] = packets_sent;
-                long signed int total_sent = 0;
 
-                //TODO use real delay
-                unsigned int delay = (unsigned int)((conn->rtt_time / PACKET_COUNTER_AVERAGE_INTERVAL) + 0.5);
-                unsigned int packets_set_rem_array = (CONGESTION_LAST_SENT_ARRAY_SIZE - CONGESTION_QUEUE_ARRAY_SIZE);
+                _Bool direct_connected = 0;
+                crypto_connection_status(c, i, &direct_connected, NULL);
 
-                if (delay > packets_set_rem_array) {
-                    delay = packets_set_rem_array;
-                }
-
-                for (j = 0; j < CONGESTION_QUEUE_ARRAY_SIZE; ++j) {
-                    total_sent += conn->last_num_packets_sent[(j + (packets_set_rem_array  - delay) + n_p_pos) %
-                                  CONGESTION_LAST_SENT_ARRAY_SIZE];
-                }
-
-                total_sent -= sum;
-
-                /* if queue is too big only allow resending packets. */
-                uint32_t npackets = num_packets_array(&conn->send_array);
-                double min_speed = 1000.0 * (((double)(total_sent)) / ((double)(CONGESTION_QUEUE_ARRAY_SIZE) *
-                                             PACKET_COUNTER_AVERAGE_INTERVAL));
-                double send_array_ratio = (((double)npackets) / min_speed);
-
-                //TODO: Improve formula?
-                if (send_array_ratio > SEND_QUEUE_RATIO && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
-                    conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / SEND_QUEUE_RATIO));
-                } else if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
-                    conn->packet_send_rate = min_speed * 1.2;
+                if (direct_connected && conn->last_tcp_sent + CONGESTION_EVENT_TIMEOUT > temp_time) {
+                    /* When switching from TCP to UDP, don't change the packet send rate for CONGESTION_EVENT_TIMEOUT ms. */
                 } else {
-                    conn->packet_send_rate = min_speed * 0.9;
-                }
+                    long signed int total_sent = 0;
 
-                if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
-                    conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+                    //TODO use real delay
+                    unsigned int delay = (unsigned int)((conn->rtt_time / PACKET_COUNTER_AVERAGE_INTERVAL) + 0.5);
+                    unsigned int packets_set_rem_array = (CONGESTION_LAST_SENT_ARRAY_SIZE - CONGESTION_QUEUE_ARRAY_SIZE);
+
+                    if (delay > packets_set_rem_array) {
+                        delay = packets_set_rem_array;
+                    }
+
+                    for (j = 0; j < CONGESTION_QUEUE_ARRAY_SIZE; ++j) {
+                        total_sent += conn->last_num_packets_sent[(j + (packets_set_rem_array  - delay) + n_p_pos) %
+                                      CONGESTION_LAST_SENT_ARRAY_SIZE];
+                    }
+
+                    total_sent -= sum;
+
+                    /* if queue is too big only allow resending packets. */
+                    uint32_t npackets = num_packets_array(&conn->send_array);
+                    double min_speed = 1000.0 * (((double)(total_sent)) / ((double)(CONGESTION_QUEUE_ARRAY_SIZE) *
+                                                 PACKET_COUNTER_AVERAGE_INTERVAL));
+                    double send_array_ratio = (((double)npackets) / min_speed);
+
+                    //TODO: Improve formula?
+                    if (send_array_ratio > SEND_QUEUE_RATIO && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
+                        conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / SEND_QUEUE_RATIO));
+                    } else if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
+                        conn->packet_send_rate = min_speed * 1.2;
+                    } else {
+                        conn->packet_send_rate = min_speed * 0.9;
+                    }
+
+                    if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
+                        conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
+                    }
                 }
 
             }
