@@ -24,7 +24,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "rtp.h"
-#include "bwcontroler.h"
+#include "bwcontroller.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 #include "../toxcore/Messenger.h"
@@ -37,7 +37,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
 
 
 RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber,
-                     BWControler *bwc, void *cs,
+                     BWController *bwc, void *cs,
                      int (*mcb) (void *, struct RTPMessage *))
 {
     assert(mcb);
