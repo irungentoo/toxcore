@@ -151,6 +151,10 @@ typedef struct {
     uint32_t packets_left;
     uint64_t last_packets_left_set;
 
+    double packet_send_rate_requested;
+    uint32_t packets_left_requested;
+    uint64_t last_packets_left_requested_set;
+
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE];
     uint32_t packets_sent;

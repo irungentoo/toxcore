@@ -2235,41 +2235,67 @@ static void send_crypto_packets(Net_Crypto *c)
                     //TODO: Improve formula?
                     if (send_array_ratio > SEND_QUEUE_RATIO && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
                         conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / SEND_QUEUE_RATIO));
+                        conn->packet_send_rate_requested = min_speed;
                     } else if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
-                        conn->packet_send_rate = min_speed * 1.2;
+                        conn->packet_send_rate_requested = conn->packet_send_rate = min_speed * 1.2;
                     } else {
                         conn->packet_send_rate = min_speed * 0.9;
+                        conn->packet_send_rate_requested = min_speed;
                     }
 
                     if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
                         conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
                     }
+
+                    if (conn->packet_send_rate_requested < conn->packet_send_rate) {
+                        conn->packet_send_rate_requested = conn->packet_send_rate;
+                    }
                 }
 
             }
 
-            if (conn->last_packets_left_set == 0) {
-                conn->last_packets_left_set = temp_time;
-                conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
-            } else if (((uint64_t)((1000.0 / conn->packet_send_rate) + 0.5) + conn->last_packets_left_set) <= temp_time) {
-                double n_packets = conn->packet_send_rate * (((double)(temp_time - conn->last_packets_left_set)) / 1000.0);
+            if (conn->last_packets_left_set == 0 || conn->last_packets_left_requested_set == 0) {
+                conn->last_packets_left_requested_set = conn->last_packets_left_set = temp_time;
+                conn->packets_left_requested = conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
+            } else {
+                if (((uint64_t)((1000.0 / conn->packet_send_rate) + 0.5) + conn->last_packets_left_set) <= temp_time) {
+                    double n_packets = conn->packet_send_rate * (((double)(temp_time - conn->last_packets_left_set)) / 1000.0);
 
-                uint32_t num_packets = n_packets;
-                double rem = n_packets - (double)num_packets;
-                uint64_t adj = (uint64_t)((rem * (1000.0 / conn->packet_send_rate)) + 0.5);
+                    uint32_t num_packets = n_packets;
+                    double rem = n_packets - (double)num_packets;
+                    uint64_t adj = (uint64_t)((rem * (1000.0 / conn->packet_send_rate)) + 0.5);
 
-                if (conn->packets_left > num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH) {
-                    conn->packets_left = num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH;
-                } else {
-                    conn->packets_left += num_packets;
+                    if (conn->packets_left > num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH) {
+                        conn->packets_left = num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH;
+                    } else {
+                        conn->packets_left += num_packets;
+                    }
+
+                    conn->last_packets_left_set = temp_time - adj;
                 }
 
-                conn->last_packets_left_set = temp_time - adj;
+                if (((uint64_t)((1000.0 / conn->packet_send_rate_requested) + 0.5) + conn->last_packets_left_requested_set) <=
+                        temp_time) {
+                    double n_packets = conn->packet_send_rate_requested * (((double)(temp_time - conn->last_packets_left_requested_set)) /
+                                       1000.0);
+
+                    uint32_t num_packets = n_packets;
+                    double rem = n_packets - (double)num_packets;
+                    uint64_t adj = (uint64_t)((rem * (1000.0 / conn->packet_send_rate_requested)) + 0.5);
+                    conn->packets_left_requested = num_packets;
+
+                    conn->last_packets_left_requested_set = temp_time - adj;
+                }
+
+                if (conn->packets_left > conn->packets_left_requested)
+                    conn->packets_left_requested = conn->packets_left;
             }
 
-            int ret = send_requested_packets(c, i, conn->packets_left);
+            int ret = send_requested_packets(c, i, conn->packets_left_requested);
 
             if (ret != -1) {
+                conn->packets_left_requested -= ret;
+
                 if ((unsigned int)ret < conn->packets_left) {
                     conn->packets_left -= ret;
                 } else {
@@ -2370,6 +2396,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     if (congestion_control) {
         --conn->packets_left;
+        --conn->packets_left_requested;
         conn->packets_sent++;
     }
 
