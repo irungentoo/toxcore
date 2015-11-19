@@ -2226,6 +2226,10 @@ static void send_crypto_packets(Net_Crypto *c)
                     uint32_t npackets = num_packets_array(&conn->send_array);
                     double min_speed = 1000.0 * (((double)(total_sent)) / ((double)(CONGESTION_QUEUE_ARRAY_SIZE) *
                                                  PACKET_COUNTER_AVERAGE_INTERVAL));
+
+                    if (min_speed < CRYPTO_PACKET_MIN_RATE)
+                        min_speed = CRYPTO_PACKET_MIN_RATE;
+
                     double send_array_ratio = (((double)npackets) / min_speed);
 
                     //TODO: Improve formula?
