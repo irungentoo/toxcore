@@ -85,6 +85,7 @@
 
 /* Default connection ping in ms. */
 #define DEFAULT_PING_CONNECTION 1000
+#define DEFAULT_TCP_PING_CONNECTION 500
 
 typedef struct {
     uint64_t sent_time;
@@ -156,8 +157,9 @@ typedef struct {
     uint64_t last_packets_left_requested_set;
 
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
-    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE];
-    uint32_t packets_sent;
+    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE],
+         last_num_packets_resent[CONGESTION_LAST_SENT_ARRAY_SIZE];
+    uint32_t packets_sent, packets_resent;
     uint64_t last_congestion_event;
     uint64_t rtt_time;
 
