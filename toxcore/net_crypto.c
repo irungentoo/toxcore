@@ -2283,10 +2283,10 @@ static void send_crypto_packets(Net_Crypto *c)
             } else {
                 if (((uint64_t)((1000.0 / conn->packet_send_rate) + 0.5) + conn->last_packets_left_set) <= temp_time) {
                     double n_packets = conn->packet_send_rate * (((double)(temp_time - conn->last_packets_left_set)) / 1000.0);
+                    n_packets += conn->last_packets_left_rem;
 
                     uint32_t num_packets = n_packets;
                     double rem = n_packets - (double)num_packets;
-                    uint64_t adj = (uint64_t)((rem * (1000.0 / conn->packet_send_rate)) + 0.5);
 
                     if (conn->packets_left > num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH) {
                         conn->packets_left = num_packets * 4 + CRYPTO_MIN_QUEUE_LENGTH;
@@ -2294,20 +2294,22 @@ static void send_crypto_packets(Net_Crypto *c)
                         conn->packets_left += num_packets;
                     }
 
-                    conn->last_packets_left_set = temp_time - adj;
+                    conn->last_packets_left_set = temp_time;
+                    conn->last_packets_left_rem = rem;
                 }
 
                 if (((uint64_t)((1000.0 / conn->packet_send_rate_requested) + 0.5) + conn->last_packets_left_requested_set) <=
                         temp_time) {
                     double n_packets = conn->packet_send_rate_requested * (((double)(temp_time - conn->last_packets_left_requested_set)) /
                                        1000.0);
+                    n_packets += conn->last_packets_left_requested_rem;
 
                     uint32_t num_packets = n_packets;
                     double rem = n_packets - (double)num_packets;
-                    uint64_t adj = (uint64_t)((rem * (1000.0 / conn->packet_send_rate_requested)) + 0.5);
                     conn->packets_left_requested = num_packets;
 
-                    conn->last_packets_left_requested_set = temp_time - adj;
+                    conn->last_packets_left_requested_set = temp_time;
+                    conn->last_packets_left_requested_rem = rem;
                 }
 
                 if (conn->packets_left > conn->packets_left_requested)

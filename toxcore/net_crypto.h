@@ -36,7 +36,7 @@
 #define CRYPTO_CONN_ESTABLISHED 4
 
 /* Maximum size of receiving and sending packet buffers. */
-#define CRYPTO_PACKET_BUFFER_SIZE 16384 /* Must be a power of 2 */
+#define CRYPTO_PACKET_BUFFER_SIZE 32768 /* Must be a power of 2 */
 
 /* Minimum packet rate per second. */
 #define CRYPTO_PACKET_MIN_RATE 4.0
@@ -151,10 +151,12 @@ typedef struct {
     double packet_send_rate;
     uint32_t packets_left;
     uint64_t last_packets_left_set;
+    double last_packets_left_rem;
 
     double packet_send_rate_requested;
     uint32_t packets_left_requested;
     uint64_t last_packets_left_requested_set;
+    double last_packets_left_requested_rem;
 
     uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
     long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE],
