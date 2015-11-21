@@ -2239,8 +2239,11 @@ static void send_crypto_packets(Net_Crypto *c)
 
                     /* if queue is too big only allow resending packets. */
                     uint32_t npackets = num_packets_array(&conn->send_array);
-                    double min_speed = 1000.0 * (((double)(total_sent + total_resent)) / ((double)(CONGESTION_QUEUE_ARRAY_SIZE) *
+                    double min_speed = 1000.0 * (((double)(total_sent)) / ((double)(CONGESTION_QUEUE_ARRAY_SIZE) *
                                                  PACKET_COUNTER_AVERAGE_INTERVAL));
+
+                    double min_speed_request = 1000.0 * (((double)(total_sent + total_resent)) / ((double)(
+                            CONGESTION_QUEUE_ARRAY_SIZE) * PACKET_COUNTER_AVERAGE_INTERVAL));
 
                     if (min_speed < CRYPTO_PACKET_MIN_RATE)
                         min_speed = CRYPTO_PACKET_MIN_RATE;
@@ -2256,7 +2259,7 @@ static void send_crypto_packets(Net_Crypto *c)
                         conn->packet_send_rate = min_speed * 0.9;
                     }
 
-                    conn->packet_send_rate_requested = min_speed * 1.2;
+                    conn->packet_send_rate_requested = min_speed_request * 1.2;
 
                     if (conn->packet_send_rate < CRYPTO_PACKET_MIN_RATE) {
                         conn->packet_send_rate = CRYPTO_PACKET_MIN_RATE;
