@@ -2235,7 +2235,12 @@ static void send_crypto_packets(Net_Crypto *c)
                         total_resent += conn->last_num_packets_resent[ind];
                     }
 
-                    total_sent -= sum;
+                    if (sum > 0) {
+                        total_sent -= sum;
+                    } else {
+                        if (total_resent > -sum)
+                            total_resent = -sum;
+                    }
 
                     /* if queue is too big only allow resending packets. */
                     uint32_t npackets = num_packets_array(&conn->send_array);
