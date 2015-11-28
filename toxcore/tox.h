@@ -1643,19 +1643,14 @@ enum TOX_FILE_KIND {
      * when they already have the sticker indicated by file_id; and because of this sending clients can't make any
      * assumptions when these file transfers are canceled with no data transferred.
      */
-    TOX_FILE_KIND_STICKER_PNG,
-
-    /**
-     * File type for a "small" image in SVG format. Otherwise same as TOX_FILE_KIND_STICKER_PNG.
-     */
-    TOX_FILE_KIND_STICKER_SVG,
+    TOX_FILE_KIND_STICKER,
 
     /**
      * File type for an image that the sending client elects to display 'inline' with other messages. It is up to the
      * receiving client to decide how to handle this file kind, but at the minimum the receiver should include some
      * reminder/notice that this is an inline image, and not just a normal file transfer of an image.
      */
-    TOX_FILE_KIND_INLINE_IMAGE_PNG,
+    TOX_FILE_KIND_INLINE_IMAGE,
 
     /**
      * Short audio file, expected to be a voicemail message from a contact. Clients should offer a way to play the audio
@@ -1671,7 +1666,7 @@ enum TOX_FILE_KIND {
      * systems for call screening, they may set file_size to 0 for a live stream. Receiving clients should enforce a max
      * length to avoid abuse. 10 seconds of voice audio at 32kb/s in roughly 1MB on disk.
      */
-    TOX_FILE_KIND_VOICEMAIL_OPUS,
+    TOX_FILE_KIND_VOICEMAIL,
 };
 
 
