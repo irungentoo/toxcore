@@ -46,7 +46,7 @@ typedef struct ToxAVCall_s {
     pthread_mutex_t mutex_video[1];
     PAIR(RTPSession *, VCSession *) video;
 
-    BWControler *bwc;
+    BWController *bwc;
 
     bool active;
     MSICall *msi_call;
@@ -88,7 +88,7 @@ struct ToxAV {
     uint32_t interval; /** Calculated interval */
 };
 
-void callback_bwc (BWControler *bwc, uint32_t friend_number, float loss, void *user_data);
+void callback_bwc (BWController *bwc, uint32_t friend_number, float loss, void *user_data);
 
 int callback_invite(void *toxav_inst, MSICall *call);
 int callback_start(void *toxav_inst, MSICall *call);
@@ -514,7 +514,7 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, TOXAV_CALL_CONTROL co
                     goto END;
                 }
 
-                rtp_allow_receiving(call->audio.first);
+                rtp_allow_receiving(call->video.first);
             } else {
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto END;
@@ -858,7 +858,7 @@ void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb 
  * :: Internal
  *
  ******************************************************************************/
-void callback_bwc(BWControler *bwc, uint32_t friend_number, float loss, void *user_data)
+void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data)
 {
     /* Callback which is called when the internal measure mechanism reported packet loss.
      * We report suggested lowered bitrate to an app. If app is sending both audio and video,

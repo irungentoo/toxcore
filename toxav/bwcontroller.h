@@ -1,4 +1,4 @@
-/**  bwcontroler.h
+/**  bwcontroller.h
  *
  *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
@@ -23,15 +23,15 @@
 #define BWCONROLER_H
 #include "../toxcore/Messenger.h"
 
-typedef struct BWControler_s BWControler;
+typedef struct BWController_s BWController;
 
-BWControler *bwc_new(Messenger *m, uint32_t friendnumber,
-                     void (*mcb) (BWControler *, uint32_t, float, void *),
-                     void *udata);
-void bwc_kill(BWControler *bwc);
+BWController *bwc_new(Messenger *m, uint32_t friendnumber,
+                      void (*mcb) (BWController *, uint32_t, float, void *),
+                      void *udata);
+void bwc_kill(BWController *bwc);
 
-void bwc_feed_avg(BWControler *bwc, uint32_t bytes);
-void bwc_add_lost(BWControler *bwc, uint32_t bytes);
-void bwc_add_recv(BWControler *bwc, uint32_t bytes);
+void bwc_feed_avg(BWController *bwc, uint32_t bytes);
+void bwc_add_lost(BWController *bwc, uint32_t bytes);
+void bwc_add_recv(BWController *bwc, uint32_t bytes);
 
 #endif /* BWCONROLER_H */

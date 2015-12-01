@@ -1,4 +1,4 @@
-/**  bwcontroler.c
+/**  bwcontroller.c
  *
  *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
@@ -24,7 +24,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <assert.h>
-#include "bwcontroler.h"
+#include "bwcontroller.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 
@@ -37,8 +37,8 @@
  *
  */
 
-struct BWControler_s {
-    void (*mcb) (BWControler *, uint32_t, float, void *);
+struct BWController_s {
+    void (*mcb) (BWController *, uint32_t, float, void *);
     void *mcb_data;
 
     Messenger *m;
@@ -60,13 +60,13 @@ struct BWControler_s {
 };
 
 int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
-void send_update(BWControler *bwc);
+void send_update(BWController *bwc);
 
-BWControler *bwc_new(Messenger *m, uint32_t friendnumber,
-                     void (*mcb) (BWControler *, uint32_t, float, void *),
-                     void *udata)
+BWController *bwc_new(Messenger *m, uint32_t friendnumber,
+                      void (*mcb) (BWController *, uint32_t, float, void *),
+                      void *udata)
 {
-    BWControler *retu = calloc(sizeof(struct BWControler_s), 1);
+    BWController *retu = calloc(sizeof(struct BWController_s), 1);
 
     retu->mcb = mcb;
     retu->mcb_data = udata;
@@ -85,7 +85,7 @@ BWControler *bwc_new(Messenger *m, uint32_t friendnumber,
 
     return retu;
 }
-void bwc_kill(BWControler *bwc)
+void bwc_kill(BWController *bwc)
 {
     if (!bwc)
         return;
@@ -95,7 +95,7 @@ void bwc_kill(BWControler *bwc)
     rb_kill(bwc->rcvpkt.rb);
     free(bwc);
 }
-void bwc_feed_avg(BWControler *bwc, uint32_t bytes)
+void bwc_feed_avg(BWController *bwc, uint32_t bytes)
 {
     uint32_t *p;
 
@@ -104,7 +104,7 @@ void bwc_feed_avg(BWControler *bwc, uint32_t bytes)
 
     *p = bytes;
 }
-void bwc_add_lost(BWControler *bwc, uint32_t bytes)
+void bwc_add_lost(BWController *bwc, uint32_t bytes)
 {
     if (!bwc)
         return;
@@ -129,7 +129,7 @@ void bwc_add_lost(BWControler *bwc, uint32_t bytes)
     bwc->cycle.lost += bytes;
     send_update(bwc);
 }
-void bwc_add_recv(BWControler *bwc, uint32_t bytes)
+void bwc_add_recv(BWController *bwc, uint32_t bytes)
 {
     if (!bwc || !bytes)
         return;
@@ -144,7 +144,7 @@ struct BWCMessage {
     uint32_t recv;
 };
 
-void send_update(BWControler *bwc)
+void send_update(BWController *bwc)
 {
     if (current_time_monotonic() - bwc->cycle.lfu > BWC_REFRESH_INTERVAL_MS) {
 
@@ -171,7 +171,7 @@ void send_update(BWControler *bwc)
         bwc->cycle.lsu = current_time_monotonic();
     }
 }
-int on_update (BWControler *bwc, struct BWCMessage *msg)
+int on_update (BWController *bwc, struct BWCMessage *msg)
 {
     LOGGER_DEBUG ("%p Got update from peer", bwc);
 
