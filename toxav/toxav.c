@@ -286,12 +286,10 @@ bool toxav_call(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, uint
         goto END;
     }
 
-    ToxAVCall *call = call_new(av, friend_number, error);
+    ToxAVCall *call = call_new(av, friend_number, &rc);
 
-    if (call == NULL) {
-        rc = TOXAV_ERR_CALL_MALLOC;
+    if (call == NULL)
         goto END;
-    }
 
     call->audio_bit_rate = audio_bit_rate;
     call->video_bit_rate = video_bit_rate;
