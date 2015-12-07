@@ -2510,10 +2510,13 @@ static int handle_gc_topic(Messenger *m, int groupnumber, uint32_t peernumber, c
     if (topic_info.version < chat->topic_info.version)
         return 0;
 
+    /* Prevents sync issues from triggering the callback needlessly. */
+    bool skip_callback = chat->topic_info.length == topic_info.length && memcmp(chat->topic_info.topic, topic_info.topic, topic_info.length) == 0;
+
     memcpy(&chat->topic_info, &topic_info, sizeof(GC_TopicInfo));
     memcpy(chat->topic_sig, signature, SIGNATURE_SIZE);
 
-    if (chat->connection_state == CS_CONNECTED && c->topic_change)
+    if (!skip_callback && chat->connection_state == CS_CONNECTED && c->topic_change)
         (*c->topic_change)(m, groupnumber, chat->gcc[peernumber].peer_id, topic_info.topic, topic_info.length,
                            c->topic_change_userdata);
 
