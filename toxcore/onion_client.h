@@ -29,6 +29,7 @@
 #include "ping_array.h"
 
 #define MAX_ONION_CLIENTS 8
+#define MAX_ONION_CLIENTS_ANNOUNCE 12 /* Number of nodes to announce ourselves to. */
 #define ONION_NODE_PING_INTERVAL 15
 #define ONION_NODE_TIMEOUT (ONION_NODE_PING_INTERVAL * 3)
 
@@ -130,7 +131,7 @@ typedef struct {
     Onion_Friend    *friends_list;
     uint16_t       num_friends;
 
-    Onion_Node clients_announce_list[MAX_ONION_CLIENTS];
+    Onion_Node clients_announce_list[MAX_ONION_CLIENTS_ANNOUNCE];
 
     Onion_Client_Paths onion_paths_self;
     Onion_Client_Paths onion_paths_friends;
