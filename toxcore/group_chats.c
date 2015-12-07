@@ -3210,6 +3210,10 @@ static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernum
     }
 
     if (target_peernum == 0) {
+        if (c->moderation)
+            (*c->moderation)(m, groupnumber, chat->gcc[peernumber].peer_id, chat->gcc[target_peernum].peer_id,
+                             mod_event, c->moderation_userdata);
+
         group_delete(c, chat);
         return 0;
     }
