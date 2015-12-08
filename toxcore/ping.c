@@ -270,7 +270,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
     IP_Port temp;
 
     if (DHT_getfriendip(ping->dht, public_key, &temp) == 0) {
-        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
+        send_ping_request(ping, ip_port, public_key);
         return -1;
     }
 
