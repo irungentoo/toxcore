@@ -267,6 +267,13 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
 
     uint32_t i;
 
+    IP_Port temp;
+
+    if (DHT_getfriendip(ping->dht, public_key, &temp) == 0) {
+        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
+        return -1;
+    }
+
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
             memcpy(ping->to_ping[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);

@@ -787,14 +787,14 @@ static int replace_all(   Client_data    *list,
  */
 static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key)
 {
-    if (store_node_ok(&dht->close_clientlist[0], public_key, dht->self_public_key)) {
+    if (store_node_ok(&dht->close_clientlist[1], public_key, dht->self_public_key)) {
         return 1;
     }
 
     unsigned int i;
 
     for (i = 0; i < dht->num_friends; ++i) {
-        if (store_node_ok(&dht->friends_list[i].client_list[0], public_key, dht->self_public_key)) {
+        if (store_node_ok(&dht->friends_list[i].client_list[1], public_key, dht->self_public_key)) {
             return 1;
         }
     }
