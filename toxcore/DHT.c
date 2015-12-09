@@ -76,11 +76,38 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 {
     size_t   i;
     uint8_t distance1, distance2;
+    _Bool d1_abs = 0, d2_abs = 0;
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
 
         distance1 = pk[i] ^ pk1[i];
         distance2 = pk[i] ^ pk2[i];
+
+        if (!i) {
+            if (distance1 & (1 << 7)) {
+                d1_abs = 1;
+            }
+
+            if (distance2 & (1 << 7)) {
+                d2_abs = 1;
+            }
+        }
+
+        if (d1_abs)
+            distance1 = ~distance1;
+
+        if (d2_abs)
+            distance2 = ~distance2;
+
+        if (i == (crypto_box_PUBLICKEYBYTES - 1)) {
+            if (d1_abs)
+                if (distance1 != UINT8_MAX)
+                    ++distance1;
+
+            if (d2_abs)
+                if (distance2 != UINT8_MAX)
+                    ++distance2;
+        }
 
         if (distance1 < distance2)
             return 1;
@@ -1441,9 +1468,9 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
 
         if (rand_node >= num_nodes) {
             rand_node = rand_node % num_nodes;
-            uint8_t get_pk[crypto_box_PUBLICKEYBYTES];
 
             if (memcmp(client_list[rand_node]->public_key, public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+                uint8_t get_pk[crypto_box_PUBLICKEYBYTES];
                 find_midpoint(get_pk, client_list[rand_node]->public_key, public_key);
                 getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, get_pk, NULL);
             }
