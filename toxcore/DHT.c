@@ -1363,6 +1363,43 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     return -1;
 }
 
+static void divide_by_2(uint8_t *public_key)
+{
+    unsigned int i;
+    _Bool one = 0;
+
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+        _Bool temp = 0;
+
+        if (public_key[i] & (1)) {
+            temp = 1;
+        }
+
+        public_key[i] >>= 1;
+
+        if (one)
+            public_key[i] += (1 << 7);
+
+        one = temp;
+    }
+}
+
+static void find_midpoint(uint8_t *out, const uint8_t *top, const uint8_t *bot)
+{
+    unsigned int i;
+    _Bool one = 0;
+
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+        out[i] = top[i] ^ bot[i];
+    }
+
+    divide_by_2(out);
+
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+        out[i] ^= bot[i];
+    }
+}
+
 /* returns number of nodes not in kill-timeout */
 static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, const uint8_t *public_key,
         Client_data *list, uint32_t list_count, uint32_t *bootstrap_times)
@@ -1400,9 +1437,20 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     }
 
     if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
-        uint32_t rand_node = rand() % num_nodes;
-        getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key,
-                 public_key, NULL);
+        uint32_t rand_node = rand() % (num_nodes * 2);
+
+        if (rand_node >= num_nodes) {
+            rand_node = rand_node % num_nodes;
+            uint8_t get_pk[crypto_box_PUBLICKEYBYTES];
+
+            if (memcmp(client_list[rand_node]->public_key, public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+                find_midpoint(get_pk, client_list[rand_node]->public_key, public_key);
+                getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, get_pk, NULL);
+            }
+        } else {
+            getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key, NULL);
+        }
+
         *lastgetnode = temp_time;
         ++*bootstrap_times;
     }
