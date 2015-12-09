@@ -227,7 +227,7 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
  */
 static int in_list(const Client_data *list, uint16_t length, const uint8_t *public_key, IP_Port ip_port)
 {
-    uint32_t i;
+    unsigned int i;
 
     for (i = 0; i < length; ++i) {
         if (id_equal(list[i].public_key, public_key)) {
@@ -265,7 +265,6 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
     if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port))
         return -1;
 
-    uint32_t i;
 
     IP_Port temp;
 
@@ -273,6 +272,8 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         send_ping_request(ping, ip_port, public_key);
         return -1;
     }
+
+    unsigned int i;
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
@@ -286,7 +287,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         }
     }
 
-    uint32_t r = rand();
+    unsigned int r = rand();
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, public_key) == 2) {
@@ -311,7 +312,7 @@ void do_to_ping(PING *ping)
     if (!ip_isset(&ping->to_ping[0].ip_port.ip))
         return;
 
-    uint32_t i;
+    unsigned int i;
 
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip))
