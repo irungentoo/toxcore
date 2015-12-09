@@ -100,10 +100,12 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 
         if (i == (crypto_box_PUBLICKEYBYTES - 1)) {
             if (d1_abs)
-                ++distance1;
+                if (distance1 != UINT8_MAX)
+                    ++distance1;
 
             if (d2_abs)
-                ++distance2;
+                if (distance2 != UINT8_MAX)
+                    ++distance2;
         }
 
         if (distance1 < distance2)
