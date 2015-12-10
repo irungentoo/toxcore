@@ -733,14 +733,14 @@ static int replace_all(   Client_data    *list,
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 0;
 
-    memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
-    qsort(list, length, sizeof(Client_data), cmp_dht_entry);
+    if (store_node_ok(&list[1], public_key, comp_public_key)) {
+        memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
+        qsort(list, length, sizeof(Client_data), cmp_dht_entry);
 
-    Client_data *client = &list[0];
-
-    if (store_node_ok(client, public_key, comp_public_key)) {
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
+
+        Client_data *client = &list[0];
 
         if (ip_port.ip.family == AF_INET) {
             ipptp_write = &client->assoc4;
@@ -1375,7 +1375,6 @@ static void divide_by_2(uint8_t *public_key)
 static void find_midpoint(uint8_t *out, const uint8_t *top, const uint8_t *bot)
 {
     unsigned int i;
-    _Bool one = 0;
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         out[i] = top[i] ^ bot[i];
