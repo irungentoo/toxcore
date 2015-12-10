@@ -61,9 +61,6 @@ static int add_to_ary(struct GC_Message_Ary *ary, const uint8_t *data, uint32_t 
     if (!data || !length)
         return -1;
 
-    if (!ary)
-        return -1;
-
     ary[idx].data = malloc(sizeof(uint8_t) * length);
 
     if (ary[idx].data == NULL)
@@ -328,14 +325,14 @@ void gcc_peer_cleanup(GC_Connection *gconn)
     for (i = 0; i < GCC_BUFFER_SIZE; ++i) {
         if (gconn->send_ary[i].data) {
             free(gconn->send_ary[i].data);
-            gconn->send_ary[i].data = NULL;
         }
 
         if (gconn->recv_ary[i].data) {
             free(gconn->recv_ary[i].data);
-            gconn->recv_ary[i].data = NULL;
         }
     }
+
+    memset(gconn, 0, sizeof(GC_Connection));
 }
 
 /* called on group exit */
