@@ -125,6 +125,12 @@ typedef struct {
 
 typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    IP_Port     ip_port;
+}
+Node_format;
+
+typedef struct {
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
@@ -142,13 +148,9 @@ typedef struct {
         int32_t number;
     } callbacks[DHT_FRIEND_MAX_LOCKS];
 
+    Node_format to_bootstrap[MAX_SENT_NODES];
+    unsigned int num_to_bootstrap;
 } DHT_Friend;
-
-typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
-    IP_Port     ip_port;
-}
-Node_format;
 
 /* Return packet size of packed node with ip_family on success.
  * Return -1 on failure.
@@ -310,6 +312,12 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, sa_family_t sa_family,
                     uint8_t is_LAN, uint8_t want_good);
 
+
+/* Put up to max_num nodes in nodes from the random friends.
+ *
+ * return the number of nodes.
+ */
+uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
 /* Put up to max_num nodes in nodes from the closelist.
  *

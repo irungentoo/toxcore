@@ -1253,37 +1253,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
     if (lock_count)
         *lock_count = lock_num + 1;
 
-#ifdef ENABLE_ASSOC_DHT
-
-    if (dht->assoc) {
-        /* get up to MAX_FRIEND_CLIENTS connectable nodes */
-        DHT_Friend *friend = &dht->friends_list[dht->num_friends - 1];
-
-        Assoc_close_entries close_entries;
-        memset(&close_entries, 0, sizeof(close_entries));
-        close_entries.wanted_id = public_key;
-        close_entries.count_good = MAX_FRIEND_CLIENTS / 2;
-        close_entries.count = MAX_FRIEND_CLIENTS;
-        close_entries.result = calloc(MAX_FRIEND_CLIENTS, sizeof(*close_entries.result));
-
-        uint8_t i, found = Assoc_get_close_entries(dht->assoc, &close_entries);
-
-        for (i = 0; i < found; i++)
-            memcpy(&friend->client_list[i], close_entries.result[i], sizeof(*close_entries.result[i]));
-
-        if (found) {
-            /* send getnodes to the "best" entry */
-            Client_data *client = &friend->client_list[0];
-
-            if (ipport_isset(&client->assoc4.ip_port))
-                getnodes(dht, client->assoc4.ip_port, client->public_key, friend->public_key, NULL);
-
-            if (ipport_isset(&client->assoc6.ip_port))
-                getnodes(dht, client->assoc6.ip_port, client->public_key, friend->public_key, NULL);
-        }
-    }
-
-#endif
+    friend->num_to_bootstrap = get_close_nodes(dht, friend->public_key, friend->to_bootstrap, 0, 1, 0);
 
     return 0;
 }
@@ -1464,11 +1434,20 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
  */
 static void do_DHT_friends(DHT *dht)
 {
-    uint32_t i;
+    unsigned int i, j;
 
-    for (i = 0; i < dht->num_friends; ++i)
-        do_ping_and_sendnode_requests(dht, &dht->friends_list[i].lastgetnode, dht->friends_list[i].public_key,
-                                      dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &dht->friends_list[i].bootstrap_times);
+    for (i = 0; i < dht->num_friends; ++i) {
+        DHT_Friend *friend = &dht->friends_list[i];
+
+        for (j = 0; j < friend->num_to_bootstrap; ++j) {
+            getnodes(dht, friend->to_bootstrap[j].ip_port, friend->to_bootstrap[j].public_key, friend->public_key, NULL);
+        }
+
+        friend->num_to_bootstrap = 0;
+
+        do_ping_and_sendnode_requests(dht, &friend->lastgetnode, friend->public_key, friend->client_list, MAX_FRIEND_CLIENTS,
+                                      &friend->bootstrap_times);
+    }
 }
 
 /* Ping each client in the close nodes list every PING_INTERVAL seconds.
@@ -2151,17 +2130,16 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
  *
  * return the number of nodes.
  */
-uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
+uint16_t list_nodes(Client_data *list, unsigned int length, Node_format *nodes, uint16_t max_num)
 {
     if (max_num == 0)
         return 0;
 
     uint16_t count = 0;
-    Client_data *list = dht->close_clientlist;
 
-    uint32_t i;
+    unsigned int i;
 
-    for (i = LCLIENT_LIST; i != 0; --i) {
+    for (i = length; i != 0; --i) {
         IPPTsPng *assoc = NULL;
 
         if (!is_timeout(list[i - 1].assoc4.timestamp, BAD_NODE_TIMEOUT))
@@ -2185,6 +2163,38 @@ uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
     }
 
     return count;
+}
+
+/* Put up to max_num nodes in nodes from the random friends.
+ *
+ * return the number of nodes.
+ */
+uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
+{
+    if (max_num == 0)
+        return 0;
+
+    uint16_t count = 0;
+    unsigned int i, r = rand();
+
+    for (i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
+        count += list_nodes(dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list, MAX_FRIEND_CLIENTS, nodes + count,
+                            max_num - count);
+
+        if (count >= max_num)
+            break;
+    }
+
+    return count;
+}
+
+/* Put up to max_num nodes in nodes from the closelist.
+ *
+ * return the number of nodes.
+ */
+uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
+{
+    return list_nodes(dht->close_clientlist, LCLIENT_LIST, nodes, max_num);
 }
 
 void do_hardening(DHT *dht)
@@ -2321,7 +2331,11 @@ DHT *new_DHT(Networking_Core *net)
     for (i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
         uint8_t random_key_bytes[crypto_box_PUBLICKEYBYTES];
         randombytes(random_key_bytes, sizeof(random_key_bytes));
-        DHT_addfriend(dht, random_key_bytes, 0, 0, 0, 0);
+
+        if (DHT_addfriend(dht, random_key_bytes, 0, 0, 0, 0) != 0) {
+            kill_DHT(dht);
+            return NULL;
+        }
     }
 
     return dht;

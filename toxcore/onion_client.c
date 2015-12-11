@@ -1209,16 +1209,14 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
 
 static void populate_path_nodes(Onion_Client *onion_c)
 {
-    Node_format nodes_list[MAX_SENT_NODES];
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    uint32_t random_num = rand();
-    memcpy(public_key, &random_num, sizeof(random_num));
+    Node_format nodes_list[MAX_FRIEND_CLIENTS];
 
-    unsigned int num_nodes = get_close_nodes(onion_c->dht, public_key, nodes_list, (rand() % 2) ? AF_INET : AF_INET6, 1, 0);
+    unsigned int num_nodes = randfriends_nodes(onion_c->dht, nodes_list, MAX_FRIEND_CLIENTS);
+
     unsigned int i;
 
     for (i = 0; i < num_nodes; ++i) {
-        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
+        int r = onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
     }
 }
 
@@ -1415,7 +1413,7 @@ static int onion_isconnected(const Onion_Client *onion_c)
     return 0;
 }
 
-#define ONION_CONNECTION_SECONDS 2
+#define ONION_CONNECTION_SECONDS 3
 
 /*  return 0 if we are not connected to the network.
  *  return 1 if we are connected with TCP only.
@@ -1441,8 +1439,6 @@ void do_onion_client(Onion_Client *onion_c)
     if (onion_c->last_run == unix_time())
         return;
 
-    populate_path_nodes(onion_c);
-
     do_announce(onion_c);
 
     if (onion_isconnected(onion_c)) {
@@ -1461,6 +1457,7 @@ void do_onion_client(Onion_Client *onion_c)
     _Bool UDP_connected = DHT_non_lan_connected(onion_c->dht);
 
     if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS)) {
+        populate_path_nodes(onion_c);
         set_tcp_onion_status(onion_c->c->tcp_c, !UDP_connected);
     }
 
