@@ -733,7 +733,7 @@ static int replace_all(   Client_data    *list,
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6))
         return 0;
 
-    if (store_node_ok(&list[1], public_key, comp_public_key)) {
+    if (store_node_ok(&list[1], public_key, comp_public_key) || store_node_ok(&list[0], public_key, comp_public_key)) {
         memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
         qsort(list, length, sizeof(Client_data), cmp_dht_entry);
 
@@ -779,10 +779,18 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
         return 1;
     }
 
+    if (store_node_ok(&dht->close_clientlist[0], public_key, dht->self_public_key)) {
+        return 1;
+    }
+
     unsigned int i;
 
     for (i = 0; i < dht->num_friends; ++i) {
         if (store_node_ok(&dht->friends_list[i].client_list[1], public_key, dht->self_public_key)) {
+            return 1;
+        }
+
+        if (store_node_ok(&dht->friends_list[i].client_list[0], public_key, dht->self_public_key)) {
             return 1;
         }
     }
