@@ -521,7 +521,6 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
         return;
 
     uint32_t num_nodes = *num_nodes_ptr;
-    int j, closest;
     uint32_t i;
 
     for (i = 0; i < client_list_length; i++) {
