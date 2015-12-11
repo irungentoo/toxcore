@@ -1439,7 +1439,10 @@ void do_onion_client(Onion_Client *onion_c)
     if (onion_c->last_run == unix_time())
         return;
 
-    do_announce(onion_c);
+    if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS)) {
+        populate_path_nodes(onion_c);
+        do_announce(onion_c);
+    }
 
     if (onion_isconnected(onion_c)) {
         if (onion_c->onion_connected < ONION_CONNECTION_SECONDS * 2) {
@@ -1456,8 +1459,7 @@ void do_onion_client(Onion_Client *onion_c)
 
     _Bool UDP_connected = DHT_non_lan_connected(onion_c->dht);
 
-    if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS)) {
-        populate_path_nodes(onion_c);
+    if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS * 2)) {
         set_tcp_onion_status(onion_c->c->tcp_c, !UDP_connected);
     }
 

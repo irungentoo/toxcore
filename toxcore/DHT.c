@@ -63,7 +63,7 @@
 #define NAT_PING_RESPONSE   1
 
 /* Number of get node requests to send to quickly find close nodes. */
-#define MAX_BOOTSTRAP_TIMES 10
+#define MAX_BOOTSTRAP_TIMES 20
 
 /* Compares pk1 and pk2 with pk.
  *
@@ -486,6 +486,7 @@ static _Bool add_to_list(Node_format *nodes_list, unsigned int length, const uin
             memcpy(pk_bak, nodes_list[i].public_key, crypto_box_PUBLICKEYBYTES);
             ip_port_bak = nodes_list[i].ip_port;
             memcpy(nodes_list[i].public_key, pk, crypto_box_PUBLICKEYBYTES);
+            nodes_list[i].ip_port = ip_port;
 
             if (i != (length - 1))
                 add_to_list(nodes_list, length, pk_bak, ip_port_bak, cmp_pk);
