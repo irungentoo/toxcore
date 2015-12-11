@@ -473,6 +473,30 @@ static int friend_number(const DHT *dht, const uint8_t *public_key)
     return -1;
 }
 
+static _Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
+                         const uint8_t *cmp_pk)
+{
+    uint8_t pk_bak[crypto_box_PUBLICKEYBYTES];
+    IP_Port ip_port_bak;
+
+    unsigned int i;
+
+    for (i = 0; i < length; ++i) {
+        if (id_closest(cmp_pk, nodes_list[i].public_key, pk) == 2) {
+            memcpy(pk_bak, nodes_list[i].public_key, crypto_box_PUBLICKEYBYTES);
+            ip_port_bak = nodes_list[i].ip_port;
+            memcpy(nodes_list[i].public_key, pk, crypto_box_PUBLICKEYBYTES);
+
+            if (i != (length - 1))
+                add_to_list(nodes_list, length, pk_bak, ip_port_bak, cmp_pk);
+
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 /*TODO: change this to 7 when done*/
 #define HARDENING_ALL_OK 2
 /* return 0 if not.
@@ -540,25 +564,7 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
             nodes_list[num_nodes].ip_port = ipptp->ip_port;
             num_nodes++;
         } else {
-            /* see if node_list contains a public_key that's "further away"
-             * compared to the one we're looking at at the moment, if there
-             * is, replace it
-             */
-            for (j = 0; j < MAX_SENT_NODES; ++j) {
-                closest = id_closest(   public_key,
-                                        nodes_list[j].public_key,
-                                        client->public_key );
-
-                /* second public_key is closer than current: change to it */
-                if (closest == 2) {
-                    memcpy( nodes_list[j].public_key,
-                            client->public_key,
-                            crypto_box_PUBLICKEYBYTES);
-
-                    nodes_list[j].ip_port = ipptp->ip_port;
-                    break;
-                }
-            }
+            add_to_list(nodes_list, MAX_SENT_NODES, client->public_key, ipptp->ip_port, public_key);
         }
     }
 
