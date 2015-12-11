@@ -366,12 +366,311 @@ START_TEST(test_addto_lists_ipv6)
 }
 END_TEST
 
+#define DHT_DEFAULT_PORT (TOX_PORT_DEFAULT + 20)
+
+#define DHT_LIST_LENGTH 128
+
+void print_pk(uint8_t *public_key)
+{
+    uint32_t j;
+
+    for (j = 0; j < crypto_box_PUBLICKEYBYTES; j++) {
+        printf("%02hhX", public_key[j]);
+    }
+
+    printf("\n");
+}
+
+void test_add_to_list(uint8_t cmp_list[][crypto_box_PUBLICKEYBYTES + 1], unsigned int length, const uint8_t *pk,
+                      const uint8_t *cmp_pk)
+{
+    uint8_t p_b[crypto_box_PUBLICKEYBYTES];
+    unsigned int i;
+
+    for (i = 0; i < length; ++i) {
+        if (!cmp_list[i][crypto_box_PUBLICKEYBYTES]) {
+            memcpy(cmp_list[i], pk, crypto_box_PUBLICKEYBYTES);
+            cmp_list[i][crypto_box_PUBLICKEYBYTES] = 1;
+            return;
+        } else {
+            if (memcmp(cmp_list[i], pk, crypto_box_PUBLICKEYBYTES) == 0) {
+                return;
+            }
+        }
+    }
+
+    for (i = 0; i < length; ++i) {
+        if (id_closest(cmp_pk, cmp_list[i], pk) == 2) {
+            memcpy(p_b, cmp_list[i], crypto_box_PUBLICKEYBYTES);
+            memcpy(cmp_list[i], pk, crypto_box_PUBLICKEYBYTES);
+            test_add_to_list(cmp_list, length, p_b, cmp_pk);
+            break;
+        }
+    }
+}
+
+void test_list_main()
+{
+    uint8_t keys[DHT_LIST_LENGTH][crypto_box_PUBLICKEYBYTES];
+    uint8_t cmp_list1[LCLIENT_LIST][crypto_box_PUBLICKEYBYTES + 1];
+    uint8_t cmp_list2[LCLIENT_LIST][crypto_box_PUBLICKEYBYTES + 1];
+
+    memset(cmp_list1, 0, sizeof(cmp_list1));
+    memset(cmp_list2, 0, sizeof(cmp_list2));
+    IP ip;
+    ip_init(&ip, 1);
+
+    unsigned int i, j;
+
+    for (i = 0; i < DHT_LIST_LENGTH; ++i) {
+        for (j = 0; j < crypto_box_PUBLICKEYBYTES; ++j)
+            keys[i][j] = rand();
+    }
+
+    DHT *dht1 = new_DHT(new_networking(ip, DHT_DEFAULT_PORT)), *dht2 = new_DHT(new_networking(ip, DHT_DEFAULT_PORT + 1));
+
+    ck_assert_msg(dht1 && dht2, "Failed to create DHTs");
+    memcpy(dht2->self_public_key, dht1->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(dht2->self_secret_key, dht1->self_secret_key, crypto_box_SECRETKEYBYTES);
+
+    for (i = 0; i < DHT_LIST_LENGTH; ++i) {
+        IP_Port ip_port;
+        ip_init(&ip_port.ip, 0);
+        ip_port.ip.ip4.uint32 = rand();
+        ip_port.port = rand() % (UINT16_MAX - 1);
+        ++ip_port.port;
+        addto_lists(dht1, ip_port, keys[i]);
+
+        ip_init(&ip_port.ip, 0);
+        ip_port.ip.ip4.uint32 = rand();
+        ip_port.port = rand() % (UINT16_MAX - 1);
+        ++ip_port.port;
+        addto_lists(dht2, ip_port, keys[(DHT_LIST_LENGTH - (i + 1))]);
+
+        test_add_to_list(cmp_list1, LCLIENT_LIST, keys[i], dht1->self_public_key);
+        test_add_to_list(cmp_list2, LCLIENT_LIST, keys[(DHT_LIST_LENGTH - (i + 1))], dht2->self_public_key);
+    }
+
+    /*
+        for (i = 0; i < LCLIENT_LIST; ++i) {
+            printf("----Entry %u----\n", i);
+
+            print_pk(cmp_list1[i]);
+            print_pk(cmp_list2[i]);
+            print_pk(dht1->close_clientlist[i].public_key);
+            print_pk(dht2->close_clientlist[i].public_key);
+        }
+    */
+    for (i = 0; i < LCLIENT_LIST; ++i) {
+        uint8_t *pk = cmp_list1[i];
+
+        unsigned int count = 0;
+
+        for (j = 0; j < LCLIENT_LIST; ++j) {
+            if (memcmp(pk, cmp_list2[j], crypto_box_PUBLICKEYBYTES) == 0)
+                ++count;
+        }
+
+        ck_assert_msg(count == 1, "Bad distance formula");
+    }
+
+    for (i = 0; i < LCLIENT_LIST; ++i) {
+        uint8_t *pk = cmp_list1[i];
+
+        unsigned int count = 0;
+
+        for (j = 0; j < LCLIENT_LIST; ++j) {
+            if (memcmp(pk, dht1->close_clientlist[j].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                ++count;
+        }
+
+        ck_assert_msg(count == 1, "Keys not in first close list, %u, %X %X", i, cmp_list1[i][0], dht1->self_public_key[0]);
+
+        for (j = 0; j < LCLIENT_LIST; ++j) {
+            if (memcmp(pk, dht2->close_clientlist[j].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                ++count;
+        }
+
+        ck_assert_msg(count == 2, "Keys not in second close list, %u, %X %X", i, cmp_list1[i][0], dht2->self_public_key[0]);
+    }
+
+    uint8_t cmp_list3[MAX_SENT_NODES][crypto_box_PUBLICKEYBYTES + 1];
+    memset(cmp_list3, 0, sizeof(cmp_list3));
+
+    for (i = 0; i < DHT_LIST_LENGTH; ++i) {
+        test_add_to_list(cmp_list3, MAX_SENT_NODES, keys[i], dht1->self_public_key);
+    }
+
+    Node_format n_list[MAX_SENT_NODES];
+    ck_assert_msg(get_close_nodes(dht1, dht1->self_public_key, n_list, 0, 1, 0) == MAX_SENT_NODES,
+                  "Wrong number of nodes returned");
+    /*
+        for (i = 0; i < MAX_SENT_NODES; ++i) {
+            printf("----Close %u----\n", i);
+
+            print_pk(cmp_list3[i]);
+            print_pk(n_list[i].public_key);
+        }
+    */
+
+    for (i = 0; i < MAX_SENT_NODES; ++i) {
+        uint8_t *pk = cmp_list3[i];
+        unsigned int count = 0;
+
+        for (j = 0; j < MAX_SENT_NODES; ++j) {
+            if (memcmp(pk, n_list[j].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                ++count;
+        }
+
+        ck_assert_msg(count == 1, "Bad get_close_nodes");
+    }
+
+    uint8_t cmp_new[crypto_box_PUBLICKEYBYTES];
+    memcpy(cmp_new, cmp_list3[0], crypto_box_PUBLICKEYBYTES);
+    ck_assert_msg(get_close_nodes(dht1, cmp_new, n_list, 0, 1, 0) == MAX_SENT_NODES,
+                  "Wrong number of nodes returned");
+
+    memset(cmp_list3, 0, sizeof(cmp_list3));
+
+    for (i = 0; i < DHT_LIST_LENGTH; ++i) {
+        test_add_to_list(cmp_list3, MAX_SENT_NODES, keys[i], cmp_new);
+    }
+
+    for (i = 0; i < MAX_SENT_NODES; ++i) {
+        uint8_t *pk = cmp_list3[i];
+        unsigned int count = 0;
+
+        for (j = 0; j < MAX_SENT_NODES; ++j) {
+            if (memcmp(pk, n_list[j].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                ++count;
+        }
+
+        ck_assert_msg(count == 1, "Bad get_close_nodes");
+    }
+
+    void *n = dht1->net;
+    kill_DHT(dht1);
+    kill_networking(n);
+
+    n = dht2->net;
+    kill_DHT(dht2);
+    kill_networking(n);
+}
+
+
+START_TEST(test_list)
+{
+    unsigned int i;
+
+    for (i = 0; i < 10; ++i)
+        test_list_main();
+}
+END_TEST
+
+void ip_callback(void *data, int32_t number, IP_Port ip_port)
+{
+
+
+}
+
+
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#define c_sleep(x) Sleep(1*x)
+#else
+#include <unistd.h>
+#define c_sleep(x) usleep(1000*x)
+#endif
+
+#define NUM_DHT 100
+#define NUM_DHT_FRIENDS 20
+
+START_TEST(test_DHT_test)
+{
+    uint32_t to_comp = 8394782;
+    DHT *dhts[NUM_DHT];
+
+    unsigned int i, j;
+
+    for (i = 0; i < NUM_DHT; ++i) {
+        IP ip;
+        ip_init(&ip, 1);
+
+        dhts[i] = new_DHT(new_networking(ip, DHT_DEFAULT_PORT + i));
+        ck_assert_msg(dhts[i] != 0, "Failed to create dht instances %u", i);
+        ck_assert_msg(dhts[i]->net->port != DHT_DEFAULT_PORT + i, "Bound to wrong port");
+    }
+
+    struct {
+        uint16_t tox1;
+        uint16_t tox2;
+    } pairs[NUM_DHT_FRIENDS];
+
+    uint8_t address[TOX_ADDRESS_SIZE];
+
+    unsigned int num_f = 0;
+
+    for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
+loop_top:
+        pairs[i].tox1 = rand() % NUM_DHT;
+        pairs[i].tox2 = (pairs[i].tox1 + (rand() % (NUM_DHT - 1)) + 1) % NUM_DHT;
+
+        for (j = 0; j < i; ++j) {
+            if (pairs[j].tox2 == pairs[i].tox2 && pairs[j].tox1 == pairs[i].tox1)
+                goto loop_top;
+        }
+
+        uint16_t lock_count = 0;
+        ck_assert_msg(DHT_addfriend(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &ip_callback, &to_comp, 1337,
+                                    &lock_count) == 0, "Failed to add friend");
+        ck_assert_msg(lock_count == 1, "bad lock count: %u %u", lock_count, i);
+    }
+
+    for (i = 0; i < NUM_DHT; ++i) {
+        IP_Port ip_port;
+        ip_init(&ip_port.ip, 1);
+        ip_port.ip.ip6.uint8[15] = 1;
+        ip_port.port = htons(DHT_DEFAULT_PORT + i);
+        DHT_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
+    }
+
+    while (1) {
+        uint16_t counter = 0;
+
+        for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
+            IP_Port a;
+
+            if (DHT_getfriendip(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &a) == 1)
+                ++counter;
+        }
+
+        if (counter == NUM_DHT_FRIENDS) {
+            break;
+        }
+
+        for (i = 0; i < NUM_DHT; ++i) {
+            networking_poll(dhts[i]->net);
+            do_DHT(dhts[i]);
+        }
+
+        c_sleep(500);
+    }
+
+    for (i = 0; i < NUM_DHT; ++i) {
+        void *n = dhts[i]->net;
+        kill_DHT(dhts[i]);
+        kill_networking(n);
+    }
+}
+END_TEST
+
 Suite *dht_suite(void)
 {
     Suite *s = suite_create("DHT");
 
-    DEFTESTCASE(addto_lists_ipv4);
-    DEFTESTCASE(addto_lists_ipv6);
+    //DEFTESTCASE(addto_lists_ipv4);
+    //DEFTESTCASE(addto_lists_ipv6);
+    DEFTESTCASE(list);
+    DEFTESTCASE_SLOW(DHT_test, 50);
     return s;
 }
 
@@ -383,6 +682,7 @@ int main(int argc, char *argv[])
     SRunner *test_runner = srunner_create(dht);
 
     int number_failed = 0;
+    //srunner_set_fork_status(test_runner, CK_NOFORK);
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);
 
