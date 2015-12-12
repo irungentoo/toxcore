@@ -1335,22 +1335,31 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     return -1;
 }
 
-static void divide_by_2(uint8_t *public_key)
+static void abs_divide_by_2(uint8_t *public_key_dist)
 {
     unsigned int i;
-    _Bool one = 0;
+    _Bool one = 0, abs = 0;
+
+    if (public_key_dist[0] & (1 << 7)) {
+        for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+            public_key_dist[i] = ~public_key_dist[i];
+        }
+
+        if (public_key_dist[crypto_box_PUBLICKEYBYTES - 1] != UINT8_MAX)
+            ++public_key_dist[crypto_box_PUBLICKEYBYTES - 1];
+    }
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         _Bool temp = 0;
 
-        if (public_key[i] & (1)) {
+        if (public_key_dist[i] & (1)) {
             temp = 1;
         }
 
-        public_key[i] >>= 1;
+        public_key_dist[i] >>= 1;
 
         if (one)
-            public_key[i] += (1 << 7);
+            public_key_dist[i] += (1 << 7);
 
         one = temp;
     }
@@ -1364,7 +1373,7 @@ static void find_midpoint(uint8_t *out, const uint8_t *top, const uint8_t *bot)
         out[i] = top[i] ^ bot[i];
     }
 
-    divide_by_2(out);
+    abs_divide_by_2(out);
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         out[i] ^= bot[i];
