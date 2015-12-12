@@ -1216,7 +1216,7 @@ static void populate_path_nodes(Onion_Client *onion_c)
     unsigned int i;
 
     for (i = 0; i < num_nodes; ++i) {
-        int r = onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
+        onion_add_path_node(onion_c, nodes_list[i].ip_port, nodes_list[i].public_key);
     }
 }
 
