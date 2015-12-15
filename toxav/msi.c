@@ -154,9 +154,11 @@ int msi_kill (MSISession *session)
 
         MSICall *it = get_call(session, session->calls_head);
 
-        for (; it; it = it->next) {
+        while (it) {
             send_message(session->messenger, it->friend_number, &msg);
-            kill_call(it); /* This will eventually free session->calls */
+            MSICall *temp_it = it;
+            it = it->next;
+            kill_call(temp_it); /* This will eventually free session->calls */
         }
     }
 
