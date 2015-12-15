@@ -231,6 +231,9 @@ typedef struct {
     uint64_t       last_run;
 
     Cryptopacket_Handles cryptopackethandlers[256];
+
+    Node_format to_bootstrap[MAX_SENT_NODES];
+    unsigned int num_to_bootstrap;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
