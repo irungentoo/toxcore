@@ -717,6 +717,12 @@ static unsigned int store_node_ok(const Client_data *client, const uint8_t *publ
     }
 }
 
+static void sort_client_list(Client_data *list, unsigned int length, const uint8_t *comp_public_key)
+{
+    memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
+    qsort(list, length, sizeof(Client_data), cmp_dht_entry);
+}
+
 /* Replace a first bad (or empty) node with this one
  *  or replace a possibly bad node (tests failed or not done yet)
  *  that is further than any other in the list
@@ -740,8 +746,7 @@ static int replace_all(   Client_data    *list,
         return 0;
 
     if (store_node_ok(&list[1], public_key, comp_public_key) || store_node_ok(&list[0], public_key, comp_public_key)) {
-        memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
-        qsort(list, length, sizeof(Client_data), cmp_dht_entry);
+        sort_client_list(list, length, comp_public_key);
 
         IPPTsPng *ipptp_write = NULL;
         IPPTsPng *ipptp_clear = NULL;
@@ -1391,6 +1396,8 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     uint32_t num_nodes = 0;
     Client_data *client_list[list_count * 2];
     IPPTsPng    *assoc_list[list_count * 2];
+    unsigned int sort = 0;
+    _Bool sort_ok = 0;
 
     for (i = 0; i < list_count; i++) {
         /* If node is not dead. */
@@ -1400,6 +1407,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
 
         for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4)
             if (!is_timeout(assoc->timestamp, KILL_NODE_TIMEOUT)) {
+                sort = 0;
                 not_kill++;
 
                 if (is_timeout(assoc->last_pinged, PING_INTERVAL)) {
@@ -1413,7 +1421,18 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
                     assoc_list[num_nodes] = assoc;
                     ++num_nodes;
                 }
+            } else {
+                ++sort;
+
+                /* Timed out should be at beginning, if they are not, sort the list. */
+                if (sort > 1 && sort < (((i + 1) * 2) - 1)) {
+                    sort_ok = 1;
+                }
             }
+    }
+
+    if (sort_ok) {
+        sort_client_list(list, list_count, public_key);
     }
 
     if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
