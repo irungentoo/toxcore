@@ -1422,12 +1422,20 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         if (rand_node >= num_nodes) {
             rand_node = rand_node % num_nodes;
 
+            if ((num_nodes - 1) != rand_node) {
+                rand_node += rand() % (num_nodes - (rand_node + 1));
+            }
+
             if (memcmp(client_list[rand_node]->public_key, public_key, crypto_box_PUBLICKEYBYTES) != 0) {
                 uint8_t get_pk[crypto_box_PUBLICKEYBYTES];
                 find_midpoint(get_pk, client_list[rand_node]->public_key, public_key);
                 getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, get_pk, NULL);
             }
         } else {
+            if ((num_nodes - 1) != rand_node) {
+                rand_node += rand() % (num_nodes - (rand_node + 1));
+            }
+
             getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key, NULL);
         }
 
