@@ -1461,7 +1461,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
                 not_kill++;
 
                 if (is_timeout(assoc->last_pinged, PING_INTERVAL)) {
-                    send_ping_request(dht->ping, assoc->ip_port, client->public_key );
+                    getnodes(dht, assoc->ip_port, client->public_key, public_key, NULL);
                     assoc->last_pinged = temp_time;
                 }
 
