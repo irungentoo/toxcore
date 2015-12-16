@@ -473,8 +473,10 @@ static int friend_number(const DHT *dht, const uint8_t *public_key)
     return -1;
 }
 
-static _Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
-                         const uint8_t *cmp_pk)
+/* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
+ */
+_Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
+                  const uint8_t *cmp_pk)
 {
     uint8_t pk_bak[crypto_box_PUBLICKEYBYTES];
     IP_Port ip_port_bak;

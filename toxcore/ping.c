@@ -287,15 +287,8 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         }
     }
 
-    unsigned int r = rand();
-
-    for (i = 0; i < MAX_TO_PING; ++i) {
-        if (id_closest(ping->dht->self_public_key, ping->to_ping[(i + r) % MAX_TO_PING].public_key, public_key) == 2) {
-            memcpy(ping->to_ping[(i + r) % MAX_TO_PING].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-            ipport_copy(&ping->to_ping[(i + r) % MAX_TO_PING].ip_port, &ip_port);
-            return 0;
-        }
-    }
+    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, ping->dht->self_public_key))
+        return 0;
 
     return -1;
 }
