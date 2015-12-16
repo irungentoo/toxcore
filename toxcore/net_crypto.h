@@ -143,6 +143,7 @@ typedef struct {
     int connection_lossy_data_callback_id;
 
     uint64_t last_request_packet_sent;
+    uint64_t direct_send_attempt_time;
 
     uint32_t packet_counter;
     double packet_recv_rate;

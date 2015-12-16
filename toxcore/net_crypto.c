@@ -490,9 +490,14 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         }
 
         //TODO: a better way of sending packets directly to confirm the others ip.
-        if (length < 96 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
-            if ((uint32_t)sendpacket(c->dht->net, ip_port, data, length) == length)
+        uint64_t current_time = unix_time();
+
+        if ((((UDP_DIRECT_TIMEOUT / 2) + conn->direct_send_attempt_time) > current_time && length < 96)
+                || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
+            if ((uint32_t)sendpacket(c->dht->net, ip_port, data, length) == length) {
                 direct_send_attempt = 1;
+                conn->direct_send_attempt_time = unix_time();
+            }
         }
     }
 
