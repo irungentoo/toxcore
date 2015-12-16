@@ -38,7 +38,7 @@
 #define MAX_SENT_NODES 4
 
 /* Ping timeout in seconds */
-#define PING_TIMEOUT 3
+#define PING_TIMEOUT 5
 
 /* size of DHT ping arrays. */
 #define DHT_PING_ARRAY_SIZE 512
