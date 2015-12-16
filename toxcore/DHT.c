@@ -63,7 +63,7 @@
 #define NAT_PING_RESPONSE   1
 
 /* Number of get node requests to send to quickly find close nodes. */
-#define MAX_BOOTSTRAP_TIMES 0
+#define MAX_BOOTSTRAP_TIMES 5
 
 /* Compares pk1 and pk2 with pk.
  *
