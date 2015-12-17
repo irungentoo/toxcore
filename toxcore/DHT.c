@@ -1079,18 +1079,19 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     Node_format nodes_list[MAX_SENT_NODES];
     uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, 0, LAN_ip(ip_port.ip) == 0, 1);
 
-    if (num_nodes == 0)
-        return 0;
-
     uint8_t plain[1 + Node_format_size * MAX_SENT_NODES + length];
     uint8_t encrypt[sizeof(plain) + crypto_box_MACBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    int nodes_length = pack_nodes(plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
+    int nodes_length = 0;
 
-    if (nodes_length <= 0)
-        return -1;
+    if (num_nodes) {
+        nodes_length = pack_nodes(plain + 1, Node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
+
+        if (nodes_length <= 0)
+            return -1;
+    }
 
     plain[0] = num_nodes;
     memcpy(plain + 1 + nodes_length, sendback_data, length);
@@ -1176,7 +1177,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     DHT *dht = object;
     uint32_t cid_size = 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + 1 + sizeof(uint64_t) + crypto_box_MACBYTES;
 
-    if (length <= cid_size) /* too short */
+    if (length < cid_size) /* too short */
         return 1;
 
     uint32_t data_size = length - cid_size;
@@ -1200,7 +1201,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     if ((unsigned int)len != sizeof(plain))
         return 1;
 
-    if (plain[0] > size_plain_nodes || plain[0] == 0)
+    if (plain[0] > size_plain_nodes)
         return 1;
 
     Node_format sendback_node;
@@ -1220,7 +1221,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     if (num_nodes != plain[0])
         return 1;
 
-    if (num_nodes <= 0)
+    if (num_nodes < 0)
         return 1;
 
     /* store the address the *request* was sent to */
