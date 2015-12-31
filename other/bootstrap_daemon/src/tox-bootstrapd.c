@@ -23,6 +23,7 @@
 
 // system provided
 #include <arpa/inet.h>
+#include <getopt.h>
 #include <syslog.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -516,18 +517,125 @@ void print_public_key(const uint8_t *public_key)
     return;
 }
 
+// Prints --help message
+
+bool print_help()
+{
+    // 2 space ident
+    // make sure all lines fit into 80 columns
+    write_log(LOG_LEVEL_INFO,
+           "Usage: tox-bootstrapd [OPTION]... --config=FILE_PATH\n"
+           "\n"
+           "Options:\n"
+           "  --config=FILE_PATH     Specify path to the config file.\n"
+           "                         This is a required option.\n"
+           "                         Set FILE_PATH to a path to an empty file in order to\n"
+           "                         use default settings.\n"
+           "  --help                 Print this help message.\n"
+           "  --log-backend=BACKEND  Specify which logging backend to use.\n"
+           "                         Valid BACKEND values (case sensetive):\n"
+           "                           syslog Writes log messages to syslog.\n"
+           "                                  Default option when no --log-backend is\n"
+           "                                  specified.\n"
+           "                           stdout Writes log messages to stdout/stderr.\n"
+           "  --version              Print version information.\n");
+}
+
+// Handels command line arguments, setting cfg_file_path and log_backend.
+// Terminates the application if incorrect arguments are specified.
+
+void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOGGER_BACKEND *log_backend)
+{
+    if (argc < 2) {
+        write_log(LOG_LEVEL_ERROR, "Error: No arguments provided.\n\n");
+        print_help();
+        exit(1);
+    }
+
+    opterr = 0;
+
+    static struct option long_options[] = {
+        {"help",        no_argument,       0, 'h'},
+        {"config",      required_argument, 0, 'c'}, // required option
+        {"log-backend", required_argument, 0, 'l'}, // optional, defaults to syslog
+        {"version",     no_argument,       0, 'v'},
+        {0,             0,                 0,  0 }
+    };
+
+    bool cfg_file_path_set = false;
+    bool log_backend_set   = false;
+
+    int opt;
+
+    while ((opt = getopt_long(argc, argv, ":", long_options, NULL)) != -1) {
+
+        switch (opt) {
+            case 'h':
+                print_help();
+                exit(0);
+
+            case 'c':
+                *cfg_file_path = optarg;
+                cfg_file_path_set = true;
+                break;
+
+            case 'l':
+                if (strcmp(optarg, "syslog") == 0) {
+                    *log_backend = LOGGER_BACKEND_SYSLOG;
+                    log_backend_set = true;
+                } else if (strcmp(optarg, "stdout") == 0) {
+                    *log_backend = LOGGER_BACKEND_STDOUT;
+                    log_backend_set = true;
+                } else {
+                    write_log(LOG_LEVEL_ERROR, "Error: Invalid BACKEND value for --log-backend option passed: %s\n\n", optarg);
+                    print_help();
+                    exit(1);
+                }
+                break;
+
+            case 'v':
+                write_log(LOG_LEVEL_INFO, "Version: %lu\n", DAEMON_VERSION_NUMBER);
+                exit(0);
+
+            case '?':
+                write_log(LOG_LEVEL_ERROR, "Error: Unrecognized option %s\n\n", argv[optind-1]);
+                print_help();
+                exit(1);
+
+            case ':':
+                write_log(LOG_LEVEL_ERROR, "Error: No argument provided for option %s\n\n", argv[optind-1]);
+                print_help();
+                exit(1);
+        }
+    }
+
+    if (!log_backend_set) {
+        *log_backend = LOGGER_BACKEND_SYSLOG;
+    }
+
+    if (!cfg_file_path_set) {
+        write_log(LOG_LEVEL_ERROR, "Error: The required --config option wasn't specified\n\n");
+        print_help();
+        exit(1);
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    open_log(LOGGER_BACKEND_SYSLOG);
+    char *cfg_file_path;
+    LOGGER_BACKEND log_backend;
+
+    // choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
+    log_backend = isatty(STDOUT_FILENO) ? LOGGER_BACKEND_STDOUT : LOGGER_BACKEND_SYSLOG;
+
+    open_log(log_backend);
+    handle_command_line_arguments(argc, argv, &cfg_file_path, &log_backend);
+    close_log();
+
+    open_log(log_backend);
 
     write_log(LOG_LEVEL_INFO, "Running \"%s\" version %lu.\n", DAEMON_NAME, DAEMON_VERSION_NUMBER);
 
-    if (argc < 2) {
-        write_log(LOG_LEVEL_ERROR, "Please specify a path to a configuration file as the first argument. Exiting.\n");
-        return 1;
-    }
-
-    const char *cfg_file_path = argv[1];
     char *pid_file_path, *keys_file_path;
     int port;
     int enable_ipv6;
@@ -690,9 +798,11 @@ int main(int argc, char *argv[])
     }
 
     // Go quiet
-    close(STDOUT_FILENO);
-    close(STDIN_FILENO);
-    close(STDERR_FILENO);
+    if (log_backend != LOGGER_BACKEND_STDOUT) {
+        close(STDOUT_FILENO);
+        close(STDIN_FILENO);
+        close(STDERR_FILENO);
+    }
 
     uint64_t last_LANdiscovery = 0;
     const uint16_t htons_port = htons(port);
