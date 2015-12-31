@@ -1,4 +1,4 @@
-/* logger.h
+/* log.h
  *
  * Tox DHT bootstrap daemon.
  *
@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef LOG_H
+#define LOG_H
 
 typedef enum LOGGER_BACKEND {
     LOGGER_BACKEND_SYSLOG,
@@ -35,29 +35,27 @@ typedef enum LOG_LEVEL {
     LOG_LEVEL_ERROR
 } LOG_LEVEL;
 
-typedef struct Logger Logger;
+/**
+ * Initializes logger.
+ * @param backend Specifies which backend to use.
+ * @return true on success, flase if log is already opened.
+ */
+bool open_log(LOGGER_BACKEND backend);
 
 /**
- * Creates new logger.
- * @param backend Specifies which backend the logger should use.
- * @return Logger object on success, NULL on failure.
+ * Releases all used resources by the logger.
+ * @return true on success, flase if log is already closed.
  */
-Logger* new_logger(LOGGER_BACKEND backend);
-
-/**
- * Destroys a logger object, releasing all used resources.
- * @param logger Logger object to destroy.
- */
-void kill_logger(Logger* logger);
+bool close_log();
 
 /**
  * Logs a message.
- * @param logger Logger object to use.
  * @param level Log level to use.
  * @param format printf-like format string.
  * @param ... Zero or more arguments, similar to printf function.
+ * @return true on success, flase if log is closed.
  */
-void log(Logger* logger, LOG_LEVEL level, const char *format, ...);
+bool log(LOG_LEVEL level, const char *format, ...);
 
 
-#endif // LOGGER_H
+#endif // LOG_H

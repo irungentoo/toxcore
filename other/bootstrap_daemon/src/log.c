@@ -21,7 +21,7 @@
  *
  */
 
-#include "logger.h"
+#include "log.h"
 
 #include "global.h"
 
@@ -30,34 +30,36 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-typedef struct Logger {
-    LOGGER_BACKEND backend;
-} Logger;
+LOGGER_BACKEND current_backend = -1;
 
-Logger* new_logger(LOGGER_BACKEND backend)
+bool open_log(LOGGER_BACKEND backend)
 {
+    if (current_backend != -1) {
+        return false;
+    }
+
     if (backend == LOGGER_BACKEND_SYSLOG) {
         openlog(DAEMON_NAME, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
     }
 
-    Logger* logger = malloc(sizeof(Logger));
+    current_backend = backend;
 
-    if (logger == NULL) {
-        return NULL;
-    }
-
-    logger->backend = backend;
-
-    return logger;
+    return true;
 }
 
-void kill_logger(Logger* logger)
+bool close_log()
 {
-    if (backend == LOGGER_BACKEND_SYSLOG) {
+    if (current_backend == -1) {
+        return false;
+    }
+
+    if (current_backend == LOGGER_BACKEND_SYSLOG) {
         closelog();
     }
 
-    free(logger);
+    current_backend = -1;
+
+    return true;
 }
 
 int level_syslog(LOG_LEVEL level)
@@ -85,7 +87,6 @@ FILE* level_stdout(LOG_LEVEL level)
         case LOG_LEVEL_WARNING: // intentional fallthrough
         case LOG_LEVEL_ERROR:
             return stderr;
-
     }
 }
 
@@ -94,12 +95,12 @@ void log_stdout(LOG_LEVEL level, const char *format, va_list args)
     vfprintf(level_stdout(level), format, args);
 }
 
-void log(Logger* logger, LOG_LEVEL level, const char *format, ...)
+bool log(LOG_LEVEL level, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
 
-    switch (logger->backend) {
+    switch (current_backend) {
         case LOGGER_BACKEND_SYSLOG:
             log_syslog(level, format, args);
             break;
@@ -109,4 +110,6 @@ void log(Logger* logger, LOG_LEVEL level, const char *format, ...)
     }
 
     va_end(args);
+
+    return current_backend != -1;
 }
