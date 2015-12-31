@@ -3,7 +3,9 @@ if BUILD_DHT_BOOTSTRAP_DAEMON
 bin_PROGRAMS += tox-bootstrapd
 
 tox_bootstrapd_SOURCES = \
-                        ../other/bootstrap_daemon/tox-bootstrapd.c
+                        ../other/bootstrap_daemon/src/tox-bootstrapd.c \
+                        ../other/bootstrap_daemon/src/log.c \
+                        ../other/bootstrap_daemon/src/log.h
 
 tox_bootstrapd_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_daemon \

@@ -24,6 +24,8 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include <stdbool.h>
+
 typedef enum LOGGER_BACKEND {
     LOGGER_BACKEND_SYSLOG,
     LOGGER_BACKEND_STDOUT
@@ -49,13 +51,13 @@ bool open_log(LOGGER_BACKEND backend);
 bool close_log();
 
 /**
- * Logs a message.
+ * Writes a message to the log.
  * @param level Log level to use.
  * @param format printf-like format string.
  * @param ... Zero or more arguments, similar to printf function.
  * @return true on success, flase if log is closed.
  */
-bool log(LOG_LEVEL level, const char *format, ...);
+bool write_log(LOG_LEVEL level, const char *format, ...);
 
 
 #endif // LOG_H

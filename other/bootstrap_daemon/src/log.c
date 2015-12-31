@@ -95,7 +95,7 @@ void log_stdout(LOG_LEVEL level, const char *format, va_list args)
     vfprintf(level_stdout(level), format, args);
 }
 
-bool log(LOG_LEVEL level, const char *format, ...)
+bool write_log(LOG_LEVEL level, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
