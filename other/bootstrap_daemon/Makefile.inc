@@ -10,7 +10,9 @@ tox_bootstrapd_SOURCES = \
                         ../other/bootstrap_daemon/src/config.c \
                         ../other/bootstrap_daemon/src/config_defaults.h \
                         ../other/bootstrap_node_packets.h \
-                        ../other/bootstrap_node_packets.c
+                        ../other/bootstrap_node_packets.c \
+                        ../other/bootstrap_daemon/src/command_line_arguments.h \
+                        ../other/bootstrap_daemon/src/command_line_arguments.c
 
 tox_bootstrapd_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_daemon \
