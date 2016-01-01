@@ -1,4 +1,4 @@
-/* logger.c
+/* log.c
  *
  * Tox DHT bootstrap daemon.
  *
