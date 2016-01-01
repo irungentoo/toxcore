@@ -26,10 +26,10 @@
 
 #include <stdbool.h>
 
-typedef enum LOGGER_BACKEND {
-    LOGGER_BACKEND_SYSLOG,
-    LOGGER_BACKEND_STDOUT
-} LOGGER_BACKEND;
+typedef enum LOG_BACKEND {
+    LOG_BACKEND_SYSLOG,
+    LOG_BACKEND_STDOUT
+} LOG_BACKEND;
 
 typedef enum LOG_LEVEL {
     LOG_LEVEL_INFO,
@@ -42,7 +42,7 @@ typedef enum LOG_LEVEL {
  * @param backend Specifies which backend to use.
  * @return true on success, flase if log is already opened.
  */
-bool open_log(LOGGER_BACKEND backend);
+bool open_log(LOG_BACKEND backend);
 
 /**
  * Releases all used resources by the logger.

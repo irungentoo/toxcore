@@ -544,7 +544,7 @@ bool print_help()
 // Handels command line arguments, setting cfg_file_path and log_backend.
 // Terminates the application if incorrect arguments are specified.
 
-void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOGGER_BACKEND *log_backend)
+void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend)
 {
     if (argc < 2) {
         write_log(LOG_LEVEL_ERROR, "Error: No arguments provided.\n\n");
@@ -581,10 +581,10 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
 
             case 'l':
                 if (strcmp(optarg, "syslog") == 0) {
-                    *log_backend = LOGGER_BACKEND_SYSLOG;
+                    *log_backend = LOG_BACKEND_SYSLOG;
                     log_backend_set = true;
                 } else if (strcmp(optarg, "stdout") == 0) {
-                    *log_backend = LOGGER_BACKEND_STDOUT;
+                    *log_backend = LOG_BACKEND_STDOUT;
                     log_backend_set = true;
                 } else {
                     write_log(LOG_LEVEL_ERROR, "Error: Invalid BACKEND value for --log-backend option passed: %s\n\n", optarg);
@@ -610,7 +610,7 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
     }
 
     if (!log_backend_set) {
-        *log_backend = LOGGER_BACKEND_SYSLOG;
+        *log_backend = LOG_BACKEND_SYSLOG;
     }
 
     if (!cfg_file_path_set) {
@@ -623,10 +623,10 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
 int main(int argc, char *argv[])
 {
     char *cfg_file_path;
-    LOGGER_BACKEND log_backend;
+    LOG_BACKEND log_backend;
 
     // choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
-    log_backend = isatty(STDOUT_FILENO) ? LOGGER_BACKEND_STDOUT : LOGGER_BACKEND_SYSLOG;
+    log_backend = isatty(STDOUT_FILENO) ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
 
     open_log(log_backend);
     handle_command_line_arguments(argc, argv, &cfg_file_path, &log_backend);
@@ -798,7 +798,7 @@ int main(int argc, char *argv[])
     }
 
     // Go quiet
-    if (log_backend != LOGGER_BACKEND_STDOUT) {
+    if (log_backend != LOG_BACKEND_STDOUT) {
         close(STDOUT_FILENO);
         close(STDIN_FILENO);
         close(STDERR_FILENO);

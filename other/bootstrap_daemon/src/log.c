@@ -30,15 +30,15 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-LOGGER_BACKEND current_backend = -1;
+LOG_BACKEND current_backend = -1;
 
-bool open_log(LOGGER_BACKEND backend)
+bool open_log(LOG_BACKEND backend)
 {
     if (current_backend != -1) {
         return false;
     }
 
-    if (backend == LOGGER_BACKEND_SYSLOG) {
+    if (backend == LOG_BACKEND_SYSLOG) {
         openlog(DAEMON_NAME, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
     }
 
@@ -53,7 +53,7 @@ bool close_log()
         return false;
     }
 
-    if (current_backend == LOGGER_BACKEND_SYSLOG) {
+    if (current_backend == LOG_BACKEND_SYSLOG) {
         closelog();
     }
 
@@ -101,10 +101,10 @@ bool write_log(LOG_LEVEL level, const char *format, ...)
     va_start(args, format);
 
     switch (current_backend) {
-        case LOGGER_BACKEND_SYSLOG:
+        case LOG_BACKEND_SYSLOG:
             log_syslog(level, format, args);
             break;
-        case LOGGER_BACKEND_STDOUT:
+        case LOG_BACKEND_STDOUT:
             log_stdout(level, format, args);
             break;
     }
