@@ -5,7 +5,12 @@ bin_PROGRAMS += tox-bootstrapd
 tox_bootstrapd_SOURCES = \
                         ../other/bootstrap_daemon/src/tox-bootstrapd.c \
                         ../other/bootstrap_daemon/src/log.c \
-                        ../other/bootstrap_daemon/src/log.h
+                        ../other/bootstrap_daemon/src/log.h \
+                        ../other/bootstrap_daemon/src/config.h \
+                        ../other/bootstrap_daemon/src/config.c \
+                        ../other/bootstrap_daemon/src/config_defaults.h \
+                        ../other/bootstrap_node_packets.h \
+                        ../other/bootstrap_node_packets.c
 
 tox_bootstrapd_CFLAGS = \
                         -I$(top_srcdir)/other/bootstrap_daemon \

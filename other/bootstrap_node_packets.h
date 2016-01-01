@@ -1,6 +1,8 @@
-/* global.h
+/* bootstrap_node_packets.h
  *
- * Tox DHT bootstrap daemon.
+ * Special bootstrap node only packets.
+ *
+ * Include it in your bootstrap node and use: bootstrap_set_callbacks() to enable.
  *
  *  Copyright (C) 2015 Tox project All Rights Reserved.
  *
@@ -21,13 +23,13 @@
  *
  */
 
-#ifndef GLOBAL_H
-#define GLOBAL_H
+#ifndef BOOTSTRAP_NODE_PACKETS_H
+#define BOOTSTRAP_NODE_PACKETS_H
 
-#define DAEMON_NAME "tox-bootstrapd"
-#define DAEMON_VERSION_NUMBER 2014101200UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
+#include "../toxcore/network.h"
 
-#define MIN_ALLOWED_PORT 1
-#define MAX_ALLOWED_PORT 65535
+#define MAX_MOTD_LENGTH 256 /* I recommend you use a maximum of 96 bytes. The hard maximum is this though. */
 
-#endif // GLOBAL_H
+int bootstrap_set_callbacks(Networking_Core *net, uint32_t version, uint8_t *motd, uint16_t motd_length);
+
+#endif // BOOTSTRAP_NODE_PACKETS_H
