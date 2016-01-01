@@ -22,22 +22,12 @@
  */
 
 // system provided
-#include <arpa/inet.h>
-#include <getopt.h>
-#include <syslog.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 // C
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-// ./configure
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 // toxcore
 #include "../../toxcore/LAN_discovery.h"
@@ -47,16 +37,13 @@
 
 // misc
 #include "../bootstrap_node_packets.h"
-#include "../../testing/misc_tools.c"
 
 #include "command_line_arguments.h"
 #include "config.h"
 #include "global.h"
 #include "log.h"
 
-
-#define SLEEP_TIME_MILLISECONDS 30
-#define sleep usleep(1000*SLEEP_TIME_MILLISECONDS)
+#define SLEEP_MILLISECONDS(MS) usleep(1000*MS)
 
 // Uses the already existing key or creates one if it didn't exist
 //
@@ -346,7 +333,7 @@ int main(int argc, char *argv[])
             waiting_for_dht_connection = 0;
         }
 
-        sleep;
+        SLEEP_MILLISECONDS(30);
     }
 
     return 1;

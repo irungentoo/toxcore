@@ -26,16 +26,13 @@
 #include "config_defaults.h"
 #include "log.h"
 
-// C
-//#include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string.h>
 
-// 3rd party
 #include <libconfig.h>
 
-// toxcore
 #include "../../bootstrap_node_packets.h"
-//#include "../../testing/misc_tools.c"
 
 // Parses tcp relay ports from `cfg` and puts them into `tcp_relay_ports` array
 //
@@ -294,6 +291,31 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     }
 
     return 1;
+}
+
+// Converts a hex string with even number of characters into binary
+//
+// You are responsible for freeing the return value!
+//
+// Returns binary on success,
+//         NULL on failure
+
+uint8_t *hex_string_to_bin(char *hex_string)
+{
+    if (strlen(hex_string) % 2 != 0) {
+        return NULL;
+    }
+
+    size_t len = strlen(hex_string) / 2;
+    uint8_t *ret = malloc(len);
+
+    char *pos = hex_string;
+    size_t i;
+    for (i = 0; i < len; ++i, pos += 2) {
+        sscanf(pos, "%2hhx", &ret[i]);
+    }
+
+    return ret;
 }
 
 int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
