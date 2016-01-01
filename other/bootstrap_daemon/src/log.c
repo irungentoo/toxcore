@@ -94,6 +94,7 @@ FILE* level_stdout(LOG_LEVEL level)
 void log_stdout(LOG_LEVEL level, const char *format, va_list args)
 {
     vfprintf(level_stdout(level), format, args);
+    fflush(level_stdout(level));
 }
 
 bool write_log(LOG_LEVEL level, const char *format, ...)
