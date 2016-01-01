@@ -5,7 +5,9 @@
 <br>
 - [For `init.d` users](#initd)
   - [Troubleshooting](#initd-troubleshooting)
-
+<br>
+- [For `Docker` users](#docker)
+  - [Troubleshooting](#docker-troubleshooting)
 
 These instructions are primarily tested on Debian Linux, Wheezy for init.d and Jessie for systemd, but they should work on other POSIX-compliant systems too.
 
@@ -146,3 +148,50 @@ sudo grep "tox-bootstrapd" /var/log/syslog
 - Make sure tox-bootstrapd has read permission for the config file.
 
 - Make sure tox-bootstrapd location matches its path in the `/etc/init.d/tox-bootstrapd` init script.
+
+
+<a name="docker" />
+##For `Docker` users:
+
+If you are familiar with Docker and would rather run the daemon in a Docker container, run the following from this directory:
+
+```sh
+sudo docker build -t tox-bootstrapd docker/
+
+sudo useradd --home-dir /var/lib/tox-bootstrapd --create-home --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
+sudo chmod 700 /var/lib/tox-bootstrapd
+
+sudo docker run -d --name tox-bootstrapd --restart always -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
+```
+
+We create a new user and protect its home directory in order to mount it in the Docker image, so that the kyepair the daemon uses would be shared with the host system, which makes it less likely that you would loose the keypair while playing with the Docker container.
+
+You can check logs for your public key or any errors:
+```sh
+sudo docker logs tox-bootstrapd
+```
+
+If you are an experienced Docker user and have a version of Docker that supports `docker cp` both host->container and container->host directions, you might want to skip the directory mounting part and just do:
+
+```sh
+sudo docker build -t tox-bootstrapd docker/
+sudo docker run -d --name tox-bootstrapd --restart always -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
+sudo docker logs tox-bootstrapd
+```
+
+The keypair is stored in `/var/lib/tox-bootstrapd/keys` file, so if you skipped the directory mounting part and want a new Docker container to retain the same public key that from an old one, just copy/overwrite it from the old container.
+
+Note that the Docker container runs a script which pulls a list of bootstrap nodes off https://nodes.tox.chat/ and adds them in the config file.
+
+<a name="docker-troubleshooting" />
+###Troubleshooting:
+
+- Check if the container is running:
+```sh
+sudo docker ps -a
+```
+
+- Check the log for errors:
+```sh
+sudo docker logs tox-bootstrapd
+```
