@@ -1,8 +1,9 @@
 /* tox-bootstrapd.c
  *
  * Tox DHT bootstrap daemon.
+ * Main file.
  *
- *  Copyright (C) 2014 Tox project All Rights Reserved.
+ *  Copyright (C) 2014-2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
@@ -34,7 +35,6 @@
 #include "../../../toxcore/onion_announce.h"
 #include "../../../toxcore/TCP_server.h"
 #include "../../../toxcore/util.h"
-
 
 // misc
 #include "../../bootstrap_node_packets.h"

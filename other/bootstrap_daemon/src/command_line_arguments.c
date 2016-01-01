@@ -1,8 +1,9 @@
 /* command_line_arguments.c
  *
  * Tox DHT bootstrap daemon.
+ * Command line argument handling.
  *
- *  Copyright (C) 2015 Tox project All Rights Reserved.
+ *  Copyright (C) 2015-2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

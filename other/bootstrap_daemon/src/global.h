@@ -1,8 +1,9 @@
 /* global.h
  *
  * Tox DHT bootstrap daemon.
+ * Globally used defines.
  *
- *  Copyright (C) 2015 Tox project All Rights Reserved.
+ *  Copyright (C) 2014-2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

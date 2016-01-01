@@ -1,8 +1,9 @@
 /* config_defaults.h
  *
  * Tox DHT bootstrap daemon.
+ * Default config options for when they are missing in the config file.
  *
- *  Copyright (C) 2014-2015 Tox project All Rights Reserved.
+ *  Copyright (C) 2014-2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

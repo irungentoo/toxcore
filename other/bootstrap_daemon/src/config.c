@@ -1,8 +1,9 @@
 /* config.c
  *
  * Tox DHT bootstrap daemon.
+ * Functionality related to dealing with the config file.
  *
- *  Copyright (C) 2014-2015 Tox project All Rights Reserved.
+ *  Copyright (C) 2014-2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *

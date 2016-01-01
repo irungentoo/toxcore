@@ -1,8 +1,9 @@
 /* log.c
  *
  * Tox DHT bootstrap daemon.
+ * Logging utility with support of multipel logging backends.
  *
- *  Copyright (C) 2015 Tox project All Rights Reserved.
+ *  Copyright (C) 2015-2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
