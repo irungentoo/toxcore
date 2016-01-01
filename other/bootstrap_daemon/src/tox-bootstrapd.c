@@ -30,18 +30,20 @@
 #include <string.h>
 
 // toxcore
-#include "../../toxcore/LAN_discovery.h"
-#include "../../toxcore/onion_announce.h"
-#include "../../toxcore/TCP_server.h"
-#include "../../toxcore/util.h"
+#include "../../../toxcore/LAN_discovery.h"
+#include "../../../toxcore/onion_announce.h"
+#include "../../../toxcore/TCP_server.h"
+#include "../../../toxcore/util.h"
+
 
 // misc
-#include "../bootstrap_node_packets.h"
+#include "../../bootstrap_node_packets.h"
 
 #include "command_line_arguments.h"
 #include "config.h"
 #include "global.h"
 #include "log.h"
+
 
 #define SLEEP_MILLISECONDS(MS) usleep(1000*MS)
 
