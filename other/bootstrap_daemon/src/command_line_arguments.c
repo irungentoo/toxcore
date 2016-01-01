@@ -31,8 +31,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Prints --help message
 
+/**
+ * Prints --help message
+ */
 void print_help()
 {
     // 2 space ident

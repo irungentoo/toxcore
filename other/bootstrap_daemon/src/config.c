@@ -35,12 +35,13 @@
 
 #include "../../bootstrap_node_packets.h"
 
-// Parses tcp relay ports from `cfg` and puts them into `tcp_relay_ports` array
-//
-// Supposed to be called from get_general_config only
-//
-// Important: iff `tcp_relay_port_count` > 0, then you are responsible for freeing `tcp_relay_ports`
-
+/**
+ * Parses tcp relay ports from `cfg` and puts them into `tcp_relay_ports` array.
+ *
+ * Supposed to be called from get_general_config only.
+ *
+ * Important: iff `tcp_relay_port_count` > 0, then you are responsible for freeing `tcp_relay_ports`.
+ */
 void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
 {
     const char *NAME_TCP_RELAY_PORTS = "tcp_relay_ports";
@@ -294,13 +295,15 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     return 1;
 }
 
-// Converts a hex string with even number of characters into binary
-//
-// You are responsible for freeing the return value!
-//
-// Returns binary on success,
-//         NULL on failure
-
+/**
+ *
+ * Converts a hex string with even number of characters into binary.
+ *
+ * Important: You are responsible for freeing the return value.
+ *
+ * @return binary on success,
+ *         NULL on failure.
+ */
 uint8_t *hex_string_to_bin(char *hex_string)
 {
     if (strlen(hex_string) % 2 != 0) {
