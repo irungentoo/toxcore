@@ -1,19 +1,29 @@
 #Instructions
 
 - [For `systemd` users](#systemd)
+  - [Setting up](#systemd-setting-up)
+  - [Updating](#systemd-updating)
   - [Troubleshooting](#systemd-troubleshooting)
 <br>
 - [For `init.d` users](#initd)
+  - [Setting up](#initd-setting-up)
+  - [Updating](#initd-updating)
   - [Troubleshooting](#initd-troubleshooting)
 <br>
 - [For `Docker` users](#docker)
+  - [Setting up](#docker-setting-up)
+  - [Updating](#docker-updating)
   - [Troubleshooting](#docker-troubleshooting)
+
 
 These instructions are primarily tested on Debian Linux, Wheezy for init.d and Jessie for systemd, but they should work on other POSIX-compliant systems too.
 
 
 <a name="systemd" />
-##For `systemd` users:
+##For `systemd` users
+
+<a name="systemd-setting-up" />
+###Setting up
 
 For security reasons we run the daemon under its own user.
 
@@ -58,8 +68,31 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
+<a name="systemd-updating" />
+###Updating
+
+You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
+
+To update the daemon first stop it:
+
+```sh
+sudo systemctl stop tox-bootstrapd.service
+```
+
+Then update your toxcore git repository, rebuild the toxcore and the daemon and make sure to install them.
+
+Check if `tox-bootstrapd.service` in toxcore git repository was modified since the last time you copied it, as you might need to update it too.
+
+After all of this is done, simply start the daemon back again:
+
+```sh
+sudo systemctl start tox-bootstrapd.service
+```
+
+Note that `tox-bootstrapd.service` file might
+
 <a name="systemd-troubleshooting" />
-###Troubleshooting:
+###Troubleshooting
 
 - Check daemon's status:
 ```sh
@@ -84,6 +117,9 @@ sudo journalctl -f _SYSTEMD_UNIT=tox-bootstrapd.service
 
 <a name="initd" />
 ##For `init.d` users
+
+<a name="initd-setting-up" />
+###Setting up
 
 For security reasons we run the daemon under its own user.
 
@@ -128,8 +164,29 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
+<a name="initd-updating" />
+###Updating
+
+You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
+
+To update the daemon first stop it:
+
+```sh
+sudo service tox-bootstrapd stop
+```
+
+Then update your toxcore git repository, rebuild the toxcore and the daemon and make sure to install them.
+
+Check if `tox-bootstrapd.sh` in toxcore git repository was modified since the last time you copied it, as you might need to update it too.
+
+After all of this is done, simply start the daemon back again:
+
+```sh
+sudo service tox-bootstrapd start
+```
+
 <a name="initd-troubleshooting" />
-###Troubleshooting:
+###Troubleshooting
 
 - Check daemon's status:
 ```sh
@@ -153,6 +210,9 @@ sudo grep "tox-bootstrapd" /var/log/syslog
 <a name="docker" />
 ##For `Docker` users:
 
+<a name="docker-setting-up" />
+###Setting up
+
 If you are familiar with Docker and would rather run the daemon in a Docker container, run the following from this directory:
 
 ```sh
@@ -164,27 +224,37 @@ sudo chmod 700 /var/lib/tox-bootstrapd
 sudo docker run -d --name tox-bootstrapd --restart always -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
 ```
 
-We create a new user and protect its home directory in order to mount it in the Docker image, so that the kyepair the daemon uses would be shared with the host system, which makes it less likely that you would loose the keypair while playing with the Docker container.
+We create a new user and protect its home directory in order to mount it in the Docker image, so that the kyepair the daemon uses would be stored on the host system, which makes it less likely that you would loose the keypair while playing with or updating the Docker container.
 
 You can check logs for your public key or any errors:
 ```sh
 sudo docker logs tox-bootstrapd
 ```
 
-If you are an experienced Docker user and have a version of Docker that supports `docker cp` both host->container and container->host directions, you might want to skip the directory mounting part and just do:
+Note that the Docker container runs a script which pulls a list of bootstrap nodes off https://nodes.tox.chat/ and adds them in the config file.
+
+<a name="docker-updating" />
+###Updating
+
+You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
+
+To update the daemon, all you need is to erase current container with its image:
+
+```sh
+sudo docker stop tox-bootstrapd
+sudo docker rm tox-bootstrapd
+sudo docker rmi tox-bootstrapd
+```
+
+Then rebuild and run the image again:
 
 ```sh
 sudo docker build -t tox-bootstrapd docker/
-sudo docker run -d --name tox-bootstrapd --restart always -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
-sudo docker logs tox-bootstrapd
+sudo docker run -d --name tox-bootstrapd --restart always -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
 ```
 
-The keypair is stored in `/var/lib/tox-bootstrapd/keys` file, so if you skipped the directory mounting part and want a new Docker container to retain the same public key that from an old one, just copy/overwrite it from the old container.
-
-Note that the Docker container runs a script which pulls a list of bootstrap nodes off https://nodes.tox.chat/ and adds them in the config file.
-
 <a name="docker-troubleshooting" />
-###Troubleshooting:
+###Troubleshooting
 
 - Check if the container is running:
 ```sh
