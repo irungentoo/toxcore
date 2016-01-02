@@ -26,7 +26,7 @@
 #define GLOBAL_H
 
 #define DAEMON_NAME "tox-bootstrapd"
-#define DAEMON_VERSION_NUMBER 2014101200UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
+#define DAEMON_VERSION_NUMBER 2016010100UL // yyyymmmddvv format: yyyy year, mm month, dd day, vv version change count for that day
 
 #define MIN_ALLOWED_PORT 1
 #define MAX_ALLOWED_PORT 65535
