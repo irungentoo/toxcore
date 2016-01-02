@@ -5,10 +5,10 @@
   - [Updating](#systemd-updating)
   - [Troubleshooting](#systemd-troubleshooting)
 <br>
-- [For `init.d` users](#initd)
-  - [Setting up](#initd-setting-up)
-  - [Updating](#initd-updating)
-  - [Troubleshooting](#initd-troubleshooting)
+- [For `SysVinit` users](#sysvinit)
+  - [Setting up](#sysvinit-setting-up)
+  - [Updating](#sysvinit-updating)
+  - [Troubleshooting](#sysvinit-troubleshooting)
 <br>
 - [For `Docker` users](#docker)
   - [Setting up](#docker-setting-up)
@@ -16,7 +16,7 @@
   - [Troubleshooting](#docker-troubleshooting)
 
 
-These instructions are primarily tested on Debian Linux, Wheezy for init.d and Jessie for systemd, but they should work on other POSIX-compliant systems too.
+These instructions are primarily tested on Debian Linux, Wheezy for SysVinit and Jessie for systemd, but they should work on other POSIX-compliant systems too.
 
 
 <a name="systemd" />
@@ -115,10 +115,10 @@ sudo journalctl -f _SYSTEMD_UNIT=tox-bootstrapd.service
 - Make sure tox-bootstrapd location matches its path in tox-bootstrapd.service file.
 
 
-<a name="initd" />
-##For `init.d` users
+<a name="sysvinit" />
+##For `SysVinit` users
 
-<a name="initd-setting-up" />
+<a name="sysvinit-setting-up" />
 ###Setting up
 
 For security reasons we run the daemon under its own user.
@@ -164,7 +164,7 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-<a name="initd-updating" />
+<a name="sysvinit-updating" />
 ###Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
@@ -185,7 +185,7 @@ After all of this is done, simply start the daemon back again:
 sudo service tox-bootstrapd start
 ```
 
-<a name="initd-troubleshooting" />
+<a name="sysvinit-troubleshooting" />
 ###Troubleshooting
 
 - Check daemon's status:
