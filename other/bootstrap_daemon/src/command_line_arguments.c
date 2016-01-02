@@ -71,9 +71,9 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
     opterr = 0;
 
     static struct option long_options[] = {
-        {"help",        no_argument,       0, 'h'},
         {"config",      required_argument, 0, 'c'}, // required option
         {"foreground",  no_argument,       0, 'f'},
+        {"help",        no_argument,       0, 'h'},
         {"log-backend", required_argument, 0, 'l'}, // optional, defaults to syslog
         {"version",     no_argument,       0, 'v'},
         {0,             0,                 0,  0 }
@@ -89,9 +89,6 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
     while ((opt = getopt_long(argc, argv, ":", long_options, NULL)) != -1) {
 
         switch (opt) {
-            case 'h':
-                print_help();
-                exit(0);
 
             case 'c':
                 *cfg_file_path = optarg;
@@ -101,6 +98,10 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
             case 'f':
                 *run_in_foreground = true;
                 break;
+
+            case 'h':
+                print_help();
+                exit(0);
 
             case 'l':
                 if (strcmp(optarg, "syslog") == 0) {
