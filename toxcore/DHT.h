@@ -31,8 +31,13 @@
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
+#define LCLIENT_NODES (MAX_FRIEND_CLIENTS)
+#define LCLIENT_LENGTH 128
+
 /* A list of the clients mathematically closest to ours. */
-#define LCLIENT_LIST 32
+#define LCLIENT_LIST (LCLIENT_LENGTH * LCLIENT_NODES)
+
+#define MAX_CLOSE_TO_BOOTSTRAP_NODES 8
 
 /* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 4
@@ -58,7 +63,7 @@
 #define TOX_TCP_INET6 138
 
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
-#define DHT_FAKE_FRIEND_NUMBER 4
+#define DHT_FAKE_FRIEND_NUMBER 2
 
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
@@ -232,7 +237,7 @@ typedef struct {
 
     Cryptopacket_Handles cryptopackethandlers[256];
 
-    Node_format to_bootstrap[MAX_SENT_NODES];
+    Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
     unsigned int num_to_bootstrap;
 } DHT;
 /*----------------------------------------------------------------------------------*/
@@ -306,6 +311,10 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
  */
 _Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
                   const uint8_t *cmp_pk);
+
+/* Return 1 if node can be added to close list, 0 if it can't.
+ */
+_Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port);
 
 /* Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).

@@ -39,10 +39,10 @@
 #define PING_NUM_MAX 512
 
 /* Maximum newly announced nodes to ping per TIME_TO_PING seconds. */
-#define MAX_TO_PING 16
+#define MAX_TO_PING 32
 
 /* Ping newly announced nodes to ping per TIME_TO_PING seconds*/
-#define TIME_TO_PING 4
+#define TIME_TO_PING 2
 
 
 struct PING {
@@ -262,9 +262,11 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
     if (!ip_isset(&ip_port.ip))
         return -1;
 
-    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port))
+    if (!node_addable_to_close_list(ping->dht, public_key, ip_port))
         return -1;
 
+    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port))
+        return -1;
 
     IP_Port temp;
 
@@ -310,6 +312,9 @@ void do_to_ping(PING *ping)
     for (i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip))
             break;
+
+        if (!node_addable_to_close_list(ping->dht, ping->to_ping[i].public_key, ping->to_ping[i].ip_port))
+            continue;
 
         send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);

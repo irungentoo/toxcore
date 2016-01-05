@@ -65,6 +65,11 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 5
 
+static uint8_t calc_dist(uint8_t a, uint8_t b)
+{
+    return a ^ b;
+}
+
 /* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
@@ -79,34 +84,8 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
 
-        distance1 = pk[i] ^ pk1[i];
-        distance2 = pk[i] ^ pk2[i];
-
-        if (!i) {
-            if (distance1 & (1 << 7)) {
-                d1_abs = 1;
-            }
-
-            if (distance2 & (1 << 7)) {
-                d2_abs = 1;
-            }
-        }
-
-        if (d1_abs)
-            distance1 = ~distance1;
-
-        if (d2_abs)
-            distance2 = ~distance2;
-
-        if (i == (crypto_box_PUBLICKEYBYTES - 1)) {
-            if (d1_abs)
-                if (distance1 != UINT8_MAX)
-                    ++distance1;
-
-            if (d2_abs)
-                if (distance2 != UINT8_MAX)
-                    ++distance2;
-        }
+        distance1 = calc_dist(pk[i], pk1[i]);
+        distance2 = calc_dist(pk[i], pk2[i]);
 
         if (distance1 < distance2)
             return 1;
@@ -116,6 +95,27 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
     }
 
     return 0;
+}
+
+/* Return index of first unequal bit number.
+ */
+static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
+{
+    unsigned int i, j = 0;
+
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+        if (pk1[i] == pk2[i])
+            continue;
+
+        for (j = 0; j < 8; ++j) {
+            if ((pk1[i] & (1 << (7 - j))) != (pk2[i] & (1 << (7 - j))))
+                break;
+        }
+
+        break;
+    }
+
+    return i * 8 + j;
 }
 
 /* Shared key generations are costly, it is therefor smart to store commonly used
@@ -586,7 +586,7 @@ static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, N
 {
     uint32_t num_nodes = 0, i;
     get_close_nodes_inner(public_key, nodes_list, sa_family,
-                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, want_good);
+                          dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, 0);
 
     /*TODO uncomment this when hardening is added to close friend clients
         for (i = 0; i < dht->num_friends; ++i)
@@ -780,6 +780,68 @@ static int replace_all(   Client_data    *list,
     return 0;
 }
 
+/* Add node to close list.
+ *
+ * simulate is set to 1 if we want to check if a node can be added to the list without adding it.
+ *
+ * return -1 on failure.
+ * return 0 on success.
+ */
+static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, _Bool simulate)
+{
+    unsigned int i;
+
+    unsigned int index = bit_by_bit_cmp(public_key, dht->self_public_key);
+
+    if (index > LCLIENT_LENGTH)
+        index = LCLIENT_LENGTH - 1;
+
+    for (i = 0; i < LCLIENT_NODES; ++i) {
+        Client_data *client = &dht->close_clientlist[(index * LCLIENT_NODES) + i];
+
+        if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+            if (!simulate) {
+                IPPTsPng *ipptp_write = NULL;
+                IPPTsPng *ipptp_clear = NULL;
+
+                if (ip_port.ip.family == AF_INET) {
+                    ipptp_write = &client->assoc4;
+                    ipptp_clear = &client->assoc6;
+                } else {
+                    ipptp_write = &client->assoc6;
+                    ipptp_clear = &client->assoc4;
+                }
+
+                id_copy(client->public_key, public_key);
+                ipptp_write->ip_port = ip_port;
+                ipptp_write->timestamp = unix_time();
+
+                ip_reset(&ipptp_write->ret_ip_port.ip);
+                ipptp_write->ret_ip_port.port = 0;
+                ipptp_write->ret_timestamp = 0;
+
+                /* zero out other address */
+                memset(ipptp_clear, 0, sizeof(*ipptp_clear));
+            }
+
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+/* Return 1 if node can be added to close list, 0 if it can't.
+ */
+_Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
+{
+    if (add_to_close(dht, public_key, ip_port, 1) == 0) {
+        return 1;
+    }
+
+    return 0;
+}
+
 static _Bool is_pk_in_client_list(Client_data *list, unsigned int client_list_length, const uint8_t *public_key,
                                   IP_Port ip_port)
 {
@@ -807,23 +869,18 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
 {
     _Bool ret = 0;
 
-    if (store_node_ok(&dht->close_clientlist[1], public_key, dht->self_public_key)) {
+    if (add_to_close(dht, public_key, ip_port, 1) == 0) {
         ret = 1;
     }
 
-    if (store_node_ok(&dht->close_clientlist[0], public_key, dht->self_public_key)) {
-        ret = 1;
-    }
-
-    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)
-            && !is_pk_in_client_list(dht->close_clientlist, LCLIENT_LIST, public_key, ip_port)) {
-        if (dht->num_to_bootstrap < MAX_SENT_NODES) {
+    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)) {
+        if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
             memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
             dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
             ++dht->num_to_bootstrap;
         } else {
             //TODO: ipv6 vs v4
-            add_to_list(dht->to_bootstrap, MAX_SENT_NODES, public_key, ip_port, dht->self_public_key);
+            add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
         }
     }
 
@@ -878,7 +935,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
      * to replace the first ip by the second.
      */
     if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, public_key, ip_port)) {
-        if (replace_all(dht->close_clientlist, LCLIENT_LIST, public_key, ip_port, dht->self_public_key))
+        if (add_to_close(dht, public_key, ip_port, 0))
             used++;
     } else
         used++;
@@ -1391,54 +1448,9 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     return -1;
 }
 
-static void abs_divide_by_2(uint8_t *public_key_dist)
-{
-    unsigned int i;
-    _Bool one = 0, abs = 0;
-
-    if (public_key_dist[0] & (1 << 7)) {
-        for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
-            public_key_dist[i] = ~public_key_dist[i];
-        }
-
-        if (public_key_dist[crypto_box_PUBLICKEYBYTES - 1] != UINT8_MAX)
-            ++public_key_dist[crypto_box_PUBLICKEYBYTES - 1];
-    }
-
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
-        _Bool temp = 0;
-
-        if (public_key_dist[i] & (1)) {
-            temp = 1;
-        }
-
-        public_key_dist[i] >>= 1;
-
-        if (one)
-            public_key_dist[i] += (1 << 7);
-
-        one = temp;
-    }
-}
-
-static void find_midpoint(uint8_t *out, const uint8_t *top, const uint8_t *bot)
-{
-    unsigned int i;
-
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
-        out[i] = top[i] ^ bot[i];
-    }
-
-    abs_divide_by_2(out);
-
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
-        out[i] ^= bot[i];
-    }
-}
-
 /* returns number of nodes not in kill-timeout */
 static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, const uint8_t *public_key,
-        Client_data *list, uint32_t list_count, uint32_t *bootstrap_times)
+        Client_data *list, uint32_t list_count, uint32_t *bootstrap_times, _Bool sortable)
 {
     uint32_t i;
     uint8_t not_kill = 0;
@@ -1482,32 +1494,18 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
             }
     }
 
-    if (sort_ok) {
+    if (sortable && sort_ok) {
         sort_client_list(list, list_count, public_key);
     }
 
     if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
-        uint32_t rand_node = rand() % (num_nodes * 2);
+        uint32_t rand_node = rand() % (num_nodes);
 
-        if (rand_node >= num_nodes) {
-            rand_node = rand_node % num_nodes;
-
-            if ((num_nodes - 1) != rand_node) {
-                rand_node += rand() % (num_nodes - (rand_node + 1));
-            }
-
-            if (memcmp(client_list[rand_node]->public_key, public_key, crypto_box_PUBLICKEYBYTES) != 0) {
-                uint8_t get_pk[crypto_box_PUBLICKEYBYTES];
-                find_midpoint(get_pk, client_list[rand_node]->public_key, public_key);
-                getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, get_pk, NULL);
-            }
-        } else {
-            if ((num_nodes - 1) != rand_node) {
-                rand_node += rand() % (num_nodes - (rand_node + 1));
-            }
-
-            getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key, NULL);
+        if ((num_nodes - 1) != rand_node) {
+            rand_node += rand() % (num_nodes - (rand_node + 1));
         }
+
+        getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key, NULL);
 
         *lastgetnode = temp_time;
         ++*bootstrap_times;
@@ -1533,7 +1531,7 @@ static void do_DHT_friends(DHT *dht)
         friend->num_to_bootstrap = 0;
 
         do_ping_and_sendnode_requests(dht, &friend->lastgetnode, friend->public_key, friend->client_list, MAX_FRIEND_CLIENTS,
-                                      &friend->bootstrap_times);
+                                      &friend->bootstrap_times, 1);
     }
 }
 
@@ -1551,7 +1549,7 @@ static void do_Close(DHT *dht)
     dht->num_to_bootstrap = 0;
 
     uint8_t not_killed = do_ping_and_sendnode_requests(dht, &dht->close_lastgetnodes, dht->self_public_key,
-                         dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times);
+                         dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times, 0);
 
     if (!not_killed) {
         /* all existing nodes are at least KILL_NODE_TIMEOUT,
@@ -2453,7 +2451,7 @@ void do_DHT(DHT *dht)
     do_DHT_friends(dht);
     do_NAT(dht);
     do_to_ping(dht->ping);
-    do_hardening(dht);
+    //do_hardening(dht);
 #ifdef ENABLE_ASSOC_DHT
 
     if (dht->assoc)
