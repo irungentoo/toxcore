@@ -2,7 +2,9 @@ bin_PROGRAMS += DHT_bootstrap
 
 DHT_bootstrap_SOURCES = ../other/DHT_bootstrap.c \
                         ../toxcore/DHT.h \
-                        ../toxcore/friend_requests.h
+                        ../toxcore/friend_requests.h \
+                        ../other/bootstrap_node_packets.h \
+                        ../other/bootstrap_node_packets.c
 
 DHT_bootstrap_CFLAGS = -I$(top_srcdir)/other \
                         $(LIBSODIUM_CFLAGS) \
