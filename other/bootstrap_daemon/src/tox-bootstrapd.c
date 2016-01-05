@@ -127,6 +127,7 @@ void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
 
     // Open the PID file for writing
     pid_file = fopen(pid_file_path, "a+");
+
     if (pid_file == NULL) {
         write_log(LOG_LEVEL_ERROR, "Couldn't open the PID file for writing: %s. Exiting.\n", pid_file_path);
         exit(1);
@@ -209,7 +210,8 @@ int main(int argc, char *argv[])
     }
 
     if (port < MIN_ALLOWED_PORT || port > MAX_ALLOWED_PORT) {
-        write_log(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+        write_log(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT,
+                  MAX_ALLOWED_PORT);
         return 1;
     }
 

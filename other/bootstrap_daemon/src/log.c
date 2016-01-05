@@ -68,8 +68,10 @@ int level_syslog(LOG_LEVEL level)
     switch (level) {
         case LOG_LEVEL_INFO:
             return LOG_INFO;
+
         case LOG_LEVEL_WARNING:
             return LOG_WARNING;
+
         case LOG_LEVEL_ERROR:
             return LOG_ERR;
     }
@@ -80,11 +82,12 @@ void log_syslog(LOG_LEVEL level, const char *format, va_list args)
     vsyslog(level_syslog(level), format, args);
 }
 
-FILE* level_stdout(LOG_LEVEL level)
+FILE *level_stdout(LOG_LEVEL level)
 {
     switch (level) {
         case LOG_LEVEL_INFO:
             return stdout;
+
         case LOG_LEVEL_WARNING: // intentional fallthrough
         case LOG_LEVEL_ERROR:
             return stderr;
@@ -106,6 +109,7 @@ bool write_log(LOG_LEVEL level, const char *format, ...)
         case LOG_BACKEND_SYSLOG:
             log_syslog(level, format, args);
             break;
+
         case LOG_BACKEND_STDOUT:
             log_stdout(level, format, args);
             break;

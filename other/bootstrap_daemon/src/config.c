@@ -72,7 +72,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
             if ((*tcp_relay_ports)[*tcp_relay_port_count] < MIN_ALLOWED_PORT
                     || (*tcp_relay_ports)[*tcp_relay_port_count] > MAX_ALLOWED_PORT) {
                 write_log(LOG_LEVEL_WARNING, "Port #%d: Invalid port: %u, should be in [%d, %d]. Skipping.\n", i,
-                       (*tcp_relay_ports)[*tcp_relay_port_count], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+                          (*tcp_relay_ports)[*tcp_relay_port_count], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
                 continue;
             }
 
@@ -92,7 +92,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 
     if (config_setting_is_array(ports_array) == CONFIG_FALSE) {
         write_log(LOG_LEVEL_ERROR, "'%s' setting should be an array. Array syntax: 'setting = [value1, value2, ...]'.\n",
-               NAME_TCP_RELAY_PORTS);
+                  NAME_TCP_RELAY_PORTS);
         return;
     }
 
@@ -126,7 +126,7 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
         if ((*tcp_relay_ports)[*tcp_relay_port_count] < MIN_ALLOWED_PORT
                 || (*tcp_relay_ports)[*tcp_relay_port_count] > MAX_ALLOWED_PORT) {
             write_log(LOG_LEVEL_WARNING, "Port #%d: Invalid port: %u, should be in [%d, %d]. Skipping.\n", i,
-                   (*tcp_relay_ports)[*tcp_relay_port_count], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+                      (*tcp_relay_ports)[*tcp_relay_port_count], MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
             continue;
         }
 
@@ -142,7 +142,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
     }
 }
 
-int get_general_config(const char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
+int get_general_config(const char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port,
+                       int *enable_ipv6,
                        int *enable_ipv4_fallback, int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports,
                        int *tcp_relay_port_count, int *enable_motd, char **motd)
 {
@@ -209,7 +210,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     if (config_lookup_bool(&cfg, NAME_ENABLE_IPV4_FALLBACK, enable_ipv4_fallback) == CONFIG_FALSE) {
         write_log(LOG_LEVEL_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_IPV4_FALLBACK);
         write_log(LOG_LEVEL_WARNING, "Using default '%s': %s\n", NAME_ENABLE_IPV4_FALLBACK,
-               DEFAULT_ENABLE_IPV4_FALLBACK ? "true" : "false");
+                  DEFAULT_ENABLE_IPV4_FALLBACK ? "true" : "false");
         *enable_ipv4_fallback = DEFAULT_ENABLE_IPV4_FALLBACK;
     }
 
@@ -217,7 +218,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     if (config_lookup_bool(&cfg, NAME_ENABLE_LAN_DISCOVERY, enable_lan_discovery) == CONFIG_FALSE) {
         write_log(LOG_LEVEL_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_LAN_DISCOVERY);
         write_log(LOG_LEVEL_WARNING, "Using default '%s': %s\n", NAME_ENABLE_LAN_DISCOVERY,
-               DEFAULT_ENABLE_LAN_DISCOVERY ? "true" : "false");
+                  DEFAULT_ENABLE_LAN_DISCOVERY ? "true" : "false");
         *enable_lan_discovery = DEFAULT_ENABLE_LAN_DISCOVERY;
     }
 
@@ -225,7 +226,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     if (config_lookup_bool(&cfg, NAME_ENABLE_TCP_RELAY, enable_tcp_relay) == CONFIG_FALSE) {
         write_log(LOG_LEVEL_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_TCP_RELAY);
         write_log(LOG_LEVEL_WARNING, "Using default '%s': %s\n", NAME_ENABLE_TCP_RELAY,
-               DEFAULT_ENABLE_TCP_RELAY ? "true" : "false");
+                  DEFAULT_ENABLE_TCP_RELAY ? "true" : "false");
         *enable_tcp_relay = DEFAULT_ENABLE_TCP_RELAY;
     }
 
@@ -239,7 +240,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     if (config_lookup_bool(&cfg, NAME_ENABLE_MOTD, enable_motd) == CONFIG_FALSE) {
         write_log(LOG_LEVEL_WARNING, "No '%s' setting in configuration file.\n", NAME_ENABLE_MOTD);
         write_log(LOG_LEVEL_WARNING, "Using default '%s': %s\n", NAME_ENABLE_MOTD,
-               DEFAULT_ENABLE_MOTD ? "true" : "false");
+                  DEFAULT_ENABLE_MOTD ? "true" : "false");
         *enable_motd = DEFAULT_ENABLE_MOTD;
     }
 
@@ -315,6 +316,7 @@ uint8_t *hex_string_to_bin(char *hex_string)
 
     char *pos = hex_string;
     size_t i;
+
     for (i = 0; i < len; ++i, pos += 2) {
         sscanf(pos, "%2hhx", &ret[i]);
     }
@@ -343,7 +345,8 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
     config_setting_t *node_list = config_lookup(&cfg, NAME_BOOTSTRAP_NODES);
 
     if (node_list == NULL) {
-        write_log(LOG_LEVEL_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n", NAME_BOOTSTRAP_NODES);
+        write_log(LOG_LEVEL_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n",
+                  NAME_BOOTSTRAP_NODES);
         config_destroy(&cfg);
         return 1;
     }
@@ -373,7 +376,8 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
 
         // Check that all settings are present
         if (config_setting_lookup_string(node, NAME_PUBLIC_KEY, &bs_public_key) == CONFIG_FALSE) {
-            write_log(LOG_LEVEL_WARNING, "Bootstrap node #%d: Couldn't find '%s' setting. Skipping the node.\n", i, NAME_PUBLIC_KEY);
+            write_log(LOG_LEVEL_WARNING, "Bootstrap node #%d: Couldn't find '%s' setting. Skipping the node.\n", i,
+                      NAME_PUBLIC_KEY);
             goto next;
         }
 
@@ -390,13 +394,14 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
         // Process settings
         if (strlen(bs_public_key) != crypto_box_PUBLICKEYBYTES * 2) {
             write_log(LOG_LEVEL_WARNING, "Bootstrap node #%d: Invalid '%s': %s. Skipping the node.\n", i, NAME_PUBLIC_KEY,
-                   bs_public_key);
+                      bs_public_key);
             goto next;
         }
 
         if (bs_port < MIN_ALLOWED_PORT || bs_port > MAX_ALLOWED_PORT) {
-            write_log(LOG_LEVEL_WARNING, "Bootstrap node #%d: Invalid '%s': %d, should be in [%d, %d]. Skipping the node.\n", i, NAME_PORT,
-                   bs_port, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
+            write_log(LOG_LEVEL_WARNING, "Bootstrap node #%d: Invalid '%s': %d, should be in [%d, %d]. Skipping the node.\n", i,
+                      NAME_PORT,
+                      bs_port, MIN_ALLOWED_PORT, MAX_ALLOWED_PORT);
             goto next;
         }
 

@@ -65,11 +65,6 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 5
 
-static uint8_t calc_dist(uint8_t a, uint8_t b)
-{
-    return a ^ b;
-}
-
 /* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
@@ -80,12 +75,11 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 {
     size_t   i;
     uint8_t distance1, distance2;
-    _Bool d1_abs = 0, d2_abs = 0;
 
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
 
-        distance1 = calc_dist(pk[i], pk1[i]);
-        distance2 = calc_dist(pk[i], pk2[i]);
+        distance1 = pk[i] ^ pk1[i];
+        distance2 = pk[i] ^ pk2[i];
 
         if (distance1 < distance2)
             return 1;
