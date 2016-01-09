@@ -331,33 +331,35 @@ uint8_t last_dht_pk[crypto_box_PUBLICKEYBYTES];
 
 static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
 {
-    Onions *on = object;
-    uint16_t count = 0;
-    int ret = DHT_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
-    ck_assert_msg(count == 1, "Count not 1");
-    ck_assert_msg(ret == 0, "DHT_addfriend() did not return 0");
+    if ((NUM_FIRST == number && !first) || (NUM_LAST == number && !last)) {
+        Onions *on = object;
+        uint16_t count = 0;
+        int ret = DHT_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
+        ck_assert_msg(ret == 0, "DHT_addfriend() did not return 0");
+        ck_assert_msg(count == 1, "Count not 1, count is %u", count);
 
-    if (NUM_FIRST == number && !first) {
-        first = 1;
+        if (NUM_FIRST == number && !first) {
+            first = 1;
 
-        if (memcmp(dht_public_key, last_dht_pk, crypto_box_PUBLICKEYBYTES) != 0) {
-            ck_abort_msg("Error wrong dht key.");
+            if (memcmp(dht_public_key, last_dht_pk, crypto_box_PUBLICKEYBYTES) != 0) {
+                ck_abort_msg("Error wrong dht key.");
+            }
+
+            return;
         }
 
-        return;
-    }
+        if (NUM_LAST == number && !last) {
+            last = 1;
 
-    if (NUM_LAST == number && !last) {
-        last = 1;
+            if (memcmp(dht_public_key, first_dht_pk, crypto_box_PUBLICKEYBYTES) != 0) {
+                ck_abort_msg("Error wrong dht key.");
+            }
 
-        if (memcmp(dht_public_key, first_dht_pk, crypto_box_PUBLICKEYBYTES) != 0) {
-            ck_abort_msg("Error wrong dht key.");
+            return;
         }
 
-        return;
+        ck_abort_msg("Error.");
     }
-
-    ck_abort_msg("Error.");
 }
 
 START_TEST(test_announce)

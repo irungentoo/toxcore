@@ -47,14 +47,19 @@
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
+#define LCLIENT_NODES (MAX_FRIEND_CLIENTS)
+#define LCLIENT_LENGTH 128
+
 /* A list of the clients mathematically closest to ours. */
-#define LCLIENT_LIST 32
+#define LCLIENT_LIST (LCLIENT_LENGTH * LCLIENT_NODES)
+
+#define MAX_CLOSE_TO_BOOTSTRAP_NODES 8
 
 /* The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 4
 
 /* Ping timeout in seconds */
-#define PING_TIMEOUT 3
+#define PING_TIMEOUT 5
 
 /* size of DHT ping arrays. */
 #define DHT_PING_ARRAY_SIZE 512
@@ -74,7 +79,7 @@
 #define TOX_TCP_INET6 138
 
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
-#define DHT_FAKE_FRIEND_NUMBER 4
+#define DHT_FAKE_FRIEND_NUMBER 2
 
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
@@ -141,6 +146,12 @@ typedef struct {
 
 typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    IP_Port     ip_port;
+}
+Node_format;
+
+typedef struct {
+    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
@@ -158,13 +169,9 @@ typedef struct {
         int32_t number;
     } callbacks[DHT_FRIEND_MAX_LOCKS];
 
+    Node_format to_bootstrap[MAX_SENT_NODES];
+    unsigned int num_to_bootstrap;
 } DHT_Friend;
-
-typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
-    IP_Port     ip_port;
-}
-Node_format;
 
 /* Return packet size of packed node with ip_family on success.
  * Return -1 on failure.
@@ -262,6 +269,9 @@ typedef struct {
     uint64_t       last_run;
 
     Cryptopacket_Handles cryptopackethandlers[256];
+
+    Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
+    unsigned int num_to_bootstrap;
 } DHT;
 /*----------------------------------------------------------------------------------*/
 
@@ -330,6 +340,15 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
  */
 int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 
+/* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
+ */
+_Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
+                  const uint8_t *cmp_pk);
+
+/* Return 1 if node can be added to close list, 0 if it can't.
+ */
+_Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port);
+
 /* Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
  *
@@ -343,6 +362,12 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, sa_family_t sa_family,
                     uint8_t is_LAN, uint8_t want_good);
 
+
+/* Put up to max_num nodes in nodes from the random friends.
+ *
+ * return the number of nodes.
+ */
+uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
 /* Put up to max_num nodes in nodes from the closelist.
  *
