@@ -22,7 +22,6 @@
 #endif
 
 #define NUM_TOXES 15
-#define TOPIC_NAME "test"
 
 START_TEST(test_text_all)
 {
@@ -46,7 +45,7 @@ START_TEST(test_text_all)
         ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed: %s\n", error);
 
         char name[16];
-        snprintf(name, sizeof(name), "test-%d", i);
+        snprintf(name, sizeof(name), "test-%lu", i);
         tox_self_set_name(toxes[i], name, strlen(name), NULL);
     }
 
@@ -76,10 +75,8 @@ START_TEST(test_text_all)
 
     ck_assert_msg(new_err == TOX_ERR_GROUP_NEW_OK, "tox_group_new failed %d", new_err);
 
-    /* Tox1 sets topic */
-    TOX_ERR_GROUP_TOPIC_SET topic_err;
-    tox_group_set_topic(toxes[1], groupnum, TOPIC_NAME, strlen(TOPIC_NAME), &topic_err);
-    ck_assert_msg(topic_err == TOX_ERR_GROUP_TOPIC_SET_OK, "failed to set topic %d", topic_err);
+    /* Set peer limit so other peers can use this value to see if they're connected */
+    tox_group_founder_set_peer_limit(toxes[1], groupnum, NUM_TOXES, NULL);
 
     for (i = 0; i < NUM_TOXES; ++i) {
         tox_iterate(toxes[i]);
@@ -93,14 +90,14 @@ START_TEST(test_text_all)
     ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "tox_group_get_chat_id failed %d", id_err);
 
     /* All other peers join the group using the Chat ID */
-
     for (i = 2; i < NUM_TOXES; ++i) {
         TOX_ERR_GROUP_JOIN join_err;
         tox_group_join(toxes[i], chat_id, NULL, 0, &join_err);
         ck_assert_msg(join_err == TOX_ERR_GROUP_JOIN_OK, "tox_group_join failed: %d", join_err);
+        sleep(1);
     }
 
-    /* Keep checking if both instances have connected to the group until test times out */
+    /* Keep checking if all instances have connected to the group until test times out */
     while (1) {
         for (i = 0; i < NUM_TOXES; ++i) {
             tox_iterate(toxes[i]);
@@ -110,10 +107,9 @@ START_TEST(test_text_all)
 
         /* Skip bootstrap and group creator */
         for (i = 2; i < NUM_TOXES; ++i) {
-            uint8_t topic[TOX_GROUP_MAX_TOPIC_LENGTH];
-            tox_group_get_topic(toxes[i], 0, topic, NULL);
+            uint32_t max = tox_group_get_peer_limit(toxes[i], 0, NULL);
 
-            if (memcmp(topic, TOPIC_NAME, strlen(TOPIC_NAME)) == 0)
+            if (max == NUM_TOXES)
                 ++count;
         }
 
