@@ -1,12 +1,17 @@
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include <sys/types.h>
+#include <stdint.h>
+#include <string.h>
 #include <stdio.h>
+#include <check.h>
+#include <stdlib.h>
 #include <time.h>
 
 #include "../toxcore/tox.h"
+
 #include "helpers.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
@@ -16,76 +21,103 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
+#define NUM_TOXES 15
+#define TOPIC_NAME "test"
+
 START_TEST(test_text_all)
 {
     long long unsigned int cur_time = time(NULL);
+    Tox *toxes[NUM_TOXES];
+
+    ck_assert_msg(NUM_TOXES >= 3, "NUM_TOXES is too small: %d", NUM_TOXES);
+
+    /* Init tox instances */
+    TOX_ERR_NEW error;
     struct Tox_Options tox_opts;
     tox_options_default(&tox_opts);
+    toxes[0] = tox_new(&tox_opts, &error);
 
-    TOX_ERR_NEW error1, error2, error3;
-    Tox *bootstrap_node = tox_new(&tox_opts, &error1);
-    Tox *Alice = tox_new(&tox_opts, &error2);
-    Tox *Bob = tox_new(&tox_opts, &error3);
+    ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed to bootstrap: %s\n", error);
 
-    tox_self_set_name(Alice, "alice", strlen("alice"), NULL);
-    tox_self_set_name(Bob, "Bob", strlen("Bob"), NULL);
+    size_t i;
 
-    ck_assert_msg(error1 == TOX_ERR_NEW_OK && error2 == TOX_ERR_NEW_OK && error3 == TOX_ERR_NEW_OK,
-                  "tox_new failed (%d %d %d %d)", error1, error2, error3);
+    for (i = 1; i < NUM_TOXES; ++i) {
+        toxes[i] = tox_new(&tox_opts, &error);
+        ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed: %s\n", error);
+
+        char name[16];
+        snprintf(name, sizeof(name), "test-%d", i);
+        tox_self_set_name(toxes[i], name, strlen(name), NULL);
+    }
+
     while (1) {
-        tox_iterate(bootstrap_node);
-        tox_iterate(Alice);
-        tox_iterate(Bob);
-
-        if (tox_self_get_connection_status(bootstrap_node)
-            && tox_self_get_connection_status(Alice)
-            && tox_self_get_connection_status(Bob)) {
-            printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
-            break;
+        for (i = 0; i < NUM_TOXES; ++i) {
+            tox_iterate(toxes[i]);
         }
+
+        size_t count = 0;
+
+        for (i = 0 ; i < NUM_TOXES; ++i) {
+            if (tox_self_get_connection_status(toxes[i]))
+                ++count;
+        }
+
+        if (count == NUM_TOXES)
+            break;
 
         c_sleep(20);
     }
 
     printf("All set after %llu seconds!\n", time(NULL) - cur_time);
 
-    /* Alice creates a group and is a founder of a newly created group */
+    /* Tox1 creates a group and is a founder of a newly created group */
     TOX_ERR_GROUP_NEW new_err;
-    uint32_t alice_groupnum = tox_group_new(Alice, TOX_GROUP_PRIVACY_STATE_PUBLIC, "test", 4, &new_err);
+    uint32_t groupnum = tox_group_new(toxes[1], TOX_GROUP_PRIVACY_STATE_PUBLIC, "test", 4, &new_err);
 
     ck_assert_msg(new_err == TOX_ERR_GROUP_NEW_OK, "tox_group_new failed %d", new_err);
 
+    /* Tox1 sets topic */
     TOX_ERR_GROUP_TOPIC_SET topic_err;
-    tox_group_set_topic(Alice, alice_groupnum, "test", 4, &topic_err);
+    tox_group_set_topic(toxes[1], groupnum, TOPIC_NAME, strlen(TOPIC_NAME), &topic_err);
     ck_assert_msg(topic_err == TOX_ERR_GROUP_TOPIC_SET_OK, "failed to set topic %d", topic_err);
 
-    tox_iterate(bootstrap_node);
-    tox_iterate(Alice);
-    tox_iterate(Bob);
+    for (i = 0; i < NUM_TOXES; ++i) {
+        tox_iterate(toxes[i]);
+    }
 
-    /* Alice gets the Chat ID and implicitly shares it with Bob */
+    /* Tox1 gets the Chat ID and implicitly shares it with Bob */
     TOX_ERR_GROUP_STATE_QUERIES id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
-    tox_group_get_chat_id(Alice, alice_groupnum, chat_id, &id_err);
+    tox_group_get_chat_id(toxes[1], groupnum, chat_id, &id_err);
 
     ck_assert_msg(id_err == TOX_ERR_GROUP_STATE_QUERIES_OK, "tox_group_get_chat_id failed %d", id_err);
 
-    /* Bob and chad join the group using the Chat ID */
-    TOX_ERR_GROUP_JOIN join_err;
+    /* All other peers join the group using the Chat ID */
 
-    uint32_t bob_groupnum = tox_group_join(Bob, chat_id, NULL, 0, &join_err);
-    ck_assert_msg(join_err == TOX_ERR_GROUP_JOIN_OK, "tox_group_join failed for Bob %d", join_err);
+    for (i = 2; i < NUM_TOXES; ++i) {
+        TOX_ERR_GROUP_JOIN join_err;
+        tox_group_join(toxes[i], chat_id, NULL, 0, &join_err);
+        ck_assert_msg(join_err == TOX_ERR_GROUP_JOIN_OK, "tox_group_join failed: %d", join_err);
+    }
 
     /* Keep checking if both instances have connected to the group until test times out */
     while (1) {
-        tox_iterate(bootstrap_node);
-        tox_iterate(Alice);
-        tox_iterate(Bob);
+        for (i = 0; i < NUM_TOXES; ++i) {
+            tox_iterate(toxes[i]);
+        }
 
-        uint8_t topic[TOX_GROUP_MAX_TOPIC_LENGTH];
-        tox_group_get_topic(Bob, bob_groupnum, topic, NULL);
+        size_t count = 0;
 
-        if (memcmp(topic, "test", 4) == 0)
+        /* Skip bootstrap and group creator */
+        for (i = 2; i < NUM_TOXES; ++i) {
+            uint8_t topic[TOX_GROUP_MAX_TOPIC_LENGTH];
+            tox_group_get_topic(toxes[i], 0, topic, NULL);
+
+            if (memcmp(topic, TOPIC_NAME, strlen(TOPIC_NAME)) == 0)
+                ++count;
+        }
+
+        if (count == (NUM_TOXES - 2))
             break;
 
         c_sleep(20);
@@ -98,20 +130,21 @@ Suite *text_groupchats_suite(void)
     Suite *s = suite_create("text_groupchats");
 
     DEFTESTCASE_SLOW(text_all, 50);
-
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
+    (void) argc;
+    (void) argv;
+
     srand((unsigned int) time(NULL));
 
-    Suite *text_groupchats = text_groupchats_suite();
-    SRunner *test_runner = srunner_create(text_groupchats);
+    Suite *tox = text_groupchats_suite();
+    SRunner *test_runner = srunner_create(tox);
 
-    int number_failed = 0;
     srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
+    int number_failed = srunner_ntests_failed(test_runner);
 
     srunner_free(test_runner);
 
