@@ -65,7 +65,7 @@ struct RTPHeader {
 } __attribute__ ((packed));
 
 /* Check alignment */
-typedef char __fail_if_misaligned [ sizeof(struct RTPHeader) == 80 ? 1 : -1 ];
+typedef char __fail_if_misaligned_1 [ sizeof(struct RTPHeader) == 80 ? 1 : -1 ];
 
 struct RTPMessage {
     uint16_t len;
@@ -75,7 +75,7 @@ struct RTPMessage {
 } __attribute__ ((packed));
 
 /* Check alignment */
-typedef char __fail_if_misaligned [ sizeof(struct RTPMessage) == 82 ? 1 : -1 ];
+typedef char __fail_if_misaligned_2 [ sizeof(struct RTPMessage) == 82 ? 1 : -1 ];
 
 /**
  * RTP control session.
