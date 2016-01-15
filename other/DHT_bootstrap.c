@@ -40,7 +40,7 @@
 #include "../testing/misc_tools.c"
 
 #ifdef DHT_NODE_EXTRA_PACKETS
-#include "./bootstrap_node_packets.c"
+#include "./bootstrap_node_packets.h"
 
 #define DHT_VERSION_NUMBER 1
 #define DHT_MOTD "This is a test motd"

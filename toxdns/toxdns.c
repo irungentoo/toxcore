@@ -44,7 +44,7 @@ uint8_t i = 0; \
         } \
     } \
 } \
- 
+
 typedef struct {
     uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
     uint8_t temp_sk[crypto_box_SECRETKEYBYTES];

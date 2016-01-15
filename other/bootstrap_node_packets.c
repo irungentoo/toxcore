@@ -23,7 +23,7 @@
  *
  */
 
-#define MAX_MOTD_LENGTH 256 /* I recommend you use a maximum of 96 bytes. The hard maximum is this though. */
+#include "bootstrap_node_packets.h"
 
 #define INFO_REQUEST_PACKET_LENGTH 78
 

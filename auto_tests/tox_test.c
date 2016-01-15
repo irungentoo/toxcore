@@ -806,7 +806,7 @@ START_TEST(test_few_clients)
 }
 END_TEST
 
-#define NUM_TOXES 66
+#define NUM_TOXES 90
 #define NUM_FRIENDS 50
 
 START_TEST(test_many_clients)
@@ -899,16 +899,17 @@ loop_top:
 }
 END_TEST
 
+#define NUM_TOXES_TCP 40
 #define TCP_RELAY_PORT 33448
 
 START_TEST(test_many_clients_tcp)
 {
     long long unsigned int cur_time = time(NULL);
-    Tox *toxes[NUM_TOXES];
+    Tox *toxes[NUM_TOXES_TCP];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (i = 0; i < NUM_TOXES_TCP; ++i) {
         struct Tox_Options opts;
         tox_options_default(&opts);
 
@@ -945,8 +946,8 @@ START_TEST(test_many_clients_tcp)
 
     for (i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
-        pairs[i].tox1 = rand() % NUM_TOXES;
-        pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+        pairs[i].tox1 = rand() % NUM_TOXES_TCP;
+        pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES_TCP - 1) + 1) % NUM_TOXES_TCP;
 
         for (j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
@@ -966,26 +967,27 @@ loop_top:
     }
 
     while (1) {
-        uint16_t counter = 0;
+        uint16_t counter = 0, cc = 0;
 
-        for (i = 0; i < NUM_TOXES; ++i) {
+        for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
                 if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP)
                     ++counter;
+
         }
 
         if (counter == NUM_FRIENDS * 2) {
             break;
         }
 
-        for (i = 0; i < NUM_TOXES; ++i) {
+        for (i = 0; i < NUM_TOXES_TCP; ++i) {
             tox_iterate(toxes[i]);
         }
 
         c_sleep(50);
     }
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (i = 0; i < NUM_TOXES_TCP; ++i) {
         tox_kill(toxes[i]);
     }
 
@@ -998,11 +1000,11 @@ END_TEST
 START_TEST(test_many_clients_tcp_b)
 {
     long long unsigned int cur_time = time(NULL);
-    Tox *toxes[NUM_TOXES];
+    Tox *toxes[NUM_TOXES_TCP];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (i = 0; i < NUM_TOXES_TCP; ++i) {
         struct Tox_Options opts;
         tox_options_default(&opts);
 
@@ -1040,8 +1042,8 @@ START_TEST(test_many_clients_tcp_b)
 
     for (i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
-        pairs[i].tox1 = rand() % NUM_TOXES;
-        pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+        pairs[i].tox1 = rand() % NUM_TOXES_TCP;
+        pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES_TCP - 1) + 1) % NUM_TOXES_TCP;
 
         for (j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
@@ -1063,7 +1065,7 @@ loop_top:
     while (1) {
         uint16_t counter = 0;
 
-        for (i = 0; i < NUM_TOXES; ++i) {
+        for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
                 if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP)
                     ++counter;
@@ -1073,14 +1075,14 @@ loop_top:
             break;
         }
 
-        for (i = 0; i < NUM_TOXES; ++i) {
+        for (i = 0; i < NUM_TOXES_TCP; ++i) {
             tox_iterate(toxes[i]);
         }
 
         c_sleep(50);
     }
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (i = 0; i < NUM_TOXES_TCP; ++i) {
         tox_kill(toxes[i]);
     }
 
