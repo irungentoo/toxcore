@@ -190,6 +190,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
             continue;
         }
 
+        // TODO: do we really have to check it with the last node?
         if (ipport_equal(&onion_paths->paths[i].ip_port1, &nodes[ONION_PATH_LENGTH - 1].ip_port)) {
             return i;
         }

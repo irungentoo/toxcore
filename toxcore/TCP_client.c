@@ -151,7 +151,7 @@ static int socks5_read_handshake_response(TCP_Client_Connection *TCP_conn)
     if (ret == -1)
         return 0;
 
-    if (data[0] == 5 && data[1] == 0)
+    if (data[0] == 5 && data[1] == 0) // FIXME magic numbers
         return 1;
 
     return -1;
