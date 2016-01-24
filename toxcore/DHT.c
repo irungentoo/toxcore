@@ -233,6 +233,7 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
         int ipv6 = -1;
         uint8_t net_family;
 
+        // FIXME use functions to convert endianness
         if (nodes[i].ip_port.ip.family == AF_INET) {
             ipv6 = 0;
             net_family = TOX_AF_INET;
