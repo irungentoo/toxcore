@@ -31,7 +31,7 @@ response = urllib.request.urlopen('https://nodes.tox.chat/json')
 raw_json = response.read().decode('ascii', 'ignore')
 nodes = json.loads(raw_json)['nodes']
 
-output = 'bootstrap_nodes = ('
+output = 'bootstrap_nodes = (\n'
 
 for node in nodes:
     node_output  = '  { // ' + node['maintainer'] + '\n'
