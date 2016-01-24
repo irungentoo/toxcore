@@ -46,7 +46,7 @@ int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t
     unsigned int i;
 
     for (i = 0; i < MAX_PATH_NODES; ++i) {
-        if (memcmp(public_key, onion_c->path_nodes_bs[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        if (public_key_cmp(public_key, onion_c->path_nodes_bs[i].public_key) == 0)
             return -1;
     }
 
@@ -76,7 +76,7 @@ static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uin
     unsigned int i;
 
     for (i = 0; i < MAX_PATH_NODES; ++i) {
-        if (memcmp(public_key, onion_c->path_nodes[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        if (public_key_cmp(public_key, onion_c->path_nodes[i].public_key) == 0)
             return -1;
     }
 
@@ -484,7 +484,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
         reference_id = onion_c->c->self_public_key;
         list_length = MAX_ONION_CLIENTS_ANNOUNCE;
 
-        if (is_stored == 1 && memcmp(pingid_or_key, onion_c->temp_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+        if (is_stored == 1 && public_key_cmp(pingid_or_key, onion_c->temp_public_key) != 0) {
             is_stored = 0;
         }
 
@@ -509,7 +509,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     }
 
     for (i = 0; i < list_length; ++i) {
-        if (memcmp(list_nodes[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (public_key_cmp(list_nodes[i].public_key, public_key) == 0) {
             index = i;
             stored = 1;
             break;
@@ -547,7 +547,7 @@ static int good_to_ping(Last_Pinged *last_pinged, uint8_t *last_pinged_index, co
 
     for (i = 0; i < MAX_STORED_PINGED_NODES; ++i) {
         if (!is_timeout(last_pinged[i].timestamp, MIN_NODE_PING_TIME))
-            if (memcmp(last_pinged[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            if (public_key_cmp(last_pinged[i].public_key, public_key) == 0)
                 return 0;
     }
 
@@ -602,7 +602,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
                 || id_closest(reference_id, list_nodes[1].public_key, nodes[i].public_key) == 2 ) {
             /* check if node is already in list. */
             for (j = 0; j < list_length; ++j) {
-                if (memcmp(list_nodes[j].public_key, nodes[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+                if (public_key_cmp(list_nodes[j].public_key, nodes[i].public_key) == 0) {
                     break;
                 }
             }
@@ -912,7 +912,7 @@ static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_
     if (len != length - (DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES))
         return 1;
 
-    if (memcmp(source_pubkey, plain + 1 + sizeof(uint64_t), crypto_box_PUBLICKEYBYTES) != 0)
+    if (public_key_cmp(source_pubkey, plain + 1 + sizeof(uint64_t)) != 0)
         return 1;
 
     return handle_dhtpk_announce(onion_c, packet, plain, len);
@@ -981,7 +981,7 @@ int onion_friend_num(const Onion_Client *onion_c, const uint8_t *public_key)
         if (onion_c->friends_list[i].status == 0)
             continue;
 
-        if (memcmp(public_key, onion_c->friends_list[i].real_public_key, crypto_box_PUBLICKEYBYTES) == 0)
+        if (public_key_cmp(public_key, onion_c->friends_list[i].real_public_key) == 0)
             return i;
     }
 
@@ -1129,7 +1129,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
         return -1;
 
     if (onion_c->friends_list[friend_num].know_dht_public_key) {
-        if (memcmp(dht_key, onion_c->friends_list[friend_num].dht_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (public_key_cmp(dht_key, onion_c->friends_list[friend_num].dht_public_key) == 0) {
             return -1;
         }
 

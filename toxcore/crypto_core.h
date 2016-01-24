@@ -108,7 +108,7 @@ int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
 void increment_nonce(uint8_t *nonce);
 
 /* increment the given nonce by num */
-void increment_nonce_number(uint8_t *nonce, uint32_t num);
+void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
 
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce);

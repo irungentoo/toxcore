@@ -284,7 +284,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
             return 0;
         }
 
-        if (memcmp(ping->to_ping[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (public_key_cmp(ping->to_ping[i].public_key, public_key) == 0) {
             return -1;
         }
     }

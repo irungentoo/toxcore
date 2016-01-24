@@ -244,7 +244,7 @@ static int tcp_oob_handle_cookie_request(const Net_Crypto *c, unsigned int tcp_c
     if (handle_cookie_request(c, request_plain, shared_key, dht_public_key_temp, packet, length) != 0)
         return -1;
 
-    if (memcmp(dht_public_key, dht_public_key_temp, crypto_box_PUBLICKEYBYTES) != 0)
+    if (public_key_cmp(dht_public_key, dht_public_key_temp) != 0)
         return -1;
 
     uint8_t data[COOKIE_RESPONSE_LENGTH];
@@ -363,7 +363,7 @@ static int handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t 
     if (len != sizeof(plain))
         return -1;
 
-    if (memcmp(cookie_hash, plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, crypto_hash_sha512_BYTES) != 0)
+    if (sodium_memcmp(cookie_hash, plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, crypto_hash_sha512_BYTES) != 0)
         return -1;
 
     memcpy(nonce, plain, crypto_box_NONCEBYTES);
@@ -1548,7 +1548,7 @@ static int getcryptconnection_id(const Net_Crypto *c, const uint8_t *public_key)
 
     for (i = 0; i < c->crypto_connections_length; ++i) {
         if (c->crypto_connections[i].status != CRYPTO_CONN_NO_CONNECTION)
-            if (memcmp(public_key, c->crypto_connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+            if (public_key_cmp(public_key, c->crypto_connections[i].public_key) == 0)
                 return i;
     }
 

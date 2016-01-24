@@ -583,7 +583,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
     TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[con_id];
 
     /* If person tries to cennect to himself we deny the request*/
-    if (memcmp(con->public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+    if (public_key_cmp(con->public_key, public_key) == 0) {
         if (send_routing_response(con, 0, public_key) == -1)
             return -1;
 
@@ -592,7 +592,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
 
     for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
         if (con->connections[i].status != 0) {
-            if (memcmp(public_key, con->connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (public_key_cmp(public_key, con->connections[i].public_key) == 0) {
                 if (send_routing_response(con, i + NUM_RESERVED_PORTS, public_key) == -1) {
                     return -1;
                 } else {
@@ -629,7 +629,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
 
         for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
             if (other_conn->connections[i].status == 1
-                    && memcmp(other_conn->connections[i].public_key, con->public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+                    && public_key_cmp(other_conn->connections[i].public_key, con->public_key) == 0) {
                 other_id = i;
                 break;
             }

@@ -153,7 +153,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 return NULL;
             }
 
-            if (memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
+            if (sodium_memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
                 return NULL;
             }
