@@ -1518,7 +1518,7 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
 
     /* Keep mutex, only destroy it when connection is realloced out. */
     pthread_mutex_t mutex = c->crypto_connections[crypt_connection_id].mutex;
-    memset(&(c->crypto_connections[crypt_connection_id]), 0 , sizeof(Crypto_Connection));
+    sodium_memzero(&(c->crypto_connections[crypt_connection_id]), sizeof(Crypto_Connection));
     c->crypto_connections[crypt_connection_id].mutex = mutex;
 
     for (i = c->crypto_connections_length; i != 0; --i) {
@@ -2709,6 +2709,6 @@ void kill_net_crypto(Net_Crypto *c)
     networking_registerhandler(c->dht->net, NET_PACKET_COOKIE_RESPONSE, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_HS, NULL, NULL);
     networking_registerhandler(c->dht->net, NET_PACKET_CRYPTO_DATA, NULL, NULL);
-    memset(c, 0, sizeof(Net_Crypto));
+    sodium_memzero(c, sizeof(Net_Crypto));
     free(c);
 }

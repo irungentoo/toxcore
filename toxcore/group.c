@@ -106,7 +106,7 @@ static int wipe_group_chat(Group_Chats *g_c, int groupnumber)
         return -1;
 
     uint32_t i;
-    memset(&(g_c->chats[groupnumber]), 0 , sizeof(Group_c));
+    sodium_memzero(&(g_c->chats[groupnumber]), sizeof(Group_c));
 
     for (i = g_c->num_chats; i != 0; --i) {
         if (g_c->chats[i - 1].status != GROUPCHAT_STATUS_NONE)
@@ -2011,7 +2011,7 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
     uint16_t top_distance = message_number - g->group[peer_index].top_lossy_number;
 
     if (top_distance >= MAX_LOSSY_COUNT) {
-        memset(g->group[peer_index].recv_lossy, 0, sizeof(g->group[peer_index].recv_lossy));
+        sodium_memzero(g->group[peer_index].recv_lossy, sizeof(g->group[peer_index].recv_lossy));
         g->group[peer_index].top_lossy_number = message_number;
         g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;

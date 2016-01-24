@@ -1060,7 +1060,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     //if (onion_c->friends_list[friend_num].know_dht_public_key)
     //    DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, 0);
 
-    memset(&(onion_c->friends_list[friend_num]), 0, sizeof(Onion_Friend));
+    sodium_memzero(&(onion_c->friends_list[friend_num]), sizeof(Onion_Friend));
     unsigned int i;
 
     for (i = onion_c->num_friends; i != 0; --i) {
@@ -1523,7 +1523,7 @@ void kill_onion_client(Onion_Client *onion_c)
     oniondata_registerhandler(onion_c, ONION_DATA_DHTPK, NULL, NULL);
     cryptopacket_registerhandler(onion_c->dht, CRYPTO_PACKET_DHTPK, NULL, NULL);
     set_onion_packet_tcp_connection_callback(onion_c->c->tcp_c, NULL, NULL);
-    memset(onion_c, 0, sizeof(Onion_Client));
+    sodium_memzero(onion_c, sizeof(Onion_Client));
     free(onion_c);
 }
 
