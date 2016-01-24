@@ -1,59 +1,36 @@
+sudo: required
+dist: trusty
 language: c
 compiler:
   - gcc
   - clang
 
 before_script:
-  #installing libsodium, needed for Core
+  - sudo apt-get update -qq
+  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
+  # install sodium, as it's not in Ubuntu Trusty
   - git clone git://github.com/jedisct1/libsodium.git > /dev/null
   - cd libsodium
-  - git checkout tags/1.0.0 > /dev/null
+  - git checkout tags/1.0.8 > /dev/null
   - ./autogen.sh > /dev/null
   - ./configure > /dev/null
-  - make check -j3 > /dev/null
+  - make -j3  >/dev/null
   - sudo make install >/dev/null
   - cd ..
-  #installing yasm, needed for compiling vpx
-  - sudo apt-get install yasm > /dev/null
-  #installing libconfig, needed for DHT_bootstrap_daemon
-  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz > /dev/null
-  - tar -xvzf libconfig-1.4.9.tar.gz > /dev/null
-  - cd libconfig-1.4.9
-  - ./configure > /dev/null
-  - make -j3 > /dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #installing libopus, needed for audio encoding/decoding
-  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz > /dev/null
-  - tar xzf opus-1.0.3.tar.gz > /dev/null
-  - cd opus-1.0.3
-  - ./configure > /dev/null
-  - make -j3 > /dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #installing vpx
-  - git clone https://chromium.googlesource.com/webm/libvpx > /dev/null
-  - cd libvpx
-  - ./configure --enable-shared > /dev/null
-  - make -j3 >/dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #creating libraries links and updating cache
-  - sudo ldconfig > /dev/null
-  #installing check, needed for unit tests
-  - sudo apt-get install check > /dev/null
+  - sudo ldconfig
 
 script:
-  - autoreconf -i
+  - ./autogen.sh
   - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --enable-ntox
-  - make -j3
+  - make
   - make check
+  - cat build/test-suite.log
   - make dist
 
 notifications:
   email: false
 
-  irc: 
+  irc:
     channels:
       - "chat.freenode.net#tox-dev"
     on_success: always
