@@ -51,6 +51,7 @@
 
 #define GCA_PING_INTERVAL 60
 #define GCA_NODES_EXPIRATION (GCA_PING_INTERVAL * 3 + 10)
+#define GCA_RELAY_RATE_LIMIT 30
 
 #define MAX_GCA_PACKET_SIZE 1024
 
@@ -245,6 +246,7 @@ static int wrap_gca_packet(const uint8_t *send_public_key, const uint8_t *send_s
     return GCA_HEADER_SIZE + len;
 }
 
+static bool gca_rate_limit(GC_Announce *announce);
 static void remove_gca_self_announce(GC_Announce *announce, const uint8_t *chat_id);
 static size_t add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_id, const GC_Announce_Node node,
                                     const uint8_t *packet_data, uint32_t length, bool self);
@@ -334,6 +336,9 @@ static int dispatch_packet(GC_Announce* announce, const uint8_t *chat_id, const 
                            const uint8_t *self_pk, const uint8_t *data, uint32_t length, uint8_t packet_type,
                            bool self)
 {
+    if (gca_rate_limit(announce))
+        return 0;
+
     if (packet_type == NET_PACKET_GCA_ANNOUNCE)
         return dispatch_packet_announce_request(announce, chat_id, origin_pk, self_pk, data, length, self);
 
@@ -638,9 +643,14 @@ int gca_send_get_nodes_request(GC_Announce* announce, const uint8_t *self_public
 }
 
 /* Sends nodes that hold chat_id to node that requested them */
-static int send_gca_get_nodes_response(DHT *dht, uint64_t request_id, IP_Port ipp, const uint8_t *receiver_pk,
+static int send_gca_get_nodes_response(GC_Announce *announce, uint64_t request_id, IP_Port ipp, const uint8_t *receiver_pk,
                                        GC_Announce_Node *nodes, uint32_t num_nodes)
 {
+    DHT *dht = announce->dht;
+
+    if (gca_rate_limit(announce))
+        return 0;
+
     /* packet contains: type, num_nodes, nodes, request_id */
     uint8_t data[1 + sizeof(uint32_t) + sizeof(GC_Announce_Node) * num_nodes + RAND_ID_SIZE];
     data[0] = NET_PACKET_GCA_SEND_NODES;
@@ -708,7 +718,7 @@ int handle_gc_get_announced_nodes_request(void *object, IP_Port ipp, const uint8
     if (num_nodes) {
         uint64_t request_id;
         bytes_to_U64(&request_id, data + 1 + CHAT_ID_SIZE);
-        return send_gca_get_nodes_response(dht, request_id, node.ip_port, node.public_key, nodes, num_nodes);
+        return send_gca_get_nodes_response(announce, request_id, node.ip_port, node.public_key, nodes, num_nodes);
     }
 
     uint8_t chat_id[CHAT_ID_SIZE];
@@ -925,6 +935,36 @@ static int send_gca_ping_request(DHT *dht, GC_Announce_Node *node, uint64_t ping
     return sendpacket(dht->net, node->ip_port, packet, len);
 }
 
+/* Increases rate limit.
+ *
+ * Returns true if we've hit the rate limit.
+ */
+static bool gca_rate_limit(GC_Announce *announce)
+{
+    ++announce->packet_relay_rate;
+
+    return announce->packet_relay_rate >= GCA_RELAY_RATE_LIMIT;
+}
+
+/* Keeps track of the rate at which we're sending announce packets.
+ *
+ * This is very basic and is only used to hinder spam and infinite DHT loops which may be
+ * caused by malicious clients or mismatched versions of toxcore.
+ */
+static void gca_do_rate_limit(GC_Announce *announce)
+{
+    if (announce->packet_relay_rate == 0) {
+        return;
+    }
+
+    uint64_t tm = unix_time();
+
+    if (announce->relay_rate_timer < tm) {
+        announce->relay_rate_timer = tm;
+        announce->packet_relay_rate /= 2;
+    }
+}
+
 static void ping_gca_nodes(GC_Announce *announce)
 {
     size_t i;
@@ -974,12 +1014,12 @@ static void check_gca_node_timeouts(GC_Announce *announce)
 
         if (!announce->announcements[i].self && is_timeout(announce->announcements[i].last_rcvd_ping, GCA_NODES_EXPIRATION))
             memset(&announce->announcements[i], 0, sizeof(struct GC_AnnouncedNode));
-
     }
 }
 
 void do_gca(GC_Announce *announce)
 {
+    gca_do_rate_limit(announce);
     ping_gca_nodes(announce);
     check_gca_node_timeouts(announce);
     renew_gca_self_announces(announce);

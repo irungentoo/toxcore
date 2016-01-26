@@ -78,6 +78,9 @@ struct GC_Announce {
     struct GC_AnnouncedNode announcements[MAX_GCA_ANNOUNCED_NODES];
     struct GC_AnnounceRequest requests[MAX_GCA_SELF_REQUESTS];
     struct GC_AnnouncedSelf self_announce[MAX_GCA_SELF_ANNOUNCEMENTS];
+
+    uint32_t packet_relay_rate;
+    uint64_t relay_rate_timer;
 };
 
 /* Initiate the process of announcing a group to the DHT.
