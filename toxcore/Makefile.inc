@@ -28,6 +28,7 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/ping.c \
                         ../toxcore/tox.h \
                         ../toxcore/tox.c \
+                        ../toxcore/tox_old_code.h \
                         ../toxcore/util.h \
                         ../toxcore/util.c \
                         ../toxcore/group.h \
