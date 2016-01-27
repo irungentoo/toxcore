@@ -38,10 +38,10 @@ RUN export BUILD_PACKAGES="\
     N=-1 && \
     while grep -q "bootstrap_nodes =" /etc/tox-bootstrapd.conf; \
     do \
-      head -n $N cp other/bootstrap_daemon/tox-bootstrapd.conf > /etc/tox-bootstrapd.conf; \
+      head -n $N other/bootstrap_daemon/tox-bootstrapd.conf > /etc/tox-bootstrapd.conf; \
       N=$((N-1)); \
     done && \
-  echo "add bootstrap nodes from https://nodes.tox.chat/" && \
+  echo " === add bootstrap nodes from https://nodes.tox.chat/ === " && \
     python3 other/bootstrap_daemon/docker/get-nodes.py >> /etc/tox-bootstrapd.conf && \
     export AUTO_ADDED_PACKAGES="$(apt-mark showauto)" && \
     apt-get remove --purge -y $BUILD_PACKAGES $AUTO_ADDED_PACKAGES && \
