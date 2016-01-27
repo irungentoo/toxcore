@@ -35,7 +35,7 @@ RUN export BUILD_PACKAGES="\
     N=-1 && \
     while grep -q "bootstrap_nodes =" /etc/tox-bootstrapd.conf; \
     do \
-      head -n $N tox-bootstrapd.conf > /etc/tox-bootstrapd.conf; \
+      head -n $N cp other/bootstrap_daemon/tox-bootstrapd.conf > /etc/tox-bootstrapd.conf; \
       N=$((N-1)); \
     done && \
     python3 other/bootstrap_daemon/docker/get-nodes.py >> /etc/tox-bootstrapd.conf && \
