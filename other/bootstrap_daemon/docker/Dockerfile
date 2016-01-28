@@ -2,7 +2,6 @@ FROM debian:jessie
 
 WORKDIR /tmp/tox
 
-# get all deps, build, install, remove build packages
 RUN export BUILD_PACKAGES="\
       build-essential \
       libtool \
@@ -17,9 +16,9 @@ RUN export BUILD_PACKAGES="\
     export RUNTIME_PACKAGES="\
       libconfig-dev \
       libsodium13" && \
-  echo " === get all deps === " && \
+# get all deps
     apt-get update && apt-get install -y $BUILD_PACKAGES $RUNTIME_PACKAGES && \
-  echo " === install toxcore and daemon === " && \
+# install toxcore and daemon
     git clone https://github.com/irungentoo/toxcore && \
     cd toxcore && \
     ./autogen.sh && \
@@ -27,21 +26,21 @@ RUN export BUILD_PACKAGES="\
     make -j`nproc` && \
     make install -j`nproc` && \
     ldconfig && \
-  echo " === add new user === " && \
+# add new user
     useradd --home-dir /var/lib/tox-bootstrapd --create-home \
       --system --shell /sbin/nologin \
       --comment "Account to run Tox's DHT bootstrap daemon" \
       --user-group tox-bootstrapd && \
     chmod 700 /var/lib/tox-bootstrapd && \
     cp other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf && \
-  echo " === remove all the example bootstrap nodes from the config file === " && \
+# remove all the example bootstrap nodes from the config file
     N=-1 && \
     while grep -q "bootstrap_nodes =" /etc/tox-bootstrapd.conf; \
     do \
       head -n $N other/bootstrap_daemon/tox-bootstrapd.conf > /etc/tox-bootstrapd.conf; \
       N=$((N-1)); \
     done && \
-  echo " === add bootstrap nodes from https://nodes.tox.chat/ === " && \
+# add bootstrap nodes from https://nodes.tox.chat/
     python3 other/bootstrap_daemon/docker/get-nodes.py >> /etc/tox-bootstrapd.conf && \
     export AUTO_ADDED_PACKAGES="$(apt-mark showauto)" && \
     apt-get remove --purge -y $BUILD_PACKAGES $AUTO_ADDED_PACKAGES && \
