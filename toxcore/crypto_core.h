@@ -37,6 +37,9 @@
 #include <crypto_verify_32.h>
 #include <crypto_scalarmult_curve25519.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
+/* I know */
+#define sodium_memcmp(a, b, c) memcmp(a, b, c)
+#define sodium_memzero(a, c) memset(a, 0, c)
 #endif
 
 #define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)

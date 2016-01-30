@@ -363,7 +363,8 @@ static int handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t 
     if (len != sizeof(plain))
         return -1;
 
-    if (sodium_memcmp(cookie_hash, plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, crypto_hash_sha512_BYTES) != 0)
+    if (sodium_memcmp(cookie_hash, plain + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
+                      crypto_hash_sha512_BYTES) != 0)
         return -1;
 
     memcpy(nonce, plain, crypto_box_NONCEBYTES);

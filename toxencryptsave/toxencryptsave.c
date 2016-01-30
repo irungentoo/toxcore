@@ -32,7 +32,6 @@
 
 #ifdef VANILLA_NACL
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
-#include "crypto_pwhash_scryptsalsa208sha256/utils.h" /* sodium_memzero */
 #include <crypto_hash_sha256.h>
 #endif
 

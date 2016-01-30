@@ -158,6 +158,7 @@ void increment_nonce(uint8_t *nonce)
      */
     uint32_t i = crypto_box_NONCEBYTES;
     uint_fast16_t carry = 1U;
+
     for (; i != 0; --i) {
         carry += (uint_fast16_t) nonce[i - 1];
         nonce[i - 1] = (uint8_t) carry;
@@ -173,7 +174,7 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num)
      * are independent of user-controlled input (you may have heard of the Heartbleed bug).
      */
     const uint32_t big_endian_num = htonl(host_order_num);
-    const uint8_t* const num_vec = (const uint8_t*) &big_endian_num;
+    const uint8_t *const num_vec = (const uint8_t *) &big_endian_num;
     uint8_t num_as_nonce[crypto_box_NONCEBYTES] = {0};
     num_as_nonce[crypto_box_NONCEBYTES - 4] = num_vec[0];
     num_as_nonce[crypto_box_NONCEBYTES - 3] = num_vec[1];
@@ -182,9 +183,10 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num)
 
     uint32_t i = crypto_box_NONCEBYTES;
     uint_fast16_t carry = 0U;
+
     for (; i != 0; --i) {
-        carry += (uint_fast16_t) nonce[i] + (uint_fast16_t) num_as_nonce[i];
-        nonce[i] = (unsigned char) carry;
+        carry += (uint_fast16_t) nonce[i - 1] + (uint_fast16_t) num_as_nonce[i - 1];
+        nonce[i - 1] = (unsigned char) carry;
         carry >>= 8;
     }
 }
@@ -227,7 +229,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
             crypto_box_MACBYTES)
         return -1;
 
-    uint8_t* nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
+    uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
     new_nonce(nonce);
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // FIXME sodium_memzero before exit function
     memcpy(temp + 1, data, length);
@@ -265,7 +267,7 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
         return -1;
 
     memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-    const uint8_t* nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
+    const uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // FIXME sodium_memzero before exit function
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
                             packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,

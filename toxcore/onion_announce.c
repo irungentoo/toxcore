@@ -316,7 +316,8 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES;
 
-    if (sodium_memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0 || sodium_memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
+    if (sodium_memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0
+            || sodium_memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
         index = add_to_entries(onion_a, source, packet_public_key, data_public_key,
                                packet + (ANNOUNCE_REQUEST_SIZE_RECV - ONION_RETURN_3));
     } else {
