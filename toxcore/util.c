@@ -60,7 +60,7 @@ int is_timeout(uint64_t timestamp, uint64_t timeout)
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src)
 {
-    return memcmp(dest, src, crypto_box_PUBLICKEYBYTES) == 0;
+    return public_key_cmp(dest, src) == 0;
 }
 
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)

@@ -699,6 +699,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
 /* Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
+    if (!net)
+        return;
+
     if (net->family != 0) /* Socket not initialized */
         kill_sock(net->sock);
 
@@ -823,7 +826,7 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
  *   writes error message into the buffer on error
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
-static char addresstext[96];
+static char addresstext[96]; // FIXME magic number. Why not INET6_ADDRSTRLEN ?
 const char *ip_ntoa(const IP *ip)
 {
     if (ip) {
@@ -964,10 +967,10 @@ int addr_resolve(const char *address, IP *to, IP *extra)
         return 0;
     }
 
-    IP4 ip4;
-    memset(&ip4, 0, sizeof(ip4));
-    IP6 ip6;
-    memset(&ip6, 0, sizeof(ip6));
+    IP ip4;
+    ip_init(&ip4, /* ipv6? */ false);
+    IP ip6;
+    ip_init(&ip6, /* ipv6? */ true);
 
     for (walker = server; (walker != NULL) && (rc != 3); walker = walker->ai_next) {
         switch (walker->ai_family) {
@@ -975,11 +978,11 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                 if (walker->ai_family == family) { /* AF_INET requested, done */
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
                     to->ip4.in_addr = addr->sin_addr;
-                    rc = 3;
+                    rc = 3; // TODO do we really have to reuse variable instead of creating a new one?
                 } else if (!(rc & 1)) { /* AF_UNSPEC requested, store away */
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
-                    ip4.in_addr = addr->sin_addr;
-                    rc |= 1;
+                    ip4.ip4.in_addr = addr->sin_addr;
+                    rc |= 1; // FIXME magic number
                 }
 
                 break; /* switch */
@@ -994,7 +997,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                 } else if (!(rc & 2)) { /* AF_UNSPEC requested, store away */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
-                        ip6.in6_addr = addr->sin6_addr;
+                        ip6.ip6.in6_addr = addr->sin6_addr;
                         rc |= 2;
                     }
                 }
@@ -1004,17 +1007,14 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     }
 
     if (to->family == AF_UNSPEC) {
-        if (rc & 2) {
-            to->family = AF_INET6;
-            to->ip6 = ip6;
+        if (rc & 2) { // FIXME magic number
+            ip_copy(to, &ip6);
 
             if ((rc & 1) && (extra != NULL)) {
-                extra->family = AF_INET;
-                extra->ip4 = ip4;
+                ip_copy(extra, &ip4);
             }
         } else if (rc & 1) {
-            to->family = AF_INET;
-            to->ip4 = ip4;
+            ip_copy(to, &ip4);
         } else
             rc = 0;
     }

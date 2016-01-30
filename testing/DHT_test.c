@@ -108,7 +108,7 @@ void print_clientlist(DHT *dht)
     for (i = 0; i < LCLIENT_LIST; i++) {
         Client_data *client = &dht->close_clientlist[i];
 
-        if (memcmp(client->public_key, zeroes_cid, crypto_box_PUBLICKEYBYTES) == 0)
+        if (public_key_cmp(client->public_key, zeroes_cid) == 0)
             continue;
 
         printf("ClientID: ");
@@ -139,7 +139,7 @@ void print_friendlist(DHT *dht)
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             Client_data *client = &dht->friends_list[k].client_list[i];
 
-            if (memcmp(client->public_key, zeroes_cid, crypto_box_PUBLICKEYBYTES) == 0)
+            if (public_key_cmp(client->public_key, zeroes_cid) == 0)
                 continue;
 
             printf("ClientID: ");

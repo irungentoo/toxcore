@@ -106,7 +106,7 @@ static int wipe_group_chat(Group_Chats *g_c, int groupnumber)
         return -1;
 
     uint32_t i;
-    memset(&(g_c->chats[groupnumber]), 0 , sizeof(Group_c));
+    sodium_memzero(&(g_c->chats[groupnumber]), sizeof(Group_c));
 
     for (i = g_c->num_chats; i != 0; --i) {
         if (g_c->chats[i - 1].status != GROUPCHAT_STATUS_NONE)
@@ -162,7 +162,7 @@ static int get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
     uint32_t i;
 
     for (i = 0; i < g_c->num_chats; ++i)
-        if (memcmp(g_c->chats[i].identifier, identifier, GROUP_IDENTIFIER_LENGTH) == 0)
+        if (sodium_memcmp(g_c->chats[i].identifier, identifier, GROUP_IDENTIFIER_LENGTH) == 0)
             return i;
 
     return -1;
@@ -218,14 +218,14 @@ static int add_to_closest(Group_Chats *g_c, int groupnumber, const uint8_t *real
     if (!g)
         return -1;
 
-    if (memcmp(g->real_pk, real_pk, crypto_box_PUBLICKEYBYTES) == 0)
+    if (public_key_cmp(g->real_pk, real_pk) == 0)
         return -1;
 
     unsigned int i;
     unsigned int index = DESIRED_CLOSE_CONNECTIONS;
 
     for (i = 0; i < DESIRED_CLOSE_CONNECTIONS; ++i) {
-        if (g->closest_peers[i].entry && memcmp(real_pk, g->closest_peers[i].real_pk, crypto_box_PUBLICKEYBYTES) == 0) {
+        if (g->closest_peers[i].entry && public_key_cmp(real_pk, g->closest_peers[i].real_pk) == 0) {
             return 0;
         }
     }
@@ -299,7 +299,7 @@ static unsigned int pk_in_closest_peers(Group_c *g, uint8_t *real_pk)
         if (!g->closest_peers[i].entry)
             continue;
 
-        if (memcmp(g->closest_peers[i].real_pk, real_pk, crypto_box_PUBLICKEYBYTES) == 0)
+        if (public_key_cmp(g->closest_peers[i].real_pk, real_pk) == 0)
             return 1;
 
     }
@@ -1277,7 +1277,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             if (!g)
                 return;
 
-            if (memcmp(data + 1 + sizeof(uint16_t) * 2, g->identifier, GROUP_IDENTIFIER_LENGTH) != 0)
+            if (sodium_memcmp(data + 1 + sizeof(uint16_t) * 2, g->identifier, GROUP_IDENTIFIER_LENGTH) != 0)
                 return;
 
             uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
@@ -1525,7 +1525,7 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
             return -1;
 
         if (g->status == GROUPCHAT_STATUS_VALID
-                && memcmp(d, g_c->m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+                && public_key_cmp(d, g_c->m->net_crypto->self_public_key) == 0) {
             g->peer_number = peer_num;
             g->status = GROUPCHAT_STATUS_CONNECTED;
             group_name_send(g_c, groupnumber, g_c->m->name, g_c->m->name_length);
@@ -2011,7 +2011,7 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
     uint16_t top_distance = message_number - g->group[peer_index].top_lossy_number;
 
     if (top_distance >= MAX_LOSSY_COUNT) {
-        memset(g->group[peer_index].recv_lossy, 0, sizeof(g->group[peer_index].recv_lossy));
+        sodium_memzero(g->group[peer_index].recv_lossy, sizeof(g->group[peer_index].recv_lossy));
         g->group[peer_index].top_lossy_number = message_number;
         g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;

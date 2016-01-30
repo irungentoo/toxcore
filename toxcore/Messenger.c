@@ -2660,7 +2660,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
                 set_nospam(&(m->fr), *(uint32_t *)data);
                 load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + crypto_box_PUBLICKEYBYTES);
 
-                if (memcmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+                if (public_key_cmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key) != 0) {
                     return -1;
                 }
             } else
