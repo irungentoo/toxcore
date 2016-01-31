@@ -272,6 +272,56 @@ START_TEST(test_large_data_symmetric)
 }
 END_TEST
 
+void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
+{
+    uint32_t num1, num2;
+    memcpy(&num1, nonce + (crypto_box_NONCEBYTES - sizeof(num1)), sizeof(num1));
+    num1 = ntohl(num1);
+    num2 = num + num1;
+
+    if (num2 < num1) {
+        uint32_t i;
+
+        for (i = crypto_box_NONCEBYTES - sizeof(num1); i != 0; --i) {
+            ++nonce[i - 1];
+
+            if (nonce[i - 1] != 0)
+                break;
+        }
+    }
+
+    num2 = htonl(num2);
+    memcpy(nonce + (crypto_box_NONCEBYTES - sizeof(num2)), &num2, sizeof(num2));
+}
+
+START_TEST(test_increment_nonce)
+{
+    long long unsigned int i;
+
+    uint8_t n[crypto_box_NONCEBYTES];
+
+    for (i = 0; i < crypto_box_NONCEBYTES; ++i)
+        n[i] = rand();
+
+    uint8_t n1[crypto_box_NONCEBYTES];
+
+    memcpy(n1, n, crypto_box_NONCEBYTES);
+
+    for (i = 0; i < (1 << 18); ++i) {
+        increment_nonce_number_cmp(n, 1);
+        increment_nonce(n1);
+        ck_assert_msg(memcmp(n, n1, crypto_box_NONCEBYTES) == 0, "Bad increment_nonce function");
+    }
+
+    for (i = 0; i < (1 << 18); ++i) {
+        uint32_t r = rand();
+        increment_nonce_number_cmp(n, r);
+        increment_nonce_number(n1, r);
+        ck_assert_msg(memcmp(n, n1, crypto_box_NONCEBYTES) == 0, "Bad increment_nonce_number function");
+    }
+}
+END_TEST
+
 Suite *crypto_suite(void)
 {
     Suite *s = suite_create("Crypto");
@@ -281,6 +331,7 @@ Suite *crypto_suite(void)
     DEFTESTCASE_SLOW(endtoend, 15); /* waiting up to 15 seconds */
     DEFTESTCASE(large_data);
     DEFTESTCASE(large_data_symmetric);
+    DEFTESTCASE_SLOW(increment_nonce, 20);
 
     return s;
 }
