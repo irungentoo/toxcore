@@ -75,6 +75,8 @@ int level_syslog(LOG_LEVEL level)
         case LOG_LEVEL_ERROR:
             return LOG_ERR;
     }
+
+    return LOG_INFO;
 }
 
 void log_syslog(LOG_LEVEL level, const char *format, va_list args)
@@ -92,6 +94,8 @@ FILE *level_stdout(LOG_LEVEL level)
         case LOG_LEVEL_ERROR:
             return stderr;
     }
+
+    return stdout;
 }
 
 void log_stdout(LOG_LEVEL level, const char *format, va_list args)
