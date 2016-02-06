@@ -413,7 +413,11 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                     else
                         free(msg_puzzle);
 
-                    msg_puzzle = NULL;
+                    if (header->ll) {
+                        session->mp_lossless = NULL;
+                    } else {
+                        session->mp = NULL;
+                    }
                 }
             } else {
                 /* Second case */
@@ -438,7 +442,11 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                 else
                     free(msg_puzzle);
 
-                msg_puzzle = NULL;
+                if (header->ll) {
+                    session->mp_lossless = NULL;
+                } else {
+                    session->mp = NULL;
+                }
                 goto NEW_MULTIPARTED;
             }
         } else {
