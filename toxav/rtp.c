@@ -422,13 +422,15 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                     /* The received message part is from the old message; discard it. */
                     return 0;
 
-                /* Measure missing parts of the old message */
-                bwc_add_lost(session->bwc,
-                             (msg_puzzle->header.tlen - msg_puzzle->len) +
+                if (!header->ll){
+                    /* Measure missing parts of the old message */
+                    bwc_add_lost(session->bwc,
+                         (msg_puzzle->header.tlen - msg_puzzle->len) +
 
-                             /* Must account sizes of rtp headers too */
-                             ((msg_puzzle->header.tlen - msg_puzzle->len) /
-                              MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
+                         /* Must account sizes of rtp headers too */
+                         ((msg_puzzle->header.tlen - msg_puzzle->len) /
+                          MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
+                }
 
                 /* Push the previous message for processing */
                 if (session->mcb)
@@ -449,7 +451,7 @@ NEW_MULTIPARTED:
             /* Only allow messages which have arrived in order;
              * drop late messages
              */
-            if (chloss(session, header)) {
+            if (!header->ll && chloss(session, header)) {
                 return 0;
             } else {
                 /* Message is not late; pick up the latest parameters */
