@@ -121,7 +121,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
 
     header->ve = 2;
     header->pe = 0;
-    header->xe = 0;
+    header->ll = 0;
     header->cc = 0;
 
     header->ma = 0;
@@ -200,7 +200,7 @@ int rtp_send_lossless_data (RTPSession *session, const uint8_t *data, uint16_t l
 
     header->ve = 2;
     header->pe = 0;
-    header->xe = 0;
+    header->ll = 1;
     header->cc = 0;
 
     header->ma = 0;
@@ -369,7 +369,15 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
     } else {
         /* The message is sent in multiple parts */
 
-        if (session->mp) {
+        struct RTPMessage *msg_puzzle;
+        if (header->ll) { /* lossless packet, must be a keyframe */
+            msg_puzzle = session->mp_lossless;
+        } else {
+            msg_puzzle = session->mp;
+        }
+
+
+        if (msg_puzzle) {
             /* There are 2 possible situations in this case:
              *      1) being that we got the part of already processing message.
              *      2) being that we got the part of a new/old message.
@@ -378,61 +386,57 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
              * processing message
              */
 
-            if (session->mp->header.sequnum == ntohs(header->sequnum) &&
-                    session->mp->header.timestamp == ntohl(header->timestamp)) {
+            if (msg_puzzle->header.sequnum == ntohs(header->sequnum) &&
+                    msg_puzzle->header.timestamp == ntohl(header->timestamp)) {
                 /* First case */
 
                 /* Make sure we have enough allocated memory */
-                if (session->mp->header.tlen - session->mp->len < length - sizeof(struct RTPHeader) ||
-                        session->mp->header.tlen <= ntohs(header->cpart)) {
+                if (msg_puzzle->header.tlen - msg_puzzle->len < length - sizeof(struct RTPHeader) ||
+                        msg_puzzle->header.tlen <= ntohs(header->cpart)) {
                     /* There happened to be some corruption on the stream;
                      * continue wihtout this part
                      */
                     return 0;
                 }
 
-                memcpy(session->mp->data + ntohs(header->cpart), data + sizeof(struct RTPHeader),
+                memcpy(msg_puzzle->data + ntohs(header->cpart), data + sizeof(struct RTPHeader),
                        length - sizeof(struct RTPHeader));
 
-                session->mp->len += length - sizeof(struct RTPHeader);
+                msg_puzzle->len += length - sizeof(struct RTPHeader);
 
                 bwc_add_recv(session->bwc, length);
 
-                if (session->mp->len == session->mp->header.tlen) {
-                    /* Received a full message; now push it for the further
-                     * processing.
-                     */
+                if (msg_puzzle->len == msg_puzzle->header.tlen) {
+                    /* Received a full message; now push it for the further processing. */
                     if (session->mcb)
-                        session->mcb (session->cs, session->mp);
+                        session->mcb (session->cs, msg_puzzle);
                     else
-                        free(session->mp);
+                        free(msg_puzzle);
 
-                    session->mp = NULL;
+                    msg_puzzle = NULL;
                 }
             } else {
                 /* Second case */
 
-                if (session->mp->header.timestamp > ntohl(header->timestamp))
-                    /* The received message part is from the old message;
-                     * discard it.
-                     */
+                if (msg_puzzle->header.timestamp > ntohl(header->timestamp))
+                    /* The received message part is from the old message; discard it. */
                     return 0;
 
                 /* Measure missing parts of the old message */
                 bwc_add_lost(session->bwc,
-                             (session->mp->header.tlen - session->mp->len) +
+                             (msg_puzzle->header.tlen - msg_puzzle->len) +
 
                              /* Must account sizes of rtp headers too */
-                             ((session->mp->header.tlen - session->mp->len) /
+                             ((msg_puzzle->header.tlen - msg_puzzle->len) /
                               MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
 
                 /* Push the previous message for processing */
                 if (session->mcb)
-                    session->mcb (session->cs, session->mp);
+                    session->mcb (session->cs, msg_puzzle);
                 else
-                    free(session->mp);
+                    free(msg_puzzle);
 
-                session->mp = NULL;
+                msg_puzzle = NULL;
                 goto NEW_MULTIPARTED;
             }
         } else {
