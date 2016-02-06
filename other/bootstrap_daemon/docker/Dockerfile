@@ -12,9 +12,10 @@ RUN export BUILD_PACKAGES="\
       git \
       yasm \
       libsodium-dev \
+      libconfig-dev \
       python3" && \
     export RUNTIME_PACKAGES="\
-      libconfig-dev \
+      libconfig9 \
       libsodium13" && \
 # get all deps
     apt-get update && apt-get install -y $BUILD_PACKAGES $RUNTIME_PACKAGES && \
@@ -33,24 +34,21 @@ RUN export BUILD_PACKAGES="\
       --user-group tox-bootstrapd && \
     chmod 700 /var/lib/tox-bootstrapd && \
     cp other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf && \
+# disable LAN discovery
+    sed -i 's/enable_lan_discovery = true/enable_lan_discovery = false/' /etc/tox-bootstrapd.conf && \
 # remove all the example bootstrap nodes from the config file
-    N=-1 && \
-    while grep -q "bootstrap_nodes =" /etc/tox-bootstrapd.conf; \
-    do \
-      head -n $N other/bootstrap_daemon/tox-bootstrapd.conf > /etc/tox-bootstrapd.conf; \
-      N=$((N-1)); \
-    done && \
+    sed -i '/^bootstrap_nodes = /,$d' /etc/tox-bootstrapd.conf && \
 # add bootstrap nodes from https://nodes.tox.chat/
     python3 other/bootstrap_daemon/docker/get-nodes.py >> /etc/tox-bootstrapd.conf && \
+# perform cleanup
     export AUTO_ADDED_PACKAGES="$(apt-mark showauto)" && \
     apt-get remove --purge -y $BUILD_PACKAGES $AUTO_ADDED_PACKAGES && \
-    apt-get install -y $RUNTIME_PACKAGES && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     cd / && \
     rm -rf /tmp/*
 
-WORKDIR /
+WORKDIR /var/lib/tox-bootstrapd
 
 USER tox-bootstrapd
 
@@ -59,5 +57,4 @@ ENTRYPOINT /usr/local/bin/tox-bootstrapd \
              --log-backend stdout \
              --foreground
 
-EXPOSE 443 3389 33445
-EXPOSE 33445/udp
+EXPOSE 443/tcp 3389/tcp 33445/tcp 33445/udp
