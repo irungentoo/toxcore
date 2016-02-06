@@ -34,8 +34,6 @@ RUN export BUILD_PACKAGES="\
       --user-group tox-bootstrapd && \
     chmod 700 /var/lib/tox-bootstrapd && \
     cp other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf && \
-# disable LAN discovery
-    sed -i 's/enable_lan_discovery = true/enable_lan_discovery = false/' /etc/tox-bootstrapd.conf && \
 # remove all the example bootstrap nodes from the config file
     sed -i '/^bootstrap_nodes = /,$d' /etc/tox-bootstrapd.conf && \
 # add bootstrap nodes from https://nodes.tox.chat/
