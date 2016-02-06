@@ -38,7 +38,7 @@ struct RTPHeader {
     /* Standard RTP header */
 #ifndef WORDS_BIGENDIAN
     uint16_t cc: 4; /* Contributing sources count */
-    uint16_t xe: 1; /* Extra header */
+    uint16_t ll: 1; /* Lossless bit */
     uint16_t pe: 1; /* Padding */
     uint16_t ve: 2; /* Version */
 
@@ -47,7 +47,7 @@ struct RTPHeader {
 #else
     uint16_t ve: 2; /* Version */
     uint16_t pe: 1; /* Padding */
-    uint16_t xe: 1; /* Extra header */
+    uint16_t ll: 1; /* Lossless bit */
     uint16_t cc: 4; /* Contributing sources count */
 
     uint16_t ma: 1; /* Marker */
@@ -88,6 +88,8 @@ typedef struct {
     uint32_t ssrc;
 
     struct RTPMessage *mp; /* Expected parted message */
+
+    struct RTPMessage *mp_lossless; /* Expected parted message */
 
     Messenger *m;
     uint32_t friend_number;
