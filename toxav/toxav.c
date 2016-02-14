@@ -125,7 +125,7 @@ bool toxav_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
             (TOXAV_VERSION_MINOR > minor || /* Current minor version must be newer than requested  -- or -- */
                 (TOXAV_VERSION_MINOR == minor && TOXAV_VERSION_PATCH >= patch) /* the patch must be the same or newer */
             )
-         )
+         );
 }
 
 ToxAV *toxav_new(Tox *tox, TOXAV_ERR_NEW *error)

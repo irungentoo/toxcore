@@ -68,7 +68,7 @@ bool toxes_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
             (TOXES_VERSION_MINOR > minor || /* Current minor version must be newer than requested  -- or -- */
                 (TOXES_VERSION_MINOR == minor && TOXES_VERSION_PATCH >= patch) /* the patch must be the same or newer */
             )
-         )
+         );
 }
 
 /* Clients should consider alerting their users that, unlike plain data, if even one bit
