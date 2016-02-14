@@ -43,20 +43,11 @@ struct Tox_Options;
 #define TOX_PASS_ENCRYPTION_EXTRA_LENGTH 80
 
 /**
- * ToxAV.
+ * ToxEncryptSave.
  */
-/**
- * The ToxAV instance type. Each ToxAV instance can be bound to only one Tox
- * instance, and Tox instance can have only one ToxAV instance. One must make
- * sure to close ToxAV instance prior closing Tox instance otherwise undefined
- * behaviour occurs. Upon closing of ToxAV instance, all active calls will be
- * forcibly terminated without notifying peers.
- *
- */
-#ifndef TOXAV_DEFINED
-#define TOXAV_DEFINED
-typedef struct ToxAV ToxAV;
-#endif /* TOXAV_DEFINED */
+#ifndef TOXES_DEFINED
+#define TOXES_DEFINED
+#endif /* TOXES_DEFINED */
 
 
 /*******************************************************************************
