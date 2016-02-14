@@ -106,24 +106,28 @@ void call_kill_transmission(ToxAVCall *call);
 
 uint32_t toxav_version_major(void)
 {
-    return 0;
+    return TOXAV_VERSION_MAJOR;
 }
+
 uint32_t toxav_version_minor(void)
 {
-    return 0;
+    return TOXAV_VERSION_MINOR;
 }
+
 uint32_t toxav_version_patch(void)
 {
-    return 0;
+    return TOXAV_VERSION_PATCH;
 }
+
 bool toxav_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
-    (void)major;
-    (void)minor;
-    (void)patch;
-
-    return 1;
+  return (TOXAV_VERSION_MAJOR == major && /* Force the major version */
+            (TOXAV_VERSION_MINOR > minor || /* Current minor version must be newer than requested  -- or -- */
+                (TOXAV_VERSION_MINOR == minor && TOXAV_VERSION_PATCH >= patch) /* the patch must be the same or newer */
+            )
+         );
 }
+
 ToxAV *toxav_new(Tox *tox, TOXAV_ERR_NEW *error)
 {
     TOXAV_ERR_NEW rc = TOXAV_ERR_NEW_OK;

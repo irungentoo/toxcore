@@ -47,6 +47,30 @@
 #error TOX_PASS_ENCRYPTION_EXTRA_LENGTH is assumed to be equal to (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)
 #endif
 
+uint32_t toxes_version_major(void)
+{
+    return TOXES_VERSION_MAJOR;
+}
+
+uint32_t toxes_version_minor(void)
+{
+    return TOXES_VERSION_MINOR;
+}
+
+uint32_t toxes_version_patch(void)
+{
+    return TOXES_VERSION_PATCH;
+}
+
+bool toxes_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
+{
+  return (TOXES_VERSION_MAJOR == major && /* Force the major version */
+            (TOXES_VERSION_MINOR > minor || /* Current minor version must be newer than requested  -- or -- */
+                (TOXES_VERSION_MINOR == minor && TOXES_VERSION_PATCH >= patch) /* the patch must be the same or newer */
+            )
+         );
+}
+
 /* Clients should consider alerting their users that, unlike plain data, if even one bit
  * becomes corrupted, the data will be entirely unrecoverable.
  * Ditto if they forget their password, there is no way to recover the data.

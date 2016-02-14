@@ -72,23 +72,26 @@ typedef struct Messenger Tox;
 
 uint32_t tox_version_major(void)
 {
-    return 0;
+    return TOX_VERSION_MAJOR;
 }
 
 uint32_t tox_version_minor(void)
 {
-    return 0;
+    return TOX_VERSION_MINOR;
 }
 
 uint32_t tox_version_patch(void)
 {
-    return 0;
+    return TOX_VERSION_PATCH;
 }
 
 bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
-    //TODO
-    return 1;
+  return (TOX_VERSION_MAJOR == major && /* Force the major version */
+            (TOX_VERSION_MINOR > minor || /* Current minor version must be newer than requested -- or -- */
+                (TOX_VERSION_MINOR == minor && TOX_VERSION_PATCH >= patch) /* the patch must be the same or newer */
+            )
+         );
 }
 
 
