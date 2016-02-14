@@ -42,6 +42,96 @@ struct Tox_Options;
 #define TOX_PASS_KEY_LENGTH 32
 #define TOX_PASS_ENCRYPTION_EXTRA_LENGTH 80
 
+/**
+ * ToxAV.
+ */
+/**
+ * The ToxAV instance type. Each ToxAV instance can be bound to only one Tox
+ * instance, and Tox instance can have only one ToxAV instance. One must make
+ * sure to close ToxAV instance prior closing Tox instance otherwise undefined
+ * behaviour occurs. Upon closing of ToxAV instance, all active calls will be
+ * forcibly terminated without notifying peers.
+ *
+ */
+#ifndef TOXAV_DEFINED
+#define TOXAV_DEFINED
+typedef struct ToxAV ToxAV;
+#endif /* TOXAV_DEFINED */
+
+
+/*******************************************************************************
+ *
+ * :: API version
+ *
+ ******************************************************************************/
+/**
+ * The major version number. Incremented when the API or ABI changes in an
+ * incompatible way.
+ */
+#define TOXES_VERSION_MAJOR               0u
+
+/**
+ * The minor version number. Incremented when functionality is added without
+ * breaking the API or ABI. Set to 0 when the major version number is
+ * incremented.
+ */
+#define TOXES_VERSION_MINOR               0u
+
+/**
+ * The patch or revision number. Incremented when bugfixes are applied without
+ * changing any functionality or API or ABI.
+ */
+#define TOXES_VERSION_PATCH               0u
+
+/**
+ * A macro to check at preprocessing time whether the client code is compatible
+ * with the installed version of ToxAV.
+ */
+#define TOXES_VERSION_IS_API_COMPATIBLE(MAJOR, MINOR, PATCH)        \
+  (TOXES_VERSION_MAJOR == MAJOR &&                                \
+   (TOXES_VERSION_MINOR > MINOR ||                                \
+    (TOXES_VERSION_MINOR == MINOR &&                              \
+     TOXES_VERSION_PATCH >= PATCH)))
+
+/**
+ * A macro to make compilation fail if the client code is not compatible with
+ * the installed version of ToxAV.
+ */
+#define TOXES_VERSION_REQUIRE(MAJOR, MINOR, PATCH)                \
+  typedef char toxes_required_version[TOXES_IS_COMPATIBLE(MAJOR, MINOR, PATCH) ? 1 : -1]
+
+/**
+ * A convenience macro to call toxES_version_is_compatible with the currently
+ * compiling API version.
+ */
+#define TOXES_VERSION_IS_ABI_COMPATIBLE()                         \
+  toxes_version_is_compatible(TOXES_VERSION_MAJOR, TOXES_VERSION_MINOR, TOXES_VERSION_PATCH)
+
+/**
+ * Return the major version number of the library. Can be used to display the
+ * ToxAV library version or to check whether the client is compatible with the
+ * dynamically linked version of ToxAV.
+ */
+uint32_t toxes_version_major(void);
+
+/**
+ * Return the minor version number of the library.
+ */
+uint32_t toxes_version_minor(void);
+
+/**
+ * Return the patch number of the library.
+ */
+uint32_t toxes_version_patch(void);
+
+/**
+ * Return whether the compiled library version is compatible with the passed
+ * version numbers.
+ */
+bool toxes_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
+
+
+
 /* This module is conceptually organized into two parts. The first part are the functions
  * with "key" in the name. To use these functions, first derive an encryption key
  * from a password with tox_derive_key_from_pass, and use the returned key to
