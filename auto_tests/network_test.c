@@ -28,7 +28,7 @@ START_TEST(test_addr_resolv_localhost)
     int localhost_split = 0;
 
     IP ip;
-    ip_init(&ip, 0);
+    ip_init(&ip, /* ipv6? */ 0);
 
     int res = addr_resolve(localhost, &ip, NULL);
 
@@ -39,10 +39,10 @@ START_TEST(test_addr_resolv_localhost)
         ck_assert_msg(ip.ip4.uint32 == htonl(0x7F000001), "Expected 127.0.0.1, got %s.", inet_ntoa(ip.ip4.in_addr));
     }
 
-    ip_init(&ip, 1);
+    ip_init(&ip, /* ipv6? */ 1);
     res = addr_resolve(localhost, &ip, NULL);
 
-    if (res < 1) {
+    if (!(res & TOX_ADDR_RESOLVE_INET6)) {
         res = addr_resolve("ip6-localhost", &ip, NULL);
         localhost_split = 1;
     }
@@ -50,12 +50,12 @@ START_TEST(test_addr_resolv_localhost)
     ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
     if (res > 0) {
-        ck_assert_msg(ip.family == AF_INET6, "Expected family AF_INET6, got %u.", ip.family);
+        ck_assert_msg(ip.family == AF_INET6, "Expected family AF_INET6 (%u), got %u.", AF_INET6, ip.family);
         ck_assert_msg(!memcmp(&ip.ip6, &in6addr_loopback, sizeof(IP6)), "Expected ::1, got %s.", ip_ntoa(&ip));
     }
 
     if (!localhost_split) {
-        ip_init(&ip, 1);
+        ip_init(&ip, /* ipv6? */ 1);
         ip.family = AF_UNSPEC;
         IP extra;
         ip_reset(&extra);
@@ -63,10 +63,10 @@ START_TEST(test_addr_resolv_localhost)
         ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
         if (res > 0) {
-            ck_assert_msg(ip.family == AF_INET6, "Expected family AF_INET6, got %u.", ip.family);
+            ck_assert_msg(ip.family == AF_INET6, "Expected family AF_INET6 (%u), got %u.", AF_INET6, ip.family);
             ck_assert_msg(!memcmp(&ip.ip6, &in6addr_loopback, sizeof(IP6)), "Expected ::1, got %s.", ip_ntoa(&ip));
 
-            ck_assert_msg(extra.family == AF_INET, "Expected family AF_INET, got %u.", extra.family);
+            ck_assert_msg(extra.family == AF_INET, "Expected family AF_INET (%u), got %u.", AF_INET, extra.family);
             ck_assert_msg(extra.ip4.uint32 == htonl(0x7F000001), "Expected 127.0.0.1, got %s.", inet_ntoa(extra.ip4.in_addr));
         }
     } else {
