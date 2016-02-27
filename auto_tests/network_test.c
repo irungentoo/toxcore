@@ -144,7 +144,7 @@ Suite *network_suite(void)
     return s;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     srand((unsigned int) time(NULL));
 
