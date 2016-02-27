@@ -11,6 +11,7 @@ tox_bootstrapd_SOURCES = \
                         ../other/bootstrap_daemon/src/log.c \
                         ../other/bootstrap_daemon/src/log.h \
                         ../other/bootstrap_daemon/src/tox-bootstrapd.c \
+                        ../other/bootstrap_daemon/src/global.h \
                         ../other/bootstrap_node_packets.c \
                         ../other/bootstrap_node_packets.h
 

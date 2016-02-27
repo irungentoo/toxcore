@@ -6,7 +6,8 @@ libtoxencryptsave_la_include_HEADERS = \
 libtoxencryptsave_la_includedir = $(includedir)/tox
 
 libtoxencryptsave_la_SOURCES = ../toxencryptsave/toxencryptsave.h \
-                        ../toxencryptsave/toxencryptsave.c
+                        ../toxencryptsave/toxencryptsave.c \
+                        ../toxencryptsave/defines.h
 
 
 if WITH_NACL
