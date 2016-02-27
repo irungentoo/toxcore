@@ -28,7 +28,7 @@ START_TEST(test_addr_resolv_localhost)
     int localhost_split = 0;
 
     IP ip;
-    ip_init(&ip, /* ipv6? */ 0);
+    ip_init(&ip, 0); // ipv6enabled = 0
 
     int res = addr_resolve(localhost, &ip, NULL);
 
@@ -39,7 +39,7 @@ START_TEST(test_addr_resolv_localhost)
         ck_assert_msg(ip.ip4.uint32 == htonl(0x7F000001), "Expected 127.0.0.1, got %s.", inet_ntoa(ip.ip4.in_addr));
     }
 
-    ip_init(&ip, /* ipv6? */ 1);
+    ip_init(&ip, 1); // ipv6enabled = 1
     res = addr_resolve(localhost, &ip, NULL);
 
     if (!(res & TOX_ADDR_RESOLVE_INET6)) {
@@ -55,7 +55,7 @@ START_TEST(test_addr_resolv_localhost)
     }
 
     if (!localhost_split) {
-        ip_init(&ip, /* ipv6? */ 1);
+        ip_init(&ip, 1); // ipv6enabled = 1
         ip.family = AF_UNSPEC;
         IP extra;
         ip_reset(&extra);

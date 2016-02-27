@@ -970,9 +970,9 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     }
 
     IP ip4;
-    ip_init(&ip4, /* ipv6? */ false);
+    ip_init(&ip4, 0); // ipv6enabled = 0
     IP ip6;
-    ip_init(&ip6, /* ipv6? */ true);
+    ip_init(&ip6, 1); // ipv6enabled = 1
 
     for (walker = server; (walker != NULL) && !done; walker = walker->ai_next) {
         switch (walker->ai_family) {
