@@ -64,11 +64,7 @@ uint32_t toxes_version_patch(void)
 
 bool toxes_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
-  return (TOXES_VERSION_MAJOR == major && /* Force the major version */
-            (TOXES_VERSION_MINOR > minor || /* Current minor version must be newer than requested  -- or -- */
-                (TOXES_VERSION_MINOR == minor && TOXES_VERSION_PATCH >= patch) /* the patch must be the same or newer */
-            )
-         );
+  return TOXES_VERSION_IS_API_COMPATIBLE(major, minor, patch);
 }
 
 /* Clients should consider alerting their users that, unlike plain data, if even one bit
