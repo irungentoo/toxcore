@@ -723,7 +723,7 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
             goto END;
         }
 
-        if (rtp_send_data(call->audio.first, dest, vrc + sizeof(sampling_rate)) != 0) {
+        if (rtp_send_data(call->audio.first, dest, vrc + sizeof(sampling_rate), 0) != 0) {
             LOGGER_WARNING("Failed to send audio packet");
             rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
         }
@@ -822,9 +822,9 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
                 int send_result = 0;
 
                 if ((pkt->data.frame.flags & VPX_FRAME_IS_KEY) != 0 ){ /* is keyframe, send lossless. */
-                    send_result = rtp_send_lossless_data(call->video.first, pkt->data.frame.buf, pkt->data.frame.sz);
+                    send_result = rtp_send_data(call->video.first, pkt->data.frame.buf, pkt->data.frame.sz, 1);
                 } else {
-                    send_result = rtp_send_data(call->video.first, pkt->data.frame.buf, pkt->data.frame.sz);
+                    send_result = rtp_send_data(call->video.first, pkt->data.frame.buf, pkt->data.frame.sz, 0);
                 }
 
                 if (send_result < 0) {

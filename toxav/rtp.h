@@ -89,8 +89,6 @@ typedef struct {
 
     struct RTPMessage *mp; /* Expected parted message */
 
-    struct RTPMessage *mp_lossless; /* Expected parted message */
-
     Messenger *m;
     uint32_t friend_number;
 
@@ -106,6 +104,6 @@ RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friend_num,
 void rtp_kill (RTPSession *session);
 int rtp_allow_receiving (RTPSession *session);
 int rtp_stop_receiving (RTPSession *session);
-int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length);
+int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bool lossless);
 
 #endif /* RTP_H */
