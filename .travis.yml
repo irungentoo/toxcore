@@ -7,7 +7,7 @@ compiler:
 
 before_script:
   - sudo apt-get update -qq
-  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
+  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev libminiupnpc-dev check -qq
   # install sodium, as it's not in Ubuntu Trusty
   - git clone git://github.com/jedisct1/libsodium.git > /dev/null
   - cd libsodium
