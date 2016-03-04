@@ -43,6 +43,13 @@
 #include "network.h"
 #include "util.h"
 
+#ifdef HAVE_LIBMINIUPNPC
+#include <miniupnpc/miniupnpc.h>
+#include <miniupnpc/miniwget.h>
+#include <miniupnpc/upnpcommands.h>
+#include <miniupnpc/upnperrors.h>
+#endif
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
 static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
@@ -109,6 +116,56 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
     return 0;
 }
 
+#endif
+
+#ifdef HAVE_LIBMINIUPNPC
+/* Setup port forwarding using UPnP */
+static void upnp_map_port(uint16_t port)
+{
+    LOGGER_DEBUG("Attempting to set up UPnP port forwarding");
+
+    int error = 0;
+    struct UPNPDev *devlist = NULL;
+
+    devlist = upnpDiscover(1000, NULL, NULL, 0, 0, &error);
+
+    if (error) {
+        LOGGER_WARNING("UPnP discovery failed (error = %d)", error);
+        return;
+    }
+
+    struct UPNPUrls urls;
+    struct IGDdatas data;
+    char lanaddr[64];
+
+    error = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr));
+    freeUPNPDevlist(devlist);
+    if (error) {
+        if (error == 1) {
+            LOGGER_INFO("A valid IGD has been found.");
+
+            char portstr[10];
+            snprintf(portstr, sizeof(portstr), "%d", port);
+
+            error = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype, portstr, portstr, lanaddr, "Tox", "UDP", 0, "0");
+            if (error) {
+                LOGGER_WARNING("UPnP port mapping failed (error = %d)", error);
+            } else {
+                LOGGER_INFO("UPnP mapped port %d", port);
+            }
+        } else if (error == 2) {
+            LOGGER_WARNING("IGD was found but reported as not connected.");
+        } else if (error == 3) {
+            LOGGER_WARNING("UPnP device was found but not recoginzed as IGD.");
+        } else {
+            LOGGER_WARNING("Unknown error finding IGD: %d", error);
+        }
+
+        FreeUPNPUrls(&urls);
+    } else {
+        LOGGER_WARNING("No IGD was found.");
+    }
+}
 #endif
 
 /* Check if socket is valid.
@@ -673,6 +730,10 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
 
             if (error)
                 *error = 0;
+
+#ifdef HAVE_LIBMINIUPNPC
+            upnp_map_port(ntohs(temp->port));
+#endif
 
             return temp;
         }
