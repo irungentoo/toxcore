@@ -127,7 +127,12 @@ static void upnp_map_port(uint16_t port)
     int error = 0;
     struct UPNPDev *devlist = NULL;
 
+#if MINIUPNPC_API_VERSION < 14
     devlist = upnpDiscover(1000, NULL, NULL, 0, 0, &error);
+#else
+    devlist = upnpDiscover(1000, NULL, NULL, 0, 0, 2, &error);
+#endif
+
 
     if (error) {
         LOGGER_WARNING("UPnP discovery failed (error = %d)", error);
