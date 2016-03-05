@@ -41,6 +41,7 @@ LIBCONFIG_FOUND="no"
 LIBCHECK_FOUND="no"
 WANT_NACL="no"
 ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
+MINIUPNP="yes"
 
 TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
 TOXAV_LT_LDFLAGS="-version-info $LIBTOXAV_LT_VERSION"
@@ -65,6 +66,17 @@ AC_ARG_ENABLE([nacl],
             WANT_NACL="no"
         elif test "x$enableval" = "xyes"; then
             WANT_NACL="yes"
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([miniupnp],
+    [AC_HELP_STRING([--disable-miniupnp], [upnp port forwarding (default: enabled)]) ],
+    [
+        if test "x$enableval" = "xyes"; then
+            MINIUPNP="yes"
+        elif test "x$enableval" = "xno"; then
+            MINIUPNP="no"
         fi
     ]
 )
@@ -227,6 +239,8 @@ LIBSODIUM_SEARCH_HEADERS=
 LIBSODIUM_SEARCH_LIBS=
 NACL_SEARCH_HEADERS=
 NACL_SEARCH_LIBS=
+MINIUPNP_SEARCH_HEADERS=
+MINIUPNP_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
     AC_HELP_STRING([--with-dependency-search=DIR],
@@ -277,6 +291,24 @@ AC_ARG_WITH(libsodium-libs,
         [
             LIBSODIUM_SEARCH_LIBS="$withval"
             AC_MSG_NOTICE([will search for libsodium libraries in $withval])
+        ]
+)
+
+AC_ARG_WITH(miniupnp-headers,
+        AC_HELP_STRING([--with-miniupnp-headers=DIR],
+                       [search for miniupnp header files in DIR]),
+        [
+            MINIUPNP_SEARCH_HEADERS="$withval"
+            AC_MSG_NOTICE([will search for miniupnp header files in $withval])
+        ]
+)
+
+AC_ARG_WITH(miniupnp-libs,
+        AC_HELP_STRING([--with-miniupnp-libs=DIR],
+                       [search for miniupnp libraries in DIR]),
+        [
+            MINIUPNP_SEARCH_LIBS="$withval"
+            AC_MSG_NOTICE([will search for miniupnp libraries in $withval])
         ]
 )
 
@@ -397,6 +429,36 @@ else
     AC_SUBST(LIBSODIUM_LDFLAGS)
 fi
 
+if test "x$MINIUPNP" = "xyes"; then
+    MINIUPNP_LIBS=
+    MINIUPNP_LDFLAGS=
+    LDFLAGS_SAVE="$LDFLAGS"
+
+    if test -n "$MINIUPNP_SEARCH_LIBS"; then
+        LDFLAGS="-L$MINIUPNP_SEARCH_LIBS $LDFLAGS"
+        AC_CHECK_LIB(miniupnpc, upnpDiscover,
+            [
+                MINIUPNP_LDFLAGS="-L$MINIUPNP_SEARCH_LIBS"
+                MINIUPNP_LIBS="-lminiupnpc"
+            ],
+            [
+                AC_MSG_ERROR([required library libminiupnpc was not found in requested location $MINIUPNP_SEARCH_LIBS])
+            ]
+        )
+    else
+        AC_CHECK_LIB(miniupnpc, upnpDiscover,
+            [],
+            [
+                AC_MSG_ERROR([required library libminiupnpc was not found on your system, please check http://miniupnp.free.fr/])
+            ]
+        )
+    fi
+
+    LDFLAGS="$LDFLAGS_SAVE"
+    AC_SUBST(MINIUPNP_LIBS)
+    AC_SUBST(MINIUPNP_LDFLAGS)
+fi
+
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
 
@@ -454,6 +516,34 @@ else
     CFLAGS="$CFLAGS_SAVE"
     CPPFLAGS="$CPPFLAGS_SAVE"
     AC_SUBST(LIBSODIUM_CFLAGS)
+fi
+
+if test "x$MINIUPNP" = "xyes"; then
+    MINIUPNP_CFLAGS=
+    CFLAGS_SAVE="$CFLAGS"
+    CPPFLAGS_SAVE="$CPPFLAGS"
+    if test -n "$MINIUPNP_SEARCH_HEADERS"; then
+        CFLAGS="-I$MINIUPNP_SEARCH_HEADERS $CFLAGS"
+        CPPFLAGS="-I$MINIUPNP_SEARCH_HEADERS $CPPFLAGS"
+        AC_CHECK_HEADERS([miniupnpc/miniupnpc.h miniupnpc/miniwget.h miniupnpc/upnpcommands.h miniupnpc/upnperrors.h],
+            [
+                MINIUPNP_CFLAGS="-I$MINIUPNP_SEARCH_HEADERS"
+            ],
+            [
+                AC_MSG_ERROR([header files for required library libminiupnpc were not found in requested location $MINIUPNP_SEARCH_HEADERS])
+            ]
+        )
+    else
+        AC_CHECK_HEADERS([miniupnpc/miniupnpc.h miniupnpc/miniwget.h miniupnpc/upnpcommands.h miniupnpc/upnperrors.h],
+            [],
+            [
+                AC_MSG_ERROR([header files for required library libminiupnpc was not found on your system, please check http://miniupnp.free.fr/])
+            ]
+        )
+    fi
+    CFLAGS="$CFLAGS_SAVE"
+    CPPFLAGS="$CPPFLAGS_SAVE"
+    AC_SUBST(MINIUPNP_CFLAGS)
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.

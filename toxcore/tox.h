@@ -412,6 +412,18 @@ struct Tox_Options {
 
 
     /**
+     * Enable the use of UPnP for port forwarding.
+     *
+     * When enabled it will automatically make a UPnP-compatible (and enabled)
+     * router forward port 33445 to you (or whichever port Tox decides to use).
+     * This should improve tox networking, especially in udp mode.
+     * Setting this to false will force Tox to not search/use UPnP-compatible
+     * devices.
+     */
+    bool upnp_enabled;
+
+
+    /**
      * Pass communications through a proxy.
      */
     TOX_PROXY_TYPE proxy_type;
