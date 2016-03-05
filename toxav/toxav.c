@@ -821,7 +821,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
             if (pkt->kind == VPX_CODEC_CX_FRAME_PKT){
                 int send_result = 0;
 
-                if ((pkt->data.frame.flags & VPX_FRAME_IS_KEY) != 0 ){ /* is keyframe, send lossless. */
+                if (pkt->data.frame.flags & VPX_FRAME_IS_KEY) { /* is keyframe, send lossless. */
                     send_result = rtp_send_data(call->video.first, pkt->data.frame.buf, pkt->data.frame.sz, 1);
                 } else {
                     send_result = rtp_send_data(call->video.first, pkt->data.frame.buf, pkt->data.frame.sz, 0);

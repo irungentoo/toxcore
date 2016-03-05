@@ -136,24 +136,24 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bo
     header->tlen = htons(length);
 
     if (MAX_CRYPTO_DATA_SIZE > length + sizeof(struct RTPHeader) + 1) {
-
-        /**
-         * The lenght is lesser than the maximum allowed lenght (including header)
+        /** The length is lesser than the maximum allowed length (including header)
          * Send the packet in single piece.
          */
 
         memcpy(rdata + 1 + sizeof(struct RTPHeader), data, length);
         if (lossless) {
-            if (-1 == send_custom_lossless_packet(session->m, session->friend_number, rdata, sizeof(rdata)))
+            if (-1 == send_custom_lossless_packet(session->m, session->friend_number, rdata, sizeof(rdata))) {
+                printf("send data one pkt err%u\n", lossless); fflush(stdout);
                 LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
+            }
         } else {
-            if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata)))
+            if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata))) {
+                printf("send data one pkt err%u\n", lossless); fflush(stdout);
                 LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
+            }
         }
     } else {
-
-        /**
-         * The lenght is greater than the maximum allowed lenght (including header)
+        /** The length is greater than the maximum allowed length (including header)
          * Send the packet in multiple pieces.
          */
 
@@ -384,7 +384,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
              */
 
             /* This is also a point for new multiparted messages */
-NEW_MULTIPARTED:
+            NEW_MULTIPARTED:
 
             /* Only allow messages which have arrived in order;
              * drop late messages
