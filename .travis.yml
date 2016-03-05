@@ -9,7 +9,7 @@ before_script:
   - sudo add-apt-repository ppa:avsm/ocaml42+opam12 -y
   - sudo apt-get update -qq
   - sudo apt-get install ocaml opam astyle -qq
-  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev libminiupnpc-dev check -qq
+  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev libminiupnpc-dev libnatpmp-dev check -qq
   # build apidsl
   - git clone https://github.com/iphydf/apidsl
   - cd apidsl

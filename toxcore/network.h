@@ -32,7 +32,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <string.h>
 #include <time.h>
 
@@ -165,6 +164,33 @@ typedef struct {
     uint16_t port;
 }
 IP_Port;
+
+/**
+ * Type of technology used to try to traverse a NAT.
+ */
+typedef enum TOX_TRAVERSAL_TYPE {
+
+    /**
+     * Don't use any particular technology.
+     */
+    TOX_TRAVERSAL_TYPE_NONE,
+
+    /**
+     * Use UPnP technology.
+     */
+    TOX_TRAVERSAL_TYPE_UPNP,
+
+    /**
+     * Use NAT-PMP technology.
+     */
+    TOX_TRAVERSAL_TYPE_NATPMP,
+
+    /**
+     * Use both UPnP and NAT-PMP technologies.
+     */
+    TOX_TRAVERSAL_TYPE_ALL,
+
+} TOX_TRAVERSAL_TYPE;
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 #define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == htonl (0xffff)))
@@ -379,7 +405,7 @@ void networking_poll(Networking_Core *net);
  */
 Networking_Core *new_networking(IP ip, uint16_t port);
 Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
-Networking_Core *new_networking_upnp(IP ip, uint16_t port_from, uint16_t port_to, bool upnp_enabled, unsigned int *error);
+Networking_Core *new_networking_nat(IP ip, uint16_t port_from, uint16_t port_to, TOX_TRAVERSAL_TYPE traversal_type, unsigned int *error);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

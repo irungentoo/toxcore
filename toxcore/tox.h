@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "network.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -412,15 +413,9 @@ struct Tox_Options {
 
 
     /**
-     * Enable the use of UPnP for port forwarding.
-     *
-     * When enabled it will automatically make a UPnP-compatible (and enabled)
-     * router forward port 33445 to you (or whichever port Tox decides to use).
-     * This should improve tox networking, especially in udp mode.
-     * Setting this to false will force Tox to not search/use UPnP-compatible
-     * devices.
+     * Try to traverse a NAT.
      */
-    bool upnp_enabled;
+    TOX_TRAVERSAL_TYPE traversal_type;
 
 
     /**

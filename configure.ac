@@ -42,6 +42,7 @@ LIBCHECK_FOUND="no"
 WANT_NACL="no"
 ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
 MINIUPNP="yes"
+NATPMP="yes"
 
 TOXCORE_LT_LDFLAGS="-version-info $LIBTOXCORE_LT_VERSION"
 TOXAV_LT_LDFLAGS="-version-info $LIBTOXAV_LT_VERSION"
@@ -77,6 +78,17 @@ AC_ARG_ENABLE([miniupnp],
             MINIUPNP="yes"
         elif test "x$enableval" = "xno"; then
             MINIUPNP="no"
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([natpmp],
+    [AC_HELP_STRING([--disable-natpmp], [nat-pmp port forwarding (default: enabled)]) ],
+    [
+        if test "x$enableval" = "xyes"; then
+            NATPMP="yes"
+        elif test "x$enableval" = "xno"; then
+            NATPMP="no"
         fi
     ]
 )
@@ -241,6 +253,8 @@ NACL_SEARCH_HEADERS=
 NACL_SEARCH_LIBS=
 MINIUPNP_SEARCH_HEADERS=
 MINIUPNP_SEARCH_LIBS=
+NATPMP_SEARCH_HEADERS=
+NATPMP_SEARCH_LIBS=
 
 AC_ARG_WITH(dependency-search,
     AC_HELP_STRING([--with-dependency-search=DIR],
@@ -309,6 +323,24 @@ AC_ARG_WITH(miniupnp-libs,
         [
             MINIUPNP_SEARCH_LIBS="$withval"
             AC_MSG_NOTICE([will search for miniupnp libraries in $withval])
+        ]
+)
+
+AC_ARG_WITH(natpmp-headers,
+        AC_HELP_STRING([--with-natpmp-headers=DIR],
+                       [search for natpmp header files in DIR]),
+        [
+            NATPMP_SEARCH_HEADERS="$withval"
+            AC_MSG_NOTICE([will search for natpmp header files in $withval])
+        ]
+)
+
+AC_ARG_WITH(natpmp-libs,
+        AC_HELP_STRING([--with-natpmp-libs=DIR],
+                       [search for natpmp libraries in DIR]),
+        [
+            NATPMP_SEARCH_LIBS="$withval"
+            AC_MSG_NOTICE([will search for natpmp libraries in $withval])
         ]
 )
 
@@ -459,6 +491,36 @@ if test "x$MINIUPNP" = "xyes"; then
     AC_SUBST(MINIUPNP_LDFLAGS)
 fi
 
+if test "x$NATPMP" = "xyes"; then
+    NATPMP_LIBS=
+    NATPMP_LDFLAGS=
+    LDFLAGS_SAVE="$LDFLAGS"
+
+    if test -n "$NATPMP_SEARCH_LIBS"; then
+        LDFLAGS="-L$NATPMP_SEARCH_LIBS $LDFLAGS"
+        AC_CHECK_LIB(natpmp, initnatpmp
+            [
+                NATPMP_LDFLAGS="-L$NATPMP_SEARCH_LIBS"
+                NATPMP_LIBS="-lnatpmp"
+            ],
+            [
+                AC_MSG_ERROR([required library libnatpmp was not found in requested location $NATPMP_SEARCH_LIBS])
+            ]
+        )
+    else
+        AC_CHECK_LIB(natpmp, initnatpmp,
+            [],
+            [
+                AC_MSG_ERROR([required library libnatpmp was not found on your system, please check http://miniupnp.free.fr/])
+            ]
+        )
+    fi
+
+    LDFLAGS="$LDFLAGS_SAVE"
+    AC_SUBST(NATPMP_LIBS)
+    AC_SUBST(NATPMP_LDFLAGS)
+fi
+
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
 
@@ -544,6 +606,34 @@ if test "x$MINIUPNP" = "xyes"; then
     CFLAGS="$CFLAGS_SAVE"
     CPPFLAGS="$CPPFLAGS_SAVE"
     AC_SUBST(MINIUPNP_CFLAGS)
+fi
+
+if test "x$NATPMP" = "xyes"; then
+    NATPMP_CFLAGS=
+    CFLAGS_SAVE="$CFLAGS"
+    CPPFLAGS_SAVE="$CPPFLAGS"
+    if test -n "$NATPMP_SEARCH_HEADERS"; then
+        CFLAGS="-I$NATPMP_SEARCH_HEADERS $CFLAGS"
+        CPPFLAGS="-I$NATPMP_SEARCH_HEADERS $CPPFLAGS"
+        AC_CHECK_HEADERS(natpmp.h,
+            [
+                NATPMP_CFLAGS="-I$NATPMP_SEARCH_HEADERS"
+            ],
+            [
+                AC_MSG_ERROR([header files for required library libnatpmp were not found in requested location $NATPMP_SEARCH_HEADERS])
+            ]
+        )
+    else
+        AC_CHECK_HEADERS(natpmp.h,
+            [],
+            [
+                AC_MSG_ERROR([header files for required library libnatpmp was not found on your system, please check http://miniupnp.free.fr/])
+            ]
+        )
+    fi
+    CFLAGS="$CFLAGS_SAVE"
+    CPPFLAGS="$CPPFLAGS_SAVE"
+    AC_SUBST(NATPMP_CFLAGS)
 fi
 
 # Checks for typedefs, structures, and compiler characteristics.

@@ -50,6 +50,10 @@
 #include <miniupnpc/upnperrors.h>
 #endif
 
+#ifdef HAVE_LIBNATPMP
+#include <natpmp.h>
+#endif
+
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
 static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
@@ -133,7 +137,6 @@ static void upnp_map_port(uint16_t port)
     devlist = upnpDiscover(1000, NULL, NULL, 0, 0, 2, &error);
 #endif
 
-
     if (error) {
         LOGGER_WARNING("UPnP discovery failed (error = %d)", error);
         return;
@@ -170,6 +173,42 @@ static void upnp_map_port(uint16_t port)
     } else {
         LOGGER_WARNING("No IGD was found.");
     }
+}
+#endif
+
+#ifdef HAVE_LIBNATPMP
+/* Setup port forwarding using NAT-PMP */
+static void natpmp_map_port(uint16_t port)
+{
+    LOGGER_DEBUG("Attempting to set up NAT-PMP port forwarding");
+
+    int error;
+    natpmp_t natpmp;
+    natpmpresp_t resp;
+
+    error = initnatpmp(&natpmp, 0, 0);
+    if (error) {
+        LOGGER_WARNING("NAT-PMP initialization failed (error = %d)", error);
+        return;
+    }
+
+    error = sendnewportmappingrequest(&natpmp, NATPMP_PROTOCOL_UDP, port, port, 3600);
+    if (error != 12) {
+        LOGGER_WARNING("NAT-PMP send request failed (error = %d)", error);
+        closenatpmp(&natpmp);
+        return;
+    }
+
+    error = readnatpmpresponseorretry(&natpmp, &resp);
+    for ( ; error == NATPMP_TRYAGAIN ; error = readnatpmpresponseorretry(&natpmp, &resp) )
+        sleep(1);
+
+    if (error)
+        LOGGER_WARNING("NAT-PMP port mapping failed (error = %d)", error);
+    else
+        LOGGER_INFO("NAT-PMP mapped port %d", port);
+
+    closenatpmp(&natpmp);
 }
 #endif
 
@@ -544,7 +583,7 @@ static void at_shutdown(void)
  */
 Networking_Core *new_networking(IP ip, uint16_t port)
 {
-    return new_networking_upnp(ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 1, 0);
+    return new_networking_nat(ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), TOX_TRAVERSAL_TYPE_NONE, 0);
 }
 
 /* Initialize networking.
@@ -552,7 +591,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
  */
 Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
-    return new_networking_upnp(ip, port_from, port_to, 1, 0);
+    return new_networking_nat(ip, port_from, port_to, TOX_TRAVERSAL_TYPE_NONE, 0);
 }
 
 /* Initialize networking.
@@ -565,7 +604,7 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking_upnp(IP ip, uint16_t port_from, uint16_t port_to, bool upnp_enabled, unsigned int *error)
+Networking_Core *new_networking_nat(IP ip, uint16_t port_from, uint16_t port_to, TOX_TRAVERSAL_TYPE traversal_type, unsigned int *error)
 {
     /* If both from and to are 0, use default port range
      * If one is 0 and the other is non-0, use the non-0 value as only port
@@ -745,8 +784,13 @@ Networking_Core *new_networking_upnp(IP ip, uint16_t port_from, uint16_t port_to
                 *error = 0;
 
 #ifdef HAVE_LIBMINIUPNPC
-            if (upnp_enabled)
+            if ((traversal_type == TOX_TRAVERSAL_TYPE_UPNP) || (traversal_type == TOX_TRAVERSAL_TYPE_ALL))
                 upnp_map_port(ntohs(temp->port));
+#endif
+
+#ifdef HAVE_LIBNATPMP
+            if ((traversal_type == TOX_TRAVERSAL_TYPE_NATPMP) || (traversal_type == TOX_TRAVERSAL_TYPE_ALL))
+                natpmp_map_port(ntohs(temp->port));
 #endif
 
             return temp;

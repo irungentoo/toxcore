@@ -68,7 +68,7 @@ enum {
 typedef struct {
     uint8_t ipv6enabled;
     uint8_t udp_disabled;
-    uint8_t upnp_enabled;
+    TOX_TRAVERSAL_TYPE traversal_type;
     TCP_Proxy_Info proxy_info;
     uint16_t port_range[2];
     uint16_t tcp_server_port;
