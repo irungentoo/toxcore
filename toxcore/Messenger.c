@@ -1766,7 +1766,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking_ex(ip, options->port_range[0], options->port_range[1], &net_err);
+        m->net = new_networking_upnp(ip, options->port_range[0], options->port_range[1], options->upnp_enabled, &net_err);
     }
 
     if (m->net == NULL) {
