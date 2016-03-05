@@ -1187,7 +1187,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
         return 0;
     }
 
-    if (data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_LOSSY_AV_RESERVED)) {
+    if (data[0] < PACKET_ID_LOSSY_RANGE_START || data[0] > PACKET_ID_LOSSY_RANGE_END) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID);
         return 0;
     }

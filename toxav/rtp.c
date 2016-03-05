@@ -116,7 +116,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bo
     uint8_t rdata[length + sizeof(struct RTPHeader) + 1];
     memset(rdata, 0, sizeof(rdata));
 
-    rdata[0] = session->payload_type;
+    rdata[0] = session->payload_type - (33 * lossless);
 
     struct RTPHeader *header = (struct RTPHeader *)(rdata  + 1);
 
@@ -141,15 +141,17 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bo
          */
 
         memcpy(rdata + 1 + sizeof(struct RTPHeader), data, length);
+        int rslt;
         if (lossless) {
-            if (-1 == send_custom_lossless_packet(session->m, session->friend_number, rdata, sizeof(rdata))) {
-                LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
-            }
+            rslt = send_custom_lossless_packet(session->m, session->friend_number, rdata, sizeof(rdata));
         } else {
-            if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata))) {
-                LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
-            }
+            rslt = send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata));
         }
+        if (rslt != 0) {
+            LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
+            printf("pck not sent %i\n", rslt); fflush(stdout);
+        }
+
     } else {
         /** The length is greater than the maximum allowed length (including header)
          * Send the packet in multiple pieces.

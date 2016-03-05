@@ -27,6 +27,7 @@
 #include "config.h"
 #endif
 
+#include "Messenger.h"
 #include "net_crypto.h"
 #include "util.h"
 #include "math.h"

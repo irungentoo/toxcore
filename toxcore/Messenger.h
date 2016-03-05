@@ -60,10 +60,19 @@ enum {
 #define PACKET_ID_MESSAGE_GROUPCHAT 99
 #define PACKET_ID_LOSSY_GROUPCHAT 199
 
+/* Packets reserved for AV functions. */
+#define PACKET_ID_AV_RANGE_START 120
+#define PACKET_ID_AV_RANGE_END   129 /* Inclusive */
+#define PACKET_ID_AV_RANGE_SIZE  (PACKET_ID_AV_RANGE_END - PACKET_ID_AV_RANGE_START)
+
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
-#define PACKET_ID_LOSSLESS_RANGE_SIZE 32
-#define PACKET_LOSSY_AV_RESERVED 8 /* Number of lossy packet types at start of range reserved for A/V. */
+#define PACKET_ID_LOSSLESS_RANGE_END   192
+#define PACKET_ID_LOSSLESS_RANGE_SIZE  (PACKET_ID_LOSSLESS_RANGE_END - PACKET_ID_LOSSLESS_RANGE_START)
+/* All packets starting with a byte in this range are considered lossy packets. */
+#define PACKET_ID_LOSSY_RANGE_START 193
+#define PACKET_ID_LOSSY_RANGE_END   256
+#define PACKET_ID_LOSSY_RANGE_SIZE  (PACKET_ID_LOSSY_RANGE_END - PACKET_ID_LOSSY_RANGE_START)
 
 typedef struct {
     uint8_t ipv6enabled;
@@ -201,7 +210,7 @@ typedef struct {
     struct {
         int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
         void *object;
-    } lossy_rtp_packethandlers[PACKET_LOSSY_AV_RESERVED];
+    } lossy_rtp_packethandlers[PACKET_ID_AV_RANGE_SIZE];
 
     struct Receipts *receipts_start;
     struct Receipts *receipts_end;

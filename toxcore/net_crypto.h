@@ -72,10 +72,6 @@
 #define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
 
-/* All packets starting with a byte in this range are considered lossy packets. */
-#define PACKET_ID_LOSSY_RANGE_START 192
-#define PACKET_ID_LOSSY_RANGE_SIZE 63
-
 #define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
 
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
