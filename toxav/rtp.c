@@ -116,7 +116,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bo
     uint8_t rdata[length + sizeof(struct RTPHeader) + 1];
     memset(rdata, 0, sizeof(rdata));
 
-    rdata[0] = session->payload_type - (33 * lossless);
+    rdata[0] = session->payload_type + (2 * lossless);
 
     struct RTPHeader *header = (struct RTPHeader *)(rdata  + 1);
 
@@ -149,7 +149,6 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bo
         }
         if (rslt != 0) {
             LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
-            printf("pck not sent %i\n", rslt); fflush(stdout);
         }
 
     } else {

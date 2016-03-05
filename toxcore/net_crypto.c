@@ -2472,10 +2472,8 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
 
-    if (data[0] < PACKET_ID_LOSSY_RANGE_START)
-        return -1;
-
-    if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+    if ((data[0] < PACKET_ID_LOSSY_RANGE_START || data[0] > PACKET_ID_LOSSY_RANGE_END) &&
+        (data[0] < PACKET_ID_AV_RANGE_START    || data[0] > PACKET_ID_AV_RANGE_END   ))
         return -1;
 
     pthread_mutex_lock(&c->connections_mutex);

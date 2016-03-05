@@ -1619,11 +1619,11 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
     if (friend_not_valid(m, friend_num))
         return 1;
 
-    if (packet[0] < PACKET_ID_LOSSY_RANGE_START || packet[0] > PACKET_ID_LOSSY_RANGE_END) {
-        if (m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function)
-            return m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] % PACKET_ID_LOSSY_RANGE_SIZE].function(
-                       m, friend_num, packet, length, m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] %
-                               PACKET_ID_LOSSY_RANGE_SIZE].object);
+    if (packet[0] < PACKET_ID_AV_RANGE_START || packet[0] > PACKET_ID_AV_RANGE_END) {
+        if (m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function)
+            return m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function(
+                       m, friend_num, packet, length, m->friendlist[friend_num].rtp_packethandlers[packet[0] %
+                               PACKET_ID_AV_RANGE_SIZE].object);
 
         return 1;
     }
@@ -1650,8 +1650,8 @@ int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int 
     if (byte < PACKET_ID_AV_RANGE_START || byte > PACKET_ID_AV_RANGE_END )
         return -1;
 
-    m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_ID_AV_RANGE_SIZE].function = packet_handler_callback;
-    m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_ID_AV_RANGE_SIZE].object = object;
+    m->friendlist[friendnumber].rtp_packethandlers[byte % PACKET_ID_AV_RANGE_SIZE].function = packet_handler_callback;
+    m->friendlist[friendnumber].rtp_packethandlers[byte % PACKET_ID_AV_RANGE_SIZE].object = object;
     return 0;
 }
 
@@ -1664,10 +1664,8 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -2;
 
-    if (data[0] < PACKET_ID_LOSSY_RANGE_START)
-        return -3;
-
-    if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+    if ((data[0] < PACKET_ID_LOSSY_RANGE_START || data[0] > PACKET_ID_LOSSY_RANGE_END) &&
+        (data[0] < PACKET_ID_AV_RANGE_START    || data[0] > PACKET_ID_AV_RANGE_END   ))
         return -3;
 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
@@ -1688,11 +1686,21 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
     if (friend_not_valid(m, friend_num))
         return -1;
 
-    if (packet[0] < PACKET_ID_LOSSLESS_RANGE_START)
+    if ((packet[0] < PACKET_ID_LOSSLESS_RANGE_START || packet[0] > PACKET_ID_LOSSLESS_RANGE_END) &&
+        (packet[0] < PACKET_ID_AV_RANGE_START       || packet[0] > PACKET_ID_AV_RANGE_END      ))
         return -1;
 
-    if (packet[0] >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
+    if (packet[0] > PACKET_ID_LOSSLESS_RANGE_END)
         return -1;
+
+    if (packet[0] < PACKET_ID_AV_RANGE_START || packet[0] > PACKET_ID_AV_RANGE_END) {
+        if (m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function)
+            return m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function(
+                       m, friend_num, packet, length, m->friendlist[friend_num].rtp_packethandlers[packet[0] %
+                               PACKET_ID_AV_RANGE_SIZE].object);
+
+        return 1;
+    }
 
     if (m->lossless_packethandler)
         m->lossless_packethandler(m, friend_num, packet, length, m->lossless_packethandler_userdata);
@@ -1715,10 +1723,8 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -2;
 
-    if (data[0] < PACKET_ID_LOSSLESS_RANGE_START)
-        return -3;
-
-    if (data[0] >= (PACKET_ID_LOSSLESS_RANGE_START + PACKET_ID_LOSSLESS_RANGE_SIZE))
+    if ((data[0] < PACKET_ID_LOSSLESS_RANGE_START || data[0] > PACKET_ID_LOSSLESS_RANGE_END) &&
+        (data[0] < PACKET_ID_AV_RANGE_START       || data[0] > PACKET_ID_AV_RANGE_END      ))
         return -3;
 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
@@ -1728,7 +1734,6 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
                           m->friendlist[friendnumber].friendcon_id), data, length, 1) == -1) {
         return -5;
     } else {
-        printf("pck sent\n"); fflush(stdout);
         return 0;
     }
 }

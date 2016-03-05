@@ -30,10 +30,10 @@
  * Payload type identifier. Also used as rtp callback prefix.
  */
 enum {
-    rtp_TypeAudio_lossless = PACKET_ID_LOSSLESS_RANGE_START,
-    rtp_TypeVideo_lossless,
-    rtp_TypeAudio = PACKET_ID_LOSSY_RANGE_START,
+    rtp_TypeAudio = PACKET_ID_AV_RANGE_START,
     rtp_TypeVideo,
+    rtp_TypeAudio_lossless,
+    rtp_TypeVideo_lossless,
 };
 
 struct RTPHeader {

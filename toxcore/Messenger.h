@@ -58,7 +58,7 @@ enum {
 #define PACKET_ID_ONLINE_PACKET 97
 #define PACKET_ID_DIRECT_GROUPCHAT 98
 #define PACKET_ID_MESSAGE_GROUPCHAT 99
-#define PACKET_ID_LOSSY_GROUPCHAT 199
+#define PACKET_ID_LOSSY_GROUPCHAT 109
 
 /* Packets reserved for AV functions. */
 #define PACKET_ID_AV_RANGE_START 120
@@ -210,7 +210,7 @@ typedef struct {
     struct {
         int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
         void *object;
-    } lossy_rtp_packethandlers[PACKET_ID_AV_RANGE_SIZE];
+    } rtp_packethandlers[PACKET_ID_AV_RANGE_SIZE];
 
     struct Receipts *receipts_start;
     struct Receipts *receipts_end;
