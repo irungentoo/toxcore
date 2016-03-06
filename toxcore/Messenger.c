@@ -1619,7 +1619,7 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
     if (friend_not_valid(m, friend_num))
         return 1;
 
-    if (packet[0] < PACKET_ID_AV_RANGE_START || packet[0] > PACKET_ID_AV_RANGE_END) {
+    if (packet[0] >= PACKET_ID_AV_RANGE_START && packet[0] < PACKET_ID_AV_RANGE_END) {
         if (m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function)
             return m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function(
                        m, friend_num, packet, length, m->friendlist[friend_num].rtp_packethandlers[packet[0] %
@@ -1690,10 +1690,7 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
         (packet[0] < PACKET_ID_AV_RANGE_START       || packet[0] > PACKET_ID_AV_RANGE_END      ))
         return -1;
 
-    if (packet[0] > PACKET_ID_LOSSLESS_RANGE_END)
-        return -1;
-
-    if (packet[0] < PACKET_ID_AV_RANGE_START || packet[0] > PACKET_ID_AV_RANGE_END) {
+    if (packet[0] >= PACKET_ID_AV_RANGE_START && packet[0] <= PACKET_ID_AV_RANGE_END) {
         if (m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function)
             return m->friendlist[friend_num].rtp_packethandlers[packet[0] % PACKET_ID_AV_RANGE_SIZE].function(
                        m, friend_num, packet, length, m->friendlist[friend_num].rtp_packethandlers[packet[0] %

@@ -36,8 +36,7 @@
 int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
 
 
-RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber,
-                     BWController *bwc, void *cs,
+RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber, BWController *bwc, void *cs,
                      int (*mcb) (void *, struct RTPMessage *))
 {
     assert(mcb);
@@ -116,7 +115,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bo
     uint8_t rdata[length + sizeof(struct RTPHeader) + 1];
     memset(rdata, 0, sizeof(rdata));
 
-    rdata[0] = session->payload_type + (2 * lossless);
+    rdata[0] = session->payload_type;
 
     struct RTPHeader *header = (struct RTPHeader *)(rdata  + 1);
 
