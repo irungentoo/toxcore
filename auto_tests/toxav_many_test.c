@@ -99,7 +99,7 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     (void) sampling_rate;
     (void) user_data;
 }
-void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, uint32_t nospam, const uint8_t *data, size_t length, void *userdata)
 {
     (void) userdata;
 

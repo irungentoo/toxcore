@@ -289,6 +289,58 @@ struct Messenger {
  */
 void getaddress(const Messenger *m, uint8_t *address);
 
+/*
+ * Returns address with nospam passed to function.
+ */
+void getaddress_nospam(const Messenger *m, uint32_t nospam, uint8_t *address);
+
+/*
+ * This function updates the nospam set. If num is in nospam set, then new_num will replace num.
+ * If new_num == 0, then num value will be removed from nospam set.
+ * If num == 0, then new_num will be added to nospam set.
+ * Passing num == 0 and new_num == 0 will return NSERR_SUCCESS and result no effect.
+ *
+ * Return: NSERR_SUCCESS on success, or NSERR_* on falure.
+ * If the call fails, the nospam set is unchanged.
+ */
+NSERR m_nospam_update(Messenger *m, uint32_t num, uint32_t new_num);
+
+/*
+ * Set description for num. Description in utf8 string.
+ * Passing 0 as descr_length will result no effect and NSERR_SUCCESS will be returned.
+ * Passing descr == 0 and descr_length != 0 will erase the description.
+ * Passing descr_length > MAX_NOSPAM_DESCRIPTION_LENGTH will result and error;
+ * If error happens then nothing is changed.
+ * On success description for nospam num is changed.
+ */
+NSERR m_nospam_descr_update(Messenger *m, uint32_t num, const uint8_t *descr, size_t descr_length);
+
+/*
+ * Returns nospam value and set nserr to NSERR_SUCCESS on success.
+ * Returns 0 and set nserr on failure.
+ */
+size_t m_nospam_descr_length(const Messenger *m, uint32_t num, NSERR *nserr);
+
+/*
+ * Copy description to descr for num.
+ * If no description exists, then descr is unchanged.
+ * returns NSERR_SUCCESS or NSERR_* on failure.
+ */
+NSERR m_nospam_descr(const Messenger *m, uint32_t num, uint8_t *descr);
+
+/*
+ * Returns the amount of entries on nospam set.
+ * Call can't fail.
+ */
+size_t m_nospam_count(const Messenger *m);
+
+/*
+ * Write to ns_list all nospams in nospam set.
+ * The size of ns_list is given with nospam_count function.
+ * Call can't fail.
+ */
+void m_nospam_list(const Messenger *m, uint32_t *ns_list);
+
 /* Add a friend.
  * Set the data that will be sent along with friend request.
  * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
@@ -473,7 +525,7 @@ int m_get_istyping(const Messenger *m, int32_t friendnumber);
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length)
  */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, uint32_t, const uint8_t *, size_t,
                               void *), void *userdata);
 
 /* Set the function that will be executed when a message from a friend is received.
