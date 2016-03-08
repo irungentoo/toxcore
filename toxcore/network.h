@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include "tox.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32) /* Put win32 includes here */
 #ifndef WINVER
@@ -164,33 +165,6 @@ typedef struct {
     uint16_t port;
 }
 IP_Port;
-
-/**
- * Type of technology used to try to traverse a NAT.
- */
-typedef enum TOX_TRAVERSAL_TYPE {
-
-    /**
-     * Don't use any particular technology.
-     */
-    TOX_TRAVERSAL_TYPE_NONE,
-
-    /**
-     * Use UPnP technology.
-     */
-    TOX_TRAVERSAL_TYPE_UPNP,
-
-    /**
-     * Use NAT-PMP technology.
-     */
-    TOX_TRAVERSAL_TYPE_NATPMP,
-
-    /**
-     * Use both UPnP and NAT-PMP technologies.
-     */
-    TOX_TRAVERSAL_TYPE_ALL,
-
-} TOX_TRAVERSAL_TYPE;
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 #define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == htonl (0xffff)))
