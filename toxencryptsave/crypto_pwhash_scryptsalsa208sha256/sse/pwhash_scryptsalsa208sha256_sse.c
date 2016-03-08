@@ -319,16 +319,16 @@ escrypt_kdf_sse(escrypt_local_t * local,
 	size_t B_size, V_size, XY_size, need;
 	uint8_t * B;
 	uint32_t * V, * XY;
-    size_t r = _r, p = _p;
+    	size_t r = _r, p = _p;
 	uint32_t i;
 
 	/* Sanity-check parameters. */
-#if SIZE_MAX > UINT32_MAX
+	#if SIZE_MAX > UINT32_MAX
 	if (buflen > (((uint64_t)(1) << 32) - 1) * 32) {
 		errno = EFBIG;
 		return -1;
 	}
-#endif
+	#endif
 	if ((uint64_t)(r) * (uint64_t)(p) >= (1 << 30)) {
 		errno = EFBIG;
 		return -1;
@@ -346,9 +346,9 @@ escrypt_kdf_sse(escrypt_local_t * local,
 		return -1;
 	}
 	int test = (r > SIZE_MAX / 128 / p) || (N > SIZE_MAX / 128 / r);
-#if SIZE_MAX / 256 <= UINT32_MAX
+	#if SIZE_MAX / 256 <= UINT32_MAX
 	test = test || (r > SIZE_MAX / 256);
-#endif	
+	#endif
 	if (test) {
 		errno = ENOMEM;
 		return -1;
