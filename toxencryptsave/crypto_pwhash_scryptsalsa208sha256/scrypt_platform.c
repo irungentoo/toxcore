@@ -40,21 +40,21 @@ void *
 alloc_region(escrypt_region_t * region, size_t size)
 {
 	uint8_t * base, * aligned;
-#ifdef MAP_ANON
+	#ifdef MAP_ANON
 	int flags;
-#ifdef MAP_NOCORE
+	#ifdef MAP_NOCORE
 	flags = MAP_ANON | MAP_PRIVATE | MAP_NOCORE;
-#else
+	#else
 	flags = MAP_ANON | MAP_PRIVATE;
-#endif
+	#endif
 	if ((base = (uint8_t *) mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0)) == MAP_FAILED)
 		base = NULL;
 	aligned = base;
-#elif defined(HAVE_POSIX_MEMALIGN)
+	#elif defined(HAVE_POSIX_MEMALIGN)
 	if ((errno = posix_memalign((void **) &base, 64, size)) != 0)
 		base = NULL;
 	aligned = base;
-#else
+	#else
 	base = aligned = NULL;
 	if (size + 63 < size)
 		errno = ENOMEM;
@@ -62,7 +62,7 @@ alloc_region(escrypt_region_t * region, size_t size)
 		aligned = base + 63;
 		aligned -= (uintptr_t)aligned & 63;
 	}
-#endif
+	#endif
 	region->base = base;
 	region->aligned = aligned;
 	region->size = base ? size : 0;
@@ -80,12 +80,12 @@ int
 free_region(escrypt_region_t * region)
 {
 	if (region->base) {
-#ifdef MAP_ANON
+		#ifdef MAP_ANON
 		if (munmap(region->base, region->size))
 			return -1;
-#else
+		#else
 		free(region->base);
-#endif
+		#endif
 	}
 	init_region(region);
 	return 0;
