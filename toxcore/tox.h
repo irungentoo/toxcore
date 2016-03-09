@@ -674,6 +674,11 @@ typedef enum TOX_ERR_BOOTSTRAP {
     TOX_ERR_BOOTSTRAP_OK,
 
     /**
+     * The function returned Unsuccessfully.
+     */
+    TOX_ERR_BOOTSTRAP_FAIL,
+
+    /**
      * One of the arguments to the function was NULL when it was not expected.
      */
     TOX_ERR_BOOTSTRAP_NULL,
