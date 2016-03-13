@@ -274,6 +274,16 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
  */
 #define TOX_MAX_FILENAME_LENGTH        255
 
+/**
+ * Maximum username/password length for proxy authentication.
+ */
+#define TOX_MAX_PROXY_USER_PASS_LENGTH 255
+
+/**
+ * Minimum username/password length for proxy authentication.
+ */
+#define TOX_MIN_PROXY_USER_PASS_LENGTH 1
+
 
 /*******************************************************************************
  *
@@ -439,6 +449,32 @@ struct Tox_Options {
 
 
     /**
+     * The username to be used to authenticate.
+     *
+     * If used, this must be non-NULL. The username must be at least MIN_PROXY_USER_PASS_LENGTH characters
+     * long but it must not exceed MAX_PROXY_USER_PASS_LENGTH characters. It must also be in
+     * a NUL-terminated C string format (MAX_PROXY_USER_PASS_LENGTH chars + 1 NUL byte).
+     *
+     * This member and password must be non-NULL in order to use username/password authentication.
+     * If either of these members are NULL, they are ignored and connecting to the proxy will be attempted without authentication.
+     */
+    const char *proxy_username;
+
+
+    /**
+     * The password to be used to authenticate.
+     *
+     * If used, this must be non-NULL. The password must be at least MIN_PROXY_USER_PASS_LENGTH characters
+     * long but it must not exceed MAX_PROXY_USER_PASS_LENGTH characters. It must also be in
+     * a NUL-terminated C string format (MAX_PROXY_USER_PASS_LENGTH chars + 1 NUL byte).
+     *
+     * This member and username must be non-NULL in order to use username/password authentication.
+     * If either of these members are NULL, they are ignored and connecting to the proxy will be attempted without authentication.
+     */
+    const char *proxy_password;
+
+
+    /**
      * The start port of the inclusive port range to attempt to use.
      *
      * If both start_port and end_port are 0, the default port range will be
@@ -590,6 +626,16 @@ typedef enum TOX_ERR_NEW {
      * proxy_type was valid, but the proxy_port was invalid.
      */
     TOX_ERR_NEW_PROXY_BAD_PORT,
+
+    /**
+     * The username had an invalid length.
+     */
+    TOX_ERR_NEW_PROXY_BAD_USERNAME,
+
+    /**
+     * The password had an invalid length.
+     */
+    TOX_ERR_NEW_PROXY_BAD_PASSWORD,
 
     /**
      * The proxy address passed could not be resolved.

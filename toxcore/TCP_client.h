@@ -29,6 +29,9 @@
 
 #define TCP_CONNECTION_TIMEOUT 10
 
+#define MAX_PROXY_USER_PASS_LENGTH 255
+#define MIN_PROXY_USER_PASS_LENGTH 1
+
 typedef enum {
     TCP_PROXY_NONE,
     TCP_PROXY_HTTP,
@@ -38,6 +41,11 @@ typedef enum {
 typedef struct {
     IP_Port ip_port;
     uint8_t proxy_type; // a value from TCP_PROXY_TYPE
+    _Bool enable_auth;
+    char username[MAX_PROXY_USER_PASS_LENGTH];
+    uint8_t username_len;
+    char password[MAX_PROXY_USER_PASS_LENGTH];
+    uint8_t password_len;
 } TCP_Proxy_Info;
 
 enum {
@@ -45,6 +53,7 @@ enum {
     TCP_CLIENT_PROXY_HTTP_CONNECTING,
     TCP_CLIENT_PROXY_SOCKS5_CONNECTING,
     TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED,
+    TCP_CLIENT_PROXY_SOCKS5_AUTH,
     TCP_CLIENT_CONNECTING,
     TCP_CLIENT_UNCONFIRMED,
     TCP_CLIENT_CONFIRMED,
