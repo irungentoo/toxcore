@@ -38,6 +38,8 @@ typedef enum {
 typedef struct {
     IP_Port ip_port;
     uint8_t proxy_type; // a value from TCP_PROXY_TYPE
+    const char *username;
+    const char *password;
 } TCP_Proxy_Info;
 
 enum {
@@ -45,6 +47,7 @@ enum {
     TCP_CLIENT_PROXY_HTTP_CONNECTING,
     TCP_CLIENT_PROXY_SOCKS5_CONNECTING,
     TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED,
+    TCP_CLIENT_PROXY_SOCKS5_AUTH,
     TCP_CLIENT_CONNECTING,
     TCP_CLIENT_UNCONFIRMED,
     TCP_CLIENT_CONFIRMED,
