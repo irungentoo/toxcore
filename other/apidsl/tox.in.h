@@ -277,6 +277,11 @@ const FILE_ID_LENGTH              = 32;
  */
 const MAX_FILENAME_LENGTH         = 255;
 
+/**
+ * Maximum username/password length for proxy authentication.
+ */
+const MAX_PROXY_USER_PASS_LENGTH  = 255;
+
 
 /*******************************************************************************
  *
@@ -417,6 +422,30 @@ static class options {
        * proxy_type is TOX_PROXY_TYPE_NONE.
        */
       uint16_t port;
+
+      /**
+       * The username to be used to authenticate.
+       *
+       * If used, this must be non-NULL. The name must not
+       * exceed MAX_PROXY_USER_PASS_LENGTH characters, and be in a NUL-terminated C string format
+       * (MAX_PROXY_USER_PASS_LENGTH chars + 1 NUL byte).
+       *
+       * This member and password must be non-NULL in order to use username/password authentication.
+       * If either of these members are NULL, they are ignored and connecting to the proxy will be attempted without authentication.
+       */
+      string username;
+
+      /**
+       * The password to be used to authenticate.
+       *
+       * If used, this must be non-NULL. The name must not
+       * exceed MAX_PROXY_USER_PASS_LENGTH characters, and be in a NUL-terminated C string format
+       * (MAX_PROXY_USER_PASS_LENGTH chars + 1 NUL byte).
+       *
+       * This member and username must be non-NULL in order to use username/password authentication.
+       * If either of these members are NULL, they are ignored and connecting to the proxy will be attempted without authentication.
+       */
+      string password;
     }
 
     /**
@@ -563,6 +592,14 @@ static this new(const options_t *options) {
      * proxy_type was valid, but the proxy_port was invalid.
      */
     BAD_PORT,
+    /**
+     * The username passed exceeded the maximum length of MAX_PROXY_USER_PASS_LENGTH characters.
+     */
+    BAD_USERNAME,
+    /**
+     * The password passed exceeded the maximum length of MAX_PROXY_USER_PASS_LENGTH characters.
+     */
+    BAD_PASSWORD,
     /**
      * The proxy address passed could not be resolved.
      */

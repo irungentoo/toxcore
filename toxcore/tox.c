@@ -194,6 +194,18 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 return NULL;
             }
 
+            if (options->proxy_username != NULL && options->proxy_password != NULL) {
+                if (strlen(options->proxy_username) > TOX_MAX_PROXY_USER_PASS_LENGTH) {
+                    SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_USERNAME);
+                    return NULL;
+                }
+
+                if (strlen(options->proxy_password) > TOX_MAX_PROXY_USER_PASS_LENGTH) {
+                    SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PASSWORD);
+                    return NULL;
+                }
+            }
+
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
             if (m_options.ipv6enabled)
@@ -206,6 +218,8 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
             }
 
             m_options.proxy_info.ip_port.port = htons(options->proxy_port);
+            m_options.proxy_info.username = options->proxy_username;
+            m_options.proxy_info.password = options->proxy_password;
         }
     }
 
