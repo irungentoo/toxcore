@@ -151,18 +151,19 @@ void vc_iterate(VCSession *vc)
         rc = vpx_codec_decode(vc->decoder, p->data, p->len, NULL, MAX_DECODE_TIME_US);
         free(p);
 
-        if (rc != VPX_CODEC_OK)
+        if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
-        else {
+        } else {
             vpx_codec_iter_t iter = NULL;
             vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
 
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(vc->decoder, &iter)) {
-                if (vc->vcb.first)
+                if (vc->vcb.first){
                     vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h,
                                   (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
                                   dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb.second);
+                }
 
                 vpx_img_free(dest);
             }

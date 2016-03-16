@@ -378,16 +378,13 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                 goto NEW_MULTIPARTED;
             }
         } else {
-            /* In this case threat the message as if it was received in order
-             */
-
-            /* This is also a point for new multiparted messages */
+            /* In this case treat the message as if it was received in order
+             * This is also a point for new multiparted messages */
             NEW_MULTIPARTED:
 
             /* Only allow messages which have arrived in order;
-             * drop late messages
-             */
-            if (!header->ll && chloss(session, header)) {
+             * drop late messages */
+            if (chloss(session, header)) {
                 return 0;
             } else {
                 /* Message is not late; pick up the latest parameters */
@@ -397,8 +394,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
 
             bwc_add_recv(session->bwc, length);
 
-            /* Again, only store message if handler is present
-             */
+            /* Again, only store message if handler is present */
             if (session->mcb) {
                 session->mp = new_message(ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
 

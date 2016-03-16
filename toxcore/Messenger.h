@@ -64,6 +64,7 @@ enum {
 #define PACKET_ID_AV_RANGE_START 120
 #define PACKET_ID_AV_RANGE_END   129 /* Inclusive */
 #define PACKET_ID_AV_RANGE_SIZE  (PACKET_ID_AV_RANGE_END - PACKET_ID_AV_RANGE_START)
+/* 130 - 159 currently unreserved */
 
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
