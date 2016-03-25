@@ -1814,7 +1814,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     }
 
     if (options->tcp_server_port) {
-        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_secret_key, m->onion);
+        m->tcp_server = new_TCP_server_nat(options->ipv6enabled, 1, &options->tcp_server_port, options->traversal_type, m->dht->self_secret_key, m->onion);
 
         if (m->tcp_server == NULL) {
             kill_friend_connections(m->fr_c);
