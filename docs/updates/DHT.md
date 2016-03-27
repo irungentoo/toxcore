@@ -28,18 +28,24 @@ If one of the lists becomes full, the expire rate reduces itself one second or t
 
 
 Entries in client list and "friends" list expire after 300 seconds without ping response.
+
 Each client stores a maximum of 32 entries in its client list.
+
 Each client in the client list and "friends" list is pinged every 60 seconds.
+
 Each client in the client list and "friends" list has a timestamp which denote the last time it was successfully pinged.
+
 If the corresponding clients timestamp is more than 130 seconds old it is considered bad.
+
 Send a get nodes request every 20 seconds to a random good node for each "friend" in our "friends" list.
+
 Send a get nodes request every 20 seconds to a random good node in the client list.
 
 
 When a client receives any request from another
 -----------------------------------------------
 - Respond to the request
-    - Ping request is replied to with with a ping response containing the same encrypted data
+    - Ping request is replied to with a ping response containing the same encrypted data
     - Get nodes request is replied with a send nodes reply containing the same encrypted data and the good nodes from the client list and/or the "friends" list that are closest to the requested_node_id
 
 - If the requesting client is not in the client list:
