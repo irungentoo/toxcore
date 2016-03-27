@@ -23,6 +23,7 @@
 #endif
 
 #ifdef HAVE_LIBMINIUPNPC
+#include <stdio.h>
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/miniwget.h>
 #include <miniupnpc/upnpcommands.h>
