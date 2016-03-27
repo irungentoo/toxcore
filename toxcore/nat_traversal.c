@@ -31,6 +31,7 @@
 #endif
 
 #ifdef HAVE_LIBNATPMP
+#include <unistd.h>
 #include <natpmp.h>
 #endif
 
