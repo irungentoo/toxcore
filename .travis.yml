@@ -6,20 +6,41 @@ compiler:
   - clang
 
 before_script:
+  - sudo add-apt-repository ppa:avsm/ocaml42+opam12 -y
   - sudo apt-get update -qq
+  - sudo apt-get install ocaml opam astyle -qq
   - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
+  # build apidsl
+  - git clone https://github.com/iphydf/apidsl
+  - cd apidsl
+  - export OPAMYES=1
+  - opam init
+  - opam install ocamlfind ppx_deriving menhir
+  - eval `opam config env`
+  - make -j3
+  - cd ..
   # install sodium, as it's not in Ubuntu Trusty
-  - git clone git://github.com/jedisct1/libsodium.git > /dev/null
+  - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
-  - git checkout tags/1.0.8 > /dev/null
-  - ./autogen.sh > /dev/null
-  - ./configure > /dev/null
-  - make -j3  >/dev/null
-  - sudo make install >/dev/null
+  - git checkout tags/1.0.8
+  - ./autogen.sh
+  - ./configure
+  - make -j3
+  - sudo make install
   - cd ..
   - sudo ldconfig
 
 script:
+  # check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h
+  # tox.h
+  - ./apidsl/_build/apigen.native ./other/apidsl/tox.in.h > tox.h
+  - astyle --options=./other/astyle/astylerc tox.h
+  - diff -u tox.h ./toxcore/tox.h
+  # toxav.h
+  - ./apidsl/_build/apigen.native ./other/apidsl/toxav.in.h > toxav.h
+  - astyle --options=./other/astyle/astylerc toxav.h
+  - diff -u toxav.h ./toxav/toxav.h
+  # build toxcore and run tests
   - ./autogen.sh
   - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --enable-ntox
   - make

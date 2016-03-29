@@ -939,7 +939,7 @@ int addr_parse_ip(const char *address, IP *to)
  * returns in *to a valid IPAny (v4/v6),
  *     prefers v6 if ip.family was AF_UNSPEC and both available
  * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is AF_INET6
- * returns 0 on failure
+ * returns 0 on failure, TOX_ADDR_RESOLVE_* on success.
  */
 int addr_resolve(const char *address, IP *to, IP *extra)
 {
@@ -951,7 +951,9 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     struct addrinfo *server = NULL;
     struct addrinfo *walker = NULL;
     struct addrinfo  hints;
-    int              rc;
+    int rc;
+    int result = 0;
+    int done = 0;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = family;
@@ -968,21 +970,22 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     }
 
     IP ip4;
-    ip_init(&ip4, /* ipv6? */ false);
+    ip_init(&ip4, 0); // ipv6enabled = 0
     IP ip6;
-    ip_init(&ip6, /* ipv6? */ true);
+    ip_init(&ip6, 1); // ipv6enabled = 1
 
-    for (walker = server; (walker != NULL) && (rc != 3); walker = walker->ai_next) {
+    for (walker = server; (walker != NULL) && !done; walker = walker->ai_next) {
         switch (walker->ai_family) {
             case AF_INET:
                 if (walker->ai_family == family) { /* AF_INET requested, done */
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
                     to->ip4.in_addr = addr->sin_addr;
-                    rc = 3; // TODO do we really have to reuse variable instead of creating a new one?
-                } else if (!(rc & 1)) { /* AF_UNSPEC requested, store away */
+                    result = TOX_ADDR_RESOLVE_INET;
+                    done = 1;
+                } else if (!(result & TOX_ADDR_RESOLVE_INET)) { /* AF_UNSPEC requested, store away */
                     struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
                     ip4.ip4.in_addr = addr->sin_addr;
-                    rc |= 1; // FIXME magic number
+                    result |= TOX_ADDR_RESOLVE_INET;
                 }
 
                 break; /* switch */
@@ -992,13 +995,14 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                         to->ip6.in6_addr = addr->sin6_addr;
-                        rc = 3;
+                        result = TOX_ADDR_RESOLVE_INET6;
+                        done = 1;
                     }
-                } else if (!(rc & 2)) { /* AF_UNSPEC requested, store away */
+                } else if (!(result & TOX_ADDR_RESOLVE_INET6)) { /* AF_UNSPEC requested, store away */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
                         ip6.ip6.in6_addr = addr->sin6_addr;
-                        rc |= 2;
+                        result |= TOX_ADDR_RESOLVE_INET6;
                     }
                 }
 
@@ -1006,21 +1010,22 @@ int addr_resolve(const char *address, IP *to, IP *extra)
         }
     }
 
-    if (to->family == AF_UNSPEC) {
-        if (rc & 2) { // FIXME magic number
+    if (family == AF_UNSPEC) {
+        if (result & TOX_ADDR_RESOLVE_INET6) {
             ip_copy(to, &ip6);
 
-            if ((rc & 1) && (extra != NULL)) {
+            if ((result & TOX_ADDR_RESOLVE_INET) && (extra != NULL)) {
                 ip_copy(extra, &ip4);
             }
-        } else if (rc & 1) {
+        } else if (result & TOX_ADDR_RESOLVE_INET) {
             ip_copy(to, &ip4);
-        } else
-            rc = 0;
+        } else {
+            result = 0;
+        }
     }
 
     freeaddrinfo(server);
-    return rc;
+    return result;
 }
 
 /*
