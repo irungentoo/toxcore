@@ -211,7 +211,7 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 
     for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
         if (!is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
-                && memcmp(onion_a->entries[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                && public_key_cmp(onion_a->entries[i].public_key, public_key) == 0)
             return i;
     }
 
@@ -316,7 +316,8 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES;
 
-    if (memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0 || memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
+    if (sodium_memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0
+            || sodium_memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
         index = add_to_entries(onion_a, source, packet_public_key, data_public_key,
                                packet + (ANNOUNCE_REQUEST_SIZE_RECV - ONION_RETURN_3));
     } else {
@@ -336,8 +337,8 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
         pl[0] = 0;
         memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
     } else {
-        if (memcmp(onion_a->entries[index].public_key, packet_public_key, crypto_box_PUBLICKEYBYTES) == 0) {
-            if (memcmp(onion_a->entries[index].data_public_key, data_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
+        if (public_key_cmp(onion_a->entries[index].public_key, packet_public_key) == 0) {
+            if (public_key_cmp(onion_a->entries[index].data_public_key, data_public_key) != 0) {
                 pl[0] = 0;
                 memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
             } else {

@@ -384,7 +384,7 @@ static int find_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_
         TCP_Connection_to *con_to = get_connection(tcp_c, i);
 
         if (con_to) {
-            if (memcmp(con_to->public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (public_key_cmp(con_to->public_key, public_key) == 0) {
                 return i;
             }
         }
@@ -407,11 +407,11 @@ static int find_tcp_connection_relay(TCP_Connections *tcp_c, const uint8_t *rela
 
         if (tcp_con) {
             if (tcp_con->status == TCP_CONN_SLEEPING) {
-                if (memcmp(tcp_con->relay_pk, relay_pk, crypto_box_PUBLICKEYBYTES) == 0) {
+                if (public_key_cmp(tcp_con->relay_pk, relay_pk) == 0) {
                     return i;
                 }
             } else {
-                if (memcmp(tcp_con->connection->public_key, relay_pk, crypto_box_PUBLICKEYBYTES) == 0) {
+                if (public_key_cmp(tcp_con->connection->public_key, relay_pk) == 0) {
                     return i;
                 }
             }

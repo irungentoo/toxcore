@@ -127,7 +127,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
         int index = public_key[30] * MAX_KEYS_PER_SLOT + i;
 
         if (shared_keys->keys[index].stored) {
-            if (memcmp(public_key, shared_keys->keys[index].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (public_key_cmp(public_key, shared_keys->keys[index].public_key) == 0) {
                 memcpy(shared_key, shared_keys->keys[index].shared_key, crypto_box_BEFORENMBYTES);
                 ++shared_keys->keys[index].times_requested;
                 shared_keys->keys[index].time_last_requested = unix_time();
@@ -233,6 +233,7 @@ int pack_ip_port(uint8_t *data, uint16_t length, uint16_t packed_length, const I
     uint8_t net_family;
 
     if (ip_port->ip.family == AF_INET) {
+        // FIXME use functions to convert endianness
         ipv6 = 0;
         net_family = TOX_AF_INET;
     } else if (ip_port->ip.family == TCP_INET) {
@@ -883,7 +884,7 @@ static _Bool is_pk_in_client_list(Client_data *list, unsigned int client_list_le
     for (i = 0; i < client_list_length; ++i) {
         if ((ip_port.ip.family == AF_INET && !is_timeout(list[i].assoc4.timestamp, BAD_NODE_TIMEOUT))
                 || (ip_port.ip.family == AF_INET6 && !is_timeout(list[i].assoc6.timestamp, BAD_NODE_TIMEOUT))) {
-            if (memcmp(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (public_key_cmp(list[i].public_key, public_key) == 0) {
                 return 1;
             }
         }
@@ -983,7 +984,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 
                 DHT_Friend *friend = &dht->friends_list[i];
 
-                if (memcmp(public_key, friend->public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+                if (public_key_cmp(public_key, friend->public_key) == 0) {
                     friend_foundip = friend;
                 }
 
@@ -992,7 +993,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
         } else {
             DHT_Friend *friend = &dht->friends_list[i];
 
-            if (memcmp(public_key, friend->public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (public_key_cmp(public_key, friend->public_key) == 0) {
                 friend_foundip = friend;
             }
 
@@ -1251,7 +1252,7 @@ static uint8_t sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port
     Node_format test;
     memcpy(&test, data, sizeof(Node_format));
 
-    if (!ipport_equal(&test.ip_port, &node_ip_port) || memcmp(test.public_key, public_key, crypto_box_PUBLICKEYBYTES) != 0)
+    if (!ipport_equal(&test.ip_port, &node_ip_port) || public_key_cmp(test.public_key, public_key) != 0)
         return 0;
 
     return 1;
@@ -2120,7 +2121,7 @@ static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, sa_
     uint32_t i;
 
     for (i = 0; i < LCLIENT_LIST; ++i) {
-        if (memcmp(dht->close_clientlist[i].public_key, public_key, crypto_box_PUBLICKEYBYTES) != 0)
+        if (public_key_cmp(dht->close_clientlist[i].public_key, public_key) != 0)
             continue;
 
         if (sa_family == AF_INET)
@@ -2217,7 +2218,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
             if (is_timeout(temp->hardening.send_nodes_timestamp, HARDENING_INTERVAL))
                 return 1;
 
-            if (memcmp(temp->hardening.send_nodes_pingedid, source_pubkey, crypto_box_PUBLICKEYBYTES) != 0)
+            if (public_key_cmp(temp->hardening.send_nodes_pingedid, source_pubkey) != 0)
                 return 1;
 
             /* If Nodes look good and the request checks out */
@@ -2390,7 +2391,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
                 length > MAX_CRYPTO_REQUEST_SIZE + crypto_box_MACBYTES)
             return 1;
 
-        if (memcmp(packet + 1, dht->self_public_key, crypto_box_PUBLICKEYBYTES) == 0) { // Check if request is for us.
+        if (public_key_cmp(packet + 1, dht->self_public_key) == 0) { // Check if request is for us.
             uint8_t public_key[crypto_box_PUBLICKEYBYTES];
             uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
             uint8_t number;

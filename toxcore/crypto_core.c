@@ -110,7 +110,7 @@ void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, ui
 int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
                            uint8_t *encrypted)
 {
-    if (length == 0)
+    if (length == 0 || !secret_key || !nonce || !plain || !encrypted)
         return -1;
 
     uint8_t temp_plain[length + crypto_box_ZEROBYTES];
@@ -130,7 +130,7 @@ int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
 int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
                            uint8_t *plain)
 {
-    if (length <= crypto_box_BOXZEROBYTES)
+    if (length <= crypto_box_BOXZEROBYTES || !secret_key || !nonce || !encrypted || !plain)
         return -1;
 
     uint8_t temp_plain[length + crypto_box_ZEROBYTES];
@@ -149,53 +149,72 @@ int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
 int encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
                  const uint8_t *plain, uint32_t length, uint8_t *encrypted)
 {
+    if (!public_key || !secret_key)
+        return -1;
+
     uint8_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
-    return encrypt_data_symmetric(k, nonce, plain, length, encrypted);
+    int ret = encrypt_data_symmetric(k, nonce, plain, length, encrypted);
+    sodium_memzero(k, sizeof k);
+    return ret;
 }
 
 int decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
                  const uint8_t *encrypted, uint32_t length, uint8_t *plain)
 {
+    if (!public_key || !secret_key)
+        return -1;
+
     uint8_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
-    return decrypt_data_symmetric(k, nonce, encrypted, length, plain);
+    int ret = decrypt_data_symmetric(k, nonce, encrypted, length, plain);
+    sodium_memzero(k, sizeof k);
+    return ret;
 }
 
 
 /* Increment the given nonce by 1. */
 void increment_nonce(uint8_t *nonce)
 {
-    uint32_t i;
+    /* FIXME use increment_nonce_number(nonce, 1) or sodium_increment (change to little endian)
+     * NOTE don't use breaks inside this loop
+     * In particular, make sure, as far as possible,
+     * that loop bounds and their potential underflow or overflow
+     * are independent of user-controlled input (you may have heard of the Heartbleed bug).
+     */
+    uint32_t i = crypto_box_NONCEBYTES;
+    uint_fast16_t carry = 1U;
 
-    for (i = crypto_box_NONCEBYTES; i != 0; --i) {
-        ++nonce[i - 1];
-
-        if (nonce[i - 1] != 0)
-            break;
+    for (; i != 0; --i) {
+        carry += (uint_fast16_t) nonce[i - 1];
+        nonce[i - 1] = (uint8_t) carry;
+        carry >>= 8;
     }
 }
 /* increment the given nonce by num */
-void increment_nonce_number(uint8_t *nonce, uint32_t num)
+void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num)
 {
-    uint32_t num1, num2;
-    memcpy(&num1, nonce + (crypto_box_NONCEBYTES - sizeof(num1)), sizeof(num1));
-    num1 = ntohl(num1);
-    num2 = num + num1;
+    /* NOTE don't use breaks inside this loop
+     * In particular, make sure, as far as possible,
+     * that loop bounds and their potential underflow or overflow
+     * are independent of user-controlled input (you may have heard of the Heartbleed bug).
+     */
+    const uint32_t big_endian_num = htonl(host_order_num);
+    const uint8_t *const num_vec = (const uint8_t *) &big_endian_num;
+    uint8_t num_as_nonce[crypto_box_NONCEBYTES] = {0};
+    num_as_nonce[crypto_box_NONCEBYTES - 4] = num_vec[0];
+    num_as_nonce[crypto_box_NONCEBYTES - 3] = num_vec[1];
+    num_as_nonce[crypto_box_NONCEBYTES - 2] = num_vec[2];
+    num_as_nonce[crypto_box_NONCEBYTES - 1] = num_vec[3];
 
-    if (num2 < num1) {
-        uint32_t i;
+    uint32_t i = crypto_box_NONCEBYTES;
+    uint_fast16_t carry = 0U;
 
-        for (i = crypto_box_NONCEBYTES - sizeof(num1); i != 0; --i) {
-            ++nonce[i - 1];
-
-            if (nonce[i - 1] != 0)
-                break;
-        }
+    for (; i != 0; --i) {
+        carry += (uint_fast16_t) nonce[i - 1] + (uint_fast16_t) num_as_nonce[i - 1];
+        nonce[i - 1] = (unsigned char) carry;
+        carry >>= 8;
     }
-
-    num2 = htonl(num2);
-    memcpy(nonce + (crypto_box_NONCEBYTES - sizeof(num2)), &num2, sizeof(num2));
 }
 
 /* Fill the given nonce with random bytes. */
@@ -229,15 +248,18 @@ void new_nonce(uint8_t *nonce)
 int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
                    const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id)
 {
+    if (!send_public_key || !packet || !recv_public_key || !data)
+        return -1;
+
     if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 +
             crypto_box_MACBYTES)
         return -1;
 
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
+    uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
+    new_nonce(nonce);
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // FIXME sodium_memzero before exit function
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
-    new_nonce(nonce);
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
                            1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
 
@@ -247,7 +269,6 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     packet[0] = NET_PACKET_CRYPTO;
     memcpy(packet + 1, recv_public_key, crypto_box_PUBLICKEYBYTES);
     memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, send_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES * 2, nonce, crypto_box_NONCEBYTES);
 
     return len + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES;
 }
@@ -261,17 +282,19 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length)
 {
+    if (!self_public_key || !public_key || !data || !request_id || !packet)
+        return -1;
+
     if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
             length > MAX_CRYPTO_REQUEST_SIZE)
         return -1;
 
-    if (memcmp(packet + 1, self_public_key, crypto_box_PUBLICKEYBYTES) != 0)
+    if (public_key_cmp(packet + 1, self_public_key) != 0)
         return -1;
 
     memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-    uint8_t nonce[crypto_box_NONCEBYTES];
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
-    memcpy(nonce, packet + 1 + crypto_box_PUBLICKEYBYTES * 2, crypto_box_NONCEBYTES);
+    const uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // FIXME sodium_memzero before exit function
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
                             packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
                             length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);

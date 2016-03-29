@@ -169,7 +169,7 @@ static int del_accepted(TCP_Server *TCP_server, int index)
     if (!bs_list_remove(&TCP_server->accepted_key_list, TCP_server->accepted_connection_array[index].public_key, index))
         return -1;
 
-    memset(&TCP_server->accepted_connection_array[index], 0, sizeof(TCP_Secure_Connection));
+    sodium_memzero(&TCP_server->accepted_connection_array[index], sizeof(TCP_Secure_Connection));
     --TCP_server->num_accepted_connections;
 
     if (TCP_server->num_accepted_connections == 0)
@@ -447,7 +447,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
 static void kill_TCP_connection(TCP_Secure_Connection *con)
 {
     kill_sock(con->sock);
-    memset(con, 0, sizeof(TCP_Secure_Connection));
+    sodium_memzero(con, sizeof(TCP_Secure_Connection));
 }
 
 static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *con, uint8_t con_number);
@@ -583,7 +583,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
     TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[con_id];
 
     /* If person tries to cennect to himself we deny the request*/
-    if (memcmp(con->public_key, public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+    if (public_key_cmp(con->public_key, public_key) == 0) {
         if (send_routing_response(con, 0, public_key) == -1)
             return -1;
 
@@ -592,7 +592,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
 
     for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
         if (con->connections[i].status != 0) {
-            if (memcmp(public_key, con->connections[i].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+            if (public_key_cmp(public_key, con->connections[i].public_key) == 0) {
                 if (send_routing_response(con, i + NUM_RESERVED_PORTS, public_key) == -1) {
                     return -1;
                 } else {
@@ -629,7 +629,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
 
         for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
             if (other_conn->connections[i].status == 1
-                    && memcmp(other_conn->connections[i].public_key, con->public_key, crypto_box_PUBLICKEYBYTES) == 0) {
+                    && public_key_cmp(other_conn->connections[i].public_key, con->public_key) == 0) {
                 other_id = i;
                 break;
             }
@@ -868,7 +868,7 @@ static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection 
         return -1;
     }
 
-    memset(con, 0, sizeof(TCP_Secure_Connection));
+    sodium_memzero(con, sizeof(TCP_Secure_Connection));
 
     if (handle_TCP_packet(TCP_server, index, data, length) == -1) {
         kill_accepted(TCP_server, index);
@@ -1056,7 +1056,7 @@ static int do_incoming(TCP_Server *TCP_server, uint32_t i)
             kill_TCP_connection(conn_new);
 
         memcpy(conn_new, conn_old, sizeof(TCP_Secure_Connection));
-        memset(conn_old, 0, sizeof(TCP_Secure_Connection));
+        sodium_memzero(conn_old, sizeof(TCP_Secure_Connection));
         ++TCP_server->unconfirmed_connection_queue_index;
 
         return index_new;

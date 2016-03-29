@@ -1,59 +1,57 @@
+sudo: required
+dist: trusty
 language: c
 compiler:
   - gcc
   - clang
 
 before_script:
-  #installing libsodium, needed for Core
-  - git clone git://github.com/jedisct1/libsodium.git > /dev/null
+  - sudo add-apt-repository ppa:avsm/ocaml42+opam12 -y
+  - sudo apt-get update -qq
+  - sudo apt-get install ocaml opam astyle -qq
+  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
+  # build apidsl
+  - git clone https://github.com/iphydf/apidsl
+  - cd apidsl
+  - export OPAMYES=1
+  - opam init
+  - opam install ocamlfind ppx_deriving menhir
+  - eval `opam config env`
+  - make -j3
+  - cd ..
+  # install sodium, as it's not in Ubuntu Trusty
+  - git clone git://github.com/jedisct1/libsodium.git
   - cd libsodium
-  - git checkout tags/1.0.0 > /dev/null
-  - ./autogen.sh > /dev/null
-  - ./configure > /dev/null
-  - make check -j3 > /dev/null
-  - sudo make install >/dev/null
+  - git checkout tags/1.0.8
+  - ./autogen.sh
+  - ./configure
+  - make -j3
+  - sudo make install
   - cd ..
-  #installing yasm, needed for compiling vpx
-  - sudo apt-get install yasm > /dev/null
-  #installing libconfig, needed for DHT_bootstrap_daemon
-  - wget http://www.hyperrealm.com/libconfig/libconfig-1.4.9.tar.gz > /dev/null
-  - tar -xvzf libconfig-1.4.9.tar.gz > /dev/null
-  - cd libconfig-1.4.9
-  - ./configure > /dev/null
-  - make -j3 > /dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #installing libopus, needed for audio encoding/decoding
-  - wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz > /dev/null
-  - tar xzf opus-1.0.3.tar.gz > /dev/null
-  - cd opus-1.0.3
-  - ./configure > /dev/null
-  - make -j3 > /dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #installing vpx
-  - git clone https://chromium.googlesource.com/webm/libvpx > /dev/null
-  - cd libvpx
-  - ./configure --enable-shared > /dev/null
-  - make -j3 >/dev/null
-  - sudo make install > /dev/null
-  - cd ..
-  #creating libraries links and updating cache
-  - sudo ldconfig > /dev/null
-  #installing check, needed for unit tests
-  - sudo apt-get install check > /dev/null
+  - sudo ldconfig
 
 script:
-  - autoreconf -i
+  # check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h
+  # tox.h
   - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --disable-ntox
-  - make -j3
+  - ./apidsl/_build/apigen.native ./other/apidsl/tox.in.h > tox.h
+  - astyle --options=./other/astyle/astylerc tox.h
+  - diff -u tox.h ./toxcore/tox.h
+  # toxav.h
+  - ./apidsl/_build/apigen.native ./other/apidsl/toxav.in.h > toxav.h
+  - astyle --options=./other/astyle/astylerc toxav.h
+  - diff -u toxav.h ./toxav/toxav.h
+  # build toxcore and run tests
+  - ./autogen.sh
+  - make
   - make check
+  - cat build/test-suite.log
   - make dist
 
 notifications:
   email: false
 
-  irc: 
+  irc:
     channels:
       - "chat.freenode.net#tox-groupchats"
     on_success: always

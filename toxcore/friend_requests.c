@@ -94,7 +94,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 
     for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
         if (id_equal(fr->received_requests[i], real_pk)) {
-            memset(fr->received_requests[i], 0, crypto_box_PUBLICKEYBYTES);
+            sodium_memzero(fr->received_requests[i], crypto_box_PUBLICKEYBYTES);
             return 0;
         }
     }

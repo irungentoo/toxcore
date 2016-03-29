@@ -151,7 +151,7 @@ static int socks5_read_handshake_response(TCP_Client_Connection *TCP_conn)
     if (ret == -1)
         return 0;
 
-    if (data[0] == 5 && data[1] == 0)
+    if (data[0] == 5 && data[1] == 0) // FIXME magic numbers
         return 1;
 
     return -1;
@@ -251,7 +251,7 @@ static int handle_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *data
 
     memcpy(TCP_conn->recv_nonce, plain + crypto_box_PUBLICKEYBYTES, crypto_box_NONCEBYTES);
     encrypt_precompute(plain, TCP_conn->temp_secret_key, TCP_conn->shared_key);
-    memset(TCP_conn->temp_secret_key, 0, crypto_box_SECRETKEYBYTES);
+    sodium_memzero(TCP_conn->temp_secret_key, crypto_box_SECRETKEYBYTES);
     return 0;
 }
 
@@ -962,6 +962,6 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
 
     wipe_priority_list(TCP_connection);
     kill_sock(TCP_connection->sock);
-    memset(TCP_connection, 0, sizeof(TCP_Client_Connection));
+    sodium_memzero(TCP_connection, sizeof(TCP_Client_Connection));
     free(TCP_connection);
 }

@@ -186,6 +186,10 @@ IP_Port;
 
 #define TOX_ENABLE_IPV6_DEFAULT 1
 
+/* addr_resolve return values */
+#define TOX_ADDR_RESOLVE_INET  1
+#define TOX_ADDR_RESOLVE_INET6 2
+
 /* ip_ntoa
  *   converts ip into a string
  *   uses a static buffer, so mustn't used multiple times in the same output
