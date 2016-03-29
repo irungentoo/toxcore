@@ -891,7 +891,8 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
     if (len == -1)
         return -1;
 
-    return route_tofriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, packet, len);
+    return route_tofriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, packet, len,
+                          DHT_BUCKET_NODES / 2);
 }
 
 static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,

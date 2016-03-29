@@ -62,7 +62,7 @@ void print_client_id(uint8_t *public_key)
         printf("%02hhX", public_key[j]);
     }
 }
-
+/*
 void print_hardening(Hardening *h)
 {
     printf("Hardening:\n");
@@ -165,7 +165,7 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
     }
 
     printf("\n--------------------END-----------------------------\n\n\n");
-}
+}*/
 
 int main(int argc, char *argv[])
 {
@@ -245,8 +245,8 @@ int main(int argc, char *argv[])
         */
         networking_poll(dht->net);
 
-        print_clientlist(dht);
-        print_friendlist(dht);
+        //print_clientlist(dht);
+        //print_friendlist(dht);
         c_sleep(300);
     }
 

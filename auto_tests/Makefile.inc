@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
-check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -46,12 +46,6 @@ network_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 network_test_LDADD = $(AUTOTEST_LDADD)
 
-
-assoc_test_SOURCES = ../auto_tests/assoc_test.c
-
-assoc_test_CFLAGS = $(AUTOTEST_CFLAGS)
-
-assoc_test_LDADD = $(AUTOTEST_LDADD)
 
 
 onion_test_SOURCES = ../auto_tests/onion_test.c
