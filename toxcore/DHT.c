@@ -497,8 +497,8 @@ static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *publ
             memset(client, 0, sizeof(Client_data));
             id_copy(client->public_key, public_key);
             client->ip_port = ip_port;
-            client->last_pinged = 0;
-            client->timestamp = unix_time();
+            client->last_pinged = client->timestamp = unix_time();
+
             return 0;
         }
 
@@ -921,43 +921,39 @@ _Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip
  */
 static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
 {
-    _Bool ret = 0;
-
     if (add_to_close(dht, public_key, ip_port, 1)) {
-        ret = 1;
-    }
-
-    //TODO: make less wasteful.
-    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)) {
-        if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
-            memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-            dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
-            ++dht->num_to_bootstrap;
-        } else {
-            //TODO: ipv6 vs v4
-            add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
-        }
-    }
-
-    unsigned int i;
-
-    for (i = 0; i < dht->num_friends; ++i) {
-        DHT_Friend *friend = &dht->friends_list[i];
-
-        if (!client_in_nodelist(friend->to_bootstrap, friend->num_to_bootstrap, public_key)) {
-            if (friend->num_to_bootstrap < MAX_SENT_NODES) {
-                memcpy(friend->to_bootstrap[friend->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-                friend->to_bootstrap[friend->num_to_bootstrap].ip_port = ip_port;
-                ++friend->num_to_bootstrap;
+        //TODO: make less wasteful.
+        if (client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)) {
+            if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
+                memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+                dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
+                ++dht->num_to_bootstrap;
             } else {
-                add_to_list(friend->to_bootstrap, MAX_SENT_NODES, public_key, ip_port, friend->public_key);
+                //TODO: ipv6 vs v4
+                add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
             }
-
-            ret = 1;
         }
+
+        unsigned int i;
+
+        for (i = 0; i < dht->num_friends; ++i) {
+            DHT_Friend *friend = &dht->friends_list[i];
+
+            if (!client_in_nodelist(friend->to_bootstrap, friend->num_to_bootstrap, public_key)) {
+                if (friend->num_to_bootstrap < MAX_SENT_NODES) {
+                    memcpy(friend->to_bootstrap[friend->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+                    friend->to_bootstrap[friend->num_to_bootstrap].ip_port = ip_port;
+                    ++friend->num_to_bootstrap;
+                } else {
+                    add_to_list(friend->to_bootstrap, MAX_SENT_NODES, public_key, ip_port, friend->public_key);
+                }
+            }
+        }
+
+        return 1;
     }
 
-    return ret;
+    return 0;
 }
 
 /* Attempt to add client with ip_port and public_key to the friends client list
@@ -1980,8 +1976,7 @@ static void do_DHT_pings(DHT *dht)
 }
 
 
-/* Ping each client in the "friends" list every PING_INTERVAL seconds. Send a get nodes request
- * every GET_NODE_INTERVAL seconds to a random good node for each "friend" in our "friends" list.
+/* Do get nodes for friends.
  */
 static void do_DHT_friends(DHT *dht)
 {
@@ -1991,22 +1986,34 @@ static void do_DHT_friends(DHT *dht)
         DHT_Friend *friend = &dht->friends_list[i];
 
         for (j = 0; j < friend->num_to_bootstrap; ++j) {
-            getnodes(dht, friend->to_bootstrap[j].ip_port, friend->to_bootstrap[j].public_key, friend->public_key, NULL);
+            if (add_to_close(dht, friend->to_bootstrap[j].public_key, friend->to_bootstrap[j].ip_port, 1)) {
+                getnodes(dht, friend->to_bootstrap[j].ip_port, friend->to_bootstrap[j].public_key, friend->public_key, NULL);
+            }
         }
 
         friend->num_to_bootstrap = 0;
+
+        if (is_timeout(friend->lastgetnode, GET_NODE_INTERVAL)) {
+            Node_format node;
+
+            if (list_nodes(dht, friend->public_key, &node, 1) == 1) {
+                getnodes(dht, node.ip_port, node.public_key, dht->self_public_key, NULL);
+                friend->lastgetnode = unix_time();
+            }
+        }
     }
 }
 
-/* Ping each client in the close nodes list every PING_INTERVAL seconds.
- * Send a get nodes request every GET_NODE_INTERVAL seconds to a random good node in the list.
+/* Do get nodes for self.
  */
 static void do_Close(DHT *dht)
 {
     unsigned int i;
 
     for (i = 0; i < dht->num_to_bootstrap; ++i) {
-        getnodes(dht, dht->to_bootstrap[i].ip_port, dht->to_bootstrap[i].public_key, dht->self_public_key, NULL);
+        if (add_to_close(dht, dht->to_bootstrap[i].public_key, dht->to_bootstrap[i].ip_port, 1)) {
+            getnodes(dht, dht->to_bootstrap[i].ip_port, dht->to_bootstrap[i].public_key, dht->self_public_key, NULL);
+        }
     }
 
     dht->num_to_bootstrap = 0;
