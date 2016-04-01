@@ -564,7 +564,7 @@ static int recursive_DHT_bucket_set_node_ret_ip_port(DHT_Bucket *bucket, const u
     if (bucket->empty) {
         return recursive_DHT_bucket_set_node_ret_ip_port(bucket->buckets[bit], node_public_key, public_key, ret_ip_port);
     } else {
-        unsigned int i, j, counter = 0;
+        unsigned int i, j;
 
         for (i = 0; (i < DHT_BUCKET_NODES); ++i) {
             Client_data *client = &bucket->client_list[i];
@@ -1004,8 +1004,6 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
  */
 static int returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *node_public_key)
 {
-    uint32_t used = 0;
-
     /* convert IPv4-in-IPv6 to IPv4 */
     if ((ip_port.ip.family == AF_INET6) && IPV6_IPV4_IN_V6(ip_port.ip.ip6)) {
         ip_port.ip.family = AF_INET;
@@ -1545,7 +1543,7 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
 
     DHT_bucket_get_nodes(bucket, client_data, (DHT_BUCKET_NODES * 2), friend->public_key);
 
-    unsigned int i, j, count = 0;
+    unsigned int i, count = 0;
     IP_Port ip_ports[(DHT_BUCKET_NODES * 2)];
 
     for (i = (DHT_BUCKET_NODES * 2); i != 0; --i) {
@@ -1584,7 +1582,7 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_pk, const uint8_t *pack
     DHT_bucket_get_nodes(&dht->bucket_v6, client_data + (DHT_BUCKET_NODES * 2), (DHT_BUCKET_NODES * 2), friend_pk);
     DHT_bucket_get_nodes(&dht->bucket_lan, client_data + ((DHT_BUCKET_NODES * 2) * 2), (DHT_BUCKET_NODES * 2), friend_pk);
 
-    unsigned int i, j, count = 0, r = rand();
+    unsigned int i, count = 0, r = rand();
 
     IP_Port ip_ports[num_to_send];
 
@@ -1798,7 +1796,7 @@ static void do_NAT(DHT *dht, _Bool v6)
     uint64_t temp_time = unix_time();
 
     for (i = 0; i < dht->num_friends; ++i) {
-        IP_Port ip_list[MAX_FRIEND_CLIENTS];
+        IP_Port ip_list[DHT_BUCKET_NODES * 2];
         int num = friend_iplist(dht, ip_list, i, v6);
 
         /* If already connected or friend is not online don't try to hole punch. */
@@ -1888,7 +1886,7 @@ static uint16_t list_nodes(const DHT *dht, uint8_t *public_key, Node_format *nod
     unsigned int i, num_nodes = 0, r = rand();
 
     for (i = DHT_BUCKET_NODES * 2; i != 0 && (num_nodes < max_num); --i) {
-        unsigned int index = (i + rand()) % (DHT_BUCKET_NODES * 2);
+        unsigned int index = (i + r) % (DHT_BUCKET_NODES * 2);
 
         if (client_data[index].timestamp != 0) {
             id_copy(nodes[num_nodes].public_key, client_data[index].public_key);
@@ -2155,7 +2153,7 @@ void DHT_save(DHT *dht, uint8_t *data)
     host_to_lendian32(data,  DHT_STATE_COOKIE_GLOBAL);
     data += sizeof(uint32_t);
 
-    unsigned int num = 0, i, j;
+    unsigned int num = 0;
 
     uint8_t *old_data = data;
 
