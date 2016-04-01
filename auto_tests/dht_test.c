@@ -237,7 +237,8 @@ START_TEST(test_DHT_test)
 
         dhts[i] = new_DHT(new_networking(ip, DHT_DEFAULT_PORT + i));
         ck_assert_msg(dhts[i] != 0, "Failed to create dht instances %u", i);
-        ck_assert_msg(dhts[i]->net->port != DHT_DEFAULT_PORT + i, "Bound to wrong port");
+        ck_assert_msg(dhts[i]->net->port == htons(DHT_DEFAULT_PORT + i), "Bound to wrong port %u != %u", dhts[i]->net->port,
+                      DHT_DEFAULT_PORT + i);
     }
 
     struct {
