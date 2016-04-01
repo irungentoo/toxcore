@@ -86,27 +86,6 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
     return 0;
 }
 
-/* Return index of first unequal bit number.
- */
-int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
-{
-    unsigned int i, j = 0;
-
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
-        if (pk1[i] == pk2[i])
-            continue;
-
-        for (j = 0; j < 8; ++j) {
-            if ((pk1[i] & (1 << (7 - j))) != (pk2[i] & (1 << (7 - j))))
-                break;
-        }
-
-        break;
-    }
-
-    return i * 8 + j;
-}
-
 /* Shared key generations are costly, it is therefor smart to store commonly used
  * ones so that they can re used later without being computed again.
  *
@@ -489,9 +468,7 @@ static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *publ
     if (bucket->empty) {
         return recursive_DHT_bucket_add_node(bucket->buckets[bit], public_key, ip_port, pretend);
     } else {
-        unsigned int store_index = DHT_BUCKET_NODES;
-
-        unsigned int i;
+        unsigned int i, store_index = DHT_BUCKET_NODES;
 
         for (i = 0; i < DHT_BUCKET_NODES; ++i) {
             Client_data *client = &bucket->client_list[i];
@@ -1005,14 +982,11 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     if (add_to_close(dht, public_key, ip_port, 0))
         used++;
 
-    DHT_Friend *friend_foundip = 0;
-
     int friend_num = friend_number(dht, public_key);
 
-    if (friend_num != -1)
-        friend_foundip = &dht->friends_list[friend_num];
+    if (friend_num != -1) {
+        DHT_Friend *friend_foundip = &dht->friends_list[friend_num];
 
-    if (friend_foundip) {
         unsigned int j;
 
         for (j = 0; j < friend_foundip->lock_count; ++j) {
