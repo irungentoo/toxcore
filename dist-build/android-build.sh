@@ -39,7 +39,7 @@ if [ -z "$TOOLCHAIN_DIR" ]; then
 fi
 
 export PREFIX="$(pwd)/toxcore-android-${TARGET_ARCH}"
-export SYSROOT="${TOOLCHAIN_DIR}/sysroot"
+export SYSROOT=${SYSROOT-${TOOLCHAIN_DIR}/sysroot}
 export PATH="${PATH}:${TOOLCHAIN_DIR}/bin"
 
 # Clean up before build
