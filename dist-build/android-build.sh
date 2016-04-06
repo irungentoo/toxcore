@@ -66,6 +66,8 @@ cd $builddir
             "${SODIUM_HDR}" \
             "${SODIUM_LIB}" \
             --disable-av \
+            --disable-rt \
+            --disable-testing \
             --prefix=/ && \
 
 make clean && \
