@@ -27,7 +27,7 @@ if [ -z "$TOOLCHAIN_DIR" ]; then
   export TOOLCHAIN_DIR="$(pwd)/android-toolchain-${TARGET_ARCH}"
   export MAKE_TOOLCHAIN="${ANDROID_NDK_HOME}/build/tools/make-standalone-toolchain.sh"
   
-  if [ -z "$MAKE_TOOLCHAIN" ]; then
+  if [ ! -f "$MAKE_TOOLCHAIN" ]; then
     echo "Cannot find a make-standalone-toolchain.sh in ndk dir, interrupt..."
     exit 1
   fi
