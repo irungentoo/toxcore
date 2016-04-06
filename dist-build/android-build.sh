@@ -49,14 +49,22 @@ export CFLAGS="${CFLAGS} --sysroot=${SYSROOT} -I${SYSROOT}/usr/include"
 export CPPFLAGS="${CFLAGS}"
 export LDFLAGS="${LDFLAGS} -L${SYSROOT}/usr/lib"
 
+# here SODIUM_ARCH must be armv6, while TARGET_ARCH is arm
+# permit override...
+SODIUM_ARCH=${SODIUM_ARCH-${TARGET_ARCH}}
+
+SODIUM_PREFIX="${SODIUM_HOME}/libsodium-android-${SODIUM_ARCH}"
+SODIUM_HDR=${SODIUM_HDR---with-libsodium-headers="${SODIUM_PREFIX}/include"}
+SODIUM_LIB=${SODIUM_LIB---with-libsodium-libs="${SODIUM_PREFIX}/lib"}
+
 builddir="build-${TARGET_ARCH}"
 mkdir -p $builddir
 cd $builddir
 
 ../configure --host="${HOST_COMPILER}" \
             --with-sysroot="${SYSROOT}" \
-            --with-libsodium-headers="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/include" \
-            --with-libsodium-libs="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/lib" \
+            "${SODIUM_HDR}" \
+            "${SODIUM_LIB}" \
             --disable-av \
             --prefix=/ && \
 
