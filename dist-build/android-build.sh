@@ -49,13 +49,17 @@ export CFLAGS="${CFLAGS} --sysroot=${SYSROOT} -I${SYSROOT}/usr/include"
 export CPPFLAGS="${CFLAGS}"
 export LDFLAGS="${LDFLAGS} -L${SYSROOT}/usr/lib"
 
-./configure --host="${HOST_COMPILER}" \
+builddir="build-${TARGET_ARCH}"
+mkdir -p $builddir
+cd $builddir
+
+../configure --host="${HOST_COMPILER}" \
             --with-sysroot="${SYSROOT}" \
             --with-libsodium-headers="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/include" \
             --with-libsodium-libs="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/lib" \
             --disable-av \
-            --prefix="${PREFIX}" && \
+            --prefix=/ && \
 
 make clean && \
-make -j3 install && \
+make -j3 install DESTDIR=${PREFIX} && \
 echo "libtoxcore has been installed into ${PREFIX}"
