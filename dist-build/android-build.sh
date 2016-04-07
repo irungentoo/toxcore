@@ -65,7 +65,6 @@ cd $builddir
             --with-sysroot="${SYSROOT}" \
             "${SODIUM_HDR}" \
             "${SODIUM_LIB}" \
-            --disable-av \
             --disable-rt \
             --disable-testing \
             --prefix=/ && \
