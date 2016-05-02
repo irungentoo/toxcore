@@ -21,7 +21,7 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/LAN_discovery.h \
                         ../toxcore/LAN_discovery.c \
                         ../toxcore/friend_connection.h \
-                        ../toxcore/friend_connection.c \
+                        ../toxcore/tox_connection.c \
                         ../toxcore/Messenger.h \
                         ../toxcore/Messenger.c \
                         ../toxcore/ping.h \

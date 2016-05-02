@@ -111,7 +111,7 @@ typedef struct {
 
 typedef struct {
     Messenger *m;
-    Friend_Connections *fr_c;
+    Tox_Connections *fr_c;
 
     Group_c *chats;
     uint32_t num_chats;

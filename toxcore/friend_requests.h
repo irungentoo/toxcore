@@ -71,7 +71,7 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const 
 void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata);
 
 /* Sets up friendreq packet handlers. */
-void friendreq_init(Friend_Requests *fr, Friend_Connections *fr_c);
+void friendreq_init(Friend_Requests *fr, Tox_Connections *fr_c);
 
 
 #endif

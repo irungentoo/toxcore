@@ -149,14 +149,14 @@ static int send_online_packet(Messenger *m, int32_t friendnumber)
         return 0;
 
     uint8_t packet = PACKET_ID_ONLINE;
-    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    return write_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                              m->friendlist[friendnumber].friendcon_id), &packet, sizeof(packet), 0) != -1;
 }
 
 static int send_offline_packet(Messenger *m, int friendcon_id)
 {
     uint8_t packet = PACKET_ID_OFFLINE;
-    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
+    return write_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c, friendcon_id), &packet,
                              sizeof(packet), 0) != -1;
 }
 
@@ -172,7 +172,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
 
     memset(&(m->friendlist[m->numfriends]), 0, sizeof(Friend));
 
-    int friendcon_id = new_friend_connection(m->fr_c, real_pk);
+    int friendcon_id = new_tox_conn(m->fr_c, real_pk);
 
     if (friendcon_id == -1)
         return FAERR_NOMEM;
@@ -189,13 +189,13 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
             m->friendlist[i].userstatus = USERSTATUS_NONE;
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
-            friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
+            tox_conn_set_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &handle_status, &handle_packet,
                                         &handle_custom_lossy_packet, m, i);
 
             if (m->numfriends == i)
                 ++m->numfriends;
 
-            if (friend_con_connected(m->fr_c, friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+            if (tox_conn_is_connected(m->fr_c, friendcon_id) == TOXCONN_STATUS_CONNECTED) {
                 send_online_packet(m, i);
             }
 
@@ -339,7 +339,7 @@ static int friend_received_packet(const Messenger *m, int32_t friendnumber, uint
     if (friend_not_valid(m, friendnumber))
         return -1;
 
-    return cryptpacket_received(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    return cryptpacket_received(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                                 m->friendlist[friendnumber].friendcon_id), number);
 }
 
@@ -385,13 +385,13 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
 
     clear_receipts(m, friendnumber);
     remove_request_received(&(m->fr), m->friendlist[friendnumber].real_pk);
-    friend_connection_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
+    tox_conn_set_callbacks(m->fr_c, m->friendlist[friendnumber].friendcon_id, MESSENGER_CALLBACK_INDEX, 0, 0, 0, 0, 0);
 
-    if (friend_con_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == FRIENDCONN_STATUS_CONNECTED) {
+    if (tox_conn_is_connected(m->fr_c, m->friendlist[friendnumber].friendcon_id) == TOXCONN_STATUS_CONNECTED) {
         send_offline_packet(m, m->friendlist[friendnumber].friendcon_id);
     }
 
-    kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
+    kill_tox_conn(m->fr_c, m->friendlist[friendnumber].friendcon_id);
     memset(&(m->friendlist[friendnumber]), 0, sizeof(Friend));
     uint32_t i;
 
@@ -416,7 +416,7 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
         _Bool direct_connected = 0;
         unsigned int num_online_relays = 0;
-        crypto_connection_status(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+        crypto_connection_status(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                                  m->friendlist[friendnumber].friendcon_id), &direct_connected, &num_online_relays);
 
         if (direct_connected) {
@@ -471,7 +471,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
     if (length != 0)
         memcpy(packet + 1, message, length);
 
-    int64_t packet_num = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    int64_t packet_num = write_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                                            m->friendlist[friendnumber].friendcon_id), packet, length + 1, 0);
 
     if (packet_num == -1)
@@ -904,7 +904,7 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
     if (length != 0)
         memcpy(packet + 1, data, length);
 
-    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    return write_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
@@ -1297,7 +1297,7 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
         memcpy(packet + 2, data, length);
     }
 
-    return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    return write_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                              m->friendlist[friendnumber].friendcon_id), packet, sizeof(packet), 1);
 }
 
@@ -1347,7 +1347,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     }
 
     /* Prevent file sending from filling up the entire buffer preventing messages from being sent. TODO: remove */
-    if (crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    if (crypto_num_free_sendqueue_slots(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                                         m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE)
         return -6;
 
@@ -1405,7 +1405,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
     if (!m->friendlist[friendnumber].num_sending_files)
         return;
 
-    int free_slots = crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    int free_slots = crypto_num_free_sendqueue_slots(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                      m->friendlist[friendnumber].friendcon_id));
 
     if (free_slots < MIN_SLOTS_FREE) {
@@ -1442,7 +1442,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
         }
 
         while (ft->status == FILESTATUS_TRANSFERRING && (ft->paused == FILE_PAUSE_NOT)) {
-            if (max_speed_reached(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+            if (max_speed_reached(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                                   m->friendlist[friendnumber].friendcon_id))) {
                 free_slots = 0;
             }
@@ -1676,7 +1676,7 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -4;
 
-    if (send_lossy_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    if (send_lossy_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                                m->friendlist[friendnumber].friendcon_id), data, length) == -1) {
         return -5;
     } else {
@@ -1727,7 +1727,7 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE)
         return -4;
 
-    if (write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
+    if (write_cryptpacket(m->net_crypto, tox_conn_crypt_connection_id(m->fr_c,
                           m->friendlist[friendnumber].friendcon_id), data, length, 1) == -1) {
         return -5;
     } else {
@@ -1798,10 +1798,10 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
     m->onion_c =  new_onion_client(m->net_crypto);
-    m->fr_c = new_friend_connections(m->onion_c);
+    m->fr_c = new_tox_conns(m->onion_c);
 
     if (!(m->onion && m->onion_a && m->onion_c)) {
-        kill_friend_connections(m->fr_c);
+        kill_tox_conns(m->fr_c);
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
@@ -1816,7 +1816,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_secret_key, m->onion);
 
         if (m->tcp_server == NULL) {
-            kill_friend_connections(m->fr_c);
+            kill_tox_conns(m->fr_c);
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
@@ -1855,7 +1855,7 @@ void kill_messenger(Messenger *m)
         kill_TCP_server(m->tcp_server);
     }
 
-    kill_friend_connections(m->fr_c);
+    kill_tox_conns(m->fr_c);
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
@@ -2181,7 +2181,7 @@ void do_friends(Messenger *m)
 
     for (i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
-            int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
+            int fr = send_tox_conn_request_pkt(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
                                                 m->friendlist[i].info,
                                                 m->friendlist[i].info_size);
 
@@ -2316,7 +2316,7 @@ void do_messenger(Messenger *m)
 
     do_net_crypto(m->net_crypto);
     do_onion_client(m->onion_c);
-    do_friend_connections(m->fr_c);
+    do_tox_connections(m->fr_c);
     do_friends(m);
     connection_status_cb(m);
 

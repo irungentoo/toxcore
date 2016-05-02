@@ -1,8 +1,8 @@
-/* friend_connection.c
+/* tox_connection.c
  *
- * Connection to friends.
+ * Connection to tox instances.
  *
- *  Copyright (C) 2014 Tox project All Rights Reserved.
+ *  Copyright (C) 2016 Tox project All Rights Reserved.
  *
  *  This file is part of Tox.
  *
@@ -28,117 +28,117 @@
 #include "friend_connection.h"
 #include "util.h"
 
-/* return 1 if the friendcon_id is not valid.
- * return 0 if the friendcon_id is valid.
+/* return 1 if the toxconn_id is not valid.
+ * return 0 if the toxconn_id is valid.
  */
-static uint8_t friendconn_id_not_valid(const Friend_Connections *fr_c, int friendcon_id)
+static uint8_t toxconn_id_not_valid(const Tox_Connections *tox_conns, int toxconn_id)
 {
-    if ((unsigned int)friendcon_id >= fr_c->num_cons)
+    if ((unsigned int)toxconn_id >= tox_conns->num_cons)
         return 1;
 
-    if (fr_c->conns == NULL)
+    if (tox_conns->conns == NULL)
         return 1;
 
-    if (fr_c->conns[friendcon_id].status == FRIENDCONN_STATUS_NONE)
+    if (tox_conns->conns[toxconn_id].status == TOXCONN_STATUS_NONE)
         return 1;
 
     return 0;
 }
 
 
-/* Set the size of the friend connections list to num.
+/* Set the size of the tox connections list to num.
  *
  *  return -1 if realloc fails.
  *  return 0 if it succeeds.
  */
-static int realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
+static int realloc_toxconns(Tox_Connections *tox_conns, uint32_t num)
 {
     if (num == 0) {
-        free(fr_c->conns);
-        fr_c->conns = NULL;
+        free(tox_conns->conns);
+        tox_conns->conns = NULL;
         return 0;
     }
 
-    Friend_Conn *newgroup_cons = realloc(fr_c->conns, num * sizeof(Friend_Conn));
+    Tox_Conn *newgroup_cons = realloc(tox_conns->conns, num * sizeof(Tox_Conn));
 
     if (newgroup_cons == NULL)
         return -1;
 
-    fr_c->conns = newgroup_cons;
+    tox_conns->conns = newgroup_cons;
     return 0;
 }
 
-/* Create a new empty friend connection.
+/* Create a new empty tox connection.
  *
  * return -1 on failure.
- * return friendcon_id on success.
+ * return toxconn_id on success.
  */
-static int create_friend_conn(Friend_Connections *fr_c)
+static int create_toxconn(Tox_Connections *tox_conns)
 {
     uint32_t i;
 
-    for (i = 0; i < fr_c->num_cons; ++i) {
-        if (fr_c->conns[i].status == FRIENDCONN_STATUS_NONE)
+    for (i = 0; i < tox_conns->num_cons; ++i) {
+        if (tox_conns->conns[i].status == TOXCONN_STATUS_NONE)
             return i;
     }
 
     int id = -1;
 
-    if (realloc_friendconns(fr_c, fr_c->num_cons + 1) == 0) {
-        id = fr_c->num_cons;
-        ++fr_c->num_cons;
-        memset(&(fr_c->conns[id]), 0, sizeof(Friend_Conn));
+    if (realloc_toxconns(tox_conns, tox_conns->num_cons + 1) == 0) {
+        id = tox_conns->num_cons;
+        ++tox_conns->num_cons;
+        memset(&(tox_conns->conns[id]), 0, sizeof(Tox_Conn));
     }
 
     return id;
 }
 
-/* Wipe a friend connection.
+/* Wipe a single tox connection.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
+static int wipe_tox_conn(Tox_Connections *tox_conns, int toxconn_id)
 {
-    if (friendconn_id_not_valid(fr_c, friendcon_id))
+    if (toxconn_id_not_valid(tox_conns, toxconn_id))
         return -1;
 
     uint32_t i;
-    memset(&(fr_c->conns[friendcon_id]), 0 , sizeof(Friend_Conn));
+    memset(&(tox_conns->conns[toxconn_id]), 0 , sizeof(Tox_Conn));
 
-    for (i = fr_c->num_cons; i != 0; --i) {
-        if (fr_c->conns[i - 1].status != FRIENDCONN_STATUS_NONE)
+    for (i = tox_conns->num_cons; i != 0; --i) {
+        if (tox_conns->conns[i - 1].status != TOXCONN_STATUS_NONE)
             break;
     }
 
-    if (fr_c->num_cons != i) {
-        fr_c->num_cons = i;
-        realloc_friendconns(fr_c, fr_c->num_cons);
+    if (tox_conns->num_cons != i) {
+        tox_conns->num_cons = i;
+        realloc_toxconns(tox_conns, tox_conns->num_cons);
     }
 
     return 0;
 }
 
-static Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
+static Tox_Conn *get_conn(const Tox_Connections *tox_conns, int toxconn_id)
 {
-    if (friendconn_id_not_valid(fr_c, friendcon_id))
+    if (toxconn_id_not_valid(tox_conns, toxconn_id))
         return 0;
 
-    return &fr_c->conns[friendcon_id];
+    return &tox_conns->conns[toxconn_id];
 }
 
-/* return friendcon_id corresponding to the real public key on success.
+/* return toxconn_id corresponding to the real public key on success.
  * return -1 on failure.
  */
-int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk)
+int gettox_conn_id_pk(Tox_Connections *tox_conns, const uint8_t *real_pk)
 {
     uint32_t i;
 
-    for (i = 0; i < fr_c->num_cons; ++i) {
-        Friend_Conn *friend_con = get_conn(fr_c, i);
+    for (i = 0; i < tox_conns->num_cons; ++i) {
+        Tox_Conn *tox_con = get_conn(tox_conns, i);
 
-        if (friend_con) {
-            if (public_key_cmp(friend_con->real_public_key, real_pk) == 0)
+        if (tox_con) {
+            if (public_key_cmp(tox_con->real_public_key, real_pk) == 0)
                 return i;
         }
     }
@@ -146,86 +146,86 @@ int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk)
     return -1;
 }
 
-/* Add a TCP relay associated to the friend.
+/* Add a TCP relay associated to the connection.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key)
+int toxconn_add_tcp_relay(Tox_Connections *tox_conns, int toxconn_id, IP_Port ip_port, const uint8_t *public_key)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     /* Local ip and same pk means that they are hosting a TCP relay. */
-    if (Local_ip(ip_port.ip) && public_key_cmp(friend_con->dht_temp_pk, public_key) == 0) {
-        if (friend_con->dht_ip_port.ip.family != 0) {
-            ip_port.ip = friend_con->dht_ip_port.ip;
+    if (Local_ip(ip_port.ip) && public_key_cmp(tox_con->dht_temp_pk, public_key) == 0) {
+        if (tox_con->dht_ip_port.ip.family != 0) {
+            ip_port.ip = tox_con->dht_ip_port.ip;
         } else {
-            friend_con->hosting_tcp_relay = 0;
+            tox_con->hosting_tcp_relay = 0;
         }
     }
 
     unsigned int i;
 
-    uint16_t index = friend_con->tcp_relay_counter % FRIEND_MAX_STORED_TCP_RELAYS;
+    uint16_t index = tox_con->tcp_relay_counter % TOXCONN_MAX_STORED_TCP_RELAYS;
 
-    for (i = 0; i < FRIEND_MAX_STORED_TCP_RELAYS; ++i) {
-        if (friend_con->tcp_relays[i].ip_port.ip.family != 0
-                && public_key_cmp(friend_con->tcp_relays[i].public_key, public_key) == 0) {
-            memset(&friend_con->tcp_relays[i], 0, sizeof(Node_format));
+    for (i = 0; i < TOXCONN_MAX_STORED_TCP_RELAYS; ++i) {
+        if (tox_con->tcp_relays[i].ip_port.ip.family != 0
+                && public_key_cmp(tox_con->tcp_relays[i].public_key, public_key) == 0) {
+            memset(&tox_con->tcp_relays[i], 0, sizeof(Node_format));
         }
     }
 
-    friend_con->tcp_relays[index].ip_port = ip_port;
-    memcpy(friend_con->tcp_relays[index].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-    ++friend_con->tcp_relay_counter;
+    tox_con->tcp_relays[index].ip_port = ip_port;
+    memcpy(tox_con->tcp_relays[index].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    ++tox_con->tcp_relay_counter;
 
-    return add_tcp_relay_peer(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port, public_key);
+    return add_tcp_relay_peer(tox_conns->net_crypto, tox_con->crypt_connection_id, ip_port, public_key);
 }
 
-/* Connect to number saved relays for friend. */
-static void connect_to_saved_tcp_relays(Friend_Connections *fr_c, int friendcon_id, unsigned int number)
+/* Connect to number saved relays for connection. */
+static void connect_to_saved_tcp_relays(Tox_Connections *tox_conns, int toxconn_id, unsigned int number)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return;
 
     unsigned int i;
 
-    for (i = 0; (i < FRIEND_MAX_STORED_TCP_RELAYS) && (number != 0); ++i) {
-        uint16_t index = (friend_con->tcp_relay_counter - (i + 1)) % FRIEND_MAX_STORED_TCP_RELAYS;
+    for (i = 0; (i < TOXCONN_MAX_STORED_TCP_RELAYS) && (number != 0); ++i) {
+        uint16_t index = (tox_con->tcp_relay_counter - (i + 1)) % TOXCONN_MAX_STORED_TCP_RELAYS;
 
-        if (friend_con->tcp_relays[index].ip_port.ip.family) {
-            if (add_tcp_relay_peer(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->tcp_relays[index].ip_port,
-                                   friend_con->tcp_relays[index].public_key) == 0) {
+        if (tox_con->tcp_relays[index].ip_port.ip.family) {
+            if (add_tcp_relay_peer(tox_conns->net_crypto, tox_con->crypt_connection_id, tox_con->tcp_relays[index].ip_port,
+                                   tox_con->tcp_relays[index].public_key) == 0) {
                 --number;
             }
         }
     }
 }
 
-static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
+static unsigned int send_relays(Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return 0;
 
     Node_format nodes[MAX_SHARED_RELAYS];
     uint8_t data[1024];
     int n, length;
 
-    n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
+    n = copy_connected_tcp_relays(tox_conns->net_crypto, nodes, MAX_SHARED_RELAYS);
 
     int i;
 
     for (i = 0; i < n; ++i) {
         /* Associated the relays being sent with this connection.
            On receiving the peer will do the same which will establish the connection. */
-        friend_add_tcp_relay(fr_c, friendcon_id, nodes[i].ip_port, nodes[i].public_key);
+        toxconn_add_tcp_relay(tox_conns, toxconn_id, nodes[i].ip_port, nodes[i].public_key);
     }
 
     length = pack_nodes(data + 1, sizeof(data) - 1, nodes, n);
@@ -236,8 +236,8 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
     data[0] = PACKET_ID_SHARE_RELAYS;
     ++length;
 
-    if (write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, data, length, 0) != -1) {
-        friend_con->share_relays_lastsent = unix_time();
+    if (write_cryptpacket(tox_conns->net_crypto, tox_con->crypt_connection_id, data, length, 0) != -1) {
+        tox_con->share_relays_lastsent = unix_time();
         return 1;
     }
 
@@ -247,100 +247,100 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 /* callback for recv TCP relay nodes. */
 static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key)
 {
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Tox_Connections *tox_conns = object;
+    Tox_Conn *tox_con = get_conn(tox_conns, number);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
-    if (friend_con->crypt_connection_id != -1) {
-        return friend_add_tcp_relay(fr_c, number, ip_port, public_key);
+    if (tox_con->crypt_connection_id != -1) {
+        return toxconn_add_tcp_relay(tox_conns, number, ip_port, public_key);
     } else {
-        return add_tcp_relay(fr_c->net_crypto, ip_port, public_key);
+        return add_tcp_relay(tox_conns->net_crypto, ip_port, public_key);
     }
 }
 
-static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id);
+static int toxconn_new_connection(Tox_Connections *tox_conns, int toxconn_id);
 /* Callback for DHT ip_port changes. */
 static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
 {
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Tox_Connections *tox_conns = object;
+    Tox_Conn *tox_con = get_conn(tox_conns, number);
 
-    if (!friend_con)
+    if (!tox_con)
         return;
 
-    if (friend_con->crypt_connection_id == -1) {
-        friend_new_connection(fr_c, number);
+    if (tox_con->crypt_connection_id == -1) {
+        toxconn_new_connection(tox_conns, number);
     }
 
-    set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port, 1);
-    friend_con->dht_ip_port = ip_port;
-    friend_con->dht_ip_port_lastrecv = unix_time();
+    set_direct_ip_port(tox_conns->net_crypto, tox_con->crypt_connection_id, ip_port, 1);
+    tox_con->dht_ip_port = ip_port;
+    tox_con->dht_ip_port_lastrecv = unix_time();
 
-    if (friend_con->hosting_tcp_relay) {
-        friend_add_tcp_relay(fr_c, number, ip_port, friend_con->dht_temp_pk);
-        friend_con->hosting_tcp_relay = 0;
+    if (tox_con->hosting_tcp_relay) {
+        toxconn_add_tcp_relay(tox_conns, number, ip_port, tox_con->dht_temp_pk);
+        tox_con->hosting_tcp_relay = 0;
     }
 }
 
-static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_public_key)
+static void change_dht_pk(Tox_Connections *tox_conns, int toxconn_id, const uint8_t *dht_public_key)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return;
 
-    friend_con->dht_pk_lastrecv = unix_time();
+    tox_con->dht_pk_lastrecv = unix_time();
 
-    if (friend_con->dht_lock) {
-        if (DHT_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock) != 0) {
+    if (tox_con->dht_lock) {
+        if (DHT_delfriend(tox_conns->dht, tox_con->dht_temp_pk, tox_con->dht_lock) != 0) {
             printf("a. Could not delete dht peer. Please report this.\n");
             return;
         }
 
-        friend_con->dht_lock = 0;
+        tox_con->dht_lock = 0;
     }
 
-    DHT_addfriend(fr_c->dht, dht_public_key, dht_ip_callback, fr_c, friendcon_id, &friend_con->dht_lock);
-    memcpy(friend_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
+    DHT_addfriend(tox_conns->dht, dht_public_key, dht_ip_callback, tox_conns, toxconn_id, &tox_con->dht_lock);
+    memcpy(tox_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
 }
 
 static int handle_status(void *object, int number, uint8_t status)
 {
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Tox_Connections *tox_conns = object;
+    Tox_Conn *tox_con = get_conn(tox_conns, number);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     _Bool call_cb = 0;
 
     if (status) {  /* Went online. */
         call_cb = 1;
-        friend_con->status = FRIENDCONN_STATUS_CONNECTED;
-        friend_con->ping_lastrecv = unix_time();
-        friend_con->share_relays_lastsent = 0;
-        onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
+        tox_con->status = TOXCONN_STATUS_CONNECTED;
+        tox_con->ping_lastrecv = unix_time();
+        tox_con->share_relays_lastsent = 0;
+        onion_set_friend_online(tox_conns->onion_c, tox_con->onion_friendnum, status);
     } else {  /* Went offline. */
-        if (friend_con->status != FRIENDCONN_STATUS_CONNECTING) {
+        if (tox_con->status != TOXCONN_STATUS_CONNECTING) {
             call_cb = 1;
-            friend_con->dht_pk_lastrecv = unix_time();
-            onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
+            tox_con->dht_pk_lastrecv = unix_time();
+            onion_set_friend_online(tox_conns->onion_c, tox_con->onion_friendnum, status);
         }
 
-        friend_con->status = FRIENDCONN_STATUS_CONNECTING;
-        friend_con->crypt_connection_id = -1;
-        friend_con->hosting_tcp_relay = 0;
+        tox_con->status = TOXCONN_STATUS_CONNECTING;
+        tox_con->crypt_connection_id = -1;
+        tox_con->hosting_tcp_relay = 0;
     }
 
     if (call_cb) {
         unsigned int i;
 
-        for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-            if (friend_con->callbacks[i].status_callback)
-                friend_con->callbacks[i].status_callback(friend_con->callbacks[i].status_callback_object,
-                        friend_con->callbacks[i].status_callback_id, status);
+        for (i = 0; i < MAX_TOX_CONNECTION_CALLBACKS; ++i) {
+            if (tox_con->callbacks[i].status_callback)
+                tox_con->callbacks[i].status_callback(tox_con->callbacks[i].status_callback_object,
+                        tox_con->callbacks[i].status_callback_id, status);
         }
     }
 
@@ -350,26 +350,26 @@ static int handle_status(void *object, int number, uint8_t status)
 /* Callback for dht public key changes. */
 static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
 {
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Tox_Connections *tox_conns = object;
+    Tox_Conn *tox_con = get_conn(tox_conns, number);
 
-    if (!friend_con)
+    if (!tox_con)
         return;
 
-    if (public_key_cmp(friend_con->dht_temp_pk, dht_public_key) == 0)
+    if (public_key_cmp(tox_con->dht_temp_pk, dht_public_key) == 0)
         return;
 
-    change_dht_pk(fr_c, number, dht_public_key);
+    change_dht_pk(tox_conns, number, dht_public_key);
 
     /* if pk changed, create a new connection.*/
-    if (friend_con->crypt_connection_id != -1) {
-        crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
-        friend_con->crypt_connection_id = -1;
+    if (tox_con->crypt_connection_id != -1) {
+        crypto_kill(tox_conns->net_crypto, tox_con->crypt_connection_id);
+        tox_con->crypt_connection_id = -1;
         handle_status(object, number, 0); /* Going offline. */
     }
 
-    friend_new_connection(fr_c, number);
-    onion_set_friend_DHT_pubkey(fr_c->onion_c, friend_con->onion_friendnum, dht_public_key);
+    toxconn_new_connection(tox_conns, number);
+    onion_set_friend_DHT_pubkey(tox_conns->onion_c, tox_con->onion_friendnum, dht_public_key);
 }
 
 static int handle_packet(void *object, int number, uint8_t *data, uint16_t length)
@@ -377,19 +377,19 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
     if (length == 0)
         return -1;
 
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Tox_Connections *tox_conns = object;
+    Tox_Conn *tox_con = get_conn(tox_conns, number);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
-        if (fr_c->fr_request_callback)
-            fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
+        if (tox_conns->toxconn_request_callback)
+            tox_conns->toxconn_request_callback(tox_conns->toxconn_request_object, tox_con->real_public_key, data, length);
 
         return 0;
     } else if (data[0] == PACKET_ID_ALIVE) {
-        friend_con->ping_lastrecv = unix_time();
+        tox_con->ping_lastrecv = unix_time();
         return 0;
     } else if (data[0] == PACKET_ID_SHARE_RELAYS) {
         Node_format nodes[MAX_SHARED_RELAYS];
@@ -401,7 +401,7 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
         int j;
 
         for (j = 0; j < n; j++) {
-            friend_add_tcp_relay(fr_c, number, nodes[j].ip_port, nodes[j].public_key);
+            toxconn_add_tcp_relay(tox_conns, number, nodes[j].ip_port, nodes[j].public_key);
         }
 
         return 0;
@@ -409,14 +409,14 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
 
     unsigned int i;
 
-    for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].data_callback)
-            friend_con->callbacks[i].data_callback(friend_con->callbacks[i].data_callback_object,
-                                                   friend_con->callbacks[i].data_callback_id, data, length);
+    for (i = 0; i < MAX_TOX_CONNECTION_CALLBACKS; ++i) {
+        if (tox_con->callbacks[i].data_callback)
+            tox_con->callbacks[i].data_callback(tox_con->callbacks[i].data_callback_object,
+                                                   tox_con->callbacks[i].data_callback_id, data, length);
 
-        friend_con = get_conn(fr_c, number);
+        tox_con = get_conn(tox_conns, number);
 
-        if (!friend_con)
+        if (!tox_con)
             return -1;
     }
 
@@ -428,22 +428,22 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
     if (length == 0)
         return -1;
 
-    Friend_Connections *fr_c = object;
-    Friend_Conn *friend_con = get_conn(fr_c, number);
+    Tox_Connections *tox_conns = object;
+    Tox_Conn *tox_con = get_conn(tox_conns, number);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     unsigned int i;
 
-    for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].lossy_data_callback)
-            friend_con->callbacks[i].lossy_data_callback(friend_con->callbacks[i].lossy_data_callback_object,
-                    friend_con->callbacks[i].lossy_data_callback_id, data, length);
+    for (i = 0; i < MAX_TOX_CONNECTION_CALLBACKS; ++i) {
+        if (tox_con->callbacks[i].lossy_data_callback)
+            tox_con->callbacks[i].lossy_data_callback(tox_con->callbacks[i].lossy_data_callback_object,
+                    tox_con->callbacks[i].lossy_data_callback_id, data, length);
 
-        friend_con = get_conn(fr_c, number);
+        tox_con = get_conn(tox_conns, number);
 
-        if (!friend_con)
+        if (!tox_con)
             return -1;
     }
 
@@ -452,180 +452,180 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
 
 static int handle_new_connections(void *object, New_Connection *n_c)
 {
-    Friend_Connections *fr_c = object;
-    int friendcon_id = getfriend_conn_id_pk(fr_c, n_c->public_key);
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Connections *tox_conns = object;
+    int toxconn_id = gettox_conn_id_pk(tox_conns, n_c->public_key);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (friend_con) {
+    if (tox_con) {
 
-        if (friend_con->crypt_connection_id != -1)
+        if (tox_con->crypt_connection_id != -1)
             return -1;
 
-        int id = accept_crypto_connection(fr_c->net_crypto, n_c);
+        int id = accept_crypto_connection(tox_conns->net_crypto, n_c);
 
         if (id == -1) {
             return -1;
         }
 
-        connection_status_handler(fr_c->net_crypto, id, &handle_status, fr_c, friendcon_id);
-        connection_data_handler(fr_c->net_crypto, id, &handle_packet, fr_c, friendcon_id);
-        connection_lossy_data_handler(fr_c->net_crypto, id, &handle_lossy_packet, fr_c, friendcon_id);
-        friend_con->crypt_connection_id = id;
+        connection_status_handler(tox_conns->net_crypto, id, &handle_status, tox_conns, toxconn_id);
+        connection_data_handler(tox_conns->net_crypto, id, &handle_packet, tox_conns, toxconn_id);
+        connection_lossy_data_handler(tox_conns->net_crypto, id, &handle_lossy_packet, tox_conns, toxconn_id);
+        tox_con->crypt_connection_id = id;
 
         if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
-            set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
+            set_direct_ip_port(tox_conns->net_crypto, tox_con->crypt_connection_id, tox_con->dht_ip_port, 0);
         } else {
-            friend_con->dht_ip_port = n_c->source;
-            friend_con->dht_ip_port_lastrecv = unix_time();
+            tox_con->dht_ip_port = n_c->source;
+            tox_con->dht_ip_port_lastrecv = unix_time();
         }
 
-        if (public_key_cmp(friend_con->dht_temp_pk, n_c->dht_public_key) != 0) {
-            change_dht_pk(fr_c, friendcon_id, n_c->dht_public_key);
+        if (public_key_cmp(tox_con->dht_temp_pk, n_c->dht_public_key) != 0) {
+            change_dht_pk(tox_conns, toxconn_id, n_c->dht_public_key);
         }
 
-        nc_dht_pk_callback(fr_c->net_crypto, id, &dht_pk_callback, fr_c, friendcon_id);
+        nc_dht_pk_callback(tox_conns->net_crypto, id, &dht_pk_callback, tox_conns, toxconn_id);
         return 0;
     }
 
     return -1;
 }
 
-static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
+static int toxconn_new_connection(Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
-    if (friend_con->crypt_connection_id != -1) {
+    if (tox_con->crypt_connection_id != -1) {
         return -1;
     }
 
     /* If dht_temp_pk does not contains a pk. */
-    if (!friend_con->dht_lock) {
+    if (!tox_con->dht_lock) {
         return -1;
     }
 
-    int id = new_crypto_connection(fr_c->net_crypto, friend_con->real_public_key, friend_con->dht_temp_pk);
+    int id = new_crypto_connection(tox_conns->net_crypto, tox_con->real_public_key, tox_con->dht_temp_pk);
 
     if (id == -1)
         return -1;
 
-    friend_con->crypt_connection_id = id;
-    connection_status_handler(fr_c->net_crypto, id, &handle_status, fr_c, friendcon_id);
-    connection_data_handler(fr_c->net_crypto, id, &handle_packet, fr_c, friendcon_id);
-    connection_lossy_data_handler(fr_c->net_crypto, id, &handle_lossy_packet, fr_c, friendcon_id);
-    nc_dht_pk_callback(fr_c->net_crypto, id, &dht_pk_callback, fr_c, friendcon_id);
+    tox_con->crypt_connection_id = id;
+    connection_status_handler(tox_conns->net_crypto, id, &handle_status, tox_conns, toxconn_id);
+    connection_data_handler(tox_conns->net_crypto, id, &handle_packet, tox_conns, toxconn_id);
+    connection_lossy_data_handler(tox_conns->net_crypto, id, &handle_lossy_packet, tox_conns, toxconn_id);
+    nc_dht_pk_callback(tox_conns->net_crypto, id, &dht_pk_callback, tox_conns, toxconn_id);
 
     return 0;
 }
 
-static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
+static int send_ping(const Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     uint8_t ping = PACKET_ID_ALIVE;
-    int64_t ret = write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, &ping, sizeof(ping), 0);
+    int64_t ret = write_cryptpacket(tox_conns->net_crypto, tox_con->crypt_connection_id, &ping, sizeof(ping), 0);
 
     if (ret != -1) {
-        friend_con->ping_lastsent = unix_time();
+        tox_con->ping_lastsent = unix_time();
         return 0;
     }
 
     return -1;
 }
 
-/* Increases lock_count for the connection with friendcon_id by 1.
+/* Increases lock_count for the connection with toxconn_id by 1.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id)
+int tox_connection_lock(Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
-    ++friend_con->lock_count;
+    ++tox_con->lock_count;
     return 0;
 }
 
-/* return FRIENDCONN_STATUS_CONNECTED if the friend is connected.
- * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
- * return FRIENDCONN_STATUS_NONE on failure.
+/* return TOXCONN_STATUS_CONNECTED if the peer is connected.
+ * return TOXCONN_STATUS_CONNECTING if the peer isn't connected.
+ * return TOXCONN_STATUS_NONE on failure.
  */
-unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id)
+unsigned int tox_conn_is_connected(Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return 0;
 
-    return friend_con->status;
+    return tox_con->status;
 }
 
-/* Copy public keys associated to friendcon_id.
+/* Copy public keys associated to toxconn_id.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Connections *fr_c, int friendcon_id)
+int tox_conn_get_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     if (real_pk)
-        memcpy(real_pk, friend_con->real_public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(real_pk, tox_con->real_public_key, crypto_box_PUBLICKEYBYTES);
 
     if (dht_temp_pk)
-        memcpy(dht_temp_pk, friend_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
+        memcpy(dht_temp_pk, tox_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
 
     return 0;
 }
 
-/* Set temp dht key for connection.
- */
-void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk)
+/* Set temp dht key for connection. */
+void set_dht_temp_pk(Tox_Connections *tox_conns, int toxconn_id, const uint8_t *dht_temp_pk)
 {
-    dht_pk_callback(fr_c, friendcon_id, dht_temp_pk);
+    dht_pk_callback(tox_conns, toxconn_id, dht_temp_pk);
 }
 
-/* Set the callbacks for the friend connection.
- * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
+/* Set the callbacks for the given connection.
+ * index is the index (0 to (MAX_TOX_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
  *
  * return 0 on success.
  * return -1 on failure
  */
-int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
-                                int (*status_callback)(void *object, int id, uint8_t status), int (*data_callback)(void *object, int id, uint8_t *data,
-                                        uint16_t length), int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
-                                int number)
+int tox_conn_set_callbacks(Tox_Connections *tox_conns, int toxconn_id, unsigned int index,
+                                int (*status_callback)(void *object, int id, uint8_t status),
+                                int (*data_callback)(void *object, int id, uint8_t *data, uint16_t length),
+                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length),
+                                void *object, int number)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
-    if (index >= MAX_FRIEND_CONNECTION_CALLBACKS)
+    if (index >= MAX_TOX_CONNECTION_CALLBACKS)
         return -1;
 
-    friend_con->callbacks[index].status_callback = status_callback;
-    friend_con->callbacks[index].data_callback = data_callback;
-    friend_con->callbacks[index].lossy_data_callback = lossy_data_callback;
+    tox_con->callbacks[index].status_callback = status_callback;
+    tox_con->callbacks[index].data_callback = data_callback;
+    tox_con->callbacks[index].lossy_data_callback = lossy_data_callback;
 
-    friend_con->callbacks[index].status_callback_object =
-        friend_con->callbacks[index].data_callback_object =
-            friend_con->callbacks[index].lossy_data_callback_object = object;
+    tox_con->callbacks[index].status_callback_object =
+        tox_con->callbacks[index].data_callback_object =
+            tox_con->callbacks[index].lossy_data_callback_object = object;
 
-    friend_con->callbacks[index].status_callback_id =
-        friend_con->callbacks[index].data_callback_id =
-            friend_con->callbacks[index].lossy_data_callback_id = number;
+    tox_con->callbacks[index].status_callback_id =
+        tox_con->callbacks[index].data_callback_id =
+            tox_con->callbacks[index].lossy_data_callback_id = number;
     return 0;
 }
 
@@ -634,121 +634,122 @@ int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsi
  * return crypt_connection_id on success.
  * return -1 on failure.
  */
-int friend_connection_crypt_connection_id(Friend_Connections *fr_c, int friendcon_id)
+int tox_conn_crypt_connection_id(Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
-    return friend_con->crypt_connection_id;
+    return tox_con->crypt_connection_id;
 }
 
-/* Create a new friend connection.
+/* Create a new connection.
  * If one to that real public key already exists, increase lock count and return it.
  *
  * return -1 on failure.
  * return connection id on success.
  */
-int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_key)
+int new_tox_conn(Tox_Connections *tox_conns, const uint8_t *real_public_key)
 {
-    int friendcon_id = getfriend_conn_id_pk(fr_c, real_public_key);
+    int toxconn_id = gettox_conn_id_pk(tox_conns, real_public_key);
 
-    if (friendcon_id != -1) {
-        ++fr_c->conns[friendcon_id].lock_count;
-        return friendcon_id;
+    if (toxconn_id != -1) {
+        ++tox_conns->conns[toxconn_id].lock_count;
+        return toxconn_id;
     }
 
-    friendcon_id = create_friend_conn(fr_c);
+    toxconn_id = create_toxconn(tox_conns);
 
-    if (friendcon_id == -1)
+    if (toxconn_id == -1)
         return -1;
 
-    int32_t onion_friendnum = onion_addfriend(fr_c->onion_c, real_public_key);
+    int32_t onion_friendnum = onion_addfriend(tox_conns->onion_c, real_public_key);
 
     if (onion_friendnum == -1)
         return -1;
 
-    Friend_Conn *friend_con = &fr_c->conns[friendcon_id];
+    Tox_Conn *tox_con = &tox_conns->conns[toxconn_id];
 
-    friend_con->crypt_connection_id = -1;
-    friend_con->status = FRIENDCONN_STATUS_CONNECTING;
-    memcpy(friend_con->real_public_key, real_public_key, crypto_box_PUBLICKEYBYTES);
-    friend_con->onion_friendnum = onion_friendnum;
+    tox_con->crypt_connection_id = -1;
+    tox_con->status = TOXCONN_STATUS_CONNECTING;
+    memcpy(tox_con->real_public_key, real_public_key, crypto_box_PUBLICKEYBYTES);
+    tox_con->onion_friendnum = onion_friendnum;
 
-    recv_tcp_relay_handler(fr_c->onion_c, onion_friendnum, &tcp_relay_node_callback, fr_c, friendcon_id);
-    onion_dht_pk_callback(fr_c->onion_c, onion_friendnum, &dht_pk_callback, fr_c, friendcon_id);
+    recv_tcp_relay_handler(tox_conns->onion_c, onion_friendnum, &tcp_relay_node_callback, tox_conns, toxconn_id);
+    onion_dht_pk_callback(tox_conns->onion_c, onion_friendnum, &dht_pk_callback, tox_conns, toxconn_id);
 
-    return friendcon_id;
+    return toxconn_id;
 }
 
-/* Kill a friend connection.
+/* Kill a connection.
  *
  * return -1 on failure.
  * return 0 on success.
  */
-int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
+int kill_tox_conn(Tox_Connections *tox_conns, int toxconn_id)
 {
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
-    if (friend_con->lock_count) {
-        --friend_con->lock_count;
+    if (tox_con->lock_count) {
+        --tox_con->lock_count;
         return 0;
     }
 
-    onion_delfriend(fr_c->onion_c, friend_con->onion_friendnum);
-    crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
+    onion_delfriend(tox_conns->onion_c, tox_con->onion_friendnum);
+    crypto_kill(tox_conns->net_crypto, tox_con->crypt_connection_id);
 
-    if (friend_con->dht_lock) {
-        DHT_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
+    if (tox_con->dht_lock) {
+        DHT_delfriend(tox_conns->dht, tox_con->dht_temp_pk, tox_con->dht_lock);
     }
 
-    return wipe_friend_conn(fr_c, friendcon_id);
+    return wipe_tox_conn(tox_conns, toxconn_id);
 }
 
 
-/* Set friend request callback.
+/* Set connection request callback.
  *
- * This function will be called every time a friend request packet is received.
+ * This function will be called every time any connection request packet is received.
  */
-void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint16_t), void *object)
+void set_tox_conn_request_callback(Tox_Connections *tox_conns,
+                                   int (*toxconn_request_callback)(void *, const uint8_t *, const uint8_t *, uint16_t),
+                                   void *object)
 {
-    fr_c->fr_request_callback = fr_request_callback;
-    fr_c->fr_request_object = object;
-    oniondata_registerhandler(fr_c->onion_c, CRYPTO_PACKET_FRIEND_REQ, fr_request_callback, object);
+    tox_conns->toxconn_request_callback = toxconn_request_callback;
+    tox_conns->toxconn_request_object = object;
+    oniondata_registerhandler(tox_conns->onion_c, CRYPTO_PACKET_FRIEND_REQ, toxconn_request_callback, object);
 }
 
-/* Send a Friend request packet.
+/* Send a connection request packet.
  *
  *  return -1 if failure.
  *  return  0 if it sent the friend request directly to the friend.
  *  return the number of peers it was routed through if it did not send it directly.
  */
-int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
+int send_tox_conn_request_pkt(Tox_Connections *tox_conns, int toxconn_id, uint32_t nospam_num, const uint8_t *data,
                                uint16_t length)
 {
     if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
         return -1;
 
-    Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
+    Tox_Conn *tox_con = get_conn(tox_conns, toxconn_id);
 
-    if (!friend_con)
+    if (!tox_con)
         return -1;
 
     uint8_t packet[1 + sizeof(nospam_num) + length];
     memcpy(packet + 1, &nospam_num, sizeof(nospam_num));
     memcpy(packet + 1 + sizeof(nospam_num), data, length);
 
-    if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
+    if (tox_con->status == TOXCONN_STATUS_CONNECTED) {
         packet[0] = PACKET_ID_FRIEND_REQUESTS;
-        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, sizeof(packet), 0) != -1;
+        return write_cryptpacket(tox_conns->net_crypto, tox_con->crypt_connection_id, packet, sizeof(packet), 0) != -1;
     } else {
         packet[0] = CRYPTO_PACKET_FRIEND_REQ;
-        int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
+        int num = send_onion_data(tox_conns->onion_c, tox_con->onion_friendnum, packet, sizeof(packet));
 
         if (num <= 0)
             return -1;
@@ -757,13 +758,13 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
     }
 }
 
-/* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(Onion_Client *onion_c)
+/* Create new Tox_Connections instance. */
+Tox_Connections *new_tox_conns(Onion_Client *onion_c)
 {
     if (!onion_c)
         return NULL;
 
-    Friend_Connections *temp = calloc(1, sizeof(Friend_Connections));
+    Tox_Connections *temp = calloc(1, sizeof(Tox_Connections));
 
     if (temp == NULL)
         return NULL;
@@ -779,77 +780,77 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c)
 }
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
-static void LANdiscovery(Friend_Connections *fr_c)
+static void LANdiscovery(Tox_Connections *tox_conns)
 {
-    if (fr_c->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        send_LANdiscovery(htons(TOX_PORT_DEFAULT), fr_c->dht);
-        fr_c->last_LANdiscovery = unix_time();
+    if (tox_conns->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+        send_LANdiscovery(htons(TOX_PORT_DEFAULT), tox_conns->dht);
+        tox_conns->last_LANdiscovery = unix_time();
     }
 }
 
-/* main friend_connections loop. */
-void do_friend_connections(Friend_Connections *fr_c)
+/* main Tox_Connections loop. */
+void do_tox_connections(Tox_Connections *tox_conns)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
 
-    for (i = 0; i < fr_c->num_cons; ++i) {
-        Friend_Conn *friend_con = get_conn(fr_c, i);
+    for (i = 0; i < tox_conns->num_cons; ++i) {
+        Tox_Conn *tox_con = get_conn(tox_conns, i);
 
-        if (friend_con) {
-            if (friend_con->status == FRIENDCONN_STATUS_CONNECTING) {
-                if (friend_con->dht_pk_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    if (friend_con->dht_lock) {
-                        DHT_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
-                        friend_con->dht_lock = 0;
+        if (tox_con) {
+            if (tox_con->status == TOXCONN_STATUS_CONNECTING) {
+                if (tox_con->dht_pk_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
+                    if (tox_con->dht_lock) {
+                        DHT_delfriend(tox_conns->dht, tox_con->dht_temp_pk, tox_con->dht_lock);
+                        tox_con->dht_lock = 0;
                     }
                 }
 
-                if (friend_con->dht_ip_port_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    friend_con->dht_ip_port.ip.family = 0;
+                if (tox_con->dht_ip_port_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
+                    tox_con->dht_ip_port.ip.family = 0;
                 }
 
-                if (friend_con->dht_lock) {
-                    if (friend_new_connection(fr_c, i) == 0) {
-                        set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
-                        connect_to_saved_tcp_relays(fr_c, i, (MAX_FRIEND_TCP_CONNECTIONS / 2)); /* Only fill it half up. */
+                if (tox_con->dht_lock) {
+                    if (toxconn_new_connection(tox_conns, i) == 0) {
+                        set_direct_ip_port(tox_conns->net_crypto, tox_con->crypt_connection_id, tox_con->dht_ip_port, 0);
+                        connect_to_saved_tcp_relays(tox_conns, i, (MAX_TCP_CONNECTIONS / 2)); /* Only fill it half up. */
                     }
                 }
 
-            } else if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
-                if (friend_con->ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
-                    send_ping(fr_c, i);
+            } else if (tox_con->status == TOXCONN_STATUS_CONNECTED) {
+                if (tox_con->ping_lastsent + TOXCONN_PING_INTERVAL < temp_time) {
+                    send_ping(tox_conns, i);
                 }
 
-                if (friend_con->share_relays_lastsent + SHARE_RELAYS_INTERVAL < temp_time) {
-                    send_relays(fr_c, i);
+                if (tox_con->share_relays_lastsent + SHARE_RELAYS_INTERVAL < temp_time) {
+                    send_relays(tox_conns, i);
                 }
 
-                if (friend_con->ping_lastrecv + FRIEND_CONNECTION_TIMEOUT < temp_time) {
+                if (tox_con->ping_lastrecv + TOXCONN_TIMEOUT < temp_time) {
                     /* If we stopped receiving ping packets, kill it. */
-                    crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
-                    friend_con->crypt_connection_id = -1;
-                    handle_status(fr_c, i, 0); /* Going offline. */
+                    crypto_kill(tox_conns->net_crypto, tox_con->crypt_connection_id);
+                    tox_con->crypt_connection_id = -1;
+                    handle_status(tox_conns, i, 0); /* Going offline. */
                 }
             }
         }
     }
 
-    LANdiscovery(fr_c);
+    LANdiscovery(tox_conns);
 }
 
-/* Free everything related with friend_connections. */
-void kill_friend_connections(Friend_Connections *fr_c)
+/* Free everything related with given Tox_Connections. */
+void kill_tox_conns(Tox_Connections *tox_conns)
 {
-    if (!fr_c)
+    if (!tox_conns)
         return;
 
     uint32_t i;
 
-    for (i = 0; i < fr_c->num_cons; ++i) {
-        kill_friend_connection(fr_c, i);
+    for (i = 0; i < tox_conns->num_cons; ++i) {
+        kill_tox_conn(tox_conns, i);
     }
 
-    LANdiscovery_kill(fr_c->dht);
-    free(fr_c);
+    LANdiscovery_kill(tox_conns->dht);
+    free(tox_conns);
 }
