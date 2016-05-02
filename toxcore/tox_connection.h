@@ -1,4 +1,4 @@
-/* friend_connection.h
+/* tox_connection.h
  *
  * Connection to tox instances.
  *

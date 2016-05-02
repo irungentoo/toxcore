@@ -20,7 +20,7 @@ libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/friend_requests.c \
                         ../toxcore/LAN_discovery.h \
                         ../toxcore/LAN_discovery.c \
-                        ../toxcore/friend_connection.h \
+                        ../toxcore/tox_connection.h \
                         ../toxcore/tox_connection.c \
                         ../toxcore/Messenger.h \
                         ../toxcore/Messenger.c \

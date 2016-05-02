@@ -24,7 +24,7 @@
 #ifndef FRIEND_REQUESTS_H
 #define FRIEND_REQUESTS_H
 
-#include "friend_connection.h"
+#include "tox_connection.h"
 
 #define MAX_FRIEND_REQUEST_DATA_SIZE (ONION_CLIENT_MAX_DATA_SIZE - (1 + sizeof(uint32_t)))
 

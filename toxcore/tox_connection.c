@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-#include "friend_connection.h"
+#include "tox_connection.h"
 #include "util.h"
 
 /* return 1 if the toxconn_id is not valid.

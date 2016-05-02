@@ -27,7 +27,7 @@
 #define MESSENGER_H
 
 #include "friend_requests.h"
-#include "friend_connection.h"
+#include "tox_connection.h"
 
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
