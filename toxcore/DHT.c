@@ -497,7 +497,8 @@ static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *publ
     if (bucket->empty) {
         return recursive_DHT_bucket_add_node(bucket->buckets[bit], public_key, ip_port, pretend);
     } else {
-        unsigned int i, store_index = DHT_BUCKET_NODES, furthest_index = DHT_BUCKET_NODES, furthest = crypto_box_PUBLICKEYBYTES * 8;
+        unsigned int i, store_index = DHT_BUCKET_NODES, furthest_index = DHT_BUCKET_NODES,
+                        furthest = crypto_box_PUBLICKEYBYTES * 8;
 
         for (i = 0; i < DHT_BUCKET_NODES; ++i) {
             Client_data *client = &bucket->client_list[i];
@@ -661,7 +662,7 @@ static int DHT_bucket_set_node_ret_ip_port(DHT_Bucket *bucket, const uint8_t *no
 }
 
 static int recursive_DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data *nodes, unsigned int number,
-        const uint8_t *public_key)
+        const uint8_t *public_key, _Bool friend_ok)
 {
     int bit = get_bit_at(public_key, bucket->deepness);
 
@@ -669,14 +670,14 @@ static int recursive_DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data 
         return -1;
 
     if (bucket->empty) {
-        int ret = recursive_DHT_bucket_get_nodes(bucket->buckets[bit], nodes, number, public_key);
+        int ret = recursive_DHT_bucket_get_nodes(bucket->buckets[bit], nodes, number, public_key, friend_ok);
 
         if (ret < 0)
             return -1;
 
         if (ret < number) {
             number -= ret;
-            int ret1 = recursive_DHT_bucket_get_nodes(bucket->buckets[!bit], nodes, number, public_key);
+            int ret1 = recursive_DHT_bucket_get_nodes(bucket->buckets[!bit], nodes, number, public_key, friend_ok);
 
             if (ret < 0)
                 return -1;
@@ -686,6 +687,10 @@ static int recursive_DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data 
             return ret;
         }
     } else {
+        if (!friend_ok && bucket->friend_key) {
+            return 0;
+        }
+
         unsigned int i, counter = 0;
 
         for (i = 0; (i < DHT_BUCKET_NODES) && (counter < number); ++i) {
@@ -700,9 +705,10 @@ static int recursive_DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data 
 }
 
 
-int DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data *nodes, unsigned int number, const uint8_t *public_key)
+int DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data *nodes, unsigned int number, const uint8_t *public_key,
+                         _Bool friend_ok)
 {
-    return recursive_DHT_bucket_get_nodes(bucket, nodes, number, public_key);
+    return recursive_DHT_bucket_get_nodes(bucket, nodes, number, public_key, friend_ok);
 }
 
 static int dealloc_buckets(DHT_Bucket *bucket)
@@ -718,7 +724,7 @@ static int dealloc_buckets(DHT_Bucket *bucket)
 
     /* pk doesn't matter, want any nodes from both lower buckets. */
     uint8_t pk[crypto_box_PUBLICKEYBYTES] = {0};
-    int ret = recursive_DHT_bucket_get_nodes(bucket, bucket->client_list, DHT_BUCKET_NODES, pk);
+    int ret = recursive_DHT_bucket_get_nodes(bucket, bucket->client_list, DHT_BUCKET_NODES, pk, 1);
 
     recursive_free_buckets(bucket);
     bucket->empty = 0;
@@ -886,21 +892,21 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
     Client_data client_data[DHT_BUCKET_NODES * 3] = {0};
 
     if (sa_family == AF_INET) {
-        DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key, 0);
     } else if (sa_family == AF_INET6) {
-        DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, 0);
     } else {
         if (rand() % 2) {
-            DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key);
-            DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+            DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key, 0);
+            DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, 0);
         } else {
-            DHT_bucket_get_nodes(&dht->bucket_v6, client_data, DHT_BUCKET_NODES, public_key);
-            DHT_bucket_get_nodes(&dht->bucket_v4, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+            DHT_bucket_get_nodes(&dht->bucket_v6, client_data, DHT_BUCKET_NODES, public_key, 0);
+            DHT_bucket_get_nodes(&dht->bucket_v4, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, 0);
         }
     }
 
     if (is_LAN) {
-        DHT_bucket_get_nodes(&dht->bucket_lan, client_data + (DHT_BUCKET_NODES * 2), DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_lan, client_data + (DHT_BUCKET_NODES * 2), DHT_BUCKET_NODES, public_key, 0);
     }
 
     unsigned int i, num_nodes = 0;
@@ -1455,14 +1461,14 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
         return -1;
 
     if (rand() % 2) {
-        DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key);
-        DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key, 1);
+        DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, 1);
     } else {
-        DHT_bucket_get_nodes(&dht->bucket_v6, client_data, DHT_BUCKET_NODES, public_key);
-        DHT_bucket_get_nodes(&dht->bucket_v4, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_v6, client_data, DHT_BUCKET_NODES, public_key, 1);
+        DHT_bucket_get_nodes(&dht->bucket_v4, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, 1);
     }
 
-    DHT_bucket_get_nodes(&dht->bucket_lan, client_data + (DHT_BUCKET_NODES * 2), DHT_BUCKET_NODES, public_key);
+    DHT_bucket_get_nodes(&dht->bucket_lan, client_data + (DHT_BUCKET_NODES * 2), DHT_BUCKET_NODES, public_key, 1);
 
     unsigned int i;
 
@@ -1528,9 +1534,9 @@ int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packe
     if (friend_number(dht, public_key) == -1)
         return -1;
 
-    DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key);
-    DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
-    DHT_bucket_get_nodes(&dht->bucket_lan, client_data + (DHT_BUCKET_NODES * 2), DHT_BUCKET_NODES, public_key);
+    DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key, 0);
+    DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, 0);
+    DHT_bucket_get_nodes(&dht->bucket_lan, client_data + (DHT_BUCKET_NODES * 2), DHT_BUCKET_NODES, public_key, 0);
 
     unsigned int i;
 
@@ -1584,7 +1590,7 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
         bucket = &dht->bucket_v4;
     }
 
-    DHT_bucket_get_nodes(bucket, client_data, (DHT_BUCKET_NODES * 2), friend->public_key);
+    DHT_bucket_get_nodes(bucket, client_data, (DHT_BUCKET_NODES * 2), friend->public_key, 1);
 
     unsigned int i, count = 0;
     IP_Port ip_ports[(DHT_BUCKET_NODES * 2)];
@@ -1621,9 +1627,10 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_pk, const uint8_t *pack
     if (friend_number(dht, friend_pk) == -1)
         return 0;
 
-    DHT_bucket_get_nodes(&dht->bucket_v4, client_data, (DHT_BUCKET_NODES * 2), friend_pk);
-    DHT_bucket_get_nodes(&dht->bucket_v6, client_data + (DHT_BUCKET_NODES * 2), (DHT_BUCKET_NODES * 2), friend_pk);
-    DHT_bucket_get_nodes(&dht->bucket_lan, client_data + ((DHT_BUCKET_NODES * 2) * 2), (DHT_BUCKET_NODES * 2), friend_pk);
+    DHT_bucket_get_nodes(&dht->bucket_v4, client_data, (DHT_BUCKET_NODES * 2), friend_pk, 1);
+    DHT_bucket_get_nodes(&dht->bucket_v6, client_data + (DHT_BUCKET_NODES * 2), (DHT_BUCKET_NODES * 2), friend_pk, 1);
+    DHT_bucket_get_nodes(&dht->bucket_lan, client_data + ((DHT_BUCKET_NODES * 2) * 2), (DHT_BUCKET_NODES * 2), friend_pk,
+                         1);
 
     unsigned int i, count = 0, r = rand();
 
@@ -1884,34 +1891,11 @@ static void do_NAT(DHT *dht, _Bool v6)
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
 
-/* Return a random node from all the nodes we are connected to.
- * TODO: improve this function.
- */
-Node_format random_node(DHT *dht, sa_family_t sa_family)
-{
-    uint8_t id[crypto_box_PUBLICKEYBYTES];
-    uint32_t i;
-
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES / 4; ++i) { /* populate the id with pseudorandom bytes.*/
-        uint32_t t = rand();
-        memcpy(id + i * sizeof(t), &t, sizeof(t));
-    }
-
-    Node_format nodes_list[MAX_SENT_NODES];
-    memset(nodes_list, 0, sizeof(nodes_list));
-    uint32_t num_nodes = get_close_nodes(dht, id, nodes_list, sa_family, 1, 0);
-
-    if (num_nodes == 0)
-        return nodes_list[0];
-    else
-        return nodes_list[rand() % num_nodes];
-}
-
 /* Put up to max_num nodes in nodes from the closelist.
  *
  * return the number of nodes.
  */
-static uint16_t list_nodes(const DHT *dht, uint8_t *public_key, Node_format *nodes, uint16_t max_num)
+static uint16_t list_nodes(const DHT *dht, uint8_t *public_key, Node_format *nodes, uint16_t max_num, _Bool friend_ok)
 {
     if (max_num == 0)
         return 0;
@@ -1919,11 +1903,11 @@ static uint16_t list_nodes(const DHT *dht, uint8_t *public_key, Node_format *nod
     Client_data client_data[DHT_BUCKET_NODES * 2] = {0};
 
     if (rand() % 2) {
-        DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key);
-        DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_v4, client_data, DHT_BUCKET_NODES, public_key, friend_ok);
+        DHT_bucket_get_nodes(&dht->bucket_v6, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, friend_ok);
     } else {
-        DHT_bucket_get_nodes(&dht->bucket_v6, client_data, DHT_BUCKET_NODES, public_key);
-        DHT_bucket_get_nodes(&dht->bucket_v4, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key);
+        DHT_bucket_get_nodes(&dht->bucket_v6, client_data, DHT_BUCKET_NODES, public_key, friend_ok);
+        DHT_bucket_get_nodes(&dht->bucket_v4, client_data + DHT_BUCKET_NODES, DHT_BUCKET_NODES, public_key, friend_ok);
     }
 
     unsigned int i, num_nodes = 0, r = rand();
@@ -1955,7 +1939,7 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
 
     for (i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
         count += list_nodes(dht, dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].public_key, nodes + count,
-                            max_num - count);
+                            max_num - count, 1);
 
         if (count >= max_num)
             break;
@@ -1970,7 +1954,7 @@ uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
  */
 uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
 {
-    return list_nodes(dht, dht->self_public_key, nodes, max_num);
+    return list_nodes(dht, dht->self_public_key, nodes, max_num, 0);
 }
 
 /*----------------------------------------------------------------------------------*/
@@ -2043,7 +2027,7 @@ static void do_DHT_friends(DHT *dht)
         if (is_timeout(friend->lastgetnode, GET_NODE_INTERVAL)) {
             Node_format node;
 
-            if (list_nodes(dht, friend->public_key, &node, 1) == 1) {
+            if (list_nodes(dht, friend->public_key, &node, 1, 1) == 1) {
                 getnodes(dht, node.ip_port, node.public_key, dht->self_public_key, NULL);
                 friend->lastgetnode = unix_time();
             }
@@ -2317,10 +2301,10 @@ int DHT_non_lan_connected(const DHT *dht)
 {
     Client_data cd;
 
-    if (DHT_bucket_get_nodes(&dht->bucket_v4, &cd, 1, dht->self_public_key) == 1)
+    if (DHT_bucket_get_nodes(&dht->bucket_v4, &cd, 1, dht->self_public_key, 1) == 1)
         return 1;
 
-    if (DHT_bucket_get_nodes(&dht->bucket_v6, &cd, 1, dht->self_public_key) == 1)
+    if (DHT_bucket_get_nodes(&dht->bucket_v6, &cd, 1, dht->self_public_key, 1) == 1)
         return 1;
 
     return 0;
@@ -2338,7 +2322,7 @@ int DHT_isconnected(const DHT *dht)
 
     Client_data cd;
 
-    if (DHT_bucket_get_nodes(&dht->bucket_lan, &cd, 1, dht->self_public_key) == 1)
+    if (DHT_bucket_get_nodes(&dht->bucket_lan, &cd, 1, dht->self_public_key, 1) == 1)
         return 1;
 
     return 0;
