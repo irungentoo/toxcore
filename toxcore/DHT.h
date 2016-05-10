@@ -108,6 +108,8 @@ typedef struct DHT_Bucket {
     _Bool empty;
 
     _Bool public_key;
+    /* this is a friend key */
+    _Bool friend_key;
     uint8_t searched_public_key[crypto_box_PUBLICKEYBYTES];
 
     Client_data client_list[DHT_BUCKET_NODES];

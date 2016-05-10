@@ -86,6 +86,27 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
     return 0;
 }
 
+/* Return index of first unequal bit number.
+ */
+static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
+{
+    unsigned int i, j = 0;
+
+    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+        if (pk1[i] == pk2[i])
+            continue;
+
+        for (j = 0; j < 8; ++j) {
+            if ((pk1[i] & (1 << (7 - j))) != (pk2[i] & (1 << (7 - j))))
+                break;
+        }
+
+        break;
+    }
+
+    return i * 8 + j;
+}
+
 /* Shared key generations are costly, it is therefor smart to store commonly used
  * ones so that they can re used later without being computed again.
  *
@@ -387,14 +408,17 @@ static int alloc_buckets(DHT_Bucket *bucket)
             if (bit == 0) {
                 memcpy(b0->searched_public_key, bucket->searched_public_key, crypto_box_PUBLICKEYBYTES);
                 b0->public_key = 1;
+                b0->friend_key = bucket->friend_key;
             } else if (bit == 1) {
                 memcpy(b1->searched_public_key, bucket->searched_public_key, crypto_box_PUBLICKEYBYTES);
                 b1->public_key = 1;
+                b1->friend_key = bucket->friend_key;
             }
         }
 
         bucket->empty = 1;
         bucket->public_key = 0;
+        bucket->friend_key = 0;
 
         memset(bucket->client_list, 0, sizeof(bucket->client_list));
 
@@ -420,13 +444,16 @@ static void recursive_free_buckets(DHT_Bucket *bucket)
     }
 }
 
+/* Free the bucket structure.
+ */
 void free_buckets(DHT_Bucket *bucket)
 {
     recursive_free_buckets(bucket);
+    memset(bucket, 0, sizeof(DHT_Bucket));
 }
 
 
-static int recursive_DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *public_key)
+static int recursive_DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *public_key, _Bool friend_key)
 {
     int bit = get_bit_at(public_key, bucket->deepness);
 
@@ -434,7 +461,7 @@ static int recursive_DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *publi
         return -1;
 
     if (bucket->empty) {
-        return recursive_DHT_bucket_add_key(bucket->buckets[bit], public_key);
+        return recursive_DHT_bucket_add_key(bucket->buckets[bit], public_key, friend_key);
     }
 
     if (bucket->public_key) {
@@ -444,18 +471,20 @@ static int recursive_DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *publi
         if (alloc_buckets(bucket) == -1)
             return -1;
 
-        return recursive_DHT_bucket_add_key(bucket->buckets[bit], public_key);
+        return recursive_DHT_bucket_add_key(bucket->buckets[bit], public_key, friend_key);
     } else {
         memcpy(bucket->searched_public_key, public_key, crypto_box_PUBLICKEYBYTES);
         bucket->public_key = 1;
+        bucket->friend_key = friend_key;
         return 0;
     }
 }
 
-
-int DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *public_key)
+/* Add search key.
+ */
+int DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *public_key, _Bool friend_key)
 {
-    return recursive_DHT_bucket_add_key(bucket, public_key);
+    return recursive_DHT_bucket_add_key(bucket, public_key, friend_key);
 }
 
 static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *public_key, IP_Port ip_port, _Bool pretend)
@@ -468,7 +497,7 @@ static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *publ
     if (bucket->empty) {
         return recursive_DHT_bucket_add_node(bucket->buckets[bit], public_key, ip_port, pretend);
     } else {
-        unsigned int i, store_index = DHT_BUCKET_NODES;
+        unsigned int i, store_index = DHT_BUCKET_NODES, furthest_index = DHT_BUCKET_NODES, furthest = crypto_box_PUBLICKEYBYTES * 8;
 
         for (i = 0; i < DHT_BUCKET_NODES; ++i) {
             Client_data *client = &bucket->client_list[i];
@@ -485,6 +514,20 @@ static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *publ
                     client->timestamp = unix_time();
                     return 0;
                 }
+
+                if (bucket->public_key) {
+                    unsigned int dist = bit_by_bit_cmp(bucket->searched_public_key, client->public_key);
+                    if (dist < furthest) {
+                        furthest = dist;
+                        furthest_index = i;
+                    }
+                }
+            }
+        }
+
+        if (bucket->friend_key && store_index == DHT_BUCKET_NODES && furthest_index < DHT_BUCKET_NODES) {
+            if (bit_by_bit_cmp(bucket->searched_public_key, public_key) > furthest) {
+                store_index = furthest_index;
             }
         }
 
@@ -500,6 +543,10 @@ static int recursive_DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *publ
             client->last_pinged = client->timestamp = unix_time();
 
             return 0;
+        }
+
+        if (bucket->friend_key) {
+            return -1;
         }
 
         if (bucket->public_key) {
@@ -1270,15 +1317,15 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-static int DHT_add_key_all_buckets(DHT *dht, const uint8_t *public_key)
+static int DHT_add_key_all_buckets(DHT *dht, const uint8_t *public_key, _Bool friend_key)
 {
-    if (DHT_bucket_add_key(&dht->bucket_lan, public_key) == -1)
+    if (DHT_bucket_add_key(&dht->bucket_lan, public_key, friend_key) == -1)
         return -1;
 
-    if (DHT_bucket_add_key(&dht->bucket_v4, public_key) == -1)
+    if (DHT_bucket_add_key(&dht->bucket_v4, public_key, friend_key) == -1)
         return -1;
 
-    if (DHT_bucket_add_key(&dht->bucket_v6, public_key) == -1)
+    if (DHT_bucket_add_key(&dht->bucket_v6, public_key, friend_key) == -1)
         return -1;
 
     return 0;
@@ -1336,7 +1383,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
 
     friend->NATping_id = random_64b();
 
-    if (DHT_add_key_all_buckets(dht, public_key) == -1)
+    if (DHT_add_key_all_buckets(dht, public_key, 1) == -1)
         return -1;
 
     ++dht->num_friends;
@@ -2062,7 +2109,7 @@ DHT *new_DHT(Networking_Core *net)
     ping_array_init(&dht->dht_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
     ping_array_init(&dht->dht_harden_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
 
-    if (DHT_add_key_all_buckets(dht, dht->self_public_key) == -1) {
+    if (DHT_add_key_all_buckets(dht, dht->self_public_key, 0) == -1) {
         kill_DHT(dht);
         return NULL;
     }
