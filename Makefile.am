@@ -9,10 +9,14 @@ pkgconfig_DATA = $(top_builddir)/libtoxcore.pc
 BUILT_SOURCES = $(top_builddir)/libtoxcore.pc
 CLEANFILES = $(top_builddir)/libtoxcore.pc
 
+pkgconfig_DATA += $(top_builddir)/libtoxencryptsave.pc
+BUILT_SOURCE += $(top_builddir)/libtoxencryptsave.pc
+CLEANFILES += $(top_builddir)/libtoxencryptsave.pc
 
 EXTRA_DIST = \
 	README.md \
 	libtoxcore.pc.in \
+	libtoxencryptsave.pc.in \
 	tox.spec \
 	dist-build/android-arm.sh \
 	dist-build/android-armv7.sh \
