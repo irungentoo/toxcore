@@ -25,7 +25,6 @@
 #include "stdbool.h"
 
 typedef struct GC_Announce GC_Announce;
-typedef struct GC_Session GC_Session;
 
 #define MAX_GCA_SELF_REQUESTS 30
 #define MAX_GCA_ANNOUNCED_NODES 30

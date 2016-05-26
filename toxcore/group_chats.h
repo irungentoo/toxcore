@@ -28,8 +28,6 @@
 #include <stdbool.h>
 #include "TCP_connection.h"
 
-typedef struct Messenger Messenger;
-
 #define TIME_STAMP_SIZE (sizeof(uint64_t))
 #define HASH_ID_BYTES (sizeof(uint32_t))
 
@@ -197,16 +195,13 @@ typedef struct {
     uint32_t    version;
 } GC_TopicInfo;
 
-typedef struct GC_Announce GC_Announce;
-typedef struct GC_Connection GC_Connection;
-
 typedef struct GC_Chat {
     Networking_Core *net;
     TCP_Connections *tcp_conn;
 
-    GC_GroupPeer    *group;
-    GC_Connection   *gcc;
-    GC_Moderation   moderation;
+    GC_GroupPeer          *group;
+    struct GC_Connection  *gcc;
+    GC_Moderation         moderation;
 
     GC_SharedState  shared_state;
     uint8_t         shared_state_sig[SIGNATURE_SIZE];    /* Signed by founder using the chat secret key */
@@ -246,39 +241,39 @@ typedef struct GC_Chat {
 } GC_Chat;
 
 typedef struct GC_Session {
-    Messenger    *messenger;
-    GC_Chat      *chats;
-    GC_Announce  *announce;
+    struct Messenger    *messenger;
+    GC_Chat             *chats;
+    struct GC_Announce  *announce;
 
     uint32_t     num_chats;
 
-    void (*message)(Messenger *m, uint32_t, uint32_t, unsigned int, const uint8_t *, size_t, void *);
+    void (*message)(struct Messenger *m, uint32_t, uint32_t, unsigned int, const uint8_t *, size_t, void *);
     void *message_userdata;
-    void (*private_message)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void (*private_message)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *private_message_userdata;
-    void (*custom_packet)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void (*custom_packet)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *custom_packet_userdata;
-    void (*moderation)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int, void *);
+    void (*moderation)(struct Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int, void *);
     void *moderation_userdata;
-    void (*nick_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void (*nick_change)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *nick_change_userdata;
-    void (*status_change)(Messenger *m, uint32_t, uint32_t, unsigned int, void *);
+    void (*status_change)(struct Messenger *m, uint32_t, uint32_t, unsigned int, void *);
     void *status_change_userdata;
-    void (*topic_change)(Messenger *m, uint32_t, uint32_t, const uint8_t *,  size_t, void *);
+    void (*topic_change)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *,  size_t, void *);
     void *topic_change_userdata;
-    void (*peer_limit)(Messenger *m, uint32_t, uint32_t, void *);
+    void (*peer_limit)(struct Messenger *m, uint32_t, uint32_t, void *);
     void *peer_limit_userdata;
-    void (*privacy_state)(Messenger *m, uint32_t, unsigned int, void *);
+    void (*privacy_state)(struct Messenger *m, uint32_t, unsigned int, void *);
     void *privacy_state_userdata;
-    void (*password)(Messenger *m, uint32_t, const uint8_t *, size_t, void *);
+    void (*password)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *password_userdata;
-    void (*peer_join)(Messenger *m, uint32_t, uint32_t, void *);
+    void (*peer_join)(struct Messenger *m, uint32_t, uint32_t, void *);
     void *peer_join_userdata;
-    void (*peer_exit)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void (*peer_exit)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *peer_exit_userdata;
-    void (*self_join)(Messenger *m, uint32_t, void *);
+    void (*self_join)(struct Messenger *m, uint32_t, void *);
     void *self_join_userdata;
-    void (*rejected)(Messenger *m, uint32_t, unsigned int, void *);
+    void (*rejected)(struct Messenger *m, uint32_t, unsigned int, void *);
     void *rejected_userdata;
 } GC_Session;
 
@@ -403,7 +398,7 @@ uint32_t gc_get_max_peers(const GC_Chat *chat);
  * Returns -4 if the nick is already taken.
  * Returns -5 if the packet fails to send.
  */
-int gc_set_self_nick(Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
+int gc_set_self_nick(struct Messenger *m, int groupnumber, const uint8_t *nick, uint16_t length);
 
 /* Copies your own nick to nick */
 void gc_get_self_nick(const GC_Chat *chat, uint8_t *nick);
@@ -442,7 +437,7 @@ int gc_get_peer_nick_size(const GC_Chat *chat, uint32_t peer_id);
  * Returns -2 if the status type is invalid.
  * Returns -3 if the packet failed to send.
  */
-int gc_set_self_status(Messenger *m, int groupnumber, uint8_t status);
+int gc_set_self_status(struct Messenger *m, int groupnumber, uint8_t status);
 
 /* Returns peer_id's status.
  * Returns (uint8_t) -1 on failure.
@@ -463,7 +458,7 @@ uint8_t gc_get_role(const GC_Chat *chat, uint32_t peer_id);
  * Returns -4 if the role assignment is invalid.
  * Returns -5 if the role failed to be set.
  */
-int gc_set_peer_role(Messenger *m, int groupnumber, uint32_t peer_id, uint8_t role);
+int gc_set_peer_role(struct Messenger *m, int groupnumber, uint32_t peer_id, uint8_t role);
 
 /* Sets the group password and distributes the new shared state to the group.
  *
@@ -487,7 +482,7 @@ int gc_founder_set_password(GC_Chat *chat, const uint8_t *passwd, uint16_t passw
  * Returns -4 if the privacy state fails to set.
  * Returns -5 if the packet fails to send.
  */
-int gc_founder_set_privacy_state(Messenger *m, int groupnumber, uint8_t new_privacy_state);
+int gc_founder_set_privacy_state(struct Messenger *m, int groupnumber, uint8_t new_privacy_state);
 
 /* Sets the peer limit to maxpeers and distributes the new shared state to the group.
  *
@@ -510,7 +505,7 @@ int gc_founder_set_max_peers(GC_Chat *chat, int groupnumber, uint32_t maxpeers);
  * Returns -4 if the action failed.
  * Returns -5 if the packet failed to send.
  */
-int gc_remove_peer(Messenger *m, int groupnumber, uint32_t peer_id, bool set_ban);
+int gc_remove_peer(struct Messenger *m, int groupnumber, uint32_t peer_id, bool set_ban);
 
 /* Instructs all peers to remove ban_id from their ban list.
  *
@@ -526,42 +521,42 @@ void gc_get_chat_id(const GC_Chat *chat, uint8_t *dest);
 
 
 
-void gc_callback_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int,
+void gc_callback_message(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, unsigned int,
                          const uint8_t *, size_t, void *), void *userdata);
 
-void gc_callback_private_message(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+void gc_callback_private_message(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *,
                                  size_t, void *), void *userdata);
 
-void gc_callback_custom_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t,
+void gc_callback_custom_packet(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t,
                                const uint8_t *, size_t, void *), void *userdata);
 
-void gc_callback_moderation(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,
+void gc_callback_moderation(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, uint32_t, unsigned int,
                             void *), void *userdata);
 
-void gc_callback_nick_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+void gc_callback_nick_change(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *,
                              size_t, void *), void *userdata);
 
-void gc_callback_status_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *),
+void gc_callback_status_change(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, unsigned int, void *),
                                void *userdata);
 
-void gc_callback_topic_change(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+void gc_callback_topic_change(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *,
                               size_t, void *), void *userdata);
 
-void gc_callback_peer_limit(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata);
+void gc_callback_peer_limit(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, void *), void *userdata);
 
-void gc_callback_privacy_state(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *), void *userdata);
+void gc_callback_privacy_state(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, unsigned int, void *), void *userdata);
 
-void gc_callback_password(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
+void gc_callback_password(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *),
                           void *userdata);
 
-void gc_callback_peer_join(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata);
+void gc_callback_peer_join(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, void *), void *userdata);
 
-void gc_callback_peer_exit(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
+void gc_callback_peer_exit(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t,
                            void *), void *userdata);
 
-void gc_callback_self_join(Messenger* m, void (*function)(Messenger *m, uint32_t, void *), void *userdata);
+void gc_callback_self_join(struct Messenger* m, void (*function)(struct Messenger *m, uint32_t, void *), void *userdata);
 
-void gc_callback_rejected(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int type, void *),
+void gc_callback_rejected(struct Messenger *m, void (*function)(struct Messenger *m, uint32_t, unsigned int type, void *),
                           void *userdata);
 
 /* The main loop. */
@@ -570,7 +565,7 @@ void do_gc(GC_Session* c);
 /* Returns a NULL pointer if fail.
  * Make sure that DHT is initialized before calling this
  */
-GC_Session* new_groupchats(Messenger* m);
+GC_Session* new_groupchats(struct Messenger* m);
 
 /* Cleans up groupchat structures and calls gc_group_exit() for every group chat */
 void kill_groupchats(GC_Session *c);
@@ -651,7 +646,7 @@ GC_Chat *gc_get_group(const GC_Session* c, int groupnumber);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gc_peer_delete(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
+int gc_peer_delete(struct Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint16_t length);
 
 /* Packs mod_list into data.
  * data must have room for num_mods * SIG_PUBLIC_KEY bytes.
@@ -669,7 +664,7 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
  */
 int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id);
 
-int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+int handle_gc_lossless_helper(struct Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                               uint16_t length, uint64_t message_id, uint8_t packet_type);
 
 /* Sends the sanctions list to all peers in group.
