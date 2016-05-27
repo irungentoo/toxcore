@@ -2282,7 +2282,8 @@ namespace group {
      */
     INIT,
     /**
-     * The chat_id pointer is set to NULL.
+     * The chat_id pointer is set to NULL or a group with chat_id already exists. This usually
+     * happens if the client attempts to create multiple sessions for the same group.
      */
     BAD_CHAT_ID,
     /**

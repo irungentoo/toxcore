@@ -81,6 +81,7 @@ static int peer_update(Messenger *m, int groupnumber, GC_GroupPeer *peer, uint32
 static int group_delete(GC_Session *c, GC_Chat *chat);
 static int get_nick_peernumber(const GC_Chat *chat, const uint8_t *nick, uint16_t length);
 static int sync_gc_announced_nodes(const GC_Session *c, GC_Chat *chat);
+static bool group_exists(const GC_Session *c, const uint8_t *chat_id);
 
 enum {
     GH_REQUEST,
@@ -4677,9 +4678,7 @@ void do_gc(GC_Session *c)
                     chat->addrs_idx = (chat->addrs_idx + 1) % chat->num_addrs;
                 }
 
-                if (onion_connection_status(c->messenger->onion_c))
-                    chat->connection_state = CS_CONNECTING;
-
+                chat->connection_state = CS_CONNECTING;
                 break;
             }
 
@@ -4976,11 +4975,14 @@ int gc_group_add(GC_Session *c, uint8_t privacy_state, const uint8_t *group_name
  *
  * Return groupnumber on success.
  * Reutrn -1 if the group object fails to initialize.
- * Return -2 if chat_id is NULL.
+ * Return -2 if chat_id is NULL or a group with chat_id already exists in the chats array.
  * Return -3 if there is an error setting the group password.
  */
 int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, uint16_t passwd_len)
 {
+    if (chat_id == NULL || group_exists(c, chat_id))
+        return -2;
+
     int groupnumber = create_new_group(c, false);
 
     if (groupnumber == -1)
@@ -4990,9 +4992,6 @@ int gc_group_join(GC_Session *c, const uint8_t *chat_id, const uint8_t *passwd, 
 
     if (chat == NULL)
         return -1;
-
-    if (chat_id == NULL)
-        return -2;
 
     expand_chat_id(chat->chat_public_key, chat_id);
     chat->chat_id_hash = get_chat_id_hash(CHAT_ID(chat->chat_public_key));
@@ -5269,4 +5268,18 @@ static int get_nick_peernumber(const GC_Chat *chat, const uint8_t *nick, uint16_
     }
 
     return -1;
+}
+
+/* Return True if chat_id exists in the session chat array */
+static bool group_exists(const GC_Session *c, const uint8_t *chat_id)
+{
+    uint32_t i;
+
+    for (i = 0; i < c->num_chats; ++i) {
+        if (memcmp(CHAT_ID(c->chats[i].chat_public_key), chat_id, CHAT_ID_SIZE) == 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
