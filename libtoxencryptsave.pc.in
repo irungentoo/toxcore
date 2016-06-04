@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libtoxencryptsave
+Description: Tox EncryptSave library
+Requires: libtoxcore
+Version: 0.0.0
+Libs:  -L${libdir}  -ltoxencryptsave

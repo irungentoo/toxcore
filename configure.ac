@@ -694,6 +694,7 @@ AM_CONDITIONAL(WIN32, test "x$WIN32" = "xyes")
 AC_CONFIG_FILES([Makefile
                  build/Makefile
                  libtoxcore.pc
+                 libtoxencryptsave.pc
                  tox.spec
                 ])
 
