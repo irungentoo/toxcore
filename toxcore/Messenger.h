@@ -26,6 +26,7 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
+#include "tox.h"
 #include "friend_requests.h"
 #include "friend_connection.h"
 
@@ -68,6 +69,7 @@ enum {
 typedef struct {
     uint8_t ipv6enabled;
     uint8_t udp_disabled;
+    TOX_TRAVERSAL_TYPE traversal_type;
     TCP_Proxy_Info proxy_info;
     uint16_t port_range[2];
     uint16_t tcp_server_port;

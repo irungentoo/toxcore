@@ -25,14 +25,14 @@
 #include "config.h"
 #endif
 
+#define TOX_DEFINED
+typedef struct Messenger Tox;
+
 #include "Messenger.h"
 #include "group.h"
 #include "logger.h"
 
 #include "../toxencryptsave/defines.h"
-
-#define TOX_DEFINED
-typedef struct Messenger Tox;
 
 #include "tox.h"
 
@@ -101,6 +101,7 @@ void tox_options_default(struct Tox_Options *options)
         memset(options, 0, sizeof(struct Tox_Options));
         options->ipv6_enabled = 1;
         options->udp_enabled = 1;
+        options->traversal_type = TOX_TRAVERSAL_TYPE_NONE;
         options->proxy_type = TOX_PROXY_TYPE_NONE;
     }
 }
@@ -166,6 +167,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
         m_options.ipv6enabled = options->ipv6_enabled;
         m_options.udp_disabled = !options->udp_enabled;
+        m_options.traversal_type = options->traversal_type;
         m_options.port_range[0] = options->start_port;
         m_options.port_range[1] = options->end_port;
         m_options.tcp_server_port = options->tcp_port;
