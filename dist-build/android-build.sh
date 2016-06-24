@@ -11,7 +11,7 @@ if [ -z "$SODIUM_HOME" ]; then
     exit
 fi
 
-if [ -z $TARGET_ARCH ] || [ -z $HOST_COMPILER ]; then
+if [ -z "$TARGET_ARCH" ] || [ -z "$HOST_COMPILER" ]; then
     echo "You shouldn't use android-build.sh directly, use android-[arch].sh instead"
     exit 1
 fi
