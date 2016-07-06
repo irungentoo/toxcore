@@ -198,7 +198,7 @@ void kill();
  */
 tox::this *tox { get(); }
 /*******************************************************************************
- * 
+ *
  * :: A/V event loop
  *
  ******************************************************************************/
@@ -209,12 +209,12 @@ tox::this *tox { get(); }
 const uint32_t iteration_interval();
 /**
  * Main loop for the session. This function needs to be called in intervals of
- * toxav_iteration_interval() milliseconds. It is best called in the separate 
+ * toxav_iteration_interval() milliseconds. It is best called in the separate
  * thread from tox_iterate.
  */
 void iterate();
 /*******************************************************************************
- * 
+ *
  * :: Call setup
  *
  ******************************************************************************/
@@ -223,7 +223,7 @@ void iterate();
  *
  * It is the client's responsibility to stop ringing after a certain timeout,
  * if such behaviour is desired. If the client does not stop ringing, the
- * library will not stop until the friend is disconnected. Audio and video 
+ * library will not stop until the friend is disconnected. Audio and video
  * receiving are both enabled by default.
  *
  * @param friend_number The friend number of the friend that should be called.
@@ -263,7 +263,7 @@ bool call(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_ra
 event call {
   /**
    * The function type for the ${event call} callback.
-   * 
+   *
    * @param friend_number The friend number from which the call is incoming.
    * @param audio_enabled True if friend is sending audio.
    * @param video_enabled True if friend is sending video.
@@ -309,13 +309,13 @@ bool answer(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_
   INVALID_BIT_RATE,
 }
 /*******************************************************************************
- * 
+ *
  * :: Call state graph
  *
  ******************************************************************************/
 bitmask FRIEND_CALL_STATE {
   /**
-   * Set by the AV core if an error occurred on the remote end or if friend 
+   * Set by the AV core if an error occurred on the remote end or if friend
    * timed out. This is the final state after which no more state
    * transitions can occur for the call. This call state will never be triggered
    * in combination with other call states.
@@ -323,7 +323,7 @@ bitmask FRIEND_CALL_STATE {
   ERROR,
   /**
    * The call has finished. This is the final state after which no more state
-   * transitions can occur for the call. This call state will never be 
+   * transitions can occur for the call. This call state will never be
    * triggered in combination with other call states.
    */
   FINISHED,
@@ -357,7 +357,7 @@ event call_state {
   typedef void(uint32_t friend_number, uint32_t state);
 }
 /*******************************************************************************
- * 
+ *
  * :: Call control
  *
  ******************************************************************************/
@@ -427,7 +427,7 @@ bool call_control (uint32_t friend_number, CALL_CONTROL control) {
   INVALID_TRANSITION,
 }
 /*******************************************************************************
- * 
+ *
  * :: Controlling bit rates
  *
  ******************************************************************************/
@@ -441,7 +441,7 @@ namespace bit_rate {
      * audio sending. Set to -1 to leave unchanged.
      * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
      * video sending. Set to -1 to leave unchanged.
-     * 
+     *
      */
     bool set(uint32_t friend_number, int32_t audio_bit_rate, int32_t video_bit_rate) {
         /**
@@ -455,7 +455,7 @@ namespace bit_rate {
         /**
          * The video bit rate passed was not one of the supported values.
          */
-         INVALID_VIDEO_BIT_RATE,
+        INVALID_VIDEO_BIT_RATE,
         /**
          * The friend_number passed did not designate a valid friend.
          */
@@ -468,9 +468,9 @@ namespace bit_rate {
     event status {
         /**
          * The function type for the ${event status} callback. The event is triggered
-         * when the network becomes too saturated for current bit rates at which 
+         * when the network becomes too saturated for current bit rates at which
          * point core suggests new bit rates.
-         * 
+         *
          * @param friend_number The friend number of the friend for which to set the
          * bit rate.
          * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
@@ -480,7 +480,7 @@ namespace bit_rate {
     }
 }
 /*******************************************************************************
- * 
+ *
  * :: A/V sending
  *
  ******************************************************************************/
@@ -538,7 +538,7 @@ namespace audio {
    * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
    * rates are 8000, 12000, 16000, 24000, or 48000.
    */
-  bool send_frame(uint32_t friend_number, const int16_t *pcm, size_t sample_count, 
+  bool send_frame(uint32_t friend_number, const int16_t *pcm, size_t sample_count,
                   uint8_t channels, uint32_t sampling_rate) with error for send_frame;
 }
 namespace video {
@@ -561,7 +561,7 @@ namespace video {
                   const uint8_t *y, const uint8_t *u, const uint8_t *v) with error for send_frame;
 }
 /*******************************************************************************
- * 
+ *
  * :: A/V receiving
  *
  ******************************************************************************/
@@ -571,7 +571,7 @@ namespace audio {
      * The function type for the ${event receive_frame} callback. The callback can be
      * called multiple times per single iteration depending on the amount of queued
      * frames in the buffer. The received format is the same as in send function.
-     * 
+     *
      * @param friend_number The friend number of the friend who sent an audio frame.
      * @param pcm An array of audio samples (sample_count * channels elements).
      * @param sample_count The number of audio samples per channel in the PCM array.
@@ -591,18 +591,18 @@ namespace video {
      * @param friend_number The friend number of the friend who sent a video frame.
      * @param width Width of the frame in pixels.
      * @param height Height of the frame in pixels.
-     * @param y 
-     * @param u 
+     * @param y
+     * @param u
      * @param v Plane data.
      *          The size of plane data is derived from width and height where
-     *          Y = MAX(width, abs(ystride)) * height, 
-     *          U = MAX(width/2, abs(ustride)) * (height/2) and 
+     *          Y = MAX(width, abs(ystride)) * height,
+     *          U = MAX(width/2, abs(ustride)) * (height/2) and
      *          V = MAX(width/2, abs(vstride)) * (height/2).
      * @param ystride
      * @param ustride
      * @param vstride Strides data. Strides represent padding for each plane
      *                that may or may not be present. You must handle strides in
-     *                your image processing code. Strides are negative if the 
+     *                your image processing code. Strides are negative if the
      *                image is bottom-up hence why you MUST abs() it when
      *                calculating plane buffer size.
      */
