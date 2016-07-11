@@ -1,7 +1,8 @@
-![Project Tox](https://raw.github.com/irungentoo/toxcore/master/other/tox.png "Project Tox")
+![Project Tox](https://raw.github.com/TokTok/toxcore/master/other/tox.png "Project Tox")
 ***
 
 **Current build status:** [![Build Status](https://travis-ci.org/TokTok/toxcore.svg?branch=master)](https://travis-ci.org/TokTok/toxcore)
+**Current Coverage :** [![Coverage Status](https://coveralls.io/repos/github/TokTok/toxcore/badge.svg?branch=master)](https://coveralls.io/github/TokTok/toxcore?branch=master)
 
 With the rise of government surveillance programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures full privacy and secure message delivery.<br /> <br />
 
