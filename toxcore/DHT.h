@@ -68,17 +68,20 @@ void to_net_family(IP *ip);
 int to_host_family(IP *ip);
 
 typedef struct {
+    uint8_t     pk[crypto_box_PUBLICKEYBYTES];
+    IP_Port     ip_port;
+    uint64_t    timestamp;
+} Ret_IP;
+
+
+typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
 
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
 
-    struct {
-        uint8_t     pk[crypto_box_PUBLICKEYBYTES];
-        IP_Port     ip_port;
-        uint64_t    timestamp;
-    } ret[DHT_BUCKET_NODES];
+    Ret_IP *ret_ip;
 
 } Client_data;
 
@@ -112,7 +115,7 @@ typedef struct DHT_Bucket {
     _Bool friend_key;
     uint8_t searched_public_key[crypto_box_PUBLICKEYBYTES];
 
-    Client_data client_list[DHT_BUCKET_NODES];
+    Client_data *client_list;
     struct DHT_Bucket *buckets[2];
 } DHT_Bucket;
 
@@ -228,6 +231,43 @@ typedef struct {
     Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
     unsigned int num_to_bootstrap;
 } DHT;
+/*----------------------------------------------------------------------------------*/
+
+/* Check if client with public_key is already in node format list of length length.
+ *
+ *  return 1 if true.
+ *  return 0 if false.
+ */
+_Bool client_in_nodelist(const Node_format *list, uint16_t length, const uint8_t *public_key);
+
+/* Get number nodes from bucket closest to public_key.
+ *
+ * Return number of nodes put in nodes.
+ * Return -1 on failure, 0 if bucket is empty.
+ */
+int DHT_bucket_get_nodes(const DHT_Bucket *bucket, Client_data *nodes, unsigned int number, const uint8_t *public_key,
+                         _Bool friend_ok, _Bool ret_ips);
+
+/* Add a search key to the DHT bucket.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int DHT_bucket_add_key(DHT_Bucket *bucket, const uint8_t *public_key, _Bool friend_key);
+
+/* Add a node to the DHT bucket. pretend can be set to true in order to see if a node will be added and not discarded.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+int DHT_bucket_add_node(DHT_Bucket *bucket, const uint8_t *public_key, IP_Port ip_port, _Bool pretend);
+
+
+/* Free the bucket structure.
+ */
+void free_buckets(DHT_Bucket *bucket);
+
+
 /*----------------------------------------------------------------------------------*/
 
 /* Shared key generations are costly, it is therefor smart to store commonly used
