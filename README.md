@@ -2,13 +2,13 @@
 ***
 
 **Current build status:** [![Build Status](https://travis-ci.org/TokTok/toxcore.svg?branch=master)](https://travis-ci.org/TokTok/toxcore)
-**Current Coverage :** [![Coverage Status](https://coveralls.io/repos/github/TokTok/toxcore/badge.svg?branch=master)](https://coveralls.io/github/TokTok/toxcore?branch=master)
+**Current Coverage:** [![Coverage Status](https://coveralls.io/repos/github/TokTok/toxcore/badge.svg?branch=master)](https://coveralls.io/github/TokTok/toxcore?branch=master)
 
 With the rise of government surveillance programs, Tox, a FOSS initiative, aims to be an easy to use, all-in-one communication platform that ensures full privacy and secure message delivery.<br /> <br />
 
 [**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://wiki.tox.chat/Binaries) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md)
 
-**IRC Channels:** [#tox@freenode](https://webchat.freenode.net/?channels=tox), [#tox-dev@freenode](https://webchat.freenode.net/?channels=tox-dev)
+**IRC Channels:** [#tox@freenode](https://webchat.freenode.net/?channels=tox), [#toktok@freenode](https://webchat.freenode.net/?channels=toktok)
 
 
 ## The Complex Stuff:
