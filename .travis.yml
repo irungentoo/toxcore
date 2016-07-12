@@ -86,20 +86,14 @@ script:
         --enable-daemon \
         --enable-logging \
         --enable-ntox \
-        CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage"
+        CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage -DTRAVIS_ENV"
   - make
-  - make check || true
+  - make check
   - if [ -f build/test-suite.log ]; then cat build/test-suite.log; fi
   - make dist
 
 after_script:
   - coveralls --exclude auto_tests --exclude other --exclude testing --gcov-options '\-lp'
 
-#notifications:
-#  email: false
-#
-#  irc:
-#    channels:
-#      - "chat.freenode.net#tox-dev"
-#    on_success: always
-#    on_failure: always
+notifications:
+  irc: "chat.freenode.net#toktok-status"

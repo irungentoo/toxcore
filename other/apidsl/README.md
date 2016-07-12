@@ -19,7 +19,7 @@ If you want to do it quickly and you don't have time for anything other than cop
 Command to run from ``toxcore`` directory (quick way, involves using curl):
 ```bash
 rm toxcore/tox.h && \
-( curl -X POST --data-binary @- https://criticism.herokuapp.com/apidsl < ./other/apidsl/tox.in.h > ./toxcore/tox.h ) && \
+( curl -X POST --data-binary @- https://apidsl.herokuapp.com/apidsl < ./other/apidsl/tox.in.h > ./toxcore/tox.h ) && \
 astyle --options=./other/astyle/astylerc ./toxcore/tox.h
 ```
 
