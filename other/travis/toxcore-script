@@ -1,0 +1,25 @@
+#!/bin/sh
+
+set -e -x
+
+# Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
+../apidsl/_build/apigen.native ./other/apidsl/tox.in.h   | $ASTYLE --options=./other/astyle/astylerc > toxcore/tox.h
+../apidsl/_build/apigen.native ./other/apidsl/toxav.in.h | $ASTYLE --options=./other/astyle/astylerc > toxav/toxav.h
+git diff --exit-code
+
+# Build toxcore and run tests.
+./autogen.sh
+./configure \
+  --with-libsodium-libs=$CACHE_DIR/lib \
+  --with-libsodium-headers=$CACHE_DIR/include \
+  --enable-daemon \
+  --enable-logging \
+  --enable-ntox \
+  CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
+
+make
+make check
+if [ -f build/test-suite.log ]; then
+  cat build/test-suite.log
+fi
+make dist
