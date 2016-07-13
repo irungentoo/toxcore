@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e -x
+
+cabal update
+
+# We need to install happy explicitly, otherwise setup-Simple-Cabal will fail to
+# install.
+cabal install happy
+
+# Fetch hstox.
+git clone --recursive --depth=1 https://github.com/TokTok/hstox ../hstox
+
+# Delete all files in the cloned toxcore.
+rm -rf ../hstox/test/toxcore/toxcore/toxcore
+# Move the toxcore source files to the hstox test directory.
+# The reason we move source files instead of the whole git root directory is
+# that the travis scripts (like this one) need to remain in place.
+mv toxcore ../hstox/test/toxcore/toxcore
+
+# In the "install" step, we only run configure, which downloads the required
+# packages. In the "script" step we then build the actual code.
+make -C ../hstox configure

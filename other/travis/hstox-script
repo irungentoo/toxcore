@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e -x
+
+make -C ../hstox check-toxcore

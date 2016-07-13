@@ -5,27 +5,36 @@ compiler:
 
 env:
   matrix:
-#    - BUILD=hstox
+    - BUILD=hstox
     - BUILD=toxcore
 
 addons:
   apt:
     sources:
       - avsm
+      - hvr-ghc
     packages:
+      - cabal-install-1.22
       - check
+      - ghc-7.10.3
       - libvpx-dev
       - opam            # For apidsl and Frama-C.
       - texinfo         # For libconfig.
 
 cache:
   directories:
+    - $HOME/.cabal
+    - $HOME/.ghc
     - $HOME/cache
 
 install:
+  # Set up PATH for the /opt packages.
+  - export PATH=/opt/cabal/1.22/bin:$PATH
+  - export PATH=/opt/ghc/7.10.3/bin:$PATH
   # Globally used environment variables.
   - export CACHE_DIR=$HOME/cache
   - export OPAMROOT=$CACHE_DIR/.opam
+  - export LD_LIBRARY_PATH=$CACHE_DIR/lib
   - export PKG_CONFIG_PATH=$CACHE_DIR/lib/pkgconfig
   - export ASTYLE=$CACHE_DIR/astyle/build/gcc/bin/astyle
   # Install required packages.
