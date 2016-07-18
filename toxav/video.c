@@ -34,6 +34,8 @@
 #include "../toxcore/network.h"
 
 #define MAX_DECODE_TIME_US 0 /* Good quality encode. */
+#define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
+
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
 VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
@@ -97,7 +99,13 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
         vpx_codec_destroy(vc->encoder);
         goto BASE_CLEANUP_1;
     }
-
+    
+    vc->input_frame.w = vc->input_frame.h = vc->input_frame.d_w = vc->input_frame.d_h = 0;
+    if(!vpx_img_alloc(&vc->input_frame, VPX_IMG_FMT_I420, cfg.g_w, cfg.g_h, 0)) {
+        LOGGER_WARNING("Allocation failed! Application might misbehave!");
+        goto BASE_CLEANUP_1;
+    }
+    
     vc->linfts = current_time_monotonic();
     vc->lcfd = 60;
     vc->vcb.first = cb;
@@ -123,6 +131,8 @@ void vc_kill(VCSession *vc)
     vpx_codec_destroy(vc->encoder);
     vpx_codec_destroy(vc->decoder);
 
+    vpx_img_free(&vc->input_frame);
+    
     void *p;
 
     while (rb_read(vc->vbuf_raw, (void **)&p))
@@ -247,7 +257,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
             LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
             return -1;
         }
-
+        
         rc = vpx_codec_control(&new_c, VP8E_SET_CPUUSED, 8);
 
         if (rc != VPX_CODEC_OK) {
@@ -258,7 +268,27 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
 
         vpx_codec_destroy(vc->encoder);
         memcpy(vc->encoder, &new_c, sizeof(new_c));
+        
+        vpx_img_free(&vc->input_frame);
+        vc->input_frame.w = vc->input_frame.h = vc->input_frame.d_w = vc->input_frame.d_h = 0;
+        if(!vpx_img_alloc(&vc->input_frame, VPX_IMG_FMT_I420, cfg.g_w, cfg.g_h, 0)) {
+            LOGGER_ERROR("Failed to allocate frame");
+            return -1;
+        }
     }
 
     return 0;
+}
+
+int vc_encode_frame(VCSession *vc, const uint8_t *y, const uint8_t *u, const uint8_t *v)
+{
+    /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes."
+     * http://fourcc.org/yuv.php#IYUV
+     */
+    vc->input_frame.planes[VPX_PLANE_Y] = y;
+    vc->input_frame.planes[VPX_PLANE_U] = u;
+    vc->input_frame.planes[VPX_PLANE_V] = v;
+
+    return vpx_codec_encode(vc->encoder, &vc->input_frame,
+                            vc->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 }

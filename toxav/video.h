@@ -56,6 +56,8 @@ typedef struct VCSession_s {
     PAIR(toxav_video_receive_frame_cb *, void *) vcb; /* Video frame receive callback */
 
     pthread_mutex_t queue_mutex[1];
+    
+    vpx_image_t input_frame;
 } VCSession;
 
 VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data);
@@ -63,5 +65,6 @@ void vc_kill(VCSession *vc);
 void vc_iterate(VCSession *vc);
 int vc_queue_message(void *vcp, struct RTPMessage *msg);
 int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height);
+int vc_encode_frame(VCSession *vc, const uint8_t *y, const uint8_t *u, const uint8_t *v);
 
 #endif /* VIDEO_H */
