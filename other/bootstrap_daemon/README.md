@@ -142,6 +142,12 @@ Go over everything in the copied `tox-bootstrapd.conf` file. Set options you wan
 
 Look at the variable declarations in the beginning of `tox-bootstrapd.sh` init script to see if you need to change anything for it to work on your system. The default values must be fine for most users and we assume that you use those next.
 
+If you have configured the daemon to use any port numbers that are lower than 1024, you need to execute the command below, as by default non-privileged users cannot open ports <1024. The change persists through reboot:
+
+```sh
+sudo setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/tox-bootstrapd
+```
+
 Copy `tox-bootstrapd.sh` init script to `/etc/init.d/tox-bootstrapd` (note the disappearance of ".sh" ending):
 ```sh
 sudo cp tox-bootstrapd.sh /etc/init.d/tox-bootstrapd
