@@ -785,7 +785,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
     }
 
     { /* Encode */
-        int vrc = vc_encode_frame(&call->video.second, y, u, v);
+        int vrc = vc_encode_frame(call->video.second, y, u, v);
 
         if (vrc != VPX_CODEC_OK) {
             pthread_mutex_unlock(call->mutex_video);
