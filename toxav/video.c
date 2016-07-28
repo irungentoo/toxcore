@@ -285,10 +285,16 @@ int vc_encode_frame(VCSession *vc, const uint8_t *y, const uint8_t *u, const uin
     /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes."
      * http://fourcc.org/yuv.php#IYUV
      */
-    vc->input_frame.planes[VPX_PLANE_Y] = y;
-    vc->input_frame.planes[VPX_PLANE_U] = u;
-    vc->input_frame.planes[VPX_PLANE_V] = v;
+    
+    vpx_image_t *img = &vc->input_frame;
 
-    return vpx_codec_encode(vc->encoder, &vc->input_frame,
+    int plane_bytes_y = img->w * img->h;
+    int plane_bytes_uv = plane_bytes_y / 4;
+
+    memcpy( img->planes[VPX_PLANE_Y], y, plane_bytes_y);
+    memcpy( img->planes[VPX_PLANE_U], u, plane_bytes_uv);    
+    memcpy( img->planes[VPX_PLANE_V], v, plane_bytes_uv);
+
+    return vpx_codec_encode(vc->encoder, img,
                             vc->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
 }
