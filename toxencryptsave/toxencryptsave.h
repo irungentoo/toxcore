@@ -72,7 +72,7 @@ struct Tox_Options;
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOXES_VERSION_PATCH               0u
+#define TOXES_VERSION_PATCH               1u
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible

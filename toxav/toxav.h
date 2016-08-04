@@ -40,7 +40,7 @@ extern "C" {
  *
  * As in Core API, events are handled by callbacks. One callback can be
  * registered per event. All events have a callback function type named
- * `toxav_{event}_cb` and a function to register it named `toxav_callback_{event}`.
+ * `toxav_{event}_cb` and a function to register it named `tox_callback_{event}`.
  * Passing a NULL callback will result in no callback being registered for that
  * event. Only one callback per event can be registered, so if a client needs
  * multiple event listeners, it needs to implement the dispatch functionality
@@ -59,7 +59,7 @@ extern "C" {
  * sleeping for toxav_iteration_interval * milliseconds on each iteration.
  *
  * An important thing to note is that events are triggered from both tox and
- * toxav thread (see above). Audio and video receive frame events are triggered
+ * toxav thread (see above). audio and video receive frame events are triggered
  * from toxav thread while all the other events are triggered from tox thread.
  *
  * Tox thread has priority with mutex mechanisms. Any api function can
@@ -96,6 +96,9 @@ typedef struct ToxAV ToxAV;
  * :: API version
  *
  ******************************************************************************/
+
+
+
 /**
  * The major version number. Incremented when the API or ABI changes in an
  * incompatible way.
@@ -113,7 +116,7 @@ typedef struct ToxAV ToxAV;
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOXAV_VERSION_PATCH               0u
+#define TOXAV_VERSION_PATCH               2u
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
@@ -168,30 +171,39 @@ bool toxav_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
  * :: Creation and destruction
  *
  ******************************************************************************/
+
+
+
 typedef enum TOXAV_ERR_NEW {
+
     /**
      * The function returned successfully.
      */
     TOXAV_ERR_NEW_OK,
+
     /**
      * One of the arguments to the function was NULL when it was not expected.
      */
     TOXAV_ERR_NEW_NULL,
+
     /**
      * Memory allocation failure while trying to allocate structures required for
      * the A/V session.
      */
     TOXAV_ERR_NEW_MALLOC,
+
     /**
      * Attempted to create a second session for the same Tox instance.
      */
     TOXAV_ERR_NEW_MULTIPLE,
+
 } TOXAV_ERR_NEW;
+
 
 /**
  * Start new A/V session. There can only be only one session per Tox instance.
  */
-ToxAV *toxav_new(Tox *tox, TOXAV_ERR_NEW *error);
+ToxAV *toxav_new(ToxAV *tox, TOXAV_ERR_NEW *error);
 
 /**
  * Releases all resources associated with the A/V session.
@@ -205,7 +217,7 @@ void toxav_kill(ToxAV *toxAV);
 /**
  * Returns the Tox instance the A/V object was created for.
  */
-Tox *toxav_get_tox(const ToxAV *toxAV);
+ToxAV *toxav_get_tox(const ToxAV *toxAV);
 
 
 /*******************************************************************************
@@ -213,6 +225,9 @@ Tox *toxav_get_tox(const ToxAV *toxAV);
  * :: A/V event loop
  *
  ******************************************************************************/
+
+
+
 /**
  * Returns the interval in milliseconds when the next toxav_iterate call should
  * be. If no call is active at the moment, this function returns 200.
@@ -232,38 +247,50 @@ void toxav_iterate(ToxAV *toxAV);
  * :: Call setup
  *
  ******************************************************************************/
+
+
+
 typedef enum TOXAV_ERR_CALL {
+
     /**
      * The function returned successfully.
      */
     TOXAV_ERR_CALL_OK,
+
     /**
      * A resource allocation error occurred while trying to create the structures
      * required for the call.
      */
     TOXAV_ERR_CALL_MALLOC,
+
     /**
      * Synchronization error occurred.
      */
     TOXAV_ERR_CALL_SYNC,
+
     /**
      * The friend number did not designate a valid friend.
      */
     TOXAV_ERR_CALL_FRIEND_NOT_FOUND,
+
     /**
      * The friend was valid, but not currently connected.
      */
     TOXAV_ERR_CALL_FRIEND_NOT_CONNECTED,
+
     /**
      * Attempted to call a friend while already in an audio or video call with
      * them.
      */
     TOXAV_ERR_CALL_FRIEND_ALREADY_IN_CALL,
+
     /**
      * Audio or video bit rate is invalid.
      */
     TOXAV_ERR_CALL_INVALID_BIT_RATE,
+
 } TOXAV_ERR_CALL;
+
 
 /**
  * Call a friend. This will start ringing the friend.
@@ -279,8 +306,8 @@ typedef enum TOXAV_ERR_CALL {
  * @param video_bit_rate Video bit rate in Kb/sec. Set this to 0 to disable
  * video sending.
  */
-bool toxav_call(ToxAV *toxAV, uint32_t friend_number, uint32_t audio_bit_rate,
-                uint32_t video_bit_rate, TOXAV_ERR_CALL *error);
+bool toxav_call(ToxAV *toxAV, uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate,
+                TOXAV_ERR_CALL *error);
 
 /**
  * The function type for the call callback.
@@ -289,8 +316,9 @@ bool toxav_call(ToxAV *toxAV, uint32_t friend_number, uint32_t audio_bit_rate,
  * @param audio_enabled True if friend is sending audio.
  * @param video_enabled True if friend is sending video.
  */
-typedef void toxav_call_cb(ToxAV *toxAV, uint32_t friend_number, bool audio_enabled,
-                           bool video_enabled, void *user_data);
+typedef void toxav_call_cb(ToxAV *toxAV, uint32_t friend_number, bool audio_enabled, bool video_enabled,
+                           void *user_data);
+
 
 /**
  * Set the callback for the `call` event. Pass NULL to unset.
@@ -299,34 +327,42 @@ typedef void toxav_call_cb(ToxAV *toxAV, uint32_t friend_number, bool audio_enab
 void toxav_callback_call(ToxAV *toxAV, toxav_call_cb *callback, void *user_data);
 
 typedef enum TOXAV_ERR_ANSWER {
+
     /**
      * The function returned successfully.
      */
     TOXAV_ERR_ANSWER_OK,
+
     /**
      * Synchronization error occurred.
      */
     TOXAV_ERR_ANSWER_SYNC,
+
     /**
      * Failed to initialize codecs for call session. Note that codec initiation
      * will fail if there is no receive callback registered for either audio or
      * video.
      */
     TOXAV_ERR_ANSWER_CODEC_INITIALIZATION,
+
     /**
      * The friend number did not designate a valid friend.
      */
     TOXAV_ERR_ANSWER_FRIEND_NOT_FOUND,
+
     /**
      * The friend was valid, but they are not currently trying to initiate a call.
      * This is also returned if this client is already in a call with the friend.
      */
     TOXAV_ERR_ANSWER_FRIEND_NOT_CALLING,
+
     /**
      * Audio or video bit rate is invalid.
      */
     TOXAV_ERR_ANSWER_INVALID_BIT_RATE,
+
 } TOXAV_ERR_ANSWER;
+
 
 /**
  * Accept an incoming call.
@@ -350,7 +386,11 @@ bool toxav_answer(ToxAV *toxAV, uint32_t friend_number, uint32_t audio_bit_rate,
  * :: Call state graph
  *
  ******************************************************************************/
+
+
+
 enum TOXAV_FRIEND_CALL_STATE {
+
     /**
      * Set by the AV core if an error occurred on the remote end or if friend
      * timed out. This is the final state after which no more state
@@ -358,29 +398,36 @@ enum TOXAV_FRIEND_CALL_STATE {
      * in combination with other call states.
      */
     TOXAV_FRIEND_CALL_STATE_ERROR = 1,
+
     /**
      * The call has finished. This is the final state after which no more state
      * transitions can occur for the call. This call state will never be
      * triggered in combination with other call states.
      */
     TOXAV_FRIEND_CALL_STATE_FINISHED = 2,
+
     /**
      * The flag that marks that friend is sending audio.
      */
     TOXAV_FRIEND_CALL_STATE_SENDING_A = 4,
+
     /**
      * The flag that marks that friend is sending video.
      */
     TOXAV_FRIEND_CALL_STATE_SENDING_V = 8,
+
     /**
      * The flag that marks that friend is receiving audio.
      */
     TOXAV_FRIEND_CALL_STATE_ACCEPTING_A = 16,
+
     /**
      * The flag that marks that friend is receiving video.
      */
     TOXAV_FRIEND_CALL_STATE_ACCEPTING_V = 32,
+
 };
+
 
 /**
  * The function type for the call_state callback.
@@ -393,78 +440,99 @@ enum TOXAV_FRIEND_CALL_STATE {
  */
 typedef void toxav_call_state_cb(ToxAV *toxAV, uint32_t friend_number, uint32_t state, void *user_data);
 
+
 /**
  * Set the callback for the `call_state` event. Pass NULL to unset.
  *
  */
 void toxav_callback_call_state(ToxAV *toxAV, toxav_call_state_cb *callback, void *user_data);
 
+
 /*******************************************************************************
  *
  * :: Call control
  *
  ******************************************************************************/
+
+
+
 typedef enum TOXAV_CALL_CONTROL {
+
     /**
      * Resume a previously paused call. Only valid if the pause was caused by this
      * client, if not, this control is ignored. Not valid before the call is accepted.
      */
     TOXAV_CALL_CONTROL_RESUME,
+
     /**
      * Put a call on hold. Not valid before the call is accepted.
      */
     TOXAV_CALL_CONTROL_PAUSE,
+
     /**
      * Reject a call if it was not answered, yet. Cancel a call after it was
      * answered.
      */
     TOXAV_CALL_CONTROL_CANCEL,
+
     /**
      * Request that the friend stops sending audio. Regardless of the friend's
      * compliance, this will cause the audio_receive_frame event to stop being
      * triggered on receiving an audio frame from the friend.
      */
     TOXAV_CALL_CONTROL_MUTE_AUDIO,
+
     /**
      * Calling this control will notify client to start sending audio again.
      */
     TOXAV_CALL_CONTROL_UNMUTE_AUDIO,
+
     /**
      * Request that the friend stops sending video. Regardless of the friend's
      * compliance, this will cause the video_receive_frame event to stop being
      * triggered on receiving a video frame from the friend.
      */
     TOXAV_CALL_CONTROL_HIDE_VIDEO,
+
     /**
      * Calling this control will notify client to start sending video again.
      */
     TOXAV_CALL_CONTROL_SHOW_VIDEO,
+
 } TOXAV_CALL_CONTROL;
 
+
 typedef enum TOXAV_ERR_CALL_CONTROL {
+
     /**
      * The function returned successfully.
      */
     TOXAV_ERR_CALL_CONTROL_OK,
+
     /**
      * Synchronization error occurred.
      */
     TOXAV_ERR_CALL_CONTROL_SYNC,
+
     /**
      * The friend_number passed did not designate a valid friend.
      */
     TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_FOUND,
+
     /**
      * This client is currently not in a call with the friend. Before the call is
      * answered, only CANCEL is a valid control.
      */
     TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL,
+
     /**
      * Happens if user tried to pause an already paused call or if trying to
      * resume a call that is not paused.
      */
     TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION,
+
 } TOXAV_ERR_CALL_CONTROL;
+
 
 /**
  * Sends a call control command to a friend.
@@ -484,59 +552,64 @@ bool toxav_call_control(ToxAV *toxAV, uint32_t friend_number, TOXAV_CALL_CONTROL
  * :: Controlling bit rates
  *
  ******************************************************************************/
+
+
+
 typedef enum TOXAV_ERR_BIT_RATE_SET {
+
     /**
      * The function returned successfully.
      */
     TOXAV_ERR_BIT_RATE_SET_OK,
+
     /**
      * Synchronization error occurred.
      */
     TOXAV_ERR_BIT_RATE_SET_SYNC,
+
     /**
-     * The audio bit rate passed was not one of the supported values.
+     * The bit rate passed was not one of the supported values.
      */
-    TOXAV_ERR_BIT_RATE_SET_INVALID_AUDIO_BIT_RATE,
-    /**
-     * The video bit rate passed was not one of the supported values.
-     */
-    TOXAV_ERR_BIT_RATE_SET_INVALID_VIDEO_BIT_RATE,
+    TOXAV_ERR_BIT_RATE_SET_INVALID,
+
     /**
      * The friend_number passed did not designate a valid friend.
      */
     TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_FOUND,
+
     /**
      * This client is currently not in a call with the friend.
      */
     TOXAV_ERR_BIT_RATE_SET_FRIEND_NOT_IN_CALL,
+
 } TOXAV_ERR_BIT_RATE_SET;
 
+
 /**
- * Set the bit rate to be used in subsequent audio/video frames.
+ * Set the audio bit rate to be used in subsequent audio/video frames.
  *
- * @param friend_number The friend number of the friend for which to set the
- * bit rate.
+ * @param friend_number The friend number.
  * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable
  * audio sending. Set to -1 to leave unchanged.
  * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
  * video sending. Set to -1 to leave unchanged.
  *
  */
-bool toxav_bit_rate_set(ToxAV *toxAV, uint32_t friend_number, int32_t audio_bit_rate,
-                        int32_t video_bit_rate, TOXAV_ERR_BIT_RATE_SET *error);
+bool toxav_bit_rate_set(ToxAV *toxAV, uint32_t friend_number, int32_t audio_bit_rate, int32_t video_bit_rate,
+                        TOXAV_ERR_BIT_RATE_SET *error);
 
 /**
  * The function type for the bit_rate_status callback. The event is triggered
  * when the network becomes too saturated for current bit rates at which
  * point core suggests new bit rates.
  *
- * @param friend_number The friend number of the friend for which to set the
- * bit rate.
+ * @param friend_number The friend number.
  * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
  * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
  */
 typedef void toxav_bit_rate_status_cb(ToxAV *toxAV, uint32_t friend_number, uint32_t audio_bit_rate,
                                       uint32_t video_bit_rate, void *user_data);
+
 
 /**
  * Set the callback for the `bit_rate_status` event. Pass NULL to unset.
@@ -550,43 +623,56 @@ void toxav_callback_bit_rate_status(ToxAV *toxAV, toxav_bit_rate_status_cb *call
  * :: A/V sending
  *
  ******************************************************************************/
+
+
+
 typedef enum TOXAV_ERR_SEND_FRAME {
+
     /**
      * The function returned successfully.
      */
     TOXAV_ERR_SEND_FRAME_OK,
+
     /**
      * In case of video, one of Y, U, or V was NULL. In case of audio, the samples
      * data pointer was NULL.
      */
     TOXAV_ERR_SEND_FRAME_NULL,
+
     /**
      * The friend_number passed did not designate a valid friend.
      */
     TOXAV_ERR_SEND_FRAME_FRIEND_NOT_FOUND,
+
     /**
      * This client is currently not in a call with the friend.
      */
     TOXAV_ERR_SEND_FRAME_FRIEND_NOT_IN_CALL,
+
     /**
      * Synchronization error occurred.
      */
     TOXAV_ERR_SEND_FRAME_SYNC,
+
     /**
      * One of the frame parameters was invalid. E.g. the resolution may be too
      * small or too large, or the audio sampling rate may be unsupported.
      */
     TOXAV_ERR_SEND_FRAME_INVALID,
+
     /**
      * Either friend turned off audio or video receiving or we turned off sending
      * for the said payload.
      */
     TOXAV_ERR_SEND_FRAME_PAYLOAD_TYPE_DISABLED,
+
     /**
      * Failed to push frame through rtp interface.
      */
     TOXAV_ERR_SEND_FRAME_RTP_FAILED,
+
 } TOXAV_ERR_SEND_FRAME;
+
 
 /**
  * Send an audio frame to a friend.
@@ -608,9 +694,8 @@ typedef enum TOXAV_ERR_SEND_FRAME {
  * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
  * rates are 8000, 12000, 16000, 24000, or 48000.
  */
-bool toxav_audio_send_frame(ToxAV *toxAV, uint32_t friend_number, const int16_t *pcm,
-                            size_t sample_count, uint8_t channels, uint32_t sampling_rate,
-                            TOXAV_ERR_SEND_FRAME *error);
+bool toxav_audio_send_frame(ToxAV *toxAV, uint32_t friend_number, const int16_t *pcm, size_t sample_count,
+                            uint8_t channels, uint32_t sampling_rate, TOXAV_ERR_SEND_FRAME *error);
 
 /**
  * Send a video frame to a friend.
@@ -627,9 +712,8 @@ bool toxav_audio_send_frame(ToxAV *toxAV, uint32_t friend_number, const int16_t 
  * @param u U (Chroma) plane data.
  * @param v V (Chroma) plane data.
  */
-bool toxav_video_send_frame(ToxAV *toxAV, uint32_t friend_number, uint16_t width,
-                            uint16_t height, const uint8_t *y, const uint8_t *u, const uint8_t *v,
-                            TOXAV_ERR_SEND_FRAME *error);
+bool toxav_video_send_frame(ToxAV *toxAV, uint32_t friend_number, uint16_t width, uint16_t height, const uint8_t *y,
+                            const uint8_t *u, const uint8_t *v, TOXAV_ERR_SEND_FRAME *error);
 
 
 /*******************************************************************************
@@ -637,6 +721,9 @@ bool toxav_video_send_frame(ToxAV *toxAV, uint32_t friend_number, uint16_t width
  * :: A/V receiving
  *
  ******************************************************************************/
+
+
+
 /**
  * The function type for the audio_receive_frame callback. The callback can be
  * called multiple times per single iteration depending on the amount of queued
@@ -649,9 +736,9 @@ bool toxav_video_send_frame(ToxAV *toxAV, uint32_t friend_number, uint16_t width
  * @param sampling_rate Sampling rate used in this frame.
  *
  */
-typedef void toxav_audio_receive_frame_cb(ToxAV *toxAV, uint32_t friend_number, const int16_t *pcm,
-        size_t sample_count, uint8_t channels, uint32_t sampling_rate,
-        void *user_data);
+typedef void toxav_audio_receive_frame_cb(ToxAV *toxAV, uint32_t friend_number, const int16_t *pcm, size_t sample_count,
+        uint8_t channels, uint32_t sampling_rate, void *user_data);
+
 
 /**
  * Set the callback for the `audio_receive_frame` event. Pass NULL to unset.
@@ -680,60 +767,16 @@ void toxav_callback_audio_receive_frame(ToxAV *toxAV, toxav_audio_receive_frame_
  *                image is bottom-up hence why you MUST abs() it when
  *                calculating plane buffer size.
  */
-typedef void toxav_video_receive_frame_cb(ToxAV *toxAV, uint32_t friend_number, uint16_t width,
-        uint16_t height, const uint8_t *y, const uint8_t *u, const uint8_t *v,
-        int32_t ystride, int32_t ustride, int32_t vstride, void *user_data);
+typedef void toxav_video_receive_frame_cb(ToxAV *toxAV, uint32_t friend_number, uint16_t width, uint16_t height,
+        const uint8_t *y, const uint8_t *u, const uint8_t *v, int32_t ystride, int32_t ustride, int32_t vstride,
+        void *user_data);
+
 
 /**
  * Set the callback for the `video_receive_frame` event. Pass NULL to unset.
  *
  */
 void toxav_callback_video_receive_frame(ToxAV *toxAV, toxav_video_receive_frame_cb *callback, void *user_data);
-
-/**
- * NOTE Compatibility with old toxav group calls TODO remove
- */
-/* Create a new toxav group.
- *
- * return group number on success.
- * return -1 on failure.
- *
- * Audio data callback format:
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
- *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
- */
-int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t,
-                           unsigned int, void *), void *userdata);
-
-/* Join a AV group (you need to have been invited first.)
- *
- * returns group number on success
- * returns -1 on failure.
- *
- * Audio data callback format (same as the one for toxav_add_av_groupchat()):
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
- *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
- */
-int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata);
-
-/* Send audio to the group chat.
- *
- * return 0 on success.
- * return -1 on failure.
- *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
- *
- * Valid number of samples are ((sample rate) * (audio length (Valid ones are: 2.5, 5, 10, 20, 40 or 60 ms)) / 1000)
- * Valid number of channels are 1 or 2.
- * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
- *
- * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
- */
-int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                           unsigned int sample_rate);
 
 #ifdef __cplusplus
 }

@@ -157,7 +157,7 @@ struct this;
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOX_VERSION_PATCH               0u
+#define TOX_VERSION_PATCH               2u
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
@@ -1763,7 +1763,8 @@ namespace file {
    *   On failure, this function returns UINT32_MAX. Any pattern in file numbers
    *   should not be relied on.
    */
-  uint32_t send(uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t[FILE_ID_LENGTH] file_id, const uint8_t[filename_length <= MAX_FILENAME_LENGTH] filename) {
+  uint32_t send(uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t[FILE_ID_LENGTH] file_id,
+                const uint8_t[filename_length <= MAX_FILENAME_LENGTH] filename) {
     NULL,
     /**
      * The friend_number passed did not designate a valid friend.
