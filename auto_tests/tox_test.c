@@ -944,7 +944,8 @@ START_TEST(test_many_clients_tcp)
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
         TOX_ERR_BOOTSTRAP error = 0;
-        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i, error);
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i,
+                      error);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
     }
 
@@ -1039,7 +1040,8 @@ START_TEST(test_many_clients_tcp_b)
         tox_callback_friend_request(toxes[i], accept_friend_request, &to_comp);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[(i % NUM_TCP_RELAYS)], dpk);
-        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, 0), "add relay error");
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, 0),
+                      "add relay error");
         tox_self_get_dht_id(toxes[0], dpk);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
     }
@@ -1169,7 +1171,7 @@ START_TEST(test_many_group)
     uint32_t to_comp = 234212;
     int test_run = 0;
 
-    group_test_restart:
+group_test_restart:
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
         toxes[i] = tox_new(0, 0);
@@ -1264,8 +1266,8 @@ START_TEST(test_many_group)
          * important again.
          */
         ck_assert_msg(num_peers == NUM_GROUP_TOX, "\n\tBad number of group peers (pre check)."
-                                                  "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %i\n\n",
-                                                   NUM_GROUP_TOX, i, num_peers);
+                      "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %i\n\n",
+                      NUM_GROUP_TOX, i, num_peers);
 
         uint8_t title[2048];
         int ret = tox_group_get_title(toxes[i], 0, title, sizeof(title));
@@ -1308,8 +1310,8 @@ START_TEST(test_many_group)
         for (i = 0; i < (k - 1); ++i) {
             int num_peers = tox_group_number_peers(toxes[i], 0);
             ck_assert_msg(num_peers == (k - 1), "\n\tBad number of group peers (post check)."
-                                                "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %i\n\n",
-                                                 (k - 1), i, num_peers);
+                          "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %i\n\n",
+                          (k - 1), i, num_peers);
         }
     }
 

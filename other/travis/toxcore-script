@@ -3,8 +3,10 @@
 set -e -x
 
 # Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
-../apidsl/_build/apigen.native ./other/apidsl/tox.in.h   | $ASTYLE --options=./other/astyle/astylerc > toxcore/tox.h
-../apidsl/_build/apigen.native ./other/apidsl/toxav.in.h | $ASTYLE --options=./other/astyle/astylerc > toxav/toxav.h
+../apidsl/_build/apigen.native other/apidsl/tox.in.h   | $ASTYLE --options=other/astyle/astylerc > toxcore/tox.h
+../apidsl/_build/apigen.native other/apidsl/toxav.in.h | $ASTYLE --options=other/astyle/astylerc > toxav/toxav.h
+# Check if the code is formatted according to the astyle configuration.
+$ASTYLE --options=other/astyle/astylerc `find . -name "*.[ch]" -and -not -name "*.in.*" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
 git diff --exit-code
 
 # Build toxcore and run tests.

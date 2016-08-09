@@ -143,9 +143,8 @@ void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int
 }
 
 int get_general_config(const char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port,
-                       int *enable_ipv6,
-                       int *enable_ipv4_fallback, int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports,
-                       int *tcp_relay_port_count, int *enable_motd, char **motd)
+                       int *enable_ipv6, int *enable_ipv4_fallback, int *enable_lan_discovery, int *enable_tcp_relay,
+                       uint16_t **tcp_relay_ports, int *tcp_relay_port_count, int *enable_motd, char **motd)
 {
     config_t cfg;
 

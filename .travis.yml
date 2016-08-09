@@ -5,7 +5,7 @@ compiler:
 
 env:
   matrix:
-    - BUILD=hstox
+#    - BUILD=hstox
     - BUILD=toxcore
 
 addons:

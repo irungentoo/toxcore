@@ -43,7 +43,7 @@ uint8_t i = 0; \
             i++; \
         } \
     } \
-} \
+}
 
 typedef struct {
     uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
