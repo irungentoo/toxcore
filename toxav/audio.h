@@ -22,7 +22,7 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#include <opus.h>
+#include <opus/opus.h>
 #include <pthread.h>
 
 #include "toxav.h"

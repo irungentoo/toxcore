@@ -10,6 +10,9 @@ Thumbs.db
 *.tmp
 
 # Make
+/_build
+/_install
+/tox-0.0.0*
 CMakeCache.txt
 CMakeFiles
 Makefile

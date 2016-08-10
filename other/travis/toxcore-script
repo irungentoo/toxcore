@@ -2,6 +2,8 @@
 
 set -e -x
 
+BUILD_DIR=_build
+
 # Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
 ../apidsl/_build/apigen.native other/apidsl/tox.in.h   | $ASTYLE --options=other/astyle/astylerc > toxcore/tox.h
 ../apidsl/_build/apigen.native other/apidsl/toxav.in.h | $ASTYLE --options=other/astyle/astylerc > toxav/toxav.h
@@ -10,18 +12,10 @@ $ASTYLE --options=other/astyle/astylerc `find . -name "*.[ch]" -and -not -name "
 git diff --exit-code
 
 # Build toxcore and run tests.
-./autogen.sh
-./configure \
-  --with-libsodium-libs=$CACHE_DIR/lib \
-  --with-libsodium-headers=$CACHE_DIR/include \
-  --enable-daemon \
-  --enable-logging \
-  --enable-ntox \
-  CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
+export CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
+cmake -B$BUILD_DIR -H.
 
-make
-make check
-if [ -f build/test-suite.log ]; then
-  cat build/test-suite.log
-fi
-make dist
+export CTEST_OUTPUT_ON_FAILURE=1
+
+make -C $BUILD_DIR -j `nproc`
+make -C $BUILD_DIR -j `nproc` test

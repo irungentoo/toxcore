@@ -19,7 +19,7 @@
  */
 
 /* Audio encoding/decoding */
-#include <opus.h>
+#include <opus/opus.h>
 
 #include "../toxcore/group.h"
 

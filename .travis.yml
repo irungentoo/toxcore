@@ -1,22 +1,23 @@
 language: c
-compiler:
-  - clang
-  - gcc
 
-env:
-  matrix:
-#    - BUILD=hstox
-    - BUILD=toxcore
+matrix:
+  include:
+    - env: BUILD=hstox
+      language: haskell
+      ghc: 7.8
+    - env: BUILD=toxcore
+      compiler: clang
+    - env: BUILD=toxcore
+      compiler: gcc
+    - env: BUILD=autotools
+      compiler: clang
 
 addons:
   apt:
     sources:
       - avsm
-      - hvr-ghc
     packages:
-      - cabal-install-1.22
       - check
-      - ghc-7.10.3
       - libvpx-dev
       - opam            # For apidsl and Frama-C.
       - texinfo         # For libconfig.
@@ -28,9 +29,6 @@ cache:
     - $HOME/cache
 
 install:
-  # Set up PATH for the /opt packages.
-  - export PATH=/opt/cabal/1.22/bin:$PATH
-  - export PATH=/opt/ghc/7.10.3/bin:$PATH
   # Globally used environment variables.
   - export CACHE_DIR=$HOME/cache
   - export OPAMROOT=$CACHE_DIR/.opam
