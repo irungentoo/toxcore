@@ -15,24 +15,29 @@ find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
 
 find_library(UTIL_LIBRARIES util)
+find_library(RT_LIBRARIES rt)
 
-pkg_search_module(LIBSODIUM REQUIRED libsodium)
 pkg_search_module(CHECK     REQUIRED check)
+pkg_search_module(LIBCONFIG REQUIRED libconfig)
+pkg_search_module(LIBSODIUM REQUIRED libsodium)
 pkg_search_module(OPUS      REQUIRED opus)
 pkg_search_module(VPX       REQUIRED vpx)
 
-link_directories(${LIBSODIUM_LIBRARY_DIRS})
 link_directories(${CHECK_LIBRARY_DIRS})
+link_directories(${LIBCONFIG_LIBRARY_DIRS})
+link_directories(${LIBSODIUM_LIBRARY_DIRS})
 link_directories(${OPUS_LIBRARY_DIRS})
 link_directories(${VPX_LIBRARY_DIRS})
 
-include_directories(${LIBSODIUM_INCLUDE_DIRS})
 include_directories(${CHECK_INCLUDE_DIRS})
+include_directories(${LIBCONFIG_INCLUDE_DIRS})
+include_directories(${LIBSODIUM_INCLUDE_DIRS})
 include_directories(${OPUS_INCLUDE_DIRS})
 include_directories(${VPX_INCLUDE_DIRS})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBSODIUM_CFLAGS_OTHER}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CHECK_CFLAGS_OTHER}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCONFIG_CFLAGS_OTHER}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBSODIUM_CFLAGS_OTHER}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPUS_CFLAGS_OTHER}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VPX_CFLAGS_OTHER}")
 
@@ -68,7 +73,9 @@ add_library(toxcore SHARED
   toxcore/util.c)
 
 target_link_libraries(toxcore ${LIBSODIUM_LIBRARIES})
-target_link_libraries(toxcore rt)
+if(RT_LIBRARIES)
+  target_link_libraries(toxcore ${RT_LIBRARIES})
+endif()
 
 add_library(toxav SHARED
   toxav/audio.c
@@ -128,6 +135,28 @@ auto_test(skeleton_test)
 auto_test(tox_test)
 auto_test(toxav_basic_test)
 auto_test(toxav_many_test)
+
+
+################################################################################
+#
+# :: Bootstrap daemon.
+#
+################################################################################
+
+add_executable(tox-bootstrapd
+  other/bootstrap_daemon/src/command_line_arguments.c
+  other/bootstrap_daemon/src/command_line_arguments.h
+  other/bootstrap_daemon/src/config.c
+  other/bootstrap_daemon/src/config_defaults.h
+  other/bootstrap_daemon/src/config.h
+  other/bootstrap_daemon/src/log.c
+  other/bootstrap_daemon/src/log.h
+  other/bootstrap_daemon/src/tox-bootstrapd.c
+  other/bootstrap_daemon/src/global.h
+  other/bootstrap_node_packets.c
+  other/bootstrap_node_packets.h)
+
+target_link_libraries(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
 
 
 ################################################################################
