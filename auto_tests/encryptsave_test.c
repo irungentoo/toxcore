@@ -41,13 +41,14 @@ void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *dat
 START_TEST(test_known_kdf)
 {
     unsigned char out[crypto_box_BEFORENMBYTES];
-    crypto_pwhash_scryptsalsa208sha256(out,
-                                       crypto_box_BEFORENMBYTES,
-                                       pw,
-                                       pwlen,
-                                       salt,
-                                       crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 8,
-                                       crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE);
+    int res = crypto_pwhash_scryptsalsa208sha256(out,
+              crypto_box_BEFORENMBYTES,
+              pw,
+              pwlen,
+              salt,
+              crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 8,
+              crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE);
+    ck_assert_msg(res != -1, "crypto function failed");
     ck_assert_msg(memcmp(out, known_key, crypto_box_BEFORENMBYTES) == 0, "derived key is wrong");
 }
 END_TEST

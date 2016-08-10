@@ -451,7 +451,10 @@ int networking_at_startup(void)
 #ifdef USE_RANDOMBYTES_STIR
     randombytes_stir();
 #else
-    sodium_init();
+
+    if (sodium_init() != 0)
+        return -1;
+
 #endif /*USE_RANDOMBYTES_STIR*/
 
 #endif/*VANILLA_NACL*/

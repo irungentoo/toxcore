@@ -76,9 +76,9 @@ int public_key_valid(const uint8_t *public_key)
  * encrypt/decrypt operation.
  * enc_key has to be crypto_box_BEFORENMBYTES bytes long.
  */
-void encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key)
+int encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key)
 {
-    crypto_box_beforenm(enc_key, public_key, secret_key);
+    return crypto_box_beforenm(enc_key, public_key, secret_key);
 }
 
 int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,

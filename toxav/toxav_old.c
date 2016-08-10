@@ -39,7 +39,8 @@ int toxav_add_av_groupchat(struct Tox *tox, void (*audio_callback)(void *, int, 
                            uint8_t, unsigned int, void *), void *userdata)
 {
     Messenger *m = (Messenger *)tox;
-    return add_av_groupchat(m->group_chat_object, audio_callback, userdata);
+    return add_av_groupchat(m->group_chat_object, (void (*)(Messenger *, int, int, const int16_t *, unsigned int,
+                            uint8_t, unsigned int, void *))audio_callback, userdata);
 }
 
 /* Join a AV group (you need to have been invited first.)
@@ -57,7 +58,8 @@ int toxav_join_av_groupchat(struct Tox *tox, int32_t friendnumber, const uint8_t
                             void *userdata)
 {
     Messenger *m = (Messenger *)tox;
-    return join_av_groupchat(m->group_chat_object, friendnumber, data, length, audio_callback, userdata);
+    return join_av_groupchat(m->group_chat_object, friendnumber, data, length, (void (*)(Messenger *, int, int,
+                             const int16_t *, unsigned int, uint8_t, unsigned int, void *))audio_callback, userdata);
 }
 
 /* Send audio to the group chat.
