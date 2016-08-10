@@ -2,8 +2,12 @@
 
 set -e -x
 
-coveralls               \
-  --exclude auto_tests  \
-  --exclude other       \
-  --exclude testing     \
-  --gcov-options '\-lp'
+# Only submit coverage from the clang build. GCC and clang disagree slightly,
+# so we arbitrarily choose the alphabetically first one for the report.
+if [ "$CC" = "clang" ]; then
+  coveralls               \
+    --exclude auto_tests  \
+    --exclude other       \
+    --exclude testing     \
+    --gcov-options '\-lp'
+fi
