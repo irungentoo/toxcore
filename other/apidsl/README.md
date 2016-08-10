@@ -18,14 +18,16 @@ If you want to do it quickly and you don't have time for anything other than cop
 
 Command to run from ``toxcore`` directory (quick way, involves using curl):
 ```bash
-rm toxcore/tox.h && \
-( curl -X POST --data-binary @- https://apidsl.herokuapp.com/apidsl < ./other/apidsl/tox.in.h > ./toxcore/tox.h ) && \
-astyle --options=./other/astyle/astylerc ./toxcore/tox.h
-```
-
-When formatting will be complete, you should see output like:
-```
-Formatted  ./toxcore/tox.h
+# For tox.h:
+curl -X POST --data-binary @- https://apidsl.herokuapp.com/apidsl \
+  < other/apidsl/tox.in.h \
+  | astyle --options=other/astyle/astylerc \
+  > toxcore/tox.h
+# For toxav.h:
+curl -X POST --data-binary @- https://apidsl.herokuapp.com/apidsl \
+  < other/apidsl/toxav.in.h \
+  | astyle --options=other/astyle/astylerc \
+  > toxav/toxav.h
 ```
 
 You may want to make sure with ``git diff`` that changes made in ``tox.h`` reflect changes in ``tox.in.h``.
@@ -43,7 +45,7 @@ If you prefer to have more control over what is happening, there are steps below
 4. Use ``apidsl`` ``??``
 5. Parse generated ``tox.h`` with astyle, minimal command for it would be:
 ```bash
-astyle --options=./other/astyle/astylerc ./toxcore/tox.h
+astyle --options=other/astyle/astylerc toxcore/tox.h
 ```
 
 **Always pass output from ``apidsl`` through astyle.**

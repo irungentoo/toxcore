@@ -248,11 +248,11 @@ START_TEST(test_AV_three_calls)
     uint8_t off = 1;
 
     while (1) {
-        tox_iterate(bootstrap);
-        tox_iterate(Alice);
-        tox_iterate(Bobs[0]);
-        tox_iterate(Bobs[1]);
-        tox_iterate(Bobs[2]);
+        tox_iterate(bootstrap, NULL);
+        tox_iterate(Alice, NULL);
+        tox_iterate(Bobs[0], NULL);
+        tox_iterate(Bobs[1], NULL);
+        tox_iterate(Bobs[2], NULL);
 
         if (tox_self_get_connection_status(bootstrap) &&
                 tox_self_get_connection_status(Alice) &&
@@ -313,10 +313,10 @@ START_TEST(test_AV_three_calls)
     time_t start_time = time(NULL);
 
     while (time(NULL) - start_time < 5) {
-        tox_iterate(Alice);
-        tox_iterate(Bobs[0]);
-        tox_iterate(Bobs[1]);
-        tox_iterate(Bobs[2]);
+        tox_iterate(Alice, NULL);
+        tox_iterate(Bobs[0], NULL);
+        tox_iterate(Bobs[1], NULL);
+        tox_iterate(Bobs[2], NULL);
         c_sleep(20);
     }
 

@@ -389,7 +389,7 @@ void line_eval(Tox *m, char *line)
 
             new_lines(numstring);
         } else if (inpt_command == 'd') {
-            tox_iterate(m);
+            tox_iterate(m, NULL);
         } else if (inpt_command == 'm') { //message command: /m friendnumber messsage
             char *posi[1];
             int num = strtoul(line + prompt_offset, posi, 0);
@@ -1354,7 +1354,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        tox_iterate(m);
+        tox_iterate(m, NULL);
         do_refresh();
 
         int c = timeout_getch(m);

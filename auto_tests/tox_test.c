@@ -443,7 +443,7 @@ START_TEST(test_few_clients)
 
     uint32_t to_compare = 974536;
     connected_t1 = 0;
-    tox_callback_self_connection_status(tox1, tox_connection_status, &to_compare);
+    tox_callback_self_connection_status(tox1, tox_connection_status);
     tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
@@ -453,9 +453,9 @@ START_TEST(test_few_clients)
     uint8_t off = 1;
 
     while (1) {
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
                 && tox_self_get_connection_status(tox3)) {
@@ -487,9 +487,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         messages_received = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (messages_received)
             break;
@@ -516,9 +516,9 @@ START_TEST(test_few_clients)
     off = 1;
 
     while (1) {
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
                 && tox_self_get_connection_status(tox3)) {
@@ -544,9 +544,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         name_changes = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (name_changes)
             break;
@@ -565,9 +565,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         status_m_changes = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (status_m_changes)
             break;
@@ -587,9 +587,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         typing_changes = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
 
         if (typing_changes == 2)
@@ -605,9 +605,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         typing_changes = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (typing_changes == 1)
             break;
@@ -632,9 +632,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         custom_packet = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (custom_packet == 1)
             break;
@@ -654,9 +654,9 @@ START_TEST(test_few_clients)
 
     while (1) {
         custom_packet = 0;
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (custom_packet == 1)
             break;
@@ -690,9 +690,9 @@ START_TEST(test_few_clients)
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
     while (1) {
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (file_sending_done) {
             if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
@@ -742,9 +742,9 @@ START_TEST(test_few_clients)
     m_send_reached = 0;
 
     while (1) {
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (file_sending_done) {
             if (sendf_ok && file_recv && m_send_reached && totalf_size == file_size && size_recv == max_sending
@@ -791,9 +791,9 @@ START_TEST(test_few_clients)
 
 
     while (1) {
-        tox_iterate(tox1);
-        tox_iterate(tox2);
-        tox_iterate(tox3);
+        tox_iterate(tox1, &to_compare);
+        tox_iterate(tox2, &to_compare);
+        tox_iterate(tox3, &to_compare);
 
         if (file_sending_done) {
             if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
@@ -904,7 +904,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_TOXES; ++i) {
-            tox_iterate(toxes[i]);
+            tox_iterate(toxes[i], NULL);
         }
 
         c_sleep(50);
@@ -1002,7 +1002,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
-            tox_iterate(toxes[i]);
+            tox_iterate(toxes[i], NULL);
         }
 
         c_sleep(50);
@@ -1098,7 +1098,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
-            tox_iterate(toxes[i]);
+            tox_iterate(toxes[i], NULL);
         }
 
         c_sleep(30);
@@ -1206,7 +1206,7 @@ group_test_restart:
             break;
 
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iterate(toxes[i]);
+            tox_iterate(toxes[i], NULL);
         }
 
         c_sleep(25);
@@ -1224,7 +1224,7 @@ group_test_restart:
 
     while (1) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iterate(toxes[i]);
+            tox_iterate(toxes[i], NULL);
         }
 
         if (!invite_counter) {
@@ -1287,7 +1287,7 @@ group_test_restart:
 
     for (j = 0; j < 20; ++j) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iterate(toxes[i]);
+            tox_iterate(toxes[i], NULL);
         }
 
         c_sleep(25);
@@ -1301,7 +1301,7 @@ group_test_restart:
 
         for (j = 0; j < 10; ++j) {
             for (i = 0; i < NUM_GROUP_TOX; ++i) {
-                tox_iterate(toxes[i]);
+                tox_iterate(toxes[i], NULL);
             }
 
             c_sleep(50);

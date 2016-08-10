@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
             tox_friend_send_message(tox, num, TOX_MESSAGE_TYPE_NORMAL, buf, ret, 0);
         }
 
-        tox_iterate(tox);
+        tox_iterate(tox, NULL);
         c_sleep(1);
     }
 

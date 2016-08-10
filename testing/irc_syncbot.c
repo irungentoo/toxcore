@@ -349,7 +349,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        tox_iterate(tox);
+        tox_iterate(tox, NULL);
         usleep(1000 * 50);
     }
 

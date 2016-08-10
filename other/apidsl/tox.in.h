@@ -86,6 +86,19 @@ extern "C" {
  * callback will result in no callback being registered for that event. Only
  * one callback per event can be registered, so if a client needs multiple
  * event listeners, it needs to implement the dispatch functionality itself.
+ *
+ * The last argument to a callback is the user data pointer. It is passed from
+ * ${tox.iterate} to each callback in sequence.
+ *
+ * The user data pointer is never stored or dereferenced by any library code, so
+ * can be any pointer, including NULL. Callbacks must all operate on the same
+ * object type. In the apidsl code (tox.in.h), this is denoted with `any`. The
+ * `any` in ${tox.iterate} must be the same `any` as in all callbacks. In C,
+ * lacking parametric polymorphism, this is a pointer to void.
+ *
+ * Old style callbacks that are registered together with a user data pointer
+ * receive that pointer as argument when they are called. They can each have
+ * their own user data pointer of their own type.
  */
 
 /** \subsection threading Threading implications
@@ -713,7 +726,7 @@ inline namespace self {
    *
    * TODO: how long should a client wait before bootstrapping again?
    */
-  event connection_status {
+  event connection_status const {
     /**
      * @param connection_status Whether we are connected to the DHT.
      */
@@ -734,7 +747,7 @@ const uint32_t iteration_interval();
  * The main loop that needs to be run in intervals of $iteration_interval()
  * milliseconds.
  */
-void iterate();
+void iterate(any user_data);
 
 
 /*******************************************************************************
@@ -858,7 +871,6 @@ inline namespace self {
      *   If this parameter is NULL, the function has no effect.
      */
     get();
-
   }
 
 
@@ -1057,7 +1069,6 @@ namespace friend {
    * it does.
    */
   const bool exists(uint32_t friend_number);
-
 
 }
 

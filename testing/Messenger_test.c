@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
 
         m_send_message_generic(m, num, MESSAGE_NORMAL, (uint8_t *)"Test", 5, 0);
-        do_messenger(m);
+        do_messenger(m, NULL);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
 

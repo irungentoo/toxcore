@@ -124,9 +124,9 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
  */
 int iterate_tox(Tox *bootstrap, Tox *Alice, Tox *Bob)
 {
-    tox_iterate(bootstrap);
-    tox_iterate(Alice);
-    tox_iterate(Bob);
+    tox_iterate(bootstrap, NULL);
+    tox_iterate(Alice, NULL);
+    tox_iterate(Bob, NULL);
 
     return MIN(tox_iteration_interval(Alice), tox_iteration_interval(Bob));
 }

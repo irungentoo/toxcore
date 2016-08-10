@@ -390,10 +390,10 @@ TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
 }
 
 
-void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *function, void *user_data)
+void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *function)
 {
     Messenger *m = tox;
-    m_callback_core_connection(m, function, user_data);
+    m_callback_core_connection(m, function);
 }
 
 uint32_t tox_iteration_interval(const Tox *tox)
@@ -402,10 +402,10 @@ uint32_t tox_iteration_interval(const Tox *tox)
     return messenger_run_interval(m);
 }
 
-void tox_iterate(Tox *tox)
+void tox_iterate(Tox *tox, void *userdata)
 {
     Messenger *m = tox;
-    do_messenger(m);
+    do_messenger(m, userdata);
     do_groupchats(m->group_chat_object);
 }
 

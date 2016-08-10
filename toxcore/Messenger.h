@@ -277,7 +277,6 @@ struct Messenger {
     void *lossless_packethandler_userdata;
 
     void (*core_connection_change)(struct Messenger *m, unsigned int, void *);
-    void *core_connection_change_userdata;
     unsigned int last_connection_status;
 
     Messenger_Options options;
@@ -540,7 +539,7 @@ void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Mess
 /* Set the callback for typing changes.
  *  Function(unsigned int connection_status (0 = not connected, 1 = TCP only, 2 = UDP + TCP))
  */
-void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *), void *userdata);
+void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *));
 
 /**********GROUP CHATS************/
 
@@ -747,7 +746,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error);
 void kill_messenger(Messenger *m);
 
 /* The main loop that needs to be run at least 20 times per second. */
-void do_messenger(Messenger *m);
+void do_messenger(Messenger *m, void *userdata);
 
 /* Return the time in milliseconds before do_messenger() should be called again
  * for optimal performance.

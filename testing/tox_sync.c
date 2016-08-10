@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        tox_iterate(tox);
+        tox_iterate(tox, NULL);
         c_sleep(1);
     }
 
