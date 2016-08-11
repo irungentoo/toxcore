@@ -452,7 +452,7 @@ int networking_at_startup(void)
     randombytes_stir();
 #else
 
-    if (sodium_init() != 0)
+    if (sodium_init() == -1)
         return -1;
 
 #endif /*USE_RANDOMBYTES_STIR*/
