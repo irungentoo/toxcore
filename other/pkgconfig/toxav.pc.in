@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: toxav
+Description: Tox A/V library
+Requires: opus toxcore vpx
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -ltoxav @toxav_PKGCONFIG_LIBS@
+Cflags: -I${includedir}

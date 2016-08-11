@@ -1,8 +1,7 @@
 #!/bin/sh
 
-set -e -x
-
-BUILD_DIR=_build
+set -e -u -x
+. other/travis/env-$ENV.sh
 
 # Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
 ../apidsl/_build/apigen.native other/apidsl/tox.in.h   | $ASTYLE --options=other/astyle/astylerc > toxcore/tox.h
@@ -13,9 +12,9 @@ git diff --exit-code
 
 # Build toxcore and run tests.
 export CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
-cmake -B$BUILD_DIR -H.
+RUN $CMAKE -B$BUILD_DIR -H. -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX
 
 export CTEST_OUTPUT_ON_FAILURE=1
 
-make -C $BUILD_DIR -j `nproc`
-make -C $BUILD_DIR -j `nproc` test
+RUN $MAKE -C $BUILD_DIR -j`nproc`
+RUN $MAKE -C $BUILD_DIR -j`nproc` test

@@ -1,3 +1,4 @@
 #!/bin/sh
 
-set -e -x
+set -e -u -x
+. other/travis/env-$ENV.sh

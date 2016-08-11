@@ -2,14 +2,14 @@ language: c
 
 matrix:
   include:
-    - env: BUILD=hstox
+    - env: BUILD=hstox ENV=linux
       language: haskell
       ghc: 7.8
-    - env: BUILD=toxcore
+    - env: BUILD=toxcore ENV=linux
       compiler: clang
-    - env: BUILD=toxcore
+    - env: BUILD=toxcore ENV=linux
       compiler: gcc
-    - env: BUILD=autotools
+    - env: BUILD=autotools ENV=linux
       compiler: clang
 
 addons:
@@ -24,25 +24,22 @@ addons:
 
 cache:
   directories:
+    # Although Travis documentation says not to rely on the value of $HOME, we
+    # rely on it here because cabal installs its packages there by default. If
+    # that ever changes, these values need to be updated.
+    # Note that we can't use shell expressions in these paths, so we can't ask
+    # cabal where its data is stored.
     - $HOME/.cabal
     - $HOME/.ghc
     - $HOME/cache
 
-install:
-  # Globally used environment variables.
-  - export CACHE_DIR=$HOME/cache
-  - export OPAMROOT=$CACHE_DIR/.opam
-  - export LD_LIBRARY_PATH=$CACHE_DIR/lib
-  - export PKG_CONFIG_PATH=$CACHE_DIR/lib/pkgconfig
-  - export ASTYLE=$CACHE_DIR/astyle/build/gcc/bin/astyle
-  # Install required packages.
-  - other/travis/${BUILD}-install
-
-script:
-  - other/travis/${BUILD}-script
-
-after_script:
-  - other/travis/${BUILD}-after_script
+install:      other/travis/${BUILD}-install
+script:       other/travis/${BUILD}-script
+after_script: other/travis/${BUILD}-after_script
 
 notifications:
   irc: "chat.freenode.net#toktok-status"
+
+branches:
+  only:
+    - master

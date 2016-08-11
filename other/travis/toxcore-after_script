@@ -1,6 +1,7 @@
 #!/bin/sh
 
-set -e -x
+set -e -u -x
+. other/travis/env-$ENV.sh
 
 # Only submit coverage from the clang build. GCC and clang disagree slightly,
 # so we arbitrarily choose the alphabetically first one for the report.

@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 2.8.6)
 project(toxcore)
 include(CTest)
 
+# This version is for the entire project. All libraries (core, av, ...) move in
+# versions in a synchronised way.
+set(PROJECT_VERSION "0.0.0")
+
 
 ################################################################################
 #
@@ -15,31 +19,57 @@ find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
 
 find_library(UTIL_LIBRARIES util)
-find_library(RT_LIBRARIES rt)
+find_library(RT_LIBRARIES   rt)
 
-pkg_search_module(CHECK     REQUIRED check)
-pkg_search_module(LIBCONFIG REQUIRED libconfig)
+pkg_search_module(CHECK              check)
+pkg_search_module(LIBCONFIG          libconfig)
 pkg_search_module(LIBSODIUM REQUIRED libsodium)
 pkg_search_module(OPUS      REQUIRED opus)
 pkg_search_module(VPX       REQUIRED vpx)
 
-link_directories(${CHECK_LIBRARY_DIRS})
-link_directories(${LIBCONFIG_LIBRARY_DIRS})
+if(CHECK_FOUND)
+  link_directories(${CHECK_LIBRARY_DIRS})
+endif()
+if(LIBCONFIG_FOUND)
+  link_directories(${LIBCONFIG_LIBRARY_DIRS})
+endif()
 link_directories(${LIBSODIUM_LIBRARY_DIRS})
 link_directories(${OPUS_LIBRARY_DIRS})
 link_directories(${VPX_LIBRARY_DIRS})
 
-include_directories(${CHECK_INCLUDE_DIRS})
-include_directories(${LIBCONFIG_INCLUDE_DIRS})
+if(CHECK_FOUND)
+  include_directories(${CHECK_INCLUDE_DIRS})
+endif()
+if(LIBCONFIG_FOUND)
+  include_directories(${LIBCONFIG_INCLUDE_DIRS})
+endif()
 include_directories(${LIBSODIUM_INCLUDE_DIRS})
 include_directories(${OPUS_INCLUDE_DIRS})
 include_directories(${VPX_INCLUDE_DIRS})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CHECK_CFLAGS_OTHER}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCONFIG_CFLAGS_OTHER}")
+if(CHECK_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CHECK_CFLAGS_OTHER}")
+endif()
+if(LIBCONFIG_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCONFIG_CFLAGS_OTHER}")
+endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBSODIUM_CFLAGS_OTHER}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPUS_CFLAGS_OTHER}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VPX_CFLAGS_OTHER}")
+
+# Users can call cmake -DLIBTYPE=STATIC or -DLIBTYPE=SHARED to override this.
+if(NOT LIBTYPE)
+  if(WIN32)
+    # Our win32 builds are fully static, since we use the MXE cross compiling
+    # environment, which builds everything statically by default. Building
+    # shared libraries will result in multiple definition errors, since multiple
+    # tox libraries will link against libsodium and other libraries that are
+    # built statically in MXE.
+    set(LIBTYPE STATIC)
+  else()
+    set(LIBTYPE SHARED)
+  endif()
+endif()
 
 
 ################################################################################
@@ -48,7 +78,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VPX_CFLAGS_OTHER}")
 #
 ################################################################################
 
-add_library(toxcore SHARED
+add_library(toxcore ${LIBTYPE}
   toxcore/DHT.c
   toxcore/LAN_discovery.c
   toxcore/Messenger.c
@@ -72,12 +102,20 @@ add_library(toxcore SHARED
   toxcore/tox.c
   toxcore/util.c)
 
-target_link_libraries(toxcore ${LIBSODIUM_LIBRARIES})
+target_link_libraries(toxcore ${LIBSODIUM_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+if(CMAKE_THREAD_LIBS_INIT)
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-l${CMAKE_THREAD_LIBS_INIT}")
+endif()
 if(RT_LIBRARIES)
   target_link_libraries(toxcore ${RT_LIBRARIES})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
 endif()
 
-add_library(toxav SHARED
+if(WIN32)
+  target_link_libraries(toxcore ws2_32 iphlpapi)
+endif()
+
+add_library(toxav ${LIBTYPE}
   toxav/audio.c
   toxav/bwcontroller.c
   toxav/group.c
@@ -91,12 +129,12 @@ target_link_libraries(toxav toxcore)
 target_link_libraries(toxav ${OPUS_LIBRARIES})
 target_link_libraries(toxav ${VPX_LIBRARIES})
 
-add_library(toxdns SHARED
+add_library(toxdns ${LIBTYPE}
   toxdns/toxdns.c)
 
 target_link_libraries(toxdns toxcore)
 
-add_library(toxencryptsave SHARED
+add_library(toxencryptsave ${LIBTYPE}
   toxencryptsave/toxencryptsave.c)
 
 target_link_libraries(toxencryptsave toxcore)
@@ -115,8 +153,7 @@ function(auto_test target)
       toxcore
       toxav
       toxencryptsave
-      ${CHECK_LIBRARIES}
-      ${CMAKE_THREAD_LIBS_INIT})
+      ${CHECK_LIBRARIES})
     add_test(${target} auto_${target})
   endif()
 endfunction()
@@ -143,20 +180,22 @@ auto_test(toxav_many_test)
 #
 ################################################################################
 
-add_executable(tox-bootstrapd
-  other/bootstrap_daemon/src/command_line_arguments.c
-  other/bootstrap_daemon/src/command_line_arguments.h
-  other/bootstrap_daemon/src/config.c
-  other/bootstrap_daemon/src/config_defaults.h
-  other/bootstrap_daemon/src/config.h
-  other/bootstrap_daemon/src/log.c
-  other/bootstrap_daemon/src/log.h
-  other/bootstrap_daemon/src/tox-bootstrapd.c
-  other/bootstrap_daemon/src/global.h
-  other/bootstrap_node_packets.c
-  other/bootstrap_node_packets.h)
+if(LIBCONFIG_FOUND)
+  add_executable(tox-bootstrapd
+    other/bootstrap_daemon/src/command_line_arguments.c
+    other/bootstrap_daemon/src/command_line_arguments.h
+    other/bootstrap_daemon/src/config.c
+    other/bootstrap_daemon/src/config_defaults.h
+    other/bootstrap_daemon/src/config.h
+    other/bootstrap_daemon/src/log.c
+    other/bootstrap_daemon/src/log.h
+    other/bootstrap_daemon/src/tox-bootstrapd.c
+    other/bootstrap_daemon/src/global.h
+    other/bootstrap_node_packets.c
+    other/bootstrap_node_packets.h)
 
-target_link_libraries(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
+  target_link_libraries(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
+endif()
 
 
 ################################################################################
@@ -165,23 +204,83 @@ target_link_libraries(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
 #
 ################################################################################
 
-add_executable(nTox testing/nTox.c)
-target_link_libraries(nTox toxcore ncurses ${CMAKE_THREAD_LIBS_INIT})
+if(NOT WIN32)
+  add_executable(nTox testing/nTox.c)
+  target_link_libraries(nTox toxcore ncurses)
+endif()
 
 add_executable(DHT_test testing/DHT_test.c)
-target_link_libraries(DHT_test toxcore ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(DHT_test toxcore)
 
 add_executable(Messenger_test testing/Messenger_test.c)
-target_link_libraries(Messenger_test toxcore ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(Messenger_test toxcore)
 
 add_executable(dns3_test testing/dns3_test.c)
-target_link_libraries(dns3_test toxdns ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(dns3_test toxdns)
 
-add_executable(tox_sync testing/tox_sync.c)
-target_link_libraries(tox_sync toxcore ${CMAKE_THREAD_LIBS_INIT})
+if(NOT WIN32)
+  add_executable(tox_sync testing/tox_sync.c)
+  target_link_libraries(tox_sync toxcore)
+endif()
 
-add_executable(tox_shell testing/tox_shell.c)
-target_link_libraries(tox_shell toxcore ${CMAKE_THREAD_LIBS_INIT} ${UTIL_LIBRARIES})
+if(UTIL_LIBRARIES)
+  add_executable(tox_shell testing/tox_shell.c)
+  target_link_libraries(tox_shell toxcore ${UTIL_LIBRARIES})
+endif()
 
-add_executable(irc_syncbot testing/irc_syncbot.c)
-target_link_libraries(irc_syncbot toxcore ${CMAKE_THREAD_LIBS_INIT})
+if(NOT WIN32)
+  add_executable(irc_syncbot testing/irc_syncbot.c)
+  target_link_libraries(irc_syncbot toxcore)
+endif()
+
+
+################################################################################
+#
+# :: Installation and pkg-config.
+#
+################################################################################
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
+  "${CMAKE_BINARY_DIR}/toxav.pc"
+  @ONLY
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
+  "${CMAKE_BINARY_DIR}/toxcore.pc"
+  @ONLY
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
+  "${CMAKE_BINARY_DIR}/toxdns.pc"
+  @ONLY
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
+  "${CMAKE_BINARY_DIR}/toxencryptsave.pc"
+  @ONLY
+)
+
+
+install(FILES
+  ${CMAKE_BINARY_DIR}/toxav.pc
+  ${CMAKE_BINARY_DIR}/toxcore.pc
+  ${CMAKE_BINARY_DIR}/toxdns.pc
+  ${CMAKE_BINARY_DIR}/toxencryptsave.pc
+  DESTINATION "lib/pkgconfig")
+install(TARGETS
+  toxav
+  toxcore
+  toxdns
+  toxencryptsave
+  DESTINATION "lib")
+install(FILES
+  toxav/toxav.h
+  toxcore/tox.h
+  toxcore/tox_old.h
+  toxdns/toxdns.h
+  toxencryptsave/toxencryptsave.h
+  DESTINATION "include/tox")

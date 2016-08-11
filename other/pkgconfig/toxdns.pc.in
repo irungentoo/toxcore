@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: toxdns
+Description: Tox DNS3 library
+Requires: toxcore
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -ltoxdns @toxdns_PKGCONFIG_LIBS@
+Cflags: -I${includedir}
