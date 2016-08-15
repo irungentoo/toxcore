@@ -6,5 +6,5 @@ Name: toxencryptsave
 Description: Tox block encryption library
 Requires: toxcore
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -ltoxencryptsave @toxencryptsave_PKGCONFIG_LIBS@
+Libs: -L${libdir} @toxencryptsave_PKGCONFIG_LIBS@ -ltoxencryptsave
 Cflags: -I${includedir}

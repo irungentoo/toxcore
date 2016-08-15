@@ -6,5 +6,5 @@ Name: toxdns
 Description: Tox DNS3 library
 Requires: toxcore
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -ltoxdns @toxdns_PKGCONFIG_LIBS@
+Libs: -L${libdir} @toxdns_PKGCONFIG_LIBS@ -ltoxdns
 Cflags: -I${includedir}

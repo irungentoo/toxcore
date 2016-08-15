@@ -12,7 +12,7 @@ git diff --exit-code
 
 # Build toxcore and run tests.
 export CFLAGS="-O0 -Wall -Wextra -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
-RUN $CMAKE -B$BUILD_DIR -H. -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX
+RUN $CMAKE -B$BUILD_DIR -H. -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX -DLOGGING=ON
 
 export CTEST_OUTPUT_ON_FAILURE=1
 

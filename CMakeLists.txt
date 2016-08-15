@@ -9,11 +9,19 @@ set(PROJECT_VERSION "0.0.0")
 
 ################################################################################
 #
-# :: Dependencies and configuration.
+# :: Dependencies and configuration
 #
 ################################################################################
 
 set(CMAKE_MACOSX_RPATH ON)
+
+option(LOGGING "Enable internal library logging" OFF)
+if(LOGGING)
+  add_definitions(
+    -DTOX_LOGGER=1
+    -DLOGGER_LEVEL=LOG_DEBUG
+    -DLOGGER_OUTPUT_FILE="libtoxcore.log")
+endif()
 
 find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
@@ -74,46 +82,91 @@ endif()
 
 ################################################################################
 #
-# :: Libraries.
+# :: Tox Core Library
 #
 ################################################################################
 
-add_library(toxcore ${LIBTYPE}
+# LAYER 1: Crypto core
+# --------------------
+add_library(toxcrypto ${LIBTYPE}
+  toxcore/crypto_core.c)
+target_link_libraries(toxcrypto ${LIBSODIUM_LIBRARIES})
+
+# LAYER 2: Basic networking
+# -------------------------
+add_library(toxnetwork ${LIBTYPE}
+  toxcore/logger.c
+  toxcore/network.c
+  toxcore/util.c)
+target_link_libraries(toxnetwork toxcrypto)
+
+# LAYER 3: Distributed Hash Table
+# -------------------------------
+add_library(toxdht ${LIBTYPE}
   toxcore/DHT.c
   toxcore/LAN_discovery.c
-  toxcore/Messenger.c
+  toxcore/assoc.c
+  toxcore/ping.c
+  toxcore/ping_array.c)
+target_link_libraries(toxdht toxnetwork)
+
+# LAYER 4: Onion routing, TCP connections, crypto connections
+# -----------------------------------------------------------
+add_library(toxnetcrypto ${LIBTYPE}
   toxcore/TCP_client.c
   toxcore/TCP_connection.c
   toxcore/TCP_server.c
-  toxcore/assoc.c
-  toxcore/crypto_core.c
-  toxcore/friend_connection.c
-  toxcore/friend_requests.c
-  toxcore/group.c
   toxcore/list.c
-  toxcore/logger.c
   toxcore/net_crypto.c
-  toxcore/network.c
   toxcore/onion.c
   toxcore/onion_announce.c
-  toxcore/onion_client.c
-  toxcore/ping.c
-  toxcore/ping_array.c
-  toxcore/tox.c
-  toxcore/util.c)
+  toxcore/onion_client.c)
+target_link_libraries(toxnetcrypto toxdht)
 
-target_link_libraries(toxcore ${LIBSODIUM_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+# LAYER 5: Friend requests and connections
+# ----------------------------------------
+add_library(toxfriends ${LIBTYPE}
+  toxcore/friend_connection.c
+  toxcore/friend_requests.c)
+target_link_libraries(toxfriends toxnetcrypto)
+
+# LAYER 6: Tox messenger
+# ----------------------
+add_library(toxmessenger ${LIBTYPE}
+  toxcore/Messenger.c)
+target_link_libraries(toxmessenger toxfriends)
+
+# LAYER 7: Group chats
+# --------------------
+add_library(toxgroup ${LIBTYPE}
+  toxcore/group.c)
+target_link_libraries(toxgroup toxmessenger)
+
+# LAYER 8: Public API
+# -------------------
+add_library(toxcore ${LIBTYPE}
+  toxcore/tox.c)
+target_link_libraries(toxcore toxgroup)
+
+target_link_libraries(toxcore ${CMAKE_THREAD_LIBS_INIT})
 if(CMAKE_THREAD_LIBS_INIT)
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-l${CMAKE_THREAD_LIBS_INIT}")
 endif()
 if(RT_LIBRARIES)
-  target_link_libraries(toxcore ${RT_LIBRARIES})
+  target_link_libraries(toxnetwork ${RT_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
 endif()
 
 if(WIN32)
   target_link_libraries(toxcore ws2_32 iphlpapi)
 endif()
+
+
+################################################################################
+#
+# :: Audio/Video Library
+#
+################################################################################
 
 add_library(toxav ${LIBTYPE}
   toxav/audio.c
@@ -124,25 +177,27 @@ add_library(toxav ${LIBTYPE}
   toxav/toxav.c
   toxav/toxav_old.c
   toxav/video.c)
+target_link_libraries(toxav toxcore ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
 
-target_link_libraries(toxav toxcore)
-target_link_libraries(toxav ${OPUS_LIBRARIES})
-target_link_libraries(toxav ${VPX_LIBRARIES})
+
+################################################################################
+#
+# :: ToxDNS and block encryption libraries
+#
+################################################################################
 
 add_library(toxdns ${LIBTYPE}
   toxdns/toxdns.c)
-
 target_link_libraries(toxdns toxcore)
 
 add_library(toxencryptsave ${LIBTYPE}
   toxencryptsave/toxencryptsave.c)
-
 target_link_libraries(toxencryptsave toxcore)
 
 
 ################################################################################
 #
-# :: Automated regression tests.
+# :: Automated regression tests
 #
 ################################################################################
 
@@ -176,7 +231,7 @@ auto_test(toxav_many_test)
 
 ################################################################################
 #
-# :: Bootstrap daemon.
+# :: Bootstrap daemon
 #
 ################################################################################
 
@@ -200,7 +255,7 @@ endif()
 
 ################################################################################
 #
-# :: Test programs.
+# :: Test programs
 #
 ################################################################################
 
@@ -236,7 +291,7 @@ endif()
 
 ################################################################################
 #
-# :: Installation and pkg-config.
+# :: Installation and pkg-config
 #
 ################################################################################
 
@@ -274,8 +329,15 @@ install(FILES
 install(TARGETS
   toxav
   toxcore
+  toxcrypto
+  toxdht
   toxdns
   toxencryptsave
+  toxfriends
+  toxgroup
+  toxmessenger
+  toxnetcrypto
+  toxnetwork
   DESTINATION "lib")
 install(FILES
   toxav/toxav.h
