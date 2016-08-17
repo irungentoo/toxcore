@@ -782,11 +782,9 @@ void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t
     m->friend_namechange = function;
 }
 
-void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                              void *userdata)
+void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *))
 {
     m->friend_statusmessagechange = function;
-    m->friend_statusmessagechange_userdata = userdata;
 }
 
 void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *), void *userdata)
@@ -1959,8 +1957,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void 
             data_terminated[data_length] = 0;
 
             if (m->friend_statusmessagechange)
-                m->friend_statusmessagechange(m, i, data_terminated, data_length,
-                                              m->friend_statusmessagechange_userdata);
+                m->friend_statusmessagechange(m, i, data_terminated, data_length, userdata);
 
             set_friend_statusmessage(m, i, data_terminated, data_length);
             break;

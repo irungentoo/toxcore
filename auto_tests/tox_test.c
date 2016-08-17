@@ -560,7 +560,7 @@ START_TEST(test_few_clients)
     tox_friend_get_name(tox3, 0, temp_name, 0);
     ck_assert_msg(memcmp(temp_name, "Gentoo", sizeof("Gentoo")) == 0, "Name not correct");
 
-    tox_callback_friend_status_message(tox3, print_status_m_change, &to_compare);
+    tox_callback_friend_status_message(tox3, print_status_m_change);
     succ = tox_self_set_status_message(tox2, (uint8_t *)"Installing Gentoo", sizeof("Installing Gentoo"), &err_n);
     ck_assert_msg(succ && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_status_message failed because %u\n", err_n);
 

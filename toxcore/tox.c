@@ -761,10 +761,10 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
     return 1;
 }
 
-void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *function, void *user_data)
+void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *function)
 {
     Messenger *m = tox;
-    m_callback_statusmessage(m, function, user_data);
+    m_callback_statusmessage(m, function);
 }
 
 TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)

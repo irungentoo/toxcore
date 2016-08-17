@@ -1240,7 +1240,7 @@ namespace friend {
   /**
    * This event is triggered when a friend changes their status message.
    */
-  event status_message {
+  event status_message const {
     /**
      * @param friend_number The friend number of the friend whose status message
      *   changed.

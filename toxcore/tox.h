@@ -1327,7 +1327,7 @@ typedef void tox_friend_status_message_cb(Tox *tox, uint32_t friend_number, cons
  *
  * This event is triggered when a friend changes their status message.
  */
-void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *callback, void *user_data);
+void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *callback);
 
 /**
  * Return the friend's user status (away/busy/...). If the friend number is
