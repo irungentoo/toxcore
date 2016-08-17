@@ -79,7 +79,6 @@ START_TEST(test_fillup)
         IPPTs ippts_send;
         IP_Port ipp_recv;
     };
-    unsigned int fail = 0;
     struct entry entries[128];
     struct entry closest[8];
 

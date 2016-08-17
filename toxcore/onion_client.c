@@ -776,7 +776,7 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, 
     if (length == 0)
         return 1;
 
-    IP_Port ip_port = {0};
+    IP_Port ip_port = {{0}};
     ip_port.ip.family = TCP_FAMILY;
 
     if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE) {

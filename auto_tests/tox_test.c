@@ -14,6 +14,7 @@
 #include "config.h"
 #endif
 
+#include <sys/param.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
@@ -709,11 +710,7 @@ START_TEST(test_few_clients)
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
-        if (tox2_interval > tox3_interval) {
-            c_sleep(tox3_interval);
-        } else {
-            c_sleep(tox2_interval);
-        }
+        c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
     }
 
     printf("100MB file sent in %llu seconds\n", time(NULL) - f_time);
@@ -721,7 +718,6 @@ START_TEST(test_few_clients)
     printf("Starting file streaming transfer test.\n");
 
     file_sending_done = file_accepted = file_size = file_recv = sendf_ok = size_recv = 0;
-    f_time = time(NULL);
     tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
     tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
     tox_callback_file_chunk_request(tox2, tox_file_chunk_request, &to_compare);
@@ -762,17 +758,12 @@ START_TEST(test_few_clients)
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
-        if (tox2_interval > tox3_interval) {
-            c_sleep(tox3_interval);
-        } else {
-            c_sleep(tox2_interval);
-        }
+        c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
     }
 
     printf("Starting file 0 transfer test.\n");
 
     file_sending_done = file_accepted = file_size = file_recv = sendf_ok = size_recv = 0;
-    f_time = time(NULL);
     tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
     tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
     tox_callback_file_chunk_request(tox2, tox_file_chunk_request, &to_compare);
@@ -810,11 +801,7 @@ START_TEST(test_few_clients)
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
-        if (tox2_interval > tox3_interval) {
-            c_sleep(tox3_interval);
-        } else {
-            c_sleep(tox2_interval);
-        }
+        c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
     }
 
     printf("test_few_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
@@ -988,7 +975,7 @@ loop_top:
     }
 
     while (1) {
-        uint16_t counter = 0, cc = 0;
+        uint16_t counter = 0;
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
@@ -1216,7 +1203,8 @@ group_test_restart:
 
     ck_assert_msg(tox_add_groupchat(toxes[0]) != -1, "Failed to create group");
     ck_assert_msg(tox_invite_friend(toxes[0], 0, 0) == 0, "Failed to invite friend");
-    ck_assert_msg(tox_group_set_title(toxes[0], 0, "Gentoo", sizeof("Gentoo") - 1) == 0, "Failed to set group title");
+    ck_assert_msg(tox_group_set_title(toxes[0], 0, (const uint8_t *)"Gentoo", sizeof("Gentoo") - 1) == 0,
+                  "Failed to set group title");
     invite_counter = ~0;
 
     unsigned int done = ~0;

@@ -91,7 +91,7 @@ START_TEST(test_basic)
     uint8_t r_req[2 + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES];
     uint16_t size = 1 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES;
     size = htons(size);
-    ret = encrypt_data_symmetric(f_shared_key, f_nonce, r_req_p, 1 + crypto_box_PUBLICKEYBYTES, r_req + 2);
+    encrypt_data_symmetric(f_shared_key, f_nonce, r_req_p, 1 + crypto_box_PUBLICKEYBYTES, r_req + 2);
     increment_nonce(f_nonce);
     memcpy(r_req, &size, 2);
     uint32_t i;
@@ -587,7 +587,7 @@ START_TEST(test_tcp_connection)
     do_tcp_connections(tc_1, NULL);
     do_tcp_connections(tc_2, NULL);
 
-    int ret = send_packet_tcp_connection(tc_1, 0, "Gentoo", 6);
+    int ret = send_packet_tcp_connection(tc_1, 0, (const uint8_t *)"Gentoo", 6);
     ck_assert_msg(ret == 0, "could not send packet.");
     set_packet_tcp_connection_callback(tc_2, &tcp_data_callback, (void *) 120397);
 
@@ -608,7 +608,7 @@ START_TEST(test_tcp_connection)
     do_tcp_connections(tc_1, NULL);
     do_tcp_connections(tc_2, NULL);
 
-    ck_assert_msg(send_packet_tcp_connection(tc_1, 0, "Gentoo", 6) == -1, "could send packet.");
+    ck_assert_msg(send_packet_tcp_connection(tc_1, 0, (const uint8_t *)"Gentoo", 6) == -1, "could send packet.");
     ck_assert_msg(kill_tcp_connection_to(tc_2, 0) == 0, "could not kill connection to\n");
 
     kill_TCP_server(tcp_s);
@@ -684,7 +684,7 @@ START_TEST(test_tcp_connection2)
     do_tcp_connections(tc_1, NULL);
     do_tcp_connections(tc_2, NULL);
 
-    int ret = send_packet_tcp_connection(tc_1, 0, "Gentoo", 6);
+    int ret = send_packet_tcp_connection(tc_1, 0, (const uint8_t *)"Gentoo", 6);
     ck_assert_msg(ret == 0, "could not send packet.");
     set_oob_packet_tcp_connection_callback(tc_2, &tcp_oobdata_callback, tc_2);
     set_packet_tcp_connection_callback(tc_1, &tcp_data_callback, (void *) 120397);

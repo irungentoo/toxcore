@@ -275,7 +275,7 @@ Onions *new_onions(uint16_t port)
     DHT *dht = new_DHT(new_networking(ip, port));
     on->onion = new_onion(dht);
     on->onion_a = new_onion_announce(dht);
-    TCP_Proxy_Info inf = {0};
+    TCP_Proxy_Info inf = {{{0}}};
     on->onion_c = new_onion_client(new_net_crypto(dht, &inf));
 
     if (on->onion && on->onion_a && on->onion_c)
@@ -417,8 +417,6 @@ START_TEST(test_announce)
 
     onion_dht_pk_callback(onions[NUM_FIRST]->onion_c, frnum_f, &dht_pk_callback, onions[NUM_FIRST], NUM_FIRST);
     onion_dht_pk_callback(onions[NUM_LAST]->onion_c, frnum, &dht_pk_callback, onions[NUM_LAST], NUM_LAST);
-
-    int ok = -1;
 
     IP_Port ip_port;
 

@@ -188,7 +188,7 @@ void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
     if (pmsg == NULL)
         return;
 
-    uint8_t *dt = req;
+    uint8_t *dt;
 
     for (dt = req, i = 0; dt != pmsg && *dt != '!'; ++dt, ++i) {
         message[i] = *dt;

@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
 
     if (ret == -1) {
         printf("fork failed\n");
+        free(master);
         return 1;
     }
 
