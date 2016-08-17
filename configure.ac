@@ -327,6 +327,14 @@ AC_SUBST(MATH_LDFLAGS)
 
 # Checks for libraries.
 
+PKG_CHECK_MODULES([LIBSODIUM], [libsodium],
+    [
+        LIBSODIUM_FOUND="yes"
+    ],
+    [
+        LIBSODIUM_FOUND="no"
+    ])
+
 if test "x$WANT_NACL" = "xyes"; then
     NACL_LIBS=
     NACL_LDFLAGS=
@@ -368,7 +376,7 @@ if test "x$WANT_NACL" = "xyes"; then
     AC_SUBST(NACL_LDFLAGS)
     AC_SUBST(NACL_OBJECTS)
     AC_SUBST(NACL_OBJECTS_PKGCONFIG)
-else
+elif test "x$LIBSODIUM_FOUND" = "xno"; then
     LIBSODIUM_LIBS=
     LIBSODIUM_LDFLAGS=
     LDFLAGS_SAVE="$LDFLAGS"
@@ -428,7 +436,7 @@ if test "x$WANT_NACL" = "xyes"; then
     CPPFLAGS="$CPPFLAGS_SAVE"
     AC_SUBST(NACL_CFLAGS)
     AC_DEFINE([VANILLA_NACL], [1], [use nacl instead of libsodium])
-else
+elif test "x$LIBSODIUM_FOUND" = "xno"; then
     LIBSODIUM_CFLAGS=
     CFLAGS_SAVE="$CFLAGS"
     CPPFLAGS_SAVE="$CPPFLAGS"
