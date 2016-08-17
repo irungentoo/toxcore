@@ -5,7 +5,7 @@ set -e -u -x
 
 # Build toxcore and run tests.
 ./autogen.sh
-RUN ./configure \
+./configure \
   --with-libsodium-libs=$CACHE_DIR/lib \
   --with-libsodium-headers=$CACHE_DIR/include \
   --enable-daemon \
@@ -15,4 +15,4 @@ RUN ./configure \
 # We use make instead of RUN $MAKE here, because the autotools build will only
 # ever run natively on the Linux container, never on a Windows cross compilation
 # docker instance or an OSX machine.
-make distcheck -j`nproc` -k
+make distcheck -j$NPROC -k

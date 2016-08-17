@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-#ifdef DEBUG
+#ifdef TOX_DEBUG
 #include <assert.h>
 #endif
 
@@ -2579,7 +2579,7 @@ void messenger_save(const Messenger *m, uint8_t *data)
     host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
     data += size32;
 
-#ifdef DEBUG
+#ifdef TOX_DEBUG
     assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
 #endif
     len = size32 + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
@@ -2732,7 +2732,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
         }
 
-#ifdef DEBUG
+#ifdef TOX_DEBUG
 
         default:
             fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",

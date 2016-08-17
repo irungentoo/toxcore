@@ -12,7 +12,7 @@ opam install -y ocamlfind ppx_deriving menhir
 
 # Build apidsl.
 git clone --depth=1 https://github.com/iphydf/apidsl ../apidsl
-make -C ../apidsl -j`nproc`
+make -C ../apidsl -j$NPROC
 
 # Install cpp-coveralls to upload test coverage results.
 pip install --user cpp-coveralls
@@ -21,7 +21,7 @@ pip install --user cpp-coveralls
 [ -f $ASTYLE ] || {
   wget -O ../astyle.tar.gz https://launchpad.net/ubuntu/+archive/primary/+files/astyle_2.05.1.orig.tar.gz
   tar -xf ../astyle.tar.gz -C $CACHE_DIR
-  make -C $CACHE_DIR/astyle/build/gcc -j`nproc`
+  make -C $CACHE_DIR/astyle/build/gcc -j$NPROC
 }
 
 # Install libsodium (not in ubuntu-precise).
@@ -30,7 +30,7 @@ pip install --user cpp-coveralls
   cd ../libsodium # pushd
   ./autogen.sh
   ./configure --prefix=$CACHE_DIR
-  make install -j`nproc`
+  make install -j$NPROC
   cd - # popd
 }
 
@@ -41,7 +41,7 @@ pip install --user cpp-coveralls
   autoreconf -fi
   ./configure --prefix=$CACHE_DIR
   touch lib/scanner.l
-  make install -j`nproc`
+  make install -j$NPROC
   cd - # popd
 }
 
@@ -51,6 +51,6 @@ pip install --user cpp-coveralls
   cd ../opus # pushd
   ./autogen.sh
   ./configure --prefix=$CACHE_DIR
-  make install -j`nproc`
+  make install -j$NPROC
   cd - # popd
 }

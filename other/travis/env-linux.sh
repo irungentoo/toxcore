@@ -8,3 +8,4 @@ RUN() {
 export CMAKE=cmake
 export MAKE=make
 export PREFIX=$PWD/_install
+export NPROC=`nproc`

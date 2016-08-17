@@ -229,7 +229,7 @@ static hash_t hash_collide(const Assoc *assoc, hash_t hash)
      *
      * BUT: because the usage of the word "never" invokes Murphy's law, catch it */
     if (!retval) {
-#ifdef DEBUG
+#ifdef TOX_DEBUG
         fprintf(stderr, "assoc::hash_collide: hash %u, bucket size %u => %u!", hash, (uint)assoc->candidates_bucket_size,
                 retval);
         assert(retval != 0);

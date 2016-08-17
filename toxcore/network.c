@@ -522,7 +522,7 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
 
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != AF_INET && ip.family != AF_INET6) {
-#ifdef DEBUG
+#ifdef TOX_DEBUG
         fprintf(stderr, "Invalid address family: %u\n", ip.family);
 #endif
         return NULL;
@@ -545,7 +545,7 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
 
     /* Check for socket error. */
     if (!sock_valid(temp->sock)) {
-#ifdef DEBUG
+#ifdef TOX_DEBUG
         fprintf(stderr, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
 #endif
         free(temp);

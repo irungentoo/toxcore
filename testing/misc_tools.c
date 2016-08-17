@@ -30,9 +30,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#ifdef DEBUG
+#ifdef TOX_DEBUG
 #include <assert.h>
-#endif // DEBUG
+#endif // TOX_DEBUG
 
 // You are responsible for freeing the return value!
 uint8_t *hex_string_to_bin(char *hex_string)

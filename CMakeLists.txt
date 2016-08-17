@@ -23,6 +23,11 @@ if(LOGGING)
     -DLOGGER_OUTPUT_FILE="libtoxcore.log")
 endif()
 
+option(DEBUG "Enable assertions and other debugging facilities" OFF)
+if(DEBUG)
+  add_definitions(-DTOX_DEBUG=1)
+endif()
+
 find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
 
@@ -99,6 +104,10 @@ add_library(toxnetwork ${LIBTYPE}
   toxcore/network.c
   toxcore/util.c)
 target_link_libraries(toxnetwork toxcrypto)
+if(RT_LIBRARIES)
+  target_link_libraries(toxnetwork ${RT_LIBRARIES})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
+endif()
 
 # LAYER 3: Distributed Hash Table
 # -------------------------------
@@ -151,10 +160,6 @@ target_link_libraries(toxcore toxgroup)
 target_link_libraries(toxcore ${CMAKE_THREAD_LIBS_INIT})
 if(CMAKE_THREAD_LIBS_INIT)
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-l${CMAKE_THREAD_LIBS_INIT}")
-endif()
-if(RT_LIBRARIES)
-  target_link_libraries(toxnetwork ${RT_LIBRARIES})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
 endif()
 
 if(WIN32)
@@ -235,6 +240,11 @@ auto_test(toxav_many_test)
 #
 ################################################################################
 
+add_executable(DHT_bootstrap
+  other/DHT_bootstrap.c
+  other/bootstrap_node_packets.c)
+target_link_libraries(DHT_bootstrap toxnetcrypto)
+
 if(LIBCONFIG_FOUND)
   add_executable(tox-bootstrapd
     other/bootstrap_daemon/src/command_line_arguments.c
@@ -249,7 +259,7 @@ if(LIBCONFIG_FOUND)
     other/bootstrap_node_packets.c
     other/bootstrap_node_packets.h)
 
-  target_link_libraries(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
+  target_link_libraries(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
 endif()
 
 
@@ -265,10 +275,10 @@ if(NOT WIN32)
 endif()
 
 add_executable(DHT_test testing/DHT_test.c)
-target_link_libraries(DHT_test toxcore)
+target_link_libraries(DHT_test toxdht)
 
 add_executable(Messenger_test testing/Messenger_test.c)
-target_link_libraries(Messenger_test toxcore)
+target_link_libraries(Messenger_test toxmessenger)
 
 add_executable(dns3_test testing/dns3_test.c)
 target_link_libraries(dns3_test toxdns)

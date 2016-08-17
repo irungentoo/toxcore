@@ -118,7 +118,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (!load_state_callback || !data) {
-#ifdef DEBUG
+#ifdef TOX_DEBUG
         fprintf(stderr, "load_state() called with invalid args.\n");
 #endif
         return -1;
@@ -137,7 +137,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
         if (length < length_sub) {
             /* file truncated */
-#ifdef DEBUG
+#ifdef TOX_DEBUG
             fprintf(stderr, "state file too short: %u < %u\n", length, length_sub);
 #endif
             return -1;
@@ -145,7 +145,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
         if (lendian_to_host16((cookie_type >> 16)) != cookie_inner) {
             /* something is not matching up in a bad way, give up */
-#ifdef DEBUG
+#ifdef TOX_DEBUG
             fprintf(stderr, "state file garbeled: %04hx != %04hx\n", (cookie_type >> 16), cookie_inner);
 #endif
             return -1;
