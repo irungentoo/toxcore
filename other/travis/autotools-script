@@ -10,7 +10,8 @@ set -e -u -x
   --with-libsodium-headers=$CACHE_DIR/include \
   --enable-daemon \
   --enable-logging \
-  --enable-ntox
+  --enable-ntox \
+  CFLAGS="-DTRAVIS_ENV=1"
 
 # We use make instead of RUN $MAKE here, because the autotools build will only
 # ever run natively on the Linux container, never on a Windows cross compilation

@@ -90,14 +90,14 @@ typedef struct {
     TCP_con *tcp_connections;
     uint32_t tcp_connections_length; /* Length of tcp_connections array. */
 
-    int (*tcp_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
+    int (*tcp_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
     void *tcp_data_callback_object;
 
     int (*tcp_oob_callback)(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
                             const uint8_t *data, uint16_t length);
     void *tcp_oob_callback_object;
 
-    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length);
+    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length, void *userdata);
     void *tcp_onion_callback_object;
 
     TCP_Proxy_Info proxy_info;
@@ -151,12 +151,12 @@ int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_num
 /* Set the callback for TCP data packets.
  */
 void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(void *object, int id,
-                                        const uint8_t *data, uint16_t length), void *object);
+                                        const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 /* Set the callback for TCP onion packets.
  */
 void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(void *object,
-        const uint8_t *data, uint16_t length), void *object);
+        const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 /* Set the callback for TCP oob data packets.
  */
@@ -239,7 +239,7 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
  */
 TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info);
 
-void do_tcp_connections(TCP_Connections *tcp_c);
+void do_tcp_connections(TCP_Connections *tcp_c, void *userdata);
 void kill_tcp_connections(TCP_Connections *tcp_c);
 
 #endif

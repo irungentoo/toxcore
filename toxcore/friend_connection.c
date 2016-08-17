@@ -372,7 +372,7 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     onion_set_friend_DHT_pubkey(fr_c->onion_c, friend_con->onion_friendnum, dht_public_key);
 }
 
-static int handle_packet(void *object, int number, uint8_t *data, uint16_t length)
+static int handle_packet(void *object, int number, uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 0)
         return -1;
@@ -411,8 +411,9 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
 
     for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
         if (friend_con->callbacks[i].data_callback)
-            friend_con->callbacks[i].data_callback(friend_con->callbacks[i].data_callback_object,
-                                                   friend_con->callbacks[i].data_callback_id, data, length);
+            friend_con->callbacks[i].data_callback(
+                friend_con->callbacks[i].data_callback_object,
+                friend_con->callbacks[i].data_callback_id, data, length, userdata);
 
         friend_con = get_conn(fr_c, number);
 
@@ -604,7 +605,8 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  */
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
                                 int (*status_callback)(void *object, int id, uint8_t status), int (*data_callback)(void *object, int id, uint8_t *data,
-                                        uint16_t length), int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
+                                        uint16_t length, void *userdata), int (*lossy_data_callback)(void *object, int id, const uint8_t *data,
+                                                uint16_t length), void *object,
                                 int number)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);

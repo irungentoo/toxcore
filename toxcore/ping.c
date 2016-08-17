@@ -129,7 +129,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT       *dht = _dht;
     int        rc;
@@ -168,7 +168,7 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
     return 0;
 }
 
-static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT      *dht = _dht;
     int       rc;

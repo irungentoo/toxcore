@@ -240,7 +240,6 @@ struct Messenger {
     void (*friend_message)(struct Messenger *m, uint32_t, unsigned int, const uint8_t *, size_t, void *);
     void *friend_message_userdata;
     void (*friend_namechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
-    void *friend_namechange_userdata;
     void (*friend_statusmessagechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void *friend_statusmessagechange_userdata;
     void (*friend_userstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
@@ -485,8 +484,7 @@ void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint3
  *  Function(uint32_t friendnumber, uint8_t *newname, size_t length)
  *  You are not responsible for freeing newname.
  */
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                           void *userdata);
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *));
 
 /* Set the callback for status message changes.
  *  Function(uint32_t friendnumber, uint8_t *newstatus, size_t length)

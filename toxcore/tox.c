@@ -716,10 +716,10 @@ bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, 
     return 1;
 }
 
-void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *function, void *user_data)
+void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *function)
 {
     Messenger *m = tox;
-    m_callback_namechange(m, function, user_data);
+    m_callback_namechange(m, function);
 }
 
 size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)

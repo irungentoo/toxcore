@@ -506,14 +506,14 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
 }
 
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
-                          uint8_t connection_id, const uint8_t *data, uint16_t length), void *object)
+                          uint8_t connection_id, const uint8_t *data, uint16_t length, void *userdata), void *object)
 {
     con->data_callback = data_callback;
     con->data_callback_object = object;
 }
 
 void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
-                      const uint8_t *data, uint16_t length), void *object)
+                      const uint8_t *data, uint16_t length, void *userdata), void *object)
 {
     con->oob_data_callback = oob_data_callback;
     con->oob_data_callback_object = object;
@@ -600,7 +600,7 @@ int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t
 }
 
 void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
-                            uint16_t length), void *object)
+                            uint16_t length, void *userdata), void *object)
 {
     con->onion_callback = onion_callback;
     con->onion_callback_object = object;
@@ -692,7 +692,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 /* return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
+static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length <= 1)
         return -1;
@@ -800,13 +800,13 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
 
             if (conn->oob_data_callback)
                 conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + crypto_box_PUBLICKEYBYTES,
-                                        length - (1 + crypto_box_PUBLICKEYBYTES));
+                                        length - (1 + crypto_box_PUBLICKEYBYTES), userdata);
 
             return 0;
         }
 
         case TCP_PACKET_ONION_RESPONSE: {
-            conn->onion_callback(conn->onion_callback_object, data + 1, length - 1);
+            conn->onion_callback(conn->onion_callback_object, data + 1, length - 1, userdata);
             return 0;
         }
 
@@ -817,14 +817,15 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
             uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
 
             if (conn->data_callback)
-                conn->data_callback(conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1);
+                conn->data_callback(conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1,
+                                    userdata);
         }
     }
 
     return 0;
 }
 
-static int do_confirmed_TCP(TCP_Client_Connection *conn)
+static int do_confirmed_TCP(TCP_Client_Connection *conn, void *userdata)
 {
     send_pending_data(conn);
     send_ping_response(conn);
@@ -856,7 +857,7 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn)
             break;
         }
 
-        if (handle_TCP_packet(conn, packet, len) == -1) {
+        if (handle_TCP_packet(conn, packet, len, userdata) == -1) {
             conn->status = TCP_CLIENT_DISCONNECTED;
             break;
         }
@@ -867,7 +868,7 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn)
 
 /* Run the TCP connection
  */
-void do_TCP_connection(TCP_Client_Connection *TCP_connection)
+void do_TCP_connection(TCP_Client_Connection *TCP_connection, void *userdata)
 {
     unix_time_update();
 
@@ -945,7 +946,7 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
     }
 
     if (TCP_connection->status == TCP_CLIENT_CONFIRMED) {
-        do_confirmed_TCP(TCP_connection);
+        do_confirmed_TCP(TCP_connection, userdata);
     }
 
     if (TCP_connection->kill_at <= unix_time()) {

@@ -191,7 +191,8 @@ static int handle_cookie_request(const Net_Crypto *c, uint8_t *request_plain, ui
 
 /* Handle the cookie request packet (for raw UDP)
  */
-static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
+                                     void *userdata)
 {
     Net_Crypto *c = object;
     uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
@@ -1223,7 +1224,7 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id)
  * return 0 on success.
  */
 static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length,
-                                     _Bool udp)
+                                     _Bool udp, void *userdata)
 {
     if (length > MAX_CRYPTO_PACKET_SIZE || length <= CRYPTO_DATA_PACKET_MIN_SIZE)
         return -1;
@@ -1320,7 +1321,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
 
             if (conn->connection_data_callback)
                 conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, dt.data,
-                                               dt.length);
+                                               dt.length, userdata);
 
             /* conn might get killed in callback. */
             conn = get_crypto_connection(c, crypt_connection_id);
@@ -1360,7 +1361,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
  * return 0 on success.
  */
 static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length,
-                                    _Bool udp)
+                                    _Bool udp, void *userdata)
 {
     if (length == 0 || length > MAX_CRYPTO_PACKET_SIZE)
         return -1;
@@ -1425,7 +1426,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
 
         case NET_PACKET_CRYPTO_DATA: {
             if (conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED) {
-                return handle_data_packet_helper(c, crypt_connection_id, packet, length, udp);
+                return handle_data_packet_helper(c, crypt_connection_id, packet, length, udp, userdata);
             } else {
                 return -1;
             }
@@ -1805,7 +1806,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
 }
 
 
-static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t length)
+static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 0 || length > MAX_CRYPTO_PACKET_SIZE)
         return -1;
@@ -1822,7 +1823,7 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
     }
 
     pthread_mutex_unlock(&c->tcp_mutex);
-    int ret = handle_packet_connection(c, id, data, length, 0);
+    int ret = handle_packet_connection(c, id, data, length, 0, userdata);
     pthread_mutex_lock(&c->tcp_mutex);
 
     if (ret != 0)
@@ -1937,10 +1938,10 @@ unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, u
     return ret;
 }
 
-static void do_tcp(Net_Crypto *c)
+static void do_tcp(Net_Crypto *c, void *userdata)
 {
     pthread_mutex_lock(&c->tcp_mutex);
-    do_tcp_connections(c->tcp_c);
+    do_tcp_connections(c->tcp_c, userdata);
     pthread_mutex_unlock(&c->tcp_mutex);
 
     uint32_t i;
@@ -2001,7 +2002,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return 0 on success.
  */
 int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
-                            int id, uint8_t *data, uint16_t length), void *object, int id)
+                            int id, uint8_t *data, uint16_t length, void *userdata), void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -2081,7 +2082,7 @@ static int crypto_id_ip_port(const Net_Crypto *c, IP_Port ip_port)
  * Crypto data packets.
  *
  */
-static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     if (length <= CRYPTO_MIN_PACKET_SIZE || length > MAX_CRYPTO_PACKET_SIZE)
         return 1;
@@ -2099,7 +2100,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
         return 0;
     }
 
-    if (handle_packet_connection(c, crypt_connection_id, packet, length, 1) != 0)
+    if (handle_packet_connection(c, crypt_connection_id, packet, length, 1, userdata) != 0)
         return 1;
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
@@ -2685,11 +2686,11 @@ uint32_t crypto_run_interval(const Net_Crypto *c)
 }
 
 /* Main loop. */
-void do_net_crypto(Net_Crypto *c)
+void do_net_crypto(Net_Crypto *c, void *userdata)
 {
     unix_time_update();
     kill_timedout(c);
-    do_tcp(c);
+    do_tcp(c, userdata);
     send_crypto_packets(c);
 }
 

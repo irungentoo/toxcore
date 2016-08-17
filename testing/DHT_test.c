@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
                     }
                 }
         */
-        networking_poll(dht->net);
+        networking_poll(dht->net, NULL);
 
         print_clientlist(dht);
         print_friendlist(dht);

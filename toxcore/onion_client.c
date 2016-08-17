@@ -617,7 +617,8 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
     return 0;
 }
 
-static int handle_announce_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_announce_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
+                                    void *userdata)
 {
     Onion_Client *onion_c = object;
 
@@ -675,7 +676,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
 
 #define DATA_IN_RESPONSE_MIN_SIZE ONION_DATA_IN_RESPONSE_MIN_SIZE
 
-static int handle_data_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_data_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion_Client *onion_c = object;
 
@@ -770,7 +771,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
     return 0;
 }
 
-static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length)
+static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 0)
         return 1;
@@ -779,9 +780,9 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length)
     ip_port.ip.family = TCP_FAMILY;
 
     if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE) {
-        return handle_announce_response(object, ip_port, data, length);
+        return handle_announce_response(object, ip_port, data, length, userdata);
     } else if (data[0] == NET_PACKET_ONION_DATA_RESPONSE) {
-        return handle_data_response(object, ip_port, data, length);
+        return handle_data_response(object, ip_port, data, length, userdata);
     }
 
     return 1;

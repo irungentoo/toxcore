@@ -162,7 +162,7 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
 }
 
 static int handle_status(void *object, int i, uint8_t status);
-static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len);
+static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void *userdata);
 static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
 
 static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t status)
@@ -777,11 +777,9 @@ void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint3
     m->friend_message_userdata = userdata;
 }
 
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
-                           void *userdata)
+void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *))
 {
     m->friend_namechange = function;
-    m->friend_namechange_userdata = userdata;
 }
 
 void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *),
@@ -1904,7 +1902,7 @@ static int handle_status(void *object, int i, uint8_t status)
     return 0;
 }
 
-static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
+static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void *userdata)
 {
     if (len == 0)
         return -1;
@@ -1943,7 +1941,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len)
 
             /* inform of namechange before we overwrite the old name */
             if (m->friend_namechange)
-                m->friend_namechange(m, i, data_terminated, data_length, m->friend_namechange_userdata);
+                m->friend_namechange(m, i, data_terminated, data_length, userdata);
 
             memcpy(m->friendlist[i].name, data_terminated, data_length);
             m->friendlist[i].name_length = data_length;
@@ -2306,7 +2304,7 @@ void do_messenger(Messenger *m, void *userdata)
     unix_time_update();
 
     if (!m->options.udp_disabled) {
-        networking_poll(m->net);
+        networking_poll(m->net, userdata);
         do_DHT(m->dht);
     }
 
@@ -2314,7 +2312,7 @@ void do_messenger(Messenger *m, void *userdata)
         do_TCP_server(m->tcp_server);
     }
 
-    do_net_crypto(m->net_crypto);
+    do_net_crypto(m->net_crypto, userdata);
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
     do_friends(m);

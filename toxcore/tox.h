@@ -1287,7 +1287,7 @@ typedef void tox_friend_name_cb(Tox *tox, uint32_t friend_number, const uint8_t 
  *
  * This event is triggered when a friend changes their name.
  */
-void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback, void *user_data);
+void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback);
 
 /**
  * Return the length of the friend's status message. If the friend number is

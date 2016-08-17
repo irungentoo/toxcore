@@ -306,7 +306,7 @@ int LAN_ip(IP ip)
     return -1;
 }
 
-static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     DHT *dht = object;
 

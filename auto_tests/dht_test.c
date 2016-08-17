@@ -618,7 +618,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_DHT; ++i) {
-            networking_poll(dhts[i]->net);
+            networking_poll(dhts[i]->net, NULL);
             do_DHT(dhts[i]);
         }
 

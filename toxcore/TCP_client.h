@@ -87,12 +87,13 @@ typedef struct  {
     void *response_callback_object;
     int (*status_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
     void *status_callback_object;
-    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length);
+    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length,
+                         void *userdata);
     void *data_callback_object;
-    int (*oob_data_callback)(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length);
+    int (*oob_data_callback)(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata);
     void *oob_data_callback_object;
 
-    int (*onion_callback)(void *object, const uint8_t *data, uint16_t length);
+    int (*onion_callback)(void *object, const uint8_t *data, uint16_t length, void *userdata);
     void *onion_callback_object;
 
     /* Can be used by user. */
@@ -107,7 +108,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
 
 /* Run the TCP connection
  */
-void do_TCP_connection(TCP_Client_Connection *TCP_connection);
+void do_TCP_connection(TCP_Client_Connection *TCP_connection, void *userdata);
 
 /* Kill the TCP connection
  */
@@ -119,7 +120,7 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection);
  */
 int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length);
 void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,
-                            uint16_t length), void *object);
+                            uint16_t length, void *userdata), void *object);
 
 /* return 1 on success.
  * return 0 if could not send packet.
@@ -152,7 +153,7 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
  */
 int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length);
 void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void *object, uint32_t number,
-                          uint8_t connection_id, const uint8_t *data, uint16_t length), void *object);
+                          uint8_t connection_id, const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 /* return 1 on success.
  * return 0 if could not send packet.
@@ -160,7 +161,7 @@ void routing_data_handler(TCP_Client_Connection *con, int (*data_callback)(void 
  */
 int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data, uint16_t length);
 void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void *object, const uint8_t *public_key,
-                      const uint8_t *data, uint16_t length), void *object);
+                      const uint8_t *data, uint16_t length, void *userdata), void *object);
 
 
 #endif

@@ -346,7 +346,7 @@ int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_num
 /* Set the callback for TCP data packets.
  */
 void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(void *object, int id,
-                                        const uint8_t *data, uint16_t length), void *object)
+                                        const uint8_t *data, uint16_t length, void *userdata), void *object)
 {
     tcp_c->tcp_data_callback = tcp_data_callback;
     tcp_c->tcp_data_callback_object = object;
@@ -364,7 +364,7 @@ void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oo
 /* Set the callback for TCP oob data packets.
  */
 void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(void *object,
-        const uint8_t *data, uint16_t length), void *object)
+        const uint8_t *data, uint16_t length, void *userdata), void *object)
 {
     tcp_c->tcp_onion_callback = tcp_onion_callback;
     tcp_c->tcp_onion_callback_object = object;
@@ -879,7 +879,8 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
     return 0;
 }
 
-static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length)
+static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length,
+                             void *userdata)
 {
 
     if (length == 0)
@@ -900,12 +901,13 @@ static int tcp_data_callback(void *object, uint32_t number, uint8_t connection_i
         return -1;
 
     if (tcp_c->tcp_data_callback)
-        tcp_c->tcp_data_callback(tcp_c->tcp_data_callback_object, con_to->id, data, length);
+        tcp_c->tcp_data_callback(tcp_c->tcp_data_callback_object, con_to->id, data, length, userdata);
 
     return 0;
 }
 
-static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length)
+static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
+                            void *userdata)
 {
     if (length == 0)
         return -1;
@@ -925,7 +927,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
     if (con_to && tcp_connection_in_conn(con_to, tcp_connections_number)) {
-        return tcp_data_callback(object, connections_number, 0, data, length);
+        return tcp_data_callback(object, connections_number, 0, data, length, userdata);
     } else {
         if (tcp_c->tcp_oob_callback)
             tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
@@ -934,12 +936,12 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     return 0;
 }
 
-static int tcp_onion_callback(void *object, const uint8_t *data, uint16_t length)
+static int tcp_onion_callback(void *object, const uint8_t *data, uint16_t length, void *userdata)
 {
     TCP_Connections *tcp_c = object;
 
     if (tcp_c->tcp_onion_callback)
-        tcp_c->tcp_onion_callback(tcp_c->tcp_onion_callback_object, data, length);
+        tcp_c->tcp_onion_callback(tcp_c->tcp_onion_callback_object, data, length, userdata);
 
     return 0;
 }
@@ -1265,7 +1267,7 @@ TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *
     return temp;
 }
 
-static void do_tcp_conns(TCP_Connections *tcp_c)
+static void do_tcp_conns(TCP_Connections *tcp_c, void *userdata)
 {
     unsigned int i;
 
@@ -1274,7 +1276,7 @@ static void do_tcp_conns(TCP_Connections *tcp_c)
 
         if (tcp_con) {
             if (tcp_con->status != TCP_CONN_SLEEPING) {
-                do_TCP_connection(tcp_con->connection);
+                do_TCP_connection(tcp_con->connection, userdata);
 
                 /* callbacks can change TCP connection address. */
                 tcp_con = get_tcp_connection(tcp_c, i);
@@ -1343,9 +1345,9 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
     }
 }
 
-void do_tcp_connections(TCP_Connections *tcp_c)
+void do_tcp_connections(TCP_Connections *tcp_c, void *userdata)
 {
-    do_tcp_conns(tcp_c);
+    do_tcp_conns(tcp_c, userdata);
     kill_nonused_tcp(tcp_c);
 }
 

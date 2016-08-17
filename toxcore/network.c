@@ -412,7 +412,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
     net->packethandlers[byte].object = object;
 }
 
-void networking_poll(Networking_Core *net)
+void networking_poll(Networking_Core *net, void *userdata)
 {
     if (net->family == 0) /* Socket not initialized */
         return;
@@ -431,7 +431,7 @@ void networking_poll(Networking_Core *net)
             continue;
         }
 
-        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length);
+        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length, userdata);
     }
 }
 

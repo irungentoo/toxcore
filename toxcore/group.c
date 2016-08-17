@@ -612,7 +612,7 @@ static int handle_status(void *object, int friendcon_id, uint8_t status)
     return 0;
 }
 
-static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length);
+static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length, void *userdata);
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length);
 
 /* Add friend to group chat.
@@ -1930,7 +1930,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
     send_message_all_close(g_c, groupnumber, data, length, -1/*TODO close_index*/);
 }
 
-static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length)
+static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length, void *userdata)
 {
     Group_Chats *g_c = object;
 

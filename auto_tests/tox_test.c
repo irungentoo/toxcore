@@ -537,7 +537,7 @@ START_TEST(test_few_clients)
     }
 
     printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
-    tox_callback_friend_name(tox3, print_nickchange, &to_compare);
+    tox_callback_friend_name(tox3, print_nickchange);
     TOX_ERR_SET_INFO err_n;
     bool succ = tox_self_set_name(tox2, (uint8_t *)"Gentoo", sizeof("Gentoo"), &err_n);
     ck_assert_msg(succ && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_name failed because %u\n", err_n);

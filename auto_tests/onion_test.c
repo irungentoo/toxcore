@@ -25,12 +25,12 @@
 
 void do_onion(Onion *onion)
 {
-    networking_poll(onion->net);
+    networking_poll(onion->net, NULL);
     do_DHT(onion->dht);
 }
 
 static int handled_test_1;
-static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = object;
 
@@ -46,7 +46,7 @@ static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, ui
 }
 
 static int handled_test_2;
-static int handle_test_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_test_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     if (length != sizeof("install Gentoo"))
         return 1;
@@ -72,7 +72,7 @@ uint8_t sb_data[ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
 static int handled_test_3;
 uint8_t test_3_pub_key[crypto_box_PUBLICKEYBYTES];
 uint8_t test_3_ping_id[crypto_hash_sha256_BYTES];
-static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = object;
 
@@ -101,7 +101,7 @@ static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, ui
 
 uint8_t nonce[crypto_box_NONCEBYTES];
 static int handled_test_4;
-static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
+static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = object;
 
@@ -286,7 +286,7 @@ Onions *new_onions(uint16_t port)
 
 void do_onions(Onions *on)
 {
-    networking_poll(on->onion->net);
+    networking_poll(on->onion->net, NULL);
     do_DHT(on->onion->dht);
     do_onion_client(on->onion_c);
 }

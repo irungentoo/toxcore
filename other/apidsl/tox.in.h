@@ -1199,7 +1199,7 @@ namespace friend {
   /**
    * This event is triggered when a friend changes their name.
    */
-  event name {
+  event name const {
     /**
      * @param friend_number The friend number of the friend whose name changed.
      * @param name A byte array containing the same data as

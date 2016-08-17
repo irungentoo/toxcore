@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
             do_TCP_server(tcp_server);
         }
 
-        networking_poll(dht->net);
+        networking_poll(dht->net, NULL);
 
         if (waiting_for_dht_connection && DHT_isconnected(dht)) {
             write_log(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");

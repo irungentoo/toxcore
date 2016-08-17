@@ -290,7 +290,8 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len);
+typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len,
+                                       void *userdata);
 
 typedef struct {
     packet_handler_callback function;
@@ -364,7 +365,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
 
 /* Call this several times a second. */
-void networking_poll(Networking_Core *net);
+void networking_poll(Networking_Core *net, void *userdata);
 
 /* Initialize networking.
  * bind to ip and port.

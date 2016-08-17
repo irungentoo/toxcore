@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
         do_TCP_server(tcp_s);
 #endif
-        networking_poll(dht->net);
+        networking_poll(dht->net, NULL);
 
         c_sleep(1);
     }
