@@ -240,6 +240,10 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
 void tox_kill(Tox *tox)
 {
+    if (tox == NULL) {
+        return;
+    }
+
     Messenger *m = tox;
     kill_groupchats(m->group_chat_object);
     kill_messenger(m);
