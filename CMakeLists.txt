@@ -96,6 +96,16 @@ endif()
 #
 ################################################################################
 
+# toxcore_PKGCONFIG_LIBS is what's added to the Libs: line in toxcore.pc. It
+# needs to contain all the libraries a program using toxcore should link against
+# if it's statically linked. If it's dynamically linked, there is no need to
+# explicitly link against all the dependencies, but it doesn't harm much(*)
+# either.
+#
+# (*) It allows client code to use symbols from our dependencies without
+#    explicitly linking against them.
+set(toxcore_PKGCONFIG_LIBS)
+
 # LAYER 1: Crypto core
 # --------------------
 add_library(toxcrypto ${LIBTYPE}
@@ -109,9 +119,20 @@ add_library(toxnetwork ${LIBTYPE}
   toxcore/network.c
   toxcore/util.c)
 target_link_libraries(toxnetwork toxcrypto)
+
+if(CMAKE_THREAD_LIBS_INIT)
+  target_link_libraries(toxnetwork ${CMAKE_THREAD_LIBS_INIT})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-l${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
 if(RT_LIBRARIES)
   target_link_libraries(toxnetwork ${RT_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
+endif()
+
+if(WIN32)
+  target_link_libraries(toxnetwork ws2_32 iphlpapi)
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
 endif()
 
 # LAYER 3: Distributed Hash Table
@@ -161,15 +182,6 @@ target_link_libraries(toxgroup toxmessenger)
 add_library(toxcore ${LIBTYPE}
   toxcore/tox.c)
 target_link_libraries(toxcore toxgroup)
-
-target_link_libraries(toxcore ${CMAKE_THREAD_LIBS_INIT})
-if(CMAKE_THREAD_LIBS_INIT)
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-l${CMAKE_THREAD_LIBS_INIT}")
-endif()
-
-if(WIN32)
-  target_link_libraries(toxcore ws2_32 iphlpapi)
-endif()
 
 
 ################################################################################
