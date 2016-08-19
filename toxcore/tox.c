@@ -823,10 +823,10 @@ bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEN
     return !!ret;
 }
 
-void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *function, void *user_data)
+void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *function)
 {
     Messenger *m = tox;
-    m_callback_typingchange(m, function, user_data);
+    m_callback_typingchange(m, function);
 }
 
 bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool is_typing, TOX_ERR_SET_TYPING *error)

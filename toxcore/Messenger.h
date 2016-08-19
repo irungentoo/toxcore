@@ -32,6 +32,10 @@
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
+/* Used for TCP relays in Messenger struct (may need to be % 2 == 0)*/
+#define NUM_SAVED_TCP_RELAYS 8
+/* This cannot be bigger than 256 */
+#define MAX_CONCURRENT_FILE_PIPES 256
 
 
 #define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
@@ -152,9 +156,6 @@ enum {
     FILE_PAUSE_BOTH
 };
 
-/* This cannot be bigger than 256 */
-#define MAX_CONCURRENT_FILE_PIPES 256
-
 enum {
     FILECONTROL_ACCEPT,
     FILECONTROL_PAUSE,
@@ -207,7 +208,6 @@ typedef struct {
     struct Receipts *receipts_end;
 } Friend;
 
-
 struct Messenger {
 
     Networking_Core *net;
@@ -233,7 +233,6 @@ struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
-#define NUM_SAVED_TCP_RELAYS 8
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
 
@@ -244,7 +243,6 @@ struct Messenger {
     void (*friend_userstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
     void *friend_userstatuschange_userdata;
     void (*friend_typingchange)(struct Messenger *m, uint32_t, _Bool, void *);
-    void *friend_typingchange_userdata;
     void (*read_receipt)(struct Messenger *m, uint32_t, uint32_t, void *);
     void *read_receipt_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
@@ -501,7 +499,7 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t
 /* Set the callback for typing changes.
  *  Function(uint32_t friendnumber, uint8_t is_typing)
  */
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, _Bool, void *), void *userdata);
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, _Bool, void *));
 
 /* Set the callback for read receipts.
  *  Function(uint32_t friendnumber, uint32_t receipt)
@@ -527,6 +525,7 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32
  */
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *),
                                  void *userdata);
+
 /* Same as previous but for internal A/V core usage only */
 void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
         void *userdata);

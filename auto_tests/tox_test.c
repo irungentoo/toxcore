@@ -583,7 +583,7 @@ START_TEST(test_few_clients)
     ck_assert_msg(memcmp(temp_status_m, "Installing Gentoo", sizeof("Installing Gentoo")) == 0,
                   "status message not correct");
 
-    tox_callback_friend_typing(tox2, &print_typingchange, &to_compare);
+    tox_callback_friend_typing(tox2, &print_typingchange);
     tox_self_set_typing(tox3, 0, 1, 0);
 
     while (1) {

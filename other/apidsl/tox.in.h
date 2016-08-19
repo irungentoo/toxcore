@@ -1333,7 +1333,7 @@ namespace friend {
   /**
    * This event is triggered when a friend starts or stops typing.
    */
-  event typing {
+  event typing const {
     /**
      * @param friend_number The friend number of the friend who started or stopped
      *   typing.

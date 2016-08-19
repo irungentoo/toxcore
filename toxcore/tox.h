@@ -1413,7 +1413,7 @@ typedef void tox_friend_typing_cb(Tox *tox, uint32_t friend_number, bool is_typi
  *
  * This event is triggered when a friend starts or stops typing.
  */
-void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *callback, void *user_data);
+void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *callback);
 
 
 /*******************************************************************************
