@@ -150,6 +150,7 @@ static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
 }
 
 typedef struct {
+    Logger *log;
     Group_Chats *g_c;
     OpusEncoder *audio_encoder;
 
@@ -191,7 +192,7 @@ static int recreate_encoder(Group_AV *group_av)
                               OPUS_APPLICATION_AUDIO, &rc);
 
     if (rc != OPUS_OK) {
-        LOGGER_ERROR("Error while starting audio encoder: %s", opus_strerror(rc));
+        LOGGER_ERROR(group_av->log, "Error while starting audio encoder: %s", opus_strerror(rc));
         group_av->audio_encoder = NULL;
         return -1;
     }
@@ -199,7 +200,7 @@ static int recreate_encoder(Group_AV *group_av)
     rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_BITRATE(group_av->audio_bitrate));
 
     if (rc != OPUS_OK) {
-        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        LOGGER_ERROR(group_av->log, "Error while setting encoder ctl: %s", opus_strerror(rc));
         opus_encoder_destroy(group_av->audio_encoder);
         group_av->audio_encoder = NULL;
         return -1;
@@ -208,7 +209,7 @@ static int recreate_encoder(Group_AV *group_av)
     rc = opus_encoder_ctl(group_av->audio_encoder, OPUS_SET_COMPLEXITY(10));
 
     if (rc != OPUS_OK) {
-        LOGGER_ERROR("Error while setting encoder ctl: %s", opus_strerror(rc));
+        LOGGER_ERROR(group_av->log, "Error while setting encoder ctl: %s", opus_strerror(rc));
         opus_encoder_destroy(group_av->audio_encoder);
         group_av->audio_encoder = NULL;
         return -1;
@@ -217,7 +218,8 @@ static int recreate_encoder(Group_AV *group_av)
     return 0;
 }
 
-static Group_AV *new_group_av(Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *,
+static Group_AV *new_group_av(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int,
+                              const int16_t *,
                               unsigned int, uint8_t, unsigned int, void *), void *userdata)
 {
     if (!g_c)
@@ -228,6 +230,7 @@ static Group_AV *new_group_av(Group_Chats *g_c, void (*audio_callback)(Messenger
     if (!group_av)
         return NULL;
 
+    group_av->log = log;
     group_av->g_c = g_c;
 
     group_av->audio_data = audio_callback;
@@ -307,7 +310,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
             peer_av->audio_decoder = opus_decoder_create(sample_rate, channels, &rc);
 
             if (rc != OPUS_OK) {
-                LOGGER_ERROR("Error while starting audio decoder: %s", opus_strerror(rc));
+                LOGGER_ERROR(group_av->log, "Error while starting audio decoder: %s", opus_strerror(rc));
                 free(pk);
                 return -1;
             }
@@ -401,13 +404,14 @@ static int handle_group_audio_packet(void *object, int groupnumber, int friendgr
  * return 0 on success.
  * return -1 on failure.
  */
-static int groupchat_enable_av(Group_Chats *g_c, int groupnumber, void (*audio_callback)(Messenger *, int, int,
+static int groupchat_enable_av(Logger *log, Group_Chats *g_c, int groupnumber, void (*audio_callback)(Messenger *, int,
+                               int,
                                const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata)
 {
     if (groupnumber == -1)
         return -1;
 
-    Group_AV *group_av = new_group_av(g_c, audio_callback, userdata);
+    Group_AV *group_av = new_group_av(log, g_c, audio_callback, userdata);
 
     if (group_av == NULL)
         return -1;
@@ -429,7 +433,8 @@ static int groupchat_enable_av(Group_Chats *g_c, int groupnumber, void (*audio_c
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int,
+int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *,
+                     unsigned int,
                      uint8_t, unsigned int, void *), void *userdata)
 {
     int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
@@ -438,7 +443,7 @@ int add_av_groupchat(Group_Chats *g_c, void (*audio_callback)(Messenger *, int, 
         return -1;
     }
 
-    if (groupchat_enable_av(g_c, groupnumber, audio_callback, userdata) == -1) {
+    if (groupchat_enable_av(log, g_c, groupnumber, audio_callback, userdata) == -1) {
         del_groupchat(g_c, groupnumber);
         return -1;
     }
@@ -451,7 +456,7 @@ int add_av_groupchat(Group_Chats *g_c, void (*audio_callback)(Messenger *, int, 
  * returns group number on success
  * returns -1 on failure.
  */
-int join_av_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length,
+int join_av_groupchat(Logger *log, Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length,
                       void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
                       void *userdata)
 {
@@ -461,7 +466,7 @@ int join_av_groupchat(Group_Chats *g_c, int32_t friendnumber, const uint8_t *dat
         return -1;
     }
 
-    if (groupchat_enable_av(g_c, groupnumber, audio_callback, userdata) == -1) {
+    if (groupchat_enable_av(log, g_c, groupnumber, audio_callback, userdata) == -1) {
         del_groupchat(g_c, groupnumber);
         return -1;
     }

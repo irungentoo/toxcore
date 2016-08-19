@@ -30,7 +30,6 @@
 #include "net_crypto.h"
 #include "util.h"
 #include "math.h"
-#include "logger.h"
 
 static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_connection_id)
 {
@@ -957,7 +956,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
             dt1->sent_time = current_time_monotonic();
     } else {
         conn->maximum_speed_reached = 1;
-        LOGGER_ERROR("send_data_packet failed\n");
+        LOGGER_ERROR(c->log, "send_data_packet failed\n");
     }
 
     return packet_num;
@@ -2603,7 +2602,7 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk)
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
+Net_Crypto *new_net_crypto(Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info)
 {
     unix_time_update();
 
@@ -2614,6 +2613,8 @@ Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info)
 
     if (temp == NULL)
         return NULL;
+
+    temp->log = log;
 
     temp->tcp_c = new_tcp_connections(dht->self_secret_key, proxy_info);
 

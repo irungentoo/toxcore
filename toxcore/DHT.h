@@ -25,6 +25,7 @@
 #define DHT_H
 
 #include "crypto_core.h"
+#include "logger.h"
 #include "network.h"
 #include "ping_array.h"
 
@@ -205,6 +206,7 @@ typedef struct {
 } Cryptopacket_Handles;
 
 typedef struct {
+    Logger *log;
     Networking_Core *net;
 
     Client_data    close_clientlist[LCLIENT_LIST];
@@ -407,7 +409,7 @@ void DHT_save(DHT *dht, uint8_t *data);
 int DHT_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_DHT(Networking_Core *net);
+DHT *new_DHT(Logger *log, Networking_Core *net);
 
 void kill_DHT(DHT *dht);
 

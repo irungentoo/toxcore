@@ -19,11 +19,11 @@ START_TEST(test_basics)
 {
     /* TODO: real test */
     uint8_t id[crypto_box_PUBLICKEYBYTES] = {1};
-    Assoc *assoc = new_Assoc_default(id);
+    Assoc *assoc = new_Assoc_default(NULL, id);
     ck_assert_msg(assoc != NULL, "failed to create default assoc");
 
     kill_Assoc(assoc);
-    assoc = new_Assoc(17, 4, id); /* results in an assoc of 16/3 */
+    assoc = new_Assoc(NULL, 17, 4, id); /* results in an assoc of 16/3 */
     ck_assert_msg(assoc != NULL, "failed to create customized assoc");
 
     IP_Port ipp;
@@ -72,7 +72,7 @@ START_TEST(test_fillup)
         id[i] = rand();
     }
 
-    Assoc *assoc = new_Assoc(6, 15, id);
+    Assoc *assoc = new_Assoc(NULL, 6, 15, id);
     ck_assert_msg(assoc != NULL, "failed to create default assoc");
     struct entry {
         uint8_t id[crypto_box_PUBLICKEYBYTES];

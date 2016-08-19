@@ -27,11 +27,14 @@
 
 #include "toxav.h"
 
+#include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 
 struct RTPMessage;
 
 typedef struct ACSession_s {
+    Logger *log;
+
     /* encoding */
     OpusEncoder *encoder;
     int32_t le_sample_rate; /* Last encoder sample rate */
@@ -55,7 +58,7 @@ typedef struct ACSession_s {
     PAIR(toxav_audio_receive_frame_cb *, void *) acb; /* Audio frame receive callback */
 } ACSession;
 
-ACSession *ac_new(ToxAV *av, uint32_t friend_number, toxav_audio_receive_frame_cb *cb, void *cb_data);
+ACSession *ac_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_receive_frame_cb *cb, void *cb_data);
 void ac_kill(ACSession *ac);
 void ac_iterate(ACSession *ac);
 int ac_queue_message(void *acp, struct RTPMessage *msg);

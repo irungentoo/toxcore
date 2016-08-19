@@ -126,12 +126,16 @@ void tox_options_free(struct Tox_Options *options)
 
 Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 {
-    if (!logger_get_global())
-        logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
-
     Messenger_Options m_options = {0};
 
     _Bool load_savedata_sk = 0, load_savedata_tox = 0;
+
+    Logger *log = logger_new();
+
+    if (log == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        return NULL;
+    }
 
     if (options == NULL) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
@@ -210,7 +214,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
     }
 
     unsigned int m_error;
-    Messenger *m = new_messenger(&m_options, &m_error);
+    Messenger *m = new_messenger(log, &m_options, &m_error);
 
     if (!new_groupchats(m)) {
         kill_messenger(m);
@@ -245,9 +249,16 @@ void tox_kill(Tox *tox)
     }
 
     Messenger *m = tox;
+    Logger *log = m->log;
     kill_groupchats(m->group_chat_object);
     kill_messenger(m);
-    logger_kill_global();
+    logger_kill(log);
+}
+
+void tox_callback_log(Tox *tox, tox_log_cb *function, void *userdata)
+{
+    Messenger *m = tox;
+    m_callback_log(m, (logger_cb *)function, userdata);
 }
 
 size_t tox_get_savedata_size(const Tox *tox)

@@ -86,6 +86,7 @@ typedef struct candidates_bucket {
 } candidates_bucket;
 
 struct Assoc {
+    Logger                *log;
     hash_t                 self_hash;                          /* hash of self_client_id */
     uint8_t                self_client_id[crypto_box_PUBLICKEYBYTES];     /* don't store entries for this */
 
@@ -169,7 +170,7 @@ static uint8_t *dist_index_id(Assoc *assoc, uint64_t dist_ind)
 }
 
 /* sorts first .. last, i.e. last is included */
-static void dist_index_bubble(Assoc *assoc, uint64_t *dist_list, size_t first, size_t last, uint8_t *id,
+static void dist_index_bubble(Assoc *assoc, uint64_t *dist_list, size_t first, size_t last, const uint8_t *id,
                               void *custom_data, Assoc_distance_relative_callback dist_rel_func)
 {
     size_t i, k;
@@ -523,7 +524,7 @@ static void client_id_self_update(Assoc *assoc)
 
     assoc->self_hash = id_hash(assoc, assoc->self_client_id);
 
-    LOGGER_DEBUG("id is now set, purging cache of self-references");
+    LOGGER_DEBUG(assoc->log, "id is now set, purging cache of self-references");
 
     /* if we already added some (or loaded some) entries,
      * look and remove if we find a match
@@ -776,7 +777,7 @@ static size_t prime_upto_min9(size_t limit)
 }
 
 /* create */
-Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id)
+Assoc *new_Assoc(Logger *log, size_t bits, size_t entries, const uint8_t *public_id)
 {
     if (!public_id)
         return NULL;
@@ -785,6 +786,8 @@ Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id)
 
     if (!assoc)
         return NULL;
+
+    assoc->log = log;
 
     /*
      * bits must be in [ 2 .. 15 ]
@@ -819,7 +822,7 @@ Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id)
 
         if (entries_test != entries) {
 
-            LOGGER_DEBUG("trimmed %i to %i.\n", (int)entries, (int)entries_test);
+            LOGGER_DEBUG(assoc->log, "trimmed %i to %i.\n", (int)entries, (int)entries_test);
             entries = (size_t)entries_test;
         }
     }
@@ -861,11 +864,11 @@ Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id)
     return assoc;
 }
 
-Assoc *new_Assoc_default(const uint8_t *public_id)
+Assoc *new_Assoc_default(Logger *log, const uint8_t *public_id)
 {
     /* original 8, 251 averages to ~32k entries... probably the whole DHT :D
      * 320 entries is fine, hopefully */
-    return new_Assoc(6, 15, public_id);
+    return new_Assoc(log, 6, 15, public_id);
 }
 
 /* own client_id, assocs for this have to be ignored */
@@ -878,9 +881,7 @@ void Assoc_self_client_id_changed(Assoc *assoc, const uint8_t *id)
     }
 }
 
-#ifdef TOX_LOGGER
 static char *idpart2str(uint8_t *id, size_t len);
-#endif /* TOX_LOGGER */
 
 /* refresh buckets */
 void do_Assoc(Assoc *assoc, DHT *dht)
@@ -939,7 +940,7 @@ void do_Assoc(Assoc *assoc, DHT *dht)
         if (seen) {
             IPPTsPng *ippts = seen->seen_family == AF_INET ? &seen->client.assoc4 : &seen->client.assoc6;
 
-            LOGGER_DEBUG("[%u] => S[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
+            LOGGER_DEBUG(assoc->log, "[%u] => S[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
                          idpart2str(seen->client.public_key, 8), ip_ntoa(&ippts->ip_port.ip), htons(ippts->ip_port.port));
 
             DHT_getnodes(dht, &ippts->ip_port, seen->client.public_key, target_id);
@@ -949,18 +950,16 @@ void do_Assoc(Assoc *assoc, DHT *dht)
         if (heard && (heard != seen)) {
             IP_Port *ipp = heard->heard_family == AF_INET ? &heard->assoc_heard4 : &heard->assoc_heard6;
 
-            LOGGER_DEBUG("[%u] => H[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
+            LOGGER_DEBUG(assoc->log, "[%u] => H[%s...] %s:%u", (uint32_t)(candidate % assoc->candidates_bucket_count),
                          idpart2str(heard->client.public_key, 8), ip_ntoa(&ipp->ip), htons(ipp->port));
 
             DHT_getnodes(dht, ipp, heard->client.public_key, target_id);
             heard->getnodes = unix_time();
         }
 
-        LOGGER_SCOPE (
-
-            if ( !heard && !seen )
-            LOGGER_DEBUG("[%u] => no nodes to talk to??", (uint32_t)(candidate % assoc->candidates_bucket_count));
-        );
+        if (!heard && !seen) {
+            LOGGER_DEBUG(assoc->log, "[%u] => no nodes to talk to??", (uint32_t)(candidate % assoc->candidates_bucket_count));
+        }
     }
 }
 
@@ -973,8 +972,6 @@ void kill_Assoc(Assoc *assoc)
         free(assoc);
     }
 }
-
-#ifdef TOX_LOGGER
 
 static char buffer[crypto_box_PUBLICKEYBYTES * 2 + 1];
 static char *idpart2str(uint8_t *id, size_t len)
@@ -994,11 +991,11 @@ static char *idpart2str(uint8_t *id, size_t len)
 void Assoc_status(const Assoc *assoc)
 {
     if (!assoc) {
-        LOGGER_TRACE("Assoc status: no assoc");
+        LOGGER_TRACE(assoc->log, "Assoc status: no assoc");
         return;
     }
 
-    LOGGER_TRACE("[b:p] hash => [id...] used, seen, heard");
+    LOGGER_TRACE(assoc->log, "[b:p] hash => [id...] used, seen, heard");
 
     size_t bid, cid, total = 0;
 
@@ -1011,7 +1008,7 @@ void Assoc_status(const Assoc *assoc)
             if (entry->hash) {
                 total++;
 
-                LOGGER_TRACE("[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
+                LOGGER_TRACE(assoc->log, "[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
                              (int)bid, (int)cid, entry->hash, idpart2str(entry->client.public_key, 8),
                              entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
                              entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
@@ -1023,9 +1020,7 @@ void Assoc_status(const Assoc *assoc)
     }
 
     if (total) {
-        LOGGER_TRACE("Total: %i entries, table usage %i%%.\n", (int)total,
+        LOGGER_TRACE(assoc->log, "Total: %i entries, table usage %i%%.\n", (int)total,
                      (int)(total * 100 / (assoc->candidates_bucket_count * assoc->candidates_bucket_size)));
     }
 }
-
-#endif /* TOX_LOGGER */

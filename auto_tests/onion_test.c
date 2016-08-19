@@ -131,8 +131,8 @@ START_TEST(test_basic)
     IP ip;
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
-    Onion *onion1 = new_onion(new_DHT(new_networking(ip, 34567)));
-    Onion *onion2 = new_onion(new_DHT(new_networking(ip, 34568)));
+    Onion *onion1 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34567)));
+    Onion *onion2 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34568)));
     ck_assert_msg((onion1 != NULL) && (onion2 != NULL), "Onion failed initializing.");
     networking_registerhandler(onion2->net, 'I', &handle_test_1, onion2);
 
@@ -209,7 +209,7 @@ START_TEST(test_basic)
     }
 
     c_sleep(1000);
-    Onion *onion3 = new_onion(new_DHT(new_networking(ip, 34569)));
+    Onion *onion3 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34569)));
     ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
 
     new_nonce(nonce);
@@ -272,11 +272,11 @@ Onions *new_onions(uint16_t port)
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
     Onions *on = malloc(sizeof(Onions));
-    DHT *dht = new_DHT(new_networking(ip, port));
+    DHT *dht = new_DHT(NULL, new_networking(NULL, ip, port));
     on->onion = new_onion(dht);
     on->onion_a = new_onion_announce(dht);
     TCP_Proxy_Info inf = {{{0}}};
-    on->onion_c = new_onion_client(new_net_crypto(dht, &inf));
+    on->onion_c = new_onion_client(new_net_crypto(NULL, dht, &inf));
 
     if (on->onion && on->onion_a && on->onion_c)
         return on;

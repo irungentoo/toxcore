@@ -144,7 +144,8 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
     }
 
     if (end_len != string - old_str) {
-        LOGGER_ERROR("tox_generate_dns3_string Fail, %u != %lu\n", end_len, string - old_str);
+        // FIXME: This currently has no access to a logger.
+        LOGGER_ERROR(NULL, "tox_generate_dns3_string Fail, %u != %lu\n", end_len, string - old_str);
         return -1;
     }
 

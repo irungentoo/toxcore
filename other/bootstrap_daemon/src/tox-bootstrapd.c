@@ -225,14 +225,14 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
-    Networking_Core *net = new_networking(ip, port);
+    Networking_Core *net = new_networking(NULL, ip, port);
 
     if (net == NULL) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             write_log(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking(ip, port);
+            net = new_networking(NULL, ip, port);
 
             if (net == NULL) {
                 write_log(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    DHT *dht = new_DHT(net);
+    DHT *dht = new_DHT(NULL, net);
 
     if (dht == NULL) {
         write_log(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");

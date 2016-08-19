@@ -48,7 +48,7 @@ typedef enum AssocCloseEntriesFlags {
 
 typedef struct Assoc_close_entries {
     void                              *custom_data;        /* given to distance functions */
-    uint8_t                           *wanted_id;          /* the target client_id */
+    const uint8_t                     *wanted_id;          /* the target client_id */
     uint8_t                            flags;              /* additional flags */
 
     Assoc_distance_relative_callback   distance_relative_func;
@@ -73,7 +73,7 @@ uint8_t Assoc_get_close_entries(Assoc *assoc, Assoc_close_entries *close_entries
 /*****************************************************************************/
 
 /* create: default sizes (6, 5 => 320 entries) */
-Assoc *new_Assoc_default(const uint8_t *public_id);
+Assoc *new_Assoc_default(Logger *log, const uint8_t *public_id);
 
 /* create: customized sizes
  * total is (2^bits) * entries
@@ -82,7 +82,7 @@ Assoc *new_Assoc_default(const uint8_t *public_id);
  *
  * preferably bits should be large and entries small to ensure spread
  * in the search space (e. g. 5, 5 is preferable to 2, 41) */
-Assoc *new_Assoc(size_t bits, size_t entries, const uint8_t *public_id);
+Assoc *new_Assoc(Logger *log, size_t bits, size_t entries, const uint8_t *public_id);
 
 /* public_id changed (loaded), update which entry isn't stored */
 void Assoc_self_client_id_changed(Assoc *assoc, const uint8_t *public_id);
@@ -97,8 +97,6 @@ void do_Assoc(Assoc *assoc, DHT *dht);
 /* destroy */
 void kill_Assoc(Assoc *assoc);
 
-#ifdef TOX_LOGGER
 void Assoc_status(const Assoc *assoc);
-#endif /* TOX_LOGGER */
 
 #endif /* !__ASSOC_H__ */

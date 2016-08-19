@@ -154,8 +154,8 @@ void send_update(BWController *bwc)
     } else if (current_time_monotonic() - bwc->cycle.lsu > BWC_SEND_INTERVAL_MS) {
 
         if (bwc->cycle.lost) {
-            LOGGER_DEBUG ("%p Sent update rcv: %u lost: %u",
-                          bwc, bwc->cycle.recv, bwc->cycle.lost);
+            LOGGER_DEBUG(bwc->m->log, "%p Sent update rcv: %u lost: %u",
+                         bwc, bwc->cycle.recv, bwc->cycle.lost);
 
             uint8_t p_msg[sizeof(struct BWCMessage) + 1];
             struct BWCMessage *b_msg = (struct BWCMessage *)(p_msg + 1);
@@ -165,7 +165,7 @@ void send_update(BWController *bwc)
             b_msg->recv = htonl(bwc->cycle.recv);
 
             if (-1 == send_custom_lossy_packet(bwc->m, bwc->friend_number, p_msg, sizeof(p_msg)))
-                LOGGER_WARNING("BWC send failed (len: %d)! std error: %s", sizeof(p_msg), strerror(errno));
+                LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %d)! std error: %s", sizeof(p_msg), strerror(errno));
         }
 
         bwc->cycle.lsu = current_time_monotonic();
@@ -173,11 +173,11 @@ void send_update(BWController *bwc)
 }
 int on_update (BWController *bwc, struct BWCMessage *msg)
 {
-    LOGGER_DEBUG ("%p Got update from peer", bwc);
+    LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", bwc);
 
     /* Peer must respect time boundary */
     if (current_time_monotonic() < bwc->cycle.lru + BWC_SEND_INTERVAL_MS) {
-        LOGGER_DEBUG("%p Rejecting extra update", bwc);
+        LOGGER_DEBUG(bwc->m->log, "%p Rejecting extra update", bwc);
         return -1;
     }
 
@@ -186,7 +186,7 @@ int on_update (BWController *bwc, struct BWCMessage *msg)
     msg->recv = ntohl(msg->recv);
     msg->lost = ntohl(msg->lost);
 
-    LOGGER_DEBUG ("recved: %u lost: %u", msg->recv, msg->lost);
+    LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u", msg->recv, msg->lost);
 
     if (msg->lost && bwc->mcb)
         bwc->mcb(bwc, bwc->friend_number,

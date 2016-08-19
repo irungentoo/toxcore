@@ -36,17 +36,17 @@
 #define MAX_DECODE_TIME_US 0 /* Good quality encode. */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
-VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
+VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
 {
     VCSession *vc = calloc(sizeof(VCSession), 1);
 
     if (!vc) {
-        LOGGER_WARNING("Allocation failed! Application might misbehave!");
+        LOGGER_WARNING(log, "Allocation failed! Application might misbehave!");
         return NULL;
     }
 
     if (create_recursive_mutex(vc->queue_mutex) != 0) {
-        LOGGER_WARNING("Failed to create recursive mutex!");
+        LOGGER_WARNING(log, "Failed to create recursive mutex!");
         free(vc);
         return NULL;
     }
@@ -57,7 +57,7 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
     int rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0);
 
     if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
+        LOGGER_ERROR(log, "Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
         goto BASE_CLEANUP;
     }
 
@@ -67,7 +67,7 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
     rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
     if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to get config: %s", vpx_codec_err_to_string(rc));
+        LOGGER_ERROR(log, "Failed to get config: %s", vpx_codec_err_to_string(rc));
         goto BASE_CLEANUP_1;
     }
 
@@ -86,14 +86,14 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
     rc = vpx_codec_enc_init(vc->encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
     if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
+        LOGGER_ERROR(log, "Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
         goto BASE_CLEANUP_1;
     }
 
     rc = vpx_codec_control(vc->encoder, VP8E_SET_CPUUSED, 8);
 
     if (rc != VPX_CODEC_OK) {
-        LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+        LOGGER_ERROR(log, "Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
         vpx_codec_destroy(vc->encoder);
         goto BASE_CLEANUP_1;
     }
@@ -104,6 +104,7 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
     vc->vcb.second = cb_data;
     vc->friend_number = friend_number;
     vc->av = av;
+    vc->log = log;
 
     return vc;
 
@@ -132,7 +133,7 @@ void vc_kill(VCSession *vc)
 
     pthread_mutex_destroy(vc->queue_mutex);
 
-    LOGGER_DEBUG("Terminated video handler: %p", vc);
+    LOGGER_DEBUG(vc->log, "Terminated video handler: %p", vc);
     free(vc);
 }
 void vc_iterate(VCSession *vc)
@@ -152,7 +153,7 @@ void vc_iterate(VCSession *vc)
         free(p);
 
         if (rc != VPX_CODEC_OK)
-            LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
+            LOGGER_ERROR(vc->log, "Error decoding video: %s", vpx_codec_err_to_string(rc));
         else {
             vpx_codec_iter_t iter = NULL;
             vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
@@ -181,19 +182,19 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
     if (!vcp || !msg)
         return -1;
 
+    VCSession *vc = vcp;
+
     if (msg->header.pt == (rtp_TypeVideo + 2) % 128) {
-        LOGGER_WARNING("Got dummy!");
+        LOGGER_WARNING(vc->log, "Got dummy!");
         free(msg);
         return 0;
     }
 
     if (msg->header.pt != rtp_TypeVideo % 128) {
-        LOGGER_WARNING("Invalid payload type!");
+        LOGGER_WARNING(vc->log, "Invalid payload type!");
         free(msg);
         return -1;
     }
-
-    VCSession *vc = vcp;
 
     pthread_mutex_lock(vc->queue_mutex);
     free(rb_write(vc->vbuf_raw, msg));
@@ -225,7 +226,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
         rc = vpx_codec_enc_config_set(vc->encoder, &cfg);
 
         if (rc != VPX_CODEC_OK) {
-            LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+            LOGGER_ERROR(vc->log, "Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
             return -1;
         }
     } else {
@@ -233,7 +234,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
          * reconfiguring encoder to use resolutions greater than initially set.
          */
 
-        LOGGER_DEBUG("Have to reinitialize vpx encoder on session %p", vc);
+        LOGGER_DEBUG(vc->log, "Have to reinitialize vpx encoder on session %p", vc);
 
         cfg.rc_target_bitrate = bit_rate;
         cfg.g_w = width;
@@ -244,14 +245,14 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
         rc = vpx_codec_enc_init(&new_c, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, 0);
 
         if (rc != VPX_CODEC_OK) {
-            LOGGER_ERROR("Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
+            LOGGER_ERROR(vc->log, "Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
             return -1;
         }
 
         rc = vpx_codec_control(&new_c, VP8E_SET_CPUUSED, 8);
 
         if (rc != VPX_CODEC_OK) {
-            LOGGER_ERROR("Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
+            LOGGER_ERROR(vc->log, "Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
             vpx_codec_destroy(&new_c);
             return -1;
         }

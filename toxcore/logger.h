@@ -23,17 +23,11 @@
 #ifndef TOXLOGGER_H
 #define TOXLOGGER_H
 
-#include <string.h>
+#include <stdint.h>
 
-/* In case these are undefined; define 'empty' */
-#ifndef LOGGER_OUTPUT_FILE
-#   define LOGGER_OUTPUT_FILE ""
+#ifndef MIN_LOGGER_LEVEL
+#define MIN_LOGGER_LEVEL LOG_INFO
 #endif
-
-#ifndef LOGGER_LEVEL
-#   define LOGGER_LEVEL LOG_ERROR
-#endif
-
 
 typedef enum {
     LOG_TRACE,
@@ -41,54 +35,44 @@ typedef enum {
     LOG_INFO,
     LOG_WARNING,
     LOG_ERROR
-} LOG_LEVEL;
+} LOGGER_LEVEL;
 
 typedef struct Logger Logger;
 
-/**
- * Set 'level' as the lowest printable level. If id == NULL, random number is used.
- */
-Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id);
-
-void logger_kill (Logger *log);
-void logger_kill_global (void);
+typedef void logger_cb(LOGGER_LEVEL level, const char *file, int line, const char *func,
+                       const char *message, void *userdata);
 
 /**
- * Global logger setter and getter.
+ * Creates a new logger with logging disabled (callback is NULL) by default.
  */
-void logger_set_global (Logger *log);
-Logger *logger_get_global (void);
+Logger *logger_new(void);
+
+void logger_kill(Logger *log);
 
 /**
- * Main write function. If logging disabled does nothing. If log == NULL uses global logger.
+ * Sets the logger callback. Disables logging if set to NULL.
  */
-void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...);
+void logger_callback_log(Logger *log, logger_cb *function, void *userdata);
+
+/**
+ * Main write function. If logging disabled does nothing.
+ */
+void logger_write(Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func, const char *format,
+                  ...);
 
 
-/* To do some checks or similar only when logging, use this */
-#ifdef TOX_LOGGER
-#   define LOGGER_SCOPE(__SCOPE_DO__) do { __SCOPE_DO__ } while(0)
-#   define LOGGER_WRITE(log, level, format, ...) \
-            logger_write(log, level, __FILE__, __LINE__, format, ##__VA_ARGS__)
-#else
-/* #   warning "Logging disabled" */
-#   define LOGGER_SCOPE(__SCOPE_DO__) do {} while(0)
-#   define LOGGER_WRITE(log, level, format, ...) do {} while(0)
-#endif /* TOX_LOGGER */
+#define LOGGER_WRITE(log, level, format, ...) \
+    do { \
+        if (level >= MIN_LOGGER_LEVEL) { \
+            logger_write(log, level, __FILE__, __LINE__, __func__, format, ##__VA_ARGS__); \
+        } \
+    } while (0)
 
 /* To log with an logger */
-#define LOGGER_TRACE_(log, format, ...) LOGGER_WRITE(log, LOG_TRACE, format, ##__VA_ARGS__)
-#define LOGGER_DEBUG_(log, format, ...) LOGGER_WRITE(log, LOG_DEBUG, format, ##__VA_ARGS__)
-#define LOGGER_INFO_(log, format, ...) LOGGER_WRITE(log, LOG_INFO, format, ##__VA_ARGS__)
-#define LOGGER_WARNING_(log, format, ...) LOGGER_WRITE(log, LOG_WARNING, format, ##__VA_ARGS__)
-#define LOGGER_ERROR_(log, format, ...) LOGGER_WRITE(log, LOG_ERROR, format, ##__VA_ARGS__)
-
-/* To log with the global logger */
-#define LOGGER_TRACE(format, ...) LOGGER_TRACE_(NULL, format, ##__VA_ARGS__)
-#define LOGGER_DEBUG(format, ...) LOGGER_DEBUG_(NULL, format, ##__VA_ARGS__)
-#define LOGGER_INFO(format, ...) LOGGER_INFO_(NULL, format, ##__VA_ARGS__)
-#define LOGGER_WARNING(format, ...) LOGGER_WARNING_(NULL, format, ##__VA_ARGS__)
-#define LOGGER_ERROR(format, ...) LOGGER_ERROR_(NULL, format, ##__VA_ARGS__)
-
+#define LOGGER_TRACE(log, format, ...)   LOGGER_WRITE(log, LOG_TRACE  , format, ##__VA_ARGS__)
+#define LOGGER_DEBUG(log, format, ...)   LOGGER_WRITE(log, LOG_DEBUG  , format, ##__VA_ARGS__)
+#define LOGGER_INFO(log, format, ...)    LOGGER_WRITE(log, LOG_INFO   , format, ##__VA_ARGS__)
+#define LOGGER_WARNING(log, format, ...) LOGGER_WRITE(log, LOG_WARNING, format, ##__VA_ARGS__)
+#define LOGGER_ERROR(log, format, ...)   LOGGER_WRITE(log, LOG_ERROR  , format, ##__VA_ARGS__)
 
 #endif /* TOXLOGGER_H */

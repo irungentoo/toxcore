@@ -47,7 +47,7 @@ RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber,
     RTPSession *retu = calloc(1, sizeof(RTPSession));
 
     if (!retu) {
-        LOGGER_WARNING("Alloc failed! Program might misbehave!");
+        LOGGER_WARNING(m->log, "Alloc failed! Program might misbehave!");
         return NULL;
     }
 
@@ -64,7 +64,7 @@ RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber,
     retu->mcb = mcb;
 
     if (-1 == rtp_allow_receiving(retu)) {
-        LOGGER_WARNING("Failed to start rtp receiving mode");
+        LOGGER_WARNING(m->log, "Failed to start rtp receiving mode");
         free(retu);
         return NULL;
     }
@@ -76,7 +76,7 @@ void rtp_kill (RTPSession *session)
     if (!session)
         return;
 
-    LOGGER_DEBUG("Terminated RTP session: %p", session);
+    LOGGER_DEBUG(session->m->log, "Terminated RTP session: %p", session);
 
     rtp_stop_receiving (session);
     free (session);
@@ -88,11 +88,11 @@ int rtp_allow_receiving(RTPSession *session)
 
     if (m_callback_rtp_packet(session->m, session->friend_number, session->payload_type,
                               handle_rtp_packet, session) == -1) {
-        LOGGER_WARNING("Failed to register rtp receive handler");
+        LOGGER_WARNING(session->m->log, "Failed to register rtp receive handler");
         return -1;
     }
 
-    LOGGER_DEBUG("Started receiving on session: %p", session);
+    LOGGER_DEBUG(session->m->log, "Started receiving on session: %p", session);
     return 0;
 }
 int rtp_stop_receiving(RTPSession *session)
@@ -102,13 +102,13 @@ int rtp_stop_receiving(RTPSession *session)
 
     m_callback_rtp_packet(session->m, session->friend_number, session->payload_type, NULL, NULL);
 
-    LOGGER_DEBUG("Stopped receiving on session: %p", session);
+    LOGGER_DEBUG(session->m->log, "Stopped receiving on session: %p", session);
     return 0;
 }
 int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
 {
     if (!session) {
-        LOGGER_WARNING("No session!");
+        LOGGER_WARNING(session->m->log, "No session!");
         return -1;
     }
 
@@ -144,7 +144,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
         memcpy(rdata + 1 + sizeof(struct RTPHeader), data, length);
 
         if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata)))
-            LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
+            LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
     } else {
 
         /**
@@ -160,7 +160,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
 
             if (-1 == send_custom_lossy_packet(session->m, session->friend_number,
                                                rdata, piece + sizeof(struct RTPHeader) + 1))
-                LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
+                LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s",
                                piece + sizeof(struct RTPHeader) + 1, strerror(errno));
 
             sent += piece;
@@ -175,7 +175,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
 
             if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata,
                                                piece + sizeof(struct RTPHeader) + 1))
-                LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
+                LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s",
                                piece + sizeof(struct RTPHeader) + 1, strerror(errno));
         }
     }
@@ -235,14 +235,14 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
     length--;
 
     if (!session || length < sizeof (struct RTPHeader)) {
-        LOGGER_WARNING("No session or invalid length of received buffer!");
+        LOGGER_WARNING(m->log, "No session or invalid length of received buffer!");
         return -1;
     }
 
     const struct RTPHeader *header = (struct RTPHeader *) data;
 
     if (header->pt != session->payload_type % 128) {
-        LOGGER_WARNING("Invalid payload type with the session");
+        LOGGER_WARNING(m->log, "Invalid payload type with the session");
         return -1;
     }
 

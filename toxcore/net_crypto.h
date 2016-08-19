@@ -27,6 +27,7 @@
 #include "DHT.h"
 #include "LAN_discovery.h"
 #include "TCP_connection.h"
+#include "logger.h"
 #include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
@@ -189,6 +190,8 @@ typedef struct {
 } New_Connection;
 
 typedef struct {
+    Logger *log;
+
     DHT *dht;
     TCP_Connections *tcp_c;
 
@@ -407,7 +410,7 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info);
+Net_Crypto *new_net_crypto(Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info);
 
 /* return the optimal interval in ms for running do_net_crypto.
  */

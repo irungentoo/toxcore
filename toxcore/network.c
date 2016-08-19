@@ -265,29 +265,35 @@ uint64_t current_time_monotonic(void)
     return time;
 }
 
-/* In case no logging */
-#ifndef TOX_LOGGER
-#define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__)
-#else
-#define data_0(__buflen__, __buffer__) __buflen__ > 4 ? ntohl(*(uint32_t *)&__buffer__[1]) : 0
-#define data_1(__buflen__, __buffer__) __buflen__ > 7 ? ntohl(*(uint32_t *)&__buffer__[5]) : 0
+static uint32_t data_0(uint16_t buflen, const uint8_t *buffer)
+{
+    return buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
+}
+static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
+{
+    return buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
+}
 
-#define loglogdata(__message__, __buffer__, __buflen__, __ip_port__, __res__) \
-    (__ip_port__) .ip; \
-    if (__res__ < 0) /* Windows doesn't necessarily know %zu */ \
-        LOGGER_TRACE("[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x", \
-                 __buffer__[0], __message__, (__buflen__ < 999 ? (uint16_t)__buflen__ : 999), 'E', \
-                 ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), errno, strerror(errno), data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__)); \
-    else if ((__res__ > 0) && ((size_t)__res__ <= __buflen__)) \
-        LOGGER_TRACE("[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x", \
-                 __buffer__[0], __message__, (__res__ < 999 ? (size_t)__res__ : 999), ((size_t)__res__ < __buflen__ ? '<' : '='), \
-                 ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__)); \
-    else /* empty or overwrite */ \
-        LOGGER_TRACE("[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x", \
-                 __buffer__[0], __message__, (size_t)__res__, (!__res__ ? '!' : '>'), __buflen__, \
-                 ip_ntoa(&((__ip_port__).ip)), ntohs((__ip_port__).port), 0, "OK", data_0(__buflen__, __buffer__), data_1(__buflen__, __buffer__));
+static void loglogdata(Logger *log, const char *message, const uint8_t *buffer,
+                       uint16_t buflen, IP_Port ip_port, int res)
+{
+    if (res < 0) /* Windows doesn't necessarily know %zu */
+        LOGGER_TRACE(log, "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x",
+                     buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
+                     ip_ntoa(&ip_port.ip), ntohs(ip_port.port), errno, strerror(errno), data_0(buflen, buffer),
+                     data_1(buflen, buffer));
+    else if ((res > 0) && ((size_t)res <= buflen))
+        LOGGER_TRACE(log, "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x",
+                     buffer[0], message, (res < 999 ? (size_t)res : 999), ((size_t)res < buflen ? '<' : '='),
+                     ip_ntoa(&ip_port.ip), ntohs(ip_port.port), 0, "OK", data_0(buflen, buffer), data_1(buflen,
+                             buffer));
+    else /* empty or overwrite */
+        LOGGER_TRACE(log, "[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x",
+                     buffer[0], message, (size_t)res, (!res ? '!' : '>'), buflen,
+                     ip_ntoa(&ip_port.ip), ntohs(ip_port.port), 0, "OK", data_0(buflen, buffer), data_1(buflen,
+                             buffer));
+}
 
-#endif /* TOX_LOGGER */
 
 /* Basic network functions:
  * Function to send packet(data) of length length to ip_port.
@@ -350,7 +356,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
 
     int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 
-    loglogdata("O=>", data, length, ip_port, res);
+    loglogdata(net->log, "O=>", data, length, ip_port, res);
 
     return res;
 }
@@ -360,7 +366,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
  *  Packet data is put into data.
  *  Packet length is put into length.
  */
-static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+static int receivepacket(Logger *log, sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     memset(ip_port, 0, sizeof(IP_Port));
     struct sockaddr_storage addr;
@@ -374,8 +380,9 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 
     if (fail_or_len < 0) {
 
-        LOGGER_SCOPE( if ((fail_or_len < 0) && (errno != EWOULDBLOCK))
-                      LOGGER_ERROR("Unexpected error reading from socket: %u, %s\n", errno, strerror(errno)); );
+        if (fail_or_len < 0 && errno != EWOULDBLOCK) {
+            LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
+        }
 
         return -1; /* Nothing received. */
     }
@@ -401,7 +408,7 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
     } else
         return -1;
 
-    loglogdata("=>O", data, MAX_UDP_PACKET_SIZE, *ip_port, *length);
+    loglogdata(log, "=>O", data, MAX_UDP_PACKET_SIZE, *ip_port, *length);
 
     return 0;
 }
@@ -423,11 +430,11 @@ void networking_poll(Networking_Core *net, void *userdata)
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;
 
-    while (receivepacket(net->sock, &ip_port, data, &length) != -1) {
+    while (receivepacket(net->log, net->sock, &ip_port, data, &length) != -1) {
         if (length < 1) continue;
 
         if (!(net->packethandlers[data[0]].function)) {
-            LOGGER_WARNING("[%02u] -- Packet has no handler", data[0]);
+            LOGGER_WARNING(net->log, "[%02u] -- Packet has no handler", data[0]);
             continue;
         }
 
@@ -483,9 +490,9 @@ static void at_shutdown(void)
 /* Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
-Networking_Core *new_networking(IP ip, uint16_t port)
+Networking_Core *new_networking(Logger *log, IP ip, uint16_t port)
 {
-    return new_networking_ex(ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
+    return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
 }
 
 /* Initialize networking.
@@ -498,7 +505,7 @@ Networking_Core *new_networking(IP ip, uint16_t port)
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
+Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
     /* If both from and to are 0, use default port range
      * If one is 0 and the other is non-0, use the non-0 value as only port
@@ -536,6 +543,7 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
     if (temp == NULL)
         return NULL;
 
+    temp->log = log;
     temp->family = ip.family;
     temp->port = 0;
 
@@ -618,12 +626,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
     }
 
     if (ip.family == AF_INET6) {
-#ifdef TOX_LOGGER
-        int is_dualstack =
-#endif /* TOX_LOGGER */
-            set_socket_dualstack(temp->sock);
-        LOGGER_DEBUG( "Dual-stack socket: %s",
-                      is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses" );
+        int is_dualstack = set_socket_dualstack(temp->sock);
+        LOGGER_DEBUG(log, "Dual-stack socket: %s",
+                     is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses" );
         /* multicast local nodes */
         struct ipv6_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -631,12 +636,9 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
-#ifdef TOX_LOGGER
-        int res =
-#endif /* TOX_LOGGER */
-            setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
+        int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
 
-        LOGGER_DEBUG(res < 0 ? "Failed to activate local multicast membership. (%u, %s)" :
+        LOGGER_DEBUG(log, res < 0 ? "Failed to activate local multicast membership. (%u, %s)" :
                      "Local multicast group FF02::1 joined successfully", errno, strerror(errno) );
     }
 
@@ -666,7 +668,7 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
         if (!res) {
             temp->port = *portptr;
 
-            LOGGER_DEBUG("Bound successfully to %s:%u", ip_ntoa(&ip), ntohs(temp->port));
+            LOGGER_DEBUG(log, "Bound successfully to %s:%u", ip_ntoa(&ip), ntohs(temp->port));
 
             /* errno isn't reset on success, only set on failure, the failed
              * binds with parallel clients yield a -EPERM to the outside if
@@ -688,7 +690,7 @@ Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, 
         *portptr = htons(port_to_try);
     }
 
-    LOGGER_ERROR("Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u", errno, strerror(errno),
+    LOGGER_ERROR(log, "Failed to bind socket: %u, %s IP: %s port_from: %u port_to: %u", errno, strerror(errno),
                  ip_ntoa(&ip), port_from, port_to);
 
     kill_networking(temp);

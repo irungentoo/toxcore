@@ -362,7 +362,8 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
  *
  *  return True(1) or False(0)
  */
-static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const uint8_t *public_key, IP_Port ip_port)
+static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t length, const uint8_t *public_key,
+                                     IP_Port ip_port)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -373,12 +374,11 @@ static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const u
             /* Refresh the client timestamp. */
             if (ip_port.ip.family == AF_INET) {
 
-                LOGGER_SCOPE( if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
-                LOGGER_TRACE("coipil[%u]: switching ipv4 from %s:%u to %s:%u", i,
-                             ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port),
-                             ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                    LOGGER_TRACE(log, "coipil[%u]: switching ipv4 from %s:%u to %s:%u", i,
+                                 ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port),
+                                 ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
                 }
-                            );
 
                 if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
                     return 1;
@@ -387,12 +387,11 @@ static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const u
                 list[i].assoc4.timestamp = temp_time;
             } else if (ip_port.ip.family == AF_INET6) {
 
-                LOGGER_SCOPE( if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
-                LOGGER_TRACE("coipil[%u]: switching ipv6 from %s:%u to %s:%u", i,
-                             ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port),
-                             ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                    LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", i,
+                                 ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port),
+                                 ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
                 }
-                            );
 
                 if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0)
                     return 1;
@@ -415,7 +414,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const u
             list[i].assoc4.timestamp = temp_time;
             memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
-            LOGGER_DEBUG("coipil[%u]: switching public_key (ipv4)", i);
+            LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv4)", i);
 
             /* kill the other address, if it was set */
             memset(&list[i].assoc6, 0, sizeof(list[i].assoc6));
@@ -425,7 +424,7 @@ static int client_or_ip_port_in_list(Client_data *list, uint16_t length, const u
             list[i].assoc6.timestamp = temp_time;
             memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
-            LOGGER_DEBUG("coipil[%u]: switching public_key (ipv6)", i);
+            LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv6)", i);
 
             /* kill the other address, if it was set */
             memset(&list[i].assoc4, 0, sizeof(list[i].assoc4));
@@ -622,11 +621,11 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
     uint8_t num_found = Assoc_get_close_entries(dht->assoc, &request);
 
     if (!num_found) {
-        LOGGER_DEBUG("get_close_nodes(): Assoc_get_close_entries() returned zero nodes");
+        LOGGER_DEBUG(dht->log, "get_close_nodes(): Assoc_get_close_entries() returned zero nodes");
         return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family, is_LAN, want_good);
     }
 
-    LOGGER_DEBUG("get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes",
+    LOGGER_DEBUG(dht->log, "get_close_nodes(): Assoc_get_close_entries() returned %i 'direct' and %i 'indirect' nodes",
                  request.count_good, num_found - request.count_good);
 
     uint8_t i, num_returned = 0;
@@ -929,7 +928,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     /* NOTE: Current behavior if there are two clients with the same id is
      * to replace the first ip by the second.
      */
-    if (!client_or_ip_port_in_list(dht->close_clientlist, LCLIENT_LIST, public_key, ip_port)) {
+    if (!client_or_ip_port_in_list(dht->log, dht->close_clientlist, LCLIENT_LIST, public_key, ip_port)) {
         if (add_to_close(dht, public_key, ip_port, 0))
             used++;
     } else
@@ -938,7 +937,7 @@ int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     DHT_Friend *friend_foundip = 0;
 
     for (i = 0; i < dht->num_friends; ++i) {
-        if (!client_or_ip_port_in_list(dht->friends_list[i].client_list,
+        if (!client_or_ip_port_in_list(dht->log, dht->friends_list[i].client_list,
                                        MAX_FRIEND_CLIENTS, public_key, ip_port)) {
             if (replace_all(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
                             public_key, ip_port, dht->friends_list[i].public_key)) {
@@ -2379,7 +2378,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_DHT(Networking_Core *net)
+DHT *new_DHT(Logger *log, Networking_Core *net)
 {
     /* init time */
     unix_time_update();
@@ -2392,6 +2391,7 @@ DHT *new_DHT(Networking_Core *net)
     if (dht == NULL)
         return NULL;
 
+    dht->log = log;
     dht->net = net;
     dht->ping = new_ping(dht);
 
@@ -2412,7 +2412,7 @@ DHT *new_DHT(Networking_Core *net)
     ping_array_init(&dht->dht_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
     ping_array_init(&dht->dht_harden_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
 #ifdef ENABLE_ASSOC_DHT
-    dht->assoc = new_Assoc_default(dht->self_public_key);
+    dht->assoc = new_Assoc_default(dht->log, dht->self_public_key);
 #endif
     uint32_t i;
 

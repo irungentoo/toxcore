@@ -28,6 +28,7 @@
 
 #include "friend_requests.h"
 #include "friend_connection.h"
+#include "logger.h"
 
 #define MAX_NAME_LENGTH 128
 /* TODO: this must depend on other variable. */
@@ -209,6 +210,7 @@ typedef struct {
 } Friend;
 
 struct Messenger {
+    Logger *log;
 
     Networking_Core *net;
     Net_Crypto *net_crypto;
@@ -461,6 +463,10 @@ int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing);
  * returns 1 if friend is typing.
  */
 int m_get_istyping(const Messenger *m, int32_t friendnumber);
+
+/* Set the logger callback.
+ */
+void m_callback_log(Messenger *m, logger_cb *function, void *userdata);
 
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length)
@@ -729,7 +735,7 @@ enum {
  *
  *  if error is not NULL it will be set to one of the values in the enum above.
  */
-Messenger *new_messenger(Messenger_Options *options, unsigned int *error);
+Messenger *new_messenger(Logger *log, Messenger_Options *options, unsigned int *error);
 
 /* Run this before closing shop
  * Free all datastructures.
