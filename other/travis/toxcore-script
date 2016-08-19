@@ -3,9 +3,6 @@
 set -e -u -x
 . other/travis/env-$ENV.sh
 
-# Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
-../apidsl/_build/apigen.native other/apidsl/tox.in.h   > toxcore/tox.h
-../apidsl/_build/apigen.native other/apidsl/toxav.in.h > toxav/toxav.h
 # Check if the code is formatted according to the astyle configuration.
 other/astyle/format-source
 git diff --exit-code

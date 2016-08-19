@@ -1,9 +1,35 @@
 #!/bin/sh
 
+set -e
+
+SOURCE_DIR="$1"
+
+# Go to the source root.
+if [ -z "$SOURCE_DIR" ]; then
+  SOURCE_DIR=.
+fi
+cd "$SOURCE_DIR"
+
 if [ -z "$ASTYLE" ]; then
   ASTYLE=astyle
 fi
 
+if [ -f ../apidsl/_build/apigen.native ]; then
+  APIDSL=../apidsl/_build/apigen.native
+else
+  APIDSL=apidsl_curl
+fi
+
+apidsl_curl() {
+  curl -X POST --data-binary @"$1" https://apidsl.herokuapp.com/apidsl
+}
+
+# Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
+$APIDSL other/apidsl/tox.in.h   > toxcore/tox.h
+$APIDSL other/apidsl/toxav.in.h > toxav/toxav.h
+
 SOURCES=`find . -name "*.[ch]" -and -not -name "*.in.*" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
 
 $ASTYLE -n --options=other/astyle/astylerc $SOURCES
+
+git diff --exit-code
