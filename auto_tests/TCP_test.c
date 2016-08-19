@@ -106,9 +106,9 @@ START_TEST(test_basic)
     do_TCP_server(tcp_s);
     c_sleep(50);
     uint8_t packet_resp[4096];
-    int recv_data_len;
-    ck_assert_msg((recv_data_len = recv(sock, packet_resp, 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES,
-                                        0)) == 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES, "recv Failed. %u", recv_data_len);
+    int recv_data_len = recv(sock, packet_resp, 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES, 0);
+    ck_assert_msg(recv_data_len == 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES,
+                  "recv Failed. %u", recv_data_len);
     memcpy(&size, packet_resp, 2);
     ck_assert_msg(ntohs(size) == 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES, "Wrong packet size.");
     uint8_t packet_resp_plain[4096];
@@ -201,10 +201,10 @@ int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, u
 
 int read_packet_sec_TCP(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
 {
-    int len;
-    ck_assert_msg((len = recv(con->sock, data, length, 0)) == length, "wrong len %i\n", len);
-    ck_assert_msg((len = decrypt_data_symmetric(con->shared_key, con->recv_nonce, data + 2, length - 2, data)) != -1,
-                  "Decrypt failed");
+    int len = recv(con->sock, data, length, 0);
+    ck_assert_msg(len == length, "wrong len %i\n", len);
+    len = decrypt_data_symmetric(con->shared_key, con->recv_nonce, data + 2, length - 2, data);
+    ck_assert_msg(len != -1, "Decrypt failed");
     increment_nonce(con->recv_nonce);
     return len;
 }
