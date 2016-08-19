@@ -237,7 +237,6 @@ struct Messenger {
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
 
     void (*friend_message)(struct Messenger *m, uint32_t, unsigned int, const uint8_t *, size_t, void *);
-    void *friend_message_userdata;
     void (*friend_namechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void (*friend_statusmessagechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void (*friend_userstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
@@ -475,7 +474,7 @@ void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const
  *  Function format is: function(uint32_t friendnumber, unsigned int type, uint8_t * message, uint32_t length)
  */
 void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, const uint8_t *,
-                              size_t, void *), void *userdata);
+                              size_t, void *));
 
 /* Set the callback for name changes.
  *  Function(uint32_t friendnumber, uint8_t *newname, size_t length)

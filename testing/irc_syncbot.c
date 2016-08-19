@@ -228,7 +228,7 @@ Tox *init_tox(int argc, char *argv[])
         exit(1);
 
     tox_self_set_name(tox, (uint8_t *)IRC_NAME, sizeof(IRC_NAME) - 1, 0);
-    tox_callback_friend_message(tox, &callback_friend_message, 0);
+    tox_callback_friend_message(tox, &callback_friend_message);
     tox_callback_group_invite(tox, &callback_group_invite, 0);
     tox_callback_group_message(tox, &copy_groupmessage, 0);
     tox_callback_group_action(tox, &copy_groupmessage, 0);

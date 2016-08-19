@@ -1291,7 +1291,7 @@ int main(int argc, char *argv[])
     save_data_file(m, filename);
 
     tox_callback_friend_request(m, print_request, NULL);
-    tox_callback_friend_message(m, print_message, NULL);
+    tox_callback_friend_message(m, print_message);
     tox_callback_friend_name(m, print_nickchange);
     tox_callback_friend_status_message(m, print_statuschange);
     tox_callback_group_invite(m, print_invite, NULL);

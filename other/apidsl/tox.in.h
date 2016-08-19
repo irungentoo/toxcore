@@ -1479,7 +1479,7 @@ namespace friend {
   /**
    * This event is triggered when a message from a friend is received.
    */
-  event message {
+  event message const {
     /**
      * @param friend_number The friend number of the friend who sent the message.
      * @param time_delta Time between composition and sending.

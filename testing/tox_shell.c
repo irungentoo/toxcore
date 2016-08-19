@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
     Tox *tox = tox_new(0, 0);
     tox_callback_friend_connection_status(tox, print_online, NULL);
-    tox_callback_friend_message(tox, print_message, master);
+    tox_callback_friend_message(tox, print_message);
 
 
     uint16_t port = atoi(argv[argvoffset + 2]);
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
             tox_friend_send_message(tox, num, TOX_MESSAGE_TYPE_NORMAL, buf, ret, 0);
         }
 
-        tox_iterate(tox, NULL);
+        tox_iterate(tox, master);
         c_sleep(1);
     }
 

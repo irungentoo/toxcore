@@ -902,10 +902,10 @@ void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *function, void
     m_callback_friendrequest(m, function, user_data);
 }
 
-void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void *user_data)
+void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function)
 {
     Messenger *m = tox;
-    m_callback_friendmessage(m, function, user_data);
+    m_callback_friendmessage(m, function);
 }
 
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)

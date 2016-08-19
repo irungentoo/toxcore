@@ -1580,7 +1580,7 @@ typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, TOX_MESSAGE
  *
  * This event is triggered when a message from a friend is received.
  */
-void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback, void *user_data);
+void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback);
 
 
 /*******************************************************************************

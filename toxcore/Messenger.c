@@ -771,10 +771,9 @@ void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const
 
 /* Set the function that will be executed when a message from a friend is received. */
 void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, const uint8_t *,
-                              size_t, void *), void *userdata)
+                              size_t, void *))
 {
     m->friend_message = function;
-    m->friend_message_userdata = userdata;
 }
 
 void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *))
@@ -2007,8 +2006,9 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void 
             message_terminated[message_length] = 0;
             uint8_t type = packet_id - PACKET_ID_MESSAGE;
 
-            if (m->friend_message)
-                (*m->friend_message)(m, i, type, message_terminated, message_length, m->friend_message_userdata);
+            if (m->friend_message) {
+                (*m->friend_message)(m, i, type, message_terminated, message_length, userdata);
+            }
 
             break;
         }

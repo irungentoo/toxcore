@@ -477,7 +477,7 @@ START_TEST(test_few_clients)
     ck_assert_msg(connected_t1, "Tox1 isn't connected. %u", connected_t1);
     printf("tox clients connected took %llu seconds\n", time(NULL) - con_time);
     to_compare = 974536;
-    tox_callback_friend_message(tox3, print_message, &to_compare);
+    tox_callback_friend_message(tox3, print_message);
     uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
     memset(msgs, 'G', sizeof(msgs));
     TOX_ERR_FRIEND_SEND_MESSAGE errm;
