@@ -28,6 +28,11 @@ if(DEBUG)
   add_definitions(-DTOX_DEBUG=1)
 endif()
 
+option(ASSOC_DHT "Enable module to store currently unused ID <=> IP associations" OFF)
+if(ASSOC_DHT)
+  add_definitions(-DENABLE_ASSOC_DHT=1)
+endif()
+
 find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
 
