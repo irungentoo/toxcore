@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ -z "$ASTYLE" ]; then
+  ASTYLE=astyle
+fi
+
+SOURCES=`find . -name "*.[ch]" -and -not -name "*.in.*" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
+
+$ASTYLE --options=other/astyle/astylerc $SOURCES
