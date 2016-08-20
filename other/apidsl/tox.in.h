@@ -1269,7 +1269,7 @@ namespace friend {
   /**
    * This event is triggered when a friend changes their user status.
    */
-  event status {
+  event status const {
     /**
      * @param friend_number The friend number of the friend whose user status
      *   changed.

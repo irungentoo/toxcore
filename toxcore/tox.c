@@ -782,10 +782,10 @@ TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TO
     return ret;
 }
 
-void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *function, void *user_data)
+void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *function)
 {
     Messenger *m = tox;
-    m_callback_userstatus(m, function, user_data);
+    m_callback_userstatus(m, function);
 }
 
 TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)

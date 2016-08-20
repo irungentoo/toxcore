@@ -786,10 +786,9 @@ void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint3
     m->friend_statusmessagechange = function;
 }
 
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *), void *userdata)
+void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *))
 {
     m->friend_userstatuschange = function;
-    m->friend_userstatuschange_userdata = userdata;
 }
 
 void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, _Bool, void *))
@@ -1971,7 +1970,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void 
                 break;
 
             if (m->friend_userstatuschange)
-                m->friend_userstatuschange(m, i, status, m->friend_userstatuschange_userdata);
+                m->friend_userstatuschange(m, i, status, userdata);
 
             set_friend_userstatus(m, i, status);
             break;

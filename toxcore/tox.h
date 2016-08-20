@@ -1351,7 +1351,7 @@ typedef void tox_friend_status_cb(Tox *tox, uint32_t friend_number, TOX_USER_STA
  *
  * This event is triggered when a friend changes their user status.
  */
-void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *callback, void *user_data);
+void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *callback);
 
 /**
  * Check whether a friend is currently connected to this client.
