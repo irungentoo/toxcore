@@ -344,7 +344,7 @@ static int friend_received_packet(const Messenger *m, int32_t friendnumber, uint
                                 m->friendlist[friendnumber].friendcon_id), number);
 }
 
-static int do_receipts(Messenger *m, int32_t friendnumber)
+static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
 {
     if (friend_not_valid(m, friendnumber))
         return -1;
@@ -357,8 +357,9 @@ static int do_receipts(Messenger *m, int32_t friendnumber)
         if (friend_received_packet(m, friendnumber, receipts->packet_num) == -1)
             break;
 
-        if (m->read_receipt)
-            (*m->read_receipt)(m, friendnumber, receipts->msg_id, m->read_receipt_userdata);
+        if (m->read_receipt) {
+            (*m->read_receipt)(m, friendnumber, receipts->msg_id, userdata);
+        }
 
         free(receipts);
         m->friendlist[friendnumber].receipts_start = temp_r;
@@ -796,10 +797,9 @@ void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_
     m->friend_typingchange = function;
 }
 
-void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata)
+void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *))
 {
     m->read_receipt = function;
-    m->read_receipt_userdata = userdata;
 }
 
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *),
@@ -2168,7 +2168,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void 
     return 0;
 }
 
-void do_friends(Messenger *m)
+static void do_friends(Messenger *m, void *userdata)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -2217,7 +2217,7 @@ void do_friends(Messenger *m)
             }
 
             check_friend_tcp_udp(m, i);
-            do_receipts(m, i);
+            do_receipts(m, i, userdata);
             do_reqchunk_filecb(m, i);
 
             m->friendlist[i].last_seen_time = (uint64_t) time(NULL);
@@ -2311,7 +2311,7 @@ void do_messenger(Messenger *m, void *userdata)
     do_net_crypto(m->net_crypto, userdata);
     do_onion_client(m->onion_c);
     do_friend_connections(m->fr_c);
-    do_friends(m);
+    do_friends(m, userdata);
     connection_status_cb(m, userdata);
 
 #ifdef TOX_LOGGER

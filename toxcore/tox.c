@@ -890,10 +890,10 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_T
     return message_id;
 }
 
-void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function, void *user_data)
+void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function)
 {
     Messenger *m = tox;
-    m_callback_read_receipt(m, function, user_data);
+    m_callback_read_receipt(m, function);
 }
 
 void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *function, void *user_data)

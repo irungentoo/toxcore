@@ -242,7 +242,6 @@ struct Messenger {
     void (*friend_userstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
     void (*friend_typingchange)(struct Messenger *m, uint32_t, _Bool, void *);
     void (*read_receipt)(struct Messenger *m, uint32_t, uint32_t, void *);
-    void *read_receipt_userdata;
     void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
     void *friend_connectionstatuschange_userdata;
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);
@@ -507,7 +506,7 @@ void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_
  *  Since core doesn't track ids for you, receipt may not correspond to any message.
  *  In that case, you should discard it.
  */
-void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *), void *userdata);
+void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *));
 
 /* Set the callback for connection status changes.
  *  function(uint32_t friendnumber, uint8_t status)

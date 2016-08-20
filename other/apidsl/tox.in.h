@@ -1435,7 +1435,7 @@ namespace friend {
    * This event is triggered when the friend receives the message sent with
    * ${send.message} with the corresponding message ID.
    */
-  event read_receipt {
+  event read_receipt const {
     /**
      * @param friend_number The friend number of the friend who received the message.
      * @param message_id The message ID as returned from ${send.message}
