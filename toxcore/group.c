@@ -327,7 +327,7 @@ static unsigned int pk_in_closest_peers(Group_c *g, uint8_t *real_pk)
 
 static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16_t group_num, uint8_t *identifier);
 
-static int connect_to_closest(Group_Chats *g_c, int groupnumber)
+static int connect_to_closest(Group_Chats *g_c, int groupnumber, void *userdata)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -383,7 +383,7 @@ static int connect_to_closest(Group_Chats *g_c, int groupnumber)
                 continue;
             }
 
-            set_dht_temp_pk(g_c->fr_c, friendcon_id, g->closest_peers[i].temp_pk);
+            set_dht_temp_pk(g_c->fr_c, friendcon_id, g->closest_peers[i].temp_pk, userdata);
         }
 
         add_conn_to_groupchat(g_c, friendcon_id, groupnumber, 1, lock);
@@ -647,7 +647,7 @@ static void set_conns_status_groups(Group_Chats *g_c, int friendcon_id, uint8_t 
     }
 }
 
-static int handle_status(void *object, int friendcon_id, uint8_t status)
+static int handle_status(void *object, int friendcon_id, uint8_t status, void *userdata)
 {
     Group_Chats *g_c = object;
 
@@ -661,7 +661,7 @@ static int handle_status(void *object, int friendcon_id, uint8_t status)
     return 0;
 }
 
-static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length, void *userdata);
+static int handle_packet(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata);
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length);
 
 /* Add friend to group chat.
@@ -1465,7 +1465,7 @@ static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16
 
 static unsigned int send_peer_kill(Group_Chats *g_c, int friendcon_id, uint16_t group_num);
 
-static int handle_packet_online(Group_Chats *g_c, int friendcon_id, uint8_t *data, uint16_t length)
+static int handle_packet_online(Group_Chats *g_c, int friendcon_id, const uint8_t *data, uint16_t length)
 {
     if (length != ONLINE_PACKET_DATA_SIZE) {
         return -1;
@@ -2063,7 +2063,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
     send_message_all_close(g_c, groupnumber, data, length, -1/*TODO close_index*/);
 }
 
-static int handle_packet(void *object, int friendcon_id, uint8_t *data, uint16_t length, void *userdata)
+static int handle_packet(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
 {
     Group_Chats *g_c = object;
 
@@ -2397,7 +2397,7 @@ Group_Chats *new_groupchats(Messenger *m)
 }
 
 /* main groupchats loop. */
-void do_groupchats(Group_Chats *g_c)
+void do_groupchats(Group_Chats *g_c, void *userdata)
 {
     unsigned int i;
 
@@ -2409,7 +2409,7 @@ void do_groupchats(Group_Chats *g_c)
         }
 
         if (g->status == GROUPCHAT_STATUS_CONNECTED) {
-            connect_to_closest(g_c, i);
+            connect_to_closest(g_c, i, userdata);
             ping_groupchat(g_c, i);
             groupchat_clear_timedout(g_c, i);
         }

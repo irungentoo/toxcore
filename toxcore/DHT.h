@@ -198,7 +198,7 @@ typedef struct {
 /*----------------------------------------------------------------------------------*/
 
 typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
-        const uint8_t *data, uint16_t len);
+        const uint8_t *data, uint16_t len, void *userdata);
 
 typedef struct {
     cryptopacket_handler_callback function;

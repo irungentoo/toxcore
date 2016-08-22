@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
         fclose(file);
     }
 
-    m_callback_friendrequest(m, print_request, NULL);
+    m_callback_friendrequest(m, print_request);
     m_callback_friendmessage(m, print_message);
 
     printf("OUR ID: ");

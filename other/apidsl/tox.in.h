@@ -1532,7 +1532,7 @@ namespace friend {
   /**
    * This event is triggered when a friend request is received.
    */
-  event request {
+  event request const {
     /**
      * @param public_key The Public Key of the user who sent the friend request.
      * @param time_delta A delta in seconds between when the message was composed

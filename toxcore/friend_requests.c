@@ -43,12 +43,11 @@ uint32_t get_nospam(const Friend_Requests *fr)
 
 /* Set the function that will be executed when a friend request is received. */
 void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, size_t,
-                            void *), void *object, void *userdata)
+                            void *), void *object)
 {
     fr->handle_friendrequest = function;
     fr->handle_friendrequest_isset = 1;
     fr->handle_friendrequest_object = object;
-    fr->handle_friendrequest_userdata = userdata;
 }
 /* Set the function used to check if a friend request should be displayed to the user or not. */
 void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata)
@@ -106,7 +105,8 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 }
 
 
-static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length)
+static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length,
+                                  void *userdata)
 {
     Friend_Requests *fr = object;
 
@@ -142,8 +142,7 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
     memcpy(message, packet + sizeof(fr->nospam), message_len);
     message[sizeof(message) - 1] = 0; /* Be sure the message is null terminated. */
 
-    (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, message_len,
-                                fr->handle_friendrequest_userdata);
+    (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, message_len, userdata);
     return 0;
 }
 

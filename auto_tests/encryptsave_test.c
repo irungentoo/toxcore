@@ -60,7 +60,7 @@ START_TEST(test_save_friend)
     Tox *tox2 = tox_new(0, 0);
     ck_assert_msg(tox1 || tox2, "Failed to create 2 tox instances");
     uint32_t to_compare = 974536;
-    tox_callback_friend_request(tox2, accept_friend_request, &to_compare);
+    tox_callback_friend_request(tox2, accept_friend_request);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
     uint32_t test = tox_friend_add(tox1, address, (uint8_t *)"Gentoo", 7, 0);

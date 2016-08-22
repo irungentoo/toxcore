@@ -33,7 +33,6 @@ typedef struct {
     void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, size_t, void *);
     uint8_t handle_friendrequest_isset;
     void *handle_friendrequest_object;
-    void *handle_friendrequest_userdata;
 
     int (*filter_function)(const uint8_t *, void *);
     void *filter_function_userdata;
@@ -62,7 +61,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk);
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length, void * userdata)
  */
 void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, size_t,
-                            void *), void *object, void *userdata);
+                            void *), void *object);
 
 /* Set the function used to check if a friend request should be displayed to the user or not.
  * Function format is int function(uint8_t * public_key, void * userdata)

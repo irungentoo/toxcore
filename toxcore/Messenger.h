@@ -472,7 +472,7 @@ void m_callback_log(Messenger *m, logger_cb *function, void *userdata);
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length)
  */
 void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
-                              void *), void *userdata);
+                              void *));
 
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(uint32_t friendnumber, unsigned int type, uint8_t * message, uint32_t length)

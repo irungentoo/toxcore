@@ -372,7 +372,7 @@ int callback_groupchat_delete(Group_Chats *g_c, int groupnumber, void (*function
 Group_Chats *new_groupchats(Messenger *m);
 
 /* main groupchats loop. */
-void do_groupchats(Group_Chats *g_c);
+void do_groupchats(Group_Chats *g_c, void *userdata);
 
 /* Free everything related with group chats. */
 void kill_groupchats(Group_Chats *g_c);

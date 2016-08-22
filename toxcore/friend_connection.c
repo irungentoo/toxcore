@@ -322,7 +322,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
     memcpy(friend_con->dht_temp_pk, dht_public_key, crypto_box_PUBLICKEYBYTES);
 }
 
-static int handle_status(void *object, int number, uint8_t status)
+static int handle_status(void *object, int number, uint8_t status, void *userdata)
 {
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
@@ -357,7 +357,7 @@ static int handle_status(void *object, int number, uint8_t status)
         for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
             if (friend_con->callbacks[i].status_callback) {
                 friend_con->callbacks[i].status_callback(friend_con->callbacks[i].status_callback_object,
-                        friend_con->callbacks[i].status_callback_id, status);
+                        friend_con->callbacks[i].status_callback_id, status, userdata);
             }
         }
     }
@@ -366,7 +366,7 @@ static int handle_status(void *object, int number, uint8_t status)
 }
 
 /* Callback for dht public key changes. */
-static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
+static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key, void *userdata)
 {
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
@@ -385,7 +385,7 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     if (friend_con->crypt_connection_id != -1) {
         crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
         friend_con->crypt_connection_id = -1;
-        handle_status(object, number, 0); /* Going offline. */
+        handle_status(object, number, 0, userdata); /* Going offline. */
     }
 
     friend_new_connection(fr_c, number);
@@ -407,7 +407,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
 
     if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
         if (fr_c->fr_request_callback) {
-            fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
+            fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length, userdata);
         }
 
         return 0;
@@ -635,9 +635,9 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
 
 /* Set temp dht key for connection.
  */
-void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk)
+void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk, void *userdata)
 {
-    dht_pk_callback(fr_c, friendcon_id, dht_temp_pk);
+    dht_pk_callback(fr_c, friendcon_id, dht_temp_pk, userdata);
 }
 
 /* Set the callbacks for the friend connection.
@@ -647,11 +647,10 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  * return -1 on failure
  */
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
-                                int (*status_callback)(void *object, int id, uint8_t status), int (*data_callback)(void *object, int id,
-                                        const uint8_t *data,
-                                        uint16_t length, void *userdata), int (*lossy_data_callback)(void *object, int id, const uint8_t *data,
-                                                uint16_t length), void *object,
-                                int number)
+                                int (*status_callback)(void *object, int id, uint8_t status, void *userdata),
+                                int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t len, void *userdata),
+                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length),
+                                void *object, int number)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
@@ -767,7 +766,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
  * This function will be called every time a friend request packet is received.
  */
 void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint16_t), void *object)
+                                 const uint8_t *, uint16_t, void *), void *object)
 {
     fr_c->fr_request_callback = fr_request_callback;
     fr_c->fr_request_object = object;
@@ -845,7 +844,7 @@ static void LANdiscovery(Friend_Connections *fr_c)
 }
 
 /* main friend_connections loop. */
-void do_friend_connections(Friend_Connections *fr_c)
+void do_friend_connections(Friend_Connections *fr_c, void *userdata)
 {
     uint32_t i;
     uint64_t temp_time = unix_time();
@@ -885,7 +884,7 @@ void do_friend_connections(Friend_Connections *fr_c)
                     /* If we stopped receiving ping packets, kill it. */
                     crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
                     friend_con->crypt_connection_id = -1;
-                    handle_status(fr_c, i, 0); /* Going offline. */
+                    handle_status(fr_c, i, 0, userdata); /* Going offline. */
                 }
             }
         }

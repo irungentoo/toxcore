@@ -79,7 +79,7 @@ typedef struct {
     uint64_t share_relays_lastsent;
 
     struct {
-        int (*status_callback)(void *object, int id, uint8_t status);
+        int (*status_callback)(void *object, int id, uint8_t status, void *userdata);
         void *status_callback_object;
         int status_callback_id;
 
@@ -109,7 +109,8 @@ typedef struct {
     Friend_Conn *conns;
     uint32_t num_cons;
 
-    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len);
+    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len,
+                               void *userdata);
     void *fr_request_object;
 
     uint64_t last_LANdiscovery;
@@ -142,7 +143,7 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
 
 /* Set temp dht key for connection.
  */
-void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk);
+void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk, void *userdata);
 
 /* Add a TCP relay associated to the friend.
  *
@@ -158,11 +159,10 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
  * return -1 on failure
  */
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
-                                int (*status_callback)(void *object, int id, uint8_t status), int (*data_callback)(void *object, int id,
-                                        const uint8_t *data,
-                                        uint16_t length, void *userdata), int (*lossy_data_callback)(void *object, int id, const uint8_t *data,
-                                                uint16_t length), void *object,
-                                int number);
+                                int (*status_callback)(void *object, int id, uint8_t status, void *userdata),
+                                int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t len, void *userdata),
+                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length),
+                                void *object, int number);
 
 /* return the crypt_connection_id for the connection.
  *
@@ -200,13 +200,13 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
  * This function will be called every time a friend request is received.
  */
 void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint16_t), void *object);
+                                 const uint8_t *, uint16_t, void *), void *object);
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c);
 
 /* main friend_connections loop. */
-void do_friend_connections(Friend_Connections *fr_c);
+void do_friend_connections(Friend_Connections *fr_c, void *userdata);
 
 /* Free everything related with friend_connections. */
 void kill_friend_connections(Friend_Connections *fr_c);

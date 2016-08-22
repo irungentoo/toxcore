@@ -131,7 +131,7 @@ typedef struct {
     Packets_Array send_array;
     Packets_Array recv_array;
 
-    int (*connection_status_callback)(void *object, int id, uint8_t status);
+    int (*connection_status_callback)(void *object, int id, uint8_t status, void *userdata);
     void *connection_status_callback_object;
     int connection_status_callback_id;
 
@@ -174,7 +174,7 @@ typedef struct {
 
     pthread_mutex_t mutex;
 
-    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key);
+    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
     void *dht_pk_callback_object;
     uint32_t dht_pk_callback_number;
 } Crypto_Connection;
@@ -264,7 +264,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  * return 0 on success.
  */
 int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
-                              int (*connection_status_callback)(void *object, int id, uint8_t status), void *object, int id);
+                              int (*connection_status_callback)(void *object, int id, uint8_t status, void *userdata), void *object, int id);
 
 /* Set function to be called when connection with crypt_connection_id receives a lossless data packet of length.
  *
@@ -301,7 +301,7 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  * return 0 on success.
  */
 int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(void *data, int32_t number,
-                       const uint8_t *dht_public_key), void *object, uint32_t number);
+                       const uint8_t *dht_public_key, void *userdata), void *object, uint32_t number);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.

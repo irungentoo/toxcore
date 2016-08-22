@@ -633,7 +633,7 @@ END_TEST
 
 _Bool tcp_oobdata_callback_called;
 static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigned int id, const uint8_t *data,
-                                uint16_t length)
+                                uint16_t length, void *userdata)
 {
     if (length != 6) {
         return -1;

@@ -342,7 +342,7 @@ _Bool first, last;
 uint8_t first_dht_pk[crypto_box_PUBLICKEYBYTES];
 uint8_t last_dht_pk[crypto_box_PUBLICKEYBYTES];
 
-static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key)
+static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key, void *userdata)
 {
     if ((NUM_FIRST == number && !first) || (NUM_LAST == number && !last)) {
         Onions *on = object;

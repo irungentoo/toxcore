@@ -168,7 +168,7 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
                              sizeof(packet), 0) != -1;
 }
 
-static int handle_status(void *object, int i, uint8_t status);
+static int handle_status(void *object, int i, uint8_t status, void *userdata);
 static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
 static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
 
@@ -450,8 +450,8 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
         _Bool direct_connected = 0;
         unsigned int num_online_relays = 0;
-        crypto_connection_status(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                 m->friendlist[friendnumber].friendcon_id), &direct_connected, &num_online_relays);
+        int crypt_conn_id = friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id);
+        crypto_connection_status(m->net_crypto, crypt_conn_id, &direct_connected, &num_online_relays);
 
         if (direct_connected) {
             return CONNECTION_UDP;
@@ -836,10 +836,9 @@ void m_callback_log(Messenger *m, logger_cb *function, void *userdata)
 
 /* Set the function that will be executed when a friend request is received. */
 void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
-                              void *), void *userdata)
+                              void *))
 {
-    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, size_t, void *) = (void *)function;
-    callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
+    callback_friendrequest(&(m->fr), (void (*)(void *, const uint8_t *, const uint8_t *, size_t, void *))function, m);
 }
 
 /* Set the function that will be executed when a message from a friend is received. */
@@ -2040,7 +2039,7 @@ static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t)
     }
 }
 
-static int handle_status(void *object, int i, uint8_t status)
+static int handle_status(void *object, int i, uint8_t status, void *userdata)
 {
     Messenger *m = object;
 
@@ -2500,7 +2499,7 @@ void do_messenger(Messenger *m, void *userdata)
 
     do_net_crypto(m->net_crypto, userdata);
     do_onion_client(m->onion_c);
-    do_friend_connections(m->fr_c);
+    do_friend_connections(m->fr_c, userdata);
     do_friends(m, userdata);
     connection_status_cb(m, userdata);
 

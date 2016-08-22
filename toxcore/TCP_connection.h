@@ -94,7 +94,7 @@ typedef struct {
     void *tcp_data_callback_object;
 
     int (*tcp_oob_callback)(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
-                            const uint8_t *data, uint16_t length);
+                            const uint8_t *data, uint16_t length, void *userdata);
     void *tcp_oob_callback_object;
 
     int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length, void *userdata);
@@ -161,7 +161,8 @@ void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_
 /* Set the callback for TCP oob data packets.
  */
 void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oob_callback)(void *object,
-        const uint8_t *public_key, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length), void *object);
+        const uint8_t *public_key, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length, void *userdata),
+        void *object);
 
 /* Create a new TCP connection to public_key.
  *

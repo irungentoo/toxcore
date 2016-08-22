@@ -375,7 +375,8 @@ void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_c
 /* Set the callback for TCP onion packets.
  */
 void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oob_callback)(void *object,
-        const uint8_t *public_key, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length), void *object)
+        const uint8_t *public_key, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length, void *userdata),
+        void *object)
 {
     tcp_c->tcp_oob_callback = tcp_oob_callback;
     tcp_c->tcp_oob_callback_object = object;
@@ -985,7 +986,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
     }
 
     if (tcp_c->tcp_oob_callback) {
-        tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
+        tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length, userdata);
     }
 
     return 0;
