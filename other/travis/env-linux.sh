@@ -1,11 +1,10 @@
 #!/bin/sh
 
-. other/travis/env.sh
+CMAKE=cmake
+NPROC=`nproc`
+CURDIR=$PWD
+TESTS=true
 
 RUN() {
   "$@"
 }
-export CMAKE=cmake
-export MAKE=make
-export PREFIX=$PWD/_install
-export NPROC=`nproc`

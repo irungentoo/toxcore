@@ -1,8 +1,5 @@
 #!/bin/sh
 
-set -e -u -x
-. other/travis/env-$ENV.sh
-
 # An initial update is required or the cabal cache will be empty and no packages
 # can be installed.
 cabal update

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# We only submit coverage from the Linux build.
+coveralls               \
+  --exclude auto_tests  \
+  --exclude other       \
+  --exclude testing     \
+  --gcov-options '\-lp'

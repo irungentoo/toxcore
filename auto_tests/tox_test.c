@@ -923,7 +923,7 @@ loop_top:
         }
 
         if (counter != last_count) {
-            printf("got to %u\n", counter);
+            printf("many_clients got to %u\n", counter);
             last_count = counter;
         }
 
@@ -1115,6 +1115,8 @@ loop_top:
         ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
 
+    uint16_t last_count = 0;
+
     while (1) {
         uint16_t counter = 0;
 
@@ -1124,6 +1126,11 @@ loop_top:
                     ++counter;
                 }
             }
+        }
+
+        if (counter != last_count) {
+            printf("many_clients_tcp_b got to %u\n", counter);
+            last_count = counter;
         }
 
         if (counter == NUM_FRIENDS * 2) {

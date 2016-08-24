@@ -1,8 +1,5 @@
 #!/bin/sh
 
-set -e -u -x
-. other/travis/env-$ENV.sh
-
 # Build toxcore and run tests.
 ./autogen.sh
 ./configure \
@@ -10,8 +7,7 @@ set -e -u -x
   --with-libsodium-headers=$CACHE_DIR/include \
   --enable-daemon \
   --enable-logging \
-  --enable-ntox \
-  CFLAGS="-DTRAVIS_ENV=1"
+  --enable-ntox
 
 # We use make instead of RUN $MAKE here, because the autotools build will only
 # ever run natively on the Linux container, never on a Windows cross compilation

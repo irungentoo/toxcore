@@ -5,11 +5,9 @@ matrix:
     - env: JOB=hstox ENV=linux
       language: haskell
       ghc: 7.8
-    - env: JOB=toxcore ENV=linux
-      compiler: clang
-    - env: JOB=toxcore ENV=linux
-      compiler: gcc
     - env: JOB=autotools ENV=linux
+      compiler: gcc
+    - env: JOB=toxcore ENV=linux
       compiler: clang
 
 addons:
