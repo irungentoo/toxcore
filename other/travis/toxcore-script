@@ -8,9 +8,7 @@ export CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
 # so it's disabled on Travis.
 RUN $CMAKE -B$BUILD_DIR -H. -DCMAKE_INSTALL_PREFIX:PATH=$CURDIR/_install -DDEBUG=ON -DASSOC_DHT=ON -DSTRICT_ABI=ON #-DASAN=ON
 
-RUN make -C $BUILD_DIR -j$NPROC -k install
+export CTEST_OUTPUT_ON_FAILURE=1
 
-if $TESTS; then
-  export CTEST_OUTPUT_ON_FAILURE=1
-  RUN make -C $BUILD_DIR -j$NPROC test
-fi
+RUN make -C$BUILD_DIR -j$NPROC -k install
+TESTS make -C$BUILD_DIR -j$NPROC test

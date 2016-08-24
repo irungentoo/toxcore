@@ -9,6 +9,14 @@ matrix:
       compiler: gcc
     - env: JOB=toxcore ENV=linux
       compiler: clang
+    - env: JOB=toxcore ENV=osx
+      os: osx
+    - env: JOB=toxcore ENV=windows ARCH=i686
+      services:
+        - docker
+    - env: JOB=toxcore ENV=windows ARCH=x86_64
+      services:
+        - docker
 
 addons:
   apt:
@@ -36,9 +44,10 @@ cache:
     - $HOME/.ghc
     - $HOME/cache
 
-install:      other/travis/phase $JOB $ENV install
-script:       other/travis/phase $JOB $ENV script
-after_script: other/travis/phase $JOB $ENV after_script
+install:       other/travis/phase $JOB $ENV install
+script:        other/travis/phase $JOB $ENV script
+after_script:  other/travis/phase $JOB $ENV after_script
+after_failure: other/travis/phase $JOB $ENV after_failure
 
 notifications:
   irc: "chat.freenode.net#toktok-status"

@@ -402,6 +402,11 @@ function(make_version_script header ns lib)
 endfunction()
 
 option(STRICT_ABI "Enforce strict ABI export in dynamic libraries" OFF)
+if(WIN32 OR APPLE)
+  # Windows and OSX don't have this linker functionality.
+  set(STRICT_ABI OFF)
+endif()
+
 if(STRICT_ABI)
   if(BUILD_TOXAV)
     make_version_script(${CMAKE_SOURCE_DIR}/toxav/toxav.h toxav toxav)

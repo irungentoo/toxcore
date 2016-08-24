@@ -1,0 +1,3 @@
+#!/bin/sh
+
+brew install libsodium libvpx opus libconfig check astyle

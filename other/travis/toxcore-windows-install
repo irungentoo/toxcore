@@ -1,0 +1,7 @@
+#!/bin/sh
+
+DOCKER_IMAGE=toktoknet/windows:latest.$ARCH-shared
+
+docker pull $DOCKER_IMAGE
+docker run --rm $DOCKER_IMAGE > dockcross
+chmod +x dockcross

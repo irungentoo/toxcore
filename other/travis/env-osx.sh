@@ -1,7 +1,7 @@
 #!/bin/sh
 
 CMAKE=cmake
-NPROC=`nproc`
+NPROC=`sysctl -n hw.ncpu`
 CURDIR=$PWD
 
 RUN() {
