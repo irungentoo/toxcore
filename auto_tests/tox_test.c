@@ -1312,7 +1312,7 @@ group_test_restart:
 END_TEST
 
 #ifdef TRAVIS_ENV
-uint8_t timeout_mux = 100;
+uint8_t timeout_mux = 20;
 #else
 uint8_t timeout_mux = 10;
 #endif
