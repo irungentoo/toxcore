@@ -18,7 +18,7 @@
 START_TEST(test_basics)
 {
     /* TODO: real test */
-    uint8_t id[crypto_box_PUBLICKEYBYTES];
+    uint8_t id[crypto_box_PUBLICKEYBYTES] = {1};
     Assoc *assoc = new_Assoc_default(id);
     ck_assert_msg(assoc != NULL, "failed to create default assoc");
 
