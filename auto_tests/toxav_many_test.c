@@ -134,7 +134,6 @@ void *call_thread(void *pd)
     CallControl *BobCC = ((thread_data *) pd)->BobCC;
     uint32_t friend_number = ((thread_data *) pd)->friend_number;
 
-
     memset(AliceCC, 0, sizeof(CallControl));
     memset(BobCC, 0, sizeof(CallControl));
 
@@ -163,15 +162,10 @@ void *call_thread(void *pd)
 
     c_sleep(30);
 
-    int16_t PCM[960];
-    uint8_t video_y[800 * 600];
-    uint8_t video_u[800 * 600 / 2];
-    uint8_t video_v[800 * 600 / 2];
-
-    memset(PCM, 0, sizeof(PCM));
-    memset(video_y, 0, sizeof(video_y));
-    memset(video_u, 0, sizeof(video_u));
-    memset(video_v, 0, sizeof(video_v));
+    int16_t *PCM = calloc(960, sizeof(int16_t));
+    uint8_t *video_y = calloc(800 * 600, sizeof(uint8_t));
+    uint8_t *video_u = calloc(800 * 600 / 2, sizeof(uint8_t));
+    uint8_t *video_v = calloc(800 * 600 / 2, sizeof(uint8_t));
 
     time_t start_time = time(NULL);
 
@@ -198,6 +192,11 @@ void *call_thread(void *pd)
     }
 
     c_sleep(30);
+
+    free(PCM);
+    free(video_y);
+    free(video_u);
+    free(video_v);
 
     printf ("Closing thread\n");
     pthread_exit(NULL);
