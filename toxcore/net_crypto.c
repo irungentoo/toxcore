@@ -2669,12 +2669,15 @@ static void kill_timedout(Net_Crypto *c)
                 continue;
 
             connection_kill(c, i);
-
         }
+
+#if 0
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
             //TODO: add a timeout here?
         }
+
+#endif
     }
 }
 
