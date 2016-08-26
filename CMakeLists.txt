@@ -26,6 +26,18 @@ if(ASSOC_DHT)
   add_definitions(-DENABLE_ASSOC_DHT=1)
 endif()
 
+option(ASAN "Enable address-sanitizer to detect invalid memory accesses" OFF)
+if(ASAN)
+  include(CheckCCompilerFlag)
+  set(SAFE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+  set(CMAKE_REQUIRED_LIBRARIES "-fsanitize=address")
+  check_c_compiler_flag("-fsanitize=address" HAVE_ASAN)
+  if(HAVE_ASAN)
+    set(CMAKE_C_FLAGS "-fsanitize=address")
+  endif()
+  set(CMAKE_REQUIRED_LIBRARIES "${SAFE_CMAKE_REQUIRED_LIBRARIES}")
+endif()
+
 find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
 

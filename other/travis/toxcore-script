@@ -9,7 +9,9 @@ git diff --exit-code
 
 # Build toxcore and run tests.
 export CFLAGS="-O3 -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
-RUN $CMAKE -B$BUILD_DIR -H. -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX -DDEBUG=ON -DASSOC_DHT=ON
+# TODO(iphydf): Enable ASAN. It currently has some bad interactions with gcov,
+# so it's disabled on Travis.
+RUN $CMAKE -B$BUILD_DIR -H. -DCMAKE_INSTALL_PREFIX:PATH=$PREFIX -DDEBUG=ON -DASSOC_DHT=ON #-DASAN=ON
 
 export CTEST_OUTPUT_ON_FAILURE=1
 
