@@ -95,6 +95,25 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 }
 
 
+#define CONST_FUNCTION(lowercase, uppercase) \
+uint32_t tox_##lowercase(void) \
+{ \
+    return TOX_##uppercase; \
+}
+
+CONST_FUNCTION(public_key_size, PUBLIC_KEY_SIZE)
+CONST_FUNCTION(secret_key_size, SECRET_KEY_SIZE)
+CONST_FUNCTION(address_size, ADDRESS_SIZE)
+CONST_FUNCTION(max_name_length, MAX_NAME_LENGTH)
+CONST_FUNCTION(max_status_message_length, MAX_STATUS_MESSAGE_LENGTH)
+CONST_FUNCTION(max_friend_request_length, MAX_FRIEND_REQUEST_LENGTH)
+CONST_FUNCTION(max_message_length, MAX_MESSAGE_LENGTH)
+CONST_FUNCTION(max_custom_packet_size, MAX_CUSTOM_PACKET_SIZE)
+CONST_FUNCTION(hash_length, HASH_LENGTH)
+CONST_FUNCTION(file_id_length, FILE_ID_LENGTH)
+CONST_FUNCTION(max_filename_length, MAX_FILENAME_LENGTH)
+
+
 void tox_options_default(struct Tox_Options *options)
 {
     if (options) {
