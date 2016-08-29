@@ -76,6 +76,9 @@ extern "C" {
  * enumeration value is outside the valid range of the type. If possible, the
  * function will try to use a sane default, but there will be no error code,
  * and one possible action for the function to take is to have no effect.
+ *
+ * Integer constants and the memory layout of publicly exposed structs are not
+ * part of the ABI.
  */
 
 /** \subsection events Events and callbacks
@@ -227,6 +230,10 @@ static namespace version {
  *
  * :: Numeric constants
  *
+ * The values of these are not part of the ABI. Prefer to use the function
+ * versions of them for code that should remain compatible with future versions
+ * of toxcore.
+ *
  ******************************************************************************/
 
 
@@ -370,11 +377,11 @@ enum class SAVEDATA_TYPE {
    */
   NONE,
   /**
-   * Savedata is one that was obtained from ${savedata.get}
+   * Savedata is one that was obtained from ${savedata.get}.
    */
   TOX_SAVE,
   /**
-   * Savedata is a secret key of length ${SECRET_KEY_SIZE}
+   * Savedata is a secret key of length $SECRET_KEY_SIZE.
    */
   SECRET_KEY,
 }
@@ -382,11 +389,20 @@ enum class SAVEDATA_TYPE {
 
 static class options {
   /**
-   * This struct contains all the startup options for Tox. You can either allocate
-   * this object yourself, and pass it to $default, or call
-   * $new to get a new default options object.
+   * This struct contains all the startup options for Tox. You can either
+   * allocate this object yourself, and pass it to $default, or call $new to get
+   * a new default options object.
+   *
+   * If you allocate it yourself, be aware that your binary will rely on the
+   * memory layout of this struct. In particular, if additional fields are added
+   * in future versions of the API, code that allocates it itself will become
+   * incompatible.
+   *
+   * The memory layout of this struct (size, alignment, and field order) is not
+   * part of the ABI. To remain compatible, prefer to use $new to allocate the
+   * object and accessor functions to set the members.
    */
-  struct this {
+  struct this [get, set] {
     /**
      * The type of socket to create.
      *
@@ -419,7 +435,10 @@ static class options {
        * exceed 255 characters, and be in a NUL-terminated C string format
        * (255 chars + 1 NUL byte).
        *
-       * This member is ignored (it can be NULL) if proxy_type is TOX_PROXY_TYPE_NONE.
+       * This member is ignored (it can be NULL) if proxy_type is ${PROXY_TYPE.NONE}.
+       *
+       * The data pointed at by this member is owned by the user, so must
+       * outlive the options object.
        */
       string host;
 
@@ -427,7 +446,7 @@ static class options {
        * The port to use to connect to the proxy server.
        *
        * Ports must be in the range (1, 65535). The value is ignored if
-       * proxy_type is TOX_PROXY_TYPE_NONE.
+       * proxy_type is ${PROXY_TYPE.NONE}.
        */
       uint16_t port;
     }
@@ -472,6 +491,9 @@ static class options {
 
       /**
        * The savedata.
+       *
+       * The data pointed at by this member is owned by the user, so must
+       * outlive the options object.
        */
       const uint8_t[length] data;
 
@@ -1567,7 +1589,7 @@ namespace friend {
  * This function is a wrapper to internal message-digest functions.
  *
  * @param hash A valid memory location the hash data. It must be at least
- *   TOX_HASH_LENGTH bytes in size.
+ *   $HASH_LENGTH bytes in size.
  * @param data Data to be hashed or NULL.
  * @param length Size of the data array or 0.
  *

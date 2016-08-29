@@ -114,6 +114,38 @@ CONST_FUNCTION(file_id_length, FILE_ID_LENGTH)
 CONST_FUNCTION(max_filename_length, MAX_FILENAME_LENGTH)
 
 
+#define ACCESSORS(type, name) \
+type tox_options_get_##name(const struct Tox_Options *options) \
+{ \
+    return options->name; \
+} \
+void tox_options_set_##name(struct Tox_Options *options, type name) \
+{ \
+    options->name = name; \
+}
+
+ACCESSORS(bool, ipv6_enabled)
+ACCESSORS(bool, udp_enabled)
+ACCESSORS(TOX_PROXY_TYPE, proxy_type)
+ACCESSORS(const char *, proxy_host)
+ACCESSORS(uint16_t, proxy_port)
+ACCESSORS(uint16_t, start_port)
+ACCESSORS(uint16_t, end_port)
+ACCESSORS(uint16_t, tcp_port)
+ACCESSORS(TOX_SAVEDATA_TYPE, savedata_type)
+ACCESSORS(size_t, savedata_length)
+
+const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
+{
+    return options->savedata_data;
+}
+
+void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *savedata_data, size_t length)
+{
+    options->savedata_data = savedata_data;
+}
+
+
 void tox_options_default(struct Tox_Options *options)
 {
     if (options) {

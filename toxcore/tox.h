@@ -75,6 +75,9 @@ extern "C" {
  * enumeration value is outside the valid range of the type. If possible, the
  * function will try to use a sane default, but there will be no error code,
  * and one possible action for the function to take is to have no effect.
+ *
+ * Integer constants and the memory layout of publicly exposed structs are not
+ * part of the ABI.
  */
 /** \subsection events Events and callbacks
  *
@@ -222,6 +225,10 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
 /*******************************************************************************
  *
  * :: Numeric constants
+ *
+ * The values of these are not part of the ABI. Prefer to use the function
+ * versions of them for code that should remain compatible with future versions
+ * of toxcore.
  *
  ******************************************************************************/
 
@@ -406,12 +413,12 @@ typedef enum TOX_SAVEDATA_TYPE {
     TOX_SAVEDATA_TYPE_NONE,
 
     /**
-     * Savedata is one that was obtained from tox_get_savedata
+     * Savedata is one that was obtained from tox_get_savedata.
      */
     TOX_SAVEDATA_TYPE_TOX_SAVE,
 
     /**
-     * Savedata is a secret key of length TOX_SECRET_KEY_SIZE
+     * Savedata is a secret key of length TOX_SECRET_KEY_SIZE.
      */
     TOX_SAVEDATA_TYPE_SECRET_KEY,
 
@@ -419,9 +426,18 @@ typedef enum TOX_SAVEDATA_TYPE {
 
 
 /**
- * This struct contains all the startup options for Tox. You can either allocate
- * this object yourself, and pass it to tox_options_default, or call
- * tox_options_new to get a new default options object.
+ * This struct contains all the startup options for Tox. You can either
+ * allocate this object yourself, and pass it to tox_options_default, or call tox_options_new to get
+ * a new default options object.
+ *
+ * If you allocate it yourself, be aware that your binary will rely on the
+ * memory layout of this struct. In particular, if additional fields are added
+ * in future versions of the API, code that allocates it itself will become
+ * incompatible.
+ *
+ * The memory layout of this struct (size, alignment, and field order) is not
+ * part of the ABI. To remain compatible, prefer to use tox_options_new to allocate the
+ * object and accessor functions to set the members.
  */
 struct Tox_Options {
 
@@ -460,6 +476,9 @@ struct Tox_Options {
      * (255 chars + 1 NUL byte).
      *
      * This member is ignored (it can be NULL) if proxy_type is TOX_PROXY_TYPE_NONE.
+     *
+     * The data pointed at by this member is owned by the user, so must
+     * outlive the options object.
      */
     const char *proxy_host;
 
@@ -516,6 +535,9 @@ struct Tox_Options {
 
     /**
      * The savedata.
+     *
+     * The data pointed at by this member is owned by the user, so must
+     * outlive the options object.
      */
     const uint8_t *savedata_data;
 
@@ -527,6 +549,50 @@ struct Tox_Options {
 
 };
 
+
+bool tox_options_get_ipv6_enabled(const struct Tox_Options *options);
+
+void tox_options_set_ipv6_enabled(struct Tox_Options *options, bool ipv6_enabled);
+
+bool tox_options_get_udp_enabled(const struct Tox_Options *options);
+
+void tox_options_set_udp_enabled(struct Tox_Options *options, bool udp_enabled);
+
+TOX_PROXY_TYPE tox_options_get_proxy_type(const struct Tox_Options *options);
+
+void tox_options_set_proxy_type(struct Tox_Options *options, TOX_PROXY_TYPE type);
+
+const char *tox_options_get_proxy_host(const struct Tox_Options *options);
+
+void tox_options_set_proxy_host(struct Tox_Options *options, const char *host);
+
+uint16_t tox_options_get_proxy_port(const struct Tox_Options *options);
+
+void tox_options_set_proxy_port(struct Tox_Options *options, uint16_t port);
+
+uint16_t tox_options_get_start_port(const struct Tox_Options *options);
+
+void tox_options_set_start_port(struct Tox_Options *options, uint16_t start_port);
+
+uint16_t tox_options_get_end_port(const struct Tox_Options *options);
+
+void tox_options_set_end_port(struct Tox_Options *options, uint16_t end_port);
+
+uint16_t tox_options_get_tcp_port(const struct Tox_Options *options);
+
+void tox_options_set_tcp_port(struct Tox_Options *options, uint16_t tcp_port);
+
+TOX_SAVEDATA_TYPE tox_options_get_savedata_type(const struct Tox_Options *options);
+
+void tox_options_set_savedata_type(struct Tox_Options *options, TOX_SAVEDATA_TYPE type);
+
+const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options);
+
+void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *data, size_t length);
+
+size_t tox_options_get_savedata_length(const struct Tox_Options *options);
+
+void tox_options_set_savedata_length(struct Tox_Options *options, size_t length);
 
 /**
  * Initialises a Tox_Options object with the default options.
