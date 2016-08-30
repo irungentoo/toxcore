@@ -173,7 +173,8 @@ target_link_libraries(toxgroup toxmessenger)
 # LAYER 8: Public API
 # -------------------
 add_library(toxcore ${LIBTYPE}
-  toxcore/tox.c)
+  toxcore/tox.c
+  toxcore/tox_group.c)
 target_link_libraries(toxcore toxgroup)
 
 
@@ -365,7 +366,7 @@ install(TARGETS
 install(FILES
   toxav/toxav.h
   toxcore/tox.h
-  toxcore/tox_old.h
+  toxcore/tox_group.h
   toxdns/toxdns.h
   toxencryptsave/toxencryptsave.h
   DESTINATION "include/tox")

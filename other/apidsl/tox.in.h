@@ -2198,7 +2198,7 @@ inline namespace self {
 } // class tox
 
 %{
-#include "tox_old.h"
+#include "tox_group.h"
 
 #ifdef __cplusplus
 }

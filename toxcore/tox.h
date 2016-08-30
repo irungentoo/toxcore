@@ -2462,7 +2462,7 @@ uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
  */
 uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
 
-#include "tox_old.h"
+#include "tox_group.h"
 
 #ifdef __cplusplus
 }

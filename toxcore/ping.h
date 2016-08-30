@@ -24,6 +24,11 @@
 #ifndef __PING_H__
 #define __PING_H__
 
+#include "DHT.h"
+#include "network.h"
+
+#include <stdint.h>
+
 typedef struct PING PING;
 
 /* Add nodes to the to_ping list.

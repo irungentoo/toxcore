@@ -1,3 +1,8 @@
+#ifndef TOX_GROUP_H
+#define TOX_GROUP_H
+
+#include "tox.h"
+
 /**********GROUP CHAT FUNCTIONS ************/
 
 /* Group chat types for tox_callback_group_invite function.
@@ -171,3 +176,4 @@ uint32_t tox_get_chatlist(const Tox *tox, int32_t *out_list, uint32_t list_size)
  */
 int tox_group_get_type(const Tox *tox, int groupnumber);
 
+#endif /* TOX_GROUP_H */

@@ -1,6 +1,12 @@
-
 #ifndef __ASSOC_H__
 #define __ASSOC_H__
+
+#include "DHT.h"
+#include "logger.h"
+#include "network.h"
+
+#include <stddef.h>
+#include <stdint.h>
 
 /* used by rendezvous */
 #define ASSOC_AVAILABLE
