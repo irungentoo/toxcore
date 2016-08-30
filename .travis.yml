@@ -18,9 +18,14 @@ addons:
       - avsm
     packages:
       - check
+      - libcv-dev             # For av_test.
+      - libhighgui-dev        # For av_test.
+      - libopencv-contrib-dev # For av_test.
+      - libsndfile1-dev       # For av_test.
       - libvpx-dev
-      - opam            # For apidsl and Frama-C.
-      - texinfo         # For libconfig.
+      - opam                  # For apidsl and Frama-C.
+      - portaudio19-dev       # For av_test.
+      - texinfo               # For libconfig.
 
 cache:
   directories:

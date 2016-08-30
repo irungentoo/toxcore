@@ -29,44 +29,49 @@ endif()
 find_package(PkgConfig REQUIRED)
 find_package(Threads   REQUIRED)
 
-find_library(UTIL_LIBRARIES util)
-find_library(RT_LIBRARIES   rt)
+find_library(UTIL_LIBRARIES          util         )
+find_library(RT_LIBRARIES            rt           )
 
-pkg_search_module(CHECK              check)
-pkg_search_module(LIBCONFIG          libconfig)
-pkg_search_module(LIBSODIUM REQUIRED libsodium)
-pkg_search_module(OPUS      REQUIRED opus)
-pkg_search_module(VPX       REQUIRED vpx)
+# For toxcore.
+pkg_search_module(LIBSODIUM REQUIRED libsodium    )
 
-if(CHECK_FOUND)
-  link_directories(${CHECK_LIBRARY_DIRS})
-endif()
-if(LIBCONFIG_FOUND)
-  link_directories(${LIBCONFIG_LIBRARY_DIRS})
-endif()
-link_directories(${LIBSODIUM_LIBRARY_DIRS})
-link_directories(${OPUS_LIBRARY_DIRS})
-link_directories(${VPX_LIBRARY_DIRS})
+# For toxav.
+pkg_search_module(OPUS      REQUIRED opus         )
+pkg_search_module(VPX       REQUIRED vpx          )
 
-if(CHECK_FOUND)
-  include_directories(${CHECK_INCLUDE_DIRS})
-endif()
-if(LIBCONFIG_FOUND)
-  include_directories(${LIBCONFIG_INCLUDE_DIRS})
-endif()
-include_directories(${LIBSODIUM_INCLUDE_DIRS})
-include_directories(${OPUS_INCLUDE_DIRS})
-include_directories(${VPX_INCLUDE_DIRS})
+# For tox-bootstrapd.
+pkg_search_module(LIBCONFIG          libconfig    )
 
-if(CHECK_FOUND)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CHECK_CFLAGS_OTHER}")
-endif()
-if(LIBCONFIG_FOUND)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBCONFIG_CFLAGS_OTHER}")
-endif()
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIBSODIUM_CFLAGS_OTHER}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPUS_CFLAGS_OTHER}")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${VPX_CFLAGS_OTHER}")
+# For auto tests.
+pkg_search_module(CHECK              check        )
+
+# For av_test.
+pkg_search_module(OPENCV             opencv       )
+pkg_search_module(PORTAUDIO          portaudio-2.0)
+pkg_search_module(SNDFILE            sndfile      )
+
+# TODO(iphydf): fold the pkg_search_module call into this function.
+function(pkg_use_module mod)
+  if(${mod}_FOUND)
+    link_directories(${${mod}_LIBRARY_DIRS})
+    include_directories(${${mod}_INCLUDE_DIRS})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${${mod}_CFLAGS_OTHER}")
+  endif()
+endfunction()
+
+pkg_use_module(LIBSODIUM)
+
+pkg_use_module(OPUS)
+pkg_use_module(VPX)
+
+pkg_use_module(LIBCONFIG)
+
+pkg_use_module(CHECK)
+
+pkg_use_module(OPENCV)
+pkg_use_module(PORTAUDIO)
+pkg_use_module(SNDFILE)
+
 
 # Users can call cmake -DLIBTYPE=STATIC or -DLIBTYPE=SHARED to override this.
 if(NOT LIBTYPE)
@@ -280,6 +285,15 @@ endif()
 # :: Test programs
 #
 ################################################################################
+
+if(NOT WIN32 AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
+  add_executable(av_test testing/av_test.c)
+  target_link_libraries(av_test
+    toxav
+    ${OPENCV_LIBRARIES}
+    ${PORTAUDIO_LIBRARIES}
+    ${SNDFILE_LIBRARIES})
+endif()
 
 if(NOT WIN32)
   add_executable(nTox testing/nTox.c)

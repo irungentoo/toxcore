@@ -47,6 +47,11 @@
 #include <errno.h>
 #include <unistd.h>
 
+#ifdef __APPLE__
+#include <sched.h>
+#define pthread_yield sched_yield
+#endif
+
 #define c_sleep(x) usleep(1000*x)
 
 
@@ -113,6 +118,8 @@ void *pa_write_thread (void *d)
             c_sleep(10);
         }
     }
+
+    return NULL;
 }
 
 /**
@@ -239,9 +246,9 @@ void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxA
     uint8_t off = 1;
 
     while (1) {
-        tox_iterate(*bootstrap);
-        tox_iterate(Alice);
-        tox_iterate(Bob);
+        tox_iterate(*bootstrap, &to_compare);
+        tox_iterate(Alice, &to_compare);
+        tox_iterate(Bob, &to_compare);
 
         if (tox_self_get_connection_status(*bootstrap) &&
                 tox_self_get_connection_status(Alice) &&
@@ -284,11 +291,11 @@ void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxA
     printf("Created 2 instances of ToxAV\n");
     printf("All set after %llu seconds!\n", time(NULL) - cur_time);
 }
-int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV)
+int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userdata)
 {
-    tox_iterate(bootstrap);
-    tox_iterate(toxav_get_tox(AliceAV));
-    tox_iterate(toxav_get_tox(BobAV));
+    tox_iterate(bootstrap, userdata);
+    tox_iterate(toxav_get_tox(AliceAV), userdata);
+    tox_iterate(toxav_get_tox(BobAV), userdata);
 
     return MIN(tox_iteration_interval(toxav_get_tox(AliceAV)), tox_iteration_interval(toxav_get_tox(BobAV)));
 }
@@ -542,7 +549,7 @@ CHECK_ARG:
         }
 
         while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
 
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
@@ -555,7 +562,7 @@ CHECK_ARG:
         }
 
         while (AliceCC.state == 0)
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
 
         /* Open audio file */
         af_handle = sf_open(af_name, SFM_READ, &af_info);
@@ -615,11 +622,11 @@ CHECK_ARG:
 
                 if (toxav_audio_send_frame(AliceAV, 0, PCM, count / af_info.channels, af_info.channels, af_info.samplerate,
                                            &rc) == false) {
-                    printf("Error sending frame of size %ld: %d\n", count, rc);
+                    printf("Error sending frame of size %ld: %d\n", (long)count, rc);
                 }
             }
 
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
             c_sleep(abs(audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
         }
 
@@ -638,7 +645,7 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         /* Stop decode thread */
@@ -678,7 +685,7 @@ CHECK_ARG:
         }
 
         while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
 
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
@@ -690,7 +697,7 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV, NULL);
 
         /* Start decode thread */
         struct toxav_thread_data data = {
@@ -721,7 +728,7 @@ CHECK_ARG:
                 break;
 
             send_opencv_img(AliceAV, 0, frame);
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
             c_sleep(10);
         }
 
@@ -737,7 +744,7 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         /* Stop decode thread */
