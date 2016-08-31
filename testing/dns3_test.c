@@ -63,15 +63,23 @@ int main(int argc, char *argv[])
     }
 
     struct sockaddr_in target;
+
     size_t addrsize = sizeof(struct sockaddr_in);
+
     target.sin_family = AF_INET;
+
     target.sin_addr = ip.ip4.in_addr;
+
     target.sin_port = htons(53);
 
     uint8_t string[1024] = {0};
+
     void *d = tox_dns3_new(hex_string_to_bin(argv[2]));
+
     unsigned int i;
+
     uint32_t request_id;
+
     /*
     for (i = 0; i < 255; ++i) {
         tox_generate_dns3_string(d, string, sizeof(string), &request_id, string, i);

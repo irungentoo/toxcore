@@ -312,6 +312,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
     }
 
     struct sockaddr_storage addr;
+
     size_t addrsize = 0;
 
     if (ip_port.ip.family == AF_INET) {

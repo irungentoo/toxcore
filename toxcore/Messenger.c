@@ -1172,12 +1172,19 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     }
 
     struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
+
     ft->status = FILESTATUS_NOT_ACCEPTED;
+
     ft->size = filesize;
+
     ft->transferred = 0;
+
     ft->requested = 0;
+
     ft->slots_allocated = 0;
+
     ft->paused = FILE_PAUSE_NOT;
+
     memcpy(ft->id, file_id, FILE_ID_LENGTH);
 
     ++m->friendlist[friendnumber].num_sending_files;

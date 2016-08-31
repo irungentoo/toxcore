@@ -146,6 +146,7 @@ void vc_iterate(VCSession *vc)
     }
 
     struct RTPMessage *p;
+
     int rc;
 
     pthread_mutex_lock(vc->queue_mutex);
