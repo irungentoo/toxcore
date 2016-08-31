@@ -107,5 +107,4 @@ encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
 encryptsave_test_LDADD = $(AUTOTEST_LDADD)
 
 
-EXTRA_DIST += $(top_srcdir)/auto_tests/friends_test.c
 EXTRA_DIST += $(top_srcdir)/auto_tests/helpers.h

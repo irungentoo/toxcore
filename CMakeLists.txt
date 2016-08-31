@@ -237,8 +237,6 @@ auto_test(assoc_test)
 auto_test(crypto_test)
 auto_test(dht_test)
 auto_test(encryptsave_test)
-# This test doesn't link (missing symbol).
-#auto_test(friends_test)
 auto_test(messenger_test)
 auto_test(network_test)
 auto_test(onion_test)
