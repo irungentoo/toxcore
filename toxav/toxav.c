@@ -327,10 +327,10 @@ END:
 
     return rc == TOXAV_ERR_CALL_OK;
 }
-void toxav_callback_call(ToxAV *av, toxav_call_cb *function, void *user_data)
+void toxav_callback_call(ToxAV *av, toxav_call_cb *callback, void *user_data)
 {
     pthread_mutex_lock(av->mutex);
-    av->ccb.first = function;
+    av->ccb.first = callback;
     av->ccb.second = user_data;
     pthread_mutex_unlock(av->mutex);
 }
@@ -386,10 +386,10 @@ END:
 
     return rc == TOXAV_ERR_ANSWER_OK;
 }
-void toxav_callback_call_state(ToxAV *av, toxav_call_state_cb *function, void *user_data)
+void toxav_callback_call_state(ToxAV *av, toxav_call_state_cb *callback, void *user_data)
 {
     pthread_mutex_lock(av->mutex);
-    av->scb.first = function;
+    av->scb.first = callback;
     av->scb.second = user_data;
     pthread_mutex_unlock(av->mutex);
 }
@@ -662,10 +662,10 @@ END:
 
     return rc == TOXAV_ERR_BIT_RATE_SET_OK;
 }
-void toxav_callback_bit_rate_status(ToxAV *av, toxav_bit_rate_status_cb *function, void *user_data)
+void toxav_callback_bit_rate_status(ToxAV *av, toxav_bit_rate_status_cb *callback, void *user_data)
 {
     pthread_mutex_lock(av->mutex);
-    av->bcb.first = function;
+    av->bcb.first = callback;
     av->bcb.second = user_data;
     pthread_mutex_unlock(av->mutex);
 }
@@ -854,17 +854,17 @@ END:
 
     return rc == TOXAV_ERR_SEND_FRAME_OK;
 }
-void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb *function, void *user_data)
+void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb *callback, void *user_data)
 {
     pthread_mutex_lock(av->mutex);
-    av->acb.first = function;
+    av->acb.first = callback;
     av->acb.second = user_data;
     pthread_mutex_unlock(av->mutex);
 }
-void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb *function, void *user_data)
+void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb *callback, void *user_data)
 {
     pthread_mutex_lock(av->mutex);
-    av->vcb.first = function;
+    av->vcb.first = callback;
     av->vcb.second = user_data;
     pthread_mutex_unlock(av->mutex);
 }
