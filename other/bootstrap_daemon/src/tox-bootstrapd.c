@@ -110,8 +110,6 @@ void print_public_key(const uint8_t *public_key)
     }
 
     write_log(LOG_LEVEL_INFO, "Public Key: %s\n", buffer);
-
-    return;
 }
 
 // Demonizes the process, appending PID to the PID file and closing file descriptors based on log backend

@@ -734,7 +734,6 @@ void kill_networking(Networking_Core *net)
     }
 
     free(net);
-    return;
 }
 
 

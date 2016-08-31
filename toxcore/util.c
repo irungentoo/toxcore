@@ -82,7 +82,6 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
 
     memcpy(num, buff, numbytes);
 #endif
-    return;
 }
 
 uint16_t lendian_to_host16(uint16_t lendian)
