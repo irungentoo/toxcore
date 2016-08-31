@@ -370,7 +370,6 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
         if (out_audio_samples <= 0) {
             return -1;
         }
-
     }
 
     if (out_audio) {

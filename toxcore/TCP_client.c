@@ -202,7 +202,6 @@ static int proxy_socks5_read_connection_response(TCP_Client_Connection *TCP_conn
         if (data[0] == 5 && data[1] == 0) {
             return 1;
         }
-
     } else {
         uint8_t data[4 + sizeof(IP6) + sizeof(uint16_t)];
         int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data));
@@ -364,7 +363,6 @@ static void wipe_priority_list(TCP_Client_Connection *con)
         p = p->next;
         free(pp);
     }
-
 }
 
 /* return 1 on success.
@@ -828,9 +826,9 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
                 }
 
                 return 0;
-            } else {
-                return -1;
             }
+
+            return -1;
         }
 
         case TCP_PACKET_OOB_RECV: {

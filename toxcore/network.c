@@ -753,11 +753,13 @@ int ip_equal(const IP *a, const IP *b)
     if (a->family == b->family) {
         if (a->family == AF_INET) {
             return (a->ip4.in_addr.s_addr == b->ip4.in_addr.s_addr);
-        } else if (a->family == AF_INET6) {
-            return a->ip6.uint64[0] == b->ip6.uint64[0] && a->ip6.uint64[1] == b->ip6.uint64[1];
-        } else {
-            return 0;
         }
+
+        if (a->family == AF_INET6) {
+            return a->ip6.uint64[0] == b->ip6.uint64[0] && a->ip6.uint64[1] == b->ip6.uint64[1];
+        }
+
+        return 0;
     }
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
@@ -921,7 +923,9 @@ int ip_parse_addr(const IP *ip, char *address, size_t length)
     if (ip->family == AF_INET) {
         struct in_addr *addr = (struct in_addr *)&ip->ip4;
         return inet_ntop(ip->family, addr, address, length) != NULL;
-    } else if (ip->family == AF_INET6) {
+    }
+
+    if (ip->family == AF_INET6) {
         struct in6_addr *addr = (struct in6_addr *)&ip->ip6;
         return inet_ntop(ip->family, addr, address, length) != NULL;
     }

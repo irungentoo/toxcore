@@ -77,10 +77,10 @@ static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, _B
 
     if (!disable_family_check) {
         return to_host_family(target);
-    } else {
-        to_host_family(target);
-        return 0;
     }
+
+    to_host_family(target);
+    return 0;
 }
 
 static void ipport_pack(uint8_t *data, const IP_Port *source)

@@ -510,7 +510,9 @@ void line_eval(Tox *m, char *line)
                     new_lines_mark(help_friend1, 1);
                     new_lines_mark(help_friend2, 1);
                     return;
-                } else if (line[3] == 'g') {
+                }
+
+                if (line[3] == 'g') {
                     new_lines_mark(help_group, 1);
                     return;
                 }
@@ -779,56 +781,56 @@ void wrap_bars(char output[STRING_LENGTH_WRAPPED], char input[STRING_LENGTH], si
             }
 
             continue;
-        } else {
-            /* at the limit */
-            if (bar_avail > nl_got) {
-                /* overwrite */
-                memcpy(output + bar_avail - 1, wrap_cont_str, wrap_cont_len);
-                nl_got = bar_avail;
+        }
 
-                ipos--;
-                continue;
-            }
+        /* at the limit */
+        if (bar_avail > nl_got) {
+            /* overwrite */
+            memcpy(output + bar_avail - 1, wrap_cont_str, wrap_cont_len);
+            nl_got = bar_avail;
 
-            if (space_avail > nl_got) {
-                if (opos + wrap_cont_len - 1 >= STRING_LENGTH_WRAPPED) {
-                    opos = STRING_LENGTH_WRAPPED - 1;
-                    break;
-                }
+            ipos--;
+            continue;
+        }
 
-                /* move forward by 2 characters */
-                memmove(output + space_avail + 3, output + space_avail + 1, opos - (space_avail + 1));
-                memcpy(output + space_avail, wrap_cont_str, wrap_cont_len);
-                nl_got = space_avail + 1;
-
-                opos += 2;
-                ipos--;
-                continue;
-            }
-
-            char c = input[ipos];
-
-            if ((c == '|') || (c == ' ') || (c == '\n')) {
-                if (opos + wrap_cont_len >= STRING_LENGTH_WRAPPED) {
-                    opos = STRING_LENGTH_WRAPPED - 1;
-                    break;
-                }
-
-                memcpy(output + opos, wrap_cont_str, wrap_cont_len);
-
-                nl_got = opos;
-                opos += wrap_cont_len;
-            }
-
-            output[opos++] = input[ipos];
-
-            if (opos >= STRING_LENGTH_WRAPPED) {
+        if (space_avail > nl_got) {
+            if (opos + wrap_cont_len - 1 >= STRING_LENGTH_WRAPPED) {
                 opos = STRING_LENGTH_WRAPPED - 1;
                 break;
             }
 
+            /* move forward by 2 characters */
+            memmove(output + space_avail + 3, output + space_avail + 1, opos - (space_avail + 1));
+            memcpy(output + space_avail, wrap_cont_str, wrap_cont_len);
+            nl_got = space_avail + 1;
+
+            opos += 2;
+            ipos--;
             continue;
         }
+
+        char c = input[ipos];
+
+        if ((c == '|') || (c == ' ') || (c == '\n')) {
+            if (opos + wrap_cont_len >= STRING_LENGTH_WRAPPED) {
+                opos = STRING_LENGTH_WRAPPED - 1;
+                break;
+            }
+
+            memcpy(output + opos, wrap_cont_str, wrap_cont_len);
+
+            nl_got = opos;
+            opos += wrap_cont_len;
+        }
+
+        output[opos++] = input[ipos];
+
+        if (opos >= STRING_LENGTH_WRAPPED) {
+            opos = STRING_LENGTH_WRAPPED - 1;
+            break;
+        }
+
+        continue;
     }
 
     if (opos >= STRING_LENGTH_WRAPPED) {

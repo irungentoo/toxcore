@@ -268,11 +268,11 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
          */
         if (chloss(session, header)) {
             return 0;
-        } else {
-            /* Message is not late; pick up the latest parameters */
-            session->rsequnum = ntohs(header->sequnum);
-            session->rtimestamp = ntohl(header->timestamp);
         }
+
+        /* Message is not late; pick up the latest parameters */
+        session->rsequnum = ntohs(header->sequnum);
+        session->rtimestamp = ntohl(header->timestamp);
 
         bwc_add_recv(session->bwc, length);
 
@@ -296,69 +296,43 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
         }
 
         return session->mcb (session->cs, new_message(length, data, length));
-    } else {
-        /* The message is sent in multiple parts */
+    }
 
-        if (session->mp) {
-            /* There are 2 possible situations in this case:
-             *      1) being that we got the part of already processing message.
-             *      2) being that we got the part of a new/old message.
-             *
-             * We handle them differently as we only allow a single multiparted
-             * processing message
-             */
+    /* The message is sent in multiple parts */
 
-            if (session->mp->header.sequnum == ntohs(header->sequnum) &&
-                    session->mp->header.timestamp == ntohl(header->timestamp)) {
-                /* First case */
+    if (session->mp) {
+        /* There are 2 possible situations in this case:
+         *      1) being that we got the part of already processing message.
+         *      2) being that we got the part of a new/old message.
+         *
+         * We handle them differently as we only allow a single multiparted
+         * processing message
+         */
 
-                /* Make sure we have enough allocated memory */
-                if (session->mp->header.tlen - session->mp->len < length - sizeof(struct RTPHeader) ||
-                        session->mp->header.tlen <= ntohs(header->cpart)) {
-                    /* There happened to be some corruption on the stream;
-                     * continue wihtout this part
-                     */
-                    return 0;
-                }
+        if (session->mp->header.sequnum == ntohs(header->sequnum) &&
+                session->mp->header.timestamp == ntohl(header->timestamp)) {
+            /* First case */
 
-                memcpy(session->mp->data + ntohs(header->cpart), data + sizeof(struct RTPHeader),
-                       length - sizeof(struct RTPHeader));
+            /* Make sure we have enough allocated memory */
+            if (session->mp->header.tlen - session->mp->len < length - sizeof(struct RTPHeader) ||
+                    session->mp->header.tlen <= ntohs(header->cpart)) {
+                /* There happened to be some corruption on the stream;
+                 * continue wihtout this part
+                 */
+                return 0;
+            }
 
-                session->mp->len += length - sizeof(struct RTPHeader);
+            memcpy(session->mp->data + ntohs(header->cpart), data + sizeof(struct RTPHeader),
+                   length - sizeof(struct RTPHeader));
 
-                bwc_add_recv(session->bwc, length);
+            session->mp->len += length - sizeof(struct RTPHeader);
 
-                if (session->mp->len == session->mp->header.tlen) {
-                    /* Received a full message; now push it for the further
-                     * processing.
-                     */
-                    if (session->mcb) {
-                        session->mcb (session->cs, session->mp);
-                    } else {
-                        free(session->mp);
-                    }
+            bwc_add_recv(session->bwc, length);
 
-                    session->mp = NULL;
-                }
-            } else {
-                /* Second case */
-
-                if (session->mp->header.timestamp > ntohl(header->timestamp)) {
-                    /* The received message part is from the old message;
-                     * discard it.
-                     */
-                    return 0;
-                }
-
-                /* Measure missing parts of the old message */
-                bwc_add_lost(session->bwc,
-                             (session->mp->header.tlen - session->mp->len) +
-
-                             /* Must account sizes of rtp headers too */
-                             ((session->mp->header.tlen - session->mp->len) /
-                              MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
-
-                /* Push the previous message for processing */
+            if (session->mp->len == session->mp->header.tlen) {
+                /* Received a full message; now push it for the further
+                 * processing.
+                 */
                 if (session->mcb) {
                     session->mcb (session->cs, session->mp);
                 } else {
@@ -366,40 +340,66 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                 }
 
                 session->mp = NULL;
-                goto NEW_MULTIPARTED;
             }
         } else {
-            /* In this case threat the message as if it was received in order
-             */
+            /* Second case */
 
-            /* This is also a point for new multiparted messages */
+            if (session->mp->header.timestamp > ntohl(header->timestamp)) {
+                /* The received message part is from the old message;
+                 * discard it.
+                 */
+                return 0;
+            }
+
+            /* Measure missing parts of the old message */
+            bwc_add_lost(session->bwc,
+                         (session->mp->header.tlen - session->mp->len) +
+
+                         /* Must account sizes of rtp headers too */
+                         ((session->mp->header.tlen - session->mp->len) /
+                          MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
+
+            /* Push the previous message for processing */
+            if (session->mcb) {
+                session->mcb (session->cs, session->mp);
+            } else {
+                free(session->mp);
+            }
+
+            session->mp = NULL;
+            goto NEW_MULTIPARTED;
+        }
+    } else {
+        /* In this case threat the message as if it was received in order
+         */
+
+        /* This is also a point for new multiparted messages */
 NEW_MULTIPARTED:
 
-            /* Only allow messages which have arrived in order;
-             * drop late messages
-             */
-            if (chloss(session, header)) {
-                return 0;
-            } else {
-                /* Message is not late; pick up the latest parameters */
-                session->rsequnum = ntohs(header->sequnum);
-                session->rtimestamp = ntohl(header->timestamp);
+        /* Only allow messages which have arrived in order;
+         * drop late messages
+         */
+        if (chloss(session, header)) {
+            return 0;
+        }
+
+        /* Message is not late; pick up the latest parameters */
+        session->rsequnum = ntohs(header->sequnum);
+        session->rtimestamp = ntohl(header->timestamp);
+
+        bwc_add_recv(session->bwc, length);
+
+        /* Again, only store message if handler is present
+         */
+        if (session->mcb) {
+            session->mp = new_message(ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
+
+            /* Reposition data if necessary */
+            if (ntohs(header->cpart)) {
+                ;
             }
 
-            bwc_add_recv(session->bwc, length);
-
-            /* Again, only store message if handler is present
-             */
-            if (session->mcb) {
-                session->mp = new_message(ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
-
-                /* Reposition data if necessary */
-                if (ntohs(header->cpart)) {
-                    ;
-                }
-
-                memmove(session->mp->data + ntohs(header->cpart), session->mp->data, session->mp->len);
-            }
+            memmove(session->mp->data + ntohs(header->cpart), session->mp->data, session->mp->len);
         }
     }
 

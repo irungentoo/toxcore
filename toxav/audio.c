@@ -413,13 +413,13 @@ bool reconfigure_audio_encoder(Logger *log, OpusEncoder **e, int32_t new_br, int
         *e = new_encoder;
     } else if (*old_br == new_br) {
         return true; /* Nothing changed */
-    } else {
-        int status = opus_encoder_ctl(*e, OPUS_SET_BITRATE(new_br));
+    }
 
-        if (status != OPUS_OK) {
-            LOGGER_ERROR(log, "Error while setting encoder ctl: %s", opus_strerror(status));
-            return false;
-        }
+    int status = opus_encoder_ctl(*e, OPUS_SET_BITRATE(new_br));
+
+    if (status != OPUS_OK) {
+        LOGGER_ERROR(log, "Error while setting encoder ctl: %s", opus_strerror(status));
+        return false;
     }
 
     *old_br = new_br;

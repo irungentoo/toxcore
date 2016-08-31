@@ -46,7 +46,6 @@ typedef enum {
     IDRequest = 1,
     IDError,
     IDCapabilities,
-
 } MSIHeaderID;
 
 
@@ -538,7 +537,6 @@ MSICall *new_call (MSISession *session, uint32_t friend_number)
         }
 
         session->calls_tail = session->calls_head = friend_number;
-
     } else if (session->calls_tail < friend_number) { /* Appending */
         void *tmp = realloc(session->calls, sizeof(MSICall *) * (friend_number + 1));
 
@@ -560,7 +558,6 @@ MSICall *new_call (MSISession *session, uint32_t friend_number)
         session->calls[session->calls_tail]->next = rc;
 
         session->calls_tail = friend_number;
-
     } else if (session->calls_head > friend_number) { /* Inserting at front */
         rc->next = session->calls[session->calls_head];
         session->calls[session->calls_head]->prev = rc;
@@ -736,7 +733,6 @@ void handle_push (MSICall *call, const MSIMessage *msg)
             if (invoke_callback(call, msi_OnStart) == -1) {
                 goto FAILURE;
             }
-
         }
         break;
 
@@ -767,7 +763,6 @@ void handle_pop (MSICall *call, const MSIMessage *msg)
         LOGGER_WARNING(call->session->messenger->log, "Friend detected an error: %d", msg->error.value);
         call->error = msg->error.value;
         invoke_callback(call, msi_OnError);
-
     } else {
         switch (call->state) {
             case msi_CallInactive: {
@@ -812,9 +807,9 @@ void handle_msi_packet (Messenger *m, uint32_t friend_number, const uint8_t *dat
         LOGGER_WARNING(m->log, "Error parsing message");
         send_error(m, friend_number, msi_EInvalidMessage);
         return;
-    } else {
-        LOGGER_DEBUG(m->log, "Successfully parsed message");
     }
+
+    LOGGER_DEBUG(m->log, "Successfully parsed message");
 
     pthread_mutex_lock(session->mutex);
     MSICall *call = get_call(session, friend_number);

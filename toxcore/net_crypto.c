@@ -482,13 +482,17 @@ IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
 
     if (v4 && LAN_ip(conn->ip_portv4.ip) == 0) {
         return conn->ip_portv4;
-    } else if (v6 && conn->ip_portv6.ip.family == AF_INET6) {
-        return conn->ip_portv6;
-    } else if (conn->ip_portv4.ip.family == AF_INET) {
-        return conn->ip_portv4;
-    } else {
-        return empty;
     }
+
+    if (v6 && conn->ip_portv6.ip.family == AF_INET6) {
+        return conn->ip_portv6;
+    }
+
+    if (conn->ip_portv4.ip.family == AF_INET) {
+        return conn->ip_portv4;
+    }
+
+    return empty;
 }
 
 /* Sends a packet to the peer using the fastest route.
@@ -519,10 +523,10 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
             if ((uint32_t)sendpacket(c->dht->net, ip_port, data, length) == length) {
                 pthread_mutex_unlock(&conn->mutex);
                 return 0;
-            } else {
-                pthread_mutex_unlock(&conn->mutex);
-                return -1;
             }
+
+            pthread_mutex_unlock(&conn->mutex);
+            return -1;
         }
 
         //TODO: a better way of sending packets directly to confirm the others ip.
@@ -775,7 +779,6 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
             if (length <= cur_len) {
                 return cur_len;
             }
-
         } else if (n == 255) {
             data[cur_len] = 0;
             n = 0;
@@ -1135,7 +1138,9 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
 
         if (ret == -1) {
             return -1;
-        } else if (ret == 0) {
+        }
+
+        if (ret == 0) {
             continue;
         }
 
@@ -1391,9 +1396,9 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
 
         if (requested == -1) {
             return -1;
-        } else {
-            //TODO?
         }
+
+        // else { /* TODO? */ }
 
         set_buffer_end(&conn->recv_array, num);
     } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
@@ -1404,7 +1409,6 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
         if (add_data_to_buffer(&conn->recv_array, num, &dt) != 0) {
             return -1;
         }
-
 
         while (1) {
             pthread_mutex_lock(&conn->mutex);
@@ -1439,7 +1443,6 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
             conn->connection_lossy_data_callback(conn->connection_lossy_data_callback_object,
                                                  conn->connection_lossy_data_callback_id, real_data, real_length);
         }
-
     } else {
         return -1;
     }
@@ -1525,7 +1528,6 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
                         conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key);
                     }
                 }
-
             } else {
                 return -1;
             }
@@ -1536,11 +1538,9 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
         case NET_PACKET_CRYPTO_DATA: {
             if (conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED) {
                 return handle_data_packet_helper(c, crypt_connection_id, packet, length, udp, userdata);
-            } else {
-                return -1;
             }
 
-            return 0;
+            return -1;
         }
 
         default: {
@@ -1698,7 +1698,9 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         }
 
         return 0;
-    } else if (source.ip.family == TCP_FAMILY) {
+    }
+
+    if (source.ip.family == TCP_FAMILY) {
         if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, source.ip.ip6.uint32[0]) == 0) {
             return 1;
         }
@@ -1974,7 +1976,9 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
 
     if (data[0] == NET_PACKET_COOKIE_REQUEST) {
         return tcp_oob_handle_cookie_request(c, tcp_connections_number, public_key, data, length);
-    } else if (data[0] == NET_PACKET_CRYPTO_HS) {
+    }
+
+    if (data[0] == NET_PACKET_CRYPTO_HS) {
         IP_Port source;
         source.port = 0;
         source.ip.family = TCP_FAMILY;
@@ -1985,9 +1989,9 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
         }
 
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* Add a tcp relay, associating it to a crypt_connection_id.
@@ -2305,7 +2309,6 @@ static void send_crypto_packets(Net_Crypto *c)
             if (send_request_packet(c, i) == 0) {
                 conn->last_request_packet_sent = temp_time;
             }
-
         }
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
@@ -2433,7 +2436,6 @@ static void send_crypto_packets(Net_Crypto *c)
                         conn->packet_send_rate_requested = conn->packet_send_rate;
                     }
                 }
-
             }
 
             if (conn->last_packets_left_set == 0 || conn->last_packets_left_requested_set == 0) {
@@ -2541,9 +2543,9 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
 
     if (conn->packets_left < max_packets) {
         return conn->packets_left;
-    } else {
-        return max_packets;
     }
+
+    return max_packets;
 }
 
 /* Sends a lossless cryptopacket.
@@ -2617,9 +2619,9 @@ int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet
 
     if (num < num1) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* return -1 on failure.

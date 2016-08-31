@@ -119,17 +119,17 @@ static int resize(BS_LIST *list, uint32_t new_size)
 
     if (!p) {
         return 0;
-    } else {
-        list->data = p;
     }
+
+    list->data = p;
 
     p = realloc(list->ids, sizeof(int) * new_size);
 
     if (!p) {
         return 0;
-    } else {
-        list->ids = p;
     }
+
+    list->ids = p;
 
     return 1;
 }

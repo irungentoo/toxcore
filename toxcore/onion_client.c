@@ -341,7 +341,9 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Pa
         }
 
         return 0;
-    } else if (path->ip_port1.ip.family == TCP_FAMILY) {
+    }
+
+    if (path->ip_port1.ip.family == TCP_FAMILY) {
         uint8_t packet[ONION_MAX_PACKET_SIZE];
         int len = create_onion_packet_tcp(packet, sizeof(packet), path, dest, data, length);
 
@@ -350,9 +352,9 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Pa
         }
 
         return send_tcp_onion_request(onion_c->c, path->ip_port1.ip.ip4.uint32, packet, len);
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* Creates a sendback for use in an announce request.
@@ -453,7 +455,6 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     if (num == 0) {
         len = create_announce_request(request, sizeof(request), dest_pubkey, onion_c->c->self_public_key,
                                       onion_c->c->self_secret_key, ping_id, onion_c->c->self_public_key, onion_c->temp_public_key, sendback);
-
     } else {
         len = create_announce_request(request, sizeof(request), dest_pubkey, onion_c->friends_list[num - 1].temp_public_key,
                                       onion_c->friends_list[num - 1].temp_secret_key, ping_id, onion_c->friends_list[num - 1].real_public_key, zero_ping_id,
@@ -520,7 +521,6 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
         if (is_stored == 1 && public_key_cmp(pingid_or_key, onion_c->temp_public_key) != 0) {
             is_stored = 0;
         }
-
     } else {
         if (is_stored >= 2) {
             return -1;
@@ -841,7 +841,9 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, 
 
     if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE) {
         return handle_announce_response(object, ip_port, data, length, userdata);
-    } else if (data[0] == NET_PACKET_ONION_DATA_RESPONSE) {
+    }
+
+    if (data[0] == NET_PACKET_ONION_DATA_RESPONSE) {
         return handle_data_response(object, ip_port, data, length, userdata);
     }
 
@@ -1418,7 +1420,6 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
                 onion_c->friends_list[friendnum].last_dht_pk_dht_sent = unix_time();
             }
         }
-
     }
 }
 
@@ -1541,9 +1542,9 @@ unsigned int onion_connection_status(const Onion_Client *onion_c)
     if (onion_c->onion_connected >= ONION_CONNECTION_SECONDS) {
         if (onion_c->UDP_connected) {
             return 2;
-        } else {
-            return 1;
         }
+
+        return 1;
     }
 
     return 0;
@@ -1566,7 +1567,6 @@ void do_onion_client(Onion_Client *onion_c)
         if (onion_c->onion_connected < ONION_CONNECTION_SECONDS * 2) {
             ++onion_c->onion_connected;
         }
-
     } else {
         populate_path_nodes_tcp(onion_c);
 

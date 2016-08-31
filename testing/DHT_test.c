@@ -98,7 +98,6 @@ void print_assoc(IPPTsPng *assoc, uint8_t ours)
 
     printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
     print_hardening(&assoc->hardening);
-
 }
 
 void print_clientlist(DHT *dht)

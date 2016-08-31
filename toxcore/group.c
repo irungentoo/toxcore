@@ -320,7 +320,6 @@ static unsigned int pk_in_closest_peers(Group_c *g, uint8_t *real_pk)
         if (public_key_cmp(g->closest_peers[i].real_pk, real_pk) == 0) {
             return 1;
         }
-
     }
 
     return 0;
@@ -983,10 +982,10 @@ int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber)
 
     if (send_group_invite_packet(g_c->m, friendnumber, invite, sizeof(invite))) {
         return 0;
-    } else {
-        wipe_group_chat(g_c, groupnumber);
-        return -1;
     }
+
+    wipe_group_chat(g_c, groupnumber);
+    return -1;
 }
 
 static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t group_num);
@@ -1051,10 +1050,10 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type
 
         send_peer_query(g_c, friendcon_id, other_groupnum);
         return groupnumber;
-    } else {
-        g->status = GROUPCHAT_STATUS_NONE;
-        return -1;
     }
+
+    g->status = GROUPCHAT_STATUS_NONE;
+    return -1;
 }
 
 /* Set the callback for group invites.
@@ -1193,9 +1192,9 @@ int group_ping_send(const Group_Chats *g_c, int groupnumber)
 {
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, 0, 0)) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 #define GROUP_MESSAGE_NEW_PEER_ID 16
@@ -1216,9 +1215,9 @@ int group_new_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_n
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NEW_PEER_ID, packet, sizeof(packet))) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 #define GROUP_MESSAGE_KILL_PEER_ID 17
@@ -1237,9 +1236,9 @@ static int group_kill_peer_send(const Group_Chats *g_c, int groupnumber, uint16_
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_KILL_PEER_ID, packet, sizeof(packet))) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 #define GROUP_MESSAGE_NAME_ID 48
@@ -1256,9 +1255,9 @@ static int group_name_send(const Group_Chats *g_c, int groupnumber, const uint8_
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NAME_ID, nick, nick_len)) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 #define GROUP_MESSAGE_TITLE_ID 49
@@ -1293,9 +1292,9 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_TITLE_ID, title, title_len)) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* Get group title from groupnumber and put it in title.
@@ -1878,9 +1877,9 @@ int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *m
 {
     if (send_message_group(g_c, groupnumber, PACKET_ID_MESSAGE, message, length)) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* send a group action
@@ -1891,9 +1890,9 @@ int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *ac
 {
     if (send_message_group(g_c, groupnumber, PACKET_ID_ACTION, action, length)) {
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* High level function to send custom lossy packets.

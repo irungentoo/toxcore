@@ -455,16 +455,16 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
 
         if (direct_connected) {
             return CONNECTION_UDP;
-        } else {
-            if (num_online_relays) {
-                return CONNECTION_TCP;
-            } else {
-                return CONNECTION_UNKNOWN;
-            }
         }
-    } else {
-        return CONNECTION_NONE;
+
+        if (num_online_relays) {
+            return CONNECTION_TCP;
+        }
+
+        return CONNECTION_UNKNOWN;
     }
+
+    return CONNECTION_NONE;
 }
 
 int m_friend_exists(const Messenger *m, int32_t friendnumber)
@@ -906,9 +906,9 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
     if (ret == CONNECTION_UNKNOWN) {
         if (last_connection_udp_tcp == CONNECTION_UDP) {
             return;
-        } else {
-            ret = CONNECTION_TCP;
         }
+
+        ret = CONNECTION_TCP;
     }
 
     if (last_connection_udp_tcp != ret) {
@@ -1276,9 +1276,9 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
             if (!(ft->paused & FILE_PAUSE_US)) {
                 if (ft->paused & FILE_PAUSE_OTHER) {
                     return -6;
-                } else {
-                    return -7;
                 }
+
+                return -7;
             }
         } else {
             if (ft->status != FILESTATUS_NOT_ACCEPTED) {
@@ -1481,7 +1481,6 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     }
 
     return -6;
-
 }
 
 /* Give the number of bytes left to be sent/received.
@@ -1504,14 +1503,14 @@ uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t fi
 
         return m->friendlist[friendnumber].file_sending[filenumber].size -
                m->friendlist[friendnumber].file_sending[filenumber].transferred;
-    } else {
-        if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE) {
-            return 0;
-        }
-
-        return m->friendlist[friendnumber].file_receiving[filenumber].size -
-               m->friendlist[friendnumber].file_receiving[filenumber].transferred;
     }
+
+    if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE) {
+        return 0;
+    }
+
+    return m->friendlist[friendnumber].file_receiving[filenumber].size -
+           m->friendlist[friendnumber].file_receiving[filenumber].transferred;
 }
 
 static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
@@ -1593,7 +1592,6 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
             }
 
             --free_slots;
-
         }
 
         if (num == 0) {
@@ -1686,7 +1684,6 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
         if (receive_send) {
             --m->friendlist[friendnumber].num_sending_files;
         }
-
     } else if (control_type == FILECONTROL_SEEK) {
         uint64_t position;
 
@@ -1816,9 +1813,9 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
     if (send_lossy_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                                m->friendlist[friendnumber].friendcon_id), data, length) == -1) {
         return -5;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 static int handle_custom_lossless_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length)
@@ -1876,9 +1873,9 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     if (write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                           m->friendlist[friendnumber].friendcon_id), data, length, 1) == -1) {
         return -5;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 /* Function to filter out some friend requests*/
@@ -2462,9 +2459,9 @@ uint32_t messenger_run_interval(const Messenger *m)
 
     if (crypto_interval > MIN_RUN_INTERVAL) {
         return MIN_RUN_INTERVAL;
-    } else {
-        return crypto_interval;
     }
+
+    return crypto_interval;
 }
 
 /* The main loop that needs to be run at least 20 times per second. */
@@ -2954,9 +2951,9 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL)) {
         return load_state(messenger_load_state_callback, m, data + cookie_len,
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* Return the number of friends in the instance m.

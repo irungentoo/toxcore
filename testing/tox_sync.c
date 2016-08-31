@@ -173,7 +173,6 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, 0)) {
         printf("Accepted file transfer. (file: %s)\n", fullpath);
     }
-
 }
 
 void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
@@ -323,7 +322,6 @@ int main(int argc, char *argv[])
                 }
 
                 closedir(d);
-
             } else {
                 printf("\nFailed to open directory.\n");
                 return 1;

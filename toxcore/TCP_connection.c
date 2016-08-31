@@ -256,7 +256,9 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
 
     if (ret == 1) {
         return 0;
-    } else if (!limit_reached) {
+    }
+
+    if (!limit_reached) {
         ret = 0;
 
         /* Send oob packets to all relays tied to the connection. */
@@ -280,12 +282,12 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
 
         if (ret >= 1) {
             return 0;
-        } else {
-            return -1;
         }
-    } else {
+
         return -1;
     }
+
+    return -1;
 }
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
@@ -527,7 +529,7 @@ int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number,
     }
 
     if (status) {
-        /* Conection is unsleeping. */
+        /* Connection is unsleeping. */
         if (con_to->status != TCP_CONN_SLEEPING) {
             return -1;
         }
@@ -551,32 +553,32 @@ int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number,
 
         con_to->status = TCP_CONN_VALID;
         return 0;
-    } else {
-        /* Conection is going to sleep. */
-        if (con_to->status != TCP_CONN_VALID) {
-            return -1;
-        }
+    }
 
-        unsigned int i;
+    /* Connection is going to sleep. */
+    if (con_to->status != TCP_CONN_VALID) {
+        return -1;
+    }
 
-        for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
-            if (con_to->connections[i].tcp_connection) {
-                unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
-                TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
+    unsigned int i;
 
-                if (!tcp_con) {
-                    continue;
-                }
+    for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
+        if (con_to->connections[i].tcp_connection) {
+            unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
+            TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
-                if (con_to->connections[i].status == TCP_CONNECTIONS_STATUS_ONLINE) {
-                    ++tcp_con->sleep_count;
-                }
+            if (!tcp_con) {
+                continue;
+            }
+
+            if (con_to->connections[i].status == TCP_CONNECTIONS_STATUS_ONLINE) {
+                ++tcp_con->sleep_count;
             }
         }
-
-        con_to->status = TCP_CONN_SLEEPING;
-        return 0;
     }
+
+    con_to->status = TCP_CONN_SLEEPING;
+    return 0;
 }
 
 static _Bool tcp_connection_in_conn(TCP_Connection_to *con_to, unsigned int tcp_connections_number)
@@ -980,10 +982,10 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
 
     if (con_to && tcp_connection_in_conn(con_to, tcp_connections_number)) {
         return tcp_data_callback(object, connections_number, 0, data, length, userdata);
-    } else {
-        if (tcp_c->tcp_oob_callback) {
-            tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
-        }
+    }
+
+    if (tcp_c->tcp_oob_callback) {
+        tcp_c->tcp_oob_callback(tcp_c->tcp_oob_callback_object, public_key, tcp_connections_number, data, length);
     }
 
     return 0;
@@ -1086,7 +1088,6 @@ static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const
 
     TCP_con *tcp_con = &tcp_c->tcp_connections[tcp_connections_number];
 
-
     tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key,
                           &tcp_c->proxy_info);
 
@@ -1174,25 +1175,25 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
 
     if (tcp_connections_number != -1) {
         return add_tcp_number_relay_connection(tcp_c, connections_number, tcp_connections_number);
-    } else {
-        if (online_tcp_connection_from_conn(con_to) >= RECOMMENDED_FRIEND_TCP_CONNECTIONS) {
-            return -1;
-        }
-
-        int tcp_connections_number = add_tcp_relay_instance(tcp_c, ip_port, relay_pk);
-
-        TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
-
-        if (!tcp_con) {
-            return -1;
-        }
-
-        if (add_tcp_connection_to_conn(con_to, tcp_connections_number) == -1) {
-            return -1;
-        }
-
-        return 0;
     }
+
+    if (online_tcp_connection_from_conn(con_to) >= RECOMMENDED_FRIEND_TCP_CONNECTIONS) {
+        return -1;
+    }
+
+    tcp_connections_number = add_tcp_relay_instance(tcp_c, ip_port, relay_pk);
+
+    TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
+
+    if (!tcp_con) {
+        return -1;
+    }
+
+    if (add_tcp_connection_to_conn(con_to, tcp_connections_number) == -1) {
+        return -1;
+    }
+
+    return 0;
 }
 
 /* return number of online tcp relays tied to the connection on success.
@@ -1406,12 +1407,12 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
 
     if (num_online <= RECOMMENDED_FRIEND_TCP_CONNECTIONS) {
         return;
-    } else {
-        unsigned int n = num_online - RECOMMENDED_FRIEND_TCP_CONNECTIONS;
+    }
 
-        if (n < num_kill) {
-            num_kill = n;
-        }
+    unsigned int n = num_online - RECOMMENDED_FRIEND_TCP_CONNECTIONS;
+
+    if (n < num_kill) {
+        num_kill = n;
     }
 
     for (i = 0; i < num_kill; ++i) {
@@ -1437,5 +1438,3 @@ void kill_tcp_connections(TCP_Connections *tcp_c)
     free(tcp_c->connections);
     free(tcp_c);
 }
-
-

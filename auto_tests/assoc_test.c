@@ -101,7 +101,6 @@ START_TEST(test_fillup)
         if (j % 16 == 0) {
             memcpy(entries[j].id, id, crypto_box_PUBLICKEYBYTES - 30);
             memcpy(&closest[j / 16], &entries[j], sizeof(struct entry));
-
         }
 
         uint8_t res = Assoc_add_entry(assoc, entries[j].id, &entries[j].ippts_send, &entries[j].ipp_recv, 1);

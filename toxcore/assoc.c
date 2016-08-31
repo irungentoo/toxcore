@@ -272,11 +272,13 @@ static IP_Port *entry_heard_get(Client_entry *entry, const IP_Port *ipp)
 {
     if (ipp->ip.family == AF_INET) {
         return &entry->assoc_heard4;
-    } else if (ipp->ip.family == AF_INET6) {
-        return &entry->assoc_heard6;
-    } else {
-        return NULL;
     }
+
+    if (ipp->ip.family == AF_INET6) {
+        return &entry->assoc_heard6;
+    }
+
+    return NULL;
 }
 
 /* store a "heard" entry
@@ -629,13 +631,13 @@ uint8_t Assoc_add_entry(Assoc *assoc, const uint8_t *id, const IPPTs *ippts_send
     if (!candidates_search(assoc, id, hash, &cnd_entry)) {
         if (candidates_create_new(assoc, hash, id, used, ippts_send, ipp_recv)) {
             return 1;
-        } else {
-            return 0;
         }
-    } else {
-        candidates_update_assoc(assoc, cnd_entry, used, ippts_send, ipp_recv);
-        return 2;
+
+        return 0;
     }
+
+    candidates_update_assoc(assoc, cnd_entry, used, ippts_send, ipp_recv);
+    return 2;
 }
 
 /*****************************************************************************/

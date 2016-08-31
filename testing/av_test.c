@@ -76,7 +76,6 @@ typedef struct {
     uint32_t state;
     pthread_mutex_t arb_mutex[1];
     RingBuffer *arb; /* Audio ring buffer */
-
 } CallControl;
 
 struct toxav_thread_data {

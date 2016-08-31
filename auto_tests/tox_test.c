@@ -614,12 +614,11 @@ START_TEST(test_few_clients)
         tox_iterate(tox2, &to_compare);
         tox_iterate(tox3, &to_compare);
 
-
         if (typing_changes == 2) {
             break;
-        } else {
-            ck_assert_msg(typing_changes == 0, "Typing fail");
         }
+
+        ck_assert_msg(typing_changes == 0, "Typing fail");
 
         c_sleep(50);
     }
@@ -635,9 +634,9 @@ START_TEST(test_few_clients)
 
         if (typing_changes == 1) {
             break;
-        } else {
-            ck_assert_msg(typing_changes == 0, "Typing fail");
         }
+
+        ck_assert_msg(typing_changes == 0, "Typing fail");
 
         c_sleep(50);
     }
@@ -663,9 +662,9 @@ START_TEST(test_few_clients)
 
         if (custom_packet == 1) {
             break;
-        } else {
-            ck_assert_msg(custom_packet == 0, "Lossless packet fail");
         }
+
+        ck_assert_msg(custom_packet == 0, "Lossless packet fail");
 
         c_sleep(50);
     }
@@ -686,9 +685,9 @@ START_TEST(test_few_clients)
 
         if (custom_packet == 1) {
             break;
-        } else {
-            ck_assert_msg(custom_packet == 0, "lossy packet fail");
         }
+
+        ck_assert_msg(custom_packet == 0, "lossy packet fail");
 
         c_sleep(50);
     }
@@ -725,11 +724,11 @@ START_TEST(test_few_clients)
             if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
                     && file_accepted == 1) {
                 break;
-            } else {
-                ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
-                             totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1, totalf_size, size_recv,
-                             sending_pos);
             }
+
+            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
+                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1, totalf_size, size_recv,
+                         sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -772,12 +771,12 @@ START_TEST(test_few_clients)
             if (sendf_ok && file_recv && m_send_reached && totalf_size == file_size && size_recv == max_sending
                     && sending_pos == size_recv && file_accepted == 1) {
                 break;
-            } else {
-                ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %u %llu %llu %llu %llu", sendf_ok, file_recv,
-                             m_send_reached, totalf_size == file_size, size_recv == max_sending, sending_pos == size_recv, file_accepted == 1,
-                             totalf_size, file_size,
-                             size_recv, sending_pos);
             }
+
+            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %u %llu %llu %llu %llu", sendf_ok, file_recv,
+                         m_send_reached, totalf_size == file_size, size_recv == max_sending, sending_pos == size_recv, file_accepted == 1,
+                         totalf_size, file_size,
+                         size_recv, sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -806,7 +805,6 @@ START_TEST(test_few_clients)
     ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
-
     while (1) {
         tox_iterate(tox1, &to_compare);
         tox_iterate(tox2, &to_compare);
@@ -816,11 +814,11 @@ START_TEST(test_few_clients)
             if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
                     && file_accepted == 1) {
                 break;
-            } else {
-                ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
-                             totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1, totalf_size, size_recv,
-                             sending_pos);
             }
+
+            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
+                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1, totalf_size, size_recv,
+                         sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -1013,7 +1011,6 @@ loop_top:
                     ++counter;
                 }
             }
-
         }
 
         if (counter == NUM_FRIENDS * 2) {

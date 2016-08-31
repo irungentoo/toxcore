@@ -325,7 +325,6 @@ static int send_pending_data_nonpriority(TCP_Secure_Connection *con)
 
     con->last_packet_sent += len;
     return -1;
-
 }
 
 /* return 0 if pending data was sent completely
@@ -620,9 +619,9 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
             if (public_key_cmp(public_key, con->connections[i].public_key) == 0) {
                 if (send_routing_response(con, i + NUM_RESERVED_PORTS, public_key) == -1) {
                     return -1;
-                } else {
-                    return 0;
                 }
+
+                return 0;
             }
         } else if (index == (uint32_t)~0) {
             index = i;
@@ -737,9 +736,9 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
         con->connections[con_number].other_id = 0;
         con->connections[con_number].status = 0;
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
@@ -830,9 +829,9 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
                 }
 
                 return 0;
-            } else {
-                return -1;
             }
+
+            return -1;
         }
 
         case TCP_PACKET_OOB_SEND: {
@@ -1132,12 +1131,14 @@ static int do_unconfirmed(TCP_Server *TCP_server, uint32_t i)
 
     if (len == 0) {
         return -1;
-    } else if (len == -1) {
+    }
+
+    if (len == -1) {
         kill_TCP_connection(conn);
         return -1;
-    } else {
-        return confirm_TCP_connection(TCP_server, conn, packet, len);
     }
+
+    return confirm_TCP_connection(TCP_server, conn, packet, len);
 }
 
 static void do_confirmed_recv(TCP_Server *TCP_server, uint32_t i)

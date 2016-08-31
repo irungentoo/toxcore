@@ -1087,7 +1087,6 @@ ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, TOXAV_ERR_CALL *error)
         }
 
         av->calls_tail = av->calls_head = friend_number;
-
     } else if (av->calls_tail < friend_number) { /* Appending */
         void *tmp = realloc(av->calls, sizeof(ToxAVCall *) * (friend_number + 1));
 
@@ -1111,7 +1110,6 @@ ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, TOXAV_ERR_CALL *error)
         av->calls[av->calls_tail]->next = call;
 
         av->calls_tail = friend_number;
-
     } else if (av->calls_head > friend_number) { /* Inserting at front */
         call->next = av->calls[av->calls_head];
         av->calls[av->calls_head]->prev = call;

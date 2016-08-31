@@ -379,10 +379,10 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
     if (count) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+    return 0;
 }
 
 bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key,
@@ -436,10 +436,10 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
     if (count) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+    return 0;
 }
 
 TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
@@ -450,11 +450,13 @@ TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
 
     if (ret == 2) {
         return TOX_CONNECTION_UDP;
-    } else if (ret == 1) {
-        return TOX_CONNECTION_TCP;
-    } else {
-        return TOX_CONNECTION_NONE;
     }
+
+    if (ret == 1) {
+        return TOX_CONNECTION_TCP;
+    }
+
+    return TOX_CONNECTION_NONE;
 }
 
 
@@ -529,10 +531,10 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET
         send_name_all_groups(m->group_chat_object);
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
+    return 0;
 }
 
 size_t tox_self_get_name_size(const Tox *tox)
@@ -561,10 +563,10 @@ bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t
     if (m_set_statusmessage(m, status_message, length) == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
+    return 0;
 }
 
 size_t tox_self_get_status_message_size(const Tox *tox)
@@ -623,7 +625,6 @@ static void set_friend_error(int32_t ret, TOX_ERR_FRIEND_ADD *error)
         case FAERR_NOMEM:
             SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_MALLOC);
             break;
-
     }
 }
 
@@ -1095,7 +1096,9 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_OK);
         return 1;
-    } else if (ret == -1) {
+    }
+
+    if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_FRIEND_NOT_FOUND);
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NOT_FOUND);
@@ -1268,9 +1271,9 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
 
     if (ret == 0) {
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *callback, void *user_data)
@@ -1300,9 +1303,9 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
 
     if (ret == 0) {
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *callback, void *user_data)
@@ -1340,8 +1343,8 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
     if (m->tcp_server) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
         return m->options.tcp_server_port;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+    return 0;
 }

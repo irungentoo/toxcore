@@ -315,7 +315,7 @@ bool tox_is_data_encrypted(const uint8_t *data)
 {
     if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }

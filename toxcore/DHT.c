@@ -195,12 +195,14 @@ int to_host_family(IP *ip)
     if (ip->family == TOX_AF_INET) {
         ip->family = AF_INET;
         return 0;
-    } else if (ip->family == TOX_AF_INET6) {
+    }
+
+    if (ip->family == TOX_AF_INET6) {
         ip->family = AF_INET6;
         return 0;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 #define PACKED_NODE_SIZE_IP4 (1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
@@ -213,15 +215,21 @@ int packed_node_size(uint8_t ip_family)
 {
     if (ip_family == AF_INET) {
         return PACKED_NODE_SIZE_IP4;
-    } else if (ip_family == TCP_INET) {
-        return PACKED_NODE_SIZE_IP4;
-    } else if (ip_family == AF_INET6) {
-        return PACKED_NODE_SIZE_IP6;
-    } else if (ip_family == TCP_INET6) {
-        return PACKED_NODE_SIZE_IP6;
-    } else {
-        return -1;
     }
+
+    if (ip_family == TCP_INET) {
+        return PACKED_NODE_SIZE_IP4;
+    }
+
+    if (ip_family == AF_INET6) {
+        return PACKED_NODE_SIZE_IP6;
+    }
+
+    if (ip_family == TCP_INET6) {
+        return PACKED_NODE_SIZE_IP6;
+    }
+
+    return -1;
 }
 
 
@@ -434,7 +442,9 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
             /* kill the other address, if it was set */
             memset(&list[i].assoc6, 0, sizeof(list[i].assoc6));
             return 1;
-        } else if ((ip_port.ip.family == AF_INET6) && ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
+        }
+
+        if ((ip_port.ip.family == AF_INET6) && ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
             /* Initialize client timestamp. */
             list[i].assoc6.timestamp = temp_time;
             memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
@@ -739,9 +749,9 @@ static unsigned int store_node_ok(const Client_data *client, const uint8_t *publ
     if ((is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
             || (id_closest(comp_public_key, client->public_key, public_key) == 2)) {
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 static void sort_client_list(Client_data *list, unsigned int length, const uint8_t *comp_public_key)
@@ -1677,9 +1687,9 @@ int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
         }
 
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 /* Send the given packet to node with public_key
@@ -1696,11 +1706,13 @@ int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packe
 
             if (ip_isset(&client->assoc6.ip_port.ip)) {
                 return sendpacket(dht->net, client->assoc6.ip_port, packet, length);
-            } else if (ip_isset(&client->assoc4.ip_port.ip)) {
-                return sendpacket(dht->net, client->assoc4.ip_port, packet, length);
-            } else {
-                break;
             }
+
+            if (ip_isset(&client->assoc4.ip_port.ip)) {
+                return sendpacket(dht->net, client->assoc4.ip_port, packet, length);
+            }
+
+            break;
         }
     }
 
@@ -1955,7 +1967,9 @@ static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pu
         send_NATping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
         friend->nat.recvNATping_timestamp = unix_time();
         return 0;
-    } else if (packet[0] == NAT_PING_RESPONSE) {
+    }
+
+    if (packet[0] == NAT_PING_RESPONSE) {
         if (friend->nat.NATping_id == ping_id) {
             friend->nat.NATping_id = random_64b();
             friend->nat.hole_punching = 1;
@@ -2186,7 +2200,9 @@ static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, sa_
 
         if (sa_family == AF_INET) {
             return &dht->close_clientlist[i].assoc4;
-        } else if (sa_family == AF_INET6) {
+        }
+
+        if (sa_family == AF_INET6) {
             return &dht->close_clientlist[i].assoc6;
         }
     }
@@ -2319,9 +2335,9 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
 
     if (num_nodes == 0) {
         return nodes_list[0];
-    } else {
-        return nodes_list[rand() % num_nodes];
     }
+
+    return nodes_list[rand() % num_nodes];
 }
 
 /* Put up to max_num nodes in nodes from the closelist.
@@ -2488,13 +2504,13 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
             return dht->cryptopackethandlers[number].function(dht->cryptopackethandlers[number].object, source, public_key,
                     data, len);
+        }
 
-        } else { /* If request is not for us, try routing it. */
-            int retval = route_packet(dht, packet + 1, packet, length);
+        /* If request is not for us, try routing it. */
+        int retval = route_packet(dht, packet + 1, packet, length);
 
-            if ((unsigned int)retval == length) {
-                return 0;
-            }
+        if ((unsigned int)retval == length) {
+            return 0;
         }
     }
 
@@ -2747,7 +2763,6 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
                 } else {
                     dht->loaded_num_nodes = 0;
                 }
-
             } /* localize declarations */
 
             break;
@@ -2824,7 +2839,6 @@ int DHT_non_lan_connected(const DHT *dht)
         if (!is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT) && LAN_ip(client->assoc6.ip_port.ip) == -1) {
             return 1;
         }
-
     }
 
     return 0;

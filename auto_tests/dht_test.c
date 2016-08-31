@@ -404,10 +404,10 @@ void test_add_to_list(uint8_t cmp_list[][crypto_box_PUBLICKEYBYTES + 1], unsigne
             memcpy(cmp_list[i], pk, crypto_box_PUBLICKEYBYTES);
             cmp_list[i][crypto_box_PUBLICKEYBYTES] = 1;
             return;
-        } else {
-            if (memcmp(cmp_list[i], pk, crypto_box_PUBLICKEYBYTES) == 0) {
-                return;
-            }
+        }
+
+        if (memcmp(cmp_list[i], pk, crypto_box_PUBLICKEYBYTES) == 0) {
+            return;
         }
     }
 
@@ -557,8 +557,6 @@ END_TEST
 
 void ip_callback(void *data, int32_t number, IP_Port ip_port)
 {
-
-
 }
 
 

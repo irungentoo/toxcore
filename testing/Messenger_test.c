@@ -146,7 +146,6 @@ int main(int argc, char *argv[])
         read = fread(buffer, 1, 128000, file);
         printf("Messenger loaded: %i\n", messenger_load(m, buffer, read));
         fclose(file);
-
     }
 
     m_callback_friendrequest(m, print_request, NULL);

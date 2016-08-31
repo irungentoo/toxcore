@@ -269,9 +269,9 @@ static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_por
 
     if (friend_con->crypt_connection_id != -1) {
         return friend_add_tcp_relay(fr_c, number, ip_port, public_key);
-    } else {
-        return add_tcp_relay(fr_c->net_crypto, ip_port, public_key);
     }
+
+    return add_tcp_relay(fr_c->net_crypto, ip_port, public_key);
 }
 
 static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id);
@@ -411,10 +411,14 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
         }
 
         return 0;
-    } else if (data[0] == PACKET_ID_ALIVE) {
+    }
+
+    if (data[0] == PACKET_ID_ALIVE) {
         friend_con->ping_lastrecv = unix_time();
         return 0;
-    } else if (data[0] == PACKET_ID_SHARE_RELAYS) {
+    }
+
+    if (data[0] == PACKET_ID_SHARE_RELAYS) {
         Node_format nodes[MAX_SHARED_RELAYS];
         int n;
 
@@ -795,16 +799,16 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
     if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
         packet[0] = PACKET_ID_FRIEND_REQUESTS;
         return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, sizeof(packet), 0) != -1;
-    } else {
-        packet[0] = CRYPTO_PACKET_FRIEND_REQ;
-        int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
-
-        if (num <= 0) {
-            return -1;
-        }
-
-        return num;
     }
+
+    packet[0] = CRYPTO_PACKET_FRIEND_REQ;
+    int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
+
+    if (num <= 0) {
+        return -1;
+    }
+
+    return num;
 }
 
 /* Create new friend_connections instance. */
@@ -867,7 +871,6 @@ void do_friend_connections(Friend_Connections *fr_c)
                         connect_to_saved_tcp_relays(fr_c, i, (MAX_FRIEND_TCP_CONNECTIONS / 2)); /* Only fill it half up. */
                     }
                 }
-
             } else if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
                 if (friend_con->ping_lastsent + FRIEND_PING_INTERVAL < temp_time) {
                     send_ping(fr_c, i);

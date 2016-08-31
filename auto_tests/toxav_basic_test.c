@@ -49,7 +49,6 @@
 typedef struct {
     bool incoming;
     uint32_t state;
-
 } CallControl;
 
 

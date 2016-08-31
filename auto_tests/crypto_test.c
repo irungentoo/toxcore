@@ -131,7 +131,6 @@ START_TEST(test_fast_known)
 
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
-
 }
 END_TEST
 
