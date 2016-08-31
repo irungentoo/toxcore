@@ -50,6 +50,8 @@
 #ifdef __APPLE__
 #include <sched.h>
 #define pthread_yield sched_yield
+#else
+#include <pthread.h>
 #endif
 
 #define c_sleep(x) usleep(1000*x)
