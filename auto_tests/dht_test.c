@@ -5,8 +5,8 @@
 #include <sys/param.h>
 #include <time.h>
 
-#include "../toxcore/tox.h"
 #include "../toxcore/DHT.c"
+#include "../toxcore/tox.h"
 
 #include "helpers.h"
 

@@ -25,9 +25,9 @@
 #ifndef FRIEND_CONNECTION_H
 #define FRIEND_CONNECTION_H
 
-#include "net_crypto.h"
 #include "DHT.h"
 #include "LAN_discovery.h"
+#include "net_crypto.h"
 #include "onion_client.h"
 
 

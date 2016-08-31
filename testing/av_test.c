@@ -24,9 +24,9 @@
 
 
 #include "../toxav/toxav.h"
+#include "../toxcore/network.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-#include "../toxcore/network.h" /* current_time_monotonic() */
 
 /* Playing audio data */
 #include <portaudio.h>
@@ -35,16 +35,16 @@
 
 /* Reading and Displaying video data */
 #include <opencv/cv.h>
-#include <opencv/highgui.h>
 #include <opencv/cvwimage.h>
+#include <opencv/highgui.h>
 
-#include <sys/stat.h>
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
-#include <errno.h>
+#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef __APPLE__

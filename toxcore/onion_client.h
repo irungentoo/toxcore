@@ -24,8 +24,8 @@
 #ifndef ONION_CLIENT_H
 #define ONION_CLIENT_H
 
-#include "onion_announce.h"
 #include "net_crypto.h"
+#include "onion_announce.h"
 #include "ping_array.h"
 
 #define MAX_ONION_CLIENTS 8

@@ -2,11 +2,11 @@
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <stdint.h>
-#include <string.h>
 #include <check.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include "../toxcore/onion.h"

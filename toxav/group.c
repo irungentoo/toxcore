@@ -22,9 +22,9 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "group.h"
-#include "../toxcore/util.h"
 #include "../toxcore/logger.h"
+#include "../toxcore/util.h"
+#include "group.h"
 
 #define GROUP_JBUF_SIZE 6
 #define GROUP_JBUF_DEAD_SECONDS 4

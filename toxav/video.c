@@ -23,12 +23,12 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
-#include "video.h"
 #include "msi.h"
 #include "rtp.h"
+#include "video.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/network.h"

@@ -25,9 +25,9 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <pthread.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }

@@ -33,8 +33,8 @@
 #include "ping.h"
 
 #include "network.h"
-#include "util.h"
 #include "ping_array.h"
+#include "util.h"
 
 #define PING_NUM_MAX 512
 

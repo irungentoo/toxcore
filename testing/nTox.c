@@ -29,21 +29,21 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #endif
 
 #include <sys/select.h>
 
-#include "nTox.h"
 #include "misc_tools.c"
+#include "nTox.h"
 
+#include <locale.h>
 #include <stdio.h>
 #include <time.h>
-#include <locale.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)

@@ -25,15 +25,16 @@
 #define NETWORK_H
 
 #ifdef PLAN9
-#include <u.h> //Plan 9 requires this is imported first
+#include <u.h> // Plan 9 requires this is imported first
+// Comment line here to avoid reordering by source code formatters.
 #include <libc.h>
 #endif
 
 #include "logger.h"
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -42,8 +43,8 @@
 //Windows XP
 #define WINVER 0x0501
 #endif
-#include <winsock2.h>
 #include <windows.h>
+#include <winsock2.h>
 #include <ws2tcpip.h>
 
 #ifndef IPV6_V6ONLY
@@ -60,14 +61,14 @@ typedef short sa_family_t;
 
 #else // Linux includes
 
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <netdb.h>
 #include <unistd.h>
 
 typedef int sock_t;

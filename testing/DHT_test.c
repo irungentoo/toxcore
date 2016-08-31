@@ -44,8 +44,8 @@
 #define c_sleep(x) Sleep(1*x)
 
 #else
-#include <unistd.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #define c_sleep(x) usleep(1000*x)
 
 #endif

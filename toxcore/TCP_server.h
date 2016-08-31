@@ -24,8 +24,8 @@
 #define TCP_SERVER_H
 
 #include "crypto_core.h"
-#include "onion.h"
 #include "list.h"
+#include "onion.h"
 
 #ifdef TCP_SERVER_USE_EPOLL
 #include "sys/epoll.h"

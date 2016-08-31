@@ -23,14 +23,14 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "rtp.h"
-#include "bwcontroller.h"
+#include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-#include "../toxcore/Messenger.h"
+#include "bwcontroller.h"
+#include "rtp.h"
 
-#include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 
 int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);

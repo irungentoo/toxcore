@@ -33,8 +33,8 @@
 
 // toxcore
 #include "../../../toxcore/LAN_discovery.h"
-#include "../../../toxcore/onion_announce.h"
 #include "../../../toxcore/TCP_server.h"
+#include "../../../toxcore/onion_announce.h"
 #include "../../../toxcore/util.h"
 
 // misc

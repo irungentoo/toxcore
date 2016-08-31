@@ -25,14 +25,14 @@
 #include "config.h"
 #endif
 
-#include "toxencryptsave.h"
-#include "defines.h"
 #include "../toxcore/crypto_core.h"
+#include "defines.h"
+#include "toxencryptsave.h"
 #define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
 
 #ifdef VANILLA_NACL
-#include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #include <crypto_hash_sha256.h>
+#include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #endif
 
 #if TOX_PASS_SALT_LENGTH != crypto_pwhash_scryptsalsa208sha256_SALTBYTES

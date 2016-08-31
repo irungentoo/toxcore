@@ -2,19 +2,19 @@
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <stdint.h>
-#include <string.h>
 #include <check.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include "helpers.h"
 
 #include "../toxcore/tox.h"
 
-#include "../toxencryptsave/toxencryptsave.h"
 #include "../toxcore/crypto_core.h"
+#include "../toxencryptsave/toxencryptsave.h"
 #ifdef VANILLA_NACL
 #include "../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #endif

@@ -40,8 +40,8 @@
 #else
 #include <pty.h>
 #endif
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #define c_sleep(x) usleep(1000*x)
 

@@ -24,9 +24,9 @@
 #include "config.h"
 #endif
 
+#include "LAN_discovery.h"
 #include "onion_client.h"
 #include "util.h"
-#include "LAN_discovery.h"
 
 /* defines for the array size and
    timeout for onion announce packets. */

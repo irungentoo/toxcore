@@ -3,9 +3,9 @@
 #include "config.h"
 #endif
 
-#include "logger.h"
 #include "DHT.h"
 #include "assoc.h"
+#include "logger.h"
 #include "ping.h"
 
 #include "LAN_discovery.h"

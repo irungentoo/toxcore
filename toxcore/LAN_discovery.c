@@ -30,9 +30,9 @@
 
 /* Used for get_broadcast(). */
 #ifdef __linux
-#include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <linux/netdevice.h>
+#include <sys/ioctl.h>
 #endif
 
 #define MAX_INTERFACES 16

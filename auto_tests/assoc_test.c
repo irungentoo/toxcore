@@ -7,9 +7,9 @@
 #include "../toxcore/assoc.h"
 #include "../toxcore/util.h"
 
-#include <sys/types.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include <check.h>
 

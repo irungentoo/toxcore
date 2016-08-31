@@ -24,9 +24,9 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <assert.h>
-#include "bwcontroller.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+#include "bwcontroller.h"
 
 #define BWC_PACKET_ID 196
 #define BWC_SEND_INTERVAL_MS 1000

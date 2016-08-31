@@ -22,8 +22,8 @@
 #ifndef RTP_H
 #define RTP_H
 
-#include "bwcontroller.h"
 #include "../toxcore/Messenger.h"
+#include "bwcontroller.h"
 #include "stdbool.h"
 
 /**

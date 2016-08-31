@@ -38,10 +38,10 @@
 #include <unistd.h>
 #define c_sleep(x) usleep(1000*x)
 
-#include <dirent.h>
-#include <stdio.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <dirent.h>
+#include <netinet/in.h>
+#include <stdio.h>
 
 #define NUM_FILE_SENDERS 256
 typedef struct {

@@ -25,9 +25,9 @@
 #include <inttypes.h>
 #include <pthread.h>
 
+#include "../toxcore/Messenger.h"
 #include "audio.h"
 #include "video.h"
-#include "../toxcore/Messenger.h"
 
 /**
  * Error codes.

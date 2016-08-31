@@ -14,13 +14,13 @@
 #include "config.h"
 #endif
 
+#include <check.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/param.h>
 #include <sys/types.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <check.h>
-#include <stdlib.h>
 #include <time.h>
 
 #include "../toxcore/tox.h"

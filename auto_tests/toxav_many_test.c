@@ -12,26 +12,26 @@
 #   include "helpers.h"
 #endif
 
-#include <sys/types.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include <vpx/vpx_image.h>
 
+#include "../toxav/toxav.h"
+#include "../toxcore/crypto_core.h"
+#include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-#include "../toxcore/logger.h"
-#include "../toxcore/crypto_core.h"
-#include "../toxav/toxav.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #define c_sleep(x) Sleep(1*x)
 #else
-#include <unistd.h>
 #include <pthread.h>
+#include <unistd.h>
 #define c_sleep(x) usleep(1000*x)
 #endif
 

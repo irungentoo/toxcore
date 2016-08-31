@@ -41,9 +41,9 @@
 
 #include "ping.h"
 
-#include "network.h"
 #include "LAN_discovery.h"
 #include "misc_tools.h"
+#include "network.h"
 #include "util.h"
 
 /* The timeout after which a node is discarded completely. */

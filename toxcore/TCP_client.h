@@ -24,8 +24,8 @@
 #ifndef TCP_CLIENT_H
 #define TCP_CLIENT_H
 
-#include "crypto_core.h"
 #include "TCP_server.h"
+#include "crypto_core.h"
 
 #define TCP_CONNECTION_TIMEOUT 10
 

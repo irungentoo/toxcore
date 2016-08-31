@@ -28,9 +28,9 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #ifndef TOX_DEFINED
 #define TOX_DEFINED

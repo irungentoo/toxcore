@@ -1,8 +1,8 @@
 
 
-#include "../toxdns/toxdns.h"
-#include "../toxcore/tox.h"
 #include "../toxcore/network.h"
+#include "../toxcore/tox.h"
+#include "../toxdns/toxdns.h"
 #include "misc_tools.c"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)

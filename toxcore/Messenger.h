@@ -26,8 +26,8 @@
 #ifndef MESSENGER_H
 #define MESSENGER_H
 
-#include "friend_requests.h"
 #include "friend_connection.h"
+#include "friend_requests.h"
 #include "logger.h"
 
 #define MAX_NAME_LENGTH 128

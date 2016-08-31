@@ -29,9 +29,9 @@
 #include <assert.h>
 #endif
 
-#include "logger.h"
 #include "Messenger.h"
 #include "assoc.h"
+#include "logger.h"
 #include "network.h"
 #include "util.h"
 

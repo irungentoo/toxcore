@@ -26,8 +26,8 @@
 #include "config.h"
 #endif
 
-#include "ping_array.h"
 #include "crypto_core.h"
+#include "ping_array.h"
 #include "util.h"
 
 static void clear_entry(Ping_Array *array, uint32_t index)

@@ -12,20 +12,20 @@
 #   include "helpers.h"
 #endif
 
-#include <sys/types.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include <vpx/vpx_image.h>
 
+#include "../toxav/toxav.h"
+#include "../toxcore/crypto_core.h"
+#include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-#include "../toxcore/logger.h"
-#include "../toxcore/crypto_core.h"
-#include "../toxav/toxav.h"
 
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)

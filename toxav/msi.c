@@ -24,15 +24,15 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "msi.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+#include "msi.h"
 
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 #define MSI_MAXMSG_SIZE 256
 
