@@ -47,10 +47,11 @@
 
 void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
-    if (status)
+    if (status) {
         printf("\nOther went online.\n");
-    else
+    } else {
         printf("\nOther went offline.\n");
+    }
 }
 
 void print_message(Tox *tox, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
@@ -66,8 +67,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = 1; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     /* with optional --ipvx, now it can be 1-4 arguments... */
     if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
@@ -147,8 +149,9 @@ int main(int argc, char *argv[])
             uint8_t buf[TOX_MAX_MESSAGE_LENGTH];
             ret = read(*master, buf, sizeof(buf));
 
-            if (ret <= 0)
+            if (ret <= 0) {
                 break;
+            }
 
             tox_friend_send_message(tox, num, TOX_MESSAGE_TYPE_NORMAL, buf, ret, 0);
         }

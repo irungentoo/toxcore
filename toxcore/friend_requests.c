@@ -60,8 +60,9 @@ void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, v
 /* Add to list of received friend requests. */
 static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 {
-    if (fr->received_requests_index >= MAX_RECEIVED_STORED)
+    if (fr->received_requests_index >= MAX_RECEIVED_STORED) {
         fr->received_requests_index = 0;
+    }
 
     id_copy(fr->received_requests[fr->received_requests_index], real_pk);
     ++fr->received_requests_index;
@@ -76,9 +77,11 @@ static int request_received(Friend_Requests *fr, const uint8_t *real_pk)
 {
     uint32_t i;
 
-    for (i = 0; i < MAX_RECEIVED_STORED; ++i)
-        if (id_equal(fr->received_requests[i], real_pk))
+    for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
+        if (id_equal(fr->received_requests[i], real_pk)) {
             return 1;
+        }
+    }
 
     return 0;
 }
@@ -107,24 +110,30 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
 {
     Friend_Requests *fr = object;
 
-    if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE)
+    if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE) {
         return 1;
+    }
 
     ++packet;
     --length;
 
-    if (fr->handle_friendrequest_isset == 0)
+    if (fr->handle_friendrequest_isset == 0) {
         return 1;
+    }
 
-    if (request_received(fr, source_pubkey))
+    if (request_received(fr, source_pubkey)) {
         return 1;
+    }
 
-    if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0)
+    if (memcmp(packet, &fr->nospam, sizeof(fr->nospam)) != 0) {
         return 1;
+    }
 
-    if (fr->filter_function)
-        if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0)
+    if (fr->filter_function) {
+        if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0) {
             return 1;
+        }
+    }
 
     addto_receivedlist(fr, source_pubkey);
 

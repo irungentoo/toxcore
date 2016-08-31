@@ -33,14 +33,17 @@
  */
 static uint8_t friendconn_id_not_valid(const Friend_Connections *fr_c, int friendcon_id)
 {
-    if ((unsigned int)friendcon_id >= fr_c->num_cons)
+    if ((unsigned int)friendcon_id >= fr_c->num_cons) {
         return 1;
+    }
 
-    if (fr_c->conns == NULL)
+    if (fr_c->conns == NULL) {
         return 1;
+    }
 
-    if (fr_c->conns[friendcon_id].status == FRIENDCONN_STATUS_NONE)
+    if (fr_c->conns[friendcon_id].status == FRIENDCONN_STATUS_NONE) {
         return 1;
+    }
 
     return 0;
 }
@@ -61,8 +64,9 @@ static int realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
 
     Friend_Conn *newgroup_cons = realloc(fr_c->conns, num * sizeof(Friend_Conn));
 
-    if (newgroup_cons == NULL)
+    if (newgroup_cons == NULL) {
         return -1;
+    }
 
     fr_c->conns = newgroup_cons;
     return 0;
@@ -78,8 +82,9 @@ static int create_friend_conn(Friend_Connections *fr_c)
     uint32_t i;
 
     for (i = 0; i < fr_c->num_cons; ++i) {
-        if (fr_c->conns[i].status == FRIENDCONN_STATUS_NONE)
+        if (fr_c->conns[i].status == FRIENDCONN_STATUS_NONE) {
             return i;
+        }
     }
 
     int id = -1;
@@ -100,15 +105,17 @@ static int create_friend_conn(Friend_Connections *fr_c)
  */
 static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
 {
-    if (friendconn_id_not_valid(fr_c, friendcon_id))
+    if (friendconn_id_not_valid(fr_c, friendcon_id)) {
         return -1;
+    }
 
     uint32_t i;
     memset(&(fr_c->conns[friendcon_id]), 0 , sizeof(Friend_Conn));
 
     for (i = fr_c->num_cons; i != 0; --i) {
-        if (fr_c->conns[i - 1].status != FRIENDCONN_STATUS_NONE)
+        if (fr_c->conns[i - 1].status != FRIENDCONN_STATUS_NONE) {
             break;
+        }
     }
 
     if (fr_c->num_cons != i) {
@@ -121,8 +128,9 @@ static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
 
 static Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
 {
-    if (friendconn_id_not_valid(fr_c, friendcon_id))
+    if (friendconn_id_not_valid(fr_c, friendcon_id)) {
         return 0;
+    }
 
     return &fr_c->conns[friendcon_id];
 }
@@ -138,8 +146,9 @@ int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk)
         Friend_Conn *friend_con = get_conn(fr_c, i);
 
         if (friend_con) {
-            if (public_key_cmp(friend_con->real_public_key, real_pk) == 0)
+            if (public_key_cmp(friend_con->real_public_key, real_pk) == 0) {
                 return i;
+            }
         }
     }
 
@@ -155,8 +164,9 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     /* Local ip and same pk means that they are hosting a TCP relay. */
     if (Local_ip(ip_port.ip) && public_key_cmp(friend_con->dht_temp_pk, public_key) == 0) {
@@ -190,8 +200,9 @@ static void connect_to_saved_tcp_relays(Friend_Connections *fr_c, int friendcon_
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return;
+    }
 
     unsigned int i;
 
@@ -211,8 +222,9 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return 0;
+    }
 
     Node_format nodes[MAX_SHARED_RELAYS];
     uint8_t data[1024];
@@ -230,8 +242,9 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 
     length = pack_nodes(data + 1, sizeof(data) - 1, nodes, n);
 
-    if (length <= 0)
+    if (length <= 0) {
         return 0;
+    }
 
     data[0] = PACKET_ID_SHARE_RELAYS;
     ++length;
@@ -250,8 +263,9 @@ static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_por
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     if (friend_con->crypt_connection_id != -1) {
         return friend_add_tcp_relay(fr_c, number, ip_port, public_key);
@@ -267,8 +281,9 @@ static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con)
+    if (!friend_con) {
         return;
+    }
 
     if (friend_con->crypt_connection_id == -1) {
         friend_new_connection(fr_c, number);
@@ -288,8 +303,9 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return;
+    }
 
     friend_con->dht_pk_lastrecv = unix_time();
 
@@ -311,8 +327,9 @@ static int handle_status(void *object, int number, uint8_t status)
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     _Bool call_cb = 0;
 
@@ -338,9 +355,10 @@ static int handle_status(void *object, int number, uint8_t status)
         unsigned int i;
 
         for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-            if (friend_con->callbacks[i].status_callback)
+            if (friend_con->callbacks[i].status_callback) {
                 friend_con->callbacks[i].status_callback(friend_con->callbacks[i].status_callback_object,
                         friend_con->callbacks[i].status_callback_id, status);
+            }
         }
     }
 
@@ -353,11 +371,13 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con)
+    if (!friend_con) {
         return;
+    }
 
-    if (public_key_cmp(friend_con->dht_temp_pk, dht_public_key) == 0)
+    if (public_key_cmp(friend_con->dht_temp_pk, dht_public_key) == 0) {
         return;
+    }
 
     change_dht_pk(fr_c, number, dht_public_key);
 
@@ -374,18 +394,21 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
 
 static int handle_packet(void *object, int number, uint8_t *data, uint16_t length, void *userdata)
 {
-    if (length == 0)
+    if (length == 0) {
         return -1;
+    }
 
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
-        if (fr_c->fr_request_callback)
+        if (fr_c->fr_request_callback) {
             fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length);
+        }
 
         return 0;
     } else if (data[0] == PACKET_ID_ALIVE) {
@@ -395,8 +418,9 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
         Node_format nodes[MAX_SHARED_RELAYS];
         int n;
 
-        if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data + 1, length - 1, 1)) == -1)
+        if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data + 1, length - 1, 1)) == -1) {
             return -1;
+        }
 
         int j;
 
@@ -410,15 +434,17 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
     unsigned int i;
 
     for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].data_callback)
+        if (friend_con->callbacks[i].data_callback) {
             friend_con->callbacks[i].data_callback(
                 friend_con->callbacks[i].data_callback_object,
                 friend_con->callbacks[i].data_callback_id, data, length, userdata);
+        }
 
         friend_con = get_conn(fr_c, number);
 
-        if (!friend_con)
+        if (!friend_con) {
             return -1;
+        }
     }
 
     return 0;
@@ -426,26 +452,30 @@ static int handle_packet(void *object, int number, uint8_t *data, uint16_t lengt
 
 static int handle_lossy_packet(void *object, int number, const uint8_t *data, uint16_t length)
 {
-    if (length == 0)
+    if (length == 0) {
         return -1;
+    }
 
     Friend_Connections *fr_c = object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     unsigned int i;
 
     for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].lossy_data_callback)
+        if (friend_con->callbacks[i].lossy_data_callback) {
             friend_con->callbacks[i].lossy_data_callback(friend_con->callbacks[i].lossy_data_callback_object,
                     friend_con->callbacks[i].lossy_data_callback_id, data, length);
+        }
 
         friend_con = get_conn(fr_c, number);
 
-        if (!friend_con)
+        if (!friend_con) {
             return -1;
+        }
     }
 
     return 0;
@@ -459,8 +489,9 @@ static int handle_new_connections(void *object, New_Connection *n_c)
 
     if (friend_con) {
 
-        if (friend_con->crypt_connection_id != -1)
+        if (friend_con->crypt_connection_id != -1) {
             return -1;
+        }
 
         int id = accept_crypto_connection(fr_c->net_crypto, n_c);
 
@@ -495,8 +526,9 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     if (friend_con->crypt_connection_id != -1) {
         return -1;
@@ -509,8 +541,9 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
 
     int id = new_crypto_connection(fr_c->net_crypto, friend_con->real_public_key, friend_con->dht_temp_pk);
 
-    if (id == -1)
+    if (id == -1) {
         return -1;
+    }
 
     friend_con->crypt_connection_id = id;
     connection_status_handler(fr_c->net_crypto, id, &handle_status, fr_c, friendcon_id);
@@ -525,8 +558,9 @@ static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     uint8_t ping = PACKET_ID_ALIVE;
     int64_t ret = write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, &ping, sizeof(ping), 0);
@@ -548,8 +582,9 @@ int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     ++friend_con->lock_count;
     return 0;
@@ -563,8 +598,9 @@ unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return 0;
+    }
 
     return friend_con->status;
 }
@@ -578,14 +614,17 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
-    if (real_pk)
+    if (real_pk) {
         memcpy(real_pk, friend_con->real_public_key, crypto_box_PUBLICKEYBYTES);
+    }
 
-    if (dht_temp_pk)
+    if (dht_temp_pk) {
         memcpy(dht_temp_pk, friend_con->dht_temp_pk, crypto_box_PUBLICKEYBYTES);
+    }
 
     return 0;
 }
@@ -611,11 +650,13 @@ int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsi
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
-    if (index >= MAX_FRIEND_CONNECTION_CALLBACKS)
+    if (index >= MAX_FRIEND_CONNECTION_CALLBACKS) {
         return -1;
+    }
 
     friend_con->callbacks[index].status_callback = status_callback;
     friend_con->callbacks[index].data_callback = data_callback;
@@ -640,8 +681,9 @@ int friend_connection_crypt_connection_id(Friend_Connections *fr_c, int friendco
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     return friend_con->crypt_connection_id;
 }
@@ -663,13 +705,15 @@ int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_k
 
     friendcon_id = create_friend_conn(fr_c);
 
-    if (friendcon_id == -1)
+    if (friendcon_id == -1) {
         return -1;
+    }
 
     int32_t onion_friendnum = onion_addfriend(fr_c->onion_c, real_public_key);
 
-    if (onion_friendnum == -1)
+    if (onion_friendnum == -1) {
         return -1;
+    }
 
     Friend_Conn *friend_con = &fr_c->conns[friendcon_id];
 
@@ -693,8 +737,9 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     if (friend_con->lock_count) {
         --friend_con->lock_count;
@@ -733,13 +778,15 @@ void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_call
 int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
                                uint16_t length)
 {
-    if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0)
+    if (1 + sizeof(nospam_num) + length > ONION_CLIENT_MAX_DATA_SIZE || length == 0) {
         return -1;
+    }
 
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con)
+    if (!friend_con) {
         return -1;
+    }
 
     uint8_t packet[1 + sizeof(nospam_num) + length];
     memcpy(packet + 1, &nospam_num, sizeof(nospam_num));
@@ -752,8 +799,9 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
         packet[0] = CRYPTO_PACKET_FRIEND_REQ;
         int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
 
-        if (num <= 0)
+        if (num <= 0) {
             return -1;
+        }
 
         return num;
     }
@@ -762,13 +810,15 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c)
 {
-    if (!onion_c)
+    if (!onion_c) {
         return NULL;
+    }
 
     Friend_Connections *temp = calloc(1, sizeof(Friend_Connections));
 
-    if (temp == NULL)
+    if (temp == NULL) {
         return NULL;
+    }
 
     temp->dht = onion_c->dht;
     temp->net_crypto = onion_c->c;
@@ -843,8 +893,9 @@ void do_friend_connections(Friend_Connections *fr_c)
 /* Free everything related with friend_connections. */
 void kill_friend_connections(Friend_Connections *fr_c)
 {
-    if (!fr_c)
+    if (!fr_c) {
         return;
+    }
 
     uint32_t i;
 

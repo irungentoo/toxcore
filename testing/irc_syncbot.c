@@ -85,16 +85,18 @@ int current_group = -1;
 
 static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
 {
-    if (current_group == -1)
+    if (current_group == -1) {
         current_group = tox_join_groupchat(tox, fid, data, length);
+    }
 }
 
 void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length,
                              void *userdata)
 {
     if (length == 1 && *message == 'c') {
-        if (tox_del_groupchat(tox, current_group) == 0)
+        if (tox_del_groupchat(tox, current_group) == 0) {
             current_group = -1;
+        }
     }
 
     if (length == 1 && *message == 'i') {
@@ -109,8 +111,9 @@ void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE type, cons
 static void copy_groupmessage(Tox *tox, int groupnumber, int friendgroupnumber, const uint8_t *message, uint16_t length,
                               void *userdata)
 {
-    if (tox_group_peernumber_is_ours(tox, groupnumber, friendgroupnumber))
+    if (tox_group_peernumber_is_ours(tox, groupnumber, friendgroupnumber)) {
         return;
+    }
 
     uint8_t name[TOX_MAX_NAME_LENGTH];
     int namelen = tox_group_peername(tox, groupnumber, friendgroupnumber, name);
@@ -136,29 +139,34 @@ static void copy_groupmessage(Tox *tox, int groupnumber, int friendgroupnumber, 
     unsigned int i;
 
     for (i = 0; i < send_len; ++i) {
-        if (sendbuf[i] == '\n')
+        if (sendbuf[i] == '\n') {
             sendbuf[i] = '|';
+        }
 
-        if (sendbuf[i] == 0)
+        if (sendbuf[i] == 0) {
             sendbuf[i] = ' ';
+        }
     }
 
     sendbuf[send_len] = '\n';
     send_len += 1;
 
-    if (sock >= 0)
+    if (sock >= 0) {
         send(sock, sendbuf, send_len, MSG_NOSIGNAL);
+    }
 }
 
 void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
 {
-    if (len > 1350 || len == 0 || len == 1)
+    if (len > 1350 || len == 0 || len == 1) {
         return;
+    }
 
     --len;
 
-    if (*msg != ':')
+    if (*msg != ':') {
         return;
+    }
 
     uint8_t req[len];
     unsigned int i;
@@ -185,8 +193,9 @@ void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
 
     uint8_t *pmsg = (uint8_t *)strstr((char *)req, " PRIVMSG");
 
-    if (pmsg == NULL)
+    if (pmsg == NULL) {
         return;
+    }
 
     uint8_t *dt;
 
@@ -200,8 +209,9 @@ void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
     message[length] = ' ';
     length += 1;
 
-    if ((req_len + 2) >= len)
+    if ((req_len + 2) >= len) {
         return;
+    }
 
     memcpy(message + length, msg + req_len + 2, len - (req_len + 2));
     length += len - (req_len + 2);
@@ -213,8 +223,9 @@ Tox *init_tox(int argc, char *argv[])
     uint8_t ipv6enabled = 1; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     /* with optional --ipvx, now it can be 1-4 arguments... */
     if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
@@ -224,8 +235,9 @@ Tox *init_tox(int argc, char *argv[])
 
     Tox *tox = tox_new(0, 0);
 
-    if (!tox)
+    if (!tox) {
         exit(1);
+    }
 
     tox_self_set_name(tox, (uint8_t *)IRC_NAME, sizeof(IRC_NAME) - 1, 0);
     tox_callback_friend_message(tox, &callback_friend_message);
@@ -263,8 +275,9 @@ int main(int argc, char *argv[])
 
     sock = reconnect();
 
-    if (sock < 0)
+    if (sock < 0) {
         return 1;
+    }
 
     uint64_t last_get = get_monotime_sec();
     int connected = 0, ping_sent = 0;
@@ -281,8 +294,9 @@ int main(int argc, char *argv[])
             recv(sock, data, count, MSG_NOSIGNAL);
             printf("%s", data);
 
-            if (!connected)
+            if (!connected) {
                 connected = 1;
+            }
 
             if (count > 6 && data[0] == 'P' && data[1] == 'I' && data[2] == 'N' && data[3] == 'G') {
                 data[1] = 'O';
@@ -309,8 +323,9 @@ int main(int argc, char *argv[])
                     break;
                 }
 
-                if (data[i] == ':')
+                if (data[i] == ':') {
                     break;
+                }
             }
 
             for (i = 0; i < count; ++i) {
@@ -329,8 +344,9 @@ int main(int argc, char *argv[])
         if (!ping_sent && last_get + (SILENT_TIMEOUT / 2) < get_monotime_sec()) {
             unsigned int p_s = sizeof("PING :test\n") - 1;
 
-            if (send(sock, "PING :test\n", p_s, MSG_NOSIGNAL) == p_s)
+            if (send(sock, "PING :test\n", p_s, MSG_NOSIGNAL) == p_s) {
                 ping_sent = 1;
+            }
         }
 
         int error = 0;

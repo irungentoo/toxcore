@@ -258,8 +258,9 @@ void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxA
         }
 
         if (tox_friend_get_connection_status(Alice, 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bob, 0, NULL) == TOX_CONNECTION_UDP)
+                tox_friend_get_connection_status(Bob, 0, NULL) == TOX_CONNECTION_UDP) {
             break;
+        }
 
         c_sleep(20);
     }
@@ -316,8 +317,9 @@ void *iterate_toxav (void *data)
 
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
 
-        if (!rc)
+        if (!rc) {
             rc = 1;
+        }
 
         cvWaitKey(rc);
 #else
@@ -379,8 +381,9 @@ int print_audio_devices()
     for (i = 0; i < Pa_GetDeviceCount(); ++i) {
         const PaDeviceInfo *info = Pa_GetDeviceInfo(i);
 
-        if (info)
+        if (info) {
             printf("%d) %s\n", i, info->name);
+        }
     }
 
     return 0;
@@ -498,8 +501,9 @@ CHECK_ARG:
         }
     }
 
-    if (audio_out_dev_idx < 0)
+    if (audio_out_dev_idx < 0) {
         audio_out_dev_idx = Pa_GetDefaultOutputDevice();
+    }
 
     const PaDeviceInfo *audio_dev = Pa_GetDeviceInfo(audio_out_dev_idx);
 
@@ -548,8 +552,9 @@ CHECK_ARG:
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, AliceAV, BobAV, NULL);
+        }
 
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
@@ -561,8 +566,9 @@ CHECK_ARG:
             }
         }
 
-        while (AliceCC.state == 0)
+        while (AliceCC.state == 0) {
             iterate_tox(bootstrap, AliceAV, BobAV, NULL);
+        }
 
         /* Open audio file */
         af_handle = sf_open(af_name, SFM_READ, &af_info);
@@ -627,7 +633,7 @@ CHECK_ARG:
             }
 
             iterate_tox(bootstrap, AliceAV, BobAV, NULL);
-            c_sleep(abs(audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
+            c_sleep((audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
         }
 
         printf("Played file in: %lu; stopping stream...\n", time(NULL) - start_time);
@@ -651,19 +657,22 @@ CHECK_ARG:
         /* Stop decode thread */
         data.sig = -1;
 
-        while (data.sig != 1)
+        while (data.sig != 1) {
             pthread_yield();
+        }
 
         pthread_mutex_destroy(AliceCC.arb_mutex);
         pthread_mutex_destroy(BobCC.arb_mutex);
 
         void *f = NULL;
 
-        while (rb_read(AliceCC.arb, &f))
+        while (rb_read(AliceCC.arb, &f)) {
             free(f);
+        }
 
-        while (rb_read(BobCC.arb, &f))
+        while (rb_read(BobCC.arb, &f)) {
             free(f);
+        }
 
         printf("Success!");
     }
@@ -684,8 +693,9 @@ CHECK_ARG:
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, AliceAV, BobAV, NULL);
+        }
 
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
@@ -724,8 +734,9 @@ CHECK_ARG:
         while (start_time + 90 > time(NULL)) {
             IplImage *frame = cvQueryFrame(capture );
 
-            if (!frame)
+            if (!frame) {
                 break;
+            }
 
             send_opencv_img(AliceAV, 0, frame);
             iterate_tox(bootstrap, AliceAV, BobAV, NULL);
@@ -751,8 +762,9 @@ CHECK_ARG:
         printf("Stopping decode thread\n");
         data.sig = -1;
 
-        while (data.sig != 1)
+        while (data.sig != 1) {
             pthread_yield();
+        }
 
         printf("Success!");
     }

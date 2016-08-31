@@ -179,8 +179,9 @@ START_TEST(test_AV_flows)
         }
 
         if (tox_friend_get_connection_status(Alice, 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bob, 0, NULL) == TOX_CONNECTION_UDP)
+                tox_friend_get_connection_status(Bob, 0, NULL) == TOX_CONNECTION_UDP) {
             break;
+        }
 
         c_sleep(20);
     }
@@ -290,8 +291,9 @@ START_TEST(test_AV_flows)
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         /* Reject */
         {
@@ -304,8 +306,9 @@ START_TEST(test_AV_flows)
             }
         }
 
-        while (AliceCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED)
+        while (AliceCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         printf("Success!\n");
     }
@@ -326,8 +329,9 @@ START_TEST(test_AV_flows)
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         /* Cancel */
         {
@@ -341,8 +345,9 @@ START_TEST(test_AV_flows)
         }
 
         /* Alice will not receive end state */
-        while (BobCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED)
+        while (BobCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         printf("Success!\n");
     }
@@ -364,8 +369,9 @@ START_TEST(test_AV_flows)
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         /* At first try all stuff while in invalid state */
         ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, NULL));
@@ -453,8 +459,9 @@ START_TEST(test_AV_flows)
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         {
             TOXAV_ERR_ANSWER rc;
@@ -520,8 +527,9 @@ START_TEST(test_AV_flows)
             }
         }
 
-        while (!BobCC.incoming)
+        while (!BobCC.incoming) {
             iterate_tox(bootstrap, Alice, Bob);
+        }
 
         {
             TOXAV_ERR_ANSWER rc;

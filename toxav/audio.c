@@ -76,8 +76,9 @@ ACSession *ac_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_re
     /* Initialize encoders with default values */
     ac->encoder = create_audio_encoder(log, 48000, 48000, 2);
 
-    if (ac->encoder == NULL)
+    if (ac->encoder == NULL) {
         goto DECODER_CLEANUP;
+    }
 
     ac->le_bit_rate = 48000;
     ac->le_sample_rate = 48000;
@@ -110,8 +111,9 @@ BASE_CLEANUP:
 }
 void ac_kill(ACSession *ac)
 {
-    if (!ac)
+    if (!ac) {
         return;
+    }
 
     opus_encoder_destroy(ac->encoder);
     opus_decoder_destroy(ac->decoder);
@@ -124,8 +126,9 @@ void ac_kill(ACSession *ac)
 }
 void ac_iterate(ACSession *ac)
 {
-    if (!ac)
+    if (!ac) {
         return;
+    }
 
     /* TODO fix this and jitter buffering */
 
@@ -196,8 +199,9 @@ void ac_iterate(ACSession *ac)
 }
 int ac_queue_message(void *acp, struct RTPMessage *msg)
 {
-    if (!acp || !msg)
+    if (!acp || !msg) {
         return -1;
+    }
 
     ACSession *ac = acp;
 
@@ -231,8 +235,9 @@ int ac_reconfigure_encoder(ACSession *ac, int32_t bit_rate, int32_t sampling_rat
                                           sampling_rate, channels,
                                           &ac->le_bit_rate,
                                           &ac->le_sample_rate,
-                                          &ac->le_channel_count))
+                                          &ac->le_channel_count)) {
         return -1;
+    }
 
     return 0;
 }
@@ -257,7 +262,9 @@ static struct JitterBuffer *jbuf_new(uint32_t capacity)
 
     struct JitterBuffer *q;
 
-    if (!(q = calloc(sizeof(struct JitterBuffer), 1))) return NULL;
+    if (!(q = calloc(sizeof(struct JitterBuffer), 1))) {
+        return NULL;
+    }
 
     if (!(q->queue = calloc(sizeof(struct RTPMessage *), size))) {
         free(q);
@@ -279,7 +286,9 @@ static void jbuf_clear(struct JitterBuffer *q)
 }
 static void jbuf_free(struct JitterBuffer *q)
 {
-    if (!q) return;
+    if (!q) {
+        return;
+    }
 
     jbuf_clear(q);
     free(q->queue);
@@ -301,13 +310,15 @@ static int jbuf_write(Logger *log, struct JitterBuffer *q, struct RTPMessage *m)
         return 0;
     }
 
-    if (q->queue[num])
+    if (q->queue[num]) {
         return -1;
+    }
 
     q->queue[num] = m;
 
-    if ((sequnum - q->bottom) >= (q->top - q->bottom))
+    if ((sequnum - q->bottom) >= (q->top - q->bottom)) {
         q->top = sequnum + 1;
+    }
 
     return 0;
 }
@@ -394,14 +405,15 @@ bool reconfigure_audio_encoder(Logger *log, OpusEncoder **e, int32_t new_br, int
     if (*old_sr != new_sr || *old_ch != new_ch) {
         OpusEncoder *new_encoder = create_audio_encoder(log, new_br, new_sr, new_ch);
 
-        if (new_encoder == NULL)
+        if (new_encoder == NULL) {
             return false;
+        }
 
         opus_encoder_destroy(*e);
         *e = new_encoder;
-    } else if (*old_br == new_br)
+    } else if (*old_br == new_br) {
         return true; /* Nothing changed */
-    else {
+    } else {
         int status = opus_encoder_ctl(*e, OPUS_SET_BITRATE(new_br));
 
         if (status != OPUS_OK) {
@@ -420,8 +432,9 @@ bool reconfigure_audio_encoder(Logger *log, OpusEncoder **e, int32_t new_br, int
 bool reconfigure_audio_decoder(ACSession *ac, int32_t sampling_rate, int8_t channels)
 {
     if (sampling_rate != ac->ld_sample_rate || channels != ac->ld_channel_count) {
-        if (current_time_monotonic() - ac->ldrts < 500)
+        if (current_time_monotonic() - ac->ldrts < 500) {
             return false;
+        }
 
         int status;
         OpusDecoder *new_dec = opus_decoder_create(sampling_rate, channels, &status);

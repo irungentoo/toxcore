@@ -78,8 +78,9 @@ BWController *bwc_new(Messenger *m, uint32_t friendnumber,
     /* Fill with zeros */
     int i = 0;
 
-    for (; i < BWC_AVG_PKT_COUNT; i ++)
+    for (; i < BWC_AVG_PKT_COUNT; i ++) {
         rb_write(retu->rcvpkt.rb, retu->rcvpkt.rb_s + i);
+    }
 
     m_callback_rtp_packet(m, friendnumber, BWC_PACKET_ID, bwc_handle_data, retu);
 
@@ -87,8 +88,9 @@ BWController *bwc_new(Messenger *m, uint32_t friendnumber,
 }
 void bwc_kill(BWController *bwc)
 {
-    if (!bwc)
+    if (!bwc) {
         return;
+    }
 
     m_callback_rtp_packet(bwc->m, bwc->friend_number, BWC_PACKET_ID, NULL, NULL);
 
@@ -106,8 +108,9 @@ void bwc_feed_avg(BWController *bwc, uint32_t bytes)
 }
 void bwc_add_lost(BWController *bwc, uint32_t bytes)
 {
-    if (!bwc)
+    if (!bwc) {
         return;
+    }
 
     if (!bytes) {
         uint32_t *t_avg[BWC_AVG_PKT_COUNT], c = 1;
@@ -119,8 +122,9 @@ void bwc_add_lost(BWController *bwc, uint32_t bytes)
         for (; i < BWC_AVG_PKT_COUNT; i ++) {
             bytes += *(t_avg[i]);
 
-            if (*(t_avg[i]))
+            if (*(t_avg[i])) {
                 c++;
+            }
         }
 
         bytes /= c;
@@ -131,8 +135,9 @@ void bwc_add_lost(BWController *bwc, uint32_t bytes)
 }
 void bwc_add_recv(BWController *bwc, uint32_t bytes)
 {
-    if (!bwc || !bytes)
+    if (!bwc || !bytes) {
         return;
+    }
 
     bwc->cycle.recv += bytes;
     send_update(bwc);
@@ -164,8 +169,9 @@ void send_update(BWController *bwc)
             b_msg->lost = htonl(bwc->cycle.lost);
             b_msg->recv = htonl(bwc->cycle.recv);
 
-            if (-1 == send_custom_lossy_packet(bwc->m, bwc->friend_number, p_msg, sizeof(p_msg)))
+            if (-1 == send_custom_lossy_packet(bwc->m, bwc->friend_number, p_msg, sizeof(p_msg))) {
                 LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %d)! std error: %s", sizeof(p_msg), strerror(errno));
+            }
         }
 
         bwc->cycle.lsu = current_time_monotonic();
@@ -188,17 +194,19 @@ int on_update (BWController *bwc, struct BWCMessage *msg)
 
     LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u", msg->recv, msg->lost);
 
-    if (msg->lost && bwc->mcb)
+    if (msg->lost && bwc->mcb) {
         bwc->mcb(bwc, bwc->friend_number,
                  ((float) (msg->lost) / (msg->recv + msg->lost)),
                  bwc->mcb_data);
+    }
 
     return 0;
 }
 int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
 {
-    if (length - 1 != sizeof(struct BWCMessage))
+    if (length - 1 != sizeof(struct BWCMessage)) {
         return -1;
+    }
 
     /* NOTE the data is mutable */
     return on_update(object, (struct BWCMessage *) (data + 1));

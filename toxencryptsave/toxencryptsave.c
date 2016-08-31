@@ -86,8 +86,9 @@ bool toxes_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
  */
 bool tox_get_salt(const uint8_t *data, uint8_t *salt)
 {
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0)
+    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
         return 0;
+    }
 
     data += TOX_ENC_SAVE_MAGIC_LENGTH;
     memcpy(salt, data, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
@@ -312,8 +313,9 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphr
  */
 bool tox_is_data_encrypted(const uint8_t *data)
 {
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0)
+    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
         return 1;
-    else
+    } else {
         return 0;
+    }
 }

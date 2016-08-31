@@ -36,8 +36,9 @@ static uint16_t bootstrap_motd_length;
  */
 static int handle_info_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    if (length != INFO_REQUEST_PACKET_LENGTH)
+    if (length != INFO_REQUEST_PACKET_LENGTH) {
         return 1;
+    }
 
     uint8_t data[1 + sizeof(bootstrap_version) + MAX_MOTD_LENGTH];
     data[0] = BOOTSTRAP_INFO_PACKET_ID;
@@ -45,16 +46,18 @@ static int handle_info_request(void *object, IP_Port source, const uint8_t *pack
     uint16_t len = 1 + sizeof(bootstrap_version) + bootstrap_motd_length;
     memcpy(data + 1 + sizeof(bootstrap_version), bootstrap_motd, bootstrap_motd_length);
 
-    if (sendpacket(object, source, data, len) == len)
+    if (sendpacket(object, source, data, len) == len) {
         return 0;
+    }
 
     return 1;
 }
 
 int bootstrap_set_callbacks(Networking_Core *net, uint32_t version, uint8_t *motd, uint16_t motd_length)
 {
-    if (motd_length > MAX_MOTD_LENGTH)
+    if (motd_length > MAX_MOTD_LENGTH) {
         return -1;
+    }
 
     bootstrap_version = htonl(version);
     memcpy(bootstrap_motd, motd, motd_length);

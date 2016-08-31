@@ -54,8 +54,9 @@ void logger_callback_log(Logger *log, logger_cb *function, void *userdata)
 void logger_write(Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func, const char *format,
                   ...)
 {
-    if (!log || !log->callback)
+    if (!log || !log->callback) {
         return;
+    }
 
     /* Format message */
     char msg[1024];

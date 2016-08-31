@@ -54,11 +54,13 @@ int main(int argc, char *argv[])
     ip.family = AF_INET;
     sock_t sock = socket(ip.family, SOCK_DGRAM, IPPROTO_UDP);
 
-    if (!sock_valid(sock))
+    if (!sock_valid(sock)) {
         return -1;
+    }
 
-    if (!addr_resolve_or_parse_ip(argv[1], &ip, 0))
+    if (!addr_resolve_or_parse_ip(argv[1], &ip, 0)) {
         return -1;
+    }
 
     struct sockaddr_in target;
     size_t addrsize = sizeof(struct sockaddr_in);
@@ -77,8 +79,9 @@ int main(int argc, char *argv[])
     }*/
     int len = tox_generate_dns3_string(d, string + 1, sizeof(string) - 1, &request_id, (uint8_t *)argv[3], strlen(argv[3]));
 
-    if (len == -1)
+    if (len == -1) {
         return -1;
+    }
 
     string[0] = '_';
     memcpy(string + len + 1, "._tox.", sizeof("._tox."));
@@ -87,21 +90,26 @@ int main(int argc, char *argv[])
     uint8_t id = rand();
     uint32_t p_len = create_packet(packet, string, strlen((char *)string), id);
 
-    if (sendto(sock, (char *) packet, p_len, 0, (struct sockaddr *)&target, addrsize) != p_len)
+    if (sendto(sock, (char *) packet, p_len, 0, (struct sockaddr *)&target, addrsize) != p_len) {
         return -1;
+    }
 
     uint8_t buffer[512] = {};
     int r_len = recv(sock, buffer, sizeof(buffer), 0);
 
-    if (r_len < (int)p_len)
+    if (r_len < (int)p_len) {
         return -1;
+    }
 
-    for (i = r_len - 1; i != 0 && buffer[i] != '='; --i);
+    for (i = r_len - 1; i != 0 && buffer[i] != '='; --i) {
+        ;
+    }
 
     uint8_t tox_id[TOX_ADDRESS_SIZE];
 
-    if (tox_decrypt_dns3_TXT(d, tox_id, buffer + i + 1, r_len - (i + 1), request_id) != 0)
+    if (tox_decrypt_dns3_TXT(d, tox_id, buffer + i + 1, r_len - (i + 1), request_id) != 0) {
         return -1;
+    }
 
     printf("The Tox id for username %s is:\n", argv[3]);
 

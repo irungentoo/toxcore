@@ -251,8 +251,9 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
-            if (m_options.ipv6enabled)
+            if (m_options.ipv6enabled) {
                 m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
+            }
 
             if (!addr_resolve_or_parse_ip(options->proxy_host, &m_options.proxy_info.ip_port.ip, NULL)) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
@@ -499,16 +500,18 @@ void tox_self_get_public_key(const Tox *tox, uint8_t *public_key)
 {
     const Messenger *m = tox;
 
-    if (public_key)
+    if (public_key) {
         memcpy(public_key, m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
+    }
 }
 
 void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key)
 {
     const Messenger *m = tox;
 
-    if (secret_key)
+    if (secret_key) {
         memcpy(secret_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
+    }
 }
 
 bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET_INFO *error)

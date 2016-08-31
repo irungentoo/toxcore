@@ -190,8 +190,9 @@ int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, u
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
-    if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t)))
+    if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t))) {
         return -1;
+    }
 
     increment_nonce(con->sent_nonce);
 
@@ -309,8 +310,9 @@ static uint8_t response_callback_connection_id;
 static uint8_t response_callback_public_key[crypto_box_PUBLICKEYBYTES];
 static int response_callback(void *object, uint8_t connection_id, const uint8_t *public_key)
 {
-    if (set_tcp_connection_number(object - 2, connection_id, 7) != 0)
+    if (set_tcp_connection_number(object - 2, connection_id, 7) != 0) {
         return 1;
+    }
 
     response_callback_connection_id = connection_id;
     memcpy(response_callback_public_key, public_key, crypto_box_PUBLICKEYBYTES);
@@ -322,11 +324,13 @@ static uint8_t status_callback_connection_id;
 static uint8_t status_callback_status;
 static int status_callback(void *object, uint32_t number, uint8_t connection_id, uint8_t status)
 {
-    if (object != (void *)2)
+    if (object != (void *)2) {
         return 1;
+    }
 
-    if (number != 7)
+    if (number != 7) {
         return 1;
+    }
 
     status_callback_connection_id = connection_id;
     status_callback_status = status;
@@ -337,14 +341,17 @@ static int data_callback_good;
 static int data_callback(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length,
                          void *userdata)
 {
-    if (object != (void *)3)
+    if (object != (void *)3) {
         return 1;
+    }
 
-    if (number != 7)
+    if (number != 7) {
         return 1;
+    }
 
-    if (length != 5)
+    if (length != 5) {
         return 1;
+    }
 
     if (data[0] == 1 && data[1] == 2 && data[2] == 3 && data[3] == 4 && data[4] == 5) {
         data_callback_good++;
@@ -359,14 +366,17 @@ static uint8_t oob_pubkey[crypto_box_PUBLICKEYBYTES];
 static int oob_data_callback(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
                              void *userdata)
 {
-    if (object != (void *)4)
+    if (object != (void *)4) {
         return 1;
+    }
 
-    if (length != 5)
+    if (length != 5) {
         return 1;
+    }
 
-    if (public_key_cmp(public_key, oob_pubkey) != 0)
+    if (public_key_cmp(public_key, oob_pubkey) != 0) {
         return 1;
+    }
 
     if (data[0] == 1 && data[1] == 2 && data[2] == 3 && data[3] == 4 && data[4] == 5) {
         oob_data_callback_good++;
@@ -515,17 +525,21 @@ END_TEST
 _Bool tcp_data_callback_called;
 static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t length, void *userdata)
 {
-    if (object != (void *)120397)
+    if (object != (void *)120397) {
         return -1;
+    }
 
-    if (id != 123)
+    if (id != 123) {
         return -1;
+    }
 
-    if (length != 6)
+    if (length != 6) {
         return -1;
+    }
 
-    if (memcmp(data, "Gentoo", length) != 0)
+    if (memcmp(data, "Gentoo", length) != 0) {
         return -1;
+    }
 
     tcp_data_callback_called = 1;
     return 0;
@@ -621,14 +635,17 @@ _Bool tcp_oobdata_callback_called;
 static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigned int id, const uint8_t *data,
                                 uint16_t length)
 {
-    if (length != 6)
+    if (length != 6) {
         return -1;
+    }
 
-    if (memcmp(data, "Gentoo", length) != 0)
+    if (memcmp(data, "Gentoo", length) != 0) {
         return -1;
+    }
 
-    if (tcp_send_oob_packet(object, id, public_key, data, length) == 0)
+    if (tcp_send_oob_packet(object, id, public_key, data, length) == 0) {
         tcp_oobdata_callback_called = 1;
+    }
 
     return 0;
 }

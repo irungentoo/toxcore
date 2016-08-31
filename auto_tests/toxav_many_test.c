@@ -147,8 +147,9 @@ void *call_thread(void *pd)
         }
     }
 
-    while (!BobCC->incoming)
+    while (!BobCC->incoming) {
         c_sleep(10);
+    }
 
     { /* Answer */
         TOXAV_ERR_ANSWER rc;
@@ -267,8 +268,9 @@ START_TEST(test_AV_three_calls)
                 tox_friend_get_connection_status(Alice, 2, NULL) == TOX_CONNECTION_UDP &&
                 tox_friend_get_connection_status(Bobs[0], 0, NULL) == TOX_CONNECTION_UDP &&
                 tox_friend_get_connection_status(Bobs[1], 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bobs[2], 0, NULL) == TOX_CONNECTION_UDP)
+                tox_friend_get_connection_status(Bobs[2], 0, NULL) == TOX_CONNECTION_UDP) {
             break;
+        }
 
         c_sleep(20);
     }

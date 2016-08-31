@@ -237,9 +237,9 @@ START_TEST(test_dht_state_saveloadsave)
 
     int res = DHT_load(m->dht, buffer + extra, size);
 
-    if (res == -1)
+    if (res == -1) {
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
-    else {
+    } else {
         char msg[128];
         size_t offset = res >> 4;
         uint8_t *ptr = buffer + extra + offset;
@@ -279,9 +279,9 @@ START_TEST(test_messenger_state_saveloadsave)
 
     int res = messenger_load(m, buffer + extra, size);
 
-    if (res == -1)
+    if (res == -1) {
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
-    else {
+    } else {
         char msg[128];
         size_t offset = res >> 4;
         uint8_t *ptr = buffer + extra + offset;
@@ -340,15 +340,17 @@ int main(int argc, char *argv[])
     m = new_messenger(NULL, &options, 0);
 
     /* setup a default friend and friendnum */
-    if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0)
+    if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0) {
         fputs("m_addfriend_norequest() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
+    }
 
-    if ((friend_id_num = getfriend_id(m, (uint8_t *)friend_id)) < 0)
+    if ((friend_id_num = getfriend_id(m, (uint8_t *)friend_id)) < 0) {
         fputs("getfriend_id() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
+    }
 
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);
