@@ -128,7 +128,7 @@ void vc_kill(VCSession *vc)
 
     void *p;
 
-    while (rb_read(vc->vbuf_raw, (void **)&p)) {
+    while (rb_read(vc->vbuf_raw, &p)) {
         free(p);
     }
 

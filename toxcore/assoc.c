@@ -891,7 +891,7 @@ Assoc *new_Assoc(Logger *log, size_t bits, size_t entries, const uint8_t *public
         if (entries_test != entries) {
 
             LOGGER_DEBUG(assoc->log, "trimmed %i to %i.\n", (int)entries, (int)entries_test);
-            entries = (size_t)entries_test;
+            entries = entries_test;
         }
     }
 

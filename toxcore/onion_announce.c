@@ -95,7 +95,7 @@ int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8
         return -1;
     }
 
-    if ((unsigned int)DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE) {
+    if (DATA_REQUEST_MIN_SIZE + length > ONION_MAX_DATA_SIZE) {
         return -1;
     }
 
