@@ -22,7 +22,6 @@
  *   -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
  */
 
-
 #include "../toxav/toxav.h"
 #include "../toxcore/network.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
@@ -40,19 +39,13 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-
-#ifdef __APPLE__
-#include <sched.h>
-#define pthread_yield sched_yield
-#else
-#include <pthread.h>
-#endif
 
 #define c_sleep(x) usleep(1000*x)
 
@@ -660,7 +653,7 @@ CHECK_ARG:
         data.sig = -1;
 
         while (data.sig != 1) {
-            pthread_yield();
+            sched_yield();
         }
 
         pthread_mutex_destroy(AliceCC.arb_mutex);
@@ -765,7 +758,7 @@ CHECK_ARG:
         data.sig = -1;
 
         while (data.sig != 1) {
-            pthread_yield();
+            sched_yield();
         }
 
         printf("Success!");
