@@ -169,7 +169,7 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
 }
 
 static int handle_status(void *object, int i, uint8_t status);
-static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void *userdata);
+static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
 static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
 
 static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t status)
@@ -1622,7 +1622,7 @@ static void break_files(const Messenger *m, int32_t friendnumber)
 /* return -1 on failure, 0 on success.
  */
 static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receive_send, uint8_t filenumber,
-                              uint8_t control_type, uint8_t *data, uint16_t length)
+                              uint8_t control_type, const uint8_t *data, uint16_t length)
 {
     if (receive_send > 1) {
         return -1;
@@ -2055,7 +2055,7 @@ static int handle_status(void *object, int i, uint8_t status)
     return 0;
 }
 
-static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void *userdata)
+static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata)
 {
     if (len == 0) {
         return -1;
@@ -2063,7 +2063,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void 
 
     Messenger *m = object;
     uint8_t packet_id = temp[0];
-    uint8_t *data = temp + 1;
+    const uint8_t *data = temp + 1;
     uint32_t data_length = len - 1;
 
     if (m->friendlist[i].status != FRIEND_ONLINE) {
@@ -2295,7 +2295,7 @@ static int handle_packet(void *object, int i, uint8_t *temp, uint16_t len, void 
             real_filenumber += 1;
             real_filenumber <<= 16;
             uint16_t file_data_length = (data_length - 1);
-            uint8_t *file_data;
+            const uint8_t *file_data;
 
             if (file_data_length == 0) {
                 file_data = NULL;

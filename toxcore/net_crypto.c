@@ -2142,7 +2142,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return 0 on success.
  */
 int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
-                            int id, uint8_t *data, uint16_t length, void *userdata), void *object, int id)
+                            int id, const uint8_t *data, uint16_t length, void *userdata), void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 

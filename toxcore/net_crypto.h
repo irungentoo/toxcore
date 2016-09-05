@@ -135,7 +135,7 @@ typedef struct {
     void *connection_status_callback_object;
     int connection_status_callback_id;
 
-    int (*connection_data_callback)(void *object, int id, uint8_t *data, uint16_t length, void *userdata);
+    int (*connection_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
     void *connection_data_callback_object;
     int connection_data_callback_id;
 
@@ -275,7 +275,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return 0 on success.
  */
 int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
-                            int id, uint8_t *data, uint16_t length, void *userdata), void *object, int id);
+                            int id, const uint8_t *data, uint16_t length, void *userdata), void *object, int id);
 
 
 /* Set function to be called when connection with crypt_connection_id receives a lossy data packet of length.
