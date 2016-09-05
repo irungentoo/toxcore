@@ -50,12 +50,12 @@
 
 // Uses the already existing key or creates one if it didn't exist
 //
-// retirns 1 on success
+// returns 1 on success
 //         0 on failure - no keys were read or stored
 
 int manage_keys(DHT *dht, char *keys_file_path)
 {
-    const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    enum { KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES };
     uint8_t keys[KEYS_SIZE];
     FILE *keys_file;
 

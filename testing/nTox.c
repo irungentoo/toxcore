@@ -57,7 +57,7 @@ uint8_t flag[HISTORY];
 char input_line[STRING_LENGTH];
 
 /* wrap: continuation mark */
-const size_t wrap_cont_len = 3;
+enum { wrap_cont_len = 3 };
 const char wrap_cont_str[] = "\n+ ";
 
 #define STRING_LENGTH_WRAPPED (STRING_LENGTH + 16 * (wrap_cont_len + 1))

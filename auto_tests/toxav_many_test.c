@@ -63,7 +63,7 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
 }
 void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
-    printf("Handling CALL STATE callback: %d %p\n", state, av);
+    printf("Handling CALL STATE callback: %d %p\n", state, (void *)av);
     ((CallControl *)user_data)[friend_number].state = state;
 }
 void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
@@ -188,7 +188,7 @@ void *call_thread(void *pd)
         toxav_call_control(AliceAV, friend_number, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
         if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
-            printf("toxav_call_control failed: %d %p %p\n", rc, AliceAV, BobAV);
+            printf("toxav_call_control failed: %d %p %p\n", rc, (void *)AliceAV, (void *)BobAV);
         }
     }
 

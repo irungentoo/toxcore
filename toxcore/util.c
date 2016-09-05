@@ -169,7 +169,7 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
     }
 
     return length == 0 ? 0 : -1;
-};
+}
 
 int create_recursive_mutex(pthread_mutex_t *mutex)
 {

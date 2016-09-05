@@ -61,18 +61,18 @@ void logger_write(Logger *log, LOGGER_LEVEL level, const char *file, int line, c
                   ...);
 
 
-#define LOGGER_WRITE(log, level, format, ...) \
+#define LOGGER_WRITE(log, level, ...) \
     do { \
         if (level >= MIN_LOGGER_LEVEL) { \
-            logger_write(log, level, __FILE__, __LINE__, __func__, format, ##__VA_ARGS__); \
+            logger_write(log, level, __FILE__, __LINE__, __func__, __VA_ARGS__); \
         } \
     } while (0)
 
 /* To log with an logger */
-#define LOGGER_TRACE(log, format, ...)   LOGGER_WRITE(log, LOG_TRACE  , format, ##__VA_ARGS__)
-#define LOGGER_DEBUG(log, format, ...)   LOGGER_WRITE(log, LOG_DEBUG  , format, ##__VA_ARGS__)
-#define LOGGER_INFO(log, format, ...)    LOGGER_WRITE(log, LOG_INFO   , format, ##__VA_ARGS__)
-#define LOGGER_WARNING(log, format, ...) LOGGER_WRITE(log, LOG_WARNING, format, ##__VA_ARGS__)
-#define LOGGER_ERROR(log, format, ...)   LOGGER_WRITE(log, LOG_ERROR  , format, ##__VA_ARGS__)
+#define LOGGER_TRACE(log, ...)   LOGGER_WRITE(log, LOG_TRACE  , __VA_ARGS__)
+#define LOGGER_DEBUG(log, ...)   LOGGER_WRITE(log, LOG_DEBUG  , __VA_ARGS__)
+#define LOGGER_INFO(log, ...)    LOGGER_WRITE(log, LOG_INFO   , __VA_ARGS__)
+#define LOGGER_WARNING(log, ...) LOGGER_WRITE(log, LOG_WARNING, __VA_ARGS__)
+#define LOGGER_ERROR(log, ...)   LOGGER_WRITE(log, LOG_ERROR  , __VA_ARGS__)
 
 #endif /* TOXLOGGER_H */

@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    uint8_t buffer[512] = {};
+    uint8_t buffer[512] = {0};
     int r_len = recv(sock, buffer, sizeof(buffer), 0);
 
     if (r_len < (int)p_len) {

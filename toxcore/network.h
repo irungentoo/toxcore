@@ -155,7 +155,7 @@ IP6;
 
 typedef struct {
     uint8_t family;
-    union {
+    __extension__ union {
         IP4 ip4;
         IP6 ip6;
     };

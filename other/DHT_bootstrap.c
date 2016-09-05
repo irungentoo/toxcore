@@ -60,7 +60,7 @@
 
 void manage_keys(DHT *dht)
 {
-    const uint32_t KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    enum { KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES };
     uint8_t keys[KEYS_SIZE];
 
     FILE *keys_file = fopen("key", "r");

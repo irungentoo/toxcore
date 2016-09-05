@@ -310,7 +310,7 @@ static uint8_t response_callback_connection_id;
 static uint8_t response_callback_public_key[crypto_box_PUBLICKEYBYTES];
 static int response_callback(void *object, uint8_t connection_id, const uint8_t *public_key)
 {
-    if (set_tcp_connection_number(object - 2, connection_id, 7) != 0) {
+    if (set_tcp_connection_number((TCP_Client_Connection *)((char *)object - 2), connection_id, 7) != 0) {
         return 1;
     }
 
@@ -433,7 +433,7 @@ START_TEST(test_client)
     crypto_box_keypair(f2_public_key, f2_secret_key);
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
     TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key, 0);
-    routing_response_handler(conn, response_callback, ((void *)conn) + 2);
+    routing_response_handler(conn, response_callback, (char *)conn + 2);
     routing_status_handler(conn, status_callback, (void *)2);
     routing_data_handler(conn, data_callback, (void *)3);
     oob_data_handler(conn, oob_data_callback, (void *)4);

@@ -85,4 +85,4 @@ int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
     }
 
     return argvoffset;
-};
+}
