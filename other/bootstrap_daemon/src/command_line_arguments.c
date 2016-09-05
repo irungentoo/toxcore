@@ -35,7 +35,7 @@
 /**
  * Prints --help message
  */
-void print_help()
+static void print_help(void)
 {
     // 2 space ident
     // make sure all lines fit into 80 columns

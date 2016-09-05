@@ -22,7 +22,7 @@ START_TEST(test_creativetestnamegoeshere)
 }
 END_TEST
 
-Suite *creativesuitenamegoeshere_suite(void)
+static Suite *creativesuitenamegoeshere_suite(void)
 {
     Suite *s = suite_create("creativesuitedescritptiongoeshere");
 
@@ -46,4 +46,3 @@ int main(int argc, char *argv[])
 
     return number_failed;
 }
-

@@ -54,7 +54,7 @@
 
 uint8_t zeroes_cid[crypto_box_PUBLICKEYBYTES];
 
-void print_client_id(uint8_t *public_key)
+static void print_client_id(uint8_t *public_key)
 {
     uint32_t j;
 
@@ -63,7 +63,7 @@ void print_client_id(uint8_t *public_key)
     }
 }
 
-void print_hardening(Hardening *h)
+static void print_hardening(Hardening *h)
 {
     printf("Hardening:\n");
     printf("routes_requests_ok: %hhu\n", h->routes_requests_ok);
@@ -81,7 +81,7 @@ void print_hardening(Hardening *h)
     printf("\n\n");
 }
 
-void print_assoc(IPPTsPng *assoc, uint8_t ours)
+static void print_assoc(IPPTsPng *assoc, uint8_t ours)
 {
     IP_Port *ipp = &assoc->ip_port;
     printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip), ntohs(ipp->port));
@@ -100,7 +100,7 @@ void print_assoc(IPPTsPng *assoc, uint8_t ours)
     print_hardening(&assoc->hardening);
 }
 
-void print_clientlist(DHT *dht)
+static void print_clientlist(DHT *dht)
 {
     uint32_t i;
     printf("___________________CLOSE________________________________\n");
@@ -120,7 +120,7 @@ void print_clientlist(DHT *dht)
     }
 }
 
-void print_friendlist(DHT *dht)
+static void print_friendlist(DHT *dht)
 {
     uint32_t i, k;
     IP_Port p_ip;
@@ -153,7 +153,8 @@ void print_friendlist(DHT *dht)
     }
 }
 
-void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
+#if 0 /* slvrTODO: */
+static void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
@@ -169,6 +170,7 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 
     printf("\n--------------------END-----------------------------\n\n\n");
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -230,26 +232,27 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /*
-        IP_Port ip_port;
-        uint8_t data[MAX_UDP_PACKET_SIZE];
-        uint32_t length;
-    */
+#if 0 /* slvrTODO: */
+    IP_Port ip_port;
+    uint8_t data[MAX_UDP_PACKET_SIZE];
+    uint32_t length;
+#endif
 
     while (1) {
-
         do_DHT(dht);
 
-        /* slvrTODO:
-                while(receivepacket(&ip_port, data, &length) != -1) {
-                    if(DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
-                        //unhandled packet
-                        printpacket(data, length, ip_port);
-                    } else {
-                        printf("Received handled packet with length: %u\n", length);
-                    }
-                }
-        */
+#if 0 /* slvrTODO: */
+
+        while (receivepacket(&ip_port, data, &length) != -1) {
+            if (DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
+                //unhandled packet
+                printpacket(data, length, ip_port);
+            } else {
+                printf("Received handled packet with length: %u\n", length);
+            }
+        }
+
+#endif
         networking_poll(dht->net, NULL);
 
         print_clientlist(dht);

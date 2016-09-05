@@ -2136,6 +2136,7 @@ static void do_NAT(DHT *dht)
 #define CHECK_TYPE_TEST_REQ 4
 #define CHECK_TYPE_TEST_RES 5
 
+#if DHT_HARDENING
 static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8_t *contents, uint16_t length)
 {
     if (length > HARDREQ_DATA_SIZE - 1) {
@@ -2164,6 +2165,7 @@ static int send_hardening_getnode_req(DHT *dht, Node_format *dest, Node_format *
     memcpy(data + sizeof(Node_format), search_id, crypto_box_PUBLICKEYBYTES);
     return send_hardening_req(dht, dest, CHECK_TYPE_GETNODE_REQ, data, sizeof(Node_format) + crypto_box_PUBLICKEYBYTES);
 }
+#endif
 
 /* Send a get node hardening response */
 static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id,
@@ -2316,10 +2318,11 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
     return 1;
 }
 
+#if DHT_HARDENING
 /* Return a random node from all the nodes we are connected to.
  * TODO: improve this function.
  */
-Node_format random_node(DHT *dht, sa_family_t sa_family)
+static Node_format random_node(DHT *dht, sa_family_t sa_family)
 {
     uint8_t id[crypto_box_PUBLICKEYBYTES];
     uint32_t i;
@@ -2339,12 +2342,13 @@ Node_format random_node(DHT *dht, sa_family_t sa_family)
 
     return nodes_list[rand() % num_nodes];
 }
+#endif
 
 /* Put up to max_num nodes in nodes from the closelist.
  *
  * return the number of nodes.
  */
-uint16_t list_nodes(Client_data *list, unsigned int length, Node_format *nodes, uint16_t max_num)
+static uint16_t list_nodes(Client_data *list, unsigned int length, Node_format *nodes, uint16_t max_num)
 {
     if (max_num == 0) {
         return 0;
@@ -2417,7 +2421,8 @@ uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
     return list_nodes(dht->close_clientlist, LCLIENT_LIST, nodes, max_num);
 }
 
-void do_hardening(DHT *dht)
+#if DHT_HARDENING
+static void do_hardening(DHT *dht)
 {
     uint32_t i;
 
@@ -2469,6 +2474,7 @@ void do_hardening(DHT *dht)
         //TODO: add the 2 other testers.
     }
 }
+#endif
 
 /*----------------------------------------------------------------------------------*/
 
@@ -2589,7 +2595,9 @@ void do_DHT(DHT *dht)
     do_DHT_friends(dht);
     do_NAT(dht);
     do_to_ping(dht->ping);
-    //do_hardening(dht);
+#if DHT_HARDENING
+    do_hardening(dht);
+#endif
 #ifdef ENABLE_ASSOC_DHT
 
     if (dht->assoc)

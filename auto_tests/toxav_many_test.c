@@ -6,7 +6,7 @@
 #   include <assert.h>
 
 #   define ck_assert(X) assert(X);
-#   define START_TEST(NAME) void NAME ()
+#   define START_TEST(NAME) static void NAME (void)
 #   define END_TEST
 #else
 #   include "helpers.h"
@@ -52,7 +52,7 @@ typedef struct {
 /**
  * Callbacks
  */
-void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
+static void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
 {
     (void) av;
     (void) audio_enabled;
@@ -61,16 +61,16 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
     printf("Handling CALL callback\n");
     ((CallControl *)user_data)[friend_number].incoming = true;
 }
-void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
+static void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
     printf("Handling CALL STATE callback: %d %p\n", state, (void *)av);
     ((CallControl *)user_data)[friend_number].state = state;
 }
-void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v,
-                                    int32_t ystride, int32_t ustride, int32_t vstride,
-                                    void *user_data)
+static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
+        uint16_t width, uint16_t height,
+        uint8_t const *y, uint8_t const *u, uint8_t const *v,
+        int32_t ystride, int32_t ustride, int32_t vstride,
+        void *user_data)
 {
     (void) av;
     (void) friend_number;
@@ -84,12 +84,12 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     (void) vstride;
     (void) user_data;
 }
-void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    int16_t const *pcm,
-                                    size_t sample_count,
-                                    uint8_t channels,
-                                    uint32_t sampling_rate,
-                                    void *user_data)
+static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
+        int16_t const *pcm,
+        size_t sample_count,
+        uint8_t channels,
+        uint32_t sampling_rate,
+        void *user_data)
 {
     (void) av;
     (void) friend_number;
@@ -99,7 +99,8 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     (void) sampling_rate;
     (void) user_data;
 }
-void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
+                                       void *userdata)
 {
     (void) userdata;
 
@@ -112,7 +113,7 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
 /**
  * Iterate helper
  */
-ToxAV *setup_av_instance(Tox *tox, CallControl *CC)
+static ToxAV *setup_av_instance(Tox *tox, CallControl *CC)
 {
     TOXAV_ERR_NEW error;
 
@@ -126,7 +127,7 @@ ToxAV *setup_av_instance(Tox *tox, CallControl *CC)
 
     return av;
 }
-void *call_thread(void *pd)
+static void *call_thread(void *pd)
 {
     ToxAV *AliceAV = ((thread_data *) pd)->AliceAV;
     ToxAV *BobAV = ((thread_data *) pd)->BobAV;
@@ -241,9 +242,9 @@ START_TEST(test_AV_three_calls)
     tox_self_get_address(Alice, address);
 
 
-    ck_assert(tox_friend_add(Bobs[0], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
-    ck_assert(tox_friend_add(Bobs[1], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
-    ck_assert(tox_friend_add(Bobs[2], address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[0], address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[1], address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[2], address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
 
     uint8_t off = 1;
 
@@ -351,7 +352,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 #else
-Suite *tox_suite(void)
+static Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
 

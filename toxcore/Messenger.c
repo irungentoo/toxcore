@@ -56,7 +56,7 @@ static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
  *
  *  return -1 if realloc fails.
  */
-int realloc_friendlist(Messenger *m, uint32_t num)
+static int realloc_friendlist(Messenger *m, uint32_t num)
 {
     if (num == 0) {
         free(m->friendlist);
@@ -1191,8 +1191,8 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
     return i;
 }
 
-int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
-                             uint8_t control_type, uint8_t *data, uint16_t data_length)
+static int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
+                                    uint8_t control_type, uint8_t *data, uint16_t data_length)
 {
     if ((unsigned int)(1 + 3 + data_length) > MAX_CRYPTO_DATA_SIZE) {
         return -1;
@@ -2845,7 +2845,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
     switch (type) {
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
             if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
-                set_nospam(&(m->fr), *(uint32_t *)data);
+                set_nospam(&(m->fr), *(const uint32_t *)data);
                 load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + crypto_box_PUBLICKEYBYTES);
 
                 if (public_key_cmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key) != 0) {

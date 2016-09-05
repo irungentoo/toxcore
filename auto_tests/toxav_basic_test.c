@@ -6,7 +6,7 @@
 #   include <assert.h>
 
 #   define ck_assert(X) assert(X);
-#   define START_TEST(NAME) void NAME ()
+#   define START_TEST(NAME) static void NAME (void)
 #   define END_TEST
 #else
 #   include "helpers.h"
@@ -66,7 +66,7 @@ typedef struct {
 /**
  * Callbacks
  */
-void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
+static void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
 {
     (void) av;
     (void) friend_number;
@@ -76,7 +76,7 @@ void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool
     printf("Handling CALL callback\n");
     ((CallControl *)user_data)->incoming = true;
 }
-void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
+static void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
     (void) av;
     (void) friend_number;
@@ -84,11 +84,11 @@ void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, vo
     printf("Handling CALL STATE callback: %d\n", state);
     ((CallControl *)user_data)->state = state;
 }
-void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v,
-                                    int32_t ystride, int32_t ustride, int32_t vstride,
-                                    void *user_data)
+static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
+        uint16_t width, uint16_t height,
+        uint8_t const *y, uint8_t const *u, uint8_t const *v,
+        int32_t ystride, int32_t ustride, int32_t vstride,
+        void *user_data)
 {
     (void) av;
     (void) friend_number;
@@ -103,12 +103,12 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     (void) user_data;
     printf("Received video payload\n");
 }
-void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    int16_t const *pcm,
-                                    size_t sample_count,
-                                    uint8_t channels,
-                                    uint32_t sampling_rate,
-                                    void *user_data)
+static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
+        int16_t const *pcm,
+        size_t sample_count,
+        uint8_t channels,
+        uint32_t sampling_rate,
+        void *user_data)
 {
     (void) av;
     (void) friend_number;
@@ -119,7 +119,8 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     (void) user_data;
     printf("Received audio payload\n");
 }
-void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
+                                       void *userdata)
 {
     (void) userdata;
 
@@ -132,7 +133,7 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
 /**
  * Iterate helper
  */
-int iterate_tox(Tox *bootstrap, Tox *Alice, Tox *Bob)
+static int iterate_tox(Tox *bootstrap, Tox *Alice, Tox *Bob)
 {
     c_sleep(100);
     tox_iterate(bootstrap, NULL);
@@ -175,7 +176,7 @@ START_TEST(test_AV_flows)
     tox_self_get_address(Alice, address);
 
 
-    ck_assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bob, address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
 
     uint8_t off = 1;
 
@@ -601,7 +602,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 #else
-Suite *tox_suite(void)
+static Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
 

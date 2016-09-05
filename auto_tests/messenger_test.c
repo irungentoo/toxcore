@@ -26,34 +26,34 @@
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
 #define STRINGS_EQUAL(X, Y) (strcmp(X, Y) == 0)
 
-char *friend_id_str = "e4b3d5030bc99494605aecc33ceec8875640c1d74aa32790e821b17e98771c4a00000000f1db";
+static const char *friend_id_str = "e4b3d5030bc99494605aecc33ceec8875640c1d74aa32790e821b17e98771c4a00000000f1db";
 
 /* in case we need more than one ID for a test */
-char *good_id_a_str = "DB9B569D14850ED8364C3744CAC2C8FF78985D213E980C7C508D0E91E8E45441";
-char *good_id_b_str = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc29744785291fa4ef4d64";
+static const char *good_id_a_str = "DB9B569D14850ED8364C3744CAC2C8FF78985D213E980C7C508D0E91E8E45441";
+static const char *good_id_b_str = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc29744785291fa4ef4d64";
 
-char *bad_id_str =    "9B569D14ff637e69f2";
+static const char *bad_id_str =    "9B569D14ff637e69f2";
 
-unsigned char *friend_id = NULL;
-unsigned char *good_id_a = NULL;
-unsigned char *good_id_b = NULL;
-unsigned char *bad_id    = NULL;
+static unsigned char *friend_id = NULL;
+static unsigned char *good_id_a = NULL;
+static unsigned char *good_id_b = NULL;
+static unsigned char *bad_id    = NULL;
 
-int friend_id_num = 0;
+static int friend_id_num = 0;
 
-Messenger *m;
+static Messenger *m;
 
 START_TEST(test_m_sendmesage)
 {
-    char *message = "h-hi :3";
+    const char *message = "h-hi :3";
     int good_len = strlen(message);
     int bad_len = MAX_CRYPTO_PACKET_SIZE;
 
 
-    ck_assert(m_send_message_generic(m, -1, MESSAGE_NORMAL, (uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, 17, MESSAGE_NORMAL, (uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, friend_id_num, MESSAGE_NORMAL, (uint8_t *)message, bad_len, 0) == -2);
+    ck_assert(m_send_message_generic(m, -1, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
+    ck_assert(m_send_message_generic(m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
+    ck_assert(m_send_message_generic(m, 17, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
+    ck_assert(m_send_message_generic(m, friend_id_num, MESSAGE_NORMAL, (const uint8_t *)message, bad_len, 0) == -2);
 }
 END_TEST
 
@@ -77,15 +77,15 @@ END_TEST
 
 START_TEST(test_m_set_userstatus)
 {
-    char *status = "online!";
+    const char *status = "online!";
     uint16_t good_length = strlen(status);
     uint16_t bad_length = REALLY_BIG_NUMBER;
 
-    ck_assert_msg((m_set_statusmessage(m, (uint8_t *)status, bad_length) == -1),
+    ck_assert_msg((m_set_statusmessage(m, (const uint8_t *)status, bad_length) == -1),
                   "m_set_userstatus did NOT catch the following length: %d\n",
                   REALLY_BIG_NUMBER);
 
-    ck_assert_msg((m_set_statusmessage(m, (uint8_t *)status, good_length) == 0),
+    ck_assert_msg((m_set_statusmessage(m, (const uint8_t *)status, good_length) == 0),
                   "m_set_userstatus did NOT return 0 on the following length: %d\n"
                   "MAX_STATUSMESSAGE_LENGTH: %d\n", good_length, MAX_STATUSMESSAGE_LENGTH);
 }
@@ -156,25 +156,25 @@ END_TEST */
 
 START_TEST(test_setname)
 {
-    char *good_name = "consensualCorn";
+    const char *good_name = "consensualCorn";
     int good_length = strlen(good_name);
     int bad_length = REALLY_BIG_NUMBER;
 
-    ck_assert_msg((setname(m, (uint8_t *)good_name, bad_length) == -1),
+    ck_assert_msg((setname(m, (const uint8_t *)good_name, bad_length) == -1),
                   "setname() did NOT error on %d as a length argument!\n", bad_length);
 
-    ck_assert_msg((setname(m, (uint8_t *)good_name, good_length) == 0),
+    ck_assert_msg((setname(m, (const uint8_t *)good_name, good_length) == 0),
                   "setname() did NOT return 0 on good arguments!\n");
 }
 END_TEST
 
 START_TEST(test_getself_name)
 {
-    char *nickname = "testGallop";
+    const char *nickname = "testGallop";
     int len = strlen(nickname);
     char nick_check[len];
 
-    setname(m, (uint8_t *)nickname, len);
+    setname(m, (const uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check);
 
     ck_assert_msg((memcmp(nickname, nick_check, len) == 0),
@@ -300,7 +300,7 @@ START_TEST(test_messenger_state_saveloadsave)
 }
 END_TEST
 
-Suite *messenger_suite(void)
+static Suite *messenger_suite(void)
 {
     Suite *s = suite_create("Messenger");
 

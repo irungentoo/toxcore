@@ -53,7 +53,7 @@
 // returns 1 on success
 //         0 on failure - no keys were read or stored
 
-int manage_keys(DHT *dht, char *keys_file_path)
+static int manage_keys(DHT *dht, char *keys_file_path)
 {
     enum { KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES };
     uint8_t keys[KEYS_SIZE];
@@ -98,7 +98,7 @@ int manage_keys(DHT *dht, char *keys_file_path)
 
 // Prints public key
 
-void print_public_key(const uint8_t *public_key)
+static void print_public_key(const uint8_t *public_key)
 {
     char buffer[2 * crypto_box_PUBLICKEYBYTES + 1];
     int index = 0;
@@ -115,7 +115,7 @@ void print_public_key(const uint8_t *public_key)
 // Demonizes the process, appending PID to the PID file and closing file descriptors based on log backend
 // Terminates the application if the daemonization fails.
 
-void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
+static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
 {
     // Check if the PID file exists
     FILE *pid_file;

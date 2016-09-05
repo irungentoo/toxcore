@@ -458,7 +458,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
  * return IP_Port with family 0 on failure.
  * return IP_Port on success.
  */
-IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
+static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
 {
     IP_Port empty;
     empty.ip.family = 0;

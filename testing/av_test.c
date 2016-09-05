@@ -84,15 +84,15 @@ struct toxav_thread_data {
     int32_t sig;
 };
 
-const char *vdout = "AV Test"; /* Video output */
-PaStream *adout = NULL; /* Audio output */
+static const char *vdout = "AV Test"; /* Video output */
+static PaStream *adout = NULL; /* Audio output */
 
 typedef struct {
     uint16_t size;
     int16_t data[];
 } frame;
 
-void *pa_write_thread (void *d)
+static void *pa_write_thread (void *d)
 {
     /* The purpose of this thread is to make sure Pa_WriteStream will not block
      * toxav_iterate thread
@@ -119,21 +119,21 @@ void *pa_write_thread (void *d)
 /**
  * Callbacks
  */
-void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
+static void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
 {
     printf("Handling CALL callback\n");
     ((CallControl *)user_data)->incoming = true;
 }
-void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
+static void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
     printf("Handling CALL STATE callback: %d\n", state);
     ((CallControl *)user_data)->state = state;
 }
-void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v,
-                                    int32_t ystride, int32_t ustride, int32_t vstride,
-                                    void *user_data)
+static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
+        uint16_t width, uint16_t height,
+        uint8_t const *y, uint8_t const *u, uint8_t const *v,
+        int32_t ystride, int32_t ustride, int32_t vstride,
+        void *user_data)
 {
     ystride = abs(ystride);
     ustride = abs(ustride);
@@ -166,12 +166,12 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     cvShowImage(vdout, img);
     free(img_data);
 }
-void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    int16_t const *pcm,
-                                    size_t sample_count,
-                                    uint8_t channels,
-                                    uint32_t sampling_rate,
-                                    void *user_data)
+static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
+        int16_t const *pcm,
+        size_t sample_count,
+        uint8_t channels,
+        uint32_t sampling_rate,
+        void *user_data)
 {
     CallControl *cc = user_data;
     frame *f = malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t) * channels);
@@ -182,13 +182,14 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     free(rb_write(cc->arb, f));
     pthread_mutex_unlock(cc->arb_mutex);
 }
-void t_toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number,
-                                uint32_t audio_bit_rate, uint32_t video_bit_rate,
-                                void *user_data)
+static void t_toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number,
+                                       uint32_t audio_bit_rate, uint32_t video_bit_rate,
+                                       void *user_data)
 {
     printf ("Suggested bit rates: audio: %d video: %d\n", audio_bit_rate, video_bit_rate);
 }
-void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
+                                       void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
         assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
@@ -197,7 +198,7 @@ void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t
 
 /**
  */
-void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxAV **BobAV, CallControl *BobCC)
+static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxAV **BobAV, CallControl *BobCC)
 {
     Tox *Alice;
     Tox *Bob;
@@ -235,7 +236,7 @@ void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxA
     tox_self_get_address(Alice, address);
 
 
-    assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    assert(tox_friend_add(Bob, address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
 
     uint8_t off = 1;
 
@@ -286,7 +287,7 @@ void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxA
     printf("Created 2 instances of ToxAV\n");
     printf("All set after %llu seconds!\n", time(NULL) - cur_time);
 }
-int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userdata)
+static int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userdata)
 {
     tox_iterate(bootstrap, userdata);
     tox_iterate(toxav_get_tox(AliceAV), userdata);
@@ -294,7 +295,7 @@ int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userdata)
 
     return MIN(tox_iteration_interval(toxav_get_tox(AliceAV)), tox_iteration_interval(toxav_get_tox(BobAV)));
 }
-void *iterate_toxav (void *data)
+static void *iterate_toxav (void *data)
 {
     struct toxav_thread_data *data_cast = data;
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
@@ -330,7 +331,7 @@ void *iterate_toxav (void *data)
     pthread_exit(NULL);
 }
 
-int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
+static int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
 {
     int32_t strides[3] = { 1280, 640, 640 };
     uint8_t *planes[3] = {
@@ -368,7 +369,7 @@ int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
     free(planes[2]);
     return rc;
 }
-int print_audio_devices()
+static int print_audio_devices(void)
 {
     int i = 0;
 
@@ -382,7 +383,7 @@ int print_audio_devices()
 
     return 0;
 }
-int print_help (const char *name)
+static int print_help (const char *name)
 {
     printf("Usage: %s -[a:v:o:dh]\n"
            "-a <path> audio input file\n"

@@ -36,7 +36,4 @@
 #define STRING_LENGTH 256
 #define HISTORY 50
 
-void new_lines(char *line);
-void do_refresh();
-
 #endif

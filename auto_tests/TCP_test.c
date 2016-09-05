@@ -130,7 +130,7 @@ struct sec_TCP_con {
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 };
 
-struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
+static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 {
     struct sec_TCP_con *sec_c = malloc(sizeof(struct sec_TCP_con));
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
@@ -176,13 +176,13 @@ struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     return sec_c;
 }
 
-void kill_TCP_con(struct sec_TCP_con *con)
+static void kill_TCP_con(struct sec_TCP_con *con)
 {
     kill_sock(con->sock);
     free(con);
 }
 
-int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
+static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
 {
     uint8_t packet[sizeof(uint16_t) + length + crypto_box_MACBYTES];
 
@@ -200,7 +200,7 @@ int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, u
     return 0;
 }
 
-int read_packet_sec_TCP(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
+static int read_packet_sec_TCP(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
 {
     int len = recv(con->sock, data, length, 0);
     ck_assert_msg(len == length, "wrong len %i\n", len);
@@ -731,7 +731,7 @@ START_TEST(test_tcp_connection2)
 }
 END_TEST
 
-Suite *TCP_suite(void)
+static Suite *TCP_suite(void)
 {
     Suite *s = suite_create("TCP");
 

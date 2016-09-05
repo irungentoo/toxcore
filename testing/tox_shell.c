@@ -45,7 +45,7 @@
 
 #define c_sleep(x) usleep(1000*x)
 
-void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
+static void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
     if (status) {
         printf("\nOther went online.\n");
@@ -54,8 +54,8 @@ void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *
     }
 }
 
-void print_message(Tox *tox, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
-                   void *userdata)
+static void print_message(Tox *tox, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
+                          void *userdata)
 {
     int master = *((int *)userdata);
     write(master, string, length);
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    uint32_t num = tox_friend_add(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"), 0);
+    uint32_t num = tox_friend_add(tox, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo"), 0);
     free(bin_id);
 
     if (num == UINT32_MAX) {

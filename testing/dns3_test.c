@@ -14,7 +14,7 @@
 
 #endif
 
-uint32_t create_packet(uint8_t *packet, uint8_t *string, uint8_t str_len, uint8_t id)
+static uint32_t create_packet(uint8_t *packet, uint8_t *string, uint8_t str_len, uint8_t id)
 {
     memset(packet, 0, str_len + 13 + 16);
     packet[0] = id;

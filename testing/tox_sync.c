@@ -49,12 +49,13 @@ typedef struct {
     uint32_t friendnum;
     uint32_t filenumber;
 } File_t;
-File_t file_senders[NUM_FILE_SENDERS];
-File_t file_recv[NUM_FILE_SENDERS];
-uint8_t numfilesenders;
+static File_t file_senders[NUM_FILE_SENDERS];
+static File_t file_recv[NUM_FILE_SENDERS];
+static uint8_t numfilesenders;
 
-void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
-                            void *user_data)
+static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                                   size_t length,
+                                   void *user_data)
 {
     unsigned int i;
 
@@ -78,7 +79,7 @@ void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_numb
 }
 
 
-uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
+static uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
 {
     FILE *tempfile = fopen(filename, "rb");
 
@@ -103,7 +104,7 @@ uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
     return filenum;
 }
 
-void kill_filesender(Tox *m, uint32_t filenum)
+static void kill_filesender(Tox *m, uint32_t filenum)
 {
     uint32_t i;
 
@@ -114,7 +115,7 @@ void kill_filesender(Tox *m, uint32_t filenum)
         }
     }
 }
-int not_sending()
+static int not_sending(void)
 {
     uint32_t i;
 
@@ -129,8 +130,9 @@ int not_sending()
 
 static char path[1024];
 
-void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t type, uint64_t file_size,
-                         const uint8_t *filename, size_t filename_length, void *user_data)
+static void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t type,
+                                uint64_t file_size,
+                                const uint8_t *filename, size_t filename_length, void *user_data)
 {
     if (type != TOX_FILE_KIND_DATA) {
         printf("Refused invalid file type.");
@@ -142,7 +144,7 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     uint32_t i;
     uint16_t rm = 0;
 
-    for (i = 0; i < strlen((char *)filename); ++i) {
+    for (i = 0; i < strlen((const char *)filename); ++i) {
         if (filename[i] == '/') {
             rm = i;
         }
@@ -175,8 +177,8 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     }
 }
 
-void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
-                        void *user_data)
+static void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+                               void *user_data)
 {
     if (file_number < (1 << 15) && (control == TOX_FILE_CONTROL_CANCEL)) {
         kill_filesender(tox, file_number);
@@ -192,8 +194,8 @@ void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, 
     }
 }
 
-void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
-                size_t length, void *user_data)
+static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
+                       size_t length, void *user_data)
 {
     uint8_t file_index = (filenumber >> 16) - 1;
 
@@ -214,7 +216,7 @@ void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t p
     }
 }
 
-void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
+static void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
     if (status) {
         printf("\nOther went online.\n");
@@ -284,7 +286,7 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    uint32_t num = tox_friend_add(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"), 0);
+    uint32_t num = tox_friend_add(tox, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo"), 0);
     free(bin_id);
 
     if (num == UINT32_MAX) {

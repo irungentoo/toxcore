@@ -35,7 +35,7 @@
 #endif // TOX_DEBUG
 
 // You are responsible for freeing the return value!
-uint8_t *hex_string_to_bin(char *hex_string)
+uint8_t *hex_string_to_bin(const char *hex_string)
 {
     // byte is represented by exactly 2 hex digits, so lenth of binary string
     // is half of that of the hex one. only hex string with even length
@@ -44,7 +44,7 @@ uint8_t *hex_string_to_bin(char *hex_string)
     // then the last byte just won't be written in 'ret'.
     size_t i, len = strlen(hex_string) / 2;
     uint8_t *ret = malloc(len);
-    char *pos = hex_string;
+    const char *pos = hex_string;
 
     for (i = 0; i < len; ++i, pos += 2) {
         sscanf(pos, "%2hhx", &ret[i]);

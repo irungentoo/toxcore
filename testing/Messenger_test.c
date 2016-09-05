@@ -56,18 +56,18 @@
 
 #endif
 
-void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
-                   void *userdata)
+static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
+                          void *userdata)
 {
     printf("Message with length %lu received from %u: %s \n", length, friendnumber, string);
-    m_send_message_generic(m, friendnumber, type, (uint8_t *)"Test1", 6, 0);
+    m_send_message_generic(m, friendnumber, type, (const uint8_t *)"Test1", 6, 0);
 }
 
 /* FIXME needed as print_request has to match the interface expected by
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
 
-void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     printf("Friend request received from: \n");
     printf("ClientID: ");
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
         printf("%hhX", address[i]);
     }
 
-    setname(m, (uint8_t *)"Anon", 5);
+    setname(m, (const uint8_t *)"Anon", 5);
 
     char temp_hex_id[128];
     printf("\nEnter the address of the friend you wish to add (38 bytes HEX format):\n");
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_hex_id);
-    int num = m_addfriend(m, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = m_addfriend(m, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     free(bin_id);
 
     perror("Initialization");
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
         getname(m, num, name);
         printf("%s\n", name);
 
-        m_send_message_generic(m, num, MESSAGE_NORMAL, (uint8_t *)"Test", 5, 0);
+        m_send_message_generic(m, num, MESSAGE_NORMAL, (const uint8_t *)"Test", 5, 0);
         do_messenger(m, NULL);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");

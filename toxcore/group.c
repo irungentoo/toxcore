@@ -1188,7 +1188,7 @@ static unsigned int send_message_group(const Group_Chats *g_c, int groupnumber, 
                                        uint16_t len);
 
 #define GROUP_MESSAGE_PING_ID 0
-int group_ping_send(const Group_Chats *g_c, int groupnumber)
+static int group_ping_send(const Group_Chats *g_c, int groupnumber)
 {
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, 0, 0)) {
         return 0;
@@ -1203,8 +1203,8 @@ int group_ping_send(const Group_Chats *g_c, int groupnumber)
  * return 0 on success
  * return -1 on failure
  */
-int group_new_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_num, const uint8_t *real_pk,
-                        uint8_t *temp_pk)
+static int group_new_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t peer_num, const uint8_t *real_pk,
+                               uint8_t *temp_pk)
 {
     uint8_t packet[GROUP_MESSAGE_NEW_PEER_LENGTH];
 

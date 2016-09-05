@@ -10,6 +10,9 @@
 
 #include "helpers.h"
 
+
+// These tests currently fail.
+#if 0
 #define swap(x,y) do \
    { unsigned char swap_temp[sizeof(x) == sizeof(y) ? (signed)sizeof(x) : -1]; \
      memcpy(swap_temp,&y,sizeof(x)); \
@@ -18,7 +21,7 @@
     } while(0)
 
 
-void mark_bad(IPPTsPng *ipptp)
+static void mark_bad(IPPTsPng *ipptp)
 {
     ipptp->timestamp = unix_time() - 2 * BAD_NODE_TIMEOUT;
     ipptp->hardening.routes_requests_ok = 0;
@@ -26,7 +29,7 @@ void mark_bad(IPPTsPng *ipptp)
     ipptp->hardening.testing_requests = 0;
 }
 
-void mark_possible_bad(IPPTsPng *ipptp)
+static void mark_possible_bad(IPPTsPng *ipptp)
 {
     ipptp->timestamp = unix_time();
     ipptp->hardening.routes_requests_ok = 0;
@@ -34,7 +37,7 @@ void mark_possible_bad(IPPTsPng *ipptp)
     ipptp->hardening.testing_requests = 0;
 }
 
-void mark_good(IPPTsPng *ipptp)
+static void mark_good(IPPTsPng *ipptp)
 {
     ipptp->timestamp = unix_time();
     ipptp->hardening.routes_requests_ok = (HARDENING_ALL_OK >> 0) & 1;
@@ -42,7 +45,7 @@ void mark_good(IPPTsPng *ipptp)
     ipptp->hardening.testing_requests = (HARDENING_ALL_OK >> 2) & 1;
 }
 
-void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
+static void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
 {
     uint32_t i;
 
@@ -57,7 +60,7 @@ void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
 
 /* Returns 1 if public_key has a furthest distance to comp_client_id
    than all public_key's  in the list */
-uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t length, const uint8_t *public_key)
+static uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t length, const uint8_t *public_key)
 {
     uint32_t i;
 
@@ -70,7 +73,7 @@ uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t l
     return 1;
 }
 
-int client_in_list(Client_data *list, uint32_t length, const uint8_t *public_key)
+static int client_in_list(Client_data *list, uint32_t length, const uint8_t *public_key)
 {
     int i;
 
@@ -83,10 +86,10 @@ int client_in_list(Client_data *list, uint32_t length, const uint8_t *public_key
     return -1;
 }
 
-void test_addto_lists_update(DHT            *dht,
-                             Client_data    *list,
-                             uint32_t        length,
-                             IP_Port        *ip_port)
+static void test_addto_lists_update(DHT            *dht,
+                                    Client_data    *list,
+                                    uint32_t        length,
+                                    IP_Port        *ip_port)
 {
     int used, test, test1, test2, found;
     IP_Port test_ipp;
@@ -157,10 +160,10 @@ void test_addto_lists_update(DHT            *dht,
                   "Client IP_Port is incorrect");
 }
 
-void test_addto_lists_bad(DHT            *dht,
-                          Client_data    *list,
-                          uint32_t        length,
-                          IP_Port        *ip_port)
+static void test_addto_lists_bad(DHT            *dht,
+                                 Client_data    *list,
+                                 uint32_t        length,
+                                 IP_Port        *ip_port)
 {
     // check "bad" clients replacement
     int used, test1, test2, test3;
@@ -200,11 +203,11 @@ void test_addto_lists_bad(DHT            *dht,
     ck_assert_msg(client_in_list(list, length, test_id3) >= 0, "Wrong bad client removed");
 }
 
-void test_addto_lists_possible_bad(DHT            *dht,
-                                   Client_data    *list,
-                                   uint32_t        length,
-                                   IP_Port        *ip_port,
-                                   const uint8_t  *comp_client_id)
+static void test_addto_lists_possible_bad(DHT            *dht,
+        Client_data    *list,
+        uint32_t        length,
+        IP_Port        *ip_port,
+        const uint8_t  *comp_client_id)
 {
     // check "possibly bad" clients replacement
     int used, test1, test2, test3;
@@ -265,11 +268,11 @@ void test_addto_lists_possible_bad(DHT            *dht,
     }
 }
 
-void test_addto_lists_good(DHT            *dht,
-                           Client_data    *list,
-                           uint32_t        length,
-                           IP_Port        *ip_port,
-                           const uint8_t  *comp_client_id)
+static void test_addto_lists_good(DHT            *dht,
+                                  Client_data    *list,
+                                  uint32_t        length,
+                                  IP_Port        *ip_port,
+                                  const uint8_t  *comp_client_id)
 {
     uint8_t public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
@@ -295,8 +298,6 @@ void test_addto_lists_good(DHT            *dht,
     ck_assert_msg(client_in_list(list, length, public_key) == -1, "Good client id is in the list");
 }
 
-// These tests currently fail.
-#if 0
 static void test_addto_lists(IP ip)
 {
     Networking_Core *net = new_networking(NULL, ip, TOX_PORT_DEFAULT);
@@ -382,7 +383,7 @@ END_TEST
 
 #define DHT_LIST_LENGTH 128
 
-void print_pk(uint8_t *public_key)
+static void print_pk(uint8_t *public_key)
 {
     uint32_t j;
 
@@ -393,8 +394,9 @@ void print_pk(uint8_t *public_key)
     printf("\n");
 }
 
-void test_add_to_list(uint8_t cmp_list[][crypto_box_PUBLICKEYBYTES + 1], unsigned int length, const uint8_t *pk,
-                      const uint8_t *cmp_pk)
+static void test_add_to_list(uint8_t cmp_list[][crypto_box_PUBLICKEYBYTES + 1],
+                             unsigned int length, const uint8_t *pk,
+                             const uint8_t *cmp_pk)
 {
     uint8_t p_b[crypto_box_PUBLICKEYBYTES];
     unsigned int i;
@@ -423,7 +425,7 @@ void test_add_to_list(uint8_t cmp_list[][crypto_box_PUBLICKEYBYTES + 1], unsigne
 
 #define NUM_DHT 100
 
-void test_list_main()
+static void test_list_main(void)
 {
     DHT *dhts[NUM_DHT];
 
@@ -555,7 +557,7 @@ START_TEST(test_list)
 }
 END_TEST
 
-void ip_callback(void *data, int32_t number, IP_Port ip_port)
+static void ip_callback(void *data, int32_t number, IP_Port ip_port)
 {
 }
 
@@ -646,7 +648,7 @@ loop_top:
 }
 END_TEST
 
-Suite *dht_suite(void)
+static Suite *dht_suite(void)
 {
     Suite *s = suite_create("DHT");
 

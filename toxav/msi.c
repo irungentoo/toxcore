@@ -682,7 +682,8 @@ void handle_init (MSICall *call, const MSIMessage *msg)
         }
         break;
 
-        default: {
+        case msi_CallRequested:
+        case msi_CallRequesting: {
             LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid state on 'init'");
             call->error = msi_EInvalidState;
             goto FAILURE;

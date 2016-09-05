@@ -268,11 +268,11 @@ uint64_t current_time_monotonic(void)
 
 static uint32_t data_0(uint16_t buflen, const uint8_t *buffer)
 {
-    return buflen > 4 ? ntohl(*(uint32_t *)&buffer[1]) : 0;
+    return buflen > 4 ? ntohl(*(const uint32_t *)&buffer[1]) : 0;
 }
 static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
 {
-    return buflen > 7 ? ntohl(*(uint32_t *)&buffer[5]) : 0;
+    return buflen > 7 ? ntohl(*(const uint32_t *)&buffer[5]) : 0;
 }
 
 static void loglogdata(Logger *log, const char *message, const uint8_t *buffer,
@@ -359,7 +359,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
         return -1;
     }
 
-    int res = sendto(net->sock, (char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+    int res = sendto(net->sock, (const char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 
     loglogdata(net->log, "O=>", data, length, ip_port, res);
 
@@ -874,13 +874,13 @@ const char *ip_ntoa(const IP *ip)
     if (ip) {
         if (ip->family == AF_INET) {
             /* returns standard quad-dotted notation */
-            struct in_addr *addr = (struct in_addr *)&ip->ip4;
+            const struct in_addr *addr = (const struct in_addr *)&ip->ip4;
 
             addresstext[0] = 0;
             inet_ntop(ip->family, addr, addresstext, sizeof(addresstext));
         } else if (ip->family == AF_INET6) {
             /* returns hex-groups enclosed into square brackets */
-            struct in6_addr *addr = (struct in6_addr *)&ip->ip6;
+            const struct in6_addr *addr = (const struct in6_addr *)&ip->ip6;
 
             addresstext[0] = '[';
             inet_ntop(ip->family, addr, &addresstext[1], sizeof(addresstext) - 3);
@@ -921,12 +921,12 @@ int ip_parse_addr(const IP *ip, char *address, size_t length)
     }
 
     if (ip->family == AF_INET) {
-        struct in_addr *addr = (struct in_addr *)&ip->ip4;
+        const struct in_addr *addr = (const struct in_addr *)&ip->ip4;
         return inet_ntop(ip->family, addr, address, length) != NULL;
     }
 
     if (ip->family == AF_INET6) {
-        struct in6_addr *addr = (struct in6_addr *)&ip->ip6;
+        const struct in6_addr *addr = (const struct in6_addr *)&ip->ip6;
         return inet_ntop(ip->family, addr, address, length) != NULL;
     }
 

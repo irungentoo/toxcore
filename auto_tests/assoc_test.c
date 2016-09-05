@@ -134,7 +134,7 @@ START_TEST(test_fillup)
 }
 END_TEST
 
-Suite *Assoc_suite(void)
+static Suite *Assoc_suite(void)
 {
     Suite *s = suite_create("Assoc");
 

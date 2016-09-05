@@ -49,7 +49,7 @@ bool open_log(LOG_BACKEND backend);
  * Releases all used resources by the logger.
  * @return true on success, flase if log is already closed.
  */
-bool close_log();
+bool close_log(void);
 
 /**
  * Writes a message to the log.

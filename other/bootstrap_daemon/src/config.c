@@ -41,7 +41,7 @@
  *
  * Important: iff `tcp_relay_port_count` > 0, then you are responsible for freeing `tcp_relay_ports`.
  */
-void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
+static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_ports, int *tcp_relay_port_count)
 {
     const char *NAME_TCP_RELAY_PORTS = "tcp_relay_ports";
 
@@ -303,7 +303,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
  * @return binary on success,
  *         NULL on failure.
  */
-uint8_t *hex_string_to_bin(char *hex_string)
+static uint8_t *hex_string_to_bin(const char *hex_string)
 {
     if (strlen(hex_string) % 2 != 0) {
         return NULL;
@@ -312,7 +312,7 @@ uint8_t *hex_string_to_bin(char *hex_string)
     size_t len = strlen(hex_string) / 2;
     uint8_t *ret = malloc(len);
 
-    char *pos = hex_string;
+    const char *pos = hex_string;
     size_t i;
 
     for (i = 0; i < len; ++i, pos += 2) {
@@ -403,7 +403,7 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
             goto next;
         }
 
-        uint8_t *bs_public_key_bin = hex_string_to_bin((char *)bs_public_key);
+        uint8_t *bs_public_key_bin = hex_string_to_bin((const char *)bs_public_key);
         const int address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port),
                                      bs_public_key_bin);
         free(bs_public_key_bin);

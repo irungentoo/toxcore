@@ -27,12 +27,12 @@
 #define IRC_CHANNEL "#tox-real-ontopic"
 
 //IRC server ip and port.
-uint8_t ip[4] = {127, 0, 0, 1};
-uint16_t port = 6667;
+static uint8_t ip[4] = {127, 0, 0, 1};
+static uint16_t port = 6667;
 
 #define SILENT_TIMEOUT 20
 
-int sock;
+static int sock;
 
 #define SERVER_CONNECT "NICK "IRC_NAME"\nUSER "IRC_NAME" 8 * :"IRC_NAME"\n"
 #define CHANNEL_JOIN "JOIN "IRC_CHANNEL"\n"
@@ -40,12 +40,12 @@ int sock;
 /* In toxcore/network.c */
 uint64_t current_time_monotonic(void);
 
-uint64_t get_monotime_sec(void)
+static uint64_t get_monotime_sec(void)
 {
     return current_time_monotonic() / 1000;
 }
 
-int reconnect(void)
+static int reconnect(void)
 {
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -81,7 +81,7 @@ int reconnect(void)
 #include "../toxcore/tox.h"
 #include "misc_tools.c"
 
-int current_group = -1;
+static int current_group = -1;
 
 static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
 {
@@ -90,8 +90,9 @@ static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t
     }
 }
 
-void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length,
-                             void *userdata)
+static void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE type, const uint8_t *message,
+                                    size_t length,
+                                    void *userdata)
 {
     if (length == 1 && *message == 'c') {
         if (tox_del_groupchat(tox, current_group) == 0) {
@@ -156,7 +157,7 @@ static void copy_groupmessage(Tox *tox, int groupnumber, int friendgroupnumber, 
     }
 }
 
-void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
+static void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
 {
     if (len > 1350 || len == 0 || len == 1) {
         return;
@@ -218,7 +219,7 @@ void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
     tox_group_message_send(tox, current_group, message, length);
 }
 
-Tox *init_tox(int argc, char *argv[])
+static Tox *init_tox(int argc, char *argv[])
 {
     uint8_t ipv6enabled = 1; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
@@ -239,7 +240,7 @@ Tox *init_tox(int argc, char *argv[])
         exit(1);
     }
 
-    tox_self_set_name(tox, (uint8_t *)IRC_NAME, sizeof(IRC_NAME) - 1, 0);
+    tox_self_set_name(tox, (const uint8_t *)IRC_NAME, sizeof(IRC_NAME) - 1, 0);
     tox_callback_friend_message(tox, &callback_friend_message);
     tox_callback_group_invite(tox, &callback_group_invite, 0);
     tox_callback_group_message(tox, &copy_groupmessage, 0);
@@ -258,7 +259,7 @@ Tox *init_tox(int argc, char *argv[])
     free(binary_string);
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    uint32_t num = tox_friend_add(tox, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo") - 1, 0);
+    uint32_t num = tox_friend_add(tox, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo") - 1, 0);
     free(bin_id);
 
     if (num == UINT32_MAX) {

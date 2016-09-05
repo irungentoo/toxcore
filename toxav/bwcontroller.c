@@ -177,7 +177,7 @@ void send_update(BWController *bwc)
         bwc->cycle.lsu = current_time_monotonic();
     }
 }
-int on_update (BWController *bwc, struct BWCMessage *msg)
+static int on_update (BWController *bwc, struct BWCMessage *msg)
 {
     LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", bwc);
 

@@ -134,7 +134,7 @@ START_TEST(test_ip_equal)
 }
 END_TEST
 
-Suite *network_suite(void)
+static Suite *network_suite(void)
 {
     Suite *s = suite_create("Network");
 
@@ -144,7 +144,7 @@ Suite *network_suite(void)
     return s;
 }
 
-int main()
+int main(void)
 {
     srand((unsigned int) time(NULL));
 

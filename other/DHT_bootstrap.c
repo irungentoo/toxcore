@@ -58,7 +58,7 @@
 #define PORT 33445
 
 
-void manage_keys(DHT *dht)
+static void manage_keys(DHT *dht)
 {
     enum { KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES };
     uint8_t keys[KEYS_SIZE];

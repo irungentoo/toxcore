@@ -191,7 +191,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
 }
 
 
-bool chloss (const RTPSession *session, const struct RTPHeader *header)
+static bool chloss (const RTPSession *session, const struct RTPHeader *header)
 {
     if (ntohl(header->timestamp) < session->rtimestamp) {
         uint16_t hosq, lost = 0;
@@ -213,7 +213,7 @@ bool chloss (const RTPSession *session, const struct RTPHeader *header)
 
     return false;
 }
-struct RTPMessage *new_message (size_t allocate_len, const uint8_t *data, uint16_t data_length)
+static struct RTPMessage *new_message (size_t allocate_len, const uint8_t *data, uint16_t data_length)
 {
     assert(allocate_len >= data_length);
 
@@ -246,7 +246,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
         return -1;
     }
 
-    const struct RTPHeader *header = (struct RTPHeader *) data;
+    const struct RTPHeader *header = (const struct RTPHeader *) data;
 
     if (header->pt != session->payload_type % 128) {
         LOGGER_WARNING(m->log, "Invalid payload type with the session");

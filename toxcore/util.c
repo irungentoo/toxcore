@@ -38,7 +38,7 @@
 static uint64_t unix_time_value;
 static uint64_t unix_base_time_value;
 
-void unix_time_update()
+void unix_time_update(void)
 {
     if (unix_base_time_value == 0) {
         unix_base_time_value = ((uint64_t)time(NULL) - (current_time_monotonic() / 1000ULL));
@@ -47,7 +47,7 @@ void unix_time_update()
     unix_time_value = (current_time_monotonic() / 1000ULL) + unix_base_time_value;
 }
 
-uint64_t unix_time()
+uint64_t unix_time(void)
 {
     return unix_time_value;
 }
