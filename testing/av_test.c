@@ -409,6 +409,7 @@ int main (int argc, char **argv)
     long audio_out_dev_idx = -1;
 
     int32_t audio_frame_duration = 20;
+    // TODO(mannol): Put this to use.
     int32_t video_frame_duration = 10;
 
     /* Parse settings */
