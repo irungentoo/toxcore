@@ -177,7 +177,7 @@ void send_update(BWController *bwc)
         bwc->cycle.lsu = current_time_monotonic();
     }
 }
-static int on_update (BWController *bwc, struct BWCMessage *msg)
+static int on_update (BWController *bwc, const struct BWCMessage *msg)
 {
     LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", bwc);
 
@@ -189,14 +189,14 @@ static int on_update (BWController *bwc, struct BWCMessage *msg)
 
     bwc->cycle.lru = current_time_monotonic();
 
-    msg->recv = ntohl(msg->recv);
-    msg->lost = ntohl(msg->lost);
+    uint32_t recv = ntohl(msg->recv);
+    uint32_t lost = ntohl(msg->lost);
 
-    LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u", msg->recv, msg->lost);
+    LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u", recv, lost);
 
-    if (msg->lost && bwc->mcb) {
+    if (lost && bwc->mcb) {
         bwc->mcb(bwc, bwc->friend_number,
-                 ((float) (msg->lost) / (msg->recv + msg->lost)),
+                 ((float) lost / (recv + lost)),
                  bwc->mcb_data);
     }
 
@@ -208,6 +208,5 @@ int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, ui
         return -1;
     }
 
-    /* NOTE the data is mutable */
-    return on_update(object, (struct BWCMessage *) (data + 1));
+    return on_update(object, (const struct BWCMessage *) (data + 1));
 }
