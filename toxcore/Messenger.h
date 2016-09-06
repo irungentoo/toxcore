@@ -12,6 +12,8 @@
 
 #include "friend_connection.h"
 #include "friend_requests.h"
+#include "group_chats.h"
+#include "group_announce.h"
 #include "logger.h"
 #include "net_crypto.h"
 #include "state.h"
@@ -36,7 +38,10 @@ typedef enum Message_Type {
     MESSAGE_ACTION,
 } Message_Type;
 
+#ifndef MESSENGER_DEFINED
+#define MESSENGER_DEFINED
 typedef struct Messenger Messenger;
+#endif /* MESSENGER_DEFINED */
 
 // Returns the size of the data
 typedef uint32_t m_state_size_cb(const Messenger *m);
@@ -193,6 +198,7 @@ typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t 
         uint8_t connection_status, void *user_data);
 typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
                                     void *user_data);
+typedef void m_group_invite_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length, void *userdata);
 typedef void m_msi_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length,
                              void *user_data);
 typedef int m_lossy_rtp_packet_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
@@ -265,6 +271,9 @@ struct Messenger {
 
     time_t lastdump;
 
+    GC_Session *group_handler;
+    GC_Announce *group_announce;
+
     bool has_added_relays; // If the first connection has occurred in do_messenger
 
     uint16_t num_loaded_relays;
@@ -283,6 +292,9 @@ struct Messenger {
     struct Group_Chats *conferences_object; /* Set by new_groupchats()*/
     m_conference_invite_cb *conference_invite;
 
+    m_group_invite_cb *group_invite;
+    void *group_invite_userdata;
+
     m_file_recv_cb *file_sendrequest;
     m_file_recv_control_cb *file_filecontrol;
     m_file_recv_chunk_cb *file_filedata;
@@ -299,6 +311,13 @@ struct Messenger {
 
     Messenger_Options options;
 };
+
+/* determines if the friendnumber passed is valid in the Messenger object.
+ *
+ * Returns 1 if friendnumber does not designate a valid friend.
+ * Returns 0 otherwise.
+ */
+uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber);
 
 /* Format: `[real_pk (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]`
  *
@@ -562,12 +581,24 @@ void m_callback_core_connection(Messenger *m, m_self_connection_status_cb *funct
  */
 void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function);
 
+/* Set the callback for group invites.
+ */
+void m_callback_group_invite(Messenger *m, m_group_invite_cb *function, void *userdata);
+
 /* Send a conference invite packet.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return 0 on success
+ *  return -1 on failure
  */
 int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+
+/* Send a group invite packet.
+ *
+ *  return 0 on success
+ *  return -1 on failure
+ */
+int send_group_invite_packet(const Messenger *m, uint32_t friendnumber, const uint8_t *data, size_t length);
+
 
 /** FILE SENDING */
 

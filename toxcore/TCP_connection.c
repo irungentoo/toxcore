@@ -55,6 +55,12 @@ const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c)
 }
 
 
+uint32_t tcp_connections_count(const TCP_Connections *tcp_c)
+{
+    return tcp_c->tcp_connections_length;
+}
+
+
 /* Set the size of the array to num.
  *
  *  return -1 if realloc fails.

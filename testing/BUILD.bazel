@@ -43,3 +43,30 @@ cc_binary(
         "//c-toxcore/toxcore",
     ],
 )
+
+cc_binary(
+    name = "group_announce_test",
+    srcs = ["groupchats/group_announce_test.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "group_bootstrap_n_chat",
+    srcs = ["groupchats/group_bootstrap_n_chat.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "group_newpeers_dos_attack",
+    srcs = ["groupchats/group_newpeers_dos_attack.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)

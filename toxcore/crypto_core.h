@@ -18,14 +18,35 @@ extern "C" {
 #endif
 
 /**
- * The number of bytes in a Tox public key.
+ * The number of bytes in a signature.
+ */
+#define CRYPTO_SIGNATURE_SIZE          64
+
+uint32_t crypto_signature_size(void);
+
+/**
+ * The number of bytes in a Tox public key used for signatures.
+ */
+#define CRYPTO_SIGN_PUBLIC_KEY_SIZE    32
+
+uint32_t crypto_sign_public_key_size(void);
+
+/**
+ * The number of bytes in a Tox secret key used for signatures.
+ */
+#define CRYPTO_SIGN_SECRET_KEY_SIZE    64
+
+uint32_t crypto_sign_secret_key_size(void);
+
+/**
+ * The number of bytes in a Tox public key used for encryption.
  */
 #define CRYPTO_PUBLIC_KEY_SIZE         32
 
 uint32_t crypto_public_key_size(void);
 
 /**
- * The number of bytes in a Tox secret key.
+ * The number of bytes in a Tox secret key used for encryption.
  */
 #define CRYPTO_SECRET_KEY_SIZE         32
 
@@ -142,12 +163,24 @@ void random_nonce(uint8_t *nonce);
 void random_bytes(uint8_t *bytes, size_t length);
 
 /**
+ * Return a value between 0 and upper_bound using a uniform distribution.
+ */
+uint32_t random_int_range(uint32_t upper_bound);
+
+/**
  * Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not. This
  * should only be used for input validation.
  *
  * @return false if it isn't, true if it is.
  */
 bool public_key_valid(const uint8_t *public_key);
+
+/**
+ * Extended keypair: curve + ed. Encryption keys are derived from the signature keys.
+ * Used for group chats and group DHT announcements.
+ * pk and sk must have room for at least EXT_PUBLIC_KEY bytes each.
+ */
+int32_t create_extended_keypair(uint8_t *pk, uint8_t *sk);
 
 /**
  * Generate a new random keypair. Every call to this function is likely to

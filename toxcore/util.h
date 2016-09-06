@@ -20,9 +20,33 @@
 extern "C" {
 #endif
 
+bool is_power_of_2(uint64_t x);
+
+/* Functions for groupchat extended keys */
+const uint8_t *get_enc_key(const uint8_t *key);
+const uint8_t *get_sig_pk(const uint8_t *key);
+void set_sig_pk(uint8_t *key, const uint8_t *sig_pk);
+const uint8_t *get_sig_sk(const uint8_t *key);
+void set_sig_sk(uint8_t *key, const uint8_t *sig_sk);
+const uint8_t *get_chat_id(const uint8_t *key);
+
+
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
+
+/* compares two group chat_id's */
+bool chat_id_equal(const uint8_t *dest, const uint8_t *src);
+
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
+
+// For printing purposes
+char *id_toa(const uint8_t *id);
+
+void host_to_net(uint8_t *num, uint16_t numbytes);
+void net_to_host(uint8_t *num, uint16_t numbytes);
+
+/* frees all pointers in a uint8_t pointer array, as well as the array itself. */
+void free_uint8_t_pointer_array(uint8_t **ary, size_t n_items);
 
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
@@ -46,6 +70,9 @@ uint64_t max_u64(uint64_t a, uint64_t b);
 uint16_t min_u16(uint16_t a, uint16_t b);
 uint32_t min_u32(uint32_t a, uint32_t b);
 uint64_t min_u64(uint64_t a, uint64_t b);
+
+/* Returns a 32-bit hash of key of size len */
+uint32_t jenkins_one_at_a_time_hash(const uint8_t *key, size_t len);
 
 #ifdef __cplusplus
 }  // extern "C"

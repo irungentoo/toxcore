@@ -690,9 +690,9 @@ int networking_at_startup(void)
         return -1;
     }
 
-#endif /*USE_RANDOMBYTES_STIR*/
+#endif /* USE_RANDOMBYTES_STIR */
 
-#endif/*VANILLA_NACL*/
+#endif /* VANILLA_NACL */
 
 #ifdef OS_WIN32
     WSADATA wsaData;
@@ -1051,6 +1051,16 @@ void ip_reset(IP *ip)
     }
 
     memset(ip, 0, sizeof(IP));
+}
+
+/* nulls out ip_port */
+void ipport_reset(IP_Port *ipport)
+{
+    if (!ipport) {
+        return;
+    }
+
+    memset(ipport, 0, sizeof(IP_Port));
 }
 
 /* nulls out ip, sets family according to flag */

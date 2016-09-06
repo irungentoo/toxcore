@@ -181,9 +181,9 @@ static void fetch_broadcast_info(uint16_t port)
         ip_port->ip.family = net_family_ipv4;
         ip_port->ip.ip.v4.uint32 = sock4->sin_addr.s_addr;
 
-        if (ip_port->ip.ip.v4.uint32 == 0) {
-            continue;
-        }
+        // if (ip_port->ip.ip.v4.uint32 == 0) {
+        //     continue;
+        // }
 
         ip_port->port = port;
         ++count;

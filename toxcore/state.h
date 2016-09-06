@@ -34,6 +34,7 @@ typedef enum State_Type {
     STATE_TYPE_NAME          = 4,
     STATE_TYPE_STATUSMESSAGE = 5,
     STATE_TYPE_STATUS        = 6,
+    STATE_TYPE_GROUPS        = 7,
     STATE_TYPE_TCP_RELAY     = 10,
     STATE_TYPE_PATH_NODE     = 11,
     STATE_TYPE_CONFERENCES   = 20,

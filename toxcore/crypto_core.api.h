@@ -20,12 +20,27 @@ extern "C" {
 %}
 
 /**
- * The number of bytes in a Tox public key.
+ * The number of bytes in a signature.
+ */
+const CRYPTO_SIGNATURE_SIZE = 64;
+
+/**
+ * The number of bytes in a Tox public key used for signatures.
+ */
+const CRYPTO_SIGN_PUBLIC_KEY_SIZE = 32;
+
+/**
+ * The number of bytes in a Tox secret key used for signatures.
+ */
+const CRYPTO_SIGN_SECRET_KEY_SIZE = 64;
+
+/**
+ * The number of bytes in a Tox public key used for encryption.
  */
 const CRYPTO_PUBLIC_KEY_SIZE = 32;
 
 /**
- * The number of bytes in a Tox secret key.
+ * The number of bytes in a Tox secret key used for encryption.
  */
 const CRYPTO_SECRET_KEY_SIZE = 32;
 
@@ -134,12 +149,24 @@ static void bytes(uint8_t[length] bytes);
 }
 
 /**
+ * Return a value between 0 and upper_bound using a uniform distribution.
+ */
+static uint32_t random_int_range(uint32_t upper_bound);
+
+/**
  * Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not. This
  * should only be used for input validation.
  *
  * @return false if it isn't, true if it is.
  */
 static bool public_key_valid(const uint8_t[CRYPTO_PUBLIC_KEY_SIZE] public_key);
+
+/**
+ * Extended keypair: curve + ed. Encryption keys are derived from the signature keys.
+ * Used for group chats and group DHT announcements.
+ * pk and sk must have room for at least EXT_PUBLIC_KEY bytes each.
+ */
+static int32_t create_extended_keypair(uint8_t *pk, uint8_t *sk);
 
 /**
  * Generate a new random keypair. Every call to this function is likely to

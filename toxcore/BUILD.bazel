@@ -250,8 +250,20 @@ cc_library(
 
 cc_library(
     name = "Messenger",
-    srcs = ["Messenger.c"],
-    hdrs = ["Messenger.h"],
+    srcs = [
+        "Messenger.c",
+        "group_announce.c",
+        "group_chats.c",
+        "group_connection.c",
+        "group_moderation.c",
+    ],
+    hdrs = [
+        "Messenger.h",
+        "group_announce.h",
+        "group_chats.h",
+        "group_connection.h",
+        "group_moderation.h",
+    ],
     visibility = ["//c-toxcore/toxav:__pkg__"],
     deps = [
         ":friend_requests",

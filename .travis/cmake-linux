@@ -86,6 +86,7 @@ travis_script() {
 
   cd _build  # pushd
   ctest -j50 --output-on-failure || \
+    ctest -j50 --output-on-failure --rerun-failed || \
     ctest -j50 --output-on-failure --rerun-failed
   cd -  # popd
 }

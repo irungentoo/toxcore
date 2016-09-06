@@ -15,7 +15,7 @@
 // "function") is used. Note the semantic difference: alloca'd memory does not
 // get freed at the end of the declaration's scope. Do not use VLA() in loops or
 // you may run out of stack space.
-#if !defined(_MSC_VER) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#if !defined(USE_ALLOCA) && !defined(_MSC_VER) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 // C99 VLAs.
 #define VLA(type, name, size) type name[size]
 #define SIZEOF_VLA sizeof

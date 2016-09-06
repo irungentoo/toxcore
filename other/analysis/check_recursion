@@ -101,4 +101,5 @@ def find_recursion(expected):
 find_recursion(expected={
     "add_to_closest -> add_to_closest",
     "add_to_list -> add_to_list",
+    "sanctions_list_add_entry -> sanctions_list_fix_ban_id -> sanctions_list_add_entry",
 })

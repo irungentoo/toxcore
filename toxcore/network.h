@@ -81,7 +81,7 @@ Socket net_accept(Socket sock);
  */
 size_t net_socket_data_recv_buffer(Socket sock);
 
-#define MAX_UDP_PACKET_SIZE 2048
+#define MAX_UDP_PACKET_SIZE 65507
 
 typedef enum Net_Packet_Type {
     NET_PACKET_PING_REQUEST         = 0x00, /* Ping request packet ID. */
@@ -94,6 +94,15 @@ typedef enum Net_Packet_Type {
     NET_PACKET_CRYPTO_DATA          = 0x1b, /* Crypto data packet */
     NET_PACKET_CRYPTO               = 0x20, /* Encrypted data packet ID. */
     NET_PACKET_LAN_DISCOVERY        = 0x21, /* LAN discovery packet ID. */
+
+    NET_PACKET_GC_HANDSHAKE         = 0x5a, /* Group chat handshake packet ID */
+    NET_PACKET_GC_LOSSLESS          = 0x5b, /* Group chat lossless packet ID */
+    NET_PACKET_GC_LOSSY             = 0x5c, /* Group chat lossy packet ID */
+    NET_PACKET_GCA_ANNOUNCE         = 0x5d, /* Group announce announcement packet ID */
+    NET_PACKET_GCA_GET_NODES        = 0x5e, /* Group announce get nodes request packet ID */
+    NET_PACKET_GCA_SEND_NODES       = 0x5f, /* Group announce send nodes packet ID */
+    NET_PACKET_GCA_PING_REQUEST     = 0x60, /* Group announce ping request packet ID */
+    NET_PACKET_GCA_PING_RESPONSE    = 0x61, /* Group announce ping response packet ID */
 
     /* See: `docs/Prevent_Tracking.txt` and `onion.{c,h}` */
     NET_PACKET_ONION_SEND_INITIAL   = 0x80,
@@ -266,6 +275,8 @@ bool ipport_equal(const IP_Port *a, const IP_Port *b);
 
 /* nulls out ip */
 void ip_reset(IP *ip);
+/* nulls out ip_port */
+void ipport_reset(IP_Port *ipport);
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, bool ipv6enabled);
 /* checks if ip is valid */

@@ -69,6 +69,8 @@ typedef struct TCP_Connections TCP_Connections;
 
 const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c);
 
+uint32_t tcp_connections_count(const TCP_Connections *tcp_c);
+
 /* Send a packet to the TCP connection.
  *
  * return -1 on failure.
@@ -210,4 +212,3 @@ void do_tcp_connections(TCP_Connections *tcp_c, void *userdata);
 void kill_tcp_connections(TCP_Connections *tcp_c);
 
 #endif
-
