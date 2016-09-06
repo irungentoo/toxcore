@@ -49,8 +49,8 @@ static void fetch_broadcast_info(uint16_t port)
 {
     broadcast_count = 0;
 
-    IP_ADAPTER_INFO *pAdapterInfo = malloc(sizeof(pAdapterInfo));
-    unsigned long ulOutBufLen = sizeof(pAdapterInfo);
+    IP_ADAPTER_INFO *pAdapterInfo = malloc(sizeof(IP_ADAPTER_INFO));
+    unsigned long ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 
     if (pAdapterInfo == NULL) {
         return;
