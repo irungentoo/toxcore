@@ -529,7 +529,7 @@ static void line_eval(Tox *m, char *line)
             new_lines(idstring);
         } else if (inpt_command == 'g') { //create new group chat
             char msg[256];
-            sprintf(msg, "[g] Created new group chat with number: %u", tox_add_groupchat(m));
+            sprintf(msg, "[g] Created new group chat with number: %u", tox_conference_new(m, NULL));
             new_lines(msg);
         } else if (inpt_command == 'i') { //invite friendnum to groupnum
             char *posi[1];
@@ -537,14 +537,15 @@ static void line_eval(Tox *m, char *line)
             int groupnumber = strtoul(*posi + 1, NULL, 0);
             char msg[256];
             sprintf(msg, "[g] Invited friend number %u to group number %u, returned: %u (0 means success)", friendnumber,
-                    groupnumber, tox_invite_friend(m, friendnumber, groupnumber));
+                    groupnumber, tox_conference_invite(m, friendnumber, groupnumber, NULL));
             new_lines(msg);
         } else if (inpt_command == 'z') { //send message to groupnum
             char *posi[1];
             int groupnumber = strtoul(line + prompt_offset, posi, 0);
 
             if (**posi != 0) {
-                int res = tox_group_message_send(m, groupnumber, (uint8_t *)*posi + 1, strlen(*posi + 1));
+                int res = tox_conference_send_message(m, groupnumber, TOX_MESSAGE_TYPE_NORMAL, (uint8_t *)*posi + 1, strlen(*posi + 1),
+                                                      NULL);
 
                 if (res == 0) {
                     char msg[32 + STRING_LENGTH];
@@ -611,7 +612,7 @@ static void line_eval(Tox *m, char *line)
 
             if (posi != NULL) {
                 char msg[64];
-                int peer_cnt = tox_group_number_peers(m, group_number);
+                int peer_cnt = tox_conference_peer_count(m, group_number, NULL);
 
                 if (peer_cnt < 0) {
                     new_lines("[g] Invalid group number.");
@@ -642,7 +643,7 @@ static void line_eval(Tox *m, char *line)
                 }
             } else {
                 int groupnumber = - conversation_default - 1;
-                int res = tox_group_message_send(m, groupnumber, (uint8_t *)line, strlen(line));
+                int res = tox_conference_send_message(m, groupnumber, TOX_MESSAGE_TYPE_NORMAL, (uint8_t *)line, strlen(line), NULL);
 
                 if (res == 0) {
                     char msg[32 + STRING_LENGTH];
@@ -1050,13 +1051,14 @@ static void print_help(char *prog_name)
     puts("  -f keyfile      [Optional] Specify a keyfile to read from and write to.");
 }
 
-static void print_invite(Tox *m, int friendnumber, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
+static void print_invite(Tox *m, uint32_t friendnumber, TOX_CONFERENCE_TYPE type, const uint8_t *data, size_t length,
+                         void *userdata)
 {
     char msg[256];
 
-    if (type == TOX_GROUPCHAT_TYPE_TEXT) {
+    if (type == TOX_CONFERENCE_TYPE_TEXT) {
         sprintf(msg, "[i] received group chat invite from: %u, auto accepting and joining. group number: %u", friendnumber,
-                tox_join_groupchat(m, friendnumber, data, length));
+                tox_conference_join(m, friendnumber, data, length, NULL));
     } else {
         sprintf(msg, "[i] Group chat invite received of type %u that could not be accepted by ntox.", type);
     }
@@ -1066,7 +1068,7 @@ static void print_invite(Tox *m, int friendnumber, uint8_t type, const uint8_t *
 
 static void print_groupchatpeers(Tox *m, int groupnumber)
 {
-    int num = tox_group_number_peers(m, groupnumber);
+    int num = tox_conference_peer_count(m, groupnumber, NULL);
 
     if (num < 0) {
         return;
@@ -1079,8 +1081,14 @@ static void print_groupchatpeers(Tox *m, int groupnumber)
 
     uint8_t names[num][TOX_MAX_NAME_LENGTH];
     uint16_t lengths[num];
-    tox_group_get_names(m, groupnumber, names, lengths, num);
+
     int i;
+
+    for (i = 0; i < num; ++i) {
+        lengths[i] = tox_conference_peer_get_name_size(m, groupnumber, i, NULL);
+        tox_conference_peer_get_name(m, groupnumber, i, names[i], NULL);
+    }
+
     char numstr[16];
     char header[] = "[g]+ ";
     size_t header_len = strlen(header);
@@ -1113,12 +1121,14 @@ static void print_groupchatpeers(Tox *m, int groupnumber)
     new_lines_mark(msg, 1);
 }
 
-static void print_groupmessage(Tox *m, int groupnumber, int peernumber, const uint8_t *message, uint16_t length,
+static void print_groupmessage(Tox *m, uint32_t groupnumber, uint32_t peernumber, TOX_MESSAGE_TYPE type,
+                               const uint8_t *message, size_t length,
                                void *userdata)
 {
     char msg[256 + length];
     uint8_t name[TOX_MAX_NAME_LENGTH] = {0};
-    int len = tox_group_peername(m, groupnumber, peernumber, name);
+    int len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, NULL);
+    tox_conference_peer_get_name(m, groupnumber, peernumber, name, NULL);
 
     //print_groupchatpeers(m, groupnumber);
     if (len <= 0) {
@@ -1133,27 +1143,29 @@ static void print_groupmessage(Tox *m, int groupnumber, int peernumber, const ui
 
     new_lines(msg);
 }
-static void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, uint8_t change, void *userdata)
+static void print_groupnamelistchange(Tox *m, uint32_t groupnumber, uint32_t peernumber, TOX_CONFERENCE_CHANGE change,
+                                      void *userdata)
 {
     char msg[256];
 
-    if (change == TOX_CHAT_CHANGE_PEER_ADD) {
+    if (change == TOX_CONFERENCE_CHANGE_PEER_ADD) {
         sprintf(msg, "[g] #%i: New peer %i.", groupnumber, peernumber);
         new_lines(msg);
-    } else if (change == TOX_CHAT_CHANGE_PEER_DEL) {
+    } else if (change == TOX_CONFERENCE_CHANGE_PEER_DEL) {
         /* if peer was the last in list, it simply dropped,
          * otherwise it was overwritten by the last peer
          *
          * adjust output
          */
-        int peers_total = tox_group_number_peers(m, groupnumber);
+        int peers_total = tox_conference_peer_count(m, groupnumber, NULL);
 
         if (peers_total == peernumber) {
             sprintf(msg, "[g] #%i: Peer %i left.", groupnumber, peernumber);
             new_lines(msg);
         } else {
             uint8_t peername[TOX_MAX_NAME_LENGTH] = {0};
-            int len = tox_group_peername(m, groupnumber, peernumber, peername);
+            int len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, NULL);
+            tox_conference_peer_get_name(m, groupnumber, peernumber, peername, NULL);
 
             if (len <= 0) {
                 peername[0] = 0;
@@ -1163,9 +1175,10 @@ static void print_groupnamelistchange(Tox *m, int groupnumber, int peernumber, u
                     peers_total, peername, peernumber);
             new_lines(msg);
         }
-    } else if (change == TOX_CHAT_CHANGE_PEER_NAME) {
+    } else if (change == TOX_CONFERENCE_CHANGE_PEER_NAME) {
         uint8_t peername[TOX_MAX_NAME_LENGTH] = {0};
-        int len = tox_group_peername(m, groupnumber, peernumber, peername);
+        int len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, NULL);
+        tox_conference_peer_get_name(m, groupnumber, peernumber, peername, NULL);
 
         if (len <= 0) {
             peername[0] = 0;
@@ -1343,13 +1356,13 @@ int main(int argc, char *argv[])
     tox_callback_friend_message(m, print_message);
     tox_callback_friend_name(m, print_nickchange);
     tox_callback_friend_status_message(m, print_statuschange);
-    tox_callback_group_invite(m, print_invite, NULL);
-    tox_callback_group_message(m, print_groupmessage, NULL);
+    tox_callback_conference_invite(m, print_invite, NULL);
+    tox_callback_conference_message(m, print_groupmessage, NULL);
     tox_callback_file_recv_chunk(m, write_file);
     tox_callback_file_recv_control(m, file_print_control);
     tox_callback_file_recv(m, file_request_accept);
     tox_callback_file_chunk_request(m, tox_file_chunk_request);
-    tox_callback_group_namelist_change(m, print_groupnamelistchange, NULL);
+    tox_callback_conference_namelist_change(m, print_groupnamelistchange, NULL);
     tox_callback_friend_connection_status(m, print_online);
 
     initscr();

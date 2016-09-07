@@ -116,15 +116,13 @@ typedef struct {
     Group_c *chats;
     uint32_t num_chats;
 
-    void (*invite_callback)(Messenger *m, int32_t, uint8_t, const uint8_t *, uint16_t, void *);
+    void (*invite_callback)(Messenger *m, uint32_t, int, const uint8_t *, size_t, void *);
     void *invite_callback_userdata;
-    void (*message_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
+    void (*message_callback)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *, size_t, void *);
     void *message_callback_userdata;
-    void (*action_callback)(Messenger *m, int, int, const uint8_t *, uint16_t, void *);
-    void *action_callback_userdata;
     void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
-    void (*title_callback)(Messenger *m, int, int, const uint8_t *, uint8_t, void *);
+    void (*title_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *title_callback_userdata;
 
     struct {
@@ -138,29 +136,25 @@ typedef struct {
  *
  *  data of length is what needs to be passed to join_groupchat().
  */
-void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, int32_t, uint8_t, const uint8_t *,
-                             uint16_t, void *), void *userdata);
+void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, int, const uint8_t *,
+                             size_t, void *), void *userdata);
 
 /* Set the callback for group messages.
  *
  *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
+void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
+                              size_t,
                               void *), void *userdata);
 
-/* Set the callback for group actions.
- *
- *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
- */
-void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
-                             void *), void *userdata);
 
 /* Set callback function for title changes.
  *
  * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
-void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint8_t,
+void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                            size_t,
                             void *), void *userdata);
 
 /* Set callback function for peer name list changes.
@@ -199,6 +193,8 @@ int del_groupchat(Group_Chats *g_c, int groupnumber);
  * returns -1 on failure
  */
 int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *pk);
+
+int group_peername_size(const Group_Chats *g_c, int groupnumber, int peernumber);
 
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
@@ -242,13 +238,15 @@ int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *ac
 int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint8_t title_len);
 
 
+int group_title_get_size(const Group_Chats *g_c, int groupnumber);
+
 /* Get group title from groupnumber and put it in title.
  * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
  *
  *  return length of copied title if success.
  *  return -1 if failure.
  */
-int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uint32_t max_length);
+int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title);
 
 /* Return the number of peers in the group chat on success.
  * return -1 on failure

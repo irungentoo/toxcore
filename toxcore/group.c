@@ -808,6 +808,25 @@ int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peernumber, u
     return 0;
 }
 
+int group_peername_size(const Group_Chats *g_c, int groupnumber, int peernumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g) {
+        return -1;
+    }
+
+    if ((uint32_t)peernumber >= g->numpeers) {
+        return -1;
+    }
+
+    if (g->group[peernumber].nick_len == 0) {
+        return 8;
+    }
+
+    return g->group[peernumber].nick_len;
+}
+
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
  *
@@ -1063,8 +1082,8 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type
  *
  *  data of length is what needs to be passed to join_groupchat().
  */
-void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, int32_t, uint8_t, const uint8_t *,
-                             uint16_t, void *), void *userdata)
+void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, int, const uint8_t *,
+                             size_t, void *), void *userdata)
 {
     g_c->invite_callback = function;
     g_c->invite_callback_userdata = userdata;
@@ -1074,22 +1093,12 @@ void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, in
  *
  *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
-void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
+void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
+                              size_t,
                               void *), void *userdata)
 {
     g_c->message_callback = function;
     g_c->message_callback_userdata = userdata;
-}
-
-/* Set the callback for group actions.
- *
- *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
- */
-void g_callback_group_action(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint16_t,
-                             void *), void *userdata)
-{
-    g_c->action_callback = function;
-    g_c->action_callback_userdata = userdata;
 }
 
 /* Set handlers for custom lossy packets.
@@ -1121,7 +1130,8 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
  * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
-void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, int, int, const uint8_t *, uint8_t,
+void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                            size_t,
                             void *), void *userdata)
 {
     g_c->title_callback = function;
@@ -1298,13 +1308,7 @@ int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *tit
     return -1;
 }
 
-/* Get group title from groupnumber and put it in title.
- * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
- *
- *  return length of copied title if success.
- *  return -1 if failure.
- */
-int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uint32_t max_length)
+int group_title_get_size(const Group_Chats *g_c, int groupnumber)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -1316,12 +1320,29 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title, uin
         return -1;
     }
 
-    if (max_length > g->title_len) {
-        max_length = g->title_len;
+    return g->title_len;
+}
+
+/* Get group title from groupnumber and put it in title.
+ * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
+ *
+ *  return length of copied title if success.
+ *  return -1 if failure.
+ */
+int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g) {
+        return -1;
     }
 
-    memcpy(title, g->title, max_length);
-    return max_length;
+    if (g->title_len == 0 || g->title_len > MAX_NAME_LENGTH) {
+        return -1;
+    }
+
+    memcpy(title, g->title, g->title_len);
+    return g->title_len;
 }
 
 static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length)
@@ -2035,7 +2056,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
             // TODO(irungentoo):
             if (g_c->message_callback) {
-                g_c->message_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->message_callback_userdata);
+                g_c->message_callback(g_c->m, groupnumber, index, 0, newmsg, msg_data_len, g_c->message_callback_userdata);
             }
 
             break;
@@ -2051,8 +2072,8 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             newmsg[msg_data_len] = 0;
 
             // TODO(irungentoo):
-            if (g_c->action_callback) {
-                g_c->action_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->action_callback_userdata);
+            if (g_c->message_callback) {
+                g_c->message_callback(g_c->m, groupnumber, index, 1, newmsg, msg_data_len, g_c->message_callback_userdata);
             }
 
             break;

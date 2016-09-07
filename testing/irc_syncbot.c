@@ -83,10 +83,11 @@ static int reconnect(void)
 
 static int current_group = -1;
 
-static void callback_group_invite(Tox *tox, int fid, uint8_t type, const uint8_t *data, uint16_t length, void *userdata)
+static void callback_group_invite(Tox *tox, uint32_t fid, TOX_CONFERENCE_TYPE type, const uint8_t *data, size_t length,
+                                  void *userdata)
 {
     if (current_group == -1) {
-        current_group = tox_join_groupchat(tox, fid, data, length);
+        current_group = tox_conference_join(tox, fid, data, length, NULL);
     }
 }
 
@@ -95,13 +96,13 @@ static void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE typ
                                     void *userdata)
 {
     if (length == 1 && *message == 'c') {
-        if (tox_del_groupchat(tox, current_group) == 0) {
+        if (tox_conference_delete(tox, current_group, NULL) == 0) {
             current_group = -1;
         }
     }
 
     if (length == 1 && *message == 'i') {
-        tox_invite_friend(tox, fid, current_group);
+        tox_conference_invite(tox, fid, current_group, NULL);
     }
 
     if (length == 1 && *message == 'j' && sock >= 0) {
@@ -109,15 +110,17 @@ static void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE typ
     }
 }
 
-static void copy_groupmessage(Tox *tox, int groupnumber, int friendgroupnumber, const uint8_t *message, uint16_t length,
+static void copy_groupmessage(Tox *tox, uint32_t groupnumber, uint32_t friendgroupnumber, TOX_MESSAGE_TYPE type,
+                              const uint8_t *message, size_t length,
                               void *userdata)
 {
-    if (tox_group_peernumber_is_ours(tox, groupnumber, friendgroupnumber)) {
+    if (tox_conference_peer_number_is_ours(tox, groupnumber, friendgroupnumber)) {
         return;
     }
 
     uint8_t name[TOX_MAX_NAME_LENGTH];
-    int namelen = tox_group_peername(tox, groupnumber, friendgroupnumber, name);
+    int namelen = tox_conference_peer_get_name_size(tox, groupnumber, friendgroupnumber, NULL);
+    tox_conference_peer_get_name(tox, groupnumber, friendgroupnumber, name, NULL);
 
     if (namelen == 0 || namelen == -1) {
         memcpy(name, "<unknown>", 9);
@@ -216,7 +219,7 @@ static void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
 
     memcpy(message + length, msg + req_len + 2, len - (req_len + 2));
     length += len - (req_len + 2);
-    tox_group_message_send(tox, current_group, message, length);
+    tox_conference_send_message(tox, current_group, TOX_MESSAGE_TYPE_NORMAL, message, length, NULL);
 }
 
 static Tox *init_tox(int argc, char *argv[])
@@ -242,9 +245,8 @@ static Tox *init_tox(int argc, char *argv[])
 
     tox_self_set_name(tox, (const uint8_t *)IRC_NAME, sizeof(IRC_NAME) - 1, 0);
     tox_callback_friend_message(tox, &callback_friend_message);
-    tox_callback_group_invite(tox, &callback_group_invite, 0);
-    tox_callback_group_message(tox, &copy_groupmessage, 0);
-    tox_callback_group_action(tox, &copy_groupmessage, 0);
+    tox_callback_conference_invite(tox, &callback_group_invite, 0);
+    tox_callback_conference_message(tox, &copy_groupmessage, 0);
 
     char temp_id[128];
     printf("\nEnter the address of irc_syncbots master (38 bytes HEX format):\n");

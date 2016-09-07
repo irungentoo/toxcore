@@ -2274,14 +2274,243 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback);
 
 
 
+typedef enum TOX_ERR_CONFERENCE {
 
-/*******************************************************************************
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_OK,
+
+    /**
+     * Some error occurred.
+     */
+    TOX_ERR_CONFERENCE_FAILURE,
+
+} TOX_ERR_CONFERENCE;
+
+
+/**
+ * Conference types for the conference_invite event.
+ */
+typedef enum TOX_CONFERENCE_TYPE {
+
+    /**
+     * Text-only conferences that must be accepted with the tox_conference_join function.
+     */
+    TOX_CONFERENCE_TYPE_TEXT,
+
+    /**
+     * Video conference. The function to accept these is in toxav.
+     */
+    TOX_CONFERENCE_TYPE_AV,
+
+} TOX_CONFERENCE_TYPE;
+
+
+/**
+ * The invitation will remain valid until the inviting friend goes offline
+ * or exits the conference.
  *
- * :: Group chat message sending and receiving
+ * @param friend_number The friend who invited us.
+ * @param type The conference type (text only or audio/video).
+ * @param cookie A piece of data of variable length required to join the
+ *   conference.
+ * @param length The length of the cookie.
+ */
+typedef void tox_conference_invite_cb(Tox *tox, uint32_t friend_number, TOX_CONFERENCE_TYPE type, const uint8_t *cookie,
+                                      size_t length, void *user_data);
+
+
+/**
+ * Set the callback for the `conference_invite` event. Pass NULL to unset.
  *
- ******************************************************************************/
+ * This event is triggered when the client is invited to join a conference.
+ */
+void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback, void *user_data);
+
+/**
+ * TODO
+ */
+typedef void tox_conference_message_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, TOX_MESSAGE_TYPE type,
+                                       const uint8_t *message, size_t length, void *user_data);
 
 
+/**
+ * Set the callback for the `conference_message` event. Pass NULL to unset.
+ *
+ * Set the callback for group messages.
+ */
+void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback, void *user_data);
+
+/**
+ * TODO
+ */
+typedef void tox_conference_title_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t *title,
+                                     size_t length, void *user_data);
+
+
+/**
+ * Set the callback for the `conference_title` event. Pass NULL to unset.
+ *
+ * Set callback function for title changes.
+ *
+ * if peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the group)
+ */
+void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback, void *user_data);
+
+typedef enum TOX_CONFERENCE_CHANGE {
+
+    /**
+     * TODO: Generate doc
+     */
+    TOX_CONFERENCE_CHANGE_PEER_ADD,
+
+    /**
+     * TODO: Generate doc
+     */
+    TOX_CONFERENCE_CHANGE_PEER_DEL,
+
+    /**
+     * TODO: Generate doc
+     */
+    TOX_CONFERENCE_CHANGE_PEER_NAME,
+
+} TOX_CONFERENCE_CHANGE;
+
+
+/**
+ * TODO
+ */
+typedef void tox_conference_namelist_change_cb(Tox *tox, uint32_t group_number, uint32_t peer_number,
+        TOX_CONFERENCE_CHANGE change, void *user_data);
+
+
+/**
+ * Set the callback for the `conference_namelist_change` event. Pass NULL to unset.
+ *
+ * Set callback function for peer name list changes.
+ *
+ * It gets called every time the name list changes(new peer/name, deleted peer)
+ */
+void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback, void *user_data);
+
+/**
+ * Creates a new groupchat.
+ *
+ * @return the group number.
+ */
+uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE *error);
+
+/**
+ * Delete a groupchat.
+ *
+ * @return true on success.
+ */
+bool tox_conference_delete(Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+
+/**
+ * Return the number of peers in the group chat.
+ */
+uint32_t tox_conference_peer_count(const Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+
+size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t group_number, uint32_t peer_number,
+        TOX_ERR_CONFERENCE *error);
+
+/**
+ * Copy the name of peer_number who is in group_number to name.
+ * name must be at least TOX_MAX_NAME_LENGTH long.
+ *
+ * return length of name if success
+ * return -1 if failure
+ */
+bool tox_conference_peer_get_name(const Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t *name,
+                                  TOX_ERR_CONFERENCE *error);
+
+/**
+ * Copy the public key of peer_number who is in group_number to public_key.
+ * public_key must be TOX_PUBLIC_KEY_SIZE long.
+ *
+ * returns 0 on success
+ * returns -1 on failure
+ */
+bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t group_number, uint32_t peer_number,
+                                        uint8_t *public_key, TOX_ERR_CONFERENCE *error);
+
+/**
+ * Check if the current peer_number corresponds to ours.
+ *
+ * return 1 if the peer_number corresponds to ours.
+ * return 0 on failure.
+ */
+bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t group_number, uint32_t peer_number);
+
+/**
+ * invite friend_number to group_number
+ * return 0 on success
+ * return -1 on failure
+ */
+bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+
+/**
+ * Join a group (you need to have been invited first.) using cookie of length obtained
+ * in the group invite callback.
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ */
+uint32_t tox_conference_join(Tox *tox, uint32_t friend_number, const uint8_t *cookie, size_t length,
+                             TOX_ERR_CONFERENCE *error);
+
+/**
+ * send a group message
+ * return 0 on success
+ * return -1 on failure
+ */
+bool tox_conference_send_message(Tox *tox, uint32_t group_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
+                                 size_t length, TOX_ERR_CONFERENCE *error);
+
+size_t tox_conference_get_title_size(const Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+
+/**
+ * Get group title from group_number and put it in title.
+ * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
+ *
+ *  return length of copied title if success.
+ *  return -1 if failure.
+ */
+bool tox_conference_get_title(const Tox *tox, uint32_t group_number, uint8_t *title, TOX_ERR_CONFERENCE *error);
+
+/**
+ * set the group's title, limited to MAX_NAME_LENGTH
+ * return 0 on success
+ * return -1 on failure
+ */
+bool tox_conference_set_title(Tox *tox, uint32_t group_number, const uint8_t *title, size_t length,
+                              TOX_ERR_CONFERENCE *error);
+
+/**
+ * Return the number of chats in the instance m.
+ * You should use this to determine how much memory to allocate
+ * for copy_chatlist.
+ */
+size_t tox_conference_get_chatlist_size(const Tox *tox);
+
+/**
+ * Copy a list of valid chat IDs into the array out_list.
+ * If out_list is NULL, returns 0.
+ * Otherwise, returns the number of elements copied.
+ * If the array was too small, the contents
+ * of out_list will be truncated to list_size.
+ */
+void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist);
+
+/**
+ * return the type of groupchat (TOX_CONFERENCE_TYPE) that group_number is.
+ *
+ * return -1 on failure.
+ * return type on success.
+ */
+TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
 
 
 /*******************************************************************************
@@ -2458,8 +2687,6 @@ uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
  * the instance is acting as a TCP relay.
  */
 uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
-
-#include "tox_group.h"
 
 #ifdef __cplusplus
 }
