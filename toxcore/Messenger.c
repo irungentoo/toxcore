@@ -2158,7 +2158,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             break;
         }
 
-        case PACKET_ID_MESSAGE:
+        case PACKET_ID_MESSAGE: // fall-through
         case PACKET_ID_ACTION: {
             if (data_length == 0) {
                 break;
