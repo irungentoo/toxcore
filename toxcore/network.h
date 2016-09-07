@@ -43,6 +43,14 @@
 //Windows XP
 #define WINVER 0x0501
 #endif
+
+// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms737629(v=vs.85).aspx
+// for why. In short: we need to avoid inclusion of <winsock.h> by <windows.h>,
+// so <winsock2.h> doesn't cause issues.
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
