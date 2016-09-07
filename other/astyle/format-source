@@ -10,8 +10,14 @@ if [ -z "$SOURCE_DIR" ]; then
 fi
 cd "$SOURCE_DIR"
 
-if [ -z "$ASTYLE" ]; then
+if [ -z "$ASTYLE" ] || ! which "$ASTYLE"; then
   ASTYLE=astyle
+fi
+
+if ! which "$ASTYLE"; then
+  # If we couldn't find or install an astyle binary, don't do anything.
+  echo "Could not find an astyle binary; please install astyle."
+  exit 1
 fi
 
 if [ -f ../apidsl/_build/apigen.native ]; then
