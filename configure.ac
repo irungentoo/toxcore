@@ -34,6 +34,7 @@ BUILD_AV="yes"
 BUILD_TESTING="yes"
 
 TOX_LOGGER="no"
+TOX_DEBUG="no"
 LOGGING_OUTNAM="libtoxcore.log"
 
 NCURSES_FOUND="no"
@@ -91,6 +92,17 @@ AC_ARG_ENABLE([logging],
             AC_DEFINE([TOX_LOGGER], [], [If logging enabled])
             AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
             AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
+        fi
+    ]
+)
+
+AC_ARG_ENABLE([debug],
+    [AC_HELP_STRING([--enable-debug], [enable debugging (default: disabled)]) ],
+    [
+        if test "x$enableval" = "xyes"; then
+            TOX_DEBUG="yes"
+
+            AC_DEFINE([TOX_DEBUG], [], [If debugging enabled])
         fi
     ]
 )
