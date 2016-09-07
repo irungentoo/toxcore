@@ -44,15 +44,12 @@
 #define WINVER 0x0501
 #endif
 
-// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms737629(v=vs.85).aspx
-// for why. In short: we need to avoid inclusion of <winsock.h> by <windows.h>,
-// so <winsock2.h> doesn't cause issues.
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
+// The mingw32/64 Windows library warns about including winsock2.h after
+// windows.h even though with the above it's a valid thing to do. So, to make
+// mingw32 headers happy, we include winsock2.h first.
+#include <winsock2.h>
 
 #include <windows.h>
-#include <winsock2.h>
 #include <ws2tcpip.h>
 
 #ifndef IPV6_V6ONLY

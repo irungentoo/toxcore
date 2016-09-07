@@ -37,21 +37,21 @@ enum {
 struct RTPHeader {
     /* Standard RTP header */
 #ifndef WORDS_BIGENDIAN
-    unsigned cc: 4; /* Contributing sources count */
-    unsigned xe: 1; /* Extra header */
-    unsigned pe: 1; /* Padding */
-    unsigned ve: 2; /* Version */
+    uint16_t cc: 4; /* Contributing sources count */
+    uint16_t xe: 1; /* Extra header */
+    uint16_t pe: 1; /* Padding */
+    uint16_t ve: 2; /* Version */
 
-    unsigned pt: 7; /* Payload type */
-    unsigned ma: 1; /* Marker */
+    uint16_t pt: 7; /* Payload type */
+    uint16_t ma: 1; /* Marker */
 #else
-    unsigned ve: 2; /* Version */
-    unsigned pe: 1; /* Padding */
-    unsigned xe: 1; /* Extra header */
-    unsigned cc: 4; /* Contributing sources count */
+    uint16_t ve: 2; /* Version */
+    uint16_t pe: 1; /* Padding */
+    uint16_t xe: 1; /* Extra header */
+    uint16_t cc: 4; /* Contributing sources count */
 
-    unsigned ma: 1; /* Marker */
-    unsigned pt: 7; /* Payload type */
+    uint16_t ma: 1; /* Marker */
+    uint16_t pt: 7; /* Payload type */
 #endif
 
     uint16_t sequnum;
