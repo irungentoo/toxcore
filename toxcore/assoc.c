@@ -1071,14 +1071,14 @@ static char *idpart2str(uint8_t *id, size_t len)
     return buffer;
 }
 
-void Assoc_status(const Assoc *assoc)
+void Assoc_status(Logger *log, const Assoc *assoc)
 {
     if (!assoc) {
-        LOGGER_TRACE(assoc->log, "Assoc status: no assoc");
+        LOGGER_TRACE(log, "Assoc status: no assoc");
         return;
     }
 
-    LOGGER_TRACE(assoc->log, "[b:p] hash => [id...] used, seen, heard");
+    LOGGER_TRACE(log, "[b:p] hash => [id...] used, seen, heard");
 
     size_t bid, cid, total = 0;
 
@@ -1091,7 +1091,7 @@ void Assoc_status(const Assoc *assoc)
             if (entry->hash) {
                 total++;
 
-                LOGGER_TRACE(assoc->log, "[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
+                LOGGER_TRACE(log, "[%3i:%3i] %08x => [%s...] %i, %i(%c), %i(%c)\n",
                              (int)bid, (int)cid, entry->hash, idpart2str(entry->client.public_key, 8),
                              entry->used_at ? (int)(unix_time() - entry->used_at) : 0,
                              entry->seen_at ? (int)(unix_time() - entry->seen_at) : 0,
@@ -1103,7 +1103,7 @@ void Assoc_status(const Assoc *assoc)
     }
 
     if (total) {
-        LOGGER_TRACE(assoc->log, "Total: %i entries, table usage %i%%.\n", (int)total,
+        LOGGER_TRACE(log, "Total: %i entries, table usage %i%%.\n", (int)total,
                      (int)(total * 100 / (assoc->candidates_bucket_count * assoc->candidates_bucket_size)));
     }
 }

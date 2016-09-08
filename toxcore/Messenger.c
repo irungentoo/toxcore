@@ -2506,7 +2506,7 @@ void do_messenger(Messenger *m, void *userdata)
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
 
 #ifdef ENABLE_ASSOC_DHT
-        Assoc_status(m->dht->assoc);
+        Assoc_status(m->log, m->dht->assoc);
 #endif
 
         lastdump = unix_time();

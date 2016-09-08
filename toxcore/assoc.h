@@ -103,6 +103,6 @@ void do_Assoc(Assoc *assoc, DHT *dht);
 /* destroy */
 void kill_Assoc(Assoc *assoc);
 
-void Assoc_status(const Assoc *assoc);
+void Assoc_status(Logger *log, const Assoc *assoc);
 
 #endif /* !__ASSOC_H__ */
