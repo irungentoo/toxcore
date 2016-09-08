@@ -372,3 +372,39 @@ if(BUILD_TOXAV)
     toxav/toxav.h
     DESTINATION "include/tox")
 endif()
+
+################################################################################
+#
+# :: Strict ABI
+#
+################################################################################
+
+function(make_version_script header ns lib)
+  execute_process(
+    COMMAND sh -c "egrep '^\\w' ${header} | grep '${ns}_[a-z_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z_]*(' | egrep -o '\\w+' | sort -u"
+    OUTPUT_VARIABLE ${lib}_SYMS
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  string(REPLACE "\n" ";" ${lib}_SYMS ${${lib}_SYMS})
+
+  set(${lib}_VERSION_SCRIPT "${CMAKE_BINARY_DIR}/${lib}.ld")
+
+  file(WRITE ${${lib}_VERSION_SCRIPT}
+    "{ global:\n")
+  foreach(sym ${${lib}_SYMS})
+    file(APPEND ${${lib}_VERSION_SCRIPT}
+      "${sym};\n")
+  endforeach(sym)
+  file(APPEND ${${lib}_VERSION_SCRIPT}
+    "local: *; };\n")
+
+  set_target_properties(${lib}_shared PROPERTIES
+    LINK_FLAGS -Wl,--version-script,${${lib}_VERSION_SCRIPT})
+endfunction()
+
+option(STRICT_ABI "Enforce strict ABI export in dynamic libraries" OFF)
+if(STRICT_ABI)
+  if(BUILD_TOXAV)
+    make_version_script(${CMAKE_SOURCE_DIR}/toxav/toxav.h toxav toxav)
+  endif()
+  make_version_script(${CMAKE_SOURCE_DIR}/toxcore/tox.h tox toxcore)
+endif()
