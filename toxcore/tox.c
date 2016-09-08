@@ -182,13 +182,6 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
     _Bool load_savedata_sk = 0, load_savedata_tox = 0;
 
-    Logger *log = logger_new();
-
-    if (log == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        return NULL;
-    }
-
     if (options == NULL) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     } else {
@@ -266,11 +259,19 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
         }
     }
 
+    Logger *log = logger_new();
+
+    if (log == NULL) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
+        return NULL;
+    }
+
     unsigned int m_error;
     Messenger *m = new_messenger(log, &m_options, &m_error);
 
     if (!new_groupchats(m)) {
         kill_messenger(m);
+        logger_kill(log);
 
         if (m_error == MESSENGER_ERROR_PORT) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
