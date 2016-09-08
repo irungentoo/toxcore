@@ -158,21 +158,31 @@ typedef struct Tox Tox;
 /**
  * The major version number. Incremented when the API or ABI changes in an
  * incompatible way.
+ *
+ * The function variants of these constants return the version number of the
+ * library. They can be used to display the Tox library version or to check
+ * whether the client is compatible with the dynamically linked version of Tox.
  */
-#define TOX_VERSION_MAJOR               0u
+#define TOX_VERSION_MAJOR              0
+
+uint32_t tox_version_major(void);
 
 /**
  * The minor version number. Incremented when functionality is added without
  * breaking the API or ABI. Set to 0 when the major version number is
  * incremented.
  */
-#define TOX_VERSION_MINOR               0u
+#define TOX_VERSION_MINOR              0
+
+uint32_t tox_version_minor(void);
 
 /**
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOX_VERSION_PATCH               0u
+#define TOX_VERSION_PATCH              0
+
+uint32_t tox_version_patch(void);
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
@@ -190,23 +200,6 @@ typedef struct Tox Tox;
  */
 #define TOX_VERSION_REQUIRE(MAJOR, MINOR, PATCH)                \
   typedef char tox_required_version[TOX_IS_COMPATIBLE(MAJOR, MINOR, PATCH) ? 1 : -1]
-
-/**
- * Return the major version number of the library. Can be used to display the
- * Tox library version or to check whether the client is compatible with the
- * dynamically linked version of Tox.
- */
-uint32_t tox_version_major(void);
-
-/**
- * Return the minor version number of the library.
- */
-uint32_t tox_version_minor(void);
-
-/**
- * Return the patch number of the library.
- */
-uint32_t tox_version_patch(void);
 
 /**
  * Return whether the compiled library version is compatible with the passed

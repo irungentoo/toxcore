@@ -102,21 +102,31 @@ typedef struct ToxAV ToxAV;
 /**
  * The major version number. Incremented when the API or ABI changes in an
  * incompatible way.
+ *
+ * The function variants of these constants return the version number of the
+ * library. They can be used to display the Tox library version or to check
+ * whether the client is compatible with the dynamically linked version of Tox.
  */
-#define TOXAV_VERSION_MAJOR               0u
+#define TOXAV_VERSION_MAJOR            0
+
+uint32_t toxav_version_major(void);
 
 /**
  * The minor version number. Incremented when functionality is added without
  * breaking the API or ABI. Set to 0 when the major version number is
  * incremented.
  */
-#define TOXAV_VERSION_MINOR               0u
+#define TOXAV_VERSION_MINOR            0
+
+uint32_t toxav_version_minor(void);
 
 /**
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOXAV_VERSION_PATCH               0u
+#define TOXAV_VERSION_PATCH            0
+
+uint32_t toxav_version_patch(void);
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
@@ -141,23 +151,6 @@ typedef struct ToxAV ToxAV;
  */
 #define TOXAV_VERSION_IS_ABI_COMPATIBLE()                         \
   toxav_version_is_compatible(TOXAV_VERSION_MAJOR, TOXAV_VERSION_MINOR, TOXAV_VERSION_PATCH)
-
-/**
- * Return the major version number of the library. Can be used to display the
- * ToxAV library version or to check whether the client is compatible with the
- * dynamically linked version of ToxAV.
- */
-uint32_t toxav_version_major(void);
-
-/**
- * Return the minor version number of the library.
- */
-uint32_t toxav_version_minor(void);
-
-/**
- * Return the patch number of the library.
- */
-uint32_t toxav_version_patch(void);
 
 /**
  * Return whether the compiled library version is compatible with the passed

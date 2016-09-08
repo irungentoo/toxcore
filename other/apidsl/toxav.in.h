@@ -92,27 +92,37 @@ class toxAV {
  *
  */
 struct this;
+
+
 /*******************************************************************************
  *
  * :: API version
  *
  ******************************************************************************/
+
+
 /**
  * The major version number. Incremented when the API or ABI changes in an
  * incompatible way.
+ *
+ * The function variants of these constants return the version number of the
+ * library. They can be used to display the Tox library version or to check
+ * whether the client is compatible with the dynamically linked version of Tox.
  */
-#define TOXAV_VERSION_MAJOR               0u
+const VERSION_MAJOR                = 0;
+
 /**
  * The minor version number. Incremented when functionality is added without
  * breaking the API or ABI. Set to 0 when the major version number is
  * incremented.
  */
-#define TOXAV_VERSION_MINOR               0u
+const VERSION_MINOR                = 0;
+
 /**
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOXAV_VERSION_PATCH               0u
+const VERSION_PATCH                = 0;
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
@@ -142,38 +152,25 @@ struct this;
 static namespace version {
 
   /**
-   * Return the major version number of the library. Can be used to display the
-   * ToxAV library version or to check whether the client is compatible with the
-   * dynamically linked version of ToxAV.
-   */
-  uint32_t major();
-
-  /**
-   * Return the minor version number of the library.
-   */
-  uint32_t minor();
-
-  /**
-   * Return the patch number of the library.
-   */
-  uint32_t patch();
-
-  /**
    * Return whether the compiled library version is compatible with the passed
    * version numbers.
    */
   bool is_compatible(uint32_t major, uint32_t minor, uint32_t patch);
 
 }
+
+
 /*******************************************************************************
  *
  * :: Creation and destruction
  *
  ******************************************************************************/
+
+
 /**
  * Start new A/V session. There can only be only one session per Tox instance.
  */
-static this new (tox::this *tox) {
+static this new(tox::this *tox) {
   NULL,
   /**
    * Memory allocation failure while trying to allocate structures required for
@@ -185,6 +182,7 @@ static this new (tox::this *tox) {
    */
   MULTIPLE,
 }
+
 /**
  * Releases all resources associated with the A/V session.
  *
@@ -193,31 +191,41 @@ static this new (tox::this *tox) {
  * called and the av pointer becomes invalid.
  */
 void kill();
+
 /**
  * Returns the Tox instance the A/V object was created for.
  */
 tox::this *tox { get(); }
+
+
 /*******************************************************************************
  *
  * :: A/V event loop
  *
  ******************************************************************************/
+
+
 /**
  * Returns the interval in milliseconds when the next toxav_iterate call should
  * be. If no call is active at the moment, this function returns 200.
  */
 const uint32_t iteration_interval();
+
 /**
  * Main loop for the session. This function needs to be called in intervals of
  * toxav_iteration_interval() milliseconds. It is best called in the separate
  * thread from tox_iterate.
  */
 void iterate();
+
+
 /*******************************************************************************
  *
  * :: Call setup
  *
  ******************************************************************************/
+
+
 /**
  * Call a friend. This will start ringing the friend.
  *
@@ -260,6 +268,7 @@ bool call(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_ra
    */
   INVALID_BIT_RATE,
 }
+
 event call {
   /**
    * The function type for the ${event call} callback.
@@ -270,6 +279,7 @@ event call {
    */
   typedef void(uint32_t friend_number, bool audio_enabled, bool video_enabled);
 }
+
 /**
  * Accept an incoming call.
  *
@@ -308,11 +318,15 @@ bool answer(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_
    */
   INVALID_BIT_RATE,
 }
+
+
 /*******************************************************************************
  *
  * :: Call state graph
  *
  ******************************************************************************/
+
+
 bitmask FRIEND_CALL_STATE {
   /**
    * Set by the AV core if an error occurred on the remote end or if friend
@@ -344,6 +358,7 @@ bitmask FRIEND_CALL_STATE {
    */
   ACCEPTING_V,
 }
+
 event call_state {
  /**
   * The function type for the ${event call_state} callback.
@@ -356,11 +371,15 @@ event call_state {
   */
   typedef void(uint32_t friend_number, uint32_t state);
 }
+
+
 /*******************************************************************************
  *
  * :: Call control
  *
  ******************************************************************************/
+
+
 enum class CALL_CONTROL {
     /**
      * Resume a previously paused call. Only valid if the pause was caused by this
@@ -397,6 +416,7 @@ enum class CALL_CONTROL {
      */
     SHOW_VIDEO,
 }
+
 /**
  * Sends a call control command to a friend.
  *
@@ -406,7 +426,7 @@ enum class CALL_CONTROL {
  *
  * @return true on success.
  */
-bool call_control (uint32_t friend_number, CALL_CONTROL control) {
+bool call_control(uint32_t friend_number, CALL_CONTROL control) {
   /**
    * Synchronization error occurred.
    */
@@ -426,64 +446,73 @@ bool call_control (uint32_t friend_number, CALL_CONTROL control) {
    */
   INVALID_TRANSITION,
 }
+
+
 /*******************************************************************************
  *
  * :: Controlling bit rates
  *
  ******************************************************************************/
+
+
 namespace bit_rate {
+  /**
+   * Set the bit rate to be used in subsequent audio/video frames.
+   *
+   * @param friend_number The friend number of the friend for which to set the
+   * bit rate.
+   * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable
+   * audio sending. Set to -1 to leave unchanged.
+   * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
+   * video sending. Set to -1 to leave unchanged.
+   *
+   */
+  bool set(uint32_t friend_number, int32_t audio_bit_rate, int32_t video_bit_rate) {
     /**
-     * Set the bit rate to be used in subsequent audio/video frames.
+     * Synchronization error occurred.
+     */
+    SYNC,
+    /**
+     * The audio bit rate passed was not one of the supported values.
+     */
+    INVALID_AUDIO_BIT_RATE,
+    /**
+     * The video bit rate passed was not one of the supported values.
+     */
+    INVALID_VIDEO_BIT_RATE,
+    /**
+     * The friend_number passed did not designate a valid friend.
+     */
+    FRIEND_NOT_FOUND,
+    /**
+     * This client is currently not in a call with the friend.
+     */
+    FRIEND_NOT_IN_CALL,
+  }
+
+  event status {
+    /**
+     * The function type for the ${event status} callback. The event is triggered
+     * when the network becomes too saturated for current bit rates at which
+     * point core suggests new bit rates.
      *
      * @param friend_number The friend number of the friend for which to set the
      * bit rate.
-     * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable
-     * audio sending. Set to -1 to leave unchanged.
-     * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
-     * video sending. Set to -1 to leave unchanged.
-     *
+     * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
+     * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
      */
-    bool set(uint32_t friend_number, int32_t audio_bit_rate, int32_t video_bit_rate) {
-        /**
-         * Synchronization error occurred.
-         */
-        SYNC,
-        /**
-         * The audio bit rate passed was not one of the supported values.
-         */
-        INVALID_AUDIO_BIT_RATE,
-        /**
-         * The video bit rate passed was not one of the supported values.
-         */
-        INVALID_VIDEO_BIT_RATE,
-        /**
-         * The friend_number passed did not designate a valid friend.
-         */
-        FRIEND_NOT_FOUND,
-        /**
-         * This client is currently not in a call with the friend.
-         */
-        FRIEND_NOT_IN_CALL,
-    }
-    event status {
-        /**
-         * The function type for the ${event status} callback. The event is triggered
-         * when the network becomes too saturated for current bit rates at which
-         * point core suggests new bit rates.
-         *
-         * @param friend_number The friend number of the friend for which to set the
-         * bit rate.
-         * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
-         * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
-         */
-        typedef void(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate);
-    }
+    typedef void(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate);
+  }
 }
+
+
 /*******************************************************************************
  *
  * :: A/V sending
  *
  ******************************************************************************/
+
+
 error for send_frame {
   /**
    * In case of video, one of Y, U, or V was NULL. In case of audio, the samples
@@ -517,6 +546,7 @@ error for send_frame {
    */
   RTP_FAILED,
 }
+
 namespace audio {
   /**
    * Send an audio frame to a friend.
@@ -541,6 +571,7 @@ namespace audio {
   bool send_frame(uint32_t friend_number, const int16_t *pcm, size_t sample_count,
                   uint8_t channels, uint32_t sampling_rate) with error for send_frame;
 }
+
 namespace video {
   /**
    * Send a video frame to a friend.
@@ -560,11 +591,15 @@ namespace video {
   bool send_frame(uint32_t friend_number, uint16_t width, uint16_t height,
                   const uint8_t *y, const uint8_t *u, const uint8_t *v) with error for send_frame;
 }
+
+
 /*******************************************************************************
  *
  * :: A/V receiving
  *
  ******************************************************************************/
+
+
 namespace audio {
   event receive_frame {
     /**
@@ -583,6 +618,7 @@ namespace audio {
                  uint8_t channels, uint32_t sampling_rate);
   }
 }
+
 namespace video {
   event receive_frame {
     /**
