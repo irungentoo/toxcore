@@ -36,7 +36,7 @@
 #include "util.h"
 
 
-static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status);
+static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
 
@@ -170,7 +170,8 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
 
 static int handle_status(void *object, int i, uint8_t status, void *userdata);
 static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
-static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length);
+static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+                                      void *userdata);
 
 static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t status)
 {
@@ -873,11 +874,9 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32
     m->read_receipt = function;
 }
 
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *),
-                                 void *userdata)
+void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *))
 {
     m->friend_connectionstatuschange = function;
-    m->friend_connectionstatuschange_userdata = userdata;
 }
 
 void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *))
@@ -892,7 +891,7 @@ void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Mess
     m->friend_connectionstatuschange_internal_userdata = userdata;
 }
 
-static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
+static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber, void *userdata)
 {
     int last_connection_udp_tcp = m->friendlist[friendnumber].last_connection_udp_tcp;
 
@@ -912,7 +911,7 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
 
     if (last_connection_udp_tcp != ret) {
         if (m->friend_connectionstatuschange) {
-            m->friend_connectionstatuschange(m, friendnumber, ret, m->friend_connectionstatuschange_userdata);
+            m->friend_connectionstatuschange(m, friendnumber, ret, userdata);
         }
     }
 
@@ -920,7 +919,7 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber)
 }
 
 static void break_files(const Messenger *m, int32_t friendnumber);
-static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, uint8_t status)
+static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata)
 {
     if (status == NOFRIEND) {
         return;
@@ -942,7 +941,7 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
 
         m->friendlist[friendnumber].status = status;
 
-        check_friend_tcp_udp(m, friendnumber);
+        check_friend_tcp_udp(m, friendnumber, userdata);
 
         if (m->friend_connectionstatuschange_internal) {
             m->friend_connectionstatuschange_internal(m, friendnumber, is_online,
@@ -951,9 +950,9 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
     }
 }
 
-void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status)
+void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata)
 {
-    check_friend_connectionstatus(m, friendnumber, status);
+    check_friend_connectionstatus(m, friendnumber, status, userdata);
     m->friendlist[friendnumber].status = status;
 }
 
@@ -1010,10 +1009,9 @@ int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uin
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint32_t filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uint32_t, uint32_t, uint32_t, uint64_t,
-                               const uint8_t *, size_t, void *), void *userdata)
+                               const uint8_t *, size_t, void *))
 {
     m->file_sendrequest = function;
-    m->file_sendrequest_userdata = userdata;
 }
 
 /* Set the callback for file control requests.
@@ -1021,11 +1019,9 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uin
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int control_type, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *),
-                           void *userdata)
+void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *))
 {
     m->file_filecontrol = function;
-    m->file_filecontrol_userdata = userdata;
 }
 
 /* Set the callback for file data.
@@ -1034,10 +1030,9 @@ void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t
  *
  */
 void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *,
-                        size_t, void *), void *userdata)
+                        size_t, void *))
 {
     m->file_filedata = function;
-    m->file_filedata_userdata = userdata;
 }
 
 /* Set the callback for file request chunk.
@@ -1045,11 +1040,9 @@ void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, u
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, size_t length, void *userdata)
  *
  */
-void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *),
-                            void *userdata)
+void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *))
 {
     m->file_reqchunk = function;
-    m->file_reqchunk_userdata = userdata;
 }
 
 #define MAX_FILENAME_LENGTH 255
@@ -1512,7 +1505,7 @@ uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t fi
            m->friendlist[friendnumber].file_receiving[filenumber].transferred;
 }
 
-static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
+static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdata)
 {
     if (!m->friendlist[friendnumber].num_sending_files) {
         return;
@@ -1539,7 +1532,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
                 /* Check if file was entirely sent. */
                 if (friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
                     if (m->file_reqchunk) {
-                        (*m->file_reqchunk)(m, friendnumber, i, ft->transferred, 0, m->file_reqchunk_userdata);
+                        (*m->file_reqchunk)(m, friendnumber, i, ft->transferred, 0, userdata);
                     }
 
                     ft->status = FILESTATUS_NONE;
@@ -1587,7 +1580,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber)
             ft->requested += length;
 
             if (m->file_reqchunk) {
-                (*m->file_reqchunk)(m, friendnumber, i, position, length, m->file_reqchunk_userdata);
+                (*m->file_reqchunk)(m, friendnumber, i, position, length, userdata);
             }
 
             --free_slots;
@@ -1621,7 +1614,7 @@ static void break_files(const Messenger *m, int32_t friendnumber)
 /* return -1 on failure, 0 on success.
  */
 static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receive_send, uint8_t filenumber,
-                              uint8_t control_type, const uint8_t *data, uint16_t length)
+                              uint8_t control_type, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (receive_send > 1) {
         return -1;
@@ -1660,7 +1653,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
         }
 
         if (m->file_filecontrol) {
-            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
+            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, userdata);
         }
     } else if (control_type == FILECONTROL_PAUSE) {
         if ((ft->paused & FILE_PAUSE_OTHER) || ft->status != FILESTATUS_TRANSFERRING) {
@@ -1670,12 +1663,12 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
         ft->paused |= FILE_PAUSE_OTHER;
 
         if (m->file_filecontrol) {
-            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
+            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, userdata);
         }
     } else if (control_type == FILECONTROL_KILL) {
 
         if (m->file_filecontrol) {
-            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, m->file_filecontrol_userdata);
+            (*m->file_filecontrol)(m, friendnumber, real_filenumber, control_type, userdata);
         }
 
         ft->status = FILESTATUS_NONE;
@@ -1733,7 +1726,8 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, 0);
 }
 
-static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length)
+static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+                                      void *userdata)
 {
     Messenger *m = object;
 
@@ -1752,17 +1746,16 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
     }
 
     if (m->lossy_packethandler) {
-        m->lossy_packethandler(m, friend_num, packet, length, m->lossy_packethandler_userdata);
+        m->lossy_packethandler(m, friend_num, packet, length, userdata);
     }
 
     return 1;
 }
 
 void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
-        uint32_t friendnumber, const uint8_t *data, size_t len, void *object), void *object)
+        uint32_t friendnumber, const uint8_t *data, size_t len, void *object))
 {
     m->lossy_packethandler = packet_handler_callback;
-    m->lossy_packethandler_userdata = object;
 }
 
 int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
@@ -1817,7 +1810,8 @@ int send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uin
     return 0;
 }
 
-static int handle_custom_lossless_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length)
+static int handle_custom_lossless_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+        void *userdata)
 {
     Messenger *m = object;
 
@@ -1834,17 +1828,16 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
     }
 
     if (m->lossless_packethandler) {
-        m->lossless_packethandler(m, friend_num, packet, length, m->lossless_packethandler_userdata);
+        m->lossless_packethandler(m, friend_num, packet, length, userdata);
     }
 
     return 1;
 }
 
 void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
-        uint32_t friendnumber, const uint8_t *data, size_t len, void *object), void *object)
+        uint32_t friendnumber, const uint8_t *data, size_t len, void *object))
 {
     m->lossless_packethandler = packet_handler_callback;
-    m->lossless_packethandler_userdata = object;
 }
 
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
@@ -2026,12 +2019,12 @@ void kill_messenger(Messenger *m)
  *   i: friendlist index of the timed-out friend
  *   t: time
  */
-static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t)
+static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t, void *userdata)
 {
     Friend *f = &m->friendlist[i];
 
     if (f->friendrequest_lastsent + f->friendrequest_timeout < t) {
-        set_friend_status(m, i, FRIEND_ADDED);
+        set_friend_status(m, i, FRIEND_ADDED, userdata);
         /* Double the default timeout every time if friendrequest is assumed
          * to have been sent unsuccessfully.
          */
@@ -2047,7 +2040,7 @@ static int handle_status(void *object, int i, uint8_t status, void *userdata)
         send_online_packet(m, i);
     } else { /* Went offline. */
         if (m->friendlist[i].status == FRIEND_ONLINE) {
-            set_friend_status(m, i, FRIEND_CONFIRMED);
+            set_friend_status(m, i, FRIEND_CONFIRMED, userdata);
         }
     }
 
@@ -2067,7 +2060,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
 
     if (m->friendlist[i].status != FRIEND_ONLINE) {
         if (packet_id == PACKET_ID_ONLINE && len == 1) {
-            set_friend_status(m, i, FRIEND_ONLINE);
+            set_friend_status(m, i, FRIEND_ONLINE, userdata);
             send_online_packet(m, i);
         } else {
             return -1;
@@ -2080,7 +2073,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
                 break;
             }
 
-            set_friend_status(m, i, FRIEND_CONFIRMED);
+            set_friend_status(m, i, FRIEND_CONFIRMED, userdata);
             break;
         }
 
@@ -2246,7 +2239,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
 
             if (m->file_sendrequest) {
                 (*m->file_sendrequest)(m, i, real_filenumber, file_type, filesize, filename, filename_length,
-                                       m->file_sendrequest_userdata);
+                                       userdata);
             }
 
             break;
@@ -2265,7 +2258,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
                 break;
             }
 
-            if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3) == -1) {
+            if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3, userdata) == -1) {
                 break;
             }
 
@@ -2308,7 +2301,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             }
 
             if (m->file_filedata) {
-                (*m->file_filedata)(m, i, real_filenumber, position, file_data, file_data_length, m->file_filedata_userdata);
+                (*m->file_filedata)(m, i, real_filenumber, position, file_data, file_data_length, userdata);
             }
 
             ft->transferred += file_data_length;
@@ -2320,7 +2313,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
 
                 /* Full file received. */
                 if (m->file_filedata) {
-                    (*m->file_filedata)(m, i, real_filenumber, position, file_data, file_data_length, m->file_filedata_userdata);
+                    (*m->file_filedata)(m, i, real_filenumber, position, file_data, file_data_length, userdata);
                 }
             }
 
@@ -2345,7 +2338,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
         }
 
         default: {
-            handle_custom_lossless_packet(object, i, temp, len);
+            handle_custom_lossless_packet(object, i, temp, len, userdata);
             break;
         }
     }
@@ -2365,7 +2358,7 @@ static void do_friends(Messenger *m, void *userdata)
                                                 m->friendlist[i].info_size);
 
             if (fr >= 0) {
-                set_friend_status(m, i, FRIEND_REQUESTED);
+                set_friend_status(m, i, FRIEND_REQUESTED, userdata);
                 m->friendlist[i].friendrequest_lastsent = temp_time;
             }
         }
@@ -2376,7 +2369,7 @@ static void do_friends(Messenger *m, void *userdata)
                 /* If we didn't connect to friend after successfully sending him a friend request the request is deemed
                  * unsuccessful so we set the status back to FRIEND_ADDED and try again.
                  */
-                check_friend_request_timed_out(m, i, temp_time);
+                check_friend_request_timed_out(m, i, temp_time, userdata);
             }
         }
 
@@ -2405,9 +2398,9 @@ static void do_friends(Messenger *m, void *userdata)
                 }
             }
 
-            check_friend_tcp_udp(m, i);
+            check_friend_tcp_udp(m, i, userdata);
             do_receipts(m, i, userdata);
-            do_reqchunk_filecb(m, i);
+            do_reqchunk_filecb(m, i, userdata);
 
             m->friendlist[i].last_seen_time = (uint64_t) time(NULL);
         }

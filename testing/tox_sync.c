@@ -254,11 +254,11 @@ int main(int argc, char *argv[])
     }
 
     Tox *tox = tox_new(0, 0);
-    tox_callback_file_recv_chunk(tox, write_file, NULL);
-    tox_callback_file_recv_control(tox, file_print_control, NULL);
-    tox_callback_file_recv(tox, file_request_accept, NULL);
-    tox_callback_file_chunk_request(tox, tox_file_chunk_request, NULL);
-    tox_callback_friend_connection_status(tox, print_online, NULL);
+    tox_callback_file_recv_chunk(tox, write_file);
+    tox_callback_file_recv_control(tox, file_print_control);
+    tox_callback_file_recv(tox, file_request_accept);
+    tox_callback_file_chunk_request(tox, tox_file_chunk_request);
+    tox_callback_friend_connection_status(tox, print_online);
 
     uint16_t port = atoi(argv[argvoffset + 2]);
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);

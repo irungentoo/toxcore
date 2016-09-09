@@ -87,7 +87,7 @@ typedef struct {
         void *data_callback_object;
         int data_callback_id;
 
-        int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
+        int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
         void *lossy_data_callback_object;
         int lossy_data_callback_id;
     } callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
@@ -161,7 +161,7 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
                                 int (*status_callback)(void *object, int id, uint8_t status, void *userdata),
                                 int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t len, void *userdata),
-                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length),
+                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
                                 void *object, int number);
 
 /* return the crypt_connection_id for the connection.

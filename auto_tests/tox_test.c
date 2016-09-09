@@ -647,7 +647,7 @@ START_TEST(test_few_clients)
     ck_assert_msg(err_t == TOX_ERR_FRIEND_QUERY_OK, "Typing fail");
 
     uint32_t packet_number = 160;
-    tox_callback_friend_lossless_packet(tox3, &handle_custom_packet, &packet_number);
+    tox_callback_friend_lossless_packet(tox3, &handle_custom_packet);
     uint8_t data_c[TOX_MAX_CUSTOM_PACKET_SIZE + 1];
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
     int ret = tox_friend_send_lossless_packet(tox2, 0, data_c, sizeof(data_c), 0);
@@ -659,7 +659,7 @@ START_TEST(test_few_clients)
         custom_packet = 0;
         tox_iterate(tox1, &to_compare);
         tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &to_compare);
+        tox_iterate(tox3, &packet_number);
 
         if (custom_packet == 1) {
             break;
@@ -671,7 +671,7 @@ START_TEST(test_few_clients)
     }
 
     packet_number = 200;
-    tox_callback_friend_lossy_packet(tox3, &handle_custom_packet, &packet_number);
+    tox_callback_friend_lossy_packet(tox3, &handle_custom_packet);
     memset(data_c, ((uint8_t)packet_number), sizeof(data_c));
     ret = tox_friend_send_lossy_packet(tox2, 0, data_c, sizeof(data_c), 0);
     ck_assert_msg(ret == 0, "tox_friend_send_lossy_packet bigger fail %i", ret);
@@ -682,7 +682,7 @@ START_TEST(test_few_clients)
         custom_packet = 0;
         tox_iterate(tox1, &to_compare);
         tox_iterate(tox2, &to_compare);
-        tox_iterate(tox3, &to_compare);
+        tox_iterate(tox3, &packet_number);
 
         if (custom_packet == 1) {
             break;
@@ -699,11 +699,11 @@ START_TEST(test_few_clients)
     file_recv = 0;
     max_sending = UINT64_MAX;
     long long unsigned int f_time = time(NULL);
-    tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
-    tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
-    tox_callback_file_chunk_request(tox2, tox_file_chunk_request, &to_compare);
-    tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
-    tox_callback_file_recv(tox3, tox_file_receive, &to_compare);
+    tox_callback_file_recv_chunk(tox3, write_file);
+    tox_callback_file_recv_control(tox2, file_print_control);
+    tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
+    tox_callback_file_recv_control(tox3, file_print_control);
+    tox_callback_file_recv(tox3, tox_file_receive);
     uint64_t totalf_size = 100 * 1024 * 1024;
     uint32_t fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, 0, (const uint8_t *)"Gentoo.exe",
                                   sizeof("Gentoo.exe"), 0);
@@ -746,11 +746,11 @@ START_TEST(test_few_clients)
 
     file_sending_done = file_accepted = file_size = sendf_ok = size_recv = 0;
     file_recv = 0;
-    tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
-    tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
-    tox_callback_file_chunk_request(tox2, tox_file_chunk_request, &to_compare);
-    tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
-    tox_callback_file_recv(tox3, tox_file_receive, &to_compare);
+    tox_callback_file_recv_chunk(tox3, write_file);
+    tox_callback_file_recv_control(tox2, file_print_control);
+    tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
+    tox_callback_file_recv_control(tox3, file_print_control);
+    tox_callback_file_recv(tox3, tox_file_receive);
     totalf_size = UINT64_MAX;
     fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, 0, (const uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
                          0);
@@ -794,11 +794,11 @@ START_TEST(test_few_clients)
 
     file_sending_done = file_accepted = file_size = sendf_ok = size_recv = 0;
     file_recv = 0;
-    tox_callback_file_recv_chunk(tox3, write_file, &to_compare);
-    tox_callback_file_recv_control(tox2, file_print_control, &to_compare);
-    tox_callback_file_chunk_request(tox2, tox_file_chunk_request, &to_compare);
-    tox_callback_file_recv_control(tox3, file_print_control, &to_compare);
-    tox_callback_file_recv(tox3, tox_file_receive, &to_compare);
+    tox_callback_file_recv_chunk(tox3, write_file);
+    tox_callback_file_recv_control(tox2, file_print_control);
+    tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
+    tox_callback_file_recv_control(tox3, file_print_control);
+    tox_callback_file_recv(tox3, tox_file_receive);
     totalf_size = 0;
     fnum = tox_file_send(tox2, 0, TOX_FILE_KIND_DATA, totalf_size, 0, (const uint8_t *)"Gentoo.exe", sizeof("Gentoo.exe"),
                          0);
@@ -908,6 +908,8 @@ loop_top:
 
     ck_assert_msg(num_f == NUM_FRIENDS, "bad num friends: %u", num_f);
 
+    uint16_t last_count = 0;
+
     while (1) {
         uint16_t counter = 0;
 
@@ -917,6 +919,11 @@ loop_top:
                     ++counter;
                 }
             }
+        }
+
+        if (counter != last_count) {
+            printf("got to %u\n", counter);
+            last_count = counter;
         }
 
         if (counter == NUM_FRIENDS * 2) {

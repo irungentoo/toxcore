@@ -871,10 +871,10 @@ TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_
     return ret;
 }
 
-void tox_callback_friend_connection_status(Tox *tox, tox_friend_connection_status_cb *callback, void *user_data)
+void tox_callback_friend_connection_status(Tox *tox, tox_friend_connection_status_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_connectionstatus(m, callback, user_data);
+    m_callback_connectionstatus(m, callback);
 }
 
 bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
@@ -1077,10 +1077,10 @@ bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint6
     return 0;
 }
 
-void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *callback, void *user_data)
+void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_control(m, callback, user_data);
+    callback_file_control(m, callback);
 }
 
 bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t *file_id,
@@ -1199,22 +1199,22 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
     return 0;
 }
 
-void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *callback, void *user_data)
+void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_reqchunk(m, callback, user_data);
+    callback_file_reqchunk(m, callback);
 }
 
-void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *callback, void *user_data)
+void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_sendrequest(m, callback, user_data);
+    callback_file_sendrequest(m, callback);
 }
 
-void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback, void *user_data)
+void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_data(m, callback, user_data);
+    callback_file_data(m, callback);
 }
 
 static void set_custom_packet_error(int ret, TOX_ERR_FRIEND_CUSTOM_PACKET *error)
@@ -1277,10 +1277,10 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
     return 0;
 }
 
-void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *callback, void *user_data)
+void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *callback)
 {
     Messenger *m = tox;
-    custom_lossy_packet_registerhandler(m, callback, user_data);
+    custom_lossy_packet_registerhandler(m, callback);
 }
 
 bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
@@ -1309,10 +1309,10 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
     return 0;
 }
 
-void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *callback, void *user_data)
+void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *callback)
 {
     Messenger *m = tox;
-    custom_lossless_packet_registerhandler(m, callback, user_data);
+    custom_lossless_packet_registerhandler(m, callback);
 }
 
 void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)

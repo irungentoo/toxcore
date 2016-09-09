@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     }
 
     Tox *tox = tox_new(0, 0);
-    tox_callback_friend_connection_status(tox, print_online, NULL);
+    tox_callback_friend_connection_status(tox, print_online);
     tox_callback_friend_message(tox, print_message);
 
 

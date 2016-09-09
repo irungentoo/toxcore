@@ -454,7 +454,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
     return 0;
 }
 
-static int handle_lossy_packet(void *object, int number, const uint8_t *data, uint16_t length)
+static int handle_lossy_packet(void *object, int number, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 0) {
         return -1;
@@ -472,7 +472,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
     for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
         if (friend_con->callbacks[i].lossy_data_callback) {
             friend_con->callbacks[i].lossy_data_callback(friend_con->callbacks[i].lossy_data_callback_object,
-                    friend_con->callbacks[i].lossy_data_callback_id, data, length);
+                    friend_con->callbacks[i].lossy_data_callback_id, data, length, userdata);
         }
 
         friend_con = get_conn(fr_c, number);
@@ -649,7 +649,7 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
                                 int (*status_callback)(void *object, int id, uint8_t status, void *userdata),
                                 int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t len, void *userdata),
-                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length),
+                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
                                 void *object, int number)
 {
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);

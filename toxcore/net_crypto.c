@@ -1443,7 +1443,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
 
         if (conn->connection_lossy_data_callback) {
             conn->connection_lossy_data_callback(conn->connection_lossy_data_callback_object,
-                                                 conn->connection_lossy_data_callback_id, real_data, real_length);
+                                                 conn->connection_lossy_data_callback_id, real_data, real_length, userdata);
         }
     } else {
         return -1;
@@ -2168,7 +2168,8 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*
  * return 0 on success.
  */
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
-                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object, int id)
+                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
+                                  void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 

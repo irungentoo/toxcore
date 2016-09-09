@@ -662,7 +662,7 @@ static int handle_status(void *object, int friendcon_id, uint8_t status, void *u
 }
 
 static int handle_packet(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata);
-static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length);
+static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata);
 
 /* Add friend to group chat.
  *
@@ -2174,7 +2174,7 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
     return -1;
 }
 
-static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length)
+static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
 {
     Group_Chats *g_c = object;
 

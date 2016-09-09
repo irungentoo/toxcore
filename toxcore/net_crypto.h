@@ -139,7 +139,7 @@ typedef struct {
     void *connection_data_callback_object;
     int connection_data_callback_id;
 
-    int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
+    int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
     void *connection_lossy_data_callback_object;
     int connection_lossy_data_callback_id;
 
@@ -287,7 +287,8 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*
  * return 0 on success.
  */
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
-                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
+                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
+                                  void *object,
                                   int id);
 
 /* Set the function for this friend that will be callbacked with object and number if
