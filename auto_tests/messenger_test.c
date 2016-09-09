@@ -14,12 +14,12 @@
 #include "config.h"
 #endif
 
+#include "../testing/misc_tools.c" // hex_string_to_bin
+#include "../toxcore/Messenger.h"
 #include <check.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
-#include "../testing/misc_tools.c" // hex_string_to_bin
-#include "../toxcore/Messenger.h"
 
 #include "helpers.h"
 

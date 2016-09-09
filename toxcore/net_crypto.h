@@ -24,11 +24,11 @@
 #ifndef NET_CRYPTO_H
 #define NET_CRYPTO_H
 
-#include <pthread.h>
 #include "DHT.h"
 #include "LAN_discovery.h"
 #include "TCP_connection.h"
 #include "logger.h"
+#include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
 #define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets

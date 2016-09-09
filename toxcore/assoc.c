@@ -10,8 +10,8 @@
 
 #include "LAN_discovery.h"
 
-#include <assert.h>
 #include "util.h"
+#include <assert.h>
 
 /*
  *        BASIC OVERVIEW:

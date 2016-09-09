@@ -23,10 +23,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <assert.h>
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 #include "bwcontroller.h"
+#include <assert.h>
 
 #define BWC_PACKET_ID 196
 #define BWC_SEND_INTERVAL_MS 1000

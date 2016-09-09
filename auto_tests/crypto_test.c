@@ -2,13 +2,13 @@
 #include "config.h"
 #endif
 
+#include "../toxcore/net_crypto.h"
 #include <check.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
-#include "../toxcore/net_crypto.h"
 
 #include "helpers.h"
 

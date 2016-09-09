@@ -15,9 +15,9 @@
  *
  * NOTE: The signature is appended to the end of the file.
  */
+#include "../../testing/misc_tools.c" // hex_string_to_bin
 #include <sodium.h>
 #include <string.h>
-#include "../../testing/misc_tools.c" // hex_string_to_bin
 
 int load_file(char *filename, char **result)
 {
@@ -73,26 +73,30 @@ int main(int argc, char *argv[])
         char *data;
         int size = load_file(argv[3], &data);
 
-        if (size < 0)
+        if (size < 0) {
             goto fail;
+        }
 
         unsigned long long smlen;
         char *sm = malloc(size + crypto_sign_ed25519_BYTES * 2);
         crypto_sign_ed25519(sm, &smlen, data, size, secret_key);
         free(secret_key);
 
-        if (smlen - size != crypto_sign_ed25519_BYTES)
+        if (smlen - size != crypto_sign_ed25519_BYTES) {
             goto fail;
+        }
 
         FILE *f = fopen(argv[4], "wb");
 
-        if (f == NULL)
+        if (f == NULL) {
             goto fail;
+        }
 
         memcpy(sm + smlen, sm, crypto_sign_ed25519_BYTES); // Move signature from beginning to end of file.
 
-        if (fwrite(sm + (smlen - size), 1, smlen, f) != smlen)
+        if (fwrite(sm + (smlen - size), 1, smlen, f) != smlen) {
             goto fail;
+        }
 
         fclose(f);
         printf("Signed successfully.\n");
@@ -103,8 +107,9 @@ int main(int argc, char *argv[])
         char *data;
         int size = load_file(argv[3], &data);
 
-        if (size < 0)
+        if (size < 0) {
             goto fail;
+        }
 
         char *signe = malloc(size + crypto_sign_ed25519_BYTES);
         memcpy(signe, data + size - crypto_sign_ed25519_BYTES,
