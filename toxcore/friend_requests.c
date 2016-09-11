@@ -26,8 +26,8 @@
 #endif
 
 #include "friend_requests.h"
-#include "util.h"
 
+#include "util.h"
 
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num)

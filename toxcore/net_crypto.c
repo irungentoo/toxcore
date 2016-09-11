@@ -27,9 +27,12 @@
 #include "config.h"
 #endif
 
-#include "math.h"
 #include "net_crypto.h"
+
 #include "util.h"
+
+#include <math.h>
+
 
 static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_connection_id)
 {

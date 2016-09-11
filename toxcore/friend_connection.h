@@ -30,7 +30,6 @@
 #include "net_crypto.h"
 #include "onion_client.h"
 
-
 #define MAX_FRIEND_CONNECTION_CALLBACKS 2
 #define MESSENGER_CALLBACK_INDEX 0
 #define GROUPCHAT_CALLBACK_INDEX 1

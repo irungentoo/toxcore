@@ -24,8 +24,9 @@
 #include "config.h"
 #endif
 
-#include "LAN_discovery.h"
 #include "onion_client.h"
+
+#include "LAN_discovery.h"
 #include "util.h"
 
 /* defines for the array size and

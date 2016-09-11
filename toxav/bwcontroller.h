@@ -21,6 +21,7 @@
 
 #ifndef BWCONROLER_H
 #define BWCONROLER_H
+
 #include "../toxcore/Messenger.h"
 
 typedef struct BWController_s BWController;

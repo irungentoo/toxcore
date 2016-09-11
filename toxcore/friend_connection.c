@@ -26,6 +26,7 @@
 #endif
 
 #include "friend_connection.h"
+
 #include "util.h"
 
 /* return 1 if the friendcon_id is not valid.

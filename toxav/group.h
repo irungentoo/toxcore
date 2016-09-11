@@ -18,10 +18,10 @@
  *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../toxcore/group.h"
+
 /* Audio encoding/decoding */
 #include <opus.h>
-
-#include "../toxcore/group.h"
 
 #define GROUP_AUDIO_PACKET_ID 192
 

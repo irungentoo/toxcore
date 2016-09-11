@@ -23,8 +23,9 @@
 #include "config.h"
 #endif
 
-#include "LAN_discovery.h"
 #include "onion_announce.h"
+
+#include "LAN_discovery.h"
 #include "util.h"
 
 #define PING_ID_TIMEOUT 20

@@ -24,6 +24,7 @@
 #endif
 
 #include "onion.h"
+
 #include "util.h"
 
 #define RETURN_1 ONION_RETURN_1

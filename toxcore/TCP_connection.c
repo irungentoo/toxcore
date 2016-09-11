@@ -26,6 +26,7 @@
 #endif
 
 #include "TCP_connection.h"
+
 #include "util.h"
 
 /* Set the size of the array to num.

@@ -23,9 +23,11 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "bwcontroller.h"
+
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-#include "bwcontroller.h"
+
 #include <assert.h>
 
 #define BWC_PACKET_ID 196

@@ -26,6 +26,7 @@
 #endif
 
 #include "LAN_discovery.h"
+
 #include "util.h"
 
 /* Used for get_broadcast(). */

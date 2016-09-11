@@ -23,6 +23,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "toxav.h"
+
 #include "msi.h"
 #include "rtp.h"
 

@@ -22,13 +22,13 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#include <opus.h>
-#include <pthread.h>
-
 #include "toxav.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+
+#include <opus.h>
+#include <pthread.h>
 
 struct RTPMessage;
 

@@ -26,11 +26,11 @@
 
 #include "TCP_client.h"
 
+#include "util.h"
+
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <sys/ioctl.h>
 #endif
-
-#include "util.h"
 
 /* return 1 on success
  * return 0 on failure

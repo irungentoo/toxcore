@@ -27,14 +27,14 @@
 #include "config.h"
 #endif
 
-#include <stdint.h>
-
-#include "DHT.h"
 #include "ping.h"
 
+#include "DHT.h"
 #include "network.h"
 #include "ping_array.h"
 #include "util.h"
+
+#include <stdint.h>
 
 #define PING_NUM_MAX 512
 

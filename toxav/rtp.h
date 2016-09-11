@@ -22,9 +22,11 @@
 #ifndef RTP_H
 #define RTP_H
 
-#include "../toxcore/Messenger.h"
 #include "bwcontroller.h"
-#include "stdbool.h"
+
+#include "../toxcore/Messenger.h"
+
+#include <stdbool.h>
 
 /**
  * Payload type identifier. Also used as rtp callback prefix.

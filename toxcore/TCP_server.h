@@ -28,7 +28,7 @@
 #include "onion.h"
 
 #ifdef TCP_SERVER_USE_EPOLL
-#include "sys/epoll.h"
+#include <sys/epoll.h>
 #endif
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)

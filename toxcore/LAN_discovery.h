@@ -25,7 +25,6 @@
 #ifndef LAN_DISCOVERY_H
 #define LAN_DISCOVERY_H
 
-
 #include "DHT.h"
 
 /* Interval in seconds between LAN discovery packet sending. */

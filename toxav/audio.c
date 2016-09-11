@@ -23,12 +23,13 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <stdlib.h>
-
 #include "audio.h"
+
 #include "rtp.h"
 
 #include "../toxcore/logger.h"
+
+#include <stdlib.h>
 
 static struct JitterBuffer *jbuf_new(uint32_t capacity);
 static void jbuf_clear(struct JitterBuffer *q);

@@ -29,7 +29,10 @@
 #include "config.h"
 #endif
 
+#include "network.h"
+
 #include "logger.h"
+#include "util.h"
 
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <errno.h>
@@ -39,9 +42,6 @@
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
-
-#include "network.h"
-#include "util.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 

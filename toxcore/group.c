@@ -26,6 +26,7 @@
 #endif
 
 #include "group.h"
+
 #include "util.h"
 
 /* return 1 if the groupnumber is not valid.

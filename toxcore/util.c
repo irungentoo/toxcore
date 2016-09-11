@@ -26,12 +26,11 @@
 #include "config.h"
 #endif
 
-#include <time.h>
-
-/* for crypto_box_PUBLICKEYBYTES */
-#include "crypto_core.h"
-
 #include "util.h"
+
+#include "crypto_core.h" /* for crypto_box_PUBLICKEYBYTES */
+
+#include <time.h>
 
 
 /* don't call into system billions of times for no reason */

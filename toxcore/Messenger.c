@@ -25,15 +25,16 @@
 #include "config.h"
 #endif
 
-#ifdef TOX_DEBUG
-#include <assert.h>
-#endif
-
 #include "Messenger.h"
+
 #include "assoc.h"
 #include "logger.h"
 #include "network.h"
 #include "util.h"
+
+#ifdef TOX_DEBUG
+#include <assert.h>
+#endif
 
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata);

@@ -27,22 +27,19 @@
 #include "config.h"
 #endif
 
-#include <assert.h>
-
-#include "logger.h"
-
 #include "DHT.h"
 
 #ifdef ENABLE_ASSOC_DHT
 #include "assoc.h"
 #endif
-
-#include "ping.h"
-
 #include "LAN_discovery.h"
+#include "logger.h"
 #include "misc_tools.h"
 #include "network.h"
+#include "ping.h"
 #include "util.h"
+
+#include <assert.h>
 
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT (BAD_NODE_TIMEOUT + PING_INTERVAL)

@@ -22,6 +22,11 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
+#include "toxav.h"
+
+#include "../toxcore/logger.h"
+#include "../toxcore/util.h"
+
 #include <vpx/vpx_decoder.h>
 #include <vpx/vpx_encoder.h>
 #include <vpx/vpx_image.h>
@@ -32,11 +37,6 @@
 #define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
 
 #include <pthread.h>
-
-#include "toxav.h"
-
-#include "../toxcore/logger.h"
-#include "../toxcore/util.h"
 
 struct RTPMessage;
 

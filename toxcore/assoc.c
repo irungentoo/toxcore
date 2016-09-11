@@ -1,16 +1,15 @@
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "DHT.h"
 #include "assoc.h"
+
+#include "DHT.h"
+#include "LAN_discovery.h"
 #include "logger.h"
 #include "ping.h"
-
-#include "LAN_discovery.h"
-
 #include "util.h"
+
 #include <assert.h>
 
 /*

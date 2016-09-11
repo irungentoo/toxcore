@@ -23,11 +23,13 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include "rtp.h"
+
+#include "bwcontroller.h"
+
 #include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-#include "bwcontroller.h"
-#include "rtp.h"
 
 #include <assert.h>
 #include <stdlib.h>

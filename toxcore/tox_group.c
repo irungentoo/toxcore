@@ -25,13 +25,12 @@
 #include "config.h"
 #endif
 
-#include "Messenger.h"
-#include "group.h"
-
 #define TOX_DEFINED
 typedef struct Messenger Tox;
+#include "tox_group.h"
 
-#include "tox.h"
+#include "Messenger.h"
+#include "group.h"
 
 /**********GROUP CHAT FUNCTIONS: WARNING Group chats will be rewritten so this might change ************/
 

@@ -28,6 +28,7 @@
 #include "LAN_discovery.h"
 #include "TCP_connection.h"
 #include "logger.h"
+
 #include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
