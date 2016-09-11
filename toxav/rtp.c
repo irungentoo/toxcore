@@ -35,7 +35,8 @@
 #include <stdlib.h>
 
 
-int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
+int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object,
+                      void *userdata);
 
 
 RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
@@ -233,7 +234,8 @@ static struct RTPMessage *new_message(size_t allocate_len, const uint8_t *data, 
 
     return msg;
 }
-int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
+int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object,
+                      void *userdata)
 {
     (void) m;
     (void) friendnumber;

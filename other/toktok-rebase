@@ -1,0 +1,48 @@
+#!/usr/bin/zsh
+
+if [[ $1 == '-v' ]]; then
+    set -u -x
+fi
+
+PREHEAD=`git rev-parse --abbrev-ref HEAD`
+TRGT=`git show-ref toktok/master --hash`
+EXCLD=`git branch --contains $TRGT`
+
+FAILED=()
+SUCCESS=()
+EXCLUDED=()
+
+echo "Auto Rebaseing!"
+git fetch --all > /dev/null 2>&1
+
+if [[ $1 == '-v' ]]; then
+    git branch --no-merged=toktok/master
+fi
+
+for i in `git branch --no-merged=toktok/master`; do
+    each=`echo $i | sed 's/*//'`
+
+    # quick exclude
+    if [[ ${EXCLD[(i)${each}]} -le ${#EXCLD} ]]; then
+        EXCLUDED+=$each
+        continue
+    fi
+
+    git checkout $each > /dev/null 2>&1
+    git rebase toktok/master > /dev/null 2>&1
+    if [[ $? != 0 ]]; then
+        git rebase --abort > /dev/null 2>&1
+        FAILED+=($each)
+    else
+        SUCCESS+=($each)
+    fi
+done
+
+echo "Was able to rebase (Don't forget to git push --force)"
+echo "\t $SUCCESS"
+echo "These branches failed"
+echo "\t $FAILED"
+echo "These branches were skipped without changes"
+echo "\t $EXCLUDED"
+
+git checkout $PREHEAD > /dev/null 2>&1

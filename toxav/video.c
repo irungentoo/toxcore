@@ -37,7 +37,7 @@
 #define MAX_DECODE_TIME_US 0 /* Good quality encode. */
 #define VIDEO_DECODE_BUFFER_SIZE 20
 
-VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
+VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb)
 {
     VCSession *vc = calloc(sizeof(VCSession), 1);
 
@@ -104,8 +104,7 @@ VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_re
 
     vc->linfts = current_time_monotonic();
     vc->lcfd = 60;
-    vc->vcb.first = cb;
-    vc->vcb.second = cb_data;
+    vc->on_video_frame = cb;
     vc->friend_number = friend_number;
     vc->av = av;
     vc->log = log;
@@ -142,7 +141,7 @@ void vc_kill(VCSession *vc)
     LOGGER_DEBUG(vc->log, "Terminated video handler: %p", vc);
     free(vc);
 }
-void vc_iterate(VCSession *vc)
+void vc_iterate(VCSession *vc, void *userdata)
 {
     if (!vc) {
         return;
@@ -168,10 +167,10 @@ void vc_iterate(VCSession *vc)
 
             /* Play decoded images */
             for (; dest; dest = vpx_codec_get_frame(vc->decoder, &iter)) {
-                if (vc->vcb.first) {
-                    vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h,
-                                  (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
-                                  dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb.second);
+                if (vc->on_video_frame) {
+                    vc->on_video_frame(vc->av, vc->friend_number, dest->d_w, dest->d_h,
+                                       (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
+                                       dest->stride[0], dest->stride[1], dest->stride[2], userdata);
                 }
 
                 vpx_img_free(dest);
