@@ -440,7 +440,7 @@ START_TEST(test_few_clients)
     Tox *tox3 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
 
-    ck_assert_msg(tox1 || tox2 || tox3, "Failed to create 3 tox instances");
+    ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
 
     {
         TOX_ERR_GET_PORT error;
