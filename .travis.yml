@@ -2,14 +2,14 @@ language: c
 
 matrix:
   include:
-    - env: BUILD=hstox ENV=linux
+    - env: JOB=hstox ENV=linux
       language: haskell
       ghc: 7.8
-    - env: BUILD=toxcore ENV=linux
+    - env: JOB=toxcore ENV=linux
       compiler: clang
-    - env: BUILD=toxcore ENV=linux
+    - env: JOB=toxcore ENV=linux
       compiler: gcc
-    - env: BUILD=autotools ENV=linux
+    - env: JOB=autotools ENV=linux
       compiler: clang
 
 addons:
@@ -38,9 +38,9 @@ cache:
     - $HOME/.ghc
     - $HOME/cache
 
-install:      other/travis/${BUILD}-install
-script:       other/travis/${BUILD}-script
-after_script: other/travis/${BUILD}-after_script
+install:      other/travis/phase $JOB $ENV install
+script:       other/travis/phase $JOB $ENV script
+after_script: other/travis/phase $JOB $ENV after_script
 
 notifications:
   irc: "chat.freenode.net#toktok-status"

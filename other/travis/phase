@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e -u -x
+
+JOB="$1"
+ENV="$2"
+PHASE="$3"
+
+. "other/travis/env.sh"
+. "other/travis/env-$ENV.sh"
+
+try_source() {
+  SCRIPT="other/travis/$1"
+  if [ -f "$SCRIPT" ]; then
+    . "$SCRIPT"
+  fi
+}
+
+try_source "$PHASE"
+try_source "$ENV-$PHASE"
+try_source "$JOB-$PHASE"
+try_source "$JOB-$ENV-$PHASE"
