@@ -11,7 +11,7 @@ eval `opam config env`
 opam install -y ocamlfind ppx_deriving menhir
 
 # Build apidsl.
-git clone --depth=1 https://github.com/iphydf/apidsl ../apidsl
+git clone --depth=1 https://github.com/TokTok/apidsl ../apidsl
 make -C ../apidsl -j$NPROC
 
 # Install cpp-coveralls to upload test coverage results.

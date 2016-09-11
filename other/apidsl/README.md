@@ -1,11 +1,11 @@
-This folder contains the input file (``tox.in.h``) that has to be used to generate the ``tox.h`` api with: https://github.com/iphydf/apidsl
+This folder contains the input file (``tox.in.h``) that has to be used to generate the ``tox.h`` api with: https://github.com/TokTok/apidsl
 
 # Minimal requirements
 
 There are some minimal requirements to contribute to ``tox.h``:
 * unix environment
 * ``astyle`` ``>=2.03``
-* [``apidsl``](https://github.com/iphydf/apidsl) (you can use provided service with curl instead)
+* [``apidsl``](https://github.com/TokTok/apidsl) (you can use provided service with curl instead)
 
 ## Quick way
 
@@ -39,7 +39,7 @@ And you're done.
 
 If you prefer to have more control over what is happening, there are steps below:
 
-1. Install [``apidsl``](https://github.com/iphydf/apidsl)
+1. Install [``apidsl``](https://github.com/TokTok/apidsl)
 2. Install ``astyle``, version 2.03 or later.
 3. Modify [``tox.in.h``](/other/apidsl/tox.in.h)
 4. Use ``apidsl`` ``??``
