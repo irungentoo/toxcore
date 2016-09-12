@@ -89,7 +89,7 @@ struct ToxAV {
     uint32_t interval; /** Calculated interval */
 };
 
-void callback_bwc (BWController *bwc, uint32_t friend_number, float loss, void *user_data);
+void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data);
 
 int callback_invite(void *toxav_inst, MSICall *call);
 int callback_start(void *toxav_inst, MSICall *call);
@@ -146,7 +146,7 @@ ToxAV *toxav_new(Tox *tox, TOXAV_ERR_NEW *error)
         goto END;
     }
 
-    av = calloc (sizeof(ToxAV), 1);
+    av = calloc(sizeof(ToxAV), 1);
 
     if (av == NULL) {
         LOGGER_WARNING(m->log, "Allocation failed!");
@@ -904,13 +904,13 @@ void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *u
     }
 
     if (call->video_bit_rate) {
-        (*call->av->bcb.first) (call->av, friend_number, call->audio_bit_rate,
-                                call->video_bit_rate - (call->video_bit_rate * loss),
-                                call->av->bcb.second);
+        (*call->av->bcb.first)(call->av, friend_number, call->audio_bit_rate,
+                               call->video_bit_rate - (call->video_bit_rate * loss),
+                               call->av->bcb.second);
     } else if (call->audio_bit_rate) {
-        (*call->av->bcb.first) (call->av, friend_number,
-                                call->audio_bit_rate - (call->audio_bit_rate * loss),
-                                0, call->av->bcb.second);
+        (*call->av->bcb.first)(call->av, friend_number,
+                               call->audio_bit_rate - (call->audio_bit_rate * loss),
+                               0, call->av->bcb.second);
     }
 
     pthread_mutex_unlock(call->av->mutex);
@@ -1079,7 +1079,7 @@ ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, TOXAV_ERR_CALL *error)
     call->friend_number = friend_number;
 
     if (av->calls == NULL) { /* Creating */
-        av->calls = calloc (sizeof(ToxAVCall *), friend_number + 1);
+        av->calls = calloc(sizeof(ToxAVCall *), friend_number + 1);
 
         if (av->calls == NULL) {
             free(call);

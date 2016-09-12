@@ -64,7 +64,7 @@ struct RTPHeader {
     /* Non-standard TOX-specific fields */
     uint16_t cpart;/* Data offset of the current part */
     uint16_t tlen; /* Total message lenght */
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 /* Check alignment */
 typedef char __fail_if_misaligned_1 [ sizeof(struct RTPHeader) == 80 ? 1 : -1 ];
@@ -74,7 +74,7 @@ struct RTPMessage {
 
     struct RTPHeader header;
     uint8_t data[];
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 /* Check alignment */
 typedef char __fail_if_misaligned_2 [ sizeof(struct RTPMessage) == 82 ? 1 : -1 ];
@@ -96,16 +96,16 @@ typedef struct {
 
     BWController *bwc;
     void *cs;
-    int (*mcb) (void *, struct RTPMessage *msg);
+    int (*mcb)(void *, struct RTPMessage *msg);
 } RTPSession;
 
 
-RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber,
-                     BWController *bwc, void *cs,
-                     int (*mcb) (void *, struct RTPMessage *));
-void rtp_kill (RTPSession *session);
-int rtp_allow_receiving (RTPSession *session);
-int rtp_stop_receiving (RTPSession *session);
-int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length);
+RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
+                    BWController *bwc, void *cs,
+                    int (*mcb)(void *, struct RTPMessage *));
+void rtp_kill(RTPSession *session);
+int rtp_allow_receiving(RTPSession *session);
+int rtp_stop_receiving(RTPSession *session);
+int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length);
 
 #endif /* RTP_H */

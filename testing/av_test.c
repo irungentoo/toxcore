@@ -92,7 +92,7 @@ typedef struct {
     int16_t data[];
 } frame;
 
-static void *pa_write_thread (void *d)
+static void *pa_write_thread(void *d)
 {
     /* The purpose of this thread is to make sure Pa_WriteStream will not block
      * toxav_iterate thread
@@ -186,7 +186,7 @@ static void t_toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number,
                                        uint32_t audio_bit_rate, uint32_t video_bit_rate,
                                        void *user_data)
 {
-    printf ("Suggested bit rates: audio: %d video: %d\n", audio_bit_rate, video_bit_rate);
+    printf("Suggested bit rates: audio: %d video: %d\n", audio_bit_rate, video_bit_rate);
 }
 static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
                                        void *userdata)
@@ -295,7 +295,7 @@ static int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userd
 
     return MIN(tox_iteration_interval(toxav_get_tox(AliceAV)), tox_iteration_interval(toxav_get_tox(BobAV)));
 }
-static void *iterate_toxav (void *data)
+static void *iterate_toxav(void *data)
 {
     struct toxav_thread_data *data_cast = data;
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
@@ -383,7 +383,7 @@ static int print_audio_devices(void)
 
     return 0;
 }
-static int print_help (const char *name)
+static int print_help(const char *name)
 {
     printf("Usage: %s -[a:v:o:dh]\n"
            "-a <path> audio input file\n"
@@ -397,7 +397,7 @@ static int print_help (const char *name)
     return 0;
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     freopen("/dev/zero", "w", stderr);
     Pa_Initialize();
@@ -615,7 +615,7 @@ CHECK_ARG:
 
         printf("Sample rate %d\n", af_info.samplerate);
 
-        while (start_time + expected_time > time(NULL) ) {
+        while (start_time + expected_time > time(NULL)) {
             uint64_t enc_start_time = current_time_monotonic();
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
 
@@ -728,7 +728,7 @@ CHECK_ARG:
         time_t start_time = time(NULL);
 
         while (start_time + 90 > time(NULL)) {
-            IplImage *frame = cvQueryFrame(capture );
+            IplImage *frame = cvQueryFrame(capture);
 
             if (!frame) {
                 break;

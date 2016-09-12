@@ -1892,7 +1892,7 @@ Messenger *new_messenger(Logger *log, Messenger_Options *options, unsigned int *
         *error = MESSENGER_ERROR_OTHER;
     }
 
-    if ( ! m ) {
+    if (! m) {
         return NULL;
     }
 

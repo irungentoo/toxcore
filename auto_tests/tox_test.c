@@ -94,7 +94,8 @@ static void print_status_m_change(Tox *tox, uint32_t friend_number, const uint8_
         return;
     }
 
-    if (length == sizeof("Installing Gentoo") && memcmp(message, "Installing Gentoo", sizeof("Installing Gentoo")) == 0) {
+    if (length == sizeof("Installing Gentoo") &&
+            memcmp(message, "Installing Gentoo", sizeof("Installing Gentoo")) == 0) {
         ++status_m_changes;
     }
 }

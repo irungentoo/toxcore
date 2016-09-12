@@ -125,7 +125,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     rc = encrypt_data_symmetric(shared_encryption_key,
                                 pk + 1 + crypto_box_PUBLICKEYBYTES,
                                 ping_plain, sizeof(ping_plain),
-                                pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES );
+                                pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
 
     if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES) {
         return 1;
@@ -158,7 +158,7 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
                                 packet + 1 + crypto_box_PUBLICKEYBYTES,
                                 packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                                 PING_PLAIN_SIZE + crypto_box_MACBYTES,
-                                ping_plain );
+                                ping_plain);
 
     if (rc != sizeof(ping_plain)) {
         return 1;

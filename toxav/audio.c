@@ -36,7 +36,7 @@ static void jbuf_clear(struct JitterBuffer *q);
 static void jbuf_free(struct JitterBuffer *q);
 static int jbuf_write(Logger *log, struct JitterBuffer *q, struct RTPMessage *m);
 static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success);
-OpusEncoder *create_audio_encoder (Logger *log, int32_t bit_rate, int32_t sampling_rate, int32_t channel_count);
+OpusEncoder *create_audio_encoder(Logger *log, int32_t bit_rate, int32_t sampling_rate, int32_t channel_count);
 bool reconfigure_audio_encoder(Logger *log, OpusEncoder **e, int32_t new_br, int32_t new_sr, uint8_t new_ch,
                                int32_t *old_br, int32_t *old_sr, int32_t *old_ch);
 bool reconfigure_audio_decoder(ACSession *ac, int32_t sampling_rate, int8_t channels);
@@ -349,7 +349,7 @@ static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
     *success = 0;
     return NULL;
 }
-OpusEncoder *create_audio_encoder (Logger *log, int32_t bit_rate, int32_t sampling_rate, int32_t channel_count)
+OpusEncoder *create_audio_encoder(Logger *log, int32_t bit_rate, int32_t sampling_rate, int32_t channel_count)
 {
     int status = OPUS_OK;
     OpusEncoder *rc = opus_encoder_create(sampling_rate, channel_count, OPUS_APPLICATION_VOIP, &status);

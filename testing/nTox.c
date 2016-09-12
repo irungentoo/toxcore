@@ -302,8 +302,8 @@ static void print_formatted_message(Tox *m, char *message, int friendnum, uint8_
 
     time_t rawtime;
     struct tm *timeinfo;
-    time ( &rawtime );
-    timeinfo = localtime ( &rawtime );
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
 
     /* assume that printing the date once a day is enough */
     if (fmtmsg_tm_mday != timeinfo->tm_mday) {
@@ -1332,7 +1332,7 @@ int main(int argc, char *argv[])
     data_file_name = filename;
     m = load_data();
 
-    if ( !m ) {
+    if (!m) {
         fputs("Failed to allocate Messenger datastructure", stderr);
         exit(0);
     }

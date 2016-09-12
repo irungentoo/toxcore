@@ -642,7 +642,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
         if (is_timeout(list_nodes[0].timestamp, ONION_NODE_TIMEOUT)
                 || id_closest(reference_id, list_nodes[0].public_key, nodes[i].public_key) == 2
                 || is_timeout(list_nodes[1].timestamp, ONION_NODE_TIMEOUT)
-                || id_closest(reference_id, list_nodes[1].public_key, nodes[i].public_key) == 2 ) {
+                || id_closest(reference_id, list_nodes[1].public_key, nodes[i].public_key) == 2) {
             /* check if node is already in list. */
             for (j = 0; j < list_length; ++j) {
                 if (public_key_cmp(list_nodes[j].public_key, nodes[i].public_key) == 0) {

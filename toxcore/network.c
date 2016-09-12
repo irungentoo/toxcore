@@ -56,8 +56,9 @@ static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t b
 
         DWORD len = bufsize;
 
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len))
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len)) {
             return NULL;
+        }
 
         return buf;
     } else if (family == AF_INET6) {
@@ -69,8 +70,9 @@ static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t b
 
         DWORD len = bufsize;
 
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len))
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len)) {
             return NULL;
+        }
 
         return buf;
     }
@@ -86,8 +88,9 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 
         INT len = sizeof(saddr);
 
-        if (WSAStringToAddress((LPTSTR)addrString, AF_INET, NULL, (LPSOCKADDR)&saddr, &len))
+        if (WSAStringToAddress((LPTSTR)addrString, AF_INET, NULL, (LPSOCKADDR)&saddr, &len)) {
             return 0;
+        }
 
         *(struct in_addr *)addrbuf = saddr.sin_addr;
 
@@ -98,8 +101,9 @@ static int inet_pton(sa_family_t family, const char *addrString, void *addrbuf)
 
         INT len = sizeof(saddr);
 
-        if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, NULL, (LPSOCKADDR)&saddr, &len))
+        if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, NULL, (LPSOCKADDR)&saddr, &len)) {
             return 0;
+        }
 
         *(struct in6_addr *)addrbuf = saddr.sin6_addr;
 
@@ -480,8 +484,9 @@ int networking_at_startup(void)
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     WSADATA wsaData;
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR)
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
         return -1;
+    }
 
 #endif
     srand((uint32_t)current_time_actual());
@@ -645,7 +650,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     if (ip.family == AF_INET6) {
         int is_dualstack = set_socket_dualstack(temp->sock);
         LOGGER_DEBUG(log, "Dual-stack socket: %s",
-                     is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses" );
+                     is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses");
         /* multicast local nodes */
         struct ipv6_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -656,7 +661,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
 
         LOGGER_DEBUG(log, res < 0 ? "Failed to activate local multicast membership. (%u, %s)" :
-                     "Local multicast group FF02::1 joined successfully", errno, strerror(errno) );
+                     "Local multicast group FF02::1 joined successfully", errno, strerror(errno));
     }
 
     /* a hanging program or a different user might block the standard port;

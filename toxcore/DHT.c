@@ -642,7 +642,7 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
         if (num_nodes < MAX_SENT_NODES) {
             memcpy(nodes_list[num_nodes].public_key,
                    client->public_key,
-                   crypto_box_PUBLICKEYBYTES );
+                   crypto_box_PUBLICKEYBYTES);
 
             nodes_list[num_nodes].ip_port = ipptp->ip_port;
             num_nodes++;
@@ -827,11 +827,11 @@ static void sort_client_list(Client_data *list, unsigned int length, const uint8
  *  than public_key.
  *
  *  returns True(1) when the item was stored, False(0) otherwise */
-static int replace_all(   Client_data    *list,
-                          uint16_t        length,
-                          const uint8_t  *public_key,
-                          IP_Port         ip_port,
-                          const uint8_t  *comp_public_key )
+static int replace_all(Client_data    *list,
+                       uint16_t        length,
+                       const uint8_t  *public_key,
+                       IP_Port         ip_port,
+                       const uint8_t  *comp_public_key)
 {
     if ((ip_port.ip.family != AF_INET) && (ip_port.ip.family != AF_INET6)) {
         return 0;
@@ -1197,11 +1197,11 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     uint8_t nonce[crypto_box_NONCEBYTES];
     new_nonce(nonce);
 
-    int len = encrypt_data_symmetric( shared_key,
-                                      nonce,
-                                      plain,
-                                      sizeof(plain),
-                                      encrypt );
+    int len = encrypt_data_symmetric(shared_key,
+                                     nonce,
+                                     plain,
+                                     sizeof(plain),
+                                     encrypt);
 
     if (len != sizeof(encrypt)) {
         return -1;
@@ -1252,11 +1252,11 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
 
     plain[0] = num_nodes;
     memcpy(plain + 1 + nodes_length, sendback_data, length);
-    int len = encrypt_data_symmetric( shared_encryption_key,
-                                      nonce,
-                                      plain,
-                                      1 + nodes_length + length,
-                                      encrypt );
+    int len = encrypt_data_symmetric(shared_encryption_key,
+                                     nonce,
+                                     plain,
+                                     1 + nodes_length + length,
+                                     encrypt);
 
     if (len != 1 + nodes_length + length + crypto_box_MACBYTES) {
         return -1;
@@ -1288,11 +1288,11 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-    int len = decrypt_data_symmetric( shared_key,
-                                      packet + 1 + crypto_box_PUBLICKEYBYTES,
-                                      packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
-                                      crypto_box_PUBLICKEYBYTES + sizeof(uint64_t) + crypto_box_MACBYTES,
-                                      plain );
+    int len = decrypt_data_symmetric(shared_key,
+                                     packet + 1 + crypto_box_PUBLICKEYBYTES,
+                                     packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
+                                     crypto_box_PUBLICKEYBYTES + sizeof(uint64_t) + crypto_box_MACBYTES,
+                                     plain);
 
     if (len != crypto_box_PUBLICKEYBYTES + sizeof(uint64_t)) {
         return 1;
@@ -1515,9 +1515,9 @@ int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
     --dht->num_friends;
 
     if (dht->num_friends != friend_num) {
-        memcpy( &dht->friends_list[friend_num],
-                &dht->friends_list[dht->num_friends],
-                sizeof(DHT_Friend) );
+        memcpy(&dht->friends_list[friend_num],
+               &dht->friends_list[dht->num_friends],
+               sizeof(DHT_Friend));
     }
 
     if (dht->num_friends == 0) {
@@ -1819,13 +1819,15 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
 #ifdef FRIEND_IPLIST_PAD
     memcpy(ip_portlist, ipv6s, num_ipv6s * sizeof(IP_Port));
 
-    if (num_ipv6s == MAX_FRIEND_CLIENTS)
+    if (num_ipv6s == MAX_FRIEND_CLIENTS) {
         return MAX_FRIEND_CLIENTS;
+    }
 
     int num_ipv4s_used = MAX_FRIEND_CLIENTS - num_ipv6s;
 
-    if (num_ipv4s_used > num_ipv4s)
+    if (num_ipv4s_used > num_ipv4s) {
         num_ipv4s_used = num_ipv4s;
+    }
 
     memcpy(&ip_portlist[num_ipv6s], ipv4s, num_ipv4s_used * sizeof(IP_Port));
     return num_ipv6s + num_ipv4s_used;
@@ -2654,8 +2656,9 @@ void do_DHT(DHT *dht)
 #endif
 #ifdef ENABLE_ASSOC_DHT
 
-    if (dht->assoc)
+    if (dht->assoc) {
         do_Assoc(dht->assoc, dht);
+    }
 
 #endif
     dht->last_run = unix_time();

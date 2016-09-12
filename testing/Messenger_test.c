@@ -87,7 +87,7 @@ static void print_request(Messenger *m, const uint8_t *public_key, const uint8_t
         return;
     }
 
-    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
+    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0)
         //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     options.ipv6enabled = ipv6enabled;
     m = new_messenger(NULL, &options, 0);
 
-    if ( !m ) {
+    if (!m) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
         exit(0);
     }
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     } else {
         FILE *file = fopen(argv[argvoffset + 1], "rb");
 
-        if ( file == NULL ) {
+        if (file == NULL) {
             printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
             return 1;
         }
@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
 
-        if ( file == NULL ) {
+        if (file == NULL) {
             return 1;
         }
 

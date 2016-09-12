@@ -334,14 +334,16 @@ static void test_addto_lists(IP ip)
      * to replace the first ip by the second. */
     test_addto_lists_update(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port);
 
-    for (i = 0; i < dht->num_friends; ++i)
+    for (i = 0; i < dht->num_friends; ++i) {
         test_addto_lists_update(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
+    }
 
     // check "bad" entries
     test_addto_lists_bad(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port);
 
-    for (i = 0; i < dht->num_friends; ++i)
+    for (i = 0; i < dht->num_friends; ++i) {
         test_addto_lists_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
+    }
 
     // check "possibly bad" entries
     /*

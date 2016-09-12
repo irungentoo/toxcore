@@ -40,7 +40,7 @@
  */
 
 struct BWController_s {
-    void (*mcb) (BWController *, uint32_t, float, void *);
+    void (*mcb)(BWController *, uint32_t, float, void *);
     void *mcb_data;
 
     Messenger *m;
@@ -65,7 +65,7 @@ int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, ui
 void send_update(BWController *bwc);
 
 BWController *bwc_new(Messenger *m, uint32_t friendnumber,
-                      void (*mcb) (BWController *, uint32_t, float, void *),
+                      void (*mcb)(BWController *, uint32_t, float, void *),
                       void *udata)
 {
     BWController *retu = calloc(sizeof(struct BWController_s), 1);
@@ -179,7 +179,7 @@ void send_update(BWController *bwc)
         bwc->cycle.lsu = current_time_monotonic();
     }
 }
-static int on_update (BWController *bwc, const struct BWCMessage *msg)
+static int on_update(BWController *bwc, const struct BWCMessage *msg)
 {
     LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", bwc);
 
@@ -210,5 +210,5 @@ int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, ui
         return -1;
     }
 
-    return on_update(object, (const struct BWCMessage *) (data + 1));
+    return on_update(object, (const struct BWCMessage *)(data + 1));
 }

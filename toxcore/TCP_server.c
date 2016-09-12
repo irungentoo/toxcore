@@ -1184,8 +1184,9 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
 {
 #ifdef TCP_SERVER_USE_EPOLL
 
-    if (TCP_server->last_run_pinged == unix_time())
+    if (TCP_server->last_run_pinged == unix_time()) {
         return;
+    }
 
     TCP_server->last_run_pinged = unix_time();
 #endif

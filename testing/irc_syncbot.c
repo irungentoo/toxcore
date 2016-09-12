@@ -250,7 +250,7 @@ static Tox *init_tox(int argc, char *argv[])
     printf("\nEnter the address of irc_syncbots master (38 bytes HEX format):\n");
 
     if (scanf("%s", temp_id) != 1) {
-        exit (1);
+        exit(1);
     }
 
     uint16_t port = atoi(argv[argvoffset + 2]);
@@ -351,10 +351,10 @@ int main(int argc, char *argv[])
         }
 
         int error = 0;
-        socklen_t len = sizeof (error);
+        socklen_t len = sizeof(error);
 
         if (sock < 0 || last_get + SILENT_TIMEOUT < get_monotime_sec()
-                || getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len ) != 0) {
+                || getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len) != 0) {
             close(sock);
             printf("reconnect\n");
             sock = reconnect();

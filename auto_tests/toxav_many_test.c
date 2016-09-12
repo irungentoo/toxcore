@@ -200,7 +200,7 @@ static void *call_thread(void *pd)
     free(video_u);
     free(video_v);
 
-    printf ("Closing thread\n");
+    printf("Closing thread\n");
     pthread_exit(NULL);
 }
 
@@ -326,7 +326,7 @@ START_TEST(test_AV_three_calls)
     (void) pthread_join(tids[1], NULL);
     (void) pthread_join(tids[2], NULL);
 
-    printf ("Killing all instances\n");
+    printf("Killing all instances\n");
     toxav_kill(BobsAV[0]);
     toxav_kill(BobsAV[1]);
     toxav_kill(BobsAV[2]);
