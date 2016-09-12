@@ -505,7 +505,7 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
  */
 static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length)
 {
-//TODO TCP, etc...
+// TODO(irungentoo): TCP, etc...
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == 0) {
@@ -517,7 +517,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     pthread_mutex_lock(&conn->mutex);
     IP_Port ip_port = return_ip_port_connection(c, crypt_connection_id);
 
-    //TODO: on bad networks, direct connections might not last indefinitely.
+    // TODO(irungentoo): on bad networks, direct connections might not last indefinitely.
     if (ip_port.ip.family != 0) {
         bool direct_connected = 0;
         crypto_connection_status(c, crypt_connection_id, &direct_connected, NULL);
@@ -532,7 +532,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
             return -1;
         }
 
-        //TODO: a better way of sending packets directly to confirm the others ip.
+        // TODO(irungentoo): a better way of sending packets directly to confirm the others ip.
         uint64_t current_time = unix_time();
 
         if ((((UDP_DIRECT_TIMEOUT / 2) + conn->direct_send_attempt_time) > current_time && length < 96)
@@ -1403,7 +1403,7 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
             return -1;
         }
 
-        // else { /* TODO? */ }
+        // else { /* TODO(irungentoo): ? */ }
 
         set_buffer_end(&conn->recv_array, num);
     } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
@@ -1595,7 +1595,7 @@ static int create_crypto_connection(Net_Crypto *c)
         }
     }
 
-    while (1) { /* TODO: is this really the best way to do this? */
+    while (1) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
 
         if (!c->connection_use_counter) {
@@ -1967,7 +1967,7 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
         return -1;
     }
 
-    //TODO detect and kill bad TCP connections.
+    // TODO(irungentoo): detect and kill bad TCP connections.
     return 0;
 }
 
@@ -2034,7 +2034,7 @@ int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key)
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
- * TODO: This number is just the index of an array that the elements can
+ * TODO(irungentoo): This number is just the index of an array that the elements can
  * change without warning.
  *
  * return TCP connection number on success.
@@ -2388,7 +2388,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 } else {
                     long signed int total_sent = 0, total_resent = 0;
 
-                    //TODO use real delay
+                    // TODO(irungentoo): use real delay
                     unsigned int delay = (unsigned int)((conn->rtt_time / PACKET_COUNTER_AVERAGE_INTERVAL) + 0.5);
                     unsigned int packets_set_rem_array = (CONGESTION_LAST_SENT_ARRAY_SIZE - CONGESTION_QUEUE_ARRAY_SIZE);
 
@@ -2424,7 +2424,7 @@ static void send_crypto_packets(Net_Crypto *c)
 
                     double send_array_ratio = (((double)npackets) / min_speed);
 
-                    //TODO: Improve formula?
+                    // TODO(irungentoo): Improve formula?
                     if (send_array_ratio > SEND_QUEUE_RATIO && CRYPTO_MIN_QUEUE_LENGTH < npackets) {
                         conn->packet_send_rate = min_speed * (1.0 / (send_array_ratio / SEND_QUEUE_RATIO));
                     } else if (conn->last_congestion_event + CONGESTION_EVENT_TIMEOUT < temp_time) {
@@ -2680,7 +2680,7 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
-    while (1) { /* TODO: is this really the best way to do this? */
+    while (1) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
 
         if (!c->connection_use_counter) {
@@ -2759,7 +2759,7 @@ void new_keys(Net_Crypto *c)
 /* Save the public and private keys to the keys array.
  * Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
  *
- * TODO: Save only secret key.
+ * TODO(irungentoo): Save only secret key.
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys)
 {
@@ -2857,7 +2857,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
 #if 0
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
-            //TODO: add a timeout here?
+            // TODO(irungentoo): add a timeout here?
         }
 
 #endif

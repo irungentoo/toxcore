@@ -152,7 +152,7 @@ static int socks5_read_handshake_response(TCP_Client_Connection *TCP_conn)
         return 0;
     }
 
-    if (data[0] == 5 && data[1] == 0) { // FIXME magic numbers
+    if (data[0] == 5 && data[1] == 0) { // TODO(irungentoo): magic numbers
         return 1;
     }
 

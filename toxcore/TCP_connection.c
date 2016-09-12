@@ -223,8 +223,8 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
         return -1;
     }
 
-    //TODO: detect and kill bad relays.
-    //TODO: thread safety?
+    // TODO(irungentoo): detect and kill bad relays.
+    // TODO(irungentoo): thread safety?
     unsigned int i;
     int ret = -1;
 
@@ -293,8 +293,8 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
- * TODO: This number is just the index of an array that the elements can
- * change without warning.
+ * TODO(irungentoo): This number is just the index of an array that the elements
+ * can change without warning.
  *
  * return TCP connection number on success.
  * return -1 on failure.
@@ -977,7 +977,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, const uint8
         return -1;
     }
 
-    /* TODO: optimize */
+    /* TODO(irungentoo): optimize */
     int connections_number = find_tcp_connection_to(tcp_c, public_key);
 
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);

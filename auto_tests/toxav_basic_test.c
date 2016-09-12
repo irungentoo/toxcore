@@ -251,7 +251,7 @@ START_TEST(test_AV_flows)
                 } \
                 BobCC.incoming = false; \
             } else { \
-                /* TODO rtp */ \
+                /* TODO(mannol): rtp */ \
                 \
                 if (time(NULL) - start_time >= 1) { \
                     \

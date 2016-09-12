@@ -77,9 +77,11 @@ VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_re
     cfg.g_w = 800;
     cfg.g_h = 600;
     cfg.g_pass = VPX_RC_ONE_PASS;
-    /* FIXME If we set error resilience the app will crash due to bug in vp8.
-             Perhaps vp9 has solved it?*/
-//     cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+    /* TODO(mannol): If we set error resilience the app will crash due to bug in vp8.
+       Perhaps vp9 has solved it?*/
+#if 0
+    cfg.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT | VPX_ERROR_RESILIENT_PARTITIONS;
+#endif
     cfg.g_lag_in_frames = 0;
     cfg.kf_min_dist = 0;
     cfg.kf_max_dist = 48;

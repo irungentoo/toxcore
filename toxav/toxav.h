@@ -777,7 +777,7 @@ typedef void toxav_video_receive_frame_cb(ToxAV *av, uint32_t friend_number, uin
 void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb *callback, void *user_data);
 
 /**
- * NOTE Compatibility with old toxav group calls TODO remove
+ * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove
  */
 /* Create a new toxav group.
  *

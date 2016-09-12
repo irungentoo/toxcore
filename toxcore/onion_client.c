@@ -203,7 +203,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
             continue;
         }
 
-        // TODO: do we really have to check it with the last node?
+        // TODO(irungentoo): do we really have to check it with the last node?
         if (ipport_equal(&onion_paths->paths[i].ip_port1, &nodes[ONION_PATH_LENGTH - 1].ip_port)) {
             return i;
         }
@@ -228,8 +228,8 @@ static bool path_timed_out(Onion_Client_Paths *onion_paths, uint32_t pathnum)
  * return -1 on failure
  * return 0 on success
  *
- * TODO: Make this function better, it currently probably is vulnerable to some attacks that
- * could de anonimize us.
+ * TODO(irungentoo): Make this function better, it currently probably is
+ * vulnerable to some attacks that could deanonimize us.
  */
 static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_paths, uint32_t pathnum, Onion_Path *path)
 {
@@ -558,7 +558,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     memcpy(list_nodes[index].public_key, public_key, crypto_box_PUBLICKEYBYTES);
     list_nodes[index].ip_port = ip_port;
 
-    //TODO: remove this and find a better source of nodes to use for paths.
+    // TODO(irungentoo): remove this and find a better source of nodes to use for paths.
     onion_add_path_node(onion_c, ip_port, public_key);
 
     if (is_stored == 1) {
@@ -718,7 +718,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
         }
     }
 
-    //TODO: LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
+    // TODO(irungentoo): LAN vs non LAN ips?, if we are connected only to LAN, are we offline?
     onion_c->last_packet_recv = unix_time();
     return 0;
 }

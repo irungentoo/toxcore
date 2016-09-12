@@ -282,7 +282,7 @@ uint32_t tox_max_friend_request_length(void);
 uint32_t tox_max_message_length(void);
 
 /**
- * Maximum size of custom packets. TODO: should be LENGTH?
+ * Maximum size of custom packets. TODO(iphydf): should be LENGTH?
  */
 #define TOX_MAX_CUSTOM_PACKET_SIZE     1373
 
@@ -928,7 +928,7 @@ typedef void tox_self_connection_status_cb(Tox *tox, TOX_CONNECTION connection_s
  * amounts of time. Clients should therefore not immediately bootstrap on
  * receiving a disconnect.
  *
- * TODO: how long should a client wait before bootstrapping again?
+ * TODO(iphydf): how long should a client wait before bootstrapping again?
  */
 void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *callback);
 

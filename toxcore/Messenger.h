@@ -31,7 +31,7 @@
 #include "logger.h"
 
 #define MAX_NAME_LENGTH 128
-/* TODO: this must depend on other variable. */
+/* TODO(irungentoo): this must depend on other variable. */
 #define MAX_STATUSMESSAGE_LENGTH 1007
 /* Used for TCP relays in Messenger struct (may need to be % 2 == 0)*/
 #define NUM_SAVED_TCP_RELAYS 8
@@ -278,7 +278,9 @@ void getaddress(const Messenger *m, uint8_t *address);
 
 /* Add a friend.
  * Set the data that will be sent along with friend request.
- * address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes. TODO: add checksum.
+ * address is the address of the friend (returned by getaddress of the friend
+ *   you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
+ *   TODO(irungentoo): add checksum.
  * data is the data and length is the length.
  *
  *  return the friend number if success.

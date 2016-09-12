@@ -196,7 +196,7 @@ static void dist_index_bubble(Assoc *assoc, uint64_t *dist_list, size_t first, s
     }
 }
 
-/* TODO: Check that there isn't a function like this elsewhere hidden.
+/* TODO(irungentoo): Check that there isn't a function like this elsewhere hidden.
  * E.g. the one which creates a handshake_id isn't usable for this, it must
  * always map the same ID to the same hash.
  *

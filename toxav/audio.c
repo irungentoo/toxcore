@@ -131,7 +131,7 @@ void ac_iterate(ACSession *ac)
         return;
     }
 
-    /* TODO fix this and jitter buffering */
+    /* TODO(mannol): fix this and jitter buffering */
 
     /* Enough space for the maximum frame size (120 ms 48 KHz stereo audio) */
     int16_t tmp[5760 * 2];

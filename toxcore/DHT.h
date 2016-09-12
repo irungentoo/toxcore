@@ -325,7 +325,7 @@ bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
  *
  * sa_family = family (IPv4 or IPv6) (0 if we don't care)?
  * is_LAN = return some LAN ips (true or false)
- * want_good = do we want tested nodes or not? (TODO)
+ * want_good = do we want tested nodes or not? (TODO(irungentoo))
  *
  * return the number of nodes returned.
  *

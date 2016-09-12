@@ -250,7 +250,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
             if (!addr_resolve_or_parse_ip(options->proxy_host, &m_options.proxy_info.ip_port.ip, NULL)) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
-                //TODO: TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
+                // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
                 return NULL;
             }
 
@@ -527,7 +527,7 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET
     Messenger *m = tox;
 
     if (setname(m, name, length) == 0) {
-        //TODO: function to set different per group names?
+        // TODO(irungentoo): function to set different per group names?
         send_name_all_groups(m->group_chat_object);
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         return 1;
@@ -672,7 +672,7 @@ bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *
     Messenger *m = tox;
     int ret = m_delfriend(m, friend_number);
 
-    //TODO handle if realloc fails?
+    // TODO(irungentoo): handle if realloc fails?
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND);
         return 0;
@@ -749,7 +749,7 @@ void tox_self_get_friend_list(const Tox *tox, uint32_t *friend_list)
 {
     if (friend_list) {
         const Messenger *m = tox;
-        //TODO: size parameter?
+        // TODO(irungentoo): size parameter?
         copy_friendlist(m, friend_list, tox_self_get_friend_list_size(tox));
     }
 }
@@ -816,7 +816,7 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
     }
 
     const Messenger *m = tox;
-    //TODO: size parameter?
+    // TODO(irungentoo): size parameter?
     int ret = m_copy_statusmessage(m, friend_number, status_message, m_get_statusmessage_size(m, friend_number));
 
     if (ret == -1) {

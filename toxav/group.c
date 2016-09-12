@@ -552,9 +552,9 @@ int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsi
         group_av->audio_sample_rate = sample_rate;
 
         if (channels == 1) {
-            group_av->audio_bitrate = 32000; //TODO: add way of adjusting bitrate
+            group_av->audio_bitrate = 32000; // TODO(mannol): add way of adjusting bitrate
         } else {
-            group_av->audio_bitrate = 64000; //TODO: add way of adjusting bitrate
+            group_av->audio_bitrate = 64000; // TODO(mannol): add way of adjusting bitrate
         }
 
         if (recreate_encoder(group_av) == -1) {

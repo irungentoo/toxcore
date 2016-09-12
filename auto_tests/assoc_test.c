@@ -17,7 +17,7 @@
 
 START_TEST(test_basics)
 {
-    /* TODO: real test */
+    /* TODO(irungentoo): real test */
     uint8_t id[crypto_box_PUBLICKEYBYTES] = {1};
     Assoc *assoc = new_Assoc_default(NULL, id);
     ck_assert_msg(assoc != NULL, "failed to create default assoc");
@@ -61,7 +61,7 @@ END_TEST
 
 START_TEST(test_fillup)
 {
-    /* TODO: real test */
+    /* TODO(irungentoo): real test */
     int i, j;
     uint8_t id[crypto_box_PUBLICKEYBYTES];
     //uint32_t a = current_time();

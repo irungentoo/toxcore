@@ -267,7 +267,7 @@ const MAX_FRIEND_REQUEST_LENGTH   = 1016;
 const MAX_MESSAGE_LENGTH          = 1372;
 
 /**
- * Maximum size of custom packets. TODO: should be LENGTH?
+ * Maximum size of custom packets. TODO(iphydf): should be LENGTH?
  */
 const MAX_CUSTOM_PACKET_SIZE      = 1373;
 
@@ -786,7 +786,7 @@ inline namespace self {
    * amounts of time. Clients should therefore not immediately bootstrap on
    * receiving a disconnect.
    *
-   * TODO: how long should a client wait before bootstrapping again?
+   * TODO(iphydf): how long should a client wait before bootstrapping again?
    */
   event connection_status const {
     /**

@@ -1449,7 +1449,8 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         return -7;
     }
 
-    /* Prevent file sending from filling up the entire buffer preventing messages from being sent. TODO: remove */
+    /* Prevent file sending from filling up the entire buffer preventing messages from being sent.
+     * TODO(irungentoo): remove */
     if (crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                                         m->friendlist[friendnumber].friendcon_id)) < MIN_SLOTS_FREE) {
         return -6;
@@ -1458,7 +1459,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     int64_t ret = send_file_data_packet(m, friendnumber, filenumber, data, length);
 
     if (ret != -1) {
-        //TODO record packet ids to check if other received complete file.
+        // TODO(irungentoo): record packet ids to check if other received complete file.
         ft->transferred += length;
 
         if (ft->slots_allocated) {
@@ -1541,7 +1542,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
                 }
             }
 
-            /* TODO: if file is too slow, switch to the next. */
+            /* TODO(irungentoo): if file is too slow, switch to the next. */
             if (ft->slots_allocated > (unsigned int)free_slots) {
                 free_slots = 0;
             } else {
@@ -1600,7 +1601,7 @@ static void break_files(const Messenger *m, int32_t friendnumber)
 {
     uint32_t i;
 
-    //TODO: Inform the client which file transfers get killed with a callback?
+    // TODO(irungentoo): Inform the client which file transfers get killed with a callback?
     for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
         if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE) {
             m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NONE;
@@ -2438,7 +2439,7 @@ static char *ID2String(const uint8_t *pk)
 }
 
 /* Minimum messenger run interval in ms
-   TODO: A/V */
+   TODO(mannol): A/V */
 #define MIN_RUN_INTERVAL 50
 
 /* Return the time in milliseconds before do_messenger() should be called again
@@ -2710,7 +2711,7 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
             net_to_host(last_seen_time, sizeof(uint64_t));
             memcpy(&m->friendlist[fnum].last_seen_time, last_seen_time, sizeof(uint64_t));
         } else if (temp.status != 0) {
-            /* TODO: This is not a good way to do this. */
+            /* TODO(irungentoo): This is not a good way to do this. */
             uint8_t address[FRIEND_ADDRESS_SIZE];
             id_copy(address, temp.real_pk);
             memcpy(address + crypto_box_PUBLICKEYBYTES, &(temp.friendrequest_nospam), sizeof(uint32_t));

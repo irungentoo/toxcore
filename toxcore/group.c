@@ -144,7 +144,7 @@ static Group_c *get_group_c(const Group_Chats *g_c, int groupnumber)
  * return peer index if peer is in chat.
  * return -1 if peer is not in chat.
  *
- * TODO: make this more efficient.
+ * TODO(irungentoo): make this more efficient.
  */
 
 static int peer_in_chat(const Group_c *chat, const uint8_t *real_pk)
@@ -166,7 +166,7 @@ static int peer_in_chat(const Group_c *chat, const uint8_t *real_pk)
  * return group number if peer is in list.
  * return -1 if group is not in list.
  *
- * TODO: make this more efficient and maybe use constant time comparisons?
+ * TODO(irungentoo): make this more efficient and maybe use constant time comparisons?
  */
 static int get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
 {
@@ -187,7 +187,7 @@ static int get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
  * return peer number if peer is in chat.
  * return -1 if peer is not in chat.
  *
- * TODO: make this more efficient.
+ * TODO(irungentoo): make this more efficient.
  */
 static int get_peer_index(Group_c *g, uint16_t peer_number)
 {
@@ -414,7 +414,7 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
         return -1;
     }
 
-    //TODO
+    // TODO(irungentoo):
     int peer_index = peer_in_chat(g, real_pk);
 
     if (peer_index != -1) {
@@ -656,7 +656,7 @@ static int handle_status(void *object, int friendcon_id, uint8_t status, void *u
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CLOSE_ONLINE);
     } else { /* Went offline */
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CLOSE_CONNECTION);
-        //TODO remove timedout connections?
+        // TODO(irungentoo): remove timedout connections?
     }
 
     return 0;
@@ -703,7 +703,7 @@ static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, int groupnu
     g->close[ind].type = GROUPCHAT_CLOSE_CONNECTION;
     g->close[ind].number = friendcon_id;
     g->close[ind].closest = closest;
-    //TODO
+    // TODO(irungentoo):
     friend_connection_callbacks(g_c->m->fr_c, friendcon_id, GROUPCHAT_CALLBACK_INDEX, &handle_status, &handle_packet,
                                 &handle_lossy, g_c, friendcon_id);
 
@@ -1374,8 +1374,9 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 return;
             }
 
-            uint16_t peer_number = rand(); /* TODO: what if two people enter the group at the same time and
-  are given the same peer_number by different nodes? */
+            /* TODO(irungentoo): what if two people enter the group at the same time and
+               are given the same peer_number by different nodes? */
+            uint16_t peer_number = rand();
 
             unsigned int tries = 0;
 
@@ -1903,7 +1904,7 @@ int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *ac
  */
 int send_group_lossy_packet(const Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length)
 {
-    //TODO: length check here?
+    // TODO(irungentoo): length check here?
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
@@ -2004,7 +2005,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
                 delpeer(g_c, groupnumber, index);
             } else {
                 return;
-                //TODO
+                // TODO(irungentoo):
             }
         }
         break;
@@ -2032,7 +2033,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             memcpy(newmsg, msg_data, msg_data_len);
             newmsg[msg_data_len] = 0;
 
-            //TODO
+            // TODO(irungentoo):
             if (g_c->message_callback) {
                 g_c->message_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->message_callback_userdata);
             }
@@ -2049,7 +2050,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             memcpy(newmsg, msg_data, msg_data_len);
             newmsg[msg_data_len] = 0;
 
-            //TODO
+            // TODO(irungentoo):
             if (g_c->action_callback) {
                 g_c->action_callback(g_c->m, groupnumber, index, newmsg, msg_data_len, g_c->action_callback_userdata);
             }
@@ -2061,7 +2062,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             return;
     }
 
-    send_message_all_close(g_c, groupnumber, data, length, -1/*TODO close_index*/);
+    send_message_all_close(g_c, groupnumber, data, length, -1/* TODO(irungentoo) close_index */);
 }
 
 static int handle_packet(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
@@ -2120,7 +2121,7 @@ static int handle_packet(void *object, int friendcon_id, const uint8_t *data, ui
  * return 0 if packet was not received.
  * return 1 if packet was received.
  *
- * TODO: test this
+ * TODO(irungentoo): test this
  */
 static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16_t message_number)
 {
@@ -2416,7 +2417,7 @@ void do_groupchats(Group_Chats *g_c, void *userdata)
         }
     }
 
-    //TODO
+    // TODO(irungentoo):
 }
 
 /* Free everything related with group chats. */

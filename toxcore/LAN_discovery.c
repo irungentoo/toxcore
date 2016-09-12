@@ -168,7 +168,7 @@ static void fetch_broadcast_info(uint16_t port)
     close(sock);
 }
 
-#else //TODO: Other platforms?
+#else // TODO(irungentoo): Other platforms?
 
 static void fetch_broadcast_info(uint16_t port)
 {

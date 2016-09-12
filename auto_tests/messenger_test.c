@@ -120,7 +120,8 @@ START_TEST(test_m_delfriend)
                   REALLY_BIG_NUMBER);
 }
 END_TEST
-/*
+
+#if 0
 START_TEST(test_m_addfriend)
 {
     char *good_data = "test";
@@ -129,30 +130,34 @@ START_TEST(test_m_addfriend)
     int good_len = strlen(good_data);
     int bad_len = strlen(bad_data);
     int really_bad_len = (MAX_CRYPTO_PACKET_SIZE - crypto_box_PUBLICKEYBYTES
-                     - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
-                                      + crypto_box_ZEROBYTES + 100); */
-/* TODO: Update this properly to latest master
-    if(m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG)
+                          - crypto_box_NONCEBYTES - crypto_box_BOXZEROBYTES
+                          + crypto_box_ZEROBYTES + 100);
+
+    /* TODO(irungentoo): Update this properly to latest master */
+    if (m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG) {
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", really_bad_len);
-*/
-/* this will return an error if the original m_addfriend_norequest() failed */
-/*    if(m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT)
+    }
+
+    /* this will return an error if the original m_addfriend_norequest() failed */
+    if (m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT) {
         ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n"
                      "(this can be caused by the error of m_addfriend_norequest in"
                      " the beginning of the suite)\n");
+    }
 
-    if(m_addfriend(m, (uint8_t *)good_id_b, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE)
+    if (m_addfriend(m, (uint8_t *)good_id_b, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE) {
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
-*/
-/* this should REALLY return an error */
-/*
- * TODO: validate client_id in m_addfriend?
-if(m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0)
-    ck_abort_msg("The following ID passed through "
-          "m_addfriend without an error:\n'%s'\n", bad_id_str);
+    }
 
+    /* this should REALLY return an error */
+    /* TODO(irungentoo): validate client_id in m_addfriend? */
+    if (m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0) {
+        ck_abort_msg("The following ID passed through "
+                     "m_addfriend without an error:\n'%s'\n", bad_id_str);
+    }
 }
-END_TEST */
+END_TEST
+#endif
 
 START_TEST(test_setname)
 {

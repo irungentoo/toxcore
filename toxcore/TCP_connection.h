@@ -115,8 +115,8 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *
- * TODO: This number is just the index of an array that the elements can
- * change without warning.
+ * TODO(irungentoo): This number is just the index of an array that the elements
+ * can change without warning.
  *
  * return TCP connection number on success.
  * return -1 on failure.

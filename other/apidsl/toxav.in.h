@@ -652,7 +652,7 @@ namespace video {
 
 %{
 /**
- * NOTE Compatibility with old toxav group calls TODO remove
+ * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove
  */
 /* Create a new toxav group.
  *

@@ -243,7 +243,7 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
     uint8_t net_family;
 
     if (ip_port->ip.family == AF_INET) {
-        // FIXME use functions to convert endianness
+        // TODO(irungentoo): use functions to convert endianness
         ipv6 = 0;
         net_family = TOX_AF_INET;
     } else if (ip_port->ip.family == TCP_INET) {
@@ -432,7 +432,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 /* Check if client with public_key is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
- *  TODO: Maybe optimize this.
+ * TODO(irungentoo): Maybe optimize this.
  *
  *  return True(1) or False(0)
  */
@@ -482,7 +482,7 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
 
     /* public_key not in list yet: see if we can find an identical ip_port, in
      * that case we kill the old public_key by overwriting it with the new one
-     * TODO: maybe we SHOULDN'T do that if that public_key is in a friend_list
+     * TODO(irungentoo): maybe we SHOULDN'T do that if that public_key is in a friend_list
      * and the one who is the actual friend's public_key/address set? */
     for (i = 0; i < length; ++i) {
         /* MAYBE: check the other address, if valid, don't nuke? */
@@ -576,7 +576,7 @@ bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk
     return 0;
 }
 
-/*TODO: change this to 7 when done*/
+/* TODO(irungentoo): change this to 7 when done*/
 #define HARDENING_ALL_OK 2
 /* return 0 if not.
  * return 1 if route request are ok
@@ -657,8 +657,8 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
 /* Find MAX_SENT_NODES nodes closest to the public_key for the send nodes request:
  * put them in the nodes_list and return how many were found.
  *
- * TODO: For the love of based <your favorite deity, in doubt use "love"> make
- * this function cleaner and much more efficient.
+ * TODO(irungentoo): For the love of based <your favorite deity, in doubt use
+ * "love"> make this function cleaner and much more efficient.
  *
  * want_good : do we want only good nodes as checked with the hardening returned or not?
  */
@@ -669,12 +669,17 @@ static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, N
     get_close_nodes_inner(public_key, nodes_list, sa_family,
                           dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, 0);
 
-    /*TODO uncomment this when hardening is added to close friend clients
-        for (i = 0; i < dht->num_friends; ++i)
-            get_close_nodes_inner(dht, public_key, nodes_list, sa_family,
-                                  dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
-                                  &num_nodes, is_LAN, want_good);
-    */
+    /* TODO(irungentoo): uncomment this when hardening is added to close friend clients */
+#if 0
+
+    for (i = 0; i < dht->num_friends; ++i) {
+        get_close_nodes_inner(dht, public_key, nodes_list, sa_family,
+                              dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
+                              &num_nodes, is_LAN, want_good);
+    }
+
+#endif
+
     for (i = 0; i < dht->num_friends; ++i) {
         get_close_nodes_inner(public_key, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
@@ -695,7 +700,7 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
         return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family, is_LAN, want_good);
 
 #ifdef ENABLE_ASSOC_DHT
-    //TODO: assoc, sa_family 0 (don't care if ipv4 or ipv6) support.
+    // TODO(irungentoo): assoc, sa_family 0 (don't care if ipv4 or ipv6) support.
     Client_data *result[MAX_SENT_NODES];
 
     Assoc_close_entries request;
@@ -970,7 +975,7 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
             dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
             ++dht->num_to_bootstrap;
         } else {
-            //TODO: ipv6 vs v4
+            // TODO(irungentoo): ipv6 vs v4
             add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
         }
     }
@@ -1536,7 +1541,7 @@ int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
     return 0;
 }
 
-/* TODO: Optimize this. */
+/* TODO(irungentoo): Optimize this. */
 int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
 {
     uint32_t i, j;
@@ -2113,7 +2118,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
     } else {
         for (i = dht->friends_list[friend_num].nat.punching_index; i != top; ++i) {
-            /* TODO: Improve port guessing algorithm. */
+            /* TODO(irungentoo): Improve port guessing algorithm. */
             uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
             IP_Port pinging;
             ip_copy(&pinging.ip, &ip);
@@ -2246,7 +2251,7 @@ static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto,
     return sendpacket(dht->net, sendto->ip_port, packet, len);
 }
 
-/* TODO: improve */
+/* TODO(irungentoo): improve */
 static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, sa_family_t sa_family)
 {
     uint32_t i;
@@ -2270,7 +2275,7 @@ static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, sa_
 
 /*
  * check how many nodes in nodes are also present in the closelist.
- * TODO: make this function better.
+ * TODO(irungentoo): make this function better.
  */
 static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 {
@@ -2340,7 +2345,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
             Node_format nodes[MAX_SENT_NODES];
             int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, packet + 1 + crypto_box_PUBLICKEYBYTES, length_nodes, 0);
 
-            /* TODO: MAX_SENT_NODES nodes should be returned at all times
+            /* TODO(irungentoo): MAX_SENT_NODES nodes should be returned at all times
              (right now we have a small network size so it could cause problems for testing and etc..) */
             if (num_nodes <= 0) {
                 return 1;
@@ -2376,7 +2381,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
 
 #if DHT_HARDENING
 /* Return a random node from all the nodes we are connected to.
- * TODO: improve this function.
+ * TODO(irungentoo): improve this function.
  */
 static Node_format random_node(DHT *dht, sa_family_t sa_family)
 {
@@ -2515,7 +2520,7 @@ static void do_hardening(DHT *dht)
                 to_test.ip_port = cur_iptspng->ip_port;
                 memcpy(to_test.public_key, public_key, crypto_box_PUBLICKEYBYTES);
 
-                //TODO: The search id should maybe not be ours?
+                // TODO(irungentoo): The search id should maybe not be ours?
                 if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->self_public_key) > 0) {
                     memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.public_key, crypto_box_PUBLICKEYBYTES);
                     cur_iptspng->hardening.send_nodes_timestamp = unix_time();
@@ -2527,7 +2532,7 @@ static void do_hardening(DHT *dht)
             }
         }
 
-        //TODO: add the 2 other testers.
+        // TODO(irungentoo): add the 2 other testers.
     }
 }
 #endif
@@ -2681,7 +2686,7 @@ void kill_DHT(DHT *dht)
 }
 
 /* new DHT format for load/save, more robust and forward compatible */
-//TODO: Move this closer to Messenger.
+// TODO(irungentoo): Move this closer to Messenger.
 #define DHT_STATE_COOKIE_GLOBAL 0x159000d
 
 #define DHT_STATE_COOKIE_TYPE      0x11ce

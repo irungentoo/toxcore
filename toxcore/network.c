@@ -494,14 +494,15 @@ int networking_at_startup(void)
     return 0;
 }
 
-/* TODO: Put this somewhere
+/* TODO(irungentoo): Put this somewhere */
+#if 0
 static void at_shutdown(void)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
     WSACleanup();
 #endif
 }
-*/
+#endif
 
 /* Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
@@ -873,7 +874,7 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
  *   writes error message into the buffer on error
  */
 /* there would be INET6_ADDRSTRLEN, but it might be too short for the error message */
-static char addresstext[96]; // FIXME magic number. Why not INET6_ADDRSTRLEN ?
+static char addresstext[96]; // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
 const char *ip_ntoa(const IP *ip)
 {
     if (ip) {

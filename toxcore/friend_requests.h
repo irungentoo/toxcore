@@ -37,7 +37,7 @@ typedef struct {
     int (*filter_function)(const uint8_t *, void *);
     void *filter_function_userdata;
     /* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
-     *  TODO: Make this better (This will most likely tie in with the way we will handle spam.)
+     * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
      */
 
 #define MAX_RECEIVED_STORED 32

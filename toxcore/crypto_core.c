@@ -157,7 +157,7 @@ int decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uin
 /* Increment the given nonce by 1. */
 void increment_nonce(uint8_t *nonce)
 {
-    /* FIXME use increment_nonce_number(nonce, 1) or sodium_increment (change to little endian)
+    /* TODO(irungentoo): use increment_nonce_number(nonce, 1) or sodium_increment (change to little endian)
      * NOTE don't use breaks inside this loop
      * In particular, make sure, as far as possible,
      * that loop bounds and their potential underflow or overflow
@@ -240,7 +240,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 
     uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
     new_nonce(nonce);
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // FIXME sodium_memzero before exit function
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): sodium_memzero before exit function
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
@@ -281,7 +281,7 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
 
     memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
     const uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // FIXME sodium_memzero before exit function
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): sodium_memzero before exit function
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
                             packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
                             length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);

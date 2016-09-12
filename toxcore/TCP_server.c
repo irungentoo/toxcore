@@ -669,7 +669,7 @@ static int handle_TCP_routing_req(TCP_Server *TCP_server, uint32_t con_id, const
             other_conn->connections[other_id].status = 2;
             other_conn->connections[other_id].index = con_id;
             other_conn->connections[other_id].other_id = index;
-            //TODO: return values?
+            // TODO(irungentoo): return values?
             send_connect_notification(con, index);
             send_connect_notification(other_conn, other_id);
         }
@@ -728,7 +728,7 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
             TCP_server->accepted_connection_array[index].connections[other_id].other_id = 0;
             TCP_server->accepted_connection_array[index].connections[other_id].index = 0;
             TCP_server->accepted_connection_array[index].connections[other_id].status = 1;
-            //TODO: return values?
+            // TODO(irungentoo): return values?
             send_disconnect_notification(&TCP_server->accepted_connection_array[index], other_id);
         }
 

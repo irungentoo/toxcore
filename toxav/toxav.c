@@ -1033,7 +1033,7 @@ bool audio_bit_rate_invalid(uint32_t bit_rate)
 bool video_bit_rate_invalid(uint32_t bit_rate)
 {
     (void) bit_rate;
-    /* TODO: If anyone knows the answer to this one please fill it up */
+    /* TODO(mannol): If anyone knows the answer to this one please fill it up */
     return false;
 }
 bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t state)
