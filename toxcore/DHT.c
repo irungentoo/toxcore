@@ -273,7 +273,9 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         memcpy(data + 1, &ip_port->ip.ip4, SIZE_IP4);
         memcpy(data + 1 + SIZE_IP4, &ip_port->port, sizeof(uint16_t));
         return size;
-    } else if (ipv6 == 1) {
+    }
+
+    if (ipv6 == 1) {
         uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t);
 
         if (size > length) {
@@ -284,9 +286,9 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         memcpy(data + 1, &ip_port->ip.ip6, SIZE_IP6);
         memcpy(data + 1 + SIZE_IP6, &ip_port->port, sizeof(uint16_t));
         return size;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* Unpack IP_Port structure from data of max size length into ip_port.
@@ -338,7 +340,9 @@ static int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length
         memcpy(&ip_port->ip.ip4, data + 1, SIZE_IP4);
         memcpy(&ip_port->port, data + 1 + SIZE_IP4, sizeof(uint16_t));
         return size;
-    } else if (ipv6 == 1) {
+    }
+
+    if (ipv6 == 1) {
         uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t);
 
         if (size > length) {
@@ -349,9 +353,9 @@ static int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length
         memcpy(&ip_port->ip.ip6, data + 1, SIZE_IP6);
         memcpy(&ip_port->port, data + 1 + SIZE_IP6, sizeof(uint16_t));
         return size;
-    } else {
-        return -1;
     }
+
+    return -1;
 }
 
 /* Pack number of nodes into data of maxlength length.
