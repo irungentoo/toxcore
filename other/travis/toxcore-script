@@ -3,10 +3,6 @@
 set -e -u -x
 . other/travis/env-$ENV.sh
 
-# Check if the code is formatted according to the astyle configuration.
-other/astyle/format-source
-git diff --exit-code
-
 # Build toxcore and run tests.
 export CFLAGS="-O3 -fprofile-arcs -ftest-coverage -DTRAVIS_ENV=1"
 # TODO(iphydf): Enable ASAN. It currently has some bad interactions with gcov,
