@@ -450,7 +450,7 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
     }
 
     if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
-        _Bool direct_connected = 0;
+        bool direct_connected = 0;
         unsigned int num_online_relays = 0;
         int crypt_conn_id = friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id);
         crypto_connection_status(m->net_crypto, crypt_conn_id, &direct_connected, &num_online_relays);
@@ -865,7 +865,7 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t
     m->friend_userstatuschange = function;
 }
 
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, _Bool, void *))
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, bool, void *))
 {
     m->friend_typingchange = function;
 }
@@ -2141,7 +2141,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
                 break;
             }
 
-            _Bool typing = !!data[0];
+            bool typing = !!data[0];
 
             set_friend_typing(m, i, typing);
 

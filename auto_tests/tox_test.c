@@ -224,9 +224,9 @@ static void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_n
 }
 
 static uint64_t max_sending;
-static _Bool m_send_reached;
+static bool m_send_reached;
 static uint8_t sending_num;
-static _Bool file_sending_done;
+static bool file_sending_done;
 static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
                                    size_t length,
                                    void *user_data)
@@ -280,7 +280,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
 
 
 static uint8_t num;
-static _Bool file_recv;
+static bool file_recv;
 static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
                        size_t length, void *user_data)
 {

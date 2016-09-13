@@ -330,7 +330,7 @@ static int send_pending_data(TCP_Client_Connection *con)
 /* return 0 on failure (only if malloc fails)
  * return 1 on success
  */
-static _Bool add_priority(TCP_Client_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
+static bool add_priority(TCP_Client_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
     TCP_Priority_List *p = con->priority_queue_end, *new;
     new = malloc(sizeof(TCP_Priority_List) + size);
@@ -370,13 +370,13 @@ static void wipe_priority_list(TCP_Client_Connection *con)
  * return -1 on failure (connection must be killed).
  */
 static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const uint8_t *data, uint16_t length,
-        _Bool priority)
+        bool priority)
 {
     if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE) {
         return -1;
     }
 
-    _Bool sendpriority = 1;
+    bool sendpriority = 1;
 
     if (send_pending_data(con) == -1) {
         if (priority) {

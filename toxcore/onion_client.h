@@ -160,7 +160,7 @@ typedef struct {
     uint64_t last_packet_recv;
 
     unsigned int onion_connected;
-    _Bool UDP_connected;
+    bool UDP_connected;
 } Onion_Client;
 
 

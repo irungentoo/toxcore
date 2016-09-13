@@ -40,7 +40,7 @@
 /* return 1 if the connections_number is not valid.
  * return 0 if the connections_number is valid.
  */
-static _Bool connections_number_not_valid(const TCP_Connections *tcp_c, int connections_number)
+static bool connections_number_not_valid(const TCP_Connections *tcp_c, int connections_number)
 {
     if ((unsigned int)connections_number >= tcp_c->connections_length) {
         return 1;
@@ -60,7 +60,7 @@ static _Bool connections_number_not_valid(const TCP_Connections *tcp_c, int conn
 /* return 1 if the tcp_connections_number is not valid.
  * return 0 if the tcp_connections_number is valid.
  */
-static _Bool tcp_connections_number_not_valid(const TCP_Connections *tcp_c, int tcp_connections_number)
+static bool tcp_connections_number_not_valid(const TCP_Connections *tcp_c, int tcp_connections_number)
 {
     if ((unsigned int)tcp_connections_number >= tcp_c->tcp_connections_length) {
         return 1;
@@ -228,7 +228,7 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
     unsigned int i;
     int ret = -1;
 
-    _Bool limit_reached = 0;
+    bool limit_reached = 0;
 
     for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         uint32_t tcp_con_num = con_to->connections[i].tcp_connection;
@@ -522,7 +522,7 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number)
  * return 0 on success.
  * return -1 on failure.
  */
-int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, _Bool status)
+int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, bool status)
 {
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
@@ -583,7 +583,7 @@ int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number,
     return 0;
 }
 
-static _Bool tcp_connection_in_conn(TCP_Connection_to *con_to, unsigned int tcp_connections_number)
+static bool tcp_connection_in_conn(TCP_Connection_to *con_to, unsigned int tcp_connections_number)
 {
     unsigned int i;
 
@@ -1253,7 +1253,7 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
  * return 0 on success.
  * return -1 on failure.
  */
-int set_tcp_onion_status(TCP_Connections *tcp_c, _Bool status)
+int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
 {
     if (tcp_c->onion_status == status) {
         return -1;

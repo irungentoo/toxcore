@@ -213,7 +213,7 @@ static int is_path_used(const Onion_Client_Paths *onion_paths, const Node_format
 }
 
 /* is path timed out */
-static _Bool path_timed_out(Onion_Client_Paths *onion_paths, uint32_t pathnum)
+static bool path_timed_out(Onion_Client_Paths *onion_paths, uint32_t pathnum)
 {
     pathnum = pathnum % NUMBER_ONION_PATHS;
 
@@ -275,7 +275,7 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
 }
 
 /* Does path with path_num exist. */
-static _Bool path_exists(Onion_Client_Paths *onion_paths, uint32_t path_num)
+static bool path_exists(Onion_Client_Paths *onion_paths, uint32_t path_num)
 {
     if (path_timed_out(onion_paths, path_num)) {
         return 0;
@@ -1577,7 +1577,7 @@ void do_onion_client(Onion_Client *onion_c)
         }
     }
 
-    _Bool UDP_connected = DHT_non_lan_connected(onion_c->dht);
+    bool UDP_connected = DHT_non_lan_connected(onion_c->dht);
 
     if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS * 2)) {
         set_tcp_onion_status(onion_c->c->tcp_c, !UDP_connected);

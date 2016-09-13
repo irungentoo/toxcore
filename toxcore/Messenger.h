@@ -242,7 +242,7 @@ struct Messenger {
     void (*friend_namechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void (*friend_statusmessagechange)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
     void (*friend_userstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
-    void (*friend_typingchange)(struct Messenger *m, uint32_t, _Bool, void *);
+    void (*friend_typingchange)(struct Messenger *m, uint32_t, bool, void *);
     void (*read_receipt)(struct Messenger *m, uint32_t, uint32_t, void *);
     void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);
@@ -494,7 +494,7 @@ void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t
 /* Set the callback for typing changes.
  *  Function(uint32_t friendnumber, uint8_t is_typing)
  */
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, _Bool, void *));
+void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, bool, void *));
 
 /* Set the callback for read receipts.
  *  Function(uint32_t friendnumber, uint32_t receipt)

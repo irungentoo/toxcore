@@ -323,7 +323,7 @@ static void kill_onions(Onions *on)
 #define NUM_FIRST 7
 #define NUM_LAST 37
 
-static _Bool first_ip, last_ip;
+static bool first_ip, last_ip;
 static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
 {
     if (NUM_FIRST == number) {
@@ -339,7 +339,7 @@ static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
     ck_abort_msg("Error.");
 }
 
-static _Bool first, last;
+static bool first, last;
 static uint8_t first_dht_pk[crypto_box_PUBLICKEYBYTES];
 static uint8_t last_dht_pk[crypto_box_PUBLICKEYBYTES];
 

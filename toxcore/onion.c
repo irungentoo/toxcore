@@ -62,7 +62,7 @@ static void ip_pack(uint8_t *data, IP source)
 }
 
 /* return 0 on success, -1 on failure. */
-static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, _Bool disable_family_check)
+static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (1 + SIZE_IP6)) {
         return -1;
@@ -91,7 +91,7 @@ static void ipport_pack(uint8_t *data, const IP_Port *source)
 }
 
 /* return 0 on success, -1 on failure. */
-static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data_size, _Bool disable_family_check)
+static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (SIZE_IP + SIZE_PORT)) {
         return -1;

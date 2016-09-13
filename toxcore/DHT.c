@@ -550,8 +550,8 @@ static int friend_number(const DHT *dht, const uint8_t *public_key)
 
 /* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
  */
-_Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
-                  const uint8_t *cmp_pk)
+bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
+                 const uint8_t *cmp_pk)
 {
     uint8_t pk_bak[crypto_box_PUBLICKEYBYTES];
     IP_Port ip_port_bak;
@@ -877,7 +877,7 @@ static int replace_all(Client_data    *list,
  * return -1 on failure.
  * return 0 on success.
  */
-static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, _Bool simulate)
+static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bool simulate)
 {
     unsigned int i;
 
@@ -924,7 +924,7 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, _B
 
 /* Return 1 if node can be added to close list, 0 if it can't.
  */
-_Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
+bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
 {
     if (add_to_close(dht, public_key, ip_port, 1) == 0) {
         return 1;
@@ -933,8 +933,8 @@ _Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip
     return 0;
 }
 
-static _Bool is_pk_in_client_list(Client_data *list, unsigned int client_list_length, const uint8_t *public_key,
-                                  IP_Port ip_port)
+static bool is_pk_in_client_list(Client_data *list, unsigned int client_list_length, const uint8_t *public_key,
+                                 IP_Port ip_port)
 {
     unsigned int i;
 
@@ -958,7 +958,7 @@ static _Bool is_pk_in_client_list(Client_data *list, unsigned int client_list_le
  */
 static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
 {
-    _Bool ret = 0;
+    bool ret = 0;
 
     if (add_to_close(dht, public_key, ip_port, 1) == 0) {
         ret = 1;
@@ -978,7 +978,7 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
     unsigned int i;
 
     for (i = 0; i < dht->num_friends; ++i) {
-        _Bool store_ok = 0;
+        bool store_ok = 0;
 
         DHT_Friend *friend = &dht->friends_list[i];
 
@@ -1572,7 +1572,7 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
 
 /* returns number of nodes not in kill-timeout */
 static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, const uint8_t *public_key,
-        Client_data *list, uint32_t list_count, uint32_t *bootstrap_times, _Bool sortable)
+        Client_data *list, uint32_t list_count, uint32_t *bootstrap_times, bool sortable)
 {
     uint32_t i;
     uint8_t not_kill = 0;
@@ -1582,7 +1582,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     Client_data *client_list[list_count * 2];
     IPPTsPng    *assoc_list[list_count * 2];
     unsigned int sort = 0;
-    _Bool sort_ok = 0;
+    bool sort_ok = 0;
 
     for (i = 0; i < list_count; i++) {
         /* If node is not dead. */

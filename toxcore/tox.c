@@ -179,7 +179,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 {
     Messenger_Options m_options = {0};
 
-    _Bool load_savedata_sk = 0, load_savedata_tox = 0;
+    bool load_savedata_sk = 0, load_savedata_tox = 0;
 
     if (options == NULL) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
