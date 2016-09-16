@@ -45,14 +45,14 @@
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
-static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t bufsize)
+static const char *inet_ntop(sa_family_t family, const void *addr, char *buf, size_t bufsize)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
         memset(&saddr, 0, sizeof(saddr));
 
         saddr.sin_family = AF_INET;
-        saddr.sin_addr = *(struct in_addr *)addr;
+        saddr.sin_addr = *(const struct in_addr *)addr;
 
         DWORD len = bufsize;
 
@@ -66,7 +66,7 @@ static const char *inet_ntop(sa_family_t family, void *addr, char *buf, size_t b
         memset(&saddr, 0, sizeof(saddr));
 
         saddr.sin6_family = AF_INET6;
-        saddr.sin6_addr = *(struct in6_addr *)addr;
+        saddr.sin6_addr = *(const struct in6_addr *)addr;
 
         DWORD len = bufsize;
 
