@@ -91,6 +91,9 @@ set(toxcore_PKGCONFIG_LIBS)
 add_module(toxcrypto
   toxcore/crypto_core.c)
 target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
+if(WIN32)
+  target_link_modules(toxcrypto ws2_32) # for htonl
+endif()
 
 # LAYER 2: Basic networking
 # -------------------------
@@ -204,8 +207,9 @@ target_link_modules(toxencryptsave toxcore)
 #
 ################################################################################
 
-add_test(format_test
-  ${CMAKE_SOURCE_DIR}/other/astyle/format-source "${CMAKE_SOURCE_DIR}")
+add_test(
+  NAME format_test
+  COMMAND ${CMAKE_SOURCE_DIR}/other/astyle/format-source "${CMAKE_SOURCE_DIR}")
 
 function(auto_test target)
   if(CHECK_FOUND)
@@ -215,7 +219,7 @@ function(auto_test target)
       toxav
       toxencryptsave
       ${CHECK_LIBRARIES})
-    add_test(${target} auto_${target})
+    add_test(NAME ${target} COMMAND auto_${target})
   endif()
 endfunction()
 
