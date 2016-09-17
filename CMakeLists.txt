@@ -163,8 +163,7 @@ target_link_modules(toxgroup toxmessenger)
 # LAYER 8: Public API
 # -------------------
 add_module(toxcore
-  toxcore/tox.c
-  toxcore/tox_group.c)
+  toxcore/tox.c)
 target_link_modules(toxcore toxgroup)
 
 

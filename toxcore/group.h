@@ -120,7 +120,7 @@ typedef struct {
     void *invite_callback_userdata;
     void (*message_callback)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *, size_t, void *);
     void *message_callback_userdata;
-    void (*peer_namelistchange)(Messenger *m, int, int, uint8_t, void *);
+    void (*group_namelistchange)(Messenger *m, int, int, uint8_t, void *);
     void *group_namelistchange_userdata;
     void (*title_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void *title_callback_userdata;
@@ -144,8 +144,7 @@ void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, ui
  *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
-                              size_t,
-                              void *), void *userdata);
+                              size_t, void *), void *userdata);
 
 
 /* Set callback function for title changes.
@@ -154,8 +153,7 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, u
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
 void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
-                            size_t,
-                            void *), void *userdata);
+                            size_t, void *), void *userdata);
 
 /* Set callback function for peer name list changes.
  *
@@ -182,31 +180,41 @@ int add_groupchat(Group_Chats *g_c, uint8_t type);
 /* Delete a groupchat from the chats array.
  *
  * return 0 on success.
- * return -1 if failure.
+ * return -1 if groupnumber is invalid.
  */
 int del_groupchat(Group_Chats *g_c, int groupnumber);
 
 /* Copy the public key of peernumber who is in groupnumber to pk.
  * pk must be crypto_box_PUBLICKEYBYTES long.
  *
- * returns 0 on success
- * returns -1 on failure
+ * return 0 on success
+ * return -1 if groupnumber is invalid.
+ * return -2 if peernumber is invalid.
  */
 int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *pk);
 
+/*
+ * Return the size of peernumber's name.
+ *
+ * return -1 if groupnumber is invalid.
+ * return -2 if peernumber is invalid.
+ */
 int group_peername_size(const Group_Chats *g_c, int groupnumber, int peernumber);
 
 /* Copy the name of peernumber who is in groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
  *
  * return length of name if success
- * return -1 if failure
+ * return -1 if groupnumber is invalid.
+ * return -2 if peernumber is invalid.
  */
 int group_peername(const Group_Chats *g_c, int groupnumber, int peernumber, uint8_t *name);
 
 /* invite friendnumber to groupnumber
- * return 0 on success
- * return -1 on failure
+ *
+ * return 0 on success.
+ * return -1 if groupnumber is invalid.
+ * return -2 if invite packet failed to send.
  */
 int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber);
 
@@ -214,49 +222,64 @@ int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber);
  *
  * expected_type is the groupchat type we expect the chat we are joining is.
  *
- * returns group number on success
- * returns -1 on failure.
+ * return group number on success.
+ * return -1 if data length is invalid.
+ * return -2 if group is not the expected type.
+ * return -3 if friendnumber is invalid.
+ * return -4 if client is already in this group.
+ * return -5 if group instance failed to initialize.
+ * return -6 if join packet fails to send.
  */
 int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type, const uint8_t *data, uint16_t length);
 
 /* send a group message
  * return 0 on success
- * return -1 on failure
+ * see: send_message_group() for error codes.
  */
 int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *message, uint16_t length);
 
 /* send a group action
  * return 0 on success
- * return -1 on failure
+ * see: send_message_group() for error codes.
  */
 int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length);
 
 /* set the group's title, limited to MAX_NAME_LENGTH
  * return 0 on success
- * return -1 on failure
+ * return -1 if groupnumber is invalid.
+ * return -2 if title is too long or empty.
+ * return -3 if packet fails to send.
  */
 int group_title_send(const Group_Chats *g_c, int groupnumber, const uint8_t *title, uint8_t title_len);
 
 
+/* return the group's title size.
+ * return -1 of groupnumber is invalid.
+ * return -2 if title is too long or empty.
+ */
 int group_title_get_size(const Group_Chats *g_c, int groupnumber);
 
 /* Get group title from groupnumber and put it in title.
- * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
+ * Title needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
- *  return length of copied title if success.
- *  return -1 if failure.
+ * return length of copied title if success.
+ * return -1 if groupnumber is invalid.
+ * return -2 if title is too long or empty.
  */
 int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title);
 
 /* Return the number of peers in the group chat on success.
- * return -1 on failure
+ * return -1 if groupnumber is invalid.
  */
 int group_number_peers(const Group_Chats *g_c, int groupnumber);
 
 /* return 1 if the peernumber corresponds to ours.
- * return 0 on failure.
+ * return 0 if the peernumber is not ours.
+ * return -1 if groupnumber is invalid.
+ * return -2 if peernumber is invalid.
+ * return -3 if we are not connected to the group chat.
  */
-unsigned int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, int peernumber);
+int group_peernumber_is_ours(const Group_Chats *g_c, int groupnumber, int peernumber);
 
 /* List all the peers in the group chat.
  *

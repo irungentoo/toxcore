@@ -612,9 +612,9 @@ static void line_eval(Tox *m, char *line)
 
             if (posi != NULL) {
                 char msg[64];
-                int peer_cnt = tox_conference_peer_count(m, group_number, NULL);
+                uint32_t peer_cnt = tox_conference_peer_count(m, group_number, NULL);
 
-                if (peer_cnt < 0) {
+                if (peer_cnt == UINT32_MAX) {
                     new_lines("[g] Invalid group number.");
                 } else if (peer_cnt == 0) {
                     sprintf(msg, "[g] #%i: No peers in group.", group_number);
@@ -1068,9 +1068,9 @@ static void print_invite(Tox *m, uint32_t friendnumber, TOX_CONFERENCE_TYPE type
 
 static void print_groupchatpeers(Tox *m, int groupnumber)
 {
-    int num = tox_conference_peer_count(m, groupnumber, NULL);
+    uint32_t num = tox_conference_peer_count(m, groupnumber, NULL);
 
-    if (num < 0) {
+    if (num == UINT32_MAX) {
         return;
     }
 
@@ -1080,9 +1080,9 @@ static void print_groupchatpeers(Tox *m, int groupnumber)
     }
 
     uint8_t names[num][TOX_MAX_NAME_LENGTH];
-    uint16_t lengths[num];
+    size_t lengths[num];
 
-    int i;
+    uint32_t i;
 
     for (i = 0; i < num; ++i) {
         lengths[i] = tox_conference_peer_get_name_size(m, groupnumber, i, NULL);
@@ -1126,12 +1126,14 @@ static void print_groupmessage(Tox *m, uint32_t groupnumber, uint32_t peernumber
                                void *userdata)
 {
     char msg[256 + length];
+
+    TOX_ERR_CONFERENCE_PEER_QUERY error;
+    size_t len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, &error);
     uint8_t name[TOX_MAX_NAME_LENGTH] = {0};
-    int len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, NULL);
     tox_conference_peer_get_name(m, groupnumber, peernumber, name, NULL);
 
     //print_groupchatpeers(m, groupnumber);
-    if (len <= 0) {
+    if (len == 0 || error != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
         name[0] = 0;
     }
 
@@ -1143,31 +1145,33 @@ static void print_groupmessage(Tox *m, uint32_t groupnumber, uint32_t peernumber
 
     new_lines(msg);
 }
-static void print_groupnamelistchange(Tox *m, uint32_t groupnumber, uint32_t peernumber, TOX_CONFERENCE_CHANGE change,
+static void print_groupnamelistchange(Tox *m, uint32_t groupnumber, uint32_t peernumber,
+                                      TOX_CONFERENCE_STATE_CHANGE change,
                                       void *userdata)
 {
     char msg[256];
 
-    if (change == TOX_CONFERENCE_CHANGE_PEER_ADD) {
+    if (change == TOX_CONFERENCE_STATE_CHANGE_PEER_JOIN) {
         sprintf(msg, "[g] #%i: New peer %i.", groupnumber, peernumber);
         new_lines(msg);
-    } else if (change == TOX_CONFERENCE_CHANGE_PEER_DEL) {
+    } else if (change == TOX_CONFERENCE_STATE_CHANGE_PEER_EXIT) {
         /* if peer was the last in list, it simply dropped,
          * otherwise it was overwritten by the last peer
          *
          * adjust output
          */
-        int peers_total = tox_conference_peer_count(m, groupnumber, NULL);
+        uint32_t peers_total = tox_conference_peer_count(m, groupnumber, NULL);
 
         if (peers_total == peernumber) {
             sprintf(msg, "[g] #%i: Peer %i left.", groupnumber, peernumber);
             new_lines(msg);
         } else {
+            TOX_ERR_CONFERENCE_PEER_QUERY error;
             uint8_t peername[TOX_MAX_NAME_LENGTH] = {0};
-            int len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, NULL);
+            size_t len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, &error);
             tox_conference_peer_get_name(m, groupnumber, peernumber, peername, NULL);
 
-            if (len <= 0) {
+            if (len == 0 || error != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
                 peername[0] = 0;
             }
 
@@ -1175,7 +1179,7 @@ static void print_groupnamelistchange(Tox *m, uint32_t groupnumber, uint32_t pee
                     peers_total, peername, peernumber);
             new_lines(msg);
         }
-    } else if (change == TOX_CONFERENCE_CHANGE_PEER_NAME) {
+    } else if (change == TOX_CONFERENCE_STATE_CHANGE_PEER_NAME_CHANGE) {
         uint8_t peername[TOX_MAX_NAME_LENGTH] = {0};
         int len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, NULL);
         tox_conference_peer_get_name(m, groupnumber, peernumber, peername, NULL);

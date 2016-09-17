@@ -316,7 +316,7 @@ enum class USER_STATUS {
 
 
 /**
- * Represents message types for ${tox.friend.send.message} and group chat
+ * Represents message types for ${tox.friend.send.message} and conference
  * messages.
  */
 enum class MESSAGE_TYPE {
@@ -1299,7 +1299,6 @@ namespace friend {
      */
     get(uint32_t friend_number)
         with error for query;
-
   }
 
 
@@ -1844,7 +1843,9 @@ namespace file {
    *   On failure, this function returns UINT32_MAX. Any pattern in file numbers
    *   should not be relied on.
    */
-  uint32_t send(uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t[FILE_ID_LENGTH] file_id, const uint8_t[filename_length <= MAX_FILENAME_LENGTH] filename) {
+  uint32_t send(uint32_t friend_number, uint32_t kind, uint64_t file_size,
+                const uint8_t[FILE_ID_LENGTH] file_id,
+                const uint8_t[filename_length <= MAX_FILENAME_LENGTH] filename) {
     NULL,
     /**
      * The friend_number passed did not designate a valid friend.
@@ -1985,7 +1986,7 @@ namespace file {
      * @param filename_length Size in bytes of the filename.
      */
     typedef void(uint32_t friend_number, uint32_t file_number, uint32_t kind,
-        uint64_t file_size, const uint8_t[filename_length <= MAX_FILENAME_LENGTH] filename);
+                 uint64_t file_size, const uint8_t[filename_length <= MAX_FILENAME_LENGTH] filename);
   }
 
 
@@ -2011,7 +2012,7 @@ namespace file {
      * @param length The length of the received chunk.
      */
     typedef void(uint32_t friend_number, uint32_t file_number, uint64_t position,
-        const uint8_t[length] data);
+                 const uint8_t[length] data);
   }
 
 }
@@ -2019,16 +2020,9 @@ namespace file {
 
 /*******************************************************************************
  *
- * :: Group chat management
+ * :: Conference management
  *
  ******************************************************************************/
-
-error for conference {
-  /**
-   * Some error occurred.
-   */
-  FAILURE,
-}
 
 namespace conference {
 
@@ -2066,199 +2060,339 @@ namespace conference {
 
 
   /**
-   * Set the callback for group messages.
+   * This event is triggered when the client receives a conference message.
    */
   event message {
     /**
-     * TODO
+     * @param conference_number The conference number of the conference the message is intended for.
+     * @param peer_number The ID of the peer who sent the message.
+     * @param type The type of message (normal, action, ...).
+     * @param message The message data.
+     * @param length The length of the message.
      */
-    typedef void(uint32_t group_number, uint32_t peer_number, MESSAGE_TYPE type,
+    typedef void(uint32_t conference_number, uint32_t peer_number, MESSAGE_TYPE type,
                  const uint8_t[length] message);
   }
 
 
   /**
-   * Set callback function for title changes.
+   * This event is triggered when a peer changes the conference title.
    *
-   * if peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the group)
+   * If peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the conference).
    */
   event title {
     /**
-     * TODO
+     * @param conference_number The conference number of the conference the title change is intended for.
+     * @param peer_number The ID of the peer who changed the title.
+     * @param title The title data.
+     * @param length The title length.
      */
-    typedef void(uint32_t group_number, uint32_t peer_number, const uint8_t[length] title);
-  }
-
-
-  // rename CHANGE to something different that is a good prefix for the three
-  // things below.
-  enum class CHANGE {
-    PEER_ADD, // JOINED?
-    PEER_DEL, // PARTED?
-    PEER_NAME, // NAME_CHANGE?
+    typedef void(uint32_t conference_number, uint32_t peer_number, const uint8_t[length] title);
   }
 
   /**
-   * Set callback function for peer name list changes.
-   *
-   * It gets called every time the name list changes(new peer/name, deleted peer)
+   * Peer list state change types.
+   */
+  enum class STATE_CHANGE {
+    /**
+     * A peer has joined the conference.
+     */
+    PEER_JOIN,
+    /**
+     * A peer has exited the conference.
+     */
+    PEER_EXIT,
+    /**
+     * A peer has changed their name.
+     */
+    PEER_NAME_CHANGE,
+  }
+
+  /**
+   * This event is triggered when the peer list changes (name change, peer join, peer exit).
    */
   event namelist_change {
     /**
-     * TODO
+     * @param conference_number The conference number of the conference the title change is intended for.
+     * @param peer_number The ID of the peer who changed the title.
+     * @param change The type of change (one of $STATE_CHANGE).
      */
-    typedef void(uint32_t group_number, uint32_t peer_number, CHANGE change);
+    typedef void(uint32_t conference_number, uint32_t peer_number, STATE_CHANGE change);
   }
 
 
   /**
-   * Creates a new groupchat.
+   * Creates a new conference.
    *
-   * @return the group number.
+   * This function creates a new text conference.
+   *
+   * @return conference number on success, or UINT32_MAX on failure.
    */
-  uint32_t new()
-      with error for conference;
+  uint32_t new() {
+    /**
+     * The conference instance failed to initialize.
+     */
+    INIT,
+  }
 
   /**
-   * Delete a groupchat.
+   * This function deletes a conference.
+   *
+   * @param conference_number The conference number of the conference to be deleted.
    *
    * @return true on success.
    */
-  bool delete(uint32_t group_number)
-      with error for conference;
+  bool delete(uint32_t conference_number) {
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    CONFERENCE_NOT_FOUND,
+  }
 
 
   namespace peer {
 
     /**
-     * Return the number of peers in the group chat.
+     * Error codes for peer info queries.
      */
-    const uint32_t count(uint32_t group_number)
-        with error for conference;
+    error for query {
+      /**
+       * The conference number passed did not designate a valid conference.
+       */
+      CONFERENCE_NOT_FOUND,
+      /**
+       * The peer number passed did not designate a valid peer.
+       */
+      PEER_NOT_FOUND,
+      /**
+       * The client is not connected to the conference.
+       */
+      NO_CONNECTION,
+    }
+
+    /**
+     * Return the number of peers in the conference. Return value is unspecified on failure.
+     */
+    const uint32_t count(uint32_t conference_number)
+        with error for query;
 
     uint8_t[size] name {
-      size(uint32_t group_number, uint32_t peer_number)
-          with error for conference;
 
       /**
-       * Copy the name of peer_number who is in group_number to name.
+       * Return the length of the peer's name. Return value is unspecified on failure.
+       */
+      size(uint32_t conference_number, uint32_t peer_number)
+          with error for query;
+
+      /**
+       * Copy the name of peer_number who is in conference_number to name.
        * name must be at least $MAX_NAME_LENGTH long.
        *
-       * return length of name if success
-       * return -1 if failure
+       * @return true on success.
        */
-      get(uint32_t group_number, uint32_t peer_number)
-          with error for conference;
+      get(uint32_t conference_number, uint32_t peer_number)
+          with error for query;
     }
 
     /**
-     * Copy the public key of peer_number who is in group_number to public_key.
+     * Copy the public key of peer_number who is in conference_number to public_key.
      * public_key must be $PUBLIC_KEY_SIZE long.
      *
-     * returns 0 on success
-     * returns -1 on failure
+     * @return true on success.
      */
     uint8_t[PUBLIC_KEY_SIZE] public_key {
-      get(uint32_t group_number, uint32_t peer_number)
-          with error for conference;
+      get(uint32_t conference_number, uint32_t peer_number)
+          with error for query;
     }
 
     /**
-     * Check if the current peer_number corresponds to ours.
-     *
-     * return 1 if the peer_number corresponds to ours.
-     * return 0 on failure.
+     * Return true if passed peer_number corresponds to our own.
      */
-    const bool number_is_ours(uint32_t group_number, uint32_t peer_number);
+    const bool number_is_ours(uint32_t conference_number, uint32_t peer_number)
+        with error for query;
 
   }
 
 
   /**
-   * invite friend_number to group_number
-   * return 0 on success
-   * return -1 on failure
+   * Invites a friend to a conference.
+   *
+   * @param friend_number The friend number of the friend we want to invite.
+   * @param conference_number The conference number of the conference we want to invite the friend to.
+   *
+   * @return true on success.
    */
-  bool invite(uint32_t friend_number, uint32_t group_number)
-      with error for conference;
+  bool invite(uint32_t friend_number, uint32_t conference_number) {
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    CONFERENCE_NOT_FOUND,
+    /**
+     * The invite packet failed to send.
+     */
+    FAIL_SEND,
+  }
 
 
   /**
-   * Join a group (you need to have been invited first.) using cookie of length obtained
-   * in the group invite callback.
+   * Joins a conference that the client has been invited to.
    *
-   * returns group number on success
-   * returns -1 on failure.
+   * @param friend_number The friend number of the friend who sent the invite.
+   * @param cookie Received via the `${event invite}` event.
+   * @param length The size of cookie.
+   *
+   * @return conference number on success, UINT32_MAX on failure.
    */
-  uint32_t join(uint32_t friend_number, const uint8_t[length] cookie)
-      with error for conference;
+  uint32_t join(uint32_t friend_number, const uint8_t[length] cookie) {
+    /**
+     * The cookie passed has an invalid length.
+     */
+    INVALID_LENGTH,
+    /**
+     * The conference is not the expected type. This indicates an invalid cookie.
+     */
+    WRONG_TYPE,
+    /**
+     * The friend number passed does not designate a valid friend.
+     */
+    FRIEND_NOT_FOUND,
+    /**
+     * Client is already in this conference.
+     */
+    DUPLICATE,
+    /**
+     * Conference instance failed to initialize.
+     */
+    INIT_FAIL,
+    /**
+     * The join packet failed to send.
+     */
+    FAIL_SEND,
+  }
 
 
   namespace send {
 
     /**
-     * send a group message
-     * return 0 on success
-     * return -1 on failure
+     * Send a text chat message to the conference.
+     *
+     * This function creates a conference message packet and pushes it into the send
+     * queue.
+     *
+     * The message length may not exceed $MAX_MESSAGE_LENGTH. Larger messages
+     * must be split by the client and sent as separate messages. Other clients can
+     * then reassemble the fragments.
+     *
+     * @param conference_number The conference number of the conference the message is intended for.
+     * @param type Message type (normal, action, ...).
+     * @param message A non-NULL pointer to the first element of a byte array
+     *   containing the message text.
+     * @param length Length of the message to be sent.
+     *
+     * @return true on success.
      */
-    bool message(uint32_t group_number, MESSAGE_TYPE type, const uint8_t[length] message)
-        with error for conference;
-
+    bool message(uint32_t conference_number, MESSAGE_TYPE type, const uint8_t[length] message) {
+      /**
+       * The conference number passed did not designate a valid conference.
+       */
+      CONFERENCE_NOT_FOUND,
+      /**
+       * The message is too long.
+       */
+      TOO_LONG,
+      /**
+       * The client is not connected to the conference.
+       */
+      NO_CONNECTION,
+      /**
+       * The message packet failed to send.
+       */
+      FAIL_SEND,
+    }
   }
 
+  error for title {
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    CONFERENCE_NOT_FOUND,
+    /**
+     * The title is too long or empty.
+     */
+    INVALID_LENGTH,
+    /**
+     * The title packet failed to send.
+     */
+    FAIL_SEND,
+  }
 
   uint8_t[length <= MAX_NAME_LENGTH] title {
-    size(uint32_t group_number)
-        with error for conference;
 
     /**
-     * Get group title from group_number and put it in title.
-     * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
+     * Return the length of the conference title. Return value is unspecified on failure.
      *
-     *  return length of copied title if success.
-     *  return -1 if failure.
+     * The return value is equal to the `length` argument received by the last
+     * `${event title}` callback.
      */
-    get(uint32_t group_number)
-        with error for conference;
+    size(uint32_t conference_number)
+        with error for title;
 
     /**
-     * set the group's title, limited to MAX_NAME_LENGTH
-     * return 0 on success
-     * return -1 on failure
+     * Write the title designated by the given conference number to a byte array.
+     *
+     * Call $size to determine the allocation size for the `title` parameter.
+     *
+     * The data written to `title` is equal to the data received by the last
+     * `${event title}` callback.
+     *
+     * @param title A valid memory region large enough to store the title.
+     *   If this parameter is NULL, this function has no effect.
+     *
+     * @return true on success.
      */
-    set(uint32_t group_number)
-        with error for conference;
+    get(uint32_t conference_number)
+        with error for title;
+
+    /**
+     * Set the conference title and broadcast it to the rest of the conference.
+     *
+     * Title length cannot be longer than $MAX_NAME_LENGTH.
+     *
+     * @return true on success.
+     */
+    set(uint32_t conference_number)
+        with error for title;
   }
 
 
   uint32_t[size] chatlist {
     /**
-     * Return the number of chats in the instance m.
-     * You should use this to determine how much memory to allocate
-     * for copy_chatlist.
+     * Return the number of conferences in the Tox instance.
+     * This should be used to determine how much memory to allocate for `$get`.
      */
     size();
 
     /**
-     * Copy a list of valid chat IDs into the array out_list.
-     * If out_list is NULL, returns 0.
-     * Otherwise, returns the number of elements copied.
-     * If the array was too small, the contents
-     * of out_list will be truncated to list_size.
+     * Copy a list of valid conference IDs into the array chatlist. Determine how much space
+     * to allocate for the array with the `$size` function.
+     *
+     * @return The number of elements copied to the array, or 0 if chatlist is set to NULL.
      */
     get();
   }
 
 
   /**
-   * return the type of groupchat ($TYPE) that group_number is.
-   *
-   * return -1 on failure.
-   * return type on success.
+   * Returns the type of conference ($TYPE) that conference_number is. Return value is
+   * unspecified on failure.
    */
   TYPE type {
-    get(uint32_t group_number)
-        with error for conference;
+    get(uint32_t conference_number) {
+      /**
+       * The conference number passed did not designate a valid conference.
+       */
+      CONFERENCE_NOT_FOUND,
+    }
   }
 
 }
@@ -2424,7 +2558,6 @@ inline namespace self {
   }
 
 }
-
 
 } // class tox
 

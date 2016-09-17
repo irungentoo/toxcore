@@ -344,7 +344,7 @@ typedef enum TOX_USER_STATUS {
 
 
 /**
- * Represents message types for tox_friend_send_message and group chat
+ * Represents message types for tox_friend_send_message and conference
  * messages.
  */
 typedef enum TOX_MESSAGE_TYPE {
@@ -2268,25 +2268,10 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback);
 
 /*******************************************************************************
  *
- * :: Group chat management
+ * :: Conference management
  *
  ******************************************************************************/
 
-
-
-typedef enum TOX_ERR_CONFERENCE {
-
-    /**
-     * The function returned successfully.
-     */
-    TOX_ERR_CONFERENCE_OK,
-
-    /**
-     * Some error occurred.
-     */
-    TOX_ERR_CONFERENCE_FAILURE,
-
-} TOX_ERR_CONFERENCE;
 
 
 /**
@@ -2329,188 +2314,420 @@ typedef void tox_conference_invite_cb(Tox *tox, uint32_t friend_number, TOX_CONF
 void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback, void *user_data);
 
 /**
- * TODO
+ * @param conference_number The conference number of the conference the message is intended for.
+ * @param peer_number The ID of the peer who sent the message.
+ * @param type The type of message (normal, action, ...).
+ * @param message The message data.
+ * @param length The length of the message.
  */
-typedef void tox_conference_message_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, TOX_MESSAGE_TYPE type,
-                                       const uint8_t *message, size_t length, void *user_data);
+typedef void tox_conference_message_cb(Tox *tox, uint32_t conference_number, uint32_t peer_number,
+                                       TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data);
 
 
 /**
  * Set the callback for the `conference_message` event. Pass NULL to unset.
  *
- * Set the callback for group messages.
+ * This event is triggered when the client receives a conference message.
  */
 void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback, void *user_data);
 
 /**
- * TODO
+ * @param conference_number The conference number of the conference the title change is intended for.
+ * @param peer_number The ID of the peer who changed the title.
+ * @param title The title data.
+ * @param length The title length.
  */
-typedef void tox_conference_title_cb(Tox *tox, uint32_t group_number, uint32_t peer_number, const uint8_t *title,
+typedef void tox_conference_title_cb(Tox *tox, uint32_t conference_number, uint32_t peer_number, const uint8_t *title,
                                      size_t length, void *user_data);
 
 
 /**
  * Set the callback for the `conference_title` event. Pass NULL to unset.
  *
- * Set callback function for title changes.
+ * This event is triggered when a peer changes the conference title.
  *
- * if peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the group)
+ * If peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the conference).
  */
 void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback, void *user_data);
 
-typedef enum TOX_CONFERENCE_CHANGE {
+/**
+ * Peer list state change types.
+ */
+typedef enum TOX_CONFERENCE_STATE_CHANGE {
 
     /**
-     * TODO: Generate doc
+     * A peer has joined the conference.
      */
-    TOX_CONFERENCE_CHANGE_PEER_ADD,
+    TOX_CONFERENCE_STATE_CHANGE_PEER_JOIN,
 
     /**
-     * TODO: Generate doc
+     * A peer has exited the conference.
      */
-    TOX_CONFERENCE_CHANGE_PEER_DEL,
+    TOX_CONFERENCE_STATE_CHANGE_PEER_EXIT,
 
     /**
-     * TODO: Generate doc
+     * A peer has changed their name.
      */
-    TOX_CONFERENCE_CHANGE_PEER_NAME,
+    TOX_CONFERENCE_STATE_CHANGE_PEER_NAME_CHANGE,
 
-} TOX_CONFERENCE_CHANGE;
+} TOX_CONFERENCE_STATE_CHANGE;
 
 
 /**
- * TODO
+ * @param conference_number The conference number of the conference the title change is intended for.
+ * @param peer_number The ID of the peer who changed the title.
+ * @param change The type of change (one of TOX_CONFERENCE_STATE_CHANGE).
  */
-typedef void tox_conference_namelist_change_cb(Tox *tox, uint32_t group_number, uint32_t peer_number,
-        TOX_CONFERENCE_CHANGE change, void *user_data);
+typedef void tox_conference_namelist_change_cb(Tox *tox, uint32_t conference_number, uint32_t peer_number,
+        TOX_CONFERENCE_STATE_CHANGE change, void *user_data);
 
 
 /**
  * Set the callback for the `conference_namelist_change` event. Pass NULL to unset.
  *
- * Set callback function for peer name list changes.
- *
- * It gets called every time the name list changes(new peer/name, deleted peer)
+ * This event is triggered when the peer list changes (name change, peer join, peer exit).
  */
 void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback, void *user_data);
 
-/**
- * Creates a new groupchat.
- *
- * @return the group number.
- */
-uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE *error);
+typedef enum TOX_ERR_CONFERENCE_NEW {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_NEW_OK,
+
+    /**
+     * The conference instance failed to initialize.
+     */
+    TOX_ERR_CONFERENCE_NEW_INIT,
+
+} TOX_ERR_CONFERENCE_NEW;
+
 
 /**
- * Delete a groupchat.
+ * Creates a new conference.
+ *
+ * This function creates a new text conference.
+ *
+ * @return conference number on success, or UINT32_MAX on failure.
+ */
+uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error);
+
+typedef enum TOX_ERR_CONFERENCE_DELETE {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_DELETE_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND,
+
+} TOX_ERR_CONFERENCE_DELETE;
+
+
+/**
+ * This function deletes a conference.
+ *
+ * @param conference_number The conference number of the conference to be deleted.
  *
  * @return true on success.
  */
-bool tox_conference_delete(Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+bool tox_conference_delete(Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_DELETE *error);
 
 /**
- * Return the number of peers in the group chat.
+ * Error codes for peer info queries.
  */
-uint32_t tox_conference_peer_count(const Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+typedef enum TOX_ERR_CONFERENCE_PEER_QUERY {
 
-size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t group_number, uint32_t peer_number,
-        TOX_ERR_CONFERENCE *error);
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_PEER_QUERY_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND,
+
+    /**
+     * The peer number passed did not designate a valid peer.
+     */
+    TOX_ERR_CONFERENCE_PEER_QUERY_PEER_NOT_FOUND,
+
+    /**
+     * The client is not connected to the conference.
+     */
+    TOX_ERR_CONFERENCE_PEER_QUERY_NO_CONNECTION,
+
+} TOX_ERR_CONFERENCE_PEER_QUERY;
+
 
 /**
- * Copy the name of peer_number who is in group_number to name.
+ * Return the number of peers in the conference. Return value is unspecified on failure.
+ */
+uint32_t tox_conference_peer_count(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+/**
+ * Return the length of the peer's name. Return value is unspecified on failure.
+ */
+size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
+        TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+/**
+ * Copy the name of peer_number who is in conference_number to name.
  * name must be at least TOX_MAX_NAME_LENGTH long.
  *
- * return length of name if success
- * return -1 if failure
+ * @return true on success.
  */
-bool tox_conference_peer_get_name(const Tox *tox, uint32_t group_number, uint32_t peer_number, uint8_t *name,
-                                  TOX_ERR_CONFERENCE *error);
+bool tox_conference_peer_get_name(const Tox *tox, uint32_t conference_number, uint32_t peer_number, uint8_t *name,
+                                  TOX_ERR_CONFERENCE_PEER_QUERY *error);
 
 /**
- * Copy the public key of peer_number who is in group_number to public_key.
+ * Copy the public key of peer_number who is in conference_number to public_key.
  * public_key must be TOX_PUBLIC_KEY_SIZE long.
  *
- * returns 0 on success
- * returns -1 on failure
+ * @return true on success.
  */
-bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t group_number, uint32_t peer_number,
-                                        uint8_t *public_key, TOX_ERR_CONFERENCE *error);
+bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
+                                        uint8_t *public_key, TOX_ERR_CONFERENCE_PEER_QUERY *error);
 
 /**
- * Check if the current peer_number corresponds to ours.
+ * Return true if passed peer_number corresponds to our own.
+ */
+bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
+                                        TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+typedef enum TOX_ERR_CONFERENCE_INVITE {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_INVITE_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_INVITE_CONFERENCE_NOT_FOUND,
+
+    /**
+     * The invite packet failed to send.
+     */
+    TOX_ERR_CONFERENCE_INVITE_FAIL_SEND,
+
+} TOX_ERR_CONFERENCE_INVITE;
+
+
+/**
+ * Invites a friend to a conference.
  *
- * return 1 if the peer_number corresponds to ours.
- * return 0 on failure.
- */
-bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t group_number, uint32_t peer_number);
-
-/**
- * invite friend_number to group_number
- * return 0 on success
- * return -1 on failure
- */
-bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t group_number, TOX_ERR_CONFERENCE *error);
-
-/**
- * Join a group (you need to have been invited first.) using cookie of length obtained
- * in the group invite callback.
+ * @param friend_number The friend number of the friend we want to invite.
+ * @param conference_number The conference number of the conference we want to invite the friend to.
  *
- * returns group number on success
- * returns -1 on failure.
+ * @return true on success.
+ */
+bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t conference_number,
+                           TOX_ERR_CONFERENCE_INVITE *error);
+
+typedef enum TOX_ERR_CONFERENCE_JOIN {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_JOIN_OK,
+
+    /**
+     * The cookie passed has an invalid length.
+     */
+    TOX_ERR_CONFERENCE_JOIN_INVALID_LENGTH,
+
+    /**
+     * The conference is not the expected type. This indicates an invalid cookie.
+     */
+    TOX_ERR_CONFERENCE_JOIN_WRONG_TYPE,
+
+    /**
+     * The friend number passed does not designate a valid friend.
+     */
+    TOX_ERR_CONFERENCE_JOIN_FRIEND_NOT_FOUND,
+
+    /**
+     * Client is already in this conference.
+     */
+    TOX_ERR_CONFERENCE_JOIN_DUPLICATE,
+
+    /**
+     * Conference instance failed to initialize.
+     */
+    TOX_ERR_CONFERENCE_JOIN_INIT_FAIL,
+
+    /**
+     * The join packet failed to send.
+     */
+    TOX_ERR_CONFERENCE_JOIN_FAIL_SEND,
+
+} TOX_ERR_CONFERENCE_JOIN;
+
+
+/**
+ * Joins a conference that the client has been invited to.
+ *
+ * @param friend_number The friend number of the friend who sent the invite.
+ * @param cookie Received via the `conference_invite` event.
+ * @param length The size of cookie.
+ *
+ * @return conference number on success, UINT32_MAX on failure.
  */
 uint32_t tox_conference_join(Tox *tox, uint32_t friend_number, const uint8_t *cookie, size_t length,
-                             TOX_ERR_CONFERENCE *error);
+                             TOX_ERR_CONFERENCE_JOIN *error);
+
+typedef enum TOX_ERR_CONFERENCE_SEND_MESSAGE {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_SEND_MESSAGE_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_SEND_MESSAGE_CONFERENCE_NOT_FOUND,
+
+    /**
+     * The message is too long.
+     */
+    TOX_ERR_CONFERENCE_SEND_MESSAGE_TOO_LONG,
+
+    /**
+     * The client is not connected to the conference.
+     */
+    TOX_ERR_CONFERENCE_SEND_MESSAGE_NO_CONNECTION,
+
+    /**
+     * The message packet failed to send.
+     */
+    TOX_ERR_CONFERENCE_SEND_MESSAGE_FAIL_SEND,
+
+} TOX_ERR_CONFERENCE_SEND_MESSAGE;
+
 
 /**
- * send a group message
- * return 0 on success
- * return -1 on failure
- */
-bool tox_conference_send_message(Tox *tox, uint32_t group_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
-                                 size_t length, TOX_ERR_CONFERENCE *error);
-
-size_t tox_conference_get_title_size(const Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
-
-/**
- * Get group title from group_number and put it in title.
- * title needs to be a valid memory location with a max_length size of at least MAX_NAME_LENGTH (128) bytes.
+ * Send a text chat message to the conference.
  *
- *  return length of copied title if success.
- *  return -1 if failure.
+ * This function creates a conference message packet and pushes it into the send
+ * queue.
+ *
+ * The message length may not exceed TOX_MAX_MESSAGE_LENGTH. Larger messages
+ * must be split by the client and sent as separate messages. Other clients can
+ * then reassemble the fragments.
+ *
+ * @param conference_number The conference number of the conference the message is intended for.
+ * @param type Message type (normal, action, ...).
+ * @param message A non-NULL pointer to the first element of a byte array
+ *   containing the message text.
+ * @param length Length of the message to be sent.
+ *
+ * @return true on success.
  */
-bool tox_conference_get_title(const Tox *tox, uint32_t group_number, uint8_t *title, TOX_ERR_CONFERENCE *error);
+bool tox_conference_send_message(Tox *tox, uint32_t conference_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
+                                 size_t length, TOX_ERR_CONFERENCE_SEND_MESSAGE *error);
+
+typedef enum TOX_ERR_CONFERENCE_TITLE {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_TITLE_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_TITLE_CONFERENCE_NOT_FOUND,
+
+    /**
+     * The title is too long or empty.
+     */
+    TOX_ERR_CONFERENCE_TITLE_INVALID_LENGTH,
+
+    /**
+     * The title packet failed to send.
+     */
+    TOX_ERR_CONFERENCE_TITLE_FAIL_SEND,
+
+} TOX_ERR_CONFERENCE_TITLE;
+
 
 /**
- * set the group's title, limited to MAX_NAME_LENGTH
- * return 0 on success
- * return -1 on failure
+ * Return the length of the conference title. Return value is unspecified on failure.
+ *
+ * The return value is equal to the `length` argument received by the last
+ * `conference_title` callback.
  */
-bool tox_conference_set_title(Tox *tox, uint32_t group_number, const uint8_t *title, size_t length,
-                              TOX_ERR_CONFERENCE *error);
+size_t tox_conference_get_title_size(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_TITLE *error);
 
 /**
- * Return the number of chats in the instance m.
- * You should use this to determine how much memory to allocate
- * for copy_chatlist.
+ * Write the title designated by the given conference number to a byte array.
+ *
+ * Call tox_conference_get_title_size to determine the allocation size for the `title` parameter.
+ *
+ * The data written to `title` is equal to the data received by the last
+ * `conference_title` callback.
+ *
+ * @param title A valid memory region large enough to store the title.
+ *   If this parameter is NULL, this function has no effect.
+ *
+ * @return true on success.
+ */
+bool tox_conference_get_title(const Tox *tox, uint32_t conference_number, uint8_t *title,
+                              TOX_ERR_CONFERENCE_TITLE *error);
+
+/**
+ * Set the conference title and broadcast it to the rest of the conference.
+ *
+ * Title length cannot be longer than TOX_MAX_NAME_LENGTH.
+ *
+ * @return true on success.
+ */
+bool tox_conference_set_title(Tox *tox, uint32_t conference_number, const uint8_t *title, size_t length,
+                              TOX_ERR_CONFERENCE_TITLE *error);
+
+/**
+ * Return the number of conferences in the Tox instance.
+ * This should be used to determine how much memory to allocate for `tox_conference_get_chatlist`.
  */
 size_t tox_conference_get_chatlist_size(const Tox *tox);
 
 /**
- * Copy a list of valid chat IDs into the array out_list.
- * If out_list is NULL, returns 0.
- * Otherwise, returns the number of elements copied.
- * If the array was too small, the contents
- * of out_list will be truncated to list_size.
+ * Copy a list of valid conference IDs into the array chatlist. Determine how much space
+ * to allocate for the array with the `tox_conference_get_chatlist_size` function.
+ *
+ * @return The number of elements copied to the array, or 0 if chatlist is set to NULL.
  */
 void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist);
 
 /**
- * return the type of groupchat (TOX_CONFERENCE_TYPE) that group_number is.
- *
- * return -1 on failure.
- * return type on success.
+ * Returns the type of conference (TOX_CONFERENCE_TYPE) that conference_number is. Return value is
+ * unspecified on failure.
  */
-TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t group_number, TOX_ERR_CONFERENCE *error);
+typedef enum TOX_ERR_CONFERENCE_GET_TYPE {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_GET_TYPE_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_GET_TYPE_CONFERENCE_NOT_FOUND,
+
+} TOX_ERR_CONFERENCE_GET_TYPE;
+
+
+TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_number,
+        TOX_ERR_CONFERENCE_GET_TYPE *error);
 
 
 /*******************************************************************************
