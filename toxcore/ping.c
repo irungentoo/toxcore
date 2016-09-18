@@ -134,9 +134,9 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_ping_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    DHT       *dht = _dht;
+    DHT       *dht = (DHT *)object;
     int        rc;
 
     if (length != DHT_PING_SIZE) {
@@ -177,9 +177,9 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
     return 0;
 }
 
-static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_ping_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    DHT      *dht = _dht;
+    DHT      *dht = (DHT *)object;
     int       rc;
 
     if (length != DHT_PING_SIZE) {
@@ -353,7 +353,7 @@ void do_to_ping(PING *ping)
 
 PING *new_ping(DHT *dht)
 {
-    PING *ping = calloc(1, sizeof(PING));
+    PING *ping = (PING *)calloc(1, sizeof(PING));
 
     if (ping == NULL) {
         return NULL;

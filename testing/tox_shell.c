@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    int *master = malloc(sizeof(int));
+    int *master = (int *)malloc(sizeof(int));
     int ret = forkpty(master, NULL, NULL, NULL);
 
     if (ret == -1) {

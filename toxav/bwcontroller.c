@@ -68,7 +68,7 @@ BWController *bwc_new(Messenger *m, uint32_t friendnumber,
                       void (*mcb)(BWController *, uint32_t, float, void *),
                       void *udata)
 {
-    BWController *retu = calloc(sizeof(struct BWController_s), 1);
+    BWController *retu = (BWController *)calloc(sizeof(struct BWController_s), 1);
 
     retu->mcb = mcb;
     retu->mcb_data = udata;
@@ -210,5 +210,5 @@ int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, ui
         return -1;
     }
 
-    return on_update(object, (const struct BWCMessage *)(data + 1));
+    return on_update((BWController *)object, (const struct BWCMessage *)(data + 1));
 }

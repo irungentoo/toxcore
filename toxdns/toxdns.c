@@ -29,7 +29,11 @@
 #include "../toxcore/logger.h"
 #include "toxdns.h"
 
-static const char base32[32] = {"abcdefghijklmnopqrstuvwxyz012345"};
+static const char base32[32] = {
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    '0', '1', '2', '3', '4', '5',
+};
 
 #define _encode(a, b, c) \
 { \
@@ -68,7 +72,7 @@ static void dns_new_temp_keys(DNS_Object *d)
  */
 void *tox_dns3_new(uint8_t *server_public_key)
 {
-    DNS_Object *d = malloc(sizeof(DNS_Object));
+    DNS_Object *d = (DNS_Object *)malloc(sizeof(DNS_Object));
 
     if (d == NULL) {
         return NULL;
@@ -111,7 +115,7 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
         return -1;
     }
 
-    DNS_Object *d = dns3_object;
+    DNS_Object *d = (DNS_Object *)dns3_object;
     uint8_t buffer[1024];
     uint8_t nonce[crypto_box_NONCEBYTES] = {0};
     memcpy(nonce, &d->nonce, sizeof(uint32_t));
@@ -202,7 +206,7 @@ static int decode(uint8_t *dest, uint8_t *src)
 int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record, uint32_t id_record_len,
                          uint32_t request_id)
 {
-    DNS_Object *d = dns3_object;
+    DNS_Object *d = (DNS_Object *)dns3_object;
 
     if (id_record_len != 87) {
         return -1;

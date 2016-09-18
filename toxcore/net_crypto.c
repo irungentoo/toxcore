@@ -207,7 +207,7 @@ static int handle_cookie_request(const Net_Crypto *c, uint8_t *request_plain, ui
 static int udp_handle_cookie_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
                                      void *userdata)
 {
-    Net_Crypto *c = object;
+    Net_Crypto *c = (Net_Crypto *)object;
     uint8_t request_plain[COOKIE_REQUEST_PLAIN_LENGTH];
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
     uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
@@ -592,7 +592,7 @@ static int add_data_to_buffer(Packets_Array *array, uint32_t number, const Packe
         return -1;
     }
 
-    Packet_Data *new_d = malloc(sizeof(Packet_Data));
+    Packet_Data *new_d = (Packet_Data *)malloc(sizeof(Packet_Data));
 
     if (new_d == NULL) {
         return -1;
@@ -643,7 +643,7 @@ static int64_t add_data_end_of_buffer(Packets_Array *array, const Packet_Data *d
         return -1;
     }
 
-    Packet_Data *new_d = malloc(sizeof(Packet_Data));
+    Packet_Data *new_d = (Packet_Data *)malloc(sizeof(Packet_Data));
 
     if (new_d == NULL) {
         return -1;
@@ -1183,7 +1183,7 @@ static int new_temp_packet(const Net_Crypto *c, int crypt_connection_id, const u
         return -1;
     }
 
-    uint8_t *temp_packet = malloc(length);
+    uint8_t *temp_packet = (uint8_t *)malloc(length);
 
     if (temp_packet == 0) {
         return -1;
@@ -1569,7 +1569,8 @@ static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
         return 0;
     }
 
-    Crypto_Connection *newcrypto_connections = realloc(c->crypto_connections, num * sizeof(Crypto_Connection));
+    Crypto_Connection *newcrypto_connections = (Crypto_Connection *)realloc(c->crypto_connections,
+            num * sizeof(Crypto_Connection));
 
     if (newcrypto_connections == NULL) {
         return -1;
@@ -1738,7 +1739,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const 
         void *userdata)
 {
     New_Connection n_c;
-    n_c.cookie = malloc(COOKIE_LENGTH);
+    n_c.cookie = (uint8_t *)malloc(COOKIE_LENGTH);
 
     if (n_c.cookie == NULL) {
         return -1;
@@ -1947,7 +1948,7 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
         return -1;
     }
 
-    Net_Crypto *c = object;
+    Net_Crypto *c = (Net_Crypto *)object;
 
     Crypto_Connection *conn = get_crypto_connection(c, id);
 
@@ -1978,7 +1979,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
         return -1;
     }
 
-    Net_Crypto *c = object;
+    Net_Crypto *c = (Net_Crypto *)object;
 
     if (data[0] == NET_PACKET_COOKIE_REQUEST) {
         return tcp_oob_handle_cookie_request(c, tcp_connections_number, public_key, data, length);
@@ -2238,7 +2239,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
         return 1;
     }
 
-    Net_Crypto *c = object;
+    Net_Crypto *c = (Net_Crypto *)object;
     int crypt_connection_id = crypto_id_ip_port(c, source);
 
     if (crypt_connection_id == -1) {
@@ -2787,7 +2788,7 @@ Net_Crypto *new_net_crypto(Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info)
         return NULL;
     }
 
-    Net_Crypto *temp = calloc(1, sizeof(Net_Crypto));
+    Net_Crypto *temp = (Net_Crypto *)calloc(1, sizeof(Net_Crypto));
 
     if (temp == NULL) {
         return NULL;

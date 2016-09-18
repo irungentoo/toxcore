@@ -325,7 +325,7 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
 
 static int handle_send_initial(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
         return 1;
@@ -394,7 +394,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
 
 static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
         return 1;
@@ -450,7 +450,7 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
 
 static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
         return 1;
@@ -505,7 +505,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 
 static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
         return 1;
@@ -546,7 +546,7 @@ static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, ui
 
 static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
         return 1;
@@ -587,7 +587,7 @@ static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, ui
 
 static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length > ONION_MAX_PACKET_SIZE) {
         return 1;
@@ -638,7 +638,7 @@ Onion *new_onion(DHT *dht)
         return NULL;
     }
 
-    Onion *onion = calloc(1, sizeof(Onion));
+    Onion *onion = (Onion *)calloc(1, sizeof(Onion));
 
     if (onion == NULL) {
         return NULL;

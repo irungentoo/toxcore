@@ -63,7 +63,7 @@ static int realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
         return 0;
     }
 
-    Friend_Conn *newgroup_cons = realloc(fr_c->conns, num * sizeof(Friend_Conn));
+    Friend_Conn *newgroup_cons = (Friend_Conn *)realloc(fr_c->conns, num * sizeof(Friend_Conn));
 
     if (newgroup_cons == NULL) {
         return -1;
@@ -261,7 +261,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 /* callback for recv TCP relay nodes. */
 static int tcp_relay_node_callback(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key)
 {
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {
@@ -279,7 +279,7 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id);
 /* Callback for DHT ip_port changes. */
 static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
 {
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {
@@ -325,7 +325,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 
 static int handle_status(void *object, int number, uint8_t status, void *userdata)
 {
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {
@@ -369,7 +369,7 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
 /* Callback for dht public key changes. */
 static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key, void *userdata)
 {
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {
@@ -399,7 +399,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
         return -1;
     }
 
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {
@@ -461,7 +461,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
         return -1;
     }
 
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {
@@ -488,7 +488,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
 
 static int handle_new_connections(void *object, New_Connection *n_c)
 {
-    Friend_Connections *fr_c = object;
+    Friend_Connections *fr_c = (Friend_Connections *)object;
     int friendcon_id = getfriend_conn_id_pk(fr_c, n_c->public_key);
     Friend_Conn *friend_con = get_conn(fr_c, friendcon_id);
 
@@ -819,7 +819,7 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c)
         return NULL;
     }
 
-    Friend_Connections *temp = calloc(1, sizeof(Friend_Connections));
+    Friend_Connections *temp = (Friend_Connections *)calloc(1, sizeof(Friend_Connections));
 
     if (temp == NULL) {
         return NULL;

@@ -974,7 +974,7 @@ START_TEST(test_many_clients_tcp)
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
-        TOX_ERR_BOOTSTRAP error = 0;
+        TOX_ERR_BOOTSTRAP error = TOX_ERR_BOOTSTRAP_OK;
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i,
                       error);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");

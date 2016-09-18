@@ -164,10 +164,10 @@ static void *call_thread(void *pd)
 
     c_sleep(30);
 
-    int16_t *PCM = calloc(960, sizeof(int16_t));
-    uint8_t *video_y = calloc(800 * 600, sizeof(uint8_t));
-    uint8_t *video_u = calloc(800 * 600 / 4, sizeof(uint8_t));
-    uint8_t *video_v = calloc(800 * 600 / 4, sizeof(uint8_t));
+    int16_t *PCM = (int16_t *)calloc(960, sizeof(int16_t));
+    uint8_t *video_y = (uint8_t *)calloc(800 * 600, sizeof(uint8_t));
+    uint8_t *video_u = (uint8_t *)calloc(800 * 600 / 4, sizeof(uint8_t));
+    uint8_t *video_v = (uint8_t *)calloc(800 * 600 / 4, sizeof(uint8_t));
 
     time_t start_time = time(NULL);
 

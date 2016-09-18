@@ -113,8 +113,9 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
         return 0;
     }
 
-    TCP_Secure_Connection *new_connections = realloc(TCP_server->accepted_connection_array,
-            num * sizeof(TCP_Secure_Connection));
+    TCP_Secure_Connection *new_connections = (TCP_Secure_Connection *)realloc(
+                TCP_server->accepted_connection_array,
+                num * sizeof(TCP_Secure_Connection));
 
     if (new_connections == NULL) {
         return -1;
@@ -407,25 +408,25 @@ static int send_pending_data(TCP_Secure_Connection *con)
  */
 static bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
-    TCP_Priority_List *p = con->priority_queue_end, *new;
-    new = malloc(sizeof(TCP_Priority_List) + size);
+    TCP_Priority_List *p = con->priority_queue_end;
+    TCP_Priority_List *new_list = (TCP_Priority_List *)malloc(sizeof(TCP_Priority_List) + size);
 
-    if (!new) {
+    if (!new_list) {
         return 0;
     }
 
-    new->next = NULL;
-    new->size = size;
-    new->sent = sent;
-    memcpy(new->data, packet, size);
+    new_list->next = NULL;
+    new_list->size = size;
+    new_list->sent = sent;
+    memcpy(new_list->data, packet, size);
 
     if (p) {
-        p->next = new;
+        p->next = new_list;
     } else {
-        con->priority_queue_start = new;
+        con->priority_queue_start = new_list;
     }
 
-    con->priority_queue_end = new;
+    con->priority_queue_end = new_list;
     return 1;
 }
 
@@ -779,7 +780,7 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
 
 static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
 {
-    TCP_Server *TCP_server = object;
+    TCP_Server *TCP_server = (TCP_Server *)object;
     uint32_t index = dest.ip.ip6.uint32[0];
 
     if (index >= TCP_server->size_accepted_connections) {
@@ -1034,13 +1035,13 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
         return NULL;
     }
 
-    TCP_Server *temp = calloc(1, sizeof(TCP_Server));
+    TCP_Server *temp = (TCP_Server *)calloc(1, sizeof(TCP_Server));
 
     if (temp == NULL) {
         return NULL;
     }
 
-    temp->socks_listening = calloc(num_sockets, sizeof(sock_t));
+    temp->socks_listening = (sock_t *)calloc(num_sockets, sizeof(sock_t));
 
     if (temp->socks_listening == NULL) {
         free(temp);

@@ -557,7 +557,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         return NULL;
     }
 
-    Networking_Core *temp = calloc(1, sizeof(Networking_Core));
+    Networking_Core *temp = (Networking_Core *)calloc(1, sizeof(Networking_Core));
 
     if (temp == NULL) {
         return NULL;

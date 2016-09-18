@@ -62,7 +62,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         }
 
         // similar procedure to the one of reading config file below
-        *tcp_relay_ports = malloc(DEFAULT_TCP_RELAY_PORTS_COUNT * sizeof(uint16_t));
+        *tcp_relay_ports = (uint16_t *)malloc(DEFAULT_TCP_RELAY_PORTS_COUNT * sizeof(uint16_t));
 
         for (i = 0; i < DEFAULT_TCP_RELAY_PORTS_COUNT; i ++) {
 
@@ -80,7 +80,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
 
         // the loop above skips invalid ports, so we adjust the allocated memory size
         if ((*tcp_relay_port_count) > 0) {
-            *tcp_relay_ports = realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
+            *tcp_relay_ports = (uint16_t *)realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
         } else {
             free(*tcp_relay_ports);
             *tcp_relay_ports = NULL;
@@ -102,7 +102,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         return;
     }
 
-    *tcp_relay_ports = malloc(config_port_count * sizeof(uint16_t));
+    *tcp_relay_ports = (uint16_t *)malloc(config_port_count * sizeof(uint16_t));
 
     int i;
 
@@ -134,7 +134,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
 
     // the loop above skips invalid ports, so we adjust the allocated memory size
     if ((*tcp_relay_port_count) > 0) {
-        *tcp_relay_ports = realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
+        *tcp_relay_ports = (uint16_t *)realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
     } else {
         free(*tcp_relay_ports);
         *tcp_relay_ports = NULL;
@@ -182,7 +182,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
         tmp_pid_file = DEFAULT_PID_FILE_PATH;
     }
 
-    *pid_file_path = malloc(strlen(tmp_pid_file) + 1);
+    *pid_file_path = (char *)malloc(strlen(tmp_pid_file) + 1);
     strcpy(*pid_file_path, tmp_pid_file);
 
     // Get keys file location
@@ -194,7 +194,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
         tmp_keys_file = DEFAULT_KEYS_FILE_PATH;
     }
 
-    *keys_file_path = malloc(strlen(tmp_keys_file) + 1);
+    *keys_file_path = (char *)malloc(strlen(tmp_keys_file) + 1);
     strcpy(*keys_file_path, tmp_keys_file);
 
     // Get IPv6 option
@@ -254,7 +254,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
 
         size_t tmp_motd_length = strlen(tmp_motd) + 1;
         size_t motd_length = tmp_motd_length > MAX_MOTD_LENGTH ? MAX_MOTD_LENGTH : tmp_motd_length;
-        *motd = malloc(motd_length);
+        *motd = (char *)malloc(motd_length);
         strncpy(*motd, tmp_motd, motd_length);
         (*motd)[motd_length - 1] = '\0';
     }
@@ -310,7 +310,7 @@ static uint8_t *hex_string_to_bin(const char *hex_string)
     }
 
     size_t len = strlen(hex_string) / 2;
-    uint8_t *ret = malloc(len);
+    uint8_t *ret = (uint8_t *)malloc(len);
 
     const char *pos = hex_string;
     size_t i;
@@ -364,6 +364,8 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
     int i = 0;
 
     while (config_setting_length(node_list)) {
+        int address_resolved;
+        uint8_t *bs_public_key_bin;
 
         node = config_setting_get_elem(node_list, 0);
 
@@ -403,9 +405,9 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
             goto next;
         }
 
-        uint8_t *bs_public_key_bin = hex_string_to_bin(bs_public_key);
-        const int address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port),
-                                     bs_public_key_bin);
+        bs_public_key_bin = hex_string_to_bin(bs_public_key);
+        address_resolved = DHT_bootstrap_from_address(dht, bs_address, enable_ipv6, htons(bs_port),
+                           bs_public_key_bin);
         free(bs_public_key_bin);
 
         if (!address_resolved) {

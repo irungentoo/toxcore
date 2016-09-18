@@ -323,7 +323,7 @@ int LAN_ip(IP ip)
 
 static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    DHT *dht = object;
+    DHT *dht = (DHT *)object;
 
     if (LAN_ip(source.ip) == -1) {
         return 1;

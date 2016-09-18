@@ -32,7 +32,7 @@ static void do_onion(Onion *onion)
 static int handled_test_1;
 static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (memcmp(packet, "Install Gentoo", sizeof("Install Gentoo")) != 0) {
         return 1;
@@ -79,7 +79,7 @@ static uint8_t test_3_pub_key[crypto_box_PUBLICKEYBYTES];
 static uint8_t test_3_ping_id[crypto_hash_sha256_BYTES];
 static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length != (1 + crypto_box_NONCEBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + 1 + crypto_hash_sha256_BYTES +
                    crypto_box_MACBYTES)) {
@@ -111,7 +111,7 @@ static uint8_t nonce[crypto_box_NONCEBYTES];
 static int handled_test_4;
 static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion *onion = object;
+    Onion *onion = (Onion *)object;
 
     if (length != (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + sizeof("Install gentoo") +
                    crypto_box_MACBYTES)) {
@@ -284,7 +284,7 @@ static Onions *new_onions(uint16_t port)
     IP ip;
     ip_init(&ip, 1);
     ip.ip6.uint8[15] = 1;
-    Onions *on = malloc(sizeof(Onions));
+    Onions *on = (Onions *)malloc(sizeof(Onions));
     DHT *dht = new_DHT(NULL, new_networking(NULL, ip, port));
     on->onion = new_onion(dht);
     on->onion_a = new_onion_announce(dht);
@@ -346,7 +346,7 @@ static uint8_t last_dht_pk[crypto_box_PUBLICKEYBYTES];
 static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_public_key, void *userdata)
 {
     if ((NUM_FIRST == number && !first) || (NUM_LAST == number && !last)) {
-        Onions *on = object;
+        Onions *on = (Onions *)object;
         uint16_t count = 0;
         int ret = DHT_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
         ck_assert_msg(ret == 0, "DHT_addfriend() did not return 0");

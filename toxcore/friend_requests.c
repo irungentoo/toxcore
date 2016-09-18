@@ -108,7 +108,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length,
                                   void *userdata)
 {
-    Friend_Requests *fr = object;
+    Friend_Requests *fr = (Friend_Requests *)object;
 
     if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE) {
         return 1;

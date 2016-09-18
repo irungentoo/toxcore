@@ -662,7 +662,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
 static int handle_announce_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
                                     void *userdata)
 {
-    Onion_Client *onion_c = object;
+    Onion_Client *onion_c = (Onion_Client *)object;
 
     if (length < ONION_ANNOUNCE_RESPONSE_MIN_SIZE || length > ONION_ANNOUNCE_RESPONSE_MAX_SIZE) {
         return 1;
@@ -727,7 +727,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
 
 static int handle_data_response(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion_Client *onion_c = object;
+    Onion_Client *onion_c = (Onion_Client *)object;
 
     if (length <= (ONION_DATA_RESPONSE_MIN_SIZE + DATA_IN_RESPONSE_MIN_SIZE)) {
         return 1;
@@ -767,7 +767,7 @@ static int handle_data_response(void *object, IP_Port source, const uint8_t *pac
 static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t length,
                                  void *userdata)
 {
-    Onion_Client *onion_c = object;
+    Onion_Client *onion_c = (Onion_Client *)object;
 
     if (length < DHTPK_DATA_MIN_LENGTH) {
         return 1;
@@ -975,7 +975,7 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
 static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
                             uint16_t length, void *userdata)
 {
-    Onion_Client *onion_c = object;
+    Onion_Client *onion_c = (Onion_Client *)object;
 
     if (length < DHTPK_DATA_MIN_LENGTH + DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES) {
         return 1;
@@ -1092,7 +1092,7 @@ static int realloc_onion_friends(Onion_Client *onion_c, uint32_t num)
         return 0;
     }
 
-    Onion_Friend *newonion_friends = realloc(onion_c->friends_list, num * sizeof(Onion_Friend));
+    Onion_Friend *newonion_friends = (Onion_Friend *)realloc(onion_c->friends_list, num * sizeof(Onion_Friend));
 
     if (newonion_friends == NULL) {
         return -1;
@@ -1605,7 +1605,7 @@ Onion_Client *new_onion_client(Net_Crypto *c)
         return NULL;
     }
 
-    Onion_Client *onion_c = calloc(1, sizeof(Onion_Client));
+    Onion_Client *onion_c = (Onion_Client *)calloc(1, sizeof(Onion_Client));
 
     if (onion_c == NULL) {
         return NULL;

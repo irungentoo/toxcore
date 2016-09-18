@@ -31,11 +31,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-static LOG_BACKEND current_backend = -1;
+#define INVALID_BACKEND (LOG_BACKEND)-1u
+static LOG_BACKEND current_backend = INVALID_BACKEND;
 
 bool open_log(LOG_BACKEND backend)
 {
-    if (current_backend != -1) {
+    if (current_backend != INVALID_BACKEND) {
         return false;
     }
 
@@ -50,7 +51,7 @@ bool open_log(LOG_BACKEND backend)
 
 bool close_log(void)
 {
-    if (current_backend == -1) {
+    if (current_backend == INVALID_BACKEND) {
         return false;
     }
 
@@ -58,7 +59,7 @@ bool close_log(void)
         closelog();
     }
 
-    current_backend = -1;
+    current_backend = INVALID_BACKEND;
 
     return true;
 }
@@ -121,5 +122,5 @@ bool write_log(LOG_LEVEL level, const char *format, ...)
 
     va_end(args);
 
-    return current_backend != -1;
+    return current_backend != INVALID_BACKEND;
 }

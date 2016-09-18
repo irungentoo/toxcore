@@ -1,7 +1,16 @@
 option(ENABLE_SHARED "Build shared (dynamic) libraries for all modules" ON)
 option(ENABLE_STATIC "Build static libraries for all modules" ON)
+option(COMPILE_AS_CXX "Compile all C code as C++ code" OFF)
 
 find_package(PkgConfig REQUIRED)
+
+function(add_c_executable exec)
+  if(COMPILE_AS_CXX)
+    set_source_files_properties(${ARGN} PROPERTIES LANGUAGE CXX)
+  endif()
+
+  add_executable(${exec} ${ARGN})
+endfunction()
 
 function(pkg_use_module mod)
   pkg_search_module(${mod} ${ARGN})
@@ -13,6 +22,10 @@ function(pkg_use_module mod)
 endfunction()
 
 function(add_module lib)
+  if(COMPILE_AS_CXX)
+    set_source_files_properties(${ARGN} PROPERTIES LANGUAGE CXX)
+  endif()
+
   if(ENABLE_SHARED)
     add_library(${lib}_shared SHARED ${ARGN})
     set_target_properties(${lib}_shared PROPERTIES OUTPUT_NAME ${lib})

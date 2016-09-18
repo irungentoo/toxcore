@@ -219,7 +219,7 @@ add_test(
 
 function(auto_test target)
   if(CHECK_FOUND)
-    add_executable(auto_${target} auto_tests/${target}.c)
+    add_c_executable(auto_${target} auto_tests/${target}.c)
     target_link_modules(auto_${target}
       toxcore
       toxencryptsave
@@ -253,13 +253,13 @@ endif()
 #
 ################################################################################
 
-add_executable(DHT_bootstrap
+add_c_executable(DHT_bootstrap
   other/DHT_bootstrap.c
   other/bootstrap_node_packets.c)
 target_link_modules(DHT_bootstrap toxnetcrypto)
 
 if(LIBCONFIG_FOUND)
-  add_executable(tox-bootstrapd
+  add_c_executable(tox-bootstrapd
     other/bootstrap_daemon/src/command_line_arguments.c
     other/bootstrap_daemon/src/command_line_arguments.h
     other/bootstrap_daemon/src/config.c
@@ -282,7 +282,7 @@ endif()
 ################################################################################
 
 if(NOT WIN32 AND BUILD_TOXAV AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
-  add_executable(av_test testing/av_test.c)
+  add_c_executable(av_test testing/av_test.c)
   target_link_modules(av_test
     toxav
     ${OPENCV_LIBRARIES}
@@ -291,31 +291,31 @@ if(NOT WIN32 AND BUILD_TOXAV AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FO
 endif()
 
 if(NOT WIN32)
-  add_executable(nTox testing/nTox.c)
+  add_c_executable(nTox testing/nTox.c)
   target_link_modules(nTox toxcore ${NCURSES_LIBRARIES})
 endif()
 
-add_executable(DHT_test testing/DHT_test.c)
+add_c_executable(DHT_test testing/DHT_test.c)
 target_link_modules(DHT_test toxdht)
 
-add_executable(Messenger_test testing/Messenger_test.c)
+add_c_executable(Messenger_test testing/Messenger_test.c)
 target_link_modules(Messenger_test toxmessenger)
 
-add_executable(dns3_test testing/dns3_test.c)
+add_c_executable(dns3_test testing/dns3_test.c)
 target_link_modules(dns3_test toxdns)
 
 if(NOT WIN32)
-  add_executable(tox_sync testing/tox_sync.c)
+  add_c_executable(tox_sync testing/tox_sync.c)
   target_link_modules(tox_sync toxcore)
 endif()
 
 if(UTIL_LIBRARIES)
-  add_executable(tox_shell testing/tox_shell.c)
+  add_c_executable(tox_shell testing/tox_shell.c)
   target_link_modules(tox_shell toxcore ${UTIL_LIBRARIES})
 endif()
 
 if(NOT WIN32)
-  add_executable(irc_syncbot testing/irc_syncbot.c)
+  add_c_executable(irc_syncbot testing/irc_syncbot.c)
   target_link_modules(irc_syncbot toxcore)
 endif()
 

@@ -528,11 +528,14 @@ static void test_list_main(void)
                 }
 
                 ck_assert_msg(count == 1, "Nodes in search don't know ip of friend. %u %u %u", i, j, count);
-                /*
-                            for (k = 0; k < MAX_SENT_NODES; ++k) {
-                                printf("----gn %u----\n", k);
-                                print_pk(ln[k].public_key);
-                            }*/
+#if 0
+
+                for (k = 0; k < MAX_SENT_NODES; ++k) {
+                    printf("----gn %u----\n", k);
+                    print_pk(ln[k].public_key);
+                }
+
+#endif
                 ++m_count;
             }
         }
@@ -542,7 +545,7 @@ static void test_list_main(void)
                   (NUM_DHT) * (MAX_FRIEND_CLIENTS));
 
     for (i = 0; i < NUM_DHT; ++i) {
-        void *n = dhts[i]->net;
+        Networking_Core *n = dhts[i]->net;
         kill_DHT(dhts[i]);
         kill_networking(n);
     }
@@ -643,7 +646,7 @@ loop_top:
     }
 
     for (i = 0; i < NUM_DHT; ++i) {
-        void *n = dhts[i]->net;
+        Networking_Core *n = dhts[i]->net;
         kill_DHT(dhts[i]);
         kill_networking(n);
     }

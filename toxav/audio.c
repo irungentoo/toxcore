@@ -45,7 +45,7 @@ bool reconfigure_audio_decoder(ACSession *ac, int32_t sampling_rate, int8_t chan
 
 ACSession *ac_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_receive_frame_cb *cb, void *cb_data)
 {
-    ACSession *ac = calloc(sizeof(ACSession), 1);
+    ACSession *ac = (ACSession *)calloc(sizeof(ACSession), 1);
 
     if (!ac) {
         LOGGER_WARNING(log, "Allocation failed! Application might misbehave!");
@@ -104,7 +104,7 @@ ACSession *ac_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_re
 
 DECODER_CLEANUP:
     opus_decoder_destroy(ac->decoder);
-    jbuf_free(ac->j_buf);
+    jbuf_free((struct JitterBuffer *)ac->j_buf);
 BASE_CLEANUP:
     pthread_mutex_destroy(ac->queue_mutex);
     free(ac);
@@ -118,7 +118,7 @@ void ac_kill(ACSession *ac)
 
     opus_encoder_destroy(ac->encoder);
     opus_decoder_destroy(ac->decoder);
-    jbuf_free(ac->j_buf);
+    jbuf_free((struct JitterBuffer *)ac->j_buf);
 
     pthread_mutex_destroy(ac->queue_mutex);
 
@@ -141,7 +141,7 @@ void ac_iterate(ACSession *ac)
 
     pthread_mutex_lock(ac->queue_mutex);
 
-    while ((msg = jbuf_read(ac->j_buf, &rc)) || rc == 2) {
+    while ((msg = jbuf_read((struct JitterBuffer *)ac->j_buf, &rc)) || rc == 2) {
         pthread_mutex_unlock(ac->queue_mutex);
 
         if (rc == 2) {
@@ -204,7 +204,7 @@ int ac_queue_message(void *acp, struct RTPMessage *msg)
         return -1;
     }
 
-    ACSession *ac = acp;
+    ACSession *ac = (ACSession *)acp;
 
     if ((msg->header.pt & 0x7f) == (rtp_TypeAudio + 2) % 128) {
         LOGGER_WARNING(ac->log, "Got dummy!");
@@ -219,7 +219,7 @@ int ac_queue_message(void *acp, struct RTPMessage *msg)
     }
 
     pthread_mutex_lock(ac->queue_mutex);
-    int rc = jbuf_write(ac->log, ac->j_buf, msg);
+    int rc = jbuf_write(ac->log, (struct JitterBuffer *)ac->j_buf, msg);
     pthread_mutex_unlock(ac->queue_mutex);
 
     if (rc == -1) {
@@ -261,13 +261,15 @@ static struct JitterBuffer *jbuf_new(uint32_t capacity)
         size *= 2;
     }
 
-    struct JitterBuffer *q;
+    struct JitterBuffer *q = (struct JitterBuffer *)calloc(sizeof(struct JitterBuffer), 1);
 
-    if (!(q = calloc(sizeof(struct JitterBuffer), 1))) {
+    if (!q) {
         return NULL;
     }
 
-    if (!(q->queue = calloc(sizeof(struct RTPMessage *), size))) {
+    q->queue = (struct RTPMessage **)calloc(sizeof(struct RTPMessage *), size);
+
+    if (!q->queue) {
         free(q);
         return NULL;
     }

@@ -97,7 +97,7 @@ static void *pa_write_thread(void *d)
     /* The purpose of this thread is to make sure Pa_WriteStream will not block
      * toxav_iterate thread
      */
-    CallControl *cc = d;
+    CallControl *cc = (CallControl *)d;
 
     while (Pa_IsStreamActive(adout)) {
         frame *f;
@@ -139,7 +139,7 @@ static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
     ustride = abs(ustride);
     vstride = abs(vstride);
 
-    uint16_t *img_data = malloc(height * width * 6);
+    uint16_t *img_data = (uint16_t *)malloc(height * width * 6);
 
     unsigned long int i, j;
 
@@ -173,8 +173,8 @@ static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
         uint32_t sampling_rate,
         void *user_data)
 {
-    CallControl *cc = user_data;
-    frame *f = malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t) * channels);
+    CallControl *cc = (CallControl *)user_data;
+    frame *f = (frame *)malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t) * channels);
     memcpy(f->data, pcm, sample_count * sizeof(int16_t) * channels);
     f->size = sample_count;
 
@@ -297,7 +297,7 @@ static int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userd
 }
 static void *iterate_toxav(void *data)
 {
-    struct toxav_thread_data *data_cast = data;
+    struct toxav_thread_data *data_cast = (struct toxav_thread_data *)data;
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
     cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
 #endif
@@ -335,9 +335,9 @@ static int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *im
 {
     int32_t strides[3] = { 1280, 640, 640 };
     uint8_t *planes[3] = {
-        malloc(img->height * img->width),
-        malloc(img->height * img->width / 4),
-        malloc(img->height * img->width / 4),
+        (uint8_t *)malloc(img->height * img->width),
+        (uint8_t *)malloc(img->height * img->width / 4),
+        (uint8_t *)malloc(img->height * img->width / 4),
     };
 
     int x_chroma_shift = 1;

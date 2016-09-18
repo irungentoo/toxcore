@@ -132,7 +132,7 @@ struct sec_TCP_con {
 
 static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 {
-    struct sec_TCP_con *sec_c = malloc(sizeof(struct sec_TCP_con));
+    struct sec_TCP_con *sec_c = (struct sec_TCP_con *)malloc(sizeof(struct sec_TCP_con));
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     struct sockaddr_in6 addr6_loopback = {0};
     addr6_loopback.sin6_family = AF_INET6;
@@ -636,6 +636,8 @@ static bool tcp_oobdata_callback_called;
 static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigned int id, const uint8_t *data,
                                 uint16_t length, void *userdata)
 {
+    TCP_Connections *tcp_c = (TCP_Connections *)object;
+
     if (length != 6) {
         return -1;
     }
@@ -644,7 +646,7 @@ static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigne
         return -1;
     }
 
-    if (tcp_send_oob_packet(object, id, public_key, data, length) == 0) {
+    if (tcp_send_oob_packet(tcp_c, id, public_key, data, length) == 0) {
         tcp_oobdata_callback_called = 1;
     }
 

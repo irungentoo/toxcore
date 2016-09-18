@@ -111,7 +111,7 @@ MSISession *msi_new(Messenger *m)
         return NULL;
     }
 
-    MSISession *retu = calloc(sizeof(MSISession), 1);
+    MSISession *retu = (MSISession *)calloc(sizeof(MSISession), 1);
 
     if (retu == NULL) {
         LOGGER_ERROR(m->log, "Allocation failed! Program might misbehave!");
@@ -337,8 +337,8 @@ int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t le
 #define CHECK_ENUM_HIGH(bytes, enum_high) /* Assumes size == 1 */ \
     if (bytes[2] > enum_high) { LOGGER_ERROR(log, "Failed enum high limit!"); return -1; }
 
-#define SET_UINT8(bytes, header) do { \
-        header.value = bytes[2]; \
+#define SET_UINT8(type, bytes, header) do { \
+        header.value = (type)bytes[2]; \
         header.exists = true; \
         bytes += 3; \
     } while(0)
@@ -367,18 +367,18 @@ int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t le
             case IDRequest:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, requ_pop);
-                SET_UINT8(it, dest->request);
+                SET_UINT8(MSIRequest, it, dest->request);
                 break;
 
             case IDError:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, msi_EUndisclosed);
-                SET_UINT8(it, dest->error);
+                SET_UINT8(MSIError, it, dest->error);
                 break;
 
             case IDCapabilities:
                 CHECK_SIZE(it, size_constraint, 1);
-                SET_UINT8(it, dest->capabilities);
+                SET_UINT8(uint8_t, it, dest->capabilities);
                 break;
 
             default:
@@ -519,7 +519,7 @@ MSICall *new_call(MSISession *session, uint32_t friend_number)
 {
     assert(session);
 
-    MSICall *rc = calloc(sizeof(MSICall), 1);
+    MSICall *rc = (MSICall *)calloc(sizeof(MSICall), 1);
 
     if (rc == NULL) {
         return NULL;
@@ -529,7 +529,7 @@ MSICall *new_call(MSISession *session, uint32_t friend_number)
     rc->friend_number = friend_number;
 
     if (session->calls == NULL) { /* Creating */
-        session->calls = calloc(sizeof(MSICall *), friend_number + 1);
+        session->calls = (MSICall **)calloc(sizeof(MSICall *), friend_number + 1);
 
         if (session->calls == NULL) {
             free(rc);
@@ -538,7 +538,7 @@ MSICall *new_call(MSISession *session, uint32_t friend_number)
 
         session->calls_tail = session->calls_head = friend_number;
     } else if (session->calls_tail < friend_number) { /* Appending */
-        void *tmp = realloc(session->calls, sizeof(MSICall *) * (friend_number + 1));
+        MSICall **tmp = (MSICall **)realloc(session->calls, sizeof(MSICall *) * (friend_number + 1));
 
         if (tmp == NULL) {
             free(rc);
@@ -610,7 +610,7 @@ CLEAR_CONTAINER:
 void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data)
 {
     (void)m;
-    MSISession *session = data;
+    MSISession *session = (MSISession *)data;
 
     switch (status) {
         case 0: { /* Friend is now offline */
@@ -799,7 +799,7 @@ void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data
 {
     LOGGER_DEBUG(m->log, "Got msi message");
 
-    MSISession *session = object;
+    MSISession *session = (MSISession *)object;
     MSIMessage msg;
 
     if (msg_parse_in(m->log, &msg, data, length) == -1) {

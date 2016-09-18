@@ -123,8 +123,8 @@ static uint64_t id_distance(const Assoc *assoc, void *callback_data, const uint8
 /* qsort() callback for a sorting by id_distance() values */
 static int dist_index_comp(const void *a, const void *b)
 {
-    const uint64_t *_a = a;
-    const uint64_t *_b = b;
+    const uint64_t *_a = (const uint64_t *)a;
+    const uint64_t *_b = (const uint64_t *)b;
 
     if (*_a < *_b) {
         return -1;
@@ -847,7 +847,7 @@ Assoc *new_Assoc(Logger *log, size_t bits, size_t entries, const uint8_t *public
         return NULL;
     }
 
-    Assoc *assoc = calloc(1, sizeof(*assoc));
+    Assoc *assoc = (Assoc *)calloc(1, sizeof(*assoc));
 
     if (!assoc) {
         return NULL;
@@ -900,14 +900,15 @@ Assoc *new_Assoc(Logger *log, size_t bits, size_t entries, const uint8_t *public
 
     /* allocation: preferably few blobs */
     size_t bckt, cix;
-    Client_entry *clients = malloc(sizeof(*clients) * assoc->candidates_bucket_count * assoc->candidates_bucket_size);
+    Client_entry *clients = (Client_entry *)malloc(sizeof(*clients) * assoc->candidates_bucket_count *
+                            assoc->candidates_bucket_size);
 
     if (!clients) {
         free(assoc);
         return NULL;
     }
 
-    candidates_bucket *lists = malloc(sizeof(*lists) * assoc->candidates_bucket_count);
+    candidates_bucket *lists = (candidates_bucket *)malloc(sizeof(*lists) * assoc->candidates_bucket_count);
 
     if (!lists) {
         free(assoc);

@@ -309,7 +309,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
 
 static int handle_announce_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion_Announce *onion_a = object;
+    Onion_Announce *onion_a = (Onion_Announce *)object;
 
     if (length != ANNOUNCE_REQUEST_SIZE_RECV) {
         return 1;
@@ -408,7 +408,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
 static int handle_data_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion_Announce *onion_a = object;
+    Onion_Announce *onion_a = (Onion_Announce *)object;
 
     if (length <= DATA_REQUEST_MIN_SIZE_RECV) {
         return 1;
@@ -442,7 +442,7 @@ Onion_Announce *new_onion_announce(DHT *dht)
         return NULL;
     }
 
-    Onion_Announce *onion_a = calloc(1, sizeof(Onion_Announce));
+    Onion_Announce *onion_a = (Onion_Announce *)calloc(1, sizeof(Onion_Announce));
 
     if (onion_a == NULL) {
         return NULL;

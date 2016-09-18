@@ -37,7 +37,7 @@ struct Logger {
  */
 Logger *logger_new(void)
 {
-    return calloc(1, sizeof(Logger));
+    return (Logger *)calloc(1, sizeof(Logger));
 }
 
 void logger_kill(Logger *log)

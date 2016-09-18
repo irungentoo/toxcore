@@ -332,25 +332,25 @@ static int send_pending_data(TCP_Client_Connection *con)
  */
 static bool add_priority(TCP_Client_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
-    TCP_Priority_List *p = con->priority_queue_end, *new;
-    new = malloc(sizeof(TCP_Priority_List) + size);
+    TCP_Priority_List *p = con->priority_queue_end;
+    TCP_Priority_List *new_list = (TCP_Priority_List *)malloc(sizeof(TCP_Priority_List) + size);
 
-    if (!new) {
+    if (!new_list) {
         return 0;
     }
 
-    new->next = NULL;
-    new->size = size;
-    new->sent = sent;
-    memcpy(new->data, packet, size);
+    new_list->next = NULL;
+    new_list->size = size;
+    new_list->sent = sent;
+    memcpy(new_list->data, packet, size);
 
     if (p) {
-        p->next = new;
+        p->next = new_list;
     } else {
-        con->priority_queue_start = new;
+        con->priority_queue_start = new_list;
     }
 
-    con->priority_queue_end = new;
+    con->priority_queue_end = new_list;
     return 1;
 }
 
@@ -668,7 +668,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         return NULL;
     }
 
-    TCP_Client_Connection *temp = calloc(sizeof(TCP_Client_Connection), 1);
+    TCP_Client_Connection *temp = (TCP_Client_Connection *)calloc(sizeof(TCP_Client_Connection), 1);
 
     if (temp == NULL) {
         kill_sock(sock);

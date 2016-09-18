@@ -63,7 +63,7 @@ static int realloc_groupchats(Group_Chats *g_c, uint32_t num)
         return 0;
     }
 
-    Group_c *newgroup_chats = realloc(g_c->chats, num * sizeof(Group_c));
+    Group_c *newgroup_chats = (Group_c *)realloc(g_c->chats, num * sizeof(Group_c));
 
     if (newgroup_chats == NULL) {
         return -1;
@@ -436,8 +436,7 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
         return -1;
     }
 
-    Group_Peer *temp;
-    temp = realloc(g->group, sizeof(Group_Peer) * (g->numpeers + 1));
+    Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * (g->numpeers + 1));
 
     if (temp == NULL) {
         return -1;
@@ -522,7 +521,6 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index, void *user
         remove_close_conn(g_c, groupnumber, friendcon_id);
     }
 
-    Group_Peer *temp;
     --g->numpeers;
 
     void *peer_object = g->group[peer_index].object;
@@ -535,7 +533,7 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index, void *user
             memcpy(&g->group[peer_index], &g->group[g->numpeers], sizeof(Group_Peer));
         }
 
-        temp = realloc(g->group, sizeof(Group_Peer) * (g->numpeers));
+        Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * (g->numpeers));
 
         if (temp == NULL) {
             return -1;
@@ -663,7 +661,7 @@ static void set_conns_status_groups(Group_Chats *g_c, int friendcon_id, uint8_t 
 
 static int handle_status(void *object, int friendcon_id, uint8_t status, void *userdata)
 {
-    Group_Chats *g_c = object;
+    Group_Chats *g_c = (Group_Chats *)object;
 
     if (status) { /* Went online */
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CLOSE_ONLINE);
@@ -1379,7 +1377,7 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title)
 static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                                         void *userdata)
 {
-    Group_Chats *g_c = m->group_chat_object;
+    Group_Chats *g_c = (Group_Chats *)m->group_chat_object;
 
     if (length <= 1) {
         return;
@@ -2128,7 +2126,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
 static int handle_packet(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
 {
-    Group_Chats *g_c = object;
+    Group_Chats *g_c = (Group_Chats *)object;
 
     if (length < 1 + sizeof(uint16_t) + 1) {
         return -1;
@@ -2240,7 +2238,7 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
 
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
 {
-    Group_Chats *g_c = object;
+    Group_Chats *g_c = (Group_Chats *)object;
 
     if (length < 1 + sizeof(uint16_t) * 3 + 1) {
         return -1;
@@ -2446,7 +2444,7 @@ Group_Chats *new_groupchats(Messenger *m)
         return NULL;
     }
 
-    Group_Chats *temp = calloc(1, sizeof(Group_Chats));
+    Group_Chats *temp = (Group_Chats *)calloc(1, sizeof(Group_Chats));
 
     if (temp == NULL) {
         return NULL;
