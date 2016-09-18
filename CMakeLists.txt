@@ -55,8 +55,8 @@ find_library(RT_LIBRARIES           rt            )
 pkg_use_module(LIBSODIUM  REQUIRED  libsodium     )
 
 # For toxav.
-pkg_use_module(OPUS       REQUIRED  opus          )
-pkg_use_module(VPX        REQUIRED  vpx           )
+pkg_use_module(OPUS                 opus          )
+pkg_use_module(VPX                  vpx           )
 
 # For tox-bootstrapd.
 pkg_use_module(LIBCONFIG            libconfig     )
@@ -69,6 +69,11 @@ pkg_use_module(OPENCV               opencv        )
 pkg_use_module(PORTAUDIO            portaudio-2.0 )
 pkg_use_module(SNDFILE              sndfile       )
 
+if(OPUS_FOUND AND VPX_FOUND)
+  set(BUILD_TOXAV TRUE)
+else()
+  set(BUILD_TOXAV FALSE)
+endif()
 
 ################################################################################
 #
@@ -173,16 +178,18 @@ target_link_modules(toxcore toxgroup)
 #
 ################################################################################
 
-add_module(toxav
-  toxav/audio.c
-  toxav/bwcontroller.c
-  toxav/group.c
-  toxav/msi.c
-  toxav/rtp.c
-  toxav/toxav.c
-  toxav/toxav_old.c
-  toxav/video.c)
-target_link_modules(toxav toxcore ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+if(BUILD_TOXAV)
+  add_module(toxav
+    toxav/audio.c
+    toxav/bwcontroller.c
+    toxav/group.c
+    toxav/msi.c
+    toxav/rtp.c
+    toxav/toxav.c
+    toxav/toxav_old.c
+    toxav/video.c)
+  target_link_modules(toxav toxcore ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+endif()
 
 
 ################################################################################
@@ -215,9 +222,11 @@ function(auto_test target)
     add_executable(auto_${target} auto_tests/${target}.c)
     target_link_modules(auto_${target}
       toxcore
-      toxav
       toxencryptsave
       ${CHECK_LIBRARIES})
+    if(BUILD_TOXAV)
+      target_link_modules(auto_${target} toxav)
+    endif()
     add_test(NAME ${target} COMMAND auto_${target})
   endif()
 endfunction()
@@ -232,8 +241,10 @@ auto_test(network_test)
 auto_test(onion_test)
 auto_test(skeleton_test)
 auto_test(tox_test)
-auto_test(toxav_basic_test)
-auto_test(toxav_many_test)
+if(BUILD_TOXAV)
+  auto_test(toxav_basic_test)
+  auto_test(toxav_many_test)
+endif()
 
 
 ################################################################################
@@ -270,7 +281,7 @@ endif()
 #
 ################################################################################
 
-if(NOT WIN32 AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
+if(NOT WIN32 AND BUILD_TOXAV AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
   add_executable(av_test testing/av_test.c)
   target_link_modules(av_test
     toxav
@@ -315,11 +326,13 @@ endif()
 #
 ################################################################################
 
-configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
-  "${CMAKE_BINARY_DIR}/toxav.pc"
-  @ONLY
-)
+if(BUILD_TOXAV)
+  configure_file(
+    "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
+    "${CMAKE_BINARY_DIR}/toxav.pc"
+    @ONLY
+  )
+endif()
 
 configure_file(
   "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
@@ -341,14 +354,21 @@ configure_file(
 
 
 install(FILES
-  ${CMAKE_BINARY_DIR}/toxav.pc
   ${CMAKE_BINARY_DIR}/toxcore.pc
   ${CMAKE_BINARY_DIR}/toxdns.pc
   ${CMAKE_BINARY_DIR}/toxencryptsave.pc
   DESTINATION "lib/pkgconfig")
 install(FILES
-  toxav/toxav.h
   toxcore/tox.h
   toxdns/toxdns.h
   toxencryptsave/toxencryptsave.h
   DESTINATION "include/tox")
+
+if(BUILD_TOXAV)
+  install(FILES
+    ${CMAKE_BINARY_DIR}/toxav.pc
+    DESTINATION "lib/pkgconfig")
+  install(FILES
+    toxav/toxav.h
+    DESTINATION "include/tox")
+endif()
