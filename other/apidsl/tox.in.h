@@ -2040,7 +2040,7 @@ namespace conference {
   /**
    * This event is triggered when the client is invited to join a conference.
    */
-  event invite {
+  event invite const {
     /**
      * The invitation will remain valid until the inviting friend goes offline
      * or exits the conference.
@@ -2058,7 +2058,7 @@ namespace conference {
   /**
    * This event is triggered when the client receives a conference message.
    */
-  event message {
+  event message const {
     /**
      * @param conference_number The conference number of the conference the message is intended for.
      * @param peer_number The ID of the peer who sent the message.
@@ -2076,7 +2076,7 @@ namespace conference {
    *
    * If peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the conference).
    */
-  event title {
+  event title const {
     /**
      * @param conference_number The conference number of the conference the title change is intended for.
      * @param peer_number The ID of the peer who changed the title.
@@ -2107,7 +2107,7 @@ namespace conference {
   /**
    * This event is triggered when the peer list changes (name change, peer join, peer exit).
    */
-  event namelist_change {
+  event namelist_change const {
     /**
      * @param conference_number The conference number of the conference the title change is intended for.
      * @param peer_number The ID of the peer who changed the title.

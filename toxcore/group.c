@@ -399,14 +399,17 @@ static int connect_to_closest(Group_Chats *g_c, int groupnumber, void *userdata)
     return 0;
 }
 
-/*
- * Add a peer to the group chat.
+/* Add a peer to the group chat.
+ *
+ * do_gc_callback indicates whether we want to trigger callbacks set by the client
+ * via the public API. This should be set to false if this function is called
+ * from outside of the tox_iterate() loop.
  *
  * return peer_index if success or peer already in chat.
  * return -1 if error.
  */
 static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, const uint8_t *temp_pk,
-                   uint16_t peer_number)
+                   uint16_t peer_number, void *userdata, bool do_gc_callback)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -452,9 +455,8 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
 
     add_to_closest(g_c, groupnumber, real_pk, temp_pk);
 
-    if (g_c->group_namelistchange) {
-        g_c->group_namelistchange(g_c->m, groupnumber, g->numpeers - 1, CHAT_CHANGE_PEER_ADD,
-                                  g_c->group_namelistchange_userdata);
+    if (do_gc_callback && g_c->group_namelistchange) {
+        g_c->group_namelistchange(g_c->m, groupnumber, g->numpeers - 1, CHAT_CHANGE_PEER_ADD, userdata);
     }
 
     if (g->peer_on_join) {
@@ -496,7 +498,7 @@ static int remove_close_conn(Group_Chats *g_c, int groupnumber, int friendcon_id
  * return 0 if success
  * return -1 if error.
  */
-static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
+static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index, void *userdata)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -543,7 +545,7 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
     }
 
     if (g_c->group_namelistchange) {
-        g_c->group_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, g_c->group_namelistchange_userdata);
+        g_c->group_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, userdata);
     }
 
     if (g->peer_on_leave) {
@@ -553,7 +555,17 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
     return 0;
 }
 
-static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *nick, uint16_t nick_len)
+/* Set the nick for a peer.
+ *
+ * do_gc_callback indicates whether we want to trigger callbacks set by the client
+ * via the public API. This should be set to false if this function is called
+ * from outside of the tox_iterate() loop.
+ *
+ * return 0 on success.
+ * return -1 if error.
+ */
+static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *nick, uint16_t nick_len,
+                   void *userdata, bool do_gc_callback)
 {
     if (nick_len > MAX_NAME_LENGTH) {
         return -1;
@@ -578,14 +590,15 @@ static int setnick(Group_Chats *g_c, int groupnumber, int peer_index, const uint
 
     g->group[peer_index].nick_len = nick_len;
 
-    if (g_c->group_namelistchange) {
-        g_c->group_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_NAME, g_c->group_namelistchange_userdata);
+    if (do_gc_callback && g_c->group_namelistchange) {
+        g_c->group_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_NAME, userdata);
     }
 
     return 0;
 }
 
-static int settitle(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *title, uint8_t title_len)
+static int settitle(Group_Chats *g_c, int groupnumber, int peer_index, const uint8_t *title, uint8_t title_len,
+                    void *userdata)
 {
     if (title_len > MAX_NAME_LENGTH || title_len == 0) {
         return -1;
@@ -606,7 +619,7 @@ static int settitle(Group_Chats *g_c, int groupnumber, int peer_index, const uin
     g->title_len = title_len;
 
     if (g_c->title_callback) {
-        g_c->title_callback(g_c->m, groupnumber, peer_index, title, title_len, g_c->title_callback_userdata);
+        g_c->title_callback(g_c->m, groupnumber, peer_index, title, title_len, userdata);
     }
 
     return 0;
@@ -733,13 +746,13 @@ int add_groupchat(Group_Chats *g_c, uint8_t type)
     g->identifier[0] = type;
     g->peer_number = 0; /* Founder is peer 0. */
     memcpy(g->real_pk, g_c->m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
-    int peer_index = addpeer(g_c, groupnumber, g->real_pk, g_c->m->dht->self_public_key, 0);
+    int peer_index = addpeer(g_c, groupnumber, g->real_pk, g_c->m->dht->self_public_key, 0, NULL, false);
 
     if (peer_index == -1) {
         return -1;
     }
 
-    setnick(g_c, groupnumber, peer_index, g_c->m->name, g_c->m->name_length);
+    setnick(g_c, groupnumber, peer_index, g_c->m->name, g_c->m->name_length, NULL, false);
 
     return groupnumber;
 }
@@ -1094,30 +1107,6 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type
     return -6;
 }
 
-/* Set the callback for group invites.
- *
- *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
- *
- *  data of length is what needs to be passed to join_groupchat().
- */
-void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, int, const uint8_t *,
-                             size_t, void *), void *userdata)
-{
-    g_c->invite_callback = function;
-    g_c->invite_callback_userdata = userdata;
-}
-
-/* Set the callback for group messages.
- *
- *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
- */
-void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
-                              size_t, void *), void *userdata)
-{
-    g_c->message_callback = function;
-    g_c->message_callback_userdata = userdata;
-}
-
 /* Set handlers for custom lossy packets.
  *
  * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
@@ -1130,16 +1119,36 @@ void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*fu
     g_c->lossy_packethandlers[byte].function = function;
 }
 
+/* Set the callback for group invites.
+ *
+ *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t type, uint8_t *data, uint16_t length, void *userdata)
+ *
+ *  data of length is what needs to be passed to join_groupchat().
+ */
+void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, int, const uint8_t *,
+                             size_t, void *))
+{
+    g_c->invite_callback = function;
+}
+
+/* Set the callback for group messages.
+ *
+ *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
+ */
+void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
+                              size_t, void *))
+{
+    g_c->message_callback = function;
+}
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
  *  Function(Group_Chats *g_c, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
  */
-void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *),
-                                     void *userdata)
+void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *))
 {
     g_c->group_namelistchange = function;
-    g_c->group_namelistchange_userdata = userdata;
 }
 
 /* Set callback function for title changes.
@@ -1148,10 +1157,9 @@ void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenge
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
 void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
-                            size_t, void *), void *userdata)
+                            size_t, void *))
 {
     g_c->title_callback = function;
-    g_c->title_callback_userdata = userdata;
 }
 
 /* Set a function to be called when a new peer joins a group chat.
@@ -1368,7 +1376,8 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title)
     return g->title_len;
 }
 
-static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length)
+static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+                                        void *userdata)
 {
     Group_Chats *g_c = m->group_chat_object;
 
@@ -1389,8 +1398,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
             if (groupnumber == -1) {
                 if (g_c->invite_callback) {
-                    g_c->invite_callback(m, friendnumber, *(invite_data + sizeof(uint16_t)), invite_data, invite_length,
-                                         g_c->invite_callback_userdata);
+                    g_c->invite_callback(m, friendnumber, *(invite_data + sizeof(uint16_t)), invite_data, invite_length, userdata);
                 }
 
                 return;
@@ -1440,7 +1448,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             uint8_t real_pk[crypto_box_PUBLICKEYBYTES], temp_pk[crypto_box_PUBLICKEYBYTES];
             get_friendcon_public_keys(real_pk, temp_pk, g_c->fr_c, friendcon_id);
 
-            addpeer(g_c, groupnum, real_pk, temp_pk, peer_number);
+            addpeer(g_c, groupnum, real_pk, temp_pk, peer_number, userdata, true);
             int close_index = add_conn_to_groupchat(g_c, friendcon_id, groupnum, 0, 1);
 
             if (close_index != -1) {
@@ -1649,7 +1657,7 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
     return sent;
 }
 
-static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length)
+static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (length == 0) {
         return -1;
@@ -1668,7 +1676,7 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
         memcpy(&peer_num, d, sizeof(peer_num));
         peer_num = ntohs(peer_num);
         d += sizeof(uint16_t);
-        int peer_index = addpeer(g_c, groupnumber, d, d + crypto_box_PUBLICKEYBYTES, peer_num);
+        int peer_index = addpeer(g_c, groupnumber, d, d + crypto_box_PUBLICKEYBYTES, peer_num, userdata, true);
 
         if (peer_index == -1) {
             return -1;
@@ -1689,7 +1697,7 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
             return -1;
         }
 
-        setnick(g_c, groupnumber, peer_index, d, name_length);
+        setnick(g_c, groupnumber, peer_index, d, name_length, userdata, true);
         d += name_length;
     }
 
@@ -1697,7 +1705,7 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
 }
 
 static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length,
-                                 int close_index)
+                                 int close_index, void *userdata)
 {
     if (length == 0) {
         return;
@@ -1732,13 +1740,13 @@ static void handle_direct_packet(Group_Chats *g_c, int groupnumber, const uint8_
         break;
 
         case PEER_RESPONSE_ID: {
-            handle_send_peers(g_c, groupnumber, data + 1, length - 1);
+            handle_send_peers(g_c, groupnumber, data + 1, length - 1, userdata);
         }
 
         break;
 
         case PEER_TITLE_ID: {
-            settitle(g_c, groupnumber, -1, data + 1, length - 1);
+            settitle(g_c, groupnumber, -1, data + 1, length - 1, userdata);
         }
 
         break;
@@ -1980,7 +1988,7 @@ int send_group_lossy_packet(const Group_Chats *g_c, int groupnumber, const uint8
 }
 
 static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const uint8_t *data, uint16_t length,
-                                        int close_index)
+                                        int close_index, void *userdata)
 {
     if (length < sizeof(uint16_t) + sizeof(uint32_t) + 1) {
         return;
@@ -2041,7 +2049,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             memcpy(&new_peer_number, msg_data, sizeof(uint16_t));
             new_peer_number = ntohs(new_peer_number);
             addpeer(g_c, groupnumber, msg_data + sizeof(uint16_t), msg_data + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES,
-                    new_peer_number);
+                    new_peer_number, userdata, true);
         }
         break;
 
@@ -2055,7 +2063,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             kill_peer_number = ntohs(kill_peer_number);
 
             if (peer_number == kill_peer_number) {
-                delpeer(g_c, groupnumber, index);
+                delpeer(g_c, groupnumber, index, userdata);
             } else {
                 return;
                 // TODO(irungentoo):
@@ -2064,14 +2072,14 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
         break;
 
         case GROUP_MESSAGE_NAME_ID: {
-            if (setnick(g_c, groupnumber, index, msg_data, msg_data_len) == -1) {
+            if (setnick(g_c, groupnumber, index, msg_data, msg_data_len, userdata, true) == -1) {
                 return;
             }
         }
         break;
 
         case GROUP_MESSAGE_TITLE_ID: {
-            if (settitle(g_c, groupnumber, index, msg_data, msg_data_len) == -1) {
+            if (settitle(g_c, groupnumber, index, msg_data, msg_data_len, userdata) == -1) {
                 return;
             }
         }
@@ -2088,7 +2096,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
             // TODO(irungentoo):
             if (g_c->message_callback) {
-                g_c->message_callback(g_c->m, groupnumber, index, 0, newmsg, msg_data_len, g_c->message_callback_userdata);
+                g_c->message_callback(g_c->m, groupnumber, index, 0, newmsg, msg_data_len, userdata);
             }
 
             break;
@@ -2105,7 +2113,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
             // TODO(irungentoo):
             if (g_c->message_callback) {
-                g_c->message_callback(g_c->m, groupnumber, index, 1, newmsg, msg_data_len, g_c->message_callback_userdata);
+                g_c->message_callback(g_c->m, groupnumber, index, 1, newmsg, msg_data_len, userdata);
             }
 
             break;
@@ -2151,12 +2159,13 @@ static int handle_packet(void *object, int friendcon_id, const uint8_t *data, ui
 
     switch (data[0]) {
         case PACKET_ID_DIRECT_GROUPCHAT: {
-            handle_direct_packet(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index);
+            handle_direct_packet(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index, userdata);
             break;
         }
 
         case PACKET_ID_MESSAGE_GROUPCHAT: {
-            handle_message_packet_group(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index);
+            handle_message_packet_group(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index,
+                                        userdata);
             break;
         }
 
@@ -2388,7 +2397,7 @@ static int ping_groupchat(Group_Chats *g_c, int groupnumber)
     return 0;
 }
 
-static int groupchat_clear_timedout(Group_Chats *g_c, int groupnumber)
+static int groupchat_clear_timedout(Group_Chats *g_c, int groupnumber, void *userdata)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -2400,7 +2409,7 @@ static int groupchat_clear_timedout(Group_Chats *g_c, int groupnumber)
 
     for (i = 0; i < g->numpeers; ++i) {
         if (g->peer_number != g->group[i].peer_number && is_timeout(g->group[i].last_recv, GROUP_PING_INTERVAL * 3)) {
-            delpeer(g_c, groupnumber, i);
+            delpeer(g_c, groupnumber, i, userdata);
         }
 
         if (g->group == NULL || i >= g->numpeers) {
@@ -2466,7 +2475,7 @@ void do_groupchats(Group_Chats *g_c, void *userdata)
         if (g->status == GROUPCHAT_STATUS_CONNECTED) {
             connect_to_closest(g_c, i, userdata);
             ping_groupchat(g_c, i);
-            groupchat_clear_timedout(g_c, i);
+            groupchat_clear_timedout(g_c, i, userdata);
         }
     }
 

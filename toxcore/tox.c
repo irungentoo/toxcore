@@ -1216,31 +1216,31 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback)
     callback_file_data(m, callback);
 }
 
-void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback, void *user_data)
+void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback)
 {
     Messenger *m = tox;
     g_callback_group_invite(m->group_chat_object, (void (*)(Messenger * m, uint32_t, int, const uint8_t *, size_t,
-                            void *))callback, user_data);
+                            void *))callback);
 }
 
-void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback, void *user_data)
+void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback)
 {
     Messenger *m = tox;
     g_callback_group_message(m->group_chat_object, (void (*)(Messenger * m, uint32_t, uint32_t, int, const uint8_t *,
-                             size_t, void *))callback, user_data);
+                             size_t, void *))callback);
 }
 
-void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback, void *user_data)
+void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_title(m->group_chat_object, callback, user_data);
+    g_callback_group_title(m->group_chat_object, callback);
 }
 
-void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback, void *user_data)
+void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback)
 {
     Messenger *m = tox;
     g_callback_group_namelistchange(m->group_chat_object, (void (*)(struct Messenger *, int, int, uint8_t,
-                                    void *))callback, user_data);
+                                    void *))callback);
 }
 
 uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error)

@@ -246,8 +246,8 @@ static Tox *init_tox(int argc, char *argv[])
 
     tox_self_set_name(tox, (const uint8_t *)IRC_NAME, sizeof(IRC_NAME) - 1, 0);
     tox_callback_friend_message(tox, &callback_friend_message);
-    tox_callback_conference_invite(tox, &callback_group_invite, NULL);
-    tox_callback_conference_message(tox, &copy_groupmessage, NULL);
+    tox_callback_conference_invite(tox, &callback_group_invite);
+    tox_callback_conference_message(tox, &copy_groupmessage);
 
     char temp_id[128];
     printf("\nEnter the address of irc_syncbots master (38 bytes HEX format):\n");

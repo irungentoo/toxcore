@@ -2307,7 +2307,7 @@ typedef void tox_conference_invite_cb(Tox *tox, uint32_t friend_number, TOX_CONF
  *
  * This event is triggered when the client is invited to join a conference.
  */
-void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback, void *user_data);
+void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback);
 
 /**
  * @param conference_number The conference number of the conference the message is intended for.
@@ -2325,7 +2325,7 @@ typedef void tox_conference_message_cb(Tox *tox, uint32_t conference_number, uin
  *
  * This event is triggered when the client receives a conference message.
  */
-void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback, void *user_data);
+void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback);
 
 /**
  * @param conference_number The conference number of the conference the title change is intended for.
@@ -2344,7 +2344,7 @@ typedef void tox_conference_title_cb(Tox *tox, uint32_t conference_number, uint3
  *
  * If peer_number == UINT32_MAX, then author is unknown (e.g. initial joining the conference).
  */
-void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback, void *user_data);
+void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback);
 
 /**
  * Peer list state change types.
@@ -2383,7 +2383,7 @@ typedef void tox_conference_namelist_change_cb(Tox *tox, uint32_t conference_num
  *
  * This event is triggered when the peer list changes (name change, peer join, peer exit).
  */
-void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback, void *user_data);
+void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback);
 
 typedef enum TOX_ERR_CONFERENCE_NEW {
 

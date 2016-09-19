@@ -117,13 +117,9 @@ typedef struct {
     uint32_t num_chats;
 
     void (*invite_callback)(Messenger *m, uint32_t, int, const uint8_t *, size_t, void *);
-    void *invite_callback_userdata;
     void (*message_callback)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *, size_t, void *);
-    void *message_callback_userdata;
     void (*group_namelistchange)(Messenger *m, int, int, uint8_t, void *);
-    void *group_namelistchange_userdata;
     void (*title_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
-    void *title_callback_userdata;
 
     struct {
         int (*function)(void *, int, int, void *, const uint8_t *, uint16_t);
@@ -137,14 +133,14 @@ typedef struct {
  *  data of length is what needs to be passed to join_groupchat().
  */
 void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, int, const uint8_t *,
-                             size_t, void *), void *userdata);
+                             size_t, void *));
 
 /* Set the callback for group messages.
  *
  *  Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * message, uint16_t length, void *userdata)
  */
 void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
-                              size_t, void *), void *userdata);
+                              size_t, void *));
 
 
 /* Set callback function for title changes.
@@ -153,7 +149,7 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, u
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
 void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
-                            size_t, void *), void *userdata);
+                            size_t, void *));
 
 /* Set callback function for peer name list changes.
  *
@@ -165,8 +161,7 @@ enum {
     CHAT_CHANGE_PEER_DEL,
     CHAT_CHANGE_PEER_NAME,
 };
-void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *),
-                                     void *userdata);
+void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *));
 
 /* Creates a new groupchat and puts it in the chats array.
  *

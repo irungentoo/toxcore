@@ -1231,7 +1231,7 @@ group_test_restart:
         toxes[i] = tox_new(0, 0);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request);
-        tox_callback_conference_invite(toxes[i], &print_group_invite_callback, &to_comp);
+        tox_callback_conference_invite(toxes[i], &print_group_invite_callback);
     }
 
     {
@@ -1280,7 +1280,7 @@ group_test_restart:
 
     while (1) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iterate(toxes[i], NULL);
+            tox_iterate(toxes[i], &to_comp);
         }
 
         if (!invite_counter) {
@@ -1336,7 +1336,7 @@ group_test_restart:
     printf("group connected\n");
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
-        tox_callback_conference_message(toxes[i], &print_group_message, &to_comp);
+        tox_callback_conference_message(toxes[i], &print_group_message);
     }
 
     ck_assert_msg(
@@ -1347,7 +1347,7 @@ group_test_restart:
 
     for (j = 0; j < 20; ++j) {
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iterate(toxes[i], NULL);
+            tox_iterate(toxes[i], &to_comp);
         }
 
         c_sleep(25);
@@ -1361,7 +1361,7 @@ group_test_restart:
 
         for (j = 0; j < 10; ++j) {
             for (i = 0; i < NUM_GROUP_TOX; ++i) {
-                tox_iterate(toxes[i], NULL);
+                tox_iterate(toxes[i], &to_comp);
             }
 
             c_sleep(50);

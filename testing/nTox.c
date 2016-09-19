@@ -1360,13 +1360,13 @@ int main(int argc, char *argv[])
     tox_callback_friend_message(m, print_message);
     tox_callback_friend_name(m, print_nickchange);
     tox_callback_friend_status_message(m, print_statuschange);
-    tox_callback_conference_invite(m, print_invite, NULL);
-    tox_callback_conference_message(m, print_groupmessage, NULL);
+    tox_callback_conference_invite(m, print_invite);
+    tox_callback_conference_message(m, print_groupmessage);
+    tox_callback_conference_namelist_change(m, print_groupnamelistchange);
     tox_callback_file_recv_chunk(m, write_file);
     tox_callback_file_recv_control(m, file_print_control);
     tox_callback_file_recv(m, file_request_accept);
     tox_callback_file_chunk_request(m, tox_file_chunk_request);
-    tox_callback_conference_namelist_change(m, print_groupnamelistchange, NULL);
     tox_callback_friend_connection_status(m, print_online);
 
     initscr();
