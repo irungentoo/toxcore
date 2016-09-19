@@ -413,6 +413,11 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     }
 
     if (m->friend_connectionstatuschange_internal) {
+        // This is a direct callback to tell ToxAV that the friend has disconnected.
+        // The userdata in this callback is set to NULL, which will be passed back
+        // to the user if there is an active call. This behavior is expected, as the
+        // plan as of this commit is to update toxcore to ONLY send callbacks with
+        // tox_iterate().
         m->friend_connectionstatuschange_internal(m, friendnumber, 0, m->friend_connectionstatuschange_internal_userdata, NULL);
     }
 
