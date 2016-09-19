@@ -157,8 +157,6 @@ void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
         exit(1);
     }
 
-    // Change the file mode mask
-    umask(0);
 
     // Change the current working directory
     if ((chdir("/")) < 0) {
@@ -176,6 +174,7 @@ void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
 
 int main(int argc, char *argv[])
 {
+    umask(077);
     char *cfg_file_path;
     LOG_BACKEND log_backend;
     bool run_in_foreground;
