@@ -200,11 +200,8 @@ typedef struct {
     unsigned int num_sending_files;
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 
-    /* ToxAV, *object is the internal session data for the active call, userdata is the *pointer provided in
-     * tox_iterate()
-     */
     struct {
-        int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object, void *userdata);
+        int (*function)(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
         void *object;
     } lossy_rtp_packethandlers[PACKET_LOSSY_AV_RESERVED];
 
@@ -248,8 +245,7 @@ struct Messenger {
     void (*friend_typingchange)(struct Messenger *m, uint32_t, bool, void *);
     void (*read_receipt)(struct Messenger *m, uint32_t, uint32_t, void *);
     void (*friend_connectionstatuschange)(struct Messenger *m, uint32_t, unsigned int, void *);
-    void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *, void *);
-    /* ToxAV internal session data */
+    void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);
     void *friend_connectionstatuschange_internal_userdata;
 
     void *group_chat_object; /* Set by new_groupchats()*/
@@ -262,7 +258,7 @@ struct Messenger {
     void (*file_filedata)(struct Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t, void *);
     void (*file_reqchunk)(struct Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *);
 
-    void (*msi_packet)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *, void *);
+    void (*msi_packet)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
     void *msi_packet_userdata;
 
     void (*lossy_packethandler)(struct Messenger *m, uint32_t, const uint8_t *, size_t, void *);
@@ -527,8 +523,7 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32
 void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *));
 
 /* Same as previous but for internal A/V core usage only */
-void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *,
-        void *),
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
         void *userdata);
 
 
@@ -662,8 +657,8 @@ uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t fi
  *
  *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *,
-                           void *), void *toxav_session);
+void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *),
+                           void *userdata);
 
 /* Send an msi packet.
  *
@@ -678,7 +673,7 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
  * return 0 on success.
  */
 int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
-                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object, void *userdata), void *object);
+                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object), void *object);
 
 /**********************************************/
 

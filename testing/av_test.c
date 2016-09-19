@@ -80,9 +80,7 @@ typedef struct {
 
 struct toxav_thread_data {
     ToxAV  *AliceAV;
-    void   *AliceCC;
     ToxAV  *BobAV;
-    void   *BobCC;
     int32_t sig;
 };
 
@@ -272,32 +270,31 @@ static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceC
 
 
     /* Alice */
-    toxav_callback_call(*AliceAV, t_toxav_call_cb);
-    toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb);
-    toxav_callback_bit_rate_status(*AliceAV, t_toxav_bit_rate_status_cb);
-    toxav_callback_video_receive_frame(*AliceAV, t_toxav_receive_video_frame_cb);
-    toxav_callback_audio_receive_frame(*AliceAV, t_toxav_receive_audio_frame_cb);
+    toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
+    toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
+    toxav_callback_bit_rate_status(*AliceAV, t_toxav_bit_rate_status_cb, AliceCC);
+    toxav_callback_video_receive_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
+    toxav_callback_audio_receive_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
 
     /* Bob */
-    toxav_callback_call(*BobAV, t_toxav_call_cb);
-    toxav_callback_call_state(*BobAV, t_toxav_call_state_cb);
-    toxav_callback_bit_rate_status(*BobAV, t_toxav_bit_rate_status_cb);
-    toxav_callback_video_receive_frame(*BobAV, t_toxav_receive_video_frame_cb);
-    toxav_callback_audio_receive_frame(*BobAV, t_toxav_receive_audio_frame_cb);
+    toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
+    toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
+    toxav_callback_bit_rate_status(*BobAV, t_toxav_bit_rate_status_cb, BobCC);
+    toxav_callback_video_receive_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
+    toxav_callback_audio_receive_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
 
 
     printf("Created 2 instances of ToxAV\n");
     printf("All set after %llu seconds!\n", time(NULL) - cur_time);
 }
-static int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, void *aCC, ToxAV *BobAV, void *bCC)
+static int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userdata)
 {
-    tox_iterate(bootstrap, NULL);
-    tox_iterate(toxav_get_tox(AliceAV), aCC);
-    tox_iterate(toxav_get_tox(BobAV), bCC);
+    tox_iterate(bootstrap, userdata);
+    tox_iterate(toxav_get_tox(AliceAV), userdata);
+    tox_iterate(toxav_get_tox(BobAV), userdata);
 
     return MIN(tox_iteration_interval(toxav_get_tox(AliceAV)), tox_iteration_interval(toxav_get_tox(BobAV)));
 }
-
 static void *iterate_toxav(void *data)
 {
     struct toxav_thread_data *data_cast = data;
@@ -306,8 +303,8 @@ static void *iterate_toxav(void *data)
 #endif
 
     while (data_cast->sig == 0) {
-        toxav_iterate(data_cast->AliceAV, data_cast->AliceCC);
-        toxav_iterate(data_cast->BobAV, data_cast->BobCC);
+        toxav_iterate(data_cast->AliceAV);
+        toxav_iterate(data_cast->BobAV);
         int rc = MIN(toxav_iteration_interval(data_cast->AliceAV), toxav_iteration_interval(data_cast->BobAV));
 
         printf("\rIteration interval: %d            ", rc);
@@ -552,7 +549,7 @@ CHECK_ARG:
         }
 
         while (!BobCC.incoming) {
-            iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         }
 
         { /* Answer */
@@ -566,7 +563,7 @@ CHECK_ARG:
         }
 
         while (AliceCC.state == 0) {
-            iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         }
 
         /* Open audio file */
@@ -631,7 +628,7 @@ CHECK_ARG:
                 }
             }
 
-            iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
             c_sleep((audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
         }
 
@@ -650,7 +647,7 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+        iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         /* Stop decode thread */
@@ -693,7 +690,7 @@ CHECK_ARG:
         }
 
         while (!BobCC.incoming) {
-            iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         }
 
         { /* Answer */
@@ -706,14 +703,12 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+        iterate_tox(bootstrap, AliceAV, BobAV, NULL);
 
         /* Start decode thread */
         struct toxav_thread_data data = {
             .AliceAV = AliceAV,
-            .AliceCC = &AliceCC,
             .BobAV = BobAV,
-            .BobCC = &BobCC,
             .sig = 0
         };
 
@@ -740,7 +735,7 @@ CHECK_ARG:
             }
 
             send_opencv_img(AliceAV, 0, frame);
-            iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+            iterate_tox(bootstrap, AliceAV, BobAV, NULL);
             c_sleep(10);
         }
 
@@ -756,7 +751,7 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, &AliceCC, BobAV, &BobCC);
+        iterate_tox(bootstrap, AliceAV, BobAV, NULL);
         assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         /* Stop decode thread */

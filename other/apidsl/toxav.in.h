@@ -216,7 +216,7 @@ const uint32_t iteration_interval();
  * toxav_iteration_interval() milliseconds. It is best called in the separate
  * thread from tox_iterate.
  */
-void iterate(any userdata);
+void iterate();
 
 
 /*******************************************************************************
@@ -269,7 +269,7 @@ bool call(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_ra
   INVALID_BIT_RATE,
 }
 
-event call const {
+event call {
   /**
    * The function type for the ${event call} callback.
    *
@@ -359,7 +359,7 @@ bitmask FRIEND_CALL_STATE {
   ACCEPTING_V,
 }
 
-event call_state const {
+event call_state {
  /**
   * The function type for the ${event call_state} callback.
   *
@@ -490,7 +490,7 @@ namespace bit_rate {
     FRIEND_NOT_IN_CALL,
   }
 
-  event status const {
+  event status {
     /**
      * The function type for the ${event status} callback. The event is triggered
      * when the network becomes too saturated for current bit rates at which
@@ -601,7 +601,7 @@ namespace video {
 
 
 namespace audio {
-  event receive_frame const {
+  event receive_frame {
     /**
      * The function type for the ${event receive_frame} callback. The callback can be
      * called multiple times per single iteration depending on the amount of queued
@@ -620,7 +620,7 @@ namespace audio {
 }
 
 namespace video {
-  event receive_frame const {
+  event receive_frame {
     /**
      * The function type for the ${event receive_frame} callback.
      *

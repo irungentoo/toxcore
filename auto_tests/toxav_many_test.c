@@ -113,17 +113,17 @@ static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const 
 /**
  * Iterate helper
  */
-static ToxAV *setup_av_instance(Tox *tox)
+static ToxAV *setup_av_instance(Tox *tox, CallControl *CC)
 {
     TOXAV_ERR_NEW error;
 
     ToxAV *av = toxav_new(tox, &error);
     ck_assert(error == TOXAV_ERR_NEW_OK);
 
-    toxav_callback_call(av, t_toxav_call_cb);
-    toxav_callback_call_state(av, t_toxav_call_state_cb);
-    toxav_callback_video_receive_frame(av, t_toxav_receive_video_frame_cb);
-    toxav_callback_audio_receive_frame(av, t_toxav_receive_audio_frame_cb);
+    toxav_callback_call(av, t_toxav_call_cb, CC);
+    toxav_callback_call_state(av, t_toxav_call_state_cb, CC);
+    toxav_callback_video_receive_frame(av, t_toxav_receive_video_frame_cb, CC);
+    toxav_callback_audio_receive_frame(av, t_toxav_receive_audio_frame_cb, CC);
 
     return av;
 }
@@ -172,8 +172,8 @@ static void *call_thread(void *pd)
     time_t start_time = time(NULL);
 
     while (time(NULL) - start_time < 4) {
-        toxav_iterate(AliceAV, &AliceCC);
-        toxav_iterate(BobAV, &BobCC);
+        toxav_iterate(AliceAV);
+        toxav_iterate(BobAV);
 
         toxav_audio_send_frame(AliceAV, friend_number, PCM, 960, 1, 48000, NULL);
         toxav_audio_send_frame(BobAV, 0, PCM, 960, 1, 48000, NULL);
@@ -250,10 +250,10 @@ START_TEST(test_AV_three_calls)
 
     while (1) {
         tox_iterate(bootstrap, NULL);
-        tox_iterate(Alice, &AliceCC);
-        tox_iterate(Bobs[0], &BobsCC[0]);
-        tox_iterate(Bobs[1], &BobsCC[1]);
-        tox_iterate(Bobs[2], &BobsCC[2]);
+        tox_iterate(Alice, NULL);
+        tox_iterate(Bobs[0], NULL);
+        tox_iterate(Bobs[1], NULL);
+        tox_iterate(Bobs[2], NULL);
 
         if (tox_self_get_connection_status(bootstrap) &&
                 tox_self_get_connection_status(Alice) &&
@@ -276,10 +276,10 @@ START_TEST(test_AV_three_calls)
         c_sleep(20);
     }
 
-    AliceAV = setup_av_instance(Alice);
-    BobsAV[0] = setup_av_instance(Bobs[0]);
-    BobsAV[1] = setup_av_instance(Bobs[1]);
-    BobsAV[2] = setup_av_instance(Bobs[2]);
+    AliceAV = setup_av_instance(Alice, AliceCC);
+    BobsAV[0] = setup_av_instance(Bobs[0], BobsCC + 0);
+    BobsAV[1] = setup_av_instance(Bobs[1], BobsCC + 1);
+    BobsAV[2] = setup_av_instance(Bobs[2], BobsCC + 2);
 
     printf("Created 4 instances of ToxAV\n");
     printf("All set after %llu seconds!\n", time(NULL) - cur_time);
@@ -315,10 +315,10 @@ START_TEST(test_AV_three_calls)
     time_t start_time = time(NULL);
 
     while (time(NULL) - start_time < 5) {
-        tox_iterate(Alice, AliceCC);
-        tox_iterate(Bobs[0], &BobsCC[0]);
-        tox_iterate(Bobs[1], &BobsCC[1]);
-        tox_iterate(Bobs[2], &BobsCC[2]);
+        tox_iterate(Alice, NULL);
+        tox_iterate(Bobs[0], NULL);
+        tox_iterate(Bobs[1], NULL);
+        tox_iterate(Bobs[2], NULL);
         c_sleep(20);
     }
 

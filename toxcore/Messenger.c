@@ -413,12 +413,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     }
 
     if (m->friend_connectionstatuschange_internal) {
-        // This is a direct callback to tell ToxAV that the friend has disconnected.
-        // The userdata in this callback is set to NULL, which will be passed back
-        // to the user if there is an active call. This behavior is expected, as the
-        // plan as of this commit is to update toxcore to ONLY send callbacks with
-        // tox_iterate().
-        m->friend_connectionstatuschange_internal(m, friendnumber, 0, m->friend_connectionstatuschange_internal_userdata, NULL);
+        m->friend_connectionstatuschange_internal(m, friendnumber, 0, m->friend_connectionstatuschange_internal_userdata);
     }
 
     clear_receipts(m, friendnumber);
@@ -890,8 +885,7 @@ void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, uns
     m->core_connection_change = function;
 }
 
-void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *,
-        void *),
+void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
         void *userdata)
 {
     m->friend_connectionstatuschange_internal = function;
@@ -952,7 +946,7 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
 
         if (m->friend_connectionstatuschange_internal) {
             m->friend_connectionstatuschange_internal(m, friendnumber, is_online,
-                    m->friend_connectionstatuschange_internal_userdata, userdata);
+                    m->friend_connectionstatuschange_internal_userdata);
         }
     }
 }
@@ -1717,11 +1711,11 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
  *
  *  Function(Messenger *m, int friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *,
-                           void *), void *object)
+void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *),
+                           void *userdata)
 {
     m->msi_packet = function;
-    m->msi_packet_userdata = object;
+    m->msi_packet_userdata = userdata;
 }
 
 /* Send an msi packet.
@@ -1747,7 +1741,7 @@ static int handle_custom_lossy_packet(void *object, int friend_num, const uint8_
         if (m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] % PACKET_LOSSY_AV_RESERVED].function) {
             return m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] % PACKET_LOSSY_AV_RESERVED].function(
                        m, friend_num, packet, length, m->friendlist[friend_num].lossy_rtp_packethandlers[packet[0] %
-                               PACKET_LOSSY_AV_RESERVED].object, userdata);
+                               PACKET_LOSSY_AV_RESERVED].object);
         }
 
         return 1;
@@ -1767,7 +1761,7 @@ void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_cal
 }
 
 int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
-                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object, void *userdata), void *object)
+                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object), void *object)
 {
     if (friend_not_valid(m, friendnumber)) {
         return -1;
@@ -2339,7 +2333,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             }
 
             if (m->msi_packet) {
-                (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata, userdata);
+                (*m->msi_packet)(m, i, data, data_length, m->msi_packet_userdata);
             }
 
             break;

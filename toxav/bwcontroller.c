@@ -40,7 +40,7 @@
  */
 
 struct BWController_s {
-    void (*mcb)(BWController *, uint32_t, float, void *, void *);
+    void (*mcb)(BWController *, uint32_t, float, void *);
     void *mcb_data;
 
     Messenger *m;
@@ -61,18 +61,17 @@ struct BWController_s {
     } rcvpkt; /* To calculate average received packet */
 };
 
-int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object,
-                    void *userdata);
+int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
 void send_update(BWController *bwc);
 
 BWController *bwc_new(Messenger *m, uint32_t friendnumber,
-                      void (*mcb)(BWController *, uint32_t, float, void *, void *),
-                      void *call_data)
+                      void (*mcb)(BWController *, uint32_t, float, void *),
+                      void *udata)
 {
     BWController *retu = calloc(sizeof(struct BWController_s), 1);
 
     retu->mcb = mcb;
-    retu->mcb_data = call_data;
+    retu->mcb_data = udata;
     retu->m = m;
     retu->friend_number = friendnumber;
     retu->cycle.lsu = retu->cycle.lfu = current_time_monotonic();
@@ -180,7 +179,7 @@ void send_update(BWController *bwc)
         bwc->cycle.lsu = current_time_monotonic();
     }
 }
-static int on_update(BWController *bwc, const struct BWCMessage *msg, void *userdata)
+static int on_update(BWController *bwc, const struct BWCMessage *msg)
 {
     LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", bwc);
 
@@ -200,18 +199,16 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg, void *user
     if (lost && bwc->mcb) {
         bwc->mcb(bwc, bwc->friend_number,
                  ((float) lost / (recv + lost)),
-                 bwc->mcb_data,
-                 userdata);
+                 bwc->mcb_data);
     }
 
     return 0;
 }
-int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object,
-                    void *userdata)
+int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
 {
     if (length - 1 != sizeof(struct BWCMessage)) {
         return -1;
     }
 
-    return on_update(object, (const struct BWCMessage *)(data + 1), userdata);
+    return on_update(object, (const struct BWCMessage *)(data + 1));
 }

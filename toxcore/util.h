@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
+#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
 void unix_time_update(void);
 uint64_t unix_time(void);

@@ -232,7 +232,7 @@ uint32_t toxav_iteration_interval(const ToxAV *av);
  * toxav_iteration_interval() milliseconds. It is best called in the separate
  * thread from tox_iterate.
  */
-void toxav_iterate(ToxAV *av, void *userdata);
+void toxav_iterate(ToxAV *av);
 
 
 /*******************************************************************************
@@ -316,7 +316,7 @@ typedef void toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled
  * Set the callback for the `call` event. Pass NULL to unset.
  *
  */
-void toxav_callback_call(ToxAV *av, toxav_call_cb *callback);
+void toxav_callback_call(ToxAV *av, toxav_call_cb *callback, void *user_data);
 
 typedef enum TOXAV_ERR_ANSWER {
 
@@ -437,7 +437,7 @@ typedef void toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t sta
  * Set the callback for the `call_state` event. Pass NULL to unset.
  *
  */
-void toxav_callback_call_state(ToxAV *av, toxav_call_state_cb *callback);
+void toxav_callback_call_state(ToxAV *av, toxav_call_state_cb *callback, void *user_data);
 
 
 /*******************************************************************************
@@ -613,7 +613,7 @@ typedef void toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number, uint32_
  * Set the callback for the `bit_rate_status` event. Pass NULL to unset.
  *
  */
-void toxav_callback_bit_rate_status(ToxAV *av, toxav_bit_rate_status_cb *callback);
+void toxav_callback_bit_rate_status(ToxAV *av, toxav_bit_rate_status_cb *callback, void *user_data);
 
 
 /*******************************************************************************
@@ -742,7 +742,7 @@ typedef void toxav_audio_receive_frame_cb(ToxAV *av, uint32_t friend_number, con
  * Set the callback for the `audio_receive_frame` event. Pass NULL to unset.
  *
  */
-void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb *callback);
+void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb *callback, void *user_data);
 
 /**
  * The function type for the video_receive_frame callback.
@@ -774,7 +774,7 @@ typedef void toxav_video_receive_frame_cb(ToxAV *av, uint32_t friend_number, uin
  * Set the callback for the `video_receive_frame` event. Pass NULL to unset.
  *
  */
-void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb *callback);
+void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb *callback, void *user_data);
 
 /**
  * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove

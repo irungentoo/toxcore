@@ -1237,10 +1237,6 @@ typedef enum TOX_ERR_FRIEND_DELETE {
  * function, this client will appear offline to the friend and no communication
  * can occur between the two.
  *
- * WARNING, calling tox_friend_delete while there's an active ToxAV call will
- * result in undefined behavior. It's the client's responsibility to end all
- * ToxAV calls before deleting a friend.
- *
  * @param friend_number Friend number for the friend to be deleted.
  *
  * @return true on success.
