@@ -381,7 +381,7 @@ endif()
 
 function(make_version_script header ns lib)
   execute_process(
-    COMMAND sh -c "egrep '^\\w' ${header} | grep '${ns}_[a-z_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z_]*(' | egrep -o '\\w+' | sort -u"
+    COMMAND sh -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '\\w+' | sort -u"
     OUTPUT_VARIABLE ${lib}_SYMS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REPLACE "\n" ";" ${lib}_SYMS ${${lib}_SYMS})
