@@ -35,8 +35,8 @@ extern "C" {
 
 /*******************************************************************************
  * `tox.h` SHOULD *NOT* BE EDITED MANUALLY – any changes should be made to   *
- * `tox.in.h`, located in `other/apidsl/`. For instructions on how to        *
- * generate `tox.h` from `tox.in.h` please refer to `other/apidsl/README.md` *
+ * `tox.api.h`, located in `toxcore/`. For instructions on how to            *
+ * generate `tox.h` from `tox.api.h` please refer to `docs/apidsl.md`        *
  ******************************************************************************/
 
 

@@ -18,6 +18,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 #
 ################################################################################
 
+include(ApiDsl)
 include(CheckCCompilerFlag)
 include(ModulePackage)
 
@@ -98,7 +99,8 @@ set(toxcore_PKGCONFIG_LIBS)
 # LAYER 1: Crypto core
 # --------------------
 add_module(toxcrypto
-  toxcore/crypto_core.c)
+  toxcore/crypto_core.c
+  toxcore/crypto_core.h)
 target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
 if(WIN32)
   target_link_modules(toxcrypto ws2_32) # for htonl
@@ -108,8 +110,11 @@ endif()
 # -------------------------
 add_module(toxnetwork
   toxcore/logger.c
+  toxcore/logger.h
   toxcore/network.c
-  toxcore/util.c)
+  toxcore/network.h
+  toxcore/util.c
+  toxcore/util.h)
 target_link_modules(toxnetwork toxcrypto)
 
 if(CMAKE_THREAD_LIBS_INIT)
@@ -131,50 +136,70 @@ endif()
 # -------------------------------
 add_module(toxdht
   toxcore/DHT.c
+  toxcore/DHT.h
   toxcore/LAN_discovery.c
+  toxcore/LAN_discovery.h
   toxcore/assoc.c
+  toxcore/assoc.h
   toxcore/ping.c
-  toxcore/ping_array.c)
+  toxcore/ping.h
+  toxcore/ping_array.c
+  toxcore/ping_array.h)
 target_link_modules(toxdht toxnetwork)
 
 # LAYER 4: Onion routing, TCP connections, crypto connections
 # -----------------------------------------------------------
 add_module(toxnetcrypto
   toxcore/TCP_client.c
+  toxcore/TCP_client.h
   toxcore/TCP_connection.c
+  toxcore/TCP_connection.h
   toxcore/TCP_server.c
+  toxcore/TCP_server.h
   toxcore/list.c
+  toxcore/list.h
   toxcore/net_crypto.c
+  toxcore/net_crypto.h
   toxcore/onion.c
+  toxcore/onion.h
   toxcore/onion_announce.c
-  toxcore/onion_client.c)
+  toxcore/onion_announce.h
+  toxcore/onion_client.c
+  toxcore/onion_client.h)
 target_link_modules(toxnetcrypto toxdht)
 
 # LAYER 5: Friend requests and connections
 # ----------------------------------------
 add_module(toxfriends
   toxcore/friend_connection.c
-  toxcore/friend_requests.c)
+  toxcore/friend_connection.h
+  toxcore/friend_requests.c
+  toxcore/friend_requests.h)
 target_link_modules(toxfriends toxnetcrypto)
 
 # LAYER 6: Tox messenger
 # ----------------------
 add_module(toxmessenger
-  toxcore/Messenger.c)
+  toxcore/Messenger.c
+  toxcore/Messenger.h)
 target_link_modules(toxmessenger toxfriends)
 
 # LAYER 7: Group chats
 # --------------------
 add_module(toxgroup
-  toxcore/group.c)
+  toxcore/group.c
+  toxcore/group.h)
 target_link_modules(toxgroup toxmessenger)
 
 # LAYER 8: Public API
 # -------------------
+apidsl(
+  toxcore/tox.api.h)
 add_module(toxcore
-  toxcore/tox.c)
+  toxcore/misc_tools.h
+  toxcore/tox.c
+  toxcore/tox.h)
 target_link_modules(toxcore toxgroup)
-
 
 ################################################################################
 #
@@ -183,19 +208,28 @@ target_link_modules(toxcore toxgroup)
 ################################################################################
 
 if(BUILD_TOXAV)
+  apidsl(
+    toxav/toxav.api.h)
   add_module(toxav
     toxav/audio.c
+    toxav/audio.h
     toxav/bwcontroller.c
+    toxav/bwcontroller.h
     toxav/group.c
+    toxav/group.h
     toxav/msi.c
+    toxav/msi.h
     toxav/ring_buffer.c
+    toxav/ring_buffer.h
     toxav/rtp.c
+    toxav/rtp.h
     toxav/toxav.c
+    toxav/toxav.h
     toxav/toxav_old.c
-    toxav/video.c)
+    toxav/video.c
+    toxav/video.h)
   target_link_modules(toxav toxcore ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
 endif()
-
 
 ################################################################################
 #
@@ -211,16 +245,20 @@ add_module(toxencryptsave
   toxencryptsave/toxencryptsave.c)
 target_link_modules(toxencryptsave toxcore)
 
-
 ################################################################################
 #
 # :: Automated regression tests
 #
 ################################################################################
 
-add_test(
-  NAME format_test
-  COMMAND ${CMAKE_SOURCE_DIR}/other/astyle/format-source "${CMAKE_SOURCE_DIR}")
+if(APIDSL AND ASTYLE)
+  add_test(
+    NAME format_test
+    COMMAND ${CMAKE_SOURCE_DIR}/other/astyle/format-source
+      "${CMAKE_SOURCE_DIR}"
+      "${APIDSL}"
+      "${ASTYLE}")
+endif()
 
 function(auto_test target)
   if(CHECK_FOUND)
@@ -251,7 +289,6 @@ if(BUILD_TOXAV)
   auto_test(toxav_many)
 endif()
 
-
 ################################################################################
 #
 # :: Bootstrap daemon
@@ -278,7 +315,6 @@ if(LIBCONFIG_FOUND)
     other/bootstrap_node_packets.h)
   target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
 endif()
-
 
 ################################################################################
 #
@@ -329,7 +365,6 @@ if(NOT WIN32)
   target_link_modules(irc_syncbot toxcore)
 endif()
 
-
 ################################################################################
 #
 # :: Installation and pkg-config
@@ -361,7 +396,6 @@ configure_file(
   "${CMAKE_BINARY_DIR}/toxencryptsave.pc"
   @ONLY
 )
-
 
 install(FILES
   ${CMAKE_BINARY_DIR}/toxcore.pc

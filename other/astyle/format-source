@@ -3,6 +3,8 @@
 set -e
 
 SOURCE_DIR="$1"
+APIDSL="$2"
+ASTYLE="$3"
 
 # Go to the source root.
 if [ -z "$SOURCE_DIR" ]; then
@@ -20,10 +22,11 @@ if ! which "$ASTYLE"; then
   exit 1
 fi
 
-if [ -f ../apidsl/apigen.native ]; then
-  APIDSL=../apidsl/apigen.native
-else
-  APIDSL=apidsl_curl
+if ! which "$APIDSL"; then
+  if [ -f ../apidsl/apigen.native ]; then
+    APIDSL=../apidsl/apigen.native
+  else
+    APIDSL=apidsl_curl
 fi
 
 apidsl_curl() {
@@ -31,10 +34,10 @@ apidsl_curl() {
 }
 
 # Check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h.
-$APIDSL other/apidsl/tox.in.h   > toxcore/tox.h
-$APIDSL other/apidsl/toxav.in.h > toxav/toxav.h
+$APIDSL toxcore/tox.api.h > toxcore/tox.h
+$APIDSL toxav/toxav.api.h > toxav/toxav.h
 
-SOURCES=`find . -name "*.[ch]" -and -not -name "*.in.*" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
+SOURCES=`find . -name "*.[ch]" -and -not -name "*.api.h" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
 
 $ASTYLE -n --options=other/astyle/astylerc $SOURCES
 
