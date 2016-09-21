@@ -78,33 +78,9 @@ typedef struct {
     bool unsleep; /* set to 1 to unsleep connection. */
 } TCP_con;
 
-typedef struct {
-    DHT *dht;
+typedef struct TCP_Connections TCP_Connections;
 
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
-    TCP_Connection_to *connections;
-    uint32_t connections_length; /* Length of connections array. */
-
-    TCP_con *tcp_connections;
-    uint32_t tcp_connections_length; /* Length of tcp_connections array. */
-
-    int (*tcp_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-    void *tcp_data_callback_object;
-
-    int (*tcp_oob_callback)(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
-                            const uint8_t *data, uint16_t length, void *userdata);
-    void *tcp_oob_callback_object;
-
-    int (*tcp_onion_callback)(void *object, const uint8_t *data, uint16_t length, void *userdata);
-    void *tcp_onion_callback_object;
-
-    TCP_Proxy_Info proxy_info;
-
-    bool onion_status;
-    uint16_t onion_num_conns;
-} TCP_Connections;
+const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c);
 
 /* Send a packet to the TCP connection.
  *

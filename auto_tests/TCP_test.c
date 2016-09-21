@@ -560,11 +560,11 @@ START_TEST(test_tcp_connection)
     proxy_info.proxy_type = TCP_PROXY_NONE;
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_1 = new_tcp_connections(self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tc_1->self_public_key, self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_1), self_public_key) == 0, "Wrong public key");
 
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_2 = new_tcp_connections(self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tc_2->self_public_key, self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_2), self_public_key) == 0, "Wrong public key");
 
     IP_Port ip_port_tcp_s;
 
@@ -572,18 +572,19 @@ START_TEST(test_tcp_connection)
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
 
-    int connection = new_tcp_connection_to(tc_1, tc_2->self_public_key, 123);
+    int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
     ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
-    connection = new_tcp_connection_to(tc_2, tc_1->self_public_key, 123);
+    connection = new_tcp_connection_to(tc_2, tcp_connections_public_key(tc_1), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
     ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
-    ck_assert_msg(new_tcp_connection_to(tc_2, tc_1->self_public_key, 123) == -1, "Managed to readd same connection\n");
+    ck_assert_msg(new_tcp_connection_to(tc_2, tcp_connections_public_key(tc_1), 123) == -1,
+                  "Managed to readd same connection\n");
 
     c_sleep(50);
     do_TCP_server(tcp_s);
@@ -666,11 +667,11 @@ START_TEST(test_tcp_connection2)
     proxy_info.proxy_type = TCP_PROXY_NONE;
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_1 = new_tcp_connections(self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tc_1->self_public_key, self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_1), self_public_key) == 0, "Wrong public key");
 
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_2 = new_tcp_connections(self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tc_2->self_public_key, self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_2), self_public_key) == 0, "Wrong public key");
 
     IP_Port ip_port_tcp_s;
 
@@ -678,7 +679,7 @@ START_TEST(test_tcp_connection2)
     ip_port_tcp_s.ip.family = AF_INET6;
     ip_port_tcp_s.ip.ip6.in6_addr = in6addr_loopback;
 
-    int connection = new_tcp_connection_to(tc_1, tc_2->self_public_key, 123);
+    int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
     ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
