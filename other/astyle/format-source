@@ -20,8 +20,8 @@ if ! which "$ASTYLE"; then
   exit 1
 fi
 
-if [ -f ../apidsl/_build/apigen.native ]; then
-  APIDSL=../apidsl/_build/apigen.native
+if [ -f ../apidsl/apigen.native ]; then
+  APIDSL=../apidsl/apigen.native
 else
   APIDSL=apidsl_curl
 fi

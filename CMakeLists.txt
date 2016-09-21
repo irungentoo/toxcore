@@ -289,6 +289,11 @@ if(NOT WIN32 AND BUILD_TOXAV AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FO
     ${OPENCV_LIBRARIES}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES})
+  # Due to https://github.com/opencv/opencv/issues/6585, we need to compile
+  # av_test as C++ for newer OpenCV versions.
+  if(NOT OPENCV_VERSION VERSION_LESS 3)
+    set_source_files_properties(testing/av_test.c PROPERTIES LANGUAGE CXX)
+  endif()
 endif()
 
 if(NOT WIN32)

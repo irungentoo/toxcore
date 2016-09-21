@@ -47,7 +47,7 @@ bool rb_read(RingBuffer *b, void **p)
 }
 RingBuffer *rb_new(int size)
 {
-    RingBuffer *buf = calloc(sizeof(RingBuffer), 1);
+    RingBuffer *buf = (RingBuffer *)calloc(sizeof(RingBuffer), 1);
 
     if (!buf) {
         return NULL;
@@ -55,7 +55,7 @@ RingBuffer *rb_new(int size)
 
     buf->size = size + 1; /* include empty elem */
 
-    if (!(buf->data = calloc(buf->size, sizeof(void *)))) {
+    if (!(buf->data = (void **)calloc(buf->size, sizeof(void *)))) {
         free(buf);
         return NULL;
     }

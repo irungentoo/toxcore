@@ -22,6 +22,10 @@
  *   -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // XXX: Hack because toxav doesn't really expose ring_buffer, but this av test
 // uses it. Not all of these functions are used, but when linking statically,
 // not renaming them will cause multiple definition errors, so we need to rename
@@ -37,11 +41,14 @@
 #define rb_data  test_rb_data
 #include "../toxav/ring_buffer.c"
 
-#include "../toxav/ring_buffer.h"
 #include "../toxav/toxav.h"
 #include "../toxcore/network.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 /* Playing audio data */
 #include <portaudio.h>
@@ -175,7 +182,9 @@ static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
 
     CvMat mat = cvMat(height, width, CV_8UC3, img_data);
 
-    CvSize sz = {.height = height, .width = width};
+    CvSize sz;
+    sz.height = height;
+    sz.width = width;
 
     IplImage *header = cvCreateImageHeader(sz, 1, 3);
     IplImage *img = cvGetImage(&mat, header);
@@ -598,9 +607,9 @@ CHECK_ARG:
 
         /* Start decode thread */
         struct toxav_thread_data data = {
-            .AliceAV = AliceAV,
-            .BobAV = BobAV,
-            .sig = 0
+            AliceAV,
+            BobAV,
+            0,
         };
 
         pthread_t dect;
@@ -723,9 +732,9 @@ CHECK_ARG:
 
         /* Start decode thread */
         struct toxav_thread_data data = {
-            .AliceAV = AliceAV,
-            .BobAV = BobAV,
-            .sig = 0
+            AliceAV,
+            BobAV,
+            0,
         };
 
         pthread_t dect;
@@ -739,7 +748,9 @@ CHECK_ARG:
             exit(1);
         }
 
-//         toxav_video_bit_rate_set(AliceAV, 0, 5000, false, NULL);
+#if 0
+        toxav_video_bit_rate_set(AliceAV, 0, 5000, false, NULL);
+#endif
 
         time_t start_time = time(NULL);
 
