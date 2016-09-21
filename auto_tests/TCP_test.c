@@ -34,7 +34,7 @@ START_TEST(test_basic)
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
-    ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
+    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
     sock_t sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     struct sockaddr_in6 addr6_loopback = {0};
@@ -154,7 +154,7 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     memcpy(handshake, sec_c->public_key, crypto_box_PUBLICKEYBYTES);
     new_nonce(handshake + crypto_box_PUBLICKEYBYTES);
 
-    ret = encrypt_data(tcp_s->public_key, f_secret_key, handshake + crypto_box_PUBLICKEYBYTES, handshake_plain,
+    ret = encrypt_data(tcp_server_public_key(tcp_s), f_secret_key, handshake + crypto_box_PUBLICKEYBYTES, handshake_plain,
                        TCP_HANDSHAKE_PLAIN_SIZE, handshake + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
     ck_assert_msg(ret == TCP_CLIENT_HANDSHAKE_SIZE - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES),
                   "Encrypt failed.");
@@ -167,7 +167,7 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
     uint8_t response_plain[TCP_HANDSHAKE_PLAIN_SIZE];
     ck_assert_msg(recv(sock, response, TCP_SERVER_HANDSHAKE_SIZE, 0) == TCP_SERVER_HANDSHAKE_SIZE, "recv Failed.");
-    ret = decrypt_data(tcp_s->public_key, f_secret_key, response, response + crypto_box_NONCEBYTES,
+    ret = decrypt_data(tcp_server_public_key(tcp_s), f_secret_key, response, response + crypto_box_NONCEBYTES,
                        TCP_SERVER_HANDSHAKE_SIZE - crypto_box_NONCEBYTES, response_plain);
     ck_assert_msg(ret == TCP_HANDSHAKE_PLAIN_SIZE, "Decrypt Failed.");
     encrypt_precompute(response_plain, t_secret_key, sec_c->shared_key);
@@ -217,7 +217,7 @@ START_TEST(test_some)
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
-    ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
+    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
     struct sec_TCP_con *con1 = new_TCP_con(tcp_s);
     struct sec_TCP_con *con2 = new_TCP_con(tcp_s);
@@ -394,7 +394,7 @@ START_TEST(test_client)
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
-    ck_assert_msg(tcp_s->num_listening_socks == NUM_PORTS, "Failed to bind to all ports");
+    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
     uint8_t f_public_key[crypto_box_PUBLICKEYBYTES];
     uint8_t f_secret_key[crypto_box_SECRETKEYBYTES];
@@ -554,7 +554,7 @@ START_TEST(test_tcp_connection)
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
-    ck_assert_msg(public_key_cmp(tcp_s->public_key, self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(public_key_cmp(tcp_server_public_key(tcp_s), self_public_key) == 0, "Wrong public key");
 
     TCP_Proxy_Info proxy_info;
     proxy_info.proxy_type = TCP_PROXY_NONE;
@@ -574,13 +574,13 @@ START_TEST(test_tcp_connection)
 
     int connection = new_tcp_connection_to(tc_1, tc_2->self_public_key, 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
-    ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_s->public_key) == 0,
+    ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
     ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
     connection = new_tcp_connection_to(tc_2, tc_1->self_public_key, 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
-    ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_s->public_key) == 0,
+    ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
     ck_assert_msg(new_tcp_connection_to(tc_2, tc_1->self_public_key, 123) == -1, "Managed to readd same connection\n");
@@ -660,7 +660,7 @@ START_TEST(test_tcp_connection2)
     uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
-    ck_assert_msg(public_key_cmp(tcp_s->public_key, self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(public_key_cmp(tcp_server_public_key(tcp_s), self_public_key) == 0, "Wrong public key");
 
     TCP_Proxy_Info proxy_info;
     proxy_info.proxy_type = TCP_PROXY_NONE;
@@ -680,10 +680,11 @@ START_TEST(test_tcp_connection2)
 
     int connection = new_tcp_connection_to(tc_1, tc_2->self_public_key, 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
-    ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_s->public_key) == 0,
+    ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
-    ck_assert_msg(add_tcp_relay_global(tc_2, ip_port_tcp_s, tcp_s->public_key) == 0, "Could not add global relay");
+    ck_assert_msg(add_tcp_relay_global(tc_2, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
+                  "Could not add global relay");
 
     c_sleep(50);
     do_TCP_server(tcp_s);
