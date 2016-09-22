@@ -2915,7 +2915,6 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             }
 
             return -2;
-            break;
         }
 
 #ifdef TOX_DEBUG

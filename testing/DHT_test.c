@@ -52,7 +52,7 @@
 
 #define PORT 33445
 
-uint8_t zeroes_cid[crypto_box_PUBLICKEYBYTES];
+static uint8_t zeroes_cid[crypto_box_PUBLICKEYBYTES];
 
 static void print_client_id(uint8_t *public_key)
 {

@@ -235,7 +235,6 @@ START_TEST(test_AV_three_calls)
     printf("Preparing network...\n");
     long long unsigned int cur_time = time(NULL);
 
-    uint32_t to_compare = 974536;
     uint8_t address[TOX_ADDRESS_SIZE];
 
     tox_callback_friend_request(Alice, t_accept_friend_request_cb);

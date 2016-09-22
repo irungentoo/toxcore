@@ -59,7 +59,6 @@ START_TEST(test_save_friend)
     Tox *tox1 = tox_new(0, 0);
     Tox *tox2 = tox_new(0, 0);
     ck_assert_msg(tox1 || tox2, "Failed to create 2 tox instances");
-    uint32_t to_compare = 974536;
     tox_callback_friend_request(tox2, accept_friend_request);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);

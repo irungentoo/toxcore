@@ -384,7 +384,6 @@ int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t le
             default:
                 LOGGER_ERROR(log, "Invalid id byte");
                 return -1;
-                break;
         }
     }
 
@@ -689,7 +688,6 @@ void handle_init(MSICall *call, const MSIMessage *msg)
             call->error = msi_EInvalidState;
             goto FAILURE;
         }
-        break;
     }
 
     return;
@@ -771,7 +769,6 @@ void handle_pop(MSICall *call, const MSIMessage *msg)
                 LOGGER_ERROR(call->session->messenger->log, "Handling what should be impossible case");
                 abort();
             }
-            break;
 
             case msi_CallActive: {
                 /* Hangup */

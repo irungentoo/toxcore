@@ -25,7 +25,7 @@
 
 #define NUM_PORTS 3
 
-uint16_t ports[NUM_PORTS] = {1234, 33445, 25643};
+static uint16_t ports[NUM_PORTS] = {1234, 33445, 25643};
 
 START_TEST(test_basic)
 {
@@ -522,7 +522,7 @@ END_TEST
 
 #include "../toxcore/TCP_connection.h"
 
-bool tcp_data_callback_called;
+static bool tcp_data_callback_called;
 static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t length, void *userdata)
 {
     if (object != (void *)120397) {
@@ -632,7 +632,7 @@ START_TEST(test_tcp_connection)
 }
 END_TEST
 
-bool tcp_oobdata_callback_called;
+static bool tcp_oobdata_callback_called;
 static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigned int id, const uint8_t *data,
                                 uint16_t length, void *userdata)
 {

@@ -460,7 +460,7 @@ void networking_poll(Networking_Core *net, void *userdata)
 #include <sodium.h>
 #endif
 
-uint8_t at_startup_ran = 0;
+static uint8_t at_startup_ran = 0;
 int networking_at_startup(void)
 {
     if (at_startup_ran != 0) {

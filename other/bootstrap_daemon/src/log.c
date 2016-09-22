@@ -31,7 +31,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-LOG_BACKEND current_backend = -1;
+static LOG_BACKEND current_backend = -1;
 
 bool open_log(LOG_BACKEND backend)
 {
