@@ -39,6 +39,7 @@
 #include <pthread.h>
 
 struct RTPMessage;
+struct RingBuffer;
 
 typedef struct VCSession_s {
     /* encoding */
@@ -47,7 +48,7 @@ typedef struct VCSession_s {
 
     /* decoding */
     vpx_codec_ctx_t decoder[1];
-    RingBuffer *vbuf_raw; /* Un-decoded data */
+    struct RingBuffer *vbuf_raw; /* Un-decoded data */
 
     uint64_t linfts; /* Last received frame time stamp */
     uint32_t lcfd; /* Last calculated frame duration for incoming video payload */

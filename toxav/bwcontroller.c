@@ -25,6 +25,8 @@
 
 #include "bwcontroller.h"
 
+#include "ring_buffer.h"
+
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 

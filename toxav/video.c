@@ -26,6 +26,7 @@
 #include "video.h"
 
 #include "msi.h"
+#include "ring_buffer.h"
 #include "rtp.h"
 
 #include "../toxcore/logger.h"

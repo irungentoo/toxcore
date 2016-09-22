@@ -184,6 +184,7 @@ if(BUILD_TOXAV)
     toxav/bwcontroller.c
     toxav/group.c
     toxav/msi.c
+    toxav/ring_buffer.c
     toxav/rtp.c
     toxav/toxav.c
     toxav/toxav_old.c

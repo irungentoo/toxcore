@@ -22,6 +22,22 @@
  *   -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
  */
 
+// XXX: Hack because toxav doesn't really expose ring_buffer, but this av test
+// uses it. Not all of these functions are used, but when linking statically,
+// not renaming them will cause multiple definition errors, so we need to rename
+// all of them.
+#define RingBuffer TestRingBuffer
+#define rb_full  test_rb_full
+#define rb_empty test_rb_empty
+#define rb_write test_rb_write
+#define rb_read  test_rb_read
+#define rb_new   test_rb_new
+#define rb_kill  test_rb_kill
+#define rb_size  test_rb_size
+#define rb_data  test_rb_data
+#include "../toxav/ring_buffer.c"
+
+#include "../toxav/ring_buffer.h"
 #include "../toxav/toxav.h"
 #include "../toxcore/network.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
