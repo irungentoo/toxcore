@@ -43,7 +43,7 @@ uint8_t i = 0; \
             i++; \
         } \
     } \
-} \
+}
 
 typedef struct {
     uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
@@ -70,8 +70,9 @@ void *tox_dns3_new(uint8_t *server_public_key)
 {
     DNS_Object *d = malloc(sizeof(DNS_Object));
 
-    if (d == NULL)
+    if (d == NULL) {
         return NULL;
+    }
 
     memcpy(d->server_public_key, server_public_key, crypto_box_PUBLICKEYBYTES);
     dns_new_temp_keys(d);
@@ -106,8 +107,9 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
     int end_len = ((base * 8) / 5) + (base / DOT_INTERVAL) + !!(base % 5);
     end_len -= !(base % DOT_INTERVAL);
 
-    if (end_len > string_max_len)
+    if (end_len > string_max_len) {
         return -1;
+    }
 
     DNS_Object *d = dns3_object;
     uint8_t buffer[1024];
@@ -118,8 +120,9 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
     int len = encrypt_data_symmetric(d->shared_key, nonce, name, name_len,
                                      buffer + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES);
 
-    if (len == -1)
+    if (len == -1) {
         return -1;
+    }
 
     int total_len = len + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES;
     uint8_t *buff = buffer, *old_str = string;
@@ -200,8 +203,9 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
 {
     DNS_Object *d = dns3_object;
 
-    if (id_record_len != 87)
+    if (id_record_len != 87) {
         return -1;
+    }
 
     /*if (id_record_len > 255 || id_record_len <= (sizeof(uint32_t) + crypto_box_MACBYTES))
         return -1;*/
@@ -212,16 +216,18 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
     uint8_t data[id_record_len];
     int length = decode(data, id_record_null);
 
-    if (length == -1)
+    if (length == -1) {
         return -1;
+    }
 
     uint8_t nonce[crypto_box_NONCEBYTES] = {0};
     memcpy(nonce, &request_id, sizeof(uint32_t));
     nonce[sizeof(uint32_t)] = 1;
     int len = decrypt_data_symmetric(d->shared_key, nonce, data, length, tox_id);
 
-    if (len != FRIEND_ADDRESS_SIZE)
+    if (len != FRIEND_ADDRESS_SIZE) {
         return -1;
+    }
 
     return 0;
 }

@@ -46,8 +46,9 @@ static void ping_array_clear_timedout(Ping_Array *array)
     while (array->last_deleted != array->last_added) {
         uint32_t index = array->last_deleted % array->total_size;
 
-        if (!is_timeout(array->entries[index].time, array->timeout))
+        if (!is_timeout(array->entries[index].time, array->timeout)) {
             break;
+        }
 
         clear_entry(array, index);
         ++array->last_deleted;
@@ -71,8 +72,9 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
 
     array->entries[index].data = malloc(length);
 
-    if (array->entries[index].data == NULL)
+    if (array->entries[index].data == NULL) {
         return 0;
+    }
 
     memcpy(array->entries[index].data, data, length);
     array->entries[index].length = length;
@@ -83,8 +85,9 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
     ping_id *= array->total_size;
     ping_id += index;
 
-    if (ping_id == 0)
+    if (ping_id == 0) {
         ping_id += array->total_size;
+    }
 
     array->entries[index].ping_id = ping_id;
     return ping_id;
@@ -100,22 +103,27 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
  */
 int ping_array_check(uint8_t *data, uint32_t length, Ping_Array *array, uint64_t ping_id)
 {
-    if (ping_id == 0)
+    if (ping_id == 0) {
         return -1;
+    }
 
     uint32_t index = ping_id % array->total_size;
 
-    if (array->entries[index].ping_id != ping_id)
+    if (array->entries[index].ping_id != ping_id) {
         return -1;
+    }
 
-    if (is_timeout(array->entries[index].time, array->timeout))
+    if (is_timeout(array->entries[index].time, array->timeout)) {
         return -1;
+    }
 
-    if (array->entries[index].length > length)
+    if (array->entries[index].length > length) {
         return -1;
+    }
 
-    if (array->entries[index].data == NULL)
+    if (array->entries[index].data == NULL) {
         return -1;
+    }
 
     memcpy(data, array->entries[index].data, array->entries[index].length);
     uint32_t len = array->entries[index].length;
@@ -132,13 +140,15 @@ int ping_array_check(uint8_t *data, uint32_t length, Ping_Array *array, uint64_t
  */
 int ping_array_init(Ping_Array *empty_array, uint32_t size, uint32_t timeout)
 {
-    if (size == 0 || timeout == 0 || empty_array == NULL)
+    if (size == 0 || timeout == 0 || empty_array == NULL) {
         return -1;
+    }
 
     empty_array->entries = calloc(size, sizeof(Ping_Array_Entry));
 
-    if (empty_array->entries == NULL)
+    if (empty_array->entries == NULL) {
         return -1;
+    }
 
     empty_array->last_deleted = empty_array->last_added = 0;
     empty_array->total_size = size;

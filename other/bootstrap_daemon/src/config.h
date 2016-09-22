@@ -37,7 +37,8 @@
  * @return 1 on success,
  *         0 on failure, doesn't modify any data pointed by arguments.
  */
-int get_general_config(const char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port, int *enable_ipv6,
+int get_general_config(const char *cfg_file_path, char **pid_file_path, char **keys_file_path, int *port,
+                       int *enable_ipv6,
                        int *enable_ipv4_fallback, int *enable_lan_discovery, int *enable_tcp_relay, uint16_t **tcp_relay_ports,
                        int *tcp_relay_port_count, int *enable_motd, char **motd);
 

@@ -40,8 +40,9 @@ static uint64_t unix_base_time_value;
 
 void unix_time_update()
 {
-    if (unix_base_time_value == 0)
+    if (unix_base_time_value == 0) {
         unix_base_time_value = ((uint64_t)time(NULL) - (current_time_monotonic() / 1000ULL));
+    }
 
     unix_time_value = (current_time_monotonic() / 1000ULL) + unix_base_time_value;
 }
@@ -87,7 +88,7 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
 uint16_t lendian_to_host16(uint16_t lendian)
 {
 #ifdef WORDS_BIGENDIAN
-    return  (lendian << 8) | (lendian >> 8 );
+    return (lendian << 8) | (lendian >> 8);
 #else
     return lendian;
 #endif
@@ -96,7 +97,7 @@ uint16_t lendian_to_host16(uint16_t lendian)
 void host_to_lendian32(uint8_t *dest,  uint32_t num)
 {
 #ifdef WORDS_BIGENDIAN
-    num = ((num << 8) & 0xFF00FF00 ) | ((num >> 8) & 0xFF00FF );
+    num = ((num << 8) & 0xFF00FF00) | ((num >> 8) & 0xFF00FF);
     num = (num << 16) | (num >> 16);
 #endif
     memcpy(dest, &num, sizeof(uint32_t));
@@ -107,7 +108,7 @@ void lendian_to_host32(uint32_t *dest, const uint8_t *lendian)
     uint32_t d;
     memcpy(&d, lendian, sizeof(uint32_t));
 #ifdef WORDS_BIGENDIAN
-    d = ((d << 8) & 0xFF00FF00 ) | ((d >> 8) & 0xFF00FF );
+    d = ((d << 8) & 0xFF00FF00) | ((d >> 8) & 0xFF00FF);
     d = (d << 16) | (d >> 16);
 #endif
     *dest = d;
@@ -160,8 +161,9 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
         }
 
         /* -2 means end of save. */
-        if (ret == -2)
+        if (ret == -2) {
             return 0;
+        }
 
         data += length_sub;
         length -= length_sub;
@@ -174,8 +176,9 @@ int create_recursive_mutex(pthread_mutex_t *mutex)
 {
     pthread_mutexattr_t attr;
 
-    if (pthread_mutexattr_init(&attr) != 0)
+    if (pthread_mutexattr_init(&attr) != 0) {
         return -1;
+    }
 
     if (pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE) != 0) {
         pthread_mutexattr_destroy(&attr);
@@ -213,14 +216,16 @@ void *rb_write(RingBuffer *b, void *p)
 {
     void *rc = NULL;
 
-    if ((b->end + 1) % b->size == b->start) /* full */
+    if ((b->end + 1) % b->size == b->start) { /* full */
         rc = b->data[b->start];
+    }
 
     b->data[b->end] = p;
     b->end = (b->end + 1) % b->size;
 
-    if (b->end == b->start)
+    if (b->end == b->start) {
         b->start = (b->start + 1) % b->size;
+    }
 
     return rc;
 }
@@ -239,7 +244,9 @@ RingBuffer *rb_new(int size)
 {
     RingBuffer *buf = calloc(sizeof(RingBuffer), 1);
 
-    if (!buf) return NULL;
+    if (!buf) {
+        return NULL;
+    }
 
     buf->size = size + 1; /* include empty elem */
 
@@ -259,8 +266,9 @@ void rb_kill(RingBuffer *b)
 }
 uint16_t rb_size(const RingBuffer *b)
 {
-    if (rb_empty(b))
+    if (rb_empty(b)) {
         return 0;
+    }
 
     return
         b->end > b->start ?
@@ -271,8 +279,9 @@ uint16_t rb_data(const RingBuffer *b, void **dest)
 {
     uint16_t i = 0;
 
-    for (; i < rb_size(b); i++)
+    for (; i < rb_size(b); i++) {
         dest[i] = b->data[(b->start + i) % b->size];
+    }
 
     return i;
 }

@@ -30,8 +30,9 @@ unsigned char known_key2[crypto_box_BEFORENMBYTES] = {0x7a, 0xfa, 0x95, 0x45, 0x
 /* cause I'm shameless */
 void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
         tox_friend_add_norequest(m, public_key, 0);

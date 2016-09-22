@@ -47,10 +47,11 @@ void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
-        if (ipv6)
+        if (ipv6) {
             mark_good(&list[i].assoc6);
-        else
+        } else {
             mark_good(&list[i].assoc4);
+        }
     }
 }
 
@@ -61,8 +62,9 @@ uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uint32_t l
     uint32_t i;
 
     for (i = 0; i < length; ++i)
-        if (id_closest(comp_client_id, public_key, list[i].public_key) == 1)
+        if (id_closest(comp_client_id, public_key, list[i].public_key) == 1) {
             return 0;
+        }
 
     return 1;
 }
@@ -72,8 +74,9 @@ int client_in_list(Client_data *list, uint32_t length, const uint8_t *public_key
     int i;
 
     for (i = 0; i < (int)length; ++i)
-        if (id_equal(public_key, list[i].public_key))
+        if (id_equal(public_key, list[i].public_key)) {
             return i;
+        }
 
     return -1;
 }
@@ -120,8 +123,11 @@ void test_addto_lists_update(DHT            *dht,
     ipport_copy(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port);
     id_copy(test_id, list[test2].public_key);
 
-    if (ipv6) list[test2].assoc6.ip_port.port = -1;
-    else list[test2].assoc4.ip_port.port = -1;
+    if (ipv6) {
+        list[test2].assoc6.ip_port.port = -1;
+    } else {
+        list[test2].assoc4.ip_port.port = -1;
+    }
 
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
@@ -136,8 +142,11 @@ void test_addto_lists_update(DHT            *dht,
     ipport_copy(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port);
     id_copy(test_id, list[test1].public_key);
 
-    if (ipv6) list[test1].assoc6.ip_port.port = -1;
-    else list[test1].assoc4.ip_port.port = -1;
+    if (ipv6) {
+        list[test1].assoc6.ip_port.port = -1;
+    } else {
+        list[test1].assoc4.ip_port.port = -1;
+    }
 
     used = addto_lists(dht, test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
@@ -320,14 +329,16 @@ void test_addto_lists(IP ip)
      * to replace the first ip by the second. */
     test_addto_lists_update(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port);
 
-    for (i = 0; i < dht->num_friends; ++i)
+    for (i = 0; i < dht->num_friends; ++i) {
         test_addto_lists_update(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
+    }
 
     // check "bad" entries
     test_addto_lists_bad(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port);
 
-    for (i = 0; i < dht->num_friends; ++i)
+    for (i = 0; i < dht->num_friends; ++i) {
         test_addto_lists_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
+    }
 
     // check "possibly bad" entries
     /*
@@ -440,8 +451,9 @@ void test_list_main()
 
     for (j = 0; j < NUM_DHT; ++j) {
         for (i = 0; i < NUM_DHT; ++i) {
-            if (i == j)
+            if (i == j) {
                 continue;
+            }
 
             IP_Port ip_port;
             ip_init(&ip_port.ip, 0);
@@ -466,15 +478,17 @@ void test_list_main()
     for (l = 0; l < NUM_DHT; ++l) {
         for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
             for (j = 1; j < NUM_DHT; ++j) {
-                if (memcmp(cmp_list1[l][i], dhts[(l + j) % NUM_DHT]->self_public_key, crypto_box_PUBLICKEYBYTES) != 0)
+                if (memcmp(cmp_list1[l][i], dhts[(l + j) % NUM_DHT]->self_public_key, crypto_box_PUBLICKEYBYTES) != 0) {
                     continue;
+                }
 
                 unsigned int count = 0;
 
                 for (k = 0; k < LCLIENT_LIST; ++k) {
                     if (memcmp(dhts[l]->self_public_key, dhts[(l + j) % NUM_DHT]->close_clientlist[k].public_key,
-                               crypto_box_PUBLICKEYBYTES) == 0)
+                               crypto_box_PUBLICKEYBYTES) == 0) {
                         ++count;
+                    }
                 }
 
                 if (count != 1) {
@@ -503,8 +517,9 @@ void test_list_main()
                 count = 0;
 
                 for (k = 0; k < MAX_SENT_NODES; ++k) {
-                    if (memcmp(dhts[l]->self_public_key, ln[k].public_key, crypto_box_PUBLICKEYBYTES) == 0)
+                    if (memcmp(dhts[l]->self_public_key, ln[k].public_key, crypto_box_PUBLICKEYBYTES) == 0) {
                         ++count;
+                    }
                 }
 
                 ck_assert_msg(count == 1, "Nodes in search don't know ip of friend. %u %u %u", i, j, count);
@@ -533,8 +548,9 @@ START_TEST(test_list)
 {
     unsigned int i;
 
-    for (i = 0; i < 10; ++i)
+    for (i = 0; i < 10; ++i) {
         test_list_main();
+    }
 }
 END_TEST
 
@@ -585,8 +601,9 @@ loop_top:
         pairs[i].tox2 = (pairs[i].tox1 + (rand() % (NUM_DHT - 1)) + 1) % NUM_DHT;
 
         for (j = 0; j < i; ++j) {
-            if (pairs[j].tox2 == pairs[i].tox2 && pairs[j].tox1 == pairs[i].tox1)
+            if (pairs[j].tox2 == pairs[i].tox2 && pairs[j].tox1 == pairs[i].tox1) {
                 goto loop_top;
+            }
         }
 
         uint16_t lock_count = 0;
@@ -609,8 +626,9 @@ loop_top:
         for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
             IP_Port a;
 
-            if (DHT_getfriendip(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &a) == 1)
+            if (DHT_getfriendip(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &a) == 1) {
                 ++counter;
+            }
         }
 
         if (counter == NUM_DHT_FRIENDS) {

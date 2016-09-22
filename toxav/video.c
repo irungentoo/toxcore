@@ -51,8 +51,9 @@ VCSession *vc_new(ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_c
         return NULL;
     }
 
-    if (!(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE)))
+    if (!(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE))) {
         goto BASE_CLEANUP;
+    }
 
     int rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0);
 
@@ -117,16 +118,18 @@ BASE_CLEANUP:
 }
 void vc_kill(VCSession *vc)
 {
-    if (!vc)
+    if (!vc) {
         return;
+    }
 
     vpx_codec_destroy(vc->encoder);
     vpx_codec_destroy(vc->decoder);
 
     void *p;
 
-    while (rb_read(vc->vbuf_raw, (void **)&p))
+    while (rb_read(vc->vbuf_raw, (void **)&p)) {
         free(p);
+    }
 
     rb_kill(vc->vbuf_raw);
 
@@ -137,10 +140,12 @@ void vc_kill(VCSession *vc)
 }
 void vc_iterate(VCSession *vc)
 {
-    if (!vc)
+    if (!vc) {
         return;
+    }
 
     struct RTPMessage *p;
+
     int rc;
 
     pthread_mutex_lock(vc->queue_mutex);
@@ -151,9 +156,9 @@ void vc_iterate(VCSession *vc)
         rc = vpx_codec_decode(vc->decoder, p->data, p->len, NULL, MAX_DECODE_TIME_US);
         free(p);
 
-        if (rc != VPX_CODEC_OK)
+        if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR("Error decoding video: %s", vpx_codec_err_to_string(rc));
-        else {
+        } else {
             vpx_codec_iter_t iter = NULL;
             vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
 
@@ -178,8 +183,9 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
     /* This function does the reconstruction of video packets.
      * See more info about video splitting in docs
      */
-    if (!vcp || !msg)
+    if (!vcp || !msg) {
         return -1;
+    }
 
     if (msg->header.pt == (rtp_TypeVideo + 2) % 128) {
         LOGGER_WARNING("Got dummy!");
@@ -209,14 +215,16 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
 }
 int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height)
 {
-    if (!vc)
+    if (!vc) {
         return -1;
+    }
 
     vpx_codec_enc_cfg_t cfg = *vc->encoder->config.enc;
     int rc;
 
-    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height)
-        return 0; /* Nothing changed */
+    if (cfg.rc_target_bitrate == bit_rate && cfg.g_w == width && cfg.g_h == height) {
+        return 0;    /* Nothing changed */
+    }
 
     if (cfg.g_w == width && cfg.g_h == height) {
         /* Only bit rate changed */

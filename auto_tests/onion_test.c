@@ -34,12 +34,14 @@ static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, ui
 {
     Onion *onion = object;
 
-    if (memcmp(packet, "Install Gentoo", sizeof("Install Gentoo")) != 0)
+    if (memcmp(packet, "Install Gentoo", sizeof("Install Gentoo")) != 0) {
         return 1;
+    }
 
     if (send_onion_response(onion->net, source, (uint8_t *)"install gentoo", sizeof("install gentoo"),
-                            packet + sizeof("Install Gentoo")) == -1)
+                            packet + sizeof("Install Gentoo")) == -1) {
         return 1;
+    }
 
     handled_test_1 = 1;
     return 0;
@@ -48,11 +50,13 @@ static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, ui
 static int handled_test_2;
 static int handle_test_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    if (length != sizeof("install Gentoo"))
+    if (length != sizeof("install Gentoo")) {
         return 1;
+    }
 
-    if (memcmp(packet, (uint8_t *)"install gentoo", sizeof("install gentoo")) != 0)
+    if (memcmp(packet, (uint8_t *)"install gentoo", sizeof("install gentoo")) != 0) {
         return 1;
+    }
 
     handled_test_2 = 1;
     return 0;
@@ -77,8 +81,9 @@ static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, ui
     Onion *onion = object;
 
     if (length != (1 + crypto_box_NONCEBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + 1 + crypto_hash_sha256_BYTES +
-                   crypto_box_MACBYTES))
+                   crypto_box_MACBYTES)) {
         return 1;
+    }
 
     uint8_t plain[1 + crypto_hash_sha256_BYTES];
     //print_client_id(packet, length);
@@ -86,12 +91,14 @@ static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, ui
                            packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES,
                            1 + crypto_hash_sha256_BYTES + crypto_box_MACBYTES, plain);
 
-    if (len == -1)
+    if (len == -1) {
         return 1;
+    }
 
 
-    if (memcmp(packet + 1, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0)
+    if (memcmp(packet + 1, sb_data, ONION_ANNOUNCE_SENDBACK_DATA_LENGTH) != 0) {
         return 1;
+    }
 
     memcpy(test_3_ping_id, plain + 1, crypto_hash_sha256_BYTES);
     //print_client_id(test_3_ping_id, sizeof(test_3_ping_id));
@@ -105,22 +112,27 @@ static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, ui
 {
     Onion *onion = object;
 
-    if (length != (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + sizeof("Install gentoo") + crypto_box_MACBYTES))
+    if (length != (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + sizeof("Install gentoo") +
+                   crypto_box_MACBYTES)) {
         return 1;
+    }
 
     uint8_t plain[sizeof("Install gentoo")] = {0};
 
-    if (memcmp(nonce, packet + 1, crypto_box_NONCEBYTES) != 0)
+    if (memcmp(nonce, packet + 1, crypto_box_NONCEBYTES) != 0) {
         return 1;
+    }
 
     int len = decrypt_data(packet + 1 + crypto_box_NONCEBYTES, onion->dht->self_secret_key, packet + 1,
                            packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES, sizeof("Install gentoo") + crypto_box_MACBYTES, plain);
 
-    if (len == -1)
+    if (len == -1) {
         return 1;
+    }
 
-    if (memcmp(plain, "Install gentoo", sizeof("Install gentoo")) != 0)
+    if (memcmp(plain, "Install gentoo", sizeof("Install gentoo")) != 0) {
         return 1;
+    }
 
     handled_test_4 = 1;
     return 0;
@@ -278,8 +290,9 @@ Onions *new_onions(uint16_t port)
     TCP_Proxy_Info inf = {0};
     on->onion_c = new_onion_client(new_net_crypto(dht, &inf));
 
-    if (on->onion && on->onion_a && on->onion_c)
+    if (on->onion && on->onion_a && on->onion_c) {
         return on;
+    }
 
     return NULL;
 }
