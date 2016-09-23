@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -eu
+
+SOURCE_DIR=$1
+MAJOR=$2
+MINOR=$3
+PATCH=$4
+
+VER="$MAJOR.$MINOR.$PATCH"
+
+update() {
+  file="$SOURCE_DIR/$1"
+  expr="$2"
+
+  sed -e "$expr" "$file" > "$file.updated-version"
+  if diff "$file" "$file.updated-version"; then
+    rm "$file.updated-version"
+  else
+    mv "$file.updated-version" "$file"
+  fi
+}
+
+update "configure.ac" 's/AC_INIT(\[tox\], \[.*\])/AC_INIT([tox], ['$VER'])/'
+
+update "other/apidsl/tox.in.h" 's/\(const VERSION_MAJOR *= \).*;/\1'$MAJOR';/'
+update "other/apidsl/tox.in.h" 's/\(const VERSION_MINOR *= \).*;/\1'$MINOR';/'
+update "other/apidsl/tox.in.h" 's/\(const VERSION_PATCH *= \).*;/\1'$PATCH';/'
