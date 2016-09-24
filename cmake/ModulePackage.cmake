@@ -4,11 +4,19 @@ option(COMPILE_AS_CXX "Compile all C code as C++ code" OFF)
 
 find_package(PkgConfig REQUIRED)
 
-function(add_c_executable exec)
+function(set_source_language)
   if(COMPILE_AS_CXX)
-    set_source_files_properties(${ARGN} PROPERTIES LANGUAGE CXX)
+    foreach(srcfile ${ARGN})
+      get_filename_component(srcext ${srcfile} EXT)
+      if(${srcext} STREQUAL ".c")
+        set_source_files_properties(${srcfile} PROPERTIES LANGUAGE CXX)
+      endif()
+    endforeach()
   endif()
+endfunction()
 
+function(add_c_executable exec)
+  set_source_language(${ARGN})
   add_executable(${exec} ${ARGN})
 endfunction()
 
@@ -22,9 +30,7 @@ function(pkg_use_module mod)
 endfunction()
 
 function(add_module lib)
-  if(COMPILE_AS_CXX)
-    set_source_files_properties(${ARGN} PROPERTIES LANGUAGE CXX)
-  endif()
+  set_source_language(${ARGN})
 
   if(ENABLE_SHARED)
     add_library(${lib}_shared SHARED ${ARGN})
