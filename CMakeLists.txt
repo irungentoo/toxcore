@@ -4,7 +4,7 @@ include(CTest)
 
 # This version is for the entire project. All libraries (core, av, ...) move in
 # versions in a synchronised way.
-set(PROJECT_VERSION "0.0.0")
+set(PROJECT_VERSION "0.0.1")
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
