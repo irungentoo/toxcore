@@ -37,6 +37,7 @@
  * @param log_backend Sets to the provided by the user log backend option.
  * @param run_in_foreground Sets to the provided by the user foreground option.
  */
-void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend, bool *run_in_foreground);
+void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path, LOG_BACKEND *log_backend,
+                                   bool *run_in_foreground);
 
 #endif // COMMAND_LINE_ARGUMENTS_H

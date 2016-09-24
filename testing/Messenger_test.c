@@ -74,8 +74,9 @@ void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data,
     uint32_t j;
 
     for (j = 0; j < 32; j++) {
-        if (public_key[j] < 16)
+        if (public_key[j] < 16) {
             printf("0");
+        }
 
         printf("%hhX", public_key[j]);
     }
@@ -86,7 +87,7 @@ void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data,
         return;
     }
 
-    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
+    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0)
         //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
@@ -100,8 +101,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     /* with optional --ipvx, now it can be 1-4 arguments... */
     if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
     options.ipv6enabled = ipv6enabled;
     m = new_messenger(&options, 0);
 
-    if ( !m ) {
+    if (!m) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
         exit(0);
     }
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
     } else {
         FILE *file = fopen(argv[argvoffset + 1], "rb");
 
-        if ( file == NULL ) {
+        if (file == NULL) {
             printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
             return 1;
         }
@@ -156,8 +158,9 @@ int main(int argc, char *argv[])
     getaddress(m, address);
 
     for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
-        if (address[i] < 16)
+        if (address[i] < 16) {
             printf("0");
+        }
 
         printf("%hhX", address[i]);
     }
@@ -167,11 +170,13 @@ int main(int argc, char *argv[])
     char temp_hex_id[128];
     printf("\nEnter the address of the friend you wish to add (38 bytes HEX format):\n");
 
-    if (!fgets(temp_hex_id, sizeof(temp_hex_id), stdin))
+    if (!fgets(temp_hex_id, sizeof(temp_hex_id), stdin)) {
         exit(0);
+    }
 
-    if ((strlen(temp_hex_id) > 0) && (temp_hex_id[strlen(temp_hex_id) - 1] == '\n'))
+    if ((strlen(temp_hex_id) > 0) && (temp_hex_id[strlen(temp_hex_id) - 1] == '\n')) {
         temp_hex_id[strlen(temp_hex_id) - 1] = '\0';
+    }
 
 
     uint8_t *bin_id = hex_string_to_bin(temp_hex_id);
@@ -190,7 +195,7 @@ int main(int argc, char *argv[])
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
 
-        if ( file == NULL ) {
+        if (file == NULL) {
             return 1;
         }
 

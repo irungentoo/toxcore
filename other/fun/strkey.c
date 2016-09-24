@@ -46,6 +46,7 @@
 void print_key(unsigned char *key)
 {
     size_t i;
+
     for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
         if (key[i] < 16) {
             fprintf(stdout, "0");
@@ -67,11 +68,14 @@ int main(int argc, char *argv[])
         offset = atoi(argv[1]);
         char *desired_hex = argv[2];
         len = strlen(desired_hex);
+
         if (len % 2 != 0) {
             fprintf(stderr, "Desired key should have an even number of letters\n");
             exit(1);
         }
-        size_t block_length = (offset < 0 ? 0 : offset) + len/2;
+
+        size_t block_length = (offset < 0 ? 0 : offset) + len / 2;
+
         if (block_length > crypto_box_PUBLICKEYBYTES) {
             fprintf(stderr, "The given key with the given offset exceed public key's length\n");
             exit(1);
@@ -80,6 +84,7 @@ int main(int argc, char *argv[])
         // convert hex to bin
         char *pos = desired_hex;
         size_t i;
+
         for (i = 0; i < len; pos += 2) {
             sscanf(pos, "%2hhx", &desired_bin[i]);
             ++i;
@@ -97,12 +102,14 @@ int main(int argc, char *argv[])
 
     if (offset < 0) {
         int found = 0;
+
         do {
 #ifdef PRINT_TRIES_COUNT
             tries ++;
 #endif
             crypto_box_keypair(public_key, secret_key);
             int i;
+
             for (i = 0; i <= crypto_box_PUBLICKEYBYTES - len; i ++) {
                 if (memcmp(public_key + i, desired_bin, len) == 0) {
                     found = 1;
@@ -115,7 +122,7 @@ int main(int argc, char *argv[])
 
         do {
 #ifdef PRINT_TRIES_COUNT
-	    tries ++;
+            tries ++;
 #endif
             crypto_box_keypair(public_key, secret_key);
         } while (memcmp(p, desired_bin, len) != 0);
@@ -130,7 +137,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "\n");
 
 #ifdef PRINT_TRIES_COUNT
-	fprintf(stdout, "Found the key pair on %llu try.\n", tries);
+    fprintf(stdout, "Found the key pair on %llu try.\n", tries);
 #endif
 
     return 0;

@@ -90,10 +90,11 @@ void print_assoc(IPPTsPng *assoc, uint8_t ours)
 
     ipp = &assoc->ret_ip_port;
 
-    if (ours)
+    if (ours) {
         printf("OUR IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
-    else
+    } else {
         printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
+    }
 
     printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
     print_hardening(&assoc->hardening);
@@ -108,8 +109,9 @@ void print_clientlist(DHT *dht)
     for (i = 0; i < LCLIENT_LIST; i++) {
         Client_data *client = &dht->close_clientlist[i];
 
-        if (public_key_cmp(client->public_key, zeroes_cid) == 0)
+        if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
             continue;
+        }
 
         printf("ClientID: ");
         print_client_id(client->public_key);
@@ -139,8 +141,9 @@ void print_friendlist(DHT *dht)
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
             Client_data *client = &dht->friends_list[k].client_list[i];
 
-            if (public_key_cmp(client->public_key, zeroes_cid) == 0)
+            if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
                 continue;
+            }
 
             printf("ClientID: ");
             print_client_id(client->public_key);
@@ -158,8 +161,9 @@ void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
     printf("--------------------BEGIN-----------------------------\n");
 
     for (i = 0; i < length; i++) {
-        if (data[i] < 16)
+        if (data[i] < 16) {
             printf("0");
+        }
 
         printf("%hhX", data[i]);
     }
@@ -178,8 +182,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     /* initialize networking */
@@ -192,8 +197,9 @@ int main(int argc, char *argv[])
     uint32_t i;
 
     for (i = 0; i < 32; i++) {
-        if (dht->self_public_key[i] < 16)
+        if (dht->self_public_key[i] < 16) {
             printf("0");
+        }
 
         printf("%hhX", dht->self_public_key[i]);
     }
@@ -201,11 +207,13 @@ int main(int argc, char *argv[])
     char temp_id[128];
     printf("\nEnter the public_key of the friend you wish to add (32 bytes HEX format):\n");
 
-    if (!fgets(temp_id, sizeof(temp_id), stdin))
+    if (!fgets(temp_id, sizeof(temp_id), stdin)) {
         exit(0);
+    }
 
-    if ((strlen(temp_id) > 0) && (temp_id[strlen(temp_id) - 1] == '\n'))
+    if ((strlen(temp_id) > 0) && (temp_id[strlen(temp_id) - 1] == '\n')) {
         temp_id[strlen(temp_id) - 1] = '\0';
+    }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
     DHT_addfriend(dht, bin_id, 0, 0, 0, 0);

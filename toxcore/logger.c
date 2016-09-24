@@ -85,7 +85,7 @@ char *strtime(char *dest, size_t max_len)
 /**
  * Public Functions
  */
-Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
+Logger *logger_new(const char *file_name, LOG_LEVEL level, const char *id)
 {
 #ifndef TOX_LOGGER /* Disabled */
     return NULL;
@@ -93,8 +93,9 @@ Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
 
     Logger *retu = calloc(1, sizeof(Logger));
 
-    if (!retu)
+    if (!retu) {
         return NULL;
+    }
 
     if (pthread_mutex_init(retu->mutex, NULL) != 0) {
         free(retu);
@@ -108,19 +109,22 @@ Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id)
         return NULL;
     }
 
-    if (!(retu->tstr = calloc(16, sizeof (char))) ||
-            !(retu->posstr = calloc(300, sizeof (char))) ||
-            !(retu->msg = calloc(4096, sizeof (char))))
+    if (!(retu->tstr = calloc(16, sizeof(char))) ||
+            !(retu->posstr = calloc(300, sizeof(char))) ||
+            !(retu->msg = calloc(4096, sizeof(char)))) {
         goto FAILURE;
+    }
 
     if (id) {
-        if (!(retu->id = calloc(strlen(id) + 1, 1)))
+        if (!(retu->id = calloc(strlen(id) + 1, 1))) {
             goto FAILURE;
+        }
 
         strcpy(retu->id, id);
     } else {
-        if (!(retu->id = malloc(8)))
+        if (!(retu->id = malloc(8))) {
             goto FAILURE;
+        }
 
         snprintf(retu->id, 8, "%u", random_int());
     }
@@ -151,8 +155,9 @@ void logger_kill(Logger *log)
     return;
 #endif
 
-    if (!log)
+    if (!log) {
         return;
+    }
 
     pthread_mutex_lock(log->mutex);
     free(log->id);
@@ -160,8 +165,9 @@ void logger_kill(Logger *log)
     free(log->posstr);
     free(log->msg);
 
-    if (fclose(log->log_file) != 0)
+    if (fclose(log->log_file) != 0) {
         perror("Could not close log file");
+    }
 
     pthread_mutex_unlock(log->mutex);
     pthread_mutex_destroy(log->mutex);
@@ -193,7 +199,7 @@ Logger *logger_get_global(void)
     return global;
 }
 
-void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...)
+void logger_write(Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...)
 {
 #ifndef TOX_LOGGER /* Disabled */
     return;
@@ -211,12 +217,14 @@ void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, con
 
     Logger *this_log = log ? log : global;
 
-    if (!this_log)
+    if (!this_log) {
         return;
+    }
 
     /* Don't print levels lesser than set one */
-    if (this_log->level > level)
+    if (this_log->level > level) {
         return;
+    }
 
     pthread_mutex_lock(this_log->mutex);
 
@@ -225,9 +233,9 @@ void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, con
 
     /* Set message */
     va_list args;
-    va_start (args, format);
+    va_start(args, format);
     vsnprintf(this_log->msg, 4096, format, args);
-    va_end (args);
+    va_end(args);
 
     fprintf(this_log->log_file, logger_format, this_log->id, strtime(this_log->tstr, 16), pthread_self(),
             LOG_LEVEL_STR[level], this_log->posstr, this_log->msg);

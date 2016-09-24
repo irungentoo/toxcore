@@ -48,21 +48,21 @@ typedef struct Logger Logger;
 /**
  * Set 'level' as the lowest printable level. If id == NULL, random number is used.
  */
-Logger *logger_new (const char *file_name, LOG_LEVEL level, const char *id);
+Logger *logger_new(const char *file_name, LOG_LEVEL level, const char *id);
 
-void logger_kill (Logger *log);
-void logger_kill_global (void);
+void logger_kill(Logger *log);
+void logger_kill_global(void);
 
 /**
  * Global logger setter and getter.
  */
-void logger_set_global (Logger *log);
-Logger *logger_get_global (void);
+void logger_set_global(Logger *log);
+Logger *logger_get_global(void);
 
 /**
  * Main write function. If logging disabled does nothing. If log == NULL uses global logger.
  */
-void logger_write (Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...);
+void logger_write(Logger *log, LOG_LEVEL level, const char *file, int line, const char *format, ...);
 
 
 /* To do some checks or similar only when logging, use this */

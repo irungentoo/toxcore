@@ -148,8 +148,9 @@ void *call_thread(void *pd)
         }
     }
 
-    while (!BobCC->incoming)
+    while (!BobCC->incoming) {
         c_sleep(10);
+    }
 
     { /* Answer */
         TOXAV_ERR_ANSWER rc;
@@ -199,7 +200,7 @@ void *call_thread(void *pd)
 
     c_sleep(30);
 
-    printf ("Closing thread\n");
+    printf("Closing thread\n");
     pthread_exit(NULL);
 }
 
@@ -268,8 +269,9 @@ START_TEST(test_AV_three_calls)
                 tox_friend_get_connection_status(Alice, 2, NULL) == TOX_CONNECTION_UDP &&
                 tox_friend_get_connection_status(Bobs[0], 0, NULL) == TOX_CONNECTION_UDP &&
                 tox_friend_get_connection_status(Bobs[1], 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bobs[2], 0, NULL) == TOX_CONNECTION_UDP)
+                tox_friend_get_connection_status(Bobs[2], 0, NULL) == TOX_CONNECTION_UDP) {
             break;
+        }
 
         c_sleep(20);
     }
@@ -324,7 +326,7 @@ START_TEST(test_AV_three_calls)
     (void) pthread_join(tids[1], NULL);
     (void) pthread_join(tids[2], NULL);
 
-    printf ("Killing all instances\n");
+    printf("Killing all instances\n");
     toxav_kill(BobsAV[0]);
     toxav_kill(BobsAV[1]);
     toxav_kill(BobsAV[2]);

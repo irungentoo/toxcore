@@ -64,8 +64,9 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
     int       rc;
     uint64_t  ping_id;
 
-    if (id_equal(public_key, ping->dht->self_public_key))
+    if (id_equal(public_key, ping->dht->self_public_key)) {
         return 1;
+    }
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
@@ -77,8 +78,9 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
     memcpy(data + crypto_box_PUBLICKEYBYTES, &ipp, sizeof(IP_Port));
     ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
 
-    if (ping_id == 0)
+    if (ping_id == 0) {
         return 1;
+    }
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
     ping_plain[0] = NET_PACKET_PING_REQUEST;
@@ -94,8 +96,9 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
                                 ping_plain, sizeof(ping_plain),
                                 pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
 
-    if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES)
+    if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES) {
         return 1;
+    }
 
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
@@ -106,8 +109,9 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
 
-    if (id_equal(public_key, ping->dht->self_public_key))
+    if (id_equal(public_key, ping->dht->self_public_key)) {
         return 1;
+    }
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
     ping_plain[0] = NET_PACKET_PING_RESPONSE;
@@ -121,10 +125,11 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     rc = encrypt_data_symmetric(shared_encryption_key,
                                 pk + 1 + crypto_box_PUBLICKEYBYTES,
                                 ping_plain, sizeof(ping_plain),
-                                pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES );
+                                pk + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
 
-    if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES)
+    if (rc != PING_PLAIN_SIZE + crypto_box_MACBYTES) {
         return 1;
+    }
 
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
@@ -134,13 +139,15 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
     DHT       *dht = _dht;
     int        rc;
 
-    if (length != DHT_PING_SIZE)
+    if (length != DHT_PING_SIZE) {
         return 1;
+    }
 
     PING *ping = dht->ping;
 
-    if (id_equal(packet + 1, ping->dht->self_public_key))
+    if (id_equal(packet + 1, ping->dht->self_public_key)) {
         return 1;
+    }
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
@@ -151,13 +158,15 @@ static int handle_ping_request(void *_dht, IP_Port source, const uint8_t *packet
                                 packet + 1 + crypto_box_PUBLICKEYBYTES,
                                 packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
                                 PING_PLAIN_SIZE + crypto_box_MACBYTES,
-                                ping_plain );
+                                ping_plain);
 
-    if (rc != sizeof(ping_plain))
+    if (rc != sizeof(ping_plain)) {
         return 1;
+    }
 
-    if (ping_plain[0] != NET_PACKET_PING_REQUEST)
+    if (ping_plain[0] != NET_PACKET_PING_REQUEST) {
         return 1;
+    }
 
     uint64_t   ping_id;
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
@@ -173,13 +182,15 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
     DHT      *dht = _dht;
     int       rc;
 
-    if (length != DHT_PING_SIZE)
+    if (length != DHT_PING_SIZE) {
         return 1;
+    }
 
     PING *ping = dht->ping;
 
-    if (id_equal(packet + 1, ping->dht->self_public_key))
+    if (id_equal(packet + 1, ping->dht->self_public_key)) {
         return 1;
+    }
 
     uint8_t shared_key[crypto_box_BEFORENMBYTES];
 
@@ -194,27 +205,32 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
                                 PING_PLAIN_SIZE + crypto_box_MACBYTES,
                                 ping_plain);
 
-    if (rc != sizeof(ping_plain))
+    if (rc != sizeof(ping_plain)) {
         return 1;
+    }
 
-    if (ping_plain[0] != NET_PACKET_PING_RESPONSE)
+    if (ping_plain[0] != NET_PACKET_PING_RESPONSE) {
         return 1;
+    }
 
     uint64_t   ping_id;
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     uint8_t data[PING_DATA_SIZE];
 
-    if (ping_array_check(data, sizeof(data), &ping->ping_array, ping_id) != sizeof(data))
+    if (ping_array_check(data, sizeof(data), &ping->ping_array, ping_id) != sizeof(data)) {
         return 1;
+    }
 
-    if (!id_equal(packet + 1, data))
+    if (!id_equal(packet + 1, data)) {
         return 1;
+    }
 
     IP_Port ipp;
     memcpy(&ipp, data + crypto_box_PUBLICKEYBYTES, sizeof(IP_Port));
 
-    if (!ipport_equal(&ipp, &source))
+    if (!ipport_equal(&ipp, &source)) {
         return 1;
+    }
 
     addto_lists(dht, source, packet + 1);
     return 0;
@@ -239,8 +255,9 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
                 ipptp = &list[i].assoc6;
             }
 
-            if (!is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT) && ipport_equal(&ipptp->ip_port, &ip_port))
+            if (!is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT) && ipport_equal(&ipptp->ip_port, &ip_port)) {
                 return 1;
+            }
         }
     }
 
@@ -259,14 +276,17 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
  */
 int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
 {
-    if (!ip_isset(&ip_port.ip))
+    if (!ip_isset(&ip_port.ip)) {
         return -1;
+    }
 
-    if (!node_addable_to_close_list(ping->dht, public_key, ip_port))
+    if (!node_addable_to_close_list(ping->dht, public_key, ip_port)) {
         return -1;
+    }
 
-    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port))
+    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port)) {
         return -1;
+    }
 
     IP_Port temp;
 
@@ -289,8 +309,9 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         }
     }
 
-    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, ping->dht->self_public_key))
+    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, ping->dht->self_public_key)) {
         return 0;
+    }
 
     return -1;
 }
@@ -301,27 +322,32 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
  */
 void do_to_ping(PING *ping)
 {
-    if (!is_timeout(ping->last_to_ping, TIME_TO_PING))
+    if (!is_timeout(ping->last_to_ping, TIME_TO_PING)) {
         return;
+    }
 
-    if (!ip_isset(&ping->to_ping[0].ip_port.ip))
+    if (!ip_isset(&ping->to_ping[0].ip_port.ip)) {
         return;
+    }
 
     unsigned int i;
 
     for (i = 0; i < MAX_TO_PING; ++i) {
-        if (!ip_isset(&ping->to_ping[i].ip_port.ip))
+        if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
             break;
+        }
 
-        if (!node_addable_to_close_list(ping->dht, ping->to_ping[i].public_key, ping->to_ping[i].ip_port))
+        if (!node_addable_to_close_list(ping->dht, ping->to_ping[i].public_key, ping->to_ping[i].ip_port)) {
             continue;
+        }
 
         send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);
     }
 
-    if (i != 0)
+    if (i != 0) {
         ping->last_to_ping = unix_time();
+    }
 }
 
 
@@ -329,8 +355,9 @@ PING *new_ping(DHT *dht)
 {
     PING *ping = calloc(1, sizeof(PING));
 
-    if (ping == NULL)
+    if (ping == NULL) {
         return NULL;
+    }
 
     if (ping_array_init(&ping->ping_array, PING_NUM_MAX, PING_TIMEOUT) != 0) {
         free(ping);

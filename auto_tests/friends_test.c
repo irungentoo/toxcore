@@ -98,8 +98,9 @@ int parent_friend_request(DHT *dht)
     for (i = 0; i < WAIT_COUNT; i++) {
         do_tox(dht);
 
-        if (request_flags & FIRST_FLAG)
+        if (request_flags & FIRST_FLAG) {
             break;
+        }
 
         fputs(".", stdout);
         fflush(stdout);
@@ -139,8 +140,9 @@ int parent_wait_for_message(DHT *dht)
     for (i = 0; i < WAIT_COUNT; i++) {
         do_tox(dht);
 
-        if (request_flags & SECOND_FLAG)
+        if (request_flags & SECOND_FLAG) {
             break;
+        }
 
         fputs(".", stdout);
         fflush(stdout);
@@ -190,12 +192,14 @@ int main(int argc, char *argv[])
         m_callback_statusmessage(m, child_got_statuschange, NULL);
 
         /* wait on the friend request */
-        while (!(request_flags & FIRST_FLAG))
+        while (!(request_flags & FIRST_FLAG)) {
             do_tox(m->dht);
+        }
 
         /* wait for the status change */
-        while (!(request_flags & SECOND_FLAG))
+        while (!(request_flags & SECOND_FLAG)) {
             do_tox(m->dht);
+        }
 
         for (i = 0; i < 6; i++) {
             /* send the message six times, just to be sure */
@@ -226,11 +230,13 @@ int main(int argc, char *argv[])
 
     Messenger_save(m, parent_id);
 
-    if (parent_friend_request(m->dht) == -1)
+    if (parent_friend_request(m->dht) == -1) {
         return -1;
+    }
 
-    if (parent_wait_for_message(m->dht) == -1)
+    if (parent_wait_for_message(m->dht) == -1) {
         return -1;
+    }
 
     wait(NULL);
     fputs("friends_test: Build passed!\n", stdout);
