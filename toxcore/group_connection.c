@@ -207,7 +207,7 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
  * Return -1 on failure.
  */
 static int process_recv_ary_entry(GC_Chat *chat, Messenger *m, int groupnum, uint32_t peernum,
-                                 struct GC_Message_Ary_Entry *ary_entry)
+                                  struct GC_Message_Ary_Entry *ary_entry)
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 

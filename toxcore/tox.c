@@ -88,11 +88,11 @@ uint32_t tox_version_patch(void)
 
 bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
-  return (TOX_VERSION_MAJOR == major && /* Force the major version */
+    return (TOX_VERSION_MAJOR == major && /* Force the major version */
             (TOX_VERSION_MINOR > minor || /* Current minor version must be newer than requested -- or -- */
-                (TOX_VERSION_MINOR == minor && TOX_VERSION_PATCH >= patch) /* the patch must be the same or newer */
+             (TOX_VERSION_MINOR == minor && TOX_VERSION_PATCH >= patch) /* the patch must be the same or newer */
             )
-         );
+           );
 }
 
 
@@ -1349,7 +1349,7 @@ void tox_callback_group_join_fail(Tox *tox, tox_group_join_fail_cb *function, vo
 }
 
 uint32_t tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const uint8_t *group_name, size_t length,
-                   TOX_ERR_GROUP_NEW *error)
+                       TOX_ERR_GROUP_NEW *error)
 {
     Messenger *m = tox;
     int ret = gc_group_add(m->group_handler, privacy_state, group_name, length);
@@ -1363,18 +1363,23 @@ uint32_t tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const ui
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_TOO_LONG);
             return UINT32_MAX;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_EMPTY);
             return UINT32_MAX;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_PRIVACY);
             return UINT32_MAX;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_INIT);
             return UINT32_MAX;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_STATE);
             return UINT32_MAX;
+
         case -6:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_NEW_ANNOUNCE);
             return UINT32_MAX;
@@ -1385,7 +1390,7 @@ uint32_t tox_group_new(Tox *tox, TOX_GROUP_PRIVACY_STATE privacy_state, const ui
 }
 
 uint32_t tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *password, size_t length,
-                    TOX_ERR_GROUP_JOIN *error)
+                        TOX_ERR_GROUP_JOIN *error)
 {
     Messenger *m = tox;
     int ret = gc_group_join(m->group_handler, chat_id, password, length);
@@ -1399,9 +1404,11 @@ uint32_t tox_group_join(Tox *tox, const uint8_t *chat_id, const uint8_t *passwor
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_INIT);
             return UINT32_MAX;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_BAD_CHAT_ID);
             return UINT32_MAX;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_JOIN_TOO_LONG);
             return UINT32_MAX;
@@ -1426,7 +1433,8 @@ bool tox_group_reconnect(Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_RECONNECT
     return 1;
 }
 
-bool tox_group_leave(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage, size_t length, TOX_ERR_GROUP_LEAVE *error)
+bool tox_group_leave(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage, size_t length,
+                     TOX_ERR_GROUP_LEAVE *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1442,12 +1450,15 @@ bool tox_group_leave(Tox *tox, uint32_t groupnumber, const uint8_t *partmessage,
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_TOO_LONG);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_FAIL_SEND);
             return 1;   /* the group was still successfully deleted */
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_LEAVE_DELETE_FAIL);
             return 0;
@@ -1467,18 +1478,23 @@ bool tox_group_self_set_name(Tox *tox, uint32_t groupnumber, const uint8_t *name
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_GROUP_NOT_FOUND);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_TOO_LONG);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_INVALID);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_TAKEN);
             return 0;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_NAME_SET_FAIL_SEND);
             return 0;
@@ -1527,12 +1543,15 @@ bool tox_group_self_set_status(Tox *tox, uint32_t groupnumber, TOX_USER_STATUS s
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_GROUP_NOT_FOUND);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_INVALID);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SELF_STATUS_SET_FAIL_SEND);
             return 0;
@@ -1584,7 +1603,8 @@ uint32_t tox_group_self_get_peer_id(const Tox *tox, uint32_t groupnumber, TOX_ER
     return gc_get_self_peer_id(chat);
 }
 
-bool tox_group_self_get_public_key(const Tox *tox, uint32_t groupnumber, uint8_t *public_key, TOX_ERR_GROUP_SELF_QUERY *error)
+bool tox_group_self_get_public_key(const Tox *tox, uint32_t groupnumber, uint8_t *public_key,
+                                   TOX_ERR_GROUP_SELF_QUERY *error)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1599,7 +1619,8 @@ bool tox_group_self_get_public_key(const Tox *tox, uint32_t groupnumber, uint8_t
     return 1;
 }
 
-size_t tox_group_peer_get_name_size(const Tox *tox, uint32_t groupnumber, uint32_t peer_id, TOX_ERR_GROUP_PEER_QUERY *error)
+size_t tox_group_peer_get_name_size(const Tox *tox, uint32_t groupnumber, uint32_t peer_id,
+                                    TOX_ERR_GROUP_PEER_QUERY *error)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1643,7 +1664,7 @@ bool tox_group_peer_get_name(const Tox *tox, uint32_t groupnumber, uint32_t peer
 }
 
 TOX_USER_STATUS tox_group_peer_get_status(const Tox *tox, uint32_t groupnumber, uint32_t peer_id,
-                                          TOX_ERR_GROUP_PEER_QUERY *error)
+        TOX_ERR_GROUP_PEER_QUERY *error)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1725,15 +1746,19 @@ bool tox_group_set_topic(Tox *tox, uint32_t groupnumber, const uint8_t *topic, s
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_TOO_LONG);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_PERMISSIONS);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_FAIL_CREATE);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_TOPIC_SET_FAIL_SEND);
             return 0;
@@ -1822,7 +1847,8 @@ uint32_t tox_group_get_number_groups(const Tox *tox)
     return gc_count_groups(m->group_handler);
 }
 
-TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, uint32_t groupnumber, TOX_ERR_GROUP_STATE_QUERIES *error)
+TOX_GROUP_PRIVACY_STATE tox_group_get_privacy_state(const Tox *tox, uint32_t groupnumber,
+        TOX_ERR_GROUP_STATE_QUERIES *error)
 {
     const Messenger *m = tox;
     const GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1896,18 +1922,23 @@ bool tox_group_send_message(Tox *tox, uint32_t groupnumber, TOX_MESSAGE_TYPE typ
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_TOO_LONG);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_EMPTY);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_BAD_TYPE);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_PERMISSIONS);
             return 0;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_MESSAGE_FAIL_SEND);
             return 0;
@@ -1918,7 +1949,7 @@ bool tox_group_send_message(Tox *tox, uint32_t groupnumber, TOX_MESSAGE_TYPE typ
 }
 
 bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t peer_id, const uint8_t *message,
-                                   size_t length, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE *error)
+                                    size_t length, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE *error)
 {
     const Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -1934,18 +1965,23 @@ bool tox_group_send_private_message(Tox *tox, uint32_t groupnumber, uint32_t pee
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_TOO_LONG);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_EMPTY);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PEER_NOT_FOUND);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_PERMISSIONS);
             return 0;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_PRIVATE_MESSAGE_FAIL_SEND);
             return 0;
@@ -1972,12 +2008,15 @@ bool tox_group_send_custom_packet(Tox *tox, uint32_t groupnumber, bool lossless,
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_TOO_LONG);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_EMPTY);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_SEND_CUSTOM_PACKET_PERMISSIONS);
             return 0;
@@ -2003,12 +2042,15 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, uint32_t friend_num
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_FRIEND_NOT_FOUND);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_INVITE_FAIL);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_FRIEND_FAIL_SEND);
             return 0;
@@ -2019,7 +2061,7 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, uint32_t friend_num
 }
 
 uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
-                                size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
+                                 size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
 {
     Messenger *m = tox;
     int ret = gc_accept_invite(m->group_handler, invite_data, length, password, password_length);
@@ -2033,9 +2075,11 @@ uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t le
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_BAD_INVITE);
             return UINT32_MAX;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_INIT_FAILED);
             return UINT32_MAX;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_TOO_LONG);
             return UINT32_MAX;
@@ -2062,12 +2106,15 @@ bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_PERMISSIONS);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_TOO_LONG);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PASSWORD_FAIL_SEND);
             return 0;
@@ -2078,7 +2125,7 @@ bool tox_group_founder_set_password(Tox *tox, uint32_t groupnumber, const uint8_
 }
 
 bool tox_group_founder_set_privacy_state(Tox *tox, uint32_t groupnumber, TOX_GROUP_PRIVACY_STATE privacy_state,
-                                         TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE *error)
+        TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE *error)
 {
     Messenger *m = tox;
     int ret = gc_founder_set_privacy_state(m, groupnumber, privacy_state);
@@ -2087,18 +2134,23 @@ bool tox_group_founder_set_privacy_state(Tox *tox, uint32_t groupnumber, TOX_GRO
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_GROUP_NOT_FOUND);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_INVALID);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_PERMISSIONS);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_FAIL_SET);
             return 0;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PRIVACY_STATE_FAIL_SEND);
             return 0;
@@ -2108,7 +2160,8 @@ bool tox_group_founder_set_privacy_state(Tox *tox, uint32_t groupnumber, TOX_GRO
     return 0;
 }
 
-bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t maxpeers, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT *error)
+bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t maxpeers,
+                                      TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2124,12 +2177,15 @@ bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t m
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_PERMISSIONS);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_FAIL_SET);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_FOUNDER_SET_PEER_LIMIT_FAIL_SEND);
             return 0;
@@ -2139,7 +2195,8 @@ bool tox_group_founder_set_peer_limit(Tox *tox, uint32_t groupnumber, uint32_t m
     return 0;
 }
 
-bool tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peer_id, bool ignore, TOX_ERR_GROUP_TOGGLE_IGNORE *error)
+bool tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peer_id, bool ignore,
+                             TOX_ERR_GROUP_TOGGLE_IGNORE *error)
 {
     Messenger *m = tox;
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
@@ -2161,7 +2218,7 @@ bool tox_group_toggle_ignore(Tox *tox, uint32_t groupnumber, uint32_t peer_id, b
 }
 
 bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peer_id, TOX_GROUP_ROLE role,
-                           TOX_ERR_GROUP_MOD_SET_ROLE *error)
+                            TOX_ERR_GROUP_MOD_SET_ROLE *error)
 {
     Messenger *m = tox;
     int ret = gc_set_peer_role(m, groupnumber, peer_id, role);
@@ -2170,18 +2227,23 @@ bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peer_id, TO
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_GROUP_NOT_FOUND);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PEER_NOT_FOUND);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_PERMISSIONS);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_ASSIGNMENT);
             return 0;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_SET_ROLE_FAIL_ACTION);
             return 0;
@@ -2192,7 +2254,7 @@ bool tox_group_mod_set_role(Tox *tox, uint32_t groupnumber, uint32_t peer_id, TO
 }
 
 bool tox_group_mod_remove_peer(Tox *tox, uint32_t groupnumber, uint32_t peer_id, bool set_ban,
-                              TOX_ERR_GROUP_MOD_REMOVE_PEER *error)
+                               TOX_ERR_GROUP_MOD_REMOVE_PEER *error)
 {
     Messenger *m = tox;
     int ret = gc_remove_peer(m, groupnumber, peer_id, set_ban);
@@ -2201,18 +2263,23 @@ bool tox_group_mod_remove_peer(Tox *tox, uint32_t groupnumber, uint32_t peer_id,
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_GROUP_NOT_FOUND);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_PEER_NOT_FOUND);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_PERMISSIONS);
             return 0;
+
         case -4:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_FAIL_ACTION);
             return 0;
+
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_PEER_FAIL_SEND);
             return 0;
@@ -2238,12 +2305,15 @@ bool tox_group_mod_remove_ban(Tox *tox, uint32_t groupnumber, uint32_t ban_id, T
         case 0:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_BAN_OK);
             return 1;
+
         case -1:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_BAN_PERMISSIONS);
             return 0;
+
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_BAN_FAIL_ACTION);
             return 0;
+
         case -3:
             SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_MOD_REMOVE_BAN_FAIL_SEND);
             return 0;
