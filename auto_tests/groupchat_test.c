@@ -21,7 +21,7 @@
 #define c_sleep(x) usleep(1000*x)
 #endif
 
-#define NUM_TOXES 15
+#define NUM_TOXES 5
 
 START_TEST(test_text_all)
 {
@@ -34,18 +34,20 @@ START_TEST(test_text_all)
     TOX_ERR_NEW error;
     struct Tox_Options tox_opts;
     tox_options_default(&tox_opts);
+
+    /* Tox0 is the bootstrap node */
     toxes[0] = tox_new(&tox_opts, &error);
 
-    ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed to bootstrap: %s\n", error);
+    ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed to bootstrap: %d\n", error);
 
     size_t i;
 
     for (i = 1; i < NUM_TOXES; ++i) {
         toxes[i] = tox_new(&tox_opts, &error);
-        ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed: %s\n", error);
+        ck_assert_msg(error == TOX_ERR_GROUP_NEW_OK, "tox_new failed: %d\n", error);
 
         char name[16];
-        snprintf(name, sizeof(name), "test-%lu", i);
+        snprintf(name, sizeof(name), "test-%zu", i);
         tox_self_set_name(toxes[i], name, strlen(name), NULL);
     }
 
@@ -56,13 +58,15 @@ START_TEST(test_text_all)
 
         size_t count = 0;
 
-        for (i = 0 ; i < NUM_TOXES; ++i) {
-            if (tox_self_get_connection_status(toxes[i]))
+        for (i = 0; i < NUM_TOXES; ++i) {
+            if (tox_self_get_connection_status(toxes[i])) {
                 ++count;
+            }
         }
 
-        if (count == NUM_TOXES)
+        if (count == NUM_TOXES) {
             break;
+        }
 
         c_sleep(20);
     }
@@ -82,7 +86,7 @@ START_TEST(test_text_all)
         tox_iterate(toxes[i]);
     }
 
-    /* Tox1 gets the Chat ID and implicitly shares it with Bob */
+    /* Tox1 gets the Chat ID and implicitly shares it publicly */
     TOX_ERR_GROUP_STATE_QUERIES id_err;
     uint8_t chat_id[TOX_GROUP_CHAT_ID_SIZE];
     tox_group_get_chat_id(toxes[1], groupnum, chat_id, &id_err);
@@ -125,7 +129,7 @@ Suite *text_groupchats_suite(void)
 {
     Suite *s = suite_create("text_groupchats");
 
-    DEFTESTCASE_SLOW(text_all, 50);
+    DEFTESTCASE_SLOW(text_all, 80);
     return s;
 }
 

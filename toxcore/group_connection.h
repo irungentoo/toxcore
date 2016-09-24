@@ -39,7 +39,7 @@
 /* The time before the direct UDP connection is considered dead */
 #define GCC_UDP_DIRECT_TIMEOUT (GC_PING_INTERVAL * 2 + 2)
 
-struct GC_Message_Ary {
+struct GC_Message_Ary_Entry {
     uint8_t *data;
     uint32_t data_length;
     uint8_t  packet_type;
@@ -52,10 +52,10 @@ typedef struct GC_Connection {
     uint64_t send_message_id;   /* message_id of the next message we send to peer */
 
     uint16_t send_ary_start;   /* send_ary index of oldest item */
-    struct GC_Message_Ary send_ary[GCC_BUFFER_SIZE];
+    struct GC_Message_Ary_Entry send_ary[GCC_BUFFER_SIZE];
 
     uint64_t recv_message_id;   /* message_id of peer's last message to us */
-    struct GC_Message_Ary recv_ary[GCC_BUFFER_SIZE];
+    struct GC_Message_Ary_Entry recv_ary[GCC_BUFFER_SIZE];
 
     uint32_t    peer_id;    /* Permanent ID (used for the public API) */
 

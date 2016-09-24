@@ -26,6 +26,8 @@
 #include "config.h"
 #endif
 
+#include <stdbool.h>
+
 #include "DHT.h"
 #include "network.h"
 #include "group_connection.h"
@@ -33,15 +35,24 @@
 #include "Messenger.h"
 #include "util.h"
 
-/* Removes idx ary item.
+/* Returns true if ary entry does not contain an active packet. */
+static bool ary_entry_is_empty(struct GC_Message_Ary_Entry *ary_entry)
+{
+    return ary_entry->time_added == 0;
+}
+
+/* Clears an ary entry.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-static void rm_from_ary(struct GC_Message_Ary *ary, uint16_t idx)
+static void clear_ary_entry(struct GC_Message_Ary_Entry *ary_entry)
 {
-    free(ary[idx].data);
-    memset(&ary[idx], 0, sizeof(struct GC_Message_Ary));
+    if (ary_entry->data) {
+        free(ary_entry->data);
+    }
+
+    memset(ary_entry, 0, sizeof(struct GC_Message_Ary_Entry));
 }
 
 /* Returns ary index for message_id */
@@ -50,28 +61,29 @@ uint16_t get_ary_index(uint64_t message_id)
     return message_id % GCC_BUFFER_SIZE;
 }
 
-/* Adds a group message to ary.
+/* Puts packet data in ary_entry.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-static int add_to_ary(struct GC_Message_Ary *ary, const uint8_t *data, uint32_t length,
-                      uint8_t packet_type, uint64_t message_id, uint16_t idx)
+static int create_ary_entry(struct GC_Message_Ary_Entry *ary_entry, const uint8_t *data, uint32_t length,
+                            uint8_t packet_type, uint64_t message_id)
 {
-    if (!data || !length)
-        return -1;
+    if (length) {
+        ary_entry->data = malloc(sizeof(uint8_t) * length);
 
-    ary[idx].data = malloc(sizeof(uint8_t) * length);
+        if (ary_entry->data == NULL) {
+            return -1;
+        }
 
-    if (ary[idx].data == NULL)
-        return -1;
+        memcpy(ary_entry->data, data, length);
+    }
 
-    memcpy(ary[idx].data, data, length);
-    ary[idx].data_length = length;
-    ary[idx].packet_type = packet_type;
-    ary[idx].message_id = message_id;
-    ary[idx].time_added = unix_time();
-    ary[idx].last_send_try = unix_time();
+    ary_entry->data_length = length;
+    ary_entry->packet_type = packet_type;
+    ary_entry->message_id = message_id;
+    ary_entry->time_added = unix_time();
+    ary_entry->last_send_try = unix_time();
 
     return 0;
 }
@@ -90,16 +102,20 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
         return -1;
 
     /* check if send_ary is full */
-    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (uint16_t) (gconn->send_ary_start - 1))
+    if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (uint16_t) (gconn->send_ary_start - 1)) {
         return -1;
+    }
 
     uint16_t idx = get_ary_index(gconn->send_message_id);
+    struct GC_Message_Ary_Entry *ary_entry = &gconn->send_ary[idx];
 
-    if (gconn->send_ary[idx].data != NULL)
+    if (!ary_entry_is_empty(ary_entry)) {
         return -1;
+    }
 
-    if (add_to_ary(gconn->send_ary, data, length, packet_type, gconn->send_message_id, idx) == -1)
+    if (create_ary_entry(ary_entry, data, length, packet_type, gconn->send_message_id) == -1) {
         return -1;
+    }
 
     ++gconn->send_message_id;
 
@@ -113,24 +129,28 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
  */
 int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id)
 {
-    if (!gconn)
+    if (!gconn) {
         return -1;
+    }
 
     uint16_t idx = get_ary_index(message_id);
+    struct GC_Message_Ary_Entry *ary_entry = &gconn->send_ary[idx];
 
-    if (gconn->send_ary[idx].data == NULL)
+    if (ary_entry_is_empty(ary_entry)) {
         return -1;
+    }
 
-    if (gconn->send_ary[idx].message_id != message_id)  // wrap-around indicates a connection problem
+    if (ary_entry->message_id != message_id) {  // wrap-around indicates a connection problem
         return -1;
+    }
 
-    rm_from_ary(gconn->send_ary, idx);
+    clear_ary_entry(ary_entry);
 
     /* Put send_ary_start in proper position */
     if (idx == gconn->send_ary_start) {
         uint16_t end = gconn->send_message_id % GCC_BUFFER_SIZE;
 
-        while (gconn->send_ary[idx].data == NULL && gconn->send_ary_start != end) {
+        while (ary_entry_is_empty(ary_entry) && gconn->send_ary_start != end) {
             gconn->send_ary_start = (gconn->send_ary_start + 1) % GCC_BUFFER_SIZE;
             idx = (idx + 1) % GCC_BUFFER_SIZE;
         }
@@ -151,22 +171,27 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn)
+    if (!gconn) {
         return -1;
+    }
 
     /* Appears to be a duplicate packet so we discard it */
-    if (message_id < gconn->recv_message_id + 1)
+    if (message_id < gconn->recv_message_id + 1) {
         return 0;
+    }
 
     /* we're missing an older message from this peer so we store it in recv_ary */
     if (message_id > gconn->recv_message_id + 1) {
         uint16_t idx = get_ary_index(message_id);
+        struct GC_Message_Ary_Entry *ary_entry = &gconn->recv_ary[idx];
 
-        if (gconn->recv_ary[idx].data != NULL)
+        if (!ary_entry_is_empty(ary_entry)) {
             return -1;
+        }
 
-        if (add_to_ary(gconn->recv_ary, data, length, packet_type, message_id, idx) == -1)
+        if (create_ary_entry(ary_entry, data, length, packet_type, message_id) == -1) {
             return -1;
+        }
 
         return 1;
     }
@@ -176,31 +201,33 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
     return 2;
 }
 
-/* Handles peernum's recv_ary message at idx with appropriate handler and removes from it. */
-static int process_recv_ary_item(GC_Chat *chat, Messenger *m, int groupnum, uint32_t peernum, uint16_t idx)
+/* Handles peernum's array entry with appropriate handler and clears it from array.
+ *
+ * Return 0 on success.
+ * Return -1 on failure.
+ */
+static int process_recv_ary_entry(GC_Chat *chat, Messenger *m, int groupnum, uint32_t peernum,
+                                 struct GC_Message_Ary_Entry *ary_entry)
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn)
-        return -1;
-
-    const uint8_t *public_key = gconn->addr.public_key;
-    const uint8_t *data = gconn->recv_ary[idx].data;
-    uint32_t length = gconn->recv_ary[idx].data_length;
-
-    int ret = handle_gc_lossless_helper(m, groupnum, peernum, data, length, gconn->recv_ary[idx].message_id,
-                                        gconn->recv_ary[idx].packet_type);
-    rm_from_ary(gconn->recv_ary, idx);
-
-    if (ret == -1) {
-        gc_send_message_ack(chat, peernum, 0, gconn->recv_ary[idx].message_id);
+    if (!gconn) {
         return -1;
     }
 
-    gc_send_message_ack(chat, peernum, gconn->recv_ary[idx].message_id, 0);
+    int ret = handle_gc_lossless_helper(m, groupnum, peernum, ary_entry->data, ary_entry->data_length,
+                                        ary_entry->message_id, ary_entry->packet_type);
+    clear_ary_entry(ary_entry);
+
+    if (ret == -1) {
+        gc_send_message_ack(chat, peernum, 0, ary_entry->message_id);
+        return -1;
+    }
+
+    gc_send_message_ack(chat, peernum, ary_entry->message_id, 0);
     ++gconn->recv_message_id;
 
-    return ret;
+    return 0;
 }
 
 /* Checks for and handles messages that are in proper sequence in peernum's recv_ary.
@@ -213,21 +240,26 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernum)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnum);
 
-    if (!chat)
+    if (!chat) {
         return -1;
+    }
 
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn)
+    if (!gconn) {
         return -1;
+    }
 
     uint16_t idx = (gconn->recv_message_id + 1) % GCC_BUFFER_SIZE;
+    struct GC_Message_Ary_Entry *ary_entry = &gconn->recv_ary[idx];
 
-    while (gconn->recv_ary[idx].data != NULL) {
-        if (process_recv_ary_item(chat, m, groupnum, peernum, idx) == -1)
+    while (!ary_entry_is_empty(ary_entry)) {
+        if (process_recv_ary_entry(chat, m, groupnum, peernum, ary_entry) == -1) {
             return -1;
+        }
 
         idx = (gconn->recv_message_id + 1) % GCC_BUFFER_SIZE;
+        ary_entry = &gconn->recv_ary[idx];
     }
 
     return 0;
@@ -237,30 +269,34 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn)
+    if (!gconn) {
         return;
+    }
 
     uint64_t tm = unix_time();
     uint16_t i, start = gconn->send_ary_start, end = gconn->send_message_id % GCC_BUFFER_SIZE;
 
     for (i = start; i != end; i = (i + 1) % GCC_BUFFER_SIZE) {
-        if (gconn->send_ary[i].data == NULL)
-            continue;
+        struct GC_Message_Ary_Entry *ary_entry = &gconn->send_ary[i];
 
-        if (tm == gconn->send_ary[i].last_send_try)
-            continue;
-
-        uint64_t delta = gconn->send_ary[i].last_send_try - gconn->send_ary[i].time_added;
-        gconn->send_ary[i].last_send_try = tm;
-
-        /* if this occurrs less than once per second this won't be reliable */
-        if (delta > 1 && POWER_OF_2(delta)) {
-            gcc_send_group_packet(chat, gconn, gconn->send_ary[i].data, gconn->send_ary[i].data_length,
-                                  gconn->send_ary[i].packet_type);
+        if (ary_entry_is_empty(ary_entry)) {
             continue;
         }
 
-        if (is_timeout(gconn->send_ary[i].time_added, GC_CONFIRMED_PEER_TIMEOUT)) {
+        if (tm == ary_entry->last_send_try) {
+            continue;
+        }
+
+        uint64_t delta = ary_entry->last_send_try - ary_entry->time_added;
+        ary_entry->last_send_try = tm;
+
+        /* if this occurrs less than once per second this won't be reliable */
+        if (delta > 1 && POWER_OF_2(delta)) {
+            gcc_send_group_packet(chat, gconn, ary_entry->data, ary_entry->data_length, ary_entry->packet_type);
+            continue;
+        }
+
+        if (is_timeout(ary_entry->time_added, GC_CONFIRMED_PEER_TIMEOUT)) {
             gc_peer_delete(m, chat->groupnumber, peernum, (uint8_t *) "Peer timed out", 14);
             return;
         }
@@ -275,18 +311,21 @@ void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *packet,
                           uint16_t length, uint8_t packet_type)
 {
-    if (!packet || length == 0)
+    if (!packet || length == 0) {
         return -1;
+    }
 
-    if (!gconn)
+    if (!gconn) {
         return -1;
+    }
 
     bool direct_send_attempt = false;
 
     if (gconn->addr.ip_port.ip.family != 0) {
         if (gcc_connection_is_direct(gconn)) {
-            if ((uint16_t) sendpacket(chat->net, gconn->addr.ip_port, packet, length) == length)
+            if ((uint16_t) sendpacket(chat->net, gconn->addr.ip_port, packet, length) == length) {
                 return 0;
+            }
 
             return -1;
         }
@@ -299,8 +338,9 @@ int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const
 
     int ret = send_packet_tcp_connection(chat->tcp_conn, gconn->tcp_connection_num, packet, length);
 
-    if (ret == 0 || direct_send_attempt)
+    if (ret == 0 || direct_send_attempt) {
         return 0;
+    }
 
     return -1;
 }
@@ -308,8 +348,9 @@ int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const
 /* Returns true if we have a direct connection with this group connection */
 bool gcc_connection_is_direct(const GC_Connection *gconn)
 {
-    if (!gconn)
+    if (!gconn) {
         return false;
+    }
 
     return ((GCC_UDP_DIRECT_TIMEOUT + gconn->last_recv_direct_time) > unix_time());
 }
@@ -317,8 +358,9 @@ bool gcc_connection_is_direct(const GC_Connection *gconn)
 /* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn)
 {
-    if (!gconn)
+    if (!gconn) {
         return;
+    }
 
     size_t i;
 
@@ -341,8 +383,9 @@ void gcc_cleanup(GC_Chat *chat)
     uint32_t i;
 
     for (i = 0; i < chat->numpeers; ++i) {
-        if (&chat->gcc[i])
+        if (&chat->gcc[i]) {
             gcc_peer_cleanup(&chat->gcc[i]);
+        }
     }
 
     free(chat->gcc);

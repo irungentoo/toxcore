@@ -919,8 +919,9 @@ static int send_lossless_group_packet(GC_Chat *chat, uint32_t peernumber, const 
         return -1;
     }
 
-    if (gcc_add_send_ary(chat, packet, len, peernumber, packet_type) == -1)
+    if (gcc_add_send_ary(chat, packet, len, peernumber, packet_type) == -1) {
         return -1;
+    }
 
     if (gcc_send_group_packet(chat, gconn, packet, len, packet_type) == -1)
         return -1;
