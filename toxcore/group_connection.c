@@ -98,9 +98,6 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn)
-        return -1;
-
     /* check if send_ary is full */
     if ((gconn->send_message_id % GCC_BUFFER_SIZE) == (uint16_t) (gconn->send_ary_start - 1)) {
         return -1;
@@ -129,10 +126,6 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
  */
 int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id)
 {
-    if (!gconn) {
-        return -1;
-    }
-
     uint16_t idx = get_ary_index(message_id);
     struct GC_Message_Ary_Entry *ary_entry = &gconn->send_ary[idx];
 
@@ -171,10 +164,6 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn) {
-        return -1;
-    }
-
     /* Appears to be a duplicate packet so we discard it */
     if (message_id < gconn->recv_message_id + 1) {
         return 0;
@@ -211,10 +200,6 @@ static int process_recv_ary_entry(GC_Chat *chat, Messenger *m, int groupnum, uin
 {
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn) {
-        return -1;
-    }
-
     int ret = handle_gc_lossless_helper(m, groupnum, peernum, ary_entry->data, ary_entry->data_length,
                                         ary_entry->message_id, ary_entry->packet_type);
     clear_ary_entry(ary_entry);
@@ -246,10 +231,6 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernum)
 
     GC_Connection *gconn = &chat->gcc[peernum];
 
-    if (!gconn) {
-        return -1;
-    }
-
     uint16_t idx = (gconn->recv_message_id + 1) % GCC_BUFFER_SIZE;
     struct GC_Message_Ary_Entry *ary_entry = &gconn->recv_ary[idx];
 
@@ -268,10 +249,6 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernum)
 void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernum)
 {
     GC_Connection *gconn = &chat->gcc[peernum];
-
-    if (!gconn) {
-        return;
-    }
 
     uint64_t tm = unix_time();
     uint16_t i, start = gconn->send_ary_start, end = gconn->send_message_id % GCC_BUFFER_SIZE;
@@ -315,10 +292,6 @@ int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const
         return -1;
     }
 
-    if (!gconn) {
-        return -1;
-    }
-
     bool direct_send_attempt = false;
 
     if (gconn->addr.ip_port.ip.family != 0) {
@@ -348,20 +321,12 @@ int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const
 /* Returns true if we have a direct connection with this group connection */
 bool gcc_connection_is_direct(const GC_Connection *gconn)
 {
-    if (!gconn) {
-        return false;
-    }
-
     return ((GCC_UDP_DIRECT_TIMEOUT + gconn->last_recv_direct_time) > unix_time());
 }
 
 /* called when a peer leaves the group */
 void gcc_peer_cleanup(GC_Connection *gconn)
 {
-    if (!gconn) {
-        return;
-    }
-
     size_t i;
 
     for (i = 0; i < GCC_BUFFER_SIZE; ++i) {

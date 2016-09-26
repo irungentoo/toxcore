@@ -2845,10 +2845,6 @@ static int handle_bc_set_mod(Messenger *m, int groupnumber, uint32_t peernumber,
             return -1;
         }
     } else {
-        if (length < 1 + SIG_PUBLIC_KEY) {
-            return -1;
-        }
-
         memcpy(mod_data, data + 1, SIG_PUBLIC_KEY);
         target_peernum = get_peernum_of_sig_pk(chat, mod_data);
 
@@ -5089,11 +5085,6 @@ void do_gc(GC_Session *c)
 
     for (i = 0; i < c->num_chats; ++i) {
         GC_Chat *chat = &c->chats[i];
-
-        if (!chat) {
-            continue;
-        }
-
         do_group_tcp(chat);
 
         switch (chat->connection_state) {
