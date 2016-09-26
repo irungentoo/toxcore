@@ -224,31 +224,31 @@ add_test(
 
 function(auto_test target)
   if(CHECK_FOUND)
-    add_c_executable(auto_${target} auto_tests/${target}.c)
-    target_link_modules(auto_${target}
+    add_c_executable(auto_${target}_test auto_tests/${target}_test.c)
+    target_link_modules(auto_${target}_test
       toxcore
       toxencryptsave
       ${CHECK_LIBRARIES})
     if(BUILD_TOXAV)
-      target_link_modules(auto_${target} toxav)
+      target_link_modules(auto_${target}_test toxav)
     endif()
-    add_test(NAME ${target} COMMAND auto_${target})
+    add_test(NAME ${target} COMMAND auto_${target}_test)
   endif()
 endfunction()
 
-auto_test(TCP_test)
-auto_test(assoc_test)
-auto_test(crypto_test)
-auto_test(dht_test)
-auto_test(encryptsave_test)
-auto_test(messenger_test)
-auto_test(network_test)
-auto_test(onion_test)
-auto_test(skeleton_test)
-auto_test(tox_test)
+auto_test(TCP)
+auto_test(assoc)
+auto_test(crypto)
+auto_test(dht)
+auto_test(encryptsave)
+auto_test(messenger)
+auto_test(network)
+auto_test(onion)
+auto_test(skeleton)
+auto_test(tox)
 if(BUILD_TOXAV)
-  auto_test(toxav_basic_test)
-  auto_test(toxav_many_test)
+  auto_test(toxav_basic)
+  auto_test(toxav_many)
 endif()
 
 
