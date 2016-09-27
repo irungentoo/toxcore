@@ -57,8 +57,6 @@ typedef struct GC_Connection {
     uint64_t recv_message_id;   /* message_id of peer's last message to us */
     struct GC_Message_Ary_Entry recv_ary[GCC_BUFFER_SIZE];
 
-    uint32_t    peer_id;    /* Permanent ID (used for the public API) */
-
     GC_PeerAddress   addr;   /* holds peer's extended real public key and ip_port */
     uint32_t    public_key_hash;   /* hash of peer's real encryption public key */
     uint8_t     session_public_key[ENC_PUBLIC_KEY];   /* self session public key for this peer */
@@ -73,7 +71,6 @@ typedef struct GC_Connection {
     uint64_t    time_added;
     bool        pending_sync_request;   /* true if we have sent this peer a sync request and have not received a reply*/
     bool        pending_state_sync;    /* used for group state syncing */
-    bool        ignore;
     bool        handshaked; /* true if we've successfully handshaked with this peer */
     bool        confirmed;  /* true if this peer has given us their info */
 } GC_Connection;
@@ -116,9 +113,9 @@ int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gcc_check_recv_ary(struct Messenger *m, int groupnum, uint32_t peernumber, GC_Connection *gconn);
+int gcc_check_recv_ary(struct Messenger *m, int groupnum, uint32_t peernumber);
 
-void gcc_resend_packets(struct Messenger *m, GC_Chat *chat, uint32_t peernumber, GC_Connection *gconn);
+void gcc_resend_packets(struct Messenger *m, GC_Chat *chat, uint32_t peernumber);
 
 /* Return true if we have a direct connection with this group connection */
 bool gcc_connection_is_direct(const GC_Connection *gconn);

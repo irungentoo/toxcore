@@ -174,6 +174,10 @@ typedef struct {
     uint8_t     nick[MAX_GC_NICK_SIZE];
     uint16_t    nick_len;
     uint8_t     status;
+
+    /* Below variables are not sent to other peers */
+    uint32_t    peer_id;    /* Permanent ID (used for the public API) */
+    bool        ignore;
 } GC_GroupPeer;
 
 typedef struct {

@@ -209,8 +209,14 @@ int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *d
  * Return -1 on failure.
  */
 static int process_recv_ary_entry(GC_Chat *chat, Messenger *m, int groupnum, uint32_t peernumber,
-                                  GC_Connection *gconn, struct GC_Message_Ary_Entry *ary_entry)
+                                  struct GC_Message_Ary_Entry *ary_entry)
 {
+    GC_Connection *gconn = gcc_get_connection(chat, peernumber);
+
+    if (gconn == NULL) {
+        return -1;
+    }
+
     int ret = handle_gc_lossless_helper(m, groupnum, peernumber, ary_entry->data, ary_entry->data_length,
                                         ary_entry->message_id, ary_entry->packet_type);
     clear_ary_entry(ary_entry);
@@ -232,7 +238,7 @@ static int process_recv_ary_entry(GC_Chat *chat, Messenger *m, int groupnum, uin
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernumber, GC_Connection *gconn)
+int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernumber)
 {
     GC_Chat *chat = gc_get_group(m->group_handler, groupnum);
 
@@ -240,11 +246,17 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernumber, GC_Conne
         return -1;
     }
 
+    GC_Connection *gconn = gcc_get_connection(chat, peernumber);
+
+    if (gconn == NULL) {
+        return -1;
+    }
+
     uint16_t idx = (gconn->recv_message_id + 1) % GCC_BUFFER_SIZE;
     struct GC_Message_Ary_Entry *ary_entry = &gconn->recv_ary[idx];
 
     while (!ary_entry_is_empty(ary_entry)) {
-        if (process_recv_ary_entry(chat, m, groupnum, peernumber, gconn, ary_entry) == -1) {
+        if (process_recv_ary_entry(chat, m, groupnum, peernumber, ary_entry) == -1) {
             return -1;
         }
 
@@ -255,8 +267,14 @@ int gcc_check_recv_ary(Messenger *m, int groupnum, uint32_t peernumber, GC_Conne
     return 0;
 }
 
-void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber, GC_Connection *gconn)
+void gcc_resend_packets(Messenger *m, GC_Chat *chat, uint32_t peernumber)
 {
+    GC_Connection *gconn = gcc_get_connection(chat, peernumber);
+
+    if (gconn == NULL) {
+        return;
+    }
+
     uint64_t tm = unix_time();
     uint16_t i, start = gconn->send_ary_start, end = gconn->send_message_id % GCC_BUFFER_SIZE;
 
