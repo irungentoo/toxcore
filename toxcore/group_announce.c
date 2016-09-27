@@ -262,8 +262,8 @@ static size_t add_gc_announced_node(GC_Announce *announce, const uint8_t *chat_i
                                     bool self);
 
 static int dispatch_packet_announce_request(GC_Announce *announce, const uint8_t *chat_id,
-                                            const uint8_t *origin_pk, const uint8_t *self_pk,
-                                            const uint8_t *data, uint32_t length, bool self)
+        const uint8_t *origin_pk, const uint8_t *self_pk,
+        const uint8_t *data, uint32_t length, bool self)
 {
     Node_format dht_nodes[MAX_SENT_NODES];
     uint32_t nclosest = get_close_nodes(announce->dht, chat_id, dht_nodes, 0, 1, 1);
@@ -410,7 +410,7 @@ static int add_requested_gc_nodes(GC_Announce *announce, const GC_Announce_Node 
 }
 
 static size_t add_announced_nodes_helper(GC_Announce *announce, const uint8_t *chat_id, const GC_Announce_Node node,
-                                         size_t idx, bool self)
+        size_t idx, bool self)
 {
     ipport_copy(&announce->announcements[idx].node.ip_port, &node.ip_port);
     memcpy(announce->announcements[idx].node.public_key, node.public_key, ENC_PUBLIC_KEY);

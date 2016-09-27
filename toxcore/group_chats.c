@@ -1508,7 +1508,7 @@ failed_invite:
  * Returns length of packet including header.
  */
 static uint32_t make_gc_broadcast_header(GC_Chat *chat, const uint8_t *data, uint32_t length, uint8_t *packet,
-                                         uint8_t bc_type)
+        uint8_t bc_type)
 {
     uint32_t header_len = 0;
     U32_to_bytes(packet, chat->self_public_key_hash);
@@ -2146,6 +2146,7 @@ static int handle_gc_sanctions_list(Messenger *m, int groupnumber, uint32_t peer
     }
 
     struct GC_Sanction_Creds creds;
+
     struct GC_Sanction *sanctions = malloc(num_sanctions * sizeof(struct GC_Sanction));
 
     if (sanctions == NULL) {
@@ -2637,7 +2638,8 @@ int gc_set_topic(GC_Chat *chat, const uint8_t *topic, uint16_t length)
     memcpy(&old_topic_info, &chat->topic_info, sizeof(GC_TopicInfo));
     memcpy(old_topic_sig, chat->topic_sig, SIGNATURE_SIZE);
 
-    if (chat->topic_info.version != UINT32_MAX) {   /* TODO (jfreegman) improbable, but an overflow would break everything */
+    if (chat->topic_info.version !=
+            UINT32_MAX) {   /* TODO (jfreegman) improbable, but an overflow would break everything */
         ++chat->topic_info.version;
     }
 
@@ -2961,7 +2963,8 @@ int founder_gc_set_moderator(GC_Chat *chat, GC_Connection *gconn, bool add_mod)
     return 0;
 }
 
-static int handle_bc_set_observer(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
+static int handle_bc_set_observer(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                  uint32_t length)
 {
     if (length <= 1 + EXT_PUBLIC_KEY) {
         return -1;
@@ -3016,7 +3019,7 @@ static int handle_bc_set_observer(Messenger *m, int groupnumber, uint32_t peernu
         struct GC_Sanction_Creds creds;
 
         if (sanctions_creds_unpack(&creds, data + 1 + EXT_PUBLIC_KEY, length - 1 - EXT_PUBLIC_KEY)
-                                  != GC_SANCTIONS_CREDENTIALS_SIZE) {
+                != GC_SANCTIONS_CREDENTIALS_SIZE) {
             return -1;
         }
 
@@ -3377,7 +3380,8 @@ int gc_send_message(GC_Chat *chat, const uint8_t *message, uint16_t length, uint
     return 0;
 }
 
-static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length, uint8_t type)
+static int handle_bc_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length,
+                             uint8_t type)
 {
     if (!data || length > MAX_GC_MESSAGE_SIZE || length == 0) {
         return -1;
@@ -3454,7 +3458,8 @@ int gc_send_private_message(GC_Chat *chat, uint32_t peer_id, const uint8_t *mess
     return 0;
 }
 
-static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
+static int handle_bc_private_message(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                     uint32_t length)
 {
     if (!data || length > MAX_GC_MESSAGE_SIZE || length == 0) {
         return -1;
@@ -3550,7 +3555,8 @@ static int handle_gc_custom_packet(Messenger *m, int groupnumber, uint32_t peern
     return 0;
 }
 
-static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data, uint32_t length)
+static int handle_bc_remove_peer(Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
+                                 uint32_t length)
 {
     if (length < 1 + ENC_PUBLIC_KEY) {
         return -1;
