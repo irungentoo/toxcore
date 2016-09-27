@@ -79,16 +79,11 @@ typedef struct {
 
     struct {
         int (*status_callback)(void *object, int id, uint8_t status, void *userdata);
-        void *status_callback_object;
-        int status_callback_id;
-
         int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-        void *data_callback_object;
-        int data_callback_id;
-
         int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-        void *lossy_data_callback_object;
-        int lossy_data_callback_id;
+
+        void *callback_object;
+        int callback_id;
     } callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
 
     uint16_t lock_count;

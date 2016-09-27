@@ -357,8 +357,9 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
 
         for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
             if (friend_con->callbacks[i].status_callback) {
-                friend_con->callbacks[i].status_callback(friend_con->callbacks[i].status_callback_object,
-                        friend_con->callbacks[i].status_callback_id, status, userdata);
+                friend_con->callbacks[i].status_callback(
+                    friend_con->callbacks[i].callback_object,
+                    friend_con->callbacks[i].callback_id, status, userdata);
             }
         }
     }
@@ -441,8 +442,8 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
     for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
         if (friend_con->callbacks[i].data_callback) {
             friend_con->callbacks[i].data_callback(
-                friend_con->callbacks[i].data_callback_object,
-                friend_con->callbacks[i].data_callback_id, data, length, userdata);
+                friend_con->callbacks[i].callback_object,
+                friend_con->callbacks[i].callback_id, data, length, userdata);
         }
 
         friend_con = get_conn(fr_c, number);
@@ -472,8 +473,9 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
 
     for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
         if (friend_con->callbacks[i].lossy_data_callback) {
-            friend_con->callbacks[i].lossy_data_callback(friend_con->callbacks[i].lossy_data_callback_object,
-                    friend_con->callbacks[i].lossy_data_callback_id, data, length, userdata);
+            friend_con->callbacks[i].lossy_data_callback(
+                friend_con->callbacks[i].callback_object,
+                friend_con->callbacks[i].callback_id, data, length, userdata);
         }
 
         friend_con = get_conn(fr_c, number);
@@ -667,13 +669,9 @@ int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsi
     friend_con->callbacks[index].data_callback = data_callback;
     friend_con->callbacks[index].lossy_data_callback = lossy_data_callback;
 
-    friend_con->callbacks[index].status_callback_object =
-        friend_con->callbacks[index].data_callback_object =
-            friend_con->callbacks[index].lossy_data_callback_object = object;
+    friend_con->callbacks[index].callback_object = object;
+    friend_con->callbacks[index].callback_id = number;
 
-    friend_con->callbacks[index].status_callback_id =
-        friend_con->callbacks[index].data_callback_id =
-            friend_con->callbacks[index].lossy_data_callback_id = number;
     return 0;
 }
 
