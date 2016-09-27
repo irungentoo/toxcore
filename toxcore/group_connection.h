@@ -78,14 +78,17 @@ typedef struct GC_Connection {
     bool        confirmed;  /* true if this peer has given us their info */
 } GC_Connection;
 
+/* Return connection object for peernumber.
+ * Return NULL if peernumber is invalid.
+ */
+GC_Connection *gcc_get_connection(const GC_Chat *chat, int peernumber);
 
-/* Adds data of length to peernum's send_ary.
+/* Adds data of length to gconn's send_ary.
  *
- * Returns 0 on success and increments peernum's send_message_id.
+ * Returns 0 on success and increments gconn's send_message_id.
  * Returns -1 on failure.
  */
-int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32_t peernum,
-                     uint8_t packet_type);
+int gcc_add_send_ary(GC_Connection *gconn, const uint8_t *data, uint32_t length, uint8_t packet_type);
 
 /* Decides if message need to be put in recv_ary or immediately handled.
  *
@@ -94,36 +97,36 @@ int gcc_add_send_ary(GC_Chat *chat, const uint8_t *data, uint32_t length, uint32
  * Return 0 if message is a duplicate.
  * Return -1 on failure
  */
-int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernum, const uint8_t *data, uint32_t length,
+int gcc_handle_recv_message(GC_Chat *chat, uint32_t peernumber, const uint8_t *data, uint32_t length,
                             uint8_t packet_type, uint64_t message_id);
 
-/* Returns ary index for message_id */
+/* Return ary index for message_id */
 uint16_t get_ary_index(uint64_t message_id);
 
 /* Removes send_ary item with message_id.
  *
- * Returns 0 if success.
- * Returns -1 on failure.
+ * Return 0 if success.
+ * Return -1 on failure.
  */
 int gcc_handle_ack(GC_Connection *gconn, uint64_t message_id);
 
-/* Checks for and handles messages that are in proper sequence in peernum's recv_ary.
+/* Checks for and handles messages that are in proper sequence in gconn's recv_ary.
  * This should always be called after a new packet is successfully handled.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
-int gcc_check_recv_ary(struct Messenger *m, int groupnum, uint32_t peernum);
+int gcc_check_recv_ary(struct Messenger *m, int groupnum, uint32_t peernumber, GC_Connection *gconn);
 
-void gcc_resend_packets(struct Messenger *m, GC_Chat *chat, uint32_t peernumber);
+void gcc_resend_packets(struct Messenger *m, GC_Chat *chat, uint32_t peernumber, GC_Connection *gconn);
 
-/* Returns true if we have a direct connection with this group connection */
+/* Return true if we have a direct connection with this group connection */
 bool gcc_connection_is_direct(const GC_Connection *gconn);
 
 /* Sends a packet to the peer associated with gconn.
  *
- * Returns 0 on success.
- * Returns -1 on failure.
+ * Return 0 on success.
+ * Return -1 on failure.
  */
 int gcc_send_group_packet(const GC_Chat *chat, const GC_Connection *gconn, const uint8_t *packet,
                           uint16_t length, uint8_t packet_type);

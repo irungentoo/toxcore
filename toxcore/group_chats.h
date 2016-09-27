@@ -195,12 +195,14 @@ typedef struct {
     uint32_t    version;
 } GC_TopicInfo;
 
+typedef struct GC_Connection GC_Connection;
+
 typedef struct GC_Chat {
     Networking_Core *net;
     TCP_Connections *tcp_conn;
 
     GC_GroupPeer          *group;
-    struct GC_Connection  *gcc;
+    GC_Connection  *gcc;
     GC_Moderation         moderation;
 
     GC_SharedState  shared_state;
@@ -648,6 +650,9 @@ int gc_group_exit(GC_Session *c, GC_Chat *chat, const uint8_t *message, uint16_t
  */
 uint32_t gc_count_groups(const GC_Session *c);
 
+/* Returns true if peernumber exists */
+bool peernumber_valid(const GC_Chat *chat, int peernumber);
+
 /* Return groupnumber's GC_Chat pointer on success
  * Return NULL on failure
  */
@@ -674,7 +679,7 @@ uint16_t gc_copy_peer_addrs(const GC_Chat *chat, GC_PeerAddress *addrs, size_t m
 /* If read_id is non-zero sends a read-receipt for ack_id's packet.
  * If request_id is non-zero sends a request for the respective id's packet.
  */
-int gc_send_message_ack(const GC_Chat *chat, uint32_t peernum, uint64_t read_id, uint64_t request_id);
+int gc_send_message_ack(const GC_Chat *chat, GC_Connection *gconn, uint64_t read_id, uint64_t request_id);
 
 int handle_gc_lossless_helper(struct Messenger *m, int groupnumber, uint32_t peernumber, const uint8_t *data,
                               uint16_t length, uint64_t message_id, uint8_t packet_type);

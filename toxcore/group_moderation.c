@@ -968,19 +968,25 @@ static int sanctions_list_sign_entry(const GC_Chat *chat, struct GC_Sanction *sa
  */
 int sanctions_list_make_entry(GC_Chat *chat, uint32_t peernumber, struct GC_Sanction *sanction, uint8_t type)
 {
+    GC_Connection *gconn = gcc_get_connection(chat, peernumber);
+
+    if (gconn == NULL) {
+        return -1;
+    }
+
     memset(sanction, 0, sizeof(struct GC_Sanction));
 
     if (type == SA_BAN) {
-        if (chat->gcc[peernumber].addr.ip_port.ip.family == TCP_FAMILY) {
+        if (gconn->addr.ip_port.ip.family == TCP_FAMILY) {
             return -1;
         }
 
-        ipport_copy(&sanction->ban_info.ip_port, &chat->gcc[peernumber].addr.ip_port);
+        ipport_copy(&sanction->ban_info.ip_port, &gconn->addr.ip_port);
         memcpy(sanction->ban_info.nick, chat->group[peernumber].nick, MAX_GC_NICK_SIZE);
         sanction->ban_info.nick_len = chat->group[peernumber].nick_len;
         sanction->ban_info.id = get_new_ban_id(chat);
     } else if (type == SA_OBSERVER) {
-        memcpy(sanction->target_pk, chat->gcc[peernumber].addr.public_key, ENC_PUBLIC_KEY);
+        memcpy(sanction->target_pk, gconn->addr.public_key, ENC_PUBLIC_KEY);
     } else {
         return -1;
     }
