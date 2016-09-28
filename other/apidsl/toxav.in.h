@@ -1,6 +1,6 @@
 %{
 /* toxav.h
- * 
+ *
  * Copyright (C) 2013-2015 Tox project All Rights Reserved.
  *
  * This file is part of Tox.
@@ -17,7 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Tox. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #ifndef TOXAV_H
@@ -33,39 +33,39 @@ extern "C" {
 %}
 
 /** \page av Public audio/video API for Tox clients.
- * 
+ *
  * This API can handle multiple calls. Each call has its state, in very rare
  * occasions the library can change the state of the call without apps knowledge.
- * 
+ *
  */
 
 /** \subsection events Events and callbacks
  *
- * As in Core API, events are handled by callbacks. One callback can be 
- * registered per event. All events have a callback function type named 
- * `toxav_{event}_cb` and a function to register it named `tox_callback_{event}`. 
- * Passing a NULL callback will result in no callback being registered for that 
- * event. Only one callback per event can be registered, so if a client needs 
- * multiple event listeners, it needs to implement the dispatch functionality 
- * itself. Unlike Core API, lack of some event handlers will cause the the 
- * library to drop calls before they are started. Hanging up call from a 
+ * As in Core API, events are handled by callbacks. One callback can be
+ * registered per event. All events have a callback function type named
+ * `toxav_{event}_cb` and a function to register it named `toxav_callback_{event}`.
+ * Passing a NULL callback will result in no callback being registered for that
+ * event. Only one callback per event can be registered, so if a client needs
+ * multiple event listeners, it needs to implement the dispatch functionality
+ * itself. Unlike Core API, lack of some event handlers will cause the the
+ * library to drop calls before they are started. Hanging up call from a
  * callback causes undefined behaviour.
- * 
+ *
  */
 
 /** \subsection threading Threading implications
  *
  * Unlike the Core API, this API is fully thread-safe. The library will ensure
- * the proper synchronization of parallel calls. 
- * 
+ * the proper synchronization of parallel calls.
+ *
  * A common way to run ToxAV (multiple or single instance) is to have a thread,
- * separate from tox instance thread, running a simple ${toxAV.iterate} loop, 
+ * separate from tox instance thread, running a simple ${toxAV.iterate} loop,
  * sleeping for ${toxAV.iteration_interval} * milliseconds on each iteration.
  *
  * An important thing to note is that events are triggered from both tox and
- * toxav thread (see above). audio and video receive frame events are triggered
+ * toxav thread (see above). Audio and video receive frame events are triggered
  * from toxav thread while all the other events are triggered from tox thread.
- * 
+ *
  * Tox thread has priority with mutex mechanisms. Any api function can
  * fail if mutexes are held by tox thread in which case they will set SYNC
  * error code.
@@ -87,9 +87,9 @@ class toxAV {
  * The ToxAV instance type. Each ToxAV instance can be bound to only one Tox
  * instance, and Tox instance can have only one ToxAV instance. One must make
  * sure to close ToxAV instance prior closing Tox instance otherwise undefined
- * behaviour occurs. Upon closing of ToxAV instance, all active calls will be 
+ * behaviour occurs. Upon closing of ToxAV instance, all active calls will be
  * forcibly terminated without notifying peers.
- * 
+ *
  */
 struct this;
 /*******************************************************************************
@@ -166,7 +166,7 @@ static namespace version {
 
 }
 /*******************************************************************************
- * 
+ *
  * :: Creation and destruction
  *
  ******************************************************************************/
@@ -433,9 +433,10 @@ bool call_control (uint32_t friend_number, CALL_CONTROL control) {
  ******************************************************************************/
 namespace bit_rate {
     /**
-     * Set the audio bit rate to be used in subsequent audio/video frames.
+     * Set the bit rate to be used in subsequent audio/video frames.
      *
-     * @param friend_number The friend number.
+     * @param friend_number The friend number of the friend for which to set the
+     * bit rate.
      * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable
      * audio sending. Set to -1 to leave unchanged.
      * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable
@@ -448,9 +449,13 @@ namespace bit_rate {
          */
         SYNC,
         /**
-         * The bit rate passed was not one of the supported values.
+         * The audio bit rate passed was not one of the supported values.
          */
-        INVALID,
+        INVALID_AUDIO_BIT_RATE,
+        /**
+         * The video bit rate passed was not one of the supported values.
+         */
+         INVALID_VIDEO_BIT_RATE,
         /**
          * The friend_number passed did not designate a valid friend.
          */
@@ -466,7 +471,8 @@ namespace bit_rate {
          * when the network becomes too saturated for current bit rates at which 
          * point core suggests new bit rates.
          * 
-         * @param friend_number The friend number.
+         * @param friend_number The friend number of the friend for which to set the
+         * bit rate.
          * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
          * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
          */
@@ -607,7 +613,53 @@ namespace video {
 }
 
 }
+
 %{
+/**
+ * NOTE Compatibility with old toxav group calls TODO remove
+ */
+/* Create a new toxav group.
+ *
+ * return group number on success.
+ * return -1 on failure.
+ *
+ * Audio data callback format:
+ *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ */
+int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t,
+                           unsigned int, void *), void *userdata);
+
+/* Join a AV group (you need to have been invited first.)
+ *
+ * returns group number on success
+ * returns -1 on failure.
+ *
+ * Audio data callback format (same as the one for toxav_add_av_groupchat()):
+ *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ */
+int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
+                            void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata);
+
+/* Send audio to the group chat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ *
+ * Valid number of samples are ((sample rate) * (audio length (Valid ones are: 2.5, 5, 10, 20, 40 or 60 ms)) / 1000)
+ * Valid number of channels are 1 or 2.
+ * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
+ *
+ * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
+ */
+int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                           unsigned int sample_rate);
+
 #ifdef __cplusplus
 }
 #endif
