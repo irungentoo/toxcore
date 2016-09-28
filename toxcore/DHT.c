@@ -65,6 +65,13 @@
 /* Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 5
 
+/* Set the callback function that will be executed when we get a getnodes response. */
+void DHT_callback_getnodes_response(DHT *dht, void (*func)(IP_Port *, const uint8_t *, void *), void *userdata)
+{
+    dht->getnodes_response = func;
+    dht->getnodes_response_data = userdata;
+}
+
 /* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
@@ -1300,10 +1307,13 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
     uint32_t i;
 
     for (i = 0; i < num_nodes; i++) {
-
         if (ipport_isset(&plain_nodes[i].ip_port)) {
             ping_node_from_getnodes_ok(dht, plain_nodes[i].public_key, plain_nodes[i].ip_port);
             returnedip_ports(dht, plain_nodes[i].ip_port, plain_nodes[i].public_key, packet + 1);
+
+            if (dht->getnodes_response) {
+                dht->getnodes_response(&plain_nodes[i].ip_port, plain_nodes[i].public_key, dht->getnodes_response_data);
+            }
         }
     }
 
@@ -2455,6 +2465,7 @@ void do_DHT(DHT *dht)
 #endif
     dht->last_run = unix_time();
 }
+
 void kill_DHT(DHT *dht)
 {
 #ifdef ENABLE_ASSOC_DHT
