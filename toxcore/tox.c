@@ -312,7 +312,7 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
     } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_FAIL);
         return 0;
     }
 }
@@ -369,7 +369,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
     } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_FAIL);
         return 0;
     }
 }
