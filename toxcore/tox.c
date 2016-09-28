@@ -409,12 +409,90 @@ void tox_iterate(Tox *tox)
     do_groupchats(m->group_chat_object);
 }
 
+bool set_nospam_error(NSERR err_code, TOX_ERR_NOSPAM *error)
+{
+    switch (err_code){
+    case NSERR_SUCCESS:
+        SET_ERROR_PARAMETER(error, TOX_ERR_NOSPAM_OK);
+        break;
+    case NSERR_NOT_FOUND:
+        SET_ERROR_PARAMETER(error, TOX_ERR_NOSPAM_NOT_FOUND);
+        break;
+    case NSERR_TOO_MANY:
+        SET_ERROR_PARAMETER(error, TOX_ERR_NOSPAM_TOO_MANY);
+        break;
+    case NSERR_ALREADY_EXISTS:
+        SET_ERROR_PARAMETER(error, TOX_ERR_NOSPAM_ALREADY_EXISTS);
+        break;
+    case NSERR_DESCRIPTION_TOO_LONG:
+        SET_ERROR_PARAMETER(error, TOX_ERR_NOSPAM_DESCRIPTION_TOO_LONG);
+        break;
+    }
+
+    if (err_code != NSERR_SUCCESS)
+        return false;
+    return true;
+}
+
 void tox_self_get_address(const Tox *tox, uint8_t *address)
 {
     if (address) {
         const Messenger *m = tox;
         getaddress(m, address);
     }
+}
+
+uint32_t tox_self_generate_nospam(const Tox *tox)
+{
+    uint32_t result = 0;
+    while (result == 0) {
+        result = random_int();
+    }
+    return result;
+}
+
+void tox_self_get_address_nospam(const Tox *tox, uint32_t nospam, uint8_t *address)
+{
+    if (address) {
+        const Messenger *m = tox;
+        getaddress_nospam(m, nospam, address);
+    }
+}
+
+bool tox_self_update_nospam(Tox *tox, uint32_t nospam, uint32_t new_nospam, TOX_ERR_NOSPAM *error)
+{
+    return set_nospam_error(m_nospam_update(tox, nospam, new_nospam), error);
+}
+
+bool tox_self_set_nospam_description(Tox *tox, uint32_t nospam, const uint8_t *description, size_t length,
+                                     TOX_ERR_NOSPAM *error)
+{
+    return set_nospam_error(m_nospam_descr_update(tox, nospam, description, length), error);
+}
+
+bool tox_self_get_nospam_description(const Tox *tox, uint32_t nospam,
+                                        uint8_t *description, TOX_ERR_NOSPAM *error)
+{
+    return set_nospam_error(m_nospam_descr(tox, nospam, description), error);
+}
+
+size_t tox_self_get_nospam_description_length(const Tox *tox, uint32_t nospam, TOX_ERR_NOSPAM *error)
+{
+    NSERR err = 0;
+    size_t result = 0;
+    result = m_nospam_descr_length(tox, nospam, &err);
+    set_nospam_error(err, error);
+    return result;
+}
+
+void tox_self_get_nospam_list(const Tox *tox, uint32_t *nospams)
+{
+    m_nospam_list(tox, nospams);
+}
+
+size_t tox_self_get_nospam_list_length(const Tox *tox)
+{
+    return m_nospam_count(tox);
 }
 
 void tox_self_set_nospam(Tox *tox, uint32_t nospam)

@@ -137,11 +137,46 @@ static uint16_t address_checksum(const uint8_t *address, uint32_t len)
  */
 void getaddress(const Messenger *m, uint8_t *address)
 {
-    id_copy(address, m->net_crypto->self_public_key);
     uint32_t nospam = get_nospam(&(m->fr));
+    getaddress_nospam(m, nospam, address);
+}
+
+void getaddress_nospam(const Messenger *m, uint32_t nospam, uint8_t *address)
+{
+    id_copy(address, m->net_crypto->self_public_key);
     memcpy(address + crypto_box_PUBLICKEYBYTES, &nospam, sizeof(nospam));
     uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
     memcpy(address + crypto_box_PUBLICKEYBYTES + sizeof(nospam), &checksum, sizeof(checksum));
+}
+
+NSERR m_nospam_update(Messenger *m, uint32_t num, uint32_t new_num)
+{
+    return nospam_update(&(m->fr), num, new_num);
+}
+
+NSERR m_nospam_descr_update(Messenger *m, uint32_t num, const uint8_t *descr, size_t descr_length)
+{
+    return nospam_descr_update(&(m->fr), num, descr, descr_length);
+}
+
+size_t m_nospam_descr_length(const Messenger *m, uint32_t num, NSERR *nserr)
+{
+    return nospam_descr_length(&(m->fr), num, nserr);
+}
+
+NSERR m_nospam_descr(const Messenger *m, uint32_t num, uint8_t *descr)
+{
+    return nospam_descr(&(m->fr), num, descr);
+}
+
+size_t m_nospam_count(const Messenger *m)
+{
+    return nospam_count(&(m->fr));
+}
+
+void m_nospam_list(const Messenger *m, uint32_t *ns_list)
+{
+    nospam_list(&(m->fr), ns_list);
 }
 
 static int send_online_packet(Messenger *m, int32_t friendnumber)
@@ -762,10 +797,10 @@ static void set_friend_typing(const Messenger *m, int32_t friendnumber, uint8_t 
 }
 
 /* Set the function that will be executed when a friend request is received. */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
+void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, uint32_t, const uint8_t *, size_t,
                               void *), void *userdata)
 {
-    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, size_t, void *) = (void *)function;
+    void (*handle_friendrequest)(void *, const uint8_t *, uint32_t, const uint8_t *, size_t, void *) = (void *)function;
     callback_friendrequest(&(m->fr), handle_friendrequest, m, userdata);
 }
 
@@ -2434,6 +2469,7 @@ void do_messenger(Messenger *m)
 #define MESSENGER_STATE_TYPE_NAME          4
 #define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
 #define MESSENGER_STATE_TYPE_STATUS        6
+#define MESSENGER_STATE_TYPE_NOSPAMS       7
 #define MESSENGER_STATE_TYPE_TCP_RELAY     10
 #define MESSENGER_STATE_TYPE_PATH_NODE     11
 #define MESSENGER_STATE_TYPE_END           255
@@ -2546,12 +2582,13 @@ uint32_t messenger_size(const Messenger *m)
 {
     uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
     return   size32 * 2                                      // global cookie
-             + sizesubhead + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
+             + sizesubhead + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES
              + sizesubhead + DHT_size(m->dht)                  // DHT
              + sizesubhead + saved_friendslist_size(m)         // Friendlist itself.
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
+             + sizesubhead + nospam_saved_list_size(&(m->fr))   //No Spams
              + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
              + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6) //saved path nodes
              + sizesubhead;
@@ -2583,11 +2620,10 @@ void messenger_save(const Messenger *m, uint8_t *data)
 #ifdef DEBUG
     assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
 #endif
-    len = size32 + crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
+    len = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES;
     type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
     data = z_state_save_subheader(data, len, type);
-    *(uint32_t *)data = get_nospam(&(m->fr));
-    save_keys(m->net_crypto, data + size32);
+    save_keys(m->net_crypto, data);
     data += len;
 
     len = saved_friendslist_size(m);
@@ -2612,6 +2648,12 @@ void messenger_save(const Messenger *m, uint8_t *data)
     type = MESSENGER_STATE_TYPE_STATUS;
     data = z_state_save_subheader(data, len, type);
     *data = m->userstatus;
+    data += len;
+
+    len = nospam_saved_list_size(&(m->fr));
+    type = MESSENGER_STATE_TYPE_NOSPAMS;
+    data = z_state_save_subheader(data, len, type);
+    nospam_list_save(&(m->fr), data);
     data += len;
 
     len = DHT_size(m->dht);
@@ -2656,15 +2698,23 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
 
     switch (type) {
         case MESSENGER_STATE_TYPE_NOSPAMKEYS:
-            if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
-                set_nospam(&(m->fr), *(uint32_t *)data);
-                load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + crypto_box_PUBLICKEYBYTES);
 
-                if (public_key_cmp((&data[sizeof(uint32_t)]), m->net_crypto->self_public_key) != 0) {
-                    return -1;
-                }
-            } else
+            if (length == crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES + sizeof(uint32_t)) {
+                // Single nospam save file
+                printf("Loading file warning: old tox save file format.\n"
+                       "File will be saved in new format.\n");
+                set_nospam(&(m->fr), *(uint32_t *)data);
+                data += sizeof(uint32_t);
+            } else if (length != crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES) {
+                // Ivalid file
                 return -1;    /* critical */
+            }
+
+            load_secret_key(m->net_crypto, data + crypto_box_PUBLICKEYBYTES);
+
+            if (public_key_cmp(data, m->net_crypto->self_public_key) != 0) {
+                return -1;
+            }
 
             break;
 
@@ -2695,6 +2745,10 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
                 m_set_userstatus(m, *data);
             }
 
+            break;
+
+        case MESSENGER_STATE_TYPE_NOSPAMS:
+            nospam_list_load(&(m->fr), data, length);
             break;
 
         case MESSENGER_STATE_TYPE_TCP_RELAY: {
