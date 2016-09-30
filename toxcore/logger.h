@@ -39,20 +39,21 @@ typedef enum {
 
 typedef struct Logger Logger;
 
-typedef void logger_cb(LOGGER_LEVEL level, const char *file, int line, const char *func,
-                       const char *message, void *userdata);
+typedef void logger_cb(void *context, LOGGER_LEVEL level, const char *file, int line,
+                       const char *func, const char *message, void *userdata);
 
 /**
  * Creates a new logger with logging disabled (callback is NULL) by default.
  */
-Logger *logger_new(void);
+Logger *logger_new();
 
 void logger_kill(Logger *log);
 
 /**
  * Sets the logger callback. Disables logging if set to NULL.
+ * The context parameter is passed to the callback as first argument.
  */
-void logger_callback_log(Logger *log, logger_cb *function, void *userdata);
+void logger_callback_log(Logger *log, logger_cb *function, void *context, void *userdata);
 
 /**
  * Main write function. If logging disabled does nothing.

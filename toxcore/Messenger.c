@@ -831,9 +831,9 @@ static void set_friend_typing(const Messenger *m, int32_t friendnumber, uint8_t 
     m->friendlist[friendnumber].is_typing = is_typing;
 }
 
-void m_callback_log(Messenger *m, logger_cb *function, void *userdata)
+void m_callback_log(Messenger *m, logger_cb *function, void *context, void *userdata)
 {
-    logger_callback_log(m->log, function, userdata);
+    logger_callback_log(m->log, function, context, userdata);
 }
 
 /* Set the function that will be executed when a friend request is received. */

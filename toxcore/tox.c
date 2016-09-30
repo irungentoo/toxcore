@@ -311,7 +311,7 @@ void tox_kill(Tox *tox)
 void tox_callback_log(Tox *tox, tox_log_cb *callback, void *user_data)
 {
     Messenger *m = tox;
-    m_callback_log(m, (logger_cb *)callback, user_data);
+    m_callback_log(m, (logger_cb *)callback, tox, user_data);
 }
 
 size_t tox_get_savedata_size(const Tox *tox)
