@@ -1,0 +1,11 @@
+#define E_OK 0
+#define E_NOMEM 1
+#define E_SOCKET 2
+#define E_BIND 3
+#define E_LISTEN 4
+#define E_ACCEPT 5
+#define E_PARSE 6
+#define E_OPEN 7
+#define E_READ 8
+#define E_WRITE 9
+#define E_SODIUM 10

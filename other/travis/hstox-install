@@ -8,16 +8,12 @@ cabal update
 # install.
 cabal install happy
 
-# Fetch hstox.
-git clone --recursive --depth=1 https://github.com/TokTok/hstox ../hstox
+# Fetch hstox and msgpack-c.
+git clone --recursive --depth=1 https://github.com/TokTok/hs-toxcore ../hs-toxcore
+git clone --depth=1 https://github.com/msgpack/msgpack-c testing/hstox/msgpack-c
 
-# Delete all files in the cloned toxcore.
-rm -rf ../hstox/test/toxcore/toxcore/toxcore
-# Move the toxcore source files to the hstox test directory.
-# The reason we move source files instead of the whole git root directory is
-# that the travis scripts (like this one) need to remain in place.
-mv toxcore ../hstox/test/toxcore/toxcore
+# Install the hstox test runner.
+(cd ../hs-toxcore && cabal install --disable-library-profiling)
 
-# In the "install" step, we only run configure, which downloads the required
-# packages. In the "script" step we then build the actual code.
-make -C ../hstox configure
+# Install toxcore dependencies.
+. other/travis/toxcore-linux-install

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-make -C ../hstox check-toxcore
+make -C testing/hstox check
