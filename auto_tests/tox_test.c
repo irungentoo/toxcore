@@ -155,12 +155,10 @@ static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_num
 
     if (kind != TOX_FILE_KIND_DATA) {
         ck_abort_msg("Bad kind");
-        return;
     }
 
     if (!(filename_length == sizeof("Gentoo.exe") && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0)) {
         ck_abort_msg("Bad filename");
-        return;
     }
 
     uint8_t file_id[TOX_FILE_ID_LENGTH];
@@ -244,7 +242,6 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
 
     if (sending_pos != position) {
         ck_abort_msg("Bad position %llu", position);
-        return;
     }
 
     if (length == 0) {
@@ -293,7 +290,6 @@ static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uin
 
     if (size_recv != position) {
         ck_abort_msg("Bad position");
-        return;
     }
 
     if (length == 0) {
@@ -897,13 +893,13 @@ loop_top:
         tox_self_get_address(toxes[pairs[i].tox1], address);
 
         TOX_ERR_FRIEND_ADD test;
-        uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
+        uint32_t friend_num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
 
         if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {
             goto loop_top;
         }
 
-        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
+        ck_assert_msg(friend_num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
 
     for (i = 0; i < NUM_TOXES; ++i) {
@@ -1010,13 +1006,13 @@ loop_top:
         tox_self_get_address(toxes[pairs[i].tox1], address);
 
         TOX_ERR_FRIEND_ADD test;
-        uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
+        uint32_t friend_num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
 
         if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {
             goto loop_top;
         }
 
-        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
+        ck_assert_msg(friend_num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
 
     while (1) {
@@ -1109,13 +1105,13 @@ loop_top:
         tox_self_get_address(toxes[pairs[i].tox1], address);
 
         TOX_ERR_FRIEND_ADD test;
-        uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
+        uint32_t friend_num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
 
         if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {
             goto loop_top;
         }
 
-        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
+        ck_assert_msg(friend_num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
 
     uint16_t last_count = 0;

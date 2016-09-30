@@ -37,7 +37,7 @@ static const unsigned char bobpk[32] = {
     0xad, 0xfc, 0x7e, 0x14, 0x6f, 0x88, 0x2b, 0x4f
 };
 
-static const unsigned char nonce[24] = {
+static const unsigned char test_nonce[24] = {
     0x69, 0x69, 0x6e, 0xe9, 0x55, 0xb6, 0x2b, 0x73,
     0xcd, 0x62, 0xbd, 0xa8, 0x75, 0xfc, 0x73, 0xd6,
     0x82, 0x19, 0xe0, 0x03, 0x6b, 0x7a, 0x0b, 0x37
@@ -96,12 +96,12 @@ START_TEST(test_known)
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
-    clen = encrypt_data(bobpk, alicesk, nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
+    clen = encrypt_data(bobpk, alicesk, test_nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
 
     ck_assert_msg(memcmp(test_c, c, sizeof(c)) == 0, "cyphertext doesn't match test vector");
     ck_assert_msg(clen == sizeof(c) / sizeof(unsigned char), "wrong ciphertext length");
 
-    mlen = decrypt_data(bobpk, alicesk, nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
+    mlen = decrypt_data(bobpk, alicesk, test_nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
 
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
@@ -122,12 +122,12 @@ START_TEST(test_fast_known)
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
-    clen = encrypt_data_symmetric(k, nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
+    clen = encrypt_data_symmetric(k, test_nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
 
     ck_assert_msg(memcmp(test_c, c, sizeof(c)) == 0, "cyphertext doesn't match test vector");
     ck_assert_msg(clen == sizeof(c) / sizeof(unsigned char), "wrong ciphertext length");
 
-    mlen = decrypt_data_symmetric(k, nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
+    mlen = decrypt_data_symmetric(k, test_nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
 
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");

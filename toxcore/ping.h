@@ -21,8 +21,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __PING_H__
-#define __PING_H__
+#ifndef PING_H
+#define PING_H
 
 #include "DHT.h"
 #include "network.h"
@@ -49,4 +49,4 @@ void kill_ping(PING *ping);
 
 int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key);
 
-#endif /* __PING_H__ */
+#endif /* PING_H */

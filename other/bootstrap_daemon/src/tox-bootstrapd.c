@@ -339,6 +339,4 @@ int main(int argc, char *argv[])
 
         SLEEP_MILLISECONDS(30);
     }
-
-    return 1;
 }

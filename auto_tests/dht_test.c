@@ -434,9 +434,6 @@ static void test_list_main(void)
     uint8_t cmp_list1[NUM_DHT][MAX_FRIEND_CLIENTS][crypto_box_PUBLICKEYBYTES + 1];
     memset(cmp_list1, 0, sizeof(cmp_list1));
 
-    IP ip;
-    ip_init(&ip, 1);
-
     unsigned int i, j, k, l;
 
     for (i = 0; i < NUM_DHT; ++i) {

@@ -47,9 +47,9 @@ static uint64_t get_monotime_sec(void)
 
 static int reconnect(void)
 {
-    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int new_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    if (sock < 0) {
+    if (new_sock < 0) {
         printf("error socket\n");
         return -1;
     }
@@ -68,14 +68,14 @@ static int reconnect(void)
 
     addr4->sin_port = htons(port);
 
-    if (connect(sock, (struct sockaddr *)&addr, addrsize) != 0) {
+    if (connect(new_sock, (struct sockaddr *)&addr, addrsize) != 0) {
         printf("error connect\n");
         return -1;
     }
 
-    send(sock, SERVER_CONNECT, sizeof(SERVER_CONNECT) - 1, MSG_NOSIGNAL);
+    send(new_sock, SERVER_CONNECT, sizeof(SERVER_CONNECT) - 1, MSG_NOSIGNAL);
 
-    return sock;
+    return new_sock;
 }
 
 #include "../toxcore/tox.h"
@@ -256,9 +256,9 @@ static Tox *init_tox(int argc, char *argv[])
         exit(1);
     }
 
-    uint16_t port = atoi(argv[argvoffset + 2]);
+    uint16_t bootstrap_port = atoi(argv[argvoffset + 2]);
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    tox_bootstrap(tox, argv[argvoffset + 1], port, binary_string, 0);
+    tox_bootstrap(tox, argv[argvoffset + 1], bootstrap_port, binary_string, 0);
     free(binary_string);
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
@@ -372,6 +372,4 @@ int main(int argc, char *argv[])
         tox_iterate(tox, NULL);
         usleep(1000 * 50);
     }
-
-    return 0;
 }

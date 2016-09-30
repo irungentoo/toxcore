@@ -203,6 +203,4 @@ int main(int argc, char *argv[])
 
         c_sleep(1);
     }
-
-    return 0;
 }

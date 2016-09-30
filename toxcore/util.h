@@ -22,8 +22,8 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <pthread.h>
 #include <stdbool.h>
@@ -58,4 +58,4 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
-#endif /* __UTIL_H__ */
+#endif /* UTIL_H */

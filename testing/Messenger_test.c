@@ -67,7 +67,7 @@ static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
 
-static void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void print_request(Messenger *m2, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     printf("Friend request received from: \n");
     printf("ClientID: ");
@@ -91,7 +91,7 @@ static void print_request(Messenger *m, const uint8_t *public_key, const uint8_t
         //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
-        m_addfriend_norequest(m, public_key);
+        m_addfriend_norequest(m2, public_key);
     }
 }
 

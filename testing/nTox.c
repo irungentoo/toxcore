@@ -1233,7 +1233,6 @@ static void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_n
             if (file_senders[i].file && file_senders[i].friendnum == friend_number && file_senders[i].filenumber == file_number) {
                 fclose(file_senders[i].file);
                 file_senders[i].file = 0;
-                char msg[512];
                 sprintf(msg, "[t] %u file transfer: %u cancelled", file_senders[i].friendnum, file_senders[i].filenumber);
                 new_lines(msg);
             }

@@ -668,13 +668,13 @@ void handle_init(MSICall *call, const MSIMessage *msg)
 
             LOGGER_INFO(call->session->messenger->log, "Friend is recalling us");
 
-            MSIMessage msg;
-            msg_init(&msg, requ_push);
+            MSIMessage out_msg;
+            msg_init(&out_msg, requ_push);
 
-            msg.capabilities.exists = true;
-            msg.capabilities.value = call->self_capabilities;
+            out_msg.capabilities.exists = true;
+            out_msg.capabilities.value = call->self_capabilities;
 
-            send_message(call->session->messenger, call->friend_number, &msg);
+            send_message(call->session->messenger, call->friend_number, &out_msg);
 
             /* If peer changed capabilities during re-call they will
              * be handled accordingly during the next step

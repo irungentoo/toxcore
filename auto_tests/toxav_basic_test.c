@@ -226,11 +226,11 @@ START_TEST(test_AV_flows)
         memset(&AliceCC, 0, sizeof(CallControl)); \
         memset(&BobCC, 0, sizeof(CallControl)); \
         \
-        TOXAV_ERR_CALL rc; \
-        toxav_call(AliceAV, 0, A_BR, V_BR, &rc); \
+        TOXAV_ERR_CALL call_err; \
+        toxav_call(AliceAV, 0, A_BR, V_BR, &call_err); \
         \
-        if (rc != TOXAV_ERR_CALL_OK) { \
-            printf("toxav_call failed: %d\n", rc); \
+        if (call_err != TOXAV_ERR_CALL_OK) { \
+            printf("toxav_call failed: %d\n", call_err); \
             ck_assert(0); \
         } \
         \
@@ -241,11 +241,11 @@ START_TEST(test_AV_flows)
         while (BobCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED) { \
             \
             if (BobCC.incoming) { \
-                TOXAV_ERR_ANSWER rc; \
-                toxav_answer(BobAV, 0, A_BR, V_BR, &rc); \
+                TOXAV_ERR_ANSWER answer_err; \
+                toxav_answer(BobAV, 0, A_BR, V_BR, &answer_err); \
                 \
-                if (rc != TOXAV_ERR_ANSWER_OK) { \
-                    printf("toxav_answer failed: %d\n", rc); \
+                if (answer_err != TOXAV_ERR_ANSWER_OK) { \
+                    printf("toxav_answer failed: %d\n", answer_err); \
                     ck_assert(0); \
                 } \
                 BobCC.incoming = false; \
@@ -254,11 +254,11 @@ START_TEST(test_AV_flows)
                 \
                 if (time(NULL) - start_time >= 1) { \
                     \
-                    TOXAV_ERR_CALL_CONTROL rc; \
-                    toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc); \
+                    TOXAV_ERR_CALL_CONTROL cc_err; \
+                    toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &cc_err); \
                     \
-                    if (rc != TOXAV_ERR_CALL_CONTROL_OK) { \
-                        printf("toxav_call_control failed: %d\n", rc); \
+                    if (cc_err != TOXAV_ERR_CALL_CONTROL_OK) { \
+                        printf("toxav_call_control failed: %d\n", cc_err); \
                         ck_assert(0); \
                     } \
                 } \

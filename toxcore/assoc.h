@@ -1,5 +1,5 @@
-#ifndef __ASSOC_H__
-#define __ASSOC_H__
+#ifndef ASSOC_H
+#define ASSOC_H
 
 #include "DHT.h"
 #include "logger.h"
@@ -105,4 +105,4 @@ void kill_Assoc(Assoc *assoc);
 
 void Assoc_status(Logger *log, const Assoc *assoc);
 
-#endif /* !__ASSOC_H__ */
+#endif /* !ASSOC_H */

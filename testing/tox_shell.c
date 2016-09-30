@@ -159,6 +159,4 @@ int main(int argc, char *argv[])
         tox_iterate(tox, master);
         c_sleep(1);
     }
-
-    return 0;
 }

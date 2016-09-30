@@ -1686,10 +1686,10 @@ static void do_Close(DHT *dht)
          * so: reset all nodes to be BAD_NODE_TIMEOUT, but not
          * KILL_NODE_TIMEOUT, so we at least keep trying pings */
         uint64_t badonly = unix_time() - BAD_NODE_TIMEOUT;
-        size_t i, a;
+        size_t j, a;
 
-        for (i = 0; i < LCLIENT_LIST; i++) {
-            Client_data *client = &dht->close_clientlist[i];
+        for (j = 0; j < LCLIENT_LIST; j++) {
+            Client_data *client = &dht->close_clientlist[j];
             IPPTsPng *assoc;
 
             for (a = 0, assoc = &client->assoc4; a < 2; a++, assoc = &client->assoc6) {

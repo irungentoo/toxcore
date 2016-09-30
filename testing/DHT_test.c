@@ -259,6 +259,4 @@ int main(int argc, char *argv[])
         print_friendlist(dht);
         c_sleep(300);
     }
-
-    return 0;
 }

@@ -37,14 +37,14 @@ static const char base32[32] = {
 
 #define _encode(a, b, c) \
 { \
-uint8_t i = 0; \
-    while(i != c) { \
+    uint8_t _i = 0; \
+    while (_i != c) { \
         *a++ = base32[((b[0] >> bits) | (b[1] << (8 - bits))) & 0x1F]; \
         bits += 5; \
         if(bits >= 8) { \
             bits -= 8; \
             b++; \
-            i++; \
+            _i++; \
         } \
     } \
 }

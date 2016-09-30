@@ -1552,8 +1552,6 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
             return -1;
         }
     }
-
-    return 0;
 }
 
 /* Set the size of the friend list to numfriends.
@@ -2321,7 +2319,7 @@ static void send_crypto_packets(Net_Crypto *c)
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
             if (conn->packet_recv_rate > CRYPTO_PACKET_MIN_RATE) {
-                double request_packet_interval = (REQUEST_PACKETS_COMPARE_CONSTANT / (((double)num_packets_array(
+                double request_packet_interval = (REQUEST_PACKETS_COMPARE_CONSTANT / ((num_packets_array(
                                                       &conn->recv_array) + 1.0) / (conn->packet_recv_rate + 1.0)));
 
                 double request_packet_interval2 = ((CRYPTO_PACKET_MIN_RATE / conn->packet_recv_rate) *
