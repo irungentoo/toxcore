@@ -26,12 +26,21 @@ set(CMAKE_MACOSX_RPATH ON)
 
 option(DEBUG "Enable assertions and other debugging facilities" OFF)
 if(DEBUG)
+  set(MIN_LOGGER_LEVEL DEBUG)
   add_definitions(-DTOX_DEBUG=1)
-  add_definitions(-DMIN_LOGGER_LEVEL=LOG_TRACE)
   check_c_compiler_flag("-g3" HAVE_G3)
   if(HAVE_G3)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3")
   endif()
+endif()
+
+option(TRACE "Enable TRACE level logging (expensive, for network debugging)" OFF)
+if(TRACE)
+  set(MIN_LOGGER_LEVEL TRACE)
+endif()
+
+if(MIN_LOGGER_LEVEL)
+  add_definitions(-DMIN_LOGGER_LEVEL=LOG_${MIN_LOGGER_LEVEL})
 endif()
 
 option(ASSOC_DHT "Enable module to store currently unused ID <=> IP associations" OFF)
