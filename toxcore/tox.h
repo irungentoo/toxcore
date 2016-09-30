@@ -805,8 +805,8 @@ size_t tox_get_savedata_size(const Tox *tox);
 /**
  * Store all information associated with the tox instance to a byte array.
  *
- * @param data A memory region large enough to store the tox instance data.
- *   Call tox_get_savedata_size to find the number of bytes required. If this parameter
+ * @param savedata A memory region large enough to store the tox instance
+ *   data. Call tox_get_savedata_size to find the number of bytes required. If this parameter
  *   is NULL, this function has no effect.
  */
 void tox_get_savedata(const Tox *tox, uint8_t *savedata);
@@ -1090,15 +1090,15 @@ size_t tox_self_get_status_message_size(const Tox *tox);
  * Call tox_self_get_status_message_size to find out how much memory to allocate for
  * the result.
  *
- * @param status A valid memory location large enough to hold the status message.
- *   If this parameter is NULL, the function has no effect.
+ * @param status_message A valid memory location large enough to hold the
+ *   status message. If this parameter is NULL, the function has no effect.
  */
 void tox_self_get_status_message(const Tox *tox, uint8_t *status_message);
 
 /**
  * Set the client's user status.
  *
- * @param user_status One of the user statuses listed in the enumeration above.
+ * @param status One of the user statuses listed in the enumeration above.
  */
 void tox_self_set_status(Tox *tox, TOX_USER_STATUS status);
 
@@ -1299,8 +1299,8 @@ size_t tox_self_get_friend_list_size(const Tox *tox);
  *
  * Call tox_self_get_friend_list_size to determine the number of elements to allocate.
  *
- * @param list A memory region with enough space to hold the friend list. If
- *   this parameter is NULL, this function has no effect.
+ * @param friend_list A memory region with enough space to hold the friend
+ *   list. If this parameter is NULL, this function has no effect.
  */
 void tox_self_get_friend_list(const Tox *tox, uint32_t *friend_list);
 
@@ -2698,8 +2698,6 @@ size_t tox_conference_get_chatlist_size(const Tox *tox);
 /**
  * Copy a list of valid conference IDs into the array chatlist. Determine how much space
  * to allocate for the array with the `tox_conference_get_chatlist_size` function.
- *
- * @return The number of elements copied to the array, or 0 if chatlist is set to NULL.
  */
 void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist);
 

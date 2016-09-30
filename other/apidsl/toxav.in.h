@@ -557,23 +557,24 @@ namespace video {
     /**
      * The function type for the ${event receive_frame} callback.
      *
+     * The size of plane data is derived from width and height as documented
+     * below.
+     *
+     * Strides represent padding for each plane that may or may not be present.
+     * You must handle strides in your image processing code. Strides are
+     * negative if the image is bottom-up hence why you MUST abs() it when
+     * calculating plane buffer size.
+     *
      * @param friend_number The friend number of the friend who sent a video frame.
      * @param width Width of the frame in pixels.
      * @param height Height of the frame in pixels.
-     * @param y
-     * @param u
-     * @param v Plane data.
-     *          The size of plane data is derived from width and height where
-     *          Y = MAX(width, abs(ystride)) * height,
-     *          U = MAX(width/2, abs(ustride)) * (height/2) and
-     *          V = MAX(width/2, abs(vstride)) * (height/2).
-     * @param ystride
-     * @param ustride
-     * @param vstride Strides data. Strides represent padding for each plane
-     *                that may or may not be present. You must handle strides in
-     *                your image processing code. Strides are negative if the
-     *                image is bottom-up hence why you MUST abs() it when
-     *                calculating plane buffer size.
+     * @param y Luminosity plane. Size = MAX(width, abs(ystride)) * height.
+     * @param u U chroma plane. Size = MAX(width/2, abs(ustride)) * (height/2).
+     * @param v V chroma plane. Size = MAX(width/2, abs(vstride)) * (height/2).
+     *
+     * @param ystride Luminosity plane stride.
+     * @param ustride U chroma plane stride.
+     * @param vstride V chroma plane stride.
      */
     typedef void(uint32_t friend_number, uint16_t width, uint16_t height,
                  const uint8_t *y, const uint8_t *u, const uint8_t *v,

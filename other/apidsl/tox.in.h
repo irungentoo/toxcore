@@ -683,8 +683,8 @@ uint8_t[size] savedata {
   /**
    * Store all information associated with the tox instance to a byte array.
    *
-   * @param data A memory region large enough to store the tox instance data.
-   *   Call $size to find the number of bytes required. If this parameter
+   * @param savedata A memory region large enough to store the tox instance
+   *   data. Call $size to find the number of bytes required. If this parameter
    *   is NULL, this function has no effect.
    */
   get();
@@ -965,8 +965,8 @@ inline namespace self {
      * Call $size to find out how much memory to allocate for
      * the result.
      *
-     * @param status A valid memory location large enough to hold the status message.
-     *   If this parameter is NULL, the function has no effect.
+     * @param status_message A valid memory location large enough to hold the
+     *   status message. If this parameter is NULL, the function has no effect.
      */
     get();
   }
@@ -976,7 +976,7 @@ inline namespace self {
     /**
      * Set the client's user status.
      *
-     * @param user_status One of the user statuses listed in the enumeration above.
+     * @param status One of the user statuses listed in the enumeration above.
      */
     set();
 
@@ -1151,8 +1151,8 @@ inline namespace self {
      *
      * Call $size to determine the number of elements to allocate.
      *
-     * @param list A memory region with enough space to hold the friend list. If
-     *   this parameter is NULL, this function has no effect.
+     * @param friend_list A memory region with enough space to hold the friend
+     *   list. If this parameter is NULL, this function has no effect.
      */
     get();
   }
@@ -1532,9 +1532,9 @@ namespace friend {
      * @param message The message they sent along with the request.
      * @param length The size of the message byte array.
      */
-    typedef void(const uint8_t[PUBLIC_KEY_SIZE] public_key
-                 //, uint32_t time_delta
-                 , const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
+    typedef void(const uint8_t[PUBLIC_KEY_SIZE] public_key,
+                 // uint32_t time_delta,
+                 const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
 
@@ -1550,9 +1550,9 @@ namespace friend {
      *
      * @see ${event request} for more information on time_delta.
      */
-    typedef void(uint32_t friend_number
-                 //, uint32_t time_delta
-                 , MESSAGE_TYPE type,
+    typedef void(uint32_t friend_number,
+                 // uint32_t time_delta,
+                 MESSAGE_TYPE type,
                  const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
@@ -1752,18 +1752,18 @@ namespace file {
     NOT_FOUND,
   }
 
-  /**
-   * Copy the file id associated to the file transfer to a byte array.
-   *
-   * @param friend_number The friend number of the friend the file is being
-   *   transferred to or received from.
-   * @param file_number The friend-specific identifier for the file transfer.
-   * @param file_id A memory region of at least $FILE_ID_LENGTH bytes. If
-   *   this parameter is NULL, this function has no effect.
-   *
-   * @return true on success.
-   */
   uint8_t[FILE_ID_LENGTH] file_id {
+    /**
+     * Copy the file id associated to the file transfer to a byte array.
+     *
+     * @param friend_number The friend number of the friend the file is being
+     *   transferred to or received from.
+     * @param file_number The friend-specific identifier for the file transfer.
+     * @param file_id A memory region of at least $FILE_ID_LENGTH bytes. If
+     *   this parameter is NULL, this function has no effect.
+     *
+     * @return true on success.
+     */
     get(uint32_t friend_number, uint32_t file_number)
         with error for get;
   }
@@ -2371,8 +2371,6 @@ namespace conference {
     /**
      * Copy a list of valid conference IDs into the array chatlist. Determine how much space
      * to allocate for the array with the `$size` function.
-     *
-     * @return The number of elements copied to the array, or 0 if chatlist is set to NULL.
      */
     get();
   }
