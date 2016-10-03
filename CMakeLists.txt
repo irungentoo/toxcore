@@ -304,20 +304,26 @@ add_c_executable(DHT_bootstrap
   other/bootstrap_node_packets.c)
 target_link_modules(DHT_bootstrap toxnetcrypto)
 
-if(LIBCONFIG_FOUND)
-  add_c_executable(tox-bootstrapd
-    other/bootstrap_daemon/src/command_line_arguments.c
-    other/bootstrap_daemon/src/command_line_arguments.h
-    other/bootstrap_daemon/src/config.c
-    other/bootstrap_daemon/src/config_defaults.h
-    other/bootstrap_daemon/src/config.h
-    other/bootstrap_daemon/src/log.c
-    other/bootstrap_daemon/src/log.h
-    other/bootstrap_daemon/src/tox-bootstrapd.c
-    other/bootstrap_daemon/src/global.h
-    other/bootstrap_node_packets.c
-    other/bootstrap_node_packets.h)
-  target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
+option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
+if(BOOTSTRAP_DAEMON)
+  if(WIN32)
+    message(FATAL_ERROR "Building tox-bootstrapd for Windows is not supported")
+  endif()
+  if(LIBCONFIG_FOUND)
+    add_c_executable(tox-bootstrapd
+      other/bootstrap_daemon/src/command_line_arguments.c
+      other/bootstrap_daemon/src/command_line_arguments.h
+      other/bootstrap_daemon/src/config.c
+      other/bootstrap_daemon/src/config_defaults.h
+      other/bootstrap_daemon/src/config.h
+      other/bootstrap_daemon/src/log.c
+      other/bootstrap_daemon/src/log.h
+      other/bootstrap_daemon/src/tox-bootstrapd.c
+      other/bootstrap_daemon/src/global.h
+      other/bootstrap_node_packets.c
+      other/bootstrap_node_packets.h)
+    target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
+  endif()
 endif()
 
 ################################################################################

@@ -1,6 +1,7 @@
 #!/bin/sh
 
 CMAKE=$ARCH-w64-mingw32.shared-cmake
+CMAKE_EXTRA_FLAGS="-DBOOTSTRAP_DAEMON=OFF"
 NPROC=`nproc`
 CURDIR=/work
 

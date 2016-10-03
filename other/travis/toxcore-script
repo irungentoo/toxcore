@@ -13,7 +13,8 @@ RUN $CMAKE                                     \
   -DDEBUG=ON                                   \
   -DASSOC_DHT=ON                               \
   -DSTRICT_ABI=ON                              \
-  -DTEST_TIMEOUT_SECONDS=300 #-DASAN=ON
+  -DTEST_TIMEOUT_SECONDS=300                   \
+  $CMAKE_EXTRA_FLAGS #-DASAN=ON
 
 export CTEST_OUTPUT_ON_FAILURE=1
 
