@@ -6,13 +6,13 @@ export CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
 # Build toxcore and run tests.
 # TODO(iphydf): Enable ASAN. It currently has some bad interactions with gcov,
 # so it's disabled on Travis.
-RUN $CMAKE \
-  -B$BUILD_DIR \
-  -H. \
+RUN $CMAKE                                     \
+  -B$BUILD_DIR                                 \
+  -H.                                          \
   -DCMAKE_INSTALL_PREFIX:PATH=$CURDIR/_install \
-  -DDEBUG=ON \
-  -DASSOC_DHT=ON \
-  -DSTRICT_ABI=ON \
+  -DDEBUG=ON                                   \
+  -DASSOC_DHT=ON                               \
+  -DSTRICT_ABI=ON                              \
   -DTEST_TIMEOUT_SECONDS=300 #-DASAN=ON
 
 export CTEST_OUTPUT_ON_FAILURE=1
