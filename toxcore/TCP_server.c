@@ -1116,7 +1116,7 @@ static void do_TCP_accept_new(TCP_Server *TCP_server)
 
     for (i = 0; i < TCP_server->num_listening_socks; ++i) {
         struct sockaddr_storage addr;
-        unsigned int addrlen = sizeof(addr);
+        socklen_t addrlen = sizeof(addr);
         sock_t sock;
 
         do {
@@ -1323,7 +1323,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                 case TCP_SOCKET_LISTENING: {
                     //socket is from socks_listening, accept connection
                     struct sockaddr_storage addr;
-                    unsigned int addrlen = sizeof(addr);
+                    socklen_t addrlen = sizeof(addr);
 
                     while (1) {
                         sock_t sock_new = accept(sock, (struct sockaddr *)&addr, &addrlen);
