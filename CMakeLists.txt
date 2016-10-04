@@ -251,6 +251,8 @@ target_link_modules(toxencryptsave toxcore)
 #
 ################################################################################
 
+set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")
+
 if(APIDSL AND ASTYLE)
   add_test(
     NAME format_test
@@ -258,6 +260,7 @@ if(APIDSL AND ASTYLE)
       "${CMAKE_SOURCE_DIR}"
       "${APIDSL}"
       "${ASTYLE}")
+  set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
 endif()
 
 function(auto_test target)
@@ -271,6 +274,7 @@ function(auto_test target)
       target_link_modules(auto_${target}_test toxav)
     endif()
     add_test(NAME ${target} COMMAND auto_${target}_test)
+    set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
   endif()
 endfunction()
 
