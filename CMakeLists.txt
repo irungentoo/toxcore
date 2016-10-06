@@ -20,6 +20,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(ApiDsl)
 include(CheckCCompilerFlag)
+include(MacRpath)
 include(ModulePackage)
 
 set(CMAKE_MACOSX_RPATH ON)
