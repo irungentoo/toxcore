@@ -813,10 +813,19 @@ static int dealloc_buckets(DHT_Bucket *bucket)
 
     /* pk doesn't matter, want any nodes from both lower buckets. */
     uint8_t pk[crypto_box_PUBLICKEYBYTES] = {0};
-    int ret = recursive_DHT_bucket_get_nodes(bucket, bucket->client_list, DHT_BUCKET_NODES, pk, 1, 1);
+
+    Client_data nodes[DHT_BUCKET_NODES];
+    int ret = recursive_DHT_bucket_get_nodes(bucket, nodes, DHT_BUCKET_NODES, pk, 1, 1);
 
     recursive_free_buckets(bucket);
     bucket->empty = 0;
+
+    if (ret >= 1) {
+        bucket->client_list = calloc(DHT_BUCKET_NODES, sizeof(Client_data));
+
+        if (bucket->client_list)
+            memcpy(bucket->client_list, nodes, sizeof(nodes));
+    }
 
     if (ret >= 0) {
         return 0;

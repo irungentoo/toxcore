@@ -296,6 +296,10 @@ loop_top:
         c_sleep(500);
     }
 
+    for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
+        ck_assert_msg(DHT_delfriend(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, 1) == 0, "Failed to delete friend");
+    }
+
     for (i = 0; i < NUM_DHT; ++i) {
         void *n = dhts[i]->net;
         kill_DHT(dhts[i]);
