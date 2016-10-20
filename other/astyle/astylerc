@@ -1,11 +1,26 @@
+# Bracket Style Options
 --style=kr
-        --pad-header
-        --max-code-length=120
-                          --convert-tabs
-                          --indent-switches
-                          --pad-oper
-                          --align-pointer=name
-                                  --align-reference=name
-                                          --preserve-date
-                                          --lineend=linux
-                                                  --break-blocks
+
+# Tab Options
+--indent=spaces=4
+
+# Indentation Options
+--indent-switches
+
+# Padding Options
+--pad-header
+--break-blocks
+--pad-oper
+--unpad-paren
+--align-pointer=name
+--align-reference=name
+
+# Formatting Options
+--add-brackets
+--convert-tabs
+--max-code-length=120
+
+# Other Options
+--preserve-date
+--formatted
+--lineend=linux

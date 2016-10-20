@@ -111,8 +111,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     /* Initialize networking -
        Bind to ip 0.0.0.0 / [::] : PORT */

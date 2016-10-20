@@ -82,8 +82,9 @@ uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
 {
     FILE *tempfile = fopen(filename, "rb");
 
-    if (tempfile == 0)
+    if (tempfile == 0) {
         return -1;
+    }
 
     fseek(tempfile, 0, SEEK_END);
     uint64_t filesize = ftell(tempfile);
@@ -91,8 +92,9 @@ uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
     uint32_t filenum = tox_file_send(m, friendnum, TOX_FILE_KIND_DATA, filesize, 0, (uint8_t *)filename,
                                      strlen(filename), 0);
 
-    if (filenum == -1)
+    if (filenum == -1) {
         return -1;
+    }
 
     file_senders[numfilesenders].file = tempfile;
     file_senders[numfilesenders].friendnum = friendnum;
@@ -116,8 +118,9 @@ int not_sending()
     uint32_t i;
 
     for (i = 0; i < NUM_FILE_SENDERS; ++i)
-        if (file_senders[i].file != 0)
+        if (file_senders[i].file != 0) {
             return 0;
+        }
 
     return 1;
 }
@@ -138,14 +141,16 @@ void file_request_accept(Tox *tox, uint32_t friend_number, uint32_t file_number,
     uint16_t rm = 0;
 
     for (i = 0; i < strlen((char *)filename); ++i) {
-        if (filename[i] == '/')
+        if (filename[i] == '/') {
             rm = i;
+        }
     }
 
-    if (path[strlen(path) - 1] == '/')
+    if (path[strlen(path) - 1] == '/') {
         sprintf(fullpath, "%s%s", path, filename + rm + 1);
-    else
+    } else {
         sprintf(fullpath, "%s/%s", path, filename + rm + 1);
+    }
 
     FILE *tempfile = fopen(fullpath, "rb");
 
@@ -202,16 +207,17 @@ void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t p
     if (file_recv[file_index].file != 0) {
         fseek(file_recv[file_index].file, position, SEEK_SET);
 
-        if (fwrite(data, length, 1, file_recv[file_index].file) != 1)
+        if (fwrite(data, length, 1, file_recv[file_index].file) != 1) {
             printf("Error writing data\n");
+        }
     }
 }
 
 void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
-    if (status)
+    if (status) {
         printf("\nOther went online.\n");
-    else {
+    } else {
         printf("\nOther went offline.\n");
         unsigned int i;
 
@@ -234,8 +240,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = 1; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     /* with optional --ipvx, now it can be 1-4 arguments... */
     if ((argc != argvoffset + 3) && (argc != argvoffset + 5)) {
@@ -303,10 +310,11 @@ int main(int argc, char *argv[])
                     if (dir->d_type == DT_REG) {
                         char fullpath[1024];
 
-                        if (path[strlen(path) - 1] == '/')
+                        if (path[strlen(path) - 1] == '/') {
                             sprintf(fullpath, "%s%s", path, dir->d_name);
-                        else
+                        } else {
                             sprintf(fullpath, "%s/%s", path, dir->d_name);
+                        }
 
                         add_filesender(tox, num, fullpath);
                     }

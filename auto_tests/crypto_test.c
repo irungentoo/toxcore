@@ -285,8 +285,9 @@ void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
         for (i = crypto_box_NONCEBYTES - sizeof(num1); i != 0; --i) {
             ++nonce[i - 1];
 
-            if (nonce[i - 1] != 0)
+            if (nonce[i - 1] != 0) {
                 break;
+            }
         }
     }
 
@@ -300,8 +301,9 @@ START_TEST(test_increment_nonce)
 
     uint8_t n[crypto_box_NONCEBYTES];
 
-    for (i = 0; i < crypto_box_NONCEBYTES; ++i)
+    for (i = 0; i < crypto_box_NONCEBYTES; ++i) {
         n[i] = rand();
+    }
 
     uint8_t n1[crypto_box_NONCEBYTES];
 

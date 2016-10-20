@@ -24,8 +24,9 @@
 
 void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
         tox_friend_add_norequest(m, public_key, 0);
@@ -36,8 +37,9 @@ uint32_t messages_received;
 void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const uint8_t *string, size_t length,
                    void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
     if (type != TOX_MESSAGE_TYPE_NORMAL) {
         ck_abort_msg("Bad type");
@@ -46,42 +48,49 @@ void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, const u
     uint8_t cmp_msg[TOX_MAX_MESSAGE_LENGTH];
     memset(cmp_msg, 'G', sizeof(cmp_msg));
 
-    if (length == TOX_MAX_MESSAGE_LENGTH && memcmp(string, cmp_msg, sizeof(cmp_msg)) == 0)
+    if (length == TOX_MAX_MESSAGE_LENGTH && memcmp(string, cmp_msg, sizeof(cmp_msg)) == 0) {
         ++messages_received;
+    }
 }
 
 uint32_t name_changes;
 
 void print_nickchange(Tox *m, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
-    if (length == sizeof("Gentoo") && memcmp(string, "Gentoo", sizeof("Gentoo")) == 0)
+    if (length == sizeof("Gentoo") && memcmp(string, "Gentoo", sizeof("Gentoo")) == 0) {
         ++name_changes;
+    }
 }
 
 uint32_t status_m_changes;
 void print_status_m_change(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length, void *user_data)
 {
-    if (*((uint32_t *)user_data) != 974536)
+    if (*((uint32_t *)user_data) != 974536) {
         return;
+    }
 
-    if (length == sizeof("Installing Gentoo") && memcmp(message, "Installing Gentoo", sizeof("Installing Gentoo")) == 0)
+    if (length == sizeof("Installing Gentoo") && memcmp(message, "Installing Gentoo", sizeof("Installing Gentoo")) == 0) {
         ++status_m_changes;
+    }
 }
 
 uint32_t typing_changes;
 
 void print_typingchange(Tox *m, uint32_t friendnumber, bool typing, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
-    if (!typing)
+    if (!typing) {
         typing_changes = 1;
-    else
+    } else {
         typing_changes = 2;
+    }
 }
 
 uint32_t custom_packet;
@@ -90,8 +99,9 @@ void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *data, size
 {
     uint8_t number = *((uint32_t *)object);
 
-    if (len != TOX_MAX_CUSTOM_PACKET_SIZE)
+    if (len != TOX_MAX_CUSTOM_PACKET_SIZE) {
         return;
+    }
 
     uint8_t f_data[len];
     memset(f_data, number, len);
@@ -115,8 +125,9 @@ uint64_t file_size;
 void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t filesize,
                       const uint8_t *filename, size_t filename_length, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
     if (kind != TOX_FILE_KIND_DATA) {
         ck_abort_msg("Bad kind");
@@ -181,12 +192,14 @@ uint32_t sendf_ok;
 void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
                         void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536)
+    if (*((uint32_t *)userdata) != 974536) {
         return;
+    }
 
     /* First send file num is 0.*/
-    if (file_number == 0 && control == TOX_FILE_CONTROL_RESUME)
+    if (file_number == 0 && control == TOX_FILE_CONTROL_RESUME) {
         sendf_ok = 1;
+    }
 }
 
 uint64_t max_sending;
@@ -196,8 +209,9 @@ _Bool file_sending_done;
 void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, size_t length,
                             void *user_data)
 {
-    if (*((uint32_t *)user_data) != 974536)
+    if (*((uint32_t *)user_data) != 974536) {
         return;
+    }
 
     if (!sendf_ok) {
         ck_abort_msg("Didn't get resume control");
@@ -248,8 +262,9 @@ _Bool file_recv;
 void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
                 size_t length, void *user_data)
 {
-    if (*((uint32_t *)user_data) != 974536)
+    if (*((uint32_t *)user_data) != 974536) {
         return;
+    }
 
     if (size_recv != position) {
         ck_abort_msg("Bad position");
@@ -275,11 +290,13 @@ void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t p
 unsigned int connected_t1;
 void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
 {
-    if (*((uint32_t *)user_data) != 974536)
+    if (*((uint32_t *)user_data) != 974536) {
         return;
+    }
 
-    if (connected_t1 && !connection_status)
+    if (connected_t1 && !connection_status) {
         ck_abort_msg("Tox went offline");
+    }
 
     ck_assert_msg(connection_status == TOX_CONNECTION_UDP, "wrong status %u", connection_status);
 
@@ -447,8 +464,9 @@ START_TEST(test_few_clients)
             }
 
             if (tox_friend_get_connection_status(tox2, 0, 0) == TOX_CONNECTION_UDP
-                    && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP)
+                    && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP) {
                 break;
+            }
         }
 
         c_sleep(50);
@@ -472,8 +490,9 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (messages_received)
+        if (messages_received) {
             break;
+        }
 
         c_sleep(50);
     }
@@ -510,8 +529,9 @@ START_TEST(test_few_clients)
             }
 
             if (tox_friend_get_connection_status(tox2, 0, 0) == TOX_CONNECTION_UDP
-                    && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP)
+                    && tox_friend_get_connection_status(tox3, 0, 0) == TOX_CONNECTION_UDP) {
                 break;
+            }
         }
 
         c_sleep(50);
@@ -529,8 +549,9 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (name_changes)
+        if (name_changes) {
             break;
+        }
 
         c_sleep(50);
     }
@@ -550,8 +571,9 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (status_m_changes)
+        if (status_m_changes) {
             break;
+        }
 
         c_sleep(50);
     }
@@ -573,10 +595,11 @@ START_TEST(test_few_clients)
         tox_iterate(tox3);
 
 
-        if (typing_changes == 2)
+        if (typing_changes == 2) {
             break;
-        else
+        } else {
             ck_assert_msg(typing_changes == 0, "Typing fail");
+        }
 
         c_sleep(50);
     }
@@ -590,10 +613,11 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (typing_changes == 1)
+        if (typing_changes == 1) {
             break;
-        else
+        } else {
             ck_assert_msg(typing_changes == 0, "Typing fail");
+        }
 
         c_sleep(50);
     }
@@ -617,10 +641,11 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (custom_packet == 1)
+        if (custom_packet == 1) {
             break;
-        else
+        } else {
             ck_assert_msg(custom_packet == 0, "Lossless packet fail");
+        }
 
         c_sleep(50);
     }
@@ -639,10 +664,11 @@ START_TEST(test_few_clients)
         tox_iterate(tox2);
         tox_iterate(tox3);
 
-        if (custom_packet == 1)
+        if (custom_packet == 1) {
             break;
-        else
+        } else {
             ck_assert_msg(custom_packet == 0, "lossy packet fail");
+        }
 
         c_sleep(50);
     }
@@ -849,8 +875,9 @@ loop_top:
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
 
         for (j = 0; j < i; ++j) {
-            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
                 goto loop_top;
+            }
         }
 
         tox_self_get_address(toxes[pairs[i].tox1], address);
@@ -876,8 +903,9 @@ loop_top:
 
         for (i = 0; i < NUM_TOXES; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
-                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_UDP)
+                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_UDP) {
                     ++counter;
+                }
         }
 
         if (counter == NUM_FRIENDS * 2) {
@@ -950,8 +978,9 @@ loop_top:
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES_TCP - 1) + 1) % NUM_TOXES_TCP;
 
         for (j = 0; j < i; ++j) {
-            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
                 goto loop_top;
+            }
         }
 
         tox_self_get_address(toxes[pairs[i].tox1], address);
@@ -971,8 +1000,9 @@ loop_top:
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
-                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP)
+                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP) {
                     ++counter;
+                }
 
         }
 
@@ -1046,8 +1076,9 @@ loop_top:
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES_TCP - 1) + 1) % NUM_TOXES_TCP;
 
         for (j = 0; j < i; ++j) {
-            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2)
+            if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
                 goto loop_top;
+            }
         }
 
         tox_self_get_address(toxes[pairs[i].tox1], address);
@@ -1067,8 +1098,9 @@ loop_top:
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j)
-                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP)
+                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP) {
                     ++counter;
+                }
         }
 
         if (counter == NUM_FRIENDS * 2) {
@@ -1095,8 +1127,9 @@ END_TEST
 
 void g_accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 234212)
+    if (*((uint32_t *)userdata) != 234212) {
         return;
+    }
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
         tox_friend_add_norequest(m, public_key, 0);
@@ -1109,16 +1142,19 @@ static unsigned int invite_counter;
 void print_group_invite_callback(Tox *tox, int32_t friendnumber, uint8_t type, const uint8_t *data, uint16_t length,
                                  void *userdata)
 {
-    if (*((uint32_t *)userdata) != 234212)
+    if (*((uint32_t *)userdata) != 234212) {
         return;
+    }
 
-    if (type != TOX_GROUPCHAT_TYPE_TEXT)
+    if (type != TOX_GROUPCHAT_TYPE_TEXT) {
         return;
+    }
 
     int g_num;
 
-    if ((g_num = tox_join_groupchat(tox, friendnumber, data, length)) == -1)
+    if ((g_num = tox_join_groupchat(tox, friendnumber, data, length)) == -1) {
         return;
+    }
 
     ck_assert_msg(g_num == 0, "Group number was not 0");
     ck_assert_msg(tox_join_groupchat(tox, friendnumber, data, length) == -1,
@@ -1133,8 +1169,9 @@ static unsigned int num_recv;
 void print_group_message(Tox *tox, int groupnumber, int peernumber, const uint8_t *message, uint16_t length,
                          void *userdata)
 {
-    if (*((uint32_t *)userdata) != 234212)
+    if (*((uint32_t *)userdata) != 234212) {
         return;
+    }
 
     if (length == (sizeof("Install Gentoo") - 1) && memcmp(message, "Install Gentoo", sizeof("Install Gentoo") - 1) == 0) {
         ++num_recv;
@@ -1178,8 +1215,9 @@ START_TEST(test_many_group)
             }
         }
 
-        if (i == NUM_GROUP_TOX)
+        if (i == NUM_GROUP_TOX) {
             break;
+        }
 
         for (i = 0; i < NUM_GROUP_TOX; ++i) {
             tox_iterate(toxes[i]);
