@@ -263,6 +263,8 @@ target_link_modules(toxencryptsave toxcore)
 
 set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")
 
+option(FORMAT_TEST "Require the format_test to be executed; fail cmake if it can't" OFF)
+
 if(APIDSL AND ASTYLE)
   add_test(
     NAME format_test
@@ -271,6 +273,8 @@ if(APIDSL AND ASTYLE)
       "${APIDSL}"
       "${ASTYLE}")
   set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
+elseif(FORMAT_TEST)
+  message(FATAL_ERROR "format_test can not be run, because either APIDSL (${APIDSL}) or ASTYLE (${ASTYLE}) could not be found")
 endif()
 
 function(auto_test target)

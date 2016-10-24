@@ -27,6 +27,7 @@ if ! which "$APIDSL"; then
     APIDSL=../apidsl/apigen.native
   else
     APIDSL=apidsl_curl
+  fi
 fi
 
 apidsl_curl() {
