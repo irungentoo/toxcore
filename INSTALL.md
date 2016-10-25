@@ -60,7 +60,7 @@ On Fedora:
 dnf groupinstall "Development Tools"
 dnf install libtool autoconf automake check check-devel
 ```
-Using ``dnf install @"Development Tools"`` is also valid and slightly shorter / cleaner way. ``@"Rpm Development Tools"``  would carry the remaining dependencies listed here.
+Using ``dnf install @"Development Tools"`` is also valid and slightly shorter / cleaner way. ``dnf install @"Rpm Development Tools"``  would carry the remaining dependencies listed here.
 
 On SunOS:
 
@@ -80,7 +80,7 @@ You should get and install [libsodium](https://github.com/jedisct1/libsodium). I
 ```bash
 git clone https://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/1.0.3
+git checkout tags/1.0.11
 ./autogen.sh
 ./configure && make check
 sudo checkinstall --install --pkgname libsodium --pkgversion 1.0.0 --nodoc
@@ -95,7 +95,7 @@ this will install the libs to /usr/local/lib and the headers to /usr/local/inclu
 ```bash
 git clone https://github.com/jedisct1/libsodium.git
 cd libsodium
-git checkout tags/1.0.3
+git checkout tags/1.0.11
 ./autogen.sh
 ./configure
 make check
