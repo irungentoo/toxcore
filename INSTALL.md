@@ -121,8 +121,8 @@ sudo ldconfig
 
 Then clone this repo, run `cmake`, and install `toxcore` system-wide:
 ```bash
-git clone https://github.com/TokTok/toxcore.git
-cd toxcore
+git clone https://github.com/TokTok/c-toxcore.git c-toxcore
+cd c-toxcore
 cmake .
 make
 sudo make install
@@ -152,8 +152,8 @@ brew install libtool automake autoconf libsodium check
 ```
 Then clone this repo and generate makefile:
 ```bash
-git clone https://github.com/TokTok/toxcore.git
-cd toxcore
+git clone https://github.com/TokTok/c-toxcore.git c-toxcore
+cd c-toxcore
 autoreconf -i
 ./configure
 make
@@ -232,7 +232,7 @@ sudo make install
 Compiling and installing Tox Core
 
 ```bash
-cd toxcore
+cd c-toxcore
 autoreconf -i
 ./configure (OS X 10.5 specific)
 ./configure CC="gcc -arch ppc -arch i386" CXX="g++ -arch ppc -arch i386" CPP="gcc -E" CXXCPP="g++ -E"
@@ -404,8 +404,8 @@ cd ..
 
 And finally we will build Tox:
 ```bash
-git clone https://github.com/TokTok/toxcore
-cd toxcore
+git clone https://github.com/TokTok/c-toxcore.git c-toxcore
+cd c-toxcore
 ./autogen.sh
 ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-ntox --disable-tests --disable-testing --with-dependency-search="$PREFIX_DIR" --disable-shared --enable-static
 make
@@ -466,7 +466,7 @@ Next, install toxcore library, should either clone this repo by using git, or ju
 Assuming that you now have the sources in the toxcore directory:
 
 ```cmd
-cd toxcore
+cd c-toxcore
 autoreconf -i
 ./configure
 make
