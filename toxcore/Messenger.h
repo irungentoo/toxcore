@@ -59,11 +59,11 @@ enum {
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
 #define PACKET_ID_FILE_DATA 82
-#define PACKET_ID_INVITE_GROUPCHAT 96
+#define PACKET_ID_INVITE_CONFERENCE 96
 #define PACKET_ID_ONLINE_PACKET 97
-#define PACKET_ID_DIRECT_GROUPCHAT 98
-#define PACKET_ID_MESSAGE_GROUPCHAT 99
-#define PACKET_ID_LOSSY_GROUPCHAT 199
+#define PACKET_ID_DIRECT_CONFERENCE 98
+#define PACKET_ID_MESSAGE_CONFERENCE 99
+#define PACKET_ID_LOSSY_CONFERENCE 199
 
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
@@ -248,8 +248,8 @@ struct Messenger {
     void (*friend_connectionstatuschange_internal)(struct Messenger *m, uint32_t, uint8_t, void *);
     void *friend_connectionstatuschange_internal_userdata;
 
-    void *group_chat_object; /* Set by new_groupchats()*/
-    void (*group_invite)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
+    void *conferences_object; /* Set by new_groupchats()*/
+    void (*conference_invite)(struct Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
 
     void (*file_sendrequest)(struct Messenger *m, uint32_t, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t,
                              void *);
@@ -531,20 +531,21 @@ void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Mess
  */
 void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *));
 
-/**********GROUP CHATS************/
+/**********CONFERENCES************/
 
-/* Set the callback for group invites.
+/* Set the callback for conference invites.
  *
  *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *));
+void m_callback_conference_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t,
+                                  void *));
 
-/* Send a group invite packet.
+/* Send a conference invite packet.
  *
  *  return 1 on success
  *  return 0 on failure
  */
-int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /****************FILE SENDING*****************/
 

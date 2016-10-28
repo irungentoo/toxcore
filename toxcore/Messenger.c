@@ -979,27 +979,28 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
-/**********GROUP CHATS************/
+/**********CONFERENCES************/
 
 
-/* Set the callback for group invites.
+/* Set the callback for conference invites.
  *
  *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_group_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *))
+void m_callback_conference_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t,
+                                  void *))
 {
-    m->group_invite = function;
+    m->conference_invite = function;
 }
 
 
-/* Send a group invite packet.
+/* Send a conference invite packet.
  *
  *  return 1 on success
  *  return 0 on failure
  */
-int send_group_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
+int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_GROUPCHAT, data, length, 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, 0);
 }
 
 /****************FILE SENDING*****************/
@@ -2175,13 +2176,13 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             break;
         }
 
-        case PACKET_ID_INVITE_GROUPCHAT: {
+        case PACKET_ID_INVITE_CONFERENCE: {
             if (data_length == 0) {
                 break;
             }
 
-            if (m->group_invite) {
-                (*m->group_invite)(m, i, data, data_length, userdata);
+            if (m->conference_invite) {
+                (*m->conference_invite)(m, i, data, data_length, userdata);
             }
 
             break;

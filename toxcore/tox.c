@@ -303,7 +303,7 @@ void tox_kill(Tox *tox)
 
     Messenger *m = tox;
     Logger *log = m->log;
-    kill_groupchats((Group_Chats *)m->group_chat_object);
+    kill_groupchats((Group_Chats *)m->conferences_object);
     kill_messenger(m);
     logger_kill(log);
 }
@@ -476,7 +476,7 @@ void tox_iterate(Tox *tox, void *user_data)
 {
     Messenger *m = tox;
     do_messenger(m, user_data);
-    do_groupchats((Group_Chats *)m->group_chat_object, user_data);
+    do_groupchats((Group_Chats *)m->conferences_object, user_data);
 }
 
 void tox_self_get_address(const Tox *tox, uint8_t *address)
@@ -528,7 +528,7 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET
 
     if (setname(m, name, length) == 0) {
         // TODO(irungentoo): function to set different per group names?
-        send_name_all_groups((Group_Chats *)m->group_chat_object);
+        send_name_all_groups((Group_Chats *)m->conferences_object);
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         return 1;
     }
@@ -1219,7 +1219,7 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback)
 void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_invite((Group_Chats *)m->group_chat_object, (void (*)(Messenger * m, uint32_t, int, const uint8_t *,
+    g_callback_group_invite((Group_Chats *)m->conferences_object, (void (*)(Messenger * m, uint32_t, int, const uint8_t *,
                             size_t,
                             void *))callback);
 }
@@ -1227,7 +1227,7 @@ void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback
 void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_message((Group_Chats *)m->group_chat_object, (void (*)(Messenger * m, uint32_t, uint32_t, int,
+    g_callback_group_message((Group_Chats *)m->conferences_object, (void (*)(Messenger * m, uint32_t, uint32_t, int,
                              const uint8_t *,
                              size_t, void *))callback);
 }
@@ -1235,20 +1235,20 @@ void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callba
 void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_title((Group_Chats *)m->group_chat_object, callback);
+    g_callback_group_title((Group_Chats *)m->conferences_object, callback);
 }
 
 void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_namelistchange((Group_Chats *)m->group_chat_object, (void (*)(struct Messenger *, int, int, uint8_t,
+    g_callback_group_namelistchange((Group_Chats *)m->conferences_object, (void (*)(struct Messenger *, int, int, uint8_t,
                                     void *))callback);
 }
 
 uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error)
 {
     Messenger *m = tox;
-    int ret = add_groupchat((Group_Chats *)m->group_chat_object, GROUPCHAT_TYPE_TEXT);
+    int ret = add_groupchat((Group_Chats *)m->conferences_object, GROUPCHAT_TYPE_TEXT);
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_NEW_INIT);
@@ -1262,7 +1262,7 @@ uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error)
 bool tox_conference_delete(Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_DELETE *error)
 {
     Messenger *m = tox;
-    int ret = del_groupchat((Group_Chats *)m->group_chat_object, conference_number);
+    int ret = del_groupchat((Group_Chats *)m->conferences_object, conference_number);
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND);
@@ -1276,7 +1276,7 @@ bool tox_conference_delete(Tox *tox, uint32_t conference_number, TOX_ERR_CONFERE
 uint32_t tox_conference_peer_count(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_PEER_QUERY *error)
 {
     const Messenger *m = tox;
-    int ret = group_number_peers((Group_Chats *)m->group_chat_object, conference_number);
+    int ret = group_number_peers((Group_Chats *)m->conferences_object, conference_number);
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND);
@@ -1291,7 +1291,7 @@ size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t conference_num
         TOX_ERR_CONFERENCE_PEER_QUERY *error)
 {
     const Messenger *m = tox;
-    int ret = group_peername_size((Group_Chats *)m->group_chat_object, conference_number, peer_number);
+    int ret = group_peername_size((Group_Chats *)m->conferences_object, conference_number, peer_number);
 
     switch (ret) {
         case -1:
@@ -1311,7 +1311,7 @@ bool tox_conference_peer_get_name(const Tox *tox, uint32_t conference_number, ui
                                   TOX_ERR_CONFERENCE_PEER_QUERY *error)
 {
     const Messenger *m = tox;
-    int ret = group_peername((Group_Chats *)m->group_chat_object, conference_number, peer_number, name);
+    int ret = group_peername((Group_Chats *)m->conferences_object, conference_number, peer_number, name);
 
     switch (ret) {
         case -1:
@@ -1331,7 +1331,7 @@ bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t conference_numb
                                         uint8_t *public_key, TOX_ERR_CONFERENCE_PEER_QUERY *error)
 {
     const Messenger *m = tox;
-    int ret = group_peer_pubkey((Group_Chats *)m->group_chat_object, conference_number, peer_number, public_key);
+    int ret = group_peer_pubkey((Group_Chats *)m->conferences_object, conference_number, peer_number, public_key);
 
     switch (ret) {
         case -1:
@@ -1351,7 +1351,7 @@ bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_numb
                                         TOX_ERR_CONFERENCE_PEER_QUERY *error)
 {
     const Messenger *m = tox;
-    int ret = group_peernumber_is_ours((Group_Chats *)m->group_chat_object, conference_number, peer_number);
+    int ret = group_peernumber_is_ours((Group_Chats *)m->conferences_object, conference_number, peer_number);
 
     switch (ret) {
         case -1:
@@ -1375,7 +1375,7 @@ bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t conference
                            TOX_ERR_CONFERENCE_INVITE *error)
 {
     Messenger *m = tox;
-    int ret = invite_friend((Group_Chats *)m->group_chat_object, friend_number, conference_number);
+    int ret = invite_friend((Group_Chats *)m->conferences_object, friend_number, conference_number);
 
     switch (ret) {
         case -1:
@@ -1395,7 +1395,7 @@ uint32_t tox_conference_join(Tox *tox, uint32_t friend_number, const uint8_t *co
                              TOX_ERR_CONFERENCE_JOIN *error)
 {
     Messenger *m = tox;
-    int ret = join_groupchat((Group_Chats *)m->group_chat_object, friend_number, GROUPCHAT_TYPE_TEXT, cookie, length);
+    int ret = join_groupchat((Group_Chats *)m->conferences_object, friend_number, GROUPCHAT_TYPE_TEXT, cookie, length);
 
     switch (ret) {
         case -1:
@@ -1434,9 +1434,9 @@ bool tox_conference_send_message(Tox *tox, uint32_t conference_number, TOX_MESSA
     int ret = 0;
 
     if (type == TOX_MESSAGE_TYPE_NORMAL) {
-        ret = group_message_send((Group_Chats *)m->group_chat_object, conference_number, message, length);
+        ret = group_message_send((Group_Chats *)m->conferences_object, conference_number, message, length);
     } else {
-        ret = group_action_send((Group_Chats *)m->group_chat_object, conference_number, message, length);
+        ret = group_action_send((Group_Chats *)m->conferences_object, conference_number, message, length);
     }
 
     switch (ret) {
@@ -1464,7 +1464,7 @@ bool tox_conference_send_message(Tox *tox, uint32_t conference_number, TOX_MESSA
 size_t tox_conference_get_title_size(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_TITLE *error)
 {
     const Messenger *m = tox;
-    int ret = group_title_get_size((Group_Chats *)m->group_chat_object, conference_number);
+    int ret = group_title_get_size((Group_Chats *)m->conferences_object, conference_number);
 
     switch (ret) {
         case -1:
@@ -1484,7 +1484,7 @@ bool tox_conference_get_title(const Tox *tox, uint32_t conference_number, uint8_
                               TOX_ERR_CONFERENCE_TITLE *error)
 {
     const Messenger *m = tox;
-    int ret = group_title_get((Group_Chats *)m->group_chat_object, conference_number, title);
+    int ret = group_title_get((Group_Chats *)m->conferences_object, conference_number, title);
 
     switch (ret) {
         case -1:
@@ -1504,7 +1504,7 @@ bool tox_conference_set_title(Tox *tox, uint32_t conference_number, const uint8_
                               TOX_ERR_CONFERENCE_TITLE *error)
 {
     Messenger *m = tox;
-    int ret = group_title_send((Group_Chats *)m->group_chat_object, conference_number, title, length);
+    int ret = group_title_send((Group_Chats *)m->conferences_object, conference_number, title, length);
 
     switch (ret) {
         case -1:
@@ -1527,21 +1527,21 @@ bool tox_conference_set_title(Tox *tox, uint32_t conference_number, const uint8_
 size_t tox_conference_get_chatlist_size(const Tox *tox)
 {
     const Messenger *m = tox;
-    return count_chatlist((Group_Chats *)m->group_chat_object);
+    return count_chatlist((Group_Chats *)m->conferences_object);
 }
 
 void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist)
 {
     const Messenger *m = tox;
     size_t list_size = tox_conference_get_chatlist_size(tox);
-    copy_chatlist((Group_Chats *)m->group_chat_object, chatlist, list_size);
+    copy_chatlist((Group_Chats *)m->conferences_object, chatlist, list_size);
 }
 
 TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_number,
         TOX_ERR_CONFERENCE_GET_TYPE *error)
 {
     const Messenger *m = tox;
-    int ret = group_get_type((Group_Chats *)m->group_chat_object, conference_number);
+    int ret = group_get_type((Group_Chats *)m->conferences_object, conference_number);
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_GET_TYPE_CONFERENCE_NOT_FOUND);

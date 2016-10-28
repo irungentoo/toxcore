@@ -1024,7 +1024,7 @@ int invite_friend(Group_Chats *g_c, int32_t friendnumber, int groupnumber)
     memcpy(invite + 1, &groupchat_num, sizeof(groupchat_num));
     memcpy(invite + 1 + sizeof(groupchat_num), g->identifier, GROUP_IDENTIFIER_LENGTH);
 
-    if (send_group_invite_packet(g_c->m, friendnumber, invite, sizeof(invite))) {
+    if (send_conference_invite_packet(g_c->m, friendnumber, invite, sizeof(invite))) {
         return 0;
     }
 
@@ -1084,7 +1084,7 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type
     memcpy(response + 1, &group_num, sizeof(uint16_t));
     memcpy(response + 1 + sizeof(uint16_t), data, sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH);
 
-    if (send_group_invite_packet(g_c->m, friendnumber, response, sizeof(response))) {
+    if (send_conference_invite_packet(g_c->m, friendnumber, response, sizeof(response))) {
         uint16_t other_groupnum;
         memcpy(&other_groupnum, data, sizeof(other_groupnum));
         other_groupnum = ntohs(other_groupnum);
@@ -1377,7 +1377,7 @@ int group_title_get(const Group_Chats *g_c, int groupnumber, uint8_t *title)
 static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                                         void *userdata)
 {
-    Group_Chats *g_c = (Group_Chats *)m->group_chat_object;
+    Group_Chats *g_c = (Group_Chats *)m->conferences_object;
 
     if (length <= 1) {
         return;
@@ -1583,7 +1583,7 @@ static unsigned int send_peer_kill(Group_Chats *g_c, int friendcon_id, uint16_t 
 {
     uint8_t packet[1];
     packet[0] = PEER_KILL_ID;
-    return send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, packet, sizeof(packet));
+    return send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, sizeof(packet));
 }
 
 
@@ -1594,7 +1594,7 @@ static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t
 {
     uint8_t packet[1];
     packet[0] = PEER_QUERY_ID;
-    return send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, packet, sizeof(packet));
+    return send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, sizeof(packet));
 }
 
 /* return number of peers sent on success.
@@ -1617,7 +1617,7 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
 
     for (i = 0; i < g->numpeers; ++i) {
         if ((p - packet) + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2 + 1 + g->group[i].nick_len > sizeof(packet)) {
-            if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, packet, (p - packet))) {
+            if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, (p - packet))) {
                 sent = i;
             } else {
                 return sent;
@@ -1640,7 +1640,7 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
     }
 
     if (sent != i) {
-        if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, packet, (p - packet))) {
+        if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, (p - packet))) {
             sent = i;
         }
     }
@@ -1649,7 +1649,7 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
         uint8_t Packet[1 + g->title_len];
         Packet[0] = PEER_TITLE_ID;
         memcpy(Packet + 1, g->title, g->title_len);
-        send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_GROUPCHAT, group_num, Packet, sizeof(Packet));
+        send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, Packet, sizeof(Packet));
     }
 
     return sent;
@@ -1778,7 +1778,7 @@ static unsigned int send_message_all_close(const Group_Chats *g_c, int groupnumb
             continue;
         }
 
-        if (send_packet_group_peer(g_c->fr_c, g->close[i].number, PACKET_ID_MESSAGE_GROUPCHAT, g->close[i].group_number, data,
+        if (send_packet_group_peer(g_c->fr_c, g->close[i].number, PACKET_ID_MESSAGE_CONFERENCE, g->close[i].group_number, data,
                                    length)) {
             ++sent;
         }
@@ -1818,7 +1818,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
             continue;
         }
 
-        if (send_lossy_group_peer(g_c->fr_c, g->close[i].number, PACKET_ID_LOSSY_GROUPCHAT, g->close[i].group_number, data,
+        if (send_lossy_group_peer(g_c->fr_c, g->close[i].number, PACKET_ID_LOSSY_CONFERENCE, g->close[i].group_number, data,
                                   length)) {
             ++sent;
         }
@@ -1843,7 +1843,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
         }
     }
 
-    if (send_lossy_group_peer(g_c->fr_c, g->close[to_send].number, PACKET_ID_LOSSY_GROUPCHAT,
+    if (send_lossy_group_peer(g_c->fr_c, g->close[to_send].number, PACKET_ID_LOSSY_CONFERENCE,
                               g->close[to_send].group_number, data, length)) {
         ++sent;
     }
@@ -1867,7 +1867,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
         return sent;
     }
 
-    if (send_lossy_group_peer(g_c->fr_c, g->close[to_send_other].number, PACKET_ID_LOSSY_GROUPCHAT,
+    if (send_lossy_group_peer(g_c->fr_c, g->close[to_send_other].number, PACKET_ID_LOSSY_CONFERENCE,
                               g->close[to_send_other].group_number, data, length)) {
         ++sent;
     }
@@ -2136,7 +2136,7 @@ static int handle_packet(void *object, int friendcon_id, const uint8_t *data, ui
         return handle_packet_online(g_c, friendcon_id, data + 1, length - 1);
     }
 
-    if (data[0] != PACKET_ID_DIRECT_GROUPCHAT && data[0] != PACKET_ID_MESSAGE_GROUPCHAT) {
+    if (data[0] != PACKET_ID_DIRECT_CONFERENCE && data[0] != PACKET_ID_MESSAGE_CONFERENCE) {
         return -1;
     }
 
@@ -2156,12 +2156,12 @@ static int handle_packet(void *object, int friendcon_id, const uint8_t *data, ui
     }
 
     switch (data[0]) {
-        case PACKET_ID_DIRECT_GROUPCHAT: {
+        case PACKET_ID_DIRECT_CONFERENCE: {
             handle_direct_packet(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index, userdata);
             break;
         }
 
-        case PACKET_ID_MESSAGE_GROUPCHAT: {
+        case PACKET_ID_MESSAGE_CONFERENCE: {
             handle_message_packet_group(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index,
                                         userdata);
             break;
@@ -2244,7 +2244,7 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
         return -1;
     }
 
-    if (data[0] != PACKET_ID_LOSSY_GROUPCHAT) {
+    if (data[0] != PACKET_ID_LOSSY_CONFERENCE) {
         return -1;
     }
 
@@ -2452,8 +2452,8 @@ Group_Chats *new_groupchats(Messenger *m)
 
     temp->m = m;
     temp->fr_c = m->fr_c;
-    m->group_chat_object = temp;
-    m_callback_group_invite(m, &handle_friend_invite_packet);
+    m->conferences_object = temp;
+    m_callback_conference_invite(m, &handle_friend_invite_packet);
 
     return temp;
 }
@@ -2489,8 +2489,8 @@ void kill_groupchats(Group_Chats *g_c)
         del_groupchat(g_c, i);
     }
 
-    m_callback_group_invite(g_c->m, NULL);
-    g_c->m->group_chat_object = 0;
+    m_callback_conference_invite(g_c->m, NULL);
+    g_c->m->conferences_object = NULL;
     free(g_c);
 }
 
