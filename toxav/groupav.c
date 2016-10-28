@@ -22,7 +22,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include "group.h"
+#include "groupav.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"

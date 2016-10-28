@@ -225,8 +225,8 @@ if(BUILD_TOXAV)
     toxav/audio.h
     toxav/bwcontroller.c
     toxav/bwcontroller.h
-    toxav/group.c
-    toxav/group.h
+    toxav/groupav.c
+    toxav/groupav.h
     toxav/msi.c
     toxav/msi.h
     toxav/ring_buffer.c

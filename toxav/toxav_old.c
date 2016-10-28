@@ -24,7 +24,7 @@
 
 #include "toxav.h"
 
-#include "group.h"
+#include "groupav.h"
 
 /* Create a new toxav group.
  *

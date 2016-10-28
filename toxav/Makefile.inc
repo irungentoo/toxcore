@@ -8,8 +8,8 @@ libtoxav_la_SOURCES = ../toxav/rtp.h \
                     ../toxav/rtp.c \
                     ../toxav/msi.h \
                     ../toxav/msi.c \
-                    ../toxav/group.h \
-                    ../toxav/group.c \
+                    ../toxav/groupav.h \
+                    ../toxav/groupav.c \
                     ../toxav/audio.h \
                     ../toxav/audio.c \
                     ../toxav/video.h \
