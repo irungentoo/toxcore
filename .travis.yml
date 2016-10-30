@@ -53,7 +53,13 @@ after_script:  other/travis/phase $JOB $ENV after_script
 after_failure: other/travis/phase $JOB $ENV after_failure
 
 notifications:
-  irc: "chat.freenode.net#toktok-status"
+  irc:
+    channels:
+      - "chat.freenode.net#toktok-status"
+    template:
+      - "%{result} %{repository_name} %{build_url}"
+      - "#%{build_number} changes: %{compare_url}"
+
 
 branches:
   only:
