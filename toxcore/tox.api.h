@@ -1524,16 +1524,10 @@ namespace friend {
   event request const {
     /**
      * @param public_key The Public Key of the user who sent the friend request.
-     * @param time_delta A delta in seconds between when the message was composed
-     *   and when it is being transmitted. For messages that are sent immediately,
-     *   it will be 0. If a message was written and couldn't be sent immediately
-     *   (due to a connection failure, for example), the time_delta is an
-     *   approximation of when it was composed.
      * @param message The message they sent along with the request.
      * @param length The size of the message byte array.
      */
     typedef void(const uint8_t[PUBLIC_KEY_SIZE] public_key,
-                 // uint32_t time_delta,
                  const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 
@@ -1544,15 +1538,10 @@ namespace friend {
   event message const {
     /**
      * @param friend_number The friend number of the friend who sent the message.
-     * @param time_delta Time between composition and sending.
      * @param message The message data they sent.
      * @param length The size of the message byte array.
-     *
-     * @see ${event request} for more information on time_delta.
      */
-    typedef void(uint32_t friend_number,
-                 // uint32_t time_delta,
-                 MESSAGE_TYPE type,
+    typedef void(uint32_t friend_number, MESSAGE_TYPE type,
                  const uint8_t[length <= MAX_MESSAGE_LENGTH] message);
   }
 

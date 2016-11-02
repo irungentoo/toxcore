@@ -1685,11 +1685,6 @@ void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *call
 
 /**
  * @param public_key The Public Key of the user who sent the friend request.
- * @param time_delta A delta in seconds between when the message was composed
- *   and when it is being transmitted. For messages that are sent immediately,
- *   it will be 0. If a message was written and couldn't be sent immediately
- *   (due to a connection failure, for example), the time_delta is an
- *   approximation of when it was composed.
  * @param message The message they sent along with the request.
  * @param length The size of the message byte array.
  */
@@ -1706,11 +1701,8 @@ void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *callback);
 
 /**
  * @param friend_number The friend number of the friend who sent the message.
- * @param time_delta Time between composition and sending.
  * @param message The message data they sent.
  * @param length The size of the message byte array.
- *
- * @see friend_request for more information on time_delta.
  */
 typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
                                    size_t length, void *user_data);
