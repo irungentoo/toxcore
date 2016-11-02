@@ -68,6 +68,33 @@
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 2
 
+#define MAX_CRYPTO_REQUEST_SIZE 1024
+
+#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
+#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
+#define CRYPTO_PACKET_DHTPK         156
+#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
+
+/* Create a request to peer.
+ * send_public_key and send_secret_key are the pub/secret keys of the sender.
+ * recv_public_key is public key of receiver.
+ * packet must be an array of MAX_CRYPTO_REQUEST_SIZE big.
+ * Data represents the data we send with the request with length being the length of the data.
+ * request_id is the id of the request (32 = friend request, 254 = ping request).
+ *
+ * return -1 on failure.
+ * return the length of the created packet on success.
+ */
+int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id);
+
+/* puts the senders public key in the request in public_key, the data from the request
+   in data if a friend or ping request was sent to us and returns the length of the data.
+   packet is the request packet and length is its length
+   return -1 if not valid request. */
+int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, const uint8_t *packet, uint16_t length);
+
 /* Functions to transfer ips safely across wire. */
 void to_net_family(IP *ip);
 
