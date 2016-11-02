@@ -63,13 +63,14 @@ START_TEST(test_basic)
                        TCP_HANDSHAKE_PLAIN_SIZE, handshake + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
     ck_assert_msg(ret == TCP_CLIENT_HANDSHAKE_SIZE - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES),
                   "Encrypt failed.");
-    ck_assert_msg(send(sock, handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1, 0) == TCP_CLIENT_HANDSHAKE_SIZE - 1, "send Failed.");
+    ck_assert_msg(send(sock, (const char *)handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1, 0) == TCP_CLIENT_HANDSHAKE_SIZE - 1,
+                  "send Failed.");
     c_sleep(50);
     do_TCP_server(tcp_s);
     c_sleep(50);
     do_TCP_server(tcp_s);
     c_sleep(50);
-    ck_assert_msg(send(sock, handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1), 1, 0) == 1, "send Failed.");
+    ck_assert_msg(send(sock, (const char *)(handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1)), 1, 0) == 1, "send Failed.");
     c_sleep(50);
     do_TCP_server(tcp_s);
     c_sleep(50);
@@ -77,7 +78,7 @@ START_TEST(test_basic)
     c_sleep(50);
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
     uint8_t response_plain[TCP_HANDSHAKE_PLAIN_SIZE];
-    ck_assert_msg(recv(sock, response, TCP_SERVER_HANDSHAKE_SIZE, 0) == TCP_SERVER_HANDSHAKE_SIZE, "recv Failed.");
+    ck_assert_msg(recv(sock, (char *)response, TCP_SERVER_HANDSHAKE_SIZE, 0) == TCP_SERVER_HANDSHAKE_SIZE, "recv Failed.");
     ret = decrypt_data(self_public_key, f_secret_key, response, response + crypto_box_NONCEBYTES,
                        TCP_SERVER_HANDSHAKE_SIZE - crypto_box_NONCEBYTES, response_plain);
     ck_assert_msg(ret == TCP_HANDSHAKE_PLAIN_SIZE, "Decrypt Failed.");
@@ -97,8 +98,8 @@ START_TEST(test_basic)
     uint32_t i;
 
     for (i = 0; i < sizeof(r_req); ++i) {
-        ck_assert_msg(send(sock, r_req + i, 1, 0) == 1, "send Failed.");
-        //ck_assert_msg(send(sock, r_req, sizeof(r_req), 0) == sizeof(r_req), "send Failed.");
+        ck_assert_msg(send(sock, (const char *)(r_req + i), 1, 0) == 1, "send Failed.");
+        //ck_assert_msg(send(sock, (const char *)r_req, sizeof(r_req), 0) == sizeof(r_req), "send Failed.");
         do_TCP_server(tcp_s);
         c_sleep(50);
     }
@@ -106,7 +107,7 @@ START_TEST(test_basic)
     do_TCP_server(tcp_s);
     c_sleep(50);
     uint8_t packet_resp[4096];
-    int recv_data_len = recv(sock, packet_resp, 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES, 0);
+    int recv_data_len = recv(sock, (char *)packet_resp, 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES, 0);
     ck_assert_msg(recv_data_len == 2 + 2 + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES,
                   "recv Failed. %u", recv_data_len);
     memcpy(&size, packet_resp, 2);
@@ -158,15 +159,16 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
                        TCP_HANDSHAKE_PLAIN_SIZE, handshake + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
     ck_assert_msg(ret == TCP_CLIENT_HANDSHAKE_SIZE - (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES),
                   "Encrypt failed.");
-    ck_assert_msg(send(sock, handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1, 0) == TCP_CLIENT_HANDSHAKE_SIZE - 1, "send Failed.");
+    ck_assert_msg(send(sock, (const char *)handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1, 0) == TCP_CLIENT_HANDSHAKE_SIZE - 1,
+                  "send Failed.");
     do_TCP_server(tcp_s);
     c_sleep(50);
-    ck_assert_msg(send(sock, handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1), 1, 0) == 1, "send Failed.");
+    ck_assert_msg(send(sock, (const char *)(handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1)), 1, 0) == 1, "send Failed.");
     c_sleep(50);
     do_TCP_server(tcp_s);
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
     uint8_t response_plain[TCP_HANDSHAKE_PLAIN_SIZE];
-    ck_assert_msg(recv(sock, response, TCP_SERVER_HANDSHAKE_SIZE, 0) == TCP_SERVER_HANDSHAKE_SIZE, "recv Failed.");
+    ck_assert_msg(recv(sock, (char *)response, TCP_SERVER_HANDSHAKE_SIZE, 0) == TCP_SERVER_HANDSHAKE_SIZE, "recv Failed.");
     ret = decrypt_data(tcp_server_public_key(tcp_s), f_secret_key, response, response + crypto_box_NONCEBYTES,
                        TCP_SERVER_HANDSHAKE_SIZE - crypto_box_NONCEBYTES, response_plain);
     ck_assert_msg(ret == TCP_HANDSHAKE_PLAIN_SIZE, "Decrypt Failed.");
@@ -196,13 +198,13 @@ static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *
 
     increment_nonce(con->sent_nonce);
 
-    ck_assert_msg(send(con->sock, packet, sizeof(packet), 0) == sizeof(packet), "send failed");
+    ck_assert_msg(send(con->sock, (const char *)packet, sizeof(packet), 0) == sizeof(packet), "send failed");
     return 0;
 }
 
 static int read_packet_sec_TCP(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
 {
-    int len = recv(con->sock, data, length, 0);
+    int len = recv(con->sock, (char *)data, length, 0);
     ck_assert_msg(len == length, "wrong len %i\n", len);
     len = decrypt_data_symmetric(con->shared_key, con->recv_nonce, data + 2, length - 2, data);
     ck_assert_msg(len != -1, "Decrypt failed");

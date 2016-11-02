@@ -4,7 +4,12 @@ option(COMPILE_AS_CXX "Compile all C code as C++ code" OFF)
 
 find_package(PkgConfig REQUIRED)
 
-function(set_source_language)
+if(COMPILE_AS_CXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_FORMAT_MACROS=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_LIMIT_MACROS=1")
+endif()
+
+macro(set_source_language)
   if(COMPILE_AS_CXX)
     foreach(srcfile ${ARGN})
       get_filename_component(srcext ${srcfile} EXT)
@@ -13,10 +18,11 @@ function(set_source_language)
       endif()
     endforeach()
   endif()
-endfunction()
+endmacro()
 
 function(add_c_executable exec)
   set_source_language(${ARGN})
+
   add_executable(${exec} ${ARGN})
 endfunction()
 
@@ -26,6 +32,7 @@ function(pkg_use_module mod)
     link_directories(${${mod}_LIBRARY_DIRS})
     include_directories(${${mod}_INCLUDE_DIRS})
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${${mod}_CFLAGS_OTHER}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${${mod}_CFLAGS_OTHER}")
   endif()
 endfunction()
 

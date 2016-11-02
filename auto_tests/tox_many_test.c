@@ -8,6 +8,7 @@
 #include <check.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"

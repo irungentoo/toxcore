@@ -98,12 +98,12 @@ int main(int argc, char *argv[])
     uint8_t id = rand();
     uint32_t p_len = create_packet(packet, string, strlen((char *)string), id);
 
-    if (sendto(sock, (char *) packet, p_len, 0, (struct sockaddr *)&target, addrsize) != p_len) {
+    if (sendto(sock, (char *)packet, p_len, 0, (struct sockaddr *)&target, addrsize) != p_len) {
         return -1;
     }
 
     uint8_t buffer[512] = {0};
-    int r_len = recv(sock, buffer, sizeof(buffer), 0);
+    int r_len = recv(sock, (char *)buffer, sizeof(buffer), 0);
 
     if (r_len < (int)p_len) {
         return -1;

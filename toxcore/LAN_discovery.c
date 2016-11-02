@@ -50,7 +50,7 @@ static void fetch_broadcast_info(uint16_t port)
 {
     broadcast_count = 0;
 
-    IP_ADAPTER_INFO *pAdapterInfo = malloc(sizeof(IP_ADAPTER_INFO));
+    IP_ADAPTER_INFO *pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
     unsigned long ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 
     if (pAdapterInfo == NULL) {
@@ -59,7 +59,7 @@ static void fetch_broadcast_info(uint16_t port)
 
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
         free(pAdapterInfo);
-        pAdapterInfo = malloc(ulOutBufLen);
+        pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
 
         if (pAdapterInfo == NULL) {
             return;

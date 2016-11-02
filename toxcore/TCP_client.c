@@ -272,7 +272,7 @@ static int send_pending_data_nonpriority(TCP_Client_Connection *con)
     }
 
     uint16_t left = con->last_packet_length - con->last_packet_sent;
-    int len = send(con->sock, con->last_packet + con->last_packet_sent, left, MSG_NOSIGNAL);
+    int len = send(con->sock, (const char *)(con->last_packet + con->last_packet_sent), left, MSG_NOSIGNAL);
 
     if (len <= 0) {
         return -1;
@@ -302,7 +302,7 @@ static int send_pending_data(TCP_Client_Connection *con)
 
     while (p) {
         uint16_t left = p->size - p->sent;
-        int len = send(con->sock, p->data + p->sent, left, MSG_NOSIGNAL);
+        int len = send(con->sock, (const char *)(p->data + p->sent), left, MSG_NOSIGNAL);
 
         if (len != left) {
             if (len > 0) {
@@ -397,7 +397,7 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
     }
 
     if (priority) {
-        len = sendpriority ? send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL) : 0;
+        len = sendpriority ? send(con->sock, (const char *)packet, sizeof(packet), MSG_NOSIGNAL) : 0;
 
         if (len <= 0) {
             len = 0;
@@ -412,7 +412,7 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
         return add_priority(con, packet, sizeof(packet), len);
     }
 
-    len = send(con->sock, packet, sizeof(packet), MSG_NOSIGNAL);
+    len = send(con->sock, (const char *)packet, sizeof(packet), MSG_NOSIGNAL);
 
     if (len <= 0) {
         return 0;

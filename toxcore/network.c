@@ -170,7 +170,7 @@ int set_socket_nosigpipe(sock_t sock)
 {
 #if defined(__MACH__)
     int set = 1;
-    return (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int)) == 0);
+    return (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (const char *)&set, sizeof(int)) == 0);
 #else
     return 1;
 #endif
@@ -184,7 +184,7 @@ int set_socket_nosigpipe(sock_t sock)
 int set_socket_reuseaddr(sock_t sock)
 {
     int set = 1;
-    return (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&set, sizeof(set)) == 0);
+    return (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(set)) == 0);
 }
 
 /* Set socket to dual (IPv4 + IPv6 socket)
@@ -196,14 +196,14 @@ int set_socket_dualstack(sock_t sock)
 {
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&ipv6only, &optsize);
+    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0)) {
         return 1;
     }
 
     ipv6only = 0;
-    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&ipv6only, sizeof(ipv6only)) == 0);
+    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&ipv6only, sizeof(ipv6only)) == 0);
 }
 
 
@@ -588,12 +588,12 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     /* Functions to increase the size of the send and receive UDP buffers.
      */
     int n = 1024 * 1024 * 2;
-    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (char *)&n, sizeof(n));
-    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (char *)&n, sizeof(n));
+    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (const char *)&n, sizeof(n));
+    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (const char *)&n, sizeof(n));
 
     /* Enable broadcast on socket */
     int broadcast = 1;
-    setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (char *)&broadcast, sizeof(broadcast));
+    setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast));
 
     /* iOS UDP sockets are weird and apparently can SIGPIPE */
     if (!set_socket_nosigpipe(temp->sock)) {
@@ -659,7 +659,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
-        int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char *)&mreq, sizeof(mreq));
+        int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
 
         LOGGER_DEBUG(log, res < 0 ? "Failed to activate local multicast membership. (%u, %s)" :
                      "Local multicast group FF02::1 joined successfully", errno, strerror(errno));

@@ -6,10 +6,10 @@
 #endif
 
 #include <check.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <inttypes.h>
 
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
