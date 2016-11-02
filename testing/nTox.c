@@ -184,7 +184,7 @@ static uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
 
 static void fraddr_to_str(uint8_t *id_bin, char *id_str)
 {
-    uint32_t i, delta = 0, pos_extra, sum_extra = 0;
+    uint32_t i, delta = 0, pos_extra = 0, sum_extra = 0;
 
     for (i = 0; i < TOX_ADDRESS_SIZE; i++) {
         sprintf(&id_str[2 * i + delta], "%02hhX", id_bin[i]);

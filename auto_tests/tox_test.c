@@ -321,7 +321,7 @@ static void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, vo
 
 START_TEST(test_few_clients)
 {
-    long long unsigned int con_time, cur_time = time(NULL);
+    long long unsigned int con_time = 0, cur_time = time(NULL);
     TOX_ERR_NEW t_n_error;
     Tox *tox1 = tox_new(0, &t_n_error);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");

@@ -20,20 +20,104 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(ApiDsl)
 include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
 include(MacRpath)
 include(ModulePackage)
 
 set(CMAKE_MACOSX_RPATH ON)
 
+function(add_cflag flag)
+  string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" var ${flag})
+  if(NOT DEFINED HAVE_C${var})
+    message(STATUS "checking for C compiler flag: ${flag}")
+  endif()
+  set(CMAKE_REQUIRED_QUIET TRUE)
+
+  check_c_compiler_flag("${flag}" HAVE_C${var} QUIET)
+  if(HAVE_C${var})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+function(add_cxxflag flag)
+  string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" var ${flag})
+  if(NOT DEFINED HAVE_CXX${var})
+    message(STATUS "checking for C++ compiler flag: ${flag}")
+  endif()
+  set(CMAKE_REQUIRED_QUIET TRUE)
+
+  check_cxx_compiler_flag("${flag}" HAVE_CXX${var} QUIET)
+  if(HAVE_CXX${var})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}" PARENT_SCOPE)
+  endif()
+endfunction()
+
+macro(add_flag flag)
+  add_cflag(${flag})
+  add_cxxflag(${flag})
+endmacro()
+
+option(WARNINGS "Enable additional compiler warnings" ON)
+if(WARNINGS)
+  # Set standard version for compiler.
+  add_cflag("-std=gnu99")
+  add_cxxflag("-std=c++98")
+
+  # Add all warning flags we can.
+  add_flag("-Wall")
+  add_flag("-Wextra")
+  add_flag("-Weverything")
+  add_flag("-pedantic")
+
+  # Set error-on-warn for C compilation. C++ compilation can't use this because
+  # treating 'c' input as 'c++' when in C++ mode is deprecated in clang and
+  # there is no way to turn that warning off.
+  add_cflag("-Werror")
+
+  # Disable specific warning flags for both C and C++.
+  add_flag("-Wno-cast-align")
+  add_flag("-Wno-conversion")
+  add_flag("-Wno-covered-switch-default")
+  add_flag("-Wno-format-nonliteral")
+  add_flag("-Wno-missing-field-initializers")
+  add_flag("-Wno-missing-prototypes")
+  add_flag("-Wno-padded")
+  add_flag("-Wno-sign-compare")
+  add_flag("-Wno-sign-conversion")
+  add_flag("-Wno-tautological-constant-out-of-range-compare")
+  add_flag("-Wno-undef")
+  add_flag("-Wno-unreachable-code")
+  add_flag("-Wno-unused-macros")
+  add_flag("-Wno-unused-parameter")
+  add_flag("-Wno-vla")
+
+  # Disable specific warning flags for C.
+  add_cflag("-Wno-assign-enum")
+  add_cflag("-Wno-bad-function-cast")
+  add_cflag("-Wno-double-promotion")
+  add_cflag("-Wno-gnu-zero-variadic-macro-arguments")
+  add_cflag("-Wno-packed")
+  add_cflag("-Wno-reserved-id-macro")
+  add_cflag("-Wno-shadow")
+  add_cflag("-Wno-shorten-64-to-32")
+  add_cflag("-Wno-unreachable-code-return")
+  add_cflag("-Wno-used-but-marked-unused")
+
+  # Disable specific warning flags for C++.
+  add_cxxflag("-Wno-c++11-compat-reserved-user-defined-literal")
+  add_cxxflag("-Wno-c++11-extensions")
+  add_cxxflag("-Wno-c++11-narrowing")
+  add_cxxflag("-Wno-c99-extensions")
+  add_cxxflag("-Wno-old-style-cast")
+  add_cxxflag("-Wno-variadic-macros")
+  add_cxxflag("-Wno-vla-extension")
+endif()
+
 option(DEBUG "Enable assertions and other debugging facilities" OFF)
 if(DEBUG)
   set(MIN_LOGGER_LEVEL DEBUG)
   add_definitions(-DTOX_DEBUG=1)
-  check_c_compiler_flag("-g3" HAVE_G3)
-  if(HAVE_G3)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3")
-  endif()
+  add_cflag("-g3")
 endif()
 
 option(TRACE "Enable TRACE level logging (expensive, for network debugging)" OFF)
@@ -54,11 +138,7 @@ option(ASAN "Enable address-sanitizer to detect invalid memory accesses" OFF)
 if(ASAN)
   set(SAFE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
   set(CMAKE_REQUIRED_LIBRARIES "-fsanitize=address")
-  check_c_compiler_flag("-fsanitize=address" HAVE_ASAN)
-  if(HAVE_ASAN)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
-  endif()
+  add_cflag("-fsanitize=address")
   set(CMAKE_REQUIRED_LIBRARIES "${SAFE_CMAKE_REQUIRED_LIBRARIES}")
 endif()
 
