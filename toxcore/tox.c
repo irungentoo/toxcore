@@ -133,6 +133,8 @@ ACCESSORS(uint16_t, , end_port)
 ACCESSORS(uint16_t, , tcp_port)
 ACCESSORS(TOX_SAVEDATA_TYPE, savedata_, type)
 ACCESSORS(size_t, savedata_, length)
+ACCESSORS(tox_log_cb *, log_, callback)
+ACCESSORS(void *, log_, user_data)
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
 {
@@ -218,6 +220,9 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
         m_options.port_range[1] = options->end_port;
         m_options.tcp_server_port = options->tcp_port;
 
+        m_options.log_callback = (logger_cb *)options->log_callback;
+        m_options.log_user_data = options->log_user_data;
+
         switch (options->proxy_type) {
             case TOX_PROXY_TYPE_HTTP:
                 m_options.proxy_info.proxy_type = TCP_PROXY_HTTP;
@@ -258,19 +263,11 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
         }
     }
 
-    Logger *log = logger_new();
-
-    if (log == NULL) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
-        return NULL;
-    }
-
     unsigned int m_error;
-    Messenger *m = new_messenger(log, &m_options, &m_error);
+    Messenger *m = new_messenger(&m_options, &m_error);
 
     if (!new_groupchats(m)) {
         kill_messenger(m);
-        logger_kill(log);
 
         if (m_error == MESSENGER_ERROR_PORT) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PORT_ALLOC);
@@ -302,16 +299,8 @@ void tox_kill(Tox *tox)
     }
 
     Messenger *m = tox;
-    Logger *log = m->log;
     kill_groupchats((Group_Chats *)m->conferences_object);
     kill_messenger(m);
-    logger_kill(log);
-}
-
-void tox_callback_log(Tox *tox, tox_log_cb *callback, void *user_data)
-{
-    Messenger *m = tox;
-    m_callback_log(m, (logger_cb *)callback, tox, user_data);
 }
 
 size_t tox_get_savedata_size(const Tox *tox)

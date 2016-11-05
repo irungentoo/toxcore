@@ -2,15 +2,7 @@
 #include "config.h"
 #endif
 
-#ifndef HAVE_LIBCHECK
-#   include <assert.h>
-
-#   define ck_assert(X) assert(X);
-#   define START_TEST(NAME) static void NAME (void)
-#   define END_TEST
-#else
-#   include "helpers.h"
-#endif
+#include "helpers.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -149,19 +141,20 @@ START_TEST(test_AV_flows)
 {
     Tox *Alice, *Bob, *bootstrap;
     ToxAV *AliceAV, *BobAV;
+    uint32_t index[] = { 1, 2, 3 };
 
     CallControl AliceCC, BobCC;
 
     {
         TOX_ERR_NEW error;
 
-        bootstrap = tox_new(NULL, &error);
+        bootstrap = tox_new_log(NULL, &error, &index[0]);
         ck_assert(error == TOX_ERR_NEW_OK);
 
-        Alice = tox_new(NULL, &error);
+        Alice = tox_new_log(NULL, &error, &index[1]);
         ck_assert(error == TOX_ERR_NEW_OK);
 
-        Bob = tox_new(NULL, &error);
+        Bob = tox_new_log(NULL, &error, &index[2]);
         ck_assert(error == TOX_ERR_NEW_OK);
     }
 
@@ -591,16 +584,6 @@ START_TEST(test_AV_flows)
 }
 END_TEST
 
-#ifndef HAVE_LIBCHECK
-int main(int argc, char *argv[])
-{
-    (void) argc;
-    (void) argv;
-
-    test_AV_flows();
-    return 0;
-}
-#else
 static Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
@@ -625,4 +608,3 @@ int main(int argc, char *argv[])
 
     return number_failed;
 }
-#endif

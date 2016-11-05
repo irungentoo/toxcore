@@ -56,8 +56,8 @@ END_TEST
 
 START_TEST(test_save_friend)
 {
-    Tox *tox1 = tox_new(0, 0);
-    Tox *tox2 = tox_new(0, 0);
+    Tox *tox1 = tox_new_log(0, 0, 0);
+    Tox *tox2 = tox_new_log(0, 0, 0);
     ck_assert_msg(tox1 || tox2, "Failed to create 2 tox instances");
     tox_callback_friend_request(tox2, accept_friend_request);
     uint8_t address[TOX_ADDRESS_SIZE];
@@ -82,7 +82,7 @@ START_TEST(test_save_friend)
     options.savedata_length = size2;
 
     TOX_ERR_NEW err2;
-    Tox *tox3 = tox_new(&options, &err2);
+    Tox *tox3 = tox_new_log(&options, &err2, 0);
     ck_assert_msg(err2 == TOX_ERR_NEW_LOAD_ENCRYPTED, "wrong error! %u. should fail with %u", err2,
                   TOX_ERR_NEW_LOAD_ENCRYPTED);
     ck_assert_msg(tox3 == NULL, "tox_new with error should return NULL");
@@ -92,7 +92,7 @@ START_TEST(test_save_friend)
     ck_assert_msg(ret, "failed to decrypt save: %u", err3);
     options.savedata_data = dec_data;
     options.savedata_length = size;
-    tox3 = tox_new(&options, &err2);
+    tox3 = tox_new_log(&options, &err2, 0);
     ck_assert_msg(err2 == TOX_ERR_NEW_OK, "failed to load from decrypted data: %u", err2);
     uint8_t address2[TOX_PUBLIC_KEY_SIZE];
     ret = tox_friend_get_public_key(tox3, 0, address2, 0);
@@ -122,7 +122,7 @@ START_TEST(test_save_friend)
     // to remove the manual check now that it's there)
     options.savedata_data = out1;
     options.savedata_length = size;
-    Tox *tox4 = tox_new(&options, &err2);
+    Tox *tox4 = tox_new_log(&options, &err2, 0);
     ck_assert_msg(err2 == TOX_ERR_NEW_OK, "failed to new the third");
     uint8_t address5[TOX_PUBLIC_KEY_SIZE];
     ret = tox_friend_get_public_key(tox4, 0, address5, 0);

@@ -76,6 +76,9 @@ typedef struct {
     TCP_Proxy_Info proxy_info;
     uint16_t port_range[2];
     uint16_t tcp_server_port;
+
+    logger_cb *log_callback;
+    void *log_user_data;
 } Messenger_Options;
 
 
@@ -727,7 +730,7 @@ enum {
  *
  *  if error is not NULL it will be set to one of the values in the enum above.
  */
-Messenger *new_messenger(Logger *log, Messenger_Options *options, unsigned int *error);
+Messenger *new_messenger(Messenger_Options *options, unsigned int *error);
 
 /* Run this before closing shop
  * Free all datastructures.

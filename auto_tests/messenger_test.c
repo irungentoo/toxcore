@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
     /* IPv6 status from global define */
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
-    m = new_messenger(NULL, &options, 0);
+    m = new_messenger(&options, 0);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0) {

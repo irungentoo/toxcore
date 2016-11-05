@@ -50,6 +50,7 @@ START_TEST(test_many_clients_tcp)
 {
     long long unsigned int cur_time = time(NULL);
     Tox *toxes[NUM_TOXES_TCP];
+    uint32_t index[NUM_TOXES_TCP];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
@@ -63,7 +64,8 @@ START_TEST(test_many_clients_tcp)
             opts.udp_enabled = 0;
         }
 
-        toxes[i] = tox_new(&opts, 0);
+        index[i] = i + 1;
+        toxes[i] = tox_new_log(&opts, 0, &index[i]);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
@@ -149,6 +151,7 @@ START_TEST(test_many_clients_tcp_b)
 {
     long long unsigned int cur_time = time(NULL);
     Tox *toxes[NUM_TOXES_TCP];
+    uint32_t index[NUM_TOXES_TCP];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
@@ -162,7 +165,8 @@ START_TEST(test_many_clients_tcp_b)
             opts.udp_enabled = 0;
         }
 
-        toxes[i] = tox_new(&opts, 0);
+        index[i] = i + 1;
+        toxes[i] = tox_new_log(&opts, 0, &index[i]);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];

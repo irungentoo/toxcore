@@ -7,7 +7,6 @@
 
 #include <check.h>
 #include <inttypes.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -91,13 +90,16 @@ group_test_restart:
     ;
 
     Tox *toxes[NUM_GROUP_TOX];
+    uint32_t tox_index[NUM_GROUP_TOX];
     unsigned int i, j, k;
     uint32_t to_comp = 234212;
     int test_run = 0;
     long long unsigned int cur_time = time(NULL);
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
-        toxes[i] = tox_new(0, 0);
+        tox_index[i] = i + 1;
+        toxes[i] = tox_new_log(0, 0, &tox_index[i]);
+
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request);
         tox_callback_conference_invite(toxes[i], &print_group_invite_callback);

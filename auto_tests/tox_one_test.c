@@ -26,8 +26,9 @@ START_TEST(test_one)
         tox_options_free(o1);
     }
 
-    Tox *tox1 = tox_new(0, 0);
-    Tox *tox2 = tox_new(0, 0);
+    uint32_t index[] = { 1, 2 };
+    Tox *tox1 = tox_new_log(0, 0, &index[0]);
+    Tox *tox2 = tox_new_log(0, 0, &index[1]);
 
     {
         TOX_ERR_GET_PORT error;
@@ -85,7 +86,7 @@ START_TEST(test_one)
     options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
     options.savedata_data = data;
     options.savedata_length = save_size;
-    tox2 = tox_new(&options, &err_n);
+    tox2 = tox_new_log(&options, &err_n, &index[1]);
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
 
     ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
@@ -105,7 +106,7 @@ START_TEST(test_one)
     options.savedata_type = TOX_SAVEDATA_TYPE_SECRET_KEY;
     options.savedata_data = sk;
     options.savedata_length = sizeof(sk);
-    tox2 = tox_new(&options, &err_n);
+    tox2 = tox_new_log(&options, &err_n, &index[1]);
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
     uint8_t address3[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address3);

@@ -42,11 +42,13 @@ START_TEST(test_many_clients)
 {
     long long unsigned int cur_time = time(NULL);
     Tox *toxes[NUM_TOXES];
+    uint32_t index[NUM_TOXES];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES; ++i) {
-        toxes[i] = tox_new(0, 0);
+        index[i] = i + 1;
+        toxes[i] = tox_new_log(0, 0, &index[i]);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
     }

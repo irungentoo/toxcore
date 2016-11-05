@@ -321,13 +321,14 @@ static void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, vo
 
 START_TEST(test_few_clients)
 {
+    uint32_t index[] = { 1, 2, 3 };
     long long unsigned int con_time = 0, cur_time = time(NULL);
     TOX_ERR_NEW t_n_error;
-    Tox *tox1 = tox_new(0, &t_n_error);
+    Tox *tox1 = tox_new_log(0, &t_n_error, &index[0]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
-    Tox *tox2 = tox_new(0, &t_n_error);
+    Tox *tox2 = tox_new_log(0, &t_n_error, &index[1]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
-    Tox *tox3 = tox_new(0, &t_n_error);
+    Tox *tox3 = tox_new_log(0, &t_n_error, &index[2]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
 
     ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
@@ -422,7 +423,7 @@ START_TEST(test_few_clients)
     options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
     options.savedata_data = save1;
     options.savedata_length = save_size1;
-    tox2 = tox_new(&options, NULL);
+    tox2 = tox_new_log(&options, NULL, &index[1]);
     cur_time = time(NULL);
     off = 1;
 

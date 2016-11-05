@@ -419,6 +419,60 @@ typedef enum TOX_SAVEDATA_TYPE {
 
 
 /**
+ * Severity level of log messages.
+ */
+typedef enum TOX_LOG_LEVEL {
+
+    /**
+     * Very detailed traces including all network activity.
+     */
+    TOX_LOG_LEVEL_TRACE,
+
+    /**
+     * Debug messages such as which port we bind to.
+     */
+    TOX_LOG_LEVEL_DEBUG,
+
+    /**
+     * Informational log messages such as video call status changes.
+     */
+    TOX_LOG_LEVEL_INFO,
+
+    /**
+     * Warnings about internal inconsistency or logic errors.
+     */
+    TOX_LOG_LEVEL_WARNING,
+
+    /**
+     * Severe unexpected errors caused by external or internal inconsistency.
+     */
+    TOX_LOG_LEVEL_ERROR,
+
+} TOX_LOG_LEVEL;
+
+
+/**
+ * This event is triggered when the toxcore library logs an internal message.
+ * This is mostly useful for debugging. This callback can be called from any
+ * function, not just tox_iterate. This means the user data lifetime must at
+ * least extend between registering and unregistering it or tox_kill.
+ *
+ * Other toxcore modules such as toxav may concurrently call this callback at
+ * any time. Thus, user code must make sure it is equipped to handle concurrent
+ * execution, e.g. by employing appropriate mutex locking.
+ *
+ * @param level The severity of the log message.
+ * @param file The source file from which the message originated.
+ * @param line The source line from which the message originated.
+ * @param func The function from which the message originated.
+ * @param message The log message.
+ * @param user_data The user data pointer passed to tox_new in options.
+ */
+typedef void tox_log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func,
+                        const char *message, void *user_data);
+
+
+/**
  * This struct contains all the startup options for Tox. You can either
  * allocate this object yourself, and pass it to tox_options_default, or call tox_options_new to get
  * a new default options object.
@@ -540,6 +594,18 @@ struct Tox_Options {
      */
     size_t savedata_length;
 
+
+    /**
+     * Logging callback for the new tox instance.
+     */
+    tox_log_cb *log_callback;
+
+
+    /**
+     * User data pointer passed to the logging callback.
+     */
+    void *log_user_data;
+
 };
 
 
@@ -586,6 +652,14 @@ void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *d
 size_t tox_options_get_savedata_length(const struct Tox_Options *options);
 
 void tox_options_set_savedata_length(struct Tox_Options *options, size_t length);
+
+tox_log_cb *tox_options_get_log_callback(const struct Tox_Options *options);
+
+void tox_options_set_log_callback(struct Tox_Options *options, tox_log_cb *callback);
+
+void *tox_options_get_log_user_data(const struct Tox_Options *options);
+
+void tox_options_set_log_user_data(struct Tox_Options *options, void *user_data);
 
 /**
  * Initialises a Tox_Options object with the default options.
@@ -733,66 +807,6 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error);
  * functions can be called, and the pointer value can no longer be read.
  */
 void tox_kill(Tox *tox);
-
-/**
- * Severity level of log messages.
- */
-typedef enum TOX_LOG_LEVEL {
-
-    /**
-     * Very detailed traces including all network activity.
-     */
-    TOX_LOG_LEVEL_TRACE,
-
-    /**
-     * Debug messages such as which port we bind to.
-     */
-    TOX_LOG_LEVEL_DEBUG,
-
-    /**
-     * Informational log messages such as video call status changes.
-     */
-    TOX_LOG_LEVEL_INFO,
-
-    /**
-     * Warnings about internal inconsistency or logic errors.
-     */
-    TOX_LOG_LEVEL_WARNING,
-
-    /**
-     * Severe unexpected errors caused by external or internal inconsistency.
-     */
-    TOX_LOG_LEVEL_ERROR,
-
-} TOX_LOG_LEVEL;
-
-
-/**
- * @param level The severity of the log message.
- * @param file The source file from which the message originated.
- * @param line The source line from which the message originated.
- * @param func The function from which the message originated.
- * @param message The log message.
- */
-typedef void tox_log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func,
-                        const char *message, void *user_data);
-
-
-/**
- * Set the callback for the `log` event. Pass NULL to unset.
- *
- * This event is triggered when the toxcore library logs an internal message.
- * This is mostly useful for debugging. This callback can be called from any
- * function, not just tox_iterate. This means the user data lifetime must at
- * least extend between registering and unregistering it or tox_kill.
- *
- * Other toxcore modules such as toxav may concurrently call this callback at
- * any time. Thus, user code must make sure it is equipped to handle concurrent
- * execution, e.g. by employing appropriate mutex locking. The callback
- * registration function must not be called during execution of any other Tox
- * library function (toxcore or toxav).
- */
-void tox_callback_log(Tox *tox, tox_log_cb *callback, void *user_data);
 
 /**
  * Calculates the number of bytes required to store the tox instance with
