@@ -11,7 +11,6 @@ RUN $CMAKE                                      \
   -H.                                           \
   -DCMAKE_INSTALL_PREFIX:PATH=$CURDIR/_install  \
   -DASAN=ON                                     \
-  -DASSOC_DHT=ON                                \
   -DDEBUG=ON                                    \
   -DSTRICT_ABI=ON                               \
   -DTEST_TIMEOUT_SECONDS=300                    \

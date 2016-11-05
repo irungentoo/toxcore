@@ -129,11 +129,6 @@ if(MIN_LOGGER_LEVEL)
   add_definitions(-DMIN_LOGGER_LEVEL=LOG_${MIN_LOGGER_LEVEL})
 endif()
 
-option(ASSOC_DHT "Enable module to store currently unused ID <=> IP associations" OFF)
-if(ASSOC_DHT)
-  add_definitions(-DENABLE_ASSOC_DHT=1)
-endif()
-
 option(ASAN "Enable address-sanitizer to detect invalid memory accesses" OFF)
 if(ASAN)
   set(SAFE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
@@ -231,8 +226,6 @@ add_module(toxdht
   toxcore/DHT.h
   toxcore/LAN_discovery.c
   toxcore/LAN_discovery.h
-  toxcore/assoc.c
-  toxcore/assoc.h
   toxcore/ping.c
   toxcore/ping.h
   toxcore/ping_array.c
@@ -375,7 +368,6 @@ function(auto_test target)
 endfunction()
 
 auto_test(TCP)
-auto_test(assoc)
 auto_test(conference)
 auto_test(crypto)
 auto_test(dht)

@@ -261,9 +261,6 @@ typedef struct {
     struct PING   *ping;
     Ping_Array    dht_ping_array;
     Ping_Array    dht_harden_ping_array;
-#ifdef ENABLE_ASSOC_DHT
-    struct Assoc  *assoc;
-#endif
     uint64_t       last_run;
 
     Cryptopacket_Handles cryptopackethandlers[256];
@@ -456,4 +453,3 @@ int DHT_non_lan_connected(const DHT *dht);
 int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 
 #endif
-

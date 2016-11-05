@@ -27,7 +27,6 @@
 
 #include "Messenger.h"
 
-#include "assoc.h"
 #include "logger.h"
 #include "network.h"
 #include "util.h"
@@ -2501,11 +2500,6 @@ void do_messenger(Messenger *m, void *userdata)
     connection_status_cb(m, userdata);
 
     if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
-
-#ifdef ENABLE_ASSOC_DHT
-        Assoc_status(m->log, m->dht->assoc);
-#endif
-
         lastdump = unix_time();
         uint32_t client, last_pinged;
 
