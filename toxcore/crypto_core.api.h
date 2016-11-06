@@ -1,3 +1,4 @@
+%{
 /* crypto_core.h
  *
  * Functions for the core crypto.
@@ -43,23 +44,24 @@
 #endif
 
 #define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
+%}
 
 /**
  * compare 2 public keys of length crypto_box_PUBLICKEYBYTES, not vulnerable to timing attacks.
  * returns 0 if both mem locations of length are equal,
  * return -1 if they are not.
  */
-int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2);
+static int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2);
 
 /**
  * Return a random 32 bit integer.
  */
-uint32_t random_int(void);
+static uint32_t random_int();
 
 /**
  * Return a random 64 bit integer.
  */
-uint64_t random_64b(void);
+static uint64_t random_64b();
 
 /**
  * Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
@@ -68,7 +70,7 @@ uint64_t random_64b(void);
  * return 0 if it isn't.
  * return 1 if it is.
  */
-int32_t public_key_valid(const uint8_t *public_key);
+static int32_t public_key_valid(const uint8_t *public_key);
 
 /**
  * Encrypts plain of length length to encrypted of length + 16 using the
@@ -77,8 +79,10 @@ int32_t public_key_valid(const uint8_t *public_key);
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain,
-                     uint32_t length, uint8_t *encrypted);
+static int32_t encrypt_data(
+    const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+    const uint8_t *plain, uint32_t length, uint8_t *encrypted);
+
 
 /**
  * Decrypts encrypted of length length to plain of length length - 16 using the
@@ -87,15 +91,17 @@ int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
-                     const uint8_t *encrypted, uint32_t length, uint8_t *plain);
+static int32_t decrypt_data(
+    const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+    const uint8_t *encrypted, uint32_t length, uint8_t *plain);
 
 /**
  * Fast encrypt/decrypt operations. Use if this is not a one-time communication.
  * encrypt_precompute does the shared-key generation once so it does not have
  * to be preformed on every encrypt/decrypt.
  */
-int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key);
+static int32_t encrypt_precompute(
+    const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key);
 
 /**
  * Encrypts plain of length length to encrypted of length + 16 using a
@@ -104,8 +110,9 @@ int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
  */
-int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
-                               uint8_t *encrypted);
+static int32_t encrypt_data_symmetric(
+    const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain,
+    uint32_t length, uint8_t *encrypted);
 
 /**
  * Decrypts encrypted of length length to plain of length length - 16 using a
@@ -114,27 +121,30 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, 
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
  */
-int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted,
-                               uint32_t length, uint8_t *plain);
+static int32_t decrypt_data_symmetric(
+    const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted,
+    uint32_t length, uint8_t *plain);
 
 /**
  * Increment the given nonce by 1.
  */
-void increment_nonce(uint8_t *nonce);
+static void increment_nonce(uint8_t *nonce);
 
 /**
  * Increment the given nonce by num.
  */
-void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
+static void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
 
 /**
  * Fill the given nonce with random bytes.
  */
-void random_nonce(uint8_t *nonce);
+static void random_nonce(uint8_t *nonce);
 
 /**
  * Fill a key crypto_box_KEYBYTES big with random bytes.
  */
-void new_symmetric_key(uint8_t *key);
+static void new_symmetric_key(uint8_t *key);
 
+%{
 #endif
+%}

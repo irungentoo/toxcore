@@ -196,6 +196,8 @@ set(toxcore_PKGCONFIG_LIBS)
 
 # LAYER 1: Crypto core
 # --------------------
+apidsl(
+  toxcore/crypto_core.api.h)
 add_module(toxcrypto
   toxcore/crypto_core.c
   toxcore/crypto_core.h)
