@@ -123,13 +123,6 @@ GC_Announce *new_gca(DHT *dht);
 /* Called when associated Messenger object is killed. */
 void kill_gca(GC_Announce *announce);
 
-/* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
- *
- * Return 0 on succcess.
- * Return -1 on failure.
- */
-int ipport_self_copy(const DHT *dht, IP_Port *dest);
-
 /* Creates a GC_Announce_Node using client_id and your own IP_Port struct
  *
  * Return 0 on success.

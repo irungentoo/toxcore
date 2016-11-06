@@ -74,3 +74,5 @@ cscope.files
 
 # rpm
 tox.spec
+
+.idea/

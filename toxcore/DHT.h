@@ -147,8 +147,7 @@ typedef struct {
 typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
     IP_Port     ip_port;
-}
-Node_format;
+} Node_format;
 
 typedef struct {
     uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
@@ -159,7 +158,7 @@ typedef struct {
     /* number of times get_node packets were sent. */
     uint32_t    bootstrap_times;
 
-    /* Symetric NAT hole punching stuff. */
+    /* Symmetric NAT hole punching stuff. */
     NAT         nat;
 
     uint16_t lock_count;
@@ -456,6 +455,9 @@ int DHT_non_lan_connected(const DHT *dht);
 
 
 int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+
+/* Copies your own ip_port structure to dest. */
+int ipport_self_copy(const DHT *dht, IP_Port *dest);
 
 #endif
 

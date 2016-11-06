@@ -5010,7 +5010,7 @@ static bool peer_timed_out(const GC_Chat *chat, GC_Connection *gconn)
 {
     return is_timeout(gconn->last_rcvd_ping, gconn->confirmed
                       ? GC_CONFIRMED_PEER_TIMEOUT
-                      : GC_UNCONFRIMED_PEER_TIMEOUT);
+                      : GC_UNCONFIRMED_PEER_TIMEOUT);
 }
 
 static void do_peer_connections(Messenger *m, int groupnumber)

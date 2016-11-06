@@ -55,33 +55,6 @@
 
 #define MAX_GCA_PACKET_SIZE 1024
 
-/* Copies your own ip_port structure to dest. (TODO: This should probably go somewhere else)
- *
- * Return 0 on succcess.
- * Return -1 on failure.
- */
-int ipport_self_copy(const DHT *dht, IP_Port *dest)
-{
-    size_t i;
-
-    for (i = 0; i < LCLIENT_LIST; i++) {
-        if (ipport_isset(&dht->close_clientlist[i].assoc4.ret_ip_port)) {
-            ipport_copy(dest, &dht->close_clientlist[i].assoc4.ret_ip_port);
-            break;
-        }
-
-        if (ipport_isset(&dht->close_clientlist[i].assoc6.ret_ip_port)) {
-            ipport_copy(dest, &dht->close_clientlist[i].assoc6.ret_ip_port);
-            break;
-        }
-    }
-
-    if (!ipport_isset(dest)) {
-        return -1;
-    }
-
-    return 0;
-}
 
 /* Creates a GC_Announce_Node using public_key and your own IP_Port struct
  *
