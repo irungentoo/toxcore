@@ -742,27 +742,27 @@ typedef enum TOX_LOG_LEVEL {
     /**
      * Very detailed traces including all network activity.
      */
-    TOX_LOG_LEVEL_LOG_TRACE,
+    TOX_LOG_LEVEL_TRACE,
 
     /**
      * Debug messages such as which port we bind to.
      */
-    TOX_LOG_LEVEL_LOG_DEBUG,
+    TOX_LOG_LEVEL_DEBUG,
 
     /**
      * Informational log messages such as video call status changes.
      */
-    TOX_LOG_LEVEL_LOG_INFO,
+    TOX_LOG_LEVEL_INFO,
 
     /**
      * Warnings about internal inconsistency or logic errors.
      */
-    TOX_LOG_LEVEL_LOG_WARNING,
+    TOX_LOG_LEVEL_WARNING,
 
     /**
      * Severe unexpected errors caused by external or internal inconsistency.
      */
-    TOX_LOG_LEVEL_LOG_ERROR,
+    TOX_LOG_LEVEL_ERROR,
 
 } TOX_LOG_LEVEL;
 

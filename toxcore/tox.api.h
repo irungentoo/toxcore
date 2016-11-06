@@ -627,23 +627,23 @@ enum class LOG_LEVEL {
   /**
    * Very detailed traces including all network activity.
    */
-  LOG_TRACE,
+  TRACE,
   /**
    * Debug messages such as which port we bind to.
    */
-  LOG_DEBUG,
+  DEBUG,
   /**
    * Informational log messages such as video call status changes.
    */
-  LOG_INFO,
+  INFO,
   /**
    * Warnings about internal inconsistency or logic errors.
    */
-  LOG_WARNING,
+  WARNING,
   /**
    * Severe unexpected errors caused by external or internal inconsistency.
    */
-  LOG_ERROR,
+  ERROR,
 }
 
 /**
