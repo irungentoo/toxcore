@@ -225,7 +225,7 @@ START_TEST(test_basic)
     Onion *onion3 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34569)));
     ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
 
-    new_nonce(nonce);
+    random_nonce(nonce);
     ret = send_data_request(onion3->net, &path, nodes[3].ip_port, onion1->dht->self_public_key,
                             onion1->dht->self_public_key,
                             nonce, (const uint8_t *)"Install gentoo", sizeof("Install gentoo"));

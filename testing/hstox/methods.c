@@ -67,7 +67,7 @@ METHOD(array, KeyPair, fromSecretKey)
 METHOD(array, Nonce, newNonce)
 {
     uint8_t nonce[24] = {0};
-    new_nonce(nonce);
+    random_nonce(nonce);
 
     SUCCESS {
         msgpack_pack_bin(res, sizeof nonce);

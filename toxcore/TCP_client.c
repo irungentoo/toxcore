@@ -228,7 +228,7 @@ static int generate_handshake(TCP_Client_Connection *TCP_conn)
     random_nonce(TCP_conn->sent_nonce);
     memcpy(plain + crypto_box_PUBLICKEYBYTES, TCP_conn->sent_nonce, crypto_box_NONCEBYTES);
     memcpy(TCP_conn->last_packet, TCP_conn->self_public_key, crypto_box_PUBLICKEYBYTES);
-    new_nonce(TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES);
+    random_nonce(TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES);
     int len = encrypt_data_symmetric(TCP_conn->shared_key, TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES, plain,
                                      sizeof(plain), TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
 

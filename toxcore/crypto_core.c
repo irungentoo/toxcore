@@ -209,9 +209,3 @@ void new_symmetric_key(uint8_t *key)
 {
     randombytes(key, crypto_box_KEYBYTES);
 }
-
-/* Gives a nonce guaranteed to be different from previous ones.*/
-void new_nonce(uint8_t *nonce)
-{
-    random_nonce(nonce);
-}

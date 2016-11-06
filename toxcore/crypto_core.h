@@ -119,7 +119,4 @@ void random_nonce(uint8_t *nonce);
 /* Fill a key crypto_box_KEYBYTES big with random bytes */
 void new_symmetric_key(uint8_t *key);
 
-/*Gives a nonce guaranteed to be different from previous ones.*/
-void new_nonce(uint8_t *nonce);
-
 #endif

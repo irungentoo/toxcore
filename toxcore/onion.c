@@ -375,7 +375,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
     memcpy(data + 1 + crypto_box_NONCEBYTES, plain + SIZE_IPPORT, len - SIZE_IPPORT);
     uint16_t data_len = 1 + crypto_box_NONCEBYTES + (len - SIZE_IPPORT);
     uint8_t *ret_part = data + data_len;
-    new_nonce(ret_part);
+    random_nonce(ret_part);
     len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, ip_port, SIZE_IPPORT,
                                  ret_part + crypto_box_NONCEBYTES);
 
@@ -428,7 +428,7 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
     memcpy(data + 1 + crypto_box_NONCEBYTES, plain + SIZE_IPPORT, len - SIZE_IPPORT);
     uint16_t data_len = 1 + crypto_box_NONCEBYTES + (len - SIZE_IPPORT);
     uint8_t *ret_part = data + data_len;
-    new_nonce(ret_part);
+    random_nonce(ret_part);
     uint8_t ret_data[RETURN_1 + SIZE_IPPORT];
     ipport_pack(ret_data, &source);
     memcpy(ret_data + SIZE_IPPORT, packet + (length - RETURN_1), RETURN_1);
@@ -482,7 +482,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
     memcpy(data, plain + SIZE_IPPORT, len - SIZE_IPPORT);
     uint16_t data_len = (len - SIZE_IPPORT);
     uint8_t *ret_part = data + (len - SIZE_IPPORT);
-    new_nonce(ret_part);
+    random_nonce(ret_part);
     uint8_t ret_data[RETURN_2 + SIZE_IPPORT];
     ipport_pack(ret_data, &source);
     memcpy(ret_data + SIZE_IPPORT, packet + (length - RETURN_2), RETURN_2);

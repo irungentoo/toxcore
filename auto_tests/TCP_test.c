@@ -57,7 +57,7 @@ START_TEST(test_basic)
     memcpy(handshake_plain + crypto_box_PUBLICKEYBYTES, f_nonce, crypto_box_NONCEBYTES);
     uint8_t handshake[TCP_CLIENT_HANDSHAKE_SIZE];
     memcpy(handshake, f_public_key, crypto_box_PUBLICKEYBYTES);
-    new_nonce(handshake + crypto_box_PUBLICKEYBYTES);
+    random_nonce(handshake + crypto_box_PUBLICKEYBYTES);
 
     ret = encrypt_data(self_public_key, f_secret_key, handshake + crypto_box_PUBLICKEYBYTES, handshake_plain,
                        TCP_HANDSHAKE_PLAIN_SIZE, handshake + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
@@ -153,7 +153,7 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     memcpy(handshake_plain + crypto_box_PUBLICKEYBYTES, sec_c->sent_nonce, crypto_box_NONCEBYTES);
     uint8_t handshake[TCP_CLIENT_HANDSHAKE_SIZE];
     memcpy(handshake, sec_c->public_key, crypto_box_PUBLICKEYBYTES);
-    new_nonce(handshake + crypto_box_PUBLICKEYBYTES);
+    random_nonce(handshake + crypto_box_PUBLICKEYBYTES);
 
     ret = encrypt_data(tcp_server_public_key(tcp_s), f_secret_key, handshake + crypto_box_PUBLICKEYBYTES, handshake_plain,
                        TCP_HANDSHAKE_PLAIN_SIZE, handshake + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);

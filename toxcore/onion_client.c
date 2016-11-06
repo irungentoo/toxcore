@@ -949,7 +949,7 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
     }
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
+    random_nonce(nonce);
 
     uint8_t temp[DATA_IN_RESPONSE_MIN_SIZE + crypto_box_NONCEBYTES + length];
     memcpy(temp, onion_c->c->self_public_key, crypto_box_PUBLICKEYBYTES);

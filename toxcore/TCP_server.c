@@ -565,7 +565,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data,
     memcpy(con->recv_nonce, plain + crypto_box_PUBLICKEYBYTES, crypto_box_NONCEBYTES);
 
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
-    new_nonce(response);
+    random_nonce(response);
 
     len = encrypt_data_symmetric(shared_key, response, resp_plain, TCP_HANDSHAKE_PLAIN_SIZE,
                                  response + crypto_box_NONCEBYTES);

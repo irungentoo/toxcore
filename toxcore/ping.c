@@ -88,7 +88,7 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
 
     pk[0] = NET_PACKET_PING_REQUEST;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
-    new_nonce(pk + 1 + crypto_box_PUBLICKEYBYTES); // Generate new nonce
+    random_nonce(pk + 1 + crypto_box_PUBLICKEYBYTES); // Generate new nonce
 
 
     rc = encrypt_data_symmetric(shared_key,
@@ -119,7 +119,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
 
     pk[0] = NET_PACKET_PING_RESPONSE;
     id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
-    new_nonce(pk + 1 + crypto_box_PUBLICKEYBYTES); // Generate new nonce
+    random_nonce(pk + 1 + crypto_box_PUBLICKEYBYTES); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
     rc = encrypt_data_symmetric(shared_encryption_key,

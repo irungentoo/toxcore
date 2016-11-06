@@ -196,7 +196,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     }
 
     uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
-    new_nonce(nonce);
+    random_nonce(nonce);
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): sodium_memzero before exit function
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
@@ -1200,7 +1200,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     DHT_get_shared_key_sent(dht, shared_key, public_key);
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
+    random_nonce(nonce);
 
     int len = encrypt_data_symmetric(shared_key,
                                      nonce,
@@ -1243,7 +1243,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     uint8_t plain[1 + Node_format_size * MAX_SENT_NODES + length];
     uint8_t encrypt[sizeof(plain) + crypto_box_MACBYTES];
     uint8_t nonce[crypto_box_NONCEBYTES];
-    new_nonce(nonce);
+    random_nonce(nonce);
 
     int nodes_length = 0;
 
