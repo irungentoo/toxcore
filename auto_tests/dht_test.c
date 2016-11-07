@@ -650,16 +650,36 @@ loop_top:
 }
 END_TEST
 
+START_TEST(test_dht_create_packet)
+{
+    uint8_t plain[100] = {0};
+    uint8_t pkt[1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + sizeof(plain) + crypto_box_MACBYTES];
+
+    uint8_t key[crypto_box_KEYBYTES];
+    new_symmetric_key(key);
+
+    int length = DHT_create_packet(key, key, NET_PACKET_GET_NODES, plain, sizeof(plain), pkt);
+
+    ck_assert_msg(pkt[0] == NET_PACKET_GET_NODES, "Malformed packet.");
+    ck_assert_msg(memcmp(pkt + 1, key, crypto_box_KEYBYTES) == 0, "Malformed packet.");
+    ck_assert_msg(length == 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + sizeof(plain) + crypto_box_MACBYTES,
+                  "Invalid size. Should be %d got %d", sizeof(pkt), length);
+
+    printf("Create Packet Successful!\n");
+}
+END_TEST
+
 static Suite *dht_suite(void)
 {
     Suite *s = suite_create("DHT");
+    DEFTESTCASE(dht_create_packet);
 
+    DEFTESTCASE_SLOW(list, 20);
+    DEFTESTCASE_SLOW(DHT_test, 50);
 #if 0
     DEFTESTCASE(addto_lists_ipv4);
     DEFTESTCASE(addto_lists_ipv6);
 #endif
-    DEFTESTCASE_SLOW(list, 20);
-    DEFTESTCASE_SLOW(DHT_test, 50);
     return s;
 }
 
