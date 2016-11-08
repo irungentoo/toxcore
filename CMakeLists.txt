@@ -67,11 +67,14 @@ if(WARNINGS)
   add_flag("-Wall")
   add_flag("-Wextra")
   add_flag("-Weverything")
-  add_flag("-pedantic")
+
+  # -pedantic only for C, because in C++ we want to allow the GNU/C99 extension
+  # of having a comma at the end of an enumerator list.
+  add_cflag("-pedantic")
 
   # Set error-on-warn for C compilation. C++ compilation can't use this because
   # treating 'c' input as 'c++' when in C++ mode is deprecated in clang and
-  # there is no way to turn that warning off.
+  # there is no way to turn off that warning.
   add_cflag("-Werror")
 
   # Disable specific warning flags for both C and C++.
@@ -82,9 +85,12 @@ if(WARNINGS)
   add_flag("-Wno-missing-field-initializers")
   add_flag("-Wno-missing-prototypes")
   add_flag("-Wno-padded")
+  add_flag("-Wno-parentheses")
+  add_flag("-Wno-return-type")
   add_flag("-Wno-sign-compare")
   add_flag("-Wno-sign-conversion")
   add_flag("-Wno-tautological-constant-out-of-range-compare")
+  add_flag("-Wno-type-limits")
   add_flag("-Wno-undef")
   add_flag("-Wno-unreachable-code")
   add_flag("-Wno-unused-macros")
@@ -104,10 +110,11 @@ if(WARNINGS)
   add_cflag("-Wno-used-but-marked-unused")
 
   # Disable specific warning flags for C++.
-  add_cxxflag("-Wno-c++11-compat-reserved-user-defined-literal")
+  add_cxxflag("-Wno-c++11-compat")
   add_cxxflag("-Wno-c++11-extensions")
   add_cxxflag("-Wno-c++11-narrowing")
   add_cxxflag("-Wno-c99-extensions")
+  add_cxxflag("-Wno-narrowing")
   add_cxxflag("-Wno-old-style-cast")
   add_cxxflag("-Wno-variadic-macros")
   add_cxxflag("-Wno-vla-extension")
