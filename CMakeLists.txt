@@ -163,6 +163,9 @@ pkg_use_module(LIBCONFIG            libconfig     )
 # For auto tests.
 pkg_use_module(CHECK                check         )
 
+# For tox-spectest.
+pkg_use_module(MSGPACK              msgpack       )
+
 # For av_test.
 pkg_use_module(OPENCV               opencv        )
 pkg_use_module(PORTAUDIO            portaudio-2.0 )
@@ -336,6 +339,31 @@ target_link_modules(toxdns toxcore)
 add_module(toxencryptsave
   toxencryptsave/toxencryptsave.c)
 target_link_modules(toxencryptsave toxcore)
+
+################################################################################
+#
+# :: Tox specification tests
+#
+################################################################################
+
+find_program(SPECTEST NAMES
+  tox-spectest
+  ${CMAKE_SOURCE_DIR}/../.cabal-sandbox/bin/tox-spectest)
+
+if(SPECTEST AND MSGPACK_FOUND)
+  add_c_executable(toxcore-sut
+    testing/hstox/binary_decode.c
+    testing/hstox/binary_encode.c
+    testing/hstox/driver.c
+    testing/hstox/methods.c
+    testing/hstox/packet_kinds.c
+    testing/hstox/test_main.c
+    testing/hstox/util.c)
+  target_link_modules(toxcore-sut
+    toxcore
+    ${MSGPACK_LIBRARIES})
+  add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
+endif()
 
 ################################################################################
 #

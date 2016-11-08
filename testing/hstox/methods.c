@@ -2,8 +2,8 @@
 
 #include "util.h"
 
-#include <crypto_core.h>
-#include <net_crypto.h>
+#include "../../toxcore/crypto_core.h"
+#include "../../toxcore/net_crypto.h"
 
 char const *const failure       = "Failure";
 char const *const pending       = "Pending";

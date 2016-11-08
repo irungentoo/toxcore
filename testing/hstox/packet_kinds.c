@@ -1,6 +1,6 @@
 #include "packet_kinds.h"
 
-#include <network.h>
+#include "../../toxcore/network.h"
 
 uint8_t const packet_kinds[21] = {
     // = PingRequest       -- 0x00: Ping request

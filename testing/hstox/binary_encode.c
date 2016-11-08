@@ -3,7 +3,7 @@
 #include "byteswap.h"
 #include "packet_kinds.h"
 
-#include <DHT.h>
+#include "../../toxcore/DHT.h"
 
 METHOD(bin, Binary_encode, CipherText)
 {

@@ -17,7 +17,7 @@
 
 #include <sodium.h>
 
-static void handle_interrupt(int signum)
+static void __attribute__((__noreturn__)) handle_interrupt(int signum)
 {
     printf("Caught signal %d; exiting cleanly.\n", signum);
     exit(0);
