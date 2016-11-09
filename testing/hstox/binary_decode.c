@@ -5,23 +5,54 @@
 
 #include "../../toxcore/DHT.h"
 
-METHOD(bin, Binary_decode, CipherText)
+
+static void decode_bytestring(msgpack_object_bin args, msgpack_packer *res,
+                              int64_t min_length)
 {
-    uint64_t length;
+    int64_t length;
     uint64_t tmp;
 
     SUCCESS {
+        if (args.size < sizeof(uint64_t))
+        {
+            // Not enough space to even fit the size.
+            msgpack_pack_nil(res);
+            return;
+        }
+
         memcpy(&tmp, args.ptr, sizeof(uint64_t));
         length = be64toh(tmp);
 
+        // TODO(iphydf): Get rid of this case if/when
+        // https://github.com/kolmodin/binary/issues/127 is fixed. This is a
+        // workaround for a Haskell library bug. Our implementation here without
+        // the special case for negative length, and instead interpreting the
+        // length as unsigned integer, was correct.
+        if (length < 0)
+        {
+            length = 0;
+        }
+
         if (args.size >= sizeof(uint64_t) && args.size == length + sizeof(uint64_t))
         {
+            if (length < min_length) {
+                // CipherTexts need at least a MAC.
+                msgpack_pack_nil(res);
+                return;
+            }
+
             msgpack_pack_bin(res, args.size - sizeof(uint64_t));
             msgpack_pack_bin_body(res, args.ptr + sizeof(uint64_t), args.size - sizeof(uint64_t));
         } else {
             msgpack_pack_nil(res);
         }
     }
+}
+
+
+METHOD(bin, Binary_decode, CipherText)
+{
+    decode_bytestring(args, res, crypto_box_MACBYTES);
     return 0;
 }
 
@@ -156,7 +187,8 @@ METHOD(bin, Binary_decode, PingPacket)
 
 METHOD(bin, Binary_decode, PlainText)
 {
-    return pending;
+    decode_bytestring(args, res, 0);
+    return 0;
 }
 
 METHOD(bin, Binary_decode, PortNumber)

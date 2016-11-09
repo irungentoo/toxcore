@@ -183,7 +183,7 @@ METHOD(u64, Binary_encode, PingPacket)
 
 METHOD(bin, Binary_encode, PlainText)
 {
-    return pending;
+    return Binary_encode_CipherText(args, res);
 }
 
 METHOD(u64, Binary_encode, PortNumber)
