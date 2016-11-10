@@ -358,7 +358,7 @@ static void *iterate_toxav(void *data)
 
 static int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
 {
-    int32_t strides[3] = { 1280, 640, 640 };
+    int32_t strides[3] = { img->width, img->width / 2, img->width / 2 };
     uint8_t *planes[3] = {
         (uint8_t *)malloc(img->height * img->width),
         (uint8_t *)malloc(img->height * img->width / 4),
