@@ -9,3 +9,6 @@ export ASTYLE=$CACHE_DIR/astyle/build/gcc/bin/astyle
 export CFLAGS="-O3 -DTRAVIS_ENV=1"
 
 BUILD_DIR=_build
+
+# Workaround for broken Travis image.
+export TERM=xterm
