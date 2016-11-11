@@ -107,6 +107,7 @@ if(WARNINGS)
   add_cflag("-Wno-shadow")
   add_cflag("-Wno-shorten-64-to-32")
   add_cflag("-Wno-unreachable-code-return")
+  add_cflag("-Wno-unused-but-set-variable")
   add_cflag("-Wno-used-but-marked-unused")
 
   # Disable specific warning flags for C++.
