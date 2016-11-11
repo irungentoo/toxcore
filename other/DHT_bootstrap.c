@@ -27,8 +27,9 @@
 #endif
 
 #include "../toxcore/DHT.h"
-#include "../toxcore/LAN_discovery.h"
 #include "../toxcore/friend_requests.h"
+#include "../toxcore/LAN_discovery.h"
+#include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
 #define TCP_RELAY_ENABLED
@@ -120,7 +121,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(NULL, new_networking(NULL, ip, PORT));
+    DHT *dht = new_DHT(NULL, new_networking(NULL, ip, PORT), true);
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
 

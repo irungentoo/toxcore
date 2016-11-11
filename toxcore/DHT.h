@@ -238,6 +238,8 @@ typedef struct {
     Logger *log;
     Networking_Core *net;
 
+    bool hole_punching_enabled;
+
     Client_data    close_clientlist[LCLIENT_LIST];
     uint64_t       close_lastgetnodes;
     uint32_t       close_bootstrap_times;
@@ -435,7 +437,7 @@ void DHT_save(DHT *dht, uint8_t *data);
 int DHT_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_DHT(Logger *log, Networking_Core *net);
+DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled);
 
 void kill_DHT(DHT *dht);
 

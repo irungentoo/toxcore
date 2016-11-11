@@ -1934,7 +1934,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return NULL;
     }
 
-    m->dht = new_DHT(m->log, m->net);
+    m->dht = new_DHT(m->log, m->net, options->hole_punching_enabled);
 
     if (m->dht == NULL) {
         kill_networking(m->net);

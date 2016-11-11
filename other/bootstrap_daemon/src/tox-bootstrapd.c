@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 
 // toxcore
+#include "../../../toxcore/tox.h"
 #include "../../../toxcore/LAN_discovery.h"
 #include "../../../toxcore/TCP_server.h"
 #include "../../../toxcore/onion_announce.h"
@@ -243,7 +244,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    DHT *dht = new_DHT(NULL, net);
+    DHT *dht = new_DHT(NULL, net, true);
 
     if (dht == NULL) {
         write_log(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");

@@ -519,6 +519,11 @@ static class options {
      */
     uint16_t tcp_port;
 
+    /**
+     * Enables or disables UDP hole-punching in toxcore. (Default: enabled).
+     */
+    bool hole_punching_enabled;
+
     namespace savedata {
       /**
        * The type of savedata to load from.

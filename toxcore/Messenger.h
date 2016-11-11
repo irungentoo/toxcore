@@ -77,6 +77,8 @@ typedef struct {
     uint16_t port_range[2];
     uint16_t tcp_server_port;
 
+    uint8_t hole_punching_enabled;
+
     logger_cb *log_callback;
     void *log_user_data;
 } Messenger_Options;

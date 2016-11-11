@@ -2088,6 +2088,10 @@ static uint16_t NAT_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
 
 static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
 {
+    if (!dht->hole_punching_enabled) {
+        return;
+    }
+
     if (numports > MAX_FRIEND_CLIENTS || numports == 0) {
         return;
     }
@@ -2577,7 +2581,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_DHT(Logger *log, Networking_Core *net)
+DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled)
 {
     /* init time */
     unix_time_update();
@@ -2594,6 +2598,9 @@ DHT *new_DHT(Logger *log, Networking_Core *net)
 
     dht->log = log;
     dht->net = net;
+
+    dht->hole_punching_enabled = holepunching_enabled;
+
     dht->ping = new_ping(dht);
 
     if (dht->ping == NULL) {
