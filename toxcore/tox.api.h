@@ -844,14 +844,17 @@ inline namespace self {
 
   uint32_t nospam {
     /**
-     * Set the 4-byte nospam part of the address.
+     * Set the 4-byte nospam part of the address. This value is expected in host
+     * byte order. I.e. 0x12345678 will form the bytes [12, 34, 56, 78] in the
+     * nospam part of the Tox friend address.
      *
      * @param nospam Any 32 bit unsigned integer.
      */
     set();
 
     /**
-     * Get the 4-byte nospam part of the address.
+     * Get the 4-byte nospam part of the address. This value is returned in host
+     * byte order.
      */
     get();
   }
