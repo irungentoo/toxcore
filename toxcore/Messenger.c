@@ -1887,6 +1887,10 @@ static int friend_already_added(const uint8_t *real_pk, void *data)
 /* Run this at startup. */
 Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 {
+    if (!options) {
+        return NULL;
+    }
+
     Messenger *m = (Messenger *)calloc(1, sizeof(Messenger));
 
     if (error) {
@@ -1899,7 +1903,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     Logger *log = NULL;
 
-    if (options && options->log_callback) {
+    if (options->log_callback) {
         log = logger_new();
 
         if (log != NULL) {
