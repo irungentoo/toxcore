@@ -177,7 +177,7 @@ void toxav_kill(ToxAV *av)
     pthread_mutex_lock(av->mutex);
 
     /* To avoid possible deadlocks */
-    while (av->msi && msi_kill(av->msi) != 0) {
+    while (av->msi && msi_kill(av->msi, av->m->log) != 0) {
         pthread_mutex_unlock(av->mutex);
         pthread_mutex_lock(av->mutex);
     }
@@ -718,7 +718,7 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
             goto END;
         }
 
-        if (rtp_send_data(call->audio.first, dest, vrc + sizeof(sampling_rate)) != 0) {
+        if (rtp_send_data(call->audio.first, dest, vrc + sizeof(sampling_rate), av->m->log) != 0) {
             LOGGER_WARNING(av->m->log, "Failed to send audio packet");
             rc = TOXAV_ERR_SEND_FRAME_RTP_FAILED;
         }
@@ -815,7 +815,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
 
         while ((pkt = vpx_codec_get_cx_data(call->video.second->encoder, &iter))) {
             if (pkt->kind == VPX_CODEC_CX_FRAME_PKT &&
-                    rtp_send_data(call->video.first, (const uint8_t *)pkt->data.frame.buf, pkt->data.frame.sz) < 0) {
+                    rtp_send_data(call->video.first, (const uint8_t *)pkt->data.frame.buf, pkt->data.frame.sz, av->m->log) < 0) {
 
                 pthread_mutex_unlock(call->mutex_video);
                 LOGGER_WARNING(av->m->log, "Could not send video frame: %s\n", strerror(errno));

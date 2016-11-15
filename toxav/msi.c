@@ -134,10 +134,10 @@ MSISession *msi_new(Messenger *m)
     LOGGER_DEBUG(m->log, "New msi session: %p ", retu);
     return retu;
 }
-int msi_kill(MSISession *session)
+int msi_kill(MSISession *session, Logger *log)
 {
     if (session == NULL) {
-        LOGGER_ERROR(session->messenger->log, "Tried to terminate non-existing session");
+        LOGGER_ERROR(log, "Tried to terminate non-existing session");
         return -1;
     }
 

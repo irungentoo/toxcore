@@ -25,6 +25,7 @@
 #include "bwcontroller.h"
 
 #include "../toxcore/Messenger.h"
+#include "../toxcore/logger.h"
 
 #include <stdbool.h>
 
@@ -106,6 +107,6 @@ RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
 void rtp_kill(RTPSession *session);
 int rtp_allow_receiving(RTPSession *session);
 int rtp_stop_receiving(RTPSession *session);
-int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length);
+int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Logger *log);
 
 #endif /* RTP_H */

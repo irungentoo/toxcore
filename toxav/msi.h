@@ -26,6 +26,7 @@
 #include "video.h"
 
 #include "../toxcore/Messenger.h"
+#include "../toxcore/logger.h"
 
 #include <inttypes.h>
 #include <pthread.h>
@@ -127,7 +128,7 @@ MSISession *msi_new(Messenger *m);
 /**
  * Terminate control session. NOTE: all calls will be freed
  */
-int msi_kill(MSISession *session);
+int msi_kill(MSISession *session, Logger *log);
 /**
  * Callback setter.
  */

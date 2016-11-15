@@ -110,10 +110,10 @@ int rtp_stop_receiving(RTPSession *session)
     LOGGER_DEBUG(session->m->log, "Stopped receiving on session: %p", session);
     return 0;
 }
-int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length)
+int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Logger *log)
 {
     if (!session) {
-        LOGGER_WARNING(session->m->log, "No session!");
+        LOGGER_ERROR(log, "No session!");
         return -1;
     }
 
