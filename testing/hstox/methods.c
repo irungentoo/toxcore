@@ -143,5 +143,9 @@ int method_cmp(char const *ptr, char const *expected, size_t max_size)
         }
     }
 
-    return memcmp(transformed, expected, max_size);
+    int result = memcmp(transformed, expected, max_size);
+
+    free(transformed);
+
+    return result;
 }
