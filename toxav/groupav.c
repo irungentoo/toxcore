@@ -346,6 +346,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
         free(pk);
 
         if (out_audio_samples <= 0) {
+            free(out_audio);
             return -1;
         }
 
@@ -369,6 +370,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
         out_audio_samples = opus_decode(peer_av->audio_decoder, NULL, 0, out_audio, peer_av->last_packet_samples, 1);
 
         if (out_audio_samples <= 0) {
+            free(out_audio);
             return -1;
         }
     }
