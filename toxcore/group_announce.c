@@ -63,8 +63,6 @@
  */
 int make_self_gca_node(const DHT *dht, GC_Announce_Node *node, const uint8_t *public_key)
 {
-    IP_Port self_node;
-
     if (ipport_self_copy(dht, &node->ip_port) == -1) {
         return -1;
     }

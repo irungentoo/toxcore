@@ -545,7 +545,7 @@ static int read_connection_handshake(TCP_Secure_Connection *con, const uint8_t *
  */
 static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, const uint8_t *public_key)
 {
-    uint8_t data[1 + 1 + crypto_box_PUBLICKEYBYTES];
+    uint8_t data[2 + crypto_box_PUBLICKEYBYTES];
     data[0] = TCP_PACKET_ROUTING_RESPONSE;
     data[1] = rpid;
     memcpy(data + 2, public_key, crypto_box_PUBLICKEYBYTES);

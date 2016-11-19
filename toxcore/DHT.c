@@ -2737,7 +2737,7 @@ int DHT_non_lan_connected(const DHT *dht)
 
 /* Copies your own ip_port structure to dest.
  *
- * Return 0 on succcess.
+ * Return 0 on success.
  * Return -1 on failure.
  */
 int ipport_self_copy(const DHT *dht, IP_Port *dest)

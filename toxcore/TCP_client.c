@@ -525,7 +525,7 @@ void oob_data_handler(TCP_Client_Connection *con, int (*oob_data_callback)(void 
  */
 static int send_disconnect_notification(TCP_Client_Connection *con, uint8_t id)
 {
-    uint8_t packet[1 + 1];
+    uint8_t packet[2];
     packet[0] = TCP_PACKET_DISCONNECT_NOTIFICATION;
     packet[1] = id;
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet), 1);
@@ -699,7 +699,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
 
     switch (data[0]) {
         case TCP_PACKET_ROUTING_RESPONSE: {
-            if (length != 1 + 1 + crypto_box_PUBLICKEYBYTES)
+            if (length != 2 + crypto_box_PUBLICKEYBYTES)
                 return -1;
 
             if (data[1] < NUM_RESERVED_PORTS)
@@ -721,7 +721,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
         }
 
         case TCP_PACKET_CONNECTION_NOTIFICATION: {
-            if (length != 1 + 1)
+            if (length != 2)
                 return -1;
 
             if (data[1] < NUM_RESERVED_PORTS)
@@ -742,7 +742,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
         }
 
         case TCP_PACKET_DISCONNECT_NOTIFICATION: {
-            if (length != 1 + 1)
+            if (length != 2)
                 return -1;
 
             if (data[1] < NUM_RESERVED_PORTS)
