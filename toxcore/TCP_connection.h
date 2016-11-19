@@ -39,17 +39,17 @@
 #define TCP_CONNECTIONS_STATUS_REGISTERED 1
 #define TCP_CONNECTIONS_STATUS_ONLINE 2
 
-#define MAX_FRIEND_TCP_CONNECTIONS 6
+#define MAX_TCP_CONNECTIONS_FRIENDS 6
 
 /* Time until connection to friend gets killed (if it doesn't get locked withing that time) */
 #define TCP_CONNECTION_ANNOUNCE_TIMEOUT (TCP_CONNECTION_TIMEOUT)
 
 /* The amount of recommended connections for each friend
-   NOTE: Must be at most (MAX_FRIEND_TCP_CONNECTIONS / 2) */
-#define RECOMMENDED_FRIEND_TCP_CONNECTIONS (MAX_FRIEND_TCP_CONNECTIONS / 2)
+   NOTE: Must be at most (MAX_TCP_CONNECTIONS_FRIENDS / 2) */
+#define RECOMMENDED_TCP_CONNECTIONS_FRIENDS (MAX_TCP_CONNECTIONS_FRIENDS / 2)
 
 /* Number of TCP connections used for onion purposes. */
-#define NUM_ONION_TCP_CONNECTIONS RECOMMENDED_FRIEND_TCP_CONNECTIONS
+#define NUM_ONION_TCP_CONNECTIONS RECOMMENDED_TCP_CONNECTIONS_FRIENDS
 
 typedef struct {
     uint8_t status;
@@ -59,7 +59,7 @@ typedef struct {
         uint32_t tcp_connection;
         unsigned int status;
         unsigned int connection_id;
-    } connections[MAX_FRIEND_TCP_CONNECTIONS];
+    } connections[MAX_TCP_CONNECTIONS_FRIENDS];
 
     int id; /* id used in callbacks. */
 } TCP_Connection_to;
