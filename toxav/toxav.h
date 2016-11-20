@@ -316,6 +316,11 @@ bool toxav_answer(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, ui
 enum TOXAV_FRIEND_CALL_STATE {
 
     /**
+     * The empty bit mask. None of the bits specified below are set.
+     */
+    TOXAV_FRIEND_CALL_STATE_NONE = 0,
+
+    /**
      * Set by the AV core if an error occurred on the remote end or if friend
      * timed out. This is the final state after which no more state
      * transitions can occur for the call. This call state will never be triggered
