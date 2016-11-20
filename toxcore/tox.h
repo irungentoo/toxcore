@@ -482,9 +482,10 @@ typedef void tox_log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_
  * in future versions of the API, code that allocates it itself will become
  * incompatible.
  *
- * The memory layout of this struct (size, alignment, and field order) is not
- * part of the ABI. To remain compatible, prefer to use tox_options_new to allocate the
- * object and accessor functions to set the members.
+ * @deprecated The memory layout of this struct (size, alignment, and field
+ * order) is not part of the ABI. To remain compatible, prefer to use tox_options_new to
+ * allocate the object and accessor functions to set the members. The struct
+ * will become opaque (i.e. the definition will become private) in v0.1.0.
  */
 struct Tox_Options {
 
