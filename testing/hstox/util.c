@@ -17,8 +17,11 @@ char const *type_name(msgpack_object_type type)
         case MSGPACK_OBJECT_NEGATIVE_INTEGER:
             return "negative_integer";
 
-        case MSGPACK_OBJECT_FLOAT:
-            return "float";
+        case MSGPACK_OBJECT_FLOAT32:
+            return "float32";
+
+        case MSGPACK_OBJECT_FLOAT64:
+            return "float64";
 
         case MSGPACK_OBJECT_STR:
             return "str";
