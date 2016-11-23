@@ -463,7 +463,10 @@ endif()
 #
 ################################################################################
 
-if(NOT WIN32 AND BUILD_TOXAV AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
+option(BUILD_AV_TEST "Build toxav test" ON)
+if(NOT WIN32
+   AND BUILD_AV_TEST AND BUILD_TOXAV
+   AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
   add_c_executable(av_test testing/av_test.c)
   target_link_modules(av_test
     toxav
