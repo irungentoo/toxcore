@@ -471,6 +471,9 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
     if (!g)
         return -1;
 
+    if (g_c->peer_namelistchange)
+        g_c->peer_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, g_c->group_namelistchange_userdata);
+
     uint32_t i;
 
     for (i = 0; i < DESIRED_CLOSE_CONNECTIONS; ++i) { /* If peer is in closest_peers list, remove it. */
@@ -506,9 +509,6 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index)
 
         g->group = temp;
     }
-
-    if (g_c->peer_namelistchange)
-        g_c->peer_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, g_c->group_namelistchange_userdata);
 
     if (g->peer_on_leave)
         g->peer_on_leave(g->object, groupnumber, peer_index, peer_object);
