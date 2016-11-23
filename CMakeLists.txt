@@ -480,7 +480,8 @@ if(NOT WIN32
   endif()
 endif()
 
-if(NOT WIN32)
+option(BUILD_NTOX "Build nTox client" ON)
+if(NOT WIN32 AND BUILD_NTOX)
   add_c_executable(nTox testing/nTox.c)
   target_link_modules(nTox toxcore ${NCURSES_LIBRARIES})
 endif()
