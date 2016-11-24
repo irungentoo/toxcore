@@ -361,6 +361,34 @@ typedef enum TOX_PROXY_TYPE {
 
 
 /**
+ * Type of technology used to try to traverse a NAT.
+ */
+typedef enum TOX_TRAVERSAL_TYPE {
+
+    /**
+     * Don't use any particular technology.
+     */
+    TOX_TRAVERSAL_TYPE_NONE,
+
+    /**
+     * Use UPnP technology.
+     */
+    TOX_TRAVERSAL_TYPE_UPNP,
+
+    /**
+     * Use NAT-PMP technology.
+     */
+    TOX_TRAVERSAL_TYPE_NATPMP,
+
+    /**
+     * Use both UPnP and NAT-PMP technologies.
+     */
+    TOX_TRAVERSAL_TYPE_ALL,
+
+} TOX_TRAVERSAL_TYPE;
+
+
+/**
  * Type of savedata to create the Tox instance from.
  */
 typedef enum TOX_SAVEDATA_TYPE {
@@ -409,6 +437,12 @@ struct Tox_Options {
      * Disabling UDP support is necessary when using anonymous proxies or Tor.
      */
     bool udp_enabled;
+
+
+    /**
+     * Try to traverse a NAT.
+     */
+    TOX_TRAVERSAL_TYPE traversal_type;
 
 
     /**

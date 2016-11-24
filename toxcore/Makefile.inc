@@ -8,6 +8,8 @@ libtoxcore_la_includedir = $(includedir)/tox
 
 libtoxcore_la_SOURCES = ../toxcore/DHT.h \
                         ../toxcore/DHT.c \
+                        ../toxcore/nat_traversal.h \
+                        ../toxcore/nat_traversal.c \
                         ../toxcore/network.h \
                         ../toxcore/network.c \
                         ../toxcore/crypto_core.h \
@@ -57,12 +59,16 @@ libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
                         $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS) \
+                        $(MINIUPNP_CFLAGS) \
+                        $(NATPMP_CFLAGS) \
                         $(PTHREAD_CFLAGS)
 
 libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        $(MINIUPNP_LDFLAGS) \
+                        $(NATPMP_LDFLAGS) \
                         $(MATH_LDFLAGS) \
                         $(RT_LIBS) \
                         $(WINSOCK2_LIBS)
@@ -70,4 +76,6 @@ libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
 libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NAC_LIBS) \
+                        $(MINIUPNP_LIBS) \
+                        $(NATPMP_LIBS) \
                         $(PTHREAD_LIBS)
