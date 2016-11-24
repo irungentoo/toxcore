@@ -36,8 +36,7 @@
 int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
 
 
-RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber,
-                     BWController *bwc, void *cs,
+RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friendnumber, BWController *bwc, void *cs,
                      int (*mcb) (void *, struct RTPMessage *))
 {
     assert(mcb);
@@ -105,7 +104,8 @@ int rtp_stop_receiving(RTPSession *session)
     LOGGER_DEBUG("Stopped receiving on session: %p", session);
     return 0;
 }
-int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
+
+int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bool lossless)
 {
     if (!session) {
         LOGGER_WARNING("No session!");
@@ -121,7 +121,7 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
 
     header->ve = 2;
     header->pe = 0;
-    header->xe = 0;
+    header->ll = lossless;
     header->cc = 0;
 
     header->ma = 0;
@@ -135,20 +135,23 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
     header->tlen = htons(length);
 
     if (MAX_CRYPTO_DATA_SIZE > length + sizeof(struct RTPHeader) + 1) {
-
-        /**
-         * The lenght is lesser than the maximum allowed lenght (including header)
+        /** The length is lesser than the maximum allowed length (including header)
          * Send the packet in single piece.
          */
 
         memcpy(rdata + 1 + sizeof(struct RTPHeader), data, length);
-
-        if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata)))
+        int rslt;
+        if (lossless) {
+            rslt = send_custom_lossless_packet(session->m, session->friend_number, rdata, sizeof(rdata));
+        } else {
+            rslt = send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata));
+        }
+        if (rslt != 0) {
             LOGGER_WARNING("RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
-    } else {
+        }
 
-        /**
-         * The lenght is greater than the maximum allowed lenght (including header)
+    } else {
+        /** The length is greater than the maximum allowed length (including header)
          * Send the packet in multiple pieces.
          */
 
@@ -158,10 +161,18 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
         while ((length - sent) + sizeof(struct RTPHeader) + 1 > MAX_CRYPTO_DATA_SIZE) {
             memcpy(rdata + 1 + sizeof(struct RTPHeader), data + sent, piece);
 
-            if (-1 == send_custom_lossy_packet(session->m, session->friend_number,
-                                               rdata, piece + sizeof(struct RTPHeader) + 1))
-                LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
-                               piece + sizeof(struct RTPHeader) + 1, strerror(errno));
+            if (lossless) {
+                if (-1 == send_custom_lossless_packet(session->m, session->friend_number,
+                                                   rdata, piece + sizeof(struct RTPHeader) + 1))
+                    LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
+                                   piece + sizeof(struct RTPHeader) + 1, strerror(errno));
+            } else {
+                if (-1 == send_custom_lossy_packet(session->m, session->friend_number,
+                                                   rdata, piece + sizeof(struct RTPHeader) + 1))
+                    LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
+                                   piece + sizeof(struct RTPHeader) + 1, strerror(errno));
+            }
+
 
             sent += piece;
             header->cpart = htons(sent);
@@ -173,10 +184,18 @@ int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length)
         if (piece) {
             memcpy(rdata + 1 + sizeof(struct RTPHeader), data + sent, piece);
 
-            if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata,
-                                               piece + sizeof(struct RTPHeader) + 1))
-                LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
-                               piece + sizeof(struct RTPHeader) + 1, strerror(errno));
+            if (lossless) {
+                if (-1 == send_custom_lossless_packet(session->m, session->friend_number, rdata,
+                                                       piece + sizeof(struct RTPHeader) + 1))
+                        LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
+                                       piece + sizeof(struct RTPHeader) + 1, strerror(errno));
+            } else {
+                if (-1 == send_custom_lossy_packet(session->m, session->friend_number, rdata,
+                                                   piece + sizeof(struct RTPHeader) + 1))
+                    LOGGER_WARNING("RTP send failed (len: %d)! std error: %s",
+                                   piece + sizeof(struct RTPHeader) + 1, strerror(errno));
+            }
+
         }
     }
 
@@ -290,6 +309,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
     } else {
         /* The message is sent in multiple parts */
 
+
         if (session->mp) {
             /* There are 2 possible situations in this case:
              *      1) being that we got the part of already processing message.
@@ -300,7 +320,7 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
              */
 
             if (session->mp->header.sequnum == ntohs(header->sequnum) &&
-                    session->mp->header.timestamp == ntohl(header->timestamp)) {
+                session->mp->header.timestamp == ntohl(header->timestamp)) {
                 /* First case */
 
                 /* Make sure we have enough allocated memory */
@@ -320,52 +340,50 @@ int handle_rtp_packet (Messenger *m, uint32_t friendnumber, const uint8_t *data,
                 bwc_add_recv(session->bwc, length);
 
                 if (session->mp->len == session->mp->header.tlen) {
-                    /* Received a full message; now push it for the further
-                     * processing.
-                     */
-                    if (session->mcb)
+                    /* Received a full message; now push it for the further processing. */
+                    if (session->mcb) {
                         session->mcb (session->cs, session->mp);
-                    else
+                    } else {
                         free(session->mp);
+                    }
 
                     session->mp = NULL;
                 }
             } else {
                 /* Second case */
 
-                if (session->mp->header.timestamp > ntohl(header->timestamp))
-                    /* The received message part is from the old message;
-                     * discard it.
-                     */
+                if (session->mp->header.timestamp > ntohl(header->timestamp)) {
+                    /* The received message part is from the old message; discard it. */
                     return 0;
+                }
 
-                /* Measure missing parts of the old message */
-                bwc_add_lost(session->bwc,
-                             (session->mp->header.tlen - session->mp->len) +
+                if (!header->ll) {
+                    /* Measure missing parts of the old message */
+                    bwc_add_lost(session->bwc,
+                         (session->mp->header.tlen - session->mp->len) +
 
-                             /* Must account sizes of rtp headers too */
-                             ((session->mp->header.tlen - session->mp->len) /
-                              MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
+                         /* Must account sizes of rtp headers too */
+                         ((session->mp->header.tlen - session->mp->len) /
+                          MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader) );
+                }
 
                 /* Push the previous message for processing */
-                if (session->mcb)
+                if (session->mcb) {
                     session->mcb (session->cs, session->mp);
-                else
+                } else {
                     free(session->mp);
+                }
 
                 session->mp = NULL;
                 goto NEW_MULTIPARTED;
             }
         } else {
-            /* In this case threat the message as if it was received in order
-             */
-
-            /* This is also a point for new multiparted messages */
-NEW_MULTIPARTED:
+            /* In this case treat the message as if it was received in order
+             * This is also a point for new multiparted messages */
+            NEW_MULTIPARTED:
 
             /* Only allow messages which have arrived in order;
-             * drop late messages
-             */
+             * drop late messages */
             if (chloss(session, header)) {
                 return 0;
             } else {
@@ -376,8 +394,7 @@ NEW_MULTIPARTED:
 
             bwc_add_recv(session->bwc, length);
 
-            /* Again, only store message if handler is present
-             */
+            /* Again, only store message if handler is present */
             if (session->mcb) {
                 session->mp = new_message(ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
 

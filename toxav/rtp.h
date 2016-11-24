@@ -30,15 +30,17 @@
  * Payload type identifier. Also used as rtp callback prefix.
  */
 enum {
-    rtp_TypeAudio = 192,
+    rtp_TypeAudio = PACKET_ID_AV_RANGE_START,
     rtp_TypeVideo,
+    rtp_TypeAudio_lossless,
+    rtp_TypeVideo_lossless,
 };
 
 struct RTPHeader {
     /* Standard RTP header */
 #ifndef WORDS_BIGENDIAN
     uint16_t cc: 4; /* Contributing sources count */
-    uint16_t xe: 1; /* Extra header */
+    uint16_t ll: 1; /* Lossless bit */
     uint16_t pe: 1; /* Padding */
     uint16_t ve: 2; /* Version */
 
@@ -47,7 +49,7 @@ struct RTPHeader {
 #else
     uint16_t ve: 2; /* Version */
     uint16_t pe: 1; /* Padding */
-    uint16_t xe: 1; /* Extra header */
+    uint16_t ll: 1; /* Lossless bit */
     uint16_t cc: 4; /* Contributing sources count */
 
     uint16_t ma: 1; /* Marker */
@@ -104,6 +106,6 @@ RTPSession *rtp_new (int payload_type, Messenger *m, uint32_t friend_num,
 void rtp_kill (RTPSession *session);
 int rtp_allow_receiving (RTPSession *session);
 int rtp_stop_receiving (RTPSession *session);
-int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length);
+int rtp_send_data (RTPSession *session, const uint8_t *data, uint16_t length, bool lossless);
 
 #endif /* RTP_H */

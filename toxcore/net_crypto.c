@@ -27,6 +27,7 @@
 #include "config.h"
 #endif
 
+#include "Messenger.h"
 #include "net_crypto.h"
 #include "util.h"
 #include "math.h"
@@ -1301,7 +1302,8 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
         }
 
         set_buffer_end(&conn->recv_array, num);
-    } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
+    } else if ( (real_data[0] >= CRYPTO_RESERVED_PACKETS        && real_data[0] < PACKET_ID_AV_RANGE_START) ||
+                (real_data[0] >= PACKET_ID_LOSSLESS_RANGE_START && real_data[0] <= PACKET_ID_LOSSLESS_RANGE_END)) {
         Packet_Data dt;
         dt.length = real_length;
         memcpy(dt.data, real_data, real_length);
@@ -1331,8 +1333,10 @@ static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, con
 
         /* Packet counter. */
         ++conn->packet_counter;
-    } else if (real_data[0] >= PACKET_ID_LOSSY_RANGE_START &&
-               real_data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE)) {
+    } else if ((real_data[0] >=  PACKET_ID_LOSSY_RANGE_START &&
+                real_data[0] <  (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE)) ||
+               (real_data[0] >=  PACKET_ID_AV_RANGE_START &&
+                real_data[0] <=  PACKET_ID_AV_RANGE_END)) {
 
         set_buffer_end(&conn->recv_array, num);
 
@@ -2471,10 +2475,8 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE)
         return -1;
 
-    if (data[0] < PACKET_ID_LOSSY_RANGE_START)
-        return -1;
-
-    if (data[0] >= (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE))
+    if ((data[0] < PACKET_ID_LOSSY_RANGE_START || data[0] > PACKET_ID_LOSSY_RANGE_END) &&
+        (data[0] < PACKET_ID_AV_RANGE_START    || data[0] > PACKET_ID_AV_RANGE_END   ))
         return -1;
 
     pthread_mutex_lock(&c->connections_mutex);

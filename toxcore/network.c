@@ -374,8 +374,8 @@ static int receivepacket(sock_t sock, IP_Port *ip_port, uint8_t *data, uint32_t 
 
     if (fail_or_len < 0) {
 
-        LOGGER_SCOPE( if ((fail_or_len < 0) && (errno != EWOULDBLOCK))
-                      LOGGER_ERROR("Unexpected error reading from socket: %u, %s\n", errno, strerror(errno)); );
+        // LOGGER_SCOPE( if ((fail_or_len < 0) && (errno != EWOULDBLOCK))
+                      //LOGGER_ERROR("Unexpected error reading from socket: %u, %s\n", errno, strerror(errno)); );
 
         return -1; /* Nothing received. */
     }
