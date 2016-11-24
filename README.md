@@ -16,10 +16,6 @@ However, Tox does use [TCP relays](/docs/TCP_Network.txt) as a fallback if it en
 ### Connecting & Communicating
 Every peer is represented as a [byte string](https://en.wikipedia.org/wiki/String_(computer_science)) (the public key [Tox ID] of the peer). By using torrent-style DHT, peers can find the IP of other peers by using their Tox ID. Once the IP is obtained, peers can initiate a [secure](/docs/updates/Crypto.md) connection with each other. Once the connection is made, peers can exchange messages, send files, start video chats, etc. using encrypted communications.
 
-
-**Current build status:** [![Build Status](https://travis-ci.org/irungentoo/toxcore.png?branch=master)](https://travis-ci.org/irungentoo/toxcore)
-
-
 ## Q&A:
 
 ### What are your goals with Tox?
