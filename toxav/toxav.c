@@ -788,15 +788,46 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
 
     { /* Encode */
         vpx_image_t img;
-        img.w = img.h = img.d_w = img.d_h = 0;
-        vpx_img_alloc(&img, VPX_IMG_FMT_I420, width, height, 0);
 
-        /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes."
-         * http://fourcc.org/yuv.php#IYUV
-         */
-        memcpy(img.planes[VPX_PLANE_Y], y, width * height);
-        memcpy(img.planes[VPX_PLANE_U], u, (width / 2) * (height / 2));
-        memcpy(img.planes[VPX_PLANE_V], v, (width / 2) * (height / 2));
+        if (0)
+        {
+            /* Old allocation code, turns out it's slow on smart phones */
+            img.w = img.h = img.d_w = img.d_h = 0;
+            vpx_img_alloc(&img, VPX_IMG_FMT_I420, width, height, 0);
+
+            /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes."
+             * http://fourcc.org/yuv.php#IYUV
+             */
+            memcpy(img.planes[VPX_PLANE_Y], y, width * height);
+            memcpy(img.planes[VPX_PLANE_U], u, (width / 2) * (height / 2));
+            memcpy(img.planes[VPX_PLANE_V], v, (width / 2) * (height / 2));
+        }
+        else
+        {
+            /* New allocation code, not sure if supported by vpx; works so far */
+            img = (vpx_image_t){
+                .fmt = VPX_IMG_FMT_I420,
+                .cs = VPX_CS_UNKNOWN,
+                .range = VPX_CR_STUDIO_RANGE, 
+                .w = width,
+                .h = height,
+                .bit_depth = 8,
+                .d_w = width,
+                .d_h = height,
+                .r_w = 0,
+                .r_h = 0,
+                .x_chroma_shift = 1,
+                .y_chroma_shift = 1,
+                .planes = { (uint8_t*)y, (uint8_t*)u, (uint8_t*)v, NULL },
+                .stride = { width, width/2, width/2, 0 /*width*/ },
+                .bps = 12,
+                .user_priv = NULL,
+                .img_data = NULL,
+                .img_data_owner = 0,
+                .self_allocd = 0,
+                .fb_priv = NULL,
+            };
+        }
 
         int vrc = vpx_codec_encode(call->video.second->encoder, &img,
                                    call->video.second->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
