@@ -180,7 +180,7 @@ uint32_t tox_version_minor(void);
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-#define TOX_VERSION_PATCH              4
+#define TOX_VERSION_PATCH              5
 
 uint32_t tox_version_patch(void);
 
