@@ -1,0 +1,45 @@
+machine:
+  environment:
+    MAKEFLAGS: "j4"
+dependencies:
+  pre:
+    - sudo apt-get update
+    - sudo apt-get install clang
+    - sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
+    - sudo apt-get install libopus-dev libvpx-dev pkg-config
+
+# ------------ network_test requires that "localhost" resolves to ::1 ------------
+    - sudo bash -c "echo '::1             localhost ipv6-localhost ipv6-loopback' >> /etc/hosts" # ipv6 localhost entry
+# ------------ network_test requires that "localhost" resolves to ::1 ------------
+
+    #- sudo update-alternatives --install /usr/bin/cc cc /usr/bin/clang 100
+    #- sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/clang++ 100
+
+    - gcc --version ; exit 0
+    - clang --version ; exit 0
+
+compile:
+  override:
+    ### ------- get libsodium -------
+    - mkdir ~/libsodium
+    - cd ~/libsodium/ ; git clone https://github.com/jedisct1/libsodium.git
+    - cd ~/libsodium/ ; cd libsodium/ ; git checkout tags/1.0.11
+    - cd ~/libsodium/ ; cd libsodium/ ; ./autogen.sh
+    - cd ~/libsodium/ ; cd libsodium/ ; ./configure && make check
+    - cd ~/libsodium/ ; cd libsodium/ ; sudo bash -c "printf 'y\naa\n\n' | checkinstall --install --pkgname libsodium --pkgversion 1.0.0 --nodoc --deldesc=no --pkglicense='GPL2'"
+    - cd ~/libsodium/ ; cd libsodium/ ; sudo ldconfig
+    ### ------- get libsodium -------
+
+##### ------------ BUILD ------------
+    - cmake -DWARNINGS=OFF .
+    #- cmake .
+    - make
+    - sudo make install
+    - sudo ldconfig -v 2>/dev/null | grep toxcore
+    - sudo ldconfig -v 2>/dev/null | grep sodium
+##### ------------ BUILD ------------
+
+test:
+  override:
+    - make VERBOSE=1 test ; ex1=$? ; if [ $ex1 -ne 0 ]; then sleep 60; make VERBOSE=1 test ; exit $? ; fi
+
