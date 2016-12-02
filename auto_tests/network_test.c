@@ -114,8 +114,8 @@ START_TEST(test_ip_equal)
     ip2.ip6.uint32[2] = htonl(0xFFFF);
     ip2.ip6.uint32[3] = htonl(0x7F000001);
 
-    ck_assert_msg(IN6_IS_ADDR_V4MAPPED(&ip2.ip6.in6_addr) != 0,
-                  "IN6_IS_ADDR_V4MAPPED(::ffff:127.0.0.1): expected != 0, got 0.");
+    ck_assert_msg(IPV6_IPV4_IN_V6(ip2.ip6) != 0,
+                  "IPV6_IPV4_IN_V6(::ffff:127.0.0.1): expected != 0, got 0.");
 
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res != 0, "ip_equal( {AF_INET, 127.0.0.1}, {AF_INET6, ::ffff:127.0.0.1} ): expected result != 0, got 0.");

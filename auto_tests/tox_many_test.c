@@ -1,6 +1,8 @@
 /* Auto Tests: Many clients.
  */
 
+#define _XOPEN_SOURCE 600
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
