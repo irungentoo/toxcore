@@ -1593,7 +1593,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
         return 0;
     }
 
-    int ret = send_custom_lossy_packet(m, friend_number, data, length);
+    int ret = m_send_custom_lossy_packet(m, friend_number, data, length);
 
     set_custom_packet_error(ret, error);
 
