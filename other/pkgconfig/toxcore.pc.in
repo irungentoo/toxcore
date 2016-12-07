@@ -6,5 +6,5 @@ Name: toxcore
 Description: Tox protocol library
 Requires: libsodium
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} @toxcore_PKGCONFIG_LIBS@ -ltoxcrypto -ltoxnetwork -ltoxdht -ltoxnetcrypto -ltoxfriends -ltoxmessenger -ltoxgroup -ltoxcore
+Libs: -L${libdir} -ltoxcore @toxcore_PKGCONFIG_LIBS@ -ltoxcrypto -ltoxnetwork -ltoxdht -ltoxnetcrypto -ltoxfriends -ltoxmessenger -ltoxgroup
 Cflags: -I${includedir}
