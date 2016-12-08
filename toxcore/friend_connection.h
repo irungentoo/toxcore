@@ -108,6 +108,8 @@ typedef struct {
     void *fr_request_object;
 
     uint64_t last_LANdiscovery;
+
+    bool local_discovery_enabled;
 } Friend_Connections;
 
 /* return friendcon_id corresponding to the real public key on success.
@@ -197,7 +199,7 @@ void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_call
                                  const uint8_t *, uint16_t, void *), void *object);
 
 /* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(Onion_Client *onion_c);
+Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled);
 
 /* main friend_connections loop. */
 void do_friend_connections(Friend_Connections *fr_c, void *userdata);

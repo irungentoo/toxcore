@@ -132,6 +132,7 @@ ACCESSORS(TOX_SAVEDATA_TYPE, savedata_, type)
 ACCESSORS(size_t, savedata_, length)
 ACCESSORS(tox_log_cb *, log_, callback)
 ACCESSORS(void *, log_, user_data)
+ACCESSORS(bool, , local_discovery_enabled)
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
 {
@@ -153,6 +154,7 @@ void tox_options_default(struct Tox_Options *options)
         options->udp_enabled = 1;
         options->proxy_type = TOX_PROXY_TYPE_NONE;
         options->hole_punching_enabled = true;
+        options->local_discovery_enabled = true;
     }
 }
 
@@ -218,6 +220,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
         m_options.port_range[1] = options->end_port;
         m_options.tcp_server_port = options->tcp_port;
         m_options.hole_punching_enabled = options->hole_punching_enabled;
+        m_options.local_discovery_enabled = options->local_discovery_enabled;
 
         m_options.log_callback = (logger_cb *)options->log_callback;
         m_options.log_user_data = options->log_user_data;

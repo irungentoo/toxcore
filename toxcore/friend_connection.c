@@ -811,7 +811,7 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 }
 
 /* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(Onion_Client *onion_c)
+Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled)
 {
     if (!onion_c) {
         return NULL;
@@ -826,9 +826,13 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c)
     temp->dht = onion_c->dht;
     temp->net_crypto = onion_c->c;
     temp->onion_c = onion_c;
+    temp->local_discovery_enabled = local_discovery_enabled;
 
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
-    LANdiscovery_init(temp->dht);
+
+    if (temp->local_discovery_enabled) {
+        LANdiscovery_init(temp->dht);
+    }
 
     return temp;
 }
@@ -889,7 +893,9 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
         }
     }
 
-    LANdiscovery(fr_c);
+    if (fr_c->local_discovery_enabled) {
+        LANdiscovery(fr_c);
+    }
 }
 
 /* Free everything related with friend_connections. */
@@ -905,6 +911,9 @@ void kill_friend_connections(Friend_Connections *fr_c)
         kill_friend_connection(fr_c, i);
     }
 
-    LANdiscovery_kill(fr_c->dht);
+    if (fr_c->local_discovery_enabled) {
+        LANdiscovery_kill(fr_c->dht);
+    }
+
     free(fr_c);
 }

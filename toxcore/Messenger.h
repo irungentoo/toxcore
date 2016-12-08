@@ -78,6 +78,7 @@ typedef struct {
     uint16_t tcp_server_port;
 
     uint8_t hole_punching_enabled;
+    bool local_discovery_enabled;
 
     logger_cb *log_callback;
     void *log_user_data;

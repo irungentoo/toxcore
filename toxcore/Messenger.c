@@ -1954,7 +1954,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     m->onion = new_onion(m->dht);
     m->onion_a = new_onion_announce(m->dht);
     m->onion_c =  new_onion_client(m->net_crypto);
-    m->fr_c = new_friend_connections(m->onion_c);
+    m->fr_c = new_friend_connections(m->onion_c, options->local_discovery_enabled);
 
     if (!(m->onion && m->onion_a && m->onion_c)) {
         kill_friend_connections(m->fr_c);
