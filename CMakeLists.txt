@@ -343,8 +343,11 @@ add_module(toxdns
   toxdns/toxdns.c)
 target_link_modules(toxdns toxcore)
 
+apidsl(
+  toxencryptsave/toxencryptsave.api.h)
 add_module(toxencryptsave
-  toxencryptsave/toxencryptsave.c)
+  toxencryptsave/toxencryptsave.c
+  toxencryptsave/toxencryptsave.h)
 target_link_modules(toxencryptsave toxcore)
 
 ################################################################################

@@ -38,6 +38,7 @@ apidsl_curl() {
 $APIDSL toxcore/crypto_core.api.h > toxcore/crypto_core.h
 $APIDSL toxcore/tox.api.h > toxcore/tox.h
 $APIDSL toxav/toxav.api.h > toxav/toxav.h
+$APIDSL toxencryptsave/toxencryptsave.api.h > toxencryptsave/toxencryptsave.h
 
 SOURCES=`find . -name "*.[ch]" -and -not -name "*.api.h" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
 

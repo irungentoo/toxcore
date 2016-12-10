@@ -1,8 +1,8 @@
 /* toxencryptsave.h
  *
- * The Tox encrypted save functions.
+ * Batch encryption functions.
  *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
+ *  Copyright (C) 2013-2016 Tox Developers. All Rights Reserved.
  *
  *  This file is part of Tox.
  *
@@ -32,216 +32,349 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef TOX_DEFINED
-#define TOX_DEFINED
-typedef struct Tox Tox;
-struct Tox_Options;
-#endif
 
-#define TOX_PASS_SALT_LENGTH 32
-#define TOX_PASS_KEY_LENGTH 32
-#define TOX_PASS_ENCRYPTION_EXTRA_LENGTH 80
+/*******************************************************************************
+ *
+ * This module is organized into two parts.
+ *
+ * 1. A simple API operating on plain text/cipher text data and a password to
+ *    encrypt or decrypt it.
+ * 2. A more advanced API that splits key derivation and encryption into two
+ *    separate function calls.
+ *
+ * The first part is implemented in terms of the second part and simply calls
+ * the separate functions in sequence. Since key derivation is very expensive
+ * compared to the actual encryption, clients that do a lot of crypto should
+ * prefer the advanced API and reuse pass-key objects.
+ *
+ * To use the second part, first derive an encryption key from a password with
+ * <unresolved>, then use the derived key to encrypt the data.
+ *
+ * The encrypted data is prepended with a magic number, to aid validity
+ * checking (no guarantees are made of course). Any data to be decrypted must
+ * start with the magic number.
+ *
+ * Clients should consider alerting their users that, unlike plain data, if
+ * even one bit becomes corrupted, the data will be entirely unrecoverable.
+ * Ditto if they forget their password, there is no way to recover the data.
+ *
+ ******************************************************************************/
+
+
 
 /**
- * ToxEncryptSave.
+ * The size of the salt part of a pass-key.
  */
-#ifndef TOXES_DEFINED
-#define TOXES_DEFINED
-#endif /* TOXES_DEFINED */
+#define TOX_PASS_SALT_LENGTH           32
 
-/* This module is conceptually organized into two parts. The first part are the functions
- * with "key" in the name. To use these functions, first derive an encryption key
- * from a password with tox_derive_key_from_pass, and use the returned key to
- * encrypt the data. The second part takes the password itself instead of the key,
- * and then delegates to the first part to derive the key before de/encryption,
- * which can simplify client code; however, key derivation is very expensive
- * compared to the actual encryption, so clients that do a lot of encryption should
- * favor using the first part intead of the second part.
- *
- * The encrypted data is prepended with a magic number, to aid validity checking
- * (no guarantees are made of course). Any data to be decrypted must start with
- * the magic number.
- *
- * Clients should consider alerting their users that, unlike plain data, if even one bit
- * becomes corrupted, the data will be entirely unrecoverable.
- * Ditto if they forget their password, there is no way to recover the data.
- */
+uint32_t tox_pass_salt_length(void);
 
-/* Since apparently no one actually bothered to learn about the module previously,
- * the recently removed functions tox_encrypted_new and tox_get_encrypted_savedata
- * may be trivially replaced by calls to tox_pass_decrypt -> tox_new or
- * tox_get_savedata -> tox_pass_encrypt as appropriate. The removed functions
- * were never more than 5 line wrappers of the other public API functions anyways.
- * (As has always been, tox_pass_decrypt and tox_pass_encrypt are interchangeable
- *  with tox_pass_key_decrypt and tox_pass_key_encrypt, as the client program requires.)
+/**
+ * The size of the key part of a pass-key.
  */
+#define TOX_PASS_KEY_LENGTH            32
+
+uint32_t tox_pass_key_length(void);
+
+/**
+ * The amount of additional data required to store any encrypted byte array.
+ * Encrypting an array of N bytes requires N + TOX_PASS_ENCRYPTION_EXTRA_LENGTH
+ * bytes in the encrypted byte array.
+ */
+#define TOX_PASS_ENCRYPTION_EXTRA_LENGTH 80
+
+uint32_t tox_pass_encryption_extra_length(void);
 
 typedef enum TOX_ERR_KEY_DERIVATION {
-    TOX_ERR_KEY_DERIVATION_OK,
+
     /**
-     * Some input data, or maybe the output pointer, was null.
+     * The function returned successfully.
+     */
+    TOX_ERR_KEY_DERIVATION_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
      */
     TOX_ERR_KEY_DERIVATION_NULL,
+
     /**
      * The crypto lib was unable to derive a key from the given passphrase,
      * which is usually a lack of memory issue. The functions accepting keys
      * do not produce this error.
      */
-    TOX_ERR_KEY_DERIVATION_FAILED
+    TOX_ERR_KEY_DERIVATION_FAILED,
+
 } TOX_ERR_KEY_DERIVATION;
 
+
 typedef enum TOX_ERR_ENCRYPTION {
-    TOX_ERR_ENCRYPTION_OK,
+
     /**
-     * Some input data, or maybe the output pointer, was null.
+     * The function returned successfully.
+     */
+    TOX_ERR_ENCRYPTION_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
      */
     TOX_ERR_ENCRYPTION_NULL,
+
     /**
      * The crypto lib was unable to derive a key from the given passphrase,
      * which is usually a lack of memory issue. The functions accepting keys
      * do not produce this error.
      */
     TOX_ERR_ENCRYPTION_KEY_DERIVATION_FAILED,
+
     /**
      * The encryption itself failed.
      */
-    TOX_ERR_ENCRYPTION_FAILED
+    TOX_ERR_ENCRYPTION_FAILED,
+
 } TOX_ERR_ENCRYPTION;
 
+
 typedef enum TOX_ERR_DECRYPTION {
-    TOX_ERR_DECRYPTION_OK,
+
     /**
-     * Some input data, or maybe the output pointer, was null.
+     * The function returned successfully.
+     */
+    TOX_ERR_DECRYPTION_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
      */
     TOX_ERR_DECRYPTION_NULL,
+
     /**
      * The input data was shorter than TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes
      */
     TOX_ERR_DECRYPTION_INVALID_LENGTH,
+
     /**
      * The input data is missing the magic number (i.e. wasn't created by this
-     * module, or is corrupted)
+     * module, or is corrupted).
      */
     TOX_ERR_DECRYPTION_BAD_FORMAT,
+
     /**
      * The crypto lib was unable to derive a key from the given passphrase,
      * which is usually a lack of memory issue. The functions accepting keys
      * do not produce this error.
      */
     TOX_ERR_DECRYPTION_KEY_DERIVATION_FAILED,
+
     /**
      * The encrypted byte array could not be decrypted. Either the data was
-     * corrupt or the password/key was incorrect.
+     * corrupted or the password/key was incorrect.
      */
-    TOX_ERR_DECRYPTION_FAILED
+    TOX_ERR_DECRYPTION_FAILED,
+
 } TOX_ERR_DECRYPTION;
 
 
-/******************************* BEGIN PART 2 *******************************
- * For simplicty, the second part of the module is presented first. The API for
- * the first part is analgous, with some extra functions for key handling. If
- * your code spends too much time using these functions, consider using the part
- * 1 functions instead.
- */
 
-/* Encrypts the given data with the given passphrase. The output array must be
- * at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long. This delegates
- * to tox_derive_key_from_pass and tox_pass_key_encrypt.
+/*******************************************************************************
  *
- * returns true on success
- */
-bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passphrase, size_t pplength, uint8_t *out,
-                      TOX_ERR_ENCRYPTION *error);
-
-
-/* Decrypts the given data with the given passphrase. The output array must be
- * at least data_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long. This delegates
- * to tox_pass_key_decrypt.
+ *                                BEGIN PART 1
  *
- * the output data has size data_length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH
+ * The simple API is presented first. If your code spends too much time using
+ * these functions, consider using the advanced functions instead and caching
+ * the generated pass-key.
  *
- * returns true on success
- */
-bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphrase, size_t pplength, uint8_t *out,
-                      TOX_ERR_DECRYPTION *error);
+ ******************************************************************************/
 
 
-/******************************* BEGIN PART 1 *******************************
- * And now part "1", which does the actual encryption, and is rather less cpu
- * intensive than part one. The first 3 functions are for key handling.
- */
 
-/* This key structure's internals should not be used by any client program, even
- * if they are straightforward here.
- */
-typedef struct {
-    uint8_t salt[TOX_PASS_SALT_LENGTH];
-    uint8_t key[TOX_PASS_KEY_LENGTH];
-} TOX_PASS_KEY;
-
-/* Generates a secret symmetric key from the given passphrase. out_key must be at least
- * TOX_PASS_KEY_LENGTH bytes long.
- * Be sure to not compromise the key! Only keep it in memory, do not write to disk.
- * The password is zeroed after key derivation.
- * The key should only be used with the other functions in this module, as it
- * includes a salt.
- * Note that this function is not deterministic; to derive the same key from a
- * password, you also must know the random salt that was used. See below.
+/**
+ * Encrypts the given data with the given passphrase.
  *
- * returns true on success
+ * The output array must be at least `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
+ * bytes long. This delegates to tox_pass_key_derive and
+ * tox_pass_key_encrypt.
+ *
+ * @param plaintext A byte array of length `plaintext_len`.
+ * @param plaintext_len The length of the plain text array. May be 0.
+ * @param passphrase The user-provided password.
+ * @param passphrase_len The length of the password.
+ * @param ciphertext The cipher text array to write the encrypted data to.
+ *
+ * @return true on success.
  */
-bool tox_derive_key_from_pass(const uint8_t *passphrase, size_t pplength, TOX_PASS_KEY *out_key,
-                              TOX_ERR_KEY_DERIVATION *error);
+bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint8_t *passphrase, size_t passphrase_len,
+                      uint8_t *ciphertext, TOX_ERR_ENCRYPTION *error);
 
-/* Same as above, except use the given salt for deterministic key derivation.
+/**
+ * Decrypts the given data with the given passphrase.
+ *
+ * The output array must be at least `ciphertext_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
+ * bytes long. This delegates to tox_pass_key_decrypt.
+ *
+ * @param ciphertext A byte array of length `ciphertext_len`.
+ * @param ciphertext_len The length of the cipher text array. May be 0.
+ * @param passphrase The user-provided password.
+ * @param passphrase_len The length of the password.
+ * @param plaintext The plain text array to write the decrypted data to.
+ *
+ * @return true on success.
+ */
+bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const uint8_t *passphrase,
+                      size_t passphrase_len, uint8_t *plaintext, TOX_ERR_DECRYPTION *error);
+
+
+/*******************************************************************************
+ *
+ *                                BEGIN PART 2
+ *
+ * And now part 2, which does the actual encryption, and can be used to write
+ * less CPU intensive client code than part one.
+ *
+ ******************************************************************************/
+
+
+
+/**
+ * This type represents a pass-key.
+ *
+ * A pass-key and a password are two different concepts: a password is given
+ * by the user in plain text. A pass-key is the generated symmetric key used
+ * for encryption and decryption. It is derived from a salt and the user-
+ * provided password.
+ *
+ * The Tox_Pass_Key structure is hidden in the implementation. It can be allocated
+ * using tox_pass_key_new and must be deallocated using tox_pass_key_free.
+ */
+#ifndef TOX_PASS_KEY_DEFINED
+#define TOX_PASS_KEY_DEFINED
+typedef struct Tox_Pass_Key Tox_Pass_Key;
+#endif /* TOX_PASS_KEY_DEFINED */
+
+/**
+ * Create a new Tox_Pass_Key. The initial value of it is indeterminate. To
+ * initialise it, use one of the derive_* functions below.
+ */
+struct Tox_Pass_Key *tox_pass_key_new(void);
+
+/**
+ * Deallocate a Tox_Pass_Key. This function behaves like free(), so NULL is an
+ * acceptable argument value.
+ */
+void tox_pass_key_free(struct Tox_Pass_Key *_key);
+
+/**
+ * Generates a secret symmetric key from the given passphrase.
+ *
+ * Be sure to not compromise the key! Only keep it in memory, do not write
+ * it to disk.
+ *
+ * Note that this function is not deterministic; to derive the same key from
+ * a password, you also must know the random salt that was used. A
+ * deterministic version of this function is tox_pass_key_derive_with_salt.
+ *
+ * @param passphrase The user-provided password.
+ * @param passphrase_len The length of the password.
+ *
+ * @return true on success.
+ */
+bool tox_pass_key_derive(struct Tox_Pass_Key *_key, const uint8_t *passphrase, size_t passphrase_len,
+                         TOX_ERR_KEY_DERIVATION *error);
+
+/**
+ * Same as above, except use the given salt for deterministic key derivation.
+ *
+ * @param passphrase The user-provided password.
+ * @param passphrase_len The length of the password.
+ * @param salt An array of at least TOX_PASS_SALT_LENGTH bytes.
+ *
+ * @return true on success.
+ */
+bool tox_pass_key_derive_with_salt(struct Tox_Pass_Key *_key, const uint8_t *passphrase, size_t passphrase_len,
+                                   const uint8_t *salt, TOX_ERR_KEY_DERIVATION *error);
+
+/**
+ * Encrypt a plain text with a key produced by tox_pass_key_derive or tox_pass_key_derive_with_salt.
+ *
+ * The output array must be at least `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
+ * bytes long.
+ *
+ * @param plaintext A byte array of length `plaintext_len`.
+ * @param plaintext_len The length of the plain text array. May be 0.
+ * @param ciphertext The cipher text array to write the encrypted data to.
+ *
+ * @return true on success.
+ */
+bool tox_pass_key_encrypt(const struct Tox_Pass_Key *_key, const uint8_t *plaintext, size_t plaintext_len,
+                          uint8_t *ciphertext, TOX_ERR_ENCRYPTION *error);
+
+/**
+ * This is the inverse of tox_pass_key_encrypt, also using only keys produced by
+ * tox_pass_key_derive or tox_pass_key_derive_with_salt.
+ *
+ * @param ciphertext A byte array of length `ciphertext_len`.
+ * @param ciphertext_len The length of the cipher text array. May be 0.
+ * @param plaintext The plain text array to write the decrypted data to.
+ *
+ * @return true on success.
+ */
+bool tox_pass_key_decrypt(const struct Tox_Pass_Key *_key, const uint8_t *ciphertext, size_t ciphertext_len,
+                          uint8_t *plaintext, TOX_ERR_DECRYPTION *error);
+
+typedef enum TOX_ERR_GET_SALT {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_GET_SALT_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
+     */
+    TOX_ERR_GET_SALT_NULL,
+
+    /**
+     * The input data is missing the magic number (i.e. wasn't created by this
+     * module, or is corrupted).
+     */
+    TOX_ERR_GET_SALT_BAD_FORMAT,
+
+} TOX_ERR_GET_SALT;
+
+
+/**
+ * Retrieves the salt used to encrypt the given data.
+ *
+ * The retrieved salt can then be passed to tox_pass_key_derive_with_salt to
+ * produce the same key as was previously used. Any data encrypted with this
+ * module can be used as input.
+ *
+ * The cipher text must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in length.
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
+ * If the passed byte arrays are smaller than required, the behaviour is
+ * undefined.
+ *
+ * Success does not say anything about the validity of the data, only that
+ * data of the appropriate size was copied.
+ *
+ * @return true on success.
  */
-bool tox_derive_key_with_salt(const uint8_t *passphrase, size_t pplength, const uint8_t *salt, TOX_PASS_KEY *out_key,
-                              TOX_ERR_KEY_DERIVATION *error);
+bool tox_get_salt(const uint8_t *ciphertext, uint8_t *salt, TOX_ERR_GET_SALT *error);
 
-/* This retrieves the salt used to encrypt the given data, which can then be passed to
- * derive_key_with_salt to produce the same key as was previously used. Any encrpyted
- * data with this module can be used as input.
+/**
+ * Determines whether or not the given data is encrypted by this module.
+ *
+ * It does this check by verifying that the magic number is the one put in
+ * place by the encryption functions.
  *
  * The data must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in length.
- * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
+ * If the passed byte array is smaller than required, the behaviour is
+ * undefined.
  *
- * returns true if magic number matches
- * success does not say anything about the validity of the data, only that data of
- * the appropriate size was copied
- */
-bool tox_get_salt(const uint8_t *data, uint8_t *salt);
-
-/* Now come the functions that are analogous to the part 2 functions. */
-
-/* Encrypt arbitrary with a key produced by tox_derive_key_*. The output
- * array must be at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
- * key must be TOX_PASS_KEY_LENGTH bytes.
- * If you already have a symmetric key from somewhere besides this module, simply
- * call encrypt_data_symmetric in toxcore/crypto_core directly.
+ * If the cipher text pointer is NULL, this function returns false.
  *
- * returns true on success
- */
-bool tox_pass_key_encrypt(const uint8_t *data, size_t data_len, const TOX_PASS_KEY *key, uint8_t *out,
-                          TOX_ERR_ENCRYPTION *error);
-
-/* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
- * tox_derive_key_from_pass.
- *
- * the output data has size data_length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH
- *
- * returns true on success
- */
-bool tox_pass_key_decrypt(const uint8_t *data, size_t length, const TOX_PASS_KEY *key, uint8_t *out,
-                          TOX_ERR_DECRYPTION *error);
-
-/* Determines whether or not the given data is encrypted (by checking the magic number).
- *
- * The data must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in length.
- *
- * returns true on success
+ * @return true if the data is encrypted by this module.
  */
 bool tox_is_data_encrypted(const uint8_t *data);
+
 
 #ifdef __cplusplus
 }

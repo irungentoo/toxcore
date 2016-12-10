@@ -19,8 +19,8 @@
 #include "../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #endif
 
-static unsigned char test_salt[32] = {0xB1, 0xC2, 0x09, 0xEE, 0x50, 0x6C, 0xF0, 0x20, 0xC4, 0xD6, 0xEB, 0xC0, 0x44, 0x51, 0x3B, 0x60, 0x4B, 0x39, 0x4A, 0xCF, 0x09, 0x53, 0x4F, 0xEA, 0x08, 0x41, 0xFA, 0xCA, 0x66, 0xD2, 0x68, 0x7F};
-static unsigned char known_key[crypto_box_BEFORENMBYTES] = {0x29, 0x36, 0x1c, 0x9e, 0x65, 0xbb, 0x46, 0x8b, 0xde, 0xa1, 0xac, 0xf, 0xd5, 0x11, 0x81, 0xc8, 0x29, 0x28, 0x17, 0x23, 0xa6, 0xc3, 0x6b, 0x77, 0x2e, 0xd7, 0xd3, 0x10, 0xeb, 0xd2, 0xf7, 0xc8};
+static unsigned char test_salt[TOX_PASS_SALT_LENGTH] = {0xB1, 0xC2, 0x09, 0xEE, 0x50, 0x6C, 0xF0, 0x20, 0xC4, 0xD6, 0xEB, 0xC0, 0x44, 0x51, 0x3B, 0x60, 0x4B, 0x39, 0x4A, 0xCF, 0x09, 0x53, 0x4F, 0xEA, 0x08, 0x41, 0xFA, 0xCA, 0x66, 0xD2, 0x68, 0x7F};
+static unsigned char known_key[TOX_PASS_KEY_LENGTH] = {0x29, 0x36, 0x1c, 0x9e, 0x65, 0xbb, 0x46, 0x8b, 0xde, 0xa1, 0xac, 0xf, 0xd5, 0x11, 0x81, 0xc8, 0x29, 0x28, 0x17, 0x23, 0xa6, 0xc3, 0x6b, 0x77, 0x2e, 0xd7, 0xd3, 0x10, 0xeb, 0xd2, 0xf7, 0xc8};
 static const char *pw = "hunter2";
 static unsigned int pwlen = 7;
 
@@ -102,19 +102,20 @@ START_TEST(test_save_friend)
     size = tox_get_savedata_size(tox3);
     uint8_t data2[size];
     tox_get_savedata(tox3, data2);
-    TOX_PASS_KEY key;
-    memcpy(key.salt, test_salt, 32);
-    memcpy(key.key, known_key2, crypto_box_BEFORENMBYTES);
+    Tox_Pass_Key *key = tox_pass_key_new();
+    ck_assert_msg(key != NULL, "pass key allocation failure");
+    memcpy((uint8_t *)key, test_salt, TOX_PASS_SALT_LENGTH);
+    memcpy((uint8_t *)key + TOX_PASS_SALT_LENGTH, known_key2, TOX_PASS_KEY_LENGTH);
     size2 = size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t encdata2[size2];
-    ret = tox_pass_key_encrypt(data2, size, &key, encdata2, &error1);
+    ret = tox_pass_key_encrypt(key, data2, size, encdata2, &error1);
     ck_assert_msg(ret, "failed to key encrypt %u", error1);
     ck_assert_msg(tox_is_data_encrypted(encdata2), "magic number the second missing");
 
     uint8_t out1[size], out2[size];
     ret = tox_pass_decrypt(encdata2, size2, (const uint8_t *)pw, pwlen, out1, &err3);
     ck_assert_msg(ret, "failed to pw decrypt %u", err3);
-    ret = tox_pass_key_decrypt(encdata2, size2, &key, out2, &err3);
+    ret = tox_pass_key_decrypt(key, encdata2, size2, out2, &err3);
     ck_assert_msg(ret, "failed to key decrypt %u", err3);
     ck_assert_msg(memcmp(out1, out2, size) == 0, "differing output data");
 
@@ -129,6 +130,8 @@ START_TEST(test_save_friend)
     ck_assert_msg(ret, "no friends! the third");
     ck_assert_msg(memcmp(address, address2, TOX_PUBLIC_KEY_SIZE) == 0, "addresses don't match! the third");
 
+    tox_pass_key_free(key);
+
     tox_kill(tox1);
     tox_kill(tox2);
     tox_kill(tox3);
@@ -141,13 +144,14 @@ START_TEST(test_keys)
     TOX_ERR_ENCRYPTION encerr;
     TOX_ERR_DECRYPTION decerr;
     TOX_ERR_KEY_DERIVATION keyerr;
-    TOX_PASS_KEY key;
-    bool ret = tox_derive_key_from_pass((const uint8_t *)"123qweasdzxc", 12, &key, &keyerr);
+    Tox_Pass_Key *key = tox_pass_key_new();
+    ck_assert_msg(key != NULL, "pass key allocation failure");
+    bool ret = tox_pass_key_derive(key, (const uint8_t *)"123qweasdzxc", 12, &keyerr);
     ck_assert_msg(ret, "generic failure 1: %u", keyerr);
     const uint8_t *string = (const uint8_t *)"No Patrick, mayonnaise is not an instrument."; // 44
 
     uint8_t encrypted[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
-    ret = tox_pass_key_encrypt(string, 44, &key, encrypted, &encerr);
+    ret = tox_pass_key_encrypt(key, string, 44, encrypted, &encerr);
     ck_assert_msg(ret, "generic failure 2: %u", encerr);
 
     uint8_t encrypted2[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
@@ -157,7 +161,7 @@ START_TEST(test_keys)
     uint8_t out1[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
     uint8_t out2[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
 
-    ret = tox_pass_key_decrypt(encrypted, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, &key, out1, &decerr);
+    ret = tox_pass_key_decrypt(key, encrypted, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, out1, &decerr);
     ck_assert_msg(ret, "generic failure 4: %u", decerr);
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 1 failed");
 
@@ -177,11 +181,16 @@ START_TEST(test_keys)
     ck_assert_msg(memcmp(out1, string, 44) == 0, "decryption 3 failed");
 
     uint8_t salt[TOX_PASS_SALT_LENGTH];
-    ck_assert_msg(tox_get_salt(encrypted, salt), "couldn't get salt");
-    TOX_PASS_KEY key2;
-    ret = tox_derive_key_with_salt((const uint8_t *)"123qweasdzxc", 12, salt, &key2, &keyerr);
+    TOX_ERR_GET_SALT salt_err;
+    ck_assert_msg(tox_get_salt(encrypted, salt, &salt_err), "couldn't get salt");
+    ck_assert_msg(salt_err == TOX_ERR_GET_SALT_OK, "get_salt returned an error");
+    Tox_Pass_Key *key2 = tox_pass_key_new();
+    ck_assert_msg(key != NULL, "pass key allocation failure");
+    ret = tox_pass_key_derive_with_salt(key2, (const uint8_t *)"123qweasdzxc", 12, salt, &keyerr);
     ck_assert_msg(ret, "generic failure 7: %u", keyerr);
-    ck_assert_msg(0 == memcmp(&key, &key2, sizeof(TOX_PASS_KEY)), "salt comparison failed");
+    ck_assert_msg(0 == memcmp(key, key2, TOX_PASS_KEY_LENGTH + TOX_PASS_SALT_LENGTH), "salt comparison failed");
+    tox_pass_key_free(key2);
+    tox_pass_key_free(key);
 }
 END_TEST
 
