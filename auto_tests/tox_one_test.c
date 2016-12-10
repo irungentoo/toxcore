@@ -14,6 +14,19 @@
 
 #include "helpers.h"
 
+static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t *status_message)
+{
+    int i;
+
+    for (i = 0; i < TOX_MAX_NAME_LENGTH; ++i) {
+        name[i] = rand();
+    }
+
+    for (i = 0; i < TOX_MAX_STATUS_MESSAGE_LENGTH; ++i) {
+        status_message[i] = rand();
+    }
+}
+
 START_TEST(test_one)
 {
     {
@@ -26,9 +39,17 @@ START_TEST(test_one)
         tox_options_free(o1);
     }
 
+    uint8_t name[TOX_MAX_NAME_LENGTH];
+    uint8_t status_message[TOX_MAX_STATUS_MESSAGE_LENGTH];
+
+    uint8_t name2[TOX_MAX_NAME_LENGTH];
+    uint8_t status_message2[TOX_MAX_STATUS_MESSAGE_LENGTH];
+
     uint32_t index[] = { 1, 2 };
     Tox *tox1 = tox_new_log(0, 0, &index[0]);
+    set_random_name_and_status_message(tox1, name, status_message);
     Tox *tox2 = tox_new_log(0, 0, &index[1]);
+    set_random_name_and_status_message(tox2, name2, status_message2);
 
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox1, address);
@@ -57,15 +78,12 @@ START_TEST(test_one)
     ret = tox_friend_add(tox1, address, message, TOX_MAX_FRIEND_REQUEST_LENGTH, &error);
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_ALREADY_SENT, "Adding friend twice worked.");
 
-    uint8_t name[TOX_MAX_NAME_LENGTH];
-    int i;
-
-    for (i = 0; i < TOX_MAX_NAME_LENGTH; ++i) {
-        name[i] = rand();
-    }
-
     tox_self_set_name(tox1, name, sizeof(name), 0);
     ck_assert_msg(tox_self_get_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
+
+    tox_self_set_status_message(tox1, status_message, sizeof(status_message), 0);
+    ck_assert_msg(tox_self_get_status_message_size(tox1) == sizeof(status_message),
+                  "Can't set status message of TOX_MAX_STATUS_MESSAGE_LENGTH");
 
     tox_self_get_address(tox1, address);
     size_t save_size = tox_get_savedata_size(tox1);
@@ -84,8 +102,17 @@ START_TEST(test_one)
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
 
     ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
+    ck_assert_msg(tox_self_get_status_message_size(tox2) == sizeof status_message, "Wrong status message size");
 
-    uint8_t address2[TOX_ADDRESS_SIZE];
+    uint8_t name_loaded[TOX_MAX_NAME_LENGTH] = { 0 };
+    tox_self_get_name(tox2, name_loaded);
+    ck_assert_msg(!memcmp(name, name_loaded, sizeof name), "Wrong name.");
+
+    uint8_t status_message_loaded[TOX_MAX_STATUS_MESSAGE_LENGTH] = { 0 };
+    tox_self_get_status_message(tox2, status_message_loaded);
+    ck_assert_msg(!memcmp(status_message, status_message_loaded, sizeof status_message_loaded), "Wrong status message.");
+
+    uint8_t address2[TOX_ADDRESS_SIZE] = { 0 };
     tox_self_get_address(tox2, address2);
     ck_assert_msg(memcmp(address2, address, TOX_ADDRESS_SIZE) == 0, "Wrong address.");
     uint8_t new_name[TOX_MAX_NAME_LENGTH] = { 0 };
