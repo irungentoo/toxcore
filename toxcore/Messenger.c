@@ -2663,9 +2663,9 @@ static uint32_t friend_size()
     data++; // padding
     VALUE_MEMBER(info_size);
     ARRAY_MEMBER(name);
-    data++; // padding
     VALUE_MEMBER(name_length);
     ARRAY_MEMBER(statusmessage);
+    data++; // padding
     VALUE_MEMBER(statusmessage_length);
     VALUE_MEMBER(userstatus);
     data += 3; // padding
@@ -2700,9 +2700,9 @@ static uint8_t *friend_save(const struct SAVED_FRIEND *temp, uint8_t *data)
     data++; // padding
     VALUE_MEMBER(info_size);
     ARRAY_MEMBER(name);
-    data++; // padding
     VALUE_MEMBER(name_length);
     ARRAY_MEMBER(statusmessage);
+    data++; // padding
     VALUE_MEMBER(statusmessage_length);
     VALUE_MEMBER(userstatus);
     data += 3; // padding
@@ -2784,9 +2784,9 @@ static const uint8_t *friend_load(struct SAVED_FRIEND *temp, const uint8_t *data
     data++; // padding
     VALUE_MEMBER(info_size);
     ARRAY_MEMBER(name);
-    data++; // padding
     VALUE_MEMBER(name_length);
     ARRAY_MEMBER(statusmessage);
+    data++; // padding
     VALUE_MEMBER(statusmessage_length);
     VALUE_MEMBER(userstatus);
     data += 3; // padding
