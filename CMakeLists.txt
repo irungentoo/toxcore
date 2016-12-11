@@ -5,8 +5,8 @@ include(CTest)
 # This version is for the entire project. All libraries (core, av, ...) move in
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
-set(PROJECT_VERSION_MINOR "0")
-set(PROJECT_VERSION_PATCH "5")
+set(PROJECT_VERSION_MINOR "1")
+set(PROJECT_VERSION_PATCH "0")
 set(PROJECT_VERSION
   "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
