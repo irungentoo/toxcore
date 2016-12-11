@@ -86,11 +86,7 @@ uint32_t tox_version_patch(void)
 
 bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
-    return (TOX_VERSION_MAJOR == major && /* Force the major version */
-            (TOX_VERSION_MINOR > minor || /* Current minor version must be newer than requested -- or -- */
-             (TOX_VERSION_MINOR == minor && TOX_VERSION_PATCH >= patch) /* the patch must be the same or newer */
-            )
-           );
+    return TOX_VERSION_IS_API_COMPATIBLE(major, minor, patch);
 }
 
 
