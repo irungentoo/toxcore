@@ -34,7 +34,6 @@ BUILD_TESTING="yes"
 
 TOX_LOGGER="no"
 TOX_DEBUG="no"
-LOGGING_OUTNAM="libtoxcore.log"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
@@ -88,9 +87,7 @@ AC_ARG_ENABLE([logging],
         if test "x$enableval" = "xyes"; then
             TOX_LOGGER="yes"
 
-            AC_DEFINE([TOX_LOGGER], [], [If logging enabled])
-            AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
-            AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$LOGGING_OUTNAM"], [Output of logger])
+            AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
         fi
     ]
 )
@@ -114,34 +111,22 @@ AC_ARG_WITH(log-level,
             AC_MSG_WARN([Logging disabled!])
         else
             if test "x$withval" = "xTRACE"; then
-                AC_DEFINE([LOGGER_LEVEL], [LOG_TRACE], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_TRACE], [LOG_LEVEL value])
 
             elif test "x$withval" = "xDEBUG"; then
-                AC_DEFINE([LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
 
             elif test "x$withval" = "xINFO"; then
-                AC_DEFINE([LOGGER_LEVEL], [LOG_INFO], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_INFO], [LOG_LEVEL value])
 
             elif test "x$withval" = "xWARNING"; then
-                AC_DEFINE([LOGGER_LEVEL], [LOG_WARNING], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_WARNING], [LOG_LEVEL value])
 
             elif test "x$withval" = "xERROR"; then
-                AC_DEFINE([LOGGER_LEVEL], [LOG_ERROR], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_ERROR], [LOG_LEVEL value])
             else
                 AC_MSG_WARN([Invalid logger level: $withval. Using default 'DEBUG'])
             fi
-        fi
-    ]
-)
-
-AC_ARG_WITH(log-path,
-    AC_HELP_STRING([--with-log-path=DIR],
-                   [Path of logger output]),
-    [
-        if test "x$TOX_LOGGER" = "xno"; then
-            AC_MSG_WARN([Logging disabled!])
-        else
-            AC_DEFINE_UNQUOTED([LOGGER_OUTPUT_FILE], ["$withval""/""$LOGGING_OUTNAM"], [Output of logger])
         fi
     ]
 )

@@ -7,9 +7,11 @@
   --with-libsodium-headers=$CACHE_DIR/include \
   --enable-daemon \
   --enable-logging \
-  --enable-ntox
+  --enable-ntox \
+  --with-log-level=TRACE
 
 # We use make instead of RUN $MAKE here, because the autotools build will only
 # ever run natively on the Linux container, never on a Windows cross compilation
 # docker instance or an OSX machine.
+make -j$NPROC -k
 make distcheck -j$NPROC -k
