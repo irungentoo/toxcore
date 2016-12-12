@@ -1321,8 +1321,8 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
  * return -1 on failure.
  * return 0 on success.
  */
-static int handle_data_packet_helper(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length,
-                                     bool udp, void *userdata)
+static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length,
+                                   bool udp, void *userdata)
 {
     if (length > MAX_CRYPTO_PACKET_SIZE || length <= CRYPTO_DATA_PACKET_MIN_SIZE) {
         return -1;
@@ -1542,7 +1542,7 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
 
         case NET_PACKET_CRYPTO_DATA: {
             if (conn->status == CRYPTO_CONN_NOT_CONFIRMED || conn->status == CRYPTO_CONN_ESTABLISHED) {
-                return handle_data_packet_helper(c, crypt_connection_id, packet, length, udp, userdata);
+                return handle_data_packet_core(c, crypt_connection_id, packet, length, udp, userdata);
             }
 
             return -1;

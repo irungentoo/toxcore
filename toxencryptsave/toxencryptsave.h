@@ -203,6 +203,9 @@ bool tox_derive_key_with_salt(const uint8_t *passphrase, size_t pplength, const 
  * derive_key_with_salt to produce the same key as was previously used. Any encrpyted
  * data with this module can be used as input.
  *
+ * The data must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in length.
+ * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
+ *
  * returns true if magic number matches
  * success does not say anything about the validity of the data, only that data of
  * the appropriate size was copied
@@ -232,7 +235,11 @@ bool tox_pass_key_encrypt(const uint8_t *data, size_t data_len, const TOX_PASS_K
 bool tox_pass_key_decrypt(const uint8_t *data, size_t length, const TOX_PASS_KEY *key, uint8_t *out,
                           TOX_ERR_DECRYPTION *error);
 
-/* Determines whether or not the given data is encrypted (by checking the magic number)
+/* Determines whether or not the given data is encrypted (by checking the magic number).
+ *
+ * The data must be at least TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes in length.
+ *
+ * returns true on success
  */
 bool tox_is_data_encrypted(const uint8_t *data);
 
