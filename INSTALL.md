@@ -498,6 +498,7 @@ While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox 
   - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
   - --enable-ntox build nTox client (default: no) see: [nTox](#ntox)
   - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrapd)
+  - --enable-dht-bootstrap build DHT bootstrap utility (default=disabled)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
   - --enable-static[=PKGS]  build static libraries [default=yes]
 

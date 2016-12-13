@@ -27,6 +27,7 @@ if test "x${prefix}" = "xNONE"; then
 fi
 
 BUILD_DHT_BOOTSTRAP_DAEMON="no"
+BUILD_DHT_BOOTSTRAP="no"
 BUILD_NTOX="no"
 BUILD_TESTS="yes"
 BUILD_AV="yes"
@@ -176,6 +177,18 @@ AC_ARG_ENABLE([daemon],
         fi
     ]
 )
+
+AC_ARG_ENABLE([dht-bootstrap],
+    [AC_HELP_STRING([--enable-dht-bootstrap], [build DHT bootstrap utility (default: disabled)]) ],
+    [
+        if test "x$enableval" = "xno"; then
+            BUILD_DHT_BOOTSTRAP="no"
+        elif test "x$enableval" = "xyes"; then
+            BUILD_DHT_BOOTSTRAP="yes"
+        fi
+    ]
+)
+
 
 AC_ARG_ENABLE([rt],
     [AC_HELP_STRING([--disable-rt], [Disables the librt check (default: auto)]) ],
@@ -688,6 +701,7 @@ if test "x$WIN32" = "xyes"; then
 fi
 
 AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes")
+AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP, test "x$BUILD_DHT_BOOTSTRAP" = "xyes")
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
 AM_CONDITIONAL(BUILD_NTOX, test "x$BUILD_NTOX" = "xyes")
 AM_CONDITIONAL(BUILD_AV, test "x$BUILD_AV" = "xyes")
