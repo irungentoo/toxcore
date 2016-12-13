@@ -1,0 +1,8 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libtoxcore
+Description: Tox protocol library - compatibility module (use toxcore, toxdns, and toxencryptsave instead)
+Requires: toxcore toxdns toxencryptsave
+Version: @PROJECT_VERSION@

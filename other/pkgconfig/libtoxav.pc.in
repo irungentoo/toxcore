@@ -1,0 +1,8 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libtoxav
+Description: Tox A/V library - compatibility module (use toxav instead)
+Requires: toxav
+Version: @PROJECT_VERSION@

@@ -551,7 +551,20 @@ configure_file(
   @ONLY
 )
 
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
+  "${CMAKE_BINARY_DIR}/libtoxcore.pc"
+  @ONLY
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
+  "${CMAKE_BINARY_DIR}/libtoxav.pc"
+  @ONLY
+)
+
 install(FILES
+  ${CMAKE_BINARY_DIR}/libtoxcore.pc
   ${CMAKE_BINARY_DIR}/toxcore.pc
   ${CMAKE_BINARY_DIR}/toxdns.pc
   ${CMAKE_BINARY_DIR}/toxencryptsave.pc
@@ -564,6 +577,7 @@ install(FILES
 
 if(BUILD_TOXAV)
   install(FILES
+    ${CMAKE_BINARY_DIR}/libtoxav.pc
     ${CMAKE_BINARY_DIR}/toxav.pc
     DESTINATION "lib/pkgconfig")
   install(FILES
