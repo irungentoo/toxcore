@@ -206,13 +206,6 @@ uint32_t tox_version_patch(void);
   )
 
 /**
- * A macro to make compilation fail if the client code is not compatible with
- * the installed version of Tox.
- */
-#define TOX_VERSION_REQUIRE(MAJOR, MINOR, PATCH)                \
-  typedef char tox_required_version[TOX_IS_COMPATIBLE(MAJOR, MINOR, PATCH) ? 1 : -1]
-
-/**
  * Return whether the compiled library version is compatible with the passed
  * version numbers.
  */

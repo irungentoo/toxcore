@@ -183,7 +183,7 @@ const VERSION_PATCH                = 0;
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
- * with the installed version of Tox. Leading zeros in the version number are 
+ * with the installed version of Tox. Leading zeros in the version number are
  * ignored. E.g. 0.1.5 is to 0.1.4 what 1.5 is to 1.4, that is: it can add new
  * features, but can't break the API.
  */
@@ -201,13 +201,6 @@ const VERSION_PATCH                = 0;
       TOX_VERSION_PATCH == PATCH                                        \
     )                                                                   \
   )
-
-/**
- * A macro to make compilation fail if the client code is not compatible with
- * the installed version of Tox.
- */
-#define TOX_VERSION_REQUIRE(MAJOR, MINOR, PATCH)                \
-  typedef char tox_required_version[TOX_IS_COMPATIBLE(MAJOR, MINOR, PATCH) ? 1 : -1]
 
 static namespace version {
 
