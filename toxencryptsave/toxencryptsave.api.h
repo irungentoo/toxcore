@@ -49,7 +49,7 @@ extern "C" {
  * prefer the advanced API and reuse pass-key objects.
  *
  * To use the second part, first derive an encryption key from a password with
- * ${pass_Key.derive}, then use the derived key to encrypt the data.
+ * ${tox.pass_Key.derive}, then use the derived key to encrypt the data.
  *
  * The encrypted data is prepended with a magic number, to aid validity
  * checking (no guarantees are made of course). Any data to be decrypted must

@@ -40,6 +40,11 @@ $APIDSL toxcore/tox.api.h > toxcore/tox.h
 $APIDSL toxav/toxav.api.h > toxav/toxav.h
 $APIDSL toxencryptsave/toxencryptsave.api.h > toxencryptsave/toxencryptsave.h
 
+if grep '<unresolved>' */*.h; then
+  echo "error: some apidsl references were unresolved"
+  exit 1
+fi
+
 SOURCES=`find . -name "*.[ch]" -and -not -name "*.api.h" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
 
 $ASTYLE -n --options=other/astyle/astylerc $SOURCES
