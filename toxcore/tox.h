@@ -727,6 +727,12 @@ typedef enum TOX_ERR_OPTIONS_NEW {
 struct Tox_Options *tox_options_new(TOX_ERR_OPTIONS_NEW *error);
 
 /**
+ * Allocates a new Tox_Options object and initialises it with the values from the
+ * passed object.
+ */
+void tox_options_copy(struct Tox_Options *options, const struct Tox_Options *rhs);
+
+/**
  * Releases all resources associated with an options objects.
  *
  * Passing a pointer that was not returned by tox_options_new results in

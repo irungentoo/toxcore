@@ -418,12 +418,10 @@ START_TEST(test_few_clients)
     tox_get_savedata(tox2, save1);
     tox_kill(tox2);
 
-    struct Tox_Options options;
-    tox_options_default(&options);
-    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
-    options.savedata_data = save1;
-    options.savedata_length = save_size1;
-    tox2 = tox_new_log(&options, NULL, &index[1]);
+    struct Tox_Options *options = tox_options_new(NULL);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
+    tox_options_set_savedata_data(options, save1, save_size1);
+    tox2 = tox_new_log(options, NULL, &index[1]);
     cur_time = time(NULL);
     off = 1;
 
@@ -727,6 +725,7 @@ START_TEST(test_few_clients)
 
     printf("test_few_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
 
+    tox_options_free(options);
     tox_kill(tox1);
     tox_kill(tox2);
     tox_kill(tox3);

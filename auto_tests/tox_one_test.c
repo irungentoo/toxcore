@@ -29,16 +29,6 @@ static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t 
 
 START_TEST(test_one)
 {
-    {
-        TOX_ERR_OPTIONS_NEW o_err;
-        struct Tox_Options *o1 = tox_options_new(&o_err);
-        struct Tox_Options o2;
-        tox_options_default(&o2);
-        ck_assert_msg(o_err == TOX_ERR_OPTIONS_NEW_OK, "tox_options_new wrong error");
-        ck_assert_msg(memcmp(o1, &o2, sizeof(struct Tox_Options)) == 0, "tox_options_new error");
-        tox_options_free(o1);
-    }
-
     uint8_t name[TOX_MAX_NAME_LENGTH];
     uint8_t status_message[TOX_MAX_STATUS_MESSAGE_LENGTH];
 
@@ -93,12 +83,10 @@ START_TEST(test_one)
     tox_kill(tox2);
     TOX_ERR_NEW err_n;
 
-    struct Tox_Options options;
-    tox_options_default(&options);
-    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
-    options.savedata_data = data;
-    options.savedata_length = save_size;
-    tox2 = tox_new_log(&options, &err_n, &index[1]);
+    struct Tox_Options *options = tox_options_new(NULL);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
+    tox_options_set_savedata_data(options, data, save_size);
+    tox2 = tox_new_log(options, &err_n, &index[1]);
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
 
     ck_assert_msg(tox_self_get_name_size(tox2) == sizeof name, "Wrong name size.");
@@ -123,11 +111,10 @@ START_TEST(test_one)
     tox_self_get_secret_key(tox2, sk);
     tox_kill(tox2);
 
-    tox_options_default(&options);
-    options.savedata_type = TOX_SAVEDATA_TYPE_SECRET_KEY;
-    options.savedata_data = sk;
-    options.savedata_length = sizeof(sk);
-    tox2 = tox_new_log(&options, &err_n, &index[1]);
+    tox_options_default(options);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_SECRET_KEY);
+    tox_options_set_savedata_data(options, sk, sizeof(sk));
+    tox2 = tox_new_log(options, &err_n, &index[1]);
     ck_assert_msg(err_n == TOX_ERR_NEW_OK, "Load failed");
     uint8_t address3[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address3);
@@ -142,6 +129,7 @@ START_TEST(test_one)
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
+    tox_options_free(options);
     tox_kill(tox1);
     tox_kill(tox2);
 }

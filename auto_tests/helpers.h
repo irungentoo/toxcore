@@ -53,7 +53,7 @@ Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_d
     struct Tox_Options *my_options = tox_options_new(NULL);
 
     if (options != NULL) {
-        *my_options = *options;
+        tox_options_copy(my_options, options);
     }
 
     tox_options_set_log_callback(my_options, &print_debug_log);

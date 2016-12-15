@@ -55,17 +55,16 @@ START_TEST(test_many_clients_tcp)
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES_TCP; ++i) {
-        struct Tox_Options opts;
-        tox_options_default(&opts);
+        struct Tox_Options *opts = tox_options_new(NULL);
 
         if (i == 0) {
-            opts.tcp_port = TCP_RELAY_PORT;
+            tox_options_set_tcp_port(opts, TCP_RELAY_PORT);
         } else {
-            opts.udp_enabled = 0;
+            tox_options_set_udp_enabled(opts, 0);
         }
 
         index[i] = i + 1;
-        toxes[i] = tox_new_log(&opts, 0, &index[i]);
+        toxes[i] = tox_new_log(opts, 0, &index[i]);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
@@ -74,6 +73,8 @@ START_TEST(test_many_clients_tcp)
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i,
                       error);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
+
+        tox_options_free(opts);
     }
 
     {
@@ -156,17 +157,16 @@ START_TEST(test_many_clients_tcp_b)
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES_TCP; ++i) {
-        struct Tox_Options opts;
-        tox_options_default(&opts);
+        struct Tox_Options *opts = tox_options_new(NULL);
 
         if (i < NUM_TCP_RELAYS) {
-            opts.tcp_port = TCP_RELAY_PORT + i;
+            tox_options_set_tcp_port(opts, TCP_RELAY_PORT + i);
         } else {
-            opts.udp_enabled = 0;
+            tox_options_set_udp_enabled(opts, 0);
         }
 
         index[i] = i + 1;
-        toxes[i] = tox_new_log(&opts, 0, &index[i]);
+        toxes[i] = tox_new_log(opts, 0, &index[i]);
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
@@ -175,6 +175,8 @@ START_TEST(test_many_clients_tcp_b)
                       "add relay error");
         tox_self_get_dht_id(toxes[0], dpk);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
+
+        tox_options_free(opts);
     }
 
     {

@@ -77,14 +77,12 @@ START_TEST(test_save_friend)
     ck_assert_msg(ret, "failed to encrypted save: %u", error1);
     ck_assert_msg(tox_is_data_encrypted(enc_data), "magic number missing");
 
-    struct Tox_Options options;
-    tox_options_default(&options);
-    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
-    options.savedata_data = enc_data;
-    options.savedata_length = size2;
+    struct Tox_Options *options = tox_options_new(NULL);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
+    tox_options_set_savedata_data(options, enc_data, size2);
 
     TOX_ERR_NEW err2;
-    Tox *tox3 = tox_new_log(&options, &err2, 0);
+    Tox *tox3 = tox_new_log(options, &err2, 0);
     ck_assert_msg(err2 == TOX_ERR_NEW_LOAD_ENCRYPTED, "wrong error! %u. should fail with %u", err2,
                   TOX_ERR_NEW_LOAD_ENCRYPTED);
     ck_assert_msg(tox3 == NULL, "tox_new with error should return NULL");
@@ -92,9 +90,8 @@ START_TEST(test_save_friend)
     TOX_ERR_DECRYPTION err3;
     ret = tox_pass_decrypt(enc_data, size2, (const uint8_t *)"correcthorsebatterystaple", 25, dec_data, &err3);
     ck_assert_msg(ret, "failed to decrypt save: %u", err3);
-    options.savedata_data = dec_data;
-    options.savedata_length = size;
-    tox3 = tox_new_log(&options, &err2, 0);
+    tox_options_set_savedata_data(options, dec_data, size);
+    tox3 = tox_new_log(options, &err2, 0);
     ck_assert_msg(err2 == TOX_ERR_NEW_OK, "failed to load from decrypted data: %u", err2);
     uint8_t address2[TOX_PUBLIC_KEY_SIZE];
     ret = tox_friend_get_public_key(tox3, 0, address2, 0);
@@ -123,9 +120,8 @@ START_TEST(test_save_friend)
 
     // and now with the code in use (I only bothered with manually to debug this, and it seems a waste
     // to remove the manual check now that it's there)
-    options.savedata_data = out1;
-    options.savedata_length = size;
-    Tox *tox4 = tox_new_log(&options, &err2, 0);
+    tox_options_set_savedata_data(options, out1, size);
+    Tox *tox4 = tox_new_log(options, &err2, 0);
     ck_assert_msg(err2 == TOX_ERR_NEW_OK, "failed to new the third");
     uint8_t address5[TOX_PUBLIC_KEY_SIZE];
     ret = tox_friend_get_public_key(tox4, 0, address5, 0);
@@ -133,6 +129,7 @@ START_TEST(test_save_friend)
     ck_assert_msg(memcmp(address, address2, TOX_PUBLIC_KEY_SIZE) == 0, "addresses don't match! the third");
 
     tox_pass_key_free(key);
+    tox_options_free(options);
 
     tox_kill(tox1);
     tox_kill(tox2);

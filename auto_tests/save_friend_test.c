@@ -1,7 +1,7 @@
 /* Auto Tests: Save and load friends.
  */
 
-#include "../toxcore/tox.h"
+#include "helpers.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -51,8 +51,8 @@ void statuschange_callback(Tox *tox, uint32_t friend_number, const uint8_t *mess
 
 int main(int argc, char *argv[])
 {
-    Tox *tox1 = tox_new(tox_options_new(NULL), 0);
-    Tox *tox2 = tox_new(tox_options_new(NULL), 0);
+    Tox *tox1 = tox_new_log(0, 0, 0);
+    Tox *tox2 = tox_new_log(0, 0, 0);
 
     struct test_data to_compare = { { 0 } };
 
@@ -106,13 +106,11 @@ int main(int argc, char *argv[])
     uint8_t savedata[save_size];
     tox_get_savedata(tox1, savedata);
 
-    struct Tox_Options options;
-    tox_options_default(&options);
-    options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
-    options.savedata_data = savedata;
-    options.savedata_length = save_size;
+    struct Tox_Options *options = tox_options_new(NULL);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
+    tox_options_set_savedata_data(options, savedata, save_size);
 
-    Tox *tox_to_compare = tox_new(&options, 0);
+    Tox *tox_to_compare = tox_new(options, 0);
 
     tox_friend_get_name(tox_to_compare, 0, to_compare.name, 0);
     tox_friend_get_status_message(tox_to_compare, 0, to_compare.status_message, 0);
@@ -120,6 +118,7 @@ int main(int argc, char *argv[])
     assert(memcmp(reference_name, to_compare.name, TOX_MAX_NAME_LENGTH) == 0);
     assert(memcmp(reference_status, to_compare.status_message, TOX_MAX_STATUS_MESSAGE_LENGTH) == 0);
 
+    tox_options_free(options);
     tox_kill(tox1);
     tox_kill(tox2);
     tox_kill(tox_to_compare);
