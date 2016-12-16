@@ -99,8 +99,7 @@ typedef enum TOX_ERR_KEY_DERIVATION {
 
     /**
      * The crypto lib was unable to derive a key from the given passphrase,
-     * which is usually a lack of memory issue. The functions accepting keys
-     * do not produce this error.
+     * which is usually a lack of memory issue.
      */
     TOX_ERR_KEY_DERIVATION_FAILED,
 
@@ -241,22 +240,13 @@ bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const ui
  * for encryption and decryption. It is derived from a salt and the user-
  * provided password.
  *
- * The Tox_Pass_Key structure is hidden in the implementation. It can be allocated
- * using tox_pass_key_new and must be deallocated using tox_pass_key_free.
+ * The Tox_Pass_Key structure is hidden in the implementation. It can be created
+ * using tox_pass_key_derive or tox_pass_key_derive_with_salt and must be deallocated using tox_pass_key_free.
  */
 #ifndef TOX_PASS_KEY_DEFINED
 #define TOX_PASS_KEY_DEFINED
 typedef struct Tox_Pass_Key Tox_Pass_Key;
 #endif /* TOX_PASS_KEY_DEFINED */
-
-/**
- * Create a new Tox_Pass_Key. The initial value of it is indeterminate. To
- * initialise it, use one of the derive_* functions below.
- *
- * In case of failure, this function returns NULL. The only failure mode at
- * this time is memory allocation failure, so this function has no error code.
- */
-struct Tox_Pass_Key *tox_pass_key_new(void);
 
 /**
  * Deallocate a Tox_Pass_Key. This function behaves like free(), so NULL is an
@@ -279,8 +269,8 @@ void tox_pass_key_free(struct Tox_Pass_Key *_key);
  *
  * @return true on success.
  */
-bool tox_pass_key_derive(struct Tox_Pass_Key *_key, const uint8_t *passphrase, size_t passphrase_len,
-                         TOX_ERR_KEY_DERIVATION *error);
+struct Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t passphrase_len,
+        TOX_ERR_KEY_DERIVATION *error);
 
 /**
  * Same as above, except use the given salt for deterministic key derivation.
@@ -291,8 +281,8 @@ bool tox_pass_key_derive(struct Tox_Pass_Key *_key, const uint8_t *passphrase, s
  *
  * @return true on success.
  */
-bool tox_pass_key_derive_with_salt(struct Tox_Pass_Key *_key, const uint8_t *passphrase, size_t passphrase_len,
-                                   const uint8_t *salt, TOX_ERR_KEY_DERIVATION *error);
+struct Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t passphrase_len,
+        const uint8_t *salt, TOX_ERR_KEY_DERIVATION *error);
 
 /**
  * Encrypt a plain text with a key produced by tox_pass_key_derive or tox_pass_key_derive_with_salt.

@@ -103,7 +103,8 @@ START_TEST(test_save_friend)
     size = tox_get_savedata_size(tox3);
     VLA(uint8_t, data2, size);
     tox_get_savedata(tox3, data2);
-    Tox_Pass_Key *key = tox_pass_key_new();
+    TOX_ERR_KEY_DERIVATION keyerr;
+    Tox_Pass_Key *key = tox_pass_key_derive((const uint8_t *)"123qweasdzxc", 12, &keyerr);
     ck_assert_msg(key != NULL, "pass key allocation failure");
     memcpy((uint8_t *)key, test_salt, TOX_PASS_SALT_LENGTH);
     memcpy((uint8_t *)key + TOX_PASS_SALT_LENGTH, known_key2, TOX_PASS_KEY_LENGTH);
@@ -146,14 +147,12 @@ START_TEST(test_keys)
     TOX_ERR_ENCRYPTION encerr;
     TOX_ERR_DECRYPTION decerr;
     TOX_ERR_KEY_DERIVATION keyerr;
-    Tox_Pass_Key *key = tox_pass_key_new();
-    ck_assert_msg(key != NULL, "pass key allocation failure");
-    bool ret = tox_pass_key_derive(key, (const uint8_t *)"123qweasdzxc", 12, &keyerr);
-    ck_assert_msg(ret, "generic failure 1: %u", keyerr);
+    Tox_Pass_Key *key = tox_pass_key_derive((const uint8_t *)"123qweasdzxc", 12, &keyerr);
+    ck_assert_msg(key != NULL, "generic failure 1: %u", keyerr);
     const uint8_t *string = (const uint8_t *)"No Patrick, mayonnaise is not an instrument."; // 44
 
     uint8_t encrypted[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
-    ret = tox_pass_key_encrypt(key, string, 44, encrypted, &encerr);
+    bool ret = tox_pass_key_encrypt(key, string, 44, encrypted, &encerr);
     ck_assert_msg(ret, "generic failure 2: %u", encerr);
 
     uint8_t encrypted2[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
@@ -186,10 +185,8 @@ START_TEST(test_keys)
     TOX_ERR_GET_SALT salt_err;
     ck_assert_msg(tox_get_salt(encrypted, salt, &salt_err), "couldn't get salt");
     ck_assert_msg(salt_err == TOX_ERR_GET_SALT_OK, "get_salt returned an error");
-    Tox_Pass_Key *key2 = tox_pass_key_new();
-    ck_assert_msg(key != NULL, "pass key allocation failure");
-    ret = tox_pass_key_derive_with_salt(key2, (const uint8_t *)"123qweasdzxc", 12, salt, &keyerr);
-    ck_assert_msg(ret, "generic failure 7: %u", keyerr);
+    Tox_Pass_Key *key2 = tox_pass_key_derive_with_salt((const uint8_t *)"123qweasdzxc", 12, salt, &keyerr);
+    ck_assert_msg(key2 != NULL, "generic failure 7: %u", keyerr);
     ck_assert_msg(0 == memcmp(key, key2, TOX_PASS_KEY_LENGTH + TOX_PASS_SALT_LENGTH), "salt comparison failed");
     tox_pass_key_free(key2);
     tox_pass_key_free(key);

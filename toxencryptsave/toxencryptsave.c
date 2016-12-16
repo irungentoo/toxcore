@@ -71,11 +71,6 @@ struct Tox_Pass_Key {
     uint8_t key[TOX_PASS_KEY_LENGTH];
 };
 
-Tox_Pass_Key *tox_pass_key_new(void)
-{
-    return (Tox_Pass_Key *)malloc(sizeof(Tox_Pass_Key));
-}
-
 void tox_pass_key_free(Tox_Pass_Key *pass_key)
 {
     free(pass_key);
@@ -123,23 +118,23 @@ bool tox_get_salt(const uint8_t *data, uint8_t *salt, TOX_ERR_GET_SALT *error)
  *
  * returns true on success
  */
-bool tox_pass_key_derive(Tox_Pass_Key *out_key, const uint8_t *passphrase, size_t pplength,
-                         TOX_ERR_KEY_DERIVATION *error)
+Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
+                                  TOX_ERR_KEY_DERIVATION *error)
 {
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
     randombytes(salt, sizeof salt);
-    return tox_pass_key_derive_with_salt(out_key, passphrase, pplength, salt, error);
+    return tox_pass_key_derive_with_salt(passphrase, pplength, salt, error);
 }
 
 /* Same as above, except with use the given salt for deterministic key derivation.
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  */
-bool tox_pass_key_derive_with_salt(Tox_Pass_Key *out_key, const uint8_t *passphrase, size_t pplength,
-                                   const uint8_t *salt, TOX_ERR_KEY_DERIVATION *error)
+Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pplength,
+        const uint8_t *salt, TOX_ERR_KEY_DERIVATION *error)
 {
-    if (!salt || !out_key || (!passphrase && pplength != 0)) {
+    if (!salt || (!passphrase && pplength != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);
-        return 0;
+        return NULL;
     }
 
     uint8_t passkey[crypto_hash_sha256_BYTES];
@@ -157,14 +152,22 @@ bool tox_pass_key_derive_with_salt(Tox_Pass_Key *out_key, const uint8_t *passphr
                 crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
         /* out of memory most likely */
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);
-        return 0;
+        return NULL;
     }
 
     sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
+
+    Tox_Pass_Key *out_key = (Tox_Pass_Key *)malloc(sizeof(Tox_Pass_Key));
+
+    if (!out_key) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);
+        return NULL;
+    }
+
     memcpy(out_key->salt, salt, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
     memcpy(out_key->key, key, CRYPTO_SHARED_KEY_SIZE);
     SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_OK);
-    return 1;
+    return out_key;
 }
 
 /* Encrypt arbitrary with a key produced by tox_derive_key_*. The output
@@ -224,10 +227,10 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t d
 bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passphrase, size_t pplength, uint8_t *out,
                       TOX_ERR_ENCRYPTION *error)
 {
-    Tox_Pass_Key key;
     TOX_ERR_KEY_DERIVATION _error;
+    Tox_Pass_Key *key = tox_pass_key_derive(passphrase, pplength, &_error);
 
-    if (!tox_pass_key_derive(&key, passphrase, pplength, &_error)) {
+    if (!key) {
         if (_error == TOX_ERR_KEY_DERIVATION_NULL) {
             SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
         } else if (_error == TOX_ERR_KEY_DERIVATION_FAILED) {
@@ -237,7 +240,9 @@ bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passp
         return 0;
     }
 
-    return tox_pass_key_encrypt(&key, data, data_len, out, error);
+    bool result = tox_pass_key_encrypt(key, data, data_len, out, error);
+    tox_pass_key_free(key);
+    return result;
 }
 
 /* This is the inverse of tox_pass_key_encrypt, also using only keys produced by
@@ -315,15 +320,17 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphr
     memcpy(salt, data + TOX_ENC_SAVE_MAGIC_LENGTH, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
 
     /* derive the key */
-    Tox_Pass_Key key;
+    Tox_Pass_Key *key = tox_pass_key_derive_with_salt(passphrase, pplength, salt, NULL);
 
-    if (!tox_pass_key_derive_with_salt(&key, passphrase, pplength, salt, NULL)) {
+    if (!key) {
         /* out of memory most likely */
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_KEY_DERIVATION_FAILED);
         return 0;
     }
 
-    return tox_pass_key_decrypt(&key, data, length, out, error);
+    bool result = tox_pass_key_decrypt(key, data, length, out, error);
+    tox_pass_key_free(key);
+    return result;
 }
 
 /* Determines whether or not the given data is encrypted (by checking the magic number)
