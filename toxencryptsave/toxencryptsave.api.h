@@ -145,7 +145,7 @@ error for decryption {
  * ${pass_Key.encrypt}.
  *
  * @param plaintext A byte array of length `plaintext_len`.
- * @param plaintext_len The length of the plain text array. May be 0.
+ * @param plaintext_len The length of the plain text array. Bigger than 0.
  * @param passphrase The user-provided password.
  * @param passphrase_len The length of the password.
  * @param ciphertext The cipher text array to write the encrypted data to.
@@ -163,7 +163,7 @@ static bool pass_encrypt(const uint8_t[plaintext_len] plaintext, const uint8_t[p
  * bytes long. This delegates to ${pass_Key.decrypt}.
  *
  * @param ciphertext A byte array of length `ciphertext_len`.
- * @param ciphertext_len The length of the cipher text array. May be 0.
+ * @param ciphertext_len The length of the cipher text array. At least $PASS_ENCRYPTION_EXTRA_LENGTH.
  * @param passphrase The user-provided password.
  * @param passphrase_len The length of the password.
  * @param plaintext The plain text array to write the decrypted data to.
@@ -246,7 +246,7 @@ class pass_Key {
    * bytes long.
    *
    * @param plaintext A byte array of length `plaintext_len`.
-   * @param plaintext_len The length of the plain text array. May be 0.
+   * @param plaintext_len The length of the plain text array. Bigger than 0.
    * @param ciphertext The cipher text array to write the encrypted data to.
    *
    * @return true on success.
@@ -259,7 +259,7 @@ class pass_Key {
    * $derive or $derive_with_salt.
    *
    * @param ciphertext A byte array of length `ciphertext_len`.
-   * @param ciphertext_len The length of the cipher text array. May be 0.
+   * @param ciphertext_len The length of the cipher text array. At least $PASS_ENCRYPTION_EXTRA_LENGTH.
    * @param plaintext The plain text array to write the decrypted data to.
    *
    * @return true on success.
