@@ -7,5 +7,5 @@ Name: libtoxcore
 Description: Tox protocol library
 Requires:
 Version: @PACKAGE_VERSION@
-Libs: @NACL_OBJECTS_PKGCONFIG@ -L${libdir} -ltoxcore @NACL_LDFLAGS@ -ltoxdns -ltoxencryptsave @NACL_LIBS@ @LIBS@ @MATH_LDFLAGS@ @PTHREAD_LDFLAGS@
+Libs: @NACL_OBJECTS_PKGCONFIG@ -L${libdir} -ltoxcore @NACL_LDFLAGS@ -ltoxdns -ltoxencryptsave @NACL_LIBS@ @LIBEV_LIBS@ @LIBEVENT_LIBS@ @LIBS@ @MATH_LDFLAGS@ @PTHREAD_LDFLAGS@
 Cflags: -I${includedir}

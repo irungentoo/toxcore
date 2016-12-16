@@ -797,6 +797,16 @@ void kill_networking(Networking_Core *net)
         kill_sock(net->sock);
     }
 
+#ifdef HAVE_LIBEV
+    ev_io_stop(net->sock_listener.dispatcher, &net->sock_listener.listener);
+#elif HAVE_LIBEVENT
+
+    if (net->sock_listener) {
+        event_free(net->sock_listener);
+    }
+
+#endif
+
     free(net);
 }
 

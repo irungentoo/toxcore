@@ -33,6 +33,8 @@ addons:
     packages:
       - check
       - libcv-dev             # For av_test.
+      - libev-dev             # For tox_loop.
+      - libevent-dev          # For tox_loop.
       - libhighgui-dev        # For av_test.
       - libopencv-contrib-dev # For av_test.
       - libsndfile1-dev       # For av_test.
