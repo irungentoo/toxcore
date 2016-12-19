@@ -29,6 +29,7 @@
 #include "util.h"
 
 #include "crypto_core.h" /* for CRYPTO_PUBLIC_KEY_SIZE */
+#include "network.h" /* for current_time_monotonic */
 
 #include <time.h>
 

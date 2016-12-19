@@ -2,13 +2,13 @@
 #include "config.h"
 #endif
 
-#include <sys/param.h>
-#include <time.h>
+#include "helpers.h"
 
 #include "../toxcore/DHT.c"
 #include "../toxcore/tox.h"
 
-#include "helpers.h"
+#include <sys/param.h>
+#include <time.h>
 
 
 // These tests currently fail.
@@ -298,6 +298,10 @@ static void test_addto_lists_good(DHT            *dht,
     addto_lists(dht, *ip_port, public_key);
     ck_assert_msg(client_in_list(list, length, public_key) == -1, "Good client id is in the list");
 }
+
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
 static void test_addto_lists(IP ip)
 {

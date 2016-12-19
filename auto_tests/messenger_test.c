@@ -14,17 +14,26 @@
 #include "config.h"
 #endif
 
+#include "helpers.h"
+
 #include "../testing/misc_tools.c" // hex_string_to_bin
 #include "../toxcore/Messenger.h"
+
 #include <check.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 
-#include "helpers.h"
+#if VANILLA_NACL
+#include <crypto_box.h> // crypto_box_PUBLICKEYBYTES and other defines.
+#else
+#include <sodium.h>
+#endif
 
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
 #define STRINGS_EQUAL(X, Y) (strcmp(X, Y) == 0)
+
+static bool enable_broken_tests = false;
 
 static const char *friend_id_str = "e4b3d5030bc99494605aecc33ceec8875640c1d74aa32790e821b17e98771c4a00000000f1db";
 
@@ -121,11 +130,10 @@ START_TEST(test_m_delfriend)
 }
 END_TEST
 
-#if 0
 START_TEST(test_m_addfriend)
 {
-    char *good_data = "test";
-    char *bad_data = "";
+    const char *good_data = "test";
+    const char *bad_data = "";
 
     int good_len = strlen(good_data);
     int bad_len = strlen(bad_data);
@@ -134,30 +142,29 @@ START_TEST(test_m_addfriend)
                           + crypto_box_ZEROBYTES + 100);
 
     /* TODO(irungentoo): Update this properly to latest master */
-    if (m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG) {
+    if (m_addfriend(m, (const uint8_t *)friend_id, (const uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG) {
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", really_bad_len);
     }
 
     /* this will return an error if the original m_addfriend_norequest() failed */
-    if (m_addfriend(m, (uint8_t *)friend_id, (uint8_t *)good_data, good_len) != FAERR_ALREADYSENT) {
+    if (m_addfriend(m, (const uint8_t *)friend_id, (const uint8_t *)good_data, good_len) != FAERR_ALREADYSENT) {
         ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n"
                      "(this can be caused by the error of m_addfriend_norequest in"
                      " the beginning of the suite)\n");
     }
 
-    if (m_addfriend(m, (uint8_t *)good_id_b, (uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE) {
+    if (m_addfriend(m, (const uint8_t *)good_id_b, (const uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE) {
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
     }
 
     /* this should REALLY return an error */
     /* TODO(irungentoo): validate client_id in m_addfriend? */
-    if (m_addfriend((uint8_t *)bad_id, (uint8_t *)good_data, good_len) >= 0) {
+    if (m_addfriend(m, (const uint8_t *)bad_id, (const uint8_t *)good_data, good_len) >= 0) {
         ck_abort_msg("The following ID passed through "
                      "m_addfriend without an error:\n'%s'\n", bad_id_str);
     }
 }
 END_TEST
-#endif
 
 START_TEST(test_setname)
 {
@@ -193,7 +200,7 @@ END_TEST
  *  ideas:
  *      if we have access to the friends list, we could
  *      just add a status manually ourselves. */
-/*
+#if 0
 START_TEST(test_m_copy_userstatus)
 {
     assert(m_copy_userstatus(-1, buf, MAX_USERSTATUS_LENGTH) == -1);
@@ -203,7 +210,7 @@ START_TEST(test_m_copy_userstatus)
     assert(STRINGS_EQUAL(name_buf, friend_id_status));
 }
 END_TEST
-*/
+#endif
 
 START_TEST(test_getname)
 {
@@ -316,7 +323,10 @@ static Suite *messenger_suite(void)
     DEFTESTCASE(m_get_userstatus_size);
     DEFTESTCASE(m_set_userstatus);
 
-    /* DEFTESTCASE(m_addfriend); */
+    if (enable_broken_tests) {
+        DEFTESTCASE(m_addfriend);
+    }
+
     DEFTESTCASE(m_friend_exists);
     DEFTESTCASE(m_get_friend_connectionstatus);
     DEFTESTCASE(m_delfriend);

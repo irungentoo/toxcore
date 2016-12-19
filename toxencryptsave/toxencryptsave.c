@@ -33,8 +33,11 @@
 #ifdef VANILLA_NACL
 #include <crypto_hash_sha256.h>
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
-#endif
+#else
 #include <sodium.h>
+#endif
+
+#include <string.h>
 
 #if TOX_PASS_SALT_LENGTH != crypto_pwhash_scryptsalsa208sha256_SALTBYTES
 #error TOX_PASS_SALT_LENGTH is assumed to be equal to crypto_pwhash_scryptsalsa208sha256_SALTBYTES

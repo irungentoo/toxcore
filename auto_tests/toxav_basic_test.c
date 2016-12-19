@@ -20,7 +20,8 @@
 #include "../toxcore/util.h"
 
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#include <windows.h>
 #define c_sleep(x) Sleep(1*x)
 #else
 #include <unistd.h>

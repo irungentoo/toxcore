@@ -29,6 +29,10 @@
 
 #include "crypto_core.h"
 
+#include "network.h"
+
+#include <string.h>
+
 #ifndef VANILLA_NACL
 /* We use libsodium by default. */
 #include <sodium.h>
@@ -41,9 +45,6 @@
 #include <crypto_verify_32.h>
 #include <randombytes.h>
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-/* I know */
-#define sodium_memcmp(a, b, c) memcmp(a, b, c)
-#define sodium_memzero(a, c) memset(a, 0, c)
 #endif
 
 #if CRYPTO_PUBLIC_KEY_SIZE != crypto_box_PUBLICKEYBYTES
@@ -78,19 +79,14 @@
 #error CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES
 #endif
 
-/* compare 2 public keys of length crypto_box_PUBLICKEYBYTES, not vulnerable to timing attacks.
-   returns 0 if both mem locations of length are equal,
-   return -1 if they are not. */
-int public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
+int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
-#if crypto_box_PUBLICKEYBYTES != 32
-#error crypto_box_PUBLICKEYBYTES is required to be 32 bytes for public_key_cmp to work,
+#if CRYPTO_PUBLIC_KEY_SIZE != 32
+#error CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work,
 #endif
     return crypto_verify_32(pk1, pk2);
 }
 
-/*  return a random number.
- */
 uint32_t random_int(void)
 {
     uint32_t randnum;
@@ -105,13 +101,7 @@ uint64_t random_64b(void)
     return randnum;
 }
 
-/* Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
- * This should only be used for input validation.
- *
- * return 0 if it isn't.
- * return 1 if it is.
- */
-int public_key_valid(const uint8_t *public_key)
+bool public_key_valid(const uint8_t *public_key)
 {
     if (public_key[31] >= 128) { /* Last bit of key is always zero. */
         return 0;
@@ -123,15 +113,15 @@ int public_key_valid(const uint8_t *public_key)
 /* Precomputes the shared key from their public_key and our secret_key.
  * This way we can avoid an expensive elliptic curve scalar multiply for each
  * encrypt/decrypt operation.
- * enc_key has to be crypto_box_BEFORENMBYTES bytes long.
+ * shared_key has to be crypto_box_BEFORENMBYTES bytes long.
  */
-int encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *enc_key)
+int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *shared_key)
 {
-    return crypto_box_beforenm(enc_key, public_key, secret_key);
+    return crypto_box_beforenm(shared_key, public_key, secret_key);
 }
 
-int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, uint32_t length,
-                           uint8_t *encrypted)
+int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain, size_t length,
+                               uint8_t *encrypted)
 {
     if (length == 0 || !secret_key || !nonce || !plain || !encrypted) {
         return -1;
@@ -152,8 +142,8 @@ int encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
     return length + crypto_box_MACBYTES;
 }
 
-int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, uint32_t length,
-                           uint8_t *plain)
+int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *encrypted, size_t length,
+                               uint8_t *plain)
 {
     if (length <= crypto_box_BOXZEROBYTES || !secret_key || !nonce || !encrypted || !plain) {
         return -1;
@@ -173,8 +163,8 @@ int decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, cons
     return length - crypto_box_MACBYTES;
 }
 
-int encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
-                 const uint8_t *plain, uint32_t length, uint8_t *encrypted)
+int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+                     const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
     if (!public_key || !secret_key) {
         return -1;
@@ -187,8 +177,8 @@ int encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uin
     return ret;
 }
 
-int decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
-                 const uint8_t *encrypted, uint32_t length, uint8_t *plain)
+int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
+                     const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
     if (!public_key || !secret_key) {
         return -1;
@@ -263,7 +253,7 @@ int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key)
     return crypto_box_keypair(public_key, secret_key);
 }
 
-void crypto_derive_public_key(uint8_t *public_key, uint8_t *secret_key)
+void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key)
 {
     crypto_scalarmult_curve25519_base(public_key, secret_key);
 }
@@ -280,12 +270,23 @@ void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
 
 void crypto_memzero(void *data, size_t length)
 {
+#ifdef VANILLA_NACL
+    /* TODO(c-toxcore#347): this is insecure. We need to provide our own
+     * secure memzero/memcmp for NaCL. */
+    memset(data, 0, length);
+#else
     sodium_memzero(data, length);
+#endif
 }
 
 int32_t crypto_memcmp(const void *p1, const void *p2, size_t length)
 {
+#ifdef VANILLA_NACL
+    /* TODO(c-toxcore#347): Implement secure memcmp. */
+    return memcmp(p1, p2, length);
+#else
     return sodium_memcmp(p1, p2, length);
+#endif
 }
 
 void random_bytes(uint8_t *data, size_t length)
