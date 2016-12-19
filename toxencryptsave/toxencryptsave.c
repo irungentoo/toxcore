@@ -62,26 +62,6 @@ void tox_pass_key_free(Tox_Pass_Key *pass_key)
     free(pass_key);
 }
 
-void tox_pass_key_get_salt(const Tox_Pass_Key *pass_key, uint8_t *salt)
-{
-    memcpy(salt, pass_key->salt, TOX_PASS_SALT_LENGTH);
-}
-
-void tox_pass_key_set_salt(Tox_Pass_Key *pass_key, const uint8_t *salt)
-{
-    memcpy(pass_key->salt, salt, TOX_PASS_SALT_LENGTH);
-}
-
-void tox_pass_key_get_key(const Tox_Pass_Key *pass_key, uint8_t *key)
-{
-    memcpy(key, pass_key->key, TOX_PASS_KEY_LENGTH);
-}
-
-void tox_pass_key_set_key(Tox_Pass_Key *pass_key, const uint8_t *key)
-{
-    memcpy(pass_key->key, key, TOX_PASS_KEY_LENGTH);
-}
-
 /* Clients should consider alerting their users that, unlike plain data, if even one bit
  * becomes corrupted, the data will be entirely unrecoverable.
  * Ditto if they forget their password, there is no way to recover the data.
