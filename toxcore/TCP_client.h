@@ -53,16 +53,16 @@ enum {
 typedef struct  {
     uint8_t status;
     sock_t  sock;
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES]; /* our public key */
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* public key of the server */
+    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* our public key */
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* public key of the server */
     IP_Port ip_port; /* The ip and port of the server */
     TCP_Proxy_Info proxy_info;
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
+    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     uint16_t next_packet_length;
 
-    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t temp_secret_key[CRYPTO_SECRET_KEY_SIZE];
 
     uint8_t last_packet[2 + MAX_PACKET_SIZE];
     uint16_t last_packet_length;
@@ -80,7 +80,7 @@ typedef struct  {
 
     struct {
         uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
         uint32_t number;
     } connections[NUM_CLIENT_CONNECTIONS];
     int (*response_callback)(void *object, uint8_t connection_id, const uint8_t *public_key);

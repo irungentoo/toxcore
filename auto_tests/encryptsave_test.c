@@ -17,6 +17,8 @@
 #include "../toxencryptsave/toxencryptsave.h"
 #ifdef VANILLA_NACL
 #include "../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
+#else
+#include <sodium.h>
 #endif
 
 static unsigned char test_salt[TOX_PASS_SALT_LENGTH] = {0xB1, 0xC2, 0x09, 0xEE, 0x50, 0x6C, 0xF0, 0x20, 0xC4, 0xD6, 0xEB, 0xC0, 0x44, 0x51, 0x3B, 0x60, 0x4B, 0x39, 0x4A, 0xCF, 0x09, 0x53, 0x4F, 0xEA, 0x08, 0x41, 0xFA, 0xCA, 0x66, 0xD2, 0x68, 0x7F};
@@ -24,7 +26,7 @@ static unsigned char known_key[TOX_PASS_KEY_LENGTH] = {0x29, 0x36, 0x1c, 0x9e, 0
 static const char *pw = "hunter2";
 static unsigned int pwlen = 7;
 
-static unsigned char known_key2[crypto_box_BEFORENMBYTES] = {0x7a, 0xfa, 0x95, 0x45, 0x36, 0x8a, 0xa2, 0x5c, 0x40, 0xfd, 0xc0, 0xe2, 0x35, 0x8, 0x7, 0x88, 0xfa, 0xf9, 0x37, 0x86, 0xeb, 0xff, 0x50, 0x4f, 0x3, 0xe2, 0xf6, 0xd9, 0xef, 0x9, 0x17, 0x1};
+static unsigned char known_key2[CRYPTO_SHARED_KEY_SIZE] = {0x7a, 0xfa, 0x95, 0x45, 0x36, 0x8a, 0xa2, 0x5c, 0x40, 0xfd, 0xc0, 0xe2, 0x35, 0x8, 0x7, 0x88, 0xfa, 0xf9, 0x37, 0x86, 0xeb, 0xff, 0x50, 0x4f, 0x3, 0xe2, 0xf6, 0xd9, 0xef, 0x9, 0x17, 0x1};
 // same as above, except standard opslimit instead of extra ops limit for test_known_kdf, and hash pw before kdf for compat
 
 /* cause I'm shameless */
@@ -41,16 +43,16 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 
 START_TEST(test_known_kdf)
 {
-    unsigned char out[crypto_box_BEFORENMBYTES];
+    unsigned char out[CRYPTO_SHARED_KEY_SIZE];
     int res = crypto_pwhash_scryptsalsa208sha256(out,
-              crypto_box_BEFORENMBYTES,
+              CRYPTO_SHARED_KEY_SIZE,
               pw,
               pwlen,
               test_salt,
               crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 8,
               crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE);
     ck_assert_msg(res != -1, "crypto function failed");
-    ck_assert_msg(memcmp(out, known_key, crypto_box_BEFORENMBYTES) == 0, "derived key is wrong");
+    ck_assert_msg(memcmp(out, known_key, CRYPTO_SHARED_KEY_SIZE) == 0, "derived key is wrong");
 }
 END_TEST
 

@@ -26,18 +26,18 @@ METHOD(array, CombinedKey, precompute)
 
 METHOD(array, KeyPair, newKeyPair)
 {
-    uint8_t key1[crypto_box_PUBLICKEYBYTES];
-    uint8_t key2[crypto_box_SECRETKEYBYTES];
-    crypto_box_keypair(key1, key2);
+    uint8_t key1[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t key2[CRYPTO_SECRET_KEY_SIZE];
+    crypto_new_keypair(key1, key2);
 
     SUCCESS {
         // init array
         msgpack_pack_array(res, 2);
-        msgpack_pack_bin(res, crypto_box_PUBLICKEYBYTES);
-        msgpack_pack_bin_body(res, key1, crypto_box_PUBLICKEYBYTES);
+        msgpack_pack_bin(res, CRYPTO_PUBLIC_KEY_SIZE);
+        msgpack_pack_bin_body(res, key1, CRYPTO_PUBLIC_KEY_SIZE);
 
-        msgpack_pack_bin(res, crypto_box_SECRETKEYBYTES);
-        msgpack_pack_bin_body(res, key2, crypto_box_SECRETKEYBYTES);
+        msgpack_pack_bin(res, CRYPTO_SECRET_KEY_SIZE);
+        msgpack_pack_bin_body(res, key2, CRYPTO_SECRET_KEY_SIZE);
     }
     return 0;
 }
@@ -46,20 +46,20 @@ METHOD(array, KeyPair, fromSecretKey)
 {
     CHECK_SIZE(args, 1);
     CHECK_TYPE(args.ptr[0], MSGPACK_OBJECT_BIN);
-    CHECK_SIZE(args.ptr[0].via.bin, crypto_box_SECRETKEYBYTES);
+    CHECK_SIZE(args.ptr[0].via.bin, CRYPTO_SECRET_KEY_SIZE);
 
     Net_Crypto c;
-    uint8_t    secret_key[crypto_box_SECRETKEYBYTES];
-    memcpy(secret_key, args.ptr[0].via.bin.ptr, crypto_box_SECRETKEYBYTES);
+    uint8_t    secret_key[CRYPTO_SECRET_KEY_SIZE];
+    memcpy(secret_key, args.ptr[0].via.bin.ptr, CRYPTO_SECRET_KEY_SIZE);
     load_secret_key(&c, secret_key);
 
     SUCCESS {
         msgpack_pack_array(res, 2);
 
-        msgpack_pack_bin(res, crypto_box_PUBLICKEYBYTES);
-        msgpack_pack_bin_body(res, c.self_secret_key, crypto_box_PUBLICKEYBYTES);
-        msgpack_pack_bin(res, crypto_box_SECRETKEYBYTES);
-        msgpack_pack_bin_body(res, c.self_public_key, crypto_box_SECRETKEYBYTES);
+        msgpack_pack_bin(res, CRYPTO_PUBLIC_KEY_SIZE);
+        msgpack_pack_bin_body(res, c.self_secret_key, CRYPTO_PUBLIC_KEY_SIZE);
+        msgpack_pack_bin(res, CRYPTO_SECRET_KEY_SIZE);
+        msgpack_pack_bin_body(res, c.self_public_key, CRYPTO_SECRET_KEY_SIZE);
     }
     return 0;
 }

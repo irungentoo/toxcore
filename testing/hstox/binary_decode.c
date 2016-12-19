@@ -52,7 +52,7 @@ static void decode_bytestring(msgpack_object_bin args, msgpack_packer *res,
 
 METHOD(bin, Binary_decode, CipherText)
 {
-    decode_bytestring(args, res, crypto_box_MACBYTES);
+    decode_bytestring(args, res, CRYPTO_MAC_SIZE);
     return 0;
 }
 
@@ -130,8 +130,8 @@ METHOD(bin, Binary_decode, NodeInfo)
             }
 
             msgpack_pack_uint16(res, port);
-            msgpack_pack_bin(res, crypto_box_PUBLICKEYBYTES);
-            msgpack_pack_bin_body(res, &node.public_key, crypto_box_PUBLICKEYBYTES);
+            msgpack_pack_bin(res, CRYPTO_PUBLIC_KEY_SIZE);
+            msgpack_pack_bin_body(res, &node.public_key, CRYPTO_PUBLIC_KEY_SIZE);
         } else {
             msgpack_pack_nil(res);
         }

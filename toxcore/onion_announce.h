@@ -27,29 +27,29 @@
 
 #define ONION_ANNOUNCE_MAX_ENTRIES 160
 #define ONION_ANNOUNCE_TIMEOUT 300
-#define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
+#define ONION_PING_ID_SIZE CRYPTO_SHA256_SIZE
 
 #define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (sizeof(uint64_t))
 
-#define ONION_ANNOUNCE_REQUEST_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_MACBYTES)
+#define ONION_ANNOUNCE_REQUEST_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_MAC_SIZE)
 
-#define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + 1 + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
+#define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE + 1 + ONION_PING_ID_SIZE + CRYPTO_MAC_SIZE)
 #define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
 
-#define ONION_DATA_RESPONSE_MIN_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define ONION_DATA_RESPONSE_MIN_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 
-#if ONION_PING_ID_SIZE != crypto_box_PUBLICKEYBYTES
-#error announce response packets assume that ONION_PING_ID_SIZE is equal to crypto_box_PUBLICKEYBYTES
+#if ONION_PING_ID_SIZE != CRYPTO_PUBLIC_KEY_SIZE
+#error announce response packets assume that ONION_PING_ID_SIZE is equal to CRYPTO_PUBLIC_KEY_SIZE
 #endif
 
-#define ONION_DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define ONION_DATA_REQUEST_MIN_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 #define MAX_DATA_REQUEST_SIZE (ONION_MAX_DATA_SIZE - ONION_DATA_REQUEST_MIN_SIZE)
 
 typedef struct {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port ret_ip_port;
     uint8_t ret[ONION_RETURN_3];
-    uint8_t data_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t data_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint64_t time;
 } Onion_Announce_Entry;
 
@@ -57,8 +57,8 @@ typedef struct {
     DHT     *dht;
     Networking_Core *net;
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
-    /* This is crypto_box_KEYBYTES long just so we can use new_symmetric_key() to fill it */
-    uint8_t secret_bytes[crypto_box_KEYBYTES];
+    /* This is CRYPTO_SYMMETRIC_KEY_SIZE long just so we can use new_symmetric_key() to fill it */
+    uint8_t secret_bytes[CRYPTO_SYMMETRIC_KEY_SIZE];
 
     Shared_Keys shared_keys_recv;
 } Onion_Announce;

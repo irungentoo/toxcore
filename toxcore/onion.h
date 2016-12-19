@@ -28,7 +28,7 @@
 typedef struct {
     DHT     *dht;
     Networking_Core *net;
-    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
+    uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     uint64_t timestamp;
 
     Shared_Keys shared_keys_1;
@@ -41,14 +41,14 @@ typedef struct {
 
 #define ONION_MAX_PACKET_SIZE 1400
 
-#define ONION_RETURN_1 (crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_MACBYTES)
-#define ONION_RETURN_2 (crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_MACBYTES + ONION_RETURN_1)
-#define ONION_RETURN_3 (crypto_box_NONCEBYTES + SIZE_IPPORT + crypto_box_MACBYTES + ONION_RETURN_2)
+#define ONION_RETURN_1 (CRYPTO_NONCE_SIZE + SIZE_IPPORT + CRYPTO_MAC_SIZE)
+#define ONION_RETURN_2 (CRYPTO_NONCE_SIZE + SIZE_IPPORT + CRYPTO_MAC_SIZE + ONION_RETURN_1)
+#define ONION_RETURN_3 (CRYPTO_NONCE_SIZE + SIZE_IPPORT + CRYPTO_MAC_SIZE + ONION_RETURN_2)
 
-#define ONION_SEND_BASE (crypto_box_PUBLICKEYBYTES + SIZE_IPPORT + crypto_box_MACBYTES)
-#define ONION_SEND_3 (crypto_box_NONCEBYTES + ONION_SEND_BASE + ONION_RETURN_2)
-#define ONION_SEND_2 (crypto_box_NONCEBYTES + ONION_SEND_BASE*2 + ONION_RETURN_1)
-#define ONION_SEND_1 (crypto_box_NONCEBYTES + ONION_SEND_BASE*3)
+#define ONION_SEND_BASE (CRYPTO_PUBLIC_KEY_SIZE + SIZE_IPPORT + CRYPTO_MAC_SIZE)
+#define ONION_SEND_3 (CRYPTO_NONCE_SIZE + ONION_SEND_BASE + ONION_RETURN_2)
+#define ONION_SEND_2 (CRYPTO_NONCE_SIZE + ONION_SEND_BASE*2 + ONION_RETURN_1)
+#define ONION_SEND_1 (CRYPTO_NONCE_SIZE + ONION_SEND_BASE*3)
 
 #define ONION_MAX_DATA_SIZE (ONION_MAX_PACKET_SIZE - (ONION_SEND_1 + 1))
 #define ONION_RESPONSE_MAX_DATA_SIZE (ONION_MAX_PACKET_SIZE - (1 + ONION_RETURN_3))
@@ -56,22 +56,22 @@ typedef struct {
 #define ONION_PATH_LENGTH 3
 
 typedef struct {
-    uint8_t shared_key1[crypto_box_BEFORENMBYTES];
-    uint8_t shared_key2[crypto_box_BEFORENMBYTES];
-    uint8_t shared_key3[crypto_box_BEFORENMBYTES];
+    uint8_t shared_key1[CRYPTO_SHARED_KEY_SIZE];
+    uint8_t shared_key2[CRYPTO_SHARED_KEY_SIZE];
+    uint8_t shared_key3[CRYPTO_SHARED_KEY_SIZE];
 
-    uint8_t public_key1[crypto_box_PUBLICKEYBYTES];
-    uint8_t public_key2[crypto_box_PUBLICKEYBYTES];
-    uint8_t public_key3[crypto_box_PUBLICKEYBYTES];
+    uint8_t public_key1[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t public_key2[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t public_key3[CRYPTO_PUBLIC_KEY_SIZE];
 
     IP_Port     ip_port1;
-    uint8_t     node_public_key1[crypto_box_PUBLICKEYBYTES];
+    uint8_t     node_public_key1[CRYPTO_PUBLIC_KEY_SIZE];
 
     IP_Port     ip_port2;
-    uint8_t     node_public_key2[crypto_box_PUBLICKEYBYTES];
+    uint8_t     node_public_key2[CRYPTO_PUBLIC_KEY_SIZE];
 
     IP_Port     ip_port3;
-    uint8_t     node_public_key3[crypto_box_PUBLICKEYBYTES];
+    uint8_t     node_public_key3[CRYPTO_PUBLIC_KEY_SIZE];
 
     uint32_t path_num;
 } Onion_Path;

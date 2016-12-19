@@ -65,8 +65,8 @@ enum {
 typedef struct {
     uint8_t status;
 
-    uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint16_t dht_lock;
     IP_Port dht_ip_port;
     uint64_t dht_pk_lastrecv, dht_ip_port_lastrecv;

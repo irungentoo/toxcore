@@ -223,20 +223,20 @@ static int proxy_socks5_read_connection_response(TCP_Client_Connection *TCP_conn
  */
 static int generate_handshake(TCP_Client_Connection *TCP_conn)
 {
-    uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
-    crypto_box_keypair(plain, TCP_conn->temp_secret_key);
+    uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
+    crypto_new_keypair(plain, TCP_conn->temp_secret_key);
     random_nonce(TCP_conn->sent_nonce);
-    memcpy(plain + crypto_box_PUBLICKEYBYTES, TCP_conn->sent_nonce, crypto_box_NONCEBYTES);
-    memcpy(TCP_conn->last_packet, TCP_conn->self_public_key, crypto_box_PUBLICKEYBYTES);
-    random_nonce(TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES);
-    int len = encrypt_data_symmetric(TCP_conn->shared_key, TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES, plain,
-                                     sizeof(plain), TCP_conn->last_packet + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES);
+    memcpy(plain + CRYPTO_PUBLIC_KEY_SIZE, TCP_conn->sent_nonce, CRYPTO_NONCE_SIZE);
+    memcpy(TCP_conn->last_packet, TCP_conn->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    random_nonce(TCP_conn->last_packet + CRYPTO_PUBLIC_KEY_SIZE);
+    int len = encrypt_data_symmetric(TCP_conn->shared_key, TCP_conn->last_packet + CRYPTO_PUBLIC_KEY_SIZE, plain,
+                                     sizeof(plain), TCP_conn->last_packet + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
-    if (len != sizeof(plain) + crypto_box_MACBYTES) {
+    if (len != sizeof(plain) + CRYPTO_MAC_SIZE) {
         return -1;
     }
 
-    TCP_conn->last_packet_length = crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + sizeof(plain) + crypto_box_MACBYTES;
+    TCP_conn->last_packet_length = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + sizeof(plain) + CRYPTO_MAC_SIZE;
     TCP_conn->last_packet_sent = 0;
     return 0;
 }
@@ -248,17 +248,17 @@ static int generate_handshake(TCP_Client_Connection *TCP_conn)
  */
 static int handle_handshake(TCP_Client_Connection *TCP_conn, const uint8_t *data)
 {
-    uint8_t plain[crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES];
-    int len = decrypt_data_symmetric(TCP_conn->shared_key, data, data + crypto_box_NONCEBYTES,
-                                     TCP_SERVER_HANDSHAKE_SIZE - crypto_box_NONCEBYTES, plain);
+    uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
+    int len = decrypt_data_symmetric(TCP_conn->shared_key, data, data + CRYPTO_NONCE_SIZE,
+                                     TCP_SERVER_HANDSHAKE_SIZE - CRYPTO_NONCE_SIZE, plain);
 
     if (len != sizeof(plain)) {
         return -1;
     }
 
-    memcpy(TCP_conn->recv_nonce, plain + crypto_box_PUBLICKEYBYTES, crypto_box_NONCEBYTES);
+    memcpy(TCP_conn->recv_nonce, plain + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_NONCE_SIZE);
     encrypt_precompute(plain, TCP_conn->temp_secret_key, TCP_conn->shared_key);
-    sodium_memzero(TCP_conn->temp_secret_key, crypto_box_SECRETKEYBYTES);
+    crypto_memzero(TCP_conn->temp_secret_key, CRYPTO_SECRET_KEY_SIZE);
     return 0;
 }
 
@@ -372,7 +372,7 @@ static void wipe_priority_list(TCP_Client_Connection *con)
 static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const uint8_t *data, uint16_t length,
         bool priority)
 {
-    if (length + crypto_box_MACBYTES > MAX_PACKET_SIZE) {
+    if (length + CRYPTO_MAC_SIZE > MAX_PACKET_SIZE) {
         return -1;
     }
 
@@ -386,9 +386,9 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
         }
     }
 
-    uint8_t packet[sizeof(uint16_t) + length + crypto_box_MACBYTES];
+    uint8_t packet[sizeof(uint16_t) + length + CRYPTO_MAC_SIZE];
 
-    uint16_t c_length = htons(length + crypto_box_MACBYTES);
+    uint16_t c_length = htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
@@ -436,9 +436,9 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
  */
 int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
 {
-    uint8_t packet[1 + crypto_box_PUBLICKEYBYTES];
+    uint8_t packet[1 + CRYPTO_PUBLIC_KEY_SIZE];
     packet[0] = TCP_PACKET_ROUTING_REQUEST;
-    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet), 1);
 }
 
@@ -493,10 +493,10 @@ int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const
         return -1;
     }
 
-    uint8_t packet[1 + crypto_box_PUBLICKEYBYTES + length];
+    uint8_t packet[1 + CRYPTO_PUBLIC_KEY_SIZE + length];
     packet[0] = TCP_PACKET_OOB_SEND;
-    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, data, length);
+    memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
     return write_packet_TCP_secure_connection(con, packet, sizeof(packet), 0);
 }
 
@@ -676,8 +676,8 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     }
 
     temp->sock = sock;
-    memcpy(temp->public_key, public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(temp->self_public_key, self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(temp->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(temp->self_public_key, self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     encrypt_precompute(temp->public_key, self_secret_key, temp->shared_key);
     temp->ip_port = ip_port;
     temp->proxy_info = *proxy_info;
@@ -721,7 +721,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
 
     switch (data[0]) {
         case TCP_PACKET_ROUTING_RESPONSE: {
-            if (length != 1 + 1 + crypto_box_PUBLICKEYBYTES) {
+            if (length != 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE) {
                 return -1;
             }
 
@@ -737,7 +737,7 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
 
             conn->connections[con_id].status = 1;
             conn->connections[con_id].number = ~0;
-            memcpy(conn->connections[con_id].public_key, data + 2, crypto_box_PUBLICKEYBYTES);
+            memcpy(conn->connections[con_id].public_key, data + 2, CRYPTO_PUBLIC_KEY_SIZE);
 
             if (conn->response_callback) {
                 conn->response_callback(conn->response_callback_object, con_id, conn->connections[con_id].public_key);
@@ -832,13 +832,13 @@ static int handle_TCP_packet(TCP_Client_Connection *conn, const uint8_t *data, u
         }
 
         case TCP_PACKET_OOB_RECV: {
-            if (length <= 1 + crypto_box_PUBLICKEYBYTES) {
+            if (length <= 1 + CRYPTO_PUBLIC_KEY_SIZE) {
                 return -1;
             }
 
             if (conn->oob_data_callback) {
-                conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + crypto_box_PUBLICKEYBYTES,
-                                        length - (1 + crypto_box_PUBLICKEYBYTES), userdata);
+                conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                                        length - (1 + CRYPTO_PUBLIC_KEY_SIZE), userdata);
             }
 
             return 0;
@@ -1006,6 +1006,6 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
 
     wipe_priority_list(TCP_connection);
     kill_sock(TCP_connection->sock);
-    sodium_memzero(TCP_connection, sizeof(TCP_Client_Connection));
+    crypto_memzero(TCP_connection, sizeof(TCP_Client_Connection));
     free(TCP_connection);
 }

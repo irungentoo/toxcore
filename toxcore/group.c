@@ -113,7 +113,7 @@ static int wipe_group_chat(Group_Chats *g_c, int groupnumber)
     }
 
     uint32_t i;
-    sodium_memzero(&(g_c->chats[groupnumber]), sizeof(Group_c));
+    crypto_memzero(&(g_c->chats[groupnumber]), sizeof(Group_c));
 
     for (i = g_c->num_chats; i != 0; --i) {
         if (g_c->chats[i - 1].status != GROUPCHAT_STATUS_NONE) {
@@ -173,7 +173,7 @@ static int get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
     uint32_t i;
 
     for (i = 0; i < g_c->num_chats; ++i) {
-        if (sodium_memcmp(g_c->chats[i].identifier, identifier, GROUP_IDENTIFIER_LENGTH) == 0) {
+        if (crypto_memcmp(g_c->chats[i].identifier, identifier, GROUP_IDENTIFIER_LENGTH) == 0) {
             return i;
         }
     }
@@ -284,19 +284,19 @@ static int add_to_closest(Group_Chats *g_c, int groupnumber, const uint8_t *real
         return -1;
     }
 
-    uint8_t old_real_pk[crypto_box_PUBLICKEYBYTES];
-    uint8_t old_temp_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t old_real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t old_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t old = 0;
 
     if (g->closest_peers[index].entry) {
-        memcpy(old_real_pk, g->closest_peers[index].real_pk, crypto_box_PUBLICKEYBYTES);
-        memcpy(old_temp_pk, g->closest_peers[index].temp_pk, crypto_box_PUBLICKEYBYTES);
+        memcpy(old_real_pk, g->closest_peers[index].real_pk, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(old_temp_pk, g->closest_peers[index].temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
         old = 1;
     }
 
     g->closest_peers[index].entry = 1;
-    memcpy(g->closest_peers[index].real_pk, real_pk, crypto_box_PUBLICKEYBYTES);
-    memcpy(g->closest_peers[index].temp_pk, temp_pk, crypto_box_PUBLICKEYBYTES);
+    memcpy(g->closest_peers[index].real_pk, real_pk, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(g->closest_peers[index].temp_pk, temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
 
     if (old) {
         add_to_closest(g_c, groupnumber, old_real_pk, old_temp_pk);
@@ -357,8 +357,8 @@ static int connect_to_closest(Group_Chats *g_c, int groupnumber, void *userdata)
             continue;
         }
 
-        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
-        uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
         get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[i].number);
 
         if (!pk_in_closest_peers(g, real_pk)) {
@@ -743,7 +743,7 @@ int add_groupchat(Group_Chats *g_c, uint8_t type)
     new_symmetric_key(g->identifier + 1);
     g->identifier[0] = type;
     g->peer_number = 0; /* Founder is peer 0. */
-    memcpy(g->real_pk, g_c->m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(g->real_pk, g_c->m->net_crypto->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     int peer_index = addpeer(g_c, groupnumber, g->real_pk, g_c->m->dht->self_public_key, 0, NULL, false);
 
     if (peer_index == -1) {
@@ -798,7 +798,7 @@ int del_groupchat(Group_Chats *g_c, int groupnumber)
 }
 
 /* Copy the public key of peernumber who is in groupnumber to pk.
- * pk must be crypto_box_PUBLICKEYBYTES long.
+ * pk must be CRYPTO_PUBLIC_KEY_SIZE long.
  *
  * return 0 on success
  * return -1 if groupnumber is invalid.
@@ -816,7 +816,7 @@ int group_peer_pubkey(const Group_Chats *g_c, int groupnumber, int peernumber, u
         return -2;
     }
 
-    memcpy(pk, g->group[peernumber].real_pk, crypto_box_PUBLICKEYBYTES);
+    memcpy(pk, g->group[peernumber].real_pk, CRYPTO_PUBLIC_KEY_SIZE);
     return 0;
 }
 
@@ -1077,7 +1077,7 @@ int join_groupchat(Group_Chats *g_c, int32_t friendnumber, uint8_t expected_type
     uint16_t group_num = htons(groupnumber);
     g->status = GROUPCHAT_STATUS_VALID;
     g->number_joined = -1;
-    memcpy(g->real_pk, g_c->m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(g->real_pk, g_c->m->net_crypto->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     uint8_t response[INVITE_RESPONSE_PACKET_SIZE];
     response[0] = INVITE_RESPONSE_ID;
@@ -1231,7 +1231,7 @@ static int group_ping_send(const Group_Chats *g_c, int groupnumber)
 }
 
 #define GROUP_MESSAGE_NEW_PEER_ID 16
-#define GROUP_MESSAGE_NEW_PEER_LENGTH (sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2)
+#define GROUP_MESSAGE_NEW_PEER_LENGTH (sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2)
 /* send a new_peer message
  * return 0 on success
  * return -1 on failure
@@ -1243,8 +1243,8 @@ static int group_new_peer_send(const Group_Chats *g_c, int groupnumber, uint16_t
 
     peer_num = htons(peer_num);
     memcpy(packet, &peer_num, sizeof(uint16_t));
-    memcpy(packet + sizeof(uint16_t), real_pk, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES, temp_pk, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + sizeof(uint16_t), real_pk, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(packet + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE, temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NEW_PEER_ID, packet, sizeof(packet)) > 0) {
         return 0;
@@ -1420,7 +1420,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 return;
             }
 
-            if (sodium_memcmp(data + 1 + sizeof(uint16_t) * 2, g->identifier, GROUP_IDENTIFIER_LENGTH) != 0) {
+            if (crypto_memcmp(data + 1 + sizeof(uint16_t) * 2, g->identifier, GROUP_IDENTIFIER_LENGTH) != 0) {
                 return;
             }
 
@@ -1443,7 +1443,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             other_groupnum = ntohs(other_groupnum);
 
             int friendcon_id = getfriendcon_id(m, friendnumber);
-            uint8_t real_pk[crypto_box_PUBLICKEYBYTES], temp_pk[crypto_box_PUBLICKEYBYTES];
+            uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE], temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
             get_friendcon_public_keys(real_pk, temp_pk, g_c->fr_c, friendcon_id);
 
             addpeer(g_c, groupnum, real_pk, temp_pk, peer_number, userdata, true);
@@ -1616,7 +1616,7 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
     unsigned int i;
 
     for (i = 0; i < g->numpeers; ++i) {
-        if ((p - packet) + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2 + 1 + g->group[i].nick_len > sizeof(packet)) {
+        if ((p - packet) + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2 + 1 + g->group[i].nick_len > sizeof(packet)) {
             if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, (p - packet))) {
                 sent = i;
             } else {
@@ -1629,10 +1629,10 @@ static unsigned int send_peers(Group_Chats *g_c, int groupnumber, int friendcon_
         uint16_t peer_num = htons(g->group[i].peer_number);
         memcpy(p, &peer_num, sizeof(peer_num));
         p += sizeof(peer_num);
-        memcpy(p, g->group[i].real_pk, crypto_box_PUBLICKEYBYTES);
-        p += crypto_box_PUBLICKEYBYTES;
-        memcpy(p, g->group[i].temp_pk, crypto_box_PUBLICKEYBYTES);
-        p += crypto_box_PUBLICKEYBYTES;
+        memcpy(p, g->group[i].real_pk, CRYPTO_PUBLIC_KEY_SIZE);
+        p += CRYPTO_PUBLIC_KEY_SIZE;
+        memcpy(p, g->group[i].temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
+        p += CRYPTO_PUBLIC_KEY_SIZE;
         *p = g->group[i].nick_len;
         p += 1;
         memcpy(p, g->group[i].nick, g->group[i].nick_len);
@@ -1669,12 +1669,12 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
 
     const uint8_t *d = data;
 
-    while ((unsigned int)(length - (d - data)) >= sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES * 2 + 1) {
+    while ((unsigned int)(length - (d - data)) >= sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2 + 1) {
         uint16_t peer_num;
         memcpy(&peer_num, d, sizeof(peer_num));
         peer_num = ntohs(peer_num);
         d += sizeof(uint16_t);
-        int peer_index = addpeer(g_c, groupnumber, d, d + crypto_box_PUBLICKEYBYTES, peer_num, userdata, true);
+        int peer_index = addpeer(g_c, groupnumber, d, d + CRYPTO_PUBLIC_KEY_SIZE, peer_num, userdata, true);
 
         if (peer_index == -1) {
             return -1;
@@ -1687,7 +1687,7 @@ static int handle_send_peers(Group_Chats *g_c, int groupnumber, const uint8_t *d
             group_name_send(g_c, groupnumber, g_c->m->name, g_c->m->name_length);
         }
 
-        d += crypto_box_PUBLICKEYBYTES * 2;
+        d += CRYPTO_PUBLIC_KEY_SIZE * 2;
         uint8_t name_length = *d;
         d += 1;
 
@@ -1832,8 +1832,8 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
     uint64_t comp_val_old = ~0;
 
     for (i = 0; i < num_connected_closest; ++i) {
-        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
-        uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
         get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[connected_closest[i]].number);
         uint64_t comp_val = calculate_comp_value(g->real_pk, real_pk);
 
@@ -1852,8 +1852,8 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
     comp_val_old = ~0;
 
     for (i = 0; i < num_connected_closest; ++i) {
-        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
-        uint8_t dht_temp_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
         get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[connected_closest[i]].number);
         uint64_t comp_val = calculate_comp_value(real_pk, g->real_pk);
 
@@ -2046,7 +2046,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
             uint16_t new_peer_number;
             memcpy(&new_peer_number, msg_data, sizeof(uint16_t));
             new_peer_number = ntohs(new_peer_number);
-            addpeer(g_c, groupnumber, msg_data + sizeof(uint16_t), msg_data + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES,
+            addpeer(g_c, groupnumber, msg_data + sizeof(uint16_t), msg_data + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE,
                     new_peer_number, userdata, true);
         }
         break;
@@ -2212,7 +2212,7 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
     uint16_t top_distance = message_number - g->group[peer_index].top_lossy_number;
 
     if (top_distance >= MAX_LOSSY_COUNT) {
-        sodium_memzero(g->group[peer_index].recv_lossy, sizeof(g->group[peer_index].recv_lossy));
+        crypto_memzero(g->group[peer_index].recv_lossy, sizeof(g->group[peer_index].recv_lossy));
         g->group[peer_index].top_lossy_number = message_number;
         g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;

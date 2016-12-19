@@ -56,25 +56,25 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const u
         return -1;
     }
 
-    uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
+    uint8_t plain[ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE +
                   ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
     memcpy(plain, ping_id, ONION_PING_ID_SIZE);
-    memcpy(plain + ONION_PING_ID_SIZE, client_id, crypto_box_PUBLICKEYBYTES);
-    memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES, data_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES, &sendback_data,
+    memcpy(plain + ONION_PING_ID_SIZE, client_id, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE, data_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE, &sendback_data,
            sizeof(sendback_data));
 
     packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
     random_nonce(packet + 1);
 
     int len = encrypt_data(dest_client_id, secret_key, packet + 1, plain, sizeof(plain),
-                           packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+                           packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE);
 
-    if ((uint32_t)len + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES != ONION_ANNOUNCE_REQUEST_SIZE) {
+    if ((uint32_t)len + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE != ONION_ANNOUNCE_REQUEST_SIZE) {
         return -1;
     }
 
-    memcpy(packet + 1 + crypto_box_NONCEBYTES, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + CRYPTO_NONCE_SIZE, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     return ONION_ANNOUNCE_REQUEST_SIZE;
 }
@@ -101,19 +101,19 @@ int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8
     }
 
     packet[0] = NET_PACKET_ONION_DATA_REQUEST;
-    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
+    memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
 
-    uint8_t random_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t random_secret_key[crypto_box_SECRETKEYBYTES];
-    crypto_box_keypair(random_public_key, random_secret_key);
+    uint8_t random_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t random_secret_key[CRYPTO_SECRET_KEY_SIZE];
+    crypto_new_keypair(random_public_key, random_secret_key);
 
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, random_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, random_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    int len = encrypt_data(encrypt_public_key, random_secret_key, packet + 1 + crypto_box_PUBLICKEYBYTES, data, length,
-                           packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES);
+    int len = encrypt_data(encrypt_public_key, random_secret_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length,
+                           packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE);
 
-    if (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + len != DATA_REQUEST_MIN_SIZE +
+    if (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + len != DATA_REQUEST_MIN_SIZE +
             length) {
         return -1;
     }
@@ -204,12 +204,12 @@ static void generate_ping_id(const Onion_Announce *onion_a, uint64_t time, const
                              IP_Port ret_ip_port, uint8_t *ping_id)
 {
     time /= PING_ID_TIMEOUT;
-    uint8_t data[crypto_box_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES + sizeof(ret_ip_port)];
-    memcpy(data, onion_a->secret_bytes, crypto_box_KEYBYTES);
-    memcpy(data + crypto_box_KEYBYTES, &time, sizeof(time));
-    memcpy(data + crypto_box_KEYBYTES + sizeof(time), public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(data + crypto_box_KEYBYTES + sizeof(time) + crypto_box_PUBLICKEYBYTES, &ret_ip_port, sizeof(ret_ip_port));
-    crypto_hash_sha256(ping_id, data, sizeof(data));
+    uint8_t data[CRYPTO_SYMMETRIC_KEY_SIZE + sizeof(time) + CRYPTO_PUBLIC_KEY_SIZE + sizeof(ret_ip_port)];
+    memcpy(data, onion_a->secret_bytes, CRYPTO_SYMMETRIC_KEY_SIZE);
+    memcpy(data + CRYPTO_SYMMETRIC_KEY_SIZE, &time, sizeof(time));
+    memcpy(data + CRYPTO_SYMMETRIC_KEY_SIZE + sizeof(time), public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(data + CRYPTO_SYMMETRIC_KEY_SIZE + sizeof(time) + CRYPTO_PUBLIC_KEY_SIZE, &ret_ip_port, sizeof(ret_ip_port));
+    crypto_sha256(ping_id, data, sizeof(data));
 }
 
 /* check if public key is in entries list
@@ -231,7 +231,7 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
     return -1;
 }
 
-static uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
+static uint8_t cmp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
 static int cmp_entry(const void *a, const void *b)
 {
     Onion_Announce_Entry entry1, entry2;
@@ -296,13 +296,13 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
         return -1;
     }
 
-    memcpy(onion_a->entries[pos].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(onion_a->entries[pos].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     onion_a->entries[pos].ret_ip_port = ret_ip_port;
     memcpy(onion_a->entries[pos].ret, ret, ONION_RETURN_3);
-    memcpy(onion_a->entries[pos].data_public_key, data_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(onion_a->entries[pos].data_public_key, data_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     onion_a->entries[pos].time = unix_time();
 
-    memcpy(cmp_public_key, onion_a->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(cmp_public_key, onion_a->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     qsort(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, sizeof(Onion_Announce_Entry), cmp_entry);
     return in_entries(onion_a, public_key);
 }
@@ -315,15 +315,15 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
         return 1;
     }
 
-    const uint8_t *packet_public_key = packet + 1 + crypto_box_NONCEBYTES;
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    const uint8_t *packet_public_key = packet + 1 + CRYPTO_NONCE_SIZE;
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     get_shared_key(&onion_a->shared_keys_recv, shared_key, onion_a->dht->self_secret_key, packet_public_key);
 
-    uint8_t plain[ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES +
+    uint8_t plain[ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE +
                   ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
-    int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES,
-                                     ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH +
-                                     crypto_box_MACBYTES, plain);
+    int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
+                                     ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH +
+                                     CRYPTO_MAC_SIZE, plain);
 
     if ((uint32_t)len != sizeof(plain)) {
         return 1;
@@ -337,10 +337,10 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     int index = -1;
 
-    uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES;
+    uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE;
 
-    if (sodium_memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0
-            || sodium_memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
+    if (crypto_memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0
+            || crypto_memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
         index = add_to_entries(onion_a, source, packet_public_key, data_public_key,
                                packet + (ANNOUNCE_REQUEST_SIZE_RECV - ONION_RETURN_3));
     } else {
@@ -351,7 +351,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     Node_format nodes_list[MAX_SENT_NODES];
     unsigned int num_nodes = get_close_nodes(onion_a->dht, plain + ONION_PING_ID_SIZE, nodes_list, 0,
                              LAN_ip(source.ip) == 0, 1);
-    uint8_t nonce[crypto_box_NONCEBYTES];
+    uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(nonce);
 
     uint8_t pl[1 + ONION_PING_ID_SIZE + sizeof(nodes_list)];
@@ -370,7 +370,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
             }
         } else {
             pl[0] = 1;
-            memcpy(pl + 1, onion_a->entries[index].data_public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(pl + 1, onion_a->entries[index].data_public_key, CRYPTO_PUBLIC_KEY_SIZE);
         }
     }
 
@@ -386,19 +386,19 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     uint8_t data[ONION_ANNOUNCE_RESPONSE_MAX_SIZE];
     len = encrypt_data_symmetric(shared_key, nonce, pl, 1 + ONION_PING_ID_SIZE + nodes_length,
-                                 data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES);
+                                 data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE);
 
-    if (len != 1 + ONION_PING_ID_SIZE + nodes_length + crypto_box_MACBYTES) {
+    if (len != 1 + ONION_PING_ID_SIZE + nodes_length + CRYPTO_MAC_SIZE) {
         return 1;
     }
 
     data[0] = NET_PACKET_ANNOUNCE_RESPONSE;
-    memcpy(data + 1, plain + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES,
+    memcpy(data + 1, plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
            ONION_ANNOUNCE_SENDBACK_DATA_LENGTH);
-    memcpy(data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH, nonce, crypto_box_NONCEBYTES);
+    memcpy(data + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH, nonce, CRYPTO_NONCE_SIZE);
 
     if (send_onion_response(onion_a->net, source, data,
-                            1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + len,
+                            1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE + len,
                             packet + (ANNOUNCE_REQUEST_SIZE_RECV - ONION_RETURN_3)) == -1) {
         return 1;
     }
@@ -424,9 +424,9 @@ static int handle_data_request(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    uint8_t data[length - (crypto_box_PUBLICKEYBYTES + ONION_RETURN_3)];
+    uint8_t data[length - (CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3)];
     data[0] = NET_PACKET_ONION_DATA_RESPONSE;
-    memcpy(data + 1, packet + 1 + crypto_box_PUBLICKEYBYTES, length - (1 + crypto_box_PUBLICKEYBYTES + ONION_RETURN_3));
+    memcpy(data + 1, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, length - (1 + CRYPTO_PUBLIC_KEY_SIZE + ONION_RETURN_3));
 
     if (send_onion_response(onion_a->net, onion_a->entries[index].ret_ip_port, data, sizeof(data),
                             onion_a->entries[index].ret) == -1) {

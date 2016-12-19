@@ -39,7 +39,7 @@
 #define MAX_CONCURRENT_FILE_PIPES 256
 
 
-#define FRIEND_ADDRESS_SIZE (crypto_box_PUBLICKEYBYTES + sizeof(uint32_t) + sizeof(uint16_t))
+#define FRIEND_ADDRESS_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
 enum {
     MESSAGE_NORMAL,
@@ -179,7 +179,7 @@ enum {
 typedef struct Messenger Messenger;
 
 typedef struct {
-    uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     int friendcon_id;
 
     uint64_t friendrequest_lastsent; // Time at which the last friend request was sent.
@@ -316,7 +316,7 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk);
 int32_t getfriend_id(const Messenger *m, const uint8_t *real_pk);
 
 /* Copies the public key associated to that friend id into real_pk buffer.
- * Make sure that real_pk is of size crypto_box_PUBLICKEYBYTES.
+ * Make sure that real_pk is of size CRYPTO_PUBLIC_KEY_SIZE.
  *
  *  return 0 if success
  *  return -1 if failure

@@ -61,7 +61,7 @@
 
 static void manage_keys(DHT *dht)
 {
-    enum { KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES };
+    enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
     uint8_t keys[KEYS_SIZE];
 
     FILE *keys_file = fopen("key", "r");
@@ -76,12 +76,12 @@ static void manage_keys(DHT *dht)
             exit(1);
         }
 
-        memcpy(dht->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
-        memcpy(dht->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
+        memcpy(dht->self_public_key, keys, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(dht->self_secret_key, keys + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_SECRET_KEY_SIZE);
         printf("Keys loaded successfully.\n");
     } else {
-        memcpy(keys, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
-        memcpy(keys + crypto_box_PUBLICKEYBYTES, dht->self_secret_key, crypto_box_SECRETKEYBYTES);
+        memcpy(keys, dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
         keys_file = fopen("key", "w");
 
         if (keys_file == NULL) {

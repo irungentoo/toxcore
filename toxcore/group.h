@@ -41,8 +41,8 @@ enum {
 #define MAX_LOSSY_COUNT 256
 
 typedef struct {
-    uint8_t     real_pk[crypto_box_PUBLICKEYBYTES];
-    uint8_t     temp_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t     real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t     temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
 
     uint64_t    last_recv;
     uint32_t    last_message_number;
@@ -60,7 +60,7 @@ typedef struct {
 
 #define DESIRED_CLOSE_CONNECTIONS 4
 #define MAX_GROUP_CONNECTIONS 16
-#define GROUP_IDENTIFIER_LENGTH (1 + crypto_box_KEYBYTES) /* type + crypto_box_KEYBYTES so we can use new_symmetric_key(...) to fill it */
+#define GROUP_IDENTIFIER_LENGTH (1 + CRYPTO_SYMMETRIC_KEY_SIZE) /* type + CRYPTO_SYMMETRIC_KEY_SIZE so we can use new_symmetric_key(...) to fill it */
 
 enum {
     GROUPCHAT_CLOSE_NONE,
@@ -81,11 +81,11 @@ typedef struct {
         uint16_t group_number;
     } close[MAX_GROUP_CONNECTIONS];
 
-    uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     struct {
         uint8_t entry;
-        uint8_t real_pk[crypto_box_PUBLICKEYBYTES];
-        uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
+        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
     } closest_peers[DESIRED_CLOSE_CONNECTIONS];
     uint8_t changed;
 
@@ -180,7 +180,7 @@ int add_groupchat(Group_Chats *g_c, uint8_t type);
 int del_groupchat(Group_Chats *g_c, int groupnumber);
 
 /* Copy the public key of peernumber who is in groupnumber to pk.
- * pk must be crypto_box_PUBLICKEYBYTES long.
+ * pk must be CRYPTO_PUBLIC_KEY_SIZE long.
  *
  * return 0 on success
  * return -1 if groupnumber is invalid.

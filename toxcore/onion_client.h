@@ -61,10 +61,10 @@
 #define ONION_DATA_DHTPK CRYPTO_PACKET_DHTPK
 
 typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port     ip_port;
     uint8_t     ping_id[ONION_PING_ID_SIZE];
-    uint8_t     data_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t     data_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t     is_stored;
 
     uint64_t    timestamp;
@@ -84,7 +84,7 @@ typedef struct {
 } Onion_Client_Paths;
 
 typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint64_t    timestamp;
 } Last_Pinged;
 
@@ -93,12 +93,12 @@ typedef struct {
     uint8_t is_online; /* Set by the onion_set_friend_status function. */
 
     uint8_t know_dht_public_key; /* 0 if we don't know the dht public key of the other, 1 if we do. */
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t real_public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
 
     Onion_Node clients_list[MAX_ONION_CLIENTS];
-    uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t temp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t temp_secret_key[CRYPTO_SECRET_KEY_SIZE];
 
     uint64_t last_dht_pk_onion_sent;
     uint64_t last_dht_pk_dht_sent;
@@ -136,11 +136,11 @@ typedef struct {
     Onion_Client_Paths onion_paths_self;
     Onion_Client_Paths onion_paths_friends;
 
-    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
+    uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     uint64_t last_run, first_run;
 
-    uint8_t temp_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t temp_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t temp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t temp_secret_key[CRYPTO_SECRET_KEY_SIZE];
 
     Last_Pinged last_pinged[MAX_STORED_PINGED_NODES];
 
@@ -257,7 +257,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
  */
 unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_num, uint8_t *dht_key);
 
-#define ONION_DATA_IN_RESPONSE_MIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define ONION_DATA_IN_RESPONSE_MIN_SIZE (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 #define ONION_CLIENT_MAX_DATA_SIZE (MAX_DATA_REQUEST_SIZE - ONION_DATA_IN_RESPONSE_MIN_SIZE)
 
 /* Send data of length length to friendnum.

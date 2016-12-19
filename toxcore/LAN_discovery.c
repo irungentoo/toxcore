@@ -329,7 +329,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    if (length != crypto_box_PUBLICKEYBYTES + 1) {
+    if (length != CRYPTO_PUBLIC_KEY_SIZE + 1) {
         return 1;
     }
 
@@ -340,11 +340,11 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 
 int send_LANdiscovery(uint16_t port, DHT *dht)
 {
-    uint8_t data[crypto_box_PUBLICKEYBYTES + 1];
+    uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     id_copy(data + 1, dht->self_public_key);
 
-    send_broadcasts(dht->net, port, data, 1 + crypto_box_PUBLICKEYBYTES);
+    send_broadcasts(dht->net, port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
 
     int res = -1;
     IP_Port ip_port;
@@ -355,7 +355,7 @@ int send_LANdiscovery(uint16_t port, DHT *dht)
         ip_port.ip = broadcast_ip(AF_INET6, AF_INET6);
 
         if (ip_isset(&ip_port.ip)) {
-            if (sendpacket(dht->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES) > 0) {
+            if (sendpacket(dht->net, ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE) > 0) {
                 res = 1;
             }
         }
@@ -365,7 +365,7 @@ int send_LANdiscovery(uint16_t port, DHT *dht)
     ip_port.ip = broadcast_ip(dht->net->family, AF_INET);
 
     if (ip_isset(&ip_port.ip)) {
-        if (sendpacket(dht->net, ip_port, data, 1 + crypto_box_PUBLICKEYBYTES)) {
+        if (sendpacket(dht->net, ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {
             res = 1;
         }
     }

@@ -42,7 +42,7 @@ typedef struct {
 
 #define MAX_RECEIVED_STORED 32
 
-    uint8_t received_requests[MAX_RECEIVED_STORED][crypto_box_PUBLICKEYBYTES];
+    uint8_t received_requests[MAX_RECEIVED_STORED][CRYPTO_PUBLIC_KEY_SIZE];
     uint16_t received_requests_index;
 } Friend_Requests;
 

@@ -68,7 +68,7 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
     size_t   i;
     uint8_t distance1, distance2;
 
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; ++i) {
 
         distance1 = pk[i] ^ pk1[i];
         distance2 = pk[i] ^ pk2[i];
@@ -91,7 +91,7 @@ static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
     unsigned int i, j = 0;
 
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
+    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; ++i) {
         if (pk1[i] == pk2[i]) {
             continue;
         }
@@ -123,7 +123,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
 
         if (shared_keys->keys[index].stored) {
             if (public_key_cmp(public_key, shared_keys->keys[index].public_key) == 0) {
-                memcpy(shared_key, shared_keys->keys[index].shared_key, crypto_box_BEFORENMBYTES);
+                memcpy(shared_key, shared_keys->keys[index].shared_key, CRYPTO_SHARED_KEY_SIZE);
                 ++shared_keys->keys[index].times_requested;
                 shared_keys->keys[index].time_last_requested = unix_time();
                 return;
@@ -151,8 +151,8 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
     if (num != (uint32_t)~0) {
         shared_keys->keys[curr].stored = 1;
         shared_keys->keys[curr].times_requested = 1;
-        memcpy(shared_keys->keys[curr].public_key, public_key, crypto_box_PUBLICKEYBYTES);
-        memcpy(shared_keys->keys[curr].shared_key, shared_key, crypto_box_BEFORENMBYTES);
+        memcpy(shared_keys->keys[curr].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(shared_keys->keys[curr].shared_key, shared_key, CRYPTO_SHARED_KEY_SIZE);
         shared_keys->keys[curr].time_last_requested = unix_time();
     }
 }
@@ -190,28 +190,28 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
         return -1;
     }
 
-    if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 +
-            crypto_box_MACBYTES) {
+    if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 +
+            CRYPTO_MAC_SIZE) {
         return -1;
     }
 
-    uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
+    uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     random_nonce(nonce);
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): sodium_memzero before exit function
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
-                           1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + packet);
+                           1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + packet);
 
     if (len == -1) {
         return -1;
     }
 
     packet[0] = NET_PACKET_CRYPTO;
-    memcpy(packet + 1, recv_public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, send_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(packet + 1, recv_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, send_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    return len + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES;
+    return len + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE;
 }
 
 /* Puts the senders public key in the request in public_key, the data from the request
@@ -227,7 +227,7 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
         return -1;
     }
 
-    if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
+    if (length <= CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 + CRYPTO_MAC_SIZE ||
             length > MAX_CRYPTO_REQUEST_SIZE) {
         return -1;
     }
@@ -236,12 +236,12 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
         return -1;
     }
 
-    memcpy(public_key, packet + 1 + crypto_box_PUBLICKEYBYTES, crypto_box_PUBLICKEYBYTES);
-    const uint8_t *nonce = packet + 1 + crypto_box_PUBLICKEYBYTES * 2;
+    memcpy(public_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_PUBLIC_KEY_SIZE);
+    const uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): sodium_memzero before exit function
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                            packet + 1 + crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES,
-                            length - (crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1), temp);
+                            packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE,
+                            length - (CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1), temp);
 
     if (len1 == -1 || len1 == 0) {
         return -1;
@@ -277,8 +277,8 @@ int to_host_family(IP *ip)
     return -1;
 }
 
-#define PACKED_NODE_SIZE_IP4 (1 + SIZE_IP4 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
-#define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
+#define PACKED_NODE_SIZE_IP4 (1 + SIZE_IP4 + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE)
+#define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE)
 
 /* Return packet size of packed node with ip_family on success.
  * Return -1 on failure.
@@ -365,11 +365,11 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
     return -1;
 }
 
-static int DHT_create_packet(const uint8_t public_key[crypto_box_PUBLICKEYBYTES],
+static int DHT_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                              const uint8_t *shared_key, const uint8_t type, uint8_t *plain, size_t plain_length, uint8_t *packet)
 {
-    uint8_t encrypted[plain_length + crypto_box_MACBYTES];
-    uint8_t nonce[crypto_box_NONCEBYTES];
+    uint8_t encrypted[plain_length + CRYPTO_MAC_SIZE];
+    uint8_t nonce[CRYPTO_NONCE_SIZE];
 
     random_nonce(nonce);
 
@@ -381,11 +381,11 @@ static int DHT_create_packet(const uint8_t public_key[crypto_box_PUBLICKEYBYTES]
     }
 
     packet[0] = type;
-    memcpy(packet + 1, public_key, crypto_box_PUBLICKEYBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES, nonce, crypto_box_NONCEBYTES);
-    memcpy(packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES, encrypted, encrypted_length);
+    memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
+    memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, encrypted, encrypted_length);
 
-    return 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + encrypted_length;
+    return 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + encrypted_length;
 }
 
 /* Unpack IP_Port structure from data of max size length into ip_port.
@@ -473,14 +473,14 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
 
         packed_length += ipp_size;
 
-        if (packed_length + crypto_box_PUBLICKEYBYTES > length) {
+        if (packed_length + CRYPTO_PUBLIC_KEY_SIZE > length) {
             return -1;
         }
 
-        memcpy(data + packed_length, nodes[i].public_key, crypto_box_PUBLICKEYBYTES);
-        packed_length += crypto_box_PUBLICKEYBYTES;
+        memcpy(data + packed_length, nodes[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
+        packed_length += CRYPTO_PUBLIC_KEY_SIZE;
 
-        uint32_t increment = ipp_size + crypto_box_PUBLICKEYBYTES;
+        uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
     }
 
@@ -508,15 +508,15 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 
         len_processed += ipp_size;
 
-        if (len_processed + crypto_box_PUBLICKEYBYTES > length) {
+        if (len_processed + CRYPTO_PUBLIC_KEY_SIZE > length) {
             return -1;
         }
 
-        memcpy(nodes[num].public_key, data + len_processed, crypto_box_PUBLICKEYBYTES);
-        len_processed += crypto_box_PUBLICKEYBYTES;
+        memcpy(nodes[num].public_key, data + len_processed, CRYPTO_PUBLIC_KEY_SIZE);
+        len_processed += CRYPTO_PUBLIC_KEY_SIZE;
         ++num;
 
-        uint32_t increment = ipp_size + crypto_box_PUBLICKEYBYTES;
+        uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
     }
 
@@ -589,7 +589,7 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
         if ((ip_port.ip.family == AF_INET) && ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
             /* Initialize client timestamp. */
             list[i].assoc4.timestamp = temp_time;
-            memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(list[i].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
             LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv4)", i);
 
@@ -601,7 +601,7 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
         if ((ip_port.ip.family == AF_INET6) && ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
             /* Initialize client timestamp. */
             list[i].assoc6.timestamp = temp_time;
-            memcpy(list[i].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(list[i].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
             LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv6)", i);
 
@@ -653,16 +653,16 @@ static int friend_number(const DHT *dht, const uint8_t *public_key)
 bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
                  const uint8_t *cmp_pk)
 {
-    uint8_t pk_bak[crypto_box_PUBLICKEYBYTES];
+    uint8_t pk_bak[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port ip_port_bak;
 
     unsigned int i;
 
     for (i = 0; i < length; ++i) {
         if (id_closest(cmp_pk, nodes_list[i].public_key, pk) == 2) {
-            memcpy(pk_bak, nodes_list[i].public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(pk_bak, nodes_list[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
             ip_port_bak = nodes_list[i].ip_port;
-            memcpy(nodes_list[i].public_key, pk, crypto_box_PUBLICKEYBYTES);
+            memcpy(nodes_list[i].public_key, pk, CRYPTO_PUBLIC_KEY_SIZE);
             nodes_list[i].ip_port = ip_port;
 
             if (i != (length - 1)) {
@@ -742,7 +742,7 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
         if (num_nodes < MAX_SENT_NODES) {
             memcpy(nodes_list[num_nodes].public_key,
                    client->public_key,
-                   crypto_box_PUBLICKEYBYTES);
+                   CRYPTO_PUBLIC_KEY_SIZE);
 
             nodes_list[num_nodes].ip_port = ipptp->ip_port;
             num_nodes++;
@@ -796,7 +796,7 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
     return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family, is_LAN, want_good);
 }
 
-static uint8_t cmp_public_key[crypto_box_PUBLICKEYBYTES];
+static uint8_t cmp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
 static int cmp_dht_entry(const void *a, const void *b)
 {
     Client_data entry1, entry2;
@@ -862,7 +862,7 @@ static unsigned int store_node_ok(const Client_data *client, const uint8_t *publ
 
 static void sort_client_list(Client_data *list, unsigned int length, const uint8_t *comp_public_key)
 {
-    memcpy(cmp_public_key, comp_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(cmp_public_key, comp_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     qsort(list, length, sizeof(Client_data), cmp_dht_entry);
 }
 
@@ -1018,7 +1018,7 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
 
     if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)) {
         if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
-            memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
             dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
             ++dht->num_to_bootstrap;
         } else {
@@ -1045,7 +1045,7 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
         if (store_ok && !client_in_nodelist(dht_friend->to_bootstrap, dht_friend->num_to_bootstrap, public_key)
                 && !is_pk_in_client_list(dht_friend->client_list, MAX_FRIEND_CLIENTS, public_key, ip_port)) {
             if (dht_friend->num_to_bootstrap < MAX_SENT_NODES) {
-                memcpy(dht_friend->to_bootstrap[dht_friend->num_to_bootstrap].public_key, public_key, crypto_box_PUBLICKEYBYTES);
+                memcpy(dht_friend->to_bootstrap[dht_friend->num_to_bootstrap].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
                 dht_friend->to_bootstrap[dht_friend->num_to_bootstrap].ip_port = ip_port;
                 ++dht_friend->num_to_bootstrap;
             } else {
@@ -1195,7 +1195,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     uint8_t plain_message[sizeof(Node_format) * 2] = {0};
 
     Node_format receiver;
-    memcpy(receiver.public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(receiver.public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     receiver.ip_port = ip_port;
     memcpy(plain_message, &receiver, sizeof(receiver));
 
@@ -1212,13 +1212,13 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
         return -1;
     }
 
-    uint8_t plain[crypto_box_PUBLICKEYBYTES + sizeof(ping_id)];
-    uint8_t data[1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + sizeof(plain) + crypto_box_MACBYTES];
+    uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + sizeof(ping_id)];
+    uint8_t data[1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + sizeof(plain) + CRYPTO_MAC_SIZE];
 
-    memcpy(plain, client_id, crypto_box_PUBLICKEYBYTES);
-    memcpy(plain + crypto_box_PUBLICKEYBYTES, &ping_id, sizeof(ping_id));
+    memcpy(plain, client_id, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(plain + CRYPTO_PUBLIC_KEY_SIZE, &ping_id, sizeof(ping_id));
 
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     DHT_get_shared_key_sent(dht, shared_key, public_key);
 
     int len = DHT_create_packet(dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
@@ -1264,8 +1264,8 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     plain[0] = num_nodes;
     memcpy(plain + 1 + nodes_length, sendback_data, length);
 
-    uint8_t data[1 + nodes_length + length + 1 + crypto_box_PUBLICKEYBYTES
-                 + crypto_box_NONCEBYTES + crypto_box_MACBYTES];
+    uint8_t data[1 + nodes_length + length + 1 + CRYPTO_PUBLIC_KEY_SIZE
+                 + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE];
 
     int len = DHT_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
                                 plain, 1 + nodes_length + length, data);
@@ -1279,8 +1279,8 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
 
 static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    if (length != (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + sizeof(
-                       uint64_t) + crypto_box_MACBYTES)) {
+    if (length != (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + sizeof(
+                       uint64_t) + CRYPTO_MAC_SIZE)) {
         return 1;
     }
 
@@ -1291,21 +1291,21 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
         return 1;
     }
 
-    uint8_t plain[crypto_box_PUBLICKEYBYTES + sizeof(uint64_t)];
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)];
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric(shared_key,
-                                     packet + 1 + crypto_box_PUBLICKEYBYTES,
-                                     packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
-                                     crypto_box_PUBLICKEYBYTES + sizeof(uint64_t) + crypto_box_MACBYTES,
+                                     packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                                     packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
+                                     CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t) + CRYPTO_MAC_SIZE,
                                      plain);
 
-    if (len != crypto_box_PUBLICKEYBYTES + sizeof(uint64_t)) {
+    if (len != CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)) {
         return 1;
     }
 
-    sendnodes_ipv6(dht, source, packet + 1, plain, plain + crypto_box_PUBLICKEYBYTES, sizeof(uint64_t), shared_key);
+    sendnodes_ipv6(dht, source, packet + 1, plain, plain + CRYPTO_PUBLIC_KEY_SIZE, sizeof(uint64_t), shared_key);
 
     add_to_ping(dht->ping, packet + 1, source);
 
@@ -1344,7 +1344,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
                                  Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
 {
     DHT *dht = (DHT *)object;
-    uint32_t cid_size = 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + 1 + sizeof(uint64_t) + crypto_box_MACBYTES;
+    uint32_t cid_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + 1 + sizeof(uint64_t) + CRYPTO_MAC_SIZE;
 
     if (length < cid_size) { /* too short */
         return 1;
@@ -1361,13 +1361,13 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     }
 
     uint8_t plain[1 + data_size + sizeof(uint64_t)];
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     DHT_get_shared_key_sent(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric(
                   shared_key,
-                  packet + 1 + crypto_box_PUBLICKEYBYTES,
-                  packet + 1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES,
-                  1 + data_size + sizeof(uint64_t) + crypto_box_MACBYTES,
+                  packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                  packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
+                  1 + data_size + sizeof(uint64_t) + CRYPTO_MAC_SIZE,
                   plain);
 
     if ((unsigned int)len != sizeof(plain)) {
@@ -1477,7 +1477,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
     dht->friends_list = temp;
     DHT_Friend *dht_friend = &dht->friends_list[dht->num_friends];
     memset(dht_friend, 0, sizeof(DHT_Friend));
-    memcpy(dht_friend->public_key, public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(dht_friend->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     dht_friend->nat.NATping_id = random_64b();
     ++dht->num_friends;
@@ -2216,10 +2216,10 @@ static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8
 /* Send a get node hardening request */
 static int send_hardening_getnode_req(DHT *dht, Node_format *dest, Node_format *node_totest, uint8_t *search_id)
 {
-    uint8_t data[sizeof(Node_format) + crypto_box_PUBLICKEYBYTES];
+    uint8_t data[sizeof(Node_format) + CRYPTO_PUBLIC_KEY_SIZE];
     memcpy(data, node_totest, sizeof(Node_format));
-    memcpy(data + sizeof(Node_format), search_id, crypto_box_PUBLICKEYBYTES);
-    return send_hardening_req(dht, dest, CHECK_TYPE_GETNODE_REQ, data, sizeof(Node_format) + crypto_box_PUBLICKEYBYTES);
+    memcpy(data + sizeof(Node_format), search_id, CRYPTO_PUBLIC_KEY_SIZE);
+    return send_hardening_req(dht, dest, CHECK_TYPE_GETNODE_REQ, data, sizeof(Node_format) + CRYPTO_PUBLIC_KEY_SIZE);
 }
 #endif
 
@@ -2232,10 +2232,10 @@ static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto,
     }
 
     uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
-    uint8_t data[1 + crypto_box_PUBLICKEYBYTES + nodes_data_length];
+    uint8_t data[1 + CRYPTO_PUBLIC_KEY_SIZE + nodes_data_length];
     data[0] = CHECK_TYPE_GETNODE_RES;
-    memcpy(data + 1, queried_client_id, crypto_box_PUBLICKEYBYTES);
-    memcpy(data + 1 + crypto_box_PUBLICKEYBYTES, nodes_data, nodes_data_length);
+    memcpy(data + 1, queried_client_id, CRYPTO_PUBLIC_KEY_SIZE);
+    memcpy(data + 1 + CRYPTO_PUBLIC_KEY_SIZE, nodes_data, nodes_data_length);
     int len = create_request(dht->self_public_key, dht->self_secret_key, packet, sendto->public_key, data,
                              sizeof(data), CRYPTO_PACKET_HARDENING);
 
@@ -2317,7 +2317,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
 
             Node_format node, tocheck_node;
             node.ip_port = source;
-            memcpy(node.public_key, source_pubkey, crypto_box_PUBLICKEYBYTES);
+            memcpy(node.public_key, source_pubkey, CRYPTO_PUBLIC_KEY_SIZE);
             memcpy(&tocheck_node, packet + 1, sizeof(Node_format));
 
             if (getnodes(dht, tocheck_node.ip_port, tocheck_node.public_key, packet + 1 + sizeof(Node_format), &node) == -1) {
@@ -2328,17 +2328,17 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
         }
 
         case CHECK_TYPE_GETNODE_RES: {
-            if (length <= crypto_box_PUBLICKEYBYTES + 1) {
+            if (length <= CRYPTO_PUBLIC_KEY_SIZE + 1) {
                 return 1;
             }
 
-            if (length > 1 + crypto_box_PUBLICKEYBYTES + sizeof(Node_format) * MAX_SENT_NODES) {
+            if (length > 1 + CRYPTO_PUBLIC_KEY_SIZE + sizeof(Node_format) * MAX_SENT_NODES) {
                 return 1;
             }
 
-            uint16_t length_nodes = length - 1 - crypto_box_PUBLICKEYBYTES;
+            uint16_t length_nodes = length - 1 - CRYPTO_PUBLIC_KEY_SIZE;
             Node_format nodes[MAX_SENT_NODES];
-            int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, packet + 1 + crypto_box_PUBLICKEYBYTES, length_nodes, 0);
+            int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, 0, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, length_nodes, 0);
 
             /* TODO(irungentoo): MAX_SENT_NODES nodes should be returned at all times
              (right now we have a small network size so it could cause problems for testing and etc..) */
@@ -2380,10 +2380,10 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
  */
 static Node_format random_node(DHT *dht, sa_family_t sa_family)
 {
-    uint8_t id[crypto_box_PUBLICKEYBYTES];
+    uint8_t id[CRYPTO_PUBLIC_KEY_SIZE];
     uint32_t i;
 
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES / 4; ++i) { /* populate the id with pseudorandom bytes.*/
+    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE / 4; ++i) { /* populate the id with pseudorandom bytes.*/
         uint32_t t = rand();
         memcpy(id + i * sizeof(t), &t, sizeof(t));
     }
@@ -2430,7 +2430,7 @@ static uint16_t list_nodes(Client_data *list, unsigned int length, Node_format *
         }
 
         if (assoc != NULL) {
-            memcpy(nodes[count].public_key, list[i - 1].public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(nodes[count].public_key, list[i - 1].public_key, CRYPTO_PUBLIC_KEY_SIZE);
             nodes[count].ip_port = assoc->ip_port;
             ++count;
 
@@ -2513,11 +2513,11 @@ static void do_hardening(DHT *dht)
 
                 Node_format to_test;
                 to_test.ip_port = cur_iptspng->ip_port;
-                memcpy(to_test.public_key, public_key, crypto_box_PUBLICKEYBYTES);
+                memcpy(to_test.public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
                 // TODO(irungentoo): The search id should maybe not be ours?
                 if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->self_public_key) > 0) {
-                    memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.public_key, crypto_box_PUBLICKEYBYTES);
+                    memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.public_key, CRYPTO_PUBLIC_KEY_SIZE);
                     cur_iptspng->hardening.send_nodes_timestamp = unix_time();
                 }
             }
@@ -2545,13 +2545,13 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
     DHT *dht = (DHT *)object;
 
     if (packet[0] == NET_PACKET_CRYPTO) {
-        if (length <= crypto_box_PUBLICKEYBYTES * 2 + crypto_box_NONCEBYTES + 1 + crypto_box_MACBYTES ||
-                length > MAX_CRYPTO_REQUEST_SIZE + crypto_box_MACBYTES) {
+        if (length <= CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 + CRYPTO_MAC_SIZE ||
+                length > MAX_CRYPTO_REQUEST_SIZE + CRYPTO_MAC_SIZE) {
             return 1;
         }
 
         if (public_key_cmp(packet + 1, dht->self_public_key) == 0) { // Check if request is for us.
-            uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+            uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
             uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
             uint8_t number;
             int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
@@ -2615,15 +2615,15 @@ DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled)
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
 
     new_symmetric_key(dht->secret_symmetric_key);
-    crypto_box_keypair(dht->self_public_key, dht->self_secret_key);
+    crypto_new_keypair(dht->self_public_key, dht->self_secret_key);
 
     ping_array_init(&dht->dht_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
     ping_array_init(&dht->dht_harden_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
     uint32_t i;
 
     for (i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
-        uint8_t random_key_bytes[crypto_box_PUBLICKEYBYTES];
-        randombytes(random_key_bytes, sizeof(random_key_bytes));
+        uint8_t random_key_bytes[CRYPTO_PUBLIC_KEY_SIZE];
+        random_bytes(random_key_bytes, sizeof(random_key_bytes));
 
         if (DHT_addfriend(dht, random_key_bytes, 0, 0, 0, 0) != 0) {
             kill_DHT(dht);
@@ -2730,13 +2730,13 @@ void DHT_save(DHT *dht, uint8_t *data)
 
     for (num = 0, i = 0; i < LCLIENT_LIST; ++i) {
         if (dht->close_clientlist[i].assoc4.timestamp != 0) {
-            memcpy(clients[num].public_key, dht->close_clientlist[i].public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(clients[num].public_key, dht->close_clientlist[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
             clients[num].ip_port = dht->close_clientlist[i].assoc4.ip_port;
             ++num;
         }
 
         if (dht->close_clientlist[i].assoc6.timestamp != 0) {
-            memcpy(clients[num].public_key, dht->close_clientlist[i].public_key, crypto_box_PUBLICKEYBYTES);
+            memcpy(clients[num].public_key, dht->close_clientlist[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
             clients[num].ip_port = dht->close_clientlist[i].assoc6.ip_port;
             ++num;
         }
@@ -2747,13 +2747,13 @@ void DHT_save(DHT *dht, uint8_t *data)
 
         for (j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
             if (fr->client_list[j].assoc4.timestamp != 0) {
-                memcpy(clients[num].public_key, fr->client_list[j].public_key, crypto_box_PUBLICKEYBYTES);
+                memcpy(clients[num].public_key, fr->client_list[j].public_key, CRYPTO_PUBLIC_KEY_SIZE);
                 clients[num].ip_port = fr->client_list[j].assoc4.ip_port;
                 ++num;
             }
 
             if (fr->client_list[j].assoc6.timestamp != 0) {
-                memcpy(clients[num].public_key, fr->client_list[j].public_key, crypto_box_PUBLICKEYBYTES);
+                memcpy(clients[num].public_key, fr->client_list[j].public_key, CRYPTO_PUBLIC_KEY_SIZE);
                 clients[num].ip_port = fr->client_list[j].assoc6.ip_port;
                 ++num;
             }

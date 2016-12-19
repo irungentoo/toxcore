@@ -111,17 +111,17 @@ typedef struct {
     uint8_t     routes_requests_ok;
     /* Time which we last checked this.*/
     uint64_t    routes_requests_timestamp;
-    uint8_t     routes_requests_pingedid[crypto_box_PUBLICKEYBYTES];
+    uint8_t     routes_requests_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
     /* Node sends correct send_node (true (1) or false/didn't check (0)) */
     uint8_t     send_nodes_ok;
     /* Time which we last checked this.*/
     uint64_t    send_nodes_timestamp;
-    uint8_t     send_nodes_pingedid[crypto_box_PUBLICKEYBYTES];
+    uint8_t     send_nodes_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
     /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
     uint8_t     testing_requests;
     /* Time which we last checked this.*/
     uint64_t    testing_timestamp;
-    uint8_t     testing_pingedid[crypto_box_PUBLICKEYBYTES];
+    uint8_t     testing_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
 } Hardening;
 
 typedef struct {
@@ -136,7 +136,7 @@ typedef struct {
 } IPPTsPng;
 
 typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
 } Client_data;
@@ -159,13 +159,13 @@ typedef struct {
 #define DHT_FRIEND_MAX_LOCKS 32
 
 typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port     ip_port;
 }
 Node_format;
 
 typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     Client_data client_list[MAX_FRIEND_CLIENTS];
 
     /* Time at which the last get_nodes request was sent. */
@@ -216,8 +216,8 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 #define KEYS_TIMEOUT 600
 typedef struct {
     struct {
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-        uint8_t shared_key[crypto_box_BEFORENMBYTES];
+        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
         uint32_t times_requested;
         uint8_t  stored; /* 0 if not, 1 if is */
         uint64_t time_last_requested;
@@ -245,10 +245,10 @@ typedef struct {
     uint32_t       close_bootstrap_times;
 
     /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[crypto_box_KEYBYTES];
+    uint8_t      secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     /* DHT keypair */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
 
     DHT_Friend    *friends_list;
     uint16_t       num_friends;
@@ -294,7 +294,7 @@ void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
 void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
 
 /* Add a new friend to the friends list.
- * public_key must be crypto_box_PUBLICKEYBYTES bytes long.
+ * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *
  * ip_callback is the callback of a function that will be called when the ip address
  * is found along with arguments data and number.
@@ -309,7 +309,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
                   void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
- * public_key must be crypto_box_PUBLICKEYBYTES bytes long.
+ * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *
  *  return 0 if success.
  *  return -1 if failure (public_key not in friends list).
@@ -317,7 +317,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
 int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
 
 /* Get ip of friend.
- *  public_key must be crypto_box_PUBLICKEYBYTES bytes long.
+ *  public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *

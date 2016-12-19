@@ -60,7 +60,7 @@ METHOD(array, Binary_encode, KeyPair)
     return 0;
 }
 
-#define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + crypto_box_PUBLICKEYBYTES)
+#define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE)
 METHOD(array, Binary_encode, NodeInfo)
 {
     CHECK_SIZE(args, 3);
@@ -85,7 +85,7 @@ METHOD(array, Binary_encode, NodeInfo)
     CHECK_TYPE(args.ptr[2], MSGPACK_OBJECT_BIN);
     msgpack_object_bin public_key = args.ptr[2].via.bin;
 
-    CHECK_SIZE(public_key, crypto_box_PUBLICKEYBYTES);
+    CHECK_SIZE(public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     IP_Port ipp;
     ipp.port = htons(port_number);
@@ -131,7 +131,7 @@ METHOD(array, Binary_encode, NodeInfo)
 
     Node_format node;
     node.ip_port = ipp;
-    memcpy(&node.public_key, public_key.ptr, crypto_box_PUBLICKEYBYTES);
+    memcpy(&node.public_key, public_key.ptr, CRYPTO_PUBLIC_KEY_SIZE);
 
     /* We assume IP6 because it's bigger */
     uint8_t packed_node[PACKED_NODE_SIZE_IP6];

@@ -28,7 +28,7 @@
 
 #include "util.h"
 
-#include "crypto_core.h" /* for crypto_box_PUBLICKEYBYTES */
+#include "crypto_core.h" /* for CRYPTO_PUBLIC_KEY_SIZE */
 
 #include <time.h>
 
@@ -65,8 +65,8 @@ bool id_equal(const uint8_t *dest, const uint8_t *src)
 
 uint32_t id_copy(uint8_t *dest, const uint8_t *src)
 {
-    memcpy(dest, src, crypto_box_PUBLICKEYBYTES);
-    return crypto_box_PUBLICKEYBYTES;
+    memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
+    return CRYPTO_PUBLIC_KEY_SIZE;
 }
 
 void host_to_net(uint8_t *num, uint16_t numbytes)

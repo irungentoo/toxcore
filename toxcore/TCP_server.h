@@ -41,9 +41,9 @@
 
 #define MAX_PACKET_SIZE 2048
 
-#define TCP_HANDSHAKE_PLAIN_SIZE (crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES)
-#define TCP_SERVER_HANDSHAKE_SIZE (crypto_box_NONCEBYTES + TCP_HANDSHAKE_PLAIN_SIZE + crypto_box_MACBYTES)
-#define TCP_CLIENT_HANDSHAKE_SIZE (crypto_box_PUBLICKEYBYTES + TCP_SERVER_HANDSHAKE_SIZE)
+#define TCP_HANDSHAKE_PLAIN_SIZE (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE)
+#define TCP_SERVER_HANDSHAKE_SIZE (CRYPTO_NONCE_SIZE + TCP_HANDSHAKE_PLAIN_SIZE + CRYPTO_MAC_SIZE)
+#define TCP_CLIENT_HANDSHAKE_SIZE (CRYPTO_PUBLIC_KEY_SIZE + TCP_SERVER_HANDSHAKE_SIZE)
 #define TCP_MAX_OOB_DATA_LENGTH 1024
 
 #define NUM_RESERVED_PORTS 16
@@ -90,13 +90,13 @@ struct TCP_Priority_List {
 
 typedef struct TCP_Secure_Connection {
     sock_t  sock;
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES];
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
+    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     uint16_t next_packet_length;
     struct {
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
+        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
         uint32_t index;
         uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
         uint8_t other_id;

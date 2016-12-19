@@ -37,28 +37,28 @@ typedef struct Messenger Tox;
 
 #define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
 
-#if TOX_HASH_LENGTH != crypto_hash_sha256_BYTES
-#error TOX_HASH_LENGTH is assumed to be equal to crypto_hash_sha256_BYTES
+#if TOX_HASH_LENGTH != CRYPTO_SHA256_SIZE
+#error TOX_HASH_LENGTH is assumed to be equal to CRYPTO_SHA256_SIZE
 #endif
 
-#if FILE_ID_LENGTH != crypto_box_KEYBYTES
-#error FILE_ID_LENGTH is assumed to be equal to crypto_box_KEYBYTES
+#if FILE_ID_LENGTH != CRYPTO_SYMMETRIC_KEY_SIZE
+#error FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE
 #endif
 
-#if TOX_FILE_ID_LENGTH != crypto_box_KEYBYTES
-#error TOX_FILE_ID_LENGTH is assumed to be equal to crypto_box_KEYBYTES
+#if TOX_FILE_ID_LENGTH != CRYPTO_SYMMETRIC_KEY_SIZE
+#error TOX_FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE
 #endif
 
 #if TOX_FILE_ID_LENGTH != TOX_HASH_LENGTH
 #error TOX_FILE_ID_LENGTH is assumed to be equal to TOX_HASH_LENGTH
 #endif
 
-#if TOX_PUBLIC_KEY_SIZE != crypto_box_PUBLICKEYBYTES
-#error TOX_PUBLIC_KEY_SIZE is assumed to be equal to crypto_box_PUBLICKEYBYTES
+#if TOX_PUBLIC_KEY_SIZE != CRYPTO_PUBLIC_KEY_SIZE
+#error TOX_PUBLIC_KEY_SIZE is assumed to be equal to CRYPTO_PUBLIC_KEY_SIZE
 #endif
 
-#if TOX_SECRET_KEY_SIZE != crypto_box_SECRETKEYBYTES
-#error TOX_SECRET_KEY_SIZE is assumed to be equal to crypto_box_SECRETKEYBYTES
+#if TOX_SECRET_KEY_SIZE != CRYPTO_SECRET_KEY_SIZE
+#error TOX_SECRET_KEY_SIZE is assumed to be equal to CRYPTO_SECRET_KEY_SIZE
 #endif
 
 #if TOX_MAX_NAME_LENGTH != MAX_NAME_LENGTH
@@ -206,7 +206,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 return NULL;
             }
 
-            if (sodium_memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
+            if (crypto_memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
                 return NULL;
             }
@@ -495,7 +495,7 @@ void tox_self_get_public_key(const Tox *tox, uint8_t *public_key)
     const Messenger *m = tox;
 
     if (public_key) {
-        memcpy(public_key, m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(public_key, m->net_crypto->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     }
 }
 
@@ -504,7 +504,7 @@ void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key)
     const Messenger *m = tox;
 
     if (secret_key) {
-        memcpy(secret_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
+        memcpy(secret_key, m->net_crypto->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
     }
 }
 
@@ -972,7 +972,7 @@ bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
         return 0;
     }
 
-    crypto_hash_sha256(hash, data, length);
+    crypto_sha256(hash, data, length);
     return 1;
 }
 
@@ -1645,7 +1645,7 @@ void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
 {
     if (dht_id) {
         const Messenger *m = tox;
-        memcpy(dht_id , m->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(dht_id , m->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     }
 }
 

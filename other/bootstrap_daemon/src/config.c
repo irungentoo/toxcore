@@ -392,7 +392,7 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
         }
 
         // Process settings
-        if (strlen(bs_public_key) != crypto_box_PUBLICKEYBYTES * 2) {
+        if (strlen(bs_public_key) != CRYPTO_PUBLIC_KEY_SIZE * 2) {
             write_log(LOG_LEVEL_WARNING, "Bootstrap node #%d: Invalid '%s': %s. Skipping the node.\n", i, NAME_PUBLIC_KEY,
                       bs_public_key);
             goto next;

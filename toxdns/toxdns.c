@@ -50,10 +50,10 @@ static const char base32[32] = {
 }
 
 typedef struct {
-    uint8_t temp_pk[crypto_box_PUBLICKEYBYTES];
-    uint8_t temp_sk[crypto_box_SECRETKEYBYTES];
-    uint8_t server_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t shared_key[crypto_box_KEYBYTES];
+    uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t temp_sk[CRYPTO_SECRET_KEY_SIZE];
+    uint8_t server_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t shared_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     uint32_t nonce;
     uint32_t nonce_start;
 } DNS_Object;
@@ -61,7 +61,7 @@ typedef struct {
 static void dns_new_temp_keys(DNS_Object *d)
 {
     d->nonce = d->nonce_start = random_int();
-    crypto_box_keypair(d->temp_pk, d->temp_sk);
+    crypto_new_keypair(d->temp_pk, d->temp_sk);
     encrypt_precompute(d->server_public_key, d->temp_sk, d->shared_key);
 }
 
@@ -78,7 +78,7 @@ void *tox_dns3_new(uint8_t *server_public_key)
         return NULL;
     }
 
-    memcpy(d->server_public_key, server_public_key, crypto_box_PUBLICKEYBYTES);
+    memcpy(d->server_public_key, server_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     dns_new_temp_keys(d);
     return d;
 }
@@ -107,7 +107,7 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
                              uint8_t *name, uint8_t name_len)
 {
 #define DOT_INTERVAL (6 * 5)
-    int base = (sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES + name_len + crypto_box_MACBYTES);
+    int base = (sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE + name_len + CRYPTO_MAC_SIZE);
     int end_len = ((base * 8) / 5) + (base / DOT_INTERVAL) + !!(base % 5);
     end_len -= !(base % DOT_INTERVAL);
 
@@ -117,18 +117,18 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
 
     DNS_Object *d = (DNS_Object *)dns3_object;
     uint8_t buffer[1024];
-    uint8_t nonce[crypto_box_NONCEBYTES] = {0};
+    uint8_t nonce[CRYPTO_NONCE_SIZE] = {0};
     memcpy(nonce, &d->nonce, sizeof(uint32_t));
     memcpy(buffer, &d->nonce, sizeof(uint32_t));
-    memcpy(buffer + sizeof(uint32_t), d->temp_pk, crypto_box_PUBLICKEYBYTES);
+    memcpy(buffer + sizeof(uint32_t), d->temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
     int len = encrypt_data_symmetric(d->shared_key, nonce, name, name_len,
-                                     buffer + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES);
+                                     buffer + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (len == -1) {
         return -1;
     }
 
-    int total_len = len + sizeof(uint32_t) + crypto_box_PUBLICKEYBYTES;
+    int total_len = len + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE;
     uint8_t *buff = buffer, *old_str = string;
     buffer[total_len] = 0;
     uint8_t bits = 0;
@@ -212,8 +212,13 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
         return -1;
     }
 
-    /*if (id_record_len > 255 || id_record_len <= (sizeof(uint32_t) + crypto_box_MACBYTES))
-        return -1;*/
+#if 0
+
+    if (id_record_len > 255 || id_record_len <= (sizeof(uint32_t) + CRYPTO_MAC_SIZE)) {
+        return -1;
+    }
+
+#endif
 
     uint8_t id_record_null[id_record_len + 1];
     memcpy(id_record_null, id_record, id_record_len);
@@ -225,7 +230,7 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
         return -1;
     }
 
-    uint8_t nonce[crypto_box_NONCEBYTES] = {0};
+    uint8_t nonce[CRYPTO_NONCE_SIZE] = {0};
     memcpy(nonce, &request_id, sizeof(uint32_t));
     nonce[sizeof(uint32_t)] = 1;
     int len = decrypt_data_symmetric(d->shared_key, nonce, data, length, tox_id);

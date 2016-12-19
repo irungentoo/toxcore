@@ -25,27 +25,75 @@
 
 #include "network.h"
 
-#ifndef VANILLA_NACL
-/* We use libsodium by default. */
-#include <sodium.h>
-#else
-#include <crypto_box.h>
-#include <crypto_hash_sha256.h>
-#include <crypto_hash_sha512.h>
-#include <crypto_scalarmult_curve25519.h>
-#include <crypto_verify_16.h>
-#include <crypto_verify_32.h>
-#include <randombytes.h>
-#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
-/* I know */
-#define sodium_memcmp(a, b, c) memcmp(a, b, c)
-#define sodium_memzero(a, c) memset(a, 0, c)
-#endif
+/**
+ * The number of bytes in a Tox public key.
+ */
+#define CRYPTO_PUBLIC_KEY_SIZE         32
 
-#define crypto_box_KEYBYTES (crypto_box_BEFORENMBYTES)
+uint32_t crypto_public_key_size(void);
 
 /**
- * compare 2 public keys of length crypto_box_PUBLICKEYBYTES, not vulnerable to timing attacks.
+ * The number of bytes in a Tox secret key.
+ */
+#define CRYPTO_SECRET_KEY_SIZE         32
+
+uint32_t crypto_secret_key_size(void);
+
+/**
+ * The number of bytes in a shared key computed from public and secret key.
+ */
+#define CRYPTO_SHARED_KEY_SIZE         32
+
+uint32_t crypto_shared_key_size(void);
+
+/**
+ * The number of bytes in a random symmetric key.
+ */
+#define CRYPTO_SYMMETRIC_KEY_SIZE      CRYPTO_SHARED_KEY_SIZE
+
+uint32_t crypto_symmetric_key_size(void);
+
+/**
+ * The number of bytes needed for the MAC (message authentication code) in an
+ * encrypted message.
+ */
+#define CRYPTO_MAC_SIZE                16
+
+uint32_t crypto_mac_size(void);
+
+/**
+ * The number of bytes in a nonce used for encryption/decryption.
+ */
+#define CRYPTO_NONCE_SIZE              24
+
+uint32_t crypto_nonce_size(void);
+
+/**
+ * The number of bytes in a SHA256 hash.
+ */
+#define CRYPTO_SHA256_SIZE             32
+
+uint32_t crypto_sha256_size(void);
+
+/**
+ * The number of bytes in a SHA512 hash.
+ */
+#define CRYPTO_SHA512_SIZE             64
+
+uint32_t crypto_sha512_size(void);
+
+int32_t crypto_memcmp(const void *p1, const void *p2, size_t length);
+
+void crypto_memzero(void *data, size_t length);
+
+void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length);
+
+void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length);
+
+void crypto_derive_public_key(uint8_t *public_key, uint8_t *secret_key);
+
+/**
+ * compare 2 public keys of length CRYPTO_PUBLIC_KEY_SIZE, not vulnerable to timing attacks.
  * returns 0 if both mem locations of length are equal,
  * return -1 if they are not.
  */
@@ -62,13 +110,15 @@ uint32_t random_int(void);
 uint64_t random_64b(void);
 
 /**
- * Check if a Tox public key crypto_box_PUBLICKEYBYTES is valid or not.
+ * Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not.
  * This should only be used for input validation.
  *
  * return 0 if it isn't.
  * return 1 if it is.
  */
 int32_t public_key_valid(const uint8_t *public_key);
+
+int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key);
 
 /**
  * Encrypts plain of length length to encrypted of length + 16 using the
@@ -99,7 +149,7 @@ int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
 
 /**
  * Encrypts plain of length length to encrypted of length + 16 using a
- * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
+ * secret key CRYPTO_SYMMETRIC_KEY_SIZE big and a 24 byte nonce.
  *
  *  return -1 if there was a problem.
  *  return length of encrypted data if everything was fine.
@@ -109,7 +159,7 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce, 
 
 /**
  * Decrypts encrypted of length length to plain of length length - 16 using a
- * secret key crypto_box_KEYBYTES big and a 24 byte nonce.
+ * secret key CRYPTO_SYMMETRIC_KEY_SIZE big and a 24 byte nonce.
  *
  *  return -1 if there was a problem (decryption failed).
  *  return length of plain data if everything was fine.
@@ -133,8 +183,14 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
 void random_nonce(uint8_t *nonce);
 
 /**
- * Fill a key crypto_box_KEYBYTES big with random bytes.
+ * Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
  */
 void new_symmetric_key(uint8_t *key);
 
+/**
+ * Fill an array of bytes with random values.
+ */
+void random_bytes(uint8_t *bytes, size_t length);
+
 #endif
+

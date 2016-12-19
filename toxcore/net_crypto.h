@@ -49,7 +49,7 @@
 /* Maximum total size of packets that net_crypto sends. */
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
-#define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + crypto_box_MACBYTES)
+#define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + CRYPTO_MAC_SIZE)
 
 /* Max size of data in packets */
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
@@ -102,20 +102,20 @@ typedef struct {
 } Packets_Array;
 
 typedef struct {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
-    uint8_t sessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* Our public key for this session. */
-    uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* Our private key for this session. */
-    uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES]; /* The precomputed shared key from encrypt_precompute. */
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The real public key of the peer. */
+    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
+    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
+    uint8_t sessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* Our public key for this session. */
+    uint8_t sessionsecret_key[CRYPTO_SECRET_KEY_SIZE]; /* Our private key for this session. */
+    uint8_t peersessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The public key of the peer. */
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE]; /* The precomputed shared key from encrypt_precompute. */
     uint8_t status; /* 0 if no connection, 1 we are sending cookie request packets,
                      * 2 if we are sending handshake packets
                      * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
                      * 4 if the connection is established.
                      */
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
+    uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer */
 
     uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
     uint16_t temp_packet_length;
@@ -182,10 +182,10 @@ typedef struct {
 
 typedef struct {
     IP_Port source;
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer. */
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The real public key of the peer. */
+    uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer. */
+    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
+    uint8_t peersessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The public key of the peer. */
     uint8_t *cookie;
     uint8_t cookie_length;
 } New_Connection;
@@ -205,11 +205,11 @@ typedef struct {
     uint32_t crypto_connections_length; /* Length of connections array. */
 
     /* Our public and secret keys. */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
 
     /* The secret key used for cookies */
-    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
+    uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
 
     int (*new_connection_callback)(void *object, New_Connection *n_c);
     void *new_connection_callback_object;
@@ -400,12 +400,12 @@ unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_
 void new_keys(Net_Crypto *c);
 
 /* Save the public and private keys to the keys array.
- *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
+ *  Length must be CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE.
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys);
 
 /* Load the secret key.
- * Length must be crypto_box_SECRETKEYBYTES.
+ * Length must be CRYPTO_SECRET_KEY_SIZE.
  */
 void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 

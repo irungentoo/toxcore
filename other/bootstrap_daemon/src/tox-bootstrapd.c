@@ -57,7 +57,7 @@
 
 static int manage_keys(DHT *dht, char *keys_file_path)
 {
-    enum { KEYS_SIZE = crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES };
+    enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
     uint8_t keys[KEYS_SIZE];
     FILE *keys_file;
 
@@ -72,12 +72,12 @@ static int manage_keys(DHT *dht, char *keys_file_path)
             return 0;
         }
 
-        memcpy(dht->self_public_key, keys, crypto_box_PUBLICKEYBYTES);
-        memcpy(dht->self_secret_key, keys + crypto_box_PUBLICKEYBYTES, crypto_box_SECRETKEYBYTES);
+        memcpy(dht->self_public_key, keys, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(dht->self_secret_key, keys + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_SECRET_KEY_SIZE);
     } else {
         // Otherwise save new keys
-        memcpy(keys, dht->self_public_key, crypto_box_PUBLICKEYBYTES);
-        memcpy(keys + crypto_box_PUBLICKEYBYTES, dht->self_secret_key, crypto_box_SECRETKEYBYTES);
+        memcpy(keys, dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
 
         keys_file = fopen(keys_file_path, "w");
 
@@ -102,12 +102,12 @@ static int manage_keys(DHT *dht, char *keys_file_path)
 
 static void print_public_key(const uint8_t *public_key)
 {
-    char buffer[2 * crypto_box_PUBLICKEYBYTES + 1];
+    char buffer[2 * CRYPTO_PUBLIC_KEY_SIZE + 1];
     int index = 0;
 
     size_t i;
 
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
+    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
         index += sprintf(buffer + index, "%02hhX", public_key[i]);
     }
 

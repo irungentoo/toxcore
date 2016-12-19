@@ -53,7 +53,7 @@
 
 typedef struct {
     uint8_t status;
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer */
 
     struct {
         uint32_t tcp_connection;
@@ -74,7 +74,7 @@ typedef struct {
 
     /* Only used when connection is sleeping. */
     IP_Port ip_port;
-    uint8_t relay_pk[crypto_box_PUBLICKEYBYTES];
+    uint8_t relay_pk[CRYPTO_PUBLIC_KEY_SIZE];
     bool unsleep; /* set to 1 to unsleep connection. */
 } TCP_con;
 
