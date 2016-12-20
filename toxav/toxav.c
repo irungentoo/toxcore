@@ -188,6 +188,7 @@ void toxav_kill(ToxAV *av)
 
         while (it) {
             call_kill_transmission(it);
+            it->msi_call = NULL; /* msi_kill() frees the call's msi_call handle; which causes #278 */
             it = call_remove(it); /* This will eventually free av->calls */
         }
     }
