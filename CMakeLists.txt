@@ -204,7 +204,11 @@ apidsl(
   toxcore/crypto_core.api.h)
 add_module(toxcrypto
   toxcore/crypto_core.c
-  toxcore/crypto_core.h)
+  toxcore/crypto_core.h
+  toxcore/crypto_core_mem.c)
+include(CheckFunctionExists)
+check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
+check_function_exists(memset_s HAVE_MEMSET_S)
 target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
 if(WIN32)
   target_link_modules(toxcrypto ws2_32) # for htonl
