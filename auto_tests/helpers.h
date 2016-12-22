@@ -3,6 +3,7 @@
 
 #include "../toxcore/tox.h"
 
+#include <assert.h>
 #include <check.h>
 #include <stdio.h>
 
@@ -50,17 +51,18 @@ static void print_debug_log(Tox *m, TOX_LOG_LEVEL level, const char *path, uint3
 
 Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data)
 {
-    struct Tox_Options *my_options = tox_options_new(NULL);
+    struct Tox_Options *log_options = tox_options_new(NULL);
+    assert(log_options != NULL);
 
     if (options != NULL) {
-        tox_options_copy(my_options, options);
+        // TODO(iphydf): don't dereference Tox_Options pointers, as the type
+        // will become opaque soon.
+        *log_options = *options;
     }
 
-    tox_options_set_log_callback(my_options, &print_debug_log);
-    tox_options_set_log_user_data(my_options, log_user_data);
-    Tox *tox = tox_new(my_options, err);
-    tox_options_free(my_options);
-    return tox;
+    tox_options_set_log_callback(log_options, &print_debug_log);
+    tox_options_set_log_user_data(log_options, log_user_data);
+    return tox_new(log_options, err);
 }
 
 #endif // TOXCORE_TEST_HELPERS_H

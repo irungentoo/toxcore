@@ -598,12 +598,6 @@ static class options {
     MALLOC,
   }
 
-  /**
-   * Allocates a new $this object and initialises it with the values from the
-   * passed object.
-   */
-  void copy(const this rhs);
-
 
   /**
    * Releases all resources associated with an options objects.

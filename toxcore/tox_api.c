@@ -91,11 +91,6 @@ struct Tox_Options *tox_options_new(TOX_ERR_OPTIONS_NEW *error)
     return NULL;
 }
 
-void tox_options_copy(struct Tox_Options *lhs, const struct Tox_Options *rhs)
-{
-    *lhs = *rhs;
-}
-
 void tox_options_free(struct Tox_Options *options)
 {
     free(options);
