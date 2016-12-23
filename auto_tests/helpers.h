@@ -51,18 +51,23 @@ static void print_debug_log(Tox *m, TOX_LOG_LEVEL level, const char *path, uint3
 
 Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data)
 {
-    struct Tox_Options *log_options = tox_options_new(NULL);
-    assert(log_options != NULL);
+    struct Tox_Options *log_options = options;
 
-    if (options != NULL) {
-        // TODO(iphydf): don't dereference Tox_Options pointers, as the type
-        // will become opaque soon.
-        *log_options = *options;
+    if (log_options == NULL) {
+        log_options = tox_options_new(NULL);
     }
+
+    assert(log_options != NULL);
 
     tox_options_set_log_callback(log_options, &print_debug_log);
     tox_options_set_log_user_data(log_options, log_user_data);
-    return tox_new(log_options, err);
+    Tox *tox = tox_new(log_options, err);
+
+    if (options == NULL) {
+        tox_options_free(log_options);
+    }
+
+    return tox;
 }
 
 #endif // TOXCORE_TEST_HELPERS_H
