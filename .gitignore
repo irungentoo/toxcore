@@ -20,6 +20,7 @@ cmake_install.cmake
 install_manifest.txt
 tags
 Makefile.in
+CMakeLists.txt.user
 
 # Testing
 testing/data
