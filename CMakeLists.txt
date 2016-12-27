@@ -10,7 +10,7 @@ set(PROJECT_VERSION_PATCH "2")
 set(PROJECT_VERSION
   "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 
 ################################################################################
 #
@@ -389,8 +389,8 @@ option(FORMAT_TEST "Require the format_test to be executed; fail cmake if it can
 if(APIDSL AND ASTYLE)
   add_test(
     NAME format_test
-    COMMAND ${CMAKE_SOURCE_DIR}/other/astyle/format-source
-      "${CMAKE_SOURCE_DIR}"
+    COMMAND ${toxcore_SOURCE_DIR}/other/astyle/format-source
+      "${toxcore_SOURCE_DIR}"
       "${APIDSL}"
       "${ASTYLE}")
   set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
@@ -531,38 +531,38 @@ string(REPLACE ";" " " toxcore_PKGCONFIG_LIBS "${toxcore_PKGCONFIG_LIBS}")
 
 if(BUILD_TOXAV)
   configure_file(
-    "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
+    "${toxcore_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
     "${CMAKE_BINARY_DIR}/toxav.pc"
     @ONLY
   )
 endif()
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
   "${CMAKE_BINARY_DIR}/toxcore.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
   "${CMAKE_BINARY_DIR}/toxdns.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
   "${CMAKE_BINARY_DIR}/toxencryptsave.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
   "${CMAKE_BINARY_DIR}/libtoxcore.pc"
   @ONLY
 )
 
 configure_file(
-  "${CMAKE_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
+  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
   "${CMAKE_BINARY_DIR}/libtoxav.pc"
   @ONLY
 )
@@ -599,8 +599,8 @@ find_program(SH NAMES sh dash bash zsh)
 
 if(SH)
   execute_process(
-    COMMAND ${SH} ${CMAKE_SOURCE_DIR}/other/version-sync
-      ${CMAKE_SOURCE_DIR}
+    COMMAND ${SH} ${toxcore_SOURCE_DIR}/other/version-sync
+      ${toxcore_SOURCE_DIR}
       ${PROJECT_VERSION_MAJOR}
       ${PROJECT_VERSION_MINOR}
       ${PROJECT_VERSION_PATCH})
@@ -642,7 +642,7 @@ endif()
 
 if(STRICT_ABI AND SH)
   if(BUILD_TOXAV)
-    make_version_script(${CMAKE_SOURCE_DIR}/toxav/toxav.h toxav toxav)
+    make_version_script(${toxcore_SOURCE_DIR}/toxav/toxav.h toxav toxav)
   endif()
-  make_version_script(${CMAKE_SOURCE_DIR}/toxcore/tox.h tox toxcore)
+  make_version_script(${toxcore_SOURCE_DIR}/toxcore/tox.h tox toxcore)
 endif()
