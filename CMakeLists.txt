@@ -357,9 +357,7 @@ target_link_modules(toxencryptsave toxcore)
 #
 ################################################################################
 
-find_program(SPECTEST NAMES
-  tox-spectest
-  ${CMAKE_SOURCE_DIR}/../.cabal-sandbox/bin/tox-spectest)
+find_program(SPECTEST NAMES tox-spectest)
 
 if(SPECTEST AND MSGPACK_FOUND)
   add_c_executable(toxcore-sut
