@@ -12,7 +12,12 @@ git clone --depth=1 https://github.com/TokTok/apidsl ../apidsl
 make -C ../apidsl -j$NPROC
 
 # Install cpp-coveralls to upload test coverage results.
-pip install --user cpp-coveralls
+pip install --user urllib3[secure] cpp-coveralls
+
+# Work around https://github.com/eddyxu/cpp-coveralls/issues/108 by manually
+# installing the pyOpenSSL module and injecting it into urllib3 as per
+# https://urllib3.readthedocs.io/en/latest/user-guide.html#ssl-py2
+sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyopenssl.inject_into_urllib3()' `which coveralls`
 
 # Install astyle (version in ubuntu-precise too old).
 [ -f $ASTYLE ] || {
