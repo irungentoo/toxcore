@@ -119,11 +119,13 @@ sudo ldconfig
 
 ##### Compile toxcore
 
-Then clone this repo, run `cmake`, and install `toxcore` system-wide:
+Then clone this repo, generate makefile, and install `toxcore` system-wide:
+
 ```bash
 git clone https://github.com/TokTok/c-toxcore.git c-toxcore
 cd c-toxcore
-cmake .
+autoreconf -i
+./configure
 make
 sudo make install
 ```
@@ -461,7 +463,7 @@ cd ..
 
 You can also use a precompiled win32 binary of libsodium, however you will have to place the files in places where they can be found, i.e., dll's go to /bin headers to /include and libraries to /lib directories in your MinGW shell.
 
-Next, install toxcore library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/TokTok/toxcore/archive/master.zip) and extract it somewhere.
+Next, install toxcore library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/TokTok/c-toxcore/archive/master.zip) and extract it somewhere.
 
 Assuming that you now have the sources in the toxcore directory:
 
