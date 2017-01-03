@@ -36,7 +36,7 @@
 /* return 1 on success
  * return 0 on failure
  */
-static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
+static int connect_sock_to(Socket sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
 {
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
         ip_port = proxy_info->ip_port;
@@ -51,14 +51,14 @@ static int connect_sock_to(sock_t sock, IP_Port ip_port, TCP_Proxy_Info *proxy_i
 
         addrsize = sizeof(struct sockaddr_in);
         addr4->sin_family = AF_INET;
-        addr4->sin_addr = ip_port.ip.ip4.in_addr;
+        fill_addr4(ip_port.ip.ip4, &addr4->sin_addr);
         addr4->sin_port = ip_port.port;
     } else if (ip_port.ip.family == AF_INET6) {
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
 
         addrsize = sizeof(struct sockaddr_in6);
         addr6->sin6_family = AF_INET6;
-        addr6->sin6_addr = ip_port.ip.ip6.in6_addr;
+        fill_addr6(ip_port.ip.ip6, &addr6->sin6_addr);
         addr6->sin6_port = ip_port.port;
     } else {
         return 0;
@@ -653,7 +653,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         family = proxy_info->ip_port.ip.family;
     }
 
-    sock_t sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
+    Socket sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
 
     if (!sock_valid(sock)) {
         return NULL;

@@ -90,7 +90,7 @@ struct TCP_Priority_List {
 };
 
 typedef struct TCP_Secure_Connection {
-    sock_t  sock;
+    Socket sock;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
     uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
@@ -137,7 +137,7 @@ void kill_TCP_server(TCP_Server *TCP_server);
 /* return the amount of data in the tcp recv buffer.
  * return 0 on failure.
  */
-unsigned int TCP_socket_data_recv_buffer(sock_t sock);
+unsigned int TCP_socket_data_recv_buffer(Socket sock);
 
 /* Read the next two bytes in TCP stream then convert them to
  * length (host byte order).
@@ -146,20 +146,20 @@ unsigned int TCP_socket_data_recv_buffer(sock_t sock);
  * return 0 if nothing has been read from socket.
  * return ~0 on failure.
  */
-uint16_t read_TCP_length(sock_t sock);
+uint16_t read_TCP_length(Socket sock);
 
 /* Read length bytes from socket.
  *
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(sock_t sock, uint8_t *data, uint16_t length);
+int read_TCP_packet(Socket sock, uint8_t *data, uint16_t length);
 
 /* return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
-int read_packet_TCP_secure_connection(sock_t sock, uint16_t *next_packet_length, const uint8_t *shared_key,
+int read_packet_TCP_secure_connection(Socket sock, uint16_t *next_packet_length, const uint8_t *shared_key,
                                       uint8_t *recv_nonce, uint8_t *data, uint16_t max_len);
 
 

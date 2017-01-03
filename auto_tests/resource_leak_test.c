@@ -1,5 +1,9 @@
 #include "helpers.h"
 
+#if defined(__AIX__)
+#   define _XOPEN_SOURCE 1
+#endif
+
 // See man 2 sbrk.
 #if _BSD_SOURCE || _SVID_SOURCE || \
   (_XOPEN_SOURCE >= 500 || \

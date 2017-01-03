@@ -254,9 +254,11 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
         }
 
         if (info->ai_family == AF_INET) {
-            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
+            struct sockaddr_in *addr = (struct sockaddr_in *)info->ai_addr;
+            get_ip4(&ip_port.ip.ip4, &addr->sin_addr);
         } else if (info->ai_family == AF_INET6) {
-            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *)info->ai_addr;
+            get_ip6(&ip_port.ip.ip6, &addr->sin6_addr);
         } else {
             continue;
         }
@@ -312,9 +314,11 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
         }
 
         if (info->ai_family == AF_INET) {
-            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
+            struct sockaddr_in *addr = (struct sockaddr_in *)info->ai_addr;
+            get_ip4(&ip_port.ip.ip4, &addr->sin_addr);
         } else if (info->ai_family == AF_INET6) {
-            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *)info->ai_addr;
+            get_ip6(&ip_port.ip.ip6, &addr->sin6_addr);
         } else {
             continue;
         }

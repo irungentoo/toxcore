@@ -29,6 +29,7 @@
 #include "../toxcore/util.h"
 
 #include <assert.h>
+#include <errno.h>
 
 #define BWC_PACKET_ID 196
 #define BWC_SEND_INTERVAL_MS 1000

@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
     IP ip = {0};
     ip.family = AF_INET;
-    sock_t sock = socket(ip.family, SOCK_DGRAM, IPPROTO_UDP);
+    Socket sock = socket(ip.family, SOCK_DGRAM, IPPROTO_UDP);
 
     if (!sock_valid(sock)) {
         return -1;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 
     target.sin_family = AF_INET;
 
-    target.sin_addr = ip.ip4.in_addr;
+    fill_addr4(ip.ip4, &target.sin_addr);
 
     target.sin_port = htons(53);
 

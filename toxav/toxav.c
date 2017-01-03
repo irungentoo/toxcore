@@ -31,6 +31,7 @@
 #include "../toxcore/util.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 

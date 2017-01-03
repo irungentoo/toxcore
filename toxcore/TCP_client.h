@@ -52,7 +52,7 @@ enum {
 };
 typedef struct  {
     uint8_t status;
-    sock_t  sock;
+    Socket sock;
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* our public key */
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* public key of the server */
     IP_Port ip_port; /* The ip and port of the server */
