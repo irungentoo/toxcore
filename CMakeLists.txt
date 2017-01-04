@@ -596,11 +596,11 @@ endif()
 #
 ################################################################################
 
-find_program(SH NAMES sh dash bash zsh)
+find_program(SHELL NAMES sh dash bash zsh)
 
-if(SH)
+if(SHELL)
   execute_process(
-    COMMAND ${SH} ${toxcore_SOURCE_DIR}/other/version-sync
+    COMMAND ${SHELL} ${toxcore_SOURCE_DIR}/other/version-sync
       ${toxcore_SOURCE_DIR}
       ${PROJECT_VERSION_MAJOR}
       ${PROJECT_VERSION_MINOR}
@@ -615,7 +615,7 @@ endif()
 
 function(make_version_script header ns lib)
   execute_process(
-    COMMAND ${SH} -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '\\w+' | sort -u"
+    COMMAND ${SHELL} -c "egrep '^\\w' ${header} | grep '${ns}_[a-z0-9_]*(' | grep -v '^typedef' | grep -o '${ns}_[a-z0-9_]*(' | egrep -o '\\w+' | sort -u"
     OUTPUT_VARIABLE ${lib}_SYMS
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REPLACE "\n" ";" ${lib}_SYMS ${${lib}_SYMS})
@@ -641,7 +641,7 @@ if(WIN32 OR APPLE)
   set(STRICT_ABI OFF)
 endif()
 
-if(STRICT_ABI AND SH)
+if(STRICT_ABI AND SHELL AND ENABLE_SHARED)
   if(BUILD_TOXAV)
     make_version_script(${toxcore_SOURCE_DIR}/toxav/toxav.h toxav toxav)
   endif()

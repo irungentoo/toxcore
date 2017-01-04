@@ -2,6 +2,14 @@ option(ENABLE_SHARED "Build shared (dynamic) libraries for all modules" ON)
 option(ENABLE_STATIC "Build static libraries for all modules" ON)
 option(COMPILE_AS_CXX "Compile all C code as C++ code" OFF)
 
+if(NOT ENABLE_SHARED AND NOT ENABLE_STATIC)
+  message(WARNING
+    "Both static and shared libraries are disabled; "
+    "enabling only shared libraries. Use -DENABLE_SHARED or -DENABLE_STATIC to "
+    "select one manually.")
+  set(ENABLE_SHARED ON)
+endif()
+
 find_package(PkgConfig REQUIRED)
 
 if(COMPILE_AS_CXX)
