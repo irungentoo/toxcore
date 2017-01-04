@@ -116,13 +116,11 @@ void lendian_to_host32(uint32_t *dest, const uint8_t *lendian)
 }
 
 /* state load/save */
-int load_state(load_state_callback_func load_state_callback, void *outer,
+int load_state(load_state_callback_func load_state_callback, Logger *log, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (!load_state_callback || !data) {
-#ifdef TOX_DEBUG
-        fprintf(stderr, "load_state() called with invalid args.\n");
-#endif
+        LOGGER_ERROR(log, "load_state() called with invalid args.\n");
         return -1;
     }
 
@@ -139,17 +137,13 @@ int load_state(load_state_callback_func load_state_callback, void *outer,
 
         if (length < length_sub) {
             /* file truncated */
-#ifdef TOX_DEBUG
-            fprintf(stderr, "state file too short: %u < %u\n", length, length_sub);
-#endif
+            LOGGER_ERROR(log, "state file too short: %u < %u\n", length, length_sub);
             return -1;
         }
 
         if (lendian_to_host16((cookie_type >> 16)) != cookie_inner) {
             /* something is not matching up in a bad way, give up */
-#ifdef DEBUG
-            fprintf(stderr, "state file garbled: %04x != %04x\n", (cookie_type >> 16), cookie_inner);
-#endif
+            LOGGER_ERROR(log, "state file garbled: %04x != %04x\n", (cookie_type >> 16), cookie_inner);
             return -1;
         }
 

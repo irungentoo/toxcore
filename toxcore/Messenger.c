@@ -31,9 +31,7 @@
 #include "network.h"
 #include "util.h"
 
-#ifdef TOX_DEBUG
 #include <assert.h>
-#endif
 
 
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata);
@@ -1339,9 +1337,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         return -3;
     }
 
-#ifdef TOX_DEBUG
     assert(temp_filenum <= UINT8_MAX);
-#endif
     uint8_t file_number = temp_filenum;
 
     // We're always receiving at this point.
@@ -2785,20 +2781,16 @@ static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
             }
 
             uint8_t *next_data = friend_save(&temp, cur_data);
-#ifdef TOX_DEBUG
             assert(next_data - cur_data == friend_size());
 #ifdef __LP64__
             assert(memcmp(cur_data, &temp, friend_size()) == 0);
-#endif
 #endif
             cur_data = next_data;
             num++;
         }
     }
 
-#ifdef TOX_DEBUG
     assert(cur_data - data == num * friend_size());
-#endif
     return cur_data - data;
 }
 
@@ -2847,11 +2839,9 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
     for (i = 0; i < num; ++i) {
         struct SAVED_FRIEND temp = { 0 };
         const uint8_t *next_data = friend_load(&temp, cur_data);
-#ifdef TOX_DEBUG
         assert(next_data - cur_data == friend_size());
 #ifdef __LP64__
         assert(memcmp(&temp, cur_data, friend_size()) == 0);
-#endif
 #endif
         cur_data = next_data;
 
@@ -2922,9 +2912,7 @@ void messenger_save(const Messenger *m, uint8_t *data)
     host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
     data += size32;
 
-#ifdef TOX_DEBUG
-    assert(sizeof(get_nospam(&(m->fr))) == sizeof(uint32_t));
-#endif
+    assert(sizeof(get_nospam(&m->fr)) == sizeof(uint32_t));
     len = size32 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE;
     type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
     data = z_state_save_subheader(data, len, type);
@@ -3075,13 +3063,10 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             return -2;
         }
 
-#ifdef TOX_DEBUG
-
         default:
-            fprintf(stderr, "Load state: contains unrecognized part (len %u, type %u)\n",
-                    length, type);
+            LOGGER_ERROR(m->log, "Load state: contains unrecognized part (len %u, type %u)\n",
+                         length, type);
             break;
-#endif
     }
 
     return 0;
@@ -3101,7 +3086,7 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
     lendian_to_host32(data32 + 1, data + sizeof(uint32_t));
 
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL)) {
-        return load_state(messenger_load_state_callback, m, data + cookie_len,
+        return load_state(messenger_load_state_callback, m->log, m, data + cookie_len,
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
     }
 
