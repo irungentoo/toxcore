@@ -37,4 +37,6 @@ RUN $CMAKE                                      \
 export CTEST_OUTPUT_ON_FAILURE=1
 
 RUN make -C$BUILD_DIR -j$NPROC -k install
-TESTS make -C$BUILD_DIR -j$NPROC test
+if $RUN_TESTS; then
+  TESTS make -C$BUILD_DIR -j$NPROC test
+fi

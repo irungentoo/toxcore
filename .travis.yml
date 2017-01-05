@@ -2,6 +2,13 @@ language: c
 
 matrix:
   include:
+    # OSX build comes first because Travis queues builds in order. The OSX
+    # builds are often pushed on a very long (100-200 jobs) backlog, so they get
+    # highest priority in our build sequence.
+    - env: JOB=toxcore ENV=osx RUN_TESTS=false
+      os: osx
+    - env: JOB=toxcore ENV=osx RUN_TESTS=true
+      os: osx
     - env: JOB=hstox ENV=linux
       language: haskell
       ghc: 7.8
@@ -9,8 +16,6 @@ matrix:
       compiler: gcc
     - env: JOB=toxcore ENV=linux
       compiler: clang
-    - env: JOB=toxcore ENV=osx
-      os: osx
     - env: JOB=toxcore ENV=windows ARCH=i686
       services:
         - docker
@@ -19,7 +24,7 @@ matrix:
         - docker
   fast_finish: true
   allow_failures:
-    - os: osx
+    - env: JOB=toxcore ENV=osx RUN_TESTS=true
 
 addons:
   apt:

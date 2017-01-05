@@ -4,12 +4,11 @@ CMAKE=$ARCH-w64-mingw32.shared-cmake
 CMAKE_EXTRA_FLAGS="$CMAKE_EXTRA_FLAGS -DBOOTSTRAP_DAEMON=OFF -DCOMPILE_AS_CXX=ON"
 NPROC=`nproc`
 CURDIR=/work
+RUN_TESTS=false
 
 RUN() {
   ./dockcross "$@"
 }
-
-ENABLE_WINDOWS_TESTS=false
 
 TESTS() {
   # Download Microsoft DLLs.
@@ -20,10 +19,8 @@ TESTS() {
   ./dockcross sh -c 'cp $WINEDLLPATH/*.dll _build'
 
   # Run tests in docker.
-  if $ENABLE_WINDOWS_TESTS; then
-    ./dockcross "$@" || {
-      cat _build/Testing/Temporary/LastTest.log
-      false
-    }
-  fi
+  ./dockcross "$@" || {
+    cat _build/Testing/Temporary/LastTest.log
+    false
+  }
 }
