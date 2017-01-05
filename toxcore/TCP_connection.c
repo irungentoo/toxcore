@@ -29,6 +29,8 @@
 
 #include "util.h"
 
+#include <assert.h>
+
 
 struct TCP_Connections {
     DHT *dht;
@@ -1396,6 +1398,9 @@ static void do_tcp_conns(TCP_Connections *tcp_c, void *userdata)
 
                 /* callbacks can change TCP connection address. */
                 tcp_con = get_tcp_connection(tcp_c, i);
+
+                // Make sure the TCP connection wasn't dropped in any of the callbacks.
+                assert(tcp_con != NULL);
 
                 if (tcp_con->connection->status == TCP_CLIENT_DISCONNECTED) {
                     if (tcp_con->status == TCP_CONN_CONNECTED) {
