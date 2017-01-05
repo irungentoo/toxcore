@@ -54,7 +54,13 @@ function(add_module lib)
 
   if(ENABLE_SHARED)
     add_library(${lib}_shared SHARED ${ARGN})
-    set_target_properties(${lib}_shared PROPERTIES OUTPUT_NAME ${lib})
+    set_target_properties(${lib}_shared PROPERTIES
+      OUTPUT_NAME ${lib}
+      VERSION ${PROJECT_VERSION}
+      # While on 0.x, the x behaves like the major version. 0.2 will be
+      # incompatible with 0.1. Change this, when releasing 1.0!
+      SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    )
     install(TARGETS ${lib}_shared DESTINATION "lib")
   endif()
   if(ENABLE_STATIC)
