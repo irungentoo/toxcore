@@ -316,27 +316,27 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         return -1;
     }
 
-    int ipv6 = -1;
+    bool is_ipv4;
     uint8_t net_family;
 
     if (ip_port->ip.family == AF_INET) {
         // TODO(irungentoo): use functions to convert endianness
-        ipv6 = 0;
+        is_ipv4 = true;
         net_family = TOX_AF_INET;
     } else if (ip_port->ip.family == TCP_INET) {
-        ipv6 = 0;
+        is_ipv4 = true;
         net_family = TOX_TCP_INET;
     } else if (ip_port->ip.family == AF_INET6) {
-        ipv6 = 1;
+        is_ipv4 = false;
         net_family = TOX_AF_INET6;
     } else if (ip_port->ip.family == TCP_INET6) {
-        ipv6 = 1;
+        is_ipv4 = false;
         net_family = TOX_TCP_INET6;
     } else {
         return -1;
     }
 
-    if (ipv6 == 0) {
+    if (is_ipv4) {
         uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t);
 
         if (size > length) {
@@ -347,9 +347,7 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         memcpy(data + 1, &ip_port->ip.ip4, SIZE_IP4);
         memcpy(data + 1 + SIZE_IP4, &ip_port->port, sizeof(uint16_t));
         return size;
-    }
-
-    if (ipv6 == 1) {
+    } else {
         uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t);
 
         if (size > length) {
@@ -361,8 +359,6 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         memcpy(data + 1 + SIZE_IP6, &ip_port->port, sizeof(uint16_t));
         return size;
     }
-
-    return -1;
 }
 
 static int DHT_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
@@ -399,34 +395,34 @@ static int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length
         return -1;
     }
 
-    int ipv6 = -1;
+    bool is_ipv4;
     uint8_t host_family;
 
     if (data[0] == TOX_AF_INET) {
-        ipv6 = 0;
+        is_ipv4 = true;
         host_family = AF_INET;
     } else if (data[0] == TOX_TCP_INET) {
         if (!tcp_enabled) {
             return -1;
         }
 
-        ipv6 = 0;
+        is_ipv4 = true;
         host_family = TCP_INET;
     } else if (data[0] == TOX_AF_INET6) {
-        ipv6 = 1;
+        is_ipv4 = false;
         host_family = AF_INET6;
     } else if (data[0] == TOX_TCP_INET6) {
         if (!tcp_enabled) {
             return -1;
         }
 
-        ipv6 = 1;
+        is_ipv4 = false;
         host_family = TCP_INET6;
     } else {
         return -1;
     }
 
-    if (ipv6 == 0) {
+    if (is_ipv4) {
         uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t);
 
         if (size > length) {
@@ -437,9 +433,7 @@ static int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length
         memcpy(&ip_port->ip.ip4, data + 1, SIZE_IP4);
         memcpy(&ip_port->port, data + 1 + SIZE_IP4, sizeof(uint16_t));
         return size;
-    }
-
-    if (ipv6 == 1) {
+    } else {
         uint32_t size = 1 + SIZE_IP6 + sizeof(uint16_t);
 
         if (size > length) {
@@ -451,8 +445,6 @@ static int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length
         memcpy(&ip_port->port, data + 1 + SIZE_IP6, sizeof(uint16_t));
         return size;
     }
-
-    return -1;
 }
 
 /* Pack number of nodes into data of maxlength length.
