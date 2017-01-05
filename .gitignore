@@ -21,9 +21,6 @@ install_manifest.txt
 tags
 Makefile.in
 CMakeLists.txt.user
-DartConfiguration.tcl
-CTestTestfile.cmake
-*.pc
 
 # Testing
 testing/data
@@ -43,9 +40,6 @@ testing/data
 *.app
 *.la
 
-# Libraries
-*.so
-
 # Misc (?)
 m4/*
 configure
@@ -57,6 +51,8 @@ config.log
 config.status
 stamp-h1
 autom4te.cache
+libtoxcore.pc
+libtoxav.pc
 libtool
 .deps
 .libs

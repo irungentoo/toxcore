@@ -22,8 +22,6 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _XOPEN_SOURCE 600
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

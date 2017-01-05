@@ -22,8 +22,6 @@
  *
  */
 
-#define _XOPEN_SOURCE 600
-
 // system provided
 #include <sys/stat.h>
 #include <unistd.h>
