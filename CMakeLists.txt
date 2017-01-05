@@ -610,6 +610,11 @@ endif()
 #
 # :: Strict ABI
 #
+# Enabling the STRICT_ABI flag will generate and use an LD version script.
+# It ensures that the dynamic libraries (libtoxcore.so, libtoxav.so) only
+# export the symbols that are defined in their public API (tox.h and toxav.h,
+# respectively).
+#
 ################################################################################
 
 function(make_version_script header ns lib)
