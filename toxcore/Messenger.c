@@ -1328,29 +1328,24 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         return -2;
     }
 
-    uint32_t temp_filenum;
-    uint8_t send_receive, file_number;
-
-    if (filenumber >= (1 << 16)) {
-        send_receive = 1;
-        temp_filenum = (filenumber >> 16) - 1;
-    } else {
+    if (filenumber < (1 << 16)) {
+        // Not receiving.
         return -4;
     }
+
+    uint32_t temp_filenum = (filenumber >> 16) - 1;
 
     if (temp_filenum >= MAX_CONCURRENT_FILE_PIPES) {
         return -3;
     }
 
-    file_number = temp_filenum;
+#ifdef TOX_DEBUG
+    assert(temp_filenum <= UINT8_MAX);
+#endif
+    uint8_t file_number = temp_filenum;
 
-    struct File_Transfers *ft;
-
-    if (send_receive) {
-        ft = &m->friendlist[friendnumber].file_receiving[file_number];
-    } else {
-        ft = &m->friendlist[friendnumber].file_sending[file_number];
-    }
+    // We're always receiving at this point.
+    struct File_Transfers *ft = &m->friendlist[friendnumber].file_receiving[file_number];
 
     if (ft->status == FILESTATUS_NONE) {
         return -3;
@@ -1367,7 +1362,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     uint64_t sending_pos = position;
     host_to_net((uint8_t *)&sending_pos, sizeof(sending_pos));
 
-    if (send_file_control_packet(m, friendnumber, send_receive, file_number, FILECONTROL_SEEK, (uint8_t *)&sending_pos,
+    if (send_file_control_packet(m, friendnumber, 1, file_number, FILECONTROL_SEEK, (uint8_t *)&sending_pos,
                                  sizeof(sending_pos))) {
         ft->transferred = position;
     } else {
