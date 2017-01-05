@@ -31,8 +31,10 @@
 #define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
 
 #ifdef VANILLA_NACL
+#include <crypto_box.h>
 #include <crypto_hash_sha256.h>
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
+#define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #else
 #include <sodium.h>
 #endif

@@ -3,8 +3,9 @@
 # Build toxcore and run tests.
 ./autogen.sh
 ./configure \
-  --with-libsodium-libs=$CACHE_DIR/lib \
-  --with-libsodium-headers=$CACHE_DIR/include \
+  --with-nacl-libs=$CACHE_DIR/lib/amd64 \
+  --with-nacl-headers=$CACHE_DIR/include/amd64 \
+  --enable-nacl \
   --enable-daemon \
   --enable-logging \
   --enable-ntox \

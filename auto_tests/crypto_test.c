@@ -338,8 +338,8 @@ START_TEST(test_memzero)
 }
 END_TEST
 
-#define CRYPTO_TEST_MEMCMP_SIZE 1024*32
-#define CRYPTO_TEST_MEMCMP_COUNT 500
+#define CRYPTO_TEST_MEMCMP_SIZE 1024*256
+#define CRYPTO_TEST_MEMCMP_COUNT 1000
 #define CRYPTO_TEST_MEMCMP_EPS 10
 
 static int cmp(const void *a, const void *b)
@@ -389,8 +389,11 @@ START_TEST(test_memcmp)
     uint8_t not_same[sizeof(src)];
     rand_bytes(not_same, sizeof(not_same));
 
+    printf("timing memcmp (equal arrays)\n");
     clock_t same_median = memcmp_median(src, same, sizeof(src));
+    printf("timing memcmp (non-equal arrays)\n");
     clock_t not_same_median = memcmp_median(src, not_same, sizeof(src));
+    printf("comparing times\n");
 
     clock_t delta;
 
