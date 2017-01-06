@@ -37,13 +37,15 @@ void crypto_memzero(void *data, size_t length)
     sodium_memzero(data, length);
 #else
 #ifdef _WIN32
-    SecureZeroMemory(pnt, len);
+    SecureZeroMemory(data, length);
 #elif defined(HAVE_MEMSET_S)
 
-    errno_t code = memset_s(data, (rsize_t) length, 0, (rsize_t) length)
+    if (length > 0U) {
+        errno_t code = memset_s(data, (rsize_t) length, 0, (rsize_t) length);
 
-    if (len > 0U && code != 0) {
-        abort(); /* LCOV_EXCL_LINE */
+        if (code != 0) {
+            abort(); /* LCOV_EXCL_LINE */
+        }
     }
 
 #elif defined(HAVE_EXPLICIT_BZERO)
