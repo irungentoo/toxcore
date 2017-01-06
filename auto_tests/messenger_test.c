@@ -352,6 +352,7 @@ int main(int argc, char *argv[])
     /* IPv6 status from global define */
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    options.log_callback = (logger_cb *)print_debug_log;
     m = new_messenger(&options, 0);
 
     /* setup a default friend and friendnum */
