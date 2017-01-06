@@ -2,7 +2,6 @@
 #include "config.h"
 #endif
 
-#include "../toxcore/misc_tools.h"
 #include "../toxcore/net_crypto.h"
 
 #include <check.h>
@@ -343,9 +342,7 @@ END_TEST
 #define CRYPTO_TEST_MEMCMP_COUNT 500
 #define CRYPTO_TEST_MEMCMP_EPS 10
 
-static make_quick_sort(clock_t)
-
-static int cmp(clock_t a, clock_t b)
+static int cmp(const void *a, const void *b)
 {
     if (a < b) {
         return -1;
@@ -374,7 +371,7 @@ static clock_t memcmp_median(void *a, void *b, size_t len)
         results[i] = memcmp_time(a, b, len);
     }
 
-    clock_t_quick_sort(results, CRYPTO_TEST_MEMCMP_COUNT, cmp);
+    qsort(results, CRYPTO_TEST_MEMCMP_COUNT, sizeof(results), cmp);
     return results[CRYPTO_TEST_MEMCMP_COUNT / 2];
 }
 
