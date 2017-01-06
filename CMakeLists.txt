@@ -61,8 +61,8 @@ endmacro()
 add_cflag("-std=c99")
 add_cxxflag("-std=c++11")
 
-# Error on non-ISO C.
-add_cflag("-pedantic-errors")
+# Warn on non-ISO C.
+add_cflag("-pedantic")
 
 option(WARNINGS "Enable additional compiler warnings" ON)
 if(WARNINGS)
