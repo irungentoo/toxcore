@@ -619,7 +619,7 @@ static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, const
  */
 static int send_connect_notification(TCP_Secure_Connection *con, uint8_t id)
 {
-    uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, id + NUM_RESERVED_PORTS};
+    uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, (uint8_t)(id + NUM_RESERVED_PORTS)};
     return write_packet_TCP_secure_connection(con, data, sizeof(data), 1);
 }
 
@@ -629,7 +629,7 @@ static int send_connect_notification(TCP_Secure_Connection *con, uint8_t id)
  */
 static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
 {
-    uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, id + NUM_RESERVED_PORTS};
+    uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, (uint8_t)(id + NUM_RESERVED_PORTS)};
     return write_packet_TCP_secure_connection(con, data, sizeof(data), 1);
 }
 

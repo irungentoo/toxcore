@@ -1,6 +1,8 @@
 /* Auto Tests: Conferences.
  */
 
+#define _XOPEN_SOURCE 600
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -175,7 +177,7 @@ group_test_restart:
          * Either way in this case it's fine  */
         if (peer_count != NUM_GROUP_TOX) {
             ++test_run;
-            printf("\tError starting up the first group (peer_count %"PRIu32" != %d, test_run = %d)\n", peer_count, NUM_GROUP_TOX,
+            printf("\tError starting up the first group (peer_count %" PRIu32 " != %d, test_run = %d)\n", peer_count, NUM_GROUP_TOX,
                    test_run);
 
             for (j = 0; j < NUM_GROUP_TOX; ++j) {
@@ -194,7 +196,7 @@ group_test_restart:
          * important again.
          */
         ck_assert_msg(peer_count == NUM_GROUP_TOX, "\n\tBad number of group peers (pre check)."
-                      "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %"PRIu32"\n\n",
+                      "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
                       NUM_GROUP_TOX, i, peer_count);
 
         uint8_t title[2048];
@@ -241,7 +243,7 @@ group_test_restart:
         for (i = 0; i < (k - 1); ++i) {
             uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, NULL);
             ck_assert_msg(peer_count == (k - 1), "\n\tBad number of group peers (post check)."
-                          "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %"PRIu32"\n\n",
+                          "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
                           (k - 1), i, peer_count);
         }
     }

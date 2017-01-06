@@ -22,6 +22,8 @@
  *   -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
  */
 
+#define _XOPEN_SOURCE 600
+
 #ifdef __cplusplus
 extern "C" {
 #endif
