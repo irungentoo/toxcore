@@ -53,9 +53,6 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-/* sa_family_t is the sockaddr_in / sockaddr_in6 family field */
-typedef short sa_family_t;
-
 #else // Linux includes
 
 #include <arpa/inet.h>
@@ -66,8 +63,12 @@ typedef short sa_family_t;
 
 struct in_addr;
 struct in6_addr;
+struct addrinfo;
+
+typedef short Family;
 
 typedef int Socket;
+Socket net_socket(int domain, int type, int protocol);
 
 #define MAX_UDP_PACKET_SIZE 2048
 
@@ -106,6 +107,18 @@ typedef enum NET_PACKET_TYPE {
 #define TOX_PORTRANGE_FROM 33445
 #define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
+
+/* Redefinitions of variables for safe transfer over wire. */
+#define TOX_AF_INET 2
+#define TOX_AF_INET6 10
+#define TOX_TCP_INET 130
+#define TOX_TCP_INET6 138
+
+#define TOX_SOCK_STREAM 1
+#define TOX_SOCK_DGRAM 2
+
+#define TOX_PROTO_TCP 1
+#define TOX_PROTO_UDP 2
 
 /* TCP related */
 #define TCP_ONION_FAMILY (AF_INET6 + 1)
@@ -150,6 +163,13 @@ void get_ip6(IP6 *ip, const struct in6_addr *addr);
 /* Conevrt IP to in_addr */
 void fill_addr4(IP4 ip, struct in_addr *addr);
 void fill_addr6(IP6 ip, struct in6_addr *addr);
+
+/* Convert values between host and network byte order.
+ */
+uint32_t net_htonl(uint32_t hostlong);
+uint16_t net_htons(uint16_t hostshort);
+uint32_t net_ntohl(uint32_t hostlong);
+uint16_t net_ntohs(uint16_t hostshort);
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 #define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == htonl (0xffff)))
@@ -292,7 +312,7 @@ typedef struct {
     Logger *log;
     Packet_Handles packethandlers[256];
 
-    sa_family_t family;
+    Family family;
     uint16_t port;
     /* Our UDP socket. */
     Socket sock;
@@ -357,6 +377,32 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 
 /* Call this several times a second. */
 void networking_poll(Networking_Core *net, void *userdata);
+
+/* Connect a socket to the address specified by the ip_port. */
+int net_connect(Socket sock, IP_Port ip_port);
+
+/* High-level getaddrinfo implementation.
+ * Given node, which identifies an Internet host, net_getipport() fills an array
+ * with one or more IP_Port structures, each of which contains an Internet
+ * address that can be specified by calling net_connect(), the port is ignored.
+ *
+ * Skip all addresses with socktype != type (use type = -1 to get all addresses)
+ * To correctly deallocate array memory use net_freeipport()
+ *
+ * return number of elements in res array.
+ */
+int32_t net_getipport(const char* node, IP_Port** res, int type);
+
+/* Deallocates memory allocated by net_getipport
+ */
+void net_freeipport(IP_Port* ip_ports);
+
+/* return 1 on success
+ * return 0 on failure
+ */
+int bind_to_port(Socket sock, int family, uint16_t port);
+
+size_t net_sendto_ip4(Socket sock, const char* buf, size_t n, IP_Port ip_port);
 
 /* Initialize networking.
  * bind to ip and port.

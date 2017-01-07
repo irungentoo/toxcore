@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
     IP ip = {0};
     ip.family = AF_INET;
-    Socket sock = socket(ip.family, SOCK_DGRAM, IPPROTO_UDP);
+    Socket sock = net_socket(ip.family, TOX_SOCK_DGRAM, TOX_PROTO_UDP);
 
     if (!sock_valid(sock)) {
         return -1;
@@ -60,29 +60,9 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    struct sockaddr_in target;
-
-    size_t addrsize = sizeof(struct sockaddr_in);
-
-    target.sin_family = AF_INET;
-
-    fill_addr4(ip.ip4, &target.sin_addr);
-
-    target.sin_port = htons(53);
-
-    uint8_t string[1024] = {0};
-
-    void *d = tox_dns3_new(hex_string_to_bin(argv[2]));
-
-    unsigned int i;
-
     uint32_t request_id;
-
-    /*
-    for (i = 0; i < 255; ++i) {
-        tox_generate_dns3_string(d, string, sizeof(string), &request_id, string, i);
-        printf("%s\n", string);
-    }*/
+    uint8_t string[1024] = {0};
+    void *d = tox_dns3_new(hex_string_to_bin(argv[2]));
     int len = tox_generate_dns3_string(d, string + 1, sizeof(string) - 1, &request_id, (uint8_t *)argv[3], strlen(argv[3]));
 
     if (len == -1) {
@@ -96,7 +76,11 @@ int main(int argc, char *argv[])
     uint8_t id = rand();
     uint32_t p_len = create_packet(packet, string, strlen((char *)string), id);
 
-    if (sendto(sock, (char *)packet, p_len, 0, (struct sockaddr *)&target, addrsize) != p_len) {
+    IP_Port ip_port;
+    ip_port.port = 53;
+    ip_port.ip = ip;
+
+    if (net_sendto_ip4(sock, (char *)packet, p_len, ip_port) != p_len) {
         return -1;
     }
 
@@ -107,6 +91,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    unsigned int i;
     for (i = r_len - 1; i != 0 && buffer[i] != '='; --i) {
         ;
     }

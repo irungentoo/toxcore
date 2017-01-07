@@ -38,13 +38,15 @@ START_TEST(test_basic)
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
-    Socket sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    struct sockaddr_in6 addr6_loopback = {0};
-    addr6_loopback.sin6_family = AF_INET6;
-    addr6_loopback.sin6_port = htons(ports[rand() % NUM_PORTS]);
-    addr6_loopback.sin6_addr = in6addr_loopback;
+    Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+    IP_Port ip_port_loopback;
+    ip_port_loopback.ip.family = AF_INET6;
+    ip_port_loopback.ip.ip6.uint64[0] = 0;
+    ip_port_loopback.ip.ip6.uint64[1] = 0;
+    ip_port_loopback.ip.ip6.uint8[15] = 1; // ::1
+    ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
 
-    int ret = connect(sock, (struct sockaddr *)&addr6_loopback, sizeof(addr6_loopback));
+    int ret = net_connect(sock, ip_port_loopback);
     ck_assert_msg(ret == 0, "Failed to connect to TCP relay server");
 
     uint8_t f_public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -93,7 +95,7 @@ START_TEST(test_basic)
     memcpy(r_req_p + 1, f_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     uint8_t r_req[2 + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE];
     uint16_t size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE;
-    size = htons(size);
+    size = net_htons(size);
     encrypt_data_symmetric(f_shared_key, f_nonce, r_req_p, 1 + CRYPTO_PUBLIC_KEY_SIZE, r_req + 2);
     increment_nonce(f_nonce);
     memcpy(r_req, &size, 2);
@@ -113,7 +115,7 @@ START_TEST(test_basic)
     ck_assert_msg(recv_data_len == 2 + 2 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE,
                   "recv Failed. %u", recv_data_len);
     memcpy(&size, packet_resp, 2);
-    ck_assert_msg(ntohs(size) == 2 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE, "Wrong packet size.");
+    ck_assert_msg(net_ntohs(size) == 2 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE, "Wrong packet size.");
     uint8_t packet_resp_plain[4096];
     ret = decrypt_data_symmetric(f_shared_key, f_nonce_r, packet_resp + 2, recv_data_len - 2, packet_resp_plain);
     ck_assert_msg(ret != -1, "decryption failed");
@@ -136,13 +138,16 @@ struct sec_TCP_con {
 static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 {
     struct sec_TCP_con *sec_c = (struct sec_TCP_con *)malloc(sizeof(struct sec_TCP_con));
-    Socket sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-    struct sockaddr_in6 addr6_loopback = {0};
-    addr6_loopback.sin6_family = AF_INET6;
-    addr6_loopback.sin6_port = htons(ports[rand() % NUM_PORTS]);
-    addr6_loopback.sin6_addr = in6addr_loopback;
+    Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
-    int ret = connect(sock, (struct sockaddr *)&addr6_loopback, sizeof(addr6_loopback));
+    IP_Port ip_port_loopback;
+    ip_port_loopback.ip.family = AF_INET6;
+    ip_port_loopback.ip.ip6.uint64[0] = 0;
+    ip_port_loopback.ip.ip6.uint64[1] = 0;
+    ip_port_loopback.ip.ip6.uint8[15] = 1; // ::1
+    ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
+
+    int ret = net_connect(sock, ip_port_loopback);
     ck_assert_msg(ret == 0, "Failed to connect to TCP relay server");
 
     uint8_t f_secret_key[CRYPTO_SECRET_KEY_SIZE];
@@ -190,7 +195,7 @@ static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *
 {
     VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
-    uint16_t c_length = htons(length + CRYPTO_MAC_SIZE);
+    uint16_t c_length = net_htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
@@ -405,7 +410,7 @@ START_TEST(test_client)
     crypto_new_keypair(f_public_key, f_secret_key);
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
@@ -435,7 +440,7 @@ START_TEST(test_client)
     uint8_t f2_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t f2_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(f2_public_key, f2_secret_key);
-    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     TCP_Client_Connection *conn2 = new_TCP_connection(ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key, 0);
     routing_response_handler(conn, response_callback, (char *)conn + 2);
     routing_status_handler(conn, status_callback, (void *)2);
@@ -503,7 +508,7 @@ START_TEST(test_client_invalid)
     crypto_new_keypair(f_public_key, f_secret_key);
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
@@ -572,7 +577,7 @@ START_TEST(test_tcp_connection)
 
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
 
@@ -581,7 +586,7 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
-    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     connection = new_tcp_connection_to(tc_2, tcp_connections_public_key(tc_1), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
     ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
@@ -681,7 +686,7 @@ START_TEST(test_tcp_connection2)
 
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = AF_INET6;
     get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
 

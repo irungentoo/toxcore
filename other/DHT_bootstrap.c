@@ -166,11 +166,11 @@ int main(int argc, char *argv[])
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", ntohs(dht->net->port));
+    printf("Port: %u\n", net_ntohs(dht->net->port));
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
-        uint16_t port = htons(atoi(argv[argvoffset + 2]));
+        uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
         int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1],
                                              ipv6enabled, port, bootstrap_key);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
         do_DHT(dht);
 
         if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
-            send_LANdiscovery(htons(PORT), dht);
+            send_LANdiscovery(net_htons(PORT), dht);
             last_LANdiscovery = unix_time();
         }
 

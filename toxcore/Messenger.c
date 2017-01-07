@@ -1113,7 +1113,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
 
     VLA(uint8_t, packet, 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length);
     packet[0] = filenumber;
-    file_type = htonl(file_type);
+    file_type = net_htonl(file_type);
     memcpy(packet + 1, &file_type, sizeof(file_type));
     host_to_net((uint8_t *)&filesize, sizeof(filesize));
     memcpy(packet + 1 + sizeof(file_type), &filesize, sizeof(filesize));
@@ -2256,7 +2256,7 @@ static int handle_packet(void *object, int i, const uint8_t *temp, uint16_t len,
             }
 
             memcpy(&file_type, data + 1, sizeof(file_type));
-            file_type = ntohl(file_type);
+            file_type = net_ntohl(file_type);
 
             memcpy(&filesize, data + 1 + sizeof(uint32_t), sizeof(filesize));
             net_to_host((uint8_t *) &filesize, sizeof(filesize));
@@ -2573,7 +2573,7 @@ void do_messenger(Messenger *m, void *userdata)
                     char id_str[IDSTRING_LEN];
                     LOGGER_TRACE(m->log, "C[%2u] %s:%u [%3u] %s",
                                  client, ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
-                                 ntohs(assoc->ip_port.port), last_pinged,
+                                 net_ntohs(assoc->ip_port.port), last_pinged,
                                  id_to_string(cptr->public_key, id_str, sizeof(id_str)));
                 }
             }
@@ -2653,7 +2653,7 @@ void do_messenger(Messenger *m, void *userdata)
                         char id_str[IDSTRING_LEN];
                         LOGGER_TRACE(m->log, "F[%2u] => C[%2u] %s:%u [%3u] %s",
                                      friend_idx, client, ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
-                                     ntohs(assoc->ip_port.port), last_pinged,
+                                     net_ntohs(assoc->ip_port.port), last_pinged,
                                      id_to_string(cptr->public_key, id_str, sizeof(id_str)));
                     }
                 }
@@ -2779,13 +2779,13 @@ static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
                         MIN(SAVED_FRIEND_REQUEST_SIZE, MAX_FRIEND_REQUEST_DATA_SIZE));
                 memcpy(temp.info, m->friendlist[i].info, friendrequest_length);
 
-                temp.info_size = htons(m->friendlist[i].info_size);
+                temp.info_size = net_htons(m->friendlist[i].info_size);
                 temp.friendrequest_nospam = m->friendlist[i].friendrequest_nospam;
             } else {
                 memcpy(temp.name, m->friendlist[i].name, m->friendlist[i].name_length);
-                temp.name_length = htons(m->friendlist[i].name_length);
+                temp.name_length = net_htons(m->friendlist[i].name_length);
                 memcpy(temp.statusmessage, m->friendlist[i].statusmessage, m->friendlist[i].statusmessage_length);
-                temp.statusmessage_length = htons(m->friendlist[i].statusmessage_length);
+                temp.statusmessage_length = net_htons(m->friendlist[i].statusmessage_length);
                 temp.userstatus = m->friendlist[i].userstatus;
 
                 uint8_t last_seen_time[sizeof(uint64_t)];
@@ -2866,8 +2866,8 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
                 continue;
             }
 
-            setfriendname(m, fnum, temp.name, ntohs(temp.name_length));
-            set_friend_statusmessage(m, fnum, temp.statusmessage, ntohs(temp.statusmessage_length));
+            setfriendname(m, fnum, temp.name, net_ntohs(temp.name_length));
+            set_friend_statusmessage(m, fnum, temp.statusmessage, net_ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);
             uint8_t last_seen_time[sizeof(uint64_t)];
             memcpy(last_seen_time, &temp.last_seen_time, sizeof(uint64_t));
@@ -2880,7 +2880,7 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
             memcpy(address + CRYPTO_PUBLIC_KEY_SIZE, &(temp.friendrequest_nospam), sizeof(uint32_t));
             uint16_t checksum = address_checksum(address, FRIEND_ADDRESS_SIZE - sizeof(checksum));
             memcpy(address + CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t), &checksum, sizeof(checksum));
-            m_addfriend(m, address, temp.info, ntohs(temp.info_size));
+            m_addfriend(m, address, temp.info, net_ntohs(temp.info_size));
         }
     }
 

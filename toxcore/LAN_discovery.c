@@ -86,9 +86,9 @@ static void fetch_broadcast_info(uint16_t port)
                 if (gateway.family == AF_INET && subnet_mask.family == AF_INET) {
                     IP_Port *ip_port = &ip_ports[count];
                     ip_port->ip.family = AF_INET;
-                    uint32_t gateway_ip = ntohl(gateway.ip4.uint32), subnet_ip = ntohl(subnet_mask.ip4.uint32);
+                    uint32_t gateway_ip = net_ntohl(gateway.ip4.uint32), subnet_ip = net_ntohl(subnet_mask.ip4.uint32);
                     uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
-                    ip_port->ip.ip4.uint32 = htonl(broadcast_ip);
+                    ip_port->ip.ip4.uint32 = net_htonl(broadcast_ip);
                     ip_port->port = port;
                     count++;
 
@@ -124,7 +124,7 @@ static void fetch_broadcast_info(uint16_t port)
     broadcast_count = 0;
     Socket sock = 0;
 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((sock = net_socket(TOX_AF_INET, TOX_SOCK_STREAM, 0)) < 0) {
         return;
     }
 
@@ -174,7 +174,7 @@ static void fetch_broadcast_info(uint16_t port)
 
         IP_Port *ip_port = &ip_ports[count];
         ip_port->ip.family = AF_INET;
-        get_ip4(&ip_port->ip.ip4, &sock4->sin_addr);
+        ip_port->ip.ip4.uint32 = sock4->sin_addr.s_addr;
 
         if (ip_port->ip.ip4.uint32 == 0) {
             continue;
@@ -228,7 +228,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, const uint8
 }
 
 /* Return the broadcast ip. */
-static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
+static IP broadcast_ip(Family family_socket, Family family_broadcast)
 {
     IP ip;
     ip_reset(&ip);
@@ -246,7 +246,7 @@ static IP broadcast_ip(sa_family_t family_socket, sa_family_t family_broadcast)
             ip.family = AF_INET6;
             ip.ip6.uint32[0] = 0;
             ip.ip6.uint32[1] = 0;
-            ip.ip6.uint32[2] = htonl(0xFFFF);
+            ip.ip6.uint32[2] = net_htonl(0xFFFF);
             ip.ip6.uint32[3] = INADDR_BROADCAST;
         }
     } else if (family_socket == AF_INET) {
@@ -279,7 +279,7 @@ bool Local_ip(IP ip)
         }
 
         /* localhost in IPv6 (::1) */
-        if (ip.ip6.uint64[0] == 0 && ip.ip6.uint32[2] == 0 && ip.ip6.uint32[3] == htonl(1)) {
+        if (ip.ip6.uint64[0] == 0 && ip.ip6.uint32[2] == 0 && ip.ip6.uint32[3] == net_htonl(1)) {
             return 1;
         }
     }

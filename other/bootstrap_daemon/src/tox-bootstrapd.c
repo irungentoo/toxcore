@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
     print_public_key(dht->self_public_key);
 
     uint64_t last_LANdiscovery = 0;
-    const uint16_t htons_port = htons(port);
+    const uint16_t net_htons_port = net_htons(port);
 
     int waiting_for_dht_connection = 1;
 
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
         do_DHT(dht);
 
         if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
-            send_LANdiscovery(htons_port, dht);
+            send_LANdiscovery(net_htons_port, dht);
             last_LANdiscovery = unix_time();
         }
 

@@ -623,7 +623,7 @@ loop_top:
         IP_Port ip_port;
         ip_init(&ip_port.ip, 1);
         ip_port.ip.ip6.uint8[15] = 1;
-        ip_port.port = htons(DHT_DEFAULT_PORT + i);
+        ip_port.port = net_htons(DHT_DEFAULT_PORT + i);
         DHT_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
     }
 

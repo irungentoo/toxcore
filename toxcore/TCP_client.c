@@ -42,30 +42,8 @@ static int connect_sock_to(Socket sock, IP_Port ip_port, TCP_Proxy_Info *proxy_i
         ip_port = proxy_info->ip_port;
     }
 
-    struct sockaddr_storage addr = {0};
-
-    size_t addrsize;
-
-    if (ip_port.ip.family == AF_INET) {
-        struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
-
-        addrsize = sizeof(struct sockaddr_in);
-        addr4->sin_family = AF_INET;
-        fill_addr4(ip_port.ip.ip4, &addr4->sin_addr);
-        addr4->sin_port = ip_port.port;
-    } else if (ip_port.ip.family == AF_INET6) {
-        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
-
-        addrsize = sizeof(struct sockaddr_in6);
-        addr6->sin6_family = AF_INET6;
-        fill_addr6(ip_port.ip.ip6, &addr6->sin6_addr);
-        addr6->sin6_port = ip_port.port;
-    } else {
-        return 0;
-    }
-
     /* nonblocking socket, connect will never return success */
-    connect(sock, (struct sockaddr *)&addr, addrsize);
+    net_connect(sock, ip_port);
     return 1;
 }
 
@@ -84,7 +62,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_con
         return 0;
     }
 
-    const uint16_t port = ntohs(TCP_conn->ip_port.port);
+    const uint16_t port = net_ntohs(TCP_conn->ip_port.port);
     const int written = snprintf((char *)TCP_conn->last_packet, MAX_PACKET_SIZE, "%s%s:%hu%s%s:%hu%s", one, ip, port, two,
                                  ip, port, three);
 
@@ -389,7 +367,7 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
 
     VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
-    uint16_t c_length = htons(length + CRYPTO_MAC_SIZE);
+    uint16_t c_length = net_htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
@@ -653,7 +631,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         family = proxy_info->ip_port.ip.family;
     }
 
-    Socket sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
+    Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
         return NULL;

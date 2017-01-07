@@ -356,7 +356,7 @@ bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
  * return the number of nodes returned.
  *
  */
-int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, sa_family_t sa_family,
+int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
                     uint8_t is_LAN, uint8_t want_good);
 
 

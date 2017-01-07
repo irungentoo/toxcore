@@ -706,7 +706,7 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
 
         VLA(uint8_t, dest, sample_count + sizeof(sampling_rate)); /* This is more than enough always */
 
-        sampling_rate = htonl(sampling_rate);
+        sampling_rate = net_htonl(sampling_rate);
         memcpy(dest, &sampling_rate, sizeof(sampling_rate));
         int vrc = opus_encode(call->audio.second->encoder, pcm, sample_count,
                               dest + sizeof(sampling_rate), SIZEOF_VLA(dest) - sizeof(sampling_rate));

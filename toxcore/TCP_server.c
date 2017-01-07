@@ -69,38 +69,11 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server)
     return tcp_server->num_listening_socks;
 }
 
-/* this is needed to compile on Android below API 21
-*/
+/* This is needed to compile on Android below API 21
+ */
 #ifndef EPOLLRDHUP
 #define EPOLLRDHUP 0x2000
 #endif
-
-/* return 1 on success
- * return 0 on failure
- */
-static int bind_to_port(Socket sock, int family, uint16_t port)
-{
-    struct sockaddr_storage addr = {0};
-    size_t addrsize;
-
-    if (family == AF_INET) {
-        struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
-
-        addrsize = sizeof(struct sockaddr_in);
-        addr4->sin_family = AF_INET;
-        addr4->sin_port = htons(port);
-    } else if (family == AF_INET6) {
-        struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
-
-        addrsize = sizeof(struct sockaddr_in6);
-        addr6->sin6_family = AF_INET6;
-        addr6->sin6_port = htons(port);
-    } else {
-        return 0;
-    }
-
-    return (bind(sock, (struct sockaddr *)&addr, addrsize) == 0);
-}
 
 /* Set the size of the connection list to numfriends.
  *
@@ -265,7 +238,7 @@ uint16_t read_TCP_length(Socket sock)
             return 0;
         }
 
-        length = ntohs(length);
+        length = net_ntohs(length);
 
         if (length > MAX_PACKET_SIZE) {
             return ~0;
@@ -460,7 +433,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
 
     VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
-    uint16_t c_length = htons(length + CRYPTO_MAC_SIZE);
+    uint16_t c_length = net_htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
@@ -1005,7 +978,7 @@ static int accept_connection(TCP_Server *TCP_server, Socket sock)
 
 static Socket new_listening_TCP_socket(int family, uint16_t port)
 {
-    Socket sock = socket(family, SOCK_STREAM, IPPROTO_TCP);
+    Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
         return ~0;

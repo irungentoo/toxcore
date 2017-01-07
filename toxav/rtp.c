@@ -131,12 +131,12 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
     header->ma = 0;
     header->pt = session->payload_type % 128;
 
-    header->sequnum = htons(session->sequnum);
-    header->timestamp = htonl(current_time_monotonic());
-    header->ssrc = htonl(session->ssrc);
+    header->sequnum = net_htons(session->sequnum);
+    header->timestamp = net_htonl(current_time_monotonic());
+    header->ssrc = net_htonl(session->ssrc);
 
     header->cpart = 0;
-    header->tlen = htons(length);
+    header->tlen = net_htons(length);
 
     if (MAX_CRYPTO_DATA_SIZE > length + sizeof(struct RTPHeader) + 1) {
 
@@ -170,7 +170,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
             }
 
             sent += piece;
-            header->cpart = htons(sent);
+            header->cpart = net_htons(sent);
         }
 
         /* Send remaining */
@@ -194,10 +194,10 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
 
 static bool chloss(const RTPSession *session, const struct RTPHeader *header)
 {
-    if (ntohl(header->timestamp) < session->rtimestamp) {
+    if (net_ntohl(header->timestamp) < session->rtimestamp) {
         uint16_t hosq, lost = 0;
 
-        hosq = ntohs(header->sequnum);
+        hosq = net_ntohs(header->sequnum);
 
         lost = (hosq > session->rsequnum) ?
                (session->rsequnum + 65535) - hosq :
@@ -224,12 +224,12 @@ static struct RTPMessage *new_message(size_t allocate_len, const uint8_t *data, 
     msg->len = data_length - sizeof(struct RTPHeader);
     memcpy(&msg->header, data, data_length);
 
-    msg->header.sequnum = ntohs(msg->header.sequnum);
-    msg->header.timestamp = ntohl(msg->header.timestamp);
-    msg->header.ssrc = ntohl(msg->header.ssrc);
+    msg->header.sequnum = net_ntohs(msg->header.sequnum);
+    msg->header.timestamp = net_ntohl(msg->header.timestamp);
+    msg->header.ssrc = net_ntohl(msg->header.ssrc);
 
-    msg->header.cpart = ntohs(msg->header.cpart);
-    msg->header.tlen = ntohs(msg->header.tlen);
+    msg->header.cpart = net_ntohs(msg->header.cpart);
+    msg->header.tlen = net_ntohs(msg->header.tlen);
 
     return msg;
 }
@@ -255,14 +255,14 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
         return -1;
     }
 
-    if (ntohs(header->cpart) >= ntohs(header->tlen)) {
+    if (net_ntohs(header->cpart) >= net_ntohs(header->tlen)) {
         /* Never allow this case to happen */
         return -1;
     }
 
     bwc_feed_avg(session->bwc, length);
 
-    if (ntohs(header->tlen) == length - sizeof(struct RTPHeader)) {
+    if (net_ntohs(header->tlen) == length - sizeof(struct RTPHeader)) {
         /* The message is sent in single part */
 
         /* Only allow messages which have arrived in order;
@@ -273,8 +273,8 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
         }
 
         /* Message is not late; pick up the latest parameters */
-        session->rsequnum = ntohs(header->sequnum);
-        session->rtimestamp = ntohl(header->timestamp);
+        session->rsequnum = net_ntohs(header->sequnum);
+        session->rtimestamp = net_ntohl(header->timestamp);
 
         bwc_add_recv(session->bwc, length);
 
@@ -311,20 +311,20 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
          * processing message
          */
 
-        if (session->mp->header.sequnum == ntohs(header->sequnum) &&
-                session->mp->header.timestamp == ntohl(header->timestamp)) {
+        if (session->mp->header.sequnum == net_ntohs(header->sequnum) &&
+                session->mp->header.timestamp == net_ntohl(header->timestamp)) {
             /* First case */
 
             /* Make sure we have enough allocated memory */
             if (session->mp->header.tlen - session->mp->len < length - sizeof(struct RTPHeader) ||
-                    session->mp->header.tlen <= ntohs(header->cpart)) {
+                    session->mp->header.tlen <= net_ntohs(header->cpart)) {
                 /* There happened to be some corruption on the stream;
                  * continue wihtout this part
                  */
                 return 0;
             }
 
-            memcpy(session->mp->data + ntohs(header->cpart), data + sizeof(struct RTPHeader),
+            memcpy(session->mp->data + net_ntohs(header->cpart), data + sizeof(struct RTPHeader),
                    length - sizeof(struct RTPHeader));
 
             session->mp->len += length - sizeof(struct RTPHeader);
@@ -346,7 +346,7 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
         } else {
             /* Second case */
 
-            if (session->mp->header.timestamp > ntohl(header->timestamp)) {
+            if (session->mp->header.timestamp > net_ntohl(header->timestamp)) {
                 /* The received message part is from the old message;
                  * discard it.
                  */
@@ -386,22 +386,22 @@ NEW_MULTIPARTED:
         }
 
         /* Message is not late; pick up the latest parameters */
-        session->rsequnum = ntohs(header->sequnum);
-        session->rtimestamp = ntohl(header->timestamp);
+        session->rsequnum = net_ntohs(header->sequnum);
+        session->rtimestamp = net_ntohl(header->timestamp);
 
         bwc_add_recv(session->bwc, length);
 
         /* Again, only store message if handler is present
          */
         if (session->mcb) {
-            session->mp = new_message(ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
+            session->mp = new_message(net_ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
 
             /* Reposition data if necessary */
-            if (ntohs(header->cpart)) {
+            if (net_ntohs(header->cpart)) {
                 ;
             }
 
-            memmove(session->mp->data + ntohs(header->cpart), session->mp->data, session->mp->len);
+            memmove(session->mp->data + net_ntohs(header->cpart), session->mp->data, session->mp->len);
         }
     }
 

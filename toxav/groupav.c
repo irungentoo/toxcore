@@ -405,7 +405,7 @@ static int handle_group_audio_packet(void *object, int groupnumber, int friendgr
 
     uint16_t sequnum;
     memcpy(&sequnum, packet, sizeof(sequnum));
-    pk->sequnum = ntohs(sequnum);
+    pk->sequnum = net_ntohs(sequnum);
     pk->length = length - sizeof(uint16_t);
     memcpy(pk->data, packet + sizeof(uint16_t), length - sizeof(uint16_t));
 
@@ -513,7 +513,7 @@ static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet,
     VLA(uint8_t, data, 1 + sizeof(uint16_t) + length);
     data[0] = GROUP_AUDIO_PACKET_ID;
 
-    uint16_t sequnum = htons(group_av->audio_sequnum);
+    uint16_t sequnum = net_htons(group_av->audio_sequnum);
     memcpy(data + 1, &sequnum, sizeof(sequnum));
     memcpy(data + 1 + sizeof(sequnum), packet, length);
 

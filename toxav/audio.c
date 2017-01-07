@@ -165,7 +165,7 @@ void ac_iterate(ACSession *ac)
 
             /* Pick up sampling rate from packet */
             memcpy(&ac->lp_sampling_rate, msg->data, 4);
-            ac->lp_sampling_rate = ntohl(ac->lp_sampling_rate);
+            ac->lp_sampling_rate = net_ntohl(ac->lp_sampling_rate);
 
             ac->lp_channel_count = opus_packet_get_nb_channels(msg->data + 4);
 

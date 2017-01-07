@@ -88,16 +88,16 @@ static void print_assoc(IPPTsPng *assoc, uint8_t ours)
 {
     IP_Port *ipp = &assoc->ip_port;
     char ip_str[IP_NTOA_LEN];
-    printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), ntohs(ipp->port));
+    printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
     printf("\nTimestamp: %llu", (long long unsigned int) assoc->timestamp);
     printf("\nLast pinged: %llu\n", (long long unsigned int) assoc->last_pinged);
 
     ipp = &assoc->ret_ip_port;
 
     if (ours) {
-        printf("OUR IP: %s Port: %u\n", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), ntohs(ipp->port));
+        printf("OUR IP: %s Port: %u\n", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
     } else {
-        printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), ntohs(ipp->port));
+        printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
     }
 
     printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
@@ -138,7 +138,7 @@ static void print_friendlist(DHT *dht)
 
         int friendok = DHT_getfriendip(dht, dht->friends_list[k].public_key, &p_ip);
         char ip_str[IP_NTOA_LEN];
-        printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip, ip_str, sizeof(ip_str)), ntohs(p_ip.port), friendok);
+        printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip, ip_str, sizeof(ip_str)), net_ntohs(p_ip.port), friendok);
 
         printf("\nCLIENTS IN LIST:\n\n");
 
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 
     perror("Initialization");
 
-    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
     int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);

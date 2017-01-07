@@ -276,7 +276,7 @@ static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
 {
     uint32_t num1, num2;
     memcpy(&num1, nonce + (CRYPTO_NONCE_SIZE - sizeof(num1)), sizeof(num1));
-    num1 = ntohl(num1);
+    num1 = net_ntohl(num1);
     num2 = num + num1;
 
     if (num2 < num1) {
@@ -291,7 +291,7 @@ static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
         }
     }
 
-    num2 = htonl(num2);
+    num2 = net_htonl(num2);
     memcpy(nonce + (CRYPTO_NONCE_SIZE - sizeof(num2)), &num2, sizeof(num2));
 }
 

@@ -169,8 +169,8 @@ void send_update(BWController *bwc)
             struct BWCMessage *b_msg = (struct BWCMessage *)(p_msg + 1);
 
             p_msg[0] = BWC_PACKET_ID;
-            b_msg->lost = htonl(bwc->cycle.lost);
-            b_msg->recv = htonl(bwc->cycle.recv);
+            b_msg->lost = net_htonl(bwc->cycle.lost);
+            b_msg->recv = net_htonl(bwc->cycle.recv);
 
             if (-1 == m_send_custom_lossy_packet(bwc->m, bwc->friend_number, p_msg, sizeof(p_msg))) {
                 LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %d)! std error: %s", sizeof(p_msg), strerror(errno));
@@ -192,8 +192,8 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
 
     bwc->cycle.lru = current_time_monotonic();
 
-    uint32_t recv = ntohl(msg->recv);
-    uint32_t lost = ntohl(msg->lost);
+    uint32_t recv = net_ntohl(msg->recv);
+    uint32_t lost = net_ntohl(msg->lost);
 
     LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u", recv, lost);
 

@@ -218,7 +218,7 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num)
      * that loop bounds and their potential underflow or overflow
      * are independent of user-controlled input (you may have heard of the Heartbleed bug).
      */
-    const uint32_t big_endian_num = htonl(host_order_num);
+    const uint32_t big_endian_num = net_htonl(host_order_num);
     const uint8_t *const num_vec = (const uint8_t *) &big_endian_num;
     uint8_t num_as_nonce[crypto_box_NONCEBYTES] = {0};
     num_as_nonce[crypto_box_NONCEBYTES - 4] = num_vec[0];

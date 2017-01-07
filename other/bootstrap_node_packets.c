@@ -61,7 +61,7 @@ int bootstrap_set_callbacks(Networking_Core *net, uint32_t version, uint8_t *mot
         return -1;
     }
 
-    bootstrap_version = htonl(version);
+    bootstrap_version = net_htonl(version);
     memcpy(bootstrap_motd, motd, motd_length);
     bootstrap_motd_length = motd_length;
 
