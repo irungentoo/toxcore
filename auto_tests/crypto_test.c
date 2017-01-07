@@ -344,11 +344,14 @@ END_TEST
 
 static int cmp(const void *a, const void *b)
 {
-    if (a < b) {
+    const clock_t *first = (const clock_t *) a;
+    const clock_t *second = (const clock_t *) b;
+
+    if (*first < *second) {
         return -1;
     }
 
-    if (a > b) {
+    if (*first > *second) {
         return 1;
     }
 
@@ -371,7 +374,7 @@ static clock_t memcmp_median(void *a, void *b, size_t len)
         results[i] = memcmp_time(a, b, len);
     }
 
-    qsort(results, CRYPTO_TEST_MEMCMP_COUNT, sizeof(results), cmp);
+    qsort(results, CRYPTO_TEST_MEMCMP_COUNT, sizeof(*results), cmp);
     return results[CRYPTO_TEST_MEMCMP_COUNT / 2];
 }
 
