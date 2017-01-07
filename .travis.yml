@@ -69,6 +69,3 @@ notifications:
 branches:
   only:
     - master
-
-git:
-  depth: 1
