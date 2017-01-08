@@ -195,7 +195,7 @@ typedef enum TOX_ERR_DECRYPTION {
  *
  * @param plaintext A byte array of length `plaintext_len`.
  * @param plaintext_len The length of the plain text array. Bigger than 0.
- * @param passphrase The user-provided password.
+ * @param passphrase The user-provided password. Can be empty.
  * @param passphrase_len The length of the password.
  * @param ciphertext The cipher text array to write the encrypted data to.
  *
@@ -212,7 +212,7 @@ bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint
  *
  * @param ciphertext A byte array of length `ciphertext_len`.
  * @param ciphertext_len The length of the cipher text array. At least TOX_PASS_ENCRYPTION_EXTRA_LENGTH.
- * @param passphrase The user-provided password.
+ * @param passphrase The user-provided password. Can be empty.
  * @param passphrase_len The length of the password.
  * @param plaintext The plain text array to write the decrypted data to.
  *
@@ -252,6 +252,9 @@ typedef struct Tox_Pass_Key Tox_Pass_Key;
 /**
  * Create a new Tox_Pass_Key. The initial value of it is indeterminate. To
  * initialise it, use one of the derive_* functions below.
+ *
+ * In case of failure, this function returns NULL. The only failure mode at
+ * this time is memory allocation failure, so this function has no error code.
  */
 struct Tox_Pass_Key *tox_pass_key_new(void);
 
@@ -271,7 +274,7 @@ void tox_pass_key_free(struct Tox_Pass_Key *_key);
  * a password, you also must know the random salt that was used. A
  * deterministic version of this function is tox_pass_key_derive_with_salt.
  *
- * @param passphrase The user-provided password.
+ * @param passphrase The user-provided password. Can be empty.
  * @param passphrase_len The length of the password.
  *
  * @return true on success.
@@ -282,7 +285,7 @@ bool tox_pass_key_derive(struct Tox_Pass_Key *_key, const uint8_t *passphrase, s
 /**
  * Same as above, except use the given salt for deterministic key derivation.
  *
- * @param passphrase The user-provided password.
+ * @param passphrase The user-provided password. Can be empty.
  * @param passphrase_len The length of the password.
  * @param salt An array of at least TOX_PASS_SALT_LENGTH bytes.
  *
