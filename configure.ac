@@ -295,7 +295,12 @@ if test "x$WANT_NACL" = "xyes"; then
 fi
 
 # Checks for programs.
-AC_PROG_CC
+AC_PROG_CC_C99
+
+if test "x$ac_cv_prog_cc_c99" = "xno" ; then
+    AC_MSG_ERROR([c-toxcore requires a C99 compatible compiler])
+fi
+
 AM_PROG_CC_C_O
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_LIBTOOL_WIN32_DLL
