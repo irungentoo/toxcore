@@ -34,7 +34,7 @@ libtoxencryptsave_la_CFLAGS =   -I$(top_srcdir) \
                         $(NACL_CFLAGS) \
                         $(PTHREAD_CFLAGS)
 
-libtoxencryptsave_la_LDFLAGS =  $(TOXCORE_LT_LDFLAGS) \
+libtoxencryptsave_la_LDFLAGS =  $(LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
@@ -47,3 +47,9 @@ libtoxencryptsave_la_LIBADD =   $(LIBSODIUM_LIBS) \
                         $(NAC_LIBS) \
                         $(PTHREAD_LIBS) \
                         libtoxcore.la
+
+if SET_SO_VERSION
+
+EXTRA_libtoxencryptsave_la_DEPENDENCIES = ../so.version
+
+endif

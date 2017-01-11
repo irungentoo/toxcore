@@ -56,7 +56,7 @@ libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         $(NACL_CFLAGS) \
                         $(PTHREAD_CFLAGS)
 
-libtoxcore_la_LDFLAGS = $(TOXCORE_LT_LDFLAGS) \
+libtoxcore_la_LDFLAGS = $(LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
@@ -68,3 +68,9 @@ libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NAC_LIBS) \
                         $(PTHREAD_LIBS)
+
+if SET_SO_VERSION
+
+EXTRA_libtoxcore_la_DEPENDENCIES = ../so.version
+
+endif

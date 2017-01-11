@@ -1,0 +1,16 @@
+# .so library version, following the libtool scheme:
+#
+#            current:revision:age
+#
+# current:  increment if interfaces have been added, removed or changed
+# revision: increment if source code has changed, set to zero if current is
+#           incremented
+# age:      increment if interfaces have been added, set to zero if
+#           interfaces have been removed or changed
+#
+# For a full reference see:
+# https://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+
+CURRENT=5
+REVISION=0
+AGE=4

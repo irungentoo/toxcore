@@ -14,7 +14,7 @@ libtoxdns_la_CFLAGS =   -I$(top_srcdir) \
                         $(NACL_CFLAGS) \
                         $(PTHREAD_CFLAGS)
 
-libtoxdns_la_LDFLAGS =  $(TOXCORE_LT_LDFLAGS) \
+libtoxdns_la_LDFLAGS =  $(LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
@@ -27,3 +27,9 @@ libtoxdns_la_LIBADD =   $(LIBSODIUM_LIBS) \
                         $(NAC_LIBS) \
                         $(PTHREAD_LIBS) \
                         libtoxcore.la
+
+if SET_SO_VERSION
+
+EXTRA_libtoxdns_la_DEPENDENCIES = ../so.version
+
+endif

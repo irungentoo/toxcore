@@ -14,6 +14,7 @@ EXTRA_DIST = \
 	README.md \
 	libtoxcore.pc.in \
 	tox.spec \
+	so.version \
 	dist-build/android-arm.sh \
 	dist-build/android-armv7.sh \
 	dist-build/android-x86.sh \

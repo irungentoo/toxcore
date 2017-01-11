@@ -29,7 +29,7 @@ libtoxav_la_CFLAGS = -I../toxcore \
                     $(AV_CFLAGS) \
                     $(PTHREAD_CFLAGS)
 
-libtoxav_la_LDFLAGS = $(TOXAV_LT_LDFLAGS) \
+libtoxav_la_LDFLAGS = $(LT_LDFLAGS) \
                     $(LIBSODIUM_LDFLAGS) \
                     $(NACL_LDFLAGS) \
                     $(EXTRA_LT_LDFLAGS) \
@@ -40,5 +40,11 @@ libtoxav_la_LIBADD =  libtoxcore.la \
                     $(NACL_LIBS) \
                     $(PTHREAD_LIBS) \
                     $(AV_LIBS)
+
+if SET_SO_VERSION
+
+EXTRA_libtoxav_la_DEPENDENCIES = ../so.version
+
+endif
 
 endif
