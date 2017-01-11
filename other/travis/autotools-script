@@ -1,6 +1,9 @@
 #!/bin/sh
 
-# Build toxcore and run tests.
+# Build toxcore with some custom flags here. Note that this does *not* run the
+# tests, so any flags passed here are irrelevant to testing. This only checks
+# that we can build toxcore with the specified flags. Tests run with default
+# configure flags.
 ./autogen.sh
 ./configure \
   --with-nacl-libs=$CACHE_DIR/lib/amd64 \
@@ -15,4 +18,7 @@
 # ever run natively on the Linux container, never on a Windows cross compilation
 # docker instance or an OSX machine.
 make -j$NPROC -k
+
+# This runs `make check` with the default configure flags, not with the ones
+# above.
 make distcheck -j$NPROC -k
