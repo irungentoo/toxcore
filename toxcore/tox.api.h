@@ -179,7 +179,7 @@ const VERSION_MINOR                = 1;
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-const VERSION_PATCH                = 3;
+const VERSION_PATCH                = 4;
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
