@@ -23,6 +23,10 @@
 #define MSG_NOSIGNAL 0
 #endif
 
+#if defined(__FreeBSD__) && !defined(MSG_NOSIGNAL)
+#define       MSG_NOSIGNAL    0x20000 // only defined on FreeBSD for some __POSIX_VISIBLE, causes compilation failures
+#endif
+
 //IRC name and channel.
 #define IRC_NAME "Tox_syncbot"
 #define IRC_CHANNEL "#tox-real-ontopic"
