@@ -1,8 +1,8 @@
-/* toxav_old.h
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  *
- * Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- * This file is part of Tox.
+ * This file is part of Tox, the free peer to peer instant messenger.
  *
  * Tox is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,8 +15,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
  * This file contains the group chats code for the backwards compatibility.

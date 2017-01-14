@@ -1,5 +1,3 @@
-
-
 #include "../toxcore/network.h"
 #include "../toxcore/tox.h"
 #include "../toxdns/toxdns.h"
