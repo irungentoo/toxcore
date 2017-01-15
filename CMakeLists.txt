@@ -1,3 +1,19 @@
+################################################################################
+#
+# The main toxcore CMake build file.
+#
+# This file when processed with cmake produces:
+# - A number of small libraries (.a/.so/...) containing independent components
+#   of toxcore. E.g. the DHT has its own library, and the system/network
+#   abstractions are in their own library as well. These libraries are not
+#   installed on `make install`. The toxdns, toxav, and toxencryptsave
+#   libraries are also not installed.
+# - A number of small programs, statically linked if possible.
+# - One big library containing all of the toxcore, toxav, toxdns, and
+#   toxencryptsave code.
+#
+################################################################################
+
 cmake_minimum_required(VERSION 2.8.6)
 cmake_policy(VERSION 2.8.6)
 project(toxcore)
@@ -30,7 +46,6 @@ math(EXPR SOVERSION_MAJOR ${SOVERSION_CURRENT}-${SOVERSION_AGE})
 set(SOVERSION "${SOVERSION_MAJOR}.${SOVERSION_AGE}.${SOVERSION_REVISION}")
 message("SOVERSION: ${SOVERSION}")
 
-
 ################################################################################
 #
 # :: Dependencies and configuration
@@ -39,9 +54,8 @@ message("SOVERSION: ${SOVERSION}")
 
 include(AddCompilerFlag)
 include(ApiDsl)
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
 include(MacRpath)
+include(ModulePackage)
 include(StrictAbi)
 
 enable_testing()
@@ -172,20 +186,10 @@ endif()
 #
 ################################################################################
 
-# toxcore_PKGCONFIG_LIBS is what's added to the Libs: line in toxcore.pc. It
-# needs to contain all the libraries a program using toxcore should link against
-# if it's statically linked. If it's dynamically linked, there is no need to
-# explicitly link against all the dependencies, but it doesn't harm much(*)
-# either.
-#
-# (*) It allows client code to use symbols from our dependencies without
-#    explicitly linking against them.
-set(toxcore_PKGCONFIG_LIBS)
-
 # LAYER 1: Crypto core
 # --------------------
 apidsl(toxcore/crypto_core.api.h)
-add_module(toxcrypto
+add_submodule(toxcore toxcrypto
   toxcore/ccompat.h
   toxcore/crypto_core.c
   toxcore/crypto_core.h
@@ -194,10 +198,11 @@ include(CheckFunctionExists)
 check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 check_function_exists(memset_s HAVE_MEMSET_S)
 target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
+set(toxcrypto_PKGCONFIG_REQUIRES ${toxcrypto_PKGCONFIG_REQUIRES} libsodium)
 
 # LAYER 2: Basic networking
 # -------------------------
-add_module(toxnetwork
+add_submodule(toxcore toxnetwork
   toxcore/logger.c
   toxcore/logger.h
   toxcore/network.c
@@ -208,22 +213,22 @@ target_link_modules(toxnetwork toxcrypto)
 
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_modules(toxnetwork ${CMAKE_THREAD_LIBS_INIT})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  set(toxnetwork_PKGCONFIG_LIBS ${toxnetwork_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 if(RT_LIBRARIES)
   target_link_modules(toxnetwork ${RT_LIBRARIES})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
+  set(toxnetwork_PKGCONFIG_LIBS ${toxnetwork_PKGCONFIG_LIBS} "-lrt")
 endif()
 
 if(WIN32)
   target_link_modules(toxnetwork ws2_32 iphlpapi)
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
+  set(toxnetwork_PKGCONFIG_LIBS ${toxnetwork_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
 endif()
 
 # LAYER 3: Distributed Hash Table
 # -------------------------------
-add_module(toxdht
+add_submodule(toxcore toxdht
   toxcore/DHT.c
   toxcore/DHT.h
   toxcore/LAN_discovery.c
@@ -236,7 +241,7 @@ target_link_modules(toxdht toxnetwork)
 
 # LAYER 4: Onion routing, TCP connections, crypto connections
 # -----------------------------------------------------------
-add_module(toxnetcrypto
+add_submodule(toxcore toxnetcrypto
   toxcore/TCP_client.c
   toxcore/TCP_client.h
   toxcore/TCP_connection.c
@@ -257,7 +262,7 @@ target_link_modules(toxnetcrypto toxdht)
 
 # LAYER 5: Friend requests and connections
 # ----------------------------------------
-add_module(toxfriends
+add_submodule(toxcore toxfriends
   toxcore/friend_connection.c
   toxcore/friend_connection.h
   toxcore/friend_requests.c
@@ -266,14 +271,14 @@ target_link_modules(toxfriends toxnetcrypto)
 
 # LAYER 6: Tox messenger
 # ----------------------
-add_module(toxmessenger
+add_submodule(toxcore toxmessenger
   toxcore/Messenger.c
   toxcore/Messenger.h)
 target_link_modules(toxmessenger toxfriends)
 
 # LAYER 7: Group chats
 # --------------------
-add_module(toxgroup
+add_submodule(toxcore toxgroup
   toxcore/group.c
   toxcore/group.h)
 target_link_modules(toxgroup toxmessenger)
@@ -281,11 +286,12 @@ target_link_modules(toxgroup toxmessenger)
 # LAYER 8: Public API
 # -------------------
 apidsl(toxcore/tox.api.h)
-add_module(toxcore
+add_submodule(toxcore toxapi
   toxcore/tox_api.c
   toxcore/tox.c
   toxcore/tox.h)
-target_link_modules(toxcore toxgroup)
+target_link_modules(toxapi toxgroup)
+set(toxapi_API_HEADERS ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox)
 
 ################################################################################
 #
@@ -295,7 +301,7 @@ target_link_modules(toxcore toxgroup)
 
 if(BUILD_TOXAV)
   apidsl(toxav/toxav.api.h)
-  add_module(toxav
+  add_submodule(toxcore toxav
     toxav/audio.c
     toxav/audio.h
     toxav/bwcontroller.c
@@ -313,7 +319,11 @@ if(BUILD_TOXAV)
     toxav/toxav_old.c
     toxav/video.c
     toxav/video.h)
-  target_link_modules(toxav toxcore ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+  target_link_modules(toxav toxgroup ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+  set(toxav_PKGCONFIG_REQUIRES ${toxav_PKGCONFIG_REQUIRES} opus vpx)
+
+  set(toxav_API_HEADERS ${toxcore_SOURCE_DIR}/toxav/toxav.h^toxav)
+  make_version_script(toxav ${toxav_API_HEADERS})
 endif()
 
 ################################################################################
@@ -322,15 +332,54 @@ endif()
 #
 ################################################################################
 
-add_module(toxdns
+add_submodule(toxcore toxdns
   toxdns/toxdns.c)
-target_link_modules(toxdns toxcore)
+target_link_modules(toxdns toxnetwork)
+set(toxdns_API_HEADERS ${toxcore_SOURCE_DIR}/toxdns/toxdns.h^tox)
 
 apidsl(toxencryptsave/toxencryptsave.api.h)
-add_module(toxencryptsave
+add_submodule(toxcore toxencryptsave
   toxencryptsave/toxencryptsave.c
   toxencryptsave/toxencryptsave.h)
-target_link_modules(toxencryptsave toxcore)
+target_link_modules(toxencryptsave toxcrypto)
+set(toxencryptsave_API_HEADERS ${toxcore_SOURCE_DIR}/toxencryptsave/toxencryptsave.h^tox)
+
+################################################################################
+#
+# :: All layers together in one library for ease of use
+#
+################################################################################
+
+# Create combined library from all the sources.
+add_module(toxcore ${toxcore_SOURCES})
+
+# Link it to all dependencies.
+foreach(sublib ${toxcore_SUBLIBS})
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${${sublib}_LINK_MODULES})
+endforeach()
+target_link_modules(toxcore ${toxcore_LINK_MODULES})
+
+# Concatenate all the pkg-config Libs: lines.
+foreach(sublib ${toxcore_SUBLIBS})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${${sublib}_PKGCONFIG_LIBS})
+endforeach()
+
+# Concatenate all the pkg-config Requires: lines.
+foreach(sublib ${toxcore_SUBLIBS})
+  set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} ${${sublib}_PKGCONFIG_REQUIRES})
+endforeach()
+
+# Collect all API headers.
+foreach(sublib ${toxcore_SUBLIBS})
+  set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${${sublib}_API_HEADERS})
+endforeach()
+
+# Make version script (on systems that support it) to limit symbol visibility.
+make_version_script(toxcore ${toxcore_API_HEADERS})
+
+# Generate pkg-config file, install library to "lib" and install headers to
+# "include/tox".
+install_module(toxcore DESTINATION "include/tox")
 
 ################################################################################
 #
@@ -338,7 +387,9 @@ target_link_modules(toxencryptsave toxcore)
 #
 ################################################################################
 
-find_program(SPECTEST NAMES tox-spectest)
+find_program(SPECTEST NAMES
+  tox-spectest
+  ../.stack-work/install/x86_64-linux/lts-2.22/7.8.4/bin/tox-spectest)
 
 if(NOT SPECTEST)
   find_program(STACK NAMES stack)
@@ -360,6 +411,8 @@ if(MSGPACK_FOUND)
     testing/hstox/util.c)
   target_link_modules(toxcore-sut
     toxcore
+    toxdht
+    toxnetcrypto
     ${MSGPACK_LIBRARIES})
   if(SPECTEST)
     add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
@@ -393,11 +446,10 @@ function(auto_test target)
     add_c_executable(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test
       toxcore
-      toxencryptsave
+      toxcrypto
+      toxmessenger
+      toxnetcrypto
       ${CHECK_LIBRARIES})
-    if(BUILD_TOXAV)
-      target_link_modules(auto_${target}_test toxav)
-    endif()
     if(NOT ARGV1 STREQUAL "DONT_RUN")
       add_test(NAME ${target} COMMAND auto_${target}_test)
       set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
@@ -478,7 +530,7 @@ if(BOOTSTRAP_DAEMON)
       other/bootstrap_daemon/src/tox-bootstrapd.c
       other/bootstrap_node_packets.c
       other/bootstrap_node_packets.h)
-    target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
+    target_link_modules(tox-bootstrapd toxfriends ${LIBCONFIG_LIBRARIES})
     install(TARGETS tox-bootstrapd RUNTIME DESTINATION bin)
   endif()
 endif()
@@ -491,11 +543,11 @@ endif()
 
 option(BUILD_AV_TEST "Build toxav test" ON)
 if(NOT WIN32
-   AND BUILD_AV_TEST AND BUILD_TOXAV
-   AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
+  AND BUILD_AV_TEST AND BUILD_TOXAV
+  AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
   add_c_executable(av_test testing/av_test.c)
   target_link_modules(av_test
-    toxav
+    toxcore
     ${OPENCV_LIBRARIES}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES})
@@ -533,80 +585,5 @@ endif()
 
 if(NOT WIN32)
   add_c_executable(irc_syncbot testing/irc_syncbot.c)
-  target_link_modules(irc_syncbot toxcore)
-endif()
-
-################################################################################
-#
-# :: Installation and pkg-config
-#
-################################################################################
-
-string(REPLACE ";" " " toxcore_PKGCONFIG_LIBS "${toxcore_PKGCONFIG_LIBS}")
-
-if(BUILD_TOXAV)
-  configure_file(
-    "${toxcore_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
-    "${CMAKE_BINARY_DIR}/toxav.pc"
-    @ONLY
-  )
-endif()
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
-  "${CMAKE_BINARY_DIR}/toxcore.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
-  "${CMAKE_BINARY_DIR}/toxdns.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
-  "${CMAKE_BINARY_DIR}/toxencryptsave.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
-  "${CMAKE_BINARY_DIR}/libtoxcore.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
-  "${CMAKE_BINARY_DIR}/libtoxav.pc"
-  @ONLY
-)
-
-install(FILES
-  ${CMAKE_BINARY_DIR}/libtoxcore.pc
-  ${CMAKE_BINARY_DIR}/toxcore.pc
-  ${CMAKE_BINARY_DIR}/toxdns.pc
-  ${CMAKE_BINARY_DIR}/toxencryptsave.pc
-  DESTINATION "lib/pkgconfig")
-install(FILES
-  toxcore/tox.h
-  toxdns/toxdns.h
-  toxencryptsave/toxencryptsave.h
-  DESTINATION "include/tox")
-
-if(BUILD_TOXAV)
-  install(FILES
-    ${CMAKE_BINARY_DIR}/libtoxav.pc
-    ${CMAKE_BINARY_DIR}/toxav.pc
-    DESTINATION "lib/pkgconfig")
-  install(FILES
-    toxav/toxav.h
-    DESTINATION "include/tox")
-endif()
-
-if(STRICT_ABI AND SHELL AND ENABLE_SHARED)
-  if(BUILD_TOXAV)
-    make_version_script(${toxcore_SOURCE_DIR}/toxav/toxav.h toxav toxav)
-  endif()
-  make_version_script(${toxcore_SOURCE_DIR}/toxcore/tox.h tox toxcore)
+  target_link_modules(irc_syncbot toxcore toxnetwork)
 endif()

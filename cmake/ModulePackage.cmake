@@ -51,45 +51,123 @@ function(pkg_use_module mod pkg)
   endif()
 endfunction()
 
+macro(add_submodule super lib)
+  add_module(${lib} ${ARGN})
+  set(${super}_SUBLIBS ${${super}_SUBLIBS} ${lib})
+  set(${super}_SOURCES ${${super}_SOURCES} ${${lib}_SOURCES})
+endmacro()
+
 function(add_module lib)
   set_source_language(${ARGN})
+  set(${lib}_SOURCES ${ARGN} PARENT_SCOPE)
 
   if(ENABLE_SHARED)
     add_library(${lib}_shared SHARED ${ARGN})
+    set_target_properties(${lib}_shared PROPERTIES OUTPUT_NAME ${lib})
+  endif()
+  if(ENABLE_STATIC)
+    add_library(${lib}_static STATIC ${ARGN})
+    set_target_properties(${lib}_static PROPERTIES OUTPUT_NAME ${lib})
+  endif()
+
+  # ${lib}_PKGCONFIG_LIBS is what's added to the Libs: line in ${lib}.pc. It
+  # needs to contain all the libraries a program using ${lib} should link against
+  # if it's statically linked. If it's dynamically linked, there is no need to
+  # explicitly link against all the dependencies, but it doesn't harm much(*)
+  # either.
+  #
+  # (*) It allows client code to use symbols from our dependencies without
+  #    explicitly linking against them.
+  set(${lib}_PKGCONFIG_LIBS PARENT_SCOPE)
+  # Requires: in pkg-config file.
+  set(${lib}_PKGCONFIG_REQUIRES PARENT_SCOPE)
+endfunction()
+
+function(install_module lib)
+  if(ENABLE_SHARED)
     set_target_properties(${lib}_shared PROPERTIES
-      OUTPUT_NAME ${lib}
       VERSION ${SOVERSION}
       SOVERSION ${SOVERSION_MAJOR}
     )
     install(TARGETS ${lib}_shared DESTINATION "lib")
   endif()
   if(ENABLE_STATIC)
-    add_library(${lib}_static STATIC ${ARGN})
-    set_target_properties(${lib}_static PROPERTIES OUTPUT_NAME ${lib})
     install(TARGETS ${lib}_static DESTINATION "lib")
   endif()
+
+  string(REPLACE ";" " " ${lib}_PKGCONFIG_LIBS "${${lib}_PKGCONFIG_LIBS}")
+  string(REPLACE ";" " " ${lib}_PKGCONFIG_REQUIRES "${${lib}_PKGCONFIG_REQUIRES}")
+
+  configure_file(
+    "${${lib}_SOURCE_DIR}/other/pkgconfig/${lib}.pc.in"
+    "${CMAKE_BINARY_DIR}/${lib}.pc"
+    @ONLY
+  )
+
+  install(FILES
+    ${CMAKE_BINARY_DIR}/${lib}.pc
+    DESTINATION "lib/pkgconfig")
+
+  foreach(sublib ${${lib}_API_HEADERS})
+    string(REPLACE "^" ";" sublib ${sublib})
+    list(GET sublib 0 header)
+
+    install(FILES ${header} ${ARGN})
+  endforeach()
 endfunction()
 
 function(target_link_modules target)
+  # If the target we're adding dependencies to is a shared library, add it to
+  # the set of targets.
   if(TARGET ${target}_shared)
     set(_targets ${_targets} ${target}_shared)
+    # Shared libraries should first try to link against other shared libraries.
+    set(${target}_shared_primary shared)
+    # If that fails (because the shared target doesn't exist), try linking
+    # against the static library. This requires the static library's objects to
+    # be PIC.
+    set(${target}_shared_secondary static)
   endif()
+  # It can also be a static library at the same time.
   if(TARGET ${target}_static)
     set(_targets ${_targets} ${target}_static)
+    # Static libraries aren't actually linked, but their dependencies are
+    # recorded by "linking" them. If we link an executable to a static library,
+    # we want to also link statically against its transitive dependencies.
+    set(${target}_static_primary static)
+    # If a dependency doesn't exist as static library, we link against the
+    # shared one.
+    set(${target}_static_secondary shared)
   endif()
+  # If it's neither, then it's an executable.
   if(NOT _targets)
     set(_targets ${_targets} ${target})
+    # Executables preferrably link against static libraries, so they are
+    # standalone and can be shipped without any external dependencies. As a
+    # frame of reference: nTox becomes an 1.3M binary instead of 139K on x86_64
+    # Linux.
+    set(${target}_primary static)
+    set(${target}_secondary shared)
   endif()
 
-  foreach(target ${_targets})
-    foreach(dep ${ARGN})
-      if(TARGET ${dep}_shared)
-        target_link_libraries(${target} ${dep}_shared)
-      elseif(TARGET ${dep}_static)
-        target_link_libraries(${target} ${dep}_static)
+  foreach(dep ${ARGN})
+    foreach(_target ${_targets})
+      if(TARGET ${dep}_${${_target}_primary})
+        target_link_libraries(${_target} ${dep}_${${_target}_primary})
+      elseif(TARGET ${dep}_${${_target}_secondary})
+        target_link_libraries(${_target} ${dep}_${${_target}_secondary})
       else()
-        target_link_libraries(${target} ${dep})
+        # We record the modules linked to this target, so that we can collect
+        # them later when linking a composed module.
+        list(FIND LINK_MODULES ${dep} _index)
+        if(_index EQUAL -1)
+          set(LINK_MODULES ${LINK_MODULES} ${dep})
+        endif()
+
+        target_link_libraries(${_target} ${dep})
       endif()
     endforeach()
   endforeach()
+
+  set(${target}_LINK_MODULES ${${target}_LINK_MODULES} ${LINK_MODULES} PARENT_SCOPE)
 endfunction()
