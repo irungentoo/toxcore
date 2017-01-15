@@ -2559,36 +2559,36 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 {
     DHT *dht = (DHT *)object;
 
-    if (packet[0] == NET_PACKET_CRYPTO) {
-        if (length <= CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 + CRYPTO_MAC_SIZE ||
-                length > MAX_CRYPTO_REQUEST_SIZE + CRYPTO_MAC_SIZE) {
+    assert(packet[0] == NET_PACKET_CRYPTO);
+
+    if (length <= CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 + CRYPTO_MAC_SIZE ||
+            length > MAX_CRYPTO_REQUEST_SIZE + CRYPTO_MAC_SIZE) {
+        return 1;
+    }
+
+    if (public_key_cmp(packet + 1, dht->self_public_key) == 0) { // Check if request is for us.
+        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
+        uint8_t number;
+        int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
+
+        if (len == -1 || len == 0) {
             return 1;
         }
 
-        if (public_key_cmp(packet + 1, dht->self_public_key) == 0) { // Check if request is for us.
-            uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-            uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
-            uint8_t number;
-            int len = handle_request(dht->self_public_key, dht->self_secret_key, public_key, data, &number, packet, length);
-
-            if (len == -1 || len == 0) {
-                return 1;
-            }
-
-            if (!dht->cryptopackethandlers[number].function) {
-                return 1;
-            }
-
-            return dht->cryptopackethandlers[number].function(dht->cryptopackethandlers[number].object, source, public_key,
-                    data, len, userdata);
+        if (!dht->cryptopackethandlers[number].function) {
+            return 1;
         }
 
-        /* If request is not for us, try routing it. */
-        int retval = route_packet(dht, packet + 1, packet, length);
+        return dht->cryptopackethandlers[number].function(dht->cryptopackethandlers[number].object, source, public_key,
+                data, len, userdata);
+    }
 
-        if ((unsigned int)retval == length) {
-            return 0;
-        }
+    /* If request is not for us, try routing it. */
+    int retval = route_packet(dht, packet + 1, packet, length);
+
+    if ((unsigned int)retval == length) {
+        return 0;
     }
 
     return 1;
