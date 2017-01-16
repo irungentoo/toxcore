@@ -440,10 +440,13 @@ endif()
 #
 ################################################################################
 
-add_c_executable(DHT_bootstrap
-  other/DHT_bootstrap.c
-  other/bootstrap_node_packets.c)
-target_link_modules(DHT_bootstrap toxnetcrypto)
+option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
+if(DHT_BOOTSTRAP)
+  add_c_executable(DHT_bootstrap
+    other/DHT_bootstrap.c
+    other/bootstrap_node_packets.c)
+  target_link_modules(DHT_bootstrap toxnetcrypto)
+endif()
 
 option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
 if(BOOTSTRAP_DAEMON)
