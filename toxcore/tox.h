@@ -3504,7 +3504,7 @@ typedef enum TOX_ERR_GROUP_INVITE_ACCEPT {
  *
  * @return the groupnumber on success, UINT32_MAX on failure.
  */
-uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
+uint32_t tox_group_invite_accept(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length, const uint8_t *password,
                                  size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error);
 
 /**

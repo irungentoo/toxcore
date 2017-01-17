@@ -61,6 +61,12 @@ typedef enum GROUP_MODERATION_EVENT {
     MV_INVALID
 } GROUP_MODERATION_EVENT;
 
+enum {
+    GROUP_INVITE,
+    GROUP_INVITE_ACCEPTED,
+    GROUP_INVITE_CONFIRMATION
+} GROUP_INVITE_MESSAGE_TYPE;
+
 /* Group roles are hierarchical where each role has a set of privileges plus
  * all the privileges of the roles below it.
  *
@@ -135,7 +141,7 @@ typedef enum GROUP_PACKET_TYPE {
     GP_MOD_LIST                 = 252,
     GP_SANCTIONS_LIST           = 253,
     GP_FRIEND_INVITE            = 254,
-    GP_HS_RESPONSE_ACK          = 255,
+    GP_HS_RESPONSE_ACK          = 255
 } GROUP_PACKET_TYPE;
 
 typedef enum GROUP_HANDSHAKE_JOIN_TYPE {
@@ -628,7 +634,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat);
  * Return -2 if the group object fails to initialize.
  * Return -3 if there is an error setting the password.
  */
-int gc_accept_invite(GC_Session *c, const uint8_t *data, uint16_t length, const uint8_t *passwd, uint16_t passwd_len);
+int gc_accept_invite(GC_Session *c, int32_t friend_number, const uint8_t *data, uint16_t length, const uint8_t *passwd, uint16_t passwd_len);
 
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
  *
@@ -694,5 +700,12 @@ int handle_gc_lossless_helper(struct Messenger *m, int groupnumber, uint32_t pee
  * Returns -1 on failure.
  */
 int broadcast_gc_sanctions_list(GC_Chat *chat);
+
+
+int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uint8_t *data,
+                                     uint32_t length);
+
+int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const uint8_t *data,
+                                      uint32_t length);
 
 #endif  /* GROUP_CHATS_H */

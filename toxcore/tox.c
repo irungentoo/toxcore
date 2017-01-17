@@ -2060,11 +2060,11 @@ bool tox_group_invite_friend(Tox *tox, uint32_t groupnumber, uint32_t friend_num
     return 0;
 }
 
-uint32_t tox_group_invite_accept(Tox *tox, const uint8_t *invite_data, size_t length, const uint8_t *password,
-                                 size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
+uint32_t tox_group_invite_accept(Tox *tox, uint32_t friend_number, const uint8_t *invite_data, size_t length,
+                                 const uint8_t *password, size_t password_length, TOX_ERR_GROUP_INVITE_ACCEPT *error)
 {
     Messenger *m = tox;
-    int ret = gc_accept_invite(m->group_handler, invite_data, length, password, password_length);
+    int ret = gc_accept_invite(m->group_handler, friend_number, invite_data, length, password, password_length);
 
     if (ret >= 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GROUP_INVITE_ACCEPT_OK);
