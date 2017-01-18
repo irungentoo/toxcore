@@ -5699,8 +5699,9 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
     GC_Connection *gconn = gcc_get_connection(chat, peer_id);
 
     Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
-    int num_nodes = unpack_nodes(data + ENC_PUBLIC_KEY + CHAT_ID_SIZE, GCC_MAX_TCP_SHARED_RELAYS,
-                                 NULL, data, length - ENC_PUBLIC_KEY - CHAT_ID_SIZE, 1);
+    int num_nodes = unpack_nodes(tcp_relays, GCC_MAX_TCP_SHARED_RELAYS,
+                                 NULL, data + ENC_PUBLIC_KEY + CHAT_ID_SIZE,
+                                 length - ENC_PUBLIC_KEY - CHAT_ID_SIZE, 1);
 
     if (num_nodes <= 0) {
         return -1;
@@ -5760,9 +5761,10 @@ int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uin
         return 0;
     }
 
-    uint8_t send_data[HASH_ID_BYTES + sizeof(tcp_relays)];
-    U32_to_bytes(send_data, chat->self_public_key_hash);
-    uint32_t len = HASH_ID_BYTES + ENC_PUBLIC_KEY;
+    uint32_t len = CHAT_ID_SIZE + ENC_PUBLIC_KEY;
+    uint8_t send_data[len + sizeof(tcp_relays)];
+    memcpy(send_data, chat_id, CHAT_ID_SIZE);
+    memcpy(send_data + CHAT_ID_SIZE, chat->self_public_key, ENC_PUBLIC_KEY);
 
     for (i = 0; i < num; ++i) {
         add_tcp_relay_connection(chat->tcp_conn, gconn->tcp_connection_num, tcp_relays[i].ip_port,
@@ -5777,7 +5779,7 @@ int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uin
 
     len += nodes_len;
 
-    if (send_gc_invite_confirmed_packet(c->messenger, chat, friend_number, data, len)) {
+    if (send_gc_invite_confirmed_packet(c->messenger, chat, friend_number, send_data, len)) {
         return -4;
     }
 
