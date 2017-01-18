@@ -5655,15 +5655,9 @@ static int send_gc_invite_confirmed_packet(Messenger *m, GC_Chat *chat, uint32_t
     packet[0] = GP_FRIEND_INVITE;
     packet[1] = GROUP_INVITE_CONFIRMATION;
 
-    memcpy(packet + 2, CHAT_ID(chat->chat_public_key), CHAT_ID_SIZE);
+    memcpy(packet + 2, data, length);
 
-    uint16_t len = 2 + CHAT_ID_SIZE;
-
-    memcpy(packet + len, data, length);
-
-    len += ENC_PUBLIC_KEY;
-
-    if (send_group_invite_packet(m, friend_number, packet, len) == -1) {
+    if (send_group_invite_packet(m, friend_number, packet, length + 2) == -1) {
         return -3;
     }
 
@@ -5674,7 +5668,7 @@ static int send_gc_invite_confirmed_packet(Messenger *m, GC_Chat *chat, uint32_t
 int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const uint8_t *data,
                                      uint32_t length)
 {
-    if (length <= CHAT_ID_SIZE) {
+    if (length <= CHAT_ID_SIZE + ENC_PUBLIC_KEY) {
         return -1;
     }
 
@@ -5706,7 +5700,7 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
 
     Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
     int num_nodes = unpack_nodes(data + ENC_PUBLIC_KEY + CHAT_ID_SIZE, GCC_MAX_TCP_SHARED_RELAYS,
-                                 NULL, data, length, 1);
+                                 NULL, data, length - ENC_PUBLIC_KEY - CHAT_ID_SIZE, 1);
 
     if (num_nodes <= 0) {
         return -1;
@@ -5717,6 +5711,10 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
     for (i = 0; i < num_nodes; ++i) {
         add_tcp_relay_connection(chat->tcp_conn, gconn->tcp_connection_num, tcp_relays[i].ip_port,
                                  tcp_relays[i].public_key);
+    }
+
+    if (send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, HJ_PRIVATE) == -1) {
+        return -1;
     }
 
     return 0;
@@ -5758,7 +5756,7 @@ int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uin
     Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
     unsigned int i, num = tcp_copy_connected_relays(chat->tcp_conn, tcp_relays, GCC_MAX_TCP_SHARED_RELAYS);
 
-    if (num == 0) {
+    if (num <= 0) {
         return 0;
     }
 
