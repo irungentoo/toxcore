@@ -39,8 +39,10 @@
 #define MAX_INTERFACES 16
 
 
+/* TODO: multiple threads might concurrently try to set these, and it isn't clear that this couldn't lead to undesirable
+ * behaviour. Consider storing the data in per-instance variables instead. */
 static int     broadcast_count = -1;
-static IP_Port broadcast_ip_port[MAX_INTERFACES];
+static IP_Port broadcast_ip_ports[MAX_INTERFACES];
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 
@@ -48,8 +50,6 @@ static IP_Port broadcast_ip_port[MAX_INTERFACES];
 
 static void fetch_broadcast_info(uint16_t port)
 {
-    broadcast_count = 0;
-
     IP_ADAPTER_INFO *pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
     unsigned long ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 
@@ -66,6 +66,13 @@ static void fetch_broadcast_info(uint16_t port)
         }
     }
 
+    /* We copy these to the static variables broadcast_* only at the end of fetch_broadcast_info().
+     * The intention is to ensure that even if multiple threads enter fetch_broadcast_info() concurrently, only valid
+     * interfaces will be set to be broadcast to.
+     * */
+    int count = 0;
+    IP_Port ip_ports[MAX_INTERFACES];
+
     int ret;
 
     if ((ret = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
@@ -77,16 +84,16 @@ static void fetch_broadcast_info(uint16_t port)
             if (addr_parse_ip(pAdapter->IpAddressList.IpMask.String, &subnet_mask)
                     && addr_parse_ip(pAdapter->GatewayList.IpAddress.String, &gateway)) {
                 if (gateway.family == AF_INET && subnet_mask.family == AF_INET) {
-                    IP_Port *ip_port = &broadcast_ip_port[broadcast_count];
+                    IP_Port *ip_port = &ip_ports[count];
                     ip_port->ip.family = AF_INET;
                     uint32_t gateway_ip = ntohl(gateway.ip4.uint32), subnet_ip = ntohl(subnet_mask.ip4.uint32);
                     uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
                     ip_port->ip.ip4.uint32 = htonl(broadcast_ip);
                     ip_port->port = port;
-                    broadcast_count++;
+                    count++;
 
-                    if (broadcast_count >= MAX_INTERFACES) {
-                        return;
+                    if (count >= MAX_INTERFACES) {
+                        break;
                     }
                 }
             }
@@ -98,6 +105,12 @@ static void fetch_broadcast_info(uint16_t port)
     if (pAdapterInfo) {
         free(pAdapterInfo);
     }
+
+    broadcast_count = count;
+
+    for (uint32_t i = 0; i < count; i++) {
+        broadcast_ip_ports[i] = ip_ports[i];
+    }
 }
 
 #elif defined(__linux__)
@@ -108,7 +121,6 @@ static void fetch_broadcast_info(uint16_t port)
      * so it's wrapped in __linux for now.
      * Definitely won't work like this on Windows...
      */
-    broadcast_count = 0;
     sock_t sock = 0;
 
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -128,14 +140,21 @@ static void fetch_broadcast_info(uint16_t port)
         return;
     }
 
+    /* We copy these to the static variables broadcast_* only at the end of fetch_broadcast_info().
+     * The intention is to ensure that even if multiple threads enter fetch_broadcast_info() concurrently, only valid
+     * interfaces will be set to be broadcast to.
+     * */
+    int count = 0;
+    IP_Port ip_ports[MAX_INTERFACES];
+
     /* ifconf.ifc_len is set by the ioctl() to the actual length used;
      * on usage of the complete array the call should be repeated with
      * a larger array, not done (640kB and 16 interfaces shall be
      * enough, for everybody!)
      */
-    int i, count = ifconf.ifc_len / sizeof(struct ifreq);
+    int i, n = ifconf.ifc_len / sizeof(struct ifreq);
 
-    for (i = 0; i < count; i++) {
+    for (i = 0; i < n; i++) {
         /* there are interfaces with are incapable of broadcast */
         if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
             continue;
@@ -148,12 +167,11 @@ static void fetch_broadcast_info(uint16_t port)
 
         struct sockaddr_in *sock4 = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
 
-        if (broadcast_count >= MAX_INTERFACES) {
-            close(sock);
-            return;
+        if (count >= MAX_INTERFACES) {
+            break;
         }
 
-        IP_Port *ip_port = &broadcast_ip_port[broadcast_count];
+        IP_Port *ip_port = &ip_ports[count];
         ip_port->ip.family = AF_INET;
         ip_port->ip.ip4.in_addr = sock4->sin_addr;
 
@@ -162,10 +180,16 @@ static void fetch_broadcast_info(uint16_t port)
         }
 
         ip_port->port = port;
-        broadcast_count++;
+        count++;
     }
 
     close(sock);
+
+    broadcast_count = count;
+
+    for (uint32_t i = 0; i < count; i++) {
+        broadcast_ip_ports[i] = ip_ports[i];
+    }
 }
 
 #else // TODO(irungentoo): Other platforms?
@@ -196,7 +220,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, const uint8
     int i;
 
     for (i = 0; i < broadcast_count; i++) {
-        sendpacket(net, broadcast_ip_port[i], data, length);
+        sendpacket(net, broadcast_ip_ports[i], data, length);
     }
 
     return 1;

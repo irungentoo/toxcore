@@ -538,9 +538,12 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
             if (ip_port.ip.family == AF_INET) {
 
                 if (!ipport_equal(&list[i].assoc4.ip_port, &ip_port)) {
+                    char ip_str[IP_NTOA_LEN];
                     LOGGER_TRACE(log, "coipil[%u]: switching ipv4 from %s:%u to %s:%u", i,
-                                 ip_ntoa(&list[i].assoc4.ip_port.ip), ntohs(list[i].assoc4.ip_port.port),
-                                 ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                                 ip_ntoa(&list[i].assoc4.ip_port.ip, ip_str, sizeof(ip_str)),
+                                 ntohs(list[i].assoc4.ip_port.port),
+                                 ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
+                                 ntohs(ip_port.port));
                 }
 
                 if (LAN_ip(list[i].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
@@ -552,9 +555,12 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
             } else if (ip_port.ip.family == AF_INET6) {
 
                 if (!ipport_equal(&list[i].assoc6.ip_port, &ip_port)) {
+                    char ip_str[IP_NTOA_LEN];
                     LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", i,
-                                 ip_ntoa(&list[i].assoc6.ip_port.ip), ntohs(list[i].assoc6.ip_port.port),
-                                 ip_ntoa(&ip_port.ip), ntohs(ip_port.port));
+                                 ip_ntoa(&list[i].assoc6.ip_port.ip, ip_str, sizeof(ip_str)),
+                                 ntohs(list[i].assoc6.ip_port.port),
+                                 ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
+                                 ntohs(ip_port.port));
                 }
 
                 if (LAN_ip(list[i].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
@@ -785,12 +791,20 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
     return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family, is_LAN, want_good);
 }
 
-static uint8_t cmp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+typedef struct {
+    const uint8_t *base_public_key;
+    Client_data entry;
+} Cmp_data;
+
 static int cmp_dht_entry(const void *a, const void *b)
 {
-    Client_data entry1, entry2;
-    memcpy(&entry1, a, sizeof(Client_data));
-    memcpy(&entry2, b, sizeof(Client_data));
+    Cmp_data cmp1, cmp2;
+    memcpy(&cmp1, a, sizeof(Cmp_data));
+    memcpy(&cmp2, b, sizeof(Cmp_data));
+    Client_data entry1 = cmp1.entry;
+    Client_data entry2 = cmp2.entry;
+    const uint8_t *cmp_public_key = cmp1.base_public_key;
+
     int t1 = is_timeout(entry1.assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(entry1.assoc6.timestamp, BAD_NODE_TIMEOUT);
     int t2 = is_timeout(entry2.assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(entry2.assoc6.timestamp, BAD_NODE_TIMEOUT);
 
@@ -851,8 +865,20 @@ static unsigned int store_node_ok(const Client_data *client, const uint8_t *publ
 
 static void sort_client_list(Client_data *list, unsigned int length, const uint8_t *comp_public_key)
 {
-    memcpy(cmp_public_key, comp_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    qsort(list, length, sizeof(Client_data), cmp_dht_entry);
+    // Pass comp_public_key to qsort with each Client_data entry, so the
+    // comparison function cmp_dht_entry can use it as the base of comparison.
+    Cmp_data cmp_list[length];
+
+    for (uint32_t i = 0; i < length; i++) {
+        cmp_list[i].base_public_key = comp_public_key;
+        cmp_list[i].entry = list[i];
+    }
+
+    qsort(cmp_list, length, sizeof(Cmp_data), cmp_dht_entry);
+
+    for (uint32_t i = 0; i < length; i++) {
+        list[i] = cmp_list[i].entry;
+    }
 }
 
 /* Replace a first bad (or empty) node with this one

@@ -41,6 +41,8 @@
 static uint64_t unix_time_value;
 static uint64_t unix_base_time_value;
 
+/* XXX: note that this is not thread-safe; if multiple threads call unix_time_update() concurrently, the return value of
+ * unix_time() may fail to increase monotonically with increasing time */
 void unix_time_update(void)
 {
     if (unix_base_time_value == 0) {

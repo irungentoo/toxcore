@@ -240,6 +240,8 @@ struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
+    time_t lastdump;
+
     uint8_t has_added_relays; // If the first connection has occurred in do_messenger
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
 

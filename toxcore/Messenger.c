@@ -2024,6 +2024,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     set_nospam(&(m->fr), random_int());
     set_filter_function(&(m->fr), &friend_already_added, m);
 
+    m->lastdump = 0;
+
     if (error) {
         *error = MESSENGER_ERROR_NONE;
     }
@@ -2471,18 +2473,22 @@ static void connection_status_cb(Messenger *m, void *userdata)
 
 
 #define DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS 60UL
-static time_t lastdump = 0;
-static char IDString[CRYPTO_PUBLIC_KEY_SIZE * 2 + 1];
-static char *ID2String(const uint8_t *pk)
-{
-    uint32_t i;
 
-    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
-        sprintf(&IDString[i * 2], "%02X", pk[i]);
+#define IDSTRING_LEN (CRYPTO_PUBLIC_KEY_SIZE * 2 + 1)
+/* id_str should be of length at least IDSTRING_LEN */
+static char *id_to_string(const uint8_t *pk, char *id_str, size_t length)
+{
+    if (length < IDSTRING_LEN) {
+        snprintf(id_str, length, "Bad buf length");
+        return id_str;
     }
 
-    IDString[CRYPTO_PUBLIC_KEY_SIZE * 2] = 0;
-    return IDString;
+    for (uint32_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
+        sprintf(&id_str[i * 2], "%02X", pk[i]);
+    }
+
+    id_str[CRYPTO_PUBLIC_KEY_SIZE * 2] = 0;
+    return id_str;
 }
 
 /* Minimum messenger run interval in ms
@@ -2546,8 +2552,8 @@ void do_messenger(Messenger *m, void *userdata)
     do_friends(m, userdata);
     connection_status_cb(m, userdata);
 
-    if (unix_time() > lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
-        lastdump = unix_time();
+    if (unix_time() > m->lastdump + DUMPING_CLIENTS_FRIENDS_EVERY_N_SECONDS) {
+        m->lastdump = unix_time();
         uint32_t client, last_pinged;
 
         for (client = 0; client < LCLIENT_LIST; client++) {
@@ -2557,15 +2563,18 @@ void do_messenger(Messenger *m, void *userdata)
 
             for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
                 if (ip_isset(&assoc->ip_port.ip)) {
-                    last_pinged = lastdump - assoc->last_pinged;
+                    last_pinged = m->lastdump - assoc->last_pinged;
 
                     if (last_pinged > 999) {
                         last_pinged = 999;
                     }
 
+                    char ip_str[IP_NTOA_LEN];
+                    char id_str[IDSTRING_LEN];
                     LOGGER_TRACE(m->log, "C[%2u] %s:%u [%3u] %s",
-                                 client, ip_ntoa(&assoc->ip_port.ip), ntohs(assoc->ip_port.port),
-                                 last_pinged, ID2String(cptr->public_key));
+                                 client, ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
+                                 ntohs(assoc->ip_port.port), last_pinged,
+                                 id_to_string(cptr->public_key, id_str, sizeof(id_str)));
                 }
             }
         }
@@ -2617,11 +2626,14 @@ void do_messenger(Messenger *m, void *userdata)
             dhtfptr = &m->dht->friends_list[friend_idx];
 
             if (msgfptr) {
+                char id_str[IDSTRING_LEN];
                 LOGGER_TRACE(m->log, "F[%2u:%2u] <%s> %s",
                              dht2m[friend_idx], friend_idx, msgfptr->name,
-                             ID2String(msgfptr->real_pk));
+                             id_to_string(msgfptr->real_pk, id_str, sizeof(id_str)));
             } else {
-                LOGGER_TRACE(m->log, "F[--:%2u] %s", friend_idx, ID2String(dhtfptr->public_key));
+                char id_str[IDSTRING_LEN];
+                LOGGER_TRACE(m->log, "F[--:%2u] %s", friend_idx,
+                             id_to_string(dhtfptr->public_key, id_str, sizeof(id_str)));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
@@ -2631,16 +2643,18 @@ void do_messenger(Messenger *m, void *userdata)
 
                 for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
                     if (ip_isset(&assoc->ip_port.ip)) {
-                        last_pinged = lastdump - assoc->last_pinged;
+                        last_pinged = m->lastdump - assoc->last_pinged;
 
                         if (last_pinged > 999) {
                             last_pinged = 999;
                         }
 
+                        char ip_str[IP_NTOA_LEN];
+                        char id_str[IDSTRING_LEN];
                         LOGGER_TRACE(m->log, "F[%2u] => C[%2u] %s:%u [%3u] %s",
-                                     friend_idx, client, ip_ntoa(&assoc->ip_port.ip),
+                                     friend_idx, client, ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
                                      ntohs(assoc->ip_port.port), last_pinged,
-                                     ID2String(cptr->public_key));
+                                     id_to_string(cptr->public_key, id_str, sizeof(id_str)));
                     }
                 }
             }
