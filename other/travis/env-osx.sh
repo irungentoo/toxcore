@@ -10,5 +10,10 @@ RUN() {
 }
 
 TESTS() {
-  "$@"
+  COUNT="$1"; shift
+  "$@" || {
+    if [ $COUNT -gt 1 ]; then
+      TESTS `expr $COUNT - 1` "$@"
+    fi
+  }
 }

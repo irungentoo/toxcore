@@ -11,6 +11,8 @@ RUN() {
 }
 
 TESTS() {
+  shift # Ignore test run count.
+
   # Download Microsoft DLLs.
   curl http://www.dlldump.com/dllfiles/I/iphlpapi.dll -o _build/iphlpapi.dll
   curl http://www.dlldump.com/dllfiles/W/ws2_32.dll -o _build/ws2_32.dll

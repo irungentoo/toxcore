@@ -38,5 +38,5 @@ export CTEST_OUTPUT_ON_FAILURE=1
 
 RUN make -C$BUILD_DIR -j$NPROC -k install
 if $RUN_TESTS; then
-  TESTS make -C$BUILD_DIR -j$NPROC test ARGS="--rerun-failed"
+  TESTS $MAX_TEST_RETRIES make -C$BUILD_DIR -j$NPROC test ARGS="--rerun-failed"
 fi

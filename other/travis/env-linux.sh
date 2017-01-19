@@ -11,8 +11,10 @@ RUN() {
 }
 
 TESTS() {
-  # Keep running tests until they eventually succeed or Travis times out after
-  # 50 minutes. This cuts down on the time lost when tests fail, because we no
-  # longer need to manually restart the build and wait for compilation.
-  "$@" || TESTS "$@"
+  COUNT="$1"; shift
+  "$@" || {
+    if [ $COUNT -gt 1 ]; then
+      TESTS `expr $COUNT - 1` "$@"
+    fi
+  }
 }
