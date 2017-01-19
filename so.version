@@ -11,6 +11,6 @@
 # For a full reference see:
 # https://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 
-CURRENT=5
+CURRENT=6
 REVISION=0
-AGE=4
+AGE=5
