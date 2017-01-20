@@ -1,3 +1,4 @@
+#define _BSD_SOURCE
 #include "methods.h"
 
 #include "byteswap.h"
@@ -9,19 +10,17 @@
 static void decode_bytestring(msgpack_object_bin args, msgpack_packer *res,
                               int64_t min_length)
 {
-    int64_t length;
-    uint64_t tmp;
-
     SUCCESS {
         if (args.size < sizeof(uint64_t))
         {
             // Not enough space to even fit the size.
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
             return;
         }
 
+        uint64_t tmp;
         memcpy(&tmp, args.ptr, sizeof(uint64_t));
-        length = be64toh(tmp);
+        int64_t length = be64toh(tmp);
 
         // TODO(iphydf): Get rid of this case if/when
         // https://github.com/kolmodin/binary/issues/127 is fixed. This is a
@@ -37,14 +36,17 @@ static void decode_bytestring(msgpack_object_bin args, msgpack_packer *res,
         {
             if (length < min_length) {
                 // CipherTexts need at least a MAC.
-                msgpack_pack_nil(res);
+                msgpack_pack_uint8(res, 0);
                 return;
             }
+
+            msgpack_pack_array(res, 2);
+            msgpack_pack_uint8(res, 1);
 
             msgpack_pack_bin(res, args.size - sizeof(uint64_t));
             msgpack_pack_bin_body(res, args.ptr + sizeof(uint64_t), args.size - sizeof(uint64_t));
         } else {
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
         }
     }
 }
@@ -57,6 +59,11 @@ METHOD(bin, Binary_decode, CipherText)
 }
 
 METHOD(bin, Binary_decode, DhtPacket)
+{
+    return pending;
+}
+
+METHOD(bin, Binary_decode, DhtRequestPacket)
 {
     return pending;
 }
@@ -81,8 +88,11 @@ METHOD(bin, Binary_decode, KeyPair)
     SUCCESS {
         if (args.size != 64)
         {
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
         } else {
+            msgpack_pack_array(res, 2);
+            msgpack_pack_uint8(res, 1);
+
             msgpack_pack_array(res, 2);
             msgpack_pack_bin(res, 32);
             msgpack_pack_bin_body(res, args.ptr, 32);
@@ -113,6 +123,9 @@ METHOD(bin, Binary_decode, NodeInfo)
     SUCCESS {
         if (len > 0 && data_processed > 0 && data_processed == args.size)
         {
+            msgpack_pack_array(res, 2);
+            msgpack_pack_uint8(res, 1);
+
             msgpack_pack_array(res, 3);
             msgpack_pack_uint8(res, tcp);
             msgpack_pack_array(res, 2);
@@ -133,7 +146,7 @@ METHOD(bin, Binary_decode, NodeInfo)
             msgpack_pack_bin(res, CRYPTO_PUBLIC_KEY_SIZE);
             msgpack_pack_bin_body(res, &node.public_key, CRYPTO_PUBLIC_KEY_SIZE);
         } else {
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
         }
     }
 
@@ -160,7 +173,7 @@ METHOD(bin, Binary_decode, PacketKind)
     SUCCESS {
         if (args.size != 1)
         {
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
         } else {
             uint8_t kind = args.ptr[0];
             size_t  i;
@@ -168,13 +181,15 @@ METHOD(bin, Binary_decode, PacketKind)
             for (i = 0; i < sizeof packet_kinds / sizeof *packet_kinds; i++)
             {
                 if (packet_kinds[i] == kind) {
+                    msgpack_pack_array(res, 2);
+                    msgpack_pack_uint8(res, 1);
                     msgpack_pack_fix_uint8(res, i);
                     return 0;
                 }
             }
 
             // Packet kind not found => error.
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
         }
     }
     return 0;
@@ -199,9 +214,11 @@ METHOD(bin, Binary_decode, PortNumber)
             uint16_t tmp;
             memcpy(&tmp, args.ptr, 2);
             uint16_t port = ntohs(tmp);
+            msgpack_pack_array(res, 2);
+            msgpack_pack_uint8(res, 1);
             msgpack_pack_uint16(res, port);
         } else {
-            msgpack_pack_nil(res);
+            msgpack_pack_uint8(res, 0);
         }
     }
 
@@ -235,6 +252,7 @@ METHOD(array, Binary, decode)
         return Binary_decode_##TYPE(args.ptr[1].via.bin, res)
     DISPATCH(CipherText);
     DISPATCH(DhtPacket);
+    DISPATCH(DhtRequestPacket);
     DISPATCH(HostAddress);
     DISPATCH(Word64);
     DISPATCH(Key_PublicKey);

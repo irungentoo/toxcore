@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdarg.h>
+
 #include <msgpack.h>
 
 #define check_return(err, expr)                                                                    \

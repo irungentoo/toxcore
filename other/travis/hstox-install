@@ -12,8 +12,11 @@ cabal install happy
 git clone --recursive --depth=1 https://github.com/TokTok/hs-toxcore ../hs-toxcore
 git clone --depth=1 https://github.com/msgpack/msgpack-c testing/hstox/msgpack-c
 
-# Install the hstox test runner.
-(cd ../hs-toxcore && cabal install --disable-library-profiling)
-
-# Install toxcore dependencies.
+# Install toxcore dependencies before hstox, as hstox needs libsodium.
 . other/travis/toxcore-linux-install
+
+# Install the hstox test runner.
+CABAL_FLAGS="--disable-library-profiling"
+CABAL_FLAGS="$CABAL_FLAGS --extra-include-dirs=$CACHE_DIR/include"
+CABAL_FLAGS="$CABAL_FLAGS --extra-lib-dirs=$CACHE_DIR/lib"
+(cd ../hs-toxcore && cabal install $CABAL_FLAGS)

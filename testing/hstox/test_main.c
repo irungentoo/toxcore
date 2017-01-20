@@ -57,7 +57,7 @@ static char const *error_desc(int code)
 #endif
 int main(void)
 {
-    struct settings cfg    = {true, true};
+    struct settings cfg    = {true, false, true};
     uint32_t        result = network_main(cfg, PORT, TIMEOUT);
     int             line   = result >> 16;
     int             error  = (result >> 8) & 0xff;

@@ -7,6 +7,8 @@
 struct settings {
     // Print the msgpack object on test failure.
     bool debug;
+    // Print all inputs and outputs to stderr.
+    bool trace;
     // Write test sample files into test-inputs/. These files, one per test
     // method, are used to seed the fuzzer.
     bool collect_samples;

@@ -1,3 +1,4 @@
+#define _BSD_SOURCE
 #include "methods.h"
 
 #include "byteswap.h"
@@ -18,6 +19,11 @@ METHOD(bin, Binary_encode, CipherText)
 }
 
 METHOD(array, Binary_encode, DhtPacket)
+{
+    return pending;
+}
+
+METHOD(array, Binary_encode, DhtRequestPacket)
 {
     return pending;
 }
@@ -231,6 +237,7 @@ METHOD(array, Binary, encode)
   } while (0)
     DISPATCH(CipherText, BIN, bin);
     DISPATCH(DhtPacket, ARRAY, array);
+    DISPATCH(DhtRequestPacket, ARRAY, array);
     DISPATCH(HostAddress, ARRAY, array);
     DISPATCH(Word64, POSITIVE_INTEGER, u64);
     DISPATCH(Key_PublicKey, BIN, bin);

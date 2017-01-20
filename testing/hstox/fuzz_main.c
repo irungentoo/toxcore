@@ -12,7 +12,7 @@
 #endif
 int main(int argc, char **argv)
 {
-    struct settings cfg = {false, false};
+    struct settings cfg = {false, false, false};
 #ifdef __AFL_LOOP
 
     while (__AFL_LOOP(ITERATIONS))

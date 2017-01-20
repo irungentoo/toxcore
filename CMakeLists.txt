@@ -361,6 +361,15 @@ target_link_modules(toxencryptsave toxcore)
 
 find_program(SPECTEST NAMES tox-spectest)
 
+if(NOT SPECTEST)
+  find_program(STACK NAMES stack)
+  if(STACK)
+    set(SPECTEST
+      ${STACK} --stack-yaml ${toxcore_SOURCE_DIR}/../stack.yaml exec --
+      tox-spectest)
+  endif()
+endif()
+
 if(SPECTEST AND MSGPACK_FOUND)
   add_c_executable(toxcore-sut
     testing/hstox/binary_decode.c
