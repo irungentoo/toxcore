@@ -34,6 +34,7 @@
 #include "config.h"
 #endif
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "misc_tools.c"
 
@@ -73,7 +74,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
             }
 
             fseek(file_senders[i].file, position, SEEK_SET);
-            uint8_t data[length];
+            VLA(uint8_t, data, length);
             int len = fread(data, 1, length, file_senders[i].file);
             tox_file_send_chunk(tox, friend_number, file_number, position, data, len, 0);
             break;
@@ -314,7 +315,7 @@ int main(int argc, char *argv[])
 
             if (d) {
                 while ((dir = readdir(d)) != NULL) {
-                    char filepath[strlen(path) + strlen(dir->d_name) + 1];
+                    VLA(char, filepath, strlen(path) + strlen(dir->d_name) + 1);
                     memcpy(filepath, path, strlen(path));
                     memcpy(filepath + strlen(path), dir->d_name, strlen(dir->d_name) + 1);
                     stat(filepath, &statbuf);

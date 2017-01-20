@@ -83,6 +83,7 @@ static int reconnect(void)
     return new_sock;
 }
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "misc_tools.c"
 
@@ -178,7 +179,7 @@ static void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
         return;
     }
 
-    uint8_t req[len];
+    VLA(uint8_t, req, len);
     unsigned int i;
 
     unsigned int spaces = 0;
@@ -198,7 +199,7 @@ static void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
     unsigned int req_len = i;
     req[i] = 0;
 
-    uint8_t message[len];
+    VLA(uint8_t, message, len);
     uint16_t length = 0;
 
     uint8_t *pmsg = (uint8_t *)strstr((char *)req, " PRIVMSG");
@@ -298,7 +299,7 @@ int main(int argc, char *argv[])
         if (count > 0) {
             last_get = get_monotime_sec();
             ping_sent = 0;
-            uint8_t data[count + 1];
+            VLA(uint8_t, data, count + 1);
             data[count] = 0;
             recv(sock, data, count, MSG_NOSIGNAL);
             printf("%s", data);

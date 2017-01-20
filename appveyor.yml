@@ -3,7 +3,7 @@ install:
 - unzip libsodium-1.0.11-msvc.zip
 
 before_build:
-- cmake . -DBOOTSTRAP_DAEMON=OFF
+- cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF
 
 build:
   project: INSTALL.vcxproj

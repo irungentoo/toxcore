@@ -120,7 +120,7 @@ static int proxy_http_read_connection_response(TCP_Client_Connection *TCP_conn)
         unsigned int data_left = TCP_socket_data_recv_buffer(TCP_conn->sock);
 
         if (data_left) {
-            uint8_t temp_data[data_left];
+            VLA(uint8_t, temp_data, data_left);
             read_TCP_packet(TCP_conn->sock, temp_data, data_left);
         }
 
@@ -387,18 +387,18 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
         }
     }
 
-    uint8_t packet[sizeof(uint16_t) + length + CRYPTO_MAC_SIZE];
+    VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
     uint16_t c_length = htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
-    if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t))) {
+    if ((unsigned int)len != (SIZEOF_VLA(packet) - sizeof(uint16_t))) {
         return -1;
     }
 
     if (priority) {
-        len = sendpriority ? send(con->sock, (const char *)packet, sizeof(packet), MSG_NOSIGNAL) : 0;
+        len = sendpriority ? send(con->sock, (const char *)packet, SIZEOF_VLA(packet), MSG_NOSIGNAL) : 0;
 
         if (len <= 0) {
             len = 0;
@@ -406,14 +406,14 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
 
         increment_nonce(con->sent_nonce);
 
-        if ((unsigned int)len == sizeof(packet)) {
+        if ((unsigned int)len == SIZEOF_VLA(packet)) {
             return 1;
         }
 
-        return add_priority(con, packet, sizeof(packet), len);
+        return add_priority(con, packet, SIZEOF_VLA(packet), len);
     }
 
-    len = send(con->sock, (const char *)packet, sizeof(packet), MSG_NOSIGNAL);
+    len = send(con->sock, (const char *)packet, SIZEOF_VLA(packet), MSG_NOSIGNAL);
 
     if (len <= 0) {
         return 0;
@@ -421,12 +421,12 @@ static int write_packet_TCP_secure_connection(TCP_Client_Connection *con, const 
 
     increment_nonce(con->sent_nonce);
 
-    if ((unsigned int)len == sizeof(packet)) {
+    if ((unsigned int)len == SIZEOF_VLA(packet)) {
         return 1;
     }
 
-    memcpy(con->last_packet, packet, sizeof(packet));
-    con->last_packet_length = sizeof(packet);
+    memcpy(con->last_packet, packet, SIZEOF_VLA(packet));
+    con->last_packet_length = SIZEOF_VLA(packet);
     con->last_packet_sent = len;
     return 1;
 }
@@ -478,10 +478,10 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, u
         return 0;
     }
 
-    uint8_t packet[1 + length];
+    VLA(uint8_t, packet, 1 + length);
     packet[0] = con_id + NUM_RESERVED_PORTS;
     memcpy(packet + 1, data, length);
-    return write_packet_TCP_secure_connection(con, packet, sizeof(packet), 0);
+    return write_packet_TCP_secure_connection(con, packet, SIZEOF_VLA(packet), 0);
 }
 
 /* return 1 on success.
@@ -494,11 +494,11 @@ int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const
         return -1;
     }
 
-    uint8_t packet[1 + CRYPTO_PUBLIC_KEY_SIZE + length];
+    VLA(uint8_t, packet, 1 + CRYPTO_PUBLIC_KEY_SIZE + length);
     packet[0] = TCP_PACKET_OOB_SEND;
     memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
-    return write_packet_TCP_secure_connection(con, packet, sizeof(packet), 0);
+    return write_packet_TCP_secure_connection(con, packet, SIZEOF_VLA(packet), 0);
 }
 
 
@@ -614,10 +614,10 @@ int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
  */
 int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
-    uint8_t packet[1 + length];
+    VLA(uint8_t, packet, 1 + length);
     packet[0] = TCP_PACKET_ONION_REQUEST;
     memcpy(packet + 1, data, length);
-    return write_packet_TCP_secure_connection(con, packet, sizeof(packet), 0);
+    return write_packet_TCP_secure_connection(con, packet, SIZEOF_VLA(packet), 0);
 }
 
 void onion_response_handler(TCP_Client_Connection *con, int (*onion_callback)(void *object, const uint8_t *data,

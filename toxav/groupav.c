@@ -510,14 +510,14 @@ static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet,
     }
 
     Group_AV *group_av = (Group_AV *)group_get_object(g_c, groupnumber);
-    uint8_t data[1 + sizeof(uint16_t) + length];
+    VLA(uint8_t, data, 1 + sizeof(uint16_t) + length);
     data[0] = GROUP_AUDIO_PACKET_ID;
 
     uint16_t sequnum = htons(group_av->audio_sequnum);
     memcpy(data + 1, &sequnum, sizeof(sequnum));
     memcpy(data + 1 + sizeof(sequnum), packet, length);
 
-    if (send_group_lossy_packet(g_c, groupnumber, data, sizeof(data)) == -1) {
+    if (send_group_lossy_packet(g_c, groupnumber, data, SIZEOF_VLA(data)) == -1) {
         return -1;
     }
 

@@ -138,9 +138,9 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
     addto_receivedlist(fr, source_pubkey);
 
     uint32_t message_len = length - sizeof(fr->nospam);
-    uint8_t message[message_len + 1];
+    VLA(uint8_t, message, message_len + 1);
     memcpy(message, packet + sizeof(fr->nospam), message_len);
-    message[sizeof(message) - 1] = 0; /* Be sure the message is null terminated. */
+    message[SIZEOF_VLA(message) - 1] = 0; /* Be sure the message is null terminated. */
 
     (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, message_len, userdata);
     return 0;

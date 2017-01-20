@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
@@ -77,7 +78,7 @@ START_TEST(test_one)
 
     tox_self_get_address(tox1, address);
     size_t save_size = tox_get_savedata_size(tox1);
-    uint8_t data[save_size];
+    VLA(uint8_t, data, save_size);
     tox_get_savedata(tox1, data);
 
     tox_kill(tox2);

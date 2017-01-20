@@ -188,19 +188,19 @@ static void kill_TCP_con(struct sec_TCP_con *con)
 
 static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
 {
-    uint8_t packet[sizeof(uint16_t) + length + CRYPTO_MAC_SIZE];
+    VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
     uint16_t c_length = htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
-    if ((unsigned int)len != (sizeof(packet) - sizeof(uint16_t))) {
+    if ((unsigned int)len != (SIZEOF_VLA(packet) - sizeof(uint16_t))) {
         return -1;
     }
 
     increment_nonce(con->sent_nonce);
 
-    ck_assert_msg(send(con->sock, (const char *)packet, sizeof(packet), 0) == sizeof(packet), "send failed");
+    ck_assert_msg(send(con->sock, (const char *)packet, SIZEOF_VLA(packet), 0) == SIZEOF_VLA(packet), "send failed");
     return 0;
 }
 

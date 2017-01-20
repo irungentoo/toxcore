@@ -361,7 +361,7 @@ static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
 static int DHT_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                              const uint8_t *shared_key, const uint8_t type, uint8_t *plain, size_t plain_length, uint8_t *packet)
 {
-    uint8_t encrypted[plain_length + CRYPTO_MAC_SIZE];
+    VLA(uint8_t, encrypted, plain_length + CRYPTO_MAC_SIZE);
     uint8_t nonce[CRYPTO_NONCE_SIZE];
 
     random_nonce(nonce);
@@ -1264,7 +1264,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     Node_format nodes_list[MAX_SENT_NODES];
     uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, 0, LAN_ip(ip_port.ip) == 0, 1);
 
-    uint8_t plain[1 + Node_format_size * MAX_SENT_NODES + length];
+    VLA(uint8_t, plain, 1 + Node_format_size * MAX_SENT_NODES + length);
 
     int nodes_length = 0;
 
@@ -1279,13 +1279,13 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     plain[0] = num_nodes;
     memcpy(plain + 1 + nodes_length, sendback_data, length);
 
-    uint8_t data[1 + nodes_length + length + 1 + CRYPTO_PUBLIC_KEY_SIZE
-                 + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE];
+    VLA(uint8_t, data, 1 + nodes_length + length + 1 + CRYPTO_PUBLIC_KEY_SIZE
+        + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE);
 
     int len = DHT_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
                                 plain, 1 + nodes_length + length, data);
 
-    if (len != sizeof(data)) {
+    if (len != SIZEOF_VLA(data)) {
         return -1;
     }
 
@@ -1375,7 +1375,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
         return 1;
     }
 
-    uint8_t plain[1 + data_size + sizeof(uint64_t)];
+    VLA(uint8_t, plain, 1 + data_size + sizeof(uint64_t));
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     DHT_get_shared_key_sent(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric(
@@ -1385,7 +1385,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
                   1 + data_size + sizeof(uint64_t) + CRYPTO_MAC_SIZE,
                   plain);
 
-    if ((unsigned int)len != sizeof(plain)) {
+    if ((unsigned int)len != SIZEOF_VLA(plain)) {
         return 1;
     }
 
@@ -1598,8 +1598,8 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     uint64_t temp_time = unix_time();
 
     uint32_t num_nodes = 0;
-    Client_data *client_list[list_count * 2];
-    IPPTsPng    *assoc_list[list_count * 2];
+    VLA(Client_data *, client_list, list_count * 2);
+    VLA(IPPTsPng *, assoc_list, list_count * 2);
     unsigned int sort = 0;
     bool sort_ok = 0;
 
@@ -2247,12 +2247,12 @@ static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto,
     }
 
     uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
-    uint8_t data[1 + CRYPTO_PUBLIC_KEY_SIZE + nodes_data_length];
+    VLA(uint8_t, data, 1 + CRYPTO_PUBLIC_KEY_SIZE + nodes_data_length);
     data[0] = CHECK_TYPE_GETNODE_RES;
     memcpy(data + 1, queried_client_id, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(data + 1 + CRYPTO_PUBLIC_KEY_SIZE, nodes_data, nodes_data_length);
     int len = create_request(dht->self_public_key, dht->self_secret_key, packet, sendto->public_key, data,
-                             sizeof(data), CRYPTO_PACKET_HARDENING);
+                             SIZEOF_VLA(data), CRYPTO_PACKET_HARDENING);
 
     if (len == -1) {
         return -1;

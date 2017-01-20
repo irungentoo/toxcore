@@ -791,17 +791,17 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
         return -1;
     }
 
-    uint8_t packet[1 + sizeof(nospam_num) + length];
+    VLA(uint8_t, packet, 1 + sizeof(nospam_num) + length);
     memcpy(packet + 1, &nospam_num, sizeof(nospam_num));
     memcpy(packet + 1 + sizeof(nospam_num), data, length);
 
     if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
         packet[0] = PACKET_ID_FRIEND_REQUESTS;
-        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, sizeof(packet), 0) != -1;
+        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet), 0) != -1;
     }
 
     packet[0] = CRYPTO_PACKET_FRIEND_REQ;
-    int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, sizeof(packet));
+    int num = send_onion_data(fr_c->onion_c, friend_con->onion_friendnum, packet, SIZEOF_VLA(packet));
 
     if (num <= 0) {
         return -1;

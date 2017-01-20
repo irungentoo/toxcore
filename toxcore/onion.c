@@ -185,7 +185,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
         return -1;
     }
 
-    uint8_t step1[SIZE_IPPORT + length];
+    VLA(uint8_t, step1, SIZE_IPPORT + length);
 
     ipport_pack(step1, &dest);
     memcpy(step1 + SIZE_IPPORT, data, length);
@@ -193,21 +193,21 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(nonce);
 
-    uint8_t step2[SIZE_IPPORT + SEND_BASE + length];
+    VLA(uint8_t, step2, SIZE_IPPORT + SEND_BASE + length);
     ipport_pack(step2, &path->ip_port3);
     memcpy(step2 + SIZE_IPPORT, path->public_key3, CRYPTO_PUBLIC_KEY_SIZE);
 
-    int len = encrypt_data_symmetric(path->shared_key3, nonce, step1, sizeof(step1),
+    int len = encrypt_data_symmetric(path->shared_key3, nonce, step1, SIZEOF_VLA(step1),
                                      step2 + SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (len != SIZE_IPPORT + length + CRYPTO_MAC_SIZE) {
         return -1;
     }
 
-    uint8_t step3[SIZE_IPPORT + SEND_BASE * 2 + length];
+    VLA(uint8_t, step3, SIZE_IPPORT + SEND_BASE * 2 + length);
     ipport_pack(step3, &path->ip_port2);
     memcpy(step3 + SIZE_IPPORT, path->public_key2, CRYPTO_PUBLIC_KEY_SIZE);
-    len = encrypt_data_symmetric(path->shared_key2, nonce, step2, sizeof(step2),
+    len = encrypt_data_symmetric(path->shared_key2, nonce, step2, SIZEOF_VLA(step2),
                                  step3 + SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (len != SIZE_IPPORT + SEND_BASE + length + CRYPTO_MAC_SIZE) {
@@ -218,7 +218,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
     memcpy(packet + 1, nonce, CRYPTO_NONCE_SIZE);
     memcpy(packet + 1 + CRYPTO_NONCE_SIZE, path->public_key1, CRYPTO_PUBLIC_KEY_SIZE);
 
-    len = encrypt_data_symmetric(path->shared_key1, nonce, step3, sizeof(step3),
+    len = encrypt_data_symmetric(path->shared_key1, nonce, step3, SIZEOF_VLA(step3),
                                  packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (len != SIZE_IPPORT + SEND_BASE * 2 + length + CRYPTO_MAC_SIZE) {
@@ -244,7 +244,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
         return -1;
     }
 
-    uint8_t step1[SIZE_IPPORT + length];
+    VLA(uint8_t, step1, SIZE_IPPORT + length);
 
     ipport_pack(step1, &dest);
     memcpy(step1 + SIZE_IPPORT, data, length);
@@ -252,11 +252,11 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
     uint8_t nonce[CRYPTO_NONCE_SIZE];
     random_nonce(nonce);
 
-    uint8_t step2[SIZE_IPPORT + SEND_BASE + length];
+    VLA(uint8_t, step2, SIZE_IPPORT + SEND_BASE + length);
     ipport_pack(step2, &path->ip_port3);
     memcpy(step2 + SIZE_IPPORT, path->public_key3, CRYPTO_PUBLIC_KEY_SIZE);
 
-    int len = encrypt_data_symmetric(path->shared_key3, nonce, step1, sizeof(step1),
+    int len = encrypt_data_symmetric(path->shared_key3, nonce, step1, SIZEOF_VLA(step1),
                                      step2 + SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (len != SIZE_IPPORT + length + CRYPTO_MAC_SIZE) {
@@ -265,7 +265,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
 
     ipport_pack(packet + CRYPTO_NONCE_SIZE, &path->ip_port2);
     memcpy(packet + CRYPTO_NONCE_SIZE + SIZE_IPPORT, path->public_key2, CRYPTO_PUBLIC_KEY_SIZE);
-    len = encrypt_data_symmetric(path->shared_key2, nonce, step2, sizeof(step2),
+    len = encrypt_data_symmetric(path->shared_key2, nonce, step2, SIZEOF_VLA(step2),
                                  packet + CRYPTO_NONCE_SIZE + SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE);
 
     if (len != SIZE_IPPORT + SEND_BASE + length + CRYPTO_MAC_SIZE) {
@@ -313,12 +313,12 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
         return -1;
     }
 
-    uint8_t packet[1 + RETURN_3 + length];
+    VLA(uint8_t, packet, 1 + RETURN_3 + length);
     packet[0] = NET_PACKET_ONION_RECV_3;
     memcpy(packet + 1, ret, RETURN_3);
     memcpy(packet + 1 + RETURN_3, data, length);
 
-    if ((uint32_t)sendpacket(net, dest, packet, sizeof(packet)) != sizeof(packet)) {
+    if ((uint32_t)sendpacket(net, dest, packet, SIZEOF_VLA(packet)) != SIZEOF_VLA(packet)) {
         return -1;
     }
 

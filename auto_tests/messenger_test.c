@@ -184,7 +184,7 @@ START_TEST(test_getself_name)
 {
     const char *nickname = "testGallop";
     int len = strlen(nickname);
-    char nick_check[len];
+    VLA(char, nick_check, len);
 
     setname(m, (const uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check);
@@ -237,7 +237,7 @@ START_TEST(test_dht_state_saveloadsave)
      * d) the second save() is of equal content */
     size_t i, extra = 64;
     size_t size = DHT_size(m->dht);
-    uint8_t buffer[size + 2 * extra];
+    VLA(uint8_t, buffer, size + 2 * extra);
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
     DHT_save(m->dht, buffer + extra);
@@ -263,7 +263,7 @@ START_TEST(test_dht_state_saveloadsave)
     size_t size2 = DHT_size(m->dht);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
 
-    uint8_t buffer2[size2];
+    VLA(uint8_t, buffer2, size2);
     DHT_save(m->dht, buffer2);
 
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "DHT state changed by store/load/store cycle");
@@ -279,7 +279,7 @@ START_TEST(test_messenger_state_saveloadsave)
      * d) the second save() is of equal content */
     size_t i, extra = 64;
     size_t size = messenger_size(m);
-    uint8_t buffer[size + 2 * extra];
+    VLA(uint8_t, buffer, size + 2 * extra);
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
     messenger_save(m, buffer + extra);
@@ -305,7 +305,7 @@ START_TEST(test_messenger_state_saveloadsave)
     size_t size2 = messenger_size(m);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
 
-    uint8_t buffer2[size2];
+    VLA(uint8_t, buffer2, size2);
     messenger_save(m, buffer2);
 
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");

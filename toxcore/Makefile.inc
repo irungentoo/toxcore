@@ -5,7 +5,8 @@ libtoxcore_la_include_HEADERS = \
 
 libtoxcore_la_includedir = $(includedir)/tox
 
-libtoxcore_la_SOURCES = ../toxcore/DHT.h \
+libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
+                        ../toxcore/DHT.h \
                         ../toxcore/DHT.c \
                         ../toxcore/network.h \
                         ../toxcore/network.c \

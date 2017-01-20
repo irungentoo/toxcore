@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
@@ -125,7 +126,7 @@ static void handle_custom_packet(Tox *m, uint32_t friend_num, const uint8_t *dat
         return;
     }
 
-    uint8_t f_data[len];
+    VLA(uint8_t, f_data, len);
     memset(f_data, number, len);
 
     if (memcmp(f_data, data, len) == 0) {
@@ -260,7 +261,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
     }
 
     TOX_ERR_FILE_SEND_CHUNK error;
-    uint8_t f_data[length];
+    VLA(uint8_t, f_data, length);
     memset(f_data, sending_num, length);
 
     if (tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error)) {
@@ -294,7 +295,7 @@ static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uin
         return;
     }
 
-    uint8_t f_data[length];
+    VLA(uint8_t, f_data, length);
     memset(f_data, num, length);
     ++num;
 
@@ -416,7 +417,7 @@ START_TEST(test_few_clients)
     unsigned int save_size1 = tox_get_savedata_size(tox2);
     ck_assert_msg(save_size1 != 0 && save_size1 < 4096, "save is invalid size %u", save_size1);
     printf("%u\n", save_size1);
-    uint8_t save1[save_size1];
+    VLA(uint8_t, save1, save_size1);
     tox_get_savedata(tox2, save1);
     tox_kill(tox2);
 

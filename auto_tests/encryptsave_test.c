@@ -13,6 +13,7 @@
 
 #include "../toxcore/tox.h"
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxencryptsave/toxencryptsave.h"
 #ifdef VANILLA_NACL
@@ -68,10 +69,10 @@ START_TEST(test_save_friend)
     ck_assert_msg(test != UINT32_MAX, "Failed to add friend");
 
     size_t size = tox_get_savedata_size(tox1);
-    uint8_t data[size];
+    VLA(uint8_t, data, size);
     tox_get_savedata(tox1, data);
     size_t size2 = size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
-    uint8_t enc_data[size2];
+    VLA(uint8_t, enc_data, size2);
     TOX_ERR_ENCRYPTION error1;
     bool ret = tox_pass_encrypt(data, size, (const uint8_t *)"correcthorsebatterystaple", 25, enc_data, &error1);
     ck_assert_msg(ret, "failed to encrypted save: %u", error1);
@@ -86,7 +87,7 @@ START_TEST(test_save_friend)
     ck_assert_msg(err2 == TOX_ERR_NEW_LOAD_ENCRYPTED, "wrong error! %u. should fail with %u", err2,
                   TOX_ERR_NEW_LOAD_ENCRYPTED);
     ck_assert_msg(tox3 == NULL, "tox_new with error should return NULL");
-    uint8_t dec_data[size];
+    VLA(uint8_t, dec_data, size);
     TOX_ERR_DECRYPTION err3;
     ret = tox_pass_decrypt(enc_data, size2, (const uint8_t *)"correcthorsebatterystaple", 25, dec_data, &err3);
     ck_assert_msg(ret, "failed to decrypt save: %u", err3);
@@ -99,19 +100,20 @@ START_TEST(test_save_friend)
     ck_assert_msg(memcmp(address, address2, TOX_PUBLIC_KEY_SIZE) == 0, "addresses don't match!");
 
     size = tox_get_savedata_size(tox3);
-    uint8_t data2[size];
+    VLA(uint8_t, data2, size);
     tox_get_savedata(tox3, data2);
     Tox_Pass_Key *key = tox_pass_key_new();
     ck_assert_msg(key != NULL, "pass key allocation failure");
     memcpy((uint8_t *)key, test_salt, TOX_PASS_SALT_LENGTH);
     memcpy((uint8_t *)key + TOX_PASS_SALT_LENGTH, known_key2, TOX_PASS_KEY_LENGTH);
     size2 = size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
-    uint8_t encdata2[size2];
+    VLA(uint8_t, encdata2, size2);
     ret = tox_pass_key_encrypt(key, data2, size, encdata2, &error1);
     ck_assert_msg(ret, "failed to key encrypt %u", error1);
     ck_assert_msg(tox_is_data_encrypted(encdata2), "magic number the second missing");
 
-    uint8_t out1[size], out2[size];
+    VLA(uint8_t, out1, size);
+    VLA(uint8_t, out2, size);
     ret = tox_pass_decrypt(encdata2, size2, (const uint8_t *)pw, pwlen, out1, &err3);
     ck_assert_msg(ret, "failed to pw decrypt %u", err3);
     ret = tox_pass_key_decrypt(key, encdata2, size2, out2, &err3);

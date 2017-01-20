@@ -79,7 +79,7 @@ void host_to_net(uint8_t *num, uint16_t numbytes)
 {
 #ifndef WORDS_BIGENDIAN
     uint32_t i;
-    uint8_t buff[numbytes];
+    VLA(uint8_t, buff, numbytes);
 
     for (i = 0; i < numbytes; ++i) {
         buff[i] = num[numbytes - i - 1];

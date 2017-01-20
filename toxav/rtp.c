@@ -116,12 +116,12 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
         return -1;
     }
 
-    uint8_t rdata[length + sizeof(struct RTPHeader) + 1];
-    memset(rdata, 0, sizeof(rdata));
+    VLA(uint8_t, rdata, length + sizeof(struct RTPHeader) + 1);
+    memset(rdata, 0, SIZEOF_VLA(rdata));
 
     rdata[0] = session->payload_type;
 
-    struct RTPHeader *header = (struct RTPHeader *)(rdata  + 1);
+    struct RTPHeader *header = (struct RTPHeader *)(rdata + 1);
 
     header->ve = 2;
     header->pe = 0;
@@ -147,8 +147,8 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
 
         memcpy(rdata + 1 + sizeof(struct RTPHeader), data, length);
 
-        if (-1 == m_send_custom_lossy_packet(session->m, session->friend_number, rdata, sizeof(rdata))) {
-            LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s", sizeof(rdata), strerror(errno));
+        if (-1 == m_send_custom_lossy_packet(session->m, session->friend_number, rdata, SIZEOF_VLA(rdata))) {
+            LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s", SIZEOF_VLA(rdata), strerror(errno));
         }
     } else {
 

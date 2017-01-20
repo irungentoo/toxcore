@@ -220,10 +220,10 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
 
 #endif
 
-    uint8_t id_record_null[id_record_len + 1];
+    VLA(uint8_t, id_record_null, id_record_len + 1);
     memcpy(id_record_null, id_record, id_record_len);
     id_record_null[id_record_len] = 0;
-    uint8_t data[id_record_len];
+    VLA(uint8_t, data, id_record_len);
     int length = decode(data, id_record_null);
 
     if (length == -1) {

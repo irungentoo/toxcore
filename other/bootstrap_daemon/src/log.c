@@ -26,6 +26,8 @@
 
 #include "global.h"
 
+#include "../../../toxcore/ccompat.h"
+
 #include <assert.h>
 #include <syslog.h>
 #include <stdarg.h>
@@ -94,7 +96,7 @@ static void log_syslog(LOG_LEVEL level, const char *format, va_list args)
         return;
     }
 
-    char buf[size + 1];
+    VLA(char, buf, size + 1);
     vsnprintf(buf, size + 1, format, args);
 
     syslog(level_syslog(level), "%s", buf);

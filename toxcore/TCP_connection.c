@@ -1436,7 +1436,10 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
         return;
     }
 
-    unsigned int i, num_online = 0, num_kill = 0, to_kill[tcp_c->tcp_connections_length];
+    unsigned int i;
+    unsigned int num_online = 0;
+    unsigned int num_kill = 0;
+    VLA(unsigned int, to_kill, tcp_c->tcp_connections_length);
 
     for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
         TCP_con *tcp_con = get_tcp_connection(tcp_c, i);

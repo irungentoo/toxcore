@@ -39,6 +39,7 @@
 
 #include <sys/select.h>
 
+#include "../toxcore/ccompat.h"
 #include "misc_tools.c"
 #include "nTox.h"
 
@@ -144,7 +145,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
             }
 
             fseek(file_senders[i].file, position, SEEK_SET);
-            uint8_t data[length];
+            VLA(uint8_t, data, length);
             int len = fread(data, 1, length, file_senders[i].file);
             tox_file_send_chunk(tox, friend_number, file_number, position, data, len, 0);
             break;
@@ -266,7 +267,7 @@ static void print_friendlist(Tox *m)
     char fraddr_str[FRADDR_TOSTR_BUFSIZE];
 
     /* account for the longest name and the longest "base" string and number (int) and id_str */
-    char fstring[TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21 + id_str_len];
+    VLA(char, fstring, TOX_MAX_NAME_LENGTH + strlen(ptrn_friend) + 21 + id_str_len);
 
     uint32_t i = 0;
 
@@ -299,7 +300,7 @@ static void print_formatted_message(Tox *m, char *message, int friendnum, uint8_
     char name[TOX_MAX_NAME_LENGTH + 1];
     getfriendname_terminated(m, friendnum, name);
 
-    char msg[100 + strlen(message) + strlen(name) + 1];
+    VLA(char, msg, 100 + strlen(message) + strlen(name) + 1);
 
     time_t rawtime;
     struct tm *timeinfo;
@@ -920,7 +921,7 @@ static void print_message(Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type, 
                           void *userdata)
 {
     /* ensure null termination */
-    uint8_t null_string[length + 1];
+    VLA(uint8_t, null_string, length + 1);
     memcpy(null_string, string, length);
     null_string[length] = 0;
     print_formatted_message(m, (char *)null_string, friendnumber, 0);
@@ -931,7 +932,7 @@ static void print_nickchange(Tox *m, uint32_t friendnumber, const uint8_t *strin
     char name[TOX_MAX_NAME_LENGTH + 1];
 
     if (getfriendname_terminated(m, friendnumber, name) != -1) {
-        char msg[100 + length];
+        VLA(char, msg, 100 + length);
 
         if (name[0] != 0) {
             sprintf(msg, "[i] [%d] %s is now known as %s.", friendnumber, name, string);
@@ -948,7 +949,7 @@ static void print_statuschange(Tox *m, uint32_t friendnumber, const uint8_t *str
     char name[TOX_MAX_NAME_LENGTH + 1];
 
     if (getfriendname_terminated(m, friendnumber, name) != -1) {
-        char msg[100 + length + strlen(name) + 1];
+        VLA(char, msg, 100 + length + strlen(name) + 1);
 
         if (name[0] != 0) {
             sprintf(msg, "[i] [%d] %s's status changed to %s.", friendnumber, name, string);
@@ -971,7 +972,7 @@ static Tox *load_data(void)
         size_t size = ftell(data_file);
         rewind(data_file);
 
-        uint8_t data[size];
+        VLA(uint8_t, data, size);
 
         if (fread(data, sizeof(uint8_t), size, data_file) != size) {
             fputs("[!] could not read data file!\n", stderr);
@@ -1014,7 +1015,7 @@ static int save_data(Tox *m)
 
     int res = 1;
     size_t size = tox_get_savedata_size(m);
-    uint8_t data[size];
+    VLA(uint8_t, data, size);
     tox_get_savedata(m, data);
 
     if (fwrite(data, sizeof(uint8_t), size, data_file) != size) {
@@ -1080,8 +1081,9 @@ static void print_groupchatpeers(Tox *m, int groupnumber)
         return;
     }
 
-    uint8_t names[num][TOX_MAX_NAME_LENGTH];
-    size_t lengths[num];
+    typedef uint8_t Peer_Name[TOX_MAX_NAME_LENGTH];
+    VLA(Peer_Name, names, num);
+    VLA(size_t, lengths, num);
 
     uint32_t i;
 
@@ -1126,7 +1128,7 @@ static void print_groupmessage(Tox *m, uint32_t groupnumber, uint32_t peernumber
                                const uint8_t *message, size_t length,
                                void *userdata)
 {
-    char msg[256 + length];
+    VLA(char, msg, 256 + length);
 
     TOX_ERR_CONFERENCE_PEER_QUERY error;
     size_t len = tox_conference_peer_get_name_size(m, groupnumber, peernumber, &error);

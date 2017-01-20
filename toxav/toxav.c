@@ -704,12 +704,12 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
             goto END;
         }
 
-        uint8_t dest[sample_count + sizeof(sampling_rate)]; /* This is more than enough always */
+        VLA(uint8_t, dest, sample_count + sizeof(sampling_rate)); /* This is more than enough always */
 
         sampling_rate = htonl(sampling_rate);
         memcpy(dest, &sampling_rate, sizeof(sampling_rate));
         int vrc = opus_encode(call->audio.second->encoder, pcm, sample_count,
-                              dest + sizeof(sampling_rate), sizeof(dest) - sizeof(sampling_rate));
+                              dest + sizeof(sampling_rate), SIZEOF_VLA(dest) - sizeof(sampling_rate));
 
         if (vrc < 0) {
             LOGGER_WARNING(av->m->log, "Failed to encode frame %s", opus_strerror(vrc));

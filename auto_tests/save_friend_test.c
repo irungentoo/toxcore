@@ -4,6 +4,7 @@
 #define _XOPEN_SOURCE 600
 
 #include "helpers.h"
+#include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 
 #include <assert.h>
@@ -28,14 +29,14 @@ struct test_data {
 
 static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, TOX_ERR_SET_INFO *), size_t length)
 {
-    uint8_t text[length];
+    VLA(uint8_t, text, length);
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
         text[i] = rand();
     }
 
-    setter(m, text, sizeof(text), 0);
+    setter(m, text, SIZEOF_VLA(text), 0);
 }
 
 void namechange_callback(Tox *tox, uint32_t friend_number, const uint8_t *name, size_t length, void *user_data)
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
     }
 
     size_t save_size = tox_get_savedata_size(tox1);
-    uint8_t savedata[save_size];
+    VLA(uint8_t, savedata, save_size);
     tox_get_savedata(tox1, savedata);
 
     struct Tox_Options *options = tox_options_new(NULL);
