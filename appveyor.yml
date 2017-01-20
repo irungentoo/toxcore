@@ -1,0 +1,13 @@
+install:
+- curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.11-msvc.zip -o libsodium-1.0.11-msvc.zip
+- unzip libsodium-1.0.11-msvc.zip
+
+before_build:
+- cmake . -DBOOTSTRAP_DAEMON=OFF
+
+build:
+  project: INSTALL.vcxproj
+
+branches:
+  only:
+  - master

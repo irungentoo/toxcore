@@ -24,6 +24,12 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#if defined(__GNUC__)
+#define GNU_EXTENSION __extension__
+#else
+#define GNU_EXTENSION
+#endif
+
 #ifdef PLAN9
 #include <u.h> // Plan 9 requires this is imported first
 // Comment line here to avoid reordering by source code formatters.
@@ -163,7 +169,7 @@ IP6;
 
 typedef struct {
     uint8_t family;
-    __extension__ union {
+    GNU_EXTENSION union {
         IP4 ip4;
         IP6 ip6;
     };
