@@ -69,6 +69,12 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server)
     return tcp_server->num_listening_socks;
 }
 
+/* this is needed to compile on Android below API 21
+*/
+#ifndef EPOLLRDHUP
+#define EPOLLRDHUP 0x2000
+#endif
+
 /* return 1 on success
  * return 0 on failure
  */
