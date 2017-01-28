@@ -215,6 +215,9 @@ int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_numb
  */
 int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_Port ip_port, const uint8_t *relay_pk);
 
+
+int copy_tcp_connection_relay(TCP_Connections *tcp_c, int connections_number, Node_format *node);
+
 /* Add a TCP relay to the instance.
  *
  * return 0 on success.

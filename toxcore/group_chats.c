@@ -1034,49 +1034,34 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
 
     gconn->pending_sync_request = false;
 
-    uint32_t num_peers;
-    bytes_to_U32(&num_peers, data);
-    uint32_t unpacked_len = sizeof(uint32_t);
+//    uint32_t num_peers;
+//    bytes_to_U32(&num_peers, data);
+//    uint32_t unpacked_len = sizeof(uint32_t);
+//
+//    if (num_peers == 0 || num_peers > MAX_GC_NUM_PEERS) {
+//        return -1;
+//    }
 
-    if (num_peers == 0 || num_peers > MAX_GC_NUM_PEERS) {
-        return -1;
-    }
-
-    GC_PeerAddress *addrs = calloc(1, sizeof(GC_PeerAddress) * num_peers);
-
-    if (addrs == NULL) {
-        return -1;
-    }
-
-    uint16_t addrs_len = 0;
-    int unpacked_addrs = unpack_gc_addresses(addrs, num_peers, &addrs_len, data + unpacked_len,
-                         length - unpacked_len, 1);
-
-    if (unpacked_addrs != num_peers || addrs_len == 0) {
-        free(addrs);
-        fprintf(stderr, "unpack_gc_addresses failed: got %d expected %d\n", unpacked_addrs, num_peers);
-        return -1;
-    }
 
     unix_time_update();
 
-    unpacked_len += addrs_len;
+   // unpacked_len += addrs_len;
 
     uint32_t i;
 
-    for (i = 0; i < num_peers; i++) {
-        if (get_peernum_of_enc_pk(chat, addrs[i].public_key) == -1) {
-            send_gc_handshake_request(m, groupnumber, addrs[i].ip_port, addrs[i].public_key,
-                                      HS_PEER_INFO_EXCHANGE, chat->join_type);
-        }
-    }
+//    for (i = 0; i < num_peers; i++) {
+//        if (get_peernum_of_enc_pk(chat, addrs[i].public_key) == -1) {
+//            send_gc_handshake_request(m, groupnumber, addrs[i].ip_port, addrs[i].public_key,
+//                                      HS_PEER_INFO_EXCHANGE, chat->join_type);
+//        }
+//    }
 
     for (i = 0; i < chat->numpeers; ++i) {
         chat->gcc[i].pending_sync_request = false;
         chat->gcc[i].pending_state_sync = false;
     }
 
-    free(addrs);
+    //free(addrs);
 
     if (chat->connection_state == CS_CONNECTED) {
         return 0;
@@ -1163,47 +1148,43 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, GC_Connec
 
     uint8_t response[MAX_GC_PACKET_SIZE];
     U32_to_bytes(response, chat->self_public_key_hash);
-    uint32_t len = HASH_ID_BYTES;
+    uint32_t len = HASH_ID_BYTES + 1;
 
-    size_t packed_addrs_size = (ENC_PUBLIC_KEY + sizeof(IP_Port)) * (chat->numpeers - 1);   /* approx. */
-
-    /* This is the technical limit to the number of peers you can have in a group (TODO: split packet?) */
-    if (HASH_ID_BYTES + packed_addrs_size > sizeof(response)) {
-        return -1;
-    }
-
-    GC_PeerAddress *peer_addrs = calloc(1, sizeof(GC_PeerAddress) * (chat->numpeers - 1));
-
-    if (peer_addrs == NULL) {
-        return -1;
-    }
+    Node_format *tcp_relays = malloc(sizeof(Node_format) * (chat->numpeers - 1));
 
     uint32_t i, num = 0;
 
-    /* must add self separately because reasons */
-    GC_PeerAddress self_addr;
-    memcpy(&self_addr.public_key, chat->self_public_key, ENC_PUBLIC_KEY);
-    ipport_self_copy(m->dht, &self_addr.ip_port);
-    copy_gc_peer_addr(&peer_addrs[num++], &self_addr);
+    uint32_t *indexes = malloc(sizeof(uint32_t) * (chat->numpeers - 1));
 
-    for (i = 1; i < chat->numpeers; ++i) {
+    for (i = 1; i < chat->numpeers; i++) {
         if (chat->gcc[i].public_key_hash != gconn->public_key_hash && chat->gcc[i].confirmed) {
-            copy_gc_peer_addr(&peer_addrs[num++], &chat->gcc[i].addr);
+            if (!copy_tcp_connection_relay(chat->tcp_conn, chat->gcc[i].tcp_connection_num, &tcp_relays[i])) {
+                indexes[num++] = i;
+            }
         }
     }
 
-    U32_to_bytes(response + len, num);
-    len += sizeof(uint32_t);
+    int nodes_len = pack_nodes(response + len, sizeof(response) - len, tcp_relays, num);
 
-    int addrs_len = pack_gc_addresses(response + len, sizeof(response) - len, peer_addrs, num);
-    len += addrs_len;
+    free(tcp_relays);
 
-    free(peer_addrs);
-
-    if (addrs_len <= 0) {
-        fprintf(stderr, "pack_gc_addresses failed %d\n", addrs_len);
+    if (nodes_len < num) {
+        free(indexes);
         return -1;
     }
+
+    response[len - 1] = num;
+
+    len += nodes_len;
+
+    for (i = 0; i < num; i++) {
+        gc_get_peer_public_key(chat, indexes[num], response + len);
+        len += ENC_PUBLIC_KEY;
+    }
+
+    free(indexes);
+
+    // TODO: split packet
 
     return send_gc_sync_response(chat, gconn, response, len);
 }

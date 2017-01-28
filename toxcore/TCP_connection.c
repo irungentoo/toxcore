@@ -421,6 +421,32 @@ static int find_tcp_connection_relay(TCP_Connections *tcp_c, const uint8_t *rela
     return -1;
 }
 
+int copy_tcp_connection_relay(TCP_Connections *tcp_connections, int connections_number, Node_format *node)
+{
+
+    TCP_Connections *tcp_c = &tcp_connections[connections_number];
+
+    if (!tcp_c || !node) {
+        return 1;
+    }
+
+    if (!tcp_c->tcp_connections_length) {
+        return 2;
+    }
+
+    TCP_con *tcp_con = get_tcp_connection(tcp_c, 0);
+
+    if (!tcp_con) {
+        return 3;
+    }
+
+    memcpy(node->public_key, tcp_con->connection->public_key, sizeof(crypto_box_PUBLICKEYBYTES));
+
+    memcpy(&node->ip_port, &tcp_con->connection->ip_port, sizeof(IP_Port));
+
+    return 0;
+}
+
 /* Create a new TCP connection to public_key.
  *
  * public_key must be the counterpart to the secret key that the other peer used with new_tcp_connections().
