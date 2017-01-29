@@ -1048,7 +1048,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
     unix_time_update();
 
     if (num_peers) {
-        fprintf(stderr, "num peers: %d\n", num_peers);
 
         Node_format *tcp_relays = malloc(sizeof(Node_format) * num_peers);
 
@@ -1058,7 +1057,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
                                       length - public_keys_size - sizeof(uint32_t), 1);
 
         if (num_relays != num_peers) {
-            fprintf(stderr, "num peers != num relays\n");
             return -1;
         }
 
@@ -1070,8 +1068,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
 
         for (i = 0; i < num_peers; i++) {
             int peer_id = peer_add(c->messenger, groupnumber, NULL, chat_pk);
-
-            fprintf(stderr, "peer id: %d\n", peer_id);
 
             chat_pk += ENC_PUBLIC_KEY;
 
@@ -1094,8 +1090,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
             usleep(50000);
             do_tcp_connections(chat->tcp_conn);
         }
-
-        fprintf(stderr, "added_peers_index: %d\n", added_peers_index);
 
         for (index = 0; index < added_peers_index; index++) {
             send_gc_handshake_packet(chat, peer_ids[index], GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
@@ -1135,6 +1129,21 @@ static int send_peer_shared_state(GC_Chat *chat, GC_Connection *gconn);
 static int send_peer_mod_list(GC_Chat *chat, GC_Connection *gconn);
 static int send_peer_sanctions_list(GC_Chat *chat, GC_Connection *gconn);
 static int send_peer_topic(GC_Chat *chat, GC_Connection *gconn);
+
+static int gcc_copy_tcp_relay(GC_Connection *gconn, Node_format *node)
+{
+    if (!gconn) {
+        return 1;
+    }
+
+    if (!node) {
+        return 2;
+    }
+
+    memcpy(node, &gconn->connected_tcp_relays[gconn->tcp_relays_index - 1], sizeof(Node_format));
+
+    return 0;
+}
 
 /* Handles a sync request packet and sends a response containing the peer list.
  * Additionally sends the group topic, shared state, mod list and sanctions list in respective packets.
@@ -1210,26 +1219,20 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, GC_Connec
     }
     // TODO: do not send t0 peer info about this peer => check if this is not possible!!!!
 
-    fprintf(stderr, "chat->numpeers: %d\n", chat->numpeers);
     for (i = 1; i < chat->numpeers; i++) {
         if (chat->gcc[i].public_key_hash != gconn->public_key_hash && chat->gcc[i].confirmed) {
 
             GC_Connection *gconn = gcc_get_connection(chat, i);
             if (!gconn) {
-                fprintf(stderr, "continue\n");
                 continue;
             }
-            memcpy(&tcp_relays[num], &gconn->connected_tcp_relays[gconn->tcp_relays_index - 1], sizeof(Node_format));
+            gcc_copy_tcp_relay(gconn, &tcp_relays[num]);
             indexes[num++] = i;
-            fprintf(stderr, "copy success!\n");
         }
     }
 
-    fprintf(stderr, "num: %d\n", num);
 
     int nodes_len = pack_nodes(response + len, sizeof(response) - len, tcp_relays, num);
-
-    fprintf(stderr, "nodes len: %d\n", nodes_len);
 
     free(tcp_relays);
 
@@ -5632,7 +5635,7 @@ bool check_group_invite(GC_Session *c, const uint8_t *data, uint32_t length)
         return false;
     }
 
-    return gc_get_group_by_public_key(c, data) != NULL;
+    return gc_get_group_by_public_key(c, data) == NULL;
 }
 
 
