@@ -67,6 +67,9 @@ typedef struct GC_Connection {
     uint64_t    last_recv_direct_time;   /* the last time we received a direct packet from this peer */
     uint64_t    last_tcp_relays_shared;  /* the last time we tried to send this peer our tcp relays */
 
+    Node_format connected_tcp_relays[MAX_FRIEND_TCP_CONNECTIONS];
+    int tcp_relays_index;
+
     uint64_t    last_rcvd_ping;
     uint64_t    time_added;
     bool        pending_sync_request;   /* true if we have sent this peer a sync request and have not received a reply*/
