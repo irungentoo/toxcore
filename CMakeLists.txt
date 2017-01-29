@@ -205,9 +205,6 @@ include(CheckFunctionExists)
 check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 check_function_exists(memset_s HAVE_MEMSET_S)
 target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
-if(WIN32)
-  target_link_modules(toxcrypto ws2_32) # for htonl
-endif()
 
 # LAYER 2: Basic networking
 # -------------------------
