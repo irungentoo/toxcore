@@ -5625,6 +5625,17 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
     chat->get_nodes_attempts = 0;
 }
 
+
+bool check_group_invite(GC_Session *c, const uint8_t *data, uint32_t length)
+{
+    if (length < CHAT_ID_SIZE) {
+        return false;
+    }
+
+    return gc_get_group_by_public_key(c, data) != NULL;
+}
+
+
 /* Invites friendnumber to chat. Packet includes: Type, chat_id, node
  *
  * Return 0 on success.

@@ -705,6 +705,8 @@ int broadcast_gc_sanctions_list(GC_Chat *chat);
 int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uint8_t *data,
                                      uint32_t length);
 
+bool check_group_invite(GC_Session *c, const uint8_t *data, uint32_t length);
+
 int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const uint8_t *data,
                                       uint32_t length);
 
