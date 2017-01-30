@@ -1073,13 +1073,15 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
 
         for (i = 0; i < num_peers; i++) {
             if (!memcmp(chat_pk, chat->self_public_key, ENC_PUBLIC_KEY)) {
-                chat_pk += ENC_PUBLIC_KEY;
+                if (i < num_peers - 1)
+                    chat_pk += ENC_PUBLIC_KEY;
                 continue;
             }
 
             int peer_id = peer_add(c->messenger, groupnumber, NULL, chat_pk);
 
-            chat_pk += ENC_PUBLIC_KEY;
+            if (i < num_peers - 1)
+                chat_pk += ENC_PUBLIC_KEY;
 
             if (peer_id < 0) {
                 continue;
@@ -1199,8 +1201,6 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, GC_Connec
         }
     }
 
-
-
     /* Do not change the order of these four calls or else */
     if (send_peer_shared_state(chat, gconn) == -1) {
         return -1;
@@ -1246,7 +1246,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, GC_Connec
         if (chat->gcc[i].public_key_hash != gconn->public_key_hash && chat->gcc[i].confirmed) {
 
             GC_Connection *peer_gconn = gcc_get_connection(chat, i);
-            if (!gconn) {
+            if (!peer_gconn) {
                 continue;
             }
             gcc_copy_tcp_relay(peer_gconn, &tcp_relays[num]);
