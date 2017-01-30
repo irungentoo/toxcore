@@ -1140,7 +1140,9 @@ static int gcc_copy_tcp_relay(GC_Connection *gconn, Node_format *node)
         return 2;
     }
 
-    memcpy(node, &gconn->connected_tcp_relays[gconn->tcp_relays_index - 1], sizeof(Node_format));
+    int index = (gconn->tcp_relays_index - 1 + MAX_FRIEND_TCP_CONNECTIONS) % MAX_FRIEND_TCP_CONNECTIONS;
+
+    memcpy(node, &gconn->connected_tcp_relays[index], sizeof(Node_format));
 
     return 0;
 }
