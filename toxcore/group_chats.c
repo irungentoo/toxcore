@@ -1167,7 +1167,8 @@ static int gcc_copy_tcp_relay(GC_Connection *gconn, Node_format *node)
  * Returns non-negative value on success.
  * Returns -1 on failure.
  */
-static int handle_gc_sync_request(const Messenger *m, int groupnumber, GC_Connection *gconn, const uint8_t *data,
+static int handle_gc_sync_request(const Messenger *m, int groupnumber, int peernumber,
+                                  GC_Connection *gconn, const uint8_t *data,
                                   uint32_t length)
 {
     if (length != sizeof(uint32_t) + MAX_GC_PASSWD_SIZE) {
@@ -1236,14 +1237,21 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, GC_Connec
     // pack info about new node
     gcc_copy_tcp_relay(gconn, sender_relay);
     uint8_t sender_relay_data[MAX_GC_PACKET_SIZE];
-    int sender_node_length = pack_nodes(sender_relay_data, sizeof(sender_relay_data), sender_relay, 1);
+
+    U32_to_bytes(sender_relay_data, chat->self_public_key_hash);
+
+    gc_get_peer_public_key(chat, peernumber, sender_relay_data + sizeof(uint32_t));
+
+    int sender_node_length = pack_nodes(sender_relay_data + ENC_PUBLIC_KEY + sizeof(uint32_t),
+                                        sizeof(sender_relay_data) - ENC_PUBLIC_KEY - sizeof(uint32_t),
+                                        sender_relay, 1);
 
     if (sender_node_length <= 0) {
         return -1;
     }
 
     for (i = 1; i < chat->numpeers; i++) {
-        if (chat->gcc[i].public_key_hash != gconn->public_key_hash && chat->gcc[i].confirmed) {
+        if (chat->gcc[i].public_key_hash != gconn->public_key_hash && chat->gcc[i].confirmed && i != peernumber) {
 
             GC_Connection *peer_gconn = gcc_get_connection(chat, i);
             if (!peer_gconn) {
@@ -4531,7 +4539,7 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber
             return handle_gc_peer_info_request(m, groupnumber, gconn);
 
         case GP_SYNC_REQUEST:
-            return handle_gc_sync_request(m, groupnumber, gconn, data, length);
+            return handle_gc_sync_request(m, groupnumber, peernumber, gconn, data, length);
 
         case GP_SYNC_RESPONSE:
             return handle_gc_sync_response(m, groupnumber, gconn, data, length);
