@@ -5252,7 +5252,7 @@ static int send_pending_handshake(GC_Chat *chat, GC_Connection *gconn, int peer_
         return 0;
     }
 
-    TCP_Connection_to *con_to = get_connection(chat->tcp_conn, gconn->tcp_connection_num);
+    TCP_Connection_to *con_to = &chat->tcp_conn->connections[gconn->tcp_connection_num];
 
     if (!con_to) {
         return 3;
