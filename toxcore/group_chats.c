@@ -1096,15 +1096,11 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
             save_tcp_relay(gconn, &tcp_relays[i]);
         }
 
-        // TODO: move handshake sending to callback
         int index;
-        for (index = 0; index < 10; index++) {
-            usleep(50000);
-            do_tcp_connections(chat->tcp_conn);
-        }
 
         for (index = 0; index < added_peers_index; index++) {
-            send_gc_handshake_packet(chat, peer_ids[index], GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
+            GC_Connection *conn = gcc_get_connection(chat, peer_ids[index]);
+            conn->pending_handshake = true;
         }
 
         free(peer_ids);
@@ -1240,7 +1236,7 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, int peern
 
     U32_to_bytes(sender_relay_data, chat->self_public_key_hash);
 
-    gc_get_peer_public_key(chat, peernumber, sender_relay_data + HASH_ID_BYTES;
+    gc_get_peer_public_key(chat, peernumber, sender_relay_data + HASH_ID_BYTES);
 
     int sender_node_length = pack_nodes(sender_relay_data + ENC_PUBLIC_KEY + HASH_ID_BYTES,
                                         sizeof(sender_relay_data) - ENC_PUBLIC_KEY - HASH_ID_BYTES,
@@ -1936,16 +1932,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
                              relays[0].public_key);
     save_tcp_relay(gconn, &relays[0]);
 
-    // TODO: move handshake sending to callback
-    int index;
-    for (index = 0; index < 10; index++) {
-        usleep(50000);
-        do_tcp_connections(chat->tcp_conn);
-    }
-
-    if (send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, HJ_PRIVATE) == -1) {
-        return -1;
-    }
+    gconn->pending_handshake = true;
 
     return 0;
 }
@@ -5251,6 +5238,38 @@ static void do_new_connection_cooldown(GC_Chat *chat)
     }
 }
 
+static int send_pending_handshake(GC_Chat *chat, GC_Connection *gconn, int peer_id)
+{
+    if (!chat || !gconn) {
+        return 1;
+    }
+
+    if (!peernumber_valid(chat, peer_id)) {
+        return 2;
+    }
+
+    if (!gconn->pending_handshake) {
+        return 0;
+    }
+
+    TCP_Connection_to *con_to = get_connection(chat->tcp_conn, gconn->tcp_connection_num);
+
+    if (!con_to) {
+        return 3;
+    }
+
+    unsigned int i;
+
+    for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; i++) {
+        uint8_t status = con_to->connections[i].status;
+        if (status == TCP_CONN_VALID) {
+            return send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
+        }
+    }
+
+    return 0;
+}
+
 static void do_group_tcp(GC_Chat *chat)
 {
     if (!chat->tcp_conn) {
@@ -5265,6 +5284,8 @@ static void do_group_tcp(GC_Chat *chat)
         GC_Connection *gconn = &chat->gcc[i];
         bool tcp_set = !gcc_connection_is_direct(gconn);
         set_tcp_connection_to_status(chat->tcp_conn, gconn->tcp_connection_num, tcp_set);
+
+        send_pending_handshake(chat, gconn, i);
     }
 }
 
@@ -5867,17 +5888,7 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
         save_tcp_relay(gconn, &tcp_relays[i]);
     }
 
-    // TODO: move handshake sending to callback
-    int index;
-    for (index = 0; index < 10; index++) {
-        usleep(50000);
-        do_tcp_connections(chat->tcp_conn);
-    }
-
-
-    if (send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, HJ_PRIVATE) == -1) {
-        return -1;
-    }
+    gconn->pending_handshake = true;
 
     return 0;
 }
