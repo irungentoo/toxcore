@@ -1240,15 +1240,17 @@ static int handle_gc_sync_request(const Messenger *m, int groupnumber, int peern
 
     U32_to_bytes(sender_relay_data, chat->self_public_key_hash);
 
-    gc_get_peer_public_key(chat, peernumber, sender_relay_data + sizeof(uint32_t));
+    gc_get_peer_public_key(chat, peernumber, sender_relay_data + HASH_ID_BYTES;
 
-    int sender_node_length = pack_nodes(sender_relay_data + ENC_PUBLIC_KEY + sizeof(uint32_t),
-                                        sizeof(sender_relay_data) - ENC_PUBLIC_KEY - sizeof(uint32_t),
+    int sender_node_length = pack_nodes(sender_relay_data + ENC_PUBLIC_KEY + HASH_ID_BYTES,
+                                        sizeof(sender_relay_data) - ENC_PUBLIC_KEY - HASH_ID_BYTES,
                                         sender_relay, 1);
 
     if (sender_node_length <= 0) {
         return -1;
     }
+
+    sender_node_length += HASH_ID_BYTES + ENC_PUBLIC_KEY;
 
     for (i = 1; i < chat->numpeers; i++) {
         if (chat->gcc[i].public_key_hash != gconn->public_key_hash && chat->gcc[i].confirmed && i != peernumber) {
@@ -1903,6 +1905,12 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
     uint8_t chat_pk[ENC_PUBLIC_KEY];
     memcpy(chat_pk, data, ENC_PUBLIC_KEY);
 
+    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
+
+    if (!memcmp(chat_pk, chat->chat_public_key, ENC_PUBLIC_KEY)) {
+        return -1;
+    }
+
     int peer_id = peer_add(m, groupnumber, NULL, chat_pk);
 
     if (peer_id < 0) {
@@ -1917,8 +1925,6 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
     if (num_nodes != 1) {
         return -1;
     }
-
-    GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
     GC_Connection *gconn = gcc_get_connection(chat, peer_id);
 
