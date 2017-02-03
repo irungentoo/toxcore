@@ -1903,7 +1903,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
 
-    if (!memcmp(chat_pk, chat->chat_public_key, ENC_PUBLIC_KEY)) {
+    if (!memcmp(chat_pk, chat->self_public_key, ENC_PUBLIC_KEY)) {
         return -1;
     }
 
@@ -4421,6 +4421,8 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port *i
         return -1;
     }
 
+    gconn->pending_handshake = false;
+
     uint8_t sender_session_pk[ENC_PUBLIC_KEY];
     memcpy(sender_session_pk, data, ENC_PUBLIC_KEY);
 
@@ -4640,8 +4642,9 @@ static int handle_gc_lossless_message(Messenger *m, GC_Chat *chat, const uint8_t
         return -1;
     }
 
-    /* we need to get the peernumber again because it may have changed */
+    /* we need to get the peernumber and gconn again because it may have changed */
     peernumber = get_peernum_of_enc_pk(chat, sender_pk);
+    gconn = gcc_get_connection(chat, peernumber);
 
     if (lossless_ret == 2 && peernumber != -1) {
         gc_send_message_ack(chat, gconn, message_id, 0);
@@ -5259,11 +5262,15 @@ static int send_pending_handshake(GC_Chat *chat, GC_Connection *gconn, int peer_
     }
 
     unsigned int i;
-
+    // todo: simplify to one send handshake?
     for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; i++) {
         uint8_t status = con_to->connections[i].status;
         if (status == TCP_CONN_VALID) {
-            return send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
+            int result = send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
+            if (!result) {
+                gconn->pending_handshake = false;
+                break;
+            }
         }
     }
 
