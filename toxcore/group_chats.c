@@ -1023,8 +1023,8 @@ static int send_gc_handshake_request(Messenger *m, int groupnumber, IP_Port ipp,
 static int send_gc_handshake_packet(GC_Chat *chat, uint32_t peernumber, uint8_t handshake_type,
                                     uint8_t request_type, uint8_t join_type);
 
-static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection *gconn, const uint8_t *data,
-                                   uint32_t length)
+static int handle_gc_sync_response(Messenger *m, int groupnumber, int peernumber, GC_Connection *gconn,
+                                   const uint8_t *data, uint32_t length)
 {
     if (length < sizeof(uint32_t)) {
         return -1;
@@ -1089,11 +1089,11 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
 
             peer_ids[added_peers_index++] = peer_id;
 
-            GC_Connection *gconn = gcc_get_connection(chat, peer_id);
+            GC_Connection *peer_conn = gcc_get_connection(chat, peer_id);
 
-            add_tcp_relay_connection(chat->tcp_conn, gconn->tcp_connection_num, tcp_relays[i].ip_port,
+            add_tcp_relay_connection(chat->tcp_conn, peer_conn->tcp_connection_num, tcp_relays[i].ip_port,
                                      tcp_relays[i].public_key);
-            save_tcp_relay(gconn, &tcp_relays[i]);
+            save_tcp_relay(peer_conn, &tcp_relays[i]);
         }
 
         int index;
@@ -1118,6 +1118,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, GC_Connection 
         return 0;
     }
 
+    gconn = gcc_get_connection(peernumber);
     self_gc_connected(chat);
     send_gc_peer_exchange(c, chat, gconn);
     group_announce_request(c, chat);
@@ -1927,7 +1928,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
                              relays[0].public_key);
     save_tcp_relay(gconn, &relays[0]);
 
-    //gconn->pending_handshake = unix_time() + HANDSHAKE_SENDING_TIMEOUT;
+    gconn->pending_handshake = unix_time() + HANDSHAKE_SENDING_TIMEOUT;
 
     return 0;
 }
@@ -4532,7 +4533,7 @@ int handle_gc_lossless_helper(Messenger *m, int groupnumber, uint32_t peernumber
             return handle_gc_sync_request(m, groupnumber, peernumber, gconn, data, length);
 
         case GP_SYNC_RESPONSE:
-            return handle_gc_sync_response(m, groupnumber, gconn, data, length);
+            return handle_gc_sync_response(m, groupnumber, peernumber, gconn, data, length);
 
         case GP_INVITE_REQUEST:
             return handle_gc_invite_request(m, groupnumber, peernumber, data, length);
@@ -5922,7 +5923,7 @@ int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uin
     }
 
     uint32_t len = CHAT_ID_SIZE + ENC_PUBLIC_KEY;
-    uint8_t send_data[len + sizeof(tcp_relays)];
+    uint8_t send_data[MAX_GC_PACKET_SIZE];
     memcpy(send_data, chat_id, CHAT_ID_SIZE);
     memcpy(send_data + CHAT_ID_SIZE, chat->self_public_key, ENC_PUBLIC_KEY);
 
