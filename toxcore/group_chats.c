@@ -1932,7 +1932,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
                              relays[0].public_key);
     save_tcp_relay(gconn, &relays[0]);
 
-    gconn->pending_handshake = true;
+    gconn->pending_handshake = unix_time() + HANDSHAKE_SENDING_TIMEOUT;
 
     return 0;
 }
@@ -5251,27 +5251,13 @@ static int send_pending_handshake(GC_Chat *chat, GC_Connection *gconn, int peer_
         return 2;
     }
 
-    if (!gconn->pending_handshake) {
+    if (!gconn->pending_handshake || unix_time() < gconn->pending_handshake) {
         return 0;
     }
 
-    TCP_Connection_to *con_to = &chat->tcp_conn->connections[gconn->tcp_connection_num];
-
-    if (!con_to) {
-        return 3;
-    }
-
-    unsigned int i;
-    // todo: simplify to one send handshake?
-    for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; i++) {
-        uint8_t status = con_to->connections[i].status;
-        if (status == TCP_CONN_VALID) {
-            int result = send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
-            if (!result) {
-                gconn->pending_handshake = false;
-                break;
-            }
-        }
+    int result = send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
+    if (!result) {
+        gconn->pending_handshake = 0;
     }
 
     return 0;
@@ -5895,7 +5881,7 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
         save_tcp_relay(gconn, &tcp_relays[i]);
     }
 
-    gconn->pending_handshake = true;
+    gconn->pending_handshake = unix_time() + HANDSHAKE_SENDING_TIMEOUT;
 
     return 0;
 }

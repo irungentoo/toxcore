@@ -39,6 +39,8 @@
 /* The time before the direct UDP connection is considered dead */
 #define GCC_UDP_DIRECT_TIMEOUT (GC_PING_INTERVAL * 2 + 2)
 
+#define HANDSHAKE_SENDING_TIMEOUT 3
+
 struct GC_Message_Ary_Entry {
     uint8_t *data;
     uint32_t data_length;
@@ -75,7 +77,7 @@ typedef struct GC_Connection {
     bool        pending_sync_request;   /* true if we have sent this peer a sync request and have not received a reply*/
     bool        pending_state_sync;    /* used for group state syncing */
     bool        handshaked; /* true if we've successfully handshaked with this peer */
-    bool        pending_handshake;
+    uint64_t    pending_handshake;
     bool        confirmed;  /* true if this peer has given us their info */
 } GC_Connection;
 
