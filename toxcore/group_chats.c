@@ -1065,7 +1065,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, int peernumber
             return -1;
         }
 
-        uint32_t *peer_ids = malloc(sizeof(uint32_t) * num_peers);
+        uint32_t *peer_numbers = malloc(sizeof(uint32_t) * num_peers);
 
         uint8_t *chat_pk = data + length - public_keys_size;
 
@@ -1078,18 +1078,18 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, int peernumber
                 continue;
             }
 
-            int peer_id = peer_add(c->messenger, groupnumber, NULL, chat_pk);
+            int peernumber = peer_add(c->messenger, groupnumber, NULL, chat_pk);
 
             if (i < num_peers - 1)
                 chat_pk += ENC_PUBLIC_KEY;
 
-            if (peer_id < 0) {
+            if (peernumber < 0) {
                 continue;
             }
 
-            peer_ids[added_peers_index++] = peer_id;
+            peer_numbers[added_peers_index++] = peernumber;
 
-            GC_Connection *peer_conn = gcc_get_connection(chat, peer_id);
+            GC_Connection *peer_conn = gcc_get_connection(chat, peernumber);
 
             add_tcp_relay_connection(chat->tcp_conn, peer_conn->tcp_connection_num, tcp_relays[i].ip_port,
                                      tcp_relays[i].public_key);
@@ -1099,11 +1099,11 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, int peernumber
         int index;
 
         for (index = 0; index < added_peers_index; index++) {
-            GC_Connection *conn = gcc_get_connection(chat, peer_ids[index]);
+            GC_Connection *conn = gcc_get_connection(chat, peer_numbers[index]);
             conn->pending_handshake = true;
         }
 
-        free(peer_ids);
+        free(peer_numbers);
         free(tcp_relays);
 
     }
@@ -1118,7 +1118,7 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, int peernumber
         return 0;
     }
 
-    gconn = gcc_get_connection(peernumber);
+    gconn = gcc_get_connection(chat, peernumber);
     self_gc_connected(chat);
     send_gc_peer_exchange(c, chat, gconn);
     group_announce_request(c, chat);
@@ -1902,9 +1902,9 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
     uint8_t chat_pk[ENC_PUBLIC_KEY];
     memcpy(chat_pk, data, ENC_PUBLIC_KEY);
 
-    int peer_id = peer_add(m, groupnumber, NULL, chat_pk);
+    int peer_number = peer_add(m, groupnumber, NULL, chat_pk);
 
-    if (peer_id < 0) {
+    if (peer_number < 0) {
         return -1;
     }
 
@@ -1918,7 +1918,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
     }
 
     GC_Chat *chat = gc_get_group(m->group_handler, groupnumber);
-    GC_Connection *gconn = gcc_get_connection(chat, peer_id);
+    GC_Connection *gconn = gcc_get_connection(chat, peer_number);
 
     if (!chat || !gconn) {
         return -1;
@@ -5852,13 +5852,13 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
         return -2;
     }
 
-    int peer_id = get_peernum_of_enc_pk(chat, invite_chat_pk);
+    int peernumber = get_peernum_of_enc_pk(chat, invite_chat_pk);
 
-    if (peer_id < 0) {
+    if (peernumber < 0) {
         return -3;
     }
 
-    GC_Connection *gconn = gcc_get_connection(chat, peer_id);
+    GC_Connection *gconn = gcc_get_connection(chat, peernumber);
 
     Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
     int num_nodes = unpack_nodes(tcp_relays, GCC_MAX_TCP_SHARED_RELAYS,
@@ -5907,13 +5907,13 @@ int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uin
         return -2;
     }
 
-    int peer_id = peer_add(m, chat->groupnumber, NULL, invite_chat_pk);
+    int peernumber = peer_add(m, chat->groupnumber, NULL, invite_chat_pk);
 
-    if (peer_id < 0) {
+    if (peernumber < 0) {
         return -3;
     }
 
-    GC_Connection *gconn = gcc_get_connection(chat, peer_id);
+    GC_Connection *gconn = gcc_get_connection(chat, peernumber);
 
     Node_format tcp_relays[GCC_MAX_TCP_SHARED_RELAYS];
     unsigned int i, num = tcp_copy_connected_relays(chat->tcp_conn, tcp_relays, GCC_MAX_TCP_SHARED_RELAYS);
