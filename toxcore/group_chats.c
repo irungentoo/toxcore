@@ -2649,23 +2649,23 @@ static int handle_bc_nick(Messenger *m, int groupnumber, uint32_t peernumber, co
 /* Copies peer_id's public key to public_key.
  *
  * Returns 0 on success.
- * Returns -1 if peer_id is invalid.
+ * Returns -1 if peernumber is invalid.
+ * Returns -2 if public_key is NULL
  */
-int gc_get_peer_public_key(const GC_Chat *chat, uint32_t peer_id, uint8_t *public_key)
+int gc_get_peer_public_key(const GC_Chat *chat, uint32_t peernumber, uint8_t *public_key)
 {
-    int peernumber = get_peernumber_of_peer_id(chat, peer_id);
-
     GC_Connection *gconn = gcc_get_connection(chat, peernumber);
 
-    if (gconn == NULL) {
+    if (!gconn) {
         return -1;
     }
 
     if (public_key) {
         memcpy(public_key, gconn->addr.public_key, ENC_PUBLIC_KEY);
+        return 0;
     }
 
-    return 0;
+    return -2;
 }
 
 /* Creates a topic packet and puts it in data. Packet includes the topic, topic length,
@@ -4407,7 +4407,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port *i
     int peernumber = get_peernum_of_enc_pk(chat, sender_pk);
 
     if (peernumber < 0) {
-        fprintf(stderr, "peer_add failed in handle_gc_handshake_request\n");
+        fprintf(stderr, "peer not found in handle_gc_handshake_request\n");
         return -1;
     }
 
@@ -4417,7 +4417,7 @@ static int handle_gc_handshake_request(Messenger *m, int groupnumber, IP_Port *i
         return -1;
     }
 
-    gconn->pending_handshake = false;
+    gconn->pending_handshake = 0;
 
     uint8_t sender_session_pk[ENC_PUBLIC_KEY];
     memcpy(sender_session_pk, data, ENC_PUBLIC_KEY);
