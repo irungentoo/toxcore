@@ -1905,7 +1905,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
     int peer_number = peer_add(m, groupnumber, NULL, chat_pk);
 
     if (peer_number < 0) {
-        return -1;
+        return 0;
     }
 
     Node_format relays[1];
@@ -5248,6 +5248,11 @@ static int send_pending_handshake(GC_Chat *chat, GC_Connection *gconn, int peer_
     }
 
     if (!gconn->pending_handshake || unix_time() < gconn->pending_handshake) {
+        return 0;
+    }
+
+    if (gconn->handshaked) {
+        gconn->pending_handshake = 0;
         return 0;
     }
 
