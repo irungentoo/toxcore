@@ -1098,11 +1098,6 @@ static int handle_gc_sync_response(Messenger *m, int groupnumber, int peernumber
 
         int index;
 
-        for (index = 0; index < added_peers_index; index++) {
-            GC_Connection *conn = gcc_get_connection(chat, peer_numbers[index]);
-            conn->pending_handshake = true;
-        }
-
         free(peer_numbers);
         free(tcp_relays);
 
@@ -1440,7 +1435,7 @@ static int send_gc_invite_request(GC_Chat *chat, GC_Connection *gconn)
 }
 
 /* Return -1 if fail
- * Return 0 if succes
+ * Return 0 if success
  */
 static int send_gc_invite_response(GC_Chat *chat, GC_Connection *gconn)
 {
@@ -1928,6 +1923,7 @@ static int handle_gc_peer_announcement(Messenger *m, int groupnumber, uint32_t p
                              relays[0].public_key);
     save_tcp_relay(gconn, &relays[0]);
 
+    gconn->pending_handshake_type = HS_PEER_INFO_EXCHANGE;
     gconn->pending_handshake = unix_time() + HANDSHAKE_SENDING_TIMEOUT;
 
     return 0;
@@ -5256,7 +5252,8 @@ static int send_pending_handshake(GC_Chat *chat, GC_Connection *gconn, int peer_
         return 0;
     }
 
-    int result = send_gc_handshake_packet(chat, peer_id, GH_REQUEST, HS_INVITE_REQUEST, chat->join_type);
+    int result = send_gc_handshake_packet(chat, peer_id, GH_REQUEST,
+                                          gconn->pending_handshake_type, chat->join_type);
     if (!result) {
         gconn->pending_handshake = 0;
     }
@@ -5882,6 +5879,7 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
         save_tcp_relay(gconn, &tcp_relays[i]);
     }
 
+    gconn->pending_handshake_type = HS_INVITE_REQUEST;
     gconn->pending_handshake = unix_time() + HANDSHAKE_SENDING_TIMEOUT;
 
     return 0;

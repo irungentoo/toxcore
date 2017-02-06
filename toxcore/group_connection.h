@@ -78,6 +78,7 @@ typedef struct GC_Connection {
     bool        pending_state_sync;    /* used for group state syncing */
     bool        handshaked; /* true if we've successfully handshaked with this peer */
     uint64_t    pending_handshake;
+    uint8_t     pending_handshake_type;
     bool        confirmed;  /* true if this peer has given us their info */
 } GC_Connection;
 
