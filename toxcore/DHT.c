@@ -866,7 +866,7 @@ static unsigned int store_node_ok(const Client_data *client, const uint8_t *publ
 static void sort_client_list(Client_data *list, unsigned int length, const uint8_t *comp_public_key)
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
-    // comparison function cmp_dht_entry can use it as the base of comparison.
+    // comparison function can use it as the base of comparison.
     Cmp_data cmp_list[length];
 
     for (uint32_t i = 0; i < length; i++) {

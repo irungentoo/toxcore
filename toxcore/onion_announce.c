@@ -233,12 +233,20 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
     return -1;
 }
 
-static uint8_t cmp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+typedef struct {
+    const uint8_t *base_public_key;
+    Onion_Announce_Entry entry;
+} Cmp_data;
+
 static int cmp_entry(const void *a, const void *b)
 {
-    Onion_Announce_Entry entry1, entry2;
-    memcpy(&entry1, a, sizeof(Onion_Announce_Entry));
-    memcpy(&entry2, b, sizeof(Onion_Announce_Entry));
+    Cmp_data cmp1, cmp2;
+    memcpy(&cmp1, a, sizeof(Cmp_data));
+    memcpy(&cmp2, b, sizeof(Cmp_data));
+    Onion_Announce_Entry entry1 = cmp1.entry;
+    Onion_Announce_Entry entry2 = cmp2.entry;
+    const uint8_t *cmp_public_key = cmp1.base_public_key;
+
     int t1 = is_timeout(entry1.time, ONION_ANNOUNCE_TIMEOUT);
     int t2 = is_timeout(entry2.time, ONION_ANNOUNCE_TIMEOUT);
 
@@ -265,6 +273,24 @@ static int cmp_entry(const void *a, const void *b)
     }
 
     return 0;
+}
+
+static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int length, const uint8_t *comp_public_key)
+{
+    // Pass comp_public_key to qsort with each Client_data entry, so the
+    // comparison function can use it as the base of comparison.
+    Cmp_data cmp_list[length];
+
+    for (uint32_t i = 0; i < length; i++) {
+        cmp_list[i].base_public_key = comp_public_key;
+        cmp_list[i].entry = list[i];
+    }
+
+    qsort(cmp_list, length, sizeof(Cmp_data), cmp_entry);
+
+    for (uint32_t i = 0; i < length; i++) {
+        list[i] = cmp_list[i].entry;
+    }
 }
 
 /* add entry to entries list
@@ -304,8 +330,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
     memcpy(onion_a->entries[pos].data_public_key, data_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     onion_a->entries[pos].time = unix_time();
 
-    memcpy(cmp_public_key, onion_a->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    qsort(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, sizeof(Onion_Announce_Entry), cmp_entry);
+    sort_onion_announce_list(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, onion_a->dht->self_public_key);
     return in_entries(onion_a, public_key);
 }
 

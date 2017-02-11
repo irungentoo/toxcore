@@ -471,12 +471,20 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
     return send_onion_packet_tcp_udp(onion_c, &path, dest, request, len);
 }
 
-static uint8_t cmp_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+typedef struct {
+    const uint8_t *base_public_key;
+    Onion_Node entry;
+} Cmp_data;
+
 static int cmp_entry(const void *a, const void *b)
 {
-    Onion_Node entry1, entry2;
-    memcpy(&entry1, a, sizeof(Onion_Node));
-    memcpy(&entry2, b, sizeof(Onion_Node));
+    Cmp_data cmp1, cmp2;
+    memcpy(&cmp1, a, sizeof(Cmp_data));
+    memcpy(&cmp2, b, sizeof(Cmp_data));
+    Onion_Node entry1 = cmp1.entry;
+    Onion_Node entry2 = cmp2.entry;
+    const uint8_t *cmp_public_key = cmp1.base_public_key;
+
     int t1 = is_timeout(entry1.timestamp, ONION_NODE_TIMEOUT);
     int t2 = is_timeout(entry2.timestamp, ONION_NODE_TIMEOUT);
 
@@ -503,6 +511,24 @@ static int cmp_entry(const void *a, const void *b)
     }
 
     return 0;
+}
+
+static void sort_onion_node_list(Onion_Node *list, unsigned int length, const uint8_t *comp_public_key)
+{
+    // Pass comp_public_key to qsort with each Client_data entry, so the
+    // comparison function can use it as the base of comparison.
+    Cmp_data cmp_list[length];
+
+    for (uint32_t i = 0; i < length; i++) {
+        cmp_list[i].base_public_key = comp_public_key;
+        cmp_list[i].entry = list[i];
+    }
+
+    qsort(cmp_list, length, sizeof(Cmp_data), cmp_entry);
+
+    for (uint32_t i = 0; i < length; i++) {
+        list[i] = cmp_list[i].entry;
+    }
 }
 
 static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t *public_key, IP_Port ip_port,
@@ -534,8 +560,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
         list_length = MAX_ONION_CLIENTS;
     }
 
-    memcpy(cmp_public_key, reference_id, CRYPTO_PUBLIC_KEY_SIZE);
-    qsort(list_nodes, list_length, sizeof(Onion_Node), cmp_entry);
+    sort_onion_node_list(list_nodes, list_length, reference_id);
 
     int index = -1, stored = 0;
     unsigned int i;
