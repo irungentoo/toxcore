@@ -58,8 +58,10 @@
 #include <windows.h>
 #include <ws2tcpip.h>
 
-#else // Linux includes
+#else // UNIX includes
 
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>

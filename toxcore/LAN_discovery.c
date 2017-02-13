@@ -31,7 +31,6 @@
 
 /* Used for get_broadcast(). */
 #ifdef __linux
-#include <arpa/inet.h>
 #include <linux/netdevice.h>
 #include <sys/ioctl.h>
 #endif
