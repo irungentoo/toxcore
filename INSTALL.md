@@ -1,556 +1,234 @@
-# Install Instructions
+# Installation instructions
 
-- [Installation](#installation)
-  - [Unix like](#most-unix-like-oses)
-    - [Quick install](#quick-install)
-    - [Build manually](#build-manually)
-      - [Compile toxcore](#compile-toxcore)
-  - [OS X](#os-x)
-    - [Homebrew](#homebrew)
-    - [Non-Homebrew](#non-homebrew)
-  - [Windows](#windows)
-    - [Cross-Compile](#cross-compile)
-      - [Setting up a VM](#setting-up-a-vm)
-      - [Setting up the environment](#setting-up-the-environment)
-      - [Compiling](#compiling)
-    - [Native](#native)
-- [Additional](#additional)
-  - [Advanced configure options](#advanced-configure-options)
-  - [A/V support](#av-support)
-    - [libtoxav](#libtoxav)
-  - [Bootstrap daemon](#bootstrap-daemon)
+These instructions will guide you through the process of building and installing the toxcore library and its components, as well as getting already pre-built binaries.
 
-## Installation
+## Table of contents
 
-### Most Unix like OSes:
+- [Overview](#overview)
+  - [Components](#components)
+    - [Main](#main)
+    - [Secondary](#secondary)
+- [Building](#building)
+  - [Requirements](#requirements)
+    - [Library dependencies](#library-dependencies)
+    - [Compiler requirements](#compiler-requirements)
+    - [Build system requirements](#build-system-requirements)
+  - [CMake options](#cmake-options)
+  - [Build process](#build-process)
+    - [Unix-like](#unix-like)
+    - [Windows](#windows)
+      - [Building on Windows host](#building-on-windows-host)
+        - [Microsoft Visual Studio's Developer Command Prompt](#microsoft-visual-studios-developer-command-prompt)
+        - [MSYS/Cygwin](#msyscygwin)
+      - [Cross-compiling from Linux](#cross-compiling-from-linux)
+- [Pre-built binaries](#pre-built-binaries)
+  - [Linux](#linux)
+  - [Windows](#windows-1)
 
-#### Quick install:
+## Overview
 
-On Gentoo:
-```
-# emerge net-libs/tox
-```
+### Components
 
-And you're done `:)`</br>
-If you happen to run some other distro which isn't made for compiling, there are steps below:
+#### Main
 
-#### Build manually
+This repository, although called `toxcore`, in fact contains several libraries besides `toxcore` which complement it, as well as several executables. However, note that although these are separate libraries, at the moment, when building the libraries, they are all merged into a single `toxcore` library. Here is the full list of the main components that can be built using the CMake, their dependencies and descriptions.
 
-Build dependencies:
+| Name           | Type       | Dependencies                                  | Platform       | Description                                                                |
+|----------------|------------|-----------------------------------------------|----------------|----------------------------------------------------------------------------|
+| toxcore        | Library    | libnacl or libsodium, libm, libpthread, librt | Cross-platform | The main Tox library that provides the messenger functionality.            |
+| toxav          | Library    | libtoxcore, libopus, libvpx                   | Cross-platform | Provides audio/video functionality.                                        |
+| toxencryptsave | Library    | libtoxcore, libnacl or libsodium              | Cross-platform | Provides encryption of Tox profiles (savedata), as well as arbitrary data. |
+| DHT_bootstrap  | Executable | libtoxcore                                    | Cross-platform | A simple DHT bootstrap node.                                               |
+| tox-bootstrapd | Executable | libtoxcore, libconfig                         | Unix-like      | Highly configurable DHT bootstrap node daemon (systemd, SysVinit, Docker). |
 
-Note: package fetching commands may vary by OS.
+#### Secondary
 
-On Ubuntu `< 15.04` / Debian `< 8`:
+There are some testing programs that you might find interesting. Note that they are not intended for the real-world use and are not coded to the high security standards, so use them on your own risk.
 
-```bash
-sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
-```
+| Name        | Type       | Dependencies           | Platform  | Description                                                                                                                             |
+|-------------|------------|------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| irc_syncbot | Executable | libtoxcore             | Unix-like | Bot that synchronizes an IRC channel and a Tox group chat (conference).                                                                      |
+| tox_shell   | Executable | libtoxcore, libutil    | Unix-like | Proof of concept SSH-like server software using Tox. Testing program, not intended for actual use.                                      |
+| tox_sync    | Executable | libtoxcore             | Unix-like | Bittorrent-sync-like software using Tox. Syncs two directories together.                                                                |
 
-On Ubuntu `>= 15.04` / Debian `>= 8`:
-```bash
-sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm libsodium13 libsodium-dev
-```
+There are also some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
 
-On Fedora:
+| Name                | Type       | Dependencies         | Platform       | Description                                                                                                                                                            |
+|---------------------|------------|----------------------|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| bootstrap_node_info | Script     | python3              | Cross-platform | Script for getting version and Message Of The Day (MOTD) information from a DHT bootstrap node.                                                                        |
+| cracker             | Executable | libnacl or libsodium | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which starts with the specified byte sequence.                                            |
+| strkey              | Executable | libsodium            | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which contains a specified byte pattern at the specified position or at any position.     |
+| make-funny-savefile | Script     | python               | Cross-platform | Generates Tox profile file (savedata file) with provided key pair. Useful for generating Tox profiles from the output of cracker or strkey programs.                   |
+| sign                | Executable | libsodium            | Cross-platform | Program for ed25519 file signing.                                                                                                                                      |
 
-```bash
-dnf groupinstall "Development Tools"
-dnf install libtool autoconf automake check check-devel
-```
-Using ``dnf install @"Development Tools"`` is also valid and slightly shorter / cleaner way. ``dnf install @"Rpm Development Tools"``  would carry the remaining dependencies listed here.
+## Building
 
-On SunOS:
+### Requirements
 
-```pfexcec
-pkg install autoconf automake gcc-47
-```
-On FreeBSD 10+:
+#### Library dependencies
 
-```tcsh
-pkg install net-im/tox
-```
-Note, if you install from ports select NaCl for performance, and sodium if you want it to be portable.
+Library dependencies are listed in the [components](#components) table. The dependencies need to be satisfied for the components to be built. Note that if you don't have a dependency for some component, e.g. you don't have `libopus` installed required for building `toxav` component, building of that component is silently disabled.
 
-**For A/V support, also install the dependences listed in the [libtoxav](#libtoxav) section.** Note that you have to install those dependencies **before** compiling `toxcore`.
+#### Compiler requirements
 
-You should get and install [libsodium](https://github.com/jedisct1/libsodium). If you have installed `libsodium` from repo, ommit this step, and jump directly to [compiling toxcore](#compile-toxcore):
-```bash
-git clone https://github.com/jedisct1/libsodium.git
-cd libsodium
-git checkout tags/1.0.11
-./autogen.sh
-./configure && make check
-sudo checkinstall --install --pkgname libsodium --pkgversion 1.0.0 --nodoc
-sudo ldconfig
-cd ..
-```
+The supported compilers are GCC, Clang and MinGW.
 
+In theory, any compiler that fully supports C99 and accepts GCC flags should work.
 
-Or if checkinstall is not easily available for your distribution (e.g., Fedora),
-this will install the libs to /usr/local/lib and the headers to /usr/local/include:
+There is a partial and experimental support of Microsoft Visual C++ compiler. We welcome any patches that help improve it.
 
-```bash
-git clone https://github.com/jedisct1/libsodium.git
-cd libsodium
-git checkout tags/1.0.11
-./autogen.sh
-./configure
-make check
-sudo make install
-cd ..
-```
+You should have a C99 compatible compiler in order to build the main components. The secondary components might require the compiler to support GNU extensions.
 
-If your default prefix is ``/usr/local`` and you happen to get an error that says ``"error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory"``, then you can try running ``sudo ldconfig``. If that doesn't fix it, run:
+#### Build system requirements
 
-```bash
-echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf.d/locallib.conf
-sudo ldconfig
-```
+To build the main components you need to have CMake of at least 2.8.6 version installed. You also need to have pkg-config installed, the build system uses it to find dependency libraries.
 
-You may run into a situation where there is no ``/etc/ld.so.conf.d`` directory. You could either create it manually, or append path to local library to ``ld.so.conf``:
+There is some experimental accommodation for building natively on Windows, i.e. without having to use MSYS/Cygwin and pkg-config, but it uses exact hardcoded paths for finding libraries and supports building only of some of toxcore components, so your mileage might vary.
 
-```bash
-echo '/usr/local/lib/' | sudo tee -a /etc/ld.so.conf 
-sudo ldconfig
-```
+### CMake options
 
-##### Compile toxcore
+There are some options that are available to configure the build.
 
-Then clone this repo, generate makefile, and install `toxcore` system-wide:
+| Name                 | Description                                                                                   | Expected Value                             | Default Value                                     |
+|----------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------|
+| ASAN                 | Enable address-sanitizer to detect invalid memory accesses.                                   | ON or OFF                                  | OFF                                               |
+| BOOTSTRAP_DAEMON     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                  | ON                                                |
+| BUILD_AV_TEST        | Build toxav test.                                                                             | ON or OFF                                  | ON                                                |
+| BUILD_TOXAV          | Whether to build the tox AV library.                                                          | ON or OFF                                  | ON                                                |
+| CMAKE_INSTALL_PREFIX | Path to where everything should be installed.                                                 | Directory path.                            | Platform-dependent. Refer to CMake documentation. |
+| DEBUG                | Enable assertions and other debugging facilities.                                             | ON or OFF                                  | OFF                                               |
+| DHT_BOOTSTRAP        | Enable building of DHT_bootstrap                                                              | ON or OFF                                  | ON                                                |
+| ENABLE_SHARED        | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                  | ON                                                |
+| ENABLE_STATIC        | Build static libraries for all modules.                                                       | ON or OFF                                  | ON                                                |
+| ERROR_ON_WARNING     | Make compilation error on a warning.                                                          | ON or OFF                                  | OFF                                               |
+| FORMAT_TEST          | Require the format_test to be executed; fail cmake if it can't.                               | ON or OFF                                  | OFF                                               |
+| STRICT_ABI           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                  | OFF                                               |
+| TEST_TIMEOUT_SECONDS | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string). | Empty string.                                     |
+| TRACE                | Enable TRACE level logging (expensive, for network debugging).                                | ON or OFF                                  | OFF                                               |
+| USE_IPV6             | Use IPv6 in tests.                                                                            | ON or OFF                                  | ON                                                |
+| WARNINGS             | Enable additional compiler warnings.                                                          | ON or OFF                                  | ON                                                |
 
-```bash
-git clone https://github.com/TokTok/c-toxcore.git c-toxcore
-cd c-toxcore
-autoreconf -i
-./configure
-make
-sudo make install
+You can get this list of option using the following commands
+
+```sh
+grep "option(" CMakeLists.txt cmake/*
+grep "set(.* CACHE" CMakeLists.txt cmake/*
 ```
 
+Note that some options might be considered only if other options are enabled.
 
-### OS X:
+Example of calling cmake with options
 
-You need the latest XCode with the Developer Tools (Preferences -> Downloads -> Command Line Tools).
-The following libraries are required along with libsodium and cmake for Mountain Lion and XCode 4.6.3 install libtool, automake and autoconf. You can download them with Homebrew, or install them manually.
-
-**Note: OS X users can also install Toxcore using [osx_build_script_toxcore.sh](other/osx_build_script_toxcore.sh)**
-
-There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch.
-
-#### Homebrew:
-To install from the formula:
-```bash
-brew tap Tox/tox
-brew install --HEAD libtoxcore
+```sh
+cmake \
+  -D ENABLE_STATIC=OFF \
+  -D DEBUG=ON \
+  -D CMAKE_INSTALL_PREFIX=/opt \
+  -D TEST_TIMEOUT_SECONDS=120 \
+  ..
 ```
 
-To do it manually:
-```
-brew install libtool automake autoconf libsodium check
-```
-Then clone this repo and generate makefile:
-```bash
-git clone https://github.com/TokTok/c-toxcore.git c-toxcore
-cd c-toxcore
-autoreconf -i
-./configure
+### Build process
+
+#### Unix-like
+
+Assuming all the [requirements](#requirements) are met, just run
+
+```sh
+mkdir _build
+cd _build
+cmake ..
 make
 make install
 ```
 
-If execution fails with errors like "dyld: Library not loaded: /opt/tox-im/lib/libtoxcore.0.dylib", you may need to specify libsodium path:
+#### Windows
 
-Determine paths:
-```
-brew list libsodium
-```
+##### Building on Windows host
 
-Configure include and lib folder and build again:
-```bash
-./configure --with-libsodium-headers=/usr/local/Cellar/libsodium/1.0.0/include/ --with-libsodium-libs=/usr/local/Cellar/libsodium/1.0.0/lib/
-make
-make install
-```
+###### Microsoft Visual Studio's Developer Command Prompt
 
+There are currently no instructions on how to build toxcore on Windows host in Microsoft Visual Studio's Developer Command Prompt. Contribution of the instructions is welcome!
 
-#### Non-homebrew:
+###### MSYS/Cygwin
 
-Grab the following packages:
-  * https://gnu.org/software/libtool/
-  * https://gnu.org/software/autoconf/
-  * https://gnu.org/software/automake/
-  * https://github.com/jedisct1/libsodium
-  * http://check.sourceforge.net/
-  * http://yasm.tortall.net/Download.html (install before libvpx)
-  * https://code.google.com/p/webm/downloads/list
-  * http://www.opus-codec.org/downloads/
-  * http://www.freedesktop.org/wiki/Software/pkg-config/
+There are currently no instructions on how to build toxcore on Windows host in MSYS/Cygwin. Contribution of the instructions is welcome!
 
-Macports: (https://www.macports.org/)
-All toxcore dependencies can be installed from MacPorts. This is often easier on PowerPC Macs,
-and any version of OS X prior to 10.6, since Homebrew is supported on 10.6 and up, but not much
-(or at all) on older systems. A few packages have slightly different names from the corresponding
-package in Debian.
+##### Cross-compiling from Linux
 
-Same: libtool autoconf automake libsodium check yasm
-Different: libvpx (webm) libopus pkgconfig gettext
+These cross-compilation instructions were tested on and written for 64-bit Ubuntu 16.04. You could generalize them for any Linux system, the only requirements are that you have Docker version of >= 1.9.0 and you are running 64-bit system.
 
-(the libintl, from gettext, built into OS X 10.5 is missing libintl_setlocale, but the Macports build has it)
+The cross-compilation is fully automated by a parameterized [Dockerfile](/other/docker/windows/Dockerfile).
 
-Verify where libintl is on your system: (MacPorts puts it in /opt/local)
-```
-for d in /usr/local/lib /opt/local/lib /usr/lib /lib; do ls -l $d/libintl.*; done
+Install Docker
+
+```sh
+apt-get update
+apt-get install docker.io
 ```
 
-Check if that copy has libintl_setlocale:
-```
-nm /opt/local/lib/libintl.8.dylib | grep _libintl_setlocale
-```
+Get the toxcore source code and navigate to `other/docker/windows`.
 
-Certain other tools may not be installed, or outdated, and should also be installed from MacPorts for simplicity: git cmake
+Build the container image based on the Dockerfile. The following options are available to customize the building of the container image.
 
-If libsodium was installed with MacPorts, you may want to symlink the copy in /opt/local/lib to /usr/local/lib. That way you don't need special configure switches for toxcore to find libsodium, and every time MacPorts updates libsodium, the new version will be linked to toxcore every time you build:
-```
-ln -s /opt/local/lib/libsodium.dylib /usr/local/lib/libsodium.dylib
-ln -s /opt/local/include/sodium.h /usr/local/include
-ln -s /opt/local/include/sodium /usr/local/include/
-```
+| Name                | Description                                                    | Expected Value                      | Default Value |
+|---------------------|----------------------------------------------------------------|-------------------------------------|---------------|
+| SUPPORT_ARCH_i686   | Support building 32-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
+| SUPPORT_ARCH_x86_64 | Support building 64-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
+| SUPPORT_TEST        | Support running toxcore automated tests.                       | "true" or "false" (case sensitive). | false         |
+| VERSION_CHECK       | Version of libcheck. Needed only when SUPPORT_TEST is enabled. | Git branch name.                    | 0.12.0        |
+| VERSION_OPUS        | Version of libopus to build toxcore with.                      | Git branch name.                    | v1.2.1        |
+| VERSION_SODIUM      | Version of libsodium to build toxcore with.                    | Git branch name.                    | 1.0.16        |
+| VERSION_VPX         | Version of libvpx to build toxcore with.                       | Git branch name.                    | v1.6.1        |
 
-Much of the build can then be done as for other platforms: git clone, and so on. Differences will be noted with (OS X 10.5 specific)
+Example of building a container image with options
 
-pkg-config is important for enabling a/v support in tox core, failure to install pkg-config will prevent tox core form finding the required libopus/libvpx libraries. (pkg-config may not configure properly, if you get an error about GLIB, run configure with the following parameter, --with-internal-glib).
-
-Uncompress and install them all. Make sure to follow the README as the instructions change, but they all follow the same pattern below:
-
-```bash
-./configure
-make
-sudo make install
-```
-
-Compiling and installing Tox Core
-
-```bash
-cd c-toxcore
-autoreconf -i
-./configure (OS X 10.5 specific)
-./configure CC="gcc -arch ppc -arch i386" CXX="g++ -arch ppc -arch i386" CPP="gcc -E" CXXCPP="g++ -E"
-make
-make install (OS X 10.5 specific)
-should be: sudo make install
-If it worked, you should have all the toxcore dylibs in /usr/local/lib: (besides the four below, the rest are symlinks to these)
-$ ls -la /usr/local/lib/libtox*.dylib
-libtoxav.0.dylib
-libtoxcore.0.dylib
-libtoxencryptsave.0.dylib
-to check what CPU architecture they're compiled for:
-$ lipo -i /usr/local/lib/libtoxencryptsave.0.dylib
-You should now be able to move on to compiling Toxic/Venom or some other client application
-There is also a shell script called "osx_build_script_toxcore.txt" which automates everything from "git pull" to "sudo make install", once the dependencies are already taken care of by MacPorts.
+```sh
+cd other/docker/windows
+docker build \
+  --build-arg SUPPORT_TEST=true \
+  --build-arg VERSION_CHECK=0.11.0 \
+  -t toxcore \
+  .
 ```
 
-If after running ./configure you get an error about core being unable to find libsodium (and you have installed it) run the following in place of ./configure;
+Run the container to build toxcore. The following options are available to customize the running of the container image.
 
-```
-./configure --with-libsodium-headers=/usr/local/include/ --with-libsodium-libs=/usr/local/lib
-```
+| Name               | Description                                                                              | Expected Value                      | Default Value                                                      |
+|--------------------|------------------------------------------------------------------------------------------|-------------------------------------|--------------------------------------------------------------------|
+| ALLOW_TEST_FAILURE | Don't stop if a test suite fails.                                                        | "true" or "false" (case sensitive). | false                                                              |
+| ENABLE_ARCH_i686   | Build 32-bit toxcore. The image should have been built with SUPPORT_ARCH_i686 enabled.   | "true" or "false" (case sensitive). | true                                                               |
+| ENABLE_ARCH_x86_64 | Build 64-bit toxcore. The image should have been built with SUPPORT_ARCH_x86_64 enabled. | "true" or "false" (case sensitive). | true                                                               |
+| ENABLE_TEST        | Run the test suite. The image should have been built with SUPPORT_TEST enabled.          | "true" or "false" (case sensitive). | false                                                              |
+| EXTRA_CMAKE_FLAGS  | Extra arguments to pass to the CMake command when building toxcore.                      | CMake options.                      | "-DWARNINGS=OFF -DBOOTSTRAP_DAEMON=OFF -DTEST_TIMEOUT_SECONDS=300" |
 
-Ensure you set the locations correctly depending on where you installed libsodium on your computer.
+Example of running the container with options
 
-If there is a problem with opus (for A/V) and you don't get a libtoxav, then try to set the pkg-config environment variable beforehand:
-
-```
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-```
-
-### Windows:
-
-#### Cross-compile
-
-It's a bit challenging to build Tox and all of its dependencies natively on Windows, so we will show an easier, less error and headache prone method of building it -- cross-compiling.
-
-##### Setting up a VM
-
-We will assume that you don't have any VM running Linux around and will guide you from the ground up.
-
-First, you would need to get a virtual machine and a Linux distribution image file.
-
-For a virtual machine we will use VirtualBox. You can get it [here](https://www.virtualbox.org/wiki/Downloads).
-
-For a Linux distribution we will use Lubuntu 14.04 32-bit, which you can get [here](https://help.ubuntu.com/community/Lubuntu/GetLubuntu).
-
-After you have those downloaded, install the VirtualBox and create a VM in it. The default of 512mb of RAM and 8gb of dynamically-allocated virtual hard drive would be enough.
-
-When you have created the VM, go into its **Settings** -> **System** -> **Processor** and add some cores, if you have any additional available, for faster builds.
-
-Then, go to **Settings** -> **Storage**, click on **Empty** under **Controller: IDE**, click on the little disc icon on the right side of the window, click on **Choose a virtual CD/DVD disk file** and select the downloaded Lubuntu image file.
-
-Start the VM and follow the installation instructions.
-
-After Lubuntu is installed and you have booted into it, in VirtualBox menu on top of the window select **Devices** -> **Insert Guest Additions CD image...**.
-
-Open terminal from **Lubuntu's menu** -> **Accessories**.
-
-Execute:
-```bash
-sudo apt-get update
-sudo apt-get install build-essential -y
-cd /media/*/*/
-sudo ./VBoxLinuxAdditions.run
+```sh
+docker run \
+  -e ENABLE_TEST=true \
+  -e ALLOW_TEST_FAILURE=true \
+  -v /path/to/toxcore/sourcecode:/toxcore \
+  -v /path/to/where/output/build/result:/prefix \
+  --rm \
+  toxcore
 ```
 
-After that, create a folder called `toxbuild` somewhere on your Windows system. The go to **Devices** -> **Shared Folders Settings...** in the VirtualBox menu, add the `toxbuild` folder there and set **Auto-mount** and **Make Permanent** options.
+After the build succeeds, you should see the built toxcore libraries in `/path/to/where/output/build/result`.
 
-Execute:
-```bash
-sudo adduser `whoami` vboxsf
-```
-Note the use of a [grave accent](http://en.wikipedia.org/wiki/Grave_accent) instead of an apostrophe.
+## Pre-built binaries
 
-Then just reboot the system with:
-```bash
-sudo reboot
-```
+### Linux
 
-After the system is booted, go to **Devices** -> **Shared Clipboard** and select **Bidirectional**. Now you will be able to copy-paste text between the host and the guest systems.
+Toxcore is packaged by at least by the following distributions: ALT Linux, [Arch Linux](https://www.archlinux.org/packages/?q=toxcore), [Fedora](https://apps.fedoraproject.org/packages/toxcore), Mageia, openSUSE, PCLinuxOS, ROSA and Slackware, [according to the information from pkgs.org](https://pkgs.org/download/toxcore). Note that this list might be incomplete and some other distributions might package it too.
 
-Now that the virtual machine is all set up, let's move to getting build dependencies and setting up environment variables.
+Debian and Ubuntu packages are available in [tox.chat's package repository](https://tox.chat/download.html#gnulinux).
 
-##### Setting up the environment
+### Windows
 
-First we will install all tools that we would need for building:
-```bash
-sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm pkg-config mingw-w64 -y
-```
+There are nightly cross-compiled binaries available on Jenkins.
 
-Then we will define a few variables, **depending on which you will build either 32-bit or 64-bit Tox**.
-
-For 32-bit Tox build, do:
-```bash
-WINDOWS_TOOLCHAIN=i686-w64-mingw32
-LIB_VPX_TARGET=x86-win32-gcc
-```
-
-For 64-bit Tox build, do:
-```bash
-WINDOWS_TOOLCHAIN=x86_64-w64-mingw32
-LIB_VPX_TARGET=x86_64-win64-gcc
-```
-
-This is the only difference between 32-bit and 64-bit build procedures.
-
-For speeding up the build process do:
-```
-MAKEFLAGS=j$(nproc)
-export MAKEFLAGS
-```
-
-And let's make a folder where we will be building everything at
-```bash
-cd ~
-mkdir prefix
-cd prefix
-PREFIX_DIR=$(pwd)
-cd ..
-mkdir build
-cd build
-```
-
-##### Compiling
-
-Now we will build libraries needed for audio/video: VPX and Opus.
-
-VPX:
-```bash
-git clone https://chromium.googlesource.com/webm/libvpx
-cd libvpx
-git checkout tags/v1.3.0
-CROSS="$WINDOWS_TOOLCHAIN"- ./configure --target="$LIB_VPX_TARGET" --prefix="$PREFIX_DIR" --disable-examples --disable-unit-tests --disable-shared --enable-static
-make
-make install
-cd ..
-```
-
-Opus:
-```bash
-wget http://downloads.xiph.org/releases/opus/opus-1.1.tar.gz
-tar -xf opus-1.1.tar.gz
-cd opus-1.1
-./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-extra-programs --disable-doc --disable-shared --enable-static
-make
-make install
-cd ..
-```
-
-Now we will build sodium crypto library:
-```bash
-git clone https://github.com/jedisct1/libsodium/
-cd libsodium
-git checkout tags/1.0.3
-./autogen.sh
-./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
-make
-make install
-cd ..
-```
-
-And finally we will build Tox:
-```bash
-git clone https://github.com/TokTok/c-toxcore.git c-toxcore
-cd c-toxcore
-./autogen.sh
-./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-tests --disable-testing --with-dependency-search="$PREFIX_DIR" --disable-shared --enable-static
-make
-make install
-cd ..
-```
-
-Then we make Tox shared library:
-```bash
-cd "$PREFIX_DIR"
-mkdir tmp
-cd tmp
-$WINDOWS_TOOLCHAIN-ar x ../lib/libtoxcore.a
-$WINDOWS_TOOLCHAIN-ar x ../lib/libtoxav.a
-$WINDOWS_TOOLCHAIN-ar x ../lib/libtoxencryptsave.a
-$WINDOWS_TOOLCHAIN-gcc -Wl,--export-all-symbols -Wl,--out-implib=libtox.dll.a -shared -o libtox.dll *.o ../lib/*.a /usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a -liphlpapi -lws2_32 -static-libgcc
-```
-
-And we will copy it over to the `toxbuild` directory:
-```bash
-mkdir -p /media/sf_toxbuild/release/lib
-cp libtox.dll.a /media/sf_toxbuild/release/lib
-mkdir -p /media/sf_toxbuild/release/bin
-cp libtox.dll /media/sf_toxbuild/release/bin
-mkdir -p /media/sf_toxbuild/release/include
-cp -r ../include/tox /media/sf_toxbuild/release/include
-```
-
-That's it. Now you should have `release/bin/libtox.dll`, `release/bin/libtox.dll.a` and `release/include/tox/<headers>` in your `toxbuild` directory on the Windows system.
-
-#### Native
-
-Note that the Native instructions are incomplete, in a sense that they miss instructions needed for adding audio/video support to Tox. You also might stumble upon some unknown MinGW+msys issues while trying to build it.
-
-You should install:
-  - [MinGW](http://sourceforge.net/projects/mingw/)
-
-When installing MinGW, make sure to select the MSYS option in the installer.
-MinGW will install an "MinGW shell" (you should get a shortcut for it), make sure to perform all operations (i.e., generating/running configure script, compiling, etc.) from the MinGW shell.
-
-First download the source tarball from https://download.libsodium.org/libsodium/releases/ and build it.
-Assuming that you got the libsodium-1.0.0.tar.gz release:
-```cmd
-tar -zxvf libsodium-1.0.0.tar.gz
-cd libsodium-1.0.0
-./configure
-make
-make install
-cd ..
-```
-
-You can also use a precompiled win32 binary of libsodium, however you will have to place the files in places where they can be found, i.e., dll's go to /bin headers to /include and libraries to /lib directories in your MinGW shell.
-
-Next, install toxcore library, should either clone this repo by using git, or just download a [zip of current Master branch](https://github.com/TokTok/c-toxcore/archive/master.zip) and extract it somewhere.
-
-Assuming that you now have the sources in the toxcore directory:
-
-```cmd
-cd c-toxcore
-autoreconf -i
-./configure
-make
-make install
-```
-
-
-## Additional
-
-### Advanced configure options:
-
-  - --prefix=/where/to/install
-  - --with-libsodium-headers=/path/to/libsodium/include/
-  - --with-libsodium-libs=/path/to/sodiumtest/lib/
-  - --enable-silent-rules less verbose build output (undo: "make V=1")
-  - --disable-silent-rules verbose build output (undo: "make V=0")
-  - --disable-tests build unit tests (default: auto)
-  - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
-  - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrap-daemon)
-  - --enable-dht-bootstrap build DHT bootstrap utility (default=disabled)
-  - --enable-shared[=PKGS]  build shared libraries [default=yes]
-  - --enable-static[=PKGS]  build static libraries [default=yes]
-
-### A/V support:
-
-#### libtoxav:
-
-'libtoxav' is needed for A/V support and it's enabled by default. You can disable it by adding --disable-av argument to ./configure script like so:
-```bash
-./configure --disable-av
-```
-
-There are 2 dependencies required for libtoxav: libopus and libvpx. If they are not installed A/V support is dropped.
-
-Install on fedora:
-```bash
-yum install opus-devel libvpx-devel
-```
-
-Install on ubuntu:
-```bash
-sudo apt-get install libopus-dev libvpx-dev pkg-config
-```
-If you get the "Unable to locate package libopus-dev" message, add the following ppa and try again:
-```bash
-sudo add-apt-repository ppa:ubuntu-sdk-team/ppa && sudo apt-get update && sudo apt-get dist-upgrade
-```
-
-Install from source (example for most unix-like OS's):
-
-libvpx:
-```bash
-git clone https://chromium.googlesource.com/webm/libvpx
-cd libvpx
-./configure
-make -j3
-sudo make install
-cd ..
-```
-
-libopus:
-```bash
-wget http://downloads.xiph.org/releases/opus/opus-1.0.3.tar.gz
-tar xvzf opus-1.0.3.tar.gz
-cd opus-1.0.3
-./configure
-make -j3
-sudo make install
-cd ..
-```
-
-### Bootstrap daemon:
-
-Daemon is disabled by default. You can enable it by adding --enable-daemon argument to ./configure script like so:
-```bash
-./configure --enable-daemon
-```
-There is one dependency required for bootstrap daemon: `libconfig-dev` >= 1.4.
-
-Install on fedora:
-```bash
-yum install libconfig-devel
-```
-
-Install on ubuntu:
-```bash
-sudo apt-get install libconfig-dev
-```
-
-OS X homebrew:
-```
-brew install libconfig
-```
-OS X non-homebrew:
-Grab the following [package](http://www.hyperrealm.com/libconfig/), uncompress and install
-
-See this [readme](other/bootstrap_daemon/README.md) on how to set up the bootstrap daemon.
+|        | Shared                                                                                                                                                                              | Static                                                                                                                                                                              |
+|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 32-bit | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86_shared_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86_shared_release.zip)       | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86_static_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86_static_release.zip)       |
+| 64-bit | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86-64_shared_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86-64_shared_release.zip) | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86-64_static_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86-64_static_release.zip) |
