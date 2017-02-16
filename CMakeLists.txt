@@ -456,7 +456,7 @@ function(auto_test target)
       toxnetcrypto
       ${CHECK_LIBRARIES})
     if(NOT ARGV1 STREQUAL "DONT_RUN")
-      add_test(NAME ${target} COMMAND auto_${target}_test)
+      add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
       set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
     endif()
   endif()
@@ -471,7 +471,7 @@ if(BUILD_TOXAV)
     ${OPUS_LIBRARIES}
     ${VPX_LIBRARIES}
     ${toxcore_PKGCONFIG_LIBS})
-  add_test(NAME monolith COMMAND auto_monolith_test)
+  add_test(NAME monolith COMMAND ${CROSSCOMPILING_EMULATOR} auto_monolith_test)
 
   if(ANDROID_CPU_FEATURES)
     target_compile_definitions(auto_monolith_test PRIVATE -Dtypeof=__typeof__)
