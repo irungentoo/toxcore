@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "../toxcore/crypto_core.c"
 
 /* Clients are encouraged to set this as the maximum length names can have. */
 #define TOXDNS_MAX_RECOMMENDED_NAME_LENGTH 32
