@@ -170,12 +170,17 @@ if(ASAN)
   set(CMAKE_REQUIRED_LIBRARIES "${SAFE_CMAKE_REQUIRED_LIBRARIES}")
 endif()
 
+option(BUILD_TOXAV "Whether to build the tox AV library" ON)
+
 include(Dependencies)
 
-if(OPUS_FOUND AND VPX_FOUND)
-  set(BUILD_TOXAV TRUE)
-else()
-  set(BUILD_TOXAV FALSE)
+if (BUILD_TOXAV)
+  if(NOT OPUS_FOUND)
+    message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
+  endif()
+  if(NOT VPX_FOUND)
+    message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library VPX was not found.")
+  endif()
 endif()
 
 ################################################################################

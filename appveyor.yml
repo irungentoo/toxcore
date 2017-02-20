@@ -13,7 +13,7 @@ install:
 - cd ..
 
 before_build:
-- cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF
+- cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF
 
 build:
   project: INSTALL.vcxproj
