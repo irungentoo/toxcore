@@ -105,7 +105,7 @@ static void manage_keys(DHT *dht)
 
 int main(int argc, char *argv[])
 {
-    if (argc == 2 && !strncasecmp(argv[1], "-h", 3)) {
+    if (argc == 2 && !tox_strncasecmp(argv[1], "-h", 3)) {
         printf("Usage (connected)  : %s [--ipv4|--ipv6] IP PORT KEY\n", argv[0]);
         printf("Usage (unconnected): %s [--ipv4|--ipv6]\n", argv[0]);
         exit(0);

@@ -25,11 +25,11 @@
 #include "config.h"
 #endif
 
+#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 
 // You are responsible for freeing the return value!
 uint8_t *hex_string_to_bin(const char *hex_string)
@@ -50,12 +50,29 @@ uint8_t *hex_string_to_bin(const char *hex_string)
     return ret;
 }
 
+/* Reimplementation of strncasecmp() function from strings.h, as strings.h is
+ * POSIX and not portable. Specifically it doesn't exist on MSVC.
+ */
+int tox_strncasecmp(const char *s1, const char *s2, size_t n)
+{
+    while (n--) {
+        int c1 = tolower(*(s1++));
+        int c2 = tolower(*(s2++));
+
+        if (c1 == '\0' || c2 == '\0' || c1 != c2) {
+            return c1 - c2;
+        }
+    }
+
+    return 0;
+}
+
 int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
 {
     int argvoffset = 0, argi;
 
     for (argi = 1; argi < argc; argi++) {
-        if (!strncasecmp(argv[argi], "--ipv", 5)) {
+        if (!tox_strncasecmp(argv[argi], "--ipv", 5)) {
             if (argv[argi][5] && !argv[argi][6]) {
                 char c = argv[argi][5];
 
