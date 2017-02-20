@@ -40,17 +40,30 @@ pkg_use_module(SNDFILE              sndfile      )
 ###############################################################################
 
 if(NOT LIBSODIUM_FOUND)
-  include_directories(include)
+  include_directories(libsodium/include)
   find_library(LIBSODIUM_LIBRARIES
     NAMES
       sodium
       libsodium
     PATHS
-      Win32/Release/v140/static
-      x64/Release/v140/static
+      libsodium/Win32/Release/v140/static
+      libsodium/x64/Release/v140/static
   )
   if(LIBSODIUM_LIBRARIES)
     set(LIBSODIUM_FOUND TRUE)
   endif()
   message("libsodium: ${LIBSODIUM_LIBRARIES}")
+endif()
+
+if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC") AND CMAKE_USE_WIN32_THREADS_INIT)
+  include_directories(pthreads-win32/Pre-built.2/include)
+  find_library(CMAKE_THREAD_LIBS_INIT
+    NAMES
+      pthreadVC2
+    PATHS
+      pthreads-win32/Pre-built.2/lib/x86
+      pthreads-win32/Pre-built.2/lib/x64
+  )
+  add_definitions(-DHAVE_STRUCT_TIMESPEC)
+  message("libpthreads: ${CMAKE_THREAD_LIBS_INIT}")
 endif()

@@ -1,6 +1,12 @@
 install:
-- curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.11-msvc.zip -o libsodium-1.0.11-msvc.zip
-- unzip libsodium-1.0.11-msvc.zip
+- mkdir libsodium && cd libsodium
+- curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.11-msvc.zip -o libsodium.zip
+- unzip libsodium.zip
+- cd ..
+- mkdir pthreads-win32 && cd pthreads-win32
+- curl ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o pthreads.zip
+- unzip pthreads.zip
+- cd ..
 
 before_build:
 - cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF
