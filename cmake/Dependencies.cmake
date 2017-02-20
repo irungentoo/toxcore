@@ -52,6 +52,7 @@ if(NOT LIBSODIUM_FOUND)
   if(LIBSODIUM_LIBRARIES)
     set(LIBSODIUM_FOUND TRUE)
   endif()
+  add_definitions(-DSODIUM_STATIC)
   message("libsodium: ${LIBSODIUM_LIBRARIES}")
 endif()
 
