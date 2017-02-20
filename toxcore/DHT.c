@@ -867,7 +867,7 @@ static void sort_client_list(Client_data *list, unsigned int length, const uint8
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    Cmp_data cmp_list[length];
+    VLA(Cmp_data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; i++) {
         cmp_list[i].base_public_key = comp_public_key;
