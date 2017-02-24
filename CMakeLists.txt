@@ -95,6 +95,8 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_flag("-Wno-cast-align")
     add_flag("-Wno-conversion")
     add_flag("-Wno-covered-switch-default")
+    # Due to clang's tolower() macro being recursive https://github.com/TokTok/c-toxcore/pull/481
+    add_flag("-Wno-disabled-macro-expansion")
     add_flag("-Wno-documentation-deprecated-sync")
     add_flag("-Wno-format-nonliteral")
     add_flag("-Wno-missing-field-initializers")
