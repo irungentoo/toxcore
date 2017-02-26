@@ -1,7 +1,7 @@
 if BUILD_TESTS
 
-TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest
-check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest
+TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest tox_strncasecmp_test
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest tox_strncasecmp_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
@@ -98,6 +98,13 @@ encryptsave_test_SOURCES = ../auto_tests/encryptsave_test.c
 encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 encryptsave_test_LDADD = $(AUTOTEST_LDADD)
+
+
+tox_strncasecmp_test_SOURCES = ../auto_tests/tox_strncasecmp_test.c
+
+tox_strncasecmp_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+tox_strncasecmp_test_LDADD = $(AUTOTEST_LDADD)
 
 
 EXTRA_DIST += $(top_srcdir)/auto_tests/helpers.h
