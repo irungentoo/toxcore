@@ -755,7 +755,6 @@ uint64_t m_get_last_online(const Messenger *m, int32_t friendnumber)
 }
 
 int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing)
-
 {
     if (is_typing != 0 && is_typing != 1) {
         return -1;
