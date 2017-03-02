@@ -986,7 +986,7 @@ static Socket new_listening_TCP_socket(int family, uint16_t port)
 
     int ok = set_socket_nonblock(sock);
 
-    if (ok && family == AF_INET6) {
+    if (ok && family == TOX_AF_INET6) {
         ok = set_socket_dualstack(sock);
     }
 
@@ -1042,9 +1042,9 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     uint8_t family;
 
     if (ipv6_enabled) {
-        family = AF_INET6;
+        family = TOX_AF_INET6;
     } else {
-        family = AF_INET;
+        family = TOX_AF_INET;
     }
 
     uint32_t i;

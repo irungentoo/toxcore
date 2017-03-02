@@ -1116,12 +1116,12 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
 static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk)
 {
     if (ip_port.ip.family == TCP_INET) {
-        ip_port.ip.family = AF_INET;
+        ip_port.ip.family = TOX_AF_INET;
     } else if (ip_port.ip.family == TCP_INET6) {
-        ip_port.ip.family = AF_INET6;
+        ip_port.ip.family = TOX_AF_INET6;
     }
 
-    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6) {
+    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
         return -1;
     }
 
@@ -1276,9 +1276,9 @@ unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_
             memcpy(tcp_relays[copied].public_key, tcp_con->connection->public_key, CRYPTO_PUBLIC_KEY_SIZE);
             tcp_relays[copied].ip_port = tcp_con->connection->ip_port;
 
-            if (tcp_relays[copied].ip_port.ip.family == AF_INET) {
+            if (tcp_relays[copied].ip_port.ip.family == TOX_AF_INET) {
                 tcp_relays[copied].ip_port.ip.family = TCP_INET;
-            } else if (tcp_relays[copied].ip_port.ip.family == AF_INET6) {
+            } else if (tcp_relays[copied].ip_port.ip.family == TOX_AF_INET6) {
                 tcp_relays[copied].ip_port.ip.family = TCP_INET6;
             }
 

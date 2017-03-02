@@ -78,12 +78,11 @@ static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bo
         memcpy(target->ip6.uint8, data + 1, SIZE_IP6);
     }
 
-    if (!disable_family_check) {
-        return to_host_family(target);
-    }
+    bool valid = disable_family_check ||
+                 target->family == TOX_AF_INET ||
+                 target->family == TOX_AF_INET6;
 
-    to_host_family(target);
-    return 0;
+    return valid ? 0 : -1;
 }
 
 static void ipport_pack(uint8_t *data, const IP_Port *source)
@@ -617,7 +616,9 @@ static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, ui
 
     uint16_t data_len = length - (1 + RETURN_1);
 
-    if (onion->recv_1_function && send_to.ip.family != AF_INET && send_to.ip.family != AF_INET6) {
+    if (onion->recv_1_function &&
+            send_to.ip.family != TOX_AF_INET &&
+            send_to.ip.family != TOX_AF_INET6) {
         return onion->recv_1_function(onion->callback_object, send_to, packet + (1 + RETURN_1), data_len);
     }
 

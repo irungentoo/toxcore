@@ -43,7 +43,7 @@
  */
 int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key)
 {
-    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6) {
+    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
         return -1;
     }
 
@@ -76,7 +76,7 @@ int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t
  */
 static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key)
 {
-    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6) {
+    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
         return -1;
     }
 
@@ -345,7 +345,7 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
 static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Path *path, IP_Port dest,
                                      const uint8_t *data, uint16_t length)
 {
-    if (path->ip_port1.ip.family == AF_INET || path->ip_port1.ip.family == AF_INET6) {
+    if (path->ip_port1.ip.family == TOX_AF_INET || path->ip_port1.ip.family == TOX_AF_INET6) {
         uint8_t packet[ONION_MAX_PACKET_SIZE];
         int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
 
@@ -866,7 +866,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
         for (i = 0; i < num_nodes; ++i) {
             uint8_t family = nodes[i].ip_port.ip.family;
 
-            if (family == AF_INET || family == AF_INET6) {
+            if (family == TOX_AF_INET || family == TOX_AF_INET6) {
                 DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].public_key, onion_c->friends_list[friend_num].dht_public_key);
             } else if (family == TCP_INET || family == TCP_INET6) {
                 if (onion_c->friends_list[friend_num].tcp_relay_node_callback) {

@@ -59,12 +59,6 @@
 #define PING_ROUNDTRIP 2
 #define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP))
 
-/* Redefinitions of variables for safe transfer over wire. */
-#define TOX_AF_INET 2
-#define TOX_AF_INET6 10
-#define TOX_TCP_INET 130
-#define TOX_TCP_INET6 138
-
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 2
 

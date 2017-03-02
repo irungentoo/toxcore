@@ -246,7 +246,7 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
     unsigned int i;
 
     for (i = 0; i < count; i++) {
-        root[i].port = htons(port);
+        root[i].port = net_htons(port);
 
         Messenger *m = tox;
         onion_add_bs_path_node(m->onion_c, root[i], public_key);
@@ -290,7 +290,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
     unsigned int i;
 
     for (i = 0; i < count; i++) {
-        root[i].port = htons(port);
+        root[i].port = net_htons(port);
 
         Messenger *m = tox;
         add_tcp_relay(m->net_crypto, root[i], public_key);

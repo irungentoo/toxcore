@@ -145,12 +145,12 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
  *
  * Used to handle these packets that are received in a non traditional way (by TCP for example).
  *
- * Source family must be set to something else than AF_INET6 or AF_INET so that the callback gets called
+ * Source family must be set to something else than TOX_AF_INET6 or TOX_AF_INET so that the callback gets called
  * when the response is received.
  */
 int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port source, const uint8_t *nonce);
 
-/* Set the callback to be called when the dest ip_port doesn't have AF_INET6 or AF_INET as the family.
+/* Set the callback to be called when the dest ip_port doesn't have TOX_AF_INET6 or TOX_AF_INET as the family.
  *
  * Format: function(void *object, IP_Port dest, uint8_t *data, uint16_t length)
  */

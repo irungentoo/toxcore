@@ -145,7 +145,7 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *TCP_
     TCP_conn->last_packet[2] = 0; /* reserved, must be 0 */
     uint16_t length = 3;
 
-    if (TCP_conn->ip_port.ip.family == AF_INET) {
+    if (TCP_conn->ip_port.ip.family == TOX_AF_INET) {
         TCP_conn->last_packet[3] = 1; /* IPv4 address */
         ++length;
         memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip4.uint8, sizeof(IP4));
@@ -170,7 +170,7 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *TCP_
  */
 static int proxy_socks5_read_connection_response(TCP_Client_Connection *TCP_conn)
 {
-    if (TCP_conn->ip_port.ip.family == AF_INET) {
+    if (TCP_conn->ip_port.ip.family == TOX_AF_INET) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
         int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data));
 
@@ -251,7 +251,8 @@ static int client_send_pending_data_nonpriority(TCP_Client_Connection *con)
     }
 
     uint16_t left = con->last_packet_length - con->last_packet_sent;
-    int len = send(con->sock, (const char *)(con->last_packet + con->last_packet_sent), left, MSG_NOSIGNAL);
+    const char *data = (const char *)(con->last_packet + con->last_packet_sent);
+    int len = send(con->sock, data, left, MSG_NOSIGNAL);
 
     if (len <= 0) {
         return -1;
@@ -614,11 +615,9 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         return NULL;
     }
 
-    if (ip_port.ip.family != AF_INET && ip_port.ip.family != AF_INET6) {
+    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
         return NULL;
     }
-
-    uint8_t family = ip_port.ip.family;
 
     TCP_Proxy_Info default_proxyinfo;
 
@@ -626,6 +625,8 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         default_proxyinfo.proxy_type = TCP_PROXY_NONE;
         proxy_info = &default_proxyinfo;
     }
+
+    uint8_t family = ip_port.ip.family;
 
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
         family = proxy_info->ip_port.ip.family;

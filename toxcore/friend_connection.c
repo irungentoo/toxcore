@@ -511,7 +511,7 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         connection_lossy_data_handler(fr_c->net_crypto, id, &handle_lossy_packet, fr_c, friendcon_id);
         friend_con->crypt_connection_id = id;
 
-        if (n_c->source.ip.family != AF_INET && n_c->source.ip.family != AF_INET6) {
+        if (n_c->source.ip.family != TOX_AF_INET && n_c->source.ip.family != TOX_AF_INET6) {
             set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
         } else {
             friend_con->dht_ip_port = n_c->source;

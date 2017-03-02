@@ -99,7 +99,7 @@ static void test_addto_lists_update(DHT            *dht,
     int used, test, test1, test2, found;
     IP_Port test_ipp;
     uint8_t test_id[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     // check id update for existing ip_port
     test = rand() % length;
@@ -174,7 +174,7 @@ static void test_addto_lists_bad(DHT            *dht,
     int used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
@@ -218,7 +218,7 @@ static void test_addto_lists_possible_bad(DHT            *dht,
     int used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
@@ -280,7 +280,7 @@ static void test_addto_lists_good(DHT            *dht,
                                   const uint8_t  *comp_client_id)
 {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
 
     mark_all_good(list, length, ipv6);
 
@@ -703,10 +703,10 @@ static void random_ip(IP_Port *ipp, int family)
     uint8_t *ip = NULL;
     size_t size;
 
-    if (family == AF_INET || family == TCP_INET) {
+    if (family == TOX_AF_INET || family == TCP_INET) {
         ip = (uint8_t *)&ipp->ip.ip4;
         size = sizeof(ipp->ip.ip4);
-    } else if (family == AF_INET6 || family == TCP_INET6) {
+    } else if (family == TOX_AF_INET6 || family == TCP_INET6) {
         ip = (uint8_t *)&ipp->ip.ip6;
         size = sizeof(ipp->ip.ip6);
     } else {
@@ -734,18 +734,18 @@ START_TEST(test_dht_node_packing)
     random_bytes(nodes[1].public_key, pk_size);
     random_bytes(nodes[2].public_key, pk_size);
 
-    random_ip(&nodes[0].ip_port, AF_INET);
-    random_ip(&nodes[1].ip_port, AF_INET);
-    random_ip(&nodes[2].ip_port, AF_INET);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET);
+    random_ip(&nodes[2].ip_port, TOX_AF_INET);
     dht_pack_unpack(nodes, 3, data, length);
 
-    random_ip(&nodes[0].ip_port, AF_INET);
-    random_ip(&nodes[1].ip_port, AF_INET);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET);
     random_ip(&nodes[2].ip_port, TCP_INET);
     dht_pack_unpack(nodes, 3, data, length);
 
-    random_ip(&nodes[0].ip_port, AF_INET);
-    random_ip(&nodes[1].ip_port, AF_INET6);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET6);
     random_ip(&nodes[2].ip_port, TCP_INET6);
     dht_pack_unpack(nodes, 3, data, length);
 
@@ -754,9 +754,9 @@ START_TEST(test_dht_node_packing)
     random_ip(&nodes[2].ip_port, TCP_INET);
     dht_pack_unpack(nodes, 3, data, length);
 
-    random_ip(&nodes[0].ip_port, AF_INET6);
-    random_ip(&nodes[1].ip_port, AF_INET6);
-    random_ip(&nodes[2].ip_port, AF_INET6);
+    random_ip(&nodes[0].ip_port, TOX_AF_INET6);
+    random_ip(&nodes[1].ip_port, TOX_AF_INET6);
+    random_ip(&nodes[2].ip_port, TOX_AF_INET6);
     dht_pack_unpack(nodes, 3, data, length);
 
     free(data);

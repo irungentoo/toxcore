@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     }
 
     IP ip = {0};
-    ip.family = AF_INET;
+    ip.family = TOX_AF_INET;
     Socket sock = net_socket(ip.family, TOX_SOCK_DGRAM, TOX_PROTO_UDP);
 
     if (!sock_valid(sock)) {

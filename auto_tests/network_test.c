@@ -37,7 +37,7 @@ START_TEST(test_addr_resolv_localhost)
     ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
     char ip_str[IP_NTOA_LEN];
-    ck_assert_msg(ip.family == AF_INET, "Expected family AF_INET, got %u.", ip.family);
+    ck_assert_msg(ip.family == TOX_AF_INET, "Expected family TOX_AF_INET, got %u.", ip.family);
     ck_assert_msg(ip.ip4.uint32 == net_htonl(0x7F000001), "Expected 127.0.0.1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 
@@ -51,7 +51,7 @@ START_TEST(test_addr_resolv_localhost)
 
     ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
-    ck_assert_msg(ip.family == AF_INET6, "Expected family AF_INET6 (%u), got %u.", AF_INET6, ip.family);
+    ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
     ck_assert_msg(!memcmp(&ip.ip6, &in6addr_loopback, sizeof(IP6)), "Expected ::1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 
@@ -67,11 +67,11 @@ START_TEST(test_addr_resolv_localhost)
     res = addr_resolve(localhost, &ip, &extra);
     ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
-    ck_assert_msg(ip.family == AF_INET6, "Expected family AF_INET6 (%u), got %u.", AF_INET6, ip.family);
+    ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
     ck_assert_msg(!memcmp(&ip.ip6, &in6addr_loopback, sizeof(IP6)), "Expected ::1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 
-    ck_assert_msg(extra.family == AF_INET, "Expected family AF_INET (%u), got %u.", AF_INET, extra.family);
+    ck_assert_msg(extra.family == TOX_AF_INET, "Expected family TOX_AF_INET (%u), got %u.", TOX_AF_INET, extra.family);
     ck_assert_msg(extra.ip4.uint32 == net_htonl(0x7F000001), "Expected 127.0.0.1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 }
@@ -93,24 +93,27 @@ START_TEST(test_ip_equal)
     res = ip_equal(NULL, &ip1);
     ck_assert_msg(res == 0, "ip_equal(NULL, PTR): expected result 0, got %u.", res);
 
-    ip1.family = AF_INET;
+    ip1.family = TOX_AF_INET;
     ip1.ip4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {AF_INET, 127.0.0.1}, {AF_UNSPEC, 0} ): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {AF_UNSPEC, 0} ): "
+                  "expected result 0, got %u.", res);
 
-    ip2.family = AF_INET;
+    ip2.family = TOX_AF_INET;
     ip2.ip4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res != 0, "ip_equal( {AF_INET, 127.0.0.1}, {AF_INET, 127.0.0.1} ): expected result != 0, got 0.");
+    ck_assert_msg(res != 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET, 127.0.0.1} ): "
+                  "expected result != 0, got 0.");
 
     ip2.ip4.uint32 = net_htonl(0x7F000002);
 
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {AF_INET, 127.0.0.1}, {AF_INET, 127.0.0.2} ): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET, 127.0.0.2} ): "
+                  "expected result 0, got %u.", res);
 
-    ip2.family = AF_INET6;
+    ip2.family = TOX_AF_INET6;
     ip2.ip6.uint32[0] = 0;
     ip2.ip6.uint32[1] = 0;
     ip2.ip6.uint32[2] = net_htonl(0xFFFF);
@@ -120,19 +123,20 @@ START_TEST(test_ip_equal)
                   "IPV6_IPV4_IN_V6(::ffff:127.0.0.1): expected != 0, got 0.");
 
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res != 0, "ip_equal( {AF_INET, 127.0.0.1}, {AF_INET6, ::ffff:127.0.0.1} ): expected result != 0, got 0.");
+    ck_assert_msg(res != 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET6, ::ffff:127.0.0.1} ): "
+                  "expected result != 0, got 0.");
 
     memcpy(&ip2.ip6, &in6addr_loopback, sizeof(IP6));
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {AF_INET, 127.0.0.1}, {AF_INET6, ::1} ): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET6, ::1} ): expected result 0, got %u.", res);
 
     memcpy(&ip1, &ip2, sizeof(IP));
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res != 0, "ip_equal( {AF_INET6, ::1}, {AF_INET6, ::1} ): expected result != 0, got 0.");
+    ck_assert_msg(res != 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::1} ): expected result != 0, got 0.");
 
     ip2.ip6.uint8[15]++;
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {AF_INET6, ::1}, {AF_INET6, ::2} ): expected result 0, got %res.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %res.", res);
 }
 END_TEST
 

@@ -111,6 +111,7 @@ typedef enum NET_PACKET_TYPE {
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
 /* Redefinitions of variables for safe transfer over wire. */
+#define TOX_AF_UNSPEC 0
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
 #define TOX_TCP_INET 130
@@ -123,10 +124,10 @@ typedef enum NET_PACKET_TYPE {
 #define TOX_PROTO_UDP 2
 
 /* TCP related */
-#define TCP_ONION_FAMILY (AF_INET6 + 1)
-#define TCP_INET (AF_INET6 + 2)
-#define TCP_INET6 (AF_INET6 + 3)
-#define TCP_FAMILY (AF_INET6 + 4)
+#define TCP_ONION_FAMILY (TOX_AF_INET6 + 1)
+#define TCP_INET (TOX_AF_INET6 + 2)
+#define TCP_INET6 (TOX_AF_INET6 + 3)
+#define TCP_FAMILY (TOX_AF_INET6 + 4)
 
 typedef union {
     uint8_t uint8[4];
@@ -174,7 +175,7 @@ uint32_t net_ntohl(uint32_t hostlong);
 uint16_t net_ntohs(uint16_t hostshort);
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
-#define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == htonl (0xffff)))
+#define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == net_htonl (0xffff)))
 
 #define SIZE_IP4 4
 #define SIZE_IP6 16
@@ -206,10 +207,10 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
  *  parses IP structure into an address string
  *
  * input
- *  ip: ip of AF_INET or AF_INET6 families
+ *  ip: ip of TOX_AF_INET or TOX_AF_INET6 families
  *  length: length of the address buffer
- *          Must be at least INET_ADDRSTRLEN for AF_INET
- *          and INET6_ADDRSTRLEN for AF_INET6
+ *          Must be at least INET_ADDRSTRLEN for TOX_AF_INET
+ *          and INET6_ADDRSTRLEN for TOX_AF_INET6
  *
  * output
  *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
@@ -270,13 +271,13 @@ void ipport_copy(IP_Port *target, const IP_Port *source);
  * input
  *  address: a hostname (or something parseable to an IP address)
  *  to: to.family MUST be initialized, either set to a specific IP version
- *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (= 0), if both
  *     IP versions are acceptable
  *  extra can be NULL and is only set in special circumstances, see returns
  *
  * returns in *to a valid IPAny (v4/v6),
- *     prefers v6 if ip.family was AF_UNSPEC and both available
- * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is AF_INET6
+ *     prefers v6 if ip.family was TOX_AF_UNSPEC and both available
+ * returns in *extra an IPv4 address, if family was TOX_AF_UNSPEC and *to is TOX_AF_INET6
  * returns 0 on failure
  */
 int addr_resolve(const char *address, IP *to, IP *extra);
@@ -287,12 +288,12 @@ int addr_resolve(const char *address, IP *to, IP *extra);
  *
  *  address: a hostname (or something parseable to an IP address)
  *  to: to.family MUST be initialized, either set to a specific IP version
- *     (AF_INET/AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
+ *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (= 0), if both
  *     IP versions are acceptable
  *  extra can be NULL and is only set in special circumstances, see returns
  *
  *  returns in *tro a matching address (IPv6 or IPv4)
- *  returns in *extra, if not NULL, an IPv4 address, if to->family was AF_UNSPEC
+ *  returns in *extra, if not NULL, an IPv4 address, if to->family was TOX_AF_UNSPEC
  *  returns 1 on success
  *  returns 0 on failure
  */
@@ -394,7 +395,7 @@ int net_connect(Socket sock, IP_Port ip_port);
  * return number of elements in res array
  * and -1 on error.
  */
-int32_t net_getipport(const char *node, IP_Port **res, int type);
+int32_t net_getipport(const char *node, IP_Port **res, int tox_type);
 
 /* Deallocates memory allocated by net_getipport
  */

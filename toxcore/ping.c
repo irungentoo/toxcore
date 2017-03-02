@@ -249,7 +249,7 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
         if (id_equal(list[i].public_key, public_key)) {
             const IPPTsPng *ipptp;
 
-            if (ip_port.ip.family == AF_INET) {
+            if (ip_port.ip.family == TOX_AF_INET) {
                 ipptp = &list[i].assoc4;
             } else {
                 ipptp = &list[i].assoc6;
