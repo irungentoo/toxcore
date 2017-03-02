@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 // toxcore
 #include "../../../toxcore/tox.h"
@@ -113,7 +112,7 @@ static void print_public_key(const uint8_t *public_key)
         index += sprintf(buffer + index, "%02hhX", public_key[i]);
     }
 
-    write_log(LOG_LEVEL_INFO, "Public Key: %s\n", buffer);
+    log_write(LOG_LEVEL_INFO, "Public Key: %s\n", buffer);
 }
 
 // Demonizes the process, appending PID to the PID file and closing file descriptors based on log backend
@@ -125,7 +124,7 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
     FILE *pid_file;
 
     if ((pid_file = fopen(pid_file_path, "r"))) {
-        write_log(LOG_LEVEL_WARNING, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
+        log_write(LOG_LEVEL_WARNING, "Another instance of the daemon is already running, PID file %s exists.\n", pid_file_path);
         fclose(pid_file);
     }
 
@@ -133,7 +132,7 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
     pid_file = fopen(pid_file_path, "a+");
 
     if (pid_file == NULL) {
-        write_log(LOG_LEVEL_ERROR, "Couldn't open the PID file for writing: %s. Exiting.\n", pid_file_path);
+        log_write(LOG_LEVEL_ERROR, "Couldn't open the PID file for writing: %s. Exiting.\n", pid_file_path);
         exit(1);
     }
 
@@ -143,27 +142,27 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
     if (pid > 0) {
         fprintf(pid_file, "%d", pid);
         fclose(pid_file);
-        write_log(LOG_LEVEL_INFO, "Forked successfully: PID: %d.\n", pid);
+        log_write(LOG_LEVEL_INFO, "Forked successfully: PID: %d.\n", pid);
         exit(0);
     } else {
         fclose(pid_file);
     }
 
     if (pid < 0) {
-        write_log(LOG_LEVEL_ERROR, "Forking failed. Exiting.\n");
+        log_write(LOG_LEVEL_ERROR, "Forking failed. Exiting.\n");
         exit(1);
     }
 
     // Create a new SID for the child process
     if (setsid() < 0) {
-        write_log(LOG_LEVEL_ERROR, "SID creation failure. Exiting.\n");
+        log_write(LOG_LEVEL_ERROR, "SID creation failure. Exiting.\n");
         exit(1);
     }
 
 
     // Change the current working directory
     if ((chdir("/")) < 0) {
-        write_log(LOG_LEVEL_ERROR, "Couldn't change working directory to '/'. Exiting.\n");
+        log_write(LOG_LEVEL_ERROR, "Couldn't change working directory to '/'. Exiting.\n");
         exit(1);
     }
 
@@ -185,13 +184,13 @@ int main(int argc, char *argv[])
     // choose backend for printing command line argument parsing output based on whether the daemon is being run from a terminal
     log_backend = isatty(STDOUT_FILENO) ? LOG_BACKEND_STDOUT : LOG_BACKEND_SYSLOG;
 
-    open_log(log_backend);
+    log_open(log_backend);
     handle_command_line_arguments(argc, argv, &cfg_file_path, &log_backend, &run_in_foreground);
-    close_log();
+    log_close();
 
-    open_log(log_backend);
+    log_open(log_backend);
 
-    write_log(LOG_LEVEL_INFO, "Running \"%s\" version %lu.\n", DAEMON_NAME, DAEMON_VERSION_NUMBER);
+    log_write(LOG_LEVEL_INFO, "Running \"%s\" version %lu.\n", DAEMON_NAME, DAEMON_VERSION_NUMBER);
 
     char *pid_file_path, *keys_file_path;
     int port;
@@ -206,14 +205,14 @@ int main(int argc, char *argv[])
 
     if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_ipv4_fallback,
                            &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count, &enable_motd, &motd)) {
-        write_log(LOG_LEVEL_INFO, "General config read successfully\n");
+        log_write(LOG_LEVEL_INFO, "General config read successfully\n");
     } else {
-        write_log(LOG_LEVEL_ERROR, "Couldn't read config file: %s. Exiting.\n", cfg_file_path);
+        log_write(LOG_LEVEL_ERROR, "Couldn't read config file: %s. Exiting.\n", cfg_file_path);
         return 1;
     }
 
     if (port < MIN_ALLOWED_PORT || port > MAX_ALLOWED_PORT) {
-        write_log(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT,
+        log_write(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT,
                   MAX_ALLOWED_PORT);
         return 1;
     }
@@ -231,17 +230,17 @@ int main(int argc, char *argv[])
 
     if (net == NULL) {
         if (enable_ipv6 && enable_ipv4_fallback) {
-            write_log(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
+            log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
             net = new_networking(NULL, ip, port);
 
             if (net == NULL) {
-                write_log(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
+                log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
                 return 1;
             }
         } else {
-            write_log(LOG_LEVEL_ERROR, "Couldn't initialize networking. Exiting.\n");
+            log_write(LOG_LEVEL_ERROR, "Couldn't initialize networking. Exiting.\n");
             return 1;
         }
     }
@@ -249,7 +248,7 @@ int main(int argc, char *argv[])
     DHT *dht = new_DHT(NULL, net, true);
 
     if (dht == NULL) {
-        write_log(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
         return 1;
     }
 
@@ -257,15 +256,15 @@ int main(int argc, char *argv[])
     Onion_Announce *onion_a = new_onion_announce(dht);
 
     if (!(onion && onion_a)) {
-        write_log(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
         return 1;
     }
 
     if (enable_motd) {
         if (bootstrap_set_callbacks(dht->net, DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
-            write_log(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
+            log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
         } else {
-            write_log(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
+            log_write(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
             return 1;
         }
 
@@ -273,9 +272,9 @@ int main(int argc, char *argv[])
     }
 
     if (manage_keys(dht, keys_file_path)) {
-        write_log(LOG_LEVEL_INFO, "Keys are managed successfully.\n");
+        log_write(LOG_LEVEL_INFO, "Keys are managed successfully.\n");
     } else {
-        write_log(LOG_LEVEL_ERROR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
+        log_write(LOG_LEVEL_ERROR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
         return 1;
     }
 
@@ -285,7 +284,7 @@ int main(int argc, char *argv[])
 
     if (enable_tcp_relay) {
         if (tcp_relay_port_count == 0) {
-            write_log(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
+            log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
             return 1;
         }
 
@@ -295,17 +294,17 @@ int main(int argc, char *argv[])
         free(tcp_relay_ports);
 
         if (tcp_server != NULL) {
-            write_log(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
+            log_write(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
         } else {
-            write_log(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
+            log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
             return 1;
         }
     }
 
     if (bootstrap_from_config(cfg_file_path, dht, enable_ipv6)) {
-        write_log(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
+        log_write(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
     } else {
-        write_log(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
+        log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
         return 1;
     }
 
@@ -318,7 +317,7 @@ int main(int argc, char *argv[])
 
     if (enable_lan_discovery) {
         LANdiscovery_init(dht);
-        write_log(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
+        log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
 
     while (1) {
@@ -336,7 +335,7 @@ int main(int argc, char *argv[])
         networking_poll(dht->net, NULL);
 
         if (waiting_for_dht_connection && DHT_isconnected(dht)) {
-            write_log(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");
+            log_write(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");
             waiting_for_dht_connection = 0;
         }
 

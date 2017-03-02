@@ -40,7 +40,7 @@ static void print_help(void)
     // 2 space ident
     // make sure all lines fit into 80 columns
     // make sure options are listed in alphabetical order
-    write_log(LOG_LEVEL_INFO,
+    log_write(LOG_LEVEL_INFO,
               "Usage: tox-bootstrapd [OPTION]... --config=FILE_PATH\n"
               "\n"
               "Options:\n"
@@ -64,7 +64,7 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
                                    bool *run_in_foreground)
 {
     if (argc < 2) {
-        write_log(LOG_LEVEL_ERROR, "Error: No arguments provided.\n\n");
+        log_write(LOG_LEVEL_ERROR, "Error: No arguments provided.\n\n");
         print_help();
         exit(1);
     }
@@ -112,7 +112,7 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
                     *log_backend = LOG_BACKEND_STDOUT;
                     log_backend_set = true;
                 } else {
-                    write_log(LOG_LEVEL_ERROR, "Error: Invalid BACKEND value for --log-backend option passed: %s\n\n", optarg);
+                    log_write(LOG_LEVEL_ERROR, "Error: Invalid BACKEND value for --log-backend option passed: %s\n\n", optarg);
                     print_help();
                     exit(1);
                 }
@@ -120,16 +120,16 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
                 break;
 
             case 'v':
-                write_log(LOG_LEVEL_INFO, "Version: %lu\n", DAEMON_VERSION_NUMBER);
+                log_write(LOG_LEVEL_INFO, "Version: %lu\n", DAEMON_VERSION_NUMBER);
                 exit(0);
 
             case '?':
-                write_log(LOG_LEVEL_ERROR, "Error: Unrecognized option %s\n\n", argv[optind - 1]);
+                log_write(LOG_LEVEL_ERROR, "Error: Unrecognized option %s\n\n", argv[optind - 1]);
                 print_help();
                 exit(1);
 
             case ':':
-                write_log(LOG_LEVEL_ERROR, "Error: No argument provided for option %s\n\n", argv[optind - 1]);
+                log_write(LOG_LEVEL_ERROR, "Error: No argument provided for option %s\n\n", argv[optind - 1]);
                 print_help();
                 exit(1);
         }
@@ -140,7 +140,7 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
     }
 
     if (!cfg_file_path_set) {
-        write_log(LOG_LEVEL_ERROR, "Error: The required --config option wasn't specified\n\n");
+        log_write(LOG_LEVEL_ERROR, "Error: The required --config option wasn't specified\n\n");
         print_help();
         exit(1);
     }

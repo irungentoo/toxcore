@@ -28,8 +28,8 @@
 #include <stdbool.h>
 
 typedef enum LOG_BACKEND {
-    LOG_BACKEND_SYSLOG,
-    LOG_BACKEND_STDOUT
+    LOG_BACKEND_STDOUT,
+    LOG_BACKEND_SYSLOG
 } LOG_BACKEND;
 
 typedef enum LOG_LEVEL {
@@ -43,13 +43,13 @@ typedef enum LOG_LEVEL {
  * @param backend Specifies which backend to use.
  * @return true on success, flase if log is already opened.
  */
-bool open_log(LOG_BACKEND backend);
+bool log_open(LOG_BACKEND backend);
 
 /**
  * Releases all used resources by the logger.
  * @return true on success, flase if log is already closed.
  */
-bool close_log(void);
+bool log_close(void);
 
 /**
  * Writes a message to the log.
@@ -58,7 +58,7 @@ bool close_log(void);
  * @param ... Zero or more arguments, similar to printf function.
  * @return true on success, flase if log is closed.
  */
-bool write_log(LOG_LEVEL level, const char *format, ...);
+bool log_write(LOG_LEVEL level, const char *format, ...);
 
 
 #endif // LOG_H

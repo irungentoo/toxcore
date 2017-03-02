@@ -23,42 +23,47 @@
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "log.h"
-
-#include "global.h"
-
-#include "../../../toxcore/ccompat.h"
-
-#include <assert.h>
-#include <syslog.h>
-#include <stdarg.h>
-#include <stdio.h>
+#include "log_backend_stdout.h"
+#include "log_backend_syslog.h"
 
 #define INVALID_BACKEND (LOG_BACKEND)-1u
 static LOG_BACKEND current_backend = INVALID_BACKEND;
 
-bool open_log(LOG_BACKEND backend)
+bool log_open(LOG_BACKEND backend)
 {
     if (current_backend != INVALID_BACKEND) {
         return false;
     }
 
-    if (backend == LOG_BACKEND_SYSLOG) {
-        openlog(DAEMON_NAME, LOG_NOWAIT | LOG_PID, LOG_DAEMON);
-    }
-
     current_backend = backend;
+
+    switch (current_backend) {
+        case LOG_BACKEND_STDOUT:
+            // nothing to do here
+            break;
+
+        case LOG_BACKEND_SYSLOG:
+            log_backend_syslog_open();
+            break;
+    }
 
     return true;
 }
 
-bool close_log(void)
+bool log_close(void)
 {
     if (current_backend == INVALID_BACKEND) {
         return false;
     }
 
-    if (current_backend == LOG_BACKEND_SYSLOG) {
-        closelog();
+    switch (current_backend) {
+        case LOG_BACKEND_STDOUT:
+            // nothing to do here
+            break;
+
+        case LOG_BACKEND_SYSLOG:
+            log_backend_syslog_close();
+            break;
     }
 
     current_backend = INVALID_BACKEND;
@@ -66,78 +71,27 @@ bool close_log(void)
     return true;
 }
 
-static int level_syslog(LOG_LEVEL level)
+
+bool log_write(LOG_LEVEL level, const char *format, ...)
 {
-    switch (level) {
-        case LOG_LEVEL_INFO:
-            return LOG_INFO;
-
-        case LOG_LEVEL_WARNING:
-            return LOG_WARNING;
-
-        case LOG_LEVEL_ERROR:
-            return LOG_ERR;
+    if (current_backend == INVALID_BACKEND) {
+        return false;
     }
 
-    return LOG_INFO;
-}
-
-static void log_syslog(LOG_LEVEL level, const char *format, va_list args)
-{
-    va_list args2;
-
-    va_copy(args2, args);
-    int size = vsnprintf(NULL, 0, format, args2);
-    va_end(args2);
-
-    assert(size >= 0);
-
-    if (size < 0) {
-        return;
-    }
-
-    VLA(char, buf, size + 1);
-    vsnprintf(buf, size + 1, format, args);
-
-    syslog(level_syslog(level), "%s", buf);
-}
-
-static FILE *level_stdout(LOG_LEVEL level)
-{
-    switch (level) {
-        case LOG_LEVEL_INFO:
-            return stdout;
-
-        case LOG_LEVEL_WARNING: // intentional fallthrough
-        case LOG_LEVEL_ERROR:
-            return stderr;
-    }
-
-    return stdout;
-}
-
-static void log_stdout(LOG_LEVEL level, const char *format, va_list args)
-{
-    vfprintf(level_stdout(level), format, args);
-    fflush(level_stdout(level));
-}
-
-bool write_log(LOG_LEVEL level, const char *format, ...)
-{
     va_list args;
     va_start(args, format);
 
     switch (current_backend) {
-        case LOG_BACKEND_SYSLOG:
-            log_syslog(level, format, args);
+        case LOG_BACKEND_STDOUT:
+            log_backend_stdout_write(level, format, args);
             break;
 
-        case LOG_BACKEND_STDOUT:
-            log_stdout(level, format, args);
+        case LOG_BACKEND_SYSLOG:
+            log_backend_syslog_write(level, format, args);
             break;
     }
 
     va_end(args);
 
-    return current_backend != INVALID_BACKEND;
+    return true;
 }
