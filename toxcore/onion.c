@@ -51,8 +51,6 @@ static void change_symmetric_key(Onion *onion)
 /* packing and unpacking functions */
 static void ip_pack(uint8_t *data, IP source)
 {
-    to_net_family(&source);
-
     data[0] = source.family;
 
     if (source.family == TOX_AF_INET || source.family == TOX_TCP_INET) {

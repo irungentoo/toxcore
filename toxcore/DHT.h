@@ -89,12 +89,6 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length);
 
-/* Functions to transfer ips safely across wire. */
-void to_net_family(IP *ip);
-
-/* return 0 on success, -1 on failure. */
-int to_host_family(IP *ip);
-
 typedef struct {
     IP_Port     ip_port;
     uint64_t    timestamp;

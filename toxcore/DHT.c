@@ -256,30 +256,6 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
     return len1;
 }
 
-void to_net_family(IP *ip)
-{
-    if (ip->family == TOX_AF_INET) {
-        ip->family = TOX_AF_INET;
-    } else if (ip->family == TOX_AF_INET6) {
-        ip->family = TOX_AF_INET6;
-    }
-}
-
-int to_host_family(IP *ip)
-{
-    if (ip->family == TOX_AF_INET) {
-        ip->family = TOX_AF_INET;
-        return 0;
-    }
-
-    if (ip->family == TOX_AF_INET6) {
-        ip->family = TOX_AF_INET6;
-        return 0;
-    }
-
-    return -1;
-}
-
 #define PACKED_NODE_SIZE_IP4 (1 + SIZE_IP4 + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE)
 #define PACKED_NODE_SIZE_IP6 (1 + SIZE_IP6 + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE)
 
