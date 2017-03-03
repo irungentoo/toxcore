@@ -194,13 +194,14 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 
     uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     random_nonce(nonce);
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): crypto_memzero before exit function
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
                            1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + packet);
 
     if (len == -1) {
+        crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
         return -1;
     }
 
@@ -208,6 +209,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     memcpy(packet + 1, recv_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, send_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
+    crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
     return len + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE;
 }
 
@@ -235,18 +237,20 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
 
     memcpy(public_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_PUBLIC_KEY_SIZE);
     const uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE]; // TODO(irungentoo): crypto_memzero before exit function
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
                             packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE,
                             length - (CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1), temp);
 
     if (len1 == -1 || len1 == 0) {
+        crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
         return -1;
     }
 
     request_id[0] = temp[0];
     --len1;
     memcpy(data, temp + 1, len1);
+    crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
     return len1;
 }
 
