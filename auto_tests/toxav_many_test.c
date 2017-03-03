@@ -21,15 +21,9 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-#include <windows.h>
-#define c_sleep(x) Sleep(1*x)
-#else
+#if !defined(_WIN32) && !defined(__WIN32__) && !defined(WIN32)
 #include <pthread.h>
-#include <unistd.h>
-#define c_sleep(x) usleep(1000*x)
 #endif
-
 
 typedef struct {
     bool incoming;

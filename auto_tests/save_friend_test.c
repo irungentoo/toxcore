@@ -12,14 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#include <windows.h>
-#define c_sleep(x) Sleep(1*x)
-#else
-#include <unistd.h>
-#define c_sleep(x) usleep(1000*x)
-#endif
-
 struct test_data {
     uint8_t name[TOX_MAX_NAME_LENGTH];
     uint8_t status_message[TOX_MAX_STATUS_MESSAGE_LENGTH];

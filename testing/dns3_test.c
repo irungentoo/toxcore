@@ -3,15 +3,6 @@
 #include "../toxdns/toxdns.h"
 #include "misc_tools.c"
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#define c_sleep(x) usleep(1000*x)
-
-#endif
-
 static uint32_t create_packet(uint8_t *packet, uint8_t *string, uint8_t str_len, uint8_t id)
 {
     memset(packet, 0, str_len + 13 + 16);

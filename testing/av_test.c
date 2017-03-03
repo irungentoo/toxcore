@@ -73,7 +73,7 @@ extern "C" {
 #include <time.h>
 #include <unistd.h>
 
-#define c_sleep(x) usleep(1000*x)
+#define c_sleep(x) usleep(1000*(x))
 
 
 #define CLIP(X) ((X) > 255 ? 255 : (X) < 0 ? 0 : X)

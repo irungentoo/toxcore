@@ -7,6 +7,14 @@
 #include <check.h>
 #include <stdio.h>
 
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#include <windows.h>
+#define c_sleep(x) Sleep(x)
+#else
+#include <unistd.h>
+#define c_sleep(x) usleep(1000*(x))
+#endif
+
 #define DEFTESTCASE(NAME)                   \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \

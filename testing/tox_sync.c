@@ -38,9 +38,6 @@
 #include "../toxcore/tox.h"
 #include "misc_tools.c"
 
-#include <unistd.h>
-#define c_sleep(x) usleep(1000*x)
-
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <netinet/in.h>

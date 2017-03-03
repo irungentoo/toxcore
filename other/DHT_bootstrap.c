@@ -50,15 +50,6 @@
 #define DHT_MOTD "This is a test motd"
 #endif
 
-/* Sleep function (x = milliseconds) */
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-#define c_sleep(x) Sleep(1*x)
-#else
-#include <arpa/inet.h>
-#include <unistd.h>
-#define c_sleep(x) usleep(1000*x)
-#endif
-
 #define PORT 33445
 
 

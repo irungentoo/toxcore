@@ -31,6 +31,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+//Sleep function (x = milliseconds)
+#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#include <windows.h>
+#define c_sleep(x) Sleep(x)
+#else
+#include <unistd.h>
+#define c_sleep(x) usleep(1000*(x))
+#endif
+
 // You are responsible for freeing the return value!
 uint8_t *hex_string_to_bin(const char *hex_string)
 {

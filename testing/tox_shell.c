@@ -43,9 +43,6 @@
 #include <pty.h>
 #endif
 #include <fcntl.h>
-#include <unistd.h>
-
-#define c_sleep(x) usleep(1000*x)
 
 static void print_online(Tox *tox, uint32_t friendnumber, TOX_CONNECTION status, void *userdata)
 {
