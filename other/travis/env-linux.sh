@@ -15,6 +15,8 @@ TESTS() {
   "$@" || {
     if [ $COUNT -gt 1 ]; then
       TESTS `expr $COUNT - 1` "$@"
+    else
+      false
     fi
   }
 }
