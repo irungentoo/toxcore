@@ -1242,8 +1242,6 @@ int32_t net_getipport(const char* node, IP_Port** res, int type)
 
     IP_Port *ip_port = *res;
     for (cur = infos; cur != NULL; cur = cur->ai_next) {
-        ip_port->ip.family = cur->ai_family;
-
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1257,6 +1255,8 @@ int32_t net_getipport(const char* node, IP_Port** res, int type)
         } else {
             continue;
         }
+
+        ip_port->ip.family = cur->ai_family;
 
         ip_port++;
     }
