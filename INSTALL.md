@@ -45,6 +45,16 @@ Note: package fetching commands may vary by OS.
 
 On Ubuntu `< 15.04` / Debian `< 8`:
 
+There is an unofficial PPA for libsodium, libtox and uTox. It may be used as follows
+
+```bash
+sudo add-apt-repository ppa:v-2e/tox
+sudo apt-get update
+sudo apt-get install utox
+```
+
+To manually install Tox from the sources the following packages are needed
+
 ```bash
 sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
 ```
