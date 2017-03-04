@@ -13,7 +13,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Tox DHT bootstrap daemon"
 NAME=tox-bootstrapd
-DAEMON=/usr/local/bin/$NAME
+DAEMON=/usr/bin/$NAME
 CFGFILE=/etc/$NAME.conf
 DAEMON_ARGS="--config $CFGFILE"
 PIDDIR=/var/run/$NAME
