@@ -46,7 +46,7 @@ Note: package fetching commands may vary by OS.
 On Ubuntu `< 15.04` / Debian `< 8`:
 
 ```bash
-sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
+sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git-core yasm
 ```
 
 On Ubuntu `>= 15.04` / Debian `>= 8`:
