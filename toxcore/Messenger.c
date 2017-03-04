@@ -375,6 +375,7 @@ static int do_receipts(Messenger *m, int32_t friendnumber)
  *
  *  return 0 if success.
  *  return -1 if failure.
+ *  return FAERR_NOMEM if memory allocation failed when trying to decrease the friend list size.
  */
 int m_delfriend(Messenger *m, int32_t friendnumber)
 {

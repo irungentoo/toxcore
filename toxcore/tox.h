@@ -1073,6 +1073,11 @@ typedef enum TOX_ERR_FRIEND_DELETE {
      */
     TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND,
 
+    /**
+     * A memory allocation failed when trying to decrease the friend list size.
+     */
+    TOX_ERR_FRIEND_DELETE_MALLOC,
+
 } TOX_ERR_FRIEND_DELETE;
 
 

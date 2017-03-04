@@ -601,14 +601,16 @@ bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *
     Messenger *m = tox;
     int ret = m_delfriend(m, friend_number);
 
-    //TODO handle if realloc fails?
-    if (ret == -1) {
+    if (ret == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_OK);
+        return 1;
+    } else if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND);
-        return 0;
+    } else if (ret == FAERR_NOMEM) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_MALLOC);
     }
 
-    SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_OK);
-    return 1;
+    return 0;
 }
 
 uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error)
