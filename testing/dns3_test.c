@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
     }
 
     unsigned int i;
+
     for (i = r_len - 1; i != 0 && buffer[i] != '='; --i) {
         ;
     }

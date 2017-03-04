@@ -1209,16 +1209,19 @@ int net_connect(Socket sock, IP_Port ip_port)
     return connect(sock, (struct sockaddr *)&addr, addrsize);
 }
 
-int32_t net_getipport(const char* node, IP_Port** res, int type)
+int32_t net_getipport(const char *node, IP_Port **res, int type)
 {
     struct addrinfo *infos;
     int ret = getaddrinfo(node, NULL, NULL, &infos);
+
     if (ret != 0) {
         return -1;
     }
 
     struct addrinfo *cur;
+
     int count = 0;
+
     for (cur = infos; count < INT32_MAX && cur != NULL; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
@@ -1235,12 +1238,14 @@ int32_t net_getipport(const char* node, IP_Port** res, int type)
         return -1;
     }
 
-    *res = (IP_Port*)malloc(sizeof(IP_Port) * count);
+    *res = (IP_Port *)malloc(sizeof(IP_Port) * count);
+
     if (*res == NULL) {
         return -1;
     }
 
     IP_Port *ip_port = *res;
+
     for (cur = infos; cur != NULL; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
@@ -1266,7 +1271,7 @@ int32_t net_getipport(const char* node, IP_Port** res, int type)
     return count;
 }
 
-void net_freeipport(IP_Port* ip_ports)
+void net_freeipport(IP_Port *ip_ports)
 {
     free(ip_ports);
 }
@@ -1301,36 +1306,42 @@ int bind_to_port(Socket sock, int family, uint16_t port)
 static int make_family(int family)
 {
     switch (family) {
-    case TOX_AF_INET:
-        return AF_INET;
-    case TOX_AF_INET6:
-        return AF_INET6;
-    default:
-        return family;
+        case TOX_AF_INET:
+            return AF_INET;
+
+        case TOX_AF_INET6:
+            return AF_INET6;
+
+        default:
+            return family;
     }
 }
 
 static int make_socktype(int type)
 {
     switch (type) {
-    case TOX_SOCK_STREAM:
-        return SOCK_STREAM;
-    case TOX_SOCK_DGRAM:
-        return SOCK_DGRAM;
-    default:
-        return type;
+        case TOX_SOCK_STREAM:
+            return SOCK_STREAM;
+
+        case TOX_SOCK_DGRAM:
+            return SOCK_DGRAM;
+
+        default:
+            return type;
     }
 }
 
 static int make_proto(int proto)
 {
     switch (proto) {
-    case TOX_PROTO_TCP:
-        return IPPROTO_TCP;
-    case TOX_PROTO_UDP:
-        return IPPROTO_UDP;
-    default:
-        return proto;
+        case TOX_PROTO_TCP:
+            return IPPROTO_TCP;
+
+        case TOX_PROTO_UDP:
+            return IPPROTO_UDP;
+
+        default:
+            return proto;
     }
 }
 
@@ -1345,7 +1356,7 @@ Socket net_socket(int domain, int type, int protocol)
 /* TODO: Remove, when tox DNS support will be removed.
  * Used only by dns3_test.c
  */
-size_t net_sendto_ip4(Socket sock, const char* buf, size_t n, IP_Port ip_port)
+size_t net_sendto_ip4(Socket sock, const char *buf, size_t n, IP_Port ip_port)
 {
     struct sockaddr_in target;
     size_t addrsize = sizeof(target);

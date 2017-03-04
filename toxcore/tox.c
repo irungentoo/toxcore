@@ -236,12 +236,14 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
     IP_Port *root;
 
     int32_t count = net_getipport(address, &root, SOCK_DGRAM);
+
     if (count == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
 
     unsigned int i;
+
     for (i = 0; i < count; i++) {
         root[i].port = htons(port);
 
@@ -277,12 +279,14 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
     IP_Port *root;
 
     int32_t count = net_getipport(address, &root, SOCK_STREAM);
+
     if (count == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
 
     unsigned int i;
+
     for (i = 0; i < count; i++) {
         root[i].port = htons(port);
 
@@ -1513,7 +1517,7 @@ void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
 {
     if (dht_id) {
         const Messenger *m = tox;
-        memcpy(dht_id , m->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(dht_id, m->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     }
 }
 
