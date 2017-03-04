@@ -87,7 +87,7 @@ int tox_generate_dns3_string(void *dns3_object, uint8_t *string, uint16_t string
  *
  */
 int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record, uint32_t id_record_len,
-                         uint32_t request_id);
+                         uint32_t *request_id);
 
 #ifdef __cplusplus
 }

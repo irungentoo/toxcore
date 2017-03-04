@@ -196,7 +196,7 @@ static int decode(uint8_t *dest, uint8_t *src)
  *
  */
 int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record, uint32_t id_record_len,
-                         uint32_t request_id)
+                         uint32_t *request_id)
 {
     DNS_Object *d = dns3_object;
 
@@ -216,7 +216,7 @@ int tox_decrypt_dns3_TXT(void *dns3_object, uint8_t *tox_id, uint8_t *id_record,
         return -1;
 
     uint8_t nonce[crypto_box_NONCEBYTES] = {0};
-    memcpy(nonce, &request_id, sizeof(uint32_t));
+    memcpy(nonce, request_id, sizeof(uint32_t));
     nonce[sizeof(uint32_t)] = 1;
     int len = decrypt_data_symmetric(d->shared_key, nonce, data, length, tox_id);
 
