@@ -772,10 +772,9 @@ void ip_reset(IP *ip)
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, uint8_t ipv6enabled)
 {
-    if (!ip)
-        return;
+    if (ip)
+        memset(ip, 0, sizeof(IP));
 
-    memset(ip, 0, sizeof(IP));
     ip->family = ipv6enabled ? AF_INET6 : AF_INET;
 }
 
