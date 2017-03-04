@@ -51,6 +51,16 @@ matrix:
     - docker
   - stage: "Stage 1"
     if: type IN (push, api, cron)
+    env: JOB=installmd ENV=windows SUPPORT_ARCH_i686=true SUPPORT_ARCH_x86_64=false SUPPORT_TEST=true ENABLE_ARCH_i686=true ENABLE_ARCH_x86_64=false ENABLE_TEST=true ALLOW_TEST_FAILURE=true
+    services:
+    - docker
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=installmd ENV=windows SUPPORT_ARCH_i686=false SUPPORT_ARCH_x86_64=true SUPPORT_TEST=true ENABLE_ARCH_i686=false ENABLE_ARCH_x86_64=true ENABLE_TEST=true ALLOW_TEST_FAILURE=true
+    services:
+    - docker
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
     env: JOB=toxcore ENV=freebsd
     dist: trusty
     sudo: required
