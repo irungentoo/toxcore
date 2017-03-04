@@ -31,6 +31,8 @@
 #include "sys/epoll.h"
 #endif
 
+#include <netinet/tcp.h> #socket options
+
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
 #define MSG_NOSIGNAL 0
 #endif
@@ -79,6 +81,16 @@ enum {
     TCP_STATUS_UNCONFIRMED,
     TCP_STATUS_CONFIRMED,
 };
+
+#ifdef __linux__
+    #include <sys/utsname.h>
+    struct utsname kernver;
+    uname(&kernver);
+    float ver = strtof(kernver.release, NULL);
+    if (ver >= 3.6) {
+        #define LINUX_TCP_OPTIMIZATIONS
+    }
+#endif
 
 typedef struct TCP_Priority_List TCP_Priority_List;
 
