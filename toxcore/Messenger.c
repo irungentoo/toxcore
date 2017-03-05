@@ -748,6 +748,7 @@ static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, co
         memcpy(m->friendlist[friendnumber].statusmessage, status, length);
 
     m->friendlist[friendnumber].statusmessage_length = length;
+    free(newstatus);
     return 0;
 }
 
