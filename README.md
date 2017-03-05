@@ -7,6 +7,8 @@ With the rise of government surveillance programs, Tox, a FOSS initiative, aims 
 
 **IRC Channels:** [#tox@freenode](https://webchat.freenode.net/?channels=tox), [#tox-dev@freenode](https://webchat.freenode.net/?channels=tox-dev)
 
+[![ScreenShot](http://vexx.us/Other/toxvid.png)](https://www.youtube.com/watch?v=9Q4uoIjk3RA)
+
 
 ## The Complex Stuff:
 ### UDP vs. TCP
