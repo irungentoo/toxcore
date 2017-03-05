@@ -30,6 +30,11 @@
 #include <sys/ioctl.h>
 #endif
 
+#if defined(__sun)
+#include <sys/filio.h>
+#define	MSG_NOSIGNAL 0
+#endif
+
 #include "util.h"
 
 /* return 1 on success
