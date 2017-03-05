@@ -375,8 +375,6 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
     struct Receipts *receipts = m->friendlist[friendnumber].receipts_start;
 
     while (receipts) {
-        struct Receipts *temp_r = receipts->next;
-
         if (friend_received_packet(m, friendnumber, receipts->packet_num) == -1) {
             break;
         }
@@ -385,9 +383,13 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
             (*m->read_receipt)(m, friendnumber, receipts->msg_id, userdata);
         }
 
+        struct Receipts *r_next = receipts->next;
+
         free(receipts);
-        m->friendlist[friendnumber].receipts_start = temp_r;
-        receipts = temp_r;
+
+        m->friendlist[friendnumber].receipts_start = r_next;
+
+        receipts = r_next;
     }
 
     if (!m->friendlist[friendnumber].receipts_start) {
