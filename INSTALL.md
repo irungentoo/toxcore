@@ -97,11 +97,21 @@ git clone https://github.com/jedisct1/libsodium.git
 cd libsodium
 git checkout tags/1.0.3
 ./autogen.sh
-./configure
+./configure --with-dependency-search=/usr/local/lib/
 make check
 sudo make install
 cd ..
+export LD_LIBRARY_PATH=/usr/local/lib/
 ```
+If you use Bash, run
+
+```echo 'export LD_LIBRARY_PATH=/usr/local/lib'  >> ~/.bashrc```
+
+If you use Zsh, run
+
+```echo 'export LD_LIBRARY_PATH=/usr/local/lib/'  >> ~/.zshrc```
+
+
 
 If your default prefix is ``/usr/local`` and you happen to get an error that says ``"error while loading shared libraries: libtoxcore.so.0: cannot open shared object file: No such file or directory"``, then you can try running ``sudo ldconfig``. If that doesn't fix it, run:
 
