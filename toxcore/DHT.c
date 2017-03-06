@@ -91,7 +91,9 @@ static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
         }
 
         for (j = 0; j < 8; ++j) {
-            if ((pk1[i] & (1 << (7 - j))) != (pk2[i] & (1 << (7 - j)))) {
+            uint8_t mask = 1 << (7 - j);
+
+            if ((pk1[i] & mask) != (pk2[i] & mask)) {
                 break;
             }
         }
@@ -169,6 +171,8 @@ void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
     get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, public_key);
 }
 
+#define CRYPTO_SIZE 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE
+
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.
  * recv_public_key is public key of receiver.
@@ -186,8 +190,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
         return -1;
     }
 
-    if (MAX_CRYPTO_REQUEST_SIZE < length + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 +
-            CRYPTO_MAC_SIZE) {
+    if (MAX_CRYPTO_REQUEST_SIZE < length + CRYPTO_SIZE + 1 + CRYPTO_MAC_SIZE) {
         return -1;
     }
 
@@ -197,7 +200,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
-                           1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + packet);
+                           CRYPTO_SIZE + packet);
 
     if (len == -1) {
         crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
@@ -209,7 +212,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, send_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
-    return len + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE;
+    return len + CRYPTO_SIZE;
 }
 
 /* Puts the senders public key in the request in public_key, the data from the request
@@ -225,8 +228,7 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
         return -1;
     }
 
-    if (length <= CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1 + CRYPTO_MAC_SIZE ||
-            length > MAX_CRYPTO_REQUEST_SIZE) {
+    if (length <= CRYPTO_SIZE + CRYPTO_MAC_SIZE || length > MAX_CRYPTO_REQUEST_SIZE) {
         return -1;
     }
 
@@ -238,8 +240,7 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
     const uint8_t *nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                            packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE,
-                            length - (CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE + 1), temp);
+                            packet + CRYPTO_SIZE, length - CRYPTO_SIZE, temp);
 
     if (len1 == -1 || len1 == 0) {
         crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
@@ -1053,12 +1054,15 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
         ret = 1;
     }
 
-    if (ret && index_of_node_pk(dht->to_bootstrap, dht->num_to_bootstrap, public_key) == UINT32_MAX
-            && !is_pk_in_close_list(dht, public_key, ip_port)) {
-        if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
-            memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-            dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
-            ++dht->num_to_bootstrap;
+    unsigned int *num = &dht->num_to_bootstrap;
+    uint32_t index = index_of_node_pk(dht->to_bootstrap, *num, public_key);
+    bool in_close_list = is_pk_in_close_list(dht, public_key, ip_port);
+
+    if (ret && index == UINT32_MAX && !in_close_list) {
+        if (*num < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
+            memcpy(dht->to_bootstrap[*num].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+            dht->to_bootstrap[*num].ip_port = ip_port;
+            ++*num;
         } else {
             // TODO(irungentoo): ipv6 vs v4
             add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
@@ -1078,12 +1082,16 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
             store_ok = 1;
         }
 
-        if (store_ok && index_of_node_pk(dht->to_bootstrap, dht->num_to_bootstrap, public_key) == UINT32_MAX
-                && !is_pk_in_client_list(dht_friend->client_list, MAX_FRIEND_CLIENTS, public_key, ip_port)) {
-            if (dht_friend->num_to_bootstrap < MAX_SENT_NODES) {
-                memcpy(dht_friend->to_bootstrap[dht_friend->num_to_bootstrap].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-                dht_friend->to_bootstrap[dht_friend->num_to_bootstrap].ip_port = ip_port;
-                ++dht_friend->num_to_bootstrap;
+        unsigned int *friend_num = &dht_friend->num_to_bootstrap;
+        const uint32_t index = index_of_node_pk(dht_friend->to_bootstrap, *friend_num, public_key);
+        const bool pk_in_list = is_pk_in_client_list(dht_friend->client_list, MAX_FRIEND_CLIENTS, public_key, ip_port);
+
+        if (store_ok && index == UINT32_MAX && !pk_in_list) {
+            if (*friend_num < MAX_SENT_NODES) {
+                Node_format *format = &dht_friend->to_bootstrap[*friend_num];
+                memcpy(format->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+                format->ip_port = ip_port;
+                ++*friend_num;
             } else {
                 add_to_list(dht_friend->to_bootstrap, MAX_SENT_NODES, public_key, ip_port, dht_friend->public_key);
             }
@@ -1297,8 +1305,8 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     plain[0] = num_nodes;
     memcpy(plain + 1 + nodes_length, sendback_data, length);
 
-    VLA(uint8_t, data, 1 + nodes_length + length + 1 + CRYPTO_PUBLIC_KEY_SIZE
-        + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE);
+    const int crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
+    VLA(uint8_t, data, 1 + nodes_length + length + crypto_size);
 
     int len = DHT_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
                                 plain, 1 + nodes_length + length, data);
@@ -1310,10 +1318,13 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     return sendpacket(dht->net, ip_port, data, len);
 }
 
+#define CRYPTO_NODE_SIZE CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)
+
 static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    if (length != (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + sizeof(
-                       uint64_t) + CRYPTO_MAC_SIZE)) {
+    const int crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
+
+    if (length != (crypto_size + CRYPTO_NODE_SIZE)) {
         return 1;
     }
 
@@ -1324,17 +1335,17 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
         return 1;
     }
 
-    uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)];
+    uint8_t plain[CRYPTO_NODE_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
     int len = decrypt_data_symmetric(shared_key,
                                      packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                      packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
-                                     CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t) + CRYPTO_MAC_SIZE,
+                                     CRYPTO_NODE_SIZE + CRYPTO_MAC_SIZE,
                                      plain);
 
-    if (len != CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)) {
+    if (len != CRYPTO_NODE_SIZE) {
         return 1;
     }
 
