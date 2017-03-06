@@ -589,12 +589,6 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Con
     return 0;
 }
 
-/* Set temp dht key for connection.
- */
-void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk)
-{
-    dht_pk_callback(fr_c, friendcon_id, dht_temp_pk);
-}
 
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
