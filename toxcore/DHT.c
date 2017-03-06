@@ -562,41 +562,35 @@ static uint32_t index_of_client_ip_port(const Client_data *array, uint32_t size,
  */
 static void update_client(Logger *log, int index, Client_data *client, IP_Port ip_port)
 {
-    uint64_t temp_time = unix_time();
+    IPPTsPng *assoc;
+    int ip_version;
+
     if (ip_port.ip.family == AF_INET) {
-        if (!ipport_equal(&client[index].assoc4.ip_port, &ip_port)) {
-            char ip_str[IP_NTOA_LEN];
-            LOGGER_TRACE(log, "coipil[%u]: switching ipv4 from %s:%u to %s:%u", index,
-                         ip_ntoa(&client[index].assoc4.ip_port.ip, ip_str, sizeof(ip_str)),
-                         net_ntohs(client[index].assoc4.ip_port.port),
-                         ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                         net_ntohs(ip_port.port));
-         }
-
-         if (LAN_ip(client[index].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
-             return;
-         }
-
-         client[index].assoc4.ip_port = ip_port;
-         client[index].assoc4.timestamp = temp_time;
+        assoc = &client->assoc4;
+        ip_version = 4;
     } else if (ip_port.ip.family == AF_INET6) {
-
-        if (!ipport_equal(&client[index].assoc6.ip_port, &ip_port)) {
-            char ip_str[IP_NTOA_LEN];
-            LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", index,
-                         ip_ntoa(&client[index].assoc6.ip_port.ip, ip_str, sizeof(ip_str)),
-                         net_ntohs(client[index].assoc6.ip_port.port),
-                         ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                         net_ntohs(ip_port.port));
-        }
-
-        if (LAN_ip(client[index].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
-            return;
-        }
-
-        client[index].assoc6.ip_port = ip_port;
-        client[index].assoc6.timestamp = temp_time;
+        assoc = &client->assoc6;
+        ip_version = 6;
+    } else {
+        return;
     }
+
+    if (!ipport_equal(&assoc->ip_port, &ip_port)) {
+        char ip_str[IP_NTOA_LEN];
+        LOGGER_TRACE(log, "coipil[%u]: switching ipv%d from %s:%u to %s:%u",
+                     index, ip_version,
+                     ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
+                     net_ntohs(assoc->ip_port.port),
+                     ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
+                     net_ntohs(ip_port.port));
+    }
+
+    if (LAN_ip(assoc->ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
+        return;
+    }
+
+    assoc->ip_port = ip_port;
+    assoc->timestamp = unix_time();
 }
 
 /* Check if client with public_key is already in list of length length.
@@ -629,31 +623,26 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
         return 0;
     }
 
+    IPPTsPng *assoc;
+    int ip_version;
+
     if (ip_port.ip.family == AF_INET) {
-        /* Initialize client timestamp. */
-        list[index].assoc4.timestamp = temp_time;
-        memcpy(list[index].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-
-        LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv4)", index);
-
-        /* kill the other address, if it was set */
-        memset(&list[index].assoc6, 0, sizeof(list[index].assoc6));
-        return 1;
+        assoc = &list[index].assoc4;
+        ip_version = 4;
+    } else {
+        assoc = &list[index].assoc6;
+        ip_version = 6;
     }
 
-    if (ip_port.ip.family == AF_INET6) {
-        /* Initialize client timestamp. */
-        list[index].assoc6.timestamp = temp_time;
-        memcpy(list[index].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    /* Initialize client timestamp. */
+    assoc->timestamp = temp_time;
+    memcpy(list[index].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-        LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv6)", index);
+    LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv%d)", index, ip_version);
 
-        /* kill the other address, if it was set */
-        memset(&list[index].assoc4, 0, sizeof(list[index].assoc4));
-        return 1;
-    }
-
-    return 0;
+    /* kill the other address, if it was set */
+    memset(assoc, 0, sizeof(IPPTsPng));
+    return 1;
 }
 
 /* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
@@ -997,12 +986,11 @@ static bool is_pk_in_client_list(Client_data *list, unsigned int client_list_len
         return 0;
     }
 
-    if ((ip_port.ip.family == AF_INET && !is_timeout(list[index].assoc4.timestamp, BAD_NODE_TIMEOUT))
-            || (ip_port.ip.family == AF_INET6 && !is_timeout(list[index].assoc6.timestamp, BAD_NODE_TIMEOUT))) {
-          return 1;
-    }
+    const IPPTsPng *assoc = ip_port.ip.family == AF_INET ?
+                            &list[index].assoc4 :
+                            &list[index].assoc6;
 
-    return 0;
+    return !is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT);
 }
 
 static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
