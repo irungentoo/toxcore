@@ -814,8 +814,10 @@ static int cmp_dht_entry(const void *a, const void *b)
     Client_data entry2 = cmp2.entry;
     const uint8_t *cmp_public_key = cmp1.base_public_key;
 
-    int t1 = is_timeout(entry1.assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(entry1.assoc6.timestamp, BAD_NODE_TIMEOUT);
-    int t2 = is_timeout(entry2.assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(entry2.assoc6.timestamp, BAD_NODE_TIMEOUT);
+#define ASSOC_TIMEOUT(assoc) is_timeout((assoc).timestamp, BAD_NODE_TIMEOUT)
+
+    bool t1 = ASSOC_TIMEOUT(entry1.assoc4) && ASSOC_TIMEOUT(entry1.assoc6);
+    bool t2 = ASSOC_TIMEOUT(entry2.assoc4) && ASSOC_TIMEOUT(entry2.assoc6);
 
     if (t1 && t2) {
         return 0;
@@ -829,10 +831,10 @@ static int cmp_dht_entry(const void *a, const void *b)
         return 1;
     }
 
-    t1 = hardening_correct(&entry1.assoc4.hardening) != HARDENING_ALL_OK
-         && hardening_correct(&entry1.assoc6.hardening) != HARDENING_ALL_OK;
-    t2 = hardening_correct(&entry2.assoc4.hardening) != HARDENING_ALL_OK
-         && hardening_correct(&entry2.assoc6.hardening) != HARDENING_ALL_OK;
+#define INCORRECT_HARDENING(assoc) hardening_correct(&(assoc).hardening) != HARDENING_ALL_OK
+
+    t1 = INCORRECT_HARDENING(entry1.assoc4) && INCORRECT_HARDENING(entry1.assoc6);
+    t2 = INCORRECT_HARDENING(entry2.assoc4) && INCORRECT_HARDENING(entry2.assoc6);
 
     if (t1 != t2) {
         if (t1) {
