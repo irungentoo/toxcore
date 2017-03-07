@@ -119,7 +119,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
         Shared_Key *key = &shared_keys->keys[index];
 
         if (key->stored) {
-            if (public_key_cmp(public_key, key->public_key) == 0) {
+            if (id_equal(public_key, key->public_key)) {
                 memcpy(shared_key, key->shared_key, CRYPTO_SHARED_KEY_SIZE);
                 ++key->times_requested;
                 key->time_last_requested = unix_time();
@@ -232,7 +232,7 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
         return -1;
     }
 
-    if (public_key_cmp(packet + 1, self_public_key) != 0) {
+    if (!id_equal(packet + 1, self_public_key)) {
         return -1;
     }
 
@@ -1144,7 +1144,7 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
         } else {
             DHT_Friend *dht_friend = &dht->friends_list[i];
 
-            if (public_key_cmp(public_key, dht_friend->public_key) == 0) {
+            if (id_equal(public_key, dht_friend->public_key)) {
                 friend_foundip = dht_friend;
             }
 
@@ -1364,7 +1364,7 @@ static uint8_t sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port
     Node_format test;
     memcpy(&test, data, sizeof(Node_format));
 
-    if (!ipport_equal(&test.ip_port, &node_ip_port) || public_key_cmp(test.public_key, public_key) != 0) {
+    if (!ipport_equal(&test.ip_port, &node_ip_port) || !id_equal(test.public_key, public_key)) {
         return 0;
     }
 
@@ -2267,7 +2267,7 @@ static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto,
 static IPPTsPng *get_closelist_IPPTsPng(DHT *dht, const uint8_t *public_key, Family sa_family)
 {
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
-        if (public_key_cmp(dht->close_clientlist[i].public_key, public_key) != 0) {
+        if (!id_equal(dht->close_clientlist[i].public_key, public_key)) {
             continue;
         }
 
@@ -2375,7 +2375,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
                 return 1;
             }
 
-            if (public_key_cmp(temp->hardening.send_nodes_pingedid, source_pubkey) != 0) {
+            if (!id_equal(temp->hardening.send_nodes_pingedid, source_pubkey)) {
                 return 1;
             }
 
@@ -2560,7 +2560,8 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    if (public_key_cmp(packet + 1, dht->self_public_key) == 0) { // Check if request is for us.
+    // Check if request is for us.
+    if (id_equal(packet + 1, dht->self_public_key)) {
         uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
         uint8_t data[MAX_CRYPTO_REQUEST_SIZE];
         uint8_t number;
