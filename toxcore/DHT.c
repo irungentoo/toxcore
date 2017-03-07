@@ -1176,9 +1176,9 @@ static bool update_client_data(Client_data *array, size_t size, IP_Port ip_port,
     Client_data *data = &array[index];
     IPPTsPng *assoc;
 
-    if (ip_port.ip.family == TOX_AF_INET) {
+    if (ip_port.ip.family == AF_INET) {
         assoc = &data->assoc4;
-    } else if (ip_port.ip.family == TOX_AF_INET6) {
+    } else if (ip_port.ip.family == AF_INET6) {
         assoc = &data->assoc6;
     } else {
         return true;
@@ -1298,7 +1298,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     plain[0] = num_nodes;
     memcpy(plain + 1 + nodes_length, sendback_data, length);
 
-    const int crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
+    const uint32_t crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
     VLA(uint8_t, data, 1 + nodes_length + length + crypto_size);
 
     int len = DHT_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
@@ -1311,13 +1311,11 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     return sendpacket(dht->net, ip_port, data, len);
 }
 
-#define CRYPTO_NODE_SIZE CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t)
+#define CRYPTO_NODE_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t))
 
 static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    const int crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
-
-    if (length != (crypto_size + CRYPTO_NODE_SIZE)) {
+    if (length != (CRYPTO_SIZE + CRYPTO_MAC_SIZE + sizeof(uint64_t))) {
         return 1;
     }
 
@@ -1580,21 +1578,21 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     ip_reset(&ip_port->ip);
     ip_port->port = 0;
 
-    int index = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
+    uint32_t friend_index = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
 
-    if (index == UINT32_MAX) {
+    if (friend_index == UINT32_MAX) {
         return -1;
     }
 
-    DHT_Friend *frnd = &dht->friends_list[index];
-    index = index_of_client_pk(frnd->client_list, MAX_FRIEND_CLIENTS, public_key);
+    DHT_Friend *frnd = &dht->friends_list[friend_index];
+    uint32_t client_index = index_of_client_pk(frnd->client_list, MAX_FRIEND_CLIENTS, public_key);
 
-    if (index == UINT32_MAX) {
-        return -1;
+    if (client_index == -1) {
+        return 0;
     }
 
-    Client_data *client = &frnd->client_list[index];
-    IPPTsPng *assoc = NULL;
+    Client_data *client = &frnd->client_list[client_index];
+    IPPTsPng *assoc;
     uint32_t a;
 
     for (a = 0, assoc = &client->assoc6; a < 2; a++, assoc = &client->assoc4) {
