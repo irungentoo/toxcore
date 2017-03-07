@@ -469,6 +469,7 @@ if(BOOTSTRAP_DAEMON)
       other/bootstrap_node_packets.c
       other/bootstrap_node_packets.h)
     target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
+    install(TARGETS tox-bootstrapd RUNTIME DESTINATION bin)
   endif()
 endif()
 
