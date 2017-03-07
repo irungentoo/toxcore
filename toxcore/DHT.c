@@ -2114,12 +2114,11 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         return;
     }
 
+    uint16_t first_port = port_list[0];
     uint32_t i;
-    uint32_t top = dht->friends_list[friend_num].nat.punching_index + MAX_PUNCHING_PORTS;
-    uint16_t firstport = port_list[0];
 
     for (i = 0; i < numports; ++i) {
-        if (firstport != port_list[i]) {
+        if (first_port != port_list[i]) {
             break;
         }
     }
@@ -2127,33 +2126,37 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
     if (i == numports) { /* If all ports are the same, only try that one port. */
         IP_Port pinging;
         ip_copy(&pinging.ip, &ip);
-        pinging.port = net_htons(firstport);
+        pinging.port = net_htons(first_port);
         send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
     } else {
-        for (uint32_t i = dht->friends_list[friend_num].nat.punching_index; i != top; ++i) {
+        for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
             /* TODO(irungentoo): Improve port guessing algorithm. */
-            uint16_t port = port_list[(i / 2) % numports] + (i / (2 * numports)) * ((i % 2) ? -1 : 1);
+            uint32_t it = i + dht->friends_list[friend_num].nat.punching_index;
+            int8_t sign = (it % 2) ? -1 : 1;
+            uint32_t delta = sign * (it / (2 * numports));
+            uint32_t index = (it / 2) % numports;
+            uint16_t port = port_list[index] + delta;
             IP_Port pinging;
             ip_copy(&pinging.ip, &ip);
             pinging.port = net_htons(port);
             send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
         }
 
-        dht->friends_list[friend_num].nat.punching_index = i;
+        dht->friends_list[friend_num].nat.punching_index += i;
     }
 
     if (dht->friends_list[friend_num].nat.tries > MAX_NORMAL_PUNCHING_TRIES) {
-        top = dht->friends_list[friend_num].nat.punching_index2 + MAX_PUNCHING_PORTS;
         uint16_t port = 1024;
         IP_Port pinging;
         ip_copy(&pinging.ip, &ip);
 
-        for (uint32_t i = dht->friends_list[friend_num].nat.punching_index2; i != top; ++i) {
-            pinging.port = net_htons(port + i);
+        for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
+            uint32_t it = i + dht->friends_list[friend_num].nat.punching_index2;
+            pinging.port = net_htons(port + it);
             send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
         }
 
-        dht->friends_list[friend_num].nat.punching_index2 = i - (MAX_PUNCHING_PORTS / 2);
+        dht->friends_list[friend_num].nat.punching_index2 += i - (MAX_PUNCHING_PORTS / 2);
     }
 
     ++dht->friends_list[friend_num].nat.tries;
