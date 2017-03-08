@@ -14,6 +14,9 @@ matrix:
   - env: JOB=toxcore ENV=windows ARCH=x86_64
     services:
     - docker
+  - env: JOB=toxcore ENV=freebsd
+    dist: trusty
+    sudo: required
   fast_finish: true
 
 addons:
@@ -46,6 +49,7 @@ cache:
   - $HOME/.cabal
   - $HOME/.ghc
   - $HOME/cache
+  - /opt/freebsd/cache
 
 install:       other/travis/phase $JOB $ENV install
 script:        other/travis/phase $JOB $ENV script

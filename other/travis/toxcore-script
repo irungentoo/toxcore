@@ -19,7 +19,7 @@ for i in `seq 0 7`; do
   set_opt ENABLE_SHARED
   set -x
   RUN $CMAKE -B$BUILD_DIR -H. $opts
-  rm -rf $BUILD_DIR
+  RUN rm -rf $BUILD_DIR
 done
 
 # Build toxcore and run tests.
@@ -36,7 +36,7 @@ RUN $CMAKE                                      \
 
 export CTEST_OUTPUT_ON_FAILURE=1
 
-RUN make -C$BUILD_DIR -j$NPROC -k install
+RUN $MAKE -C$BUILD_DIR -j$NPROC -k install
 if $RUN_TESTS; then
   TESTS $MAX_TEST_RETRIES make -C$BUILD_DIR -j$NPROC test ARGS="--rerun-failed"
 fi

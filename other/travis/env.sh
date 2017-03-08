@@ -8,6 +8,7 @@ export PKG_CONFIG_PATH=$CACHE_DIR/lib/pkgconfig
 export ASTYLE=$CACHE_DIR/astyle/build/gcc/bin/astyle
 export CFLAGS="-O3 -DTRAVIS_ENV=1"
 export CMAKE_EXTRA_FLAGS="-DERROR_ON_WARNING=ON -DBUILD_NTOX=ON"
+export MAKE=make
 
 BUILD_DIR=_build
 MAX_TEST_RETRIES=3

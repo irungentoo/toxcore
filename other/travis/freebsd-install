@@ -1,0 +1,221 @@
+#!/bin/sh
+
+# Travis doesn't provide FreeBSD machines, so we just take a Linux one and run
+# FreeBSD in qemu virtual machine. qemu is being ran in curses mode inside a
+# screen session, because screen allows to easily send input and read output.
+# The input is sent using `screen -S session-name -X stuff ...` and the output
+# is read from the screen's log file. Note that for some reason you can't send
+# long input lines on Travis (it works just fine when I do it on my machine...),
+# but that limitation is not an issue, as we don't really need to send long
+# lines of input anyway. Also, note that since we run qemu in curses mode, the
+# output contains control characters intended for a terminal emulator telling
+# how to position and color the text, so it might be a little tricky to read it
+# sometimes. The only time when this script has to send input to and read the
+# output from the screen session is during the initial setup when we setup the
+# network, install and configure the ssh server, and update the system. After
+# this initial setup, ssh is used to communicate with the FreeBSD running in the
+# VM, which is a lot friendlier way of communication. Please note that Travis
+# doesn't seem to allow KVM passthrough, so qemu has to emulate all the
+# hardware, which makes it quite slow compared to the host machine. We cache
+# the qemu image since it takes a long time to run the initial system and
+# pacakge updates, and we update packages and the system on every job run.
+
+sudo apt-get install qemu -y
+
+OLD_PWD="$PWD"
+
+mkdir -p /opt/freebsd/cache
+cd /opt/freebsd/cache
+
+IMAGE_NAME=FreeBSD-11.0-RELEASE-amd64.raw
+
+# Sends keys to the VM as they are
+send_keys()
+{
+  screen -S $SCREEN_SESSION -X stuff "$1"
+}
+
+# Runs until a specific text appears on VM's screen
+wait_for()
+{
+  while ! grep "$1" screenlog.0 -q
+  do
+    sleep 1
+  done
+}
+
+# Starts VM and waits until it's fully running (until a login prompt is shown)
+start_vm()
+{
+  rm -f screenlog.0
+
+  # Start emulator. 2000mb RAM should be enough, right? The build machine has over 7gb.
+  screen -L -S $SCREEN_SESSION -d -m qemu-system-x86_64 -curses -m 2000 -smp $NPROC -net user,hostfwd=tcp::${SSH_PORT}-:22 -net nic $IMAGE_NAME
+
+  # Wait for the boot screen options
+  wait_for "Autoboot in"
+
+  # Select the 1st option
+  send_keys '
+'
+
+  # Wait for the system to boot and present the login prompt
+  wait_for "FreeBSD/amd64 ("
+}
+
+# Let's see what's in the cache directory
+ls -lh
+
+# === Get the VM running, configured to run ssh server and updated ===
+
+# Create image if it's not cached
+if [ ! -f ./$IMAGE_NAME.tgz ]; then
+
+  # https://download.freebsd.org/ftp/releases/VM-IMAGES/11.0-RELEASE/amd64/Latest/
+  DL_SHA512="1bfdef9a106e41134cf92c5ceb7f7da468293d6611d16c0bc51482a8fb3088064204bacfe6a8b1afda169d9ab63e4bbd1c9ba1de06fe3fd604864d3fb0c07326"
+  # Selecting random mirror from https://www.freebsd.org/doc/handbook/mirrors-ftp.html
+  # Note that not all mirrors listed on that page are working, so we have removed them
+  # I'm so sorry, there are no arrays in sh and we are not using bash...
+  DL_MIRROR_1=1
+  DL_MIRROR_2=4
+  DL_MIRROR_3=5
+  DL_MIRROR_4=6
+  DL_MIRROR_5=8
+  DL_MIRROR_6=10
+  DL_MIRROR_7=14
+  DL_MIRROR_8=15
+  # There are 8 mirrors
+  DL_MIRROR_RANDOM=`expr $(date +%s) % 8 + 1`
+  DL_URL=ftp://ftp$(eval echo \$DL_MIRROR_$DL_MIRROR_RANDOM).us.freebsd.org/pub/FreeBSD/releases/VM-IMAGES/11.0-RELEASE/amd64/Latest/${IMAGE_NAME}.xz
+
+  wget $DL_URL
+
+  if ! ( echo "$DL_SHA512  $IMAGE_NAME.xz" | sha512sum -c --status - ) ; then
+      echo "Error: sha512 of $IMAGE_NAME.xz doesn't match the known one"
+      exit 1
+  fi
+
+  unxz $IMAGE_NAME.xz
+
+  # With this we don't have to guess how long a command will run for and sleeping
+  # for that amount of time, risking either under sleeping or over sleeping, instead
+  # we will sleep exactly until the command is finished by printing out a unique
+  # string after the command is executed and then checking if it was printed.
+  execute_shell_and_wait()
+  {
+    # $RANDOM is a bash built-in, so we try to avoid name collision here by using ugly RANDOM_STR name
+    RANDOM_STR=$(< /dev/urandom tr -dc _A-Za-z0-9 | head -c16)
+    send_keys "$1;echo $RANDOM_STR
+
+"
+    # \[1B is a control escape sequence for a new line in the terminal.
+    # We want to wait for <new-line>$RANDOM_STR instead of just $RANDOM_STR because
+    # $RANDOM_STR we have inputted with send_keys above would appear in the screenlog.0
+    # file and we don't want to much our input.
+    # The .\? optionally matches any character. Sometimes it happens that there is some
+    # random character inserved between the new line control escape sequence and $RANDOM_STR.
+    wait_for "\[1B.\?$RANDOM_STR"
+  }
+
+  start_vm
+
+  # Login as root user
+  send_keys 'root
+
+'
+
+  # Wait for the prompt
+  wait_for "root@:~"
+
+  # Configure network, ssh and start changing password
+  execute_shell_and_wait 'echo "ifconfig_em0=DHCP"          >> /etc/rc.conf'
+  execute_shell_and_wait 'echo "Port 22"                    >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "PermitRootLogin yes"        >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "PermitEmptyPasswords yes"   >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "sshd_enable=YES"            >> /etc/rc.conf'
+  send_keys 'sh /etc/rc.d/netif restart && sh /etc/rc.d/sshd start && passwd
+'
+
+  # Wait for the password prompt
+  wait_for "Changing local password for root"
+
+  # Reset password to empty for the passwordless ssh to work
+  send_keys '
+'
+  wait_for "New Password"
+  send_keys '
+'
+
+  # Update system
+  RUN freebsd-update --not-running-from-cron fetch
+  # It fails if there is nothing to install, so we make it always succeed with true
+  RUN freebsd-update --not-running-from-cron install || true
+
+  # Update packages
+  RUN env ASSUME_ALWAYS_YES=YES pkg upgrade
+
+  # Install and set bash as the default shell for the root user
+  RUN env ASSUME_ALWAYS_YES=YES pkg install bash
+  RUN chsh -s /usr/local/bin/bash root
+
+  # Install required toxcore dependencies
+  RUN ASSUME_ALWAYS_YES=YES pkg install git opus libvpx libsodium gmake cmake pkgconf libcheck opencv2 portaudio libsndfile texinfo autotools
+
+else
+
+  # Extract the cached image
+  tar -Sxzvf $IMAGE_NAME.tgz
+  rm $IMAGE_NAME.tgz
+
+  start_vm
+
+# TODO: Figure out if the system and packages were indeed updated, if not, then
+#       there is no need to update the image stored in Travis's cache. This can
+#       make the build finish ~4 minutes faster.
+
+  # Update system
+  RUN freebsd-update --not-running-from-cron fetch
+  RUN freebsd-update --not-running-from-cron install || true
+
+  # Update packages
+  RUN ASSUME_ALWAYS_YES=YES pkg upgrade
+
+fi
+
+# === Cache the updated VM image ===
+
+# Turn it off
+RUN poweroff
+
+# Wait for qemu process to terminate
+while ps aux | grep qemu | grep -vq grep
+do
+  sleep 1
+done
+
+# Create/Update cache
+tar -Sczvf $IMAGE_NAME.tgz $IMAGE_NAME
+# Get the image we wil lbe using out of the cached directory
+mv $IMAGE_NAME ..
+rm screenlog.0
+ls -lh
+
+cd ..
+
+ls -lh
+
+# === Get VM ready to build the code ===
+
+start_vm
+
+# Display FreeBSD kernel info and last login
+RUN uname -a
+RUN last
+
+cd "$OLD_PWD"
+
+# Copy over toxcore code from Travis to qemu
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P $SSH_PORT -r ./* root@localhost:~
+
+RUN ls -lh
