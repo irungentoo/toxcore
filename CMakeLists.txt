@@ -422,9 +422,10 @@ auto_test(tox_many_tcp)
 auto_test(tox_one)
 auto_test(tox_strncasecmp)
 auto_test(version)
-# TODO(iphydf): This test is broken. The code needs to be fixed, as the test
-# itself is correct.
+# TODO(iphydf): These tests are broken. The code needs to be fixed, as the
+# tests themselves are correct.
 #auto_test(selfname_change_conference)
+#auto_test(self_conference_title_change)
 
 if(BUILD_TOXAV)
   auto_test(toxav_basic)
