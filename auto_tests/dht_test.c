@@ -669,10 +669,103 @@ START_TEST(test_dht_create_packet)
 }
 END_TEST
 
+#define MAX_COUNT 3
+
+static void dht_pack_unpack(const Node_format *nodes, size_t size, uint8_t *data, size_t length)
+{
+    int packed_size = pack_nodes(data, length, nodes, size);
+    ck_assert_msg(packed_size != -1, "Wrong pack_nodes result");
+
+    uint16_t processed = 0;
+    VLA(Node_format, nodes_unpacked, size);
+    const uint8_t tcp_enabled = 1;
+
+    int unpacked_count = unpack_nodes(nodes_unpacked, size, &processed, data, length, tcp_enabled);
+    ck_assert_msg(unpacked_count == size, "Wrong unpack_nodes result");
+    ck_assert_msg(processed == packed_size, "unpack_nodes did not process all data");
+
+    for (size_t i = 0; i < size; i++) {
+        const IP_Port *ipp1 = &nodes[i].ip_port;
+        const IP_Port *ipp2 = &nodes_unpacked[i].ip_port;
+        ck_assert_msg(ip_equal(&ipp1->ip, &ipp2->ip), "Unsuccessful ip unpack");
+        ck_assert_msg(ipp1->port == ipp2->port, "Unsuccessful port unpack");
+
+        const uint8_t *pk1 = nodes[i].public_key;
+        const uint8_t *pk2 = nodes_unpacked[i].public_key;
+        ck_assert_msg(!memcmp(pk1, pk2, CRYPTO_PUBLIC_KEY_SIZE), "Unsuccessful pk unpack");
+    }
+}
+
+static void random_ip(IP_Port *ipp, int family)
+{
+    uint8_t *ip = NULL;
+    size_t size;
+
+    if (family == AF_INET || family == TCP_INET) {
+        ip = (uint8_t *)&ipp->ip.ip4;
+        size = sizeof(ipp->ip.ip4);
+    } else if (family == AF_INET6 || family == TCP_INET6) {
+        ip = (uint8_t *)&ipp->ip.ip6;
+        size = sizeof(ipp->ip.ip6);
+    } else {
+        return;
+    }
+
+    uint8_t *port = (uint8_t *)&ipp->port;
+    random_bytes(port, sizeof(ipp->port));
+    random_bytes(ip, size);
+    ipp->ip.family = family;
+
+}
+
+#define PACKED_NODES_SIZE (SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE)
+
+START_TEST(test_dht_node_packing)
+{
+    const uint16_t length = MAX_COUNT * PACKED_NODES_SIZE;
+    uint8_t *data = (uint8_t *)malloc(length);
+
+    Node_format nodes[MAX_COUNT];
+    const size_t pk_size = sizeof(nodes[0].public_key);
+
+    random_bytes(nodes[0].public_key, pk_size);
+    random_bytes(nodes[1].public_key, pk_size);
+    random_bytes(nodes[2].public_key, pk_size);
+
+    random_ip(&nodes[0].ip_port, AF_INET);
+    random_ip(&nodes[1].ip_port, AF_INET);
+    random_ip(&nodes[2].ip_port, AF_INET);
+    dht_pack_unpack(nodes, 3, data, length);
+
+    random_ip(&nodes[0].ip_port, AF_INET);
+    random_ip(&nodes[1].ip_port, AF_INET);
+    random_ip(&nodes[2].ip_port, TCP_INET);
+    dht_pack_unpack(nodes, 3, data, length);
+
+    random_ip(&nodes[0].ip_port, AF_INET);
+    random_ip(&nodes[1].ip_port, AF_INET6);
+    random_ip(&nodes[2].ip_port, TCP_INET6);
+    dht_pack_unpack(nodes, 3, data, length);
+
+    random_ip(&nodes[0].ip_port, TCP_INET);
+    random_ip(&nodes[1].ip_port, TCP_INET6);
+    random_ip(&nodes[2].ip_port, TCP_INET);
+    dht_pack_unpack(nodes, 3, data, length);
+
+    random_ip(&nodes[0].ip_port, AF_INET6);
+    random_ip(&nodes[1].ip_port, AF_INET6);
+    random_ip(&nodes[2].ip_port, AF_INET6);
+    dht_pack_unpack(nodes, 3, data, length);
+
+    free(data);
+}
+END_TEST
+
 static Suite *dht_suite(void)
 {
     Suite *s = suite_create("DHT");
     DEFTESTCASE(dht_create_packet);
+    DEFTESTCASE(dht_node_packing);
 
     DEFTESTCASE_SLOW(list, 20);
     DEFTESTCASE_SLOW(DHT_test, 50);
