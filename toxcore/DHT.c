@@ -954,11 +954,13 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bo
 
     unsigned int index = bit_by_bit_cmp(public_key, dht->self_public_key);
 
-    if (index > LCLIENT_LENGTH) {
+    if (index >= LCLIENT_LENGTH) {
         index = LCLIENT_LENGTH - 1;
     }
 
     for (i = 0; i < LCLIENT_NODES; ++i) {
+        /* TODO(iphydf): write bounds checking test to catch the case that
+         * index is left as >= LCLIENT_LENGTH */
         Client_data *client = &dht->close_clientlist[(index * LCLIENT_NODES) + i];
 
         if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
@@ -1021,6 +1023,17 @@ static bool is_pk_in_client_list(Client_data *list, unsigned int client_list_len
     return 0;
 }
 
+static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
+{
+    unsigned int index = bit_by_bit_cmp(public_key, dht->self_public_key);
+
+    if (index >= LCLIENT_LENGTH) {
+        index = LCLIENT_LENGTH - 1;
+    }
+
+    return is_pk_in_client_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_NODES, public_key, ip_port);
+}
+
 /* Check if the node obtained with a get_nodes with public_key should be pinged.
  * NOTE: for best results call it after addto_lists;
  *
@@ -1035,7 +1048,8 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
         ret = 1;
     }
 
-    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)) {
+    if (ret && !client_in_nodelist(dht->to_bootstrap, dht->num_to_bootstrap, public_key)
+            && !is_pk_in_close_list(dht, public_key, ip_port)) {
         if (dht->num_to_bootstrap < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
             memcpy(dht->to_bootstrap[dht->num_to_bootstrap].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
             dht->to_bootstrap[dht->num_to_bootstrap].ip_port = ip_port;
