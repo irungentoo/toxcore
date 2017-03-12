@@ -389,7 +389,8 @@ int net_connect(Socket sock, IP_Port ip_port);
  * Skip all addresses with socktype != type (use type = -1 to get all addresses)
  * To correctly deallocate array memory use net_freeipport()
  *
- * return number of elements in res array.
+ * return number of elements in res array
+ * and -1 on error.
  */
 int32_t net_getipport(const char *node, IP_Port **res, int type);
 
