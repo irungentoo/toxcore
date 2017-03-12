@@ -117,6 +117,11 @@ static int find(const BS_LIST *list, const uint8_t *data)
  */
 static int resize(BS_LIST *list, uint32_t new_size)
 {
+    if (new_size == 0) {
+        bs_list_free(list);
+        return 1;
+    }
+
     uint8_t *data = (uint8_t *)realloc(list->data, list->element_size * new_size);
 
     if (!data) {
@@ -161,7 +166,10 @@ void bs_list_free(BS_LIST *list)
 {
     //free both arrays
     free(list->data);
+    list->data = NULL;
+
     free(list->ids);
+    list->ids = NULL;
 }
 
 int bs_list_find(const BS_LIST *list, const uint8_t *data)
