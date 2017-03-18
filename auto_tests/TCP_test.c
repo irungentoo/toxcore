@@ -35,9 +35,7 @@ START_TEST(test_basic)
     Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
     IP_Port ip_port_loopback;
     ip_port_loopback.ip.family = TOX_AF_INET6;
-    ip_port_loopback.ip.ip6.uint64[0] = 0;
-    ip_port_loopback.ip.ip6.uint64[1] = 0;
-    ip_port_loopback.ip.ip6.uint8[15] = 1; // ::1
+    ip_port_loopback.ip.ip6 = IP6_LOOPBACK;
     ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
 
     int ret = net_connect(sock, ip_port_loopback);
@@ -406,7 +404,7 @@ START_TEST(test_client)
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
+    ip_port_tcp_s.ip.ip6 = IP6_LOOPBACK;
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn, NULL);
@@ -504,7 +502,7 @@ START_TEST(test_client_invalid)
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
+    ip_port_tcp_s.ip.ip6 = IP6_LOOPBACK;
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn, NULL);
@@ -573,7 +571,7 @@ START_TEST(test_tcp_connection)
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
+    ip_port_tcp_s.ip.ip6 = IP6_LOOPBACK;
 
     int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
@@ -682,7 +680,7 @@ START_TEST(test_tcp_connection2)
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
     ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    get_ip6(&ip_port_tcp_s.ip.ip6, &in6addr_loopback);
+    ip_port_tcp_s.ip.ip6 = IP6_LOOPBACK;
 
     int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");

@@ -138,6 +138,10 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
 
 #endif
 
+#if !defined(INADDR_LOOPBACK)
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
 const IP4 IP4_LOOPBACK = { INADDR_LOOPBACK };
 const IP6 IP6_LOOPBACK = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }
@@ -154,7 +158,7 @@ const IP6 IP6_BROADCAST = {
 #endif
 
 #if TOX_INET_ADDRSTRLEN < INET_ADDRSTRLEN
-#error TOX_INET_ADDRSTRLEN should be egreater or qual to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)
+#error TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)
 #endif
 
 static int make_proto(int proto);

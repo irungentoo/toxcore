@@ -243,15 +243,12 @@ static IP broadcast_ip(Family family_socket, Family family_broadcast)
             ip.ip6.uint8[15] = 0x01;
         } else if (family_broadcast == TOX_AF_INET) {
             ip.family = TOX_AF_INET6;
-            ip.ip6.uint32[0] = 0;
-            ip.ip6.uint32[1] = 0;
-            ip.ip6.uint32[2] = net_htonl(0xFFFF);
-            ip.ip6.uint32[3] = INADDR_BROADCAST;
+            ip.ip6 = IP6_BROADCAST;
         }
     } else if (family_socket == TOX_AF_INET) {
         if (family_broadcast == TOX_AF_INET) {
             ip.family = TOX_AF_INET;
-            ip.ip4.uint32 = INADDR_BROADCAST;
+            ip.ip4 = IP4_BROADCAST;
         }
     }
 
