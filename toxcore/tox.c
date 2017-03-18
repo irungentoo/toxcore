@@ -153,7 +153,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
             if (m_options.ipv6enabled) {
-                m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
+                m_options.proxy_info.ip_port.ip.family = TOX_AF_UNSPEC;
             }
 
             if (!addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, NULL)) {
@@ -235,7 +235,7 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
 
     IP_Port *root;
 
-    int32_t count = net_getipport(address, &root, SOCK_DGRAM);
+    int32_t count = net_getipport(address, &root, TOX_SOCK_DGRAM);
 
     if (count == -1) {
         net_freeipport(root);
@@ -279,7 +279,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
 
     IP_Port *root;
 
-    int32_t count = net_getipport(address, &root, SOCK_STREAM);
+    int32_t count = net_getipport(address, &root, TOX_SOCK_STREAM);
 
     if (count == -1) {
         net_freeipport(root);

@@ -56,7 +56,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *TCP_con
     char two[] = " HTTP/1.1\nHost: ";
     char three[] = "\r\n\r\n";
 
-    char ip[INET6_ADDRSTRLEN];
+    char ip[TOX_INET6_ADDRSTRLEN];
 
     if (!ip_parse_addr(&TCP_conn->ip_port.ip, ip, sizeof(ip))) {
         return 0;

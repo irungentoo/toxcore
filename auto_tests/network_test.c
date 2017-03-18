@@ -61,7 +61,7 @@ START_TEST(test_addr_resolv_localhost)
     }
 
     ip_init(&ip, 1); // ipv6enabled = 1
-    ip.family = AF_UNSPEC;
+    ip.family = TOX_AF_UNSPEC;
     IP extra;
     ip_reset(&extra);
     res = addr_resolve(localhost, &ip, &extra);
@@ -97,7 +97,7 @@ START_TEST(test_ip_equal)
     ip1.ip4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {AF_UNSPEC, 0} ): "
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_UNSPEC, 0} ): "
                   "expected result 0, got %u.", res);
 
     ip2.family = TOX_AF_INET;

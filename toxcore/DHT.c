@@ -1717,7 +1717,7 @@ int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
 
     if (ipv6enabled) {
         /* setup for getting BOTH: an IPv6 AND an IPv4 address */
-        ip_port_v64.ip.family = AF_UNSPEC;
+        ip_port_v64.ip.family = TOX_AF_UNSPEC;
         ip_reset(&ip_port_v4.ip);
         ip_extra = &ip_port_v4.ip;
     }

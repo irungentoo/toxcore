@@ -189,6 +189,9 @@ uint16_t net_ntohs(uint16_t hostshort);
 #define TOX_ADDR_RESOLVE_INET  1
 #define TOX_ADDR_RESOLVE_INET6 2
 
+#define TOX_INET6_ADDRSTRLEN 66
+#define TOX_INET_ADDRSTRLEN 22
+
 /* ip_ntoa
  *   converts ip into a string
  *   ip_str must be of length at least IP_NTOA_LEN
@@ -198,7 +201,7 @@ uint16_t net_ntohs(uint16_t hostshort);
  *
  *   returns ip_str
  */
-/* this would be INET6_ADDRSTRLEN, but it might be too short for the error message */
+/* this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
 #define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
 const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
 
