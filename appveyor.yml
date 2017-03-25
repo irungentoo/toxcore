@@ -1,4 +1,8 @@
 install:
+# TODO(iphydf): Remove this when appveyor gets curl back, which it should have
+# according to https://www.appveyor.com/docs/how-to/download-file/.
+- choco install curl
+- refreshenv
 - mkdir libsodium && cd libsodium
 - curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.11-msvc.zip -o libsodium.zip
 - unzip libsodium.zip
