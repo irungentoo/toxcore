@@ -30,7 +30,7 @@ RUN $CMAKE                                      \
   -DASAN=ON                                     \
   -DDEBUG=ON                                    \
   -DSTRICT_ABI=ON                               \
-  -DTEST_TIMEOUT_SECONDS=300                    \
+  -DTEST_TIMEOUT_SECONDS=120                    \
   -DTRACE=ON                                    \
   $CMAKE_EXTRA_FLAGS
 
