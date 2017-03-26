@@ -36,6 +36,8 @@
 /* The time between attempts to share our TCP relays with a peer */
 #define GCC_TCP_SHARED_RELAYS_TIMEOUT 300
 
+#define GCC_IP_PORT_TIMEOUT GC_PING_INTERVAL * 4
+
 /* The time before the direct UDP connection is considered dead */
 #define GCC_UDP_DIRECT_TIMEOUT (GC_PING_INTERVAL * 2 + 2)
 
@@ -68,6 +70,7 @@ typedef struct GC_Connection {
     int         tcp_connection_num;
     uint64_t    last_recv_direct_time;   /* the last time we received a direct packet from this peer */
     uint64_t    last_tcp_relays_shared;  /* the last time we tried to send this peer our tcp relays */
+    uint64_t    last_ip_port_shared;
 
     Node_format connected_tcp_relays[MAX_FRIEND_TCP_CONNECTIONS];
     int tcp_relays_index;

@@ -127,6 +127,7 @@ typedef enum GROUP_PACKET_TYPE {
     GP_MESSAGE_ACK              = 2,
     GP_INVITE_RESPONSE_REJECT   = 3,
     GP_TCP_RELAYS               = 4,
+    GP_IP_PORT                  = 5,
 
     /* lossless packets */
     GP_CUSTOM_PACKET            = 241,
