@@ -5772,6 +5772,9 @@ int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber)
         return -2;
     }
 
+    chat->saved_invites[chat->saved_invites_index] = friendnumber + 1;
+    chat->saved_invites_index = (chat->saved_invites_index + 1) % GC_MAX_SAVED_INVITES;
+
     return 0;
 }
 
@@ -5885,6 +5888,19 @@ int handle_gc_invite_confirmed_packet(GC_Session *c, int friend_number, const ui
     return 0;
 }
 
+
+bool friend_was_invited(GC_Chat *chat, int friend_number)
+{
+    int i;
+    for (i = 0; i < GC_MAX_SAVED_INVITES; i++) {
+        if (chat->saved_invites[i] == friend_number - 1) {
+            chat->saved_invites[i] = -1;
+            return true;
+        }
+    }
+    return false;
+}
+
 int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uint8_t *data,
                                      uint32_t length)
 {
@@ -5907,6 +5923,10 @@ int handle_gc_invite_accepted_packet(GC_Session *c, int friend_number, const uin
     GC_Chat *chat = gc_get_group_by_public_key(c, chat_id);
 
     if (chat == NULL) {
+        return -2;
+    }
+
+    if (!friend_was_invited(chat, friend_number)) {
         return -2;
     }
 
