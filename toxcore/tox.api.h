@@ -241,6 +241,11 @@ const PUBLIC_KEY_SIZE              = 32;
 const SECRET_KEY_SIZE              = 32;
 
 /**
+ * The size of the nospam in bytes when written in a Tox address.
+ */
+const NOSPAM_SIZE                  = sizeof(uint32_t);
+
+/**
  * The size of a Tox address in bytes. Tox addresses are in the format
  * [Public Key ($PUBLIC_KEY_SIZE bytes)][nospam (4 bytes)][checksum (2 bytes)].
  *
@@ -248,7 +253,7 @@ const SECRET_KEY_SIZE              = 32;
  * byte is an XOR of all the even bytes (0, 2, 4, ...), the second byte is an
  * XOR of all the odd bytes (1, 3, 5, ...) of the Public Key and nospam.
  */
-const ADDRESS_SIZE                = PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t);
+const ADDRESS_SIZE                = PUBLIC_KEY_SIZE + NOSPAM_SIZE + sizeof(uint16_t);
 
 /**
  * Maximum length of a nickname in bytes.

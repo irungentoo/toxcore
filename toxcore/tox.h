@@ -246,6 +246,13 @@ uint32_t tox_public_key_size(void);
 uint32_t tox_secret_key_size(void);
 
 /**
+ * The size of the nospam in bytes when written in a Tox address.
+ */
+#define TOX_NOSPAM_SIZE                (sizeof(uint32_t))
+
+uint32_t tox_nospam_size(void);
+
+/**
  * The size of a Tox address in bytes. Tox addresses are in the format
  * [Public Key (TOX_PUBLIC_KEY_SIZE bytes)][nospam (4 bytes)][checksum (2 bytes)].
  *
@@ -253,7 +260,7 @@ uint32_t tox_secret_key_size(void);
  * byte is an XOR of all the even bytes (0, 2, 4, ...), the second byte is an
  * XOR of all the odd bytes (1, 3, 5, ...) of the Public Key and nospam.
  */
-#define TOX_ADDRESS_SIZE               (TOX_PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
+#define TOX_ADDRESS_SIZE               (TOX_PUBLIC_KEY_SIZE + TOX_NOSPAM_SIZE + sizeof(uint16_t))
 
 uint32_t tox_address_size(void);
 
