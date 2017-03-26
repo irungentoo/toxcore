@@ -21,4 +21,4 @@ make -j$NPROC -k
 
 # This runs `make check` with the default configure flags, not with the ones
 # above.
-make distcheck -j$NPROC -k
+TESTS $MAX_TEST_RETRIES make distcheck -j$NPROC -k
