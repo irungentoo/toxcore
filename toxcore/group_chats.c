@@ -1395,6 +1395,42 @@ static int send_gc_tcp_relays(GC_Chat *chat, GC_Connection *gconn)
     return 0;
 }
 
+
+static int handle_gc_ip_port(Messenger *m, int groupnumber, GC_Connection *gconn,
+                             const uint8_t *data, uint32_t length)
+{
+    if (length == 0) {
+        return -1;
+    }
+
+    GC_Session *c = m->group_handler;
+    GC_Chat *chat = gc_get_group(c, groupnumber);
+
+    if (chat == NULL) {
+        return -1;
+    }
+
+    if (chat->connection_state != CS_CONNECTED) {
+        return -1;
+    }
+
+    if (!gconn->confirmed) {
+        return -1;
+    }
+
+    GC_Announce_Node friend_node;
+
+    int node_len = unpack_gca_nodes(&friend_node, 1, NULL, data, length, 0);
+
+    if (node_len != 1) {
+        return -1;
+    }
+
+    memcpy(&gconn->addr.ip_port, &friend_node.ip_port, sizeof(IP_Port));
+
+    return 0;
+}
+
 /* Adds peer's shared TCP relays to our connection with them.
  *
  * Returns 0 on success.
@@ -4739,6 +4775,10 @@ static int handle_gc_lossy_message(Messenger *m, GC_Chat *chat, const uint8_t *p
 
         case GP_TCP_RELAYS:
             ret = handle_gc_tcp_relays(m, chat->groupnumber, gconn, real_data, len);
+            break;
+
+        case GP_IP_PORT:
+            ret = handle_gc_ip_port(m, chat->groupnumber, gconn, real_data, len);
             break;
 
         case GP_CUSTOM_PACKET:
