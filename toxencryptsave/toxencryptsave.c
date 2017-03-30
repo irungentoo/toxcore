@@ -53,6 +53,19 @@
 #error TOX_PASS_ENCRYPTION_EXTRA_LENGTH is assumed to be equal to (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)
 #endif
 
+uint32_t tox_pass_salt_length(void)
+{
+    return TOX_PASS_SALT_LENGTH;
+}
+uint32_t tox_pass_key_length(void)
+{
+    return TOX_PASS_KEY_LENGTH;
+}
+uint32_t tox_pass_encryption_extra_length(void)
+{
+    return TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+}
+
 struct Tox_Pass_Key {
     uint8_t salt[TOX_PASS_SALT_LENGTH];
     uint8_t key[TOX_PASS_KEY_LENGTH];
