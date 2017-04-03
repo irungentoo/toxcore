@@ -4,7 +4,8 @@ includedir=${prefix}/include
 
 Name: toxcore
 Description: Tox protocol library
-Requires: @toxcore_PKGCONFIG_REQUIRES@
+Requires.private: @toxcore_PKGCONFIG_REQUIRES@
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -ltoxcore @toxcore_PKGCONFIG_LIBS@
+Libs: -L${libdir} -ltoxcore
+Libs.private: @toxcore_PKGCONFIG_LIBS@
 Cflags: -I${includedir}
