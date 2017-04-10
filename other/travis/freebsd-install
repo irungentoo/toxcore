@@ -18,9 +18,12 @@
 # doesn't seem to allow KVM passthrough, so qemu has to emulate all the
 # hardware, which makes it quite slow compared to the host machine. We cache
 # the qemu image since it takes a long time to run the initial system and
-# pacakge updates, and we update packages and the system on every job run.
+# package updates, and we do incremental system and package updates on every
+# change to the list of git tags (i.e. on every toxcore release, presumably).
 
 sudo apt-get install qemu -y
+
+git tag -l --sort=version:refname > GIT_TAGS
 
 OLD_PWD="$PWD"
 
@@ -63,6 +66,19 @@ start_vm()
   wait_for "FreeBSD/amd64 ("
 }
 
+# Shuts VM down and waits until its process finishes
+stop_vm()
+{
+  # Turn it off
+  RUN poweroff
+
+  # Wait for qemu process to terminate
+  while ps aux | grep qemu | grep -vq grep
+  do
+    sleep 1
+  done
+}
+
 # Let's see what's in the cache directory
 ls -lh
 
@@ -70,6 +86,8 @@ ls -lh
 
 # Create image if it's not cached
 if [ ! -f ./$IMAGE_NAME.tgz ]; then
+
+  rm -rf ./*
 
   # https://download.freebsd.org/ftp/releases/VM-IMAGES/11.0-RELEASE/amd64/Latest/
   DL_SHA512="1bfdef9a106e41134cf92c5ceb7f7da468293d6611d16c0bc51482a8fb3088064204bacfe6a8b1afda169d9ab63e4bbd1c9ba1de06fe3fd604864d3fb0c07326"
@@ -160,19 +178,29 @@ if [ ! -f ./$IMAGE_NAME.tgz ]; then
   RUN chsh -s /usr/local/bin/bash root
 
   # Install required toxcore dependencies
-  RUN ASSUME_ALWAYS_YES=YES pkg install git opus libvpx libsodium gmake cmake pkgconf libcheck opencv2 portaudio libsndfile texinfo autotools
+  RUN ASSUME_ALWAYS_YES=YES pkg install git opus libvpx libsodium gmake cmake pkgconf check opencv2 portaudio libsndfile texinfo autotools
 
-else
+  # === Cache the VM image ===
 
+  stop_vm
+
+  # Create cache
+  tar -Sczvf $IMAGE_NAME.tgz $IMAGE_NAME
+  rm screenlog.0
+
+  cp "$OLD_PWD/GIT_TAGS" .
+
+  ls -lh
+fi
+
+if [ ! -f ./$IMAGE_NAME ]; then
   # Extract the cached image
   tar -Sxzvf $IMAGE_NAME.tgz
-  rm $IMAGE_NAME.tgz
+fi
 
+# === Update the image on new version (tag) of toxcore ===
+if ! diff -u ./GIT_TAGS "$OLD_PWD/GIT_TAGS" ; then
   start_vm
-
-# TODO: Figure out if the system and packages were indeed updated, if not, then
-#       there is no need to update the image stored in Travis's cache. This can
-#       make the build finish ~4 minutes faster.
 
   # Update system
   RUN freebsd-update --not-running-from-cron fetch
@@ -181,24 +209,22 @@ else
   # Update packages
   RUN ASSUME_ALWAYS_YES=YES pkg upgrade
 
+  # === Cache the updated VM image ===
+
+  stop_vm
+
+  # Create/Update cache
+  rm $IMAGE_NAME.tgz
+  tar -Sczvf $IMAGE_NAME.tgz $IMAGE_NAME
+  rm screenlog.0
+
+  cp "$OLD_PWD/GIT_TAGS" .
+
+  ls -lh
 fi
 
-# === Cache the updated VM image ===
-
-# Turn it off
-RUN poweroff
-
-# Wait for qemu process to terminate
-while ps aux | grep qemu | grep -vq grep
-do
-  sleep 1
-done
-
-# Create/Update cache
-tar -Sczvf $IMAGE_NAME.tgz $IMAGE_NAME
-# Get the image we wil lbe using out of the cached directory
+# Get the image we will be using out of the cached directory
 mv $IMAGE_NAME ..
-rm screenlog.0
 ls -lh
 
 cd ..
