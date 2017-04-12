@@ -1,8 +1,8 @@
-#A/V API reference
+# A/V API reference
 
-##Take toxmsi/phone.c as a reference
+## Take toxmsi/phone.c as a reference
 
-###Initialization:
+### Initialization:
 
 ```
 phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port);
@@ -31,7 +31,7 @@ const uint8_t* _user_agent - string describing phone client version.
 Return value:
 msi_session_t* - pointer to a newly created msi session handler.
 
-###msi_session_t reference:
+### msi_session_t reference:
 
 How to handle msi session:
 Controlling is done via callbacks and action handlers.
@@ -91,7 +91,7 @@ int msi_reject ( msi_session_t* _session );
 Reject incomming call.
 
 
-###Now for rtp:
+### Now for rtp:
 
 You will need 2 sessions; one for audio one for video.
 You start them with:
@@ -110,7 +110,7 @@ Return value:
 rtp_session_t* - pointer to a newly created rtp session handler.
 ```
 
-###How to handle rtp session:
+### How to handle rtp session:
 Take a look at
 ```
 void* phone_handle_media_transport_poll ( void* _hmtc_args_p ) in phone.c
@@ -139,7 +139,7 @@ int rtp_send_msg ( rtp_session_t* _session, struct rtp_msg_s* _msg, void* _core_
 _core_handler is the same network handler as in msi_session_s struct.
 
 
-##A/V initialization:
+## A/V initialization:
 ```
 int init_receive_audio(codec_state *cs);
 int init_receive_video(codec_state *cs);
@@ -157,7 +157,7 @@ The variable bps is the required bitrate in bits per second.
 ```
 
 
-###A/V encoding/decoding:
+### A/V encoding/decoding:
 ```
 void *encode_video_thread(void *arg);
 ```

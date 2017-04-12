@@ -1,29 +1,25 @@
-#Instructions
+# Instructions
 
-- [For `systemd` users](#systemd)
-  - [Setting up](#systemd-setting-up)
-  - [Updating](#systemd-updating)
-  - [Troubleshooting](#systemd-troubleshooting)
-<br>
-- [For `SysVinit` users](#sysvinit)
-  - [Setting up](#sysvinit-setting-up)
-  - [Updating](#sysvinit-updating)
-  - [Troubleshooting](#sysvinit-troubleshooting)
-<br>
-- [For `Docker` users](#docker)
-  - [Setting up](#docker-setting-up)
-  - [Updating](#docker-updating)
-  - [Troubleshooting](#docker-troubleshooting)
+- [For `systemd` users](#for-systemd-users)
+  - [Setting up](#setting-up)
+  - [Updating](#updating)
+  - [Troubleshooting](#troubleshooting)
+- [For `SysVinit` users](#for-sysvinit-users)
+  - [Setting up](#setting-up-1)
+  - [Updating](#updating-1)
+  - [Troubleshooting](#troubleshooting-1)
+- [For `Docker` users](#for-docker-users)
+  - [Setting up](#setting-up-2)
+  - [Updating](#updating-2)
+  - [Troubleshooting](#troubleshooting-2)
 
 
 These instructions are primarily tested on Debian Linux, Wheezy for SysVinit and Jessie for systemd, but they should work on other POSIX-compliant systems too.
 
 
-<a name="systemd" />
-##For `systemd` users
+## For `systemd` users
 
-<a name="systemd-setting-up" />
-###Setting up
+### Setting up
 
 For security reasons we run the daemon under its own user.
 
@@ -68,8 +64,7 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-<a name="systemd-updating" />
-###Updating
+### Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
 
@@ -91,8 +86,8 @@ sudo systemctl start tox-bootstrapd.service
 
 Note that `tox-bootstrapd.service` file might
 
-<a name="systemd-troubleshooting" />
-###Troubleshooting
+
+### Troubleshooting
 
 - Check daemon's status:
 ```sh
@@ -115,11 +110,11 @@ sudo journalctl -f _SYSTEMD_UNIT=tox-bootstrapd.service
 - Make sure tox-bootstrapd location matches its path in tox-bootstrapd.service file.
 
 
-<a name="sysvinit" />
-##For `SysVinit` users
 
-<a name="sysvinit-setting-up" />
-###Setting up
+## For `SysVinit` users
+
+
+### Setting up
 
 For security reasons we run the daemon under its own user.
 
@@ -170,8 +165,8 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-<a name="sysvinit-updating" />
-###Updating
+
+### Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
 
@@ -191,8 +186,7 @@ After all of this is done, simply start the daemon back again:
 sudo service tox-bootstrapd start
 ```
 
-<a name="sysvinit-troubleshooting" />
-###Troubleshooting
+### Troubleshooting
 
 - Check daemon's status:
 ```sh
@@ -213,11 +207,9 @@ sudo grep "tox-bootstrapd" /var/log/syslog
 - Make sure tox-bootstrapd location matches its path in the `/etc/init.d/tox-bootstrapd` init script.
 
 
-<a name="docker" />
-##For `Docker` users:
+## For `Docker` users:
 
-<a name="docker-setting-up" />
-###Setting up
+### Setting up
 
 If you are familiar with Docker and would rather run the daemon in a Docker container, run the following from this directory:
 
@@ -239,8 +231,7 @@ sudo docker logs tox-bootstrapd
 
 Note that the Docker container runs a script which pulls a list of bootstrap nodes off https://nodes.tox.chat/ and adds them in the config file.
 
-<a name="docker-updating" />
-###Updating
+### Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
 
@@ -259,8 +250,7 @@ sudo docker build -t tox-bootstrapd docker/
 sudo docker run -d --name tox-bootstrapd --restart always -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
 ```
 
-<a name="docker-troubleshooting" />
-###Troubleshooting
+### Troubleshooting
 
 - Check if the container is running:
 ```sh

@@ -1,31 +1,29 @@
-#Install Instructions
+# Install Instructions
 
 - [Installation](#installation)
-  - [Unix like](#unix)
+  - [Unix like](#most-unix-like-oses)
     - [Quick install](#quick-install)
     - [Build manually](#build-manually)
       - [Compile toxcore](#compile-toxcore)
-  - [OS X](#osx)
+  - [OS X](#os-x)
     - [Homebrew](#homebrew)
     - [Non-Homebrew](#non-homebrew)
   - [Windows](#windows)
-    - [Cross-Compile](#windows-cross-compile)
-      - [Setting up a VM](#windows-cross-compile-vm)
-      - [Setting up the environment](#windows-cross-compile-environment)
-      - [Compiling](#windows-cross-compile-compiling)
-    - [Native](#windows-native)
+    - [Cross-Compile](#cross-compile)
+      - [Setting up a VM](#setting-up-a-vm)
+      - [Setting up the environment](#setting-up-the-environment)
+      - [Compiling](#compiling)
+    - [Native](#native)
 - [Additional](#additional)
-  - [Advanced configure options](#aconf)
-  - [A/V support](#av)
+  - [Advanced configure options](#advanced-configure-options)
+  - [A/V support](#av-support)
     - [libtoxav](#libtoxav)
-  - [Bootstrap daemon](#bootstrapd)
-  - [nTox](#ntox)
+  - [Bootstrap daemon](#bootstrap-daemon)
+  - [nTox](#ntox-test-cli)
 
-<a name="installation" />
-##Installation
+## Installation
 
-<a name="unix" />
-###Most Unix like OSes:
+### Most Unix like OSes:
 
 #### Quick install:
 
@@ -131,17 +129,16 @@ sudo make install
 ```
 
 
-<a name="osx" />
-###OS X:
+### OS X:
 
 You need the latest XCode with the Developer Tools (Preferences -> Downloads -> Command Line Tools).
 The following libraries are required along with libsodium and cmake for Mountain Lion and XCode 4.6.3 install libtool, automake and autoconf. You can download them with Homebrew, or install them manually.
 
 **Note: OS X users can also install Toxcore using [osx_build_script_toxcore.sh](other/osx_build_script_toxcore.sh)**
 
-There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch. See [Usage](#usage) below.
-<a name="homebrew" />
-####Homebrew:
+There are no binaries/executables going to /bin/ or /usr/bin/ now. Everything is compiled and ran from the inside your local branch.
+
+#### Homebrew:
 To install from the formula:
 ```bash
 brew tap Tox/tox
@@ -177,8 +174,7 @@ make install
 ```
 
 
-<a name="non-homebrew" />
-####Non-homebrew:
+#### Non-homebrew:
 
 Grab the following packages:
   * https://gnu.org/software/libtool/
@@ -267,17 +263,13 @@ If there is a problem with opus (for A/V) and you don't get a libtoxav, then try
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 ```
 
-<a name="windows" />
-###Windows:
+### Windows:
 
-<a name="windows-cross-compile" />
-
-####Cross-compile
+#### Cross-compile
 
 It's a bit challenging to build Tox and all of its dependencies nativly on Windows, so we will show an easier, less error and headache prone method of building it -- cross-compiling.
 
-<a name="windows-cross-compile-vm" />
-#####Setting up a VM
+##### Setting up a VM
 
 We will assume that you don't have any VM running Linux around and will guide you from the ground up.
 
@@ -324,8 +316,7 @@ After the system is booted, go to **Devices** -> **Shared Clipboard** and select
 
 Now that the virtual machine is all set up, let's move to getting build dependencies and setting up environment variables.
 
-<a name="windows-cross-compile-environment" />
-#####Setting up the environment
+##### Setting up the environment
 
 First we will install all tools that we would need for building:
 ```bash
@@ -365,8 +356,7 @@ mkdir build
 cd build
 ```
 
-<a name="windows-cross-compile-compiling" />
-#####Compiling
+##### Compiling
 
 Now we will build libraries needed for audio/video: VPX and Opus.
 
@@ -439,8 +429,7 @@ cp -r ../include/tox /media/sf_toxbuild/release/include
 
 That's it. Now you should have `release/bin/libtox.dll`, `release/bin/libtox.dll.a` and `release/include/tox/<headers>` in your `toxbuild` directory on the Windows system.
 
-<a name="windows-native" />
-####Native
+#### Native
 
 Note that the Native instructions are incomplete, in a sense that they miss instructions needed for adding audio/video support to Tox. You also might stumble upon some unknown MinGW+msys issues while trying to build it.
 
@@ -475,21 +464,10 @@ make
 make install
 ```
 
-<a name="Clients" />
-####Clients:
-While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox clients are located in our [wiki](https://wiki.tox.chat/doku.php?id=clients)
 
+## Additional
 
-
-
-
-<a name="additional" />
-##Additional
-
-
-
-<a name="aconf" />
-###Advanced configure options:
+### Advanced configure options:
 
   - --prefix=/where/to/install
   - --with-libsodium-headers=/path/to/libsodium/include/
@@ -499,17 +477,14 @@ While [Toxic](https://github.com/tox/toxic) is no longer in core, a list of Tox 
   - --disable-tests build unit tests (default: auto)
   - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
   - --enable-ntox build nTox client (default: no) see: [nTox](#ntox)
-  - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrapd)
+  - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrap-daemon)
   - --enable-dht-bootstrap build DHT bootstrap utility (default=disabled)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
   - --enable-static[=PKGS]  build static libraries [default=yes]
 
+### A/V support:
 
-<a name="av" />
-###A/V support:
-
-<a name="libtoxav" />
-####libtoxav:
+#### libtoxav:
 
 'libtoxav' is needed for A/V support and it's enabled by default. You can disable it by adding --disable-av argument to ./configure script like so:
 ```bash
@@ -555,8 +530,7 @@ sudo make install
 cd ..
 ```
 
-<a name="bootstrapd" />
-###Bootstrap daemon:
+### Bootstrap daemon:
 
 Daemon is disabled by default. You can enable it by adding --enable-daemon argument to ./configure script like so:
 ```bash
@@ -584,8 +558,7 @@ Grab the following [package](http://www.hyperrealm.com/libconfig/), uncompress a
 See this [readme](other/bootstrap_daemon/README.md) on how to set up the bootstrap daemon.
 
 
-<a name="ntox" />
-###nTox test cli:
+### nTox test cli:
 
 nTox is disabled by default. You can enable it by adding --enable-ntox argument to ./configure script like so:
 ```bash
