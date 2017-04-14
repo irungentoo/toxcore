@@ -1,13 +1,35 @@
 
 
+## v0.1.8
+
+### Closed issues:
+
+- [#535](https://github.com/TokTok/c-toxcore/issues/535) OS X tests failing
+- [#503](https://github.com/TokTok/c-toxcore/issues/503) Undefined functions: tox_pass_salt_length, tox_pass_key_length, tox_pass_encryption_extra_length
+- [#456](https://github.com/TokTok/c-toxcore/issues/456) Tox.h doesn't expose the size of the nospam.
+- [#411](https://github.com/TokTok/c-toxcore/issues/411) Reduce CTest timeout to 2 minutes
+
+### Merged PRs:
+
+- [#538](https://github.com/TokTok/c-toxcore/issues/538) Reverting tox_loop PR changes
+- [#526](https://github.com/TokTok/c-toxcore/issues/526) Add TOX_NOSPAM_SIZE to the public API.
+- [#525](https://github.com/TokTok/c-toxcore/issues/525) Retry autotools tests the same way as cmake tests.
+- [#524](https://github.com/TokTok/c-toxcore/issues/524) Reduce ctest timeout to 2 minutes from 5 minutes.
+- [#512](https://github.com/TokTok/c-toxcore/issues/512) Add test for DHT pack_nodes and unpack_nodes
+- [#504](https://github.com/TokTok/c-toxcore/issues/504) CMake: install bootstrapd if it is built
+- [#488](https://github.com/TokTok/c-toxcore/issues/488) Save compiled Android artifacts after CircleCI builds.
+- [#473](https://github.com/TokTok/c-toxcore/issues/473) Added missing includes: <netinet/in.h> and <sys/socket.h>
+- [#335](https://github.com/TokTok/c-toxcore/issues/335) Implement tox_loop
+
 ## v0.1.7
 
 ### Closed issues:
 
-- [#482](https://github.com/TokTok/c-toxcore/issues/482) CMake can't detect and compile ToxAV on OSX
+- [#474](https://github.com/TokTok/c-toxcore/issues/474) TOX_VERSION_PATCH isn't in sync with the version
 
 ### Merged PRs:
 
+- [#523](https://github.com/TokTok/c-toxcore/issues/523) Release v0.1.7
 - [#521](https://github.com/TokTok/c-toxcore/issues/521) Fix appveyor script: install curl from chocolatey.
 - [#510](https://github.com/TokTok/c-toxcore/issues/510) Fix list malloc(0) bug
 - [#509](https://github.com/TokTok/c-toxcore/issues/509) Fix network malloc(0) bug
