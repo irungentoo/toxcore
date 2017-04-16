@@ -15,7 +15,6 @@ dependencies:
   - sudo apt-get install clang
   - sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
   - sudo apt-get install libopus-dev libvpx-dev pkg-config
-  - sudo apt-get install libev-dev libevent-dev
 
 # ------------ network_test requires that "localhost" resolves to ::1 ------------
   - sudo bash -c "echo '::1             localhost ipv6-localhost ipv6-loopback' >> /etc/hosts" # ipv6 localhost entry

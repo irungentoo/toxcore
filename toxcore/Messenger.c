@@ -1930,28 +1930,6 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return NULL;
     }
 
-#ifdef HAVE_LIBEV
-    m->dispatcher = ev_loop_new(0);
-#elif HAVE_LIBEVENT
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
-    evthread_use_windows_threads();
-#else
-    evthread_use_pthreads();
-#endif /* WIN32 || _WIN32 || __WIN32__ */
-    m->dispatcher = event_base_new();
-#else
-    m->loop_run = false;
-#endif /* HAVE_LIBEV */
-
-#if defined(HAVE_LIBEV) || defined(HAVE_LIBEVENT)
-
-    if (!m->dispatcher) {
-        free(m);
-        return NULL;
-    }
-
-#endif /* HAVE_LIBEV || HAVE_LIBEVENT */
-
     Logger *log = NULL;
 
     if (options->log_callback) {
@@ -2078,12 +2056,6 @@ void kill_messenger(Messenger *m)
     for (i = 0; i < m->numfriends; ++i) {
         clear_receipts(m, i);
     }
-
-#ifdef HAVE_LIBEV
-    ev_loop_destroy(m->dispatcher);
-#elif HAVE_LIBEVENT
-    event_base_free(m->dispatcher);
-#endif
 
     logger_kill(m->log);
     free(m->friendlist);

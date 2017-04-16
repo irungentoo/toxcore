@@ -67,37 +67,6 @@ const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c)
 }
 
 
-/**
- * Return number of elements of TCP connection array.
- *
- * @param tcp_c struct containing TCP_con array
- *
- * @return number of elements of TCP connection array
- */
-uint32_t tcp_connections_length(const TCP_Connections *tcp_c)
-{
-    return tcp_c->tcp_connections_length;
-}
-
-
-/**
- * Return TCP connection stored at "idx" position.
- *
- * @param tcp_c struct containing TCP_con array
- * @param idx   index of TCP connection to return (values from 0 to tcp_connections_length() - 1)
- *
- * @return TCP connection stored at "idx" position, or NULL if errors occurred
- */
-const TCP_con *tcp_connections_connection_at(const TCP_Connections *tcp_c, uint32_t idx)
-{
-    if (idx >= tcp_c->tcp_connections_length) {
-        return NULL;
-    }
-
-    return &tcp_c->tcp_connections[idx];
-}
-
-
 /* Set the size of the array to num.
  *
  *  return -1 if realloc fails.

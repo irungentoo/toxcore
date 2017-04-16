@@ -27,12 +27,6 @@
 #include "TCP_server.h"
 #include "crypto_core.h"
 
-#ifdef HAVE_LIBEV
-#include <ev.h>
-#elif HAVE_LIBEVENT
-#include <event2/event.h>
-#endif
-
 #define TCP_CONNECTION_TIMEOUT 10
 
 typedef enum {
@@ -58,15 +52,7 @@ enum {
 };
 typedef struct  {
     uint8_t status;
-    Socket  sock;
-#ifdef HAVE_LIBEV
-    struct {
-        ev_io listener;
-        struct ev_loop *dispatcher;
-    } sock_listener;
-#elif HAVE_LIBEVENT
-    struct event *sock_listener;
-#endif
+    Socket sock;
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* our public key */
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* public key of the server */
     IP_Port ip_port; /* The ip and port of the server */

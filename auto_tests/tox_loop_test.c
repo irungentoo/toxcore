@@ -1,12 +1,14 @@
-#include <check.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
+
+
+#include "helpers.h"
 
 #include "../toxcore/tox.h"
 
-#include "helpers.h"
+#include <check.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #define TCP_RELAY_PORT 33448
 /* The Travis-CI container responds poorly to ::1 as a localhost address
@@ -17,38 +19,38 @@
 #define TOX_LOCALHOST "127.0.0.1"
 #endif
 
-typedef struct {
+struct loop_test {
     int start_count, stop_count;
     pthread_mutex_t mutex;
     Tox *tox;
-} loop_test;
+};
 
 void tox_loop_cb_start(Tox *tox, void *user_data)
 {
-    loop_test *userdata = (loop_test *) user_data;
+    struct loop_test *userdata = user_data;
     pthread_mutex_lock(&userdata->mutex);
     userdata->start_count++;
 }
 
 void tox_loop_cb_stop(Tox *tox, void *user_data)
 {
-    loop_test *userdata = (loop_test *) user_data;
+    struct loop_test *userdata = user_data;
     userdata->stop_count++;
     pthread_mutex_unlock(&userdata->mutex);
 }
 
 void *tox_loop_worker(void *data)
 {
-    loop_test *userdata = (loop_test *) data;
-    tox_loop(userdata->tox, data, NULL);
-    return NULL;
+    struct loop_test *userdata = data;
+    int retval = tox_loop(userdata->tox, data);
+    return (void *)retval;
 }
 
 START_TEST(test_tox_loop)
 {
-    pthread_t worker, worker_tcp;
-    struct Tox_Options *opts = tox_options_new(NULL);
-    loop_test userdata;
+    pthread_t worker1, worker2;
+    struct Tox_Options opts;
+    struct loop_test userdata;
     uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
     int retval;
 
@@ -56,42 +58,43 @@ START_TEST(test_tox_loop)
     userdata.stop_count = 0;
     pthread_mutex_init(&userdata.mutex, NULL);
 
-    tox_options_set_tcp_port(opts, TCP_RELAY_PORT);
-    userdata.tox = tox_new(opts, NULL);
+    tox_options_default(&opts);
+    opts.tcp_port = TCP_RELAY_PORT;
+    userdata.tox = tox_new(&opts, 0);
     tox_callback_loop_begin(userdata.tox, tox_loop_cb_start);
     tox_callback_loop_end(userdata.tox, tox_loop_cb_stop);
-    pthread_create(&worker, NULL, tox_loop_worker, &userdata);
+    pthread_create(&worker1, NULL, tox_loop_worker, &userdata);
 
     tox_self_get_dht_id(userdata.tox, dpk);
 
-    tox_options_default(opts);
-    loop_test userdata_tcp;
+    tox_options_default(&opts);
+    struct loop_test userdata_tcp;
     userdata_tcp.start_count = 0;
     userdata_tcp.stop_count = 0;
     pthread_mutex_init(&userdata_tcp.mutex, NULL);
-    userdata_tcp.tox = tox_new(opts, NULL);
+    userdata_tcp.tox = tox_new(&opts, 0);
     tox_callback_loop_begin(userdata_tcp.tox, tox_loop_cb_start);
     tox_callback_loop_end(userdata_tcp.tox, tox_loop_cb_stop);
-    pthread_create(&worker_tcp, NULL, tox_loop_worker, &userdata_tcp);
+    pthread_create(&worker2, NULL, tox_loop_worker, &userdata_tcp);
 
     pthread_mutex_lock(&userdata_tcp.mutex);
-    TOX_ERR_BOOTSTRAP error;
-    ck_assert_msg(tox_add_tcp_relay(userdata_tcp.tox, TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "Add relay error, %i",
+    TOX_ERR_BOOTSTRAP error = 0;
+    ck_assert_msg(tox_add_tcp_relay(userdata_tcp.tox, TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i",
                   error);
-    ck_assert_msg(tox_bootstrap(userdata_tcp.tox, TOX_LOCALHOST, 33445, dpk, &error), "Bootstrap error, %i", error);
+    ck_assert_msg(tox_bootstrap(userdata_tcp.tox, TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
     pthread_mutex_unlock(&userdata_tcp.mutex);
 
     sleep(10);
 
     tox_loop_stop(userdata.tox);
-    pthread_join(worker, (void **)&retval);
+    pthread_join(worker1, (void **)&retval);
     ck_assert_msg(retval == 0, "tox_loop didn't return 0");
 
     tox_kill(userdata.tox);
     ck_assert_msg(userdata.start_count == userdata.stop_count, "start and stop must match");
 
     tox_loop_stop(userdata_tcp.tox);
-    pthread_join(worker_tcp, (void **)&retval);
+    pthread_join(worker2, (void **)&retval);
     ck_assert_msg(retval == 0, "tox_loop didn't return 0");
 
     tox_kill(userdata_tcp.tox);
@@ -100,9 +103,9 @@ START_TEST(test_tox_loop)
 END_TEST
 
 #ifdef TRAVIS_ENV
-static uint8_t timeout_mux = 20;
+uint8_t timeout_mux = 20;
 #else
-static uint8_t timeout_mux = 10;
+uint8_t timeout_mux = 10;
 #endif
 
 static Suite *tox_suite(void)

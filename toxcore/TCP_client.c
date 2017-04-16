@@ -985,17 +985,6 @@ void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
 
     wipe_priority_list(TCP_connection);
     kill_sock(TCP_connection->sock);
-
-#ifdef HAVE_LIBEV
-    ev_io_stop(TCP_connection->sock_listener.dispatcher, &TCP_connection->sock_listener.listener);
-#elif HAVE_LIBEVENT
-
-    if (TCP_connection->sock_listener) {
-        event_free(TCP_connection->sock_listener);
-    }
-
-#endif
-
     crypto_memzero(TCP_connection, sizeof(TCP_Client_Connection));
     free(TCP_connection);
 }

@@ -55,16 +55,12 @@ libtoxcore_la_CFLAGS =  -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
                         $(LIBSODIUM_CFLAGS) \
                         $(NACL_CFLAGS) \
-                        $(LIBEV_CFLAGS) \
-                        $(LIBEVENT_CFLAGS) \
                         $(PTHREAD_CFLAGS)
 
 libtoxcore_la_LDFLAGS = $(LT_LDFLAGS) \
                         $(EXTRA_LT_LDFLAGS) \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
-                        $(LIBEV_LDFLAGS) \
-                        $(LIBEVENT_LDFLAGS) \
                         $(MATH_LDFLAGS) \
                         $(RT_LIBS) \
                         $(WINSOCK2_LIBS)
@@ -72,8 +68,6 @@ libtoxcore_la_LDFLAGS = $(LT_LDFLAGS) \
 libtoxcore_la_LIBADD =  $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NAC_LIBS) \
-                        $(LIBEV_LIBS) \
-                        $(LIBEVENT_LIBS) \
                         $(PTHREAD_LIBS)
 
 if SET_SO_VERSION

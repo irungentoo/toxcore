@@ -2,8 +2,6 @@ option(ENABLE_SHARED "Build shared (dynamic) libraries for all modules" ON)
 option(ENABLE_STATIC "Build static libraries for all modules" ON)
 option(COMPILE_AS_CXX "Compile all C code as C++ code" OFF)
 
-include(FindPackageHandleStandardArgs)
-
 if(NOT ENABLE_SHARED AND NOT ENABLE_STATIC)
   message(WARNING
     "Both static and shared libraries are disabled; "
@@ -50,31 +48,6 @@ function(pkg_use_module mod pkg)
       set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -isystem ${dir}" PARENT_SCOPE)
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${dir}" PARENT_SCOPE)
     endforeach()
-  else()
-    set(${mod}_DEFINITIONS ${${mod}_CFLAGS_OTHER})
-    find_path(${mod}_INCLUDE_DIR NAMES ${ARGV1}.h
-      HINTS ${${mod}_INCLUDEDIR} ${${mod}_INCLUDE_DIRS}
-      PATH_SUFFIXES ${ARGV1})
-    find_library(${mod}_LIBRARY NAMES ${ARGV1} lib${ARGV1}
-      HINTS ${${mod}_LIBDIR} ${${mod}_LIBRARY_DIRS})
-    find_package_handle_standard_args(${mod} DEFAULT_MSG
-      ${mod}_LIBRARY ${mod}_INCLUDE_DIR)
-
-    if(${mod}_FOUND)
-      mark_as_advanced(${mod}_INCLUDE_DIR ${mod}_LIBRARY)
-      set(${mod}_LIBRARIES ${${mod}_LIBRARY} PARENT_SCOPE)
-      set(${mod}_INCLUDE_DIRS ${${mod}_INCLUDE_DIR} PARENT_SCOPE)
-      set(${mod}_FOUND TRUE PARENT_SCOPE)
-      link_directories(${${mod}_LIBRARY_DIRS})
-      include_directories(${${mod}_INCLUDE_DIRS})
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${${mod}_CFLAGS_OTHER}" PARENT_SCOPE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${${mod}_CFLAGS_OTHER}" PARENT_SCOPE)
-
-      foreach(dir ${${mod}_INCLUDE_DIRS})
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -isystem ${dir}" PARENT_SCOPE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${dir}" PARENT_SCOPE)
-      endforeach()
-    endif()
   endif()
 endfunction()
 
