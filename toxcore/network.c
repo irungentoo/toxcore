@@ -674,6 +674,8 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     struct sockaddr_storage addr;
     size_t addrsize;
 
+    memset(&addr, 0, sizeof(struct sockaddr_storage));
+
     if (temp->family == AF_INET) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
 

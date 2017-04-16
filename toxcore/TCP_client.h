@@ -58,7 +58,7 @@ enum {
 };
 typedef struct  {
     uint8_t status;
-    Socket  sock;
+    Socket sock;
 #ifdef HAVE_LIBEV
     struct {
         ev_io listener;
