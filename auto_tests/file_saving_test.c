@@ -29,9 +29,9 @@
 #include "../toxcore/tox.h"
 #include "../toxencryptsave/toxencryptsave.h"
 
-static const char *pphrase = "bar", *name = "foo";
+static const char *pphrase = "bar", *name = "foo", *savefile = "./save";
 
-static void tse(void)
+static void save_data_encrypted(void)
 {
     struct Tox_Options options;
     tox_options_default(&options);
@@ -39,27 +39,27 @@ static void tse(void)
 
     tox_self_set_name(t, (const uint8_t *)name, strlen(name), NULL);
 
-    FILE *f = fopen("save", "w");
+    FILE *f = fopen(savefile, "w");
 
-    off_t sz = tox_get_savedata_size(t);
-    uint8_t *clear = (uint8_t *)malloc(sz);
+    off_t size = tox_get_savedata_size(t);
+    uint8_t *clear = (uint8_t *)malloc(size);
 
     /*this function does not write any data at all*/
     tox_get_savedata(t, clear);
 
-    sz += TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
-    uint8_t *cipher = (uint8_t *)malloc(sz);
+    size += TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+    uint8_t *cipher = (uint8_t *)malloc(size);
 
     TOX_ERR_ENCRYPTION eerr;
 
-    if (!tox_pass_encrypt(clear, sz - TOX_PASS_ENCRYPTION_EXTRA_LENGTH, (const uint8_t *)pphrase, strlen(pphrase), cipher,
+    if (!tox_pass_encrypt(clear, size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH, (const uint8_t *)pphrase, strlen(pphrase), cipher,
                           &eerr)) {
         fprintf(stderr, "error: could not encrypt, error code %d\n", eerr);
         exit(4);
     }
 
-    size_t wv = fwrite(cipher, sizeof(*cipher), sz, f);
-    printf("written wv = %li of %li\n", wv, sz);
+    size_t written_value = fwrite(cipher, sizeof(*cipher), size, f);
+    printf("written written_value = %li of %li\n", written_value, size);
 
     free(cipher);
     free(clear);
@@ -67,21 +67,21 @@ static void tse(void)
     tox_kill(t);
 }
 
-static void tsd(void)
+static void load_data_decrypted(void)
 {
-    FILE *f = fopen("save", "r");
+    FILE *f = fopen(savefile, "r");
     fseek(f, 0, SEEK_END);
-    long sz = ftell(f);
+    long size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    uint8_t *cipher = (uint8_t *)malloc(sz);
-    uint8_t *clear = (uint8_t *)malloc(sz - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
-    size_t rv = fread(cipher, sizeof(*cipher), sz, f);
-    printf("read rv = %li of %li\n", rv, sz);
+    uint8_t *cipher = (uint8_t *)malloc(size);
+    uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
+    size_t read_value = fread(cipher, sizeof(*cipher), size, f);
+    printf("read read_vavue = %li of %li\n", read_value, size);
 
     TOX_ERR_DECRYPTION derr;
 
-    if (!tox_pass_decrypt(cipher, sz, (const uint8_t *)pphrase, strlen(pphrase), clear, &derr)) {
+    if (!tox_pass_decrypt(cipher, size, (const uint8_t *)pphrase, strlen(pphrase), clear, &derr)) {
         fprintf(stderr, "error: could not decrypt, error code %d\n", derr);
         exit(3);
     }
@@ -92,7 +92,7 @@ static void tsd(void)
 
     tox_options_set_savedata_type(&options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
-    tox_options_set_savedata_data(&options, clear, sz);
+    tox_options_set_savedata_data(&options, clear, size);
 
     TOX_ERR_NEW err;
 
@@ -120,10 +120,10 @@ static void tsd(void)
 
 int main(void)
 {
-    tse();
-    tsd();
+    save_data_encrypted();
+    load_data_decrypted();
 
-    int ret = remove("./save");
+    int ret = remove(savefile);
 
     if (ret != 0) {
         fprintf(stderr, "error: could not remove savefile\n");
