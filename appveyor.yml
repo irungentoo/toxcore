@@ -1,15 +1,26 @@
+cache:
+- '%APPDATA%\downloads'
+
 install:
 # TODO(iphydf): Remove this when appveyor gets curl back, which it should have
 # according to https://www.appveyor.com/docs/how-to/download-file/.
 - choco install curl
 - refreshenv
-- mkdir libsodium && cd libsodium
-- curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.11-msvc.zip -o libsodium.zip
-- unzip libsodium.zip
+- if not exist %APPDATA%\downloads mkdir %APPDATA%\downloads
+# libcheck
+- if not exist %APPDATA%\downloads\check.zip curl -L https://github.com/libcheck/check/archive/0.11.0.zip -o %APPDATA%\downloads\check.zip
+- unzip %APPDATA%\downloads\check.zip && cd check-0.11.0
+- if not exist "%PROGRAMFILES%\check\include\check.h" cmake . && msbuild INSTALL.vcxproj
 - cd ..
+# libsodium
+- mkdir libsodium && cd libsodium
+- if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.12-msvc.zip -o %APPDATA%\downloads\libsodium.zip
+- unzip %APPDATA%\downloads\libsodium.zip
+- cd ..
+# pthreads-win32
 - mkdir pthreads-win32 && cd pthreads-win32
-- curl ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o pthreads.zip
-- unzip pthreads.zip
+- if not exist %APPDATA%\downloads\pthreads.zip curl -L ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o %APPDATA%\downloads\pthreads.zip
+- unzip %APPDATA%\downloads\pthreads.zip
 - cd ..
 
 before_build:
@@ -17,6 +28,10 @@ before_build:
 
 build:
   project: INSTALL.vcxproj
+
+# TODO(iphydf): Tests all segfault on Windows at the moment.
+#test_script:
+#- ctest -C Debug
 
 branches:
   only:

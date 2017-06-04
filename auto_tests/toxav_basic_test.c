@@ -4,7 +4,7 @@
 #include "config.h"
 #endif
 
-#include "helpers.h"
+#include "check_compat.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -21,6 +21,7 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
+#include "helpers.h"
 
 #define TEST_REGULAR_AV 1
 #define TEST_REGULAR_A 1

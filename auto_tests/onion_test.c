@@ -4,7 +4,8 @@
 #include "config.h"
 #endif
 
-#include <check.h>
+#include "check_compat.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

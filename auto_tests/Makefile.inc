@@ -123,4 +123,5 @@ tox_strncasecmp_test_CFLAGS = $(AUTOTEST_CFLAGS)
 tox_strncasecmp_test_LDADD = $(AUTOTEST_LDADD)
 
 
+EXTRA_DIST += $(top_srcdir)/auto_tests/check_compat.h
 EXTRA_DIST += $(top_srcdir)/auto_tests/helpers.h

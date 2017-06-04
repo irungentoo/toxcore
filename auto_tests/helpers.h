@@ -4,25 +4,25 @@
 #include "../toxcore/tox.h"
 
 #include <assert.h>
-#include <check.h>
 #include <stdio.h>
+#include <string.h>
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <windows.h>
 #define c_sleep(x) Sleep(x)
 #else
 #include <unistd.h>
-#define c_sleep(x) usleep(1000*(x))
+#define c_sleep(x) usleep(1000 * (x))
 #endif
 
 #define DEFTESTCASE(NAME)                   \
     TCase *tc_##NAME = tcase_create(#NAME); \
     tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME);
+    suite_add_tcase(s, tc_##NAME)
 
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT) \
-    DEFTESTCASE(NAME) \
-    tcase_set_timeout(tc_##NAME, TIMEOUT);
+#define DEFTESTCASE_SLOW(NAME, TIMEOUT)     \
+    DEFTESTCASE(NAME);                      \
+    tcase_set_timeout(tc_##NAME, TIMEOUT)
 
 static const char *tox_log_level_name(TOX_LOG_LEVEL level)
 {

@@ -4,7 +4,7 @@
 #include "config.h"
 #endif
 
-#include "helpers.h"
+#include "check_compat.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -20,6 +20,8 @@
 #include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
+
+#include "helpers.h"
 
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined(WIN32)
 #include <pthread.h>

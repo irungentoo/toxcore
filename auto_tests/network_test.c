@@ -2,7 +2,8 @@
 #include "config.h"
 #endif
 
-#include <check.h>
+#include "check_compat.h"
+
 #include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>

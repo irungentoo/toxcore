@@ -2,11 +2,9 @@
 #include "config.h"
 #endif
 
-#include <check.h>
-#include <stdint.h>
+#include "check_compat.h"
+
 #include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
 #include <time.h>
 
 #include "helpers.h"

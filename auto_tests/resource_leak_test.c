@@ -1,8 +1,8 @@
-#include "helpers.h"
-
 #if defined(__AIX__)
-#   define _XOPEN_SOURCE 1
+#define _XOPEN_SOURCE 1
 #endif
+
+#include "helpers.h"
 
 // See man 2 sbrk.
 #if _BSD_SOURCE || _SVID_SOURCE || \

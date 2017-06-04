@@ -4,13 +4,15 @@
 #include "config.h"
 #endif
 
+#include "check_compat.h"
+
+#include <sys/param.h>
+#include <time.h>
+
 #include "helpers.h"
 
 #include "../toxcore/DHT.c"
 #include "../toxcore/tox.h"
-
-#include <sys/param.h>
-#include <time.h>
 
 
 // These tests currently fail.

@@ -2,9 +2,8 @@
 #include "config.h"
 #endif
 
-#include "../toxcore/net_crypto.h"
+#include "check_compat.h"
 
-#include <check.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +11,8 @@
 #include <time.h>
 
 #include "helpers.h"
+
+#include "../toxcore/net_crypto.h"
 
 static void rand_bytes(uint8_t *b, size_t blen)
 {

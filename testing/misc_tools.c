@@ -32,12 +32,14 @@
 #include <string.h>
 
 //Sleep function (x = milliseconds)
+#ifndef c_sleep
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
 #include <windows.h>
 #define c_sleep(x) Sleep(x)
 #else
 #include <unistd.h>
 #define c_sleep(x) usleep(1000*(x))
+#endif
 #endif
 
 // You are responsible for freeing the return value!

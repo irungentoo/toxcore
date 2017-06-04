@@ -14,12 +14,13 @@
 #include "config.h"
 #endif
 
+#include "check_compat.h"
+
 #include "helpers.h"
 
 #include "../testing/misc_tools.c" // hex_string_to_bin
 #include "../toxcore/Messenger.h"
 
-#include <check.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
