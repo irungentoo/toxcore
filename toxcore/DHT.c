@@ -564,6 +564,47 @@ static uint32_t index_of_client_ip_port(const Client_data *array, uint32_t size,
     return UINT32_MAX;
 }
 
+/* Update ip_port of client if it's needed.
+ */
+static void update_client(Logger *log, int index, Client_data *client, IP_Port ip_port)
+{
+    uint64_t temp_time = unix_time();
+    if (ip_port.ip.family == AF_INET) {
+        if (!ipport_equal(&client[index].assoc4.ip_port, &ip_port)) {
+            char ip_str[IP_NTOA_LEN];
+            LOGGER_TRACE(log, "coipil[%u]: switching ipv4 from %s:%u to %s:%u", index,
+                         ip_ntoa(&client[index].assoc4.ip_port.ip, ip_str, sizeof(ip_str)),
+                         net_ntohs(client[index].assoc4.ip_port.port),
+                         ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
+                         net_ntohs(ip_port.port));
+         }
+
+         if (LAN_ip(client[index].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
+             return;
+         }
+
+         client[index].assoc4.ip_port = ip_port;
+         client[index].assoc4.timestamp = temp_time;
+    } else if (ip_port.ip.family == AF_INET6) {
+
+        if (!ipport_equal(&client[index].assoc6.ip_port, &ip_port)) {
+            char ip_str[IP_NTOA_LEN];
+            LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", index,
+                         ip_ntoa(&client[index].assoc6.ip_port.ip, ip_str, sizeof(ip_str)),
+                         net_ntohs(client[index].assoc6.ip_port.port),
+                         ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
+                         net_ntohs(ip_port.port));
+        }
+
+        if (LAN_ip(client[index].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
+            return;
+        }
+
+        client[index].assoc6.ip_port = ip_port;
+        client[index].assoc6.timestamp = temp_time;
+    }
+}
+
 /* Check if client with public_key is already in list of length length.
  * If it is then set its corresponding timestamp to current time.
  * If the id is already in the list with a different ip_port, update it.
@@ -579,42 +620,7 @@ static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t le
 
     /* if public_key is in list, find it and maybe overwrite ip_port */
     if (index != UINT32_MAX) {
-        /* Refresh the client timestamp. */
-        if (ip_port.ip.family == AF_INET) {
-            if (!ipport_equal(&list[index].assoc4.ip_port, &ip_port)) {
-                char ip_str[IP_NTOA_LEN];
-                LOGGER_TRACE(log, "coipil[%u]: switching ipv4 from %s:%u to %s:%u", index,
-                             ip_ntoa(&list[index].assoc4.ip_port.ip, ip_str, sizeof(ip_str)),
-                             net_ntohs(list[index].assoc4.ip_port.port),
-                             ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                             net_ntohs(ip_port.port));
-             }
-
-             if (LAN_ip(list[index].assoc4.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
-                 return 1;
-             }
-
-             list[index].assoc4.ip_port = ip_port;
-             list[index].assoc4.timestamp = temp_time;
-        } else if (ip_port.ip.family == AF_INET6) {
-
-            if (!ipport_equal(&list[index].assoc6.ip_port, &ip_port)) {
-                char ip_str[IP_NTOA_LEN];
-                LOGGER_TRACE(log, "coipil[%u]: switching ipv6 from %s:%u to %s:%u", index,
-                             ip_ntoa(&list[index].assoc6.ip_port.ip, ip_str, sizeof(ip_str)),
-                             net_ntohs(list[index].assoc6.ip_port.port),
-                             ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                             net_ntohs(ip_port.port));
-            }
-
-            if (LAN_ip(list[index].assoc6.ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
-                return 1;
-            }
-
-            list[index].assoc6.ip_port = ip_port;
-            list[index].assoc6.timestamp = temp_time;
-        }
-
+        update_client(log, index, &list[index], ip_port);
         return 1;
     }
 
