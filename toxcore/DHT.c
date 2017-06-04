@@ -1100,7 +1100,7 @@ static unsigned int ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_k
  *
  *  returns 1+ if the item is used in any list, 0 else
  */
-int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
+uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 {
     uint32_t used = 0;
 

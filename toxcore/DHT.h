@@ -455,6 +455,6 @@ int DHT_isconnected(const DHT *dht);
 int DHT_non_lan_connected(const DHT *dht);
 
 
-int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 
 #endif
