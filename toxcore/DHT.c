@@ -899,6 +899,30 @@ static void sort_client_list(Client_data *list, unsigned int length, const uint8
     }
 }
 
+static void update_client_with_reset(Client_data *client, const IP_Port *ip_port)
+{
+    IPPTsPng *ipptp_write = NULL;
+    IPPTsPng *ipptp_clear = NULL;
+
+    if (ip_port->ip.family == AF_INET) {
+        ipptp_write = &client->assoc4;
+        ipptp_clear = &client->assoc6;
+    } else {
+        ipptp_write = &client->assoc6;
+        ipptp_clear = &client->assoc4;
+    }
+
+    ipptp_write->ip_port = *ip_port;
+    ipptp_write->timestamp = unix_time();
+
+    ip_reset(&ipptp_write->ret_ip_port.ip);
+    ipptp_write->ret_ip_port.port = 0;
+    ipptp_write->ret_timestamp = 0;
+
+    /* zero out other address */
+    memset(ipptp_clear, 0, sizeof(*ipptp_clear));
+}
+
 /* Replace a first bad (or empty) node with this one
  *  or replace a possibly bad node (tests failed or not done yet)
  *  that is further than any other in the list
@@ -922,37 +946,18 @@ static int replace_all(Client_data    *list,
         return 0;
     }
 
-    if (store_node_ok(&list[1], public_key, comp_public_key) || store_node_ok(&list[0], public_key, comp_public_key)) {
-        sort_client_list(list, length, comp_public_key);
-
-        IPPTsPng *ipptp_write = NULL;
-        IPPTsPng *ipptp_clear = NULL;
-
-        Client_data *client = &list[0];
-
-        if (ip_port.ip.family == AF_INET) {
-            ipptp_write = &client->assoc4;
-            ipptp_clear = &client->assoc6;
-        } else {
-            ipptp_write = &client->assoc6;
-            ipptp_clear = &client->assoc4;
-        }
-
-        id_copy(client->public_key, public_key);
-        ipptp_write->ip_port = ip_port;
-        ipptp_write->timestamp = unix_time();
-
-        ip_reset(&ipptp_write->ret_ip_port.ip);
-        ipptp_write->ret_ip_port.port = 0;
-        ipptp_write->ret_timestamp = 0;
-
-        /* zero out other address */
-        memset(ipptp_clear, 0, sizeof(*ipptp_clear));
-
-        return 1;
+    if (!store_node_ok(&list[1], public_key, comp_public_key) &&
+            !store_node_ok(&list[0], public_key, comp_public_key)) {
+        return 0;
     }
 
-    return 0;
+    sort_client_list(list, length, comp_public_key);
+
+    Client_data *client = &list[0];
+    id_copy(client->public_key, public_key);
+
+    update_client_with_reset(client, &ip_port);
+    return 1;
 }
 
 /* Add node to close list.
@@ -975,33 +980,18 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bo
          * index is left as >= LCLIENT_LENGTH */
         Client_data *client = &dht->close_clientlist[(index * LCLIENT_NODES) + i];
 
-        if (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
-            if (!simulate) {
-                IPPTsPng *ipptp_write = NULL;
-                IPPTsPng *ipptp_clear = NULL;
+        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+            continue;
+        }
 
-                if (ip_port.ip.family == AF_INET) {
-                    ipptp_write = &client->assoc4;
-                    ipptp_clear = &client->assoc6;
-                } else {
-                    ipptp_write = &client->assoc6;
-                    ipptp_clear = &client->assoc4;
-                }
-
-                id_copy(client->public_key, public_key);
-                ipptp_write->ip_port = ip_port;
-                ipptp_write->timestamp = unix_time();
-
-                ip_reset(&ipptp_write->ret_ip_port.ip);
-                ipptp_write->ret_ip_port.port = 0;
-                ipptp_write->ret_timestamp = 0;
-
-                /* zero out other address */
-                memset(ipptp_clear, 0, sizeof(*ipptp_clear));
-            }
-
+        if (simulate) {
             return 0;
         }
+
+        id_copy(client->public_key, public_key);
+        update_client_with_reset(client, &ip_port);
+        return 0;
     }
 
     return -1;
