@@ -1164,15 +1164,36 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     return used;
 }
 
+static bool update_client_data(Client_data *array, size_t size, IP_Port ip_port, const uint8_t *pk)
+{
+    uint64_t temp_time = unix_time();
+    uint32_t index = index_of_client_pk(array, size, pk);
+
+    if (index == UINT32_MAX) {
+        return false;
+    }
+
+    Client_data *data = &array[index];
+    IPPTsPng *assoc;
+
+    if (ip_port.ip.family == TOX_AF_INET) {
+        assoc = &data->assoc4;
+    } else if (ip_port.ip.family == TOX_AF_INET6) {
+        assoc = &data->assoc6;
+    } else {
+        return true;
+    }
+
+    assoc->ret_ip_port = ip_port;
+    assoc->ret_timestamp = temp_time;
+    return true;
+}
+
 /* If public_key is a friend or us, update ret_ip_port
  * nodepublic_key is the id of the node that sent us this info.
  */
-static int returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *nodepublic_key)
+static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *nodepublic_key)
 {
-    uint64_t temp_time = unix_time();
-
-    uint32_t used = 0;
-
     /* convert IPv4-in-IPv6 to IPv4 */
     if ((ip_port.ip.family == AF_INET6) && IPV6_IPV4_IN_V6(ip_port.ip.ip6)) {
         ip_port.ip.family = AF_INET;
@@ -1180,43 +1201,19 @@ static int returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_key
     }
 
     if (id_equal(public_key, dht->self_public_key)) {
-        for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
-            if (id_equal(nodepublic_key, dht->close_clientlist[i].public_key)) {
-                if (ip_port.ip.family == AF_INET) {
-                    dht->close_clientlist[i].assoc4.ret_ip_port = ip_port;
-                    dht->close_clientlist[i].assoc4.ret_timestamp = temp_time;
-                } else if (ip_port.ip.family == AF_INET6) {
-                    dht->close_clientlist[i].assoc6.ret_ip_port = ip_port;
-                    dht->close_clientlist[i].assoc6.ret_timestamp = temp_time;
-                }
+        update_client_data(dht->close_clientlist, LCLIENT_LIST, ip_port, nodepublic_key);
+        return;
+    }
 
-                ++used;
-                break;
-            }
-        }
-    } else {
-        for (uint32_t i = 0; i < dht->num_friends; ++i) {
-            if (id_equal(public_key, dht->friends_list[i].public_key)) {
-                for (uint32_t j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-                    if (id_equal(nodepublic_key, dht->friends_list[i].client_list[j].public_key)) {
-                        if (ip_port.ip.family == AF_INET) {
-                            dht->friends_list[i].client_list[j].assoc4.ret_ip_port = ip_port;
-                            dht->friends_list[i].client_list[j].assoc4.ret_timestamp = temp_time;
-                        } else if (ip_port.ip.family == AF_INET6) {
-                            dht->friends_list[i].client_list[j].assoc6.ret_ip_port = ip_port;
-                            dht->friends_list[i].client_list[j].assoc6.ret_timestamp = temp_time;
-                        }
+    for (uint32_t i = 0; i < dht->num_friends; ++i) {
+        if (id_equal(public_key, dht->friends_list[i].public_key)) {
+            Client_data *client_list = dht->friends_list[i].client_list;
 
-                        ++used;
-                        goto end;
-                    }
-                }
+            if (update_client_data(client_list, MAX_FRIEND_CLIENTS, ip_port, nodepublic_key)) {
+                return;
             }
         }
     }
-
-end:
-    return 0;
 }
 
 /* Send a getnodes request.
