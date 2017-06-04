@@ -798,13 +798,13 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
 typedef struct {
     const uint8_t *base_public_key;
     Client_data entry;
-} Cmp_data;
+} DHT_Cmp_data;
 
 static int cmp_dht_entry(const void *a, const void *b)
 {
-    Cmp_data cmp1, cmp2;
-    memcpy(&cmp1, a, sizeof(Cmp_data));
-    memcpy(&cmp2, b, sizeof(Cmp_data));
+    DHT_Cmp_data cmp1, cmp2;
+    memcpy(&cmp1, a, sizeof(DHT_Cmp_data));
+    memcpy(&cmp2, b, sizeof(DHT_Cmp_data));
     Client_data entry1 = cmp1.entry;
     Client_data entry2 = cmp2.entry;
     const uint8_t *cmp_public_key = cmp1.base_public_key;
@@ -871,14 +871,14 @@ static void sort_client_list(Client_data *list, unsigned int length, const uint8
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    VLA(Cmp_data, cmp_list, length);
+    VLA(DHT_Cmp_data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; i++) {
         cmp_list[i].base_public_key = comp_public_key;
         cmp_list[i].entry = list[i];
     }
 
-    qsort(cmp_list, length, sizeof(Cmp_data), cmp_dht_entry);
+    qsort(cmp_list, length, sizeof(DHT_Cmp_data), cmp_dht_entry);
 
     for (uint32_t i = 0; i < length; i++) {
         list[i] = cmp_list[i].entry;
@@ -2736,7 +2736,7 @@ uint32_t DHT_size(const DHT *dht)
     return size32 + sizesubhead + (packed_node_size(AF_INET) * numv4) + (packed_node_size(AF_INET6) * numv6);
 }
 
-static uint8_t *z_state_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
+static uint8_t *DHT_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
     host_to_lendian32(data, len);
     data += sizeof(uint32_t);
@@ -2757,7 +2757,7 @@ void DHT_save(DHT *dht, uint8_t *data)
     uint8_t *old_data = data;
 
     /* get right offset. we write the actual header later. */
-    data = z_state_save_subheader(data, 0, 0);
+    data = DHT_save_subheader(data, 0, 0);
 
     Node_format clients[MAX_SAVED_DHT_NODES];
 
@@ -2793,7 +2793,7 @@ void DHT_save(DHT *dht, uint8_t *data)
         }
     }
 
-    z_state_save_subheader(old_data, pack_nodes(data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
+    DHT_save_subheader(old_data, pack_nodes(data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
 }
 
 /* Bootstrap from this number of nodes every time DHT_connect_after_load() is called */

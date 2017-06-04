@@ -149,7 +149,7 @@ option(BUILD_TOXAV "Whether to build the tox AV library" ON)
 
 include(Dependencies)
 
-if (BUILD_TOXAV)
+if(BUILD_TOXAV)
   if(NOT OPUS_FOUND)
     message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
   endif()
@@ -394,6 +394,16 @@ function(auto_test target)
     set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
   endif()
 endfunction()
+
+if(BUILD_TOXAV)
+  add_c_executable(auto_monolith_test auto_tests/monolith_test.c)
+  target_link_modules(auto_monolith_test
+    ${toxcore_PKGCONFIG_LIBS}
+    ${LIBSODIUM_LIBRARIES}
+    ${OPUS_LIBRARIES}
+    ${VPX_LIBRARIES})
+  add_test(NAME monolith COMMAND auto_monolith_test)
+endif()
 
 auto_test(TCP)
 auto_test(conference)

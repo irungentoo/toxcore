@@ -474,13 +474,13 @@ static int client_send_announce_request(Onion_Client *onion_c, uint32_t num, IP_
 typedef struct {
     const uint8_t *base_public_key;
     Onion_Node entry;
-} Cmp_data;
+} Onion_Client_Cmp_data;
 
-static int cmp_entry(const void *a, const void *b)
+static int onion_client_cmp_entry(const void *a, const void *b)
 {
-    Cmp_data cmp1, cmp2;
-    memcpy(&cmp1, a, sizeof(Cmp_data));
-    memcpy(&cmp2, b, sizeof(Cmp_data));
+    Onion_Client_Cmp_data cmp1, cmp2;
+    memcpy(&cmp1, a, sizeof(Onion_Client_Cmp_data));
+    memcpy(&cmp2, b, sizeof(Onion_Client_Cmp_data));
     Onion_Node entry1 = cmp1.entry;
     Onion_Node entry2 = cmp2.entry;
     const uint8_t *cmp_public_key = cmp1.base_public_key;
@@ -517,14 +517,14 @@ static void sort_onion_node_list(Onion_Node *list, unsigned int length, const ui
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    VLA(Cmp_data, cmp_list, length);
+    VLA(Onion_Client_Cmp_data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; i++) {
         cmp_list[i].base_public_key = comp_public_key;
         cmp_list[i].entry = list[i];
     }
 
-    qsort(cmp_list, length, sizeof(Cmp_data), cmp_entry);
+    qsort(cmp_list, length, sizeof(Onion_Client_Cmp_data), onion_client_cmp_entry);
 
     for (uint32_t i = 0; i < length; i++) {
         list[i] = cmp_list[i].entry;

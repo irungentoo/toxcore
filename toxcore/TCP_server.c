@@ -45,9 +45,9 @@ struct TCP_Server {
 
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t secret_key[CRYPTO_SECRET_KEY_SIZE];
-    TCP_Secure_Connection incomming_connection_queue[MAX_INCOMMING_CONNECTIONS];
-    uint16_t incomming_connection_queue_index;
-    TCP_Secure_Connection unconfirmed_connection_queue[MAX_INCOMMING_CONNECTIONS];
+    TCP_Secure_Connection incoming_connection_queue[MAX_INCOMING_CONNECTIONS];
+    uint16_t incoming_connection_queue_index;
+    TCP_Secure_Connection unconfirmed_connection_queue[MAX_INCOMING_CONNECTIONS];
     uint16_t unconfirmed_connection_queue_index;
 
     TCP_Secure_Connection *accepted_connection_array;
@@ -477,7 +477,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
 
 /* Kill a TCP_Secure_Connection
  */
-static void kill_TCP_connection(TCP_Secure_Connection *con)
+static void kill_TCP_secure_connection(TCP_Secure_Connection *con)
 {
     kill_sock(con->sock);
     crypto_memzero(con, sizeof(TCP_Secure_Connection));
@@ -927,7 +927,7 @@ static int confirm_TCP_connection(TCP_Server *TCP_server, TCP_Secure_Connection 
     int index = add_accepted(TCP_server, con);
 
     if (index == -1) {
-        kill_TCP_connection(con);
+        kill_TCP_secure_connection(con);
         return -1;
     }
 
@@ -960,19 +960,19 @@ static int accept_connection(TCP_Server *TCP_server, Socket sock)
         return -1;
     }
 
-    uint16_t index = TCP_server->incomming_connection_queue_index % MAX_INCOMMING_CONNECTIONS;
+    uint16_t index = TCP_server->incoming_connection_queue_index % MAX_INCOMING_CONNECTIONS;
 
-    TCP_Secure_Connection *conn = &TCP_server->incomming_connection_queue[index];
+    TCP_Secure_Connection *conn = &TCP_server->incoming_connection_queue[index];
 
     if (conn->status != TCP_STATUS_NO_STATUS) {
-        kill_TCP_connection(conn);
+        kill_TCP_secure_connection(conn);
     }
 
     conn->status = TCP_STATUS_CONNECTED;
     conn->sock = sock;
     conn->next_packet_length = 0;
 
-    ++TCP_server->incomming_connection_queue_index;
+    ++TCP_server->incoming_connection_queue_index;
     return index;
 }
 
@@ -1107,21 +1107,21 @@ static void do_TCP_accept_new(TCP_Server *TCP_server)
 
 static int do_incoming(TCP_Server *TCP_server, uint32_t i)
 {
-    if (TCP_server->incomming_connection_queue[i].status != TCP_STATUS_CONNECTED) {
+    if (TCP_server->incoming_connection_queue[i].status != TCP_STATUS_CONNECTED) {
         return -1;
     }
 
-    int ret = read_connection_handshake(&TCP_server->incomming_connection_queue[i], TCP_server->secret_key);
+    int ret = read_connection_handshake(&TCP_server->incoming_connection_queue[i], TCP_server->secret_key);
 
     if (ret == -1) {
-        kill_TCP_connection(&TCP_server->incomming_connection_queue[i]);
+        kill_TCP_secure_connection(&TCP_server->incoming_connection_queue[i]);
     } else if (ret == 1) {
-        int index_new = TCP_server->unconfirmed_connection_queue_index % MAX_INCOMMING_CONNECTIONS;
-        TCP_Secure_Connection *conn_old = &TCP_server->incomming_connection_queue[i];
+        int index_new = TCP_server->unconfirmed_connection_queue_index % MAX_INCOMING_CONNECTIONS;
+        TCP_Secure_Connection *conn_old = &TCP_server->incoming_connection_queue[i];
         TCP_Secure_Connection *conn_new = &TCP_server->unconfirmed_connection_queue[index_new];
 
         if (conn_new->status != TCP_STATUS_NO_STATUS) {
-            kill_TCP_connection(conn_new);
+            kill_TCP_secure_connection(conn_new);
         }
 
         memcpy(conn_new, conn_old, sizeof(TCP_Secure_Connection));
@@ -1151,7 +1151,7 @@ static int do_unconfirmed(TCP_Server *TCP_server, uint32_t i)
     }
 
     if (len == -1) {
-        kill_TCP_connection(conn);
+        kill_TCP_secure_connection(conn);
         return -1;
     }
 
@@ -1179,11 +1179,11 @@ static void do_confirmed_recv(TCP_Server *TCP_server, uint32_t i)
     }
 }
 
-static void do_TCP_incomming(TCP_Server *TCP_server)
+static void do_TCP_incoming(TCP_Server *TCP_server)
 {
     uint32_t i;
 
-    for (i = 0; i < MAX_INCOMMING_CONNECTIONS; ++i) {
+    for (i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_incoming(TCP_server, i);
     }
 }
@@ -1192,7 +1192,7 @@ static void do_TCP_unconfirmed(TCP_Server *TCP_server)
 {
     uint32_t i;
 
-    for (i = 0; i < MAX_INCOMMING_CONNECTIONS; ++i) {
+    for (i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_unconfirmed(TCP_server, i);
     }
 }
@@ -1276,12 +1276,12 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                     }
 
                     case TCP_SOCKET_INCOMING: {
-                        kill_TCP_connection(&TCP_server->incomming_connection_queue[index]);
+                        kill_TCP_secure_connection(&TCP_server->incoming_connection_queue[index]);
                         break;
                     }
 
                     case TCP_SOCKET_UNCONFIRMED: {
-                        kill_TCP_connection(&TCP_server->unconfirmed_connection_queue[index]);
+                        kill_TCP_secure_connection(&TCP_server->unconfirmed_connection_queue[index]);
                         break;
                     }
 
@@ -1324,7 +1324,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                         };
 
                         if (epoll_ctl(TCP_server->efd, EPOLL_CTL_ADD, sock_new, &ev) == -1) {
-                            kill_TCP_connection(&TCP_server->incomming_connection_queue[index_new]);
+                            kill_TCP_secure_connection(&TCP_server->incoming_connection_queue[index_new]);
                             continue;
                         }
                     }
@@ -1340,7 +1340,7 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
                         events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 40);
 
                         if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
-                            kill_TCP_connection(&TCP_server->unconfirmed_connection_queue[index_new]);
+                            kill_TCP_secure_connection(&TCP_server->unconfirmed_connection_queue[index_new]);
                             break;
                         }
                     }
@@ -1386,7 +1386,7 @@ void do_TCP_server(TCP_Server *TCP_server)
 
 #else
     do_TCP_accept_new(TCP_server);
-    do_TCP_incomming(TCP_server);
+    do_TCP_incoming(TCP_server);
     do_TCP_unconfirmed(TCP_server);
 #endif
 
