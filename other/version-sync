@@ -36,7 +36,7 @@ update 'CMakeLists.txt' 's/\(PROJECT_VERSION_PATCH "\).*"/\1'$PATCH'"/'
 #
 # calculating the SO version
 #
-# The SO version reflects changes in the ABI compatibility of the libary [1].
+# The SO version reflects changes in the ABI compatibility of the library [1].
 # The general convention on this is that the SO version is a monotonically
 # increasing number. The major version reflects breaking changes and the minor
 # number reflect non-breaking updates [2].
@@ -65,14 +65,14 @@ update 'CMakeLists.txt' 's/\(PROJECT_VERSION_PATCH "\).*"/\1'$PATCH'"/'
 LAST_SOMAJOR=1
 
 if [ $MAJOR -eq 0 ]; then
-    SOMAJOR=$MINOR
-    SOMINOR=$PATCH
+  SOMAJOR=$MINOR
+  SOMINOR=$PATCH
 
-    # update lastmajor above
-    update 'other/version-sync' 's/^\(LAST_SOMAJOR=\).*/\1'$SOMAJOR'/'
+  # update lastmajor above
+  update 'other/version-sync' 's/^\(LAST_SOMAJOR=\).*/\1'$SOMAJOR'/'
 else
-    SOMAJOR=$(expr $MAJOR + $LAST_SOMAJOR)
-    SOMINOR=$MINOR
+  SOMAJOR=$(expr $MAJOR + $LAST_SOMAJOR)
+  SOMINOR=$MINOR
 fi
 
 #
@@ -93,7 +93,7 @@ fi
 # https://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
 #
 # Passing such a version string to libtool will generate the following version number
-# on the libary binary file on GNU/Linux:
+# on the library binary file on GNU/Linux:
 #
 # (current - age).(age).(revision)
 #
@@ -116,13 +116,13 @@ fi
 #
 
 if [ $MAJOR -eq 0 ]; then
-    LIBTOOL_CURRENT=$(expr $SOMAJOR + $SOMINOR)
-    LIBTOOL_AGE=$SOMINOR
-    LIBTOOL_REVISION=0
+  LIBTOOL_CURRENT=$(expr $SOMAJOR + $SOMINOR)
+  LIBTOOL_AGE=$SOMINOR
+  LIBTOOL_REVISION=0
 else
-    LIBTOOL_CURRENT=$(expr $SOMAJOR + $SOMINOR)
-    LIBTOOL_AGE=$SOMINOR
-    LIBTOOL_REVISION=$PATCH
+  LIBTOOL_CURRENT=$(expr $SOMAJOR + $SOMINOR)
+  LIBTOOL_AGE=$SOMINOR
+  LIBTOOL_REVISION=$PATCH
 fi
 
 update 'so.version' 's/^\(CURRENT=\).*/\1'$LIBTOOL_CURRENT'/'
