@@ -114,21 +114,22 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
 
     for (uint32_t i = 0; i < MAX_KEYS_PER_SLOT; ++i) {
         int index = public_key[30] * MAX_KEYS_PER_SLOT + i;
+        Shared_Key *key = &shared_keys->keys[index];
 
-        if (shared_keys->keys[index].stored) {
-            if (public_key_cmp(public_key, shared_keys->keys[index].public_key) == 0) {
-                memcpy(shared_key, shared_keys->keys[index].shared_key, CRYPTO_SHARED_KEY_SIZE);
-                ++shared_keys->keys[index].times_requested;
-                shared_keys->keys[index].time_last_requested = unix_time();
+        if (key->stored) {
+            if (public_key_cmp(public_key, key->public_key) == 0) {
+                memcpy(shared_key, key->shared_key, CRYPTO_SHARED_KEY_SIZE);
+                ++key->times_requested;
+                key->time_last_requested = unix_time();
                 return;
             }
 
             if (num != 0) {
-                if (is_timeout(shared_keys->keys[index].time_last_requested, KEYS_TIMEOUT)) {
+                if (is_timeout(key->time_last_requested, KEYS_TIMEOUT)) {
                     num = 0;
                     curr = index;
-                } else if (num > shared_keys->keys[index].times_requested) {
-                    num = shared_keys->keys[index].times_requested;
+                } else if (num > key->times_requested) {
+                    num = key->times_requested;
                     curr = index;
                 }
             }
@@ -143,11 +144,12 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
     encrypt_precompute(public_key, secret_key, shared_key);
 
     if (num != (uint32_t)~0) {
-        shared_keys->keys[curr].stored = 1;
-        shared_keys->keys[curr].times_requested = 1;
-        memcpy(shared_keys->keys[curr].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(shared_keys->keys[curr].shared_key, shared_key, CRYPTO_SHARED_KEY_SIZE);
-        shared_keys->keys[curr].time_last_requested = unix_time();
+        Shared_Key *key = &shared_keys->keys[curr];
+        key->stored = 1;
+        key->times_requested = 1;
+        memcpy(key->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(key->shared_key, shared_key, CRYPTO_SHARED_KEY_SIZE);
+        key->time_last_requested = unix_time();
     }
 }
 
