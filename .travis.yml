@@ -2,48 +2,50 @@ language: c
 
 matrix:
   include:
-    - env: JOB=toxcore ENV=osx RUN_TESTS=true
-      os: osx
-    - env: JOB=hstox ENV=linux
-      language: haskell
-      ghc: 7.8
-    - env: JOB=autotools ENV=linux
-      compiler: gcc
-    - env: JOB=toxcore ENV=linux
-      compiler: clang
-    - env: JOB=toxcore ENV=windows ARCH=i686
-      services:
-        - docker
-    - env: JOB=toxcore ENV=windows ARCH=x86_64
-      services:
-        - docker
+  - env: JOB=toxcore ENV=osx RUN_TESTS=true
+    os: osx
+  - env: JOB=autotools ENV=linux
+    compiler: gcc
+  - env: JOB=toxcore ENV=linux
+    compiler: clang
+  - env: JOB=toxcore ENV=windows ARCH=i686
+    services:
+    - docker
+  - env: JOB=toxcore ENV=windows ARCH=x86_64
+    services:
+    - docker
   fast_finish: true
 
 addons:
   apt:
     sources:
-      - avsm
+    - avsm
+    - hvr-ghc
     packages:
-      - check
-      - libcv-dev             # For av_test.
-      - libhighgui-dev        # For av_test.
-      - libopencv-contrib-dev # For av_test.
-      - libsndfile1-dev       # For av_test.
-      - libvpx-dev
-      - opam                  # For apidsl and Frama-C.
-      - portaudio19-dev       # For av_test.
-      - texinfo               # For libconfig.
+    - alex-3.1.7            # For hstox.
+    - cabal-install-1.18    # For hstox.
+    - check                 # For tests.
+    - ghc-7.8.4             # For hstox.
+    - happy-1.19.5          # For hstox.
+    - libcv-dev             # For av_test.
+    - libhighgui-dev        # For av_test.
+    - libopencv-contrib-dev # For av_test.
+    - libsndfile1-dev       # For av_test.
+    - libvpx-dev            # For toxav.
+    - opam                  # For apidsl and Frama-C.
+    - portaudio19-dev       # For av_test.
+    - texinfo               # For libconfig.
 
 cache:
   directories:
-    # Although Travis documentation says not to rely on the value of $HOME, we
-    # rely on it here because cabal installs its packages there by default. If
-    # that ever changes, these values need to be updated.
-    # Note that we can't use shell expressions in these paths, so we can't ask
-    # cabal where its data is stored.
-    - $HOME/.cabal
-    - $HOME/.ghc
-    - $HOME/cache
+  # Although Travis documentation says not to rely on the value of $HOME, we
+  # rely on it here because cabal installs its packages there by default. If
+  # that ever changes, these values need to be updated.
+  # Note that we can't use shell expressions in these paths, so we can't ask
+  # cabal where its data is stored.
+  - $HOME/.cabal
+  - $HOME/.ghc
+  - $HOME/cache
 
 install:       other/travis/phase $JOB $ENV install
 script:        other/travis/phase $JOB $ENV script
@@ -53,12 +55,11 @@ after_failure: other/travis/phase $JOB $ENV after_failure
 notifications:
   irc:
     channels:
-      - "chat.freenode.net#toktok-status"
+    - "chat.freenode.net#toktok-status"
     template:
-      - "%{result} %{repository_name} %{build_url}"
-      - "#%{build_number} changes: %{compare_url}"
-
+    - "%{result} %{repository_name} %{build_url}"
+    - "#%{build_number} changes: %{compare_url}"
 
 branches:
   only:
-    - master
+  - master

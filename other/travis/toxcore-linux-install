@@ -36,6 +36,30 @@ sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyo
   cd - # popd
 }
 
+# Install msgpack-c.
+[ -f $CACHE_DIR/lib/libmsgpackc.so ] || {
+  git clone --depth=1 https://github.com/msgpack/msgpack-c ../msgpack-c
+  $CC -shared -fPIC -O3 -I../msgpack-c/include ../msgpack-c/src/*.c -o $CACHE_DIR/lib/libmsgpackc.so
+  cp -a ../msgpack-c/include/* $CACHE_DIR/include/
+  sed -e "s|@prefix@|$CACHE_DIR|"            \
+      -e 's|@exec_prefix@|${prefix}|'        \
+      -e 's|@libdir@|${prefix}/lib|'         \
+      -e 's|@includedir@|${prefix}/include|' \
+      -e 's|@VERSION@|2.1.1|'                \
+      ../msgpack-c/msgpack.pc.in             \
+      > $CACHE_DIR/lib/pkgconfig/msgpack.pc
+  # TODO(iphydf): This doesn't work, because the cmake version on travis is too
+  # old. We're building it manually, instead.
+  # cd ../msgpack-c # pushd
+  # cmake . -DCMAKE_INSTALL_PREFIX:PATH=$CACHE_DIR \
+  #   -DMSGPACK_ENABLE_CXX=OFF                     \
+  #   -DMSGPACK_BUILD_EXAMPLES=OFF                 \
+  #   -DMSGPACK_BUILD_TESTS=OFF
+  # make -j$NPROC
+  # make install -j$NPROC
+  # cd - # popd
+}
+
 # Install libconfig (version in ubuntu-precise too old).
 [ -f $CACHE_DIR/lib/libconfig.a ] || {
   git clone --depth=1 --branch=REL1_6_STABLE https://github.com/hyperrealm/libconfig ../libconfig
@@ -56,3 +80,16 @@ sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyo
   make install -j$NPROC
   cd - # popd
 }
+
+if [ "$CC" = "clang" ]; then
+  # An initial update is required or the cabal cache will be empty and no packages
+  # can be installed.
+  cabal update
+
+  # Install the hstox test runner after installing libsodium.
+  CABAL_FLAGS="--disable-library-profiling"
+  CABAL_FLAGS="$CABAL_FLAGS --extra-include-dirs=$CACHE_DIR/include"
+  CABAL_FLAGS="$CABAL_FLAGS --extra-lib-dirs=$CACHE_DIR/lib"
+  git clone --recursive --depth=1 https://github.com/TokTok/hs-toxcore ../hs-toxcore
+  (cd ../hs-toxcore && cabal install $CABAL_FLAGS)
+fi

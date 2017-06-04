@@ -1,3 +1,0 @@
-#!/bin/sh
-
-make -C testing/hstox check
