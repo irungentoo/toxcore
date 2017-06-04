@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.6)
 cmake_policy(VERSION 2.8.6)
 project(toxcore)
-include(CTest)
 
 set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 
@@ -38,43 +37,14 @@ message("SOVERSION: ${SOVERSION}")
 #
 ################################################################################
 
+include(AddCompilerFlag)
 include(ApiDsl)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+include(CTest)
 include(MacRpath)
 
 set(CMAKE_MACOSX_RPATH ON)
-
-function(add_cflag flag)
-  string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" var ${flag})
-  if(NOT DEFINED HAVE_C${var})
-    message(STATUS "checking for C compiler flag: ${flag}")
-  endif()
-  set(CMAKE_REQUIRED_QUIET TRUE)
-
-  check_c_compiler_flag("${flag}" HAVE_C${var} QUIET)
-  if(HAVE_C${var})
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}" PARENT_SCOPE)
-  endif()
-endfunction()
-
-function(add_cxxflag flag)
-  string(REGEX REPLACE "[^a-zA-Z0-9_]" "_" var ${flag})
-  if(NOT DEFINED HAVE_CXX${var})
-    message(STATUS "checking for C++ compiler flag: ${flag}")
-  endif()
-  set(CMAKE_REQUIRED_QUIET TRUE)
-
-  check_cxx_compiler_flag("${flag}" HAVE_CXX${var} QUIET)
-  if(HAVE_CXX${var})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}" PARENT_SCOPE)
-  endif()
-endfunction()
-
-macro(add_flag flag)
-  add_cflag(${flag})
-  add_cxxflag(${flag})
-endmacro()
 
 if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # Set standard version for compiler.
@@ -168,6 +138,10 @@ if(ASAN)
   set(CMAKE_REQUIRED_LIBRARIES "-fsanitize=address")
   add_cflag("-fsanitize=address")
   set(CMAKE_REQUIRED_LIBRARIES "${SAFE_CMAKE_REQUIRED_LIBRARIES}")
+else()
+  # Forbid undefined symbols in shared libraries. This is incompatible with
+  # asan, so it's in the else branch here.
+  add_dllflag("-Wl,-z,defs")
 endif()
 
 option(BUILD_TOXAV "Whether to build the tox AV library" ON)
@@ -370,7 +344,7 @@ if(NOT SPECTEST)
   endif()
 endif()
 
-if(SPECTEST AND MSGPACK_FOUND)
+if(MSGPACK_FOUND)
   add_c_executable(toxcore-sut
     testing/hstox/binary_decode.c
     testing/hstox/binary_encode.c
@@ -382,7 +356,9 @@ if(SPECTEST AND MSGPACK_FOUND)
   target_link_modules(toxcore-sut
     toxcore
     ${MSGPACK_LIBRARIES})
-  add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
+  if(SPECTEST)
+    add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
+  endif()
 endif()
 
 ################################################################################
