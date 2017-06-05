@@ -34,6 +34,10 @@
 #include <assert.h>
 
 
+#if !defined(INADDR_LOOPBACK)
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
 static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
