@@ -32,7 +32,8 @@
 #include <sys/epoll.h>
 #endif
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32) || defined(__MACH__)
+// Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
+#if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
 #endif
 
