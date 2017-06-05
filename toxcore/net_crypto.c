@@ -1957,6 +1957,8 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
         return tcp_handle_cookie_request(c, conn->connection_number_tcp, data, length);
     }
 
+    // This unlocks the mutex that at this point is locked by do_tcp before
+    // calling do_tcp_connections.
     pthread_mutex_unlock(&c->tcp_mutex);
     int ret = handle_packet_connection(c, id, data, length, 0, userdata);
     pthread_mutex_lock(&c->tcp_mutex);
