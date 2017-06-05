@@ -1609,6 +1609,12 @@ static int create_crypto_connection(Net_Crypto *c)
         id = c->crypto_connections_length;
         ++c->crypto_connections_length;
         memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
+        // Memsetting float/double to 0 is non-portable, so we explicitly set them to 0
+        c->crypto_connections[id].packet_recv_rate = 0;
+        c->crypto_connections[id].packet_send_rate = 0;
+        c->crypto_connections[id].last_packets_left_rem = 0;
+        c->crypto_connections[id].packet_send_rate_requested = 0;
+        c->crypto_connections[id].last_packets_left_requested_rem = 0;
 
         if (pthread_mutex_init(&c->crypto_connections[id].mutex, NULL) != 0) {
             pthread_mutex_unlock(&c->connections_mutex);
