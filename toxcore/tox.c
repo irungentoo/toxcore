@@ -238,6 +238,7 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
     int32_t count = net_getipport(address, &root, SOCK_DGRAM);
 
     if (count == -1) {
+        net_freeipport(root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
@@ -281,6 +282,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
     int32_t count = net_getipport(address, &root, SOCK_STREAM);
 
     if (count == -1) {
+        net_freeipport(root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
