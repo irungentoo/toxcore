@@ -78,6 +78,8 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_flag("-Wno-sign-compare")
     add_flag("-Wno-sign-conversion")
     add_flag("-Wno-tautological-constant-out-of-range-compare")
+    # Our use of mutexes results in a false positive, see 1bbe446
+    add_flag("-Wno-thread-safety-analysis")
     add_flag("-Wno-type-limits")
     add_flag("-Wno-undef")
     add_flag("-Wno-unreachable-code")
