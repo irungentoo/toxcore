@@ -57,7 +57,6 @@ static void cbconfmembers(Tox *tox, uint32_t conference_number, uint32_t peer_nu
 
 int main(void)
 {
-    uint32_t conference_number;
     struct Tox_Options to;
     Tox *t;
     TOX_ERR_CONFERENCE_NEW conference_err;
@@ -68,7 +67,7 @@ int main(void)
 
     tox_callback_conference_namelist_change(t, cbconfmembers);
 
-    if ((conference_number = tox_conference_new(t, &conference_err)) == UINT32_MAX) {
+    if (tox_conference_new(t, &conference_err) == UINT32_MAX) {
         tox_kill(t);
         fprintf(stderr, "error: could not create new conference, error code %d\n", conference_err);
         return 2;
