@@ -400,10 +400,10 @@ endfunction()
 if(BUILD_TOXAV)
   add_c_executable(auto_monolith_test auto_tests/monolith_test.c)
   target_link_modules(auto_monolith_test
-    ${toxcore_PKGCONFIG_LIBS}
     ${LIBSODIUM_LIBRARIES}
     ${OPUS_LIBRARIES}
-    ${VPX_LIBRARIES})
+    ${VPX_LIBRARIES}
+    ${toxcore_PKGCONFIG_LIBS})
   add_test(NAME monolith COMMAND auto_monolith_test)
 endif()
 
