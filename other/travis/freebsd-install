@@ -30,7 +30,7 @@ OLD_PWD="$PWD"
 mkdir -p /opt/freebsd/cache
 cd /opt/freebsd/cache
 
-IMAGE_NAME=FreeBSD-11.0-RELEASE-amd64.raw
+IMAGE_NAME=FreeBSD-11.1-RELEASE-amd64.raw
 
 # Sends keys to the VM as they are
 send_keys()
@@ -89,8 +89,8 @@ if [ ! -f ./$IMAGE_NAME.tgz ]; then
 
   rm -rf ./*
 
-  # https://download.freebsd.org/ftp/releases/VM-IMAGES/11.0-RELEASE/amd64/Latest/
-  DL_SHA512="1bfdef9a106e41134cf92c5ceb7f7da468293d6611d16c0bc51482a8fb3088064204bacfe6a8b1afda169d9ab63e4bbd1c9ba1de06fe3fd604864d3fb0c07326"
+  # https://download.freebsd.org/ftp/releases/VM-IMAGES/11.1-RELEASE/amd64/Latest/
+  DL_SHA512="c569776334131fdc85cd25a2a0d5aecafdc3e4b2e6e010dffaa2488d934293ce4f091f23481079dd91ad20dfd2dfc3d3487707096c59448f1d8914c5d7d6b582"
   # Selecting random mirror from https://www.freebsd.org/doc/handbook/mirrors-ftp.html
   # Note that not all mirrors listed on that page are working, so we have removed them
   # I'm so sorry, there are no arrays in sh and we are not using bash...
@@ -104,7 +104,7 @@ if [ ! -f ./$IMAGE_NAME.tgz ]; then
   DL_MIRROR_8=15
   # There are 8 mirrors
   DL_MIRROR_RANDOM=`expr $(date +%s) % 8 + 1`
-  DL_URL=ftp://ftp$(eval echo \$DL_MIRROR_$DL_MIRROR_RANDOM).us.freebsd.org/pub/FreeBSD/releases/VM-IMAGES/11.0-RELEASE/amd64/Latest/${IMAGE_NAME}.xz
+  DL_URL=ftp://ftp$(eval echo \$DL_MIRROR_$DL_MIRROR_RANDOM).us.freebsd.org/pub/FreeBSD/releases/VM-IMAGES/11.1-RELEASE/amd64/Latest/${IMAGE_NAME}.xz
 
   wget $DL_URL
 
