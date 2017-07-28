@@ -213,6 +213,8 @@ Certain other tools may not be installed, or outdated, and should also be instal
 If libsodium was installed with MacPorts, you may want to symlink the copy in /opt/local/lib to /usr/local/lib. That way you don't need special configure switches for toxcore to find libsodium, and every time MacPorts updates libsodium, the new version will be linked to toxcore every time you build:
 ```
 ln -s /opt/local/lib/libsodium.dylib /usr/local/lib/libsodium.dylib
+ln -s /opt/local/include/sodium.h /usr/local/include
+ln -s /opt/local/include/sodium /usr/local/include/
 ```
 
 Much of the build can then be done as for other platforms: git clone, and so on. Differences will be noted with (OS X 10.5 specific)
