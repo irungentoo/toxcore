@@ -21,7 +21,7 @@
 # package updates, and we do incremental system and package updates on every
 # change to the list of git tags (i.e. on every toxcore release, presumably).
 
-sudo apt-get install qemu -y
+sudo apt-get install -y qemu
 
 git tag -l --sort=version:refname > GIT_TAGS
 
@@ -30,7 +30,9 @@ OLD_PWD="$PWD"
 mkdir -p /opt/freebsd/cache
 cd /opt/freebsd/cache
 
-IMAGE_NAME=FreeBSD-11.1-RELEASE-amd64.raw
+# Make sure to update DL_SHA512 when bumping the version
+FREEBSD_VERSION="11.1"
+IMAGE_NAME=FreeBSD-${FREEBSD_VERSION}-RELEASE-amd64.raw
 
 # Sends keys to the VM as they are
 send_keys()
@@ -38,10 +40,10 @@ send_keys()
   screen -S $SCREEN_SESSION -X stuff "$1"
 }
 
-# Runs until a specific text appears on VM's screen
+# Blocks until a specific text appears on VM's screen
 wait_for()
 {
-  while ! grep "$1" screenlog.0 -q
+  while ! grep -q "$1" screenlog.0
   do
     sleep 1
   done
@@ -53,7 +55,9 @@ start_vm()
   rm -f screenlog.0
 
   # Start emulator. 2000mb RAM should be enough, right? The build machine has over 7gb.
-  screen -L -S $SCREEN_SESSION -d -m qemu-system-x86_64 -curses -m 2000 -smp $NPROC -net user,hostfwd=tcp::${SSH_PORT}-:22 -net nic $IMAGE_NAME
+  screen -L -S $SCREEN_SESSION -d -m \
+    qemu-system-x86_64 -curses -m 2000 -smp $NPROC \
+    -net user,hostfwd=tcp::${SSH_PORT}-:22 -net nic $IMAGE_NAME
 
   # Wait for the boot screen options
   wait_for "Autoboot in"
@@ -104,7 +108,7 @@ if [ ! -f ./$IMAGE_NAME.tgz ]; then
   DL_MIRROR_8=15
   # There are 8 mirrors
   DL_MIRROR_RANDOM=`expr $(date +%s) % 8 + 1`
-  DL_URL=ftp://ftp$(eval echo \$DL_MIRROR_$DL_MIRROR_RANDOM).us.freebsd.org/pub/FreeBSD/releases/VM-IMAGES/11.1-RELEASE/amd64/Latest/${IMAGE_NAME}.xz
+  DL_URL=ftp://ftp$(eval echo \$DL_MIRROR_$DL_MIRROR_RANDOM).us.freebsd.org/pub/FreeBSD/releases/VM-IMAGES/${FREEBSD_VERSION}-RELEASE/amd64/Latest/${IMAGE_NAME}.xz
 
   wget $DL_URL
 
@@ -129,7 +133,7 @@ if [ ! -f ./$IMAGE_NAME.tgz ]; then
     # \[1B is a control escape sequence for a new line in the terminal.
     # We want to wait for <new-line>$RANDOM_STR instead of just $RANDOM_STR because
     # $RANDOM_STR we have inputted with send_keys above would appear in the screenlog.0
-    # file and we don't want to much our input.
+    # file and we don't want to match our input, we want to match the echo's output.
     # The .\? optionally matches any character. Sometimes it happens that there is some
     # random character inserved between the new line control escape sequence and $RANDOM_STR.
     wait_for "\[1B.\?$RANDOM_STR"
@@ -166,19 +170,31 @@ if [ ! -f ./$IMAGE_NAME.tgz ]; then
 '
 
   # Update system
-  RUN freebsd-update --not-running-from-cron fetch
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron fetch
   # It fails if there is nothing to install, so we make it always succeed with true
-  RUN freebsd-update --not-running-from-cron install || true
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron install || true
 
   # Update packages
-  RUN env ASSUME_ALWAYS_YES=YES pkg upgrade
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES pkg upgrade
 
   # Install and set bash as the default shell for the root user
-  RUN env ASSUME_ALWAYS_YES=YES pkg install bash
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES pkg install bash
   RUN chsh -s /usr/local/bin/bash root
 
   # Install required toxcore dependencies
-  RUN ASSUME_ALWAYS_YES=YES pkg install git opus libvpx libsodium gmake cmake pkgconf check opencv2 portaudio libsndfile texinfo autotools
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES pkg install git \
+                                                  opus \
+                                                  libvpx \
+                                                  libsodium \
+                                                  gmake \
+                                                  cmake \
+                                                  pkgconf \
+                                                  check \
+                                                  opencv \
+                                                  portaudio \
+                                                  libsndfile \
+                                                  texinfo \
+                                                  autotools
 
   # === Cache the VM image ===
 
@@ -203,11 +219,11 @@ if ! diff -u ./GIT_TAGS "$OLD_PWD/GIT_TAGS" ; then
   start_vm
 
   # Update system
-  RUN freebsd-update --not-running-from-cron fetch
-  RUN freebsd-update --not-running-from-cron install || true
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron fetch
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron install || true
 
   # Update packages
-  RUN ASSUME_ALWAYS_YES=YES pkg upgrade
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES pkg upgrade
 
   # === Cache the updated VM image ===
 
