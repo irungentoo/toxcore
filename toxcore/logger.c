@@ -42,7 +42,7 @@ struct Logger {
 /**
  * Public Functions
  */
-Logger *logger_new()
+Logger *logger_new(void)
 {
     return (Logger *)calloc(1, sizeof(Logger));
 }

@@ -46,7 +46,7 @@ typedef void logger_cb(void *context, LOGGER_LEVEL level, const char *file, int 
 /**
  * Creates a new logger with logging disabled (callback is NULL) by default.
  */
-Logger *logger_new();
+Logger *logger_new(void);
 
 void logger_kill(Logger *log);
 
