@@ -8,6 +8,10 @@ NPROC=`nproc`
 CURDIR=/root
 RUN_TESTS=true
 MAKE=gmake
+# A lot of tests fail and run for the full 2 minutes allowed, resulting in
+# Travis build timing out, so we restrict it to just 1 test run until enough
+# tests are fixed so that they succeed and don't run the full 2 minutes.
+MAX_TEST_RETRIES=1
 
 SCREEN_SESSION=freebsd
 SSH_PORT=10022
