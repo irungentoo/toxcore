@@ -63,10 +63,6 @@
 
 #endif
 
-struct in_addr;
-struct in6_addr;
-struct addrinfo;
-
 typedef short Family;
 
 typedef int Socket;
@@ -164,14 +160,6 @@ typedef struct {
     uint16_t port;
 }
 IP_Port;
-
-/* Convert in_addr to IP */
-void get_ip4(IP4 *ip, const struct in_addr *addr);
-void get_ip6(IP6 *ip, const struct in6_addr *addr);
-
-/* Conevrt IP to in_addr */
-void fill_addr4(IP4 ip, struct in_addr *addr);
-void fill_addr6(IP6 ip, struct in6_addr *addr);
 
 /* Convert values between host and network byte order.
  */

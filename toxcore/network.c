@@ -166,6 +166,28 @@ static int make_socktype(int type);
 static int make_family(int tox_family);
 static int make_tox_family(int family);
 
+static void get_ip4(IP4 *result, const struct in_addr *addr)
+{
+    result->uint32 = addr->s_addr;
+}
+
+static void get_ip6(IP6 *result, const struct in6_addr *addr)
+{
+    assert(sizeof(result->uint8) == sizeof(addr->s6_addr));
+    memcpy(result->uint8, addr->s6_addr, sizeof(result->uint8));
+}
+
+static void fill_addr4(IP4 ip, struct in_addr *addr)
+{
+    addr->s_addr = ip.uint32;
+}
+
+static void fill_addr6(IP6 ip, struct in6_addr *addr)
+{
+    assert(sizeof(ip.uint8) == sizeof(addr->s6_addr));
+    memcpy(addr->s6_addr, ip.uint8, sizeof(ip.uint8));
+}
+
 /* Check if socket is valid.
  *
  * return 1 if valid
@@ -356,29 +378,6 @@ static void loglogdata(Logger *log, const char *message, const uint8_t *buffer,
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
     }
-}
-
-void get_ip4(IP4 *result, const struct in_addr *addr)
-{
-    result->uint32 = addr->s_addr;
-}
-
-void get_ip6(IP6 *result, const struct in6_addr *addr)
-{
-    assert(sizeof(result->uint8) == sizeof(addr->s6_addr));
-    memcpy(result->uint8, addr->s6_addr, sizeof(result->uint8));
-}
-
-
-void fill_addr4(IP4 ip, struct in_addr *addr)
-{
-    addr->s_addr = ip.uint32;
-}
-
-void fill_addr6(IP6 ip, struct in6_addr *addr)
-{
-    assert(sizeof(ip.uint8) == sizeof(addr->s6_addr));
-    memcpy(addr->s6_addr, ip.uint8, sizeof(ip.uint8));
 }
 
 /* Basic network functions:
