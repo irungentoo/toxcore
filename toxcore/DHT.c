@@ -46,6 +46,9 @@
 /* Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 3
 
+/* Time in seconds after which punching parameters will be reset */
+#define PUNCH_RESET_TIME 40
+
 #define MAX_NORMAL_PUNCHING_TRIES 5
 
 #define NAT_PING_REQUEST    0
@@ -2127,6 +2130,12 @@ static void do_NAT(DHT *dht)
 
             if (!ip_isset(&ip)) {
                 continue;
+            }
+
+            if (dht->friends_list[i].nat.punching_timestamp + PUNCH_RESET_TIME < temp_time) {
+                dht->friends_list[i].nat.tries = 0;
+                dht->friends_list[i].nat.punching_index = 0;
+                dht->friends_list[i].nat.punching_index2 = 0;
             }
 
             uint16_t port_list[MAX_FRIEND_CLIENTS];
