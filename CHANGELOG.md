@@ -1,9 +1,17 @@
 
 
+## v0.1.10
+
+### Merged PRs:
+
+- [#564](https://github.com/TokTok/c-toxcore/pull/564) Fix Windows build
+- [#542](https://github.com/TokTok/c-toxcore/pull/542) Save bandwidth by moderating onion pinging
+
 ## v0.1.9
 
 ### Merged PRs:
 
+- [#563](https://github.com/TokTok/c-toxcore/pull/563) Release v0.1.9
 - [#561](https://github.com/TokTok/c-toxcore/pull/561) Remove unused variable
 - [#560](https://github.com/TokTok/c-toxcore/pull/560) Fix non-portable zeroing out of doubles
 - [#559](https://github.com/TokTok/c-toxcore/pull/559) Fix theoretical memory leaks
