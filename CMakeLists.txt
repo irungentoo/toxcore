@@ -41,9 +41,10 @@ include(AddCompilerFlag)
 include(ApiDsl)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
-include(CTest)
 include(MacRpath)
 include(StrictAbi)
+
+enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
 
