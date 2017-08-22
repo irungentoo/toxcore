@@ -10,7 +10,7 @@ phone_t* initPhone(uint16_t _listen_port, uint16_t _send_port);
 
 function initializes sample phone. _listen_port and _send_port are variables only meant
 for local testing. You will not have to do anything regarding to that since
-everything will be started within a mesenger.
+everything will be started within a messenger.
 
 
 Phone requires one msi session and two rtp sessions ( one for audio and one for
@@ -78,7 +78,7 @@ Hangs up active call
 ```
 int msi_answer ( msi_session_t* _session, call_type _call_type );
 ```
-Answer incomming call. _call_type set's callee call type.
+Answer incoming call. _call_type set's callee call type.
 
 ```
 int msi_cancel ( msi_session_t* _session );
@@ -88,7 +88,7 @@ Cancel current request.
 ```
 int msi_reject ( msi_session_t* _session );
 ```
-Reject incomming call.
+Reject incoming call.
 
 
 ### Now for rtp:
@@ -169,7 +169,7 @@ void *encode_audio_thread(void *arg);
 ```
 Spawns the audio encoding thread. The argument should hold a pointer to a codec_state.
 This function should only be called if audio encoding is supported (when init_send_audio returns 1).
-Audio frames are read from the selected audio capture device during intitialisation. This audio capturing can be rerouted to a different device on the fly.
+Audio frames are read from the selected audio capture device during initialisation. This audio capturing can be rerouted to a different device on the fly.
 Each audio frame is encoded into a packet, and sent via RTP. All audio frames have the same amount of samples, which is defined in AV_codec.h.
 ```
 int video_decoder_refresh(codec_state *cs, int width, int height);

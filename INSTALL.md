@@ -269,7 +269,7 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
 #### Cross-compile
 
-It's a bit challenging to build Tox and all of its dependencies nativly on Windows, so we will show an easier, less error and headache prone method of building it -- cross-compiling.
+It's a bit challenging to build Tox and all of its dependencies natively on Windows, so we will show an easier, less error and headache prone method of building it -- cross-compiling.
 
 ##### Setting up a VM
 
