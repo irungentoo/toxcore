@@ -29,6 +29,8 @@
 
 #include "util.h"
 
+#define PORTS_PER_DISCOVERY 10
+
 /* return 1 if the friendcon_id is not valid.
  * return 0 if the friendcon_id is valid.
  */
@@ -827,6 +829,8 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
     temp->net_crypto = onion_c->c;
     temp->onion_c = onion_c;
     temp->local_discovery_enabled = local_discovery_enabled;
+    // Don't include default port in port range
+    temp->next_LANport = TOX_PORTRANGE_FROM + 1;
 
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
@@ -841,7 +845,20 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
 static void LANdiscovery(Friend_Connections *fr_c)
 {
     if (fr_c->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+        const uint16_t first = fr_c->next_LANport;
+        uint16_t last = first + PORTS_PER_DISCOVERY;
+        last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
+
+        // Always send to default port
         send_LANdiscovery(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
+
+        // And check some extra ports
+        for (uint16_t port = first; port < last; port++) {
+            send_LANdiscovery(net_htons(port), fr_c->dht);
+        }
+
+        // Don't include default port in port range
+        fr_c->next_LANport = last != TOX_PORTRANGE_TO ? last : TOX_PORTRANGE_FROM + 1;
         fr_c->last_LANdiscovery = unix_time();
     }
 }
