@@ -406,7 +406,7 @@ START_TEST(test_few_clients)
     printf("tox clients messaging succeeded\n");
 
     unsigned int save_size1 = tox_get_savedata_size(tox2);
-    ck_assert_msg(save_size1 != 0 && save_size1 < 4096, "save is invalid size %u", save_size1);
+    ck_assert_msg(save_size1 != 0, "save is invalid size %u", save_size1);
     printf("%u\n", save_size1);
     VLA(uint8_t, save1, save_size1);
     tox_get_savedata(tox2, save1);
