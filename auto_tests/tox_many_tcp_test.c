@@ -74,7 +74,9 @@ START_TEST(test_many_clients_tcp)
 
     {
         TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        uint16_t port = tox_self_get_udp_port(toxes[0], &error);
+        ck_assert_msg(33445 <= port && port <= 33545,
+                      "First Tox instance did not bind to udp port inside [33445, 33545].\n");
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
         ck_assert_msg(tox_self_get_tcp_port(toxes[0], &error) == TCP_RELAY_PORT,
                       "First Tox instance did not bind to tcp port %u.\n", TCP_RELAY_PORT);
@@ -176,7 +178,9 @@ START_TEST(test_many_clients_tcp_b)
 
     {
         TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
+        uint16_t port = tox_self_get_udp_port(toxes[0], &error);
+        ck_assert_msg(33445 <= port && port <= 33545,
+                      "First Tox instance did not bind to udp port inside [33445, 33545].\n");
         ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
         ck_assert_msg(tox_self_get_tcp_port(toxes[0], &error) == TCP_RELAY_PORT,
                       "First Tox instance did not bind to tcp port %u.\n", TCP_RELAY_PORT);
