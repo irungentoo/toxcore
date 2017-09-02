@@ -283,6 +283,8 @@ class pass_Key {
  * If the passed byte arrays are smaller than required, the behaviour is
  * undefined.
  *
+ * If the cipher text pointer or the salt is NULL, this function returns false.
+ *
  * Success does not say anything about the validity of the data, only that
  * data of the appropriate size was copied.
  *
@@ -307,7 +309,7 @@ static bool get_salt(const uint8_t *ciphertext, uint8_t[PASS_SALT_LENGTH] salt) 
  * If the passed byte array is smaller than required, the behaviour is
  * undefined.
  *
- * If the cipher text pointer is NULL, this function returns false.
+ * If the data pointer is NULL, the behaviour is undefined
  *
  * @return true if the data is encrypted by this module.
  */
