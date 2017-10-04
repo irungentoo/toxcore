@@ -89,7 +89,7 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
     unsigned int i;
-    unsigned int j = 0;
+    unsigned int j = 7;
 
     for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; ++i) {
         if (pk1[i] == pk2[i]) {
