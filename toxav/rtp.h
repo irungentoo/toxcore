@@ -62,7 +62,7 @@ struct RTPHeader {
 
     /* Non-standard TOX-specific fields */
     uint16_t cpart;/* Data offset of the current part */
-    uint16_t tlen; /* Total message lenght */
+    uint16_t tlen; /* Total message length */
 } __attribute__((packed));
 
 /* Check alignment */

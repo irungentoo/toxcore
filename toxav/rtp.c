@@ -141,7 +141,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
     if (MAX_CRYPTO_DATA_SIZE > length + sizeof(struct RTPHeader) + 1) {
 
         /**
-         * The lenght is lesser than the maximum allowed lenght (including header)
+         * The length is lesser than the maximum allowed length (including header)
          * Send the packet in single piece.
          */
 
@@ -153,7 +153,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
     } else {
 
         /**
-         * The lenght is greater than the maximum allowed lenght (including header)
+         * The length is greater than the maximum allowed length (including header)
          * Send the packet in multiple pieces.
          */
 

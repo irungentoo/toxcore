@@ -246,7 +246,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
 
     if (position + length > max_sending) {
         if (m_send_reached) {
-            ck_abort_msg("Requested done file tranfer.");
+            ck_abort_msg("Requested done file transfer.");
         }
 
         length = max_sending - position;

@@ -141,7 +141,7 @@ int msi_kill(MSISession *session, Logger *log)
     m_callback_msi_packet((struct Messenger *) session->messenger, NULL, NULL);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
-        LOGGER_ERROR(session->messenger->log, "Failed to aquire lock on msi mutex");
+        LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
         return -1;
     }
 
@@ -175,7 +175,7 @@ int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint
     LOGGER_DEBUG(session->messenger->log, "Session: %p Inviting friend: %u", session, friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
-        LOGGER_ERROR(session->messenger->log, "Failed to aquire lock on msi mutex");
+        LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
         return -1;
     }
 
@@ -220,7 +220,7 @@ int msi_hangup(MSICall *call)
                  call->friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
-        LOGGER_ERROR(session->messenger->log, "Failed to aquire lock on msi mutex");
+        LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
         return -1;
     }
 
@@ -250,12 +250,12 @@ int msi_answer(MSICall *call, uint8_t capabilities)
     LOGGER_DEBUG(session->messenger->log, "Session: %p Answering call from: %u", call->session, call->friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
-        LOGGER_ERROR(session->messenger->log, "Failed to aquire lock on msi mutex");
+        LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
         return -1;
     }
 
     if (call->state != msi_CallRequested) {
-        /* Though sending in invalid state will not cause anything wierd
+        /* Though sending in invalid state will not cause anything weird
          * Its better to not do it like a maniac */
         LOGGER_ERROR(session->messenger->log, "Call is in invalid state!");
         pthread_mutex_unlock(session->mutex);
@@ -289,7 +289,7 @@ int msi_change_capabilities(MSICall *call, uint8_t capabilities)
                  call->friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
-        LOGGER_ERROR(session->messenger->log, "Failed to aquire lock on msi mutex");
+        LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
         return -1;
     }
 
