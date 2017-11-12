@@ -67,7 +67,8 @@ START_TEST(test_many_clients_tcp)
         TOX_ERR_BOOTSTRAP error = TOX_ERR_BOOTSTRAP_OK;
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i,
                       error);
-        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
+        uint16_t first_port = tox_self_get_udp_port(toxes[0], NULL);
+        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, first_port, dpk, 0), "Bootstrap error");
 
         tox_options_free(opts);
     }
@@ -171,7 +172,8 @@ START_TEST(test_many_clients_tcp_b)
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, 0),
                       "add relay error");
         tox_self_get_dht_id(toxes[0], dpk);
-        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
+        uint16_t first_port = tox_self_get_udp_port(toxes[0], NULL);
+        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, first_port, dpk, 0), "Bootstrap error");
 
         tox_options_free(opts);
     }
