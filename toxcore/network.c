@@ -138,21 +138,6 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
 
 #endif
 
-#if !defined(INADDR_LOOPBACK)
-#define INADDR_LOOPBACK 0x7f000001
-#endif
-
-const IP4 IP4_LOOPBACK = { INADDR_LOOPBACK };
-const IP6 IP6_LOOPBACK = {
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }
-};
-
-
-const IP4 IP4_BROADCAST = { INADDR_BROADCAST };
-const IP6 IP6_BROADCAST = {
-    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
-};
-
 #if TOX_INET6_ADDRSTRLEN < INET6_ADDRSTRLEN
 #error TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)
 #endif
@@ -186,6 +171,29 @@ static void fill_addr6(IP6 ip, struct in6_addr *addr)
 {
     assert(sizeof(ip.uint8) == sizeof(addr->s6_addr));
     memcpy(addr->s6_addr, ip.uint8, sizeof(ip.uint8));
+}
+
+#if !defined(INADDR_LOOPBACK)
+#define INADDR_LOOPBACK 0x7f000001
+#endif
+
+const IP4 IP4_BROADCAST = { INADDR_BROADCAST };
+const IP6 IP6_BROADCAST = {
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
+};
+
+IP4 get_ip4_loopback()
+{
+    IP4 loopback;
+    loopback.uint32 = htonl(INADDR_LOOPBACK);
+    return loopback;
+}
+
+IP6 get_ip6_loopback()
+{
+    IP6 loopback;
+    get_ip6(&loopback, &in6addr_loopback);
+    return loopback;
 }
 
 /* Check if socket is valid.
@@ -1436,4 +1444,3 @@ uint16_t net_ntohs(uint16_t hostshort)
 {
     return ntohs(hostshort);
 }
-

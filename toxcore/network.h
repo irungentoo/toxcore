@@ -132,7 +132,7 @@ typedef union {
 }
 IP4;
 
-extern const IP4 IP4_LOOPBACK;
+IP4 get_ip4_loopback(void);
 extern const IP4 IP4_BROADCAST;
 
 typedef union {
@@ -143,7 +143,7 @@ typedef union {
 }
 IP6;
 
-extern const IP6 IP6_LOOPBACK;
+IP6 get_ip6_loopback(void);
 extern const IP6 IP6_BROADCAST;
 
 typedef struct {

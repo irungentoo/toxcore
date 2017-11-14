@@ -2527,7 +2527,7 @@ void do_messenger(Messenger *m, void *userdata)
             IP_Port local_ip_port;
             local_ip_port.port = m->options.tcp_server_port;
             local_ip_port.ip.family = TOX_AF_INET;
-            local_ip_port.ip.ip4 = IP4_LOOPBACK;
+            local_ip_port.ip.ip4 = get_ip4_loopback();
             add_tcp_relay(m->net_crypto, local_ip_port,
                           tcp_server_public_key(m->tcp_server));
         }
