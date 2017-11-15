@@ -21,6 +21,29 @@
 
 #define NUM_PORTS 3
 
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
+#if !USE_IPV6
+#  undef TOX_AF_INET6
+#  define TOX_AF_INET6 TOX_AF_INET
+#  define get_ip6_loopback get_ip4_loopback
+#endif
+
+static inline IP get_loopback()
+{
+    IP ip;
+#if USE_IPV6
+    ip.family = TOX_AF_INET6;
+    ip.ip6 = get_ip6_loopback();
+#else
+    ip.family = TOX_AF_INET;
+    ip.ip4 = get_ip4_loopback();
+#endif
+    return ip;
+}
+
 static uint16_t ports[NUM_PORTS] = {1234, 33445, 25643};
 
 START_TEST(test_basic)
@@ -28,14 +51,13 @@ START_TEST(test_basic)
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
     Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
     IP_Port ip_port_loopback;
-    ip_port_loopback.ip.family = TOX_AF_INET6;
-    ip_port_loopback.ip.ip6 = get_ip6_loopback();
+    ip_port_loopback.ip = get_loopback();
     ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
 
     int ret = net_connect(sock, ip_port_loopback);
@@ -133,9 +155,7 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
     Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     IP_Port ip_port_loopback;
-    ip_port_loopback.ip.family = TOX_AF_INET6;
-    ip_port_loopback.ip.ip6.uint64[0] = 0;
-    ip_port_loopback.ip.ip4 = get_ip4_loopback();
+    ip_port_loopback.ip = get_loopback();
     ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
 
     int ret = net_connect(sock, ip_port_loopback);
@@ -215,7 +235,7 @@ START_TEST(test_some)
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
@@ -392,7 +412,7 @@ START_TEST(test_client)
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(tcp_s != NULL, "Failed to create TCP relay server");
     ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
@@ -402,8 +422,7 @@ START_TEST(test_client)
     IP_Port ip_port_tcp_s;
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
-    ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    ip_port_tcp_s.ip.ip6 = get_ip6_loopback();
+    ip_port_tcp_s.ip = get_loopback();
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn, NULL);
@@ -500,8 +519,7 @@ START_TEST(test_client_invalid)
     IP_Port ip_port_tcp_s;
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
-    ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    ip_port_tcp_s.ip.ip6 = get_ip6_loopback();
+    ip_port_tcp_s.ip = get_loopback();
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, 0);
     c_sleep(50);
     do_TCP_connection(conn, NULL);
@@ -553,7 +571,7 @@ START_TEST(test_tcp_connection)
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(public_key_cmp(tcp_server_public_key(tcp_s), self_public_key) == 0, "Wrong public key");
 
     TCP_Proxy_Info proxy_info;
@@ -569,8 +587,7 @@ START_TEST(test_tcp_connection)
     IP_Port ip_port_tcp_s;
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
-    ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    ip_port_tcp_s.ip.ip6 = get_ip6_loopback();
+    ip_port_tcp_s.ip = get_loopback();
 
     int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
@@ -662,7 +679,7 @@ START_TEST(test_tcp_connection2)
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
-    TCP_Server *tcp_s = new_TCP_server(1, NUM_PORTS, ports, self_secret_key, NULL);
+    TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, NULL);
     ck_assert_msg(public_key_cmp(tcp_server_public_key(tcp_s), self_public_key) == 0, "Wrong public key");
 
     TCP_Proxy_Info proxy_info;
@@ -678,8 +695,7 @@ START_TEST(test_tcp_connection2)
     IP_Port ip_port_tcp_s;
 
     ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
-    ip_port_tcp_s.ip.family = TOX_AF_INET6;
-    ip_port_tcp_s.ip.ip6 = get_ip6_loopback();
+    ip_port_tcp_s.ip = get_loopback();
 
     int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");

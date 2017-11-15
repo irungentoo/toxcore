@@ -25,6 +25,22 @@ static bool enable_broken_tests = false;
      memcpy(&x,swap_temp,sizeof(x)); \
     } while(0)
 
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
+static inline IP get_loopback()
+{
+    IP ip;
+#if USE_IPV6
+    ip.family = TOX_AF_INET6;
+    ip.ip6 = get_ip6_loopback();
+#else
+    ip.family = TOX_AF_INET;
+    ip.ip4 = get_ip4_loopback();
+#endif
+    return ip;
+}
 
 static void mark_bad(IPPTsPng *ipptp)
 {
@@ -615,8 +631,7 @@ loop_top:
 
     for (i = 0; i < NUM_DHT; ++i) {
         IP_Port ip_port;
-        ip_init(&ip_port.ip, 1);
-        ip_port.ip.ip6.uint8[15] = 1;
+        ip_port.ip = get_loopback();
         ip_port.port = net_htons(DHT_DEFAULT_PORT + i);
         DHT_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
     }

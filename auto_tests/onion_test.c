@@ -19,6 +19,22 @@
 
 #include "helpers.h"
 
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
+static inline IP get_loopback()
+{
+    IP ip;
+#if USE_IPV6
+    ip.family = TOX_AF_INET6;
+    ip.ip6 = get_ip6_loopback();
+#else
+    ip.family = TOX_AF_INET;
+    ip.ip4 = get_ip4_loopback();
+#endif
+    return ip;
+}
 static void do_onion(Onion *onion)
 {
     networking_poll(onion->net, NULL);
@@ -141,9 +157,7 @@ static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, ui
 
 START_TEST(test_basic)
 {
-    IP ip;
-    ip_init(&ip, 1);
-    ip.ip6.uint8[15] = 1;
+    IP ip = get_loopback();
     Onion *onion1 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34567), true));
     Onion *onion2 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34568), true));
     ck_assert_msg((onion1 != NULL) && (onion2 != NULL), "Onion failed initializing.");
@@ -281,8 +295,7 @@ typedef struct {
 
 static Onions *new_onions(uint16_t port)
 {
-    IP ip;
-    ip_init(&ip, 1);
+    IP ip = get_loopback();
     ip.ip6.uint8[15] = 1;
     Onions *on = (Onions *)malloc(sizeof(Onions));
     DHT *dht = new_DHT(NULL, new_networking(NULL, ip, port), true);
@@ -386,9 +399,7 @@ START_TEST(test_announce)
         ck_assert_msg(onions[i] != 0, "Failed to create onions. %u");
     }
 
-    IP ip;
-    ip_init(&ip, 1);
-    ip.ip6.uint8[15] = 1;
+    IP ip = get_loopback();
 
     for (i = 3; i < NUM_ONIONS; ++i) {
         IP_Port ip_port = {ip, onions[i - 1]->onion->net->port};
