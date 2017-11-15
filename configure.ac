@@ -193,6 +193,16 @@ AC_ARG_ENABLE([[epoll]],
     [enable_epoll='auto']
   )
 
+AC_ARG_ENABLE([[ipv6]],
+  [AS_HELP_STRING([[--disable-ipv6[=ARG]]], [use ipv4 in tests (yes, no, auto) [auto]])],
+    [use_ipv6=${enableval}],
+    [use_ipv6='auto']
+  )
+
+if test "$use_ipv6" != "yes"; then
+  AC_DEFINE([USE_IPV6],[0],[define to 0 to force ipv4])
+fi
+
 AX_HAVE_EPOLL
 if test "$enable_epoll" != "no"; then
   if test "${ax_cv_have_epoll}" = "yes"; then

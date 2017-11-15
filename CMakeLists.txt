@@ -148,6 +148,11 @@ else()
   add_dllflag("-Wl,-z,defs")
 endif()
 
+option(USE_IPV6 "Use IPv6 in tests" ON)
+if(NOT USE_IPV6)
+  add_definitions(-DUSE_IPV6=0)
+endif()
+
 option(BUILD_TOXAV "Whether to build the tox AV library" ON)
 
 include(Dependencies)

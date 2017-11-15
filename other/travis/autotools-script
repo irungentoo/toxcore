@@ -1,5 +1,16 @@
 #!/bin/sh
 
+if perl -e '
+    use Socket qw(PF_INET6 SOCK_STREAM pack_sockaddr_in6 IN6ADDR_LOOPBACK);
+
+    socket(S, PF_INET6, SOCK_STREAM, 0) || exit 1;
+    bind(S, pack_sockaddr_in6(0, IN6ADDR_LOOPBACK)) || exit 1;
+'; then
+    IPV6_FLAG="--enable-ipv6"
+else
+    IPV6_FLAG="--disable-ipv6"
+fi
+
 # Build toxcore with some custom flags here. Note that this does *not* run the
 # tests, so any flags passed here are irrelevant to testing. This only checks
 # that we can build toxcore with the specified flags. Tests run with default
@@ -12,6 +23,7 @@
   --enable-daemon \
   --enable-logging \
   --enable-ntox \
+  $IPV6_FLAG \
   --with-log-level=TRACE
 
 # We use make instead of RUN $MAKE here, because the autotools build will only
