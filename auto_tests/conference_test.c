@@ -89,15 +89,20 @@ group_test_restart:
     uint32_t to_comp = 234212;
     int test_run = 0;
     long long unsigned int cur_time = time(NULL);
+    struct Tox_Options *opts = tox_options_new(NULL);
+    /* FIXME: Currenly here is problems with IPv6 */
+    tox_options_set_ipv6_enabled(opts, false);
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
         tox_index[i] = i + 1;
-        toxes[i] = tox_new_log(0, 0, &tox_index[i]);
+        toxes[i] = tox_new_log(opts, 0, &tox_index[i]);
 
         ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], &g_accept_friend_request);
         tox_callback_conference_invite(toxes[i], &print_group_invite_callback);
     }
+
+    tox_options_free(opts);
 
     {
         TOX_ERR_GET_PORT error;
