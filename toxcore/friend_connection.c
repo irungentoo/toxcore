@@ -878,6 +878,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                     if (friend_con->dht_lock) {
                         DHT_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
                         friend_con->dht_lock = 0;
+                        memset(friend_con->dht_temp_pk, 0, CRYPTO_PUBLIC_KEY_SIZE);
                     }
                 }
 
