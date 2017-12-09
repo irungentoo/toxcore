@@ -36,6 +36,7 @@ addons:
     - libsndfile1-dev       # For av_test.
     - libvpx-dev            # For toxav.
     - opam                  # For apidsl and Frama-C.
+    - aspcud                # For Opam
     - portaudio19-dev       # For av_test.
     - texinfo               # For libconfig.
 
