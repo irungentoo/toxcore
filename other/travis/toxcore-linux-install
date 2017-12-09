@@ -62,7 +62,7 @@ sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyo
 
 # Install libconfig (version in ubuntu-precise too old).
 [ -f $CACHE_DIR/lib/libconfig.a ] || {
-  git clone --depth=1 --branch=REL1_6_STABLE https://github.com/hyperrealm/libconfig ../libconfig
+  git clone --depth=1 --branch=v1.7.1 https://github.com/hyperrealm/libconfig ../libconfig
   cd ../libconfig # pushd
   autoreconf -fi
   ./configure --prefix=$CACHE_DIR
