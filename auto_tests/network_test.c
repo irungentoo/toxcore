@@ -15,6 +15,10 @@
 
 #include "helpers.h"
 
+#ifndef USE_IPV6
+#define USE_IPV6 1
+#endif
+
 START_TEST(test_addr_resolv_localhost)
 {
 #ifdef __CYGWIN__
@@ -69,6 +73,7 @@ START_TEST(test_addr_resolv_localhost)
     res = addr_resolve(localhost, &ip, &extra);
     ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
+#if USE_IPV6
     ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
     ck_assert_msg(!memcmp(&ip.ip6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
@@ -76,6 +81,11 @@ START_TEST(test_addr_resolv_localhost)
     ck_assert_msg(extra.family == TOX_AF_INET, "Expected family TOX_AF_INET (%u), got %u.", TOX_AF_INET, extra.family);
     ck_assert_msg(extra.ip4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+#else
+    ck_assert_msg(ip.family == TOX_AF_INET, "Expected family TOX_AF_INET (%u), got %u.", TOX_AF_INET, ip.family);
+    ck_assert_msg(ip.ip4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
+                  ip_ntoa(&ip, ip_str, sizeof(ip_str)));
+#endif
 }
 END_TEST
 
