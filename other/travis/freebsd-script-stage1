@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# We don't want toxcore-script to run yet, it should be done during FreeBSD stage 2
+exit 0

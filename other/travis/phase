@@ -5,6 +5,13 @@ set -e -u -x
 JOB="$1"
 ENV="$2"
 PHASE="$3"
+STAGE=""
+
+set +u
+if [ ! -z "$4" ] ; then
+  STAGE="$4"
+fi
+set -u
 
 . "other/travis/env.sh"
 . "other/travis/env-$ENV.sh"
@@ -13,6 +20,9 @@ try_source() {
   SCRIPT="other/travis/$1"
   if [ -f "$SCRIPT" ]; then
     . "$SCRIPT"
+  fi
+  if [ ! -z "$STAGE" ] && [ -f "$SCRIPT-$STAGE" ]; then
+    . "$SCRIPT-$STAGE"
   fi
 }
 

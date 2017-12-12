@@ -1,0 +1,165 @@
+#!/bin/sh
+
+git tag -l --sort=version:refname > GIT_TAGS
+
+OLD_PWD="$PWD"
+
+mkdir -p /opt/freebsd/cache
+cd /opt/freebsd/cache
+
+# === Get the VM image, set it up and cache ===
+
+# Create image if it's not cached or if this build script has changed
+if [ ! -f ./$IMAGE_NAME.tgz ] || [ ! -f ./freebsd-install-stage1.sha256 ] || [ "`cat freebsd-install-stage1.sha256`" != "`sha256sum $OLD_PWD/other/travis/freebsd-install-stage1`" ]; then
+
+  rm -rf ./*
+
+  # https://download.freebsd.org/ftp/releases/VM-IMAGES/11.1-RELEASE/amd64/Latest/
+  DL_SHA512="c569776334131fdc85cd25a2a0d5aecafdc3e4b2e6e010dffaa2488d934293ce4f091f23481079dd91ad20dfd2dfc3d3487707096c59448f1d8914c5d7d6b582"
+  # Selecting random mirror from https://www.freebsd.org/doc/handbook/mirrors-ftp.html
+  # Note that not all mirrors listed on that page are working, so we have removed them
+  # I'm so sorry, there are no arrays in sh and we are not using bash...
+  DL_MIRROR_1=1
+  DL_MIRROR_2=4
+  DL_MIRROR_3=5
+  DL_MIRROR_4=6
+  DL_MIRROR_5=8
+  DL_MIRROR_6=10
+  DL_MIRROR_7=14
+  DL_MIRROR_8=15
+  # There are 8 mirrors
+  DL_MIRROR_RANDOM=`expr $(date +%s) % 8 + 1`
+  DL_URL=ftp://ftp$(eval echo \$DL_MIRROR_$DL_MIRROR_RANDOM).us.freebsd.org/pub/FreeBSD/releases/VM-IMAGES/${FREEBSD_VERSION}-RELEASE/amd64/Latest/${IMAGE_NAME}.xz
+
+  wget $DL_URL
+
+  if ! ( echo "$DL_SHA512  $IMAGE_NAME.xz" | sha512sum -c --status - ) ; then
+      echo "Error: sha512 of $IMAGE_NAME.xz doesn't match the known one"
+      exit 1
+  fi
+
+  unxz $IMAGE_NAME.xz
+
+  # With this we don't have to guess how long a command will run for and sleeping
+  # for that amount of time, risking either under sleeping or over sleeping, instead
+  # we will sleep exactly until the command is finished by printing out a unique
+  # string after the command is executed and then checking if it was printed.
+  execute_shell_and_wait()
+  {
+    # $RANDOM is a bash built-in, so we try to avoid name collision here by using ugly RANDOM_STR name
+    RANDOM_STR=$(< /dev/urandom tr -dc _A-Za-z0-9 | head -c16)
+    send_keys "$1;echo $RANDOM_STR
+
+"
+    # \[1B is a control escape sequence for a new line in the terminal.
+    # We want to wait for <new-line>$RANDOM_STR instead of just $RANDOM_STR because
+    # $RANDOM_STR we have inputted with send_keys above would appear in the screenlog.0
+    # file and we don't want to match our input, we want to match the echo's output.
+    # The .\? optionally matches any character. Sometimes it happens that there is some
+    # random character inserved between the new line control escape sequence and $RANDOM_STR.
+    wait_for "\[1B.\?$RANDOM_STR"
+  }
+
+  start_vm
+
+  # Login as root user
+  send_keys 'root
+
+'
+
+  # Wait for the prompt
+  wait_for "root@:~"
+
+  # Configure network, ssh and start changing password
+  execute_shell_and_wait 'echo "ifconfig_em0=DHCP"          >> /etc/rc.conf'
+  execute_shell_and_wait 'echo "Port 22"                    >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "PermitRootLogin yes"        >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "PermitEmptyPasswords yes"   >> /etc/ssh/sshd_config'
+  execute_shell_and_wait 'echo "sshd_enable=YES"            >> /etc/rc.conf'
+  send_keys 'sh /etc/rc.d/netif restart && sh /etc/rc.d/sshd start && passwd
+'
+
+  # Wait for the password prompt
+  wait_for "Changing local password for root"
+
+  # Reset password to empty for the passwordless ssh to work
+  send_keys '
+'
+  wait_for "New Password"
+  send_keys '
+'
+
+  # Update system
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron fetch
+  # It fails if there is nothing to install, so we make it always succeed with true
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron install || true
+
+  # Update packages
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES pkg upgrade
+
+  # Install and set bash as the default shell for the root user
+  RUN env PAGER=cat env ASSUME_ALWAYS_YES=YES pkg install bash
+  RUN chsh -s /usr/local/bin/bash root
+
+  # Install required toxcore dependencies
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES pkg install git \
+                                                  opus \
+                                                  libvpx \
+                                                  libsodium \
+                                                  gmake \
+                                                  cmake \
+                                                  pkgconf \
+                                                  check \
+                                                  opencv \
+                                                  portaudio \
+                                                  libsndfile \
+                                                  texinfo \
+                                                  autotools
+
+  # === Cache the VM image ===
+
+  stop_vm
+
+  # Create cache
+  tar -Sczvf $IMAGE_NAME.tgz $IMAGE_NAME
+  rm $IMAGE_NAME
+  rm screenlog.0
+
+  cp "$OLD_PWD/GIT_TAGS" .
+  sha256sum "$OLD_PWD/other/travis/freebsd-install-stage1" > freebsd-install-stage1.sha256
+
+  ls -lh
+fi
+
+# === Update the image on new version (tag) of toxcore ===
+
+if ! diff -u ./GIT_TAGS "$OLD_PWD/GIT_TAGS" ; then
+  # Extract the cached image
+  tar -Sxzvf $IMAGE_NAME.tgz
+
+  start_vm
+
+  # Update system
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron fetch
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron install || true
+
+  # Update packages
+  RUN PAGER=cat ASSUME_ALWAYS_YES=YES pkg upgrade
+
+  # === Cache the updated VM image ===
+
+  stop_vm
+
+  # Create/Update cache
+  rm $IMAGE_NAME.tgz
+  tar -Sczvf $IMAGE_NAME.tgz $IMAGE_NAME
+  rm $IMAGE_NAME
+  rm screenlog.0
+
+  cp "$OLD_PWD/GIT_TAGS" .
+
+  ls -lh
+fi
+
+cd "$OLD_PWD"
