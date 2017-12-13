@@ -10,10 +10,12 @@ matrix:
     compiler: clang
   - stage: "Stage 1"
     env: JOB=toxcore ENV=windows ARCH=i686
+    group: deprecated-2017Q4
     services:
     - docker
   - stage: "Stage 1"
     env: JOB=toxcore ENV=windows ARCH=x86_64
+    group: deprecated-2017Q4
     services:
     - docker
   - stage: "Stage 1"
