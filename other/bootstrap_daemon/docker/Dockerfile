@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM debian:stretch-slim
 
 WORKDIR /tmp/tox
 
@@ -16,12 +16,12 @@ RUN export BUILD_PACKAGES="\
       python3" && \
     export RUNTIME_PACKAGES="\
       libconfig9 \
-      libsodium13" && \
+      libsodium18" && \
 # get all deps
     apt-get update && apt-get install -y $BUILD_PACKAGES $RUNTIME_PACKAGES && \
 # install toxcore and daemon
-    git clone https://github.com/irungentoo/toxcore && \
-    cd toxcore && \
+    git clone https://github.com/TokTok/c-toxcore && \
+    cd c-toxcore && \
     ./autogen.sh && \
     ./configure --enable-daemon && \
     make -j`nproc` && \
@@ -39,9 +39,9 @@ RUN export BUILD_PACKAGES="\
 # add bootstrap nodes from https://nodes.tox.chat/
     python3 other/bootstrap_daemon/docker/get-nodes.py >> /etc/tox-bootstrapd.conf && \
 # perform cleanup
-    export AUTO_ADDED_PACKAGES="$(apt-mark showauto)" && \
-    apt-get remove --purge -y $BUILD_PACKAGES $AUTO_ADDED_PACKAGES && \
+    apt-get remove --purge -y $BUILD_PACKAGES && \
     apt-get clean && \
+    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* && \
     cd / && \
     rm -rf /tmp/*
