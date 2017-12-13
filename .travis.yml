@@ -24,6 +24,11 @@ matrix:
     sudo: required
     install:       other/travis/phase $JOB $ENV install       stage1
     script:        other/travis/phase $JOB $ENV script        stage1
+  - stage: "Stage 1"
+    env: JOB=tox-bootstrapd-docker ENV=linux
+    services:
+    - docker
+    sudo: required
   - stage: "Stage 2"
     env: JOB=toxcore ENV=freebsd
     dist: trusty
