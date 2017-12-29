@@ -243,7 +243,6 @@ If it worked, you should have all the toxcore dylibs in /usr/local/lib: (besides
 $ ls -la /usr/local/lib/libtox*.dylib
 libtoxav.0.dylib
 libtoxcore.0.dylib
-libtoxdns.0.dylib
 libtoxencryptsave.0.dylib
 to check what CPU architecture they're compiled for:
 $ lipo -i /usr/local/lib/libtoxencryptsave.0.dylib
@@ -414,7 +413,6 @@ mkdir tmp
 cd tmp
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxcore.a
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxav.a
-$WINDOWS_TOOLCHAIN-ar x ../lib/libtoxdns.a
 $WINDOWS_TOOLCHAIN-ar x ../lib/libtoxencryptsave.a
 $WINDOWS_TOOLCHAIN-gcc -Wl,--export-all-symbols -Wl,--out-implib=libtox.dll.a -shared -o libtox.dll *.o ../lib/*.a /usr/$WINDOWS_TOOLCHAIN/lib/libwinpthread.a -liphlpapi -lws2_32 -static-libgcc
 ```

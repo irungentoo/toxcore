@@ -403,8 +403,6 @@ void net_freeipport(IP_Port *ip_ports);
  */
 int bind_to_port(Socket sock, int family, uint16_t port);
 
-size_t net_sendto_ip4(Socket sock, const char *buf, size_t n, IP_Port ip_port);
-
 /* Initialize networking.
  * bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).

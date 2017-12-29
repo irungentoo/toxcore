@@ -6,11 +6,11 @@
 # - A number of small libraries (.a/.so/...) containing independent components
 #   of toxcore. E.g. the DHT has its own library, and the system/network
 #   abstractions are in their own library as well. These libraries are not
-#   installed on `make install`. The toxdns, toxav, and toxencryptsave
-#   libraries are also not installed.
+#   installed on `make install`. The toxav, and toxencryptsave libraries are
+#   also not installed.
 # - A number of small programs, statically linked if possible.
-# - One big library containing all of the toxcore, toxav, toxdns, and
-#   toxencryptsave code.
+# - One big library containing all of the toxcore, toxav, and toxencryptsave
+#   code.
 #
 ################################################################################
 
@@ -328,14 +328,9 @@ endif()
 
 ################################################################################
 #
-# :: ToxDNS and block encryption libraries
+# :: Block encryption libraries
 #
 ################################################################################
-
-add_submodule(toxcore toxdns
-  toxdns/toxdns.c)
-target_link_modules(toxdns toxnetwork)
-set(toxdns_API_HEADERS ${toxcore_SOURCE_DIR}/toxdns/toxdns.h^tox)
 
 apidsl(toxencryptsave/toxencryptsave.api.h)
 add_submodule(toxcore toxencryptsave
@@ -569,9 +564,6 @@ target_link_modules(DHT_test toxdht)
 
 add_c_executable(Messenger_test testing/Messenger_test.c)
 target_link_modules(Messenger_test toxmessenger)
-
-add_c_executable(dns3_test testing/dns3_test.c)
-target_link_modules(dns3_test toxdns)
 
 if(NOT WIN32)
   add_c_executable(tox_sync testing/tox_sync.c)

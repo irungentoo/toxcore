@@ -8,7 +8,7 @@ This directory can house various tools and utilities.
 
 Run from ``toxcore`` directory:
 ```bash
-astyle --options=./other/astyle/astylerc ./toxcore/*.c ./toxcore/*.h ./toxdns/*.c ./toxdns/*.h ./testing/*.c ./toxav/*.c ./toxav/*.h ./other/*.c ./other/bootstrap_daemon/*.c ./toxencryptsave/*.c ./toxencryptsave/*.h ./auto_tests/*.c
+astyle --options=./other/astyle/astylerc ./toxcore/*.c ./toxcore/*.h ./testing/*.c ./toxav/*.c ./toxav/*.h ./other/*.c ./other/bootstrap_daemon/*.c ./toxencryptsave/*.c ./toxencryptsave/*.h ./auto_tests/*.c
 ```
 
 ### For selected file
