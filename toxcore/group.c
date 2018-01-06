@@ -1832,8 +1832,8 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
     uint64_t comp_val_old = ~0;
 
     for (i = 0; i < num_connected_closest; ++i) {
-        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE] = {0};
+        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE] = {0};
         get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[connected_closest[i]].number);
         uint64_t comp_val = calculate_comp_value(g->real_pk, real_pk);
 
@@ -1852,8 +1852,8 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, int groupnumber
     comp_val_old = ~0;
 
     for (i = 0; i < num_connected_closest; ++i) {
-        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE] = {0};
+        uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE] = {0};
         get_friendcon_public_keys(real_pk, dht_temp_pk, g_c->fr_c, g->close[connected_closest[i]].number);
         uint64_t comp_val = calculate_comp_value(real_pk, g->real_pk);
 

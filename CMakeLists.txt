@@ -453,13 +453,19 @@ function(auto_test target)
 endfunction()
 
 if(BUILD_TOXAV)
-  add_c_executable(auto_monolith_test auto_tests/monolith_test.c)
+  add_c_executable(auto_monolith_test
+    auto_tests/monolith_test.c
+    ${ANDROID_CPU_FEATURES})
   target_link_modules(auto_monolith_test
     ${LIBSODIUM_LIBRARIES}
     ${OPUS_LIBRARIES}
     ${VPX_LIBRARIES}
     ${toxcore_PKGCONFIG_LIBS})
   add_test(NAME monolith COMMAND auto_monolith_test)
+
+  if(ANDROID_CPU_FEATURES)
+    target_compile_definitions(auto_monolith_test PRIVATE -Dtypeof=__typeof__)
+  endif()
 endif()
 
 auto_test(TCP)
