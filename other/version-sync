@@ -62,7 +62,7 @@ update 'CMakeLists.txt' 's/\(PROJECT_VERSION_PATCH "\).*"/\1'$PATCH'"/'
 
 # the last major version number from the 0.x release cycle
 # this must be constant starting from the 1.0 release
-LAST_SOMAJOR=1
+LAST_SOMAJOR=2
 
 if [ $MAJOR -eq 0 ]; then
   SOMAJOR=$MINOR

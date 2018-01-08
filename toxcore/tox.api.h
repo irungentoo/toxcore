@@ -173,13 +173,13 @@ const VERSION_MAJOR                = 0;
  * breaking the API or ABI. Set to 0 when the major version number is
  * incremented.
  */
-const VERSION_MINOR                = 1;
+const VERSION_MINOR                = 2;
 
 /**
  * The patch or revision number. Incremented when bugfixes are applied without
  * changing any functionality or API or ABI.
  */
-const VERSION_PATCH                = 11;
+const VERSION_PATCH                = 0;
 
 /**
  * A macro to check at preprocessing time whether the client code is compatible
