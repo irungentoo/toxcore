@@ -37,7 +37,7 @@ compile:
   ### ------- get libsodium -------
 
 ##### ------------ BUILD ------------
-  - cmake -DWARNINGS=OFF .
+  - cmake -DASAN=ON -DDEBUG=ON -DSTRICT_ABI=ON -DTRACE=ON -DWARNINGS=OFF .
   #- cmake .
   - make
   - sudo make install
@@ -121,4 +121,4 @@ compile:
 
 test:
   override:
-  - make VERBOSE=1 test || make VERBOSE=1 ARGS="--rerun-failed" test
+  - make VERBOSE=1 test || make VERBOSE=1 ARGS="--rerun-failed" test || make VERBOSE=1 ARGS="--rerun-failed" test || make VERBOSE=1 ARGS="--rerun-failed" test
