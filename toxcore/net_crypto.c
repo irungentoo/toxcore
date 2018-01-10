@@ -1608,7 +1608,7 @@ static int create_crypto_connection(Net_Crypto *c)
     if (realloc_cryptoconnection(c, c->crypto_connections_length + 1) == 0) {
         id = c->crypto_connections_length;
         ++c->crypto_connections_length;
-        memset(&(c->crypto_connections[id]), 0, sizeof(Crypto_Connection));
+        memset(&c->crypto_connections[id], 0, sizeof(Crypto_Connection));
         // Memsetting float/double to 0 is non-portable, so we explicitly set them to 0
         c->crypto_connections[id].packet_recv_rate = 0;
         c->crypto_connections[id].packet_send_rate = 0;
@@ -1641,7 +1641,7 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
 
     /* Keep mutex, only destroy it when connection is realloced out. */
     pthread_mutex_t mutex = c->crypto_connections[crypt_connection_id].mutex;
-    crypto_memzero(&(c->crypto_connections[crypt_connection_id]), sizeof(Crypto_Connection));
+    crypto_memzero(&c->crypto_connections[crypt_connection_id], sizeof(Crypto_Connection));
     c->crypto_connections[crypt_connection_id].mutex = mutex;
 
     for (i = c->crypto_connections_length; i != 0; --i) {

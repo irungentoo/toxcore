@@ -47,7 +47,7 @@ START_TEST(test_general)
     // unequal strings with n=0 are equal
     verify("A", "B", 0, ZERO);
     verify("AAA", "BBB", 0, ZERO);
-    verify("AAA", "BBBBBB", 0 , ZERO);
+    verify("AAA", "BBBBBB", 0, ZERO);
     verify("AAAAAA", "BBB", 0, ZERO);
 
     // equal strings are equal
@@ -111,7 +111,7 @@ START_TEST(test_general)
     // unequal strings with n=0 are equal
     verify("a", "B", 0, ZERO);
     verify("aaa", "BBB", 0, ZERO);
-    verify("aaa", "BBBBBB", 0 , ZERO);
+    verify("aaa", "BBBBBB", 0, ZERO);
     verify("aaaaaa", "BBB", 0, ZERO);
 
     // equal strings are equal

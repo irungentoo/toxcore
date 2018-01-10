@@ -94,7 +94,7 @@ static int create_group_chat(Group_Chats *g_c)
     if (realloc_groupchats(g_c, g_c->num_chats + 1) == 0) {
         id = g_c->num_chats;
         ++g_c->num_chats;
-        memset(&(g_c->chats[id]), 0, sizeof(Group_c));
+        memset(&g_c->chats[id], 0, sizeof(Group_c));
     }
 
     return id;
@@ -113,7 +113,7 @@ static int wipe_group_chat(Group_Chats *g_c, int groupnumber)
     }
 
     uint32_t i;
-    crypto_memzero(&(g_c->chats[groupnumber]), sizeof(Group_c));
+    crypto_memzero(&g_c->chats[groupnumber], sizeof(Group_c));
 
     for (i = g_c->num_chats; i != 0; --i) {
         if (g_c->chats[i - 1].status != GROUPCHAT_STATUS_NONE) {
@@ -442,7 +442,7 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
         return -1;
     }
 
-    memset(&(temp[g->numpeers]), 0, sizeof(Group_Peer));
+    memset(&temp[g->numpeers], 0, sizeof(Group_Peer));
     g->group = temp;
 
     id_copy(g->group[g->numpeers].real_pk, real_pk);

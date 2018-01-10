@@ -144,7 +144,7 @@ static int create_connection(TCP_Connections *tcp_c)
                           temp_pointer) == 0) {
         id = tcp_c->connections_length;
         ++tcp_c->connections_length;
-        memset(&(tcp_c->connections[id]), 0, sizeof(TCP_Connection_to));
+        memset(&tcp_c->connections[id], 0, sizeof(TCP_Connection_to));
     }
 
     return id;
@@ -172,7 +172,7 @@ static int create_tcp_connection(TCP_Connections *tcp_c)
     if (realloc_tox_array(tcp_c->tcp_connections, TCP_con, tcp_c->tcp_connections_length + 1, temp_pointer) == 0) {
         id = tcp_c->tcp_connections_length;
         ++tcp_c->tcp_connections_length;
-        memset(&(tcp_c->tcp_connections[id]), 0, sizeof(TCP_con));
+        memset(&tcp_c->tcp_connections[id], 0, sizeof(TCP_con));
     }
 
     return id;
@@ -190,7 +190,7 @@ static int wipe_connection(TCP_Connections *tcp_c, int connections_number)
     }
 
     uint32_t i;
-    memset(&(tcp_c->connections[connections_number]), 0 , sizeof(TCP_Connection_to));
+    memset(&tcp_c->connections[connections_number], 0, sizeof(TCP_Connection_to));
 
     for (i = tcp_c->connections_length; i != 0; --i) {
         if (tcp_c->connections[i - 1].status != TCP_CONN_NONE) {
@@ -219,7 +219,7 @@ static int wipe_tcp_connection(TCP_Connections *tcp_c, int tcp_connections_numbe
     }
 
     uint32_t i;
-    memset(&(tcp_c->tcp_connections[tcp_connections_number]), 0 , sizeof(TCP_con));
+    memset(&tcp_c->tcp_connections[tcp_connections_number], 0, sizeof(TCP_con));
 
     for (i = tcp_c->tcp_connections_length; i != 0; --i) {
         if (tcp_c->tcp_connections[i - 1].status != TCP_CONN_NONE) {

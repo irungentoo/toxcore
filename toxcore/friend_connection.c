@@ -95,7 +95,7 @@ static int create_friend_conn(Friend_Connections *fr_c)
     if (realloc_friendconns(fr_c, fr_c->num_cons + 1) == 0) {
         id = fr_c->num_cons;
         ++fr_c->num_cons;
-        memset(&(fr_c->conns[id]), 0, sizeof(Friend_Conn));
+        memset(&fr_c->conns[id], 0, sizeof(Friend_Conn));
     }
 
     return id;
@@ -113,7 +113,7 @@ static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
     }
 
     uint32_t i;
-    memset(&(fr_c->conns[friendcon_id]), 0 , sizeof(Friend_Conn));
+    memset(&fr_c->conns[friendcon_id], 0, sizeof(Friend_Conn));
 
     for (i = fr_c->num_cons; i != 0; --i) {
         if (fr_c->conns[i - 1].status != FRIENDCONN_STATUS_NONE) {

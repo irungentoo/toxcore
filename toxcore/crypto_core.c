@@ -89,7 +89,7 @@ int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 uint32_t random_int(void)
 {
     uint32_t randnum;
-    randombytes((uint8_t *)&randnum , sizeof(randnum));
+    randombytes((uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 

@@ -28,9 +28,9 @@ if perl -e '
     socket(S, PF_INET6, SOCK_STREAM, 0) || exit 1;
     bind(S, pack_sockaddr_in6(0, IN6ADDR_LOOPBACK)) || exit 1;
 '; then
-    USE_IPV6=yes
+  USE_IPV6=yes
 else
-    USE_IPV6=no
+  USE_IPV6=no
 fi
 
 

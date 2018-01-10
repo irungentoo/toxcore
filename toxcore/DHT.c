@@ -68,7 +68,6 @@
 int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2)
 {
     for (size_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; ++i) {
-
         uint8_t distance1 = pk[i] ^ pk1[i];
         uint8_t distance2 = pk[i] ^ pk2[i];
 
@@ -1273,11 +1272,12 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
     DHT_get_shared_key_recv(dht, shared_key, packet + 1);
-    int len = decrypt_data_symmetric(shared_key,
-                                     packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
-                                     packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
-                                     CRYPTO_NODE_SIZE + CRYPTO_MAC_SIZE,
-                                     plain);
+    int len = decrypt_data_symmetric(
+                  shared_key,
+                  packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                  packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
+                  CRYPTO_NODE_SIZE + CRYPTO_MAC_SIZE,
+                  plain);
 
     if (len != CRYPTO_NODE_SIZE) {
         return 1;
@@ -1763,7 +1763,7 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
     int num_ipv6s = 0;
 
     for (size_t i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        client = &(dht_friend->client_list[i]);
+        client = &dht_friend->client_list[i];
 
         /* If ip is not zero and node is good. */
         if (ip_isset(&client->assoc4.ret_ip_port.ip) && !is_timeout(client->assoc4.ret_timestamp, BAD_NODE_TIMEOUT)) {

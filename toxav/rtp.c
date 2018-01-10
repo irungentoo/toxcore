@@ -206,7 +206,7 @@ static bool chloss(const RTPSession *session, const struct RTPHeader *header)
         fprintf(stderr, "Lost packet\n");
 
         while (lost --) {
-            bwc_add_lost(session->bwc , 0);
+            bwc_add_lost(session->bwc, 0);
         }
 
         return true;

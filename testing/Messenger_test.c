@@ -83,7 +83,7 @@ static void print_request(Messenger *m2, const uint8_t *public_key, const uint8_
         return;
     }
 
-    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0)
+    if (memcmp(data, "Install Gentoo", sizeof("Install Gentoo")) == 0)
         //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");

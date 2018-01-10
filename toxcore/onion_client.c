@@ -1179,7 +1179,7 @@ int onion_addfriend(Onion_Client *onion_c, const uint8_t *public_key)
         }
 
         index = onion_c->num_friends;
-        memset(&(onion_c->friends_list[onion_c->num_friends]), 0, sizeof(Onion_Friend));
+        memset(&onion_c->friends_list[onion_c->num_friends], 0, sizeof(Onion_Friend));
         ++onion_c->num_friends;
     }
 
@@ -1203,7 +1203,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     //if (onion_c->friends_list[friend_num].know_dht_public_key)
     //    DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, 0);
 
-    crypto_memzero(&(onion_c->friends_list[friend_num]), sizeof(Onion_Friend));
+    crypto_memzero(&onion_c->friends_list[friend_num], sizeof(Onion_Friend));
     unsigned int i;
 
     for (i = onion_c->num_friends; i != 0; --i) {
