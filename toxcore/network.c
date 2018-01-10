@@ -1273,12 +1273,14 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     assert(count <= MAX_COUNT);
 
     if (count == 0) {
+        freeaddrinfo(infos);
         return 0;
     }
 
     *res = (IP_Port *)malloc(sizeof(IP_Port) * count);
 
     if (*res == NULL) {
+        freeaddrinfo(infos);
         return -1;
     }
 
