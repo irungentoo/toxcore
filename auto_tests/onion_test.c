@@ -163,12 +163,12 @@ START_TEST(test_basic)
     ck_assert_msg((onion1 != NULL) && (onion2 != NULL), "Onion failed initializing.");
     networking_registerhandler(onion2->net, 'I', &handle_test_1, onion2);
 
-    IP_Port on1 = {ip, onion1->net->port};
+    IP_Port on1 = {ip, net_port(onion1->net)};
     Node_format n1;
     memcpy(n1.public_key, onion1->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     n1.ip_port = on1;
 
-    IP_Port on2 = {ip, onion2->net->port};
+    IP_Port on2 = {ip, net_port(onion2->net)};
     Node_format n2;
     memcpy(n2.public_key, onion2->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     n2.ip_port = on2;
@@ -402,11 +402,11 @@ START_TEST(test_announce)
     IP ip = get_loopback();
 
     for (i = 3; i < NUM_ONIONS; ++i) {
-        IP_Port ip_port = {ip, onions[i - 1]->onion->net->port};
+        IP_Port ip_port = {ip, net_port(onions[i - 1]->onion->net)};
         DHT_bootstrap(onions[i]->onion->dht, ip_port, onions[i - 1]->onion->dht->self_public_key);
-        IP_Port ip_port1 = {ip, onions[i - 2]->onion->net->port};
+        IP_Port ip_port1 = {ip, net_port(onions[i - 2]->onion->net)};
         DHT_bootstrap(onions[i]->onion->dht, ip_port1, onions[i - 2]->onion->dht->self_public_key);
-        IP_Port ip_port2 = {ip, onions[i - 3]->onion->net->port};
+        IP_Port ip_port2 = {ip, net_port(onions[i - 3]->onion->net)};
         DHT_bootstrap(onions[i]->onion->dht, ip_port2, onions[i - 3]->onion->dht->self_public_key);
     }
 
@@ -464,7 +464,7 @@ START_TEST(test_announce)
     }
 
     onion_getfriendip(onions[NUM_LAST]->onion_c, frnum, &ip_port);
-    ck_assert_msg(ip_port.port == onions[NUM_FIRST]->onion->net->port, "Port in returned ip not correct.");
+    ck_assert_msg(ip_port.port == net_port(onions[NUM_FIRST]->onion->net), "Port in returned ip not correct.");
 
     for (i = 0; i < NUM_ONIONS; ++i) {
         kill_onions(onions[i]);

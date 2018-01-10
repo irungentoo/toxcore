@@ -303,20 +303,10 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len,
                                        void *userdata);
 
-typedef struct {
-    packet_handler_callback function;
-    void *object;
-} Packet_Handles;
+typedef struct Networking_Core Networking_Core;
 
-typedef struct {
-    Logger *log;
-    Packet_Handles packethandlers[256];
-
-    Family family;
-    uint16_t port;
-    /* Our UDP socket. */
-    Socket sock;
-} Networking_Core;
+Family net_family(const Networking_Core *net);
+uint16_t net_port(const Networking_Core *net);
 
 /* Run this before creating sockets.
  *
@@ -415,6 +405,7 @@ int bind_to_port(Socket sock, int family, uint16_t port);
  */
 Networking_Core *new_networking(Logger *log, IP ip, uint16_t port);
 Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
+Networking_Core *new_networking_no_udp(Logger *log);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

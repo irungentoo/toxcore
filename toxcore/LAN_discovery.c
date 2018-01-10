@@ -376,7 +376,7 @@ int send_LANdiscovery(uint16_t port, DHT *dht)
     ip_port.port = port;
 
     /* IPv6 multicast */
-    if (dht->net->family == TOX_AF_INET6) {
+    if (net_family(dht->net) == TOX_AF_INET6) {
         ip_port.ip = broadcast_ip(TOX_AF_INET6, TOX_AF_INET6);
 
         if (ip_isset(&ip_port.ip)) {
@@ -387,7 +387,7 @@ int send_LANdiscovery(uint16_t port, DHT *dht)
     }
 
     /* IPv4 broadcast (has to be IPv4-in-IPv6 mapping if socket is TOX_AF_INET6 */
-    ip_port.ip = broadcast_ip(dht->net->family, TOX_AF_INET);
+    ip_port.ip = broadcast_ip(net_family(dht->net), TOX_AF_INET);
 
     if (ip_isset(&ip_port.ip)) {
         if (sendpacket(dht->net, ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {

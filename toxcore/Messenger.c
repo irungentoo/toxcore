@@ -1946,8 +1946,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     unsigned int net_err = 0;
 
     if (options->udp_disabled) {
-        /* this is the easiest way to completely disable UDP without changing too much code. */
-        m->net = (Networking_Core *)calloc(1, sizeof(Networking_Core));
+        m->net = new_networking_no_udp(log);
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);

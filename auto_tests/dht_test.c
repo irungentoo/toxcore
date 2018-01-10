@@ -468,7 +468,7 @@ static void test_list_main(void)
 
         dhts[i] = new_DHT(NULL, new_networking(NULL, ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != 0, "Failed to create dht instances %u", i);
-        ck_assert_msg(dhts[i]->net->port != DHT_DEFAULT_PORT + i, "Bound to wrong port");
+        ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
 
     for (j = 0; j < NUM_DHT; ++j) {
@@ -604,7 +604,7 @@ START_TEST(test_DHT_test)
 
         dhts[i] = new_DHT(NULL, new_networking(NULL, ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != 0, "Failed to create dht instances %u", i);
-        ck_assert_msg(dhts[i]->net->port != DHT_DEFAULT_PORT + i, "Bound to wrong port");
+        ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
 
     struct {

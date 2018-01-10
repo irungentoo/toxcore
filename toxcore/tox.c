@@ -1526,7 +1526,7 @@ void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
 uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 {
     const Messenger *m = tox;
-    uint16_t port = net_htons(m->net->port);
+    uint16_t port = net_htons(net_port(m->net));
 
     if (port) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);

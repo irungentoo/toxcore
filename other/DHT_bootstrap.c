@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", net_ntohs(dht->net->port));
+    printf("Port: %u\n", net_ntohs(net_port(dht->net)));
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
