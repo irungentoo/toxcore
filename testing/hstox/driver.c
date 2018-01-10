@@ -89,6 +89,7 @@ static int write_sample_input(msgpack_object req)
     msgpack_pack_object(&pk, req);
 
     check_return(E_WRITE, write(fd, sbuf.data, sbuf.size));
+    check_return(E_WRITE, close(fd));
 
     return E_OK;
 }
