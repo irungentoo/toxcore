@@ -11,7 +11,7 @@ export CMAKE_EXTRA_FLAGS="-DERROR_ON_WARNING=ON -DBUILD_NTOX=ON"
 export MAKE=make
 
 BUILD_DIR=_build
-MAX_TEST_RETRIES=3
+MAX_TEST_RETRIES=10
 
 # Workaround for broken Travis image.
 export TERM=xterm
