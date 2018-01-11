@@ -142,7 +142,7 @@ function(target_link_modules target)
   # If it's neither, then it's an executable.
   if(NOT _targets)
     set(_targets ${_targets} ${target})
-    # Executables preferrably link against static libraries, so they are
+    # Executables preferably link against static libraries, so they are
     # standalone and can be shipped without any external dependencies. As a
     # frame of reference: nTox becomes an 1.3M binary instead of 139K on x86_64
     # Linux.

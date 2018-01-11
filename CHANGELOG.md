@@ -331,7 +331,7 @@
 
 ### Merged PRs:
 
-- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden agains repo name changes
+- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden against repo name changes
 - [#206](https://github.com/TokTok/c-toxcore/pull/206) Corrected libsodium tag
 - [#204](https://github.com/TokTok/c-toxcore/pull/204) Error if format_test can't be executed.
 - [#202](https://github.com/TokTok/c-toxcore/pull/202) Version Patch v0.0.2

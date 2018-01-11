@@ -90,7 +90,7 @@ group_test_restart:
     int test_run = 0;
     long long unsigned int cur_time = time(NULL);
     struct Tox_Options *opts = tox_options_new(NULL);
-    /* FIXME: Currenly here is problems with IPv6 */
+    /* FIXME: Currently here is problems with IPv6 */
     tox_options_set_ipv6_enabled(opts, false);
 
     for (i = 0; i < NUM_GROUP_TOX; ++i) {
