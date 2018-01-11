@@ -395,12 +395,6 @@ NEW_MULTIPARTED:
          */
         if (session->mcb) {
             session->mp = new_message(net_ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
-
-            /* Reposition data if necessary */
-            if (net_ntohs(header->cpart)) {
-                ;
-            }
-
             memmove(session->mp->data + net_ntohs(header->cpart), session->mp->data, session->mp->len);
         }
     }
