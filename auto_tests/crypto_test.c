@@ -339,8 +339,8 @@ START_TEST(test_memzero)
 }
 END_TEST
 
-#define CRYPTO_TEST_MEMCMP_SIZE 1024*256
-#define CRYPTO_TEST_MEMCMP_COUNT 1000
+#define CRYPTO_TEST_MEMCMP_SIZE 1024*1024  // 1MiB
+#define CRYPTO_TEST_MEMCMP_COUNT 2000
 #define CRYPTO_TEST_MEMCMP_EPS 10
 
 static int cmp(const void *a, const void *b)
@@ -381,20 +381,24 @@ static clock_t memcmp_median(void *a, void *b, size_t len)
 
 START_TEST(test_memcmp)
 {
-    uint8_t src[CRYPTO_TEST_MEMCMP_SIZE];
-    rand_bytes(src, sizeof(src));
+    uint8_t *src = (uint8_t *)malloc(CRYPTO_TEST_MEMCMP_SIZE);
+    rand_bytes(src, CRYPTO_TEST_MEMCMP_SIZE);
 
-    uint8_t same[sizeof(src)];
-    memcpy(same, src, sizeof(src));
+    uint8_t *same = (uint8_t *)malloc(CRYPTO_TEST_MEMCMP_SIZE);
+    memcpy(same, src, CRYPTO_TEST_MEMCMP_SIZE);
 
-    uint8_t not_same[sizeof(src)];
-    rand_bytes(not_same, sizeof(not_same));
+    uint8_t *not_same = (uint8_t *)malloc(CRYPTO_TEST_MEMCMP_SIZE);
+    rand_bytes(not_same, CRYPTO_TEST_MEMCMP_SIZE);
 
     printf("timing memcmp (equal arrays)\n");
-    clock_t same_median = memcmp_median(src, same, sizeof(src));
+    clock_t same_median = memcmp_median(src, same, CRYPTO_TEST_MEMCMP_SIZE);
     printf("timing memcmp (non-equal arrays)\n");
-    clock_t not_same_median = memcmp_median(src, not_same, sizeof(src));
+    clock_t not_same_median = memcmp_median(src, not_same, CRYPTO_TEST_MEMCMP_SIZE);
     printf("comparing times\n");
+
+    free(not_same);
+    free(same);
+    free(src);
 
     clock_t delta;
 
@@ -423,7 +427,7 @@ static Suite *crypto_suite(void)
     DEFTESTCASE(large_data_symmetric);
     DEFTESTCASE_SLOW(increment_nonce, 20);
     DEFTESTCASE(memzero);
-    DEFTESTCASE(memcmp);
+    DEFTESTCASE_SLOW(memcmp, 30);
 
     return s;
 }
