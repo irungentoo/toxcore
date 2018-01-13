@@ -1179,9 +1179,9 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
 
     if (sendback_node != NULL) {
         memcpy(plain_message + sizeof(receiver), sendback_node, sizeof(Node_format));
-        ping_id = ping_array_add(&dht->dht_harden_ping_array, plain_message, sizeof(plain_message));
+        ping_id = ping_array_add(dht->dht_harden_ping_array, plain_message, sizeof(plain_message));
     } else {
-        ping_id = ping_array_add(&dht->dht_ping_array, plain_message, sizeof(receiver));
+        ping_id = ping_array_add(dht->dht_ping_array, plain_message, sizeof(receiver));
     }
 
     if (ping_id == 0) {
@@ -1296,9 +1296,9 @@ static uint8_t sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port
 {
     uint8_t data[sizeof(Node_format) * 2];
 
-    if (ping_array_check(data, sizeof(data), &dht->dht_ping_array, ping_id) == sizeof(Node_format)) {
+    if (ping_array_check(dht->dht_ping_array, data, sizeof(data), ping_id) == sizeof(Node_format)) {
         memset(sendback_node, 0, sizeof(Node_format));
-    } else if (ping_array_check(data, sizeof(data), &dht->dht_harden_ping_array, ping_id) == sizeof(data)) {
+    } else if (ping_array_check(dht->dht_harden_ping_array, data, sizeof(data), ping_id) == sizeof(data)) {
         memcpy(sendback_node, data + sizeof(Node_format), sizeof(Node_format));
     } else {
         return 0;
@@ -2578,8 +2578,8 @@ DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled)
     new_symmetric_key(dht->secret_symmetric_key);
     crypto_new_keypair(dht->self_public_key, dht->self_secret_key);
 
-    ping_array_init(&dht->dht_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
-    ping_array_init(&dht->dht_harden_ping_array, DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
+    dht->dht_ping_array = ping_array_new(DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
+    dht->dht_harden_ping_array = ping_array_new(DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
 
     for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
         uint8_t random_key_bytes[CRYPTO_PUBLIC_KEY_SIZE];
@@ -2622,8 +2622,8 @@ void kill_DHT(DHT *dht)
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, NULL, NULL);
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, NULL, NULL);
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_HARDENING, NULL, NULL);
-    ping_array_free_all(&dht->dht_ping_array);
-    ping_array_free_all(&dht->dht_harden_ping_array);
+    ping_array_kill(dht->dht_ping_array);
+    ping_array_kill(dht->dht_harden_ping_array);
     kill_ping(dht->ping);
     free(dht->friends_list);
     free(dht->loaded_nodes_list);

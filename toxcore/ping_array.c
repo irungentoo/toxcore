@@ -30,6 +30,55 @@
 #include "crypto_core.h"
 #include "util.h"
 
+
+typedef struct {
+    void *data;
+    uint32_t length;
+    uint64_t time;
+    uint64_t ping_id;
+} Ping_Array_Entry;
+
+struct Ping_Array {
+    Ping_Array_Entry *entries;
+
+    uint32_t last_deleted; /* number representing the next entry to be deleted. */
+    uint32_t last_added; /* number representing the last entry to be added. */
+    uint32_t total_size; /* The length of entries */
+    uint32_t timeout; /* The timeout after which entries are cleared. */
+};
+
+/* Initialize a Ping_Array.
+ * size represents the total size of the array and should be a power of 2.
+ * timeout represents the maximum timeout in seconds for the entry.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
+{
+    if (size == 0 || timeout == 0) {
+        return NULL;
+    }
+
+    Ping_Array *empty_array = (Ping_Array *)calloc(1, sizeof(Ping_Array));
+
+    if (empty_array == NULL) {
+        return NULL;
+    }
+
+    empty_array->entries = (Ping_Array_Entry *)calloc(size, sizeof(Ping_Array_Entry));
+
+    if (empty_array->entries == NULL) {
+        free(empty_array);
+        return NULL;
+    }
+
+    empty_array->last_deleted = empty_array->last_added = 0;
+    empty_array->total_size = size;
+    empty_array->timeout = timeout;
+    return empty_array;
+}
+
 static void clear_entry(Ping_Array *array, uint32_t index)
 {
     free(array->entries[index].data);
@@ -37,6 +86,20 @@ static void clear_entry(Ping_Array *array, uint32_t index)
     array->entries[index].length =
         array->entries[index].time =
             array->entries[index].ping_id = 0;
+}
+
+/* Free all the allocated memory in a Ping_Array.
+ */
+void ping_array_kill(Ping_Array *array)
+{
+    while (array->last_deleted != array->last_added) {
+        uint32_t index = array->last_deleted % array->total_size;
+        clear_entry(array, index);
+        ++array->last_deleted;
+    }
+
+    free(array->entries);
+    free(array);
 }
 
 /* Clear timed out entries.
@@ -101,7 +164,7 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
  * return length of data copied on success.
  * return -1 on failure.
  */
-int ping_array_check(uint8_t *data, uint32_t length, Ping_Array *array, uint64_t ping_id)
+int32_t ping_array_check(Ping_Array *array, uint8_t *data, size_t length, uint64_t ping_id)
 {
     if (ping_id == 0) {
         return -1;
@@ -130,43 +193,3 @@ int ping_array_check(uint8_t *data, uint32_t length, Ping_Array *array, uint64_t
     clear_entry(array, index);
     return len;
 }
-
-/* Initialize a Ping_Array.
- * size represents the total size of the array and should be a power of 2.
- * timeout represents the maximum timeout in seconds for the entry.
- *
- * return 0 on success.
- * return -1 on failure.
- */
-int ping_array_init(Ping_Array *empty_array, uint32_t size, uint32_t timeout)
-{
-    if (size == 0 || timeout == 0 || empty_array == NULL) {
-        return -1;
-    }
-
-    empty_array->entries = (Ping_Array_Entry *)calloc(size, sizeof(Ping_Array_Entry));
-
-    if (empty_array->entries == NULL) {
-        return -1;
-    }
-
-    empty_array->last_deleted = empty_array->last_added = 0;
-    empty_array->total_size = size;
-    empty_array->timeout = timeout;
-    return 0;
-}
-
-/* Free all the allocated memory in a Ping_Array.
- */
-void ping_array_free_all(Ping_Array *array)
-{
-    while (array->last_deleted != array->last_added) {
-        uint32_t index = array->last_deleted % array->total_size;
-        clear_entry(array, index);
-        ++array->last_deleted;
-    }
-
-    free(array->entries);
-    array->entries = NULL;
-}
-

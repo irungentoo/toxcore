@@ -1,3 +1,4 @@
+%{
 /*
  * Implementation of an efficient array to store that we pinged something.
  */
@@ -25,11 +26,11 @@
 #define PING_ARRAY_H
 
 #include "network.h"
+%}
 
-#ifndef PING_ARRAY_DEFINED
-#define PING_ARRAY_DEFINED
-typedef struct Ping_Array Ping_Array;
-#endif /* PING_ARRAY_DEFINED */
+class ping_Array {
+
+struct this;
 
 /**
  * Initialize a Ping_Array.
@@ -39,12 +40,12 @@ typedef struct Ping_Array Ping_Array;
  * return 0 on success.
  * return -1 on failure.
  */
-struct Ping_Array *ping_array_new(uint32_t size, uint32_t timeout);
+static this new(uint32_t size, uint32_t timeout);
 
 /**
  * Free all the allocated memory in a Ping_Array.
  */
-void ping_array_kill(struct Ping_Array *_array);
+void kill();
 
 /**
  * Add a data with length to the Ping_Array list and return a ping_id.
@@ -52,7 +53,7 @@ void ping_array_kill(struct Ping_Array *_array);
  * return ping_id on success.
  * return 0 on failure.
  */
-uint64_t ping_array_add(struct Ping_Array *_array, const uint8_t *data, uint32_t length);
+uint64_t add(const uint8_t *data, uint32_t length);
 
 /**
  * Check if ping_id is valid and not timed out.
@@ -62,6 +63,10 @@ uint64_t ping_array_add(struct Ping_Array *_array, const uint8_t *data, uint32_t
  * return length of data copied on success.
  * return -1 on failure.
  */
-int32_t ping_array_check(struct Ping_Array *_array, uint8_t *data, size_t length, uint64_t ping_id);
+int32_t check(uint8_t[length] data, uint64_t ping_id);
 
+}
+
+%{
 #endif
+%}

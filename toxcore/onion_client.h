@@ -162,7 +162,7 @@ typedef struct {
     Node_format path_nodes_bs[MAX_PATH_NODES];
     uint16_t path_nodes_index_bs;
 
-    Ping_Array announce_ping_array;
+    Ping_Array *announce_ping_array;
     uint8_t last_pinged_index;
     struct {
         oniondata_handler_callback function;

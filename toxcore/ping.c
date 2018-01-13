@@ -48,7 +48,7 @@
 struct PING {
     DHT *dht;
 
-    Ping_Array  ping_array;
+    Ping_Array  *ping_array;
     Node_format to_ping[MAX_TO_PING];
     uint64_t    last_to_ping;
 };
@@ -76,7 +76,7 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
     uint8_t data[PING_DATA_SIZE];
     id_copy(data, public_key);
     memcpy(data + CRYPTO_PUBLIC_KEY_SIZE, &ipp, sizeof(IP_Port));
-    ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
+    ping_id = ping_array_add(ping->ping_array, data, sizeof(data));
 
     if (ping_id == 0) {
         return 1;
@@ -217,7 +217,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     uint8_t data[PING_DATA_SIZE];
 
-    if (ping_array_check(data, sizeof(data), &ping->ping_array, ping_id) != sizeof(data)) {
+    if (ping_array_check(ping->ping_array, data, sizeof(data), ping_id) != sizeof(data)) {
         return 1;
     }
 
@@ -359,7 +359,9 @@ PING *new_ping(DHT *dht)
         return NULL;
     }
 
-    if (ping_array_init(&ping->ping_array, PING_NUM_MAX, PING_TIMEOUT) != 0) {
+    ping->ping_array = ping_array_new(PING_NUM_MAX, PING_TIMEOUT);
+
+    if (ping->ping_array == NULL) {
         free(ping);
         return NULL;
     }
@@ -375,7 +377,7 @@ void kill_ping(PING *ping)
 {
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, NULL, NULL);
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, NULL, NULL);
-    ping_array_free_all(&ping->ping_array);
+    ping_array_kill(ping->ping_array);
 
     free(ping);
 }

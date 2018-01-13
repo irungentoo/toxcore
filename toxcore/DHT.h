@@ -252,8 +252,8 @@ typedef struct {
     Shared_Keys shared_keys_sent;
 
     struct PING   *ping;
-    Ping_Array    dht_ping_array;
-    Ping_Array    dht_harden_ping_array;
+    Ping_Array    *dht_ping_array;
+    Ping_Array    *dht_harden_ping_array;
     uint64_t       last_run;
 
     Cryptopacket_Handles cryptopackethandlers[256];

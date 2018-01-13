@@ -397,7 +397,7 @@ static int new_sendback(Onion_Client *onion_c, uint32_t num, const uint8_t *publ
     memcpy(data + sizeof(uint32_t), public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(data + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE, &ip_port, sizeof(IP_Port));
     memcpy(data + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE + sizeof(IP_Port), &path_num, sizeof(uint32_t));
-    *sendback = ping_array_add(&onion_c->announce_ping_array, data, sizeof(data));
+    *sendback = ping_array_add(onion_c->announce_ping_array, data, sizeof(data));
 
     if (*sendback == 0) {
         return -1;
@@ -423,7 +423,7 @@ static uint32_t check_sendback(Onion_Client *onion_c, const uint8_t *sendback, u
     memcpy(&sback, sendback, sizeof(uint64_t));
     uint8_t data[sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE + sizeof(IP_Port) + sizeof(uint32_t)];
 
-    if (ping_array_check(data, sizeof(data), &onion_c->announce_ping_array, sback) != sizeof(data)) {
+    if (ping_array_check(onion_c->announce_ping_array, data, sizeof(data), sback) != sizeof(data)) {
         return ~0;
     }
 
@@ -1733,7 +1733,9 @@ Onion_Client *new_onion_client(Net_Crypto *c)
         return NULL;
     }
 
-    if (ping_array_init(&onion_c->announce_ping_array, ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT) != 0) {
+    onion_c->announce_ping_array = ping_array_new(ANNOUNCE_ARRAY_SIZE, ANNOUNCE_TIMEOUT);
+
+    if (onion_c->announce_ping_array == NULL) {
         free(onion_c);
         return NULL;
     }
@@ -1758,7 +1760,7 @@ void kill_onion_client(Onion_Client *onion_c)
         return;
     }
 
-    ping_array_free_all(&onion_c->announce_ping_array);
+    ping_array_kill(onion_c->announce_ping_array);
     realloc_onion_friends(onion_c, 0);
     networking_registerhandler(onion_c->net, NET_PACKET_ANNOUNCE_RESPONSE, NULL, NULL);
     networking_registerhandler(onion_c->net, NET_PACKET_ONION_DATA_RESPONSE, NULL, NULL);
