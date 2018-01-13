@@ -40,7 +40,7 @@ typedef struct {
     uint8_t proxy_type; // a value from TCP_PROXY_TYPE
 } TCP_Proxy_Info;
 
-enum {
+typedef enum {
     TCP_CLIENT_NO_STATUS,
     TCP_CLIENT_PROXY_HTTP_CONNECTING,
     TCP_CLIENT_PROXY_SOCKS5_CONNECTING,
@@ -49,57 +49,17 @@ enum {
     TCP_CLIENT_UNCONFIRMED,
     TCP_CLIENT_CONFIRMED,
     TCP_CLIENT_DISCONNECTED,
-};
-typedef struct  {
-    uint8_t status;
-    Socket sock;
-    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* our public key */
-    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* public key of the server */
-    IP_Port ip_port; /* The ip and port of the server */
-    TCP_Proxy_Info proxy_info;
-    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
-    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    uint16_t next_packet_length;
+} TCP_CLIENT_STATUS;
+typedef struct TCP_Client_Connection TCP_Client_Connection;
 
-    uint8_t temp_secret_key[CRYPTO_SECRET_KEY_SIZE];
+const uint8_t *tcp_con_public_key(const TCP_Client_Connection *con);
+IP_Port tcp_con_ip_port(const TCP_Client_Connection *con);
+TCP_CLIENT_STATUS tcp_con_status(const TCP_Client_Connection *con);
 
-    uint8_t last_packet[2 + MAX_PACKET_SIZE];
-    uint16_t last_packet_length;
-    uint16_t last_packet_sent;
-
-    TCP_Priority_List *priority_queue_start, *priority_queue_end;
-
-    uint64_t kill_at;
-
-    uint64_t last_pinged;
-    uint64_t ping_id;
-
-    uint64_t ping_response_id;
-    uint64_t ping_request_id;
-
-    struct {
-        uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
-        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-        uint32_t number;
-    } connections[NUM_CLIENT_CONNECTIONS];
-    int (*response_callback)(void *object, uint8_t connection_id, const uint8_t *public_key);
-    void *response_callback_object;
-    int (*status_callback)(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
-    void *status_callback_object;
-    int (*data_callback)(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data, uint16_t length,
-                         void *userdata);
-    void *data_callback_object;
-    int (*oob_data_callback)(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length, void *userdata);
-    void *oob_data_callback_object;
-
-    int (*onion_callback)(void *object, const uint8_t *data, uint16_t length, void *userdata);
-    void *onion_callback_object;
-
-    /* Can be used by user. */
-    void *custom_object;
-    uint32_t custom_uint;
-} TCP_Client_Connection;
+void *tcp_con_custom_object(const TCP_Client_Connection *con);
+uint32_t tcp_con_custom_uint(const TCP_Client_Connection *con);
+void tcp_con_set_custom_object(TCP_Client_Connection *con, void *object);
+void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t uint);
 
 /* Create new TCP connection to ip_port/public_key
  */
