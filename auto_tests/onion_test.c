@@ -222,13 +222,13 @@ START_TEST(test_basic)
 
     random_bytes(sb_data, sizeof(sb_data));
     memcpy(&s, sb_data, sizeof(uint64_t));
-    memcpy(onion2_a->entries[1].public_key, onion2->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    onion2_a->entries[1].time = unix_time();
+    memcpy(onion_announce_entry_public_key(onion2_a, 1), onion2->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    onion_announce_entry_set_time(onion2_a, 1, unix_time());
     networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
     send_announce_request(onion1->net, &path, nodes[3], onion1->dht->self_public_key, onion1->dht->self_secret_key,
                           test_3_ping_id, onion1->dht->self_public_key, onion1->dht->self_public_key, s);
 
-    while (memcmp(onion2_a->entries[ONION_ANNOUNCE_MAX_ENTRIES - 2].public_key, onion1->dht->self_public_key,
+    while (memcmp(onion_announce_entry_public_key(onion2_a, ONION_ANNOUNCE_MAX_ENTRIES - 2), onion1->dht->self_public_key,
                   CRYPTO_PUBLIC_KEY_SIZE) != 0) {
         do_onion(onion1);
         do_onion(onion2);
