@@ -286,7 +286,7 @@ int packed_node_size(uint8_t ip_family)
  * Returns size of packed IP_Port data on success
  * Return -1 on failure.
  */
-static int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
+int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
 {
     if (data == NULL) {
         return -1;
@@ -364,7 +364,7 @@ static int DHT_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
  * Return size of unpacked ip_port on success.
  * Return -1 on failure.
  */
-static int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, uint8_t tcp_enabled)
+int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, uint8_t tcp_enabled)
 {
     if (data == NULL) {
         return -1;
