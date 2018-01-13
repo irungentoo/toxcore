@@ -29,6 +29,24 @@
 
 #include "util.h"
 
+struct Friend_Requests {
+    uint32_t nospam;
+    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, size_t, void *);
+    uint8_t handle_friendrequest_isset;
+    void *handle_friendrequest_object;
+
+    int (*filter_function)(const uint8_t *, void *);
+    void *filter_function_userdata;
+    /* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
+     * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
+     */
+
+#define MAX_RECEIVED_STORED 32
+
+    uint8_t received_requests[MAX_RECEIVED_STORED][CRYPTO_PUBLIC_KEY_SIZE];
+    uint16_t received_requests_index;
+};
+
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num)
 {
@@ -149,4 +167,14 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
 void friendreq_init(Friend_Requests *fr, Friend_Connections *fr_c)
 {
     set_friend_request_callback(fr_c, &friendreq_handlepacket, fr);
+}
+
+Friend_Requests *friendreq_new(void)
+{
+    return (Friend_Requests *)calloc(1, sizeof(Friend_Requests));
+}
+
+void friendreq_kill(Friend_Requests *fr)
+{
+    free(fr);
 }

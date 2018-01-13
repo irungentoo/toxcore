@@ -228,7 +228,7 @@ struct Messenger {
     Friend_Connections *fr_c;
 
     TCP_Server *tcp_server;
-    Friend_Requests fr;
+    Friend_Requests *fr;
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
 
