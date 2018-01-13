@@ -825,8 +825,8 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
         return NULL;
     }
 
-    temp->dht = onion_c->dht;
-    temp->net_crypto = onion_c->c;
+    temp->dht = onion_get_dht(onion_c);
+    temp->net_crypto = onion_get_net_crypto(onion_c);
     temp->onion_c = onion_c;
     temp->local_discovery_enabled = local_discovery_enabled;
     // Don't include default port in port range

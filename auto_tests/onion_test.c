@@ -322,7 +322,7 @@ static void kill_onions(Onions *on)
 {
     Networking_Core *net = on->onion->dht->net;
     DHT *dht = on->onion->dht;
-    Net_Crypto *c = on->onion_c->c;
+    Net_Crypto *c = onion_get_net_crypto(on->onion_c);
     kill_onion_client(on->onion_c);
     kill_onion_announce(on->onion_a);
     kill_onion(on->onion);
@@ -437,8 +437,10 @@ START_TEST(test_announce)
     memcpy(last_dht_pk, onions[NUM_LAST]->onion->dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     printf("adding friend\n");
-    int frnum_f = onion_addfriend(onions[NUM_FIRST]->onion_c, onions[NUM_LAST]->onion_c->c->self_public_key);
-    int frnum = onion_addfriend(onions[NUM_LAST]->onion_c, onions[NUM_FIRST]->onion_c->c->self_public_key);
+    int frnum_f = onion_addfriend(onions[NUM_FIRST]->onion_c,
+                                  onion_get_net_crypto(onions[NUM_LAST]->onion_c)->self_public_key);
+    int frnum = onion_addfriend(onions[NUM_LAST]->onion_c,
+                                onion_get_net_crypto(onions[NUM_FIRST]->onion_c)->self_public_key);
 
     onion_dht_pk_callback(onions[NUM_FIRST]->onion_c, frnum_f, &dht_pk_callback, onions[NUM_FIRST], NUM_FIRST);
     onion_dht_pk_callback(onions[NUM_LAST]->onion_c, frnum, &dht_pk_callback, onions[NUM_LAST], NUM_LAST);
