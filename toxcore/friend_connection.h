@@ -61,56 +61,9 @@ enum {
     FRIENDCONN_STATUS_CONNECTED
 };
 
-typedef struct {
-    uint8_t status;
+typedef struct Friend_Connections Friend_Connections;
 
-    uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    uint16_t dht_lock;
-    IP_Port dht_ip_port;
-    uint64_t dht_pk_lastrecv, dht_ip_port_lastrecv;
-
-    int onion_friendnum;
-    int crypt_connection_id;
-
-    uint64_t ping_lastrecv, ping_lastsent;
-    uint64_t share_relays_lastsent;
-
-    struct {
-        int (*status_callback)(void *object, int id, uint8_t status, void *userdata);
-        int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-        int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-
-        void *callback_object;
-        int callback_id;
-    } callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
-
-    uint16_t lock_count;
-
-    Node_format tcp_relays[FRIEND_MAX_STORED_TCP_RELAYS];
-    uint16_t tcp_relay_counter;
-
-    bool hosting_tcp_relay;
-} Friend_Conn;
-
-
-typedef struct {
-    Net_Crypto *net_crypto;
-    DHT *dht;
-    Onion_Client *onion_c;
-
-    Friend_Conn *conns;
-    uint32_t num_cons;
-
-    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len,
-                               void *userdata);
-    void *fr_request_object;
-
-    uint64_t last_LANdiscovery;
-    uint16_t next_LANport;
-
-    bool local_discovery_enabled;
-} Friend_Connections;
+Net_Crypto *friendconn_net_crypto(const Friend_Connections *fr_c);
 
 /* return friendcon_id corresponding to the real public key on success.
  * return -1 on failure.
