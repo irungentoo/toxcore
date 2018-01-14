@@ -51,6 +51,11 @@ static void print_debug_log(Tox *m, TOX_LOG_LEVEL level, const char *path, uint3
         return;
     }
 
+    if (strncmp(message, "Bound successfully to ", strlen("Bound successfully to ")) ||
+            strncmp(message, "Found node in LAN: ", strlen("Found node in LAN: "))) {
+        return;
+    }
+
     uint32_t index = user_data ? *(uint32_t *)user_data : 0;
     const char *file = strrchr(path, '/');
     file = file ? file + 1 : path;
