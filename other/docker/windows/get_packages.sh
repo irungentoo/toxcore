@@ -36,15 +36,26 @@ fi
 # Pacakges needed for running toxcore tests
 if [ "${SUPPORT_TEST}" = "true" ]; then
     apt-get install -y \
+        apt-transport-https \
         curl \
+        gnupg \
         texinfo
 
-        dpkg --add-architecture i386
-        apt-get update
-        apt-get install -y \
-            wine \
-            wine32 \
-            wine64
+    # Add Wine package repository to use the latest Wine
+    echo "
+    # Wine-staging
+    deb https://dl.winehq.org/wine-builds/debian/ stretch main
+    " >> /etc/apt/sources.list
+    curl -o Release.key https://dl.winehq.org/wine-builds/Release.key
+    apt-key add Release.key
+
+    dpkg --add-architecture i386
+    apt-get update
+    apt-get install -y \
+        wine-staging \
+        wine-staging-amd64 \
+        wine-staging-dbg \
+        winehq-staging
 fi
 
 # Clean up to reduce image size
