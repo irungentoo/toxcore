@@ -238,6 +238,12 @@ int group_message_send(const Group_Chats *g_c, int groupnumber, const uint8_t *m
  */
 int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length);
 
+/* send a group correction message
+ * return 0 on success
+ * see: send_message_group() for error codes.
+ */
+int group_correction_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length);
+
 /* set the group's title, limited to MAX_NAME_LENGTH
  * return 0 on success
  * return -1 if groupnumber is invalid.
