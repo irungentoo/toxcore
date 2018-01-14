@@ -1892,7 +1892,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
     conn->rtt_time = DEFAULT_PING_CONNECTION;
     memcpy(conn->dht_public_key, dht_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    conn->cookie_request_number = random_64b();
+    conn->cookie_request_number = random_u64();
     uint8_t cookie_request[COOKIE_REQUEST_LENGTH];
 
     if (create_cookie_request(c, cookie_request, conn->dht_public_key, conn->cookie_request_number,

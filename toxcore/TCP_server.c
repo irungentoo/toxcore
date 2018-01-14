@@ -1246,7 +1246,7 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
         if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY)) {
             uint8_t ping[1 + sizeof(uint64_t)];
             ping[0] = TCP_PACKET_PING;
-            uint64_t ping_id = random_64b();
+            uint64_t ping_id = random_u64();
 
             if (!ping_id) {
                 ++ping_id;

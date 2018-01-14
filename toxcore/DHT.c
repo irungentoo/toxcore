@@ -1454,7 +1454,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
     memset(dht_friend, 0, sizeof(DHT_Friend));
     memcpy(dht_friend->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    dht_friend->nat.NATping_id = random_64b();
+    dht_friend->nat.NATping_id = random_u64();
     ++dht->num_friends;
 
     lock_num = dht_friend->lock_count;
@@ -1985,7 +1985,7 @@ static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pu
 
     if (packet[0] == NAT_PING_RESPONSE) {
         if (dht_friend->nat.NATping_id == ping_id) {
-            dht_friend->nat.NATping_id = random_64b();
+            dht_friend->nat.NATping_id = random_u64();
             dht_friend->nat.hole_punching = 1;
             return 0;
         }

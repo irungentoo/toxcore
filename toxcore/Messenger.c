@@ -2032,7 +2032,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     m->options = *options;
     friendreq_init(m->fr, m->fr_c);
-    set_nospam(m->fr, random_int());
+    set_nospam(m->fr, random_u32());
     set_filter_function(m->fr, &friend_already_added, m);
 
     m->lastdump = 0;

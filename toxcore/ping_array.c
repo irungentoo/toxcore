@@ -143,7 +143,7 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
     array->entries[index].length = length;
     array->entries[index].time = unix_time();
     ++array->last_added;
-    uint64_t ping_id = random_64b();
+    uint64_t ping_id = random_u64();
     ping_id /= array->total_size;
     ping_id *= array->total_size;
     ping_id += index;

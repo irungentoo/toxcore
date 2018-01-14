@@ -938,7 +938,7 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn, void *userdata)
     int len;
 
     if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY)) {
-        uint64_t ping_id = random_64b();
+        uint64_t ping_id = random_u64();
 
         if (!ping_id) {
             ++ping_id;
