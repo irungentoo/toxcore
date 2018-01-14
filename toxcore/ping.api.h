@@ -1,3 +1,4 @@
+%{
 /*
  * Buffered pinging using cyclic arrays.
  */
@@ -30,25 +31,17 @@
 #include "network.h"
 
 #include <stdint.h>
+%}
 
-#ifndef IP_PORT_DEFINED
-#define IP_PORT_DEFINED
-typedef struct IP_Port IP_Port;
-#endif /* IP_PORT_DEFINED */
+class iP_Port { struct this; }
+class dHT { struct this; }
 
-#ifndef DHT_DEFINED
-#define DHT_DEFINED
-typedef struct DHT DHT;
-#endif /* DHT_DEFINED */
+class ping {
 
-#ifndef PING_DEFINED
-#define PING_DEFINED
-typedef struct Ping Ping;
-#endif /* PING_DEFINED */
+struct this;
 
-Ping *ping_new(DHT *dht);
-
-void ping_kill(Ping *ping);
+static this new(dHT::this *dht);
+void kill();
 
 /** Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TOPING seconds
@@ -60,10 +53,13 @@ void ping_kill(Ping *ping);
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int32_t ping_add(Ping *ping, const uint8_t *public_key, struct IP_Port ip_port);
+int32_t add(const uint8_t *public_key, iP_Port::this ip_port);
+void iterate();
 
-void ping_iterate(Ping *ping);
+int32_t send_request(iP_Port::this ipp, const uint8_t *public_key);
 
-int32_t ping_send_request(Ping *ping, struct IP_Port ipp, const uint8_t *public_key);
+}
 
+%{
 #endif /* PING_H */
+%}

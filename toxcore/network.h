@@ -155,11 +155,11 @@ typedef struct {
 }
 IP;
 
-typedef struct {
+#define IP_PORT_DEFINED
+typedef struct IP_Port {
     IP ip;
     uint16_t port;
-}
-IP_Port;
+} IP_Port;
 
 /* Convert values between host and network byte order.
  */

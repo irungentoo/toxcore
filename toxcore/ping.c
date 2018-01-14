@@ -45,7 +45,7 @@
 #define TIME_TO_PING 2
 
 
-struct PING {
+struct Ping {
     DHT *dht;
 
     Ping_Array  *ping_array;
@@ -58,7 +58,7 @@ struct PING {
 #define DHT_PING_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + PING_PLAIN_SIZE + CRYPTO_MAC_SIZE)
 #define PING_DATA_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(IP_Port))
 
-int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
+int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
@@ -103,7 +103,7 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
     return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
 }
 
-static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
+static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
                               uint8_t *shared_encryption_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
@@ -143,7 +143,7 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    PING *ping = dht->ping;
+    Ping *ping = dht->ping;
 
     if (id_equal(packet + 1, ping->dht->self_public_key)) {
         return 1;
@@ -171,8 +171,8 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
     uint64_t   ping_id;
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     // Send response
-    send_ping_response(ping, source, packet + 1, ping_id, shared_key);
-    add_to_ping(ping, packet + 1, source);
+    ping_send_response(ping, source, packet + 1, ping_id, shared_key);
+    ping_add(ping, packet + 1, source);
 
     return 0;
 }
@@ -186,7 +186,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
         return 1;
     }
 
-    PING *ping = dht->ping;
+    Ping *ping = dht->ping;
 
     if (id_equal(packet + 1, ping->dht->self_public_key)) {
         return 1;
@@ -274,7 +274,7 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
+int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip)) {
         return -1;
@@ -291,7 +291,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
     IP_Port temp;
 
     if (DHT_getfriendip(ping->dht, public_key, &temp) == 0) {
-        send_ping_request(ping, ip_port, public_key);
+        ping_send_request(ping, ip_port, public_key);
         return -1;
     }
 
@@ -320,7 +320,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
 /* Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
  * This function must be run at least once every TIME_TO_PING seconds.
  */
-void do_to_ping(PING *ping)
+void ping_iterate(Ping *ping)
 {
     if (!is_timeout(ping->last_to_ping, TIME_TO_PING)) {
         return;
@@ -341,7 +341,7 @@ void do_to_ping(PING *ping)
             continue;
         }
 
-        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
+        ping_send_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);
     }
 
@@ -351,9 +351,9 @@ void do_to_ping(PING *ping)
 }
 
 
-PING *new_ping(DHT *dht)
+Ping *ping_new(DHT *dht)
 {
-    PING *ping = (PING *)calloc(1, sizeof(PING));
+    Ping *ping = (Ping *)calloc(1, sizeof(Ping));
 
     if (ping == NULL) {
         return NULL;
@@ -373,7 +373,7 @@ PING *new_ping(DHT *dht)
     return ping;
 }
 
-void kill_ping(PING *ping)
+void ping_kill(Ping *ping)
 {
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, NULL, NULL);
     networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, NULL, NULL);

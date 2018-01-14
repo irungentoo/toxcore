@@ -1285,7 +1285,7 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
 
     sendnodes_ipv6(dht, source, packet + 1, plain, plain + CRYPTO_PUBLIC_KEY_SIZE, sizeof(uint64_t), shared_key);
 
-    add_to_ping(dht->ping, packet + 1, source);
+    ping_add(dht->ping, packet + 1, source);
 
     return 0;
 }
@@ -2069,7 +2069,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         IP_Port pinging;
         ip_copy(&pinging.ip, &ip);
         pinging.port = net_htons(first_port);
-        send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
+        ping_send_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
     } else {
         for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
             /* TODO(irungentoo): Improve port guessing algorithm. */
@@ -2081,7 +2081,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
             IP_Port pinging;
             ip_copy(&pinging.ip, &ip);
             pinging.port = net_htons(port);
-            send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
+            ping_send_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
         }
 
         dht->friends_list[friend_num].nat.punching_index += i;
@@ -2095,7 +2095,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
         for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
             uint32_t it = i + dht->friends_list[friend_num].nat.punching_index2;
             pinging.port = net_htons(port + it);
-            send_ping_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
+            ping_send_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
         }
 
         dht->friends_list[friend_num].nat.punching_index2 += i - (MAX_PUNCHING_PORTS / 2);
@@ -2562,7 +2562,7 @@ DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled)
 
     dht->hole_punching_enabled = holepunching_enabled;
 
-    dht->ping = new_ping(dht);
+    dht->ping = ping_new(dht);
 
     if (dht->ping == NULL) {
         kill_DHT(dht);
@@ -2610,7 +2610,7 @@ void do_DHT(DHT *dht)
     do_Close(dht);
     do_DHT_friends(dht);
     do_NAT(dht);
-    do_to_ping(dht->ping);
+    ping_iterate(dht->ping);
 #if DHT_HARDENING
     do_hardening(dht);
 #endif
@@ -2624,7 +2624,7 @@ void kill_DHT(DHT *dht)
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_HARDENING, NULL, NULL);
     ping_array_kill(dht->dht_ping_array);
     ping_array_kill(dht->dht_harden_ping_array);
-    kill_ping(dht->ping);
+    ping_kill(dht->ping);
     free(dht->friends_list);
     free(dht->loaded_nodes_list);
     free(dht);

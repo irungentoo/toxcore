@@ -225,7 +225,8 @@ typedef struct {
     void *object;
 } Cryptopacket_Handles;
 
-typedef struct {
+#define DHT_DEFINED
+typedef struct DHT {
     Logger *log;
     Networking_Core *net;
 
@@ -251,7 +252,7 @@ typedef struct {
     Shared_Keys shared_keys_recv;
     Shared_Keys shared_keys_sent;
 
-    struct PING   *ping;
+    struct Ping   *ping;
     Ping_Array    *dht_ping_array;
     Ping_Array    *dht_harden_ping_array;
     uint64_t       last_run;
