@@ -95,6 +95,7 @@ static uint32_t add_filesender(Tox *m, uint16_t friendnum, char *filename)
                                      strlen(filename), 0);
 
     if (filenum == -1) {
+        fclose(tempfile);
         return -1;
     }
 

@@ -75,6 +75,7 @@ static int reconnect(void)
 
     if (connect(new_sock, (struct sockaddr *)&addr, addrsize) != 0) {
         printf("error connect\n");
+        close(new_sock);
         return -1;
     }
 

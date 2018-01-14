@@ -58,6 +58,13 @@ static bool type_check(msgpack_packer *pk, msgpack_object req, int index,
     return true;
 }
 
+static int close_ptr(int *fd)
+{
+    if (fd && *fd >= 0) {
+        close(*fd);
+    }
+}
+
 static int write_sample_input(msgpack_object req)
 {
     static unsigned int n;
@@ -70,7 +77,7 @@ static int write_sample_input(msgpack_object req)
     memcpy(filename + strlen(filename) + name.size, ".mp", 4);
     memcpy(filename + strlen(filename), name.ptr, name.size);
 
-    int fd = open(filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+    int fd __attribute__((__cleanup__(close_ptr))) = open(filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
 
     if (fd < 0)
         // If we can't open the sample file, we just don't write it.

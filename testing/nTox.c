@@ -1261,6 +1261,13 @@ static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uin
         pFile = fopen(filename, "wb");
     }
 
+    if (pFile == NULL) {
+        char msg[512];
+        sprintf(msg, "Could not open file \"%s\" for writing.", filename);
+        new_lines(msg);
+        return;
+    }
+
     fseek(pFile, position, SEEK_SET);
 
     if (fwrite(data, length, 1, pFile) != 1) {

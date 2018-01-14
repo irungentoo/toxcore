@@ -298,17 +298,58 @@ static Onions *new_onions(uint16_t port)
     IP ip = get_loopback();
     ip.ip6.uint8[15] = 1;
     Onions *on = (Onions *)malloc(sizeof(Onions));
-    DHT *dht = new_DHT(NULL, new_networking(NULL, ip, port), true);
+
+    if (!on) {
+        return NULL;
+    }
+
+    Networking_Core *net = new_networking(NULL, ip, port);
+
+    if (!net) {
+        free(on);
+        return NULL;
+    }
+
+    DHT *dht = new_DHT(NULL, net, true);
+
+    if (!dht) {
+        kill_networking(net);
+        free(on);
+        return NULL;
+    }
+
     on->onion = new_onion(dht);
+
+    if (!on->onion) {
+        kill_DHT(dht);
+        kill_networking(net);
+        free(on);
+        return NULL;
+    }
+
     on->onion_a = new_onion_announce(dht);
+
+    if (!on->onion_a) {
+        kill_onion(on->onion);
+        kill_DHT(dht);
+        kill_networking(net);
+        free(on);
+        return NULL;
+    }
+
     TCP_Proxy_Info inf = {{{0}}};
     on->onion_c = new_onion_client(new_net_crypto(NULL, dht, &inf));
 
-    if (on->onion && on->onion_a && on->onion_c) {
-        return on;
+    if (!on->onion_c) {
+        kill_onion_announce(on->onion_a);
+        kill_onion(on->onion);
+        kill_DHT(dht);
+        kill_networking(net);
+        free(on);
+        return NULL;
     }
 
-    return NULL;
+    return on;
 }
 
 static void do_onions(Onions *on)

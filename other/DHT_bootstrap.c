@@ -146,8 +146,13 @@ int main(int argc, char *argv[])
 
 #endif
 
-    FILE *file;
-    file = fopen("PUBLIC_ID.txt", "w");
+    const char *const public_id_filename = "PUBLIC_ID.txt";
+    FILE *file = fopen(public_id_filename, "w");
+
+    if (file == NULL) {
+        printf("Could not open file \"%s\" for writing. Exiting...\n", public_id_filename);
+        exit(1);
+    }
 
     for (i = 0; i < 32; i++) {
         printf("%02hhX", dht->self_public_key[i]);

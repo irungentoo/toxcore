@@ -137,6 +137,7 @@ START_TEST(test_basic)
     ck_assert_msg(packet_resp_plain[0] == 1, "wrong packet id %u", packet_resp_plain[0]);
     ck_assert_msg(packet_resp_plain[1] == 0, "connection not refused %u", packet_resp_plain[1]);
     ck_assert_msg(public_key_cmp(packet_resp_plain + 2, f_public_key) == 0, "key in packet wrong");
+    kill_sock(sock);
     kill_TCP_server(tcp_s);
 }
 END_TEST
