@@ -476,19 +476,19 @@ START_TEST(test_AV_flows)
 
         printf("Call started as audio only\n");
         printf("Turning on video for Alice...\n");
-        ck_assert(toxav_bit_rate_set(AliceAV, 0, -1, 1000, NULL));
+        ck_assert(toxav_bit_rate_set_video(AliceAV, 0, 1000, NULL));
 
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_V);
 
         printf("Turning off video for Alice...\n");
-        ck_assert(toxav_bit_rate_set(AliceAV, 0, -1, 0, NULL));
+        ck_assert(toxav_bit_rate_set_video(AliceAV, 0, 0, NULL));
 
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert(!(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_V));
 
         printf("Turning off audio for Alice...\n");
-        ck_assert(toxav_bit_rate_set(AliceAV, 0, 0, -1, NULL));
+        ck_assert(toxav_bit_rate_set_audio(AliceAV, 0, 0, NULL));
 
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert(!(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_A));
