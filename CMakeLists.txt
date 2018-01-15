@@ -54,9 +54,13 @@ message("SOVERSION: ${SOVERSION}")
 
 include(AddCompilerFlag)
 include(ApiDsl)
-include(MacRpath)
 include(ModulePackage)
 include(StrictAbi)
+include(GNUInstallDirs)
+
+if(APPLE)
+  include(MacRpath)
+endif()
 
 enable_testing()
 
@@ -374,9 +378,9 @@ endforeach()
 # Make version script (on systems that support it) to limit symbol visibility.
 make_version_script(toxcore ${toxcore_API_HEADERS})
 
-# Generate pkg-config file, install library to "lib" and install headers to
-# "include/tox".
-install_module(toxcore DESTINATION "include/tox")
+# Generate pkg-config file, install library to "${CMAKE_INSTALL_LIBDIR}" and install headers to
+# "${CMAKE_INSTALL_INCLUDEDIR}/tox".
+install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 
 ################################################################################
 #

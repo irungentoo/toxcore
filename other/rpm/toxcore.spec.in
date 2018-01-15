@@ -1,0 +1,126 @@
+%define full_name c-@PROJECT_NAME@
+%define commit 0
+%if "${commit}" != "0"
+%define shortcommit %(c=%{commit}; echo ${c:0:7})
+%endif
+
+Name:           @PROJECT_NAME@
+Version:        @PROJECT_VERSION@
+Release:        1%{?dist}
+Summary:        All-in-one secure communication platform
+
+License:        GPLv3
+URL:            https://github.com/TokTok/%{full_name}
+%if "%{commit}" == "0"
+Source0:        https://github.com/TokTok/%{full_name}/archive/v%{version}.tar.gz
+%else
+Source0:        https://github.com/TokTok/%{full_name}/archive/%{commit}/%{full_name}-%{shortcommit}.tar.gz
+%endif
+
+BuildRequires:  cmake
+BuildRequires:  libvpx-devel
+BuildRequires:  opus-devel
+BuildRequires:  libsodium-devel
+BuildRequires:  libconfig-devel
+BuildRequires:  systemd-units
+
+%description
+With the rise of governmental monitoring programs, Tox, a FOSS initiative, aims
+to be an easy to use, all-in-one communication platform that ensures their users
+full privacy and secure message delivery.
+
+%package devel
+Summary:        Development files for @PROJECT_NAME@
+Requires:       %{name} = %{version}-%{release}
+
+%description devel
+Development package for @PROJECT_NAME@
+
+%package static
+Summary:        @PROJECT_NAME@ static libraries
+Requires:       %{name}-devel = %{version}-%{release}
+
+%description static
+@PROJECT_NAME@ static libraries
+
+%package -n tox-bootstrapd
+Summary:        Tox DHT bootstrap daemon.
+Requires:       %{name} = %{version}-%{release}
+Requires(pre):  shadow-utils
+Requires(post): systemd-units
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+
+%description -n tox-bootstrapd
+Tox DHT bootstrap daemon.
+
+%prep
+%if "%{commit}" == "0"
+%setup -q -n %{full_name}-%{version}
+%else
+%setup -q -n %{full_name}-%{commit}
+%endif
+
+%build
+%cmake
+%{__make} %{?_smp_mflags}
+
+%install
+%make_install
+mkdir -p %{buildroot}%{_unitdir}
+install -m 0644 other/rpm/tox-bootstrapd.service %{buildroot}%{_unitdir}/tox-bootstrapd.service
+install -d "%{buildroot}%{_sharedstatedir}/tox-bootstrapd"
+mkdir -p %{buildroot}%{_sysconfdir}
+install -m 0644 other/bootstrap_daemon/tox-bootstrapd.conf %{buildroot}%{_sysconfdir}/tox-bootstrapd.conf
+
+%check
+%{__make} %{?_smp_mflags} test
+
+%pre -n tox-bootstrapd
+getent group tox-bootstrapd >/dev/null || groupadd -r tox-bootstrapd
+getent passwd tox-bootstrapd >/dev/null || \
+    useradd -r -g tox-bootstrapd -d /var/lib/tox-bootstrapd -s /sbin/nologin \
+    -c "Account to run Tox's DHT bootstrap daemon" tox-bootstrapd
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%post -n tox-bootstrapd
+%systemd_post tox-bootstrapd.service
+
+%postun -n tox-bootstrapd
+%systemd_postun_with_restart tox-bootstrapd.service
+
+%preun -n tox-bootstrapd
+%systemd_preun tox-bootstrapd.service
+
+%files
+%defattr(-, root, root)
+%doc COPYING README.md CHANGELOG.md
+%{_libdir}/libtoxcore.so*
+
+%files devel
+%defattr(-, root, root)
+%{_includedir}/tox/
+%{_libdir}/pkgconfig/toxcore.pc
+
+%files static
+%defattr(-, root, root)
+%{_libdir}/libtoxcore.a
+
+%files -n tox-bootstrapd
+%defattr(-, root, root)
+%{_bindir}/tox-bootstrapd
+%{_unitdir}/tox-bootstrapd.service
+%{_sharedstatedir}/tox-bootstrapd
+%attr(-,tox-bootstrapd,tox-bootstrapd) %{_sharedstatedir}/tox-bootstrapd/
+%config(noreplace) %{_sysconfdir}/tox-bootstrapd.conf
+
+
+%changelog
+* Sat Nov 25 2017 SmokedCheese <root@ubuntology.ru> - 0.0.0-2
+- Rewrite spec file
+
+* Tue Mar  3 2015 Sergey 'Jin' Bostandzhyan <jin@mediatomb.cc> - 0.0.0-1
+- initial package

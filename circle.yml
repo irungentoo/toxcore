@@ -20,6 +20,8 @@ dependencies:
   - sudo bash -c "echo '::1             localhost ipv6-localhost ipv6-loopback' >> /etc/hosts" # ipv6 localhost entry
 # ------------ network_test requires that "localhost" resolves to ::1 ------------
 
+  - sudo bash -c "echo /usr/local/lib/x86_64-linux-gnu > /etc/ld.so.conf.d/fix685519.conf" # fix https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=685519 
+
   - java -version ; exit 0
   - gcc --version ; exit 0
   - clang --version ; exit 0

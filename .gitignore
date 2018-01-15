@@ -16,6 +16,7 @@ Thumbs.db
 CMakeCache.txt
 CMakeFiles
 Makefile
+!/other/rpm/Makefile
 cmake_install.cmake
 install_manifest.txt
 tags

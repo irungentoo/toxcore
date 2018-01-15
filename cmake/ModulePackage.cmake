@@ -89,10 +89,10 @@ function(install_module lib)
       VERSION ${SOVERSION}
       SOVERSION ${SOVERSION_MAJOR}
     )
-    install(TARGETS ${lib}_shared DESTINATION "lib")
+    install(TARGETS ${lib}_shared DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
   if(ENABLE_STATIC)
-    install(TARGETS ${lib}_static DESTINATION "lib")
+    install(TARGETS ${lib}_static DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
 
   string(REPLACE ";" " " ${lib}_PKGCONFIG_LIBS "${${lib}_PKGCONFIG_LIBS}")
@@ -104,9 +104,15 @@ function(install_module lib)
     @ONLY
   )
 
+  configure_file(
+    "${toxcore_SOURCE_DIR}/other/rpm/${lib}.spec.in"
+    "${CMAKE_BINARY_DIR}/${lib}.spec"
+    @ONLY
+  )
+
   install(FILES
     ${CMAKE_BINARY_DIR}/${lib}.pc
-    DESTINATION "lib/pkgconfig")
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
   foreach(sublib ${${lib}_API_HEADERS})
     string(REPLACE "^" ";" sublib ${sublib})
