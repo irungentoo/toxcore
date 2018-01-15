@@ -232,6 +232,7 @@ endif()
 
 # LAYER 3: Distributed Hash Table
 # -------------------------------
+apidsl(toxcore/LAN_discovery.api.h)
 apidsl(toxcore/ping.api.h)
 apidsl(toxcore/ping_array.api.h)
 add_submodule(toxcore toxdht

@@ -793,12 +793,12 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
     }
 
     unsigned int i, j;
-    int lan_ips_accepted = (LAN_ip(source.ip) == 0);
+    int lan_ips_accepted = (ip_is_lan(source.ip) == 0);
 
     for (i = 0; i < num_nodes; ++i) {
 
         if (!lan_ips_accepted) {
-            if (LAN_ip(nodes[i].ip_port.ip) == 0) {
+            if (ip_is_lan(nodes[i].ip_port.ip) == 0) {
                 continue;
             }
         }

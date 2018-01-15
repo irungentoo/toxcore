@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
 
     uint64_t last_LANdiscovery = 0;
-    LANdiscovery_init(dht);
+    lan_discovery_init(dht);
 
     while (1) {
         if (is_waiting_for_dht_connection && DHT_isconnected(dht)) {
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
         do_DHT(dht);
 
         if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
-            send_LANdiscovery(net_htons(PORT), dht);
+            lan_discovery_send(net_htons(PORT), dht);
             last_LANdiscovery = unix_time();
         }
 

@@ -229,7 +229,7 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
     }
 
     /* Local ip and same pk means that they are hosting a TCP relay. */
-    if (Local_ip(ip_port.ip) && public_key_cmp(friend_con->dht_temp_pk, public_key) == 0) {
+    if (ip_is_local(ip_port.ip) && public_key_cmp(friend_con->dht_temp_pk, public_key) == 0) {
         if (friend_con->dht_ip_port.ip.family != 0) {
             ip_port.ip = friend_con->dht_ip_port.ip;
         } else {
@@ -892,7 +892,7 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
     if (temp->local_discovery_enabled) {
-        LANdiscovery_init(temp->dht);
+        lan_discovery_init(temp->dht);
     }
 
     return temp;
@@ -907,11 +907,11 @@ static void LANdiscovery(Friend_Connections *fr_c)
         last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
 
         // Always send to default port
-        send_LANdiscovery(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
+        lan_discovery_send(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
 
         // And check some extra ports
         for (uint16_t port = first; port < last; port++) {
-            send_LANdiscovery(net_htons(port), fr_c->dht);
+            lan_discovery_send(net_htons(port), fr_c->dht);
         }
 
         // Don't include default port in port range
@@ -987,7 +987,7 @@ void kill_friend_connections(Friend_Connections *fr_c)
     }
 
     if (fr_c->local_discovery_enabled) {
-        LANdiscovery_kill(fr_c->dht);
+        lan_discovery_kill(fr_c->dht);
     }
 
     free(fr_c);

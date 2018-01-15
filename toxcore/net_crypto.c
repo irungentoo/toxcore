@@ -432,7 +432,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
     }
 
     if (ip_port.ip.family == TOX_AF_INET) {
-        if (!ipport_equal(&ip_port, &conn->ip_portv4) && LAN_ip(conn->ip_portv4.ip) != 0) {
+        if (!ipport_equal(&ip_port, &conn->ip_portv4) && ip_is_lan(conn->ip_portv4.ip) != 0) {
             if (!bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
                 return -1;
             }
@@ -482,7 +482,7 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
         v6 = 1;
     }
 
-    if (v4 && LAN_ip(conn->ip_portv4.ip) == 0) {
+    if (v4 && ip_is_lan(conn->ip_portv4.ip) == 0) {
         return conn->ip_portv4;
     }
 

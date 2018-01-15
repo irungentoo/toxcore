@@ -256,7 +256,7 @@ static IP broadcast_ip(Family family_socket, Family family_broadcast)
 }
 
 /* Is IP a local ip or not. */
-bool Local_ip(IP ip)
+bool ip_is_local(IP ip)
 {
     if (ip.family == TOX_AF_INET) {
         IP4 ip4 = ip.ip4;
@@ -271,7 +271,7 @@ bool Local_ip(IP ip)
             IP ip4;
             ip4.family = TOX_AF_INET;
             ip4.ip4.uint32 = ip.ip6.uint32[3];
-            return Local_ip(ip4);
+            return ip_is_local(ip4);
         }
 
         /* localhost in IPv6 (::1) */
@@ -286,9 +286,9 @@ bool Local_ip(IP ip)
 /*  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-int LAN_ip(IP ip)
+int ip_is_lan(IP ip)
 {
-    if (Local_ip(ip)) {
+    if (ip_is_local(ip)) {
         return 0;
     }
 
@@ -335,7 +335,7 @@ int LAN_ip(IP ip)
             IP ip4;
             ip4.family = TOX_AF_INET;
             ip4.ip4.uint32 = ip.ip6.uint32[3];
-            return LAN_ip(ip4);
+            return ip_is_lan(ip4);
         }
     }
 
@@ -346,7 +346,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 {
     DHT *dht = (DHT *)object;
 
-    if (LAN_ip(source.ip) == -1) {
+    if (ip_is_lan(source.ip) == -1) {
         return 1;
     }
 
@@ -363,7 +363,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 }
 
 
-int send_LANdiscovery(uint16_t port, DHT *dht)
+int lan_discovery_send(uint16_t port, DHT *dht)
 {
     uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
@@ -399,12 +399,12 @@ int send_LANdiscovery(uint16_t port, DHT *dht)
 }
 
 
-void LANdiscovery_init(DHT *dht)
+void lan_discovery_init(DHT *dht)
 {
     networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
 }
 
-void LANdiscovery_kill(DHT *dht)
+void lan_discovery_kill(DHT *dht)
 {
     networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, NULL, NULL);
 }

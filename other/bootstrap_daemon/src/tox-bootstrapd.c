@@ -316,7 +316,7 @@ int main(int argc, char *argv[])
     int waiting_for_dht_connection = 1;
 
     if (enable_lan_discovery) {
-        LANdiscovery_init(dht);
+        lan_discovery_init(dht);
         log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
 
@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
         do_DHT(dht);
 
         if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
-            send_LANdiscovery(net_htons_port, dht);
+            lan_discovery_send(net_htons_port, dht);
             last_LANdiscovery = unix_time();
         }
 

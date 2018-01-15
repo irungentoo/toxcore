@@ -565,7 +565,7 @@ static void update_client(Logger *log, int index, Client_data *client, IP_Port i
                      net_ntohs(ip_port.port));
     }
 
-    if (LAN_ip(assoc->ip_port.ip) != 0 && LAN_ip(ip_port.ip) == 0) {
+    if (ip_is_lan(assoc->ip_port.ip) != 0 && ip_is_lan(ip_port.ip) == 0) {
         return;
     }
 
@@ -702,11 +702,11 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
         }
 
         /* don't send LAN ips to non LAN peers */
-        if (LAN_ip(ipptp->ip_port.ip) == 0 && !is_LAN) {
+        if (ip_is_lan(ipptp->ip_port.ip) == 0 && !is_LAN) {
             continue;
         }
 
-        if (LAN_ip(ipptp->ip_port.ip) != 0 && want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK
+        if (ip_is_lan(ipptp->ip_port.ip) != 0 && want_good && hardening_correct(&ipptp->hardening) != HARDENING_ALL_OK
                 && !id_equal(public_key, client->public_key)) {
             continue;
         }
@@ -1223,7 +1223,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     size_t Node_format_size = sizeof(Node_format);
 
     Node_format nodes_list[MAX_SENT_NODES];
-    uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, 0, LAN_ip(ip_port.ip) == 0, 1);
+    uint32_t num_nodes = get_close_nodes(dht, client_id, nodes_list, 0, ip_is_lan(ip_port.ip) == 0, 1);
 
     VLA(uint8_t, plain, 1 + Node_format_size * MAX_SENT_NODES + length);
 
@@ -2840,11 +2840,11 @@ int DHT_non_lan_connected(const DHT *dht)
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *client = &dht->close_clientlist[i];
 
-        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && LAN_ip(client->assoc4.ip_port.ip) == -1) {
+        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && ip_is_lan(client->assoc4.ip_port.ip) == -1) {
             return 1;
         }
 
-        if (!is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT) && LAN_ip(client->assoc6.ip_port.ip) == -1) {
+        if (!is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT) && ip_is_lan(client->assoc6.ip_port.ip) == -1) {
             return 1;
         }
     }
