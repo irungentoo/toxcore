@@ -388,37 +388,37 @@ install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 #
 ################################################################################
 
-find_program(SPECTEST NAMES
-  tox-spectest
-  ../.stack-work/install/x86_64-linux/lts-2.22/7.8.4/bin/tox-spectest)
-
-if(NOT SPECTEST)
-  find_program(STACK NAMES stack)
-  if(STACK)
-    set(SPECTEST
-      ${STACK} --stack-yaml ${toxcore_SOURCE_DIR}/../stack.yaml exec --
-      tox-spectest)
-  endif()
-endif()
-
-if(MSGPACK_FOUND)
-  add_c_executable(toxcore-sut
-    testing/hstox/binary_decode.c
-    testing/hstox/binary_encode.c
-    testing/hstox/driver.c
-    testing/hstox/methods.c
-    testing/hstox/packet_kinds.c
-    testing/hstox/test_main.c
-    testing/hstox/util.c)
-  target_link_modules(toxcore-sut
-    toxcore
-    toxdht
-    toxnetcrypto
-    ${MSGPACK_LIBRARIES})
-  if(SPECTEST)
-    add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
-  endif()
-endif()
+# find_program(SPECTEST NAMES
+#   tox-spectest
+#   ../.stack-work/install/x86_64-linux/lts-2.22/7.8.4/bin/tox-spectest)
+# 
+# if(NOT SPECTEST)
+#   find_program(STACK NAMES stack)
+#   if(STACK)
+#     set(SPECTEST
+#       ${STACK} --stack-yaml ${toxcore_SOURCE_DIR}/../stack.yaml exec --
+#       tox-spectest)
+#   endif()
+# endif()
+# 
+# if(MSGPACK_FOUND)
+#   add_c_executable(toxcore-sut
+#     testing/hstox/binary_decode.c
+#     testing/hstox/binary_encode.c
+#     testing/hstox/driver.c
+#     testing/hstox/methods.c
+#     testing/hstox/packet_kinds.c
+#     testing/hstox/test_main.c
+#     testing/hstox/util.c)
+#   target_link_modules(toxcore-sut
+#     toxcore
+#     toxdht
+#     toxnetcrypto
+#     ${MSGPACK_LIBRARIES})
+#   if(SPECTEST)
+#     add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
+#   endif()
+# endif()
 
 ################################################################################
 #

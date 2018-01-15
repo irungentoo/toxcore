@@ -1,8 +1,0 @@
-/*.dSYM
-/*_main-*
-/test-findings
-!/Makefile
-*.gcno
-*.gcda
-*.hi
-*.o
