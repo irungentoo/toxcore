@@ -49,7 +49,7 @@
 
 static uint8_t zeroes_cid[CRYPTO_PUBLIC_KEY_SIZE];
 
-static void print_client_id(uint8_t *public_key)
+static void print_client_id(const uint8_t *public_key)
 {
     uint32_t j;
 
@@ -58,7 +58,7 @@ static void print_client_id(uint8_t *public_key)
     }
 }
 
-static void print_hardening(Hardening *h)
+static void print_hardening(const Hardening *h)
 {
     printf("Hardening:\n");
     printf("routes_requests_ok: %hhu\n", h->routes_requests_ok);
@@ -76,9 +76,9 @@ static void print_hardening(Hardening *h)
     printf("\n\n");
 }
 
-static void print_assoc(IPPTsPng *assoc, uint8_t ours)
+static void print_assoc(const IPPTsPng *assoc, uint8_t ours)
 {
-    IP_Port *ipp = &assoc->ip_port;
+    const IP_Port *ipp = &assoc->ip_port;
     char ip_str[IP_NTOA_LEN];
     printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
     printf("\nTimestamp: %llu", (long long unsigned int) assoc->timestamp);
@@ -102,7 +102,7 @@ static void print_clientlist(DHT *dht)
     printf("___________________CLOSE________________________________\n");
 
     for (i = 0; i < LCLIENT_LIST; i++) {
-        Client_data *client = &dht->close_clientlist[i];
+        const Client_data *client = dht_get_close_client(dht, i);
 
         if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
             continue;
@@ -122,20 +122,20 @@ static void print_friendlist(DHT *dht)
     IP_Port p_ip;
     printf("_________________FRIENDS__________________________________\n");
 
-    for (k = 0; k < dht->num_friends; k++) {
+    for (k = 0; k < dht_get_num_friends(dht); k++) {
         printf("FRIEND %u\n", k);
         printf("ID: ");
 
-        print_client_id(dht->friends_list[k].public_key);
+        print_client_id(dht_get_friend_public_key(dht, k));
 
-        int friendok = DHT_getfriendip(dht, dht->friends_list[k].public_key, &p_ip);
+        int friendok = DHT_getfriendip(dht, dht_get_friend_public_key(dht, k), &p_ip);
         char ip_str[IP_NTOA_LEN];
         printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip, ip_str, sizeof(ip_str)), net_ntohs(p_ip.port), friendok);
 
         printf("\nCLIENTS IN LIST:\n\n");
 
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
-            Client_data *client = &dht->friends_list[k].client_list[i];
+            const Client_data *client = &dht_get_friend(dht, k)->client_list[i];
 
             if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
                 continue;
@@ -195,11 +195,13 @@ int main(int argc, char *argv[])
     uint32_t i;
 
     for (i = 0; i < 32; i++) {
-        if (dht->self_public_key[i] < 16) {
+        const uint8_t *const self_public_key = dht_get_self_public_key(dht);
+
+        if (self_public_key[i] < 16) {
             printf("0");
         }
 
-        printf("%hhX", dht->self_public_key[i]);
+        printf("%hhX", self_public_key[i]);
     }
 
     char temp_id[128];
@@ -250,7 +252,7 @@ int main(int argc, char *argv[])
         }
 
 #endif
-        networking_poll(dht->net, NULL);
+        networking_poll(dht_get_net(dht), NULL);
 
         print_clientlist(dht);
         print_friendlist(dht);

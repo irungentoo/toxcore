@@ -59,6 +59,94 @@
 
 #define ASSOC_COUNT 2
 
+struct DHT {
+    Logger *log;
+    Networking_Core *net;
+
+    bool hole_punching_enabled;
+
+    Client_data    close_clientlist[LCLIENT_LIST];
+    uint64_t       close_lastgetnodes;
+    uint32_t       close_bootstrap_times;
+
+    /* Note: this key should not be/is not used to transmit any sensitive materials */
+    uint8_t      secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
+    /* DHT keypair */
+    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
+
+    DHT_Friend    *friends_list;
+    uint16_t       num_friends;
+
+    Node_format   *loaded_nodes_list;
+    uint32_t       loaded_num_nodes;
+    unsigned int   loaded_nodes_index;
+
+    Shared_Keys shared_keys_recv;
+    Shared_Keys shared_keys_sent;
+
+    struct Ping   *ping;
+    Ping_Array    *dht_ping_array;
+    Ping_Array    *dht_harden_ping_array;
+    uint64_t       last_run;
+
+    Cryptopacket_Handles cryptopackethandlers[256];
+
+    Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
+    unsigned int num_to_bootstrap;
+};
+
+const uint8_t *dht_get_self_public_key(const DHT *dht)
+{
+    return dht->self_public_key;
+}
+const uint8_t *dht_get_self_secret_key(const DHT *dht)
+{
+    return dht->self_secret_key;
+}
+
+void dht_set_self_public_key(DHT *dht, const uint8_t *key)
+{
+    memcpy(dht->self_public_key, key, CRYPTO_PUBLIC_KEY_SIZE);
+}
+void dht_set_self_secret_key(DHT *dht, const uint8_t *key)
+{
+    memcpy(dht->self_secret_key, key, CRYPTO_SECRET_KEY_SIZE);
+}
+
+Networking_Core *dht_get_net(const DHT *dht)
+{
+    return dht->net;
+}
+struct Ping *dht_get_ping(const DHT *dht)
+{
+    return dht->ping;
+}
+const Client_data *dht_get_close_clientlist(const DHT *dht)
+{
+    return dht->close_clientlist;
+}
+const Client_data *dht_get_close_client(const DHT *dht, uint32_t client_num)
+{
+    assert(client_num < sizeof(dht->close_clientlist) / sizeof(dht->close_clientlist[0]));
+    return &dht->close_clientlist[client_num];
+}
+uint16_t dht_get_num_friends(const DHT *dht)
+{
+    return dht->num_friends;
+}
+
+DHT_Friend *dht_get_friend(DHT *dht, uint32_t friend_num)
+{
+    assert(friend_num < dht->num_friends);
+    return &dht->friends_list[friend_num];
+}
+const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num)
+{
+    assert(friend_num < dht->num_friends);
+    return dht->friends_list[friend_num].public_key;
+}
+
 /* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.

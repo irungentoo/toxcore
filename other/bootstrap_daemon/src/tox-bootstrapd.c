@@ -73,12 +73,12 @@ static int manage_keys(DHT *dht, char *keys_file_path)
             return 0;
         }
 
-        memcpy(dht->self_public_key, keys, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(dht->self_secret_key, keys + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_SECRET_KEY_SIZE);
+        dht_set_self_public_key(dht, keys);
+        dht_set_self_secret_key(dht, keys + CRYPTO_PUBLIC_KEY_SIZE);
     } else {
         // Otherwise save new keys
-        memcpy(keys, dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
+        memcpy(keys, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht_get_self_secret_key(dht), CRYPTO_SECRET_KEY_SIZE);
 
         keys_file = fopen(keys_file_path, "w");
 
@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
     }
 
     if (enable_motd) {
-        if (bootstrap_set_callbacks(dht->net, DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
+        if (bootstrap_set_callbacks(dht_get_net(dht), DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
             log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        tcp_server = new_TCP_server(enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht->self_secret_key, onion);
+        tcp_server = new_TCP_server(enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht_get_self_secret_key(dht), onion);
 
         // tcp_relay_port_count != 0 at this point
         free(tcp_relay_ports);
@@ -308,7 +308,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    print_public_key(dht->self_public_key);
+    print_public_key(dht_get_self_public_key(dht));
 
     uint64_t last_LANdiscovery = 0;
     const uint16_t net_htons_port = net_htons(port);
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
             do_TCP_server(tcp_server);
         }
 
-        networking_poll(dht->net, NULL);
+        networking_poll(dht_get_net(dht), NULL);
 
         if (waiting_for_dht_connection && DHT_isconnected(dht)) {
             log_write(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");

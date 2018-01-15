@@ -2010,7 +2010,8 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     }
 
     if (options->tcp_server_port) {
-        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, m->dht->self_secret_key, m->onion);
+        m->tcp_server = new_TCP_server(options->ipv6enabled, 1, &options->tcp_server_port, dht_get_self_secret_key(m->dht),
+                                       m->onion);
 
         if (m->tcp_server == NULL) {
             kill_friend_connections(m->fr_c);
@@ -2571,8 +2572,8 @@ void do_messenger(Messenger *m, void *userdata)
         uint32_t client, last_pinged;
 
         for (client = 0; client < LCLIENT_LIST; client++) {
-            Client_data *cptr = &m->dht->close_clientlist[client];
-            IPPTsPng *assoc = NULL;
+            const Client_data *cptr = dht_get_close_client(m->dht, client);
+            const IPPTsPng *assoc = NULL;
             uint32_t a;
 
             for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
@@ -2597,7 +2598,7 @@ void do_messenger(Messenger *m, void *userdata)
         uint32_t friend_idx, dhtfriend;
 
         /* dht contains additional "friends" (requests) */
-        uint32_t num_dhtfriends = m->dht->num_friends;
+        uint32_t num_dhtfriends = dht_get_num_friends(m->dht);
         VLA(int32_t, m2dht, num_dhtfriends);
         VLA(int32_t, dht2m, num_dhtfriends);
 
@@ -2609,8 +2610,8 @@ void do_messenger(Messenger *m, void *userdata)
                 continue;
             }
 
-            for (dhtfriend = 0; dhtfriend < m->dht->num_friends; dhtfriend++) {
-                if (id_equal(m->friendlist[friend_idx].real_pk, m->dht->friends_list[dhtfriend].public_key)) {
+            for (dhtfriend = 0; dhtfriend < dht_get_num_friends(m->dht); dhtfriend++) {
+                if (id_equal(m->friendlist[friend_idx].real_pk, dht_get_friend_public_key(m->dht, dhtfriend))) {
                     m2dht[friend_idx] = dhtfriend;
                     break;
                 }
@@ -2623,8 +2624,8 @@ void do_messenger(Messenger *m, void *userdata)
             }
         }
 
-        if (m->numfriends != m->dht->num_friends) {
-            LOGGER_TRACE(m->log, "Friend num in DHT %u != friend num in msger %u\n", m->dht->num_friends, m->numfriends);
+        if (m->numfriends != dht_get_num_friends(m->dht)) {
+            LOGGER_TRACE(m->log, "Friend num in DHT %u != friend num in msger %u\n", dht_get_num_friends(m->dht), m->numfriends);
         }
 
         Friend *msgfptr;
@@ -2637,7 +2638,7 @@ void do_messenger(Messenger *m, void *userdata)
                 msgfptr = NULL;
             }
 
-            dhtfptr = &m->dht->friends_list[friend_idx];
+            dhtfptr = dht_get_friend(m->dht, friend_idx);
 
             if (msgfptr) {
                 char id_str[IDSTRING_LEN];

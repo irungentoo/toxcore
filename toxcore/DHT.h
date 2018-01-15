@@ -240,42 +240,22 @@ typedef struct {
 } Cryptopacket_Handles;
 
 #define DHT_DEFINED
-typedef struct DHT {
-    Logger *log;
-    Networking_Core *net;
+typedef struct DHT DHT;
 
-    bool hole_punching_enabled;
+const uint8_t *dht_get_self_public_key(const DHT *dht);
+const uint8_t *dht_get_self_secret_key(const DHT *dht);
+void dht_set_self_public_key(DHT *dht, const uint8_t *key);
+void dht_set_self_secret_key(DHT *dht, const uint8_t *key);
 
-    Client_data    close_clientlist[LCLIENT_LIST];
-    uint64_t       close_lastgetnodes;
-    uint32_t       close_bootstrap_times;
+Networking_Core *dht_get_net(const DHT *dht);
+struct Ping *dht_get_ping(const DHT *dht);
+const Client_data *dht_get_close_clientlist(const DHT *dht);
+const Client_data *dht_get_close_client(const DHT *dht, uint32_t client_num);
+uint16_t dht_get_num_friends(const DHT *dht);
 
-    /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
-    /* DHT keypair */
-    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
+DHT_Friend *dht_get_friend(DHT *dht, uint32_t friend_num);
+const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num);
 
-    DHT_Friend    *friends_list;
-    uint16_t       num_friends;
-
-    Node_format   *loaded_nodes_list;
-    uint32_t       loaded_num_nodes;
-    unsigned int   loaded_nodes_index;
-
-    Shared_Keys shared_keys_recv;
-    Shared_Keys shared_keys_sent;
-
-    struct Ping   *ping;
-    Ping_Array    *dht_ping_array;
-    Ping_Array    *dht_harden_ping_array;
-    uint64_t       last_run;
-
-    Cryptopacket_Handles cryptopackethandlers[256];
-
-    Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
-    unsigned int num_to_bootstrap;
-} DHT;
 /*----------------------------------------------------------------------------------*/
 
 /* Shared key generations are costly, it is therefor smart to store commonly used

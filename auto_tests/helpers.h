@@ -51,8 +51,7 @@ static void print_debug_log(Tox *m, TOX_LOG_LEVEL level, const char *path, uint3
         return;
     }
 
-    if (strncmp(message, "Bound successfully to ", strlen("Bound successfully to ")) ||
-            strncmp(message, "Found node in LAN: ", strlen("Found node in LAN: "))) {
+    if (strncmp(message, "Bound successfully to ", strlen("Bound successfully to "))) {
         return;
     }
 

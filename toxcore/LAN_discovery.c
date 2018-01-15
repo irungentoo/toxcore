@@ -356,7 +356,6 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 
     char ip_str[IP_NTOA_LEN] = { 0 };
     ip_ntoa(&source.ip, ip_str, sizeof(ip_str));
-    LOGGER_DEBUG(dht->log, "Found node in LAN: %s", ip_str);
 
     DHT_bootstrap(dht, source, packet + 1);
     return 0;
@@ -367,30 +366,30 @@ int lan_discovery_send(uint16_t port, DHT *dht)
 {
     uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
-    id_copy(data + 1, dht->self_public_key);
+    id_copy(data + 1, dht_get_self_public_key(dht));
 
-    send_broadcasts(dht->net, port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
+    send_broadcasts(dht_get_net(dht), port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
 
     int res = -1;
     IP_Port ip_port;
     ip_port.port = port;
 
     /* IPv6 multicast */
-    if (net_family(dht->net) == TOX_AF_INET6) {
+    if (net_family(dht_get_net(dht)) == TOX_AF_INET6) {
         ip_port.ip = broadcast_ip(TOX_AF_INET6, TOX_AF_INET6);
 
         if (ip_isset(&ip_port.ip)) {
-            if (sendpacket(dht->net, ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE) > 0) {
+            if (sendpacket(dht_get_net(dht), ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE) > 0) {
                 res = 1;
             }
         }
     }
 
     /* IPv4 broadcast (has to be IPv4-in-IPv6 mapping if socket is TOX_AF_INET6 */
-    ip_port.ip = broadcast_ip(net_family(dht->net), TOX_AF_INET);
+    ip_port.ip = broadcast_ip(net_family(dht_get_net(dht)), TOX_AF_INET);
 
     if (ip_isset(&ip_port.ip)) {
-        if (sendpacket(dht->net, ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {
+        if (sendpacket(dht_get_net(dht), ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {
             res = 1;
         }
     }
@@ -401,10 +400,10 @@ int lan_discovery_send(uint16_t port, DHT *dht)
 
 void lan_discovery_init(DHT *dht)
 {
-    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
+    networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
 }
 
 void lan_discovery_kill(DHT *dht)
 {
-    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, NULL, NULL);
+    networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, NULL, NULL);
 }

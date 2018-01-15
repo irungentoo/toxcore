@@ -70,12 +70,12 @@ static void manage_keys(DHT *dht)
             exit(1);
         }
 
-        memcpy(dht->self_public_key, keys, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(dht->self_secret_key, keys + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_SECRET_KEY_SIZE);
+        dht_set_self_public_key(dht, keys);
+        dht_set_self_public_key(dht, keys + CRYPTO_PUBLIC_KEY_SIZE);
         printf("Keys loaded successfully.\n");
     } else {
-        memcpy(keys, dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
+        memcpy(keys, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht_get_self_secret_key(dht), CRYPTO_SECRET_KEY_SIZE);
         keys_file = fopen("key", "w");
 
         if (keys_file == NULL) {
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     Onion_Announce *onion_a = new_onion_announce(dht);
 
 #ifdef DHT_NODE_EXTRA_PACKETS
-    bootstrap_set_callbacks(dht->net, DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
+    bootstrap_set_callbacks(dht_get_net(dht), DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
 #endif
 
     if (!(onion && onion_a)) {
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
 #define NUM_PORTS 3
     uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
-    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht->self_secret_key, onion);
+    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
 
     if (tcp_s == NULL) {
         printf("TCP server failed to initialize.\n");
@@ -155,14 +155,15 @@ int main(int argc, char *argv[])
     }
 
     for (i = 0; i < 32; i++) {
-        printf("%02hhX", dht->self_public_key[i]);
-        fprintf(file, "%02hhX", dht->self_public_key[i]);
+        const uint8_t *const self_public_key = dht_get_self_public_key(dht);
+        printf("%02hhX", self_public_key[i]);
+        fprintf(file, "%02hhX", self_public_key[i]);
     }
 
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", net_ntohs(net_port(dht->net)));
+    printf("Port: %u\n", net_ntohs(net_port(dht_get_net(dht))));
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
@@ -199,7 +200,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
         do_TCP_server(tcp_s);
 #endif
-        networking_poll(dht->net, NULL);
+        networking_poll(dht_get_net(dht), NULL);
 
         c_sleep(1);
     }

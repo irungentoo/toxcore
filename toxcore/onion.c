@@ -120,8 +120,8 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
         return -1;
     }
 
-    encrypt_precompute(nodes[0].public_key, dht->self_secret_key, new_path->shared_key1);
-    memcpy(new_path->public_key1, dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
+    encrypt_precompute(nodes[0].public_key, dht_get_self_secret_key(dht), new_path->shared_key1);
+    memcpy(new_path->public_key1, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
 
     uint8_t random_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t random_secret_key[CRYPTO_SECRET_KEY_SIZE];
@@ -338,7 +338,7 @@ static int handle_send_initial(void *object, IP_Port source, const uint8_t *pack
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion->shared_keys_1, shared_key, onion->dht->self_secret_key, packet + 1 + CRYPTO_NONCE_SIZE);
+    get_shared_key(&onion->shared_keys_1, shared_key, dht_get_self_secret_key(onion->dht), packet + 1 + CRYPTO_NONCE_SIZE);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE), plain);
 
@@ -407,7 +407,7 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion->shared_keys_2, shared_key, onion->dht->self_secret_key, packet + 1 + CRYPTO_NONCE_SIZE);
+    get_shared_key(&onion->shared_keys_2, shared_key, dht_get_self_secret_key(onion->dht), packet + 1 + CRYPTO_NONCE_SIZE);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + RETURN_1), plain);
 
@@ -463,7 +463,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion->shared_keys_3, shared_key, onion->dht->self_secret_key, packet + 1 + CRYPTO_NONCE_SIZE);
+    get_shared_key(&onion->shared_keys_3, shared_key, dht_get_self_secret_key(onion->dht), packet + 1 + CRYPTO_NONCE_SIZE);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + RETURN_2), plain);
 
@@ -646,7 +646,7 @@ Onion *new_onion(DHT *dht)
     }
 
     onion->dht = dht;
-    onion->net = dht->net;
+    onion->net = dht_get_net(dht);
     new_symmetric_key(onion->secret_symmetric_key);
     onion->timestamp = unix_time();
 
