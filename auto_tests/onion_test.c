@@ -479,9 +479,9 @@ START_TEST(test_announce)
 
     printf("adding friend\n");
     int frnum_f = onion_addfriend(onions[NUM_FIRST]->onion_c,
-                                  onion_get_net_crypto(onions[NUM_LAST]->onion_c)->self_public_key);
+                                  nc_get_self_public_key(onion_get_net_crypto(onions[NUM_LAST]->onion_c)));
     int frnum = onion_addfriend(onions[NUM_LAST]->onion_c,
-                                onion_get_net_crypto(onions[NUM_FIRST]->onion_c)->self_public_key);
+                                nc_get_self_public_key(onion_get_net_crypto(onions[NUM_FIRST]->onion_c)));
 
     onion_dht_pk_callback(onions[NUM_FIRST]->onion_c, frnum_f, &dht_pk_callback, onions[NUM_FIRST], NUM_FIRST);
     onion_dht_pk_callback(onions[NUM_LAST]->onion_c, frnum, &dht_pk_callback, onions[NUM_LAST], NUM_LAST);
