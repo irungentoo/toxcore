@@ -81,8 +81,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(CHECK_FOUND TRUE)
     set(CHECK_LIBRARIES ${LIBCHECK_LIBRARIES} ${LIBCOMPAT_LIBRARIES})
     message("check: ${CHECK_LIBRARIES}")
-  else()
-    message(FATAL_ERROR "check libraries not found")
   endif()
 
   # pthreads
