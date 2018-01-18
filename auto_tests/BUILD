@@ -12,6 +12,7 @@ cc_library(
     size = "small",
     srcs = [src],
     copts = [
+        "-std=c99",
         "-Wno-parentheses",
     ],
     deps = [

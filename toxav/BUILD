@@ -28,6 +28,9 @@ cc_library(
         "toxav.h",
         "video.h",
     ],
+    copts = [
+        "-std=c99",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         "//c-toxcore/toxcore",

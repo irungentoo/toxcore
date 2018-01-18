@@ -13,6 +13,9 @@ cc_library(
         "defines.h",
         "toxencryptsave.h",
     ],
+    copts = [
+        "-std=c99",
+    ],
     visibility = [
         "//visibility:public",
     ],

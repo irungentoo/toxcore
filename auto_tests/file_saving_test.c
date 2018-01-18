@@ -42,7 +42,7 @@ static void save_data_encrypted(void)
 
     FILE *f = fopen(savefile, "w");
 
-    off_t size = tox_get_savedata_size(t);
+    size_t size = tox_get_savedata_size(t);
     uint8_t *clear = (uint8_t *)malloc(size);
 
     /*this function does not write any data at all*/

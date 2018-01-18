@@ -21,7 +21,7 @@ cc_library(
     hdrs = [
         "crypto_core.h",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":ccompat",
         "@libsodium",
@@ -74,6 +74,7 @@ cc_library(
         "util.h",
     ],
     copts = [
+        "-std=c99",
         "-Wno-parentheses",
     ],
     linkopts = ["-lpthread"],
