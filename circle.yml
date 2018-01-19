@@ -12,7 +12,9 @@ machine:
 dependencies:
   pre:
   - sudo apt-get update
-  - sudo apt-get install astyle
+  - sudo bash -c "echo 'deb http://archive.ubuntu.com/ubuntu trusty-backports main restricted universe multiverse' >> /etc/apt/sources.list" # add backports repo
+  - sudo apt-get update
+  - sudo apt-get install astyle/trusty-backports
   - sudo apt-get install clang
   - sudo apt-get install build-essential libtool autotools-dev automake checkinstall check git yasm
   - sudo apt-get install libopus-dev libvpx-dev pkg-config
