@@ -38,7 +38,7 @@ TEST(Rtp, Deserialisation)
     RTPHeader unpacked = {0};
     EXPECT_EQ(rtp_header_unpack(rdata, &unpacked), RTP_HEADER_SIZE);
 
-    EXPECT_EQ(header.protocol_version, unpacked.protocol_version);
+    EXPECT_EQ(header.ve, unpacked.ve);
     EXPECT_EQ(header.pe, unpacked.pe);
     EXPECT_EQ(header.xe, unpacked.xe);
     EXPECT_EQ(header.cc, unpacked.cc);

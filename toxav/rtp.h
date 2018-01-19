@@ -66,9 +66,10 @@ enum RTPFlags {
     RTP_KEY_FRAME = 1 << 1,
 };
 
+
 struct RTPHeader {
     /* Standard RTP header */
-    unsigned protocol_version: 2; /* Version has only 2 bits! */
+    unsigned ve: 2; /* Version has only 2 bits! */
     unsigned pe: 1; /* Padding */
     unsigned xe: 1; /* Extra header */
     unsigned cc: 4; /* Contributing sources count */
@@ -113,32 +114,70 @@ struct RTPHeader {
     uint16_t data_length_lower;
 };
 
+
 struct RTPMessage {
+    /**
+     * This is used in the old code that doesn't deal with large frames, i.e.
+     * the audio code or receiving code for old 16 bit messages. We use it to
+     * record the number of bytes received so far in a multi-part message. The
+     * multi-part message in the old code is stored in \ref RTPSession::mp.
+     */
     uint16_t len;
 
     struct RTPHeader header;
     uint8_t data[];
 };
 
+#define USED_RTP_WORKBUFFER_COUNT 3
+
+/**
+ * One slot in the work buffer list. Represents one frame that is currently
+ * being assembled.
+ */
+struct RTPWorkBuffer {
+    /**
+     * Whether this slot contains a key frame. This is true iff
+     * buf->header.flags & RTP_KEY_FRAME.
+     */
+    bool is_keyframe;
+    /**
+     * The number of bytes received so far, regardless of which pieces. I.e. we
+     * could have received the first 1000 bytes and the last 1000 bytes with
+     * 4000 bytes in the middle still to come, and this number would be 2000.
+     */
+    uint32_t received_len;
+    /**
+     * The message currently being assembled.
+     */
+    struct RTPMessage *buf;
+};
+
+struct RTPWorkBufferList {
+    int8_t next_free_entry;
+    struct RTPWorkBuffer work_buffer[USED_RTP_WORKBUFFER_COUNT];
+};
+
+#define DISMISS_FIRST_LOST_VIDEO_PACKET_COUNT 10
+
 /**
  * RTP control session.
  */
-typedef struct {
+typedef struct RTPSession {
     uint8_t  payload_type;
     uint16_t sequnum;      /* Sending sequence number */
     uint16_t rsequnum;     /* Receiving sequence number */
     uint32_t rtimestamp;
-    uint32_t ssrc;
-
+    uint32_t ssrc; //  this seems to be unused!?
     struct RTPMessage *mp; /* Expected parted message */
-
+    struct RTPWorkBufferList *work_buffer_list;
+    uint8_t  first_packets_counter; /* dismiss first few lost video packets */
     Messenger *m;
     uint32_t friend_number;
-
     BWController *bwc;
     void *cs;
     int (*mcb)(void *, struct RTPMessage *msg);
 } RTPSession;
+
 
 /**
  * Serialise an RTPHeader to bytes to be sent over the network.
@@ -164,7 +203,17 @@ RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
 void rtp_kill(RTPSession *session);
 int rtp_allow_receiving(RTPSession *session);
 int rtp_stop_receiving(RTPSession *session);
-int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Logger *log);
+/**
+ * Send a frame of audio or video data, chunked in \ref RTPMessage instances.
+ *
+ * @param session The A/V session to send the data for.
+ * @param data A byte array of length \p length.
+ * @param length The number of bytes to send from @p data.
+ * @param is_keyframe Whether this video frame is a key frame. If it is an
+ *   audio frame, this parameter is ignored.
+ */
+int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
+                  bool is_keyframe, Logger *log);
 
 #ifdef __cplusplus
 }  // extern "C"

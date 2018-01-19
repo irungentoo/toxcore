@@ -31,8 +31,7 @@
 
 #include <vpx/vp8cx.h>
 #include <vpx/vp8dx.h>
-#define VIDEO_CODEC_DECODER_INTERFACE (vpx_codec_vp8_dx())
-#define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
+
 
 #include <pthread.h>
 
@@ -64,6 +63,6 @@ VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_re
 void vc_kill(VCSession *vc);
 void vc_iterate(VCSession *vc);
 int vc_queue_message(void *vcp, struct RTPMessage *msg);
-int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height);
+int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height, int16_t kf_max_dist);
 
 #endif /* VIDEO_H */
