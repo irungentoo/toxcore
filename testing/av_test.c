@@ -231,27 +231,29 @@ static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceC
     Tox *Alice;
     Tox *Bob;
 
-    struct Tox_Options opts;
-    tox_options_default(&opts);
+    struct Tox_Options *opts = tox_options_new(NULL);
+    assert(opts != NULL);
 
-    opts.end_port = 0;
-    opts.ipv6_enabled = false;
+    tox_options_set_end_port(opts, 0);
+    tox_options_set_ipv6_enabled(opts, false);
 
     {
         TOX_ERR_NEW error;
 
-        opts.start_port = 33445;
+        tox_options_set_start_port(opts, 33445);
         *bootstrap = tox_new(&opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
-        opts.start_port = 33455;
+        tox_options_set_start_port(opts, 33455);
         Alice = tox_new(&opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
-        opts.start_port = 33465;
+        tox_options_set_start_port(opts, 33465);
         Bob = tox_new(&opts, &error);
         assert(error == TOX_ERR_NEW_OK);
     }
+
+    tox_options_free(opts);
 
     printf("Created 3 instances of Tox\n");
     printf("Preparing network...\n");

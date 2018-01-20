@@ -34,9 +34,9 @@ static const char *pphrase = "bar", *name = "foo", *savefile = "./save";
 
 static void save_data_encrypted(void)
 {
-    struct Tox_Options options;
-    tox_options_default(&options);
-    Tox *t = tox_new(&options, NULL);
+    struct Tox_Options *options = tox_options_new(NULL);
+    Tox *t = tox_new(options, NULL);
+    tox_options_free(options);
 
     tox_self_set_name(t, (const uint8_t *)name, strlen(name), NULL);
 
@@ -87,17 +87,17 @@ static void load_data_decrypted(void)
         exit(3);
     }
 
-    struct Tox_Options options;
+    struct Tox_Options *options = tox_options_new(NULL);
 
-    tox_options_default(&options);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
-    tox_options_set_savedata_type(&options, TOX_SAVEDATA_TYPE_TOX_SAVE);
-
-    tox_options_set_savedata_data(&options, clear, size);
+    tox_options_set_savedata_data(options, clear, size);
 
     TOX_ERR_NEW err;
 
-    Tox *t = tox_new(&options, &err);
+    Tox *t = tox_new(options, &err);
+
+    tox_options_free(options);
 
     if (t == NULL) {
         fprintf(stderr, "error: tox_new returned the error value %d\n", err);
