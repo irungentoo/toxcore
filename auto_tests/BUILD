@@ -15,6 +15,7 @@ cc_library(
     srcs = [src],
     copts = [
         "-Wno-parentheses",
+        "-Wno-sign-compare",
     ],
     deps = [
         ":helpers",
@@ -25,4 +26,4 @@ cc_library(
         "//c-toxcore/toxencryptsave",
         "@check",
     ],
-) for src in glob(["*_test.c"])]
+) for src in glob(["*_test.c*"])]

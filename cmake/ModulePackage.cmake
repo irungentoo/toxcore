@@ -28,7 +28,7 @@ macro(set_source_language)
   endif()
 endmacro()
 
-function(add_c_executable exec)
+function(add_binary exec)
   set_source_language(${ARGN})
 
   add_executable(${exec} ${ARGN})

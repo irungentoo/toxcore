@@ -27,7 +27,9 @@
 #include "config.h"
 #endif
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #include "util.h"
 

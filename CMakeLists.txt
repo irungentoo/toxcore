@@ -403,7 +403,7 @@ install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 # endif()
 # 
 # if(MSGPACK_FOUND)
-#   add_c_executable(toxcore-sut
+#   add_binary(toxcore-sut
 #     testing/hstox/binary_decode.c
 #     testing/hstox/binary_encode.c
 #     testing/hstox/driver.c
@@ -445,7 +445,7 @@ endif()
 
 function(auto_test target)
   if(CHECK_FOUND AND NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
-    add_c_executable(auto_${target}_test auto_tests/${target}_test.c)
+    add_binary(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test
       toxcore
       toxcrypto
@@ -460,8 +460,8 @@ function(auto_test target)
 endfunction()
 
 if(BUILD_TOXAV)
-  add_c_executable(auto_monolith_test
-    auto_tests/monolith_test.c
+  add_binary(auto_monolith_test
+    auto_tests/monolith_test.cpp
     ${ANDROID_CPU_FEATURES})
   target_link_modules(auto_monolith_test
     ${LIBSODIUM_LIBRARIES}
@@ -511,7 +511,7 @@ endif()
 
 option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
 if(DHT_BOOTSTRAP)
-  add_c_executable(DHT_bootstrap
+  add_binary(DHT_bootstrap
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
   target_link_modules(DHT_bootstrap toxnetcrypto)
@@ -523,7 +523,7 @@ if(BOOTSTRAP_DAEMON)
     message(FATAL_ERROR "Building tox-bootstrapd for Windows is not supported")
   endif()
   if(LIBCONFIG_FOUND)
-    add_c_executable(tox-bootstrapd
+    add_binary(tox-bootstrapd
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
       other/bootstrap_daemon/src/config.c
@@ -554,7 +554,7 @@ option(BUILD_AV_TEST "Build toxav test" ON)
 if(NOT WIN32
   AND BUILD_AV_TEST AND BUILD_TOXAV
   AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
-  add_c_executable(av_test testing/av_test.c)
+  add_binary(av_test testing/av_test.c)
   target_link_modules(av_test
     toxcore
     ${OPENCV_LIBRARIES}
@@ -567,23 +567,23 @@ if(NOT WIN32
   endif()
 endif()
 
-add_c_executable(DHT_test testing/DHT_test.c)
+add_binary(DHT_test testing/DHT_test.c)
 target_link_modules(DHT_test toxdht)
 
-add_c_executable(Messenger_test testing/Messenger_test.c)
+add_binary(Messenger_test testing/Messenger_test.c)
 target_link_modules(Messenger_test toxmessenger)
 
 if(NOT WIN32)
-  add_c_executable(tox_sync testing/tox_sync.c)
+  add_binary(tox_sync testing/tox_sync.c)
   target_link_modules(tox_sync toxcore)
 endif()
 
 if(UTIL_LIBRARIES)
-  add_c_executable(tox_shell testing/tox_shell.c)
+  add_binary(tox_shell testing/tox_shell.c)
   target_link_modules(tox_shell toxcore ${UTIL_LIBRARIES})
 endif()
 
 if(NOT WIN32)
-  add_c_executable(irc_syncbot testing/irc_syncbot.c)
+  add_binary(irc_syncbot testing/irc_syncbot.c)
   target_link_modules(irc_syncbot toxcore toxnetwork)
 endif()
