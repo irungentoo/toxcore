@@ -211,10 +211,13 @@ group_test_restart:
         tox_callback_conference_message(toxes[i], &print_group_message);
     }
 
+    TOX_ERR_CONFERENCE_SEND_MESSAGE err;
     ck_assert_msg(
         tox_conference_send_message(
             toxes[rand() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)"Install Gentoo",
-            sizeof("Install Gentoo") - 1, NULL) != 0, "Failed to send group message.");
+            sizeof("Install Gentoo") - 1, &err) != 0, "Failed to send group message.");
+    ck_assert_msg(
+        err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "Failed to send group message.");
     num_recv = 0;
 
     for (j = 0; j < 20; ++j) {
