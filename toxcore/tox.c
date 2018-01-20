@@ -1300,8 +1300,10 @@ bool tox_conference_send_message(Tox *tox, uint32_t conference_number, TOX_MESSA
 
     if (type == TOX_MESSAGE_TYPE_NORMAL) {
         ret = group_message_send((Group_Chats *)m->conferences_object, conference_number, message, length);
-    } else {
+    } else if (type == TOX_MESSAGE_TYPE_ACTION) {
         ret = group_action_send((Group_Chats *)m->conferences_object, conference_number, message, length);
+    } else if (type == TOX_MESSAGE_TYPE_CORRECTION) {
+        ret = group_correction_send((Group_Chats *)m->conferences_object, conference_number, message, length);
     }
 
     switch (ret) {
