@@ -567,12 +567,6 @@ if(NOT WIN32
   endif()
 endif()
 
-option(BUILD_NTOX "Build nTox client" OFF)
-if(BUILD_NTOX AND NOT WIN32)
-  add_c_executable(nTox testing/nTox.c)
-  target_link_modules(nTox toxcore ${NCURSES_LIBRARIES})
-endif()
-
 add_c_executable(DHT_test testing/DHT_test.c)
 target_link_modules(DHT_test toxdht)
 

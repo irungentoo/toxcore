@@ -1,25 +1,3 @@
-if BUILD_NTOX
-
-bin_PROGRAMS += nTox
-
-nTox_SOURCES =          ../testing/nTox.h \
-                        ../testing/nTox.c
-
-nTox_CFLAGS =           $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS) \
-                        $(NCURSES_CFLAGS)
-
-nTox_LDADD =            $(LIBSODIUM_LDFLAGS) \
-                        $(NAC_LDFLAGS) \
-                        libtoxcore.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(NCURSES_LIBS) \
-                        $(WINSOCK2_LIBS)
-endif
-
-
 if BUILD_TESTING
 
 noinst_PROGRAMS +=      DHT_test \

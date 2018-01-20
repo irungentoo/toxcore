@@ -29,7 +29,6 @@ Development package for @PACKAGE_NAME@
     --enable-shared \
     --disable-static \
     --enable-av \
-    --disable-ntox \
     --disable-daemon \
     --disable-testing
 

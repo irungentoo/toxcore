@@ -22,7 +22,6 @@ fi
   --enable-nacl \
   --enable-daemon \
   --enable-logging \
-  --enable-ntox \
   $IPV6_FLAG \
   --with-log-level=TRACE
 

@@ -8,7 +8,6 @@ include(ModulePackage)
 
 find_package(Threads REQUIRED)
 
-find_library(NCURSES_LIBRARIES      ncurses      )
 find_library(UTIL_LIBRARIES         util         )
 find_library(RT_LIBRARIES           rt           )
 

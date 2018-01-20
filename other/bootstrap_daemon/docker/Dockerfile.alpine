@@ -39,7 +39,7 @@ RUN set -x && \
 # Compile
 	cd c-toxcore-master && \
 	su_wrapper "./autogen.sh" && \
-	su_wrapper "./configure --prefix=/usr --enable-daemon --disable-av --disable-ntox" && \
+	su_wrapper "./configure --prefix=/usr --enable-daemon --disable-av" && \
 	su_wrapper "make" && \
 # Run tests (they FAIL mostly if you don't have enough compute resources)
 #	for i in $(seq 1 10); do echo "=== check attempt $i ==="; su_wrapper "make check"; ret=$?; echo "=== check returned $ret ==="; if [ $ret -eq 0 ]; then echo "=== check passed ==="; break; elif [ $i -eq 10 ]; then echo "=== too many failures, aborting ==="; exit 1; fi; done && \

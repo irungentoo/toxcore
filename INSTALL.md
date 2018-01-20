@@ -19,7 +19,6 @@
   - [A/V support](#av-support)
     - [libtoxav](#libtoxav)
   - [Bootstrap daemon](#bootstrap-daemon)
-  - [nTox](#ntox-test-cli)
 
 ## Installation
 
@@ -400,7 +399,7 @@ And finally we will build Tox:
 git clone https://github.com/TokTok/c-toxcore.git c-toxcore
 cd c-toxcore
 ./autogen.sh
-./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-ntox --disable-tests --disable-testing --with-dependency-search="$PREFIX_DIR" --disable-shared --enable-static
+./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-tests --disable-testing --with-dependency-search="$PREFIX_DIR" --disable-shared --enable-static
 make
 make install
 cd ..
@@ -476,7 +475,6 @@ make install
   - --disable-silent-rules verbose build output (undo: "make V=0")
   - --disable-tests build unit tests (default: auto)
   - --disable-av disable A/V support (default: auto) see: [libtoxav](#libtoxav)
-  - --enable-ntox build nTox client (default: no) see: [nTox](#ntox)
   - --enable-daemon build DHT bootstrap daemon (default=no) see: [Bootstrap daemon](#bootstrap-daemon)
   - --enable-dht-bootstrap build DHT bootstrap utility (default=disabled)
   - --enable-shared[=PKGS]  build shared libraries [default=yes]
@@ -556,22 +554,3 @@ OS X non-homebrew:
 Grab the following [package](http://www.hyperrealm.com/libconfig/), uncompress and install
 
 See this [readme](other/bootstrap_daemon/README.md) on how to set up the bootstrap daemon.
-
-
-### nTox test cli:
-
-nTox is disabled by default. You can enable it by adding --enable-ntox argument to ./configure script like so:
-```bash
-./configure --enable-ntox
-```
-There is one dependency required for nTox: libncurses.
-
-Install on fedora:
-```bash
-yum install ncurses-devel
-```
-
-Install on ubuntu:
-```bash
-sudo apt-get install ncurses-dev
-```

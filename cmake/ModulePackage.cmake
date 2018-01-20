@@ -150,8 +150,8 @@ function(target_link_modules target)
     set(_targets ${_targets} ${target})
     # Executables preferably link against static libraries, so they are
     # standalone and can be shipped without any external dependencies. As a
-    # frame of reference: nTox becomes an 1.3M binary instead of 139K on x86_64
-    # Linux.
+    # frame of reference: tests become roughly 1-1.5M binaries instead of
+    # 100-200K on x86_64 Linux.
     set(${target}_primary static)
     set(${target}_secondary shared)
   endif()
