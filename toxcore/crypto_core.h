@@ -28,6 +28,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * The number of bytes in a Tox public key.
  */
@@ -235,5 +239,9 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
  * Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
  */
 void new_symmetric_key(uint8_t *key);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif /* CRYPTO_CORE_H */

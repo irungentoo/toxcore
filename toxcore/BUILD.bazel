@@ -21,7 +21,7 @@ cc_library(
     hdrs = [
         "crypto_core.h",
     ],
-    visibility = ["//c-toxcore/toxencryptsave:__pkg__"],
+    visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":ccompat",
         "@libsodium",

@@ -28,6 +28,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 %}
 
 /**
@@ -251,5 +255,9 @@ static void increment_nonce_number(uint8_t[CRYPTO_NONCE_SIZE] nonce, uint32_t ho
 static void new_symmetric_key(uint8_t[CRYPTO_SYMMETRIC_KEY_SIZE] key);
 
 %{
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
 #endif /* CRYPTO_CORE_H */
 %}

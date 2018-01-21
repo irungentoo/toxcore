@@ -1474,3 +1474,50 @@ uint16_t net_ntohs(uint16_t hostshort)
 {
     return ntohs(hostshort);
 }
+
+size_t net_pack_u16(uint8_t *bytes, uint16_t v)
+{
+    bytes[0] = (v >> 8) & 0xff;
+    bytes[1] = v & 0xff;
+    return sizeof(v);
+}
+
+size_t net_pack_u32(uint8_t *bytes, uint32_t v)
+{
+    bytes += net_pack_u16(bytes, (v >> 16) & 0xffff);
+    bytes += net_pack_u16(bytes, v & 0xffff);
+    return sizeof(v);
+}
+
+size_t net_pack_u64(uint8_t *bytes, uint64_t v)
+{
+    bytes += net_pack_u32(bytes, (v >> 32) & 0xffffffff);
+    bytes += net_pack_u32(bytes, v & 0xffffffff);
+    return sizeof(v);
+}
+
+size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v)
+{
+    uint8_t hi = bytes[0];
+    uint8_t lo = bytes[1];
+    *v = ((uint16_t)hi << 8) | lo;
+    return sizeof(*v);
+}
+
+size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v)
+{
+    uint16_t lo, hi;
+    bytes += net_unpack_u16(bytes, &hi);
+    bytes += net_unpack_u16(bytes, &lo);
+    *v = ((uint32_t)hi << 16) | lo;
+    return sizeof(*v);
+}
+
+size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v)
+{
+    uint32_t lo, hi;
+    bytes += net_unpack_u32(bytes, &hi);
+    bytes += net_unpack_u32(bytes, &lo);
+    *v = ((uint64_t)hi << 32) | lo;
+    return sizeof(*v);
+}

@@ -63,6 +63,10 @@
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef short Family;
 
 typedef int Socket;
@@ -165,6 +169,14 @@ uint32_t net_htonl(uint32_t hostlong);
 uint16_t net_htons(uint16_t hostshort);
 uint32_t net_ntohl(uint32_t hostlong);
 uint16_t net_ntohs(uint16_t hostshort);
+
+size_t net_pack_u16(uint8_t *bytes, uint16_t v);
+size_t net_pack_u32(uint8_t *bytes, uint32_t v);
+size_t net_pack_u64(uint8_t *bytes, uint64_t v);
+
+size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v);
+size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v);
+size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 #define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == net_htonl (0xffff)))
@@ -407,5 +419,9 @@ Networking_Core *new_networking_no_udp(Logger *log);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif

@@ -35,6 +35,16 @@ cc_library(
     deps = [":bwcontroller"],
 )
 
+cc_test(
+    name = "rtp_test",
+    srcs = ["rtp_test.cpp"],
+    deps = [
+        ":rtp",
+        "//c-toxcore/toxcore:crypto_core",
+        "@gtest",
+    ],
+)
+
 cc_library(
     name = "audio",
     srcs = ["audio.c"],
