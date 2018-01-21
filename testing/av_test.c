@@ -241,15 +241,15 @@ static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceC
         TOX_ERR_NEW error;
 
         tox_options_set_start_port(opts, 33445);
-        *bootstrap = tox_new(&opts, &error);
+        *bootstrap = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
         tox_options_set_start_port(opts, 33455);
-        Alice = tox_new(&opts, &error);
+        Alice = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
         tox_options_set_start_port(opts, 33465);
-        Bob = tox_new(&opts, &error);
+        Bob = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
     }
 
@@ -440,8 +440,10 @@ int main(int argc, char **argv)
     long audio_out_dev_idx = -1;
 
     int32_t audio_frame_duration = 20;
+#if 0
     // TODO(mannol): Put this to use.
     int32_t video_frame_duration = 10;
+#endif
 
     /* Parse settings */
 CHECK_ARG:
@@ -467,6 +469,8 @@ CHECK_ARG:
             vf_name = optarg;
             goto CHECK_ARG;
 
+#if 0
+
         case 'x': {
             char *d;
             video_frame_duration = strtol(optarg, &d, 10);
@@ -478,6 +482,8 @@ CHECK_ARG:
 
             goto CHECK_ARG;
         }
+
+#endif
 
         case 'o': {
             char *d;

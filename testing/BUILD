@@ -25,6 +25,21 @@ cc_binary(
 )
 
 cc_binary(
+    name = "av_test",
+    srcs = ["av_test.c"],
+    linkopts = [
+        "-lportaudio",
+        "-lopencv_highgui",
+        "-lopencv_core",
+    ],
+    deps = [
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxav:monolith",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
     name = "irc_syncbot",
     srcs = ["irc_syncbot.c"],
     deps = [

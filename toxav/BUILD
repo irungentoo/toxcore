@@ -45,5 +45,8 @@ cc_library(
         "*.c",
         "*.h",
     ]),
-    visibility = ["//c-toxcore/other:__pkg__"],
+    visibility = [
+        "//c-toxcore/other:__pkg__",
+        "//c-toxcore/testing:__pkg__",
+    ],
 )

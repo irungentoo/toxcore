@@ -8,3 +8,20 @@ cc_library(
         "//c-toxcore/toxencryptsave:monolith",
     ],
 )
+
+cc_library(
+    name = "bootstrap_node_packets",
+    srcs = ["bootstrap_node_packets.c"],
+    hdrs = ["bootstrap_node_packets.h"],
+    visibility = ["//c-toxcore/other/bootstrap_daemon:__pkg__"],
+    deps = ["//c-toxcore/toxcore"],
+)
+
+cc_binary(
+    name = "DHT_bootstrap",
+    srcs = ["DHT_bootstrap.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
