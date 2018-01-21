@@ -34,10 +34,16 @@ bool rb_full(const RingBuffer *b)
 {
     return (b->end + 1) % b->size == b->start;
 }
+
 bool rb_empty(const RingBuffer *b)
 {
     return b->end == b->start;
 }
+
+/*
+ * returns: NULL on success
+ *          input value "p" on FAILURE -> caller can free on failed rb_write
+ */
 void *rb_write(RingBuffer *b, void *p)
 {
     void *rc = NULL;
@@ -55,6 +61,7 @@ void *rb_write(RingBuffer *b, void *p)
 
     return rc;
 }
+
 bool rb_read(RingBuffer *b, void **p)
 {
     if (b->end == b->start) { /* Empty */
@@ -66,6 +73,7 @@ bool rb_read(RingBuffer *b, void **p)
     b->start = (b->start + 1) % b->size;
     return true;
 }
+
 RingBuffer *rb_new(int size)
 {
     RingBuffer *buf = (RingBuffer *)calloc(sizeof(RingBuffer), 1);
@@ -83,6 +91,7 @@ RingBuffer *rb_new(int size)
 
     return buf;
 }
+
 void rb_kill(RingBuffer *b)
 {
     if (b) {
@@ -90,6 +99,7 @@ void rb_kill(RingBuffer *b)
         free(b);
     }
 }
+
 uint16_t rb_size(const RingBuffer *b)
 {
     if (rb_empty(b)) {
@@ -101,6 +111,7 @@ uint16_t rb_size(const RingBuffer *b)
         b->end - b->start :
         (b->size - b->start) + b->end;
 }
+
 uint16_t rb_data(const RingBuffer *b, void **dest)
 {
     uint16_t i = 0;
