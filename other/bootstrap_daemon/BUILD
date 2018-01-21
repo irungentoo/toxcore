@@ -4,9 +4,9 @@ cc_binary(
         "src/*.c",
         "src/*.h",
     ]),
-    linkopts = ["-lconfig"],
     deps = [
         "//c-toxcore/other:bootstrap_node_packets",
         "//c-toxcore/toxcore",
+        "@libconfig",
     ],
 )

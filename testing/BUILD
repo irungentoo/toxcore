@@ -30,7 +30,6 @@ cc_binary(
     name = "av_test",
     srcs = ["av_test.c"],
     linkopts = [
-        "-lportaudio",
         "-lopencv_highgui",
         "-lopencv_core",
     ],
@@ -38,6 +37,8 @@ cc_binary(
         "//c-toxcore/toxav",
         "//c-toxcore/toxav:monolith",
         "//c-toxcore/toxcore",
+        "@portaudio",
+        "@sndfile",
     ],
 )
 
