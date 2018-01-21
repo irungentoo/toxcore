@@ -1,41 +1,94 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
 filegroup(
-    name = "public",
+    name = "public_headers",
     srcs = ["toxav.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__pkg__"],
+)
+
+cc_library(
+    name = "public",
+    hdrs = [":public_headers"],
+)
+
+cc_library(
+    name = "ring_buffer",
+    srcs = ["ring_buffer.c"],
+    hdrs = ["ring_buffer.h"],
+)
+
+cc_library(
+    name = "bwcontroller",
+    srcs = ["bwcontroller.c"],
+    hdrs = ["bwcontroller.h"],
+    deps = [
+        ":ring_buffer",
+        "//c-toxcore/toxcore:Messenger",
+    ],
+)
+
+cc_library(
+    name = "rtp",
+    srcs = ["rtp.c"],
+    hdrs = ["rtp.h"],
+    deps = [":bwcontroller"],
+)
+
+cc_library(
+    name = "audio",
+    srcs = ["audio.c"],
+    hdrs = ["audio.h"],
+    deps = [
+        ":public",
+        ":rtp",
+        "//c-toxcore/toxcore:network",
+        "@opus",
+    ],
+)
+
+cc_library(
+    name = "video",
+    srcs = [
+        "msi.c",
+        "video.c",
+    ],
+    hdrs = [
+        "msi.h",
+        "video.h",
+    ],
+    deps = [
+        ":audio",
+        ":public",
+        "//c-toxcore/toxcore:network",
+        "@libvpx",
+    ],
+)
+
+cc_library(
+    name = "groupav",
+    srcs = ["groupav.c"],
+    hdrs = ["groupav.h"],
+    deps = [
+        "//c-toxcore/toxcore:group",
+        "@opus",
+    ],
 )
 
 cc_library(
     name = "toxav",
     srcs = [
-        "audio.c",
-        "bwcontroller.c",
-        "groupav.c",
-        "msi.c",
-        "ring_buffer.c",
-        "rtp.c",
         "toxav.c",
         "toxav_old.c",
-        "video.c",
     ],
     hdrs = [
-        "audio.h",
-        "bwcontroller.h",
-        "groupav.h",
-        "msi.h",
-        "ring_buffer.h",
-        "rtp.h",
         "toxav.api.h",
         "toxav.h",
-        "video.h",
-    ],
-    copts = [
-        "-std=c99",
     ],
     visibility = ["//visibility:public"],
     deps = [
+        ":groupav",
+        ":video",
         "//c-toxcore/toxcore",
-        "@libvpx",
-        "@opus",
     ],
 )
 
@@ -48,5 +101,10 @@ cc_library(
     visibility = [
         "//c-toxcore/other:__pkg__",
         "//c-toxcore/testing:__pkg__",
+    ],
+    deps = [
+        "//c-toxcore/toxcore",
+        "@libvpx",
+        "@opus",
     ],
 )

@@ -1,3 +1,5 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
 cc_library(
     name = "misc_tools",
     hdrs = [

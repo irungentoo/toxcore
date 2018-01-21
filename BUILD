@@ -1,9 +1,9 @@
 genrule(
     name = "copy_headers",
     srcs = [
-        "//c-toxcore/toxav:public",
-        "//c-toxcore/toxcore:public",
-        "//c-toxcore/toxencryptsave:public",
+        "//c-toxcore/toxav:public_headers",
+        "//c-toxcore/toxcore:public_headers",
+        "//c-toxcore/toxencryptsave:public_headers",
     ],
     outs = [
         "tox/toxav.h",
@@ -11,9 +11,9 @@ genrule(
         "tox/toxencryptsave.h",
     ],
     cmd = """
-        cp $(location //c-toxcore/toxav:public) $(GENDIR)/c-toxcore/tox/toxav.h
-        cp $(location //c-toxcore/toxcore:public) $(GENDIR)/c-toxcore/tox/tox.h
-        cp $(location //c-toxcore/toxencryptsave:public) $(GENDIR)/c-toxcore/tox/toxencryptsave.h
+        cp $(location //c-toxcore/toxav:public_headers) $(GENDIR)/c-toxcore/tox/toxav.h
+        cp $(location //c-toxcore/toxcore:public_headers) $(GENDIR)/c-toxcore/tox/tox.h
+        cp $(location //c-toxcore/toxencryptsave:public_headers) $(GENDIR)/c-toxcore/tox/toxencryptsave.h
     """,
 )
 

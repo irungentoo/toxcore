@@ -1,3 +1,5 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
 cc_library(
     name = "helpers",
     testonly = True,
@@ -12,7 +14,6 @@ cc_library(
     size = "small",
     srcs = [src],
     copts = [
-        "-std=c99",
         "-Wno-parentheses",
     ],
     deps = [
@@ -21,6 +22,7 @@ cc_library(
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxav",
         "//c-toxcore/toxcore",
+        "//c-toxcore/toxencryptsave",
         "@check",
     ],
 ) for src in glob(["*_test.c"])]

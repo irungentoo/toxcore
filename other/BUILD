@@ -1,3 +1,5 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
 cc_library(
     name = "monolith",
     hdrs = ["monolith.h"],
@@ -14,7 +16,7 @@ cc_library(
     srcs = ["bootstrap_node_packets.c"],
     hdrs = ["bootstrap_node_packets.h"],
     visibility = ["//c-toxcore/other/bootstrap_daemon:__pkg__"],
-    deps = ["//c-toxcore/toxcore"],
+    deps = ["//c-toxcore/toxcore:network"],
 )
 
 cc_binary(
