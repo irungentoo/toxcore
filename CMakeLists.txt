@@ -74,6 +74,17 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # Warn on non-ISO C.
   add_cflag("-pedantic")
 
+  option(ERROR_ON_WARNING "Make compilation error on a warning" OFF)
+  if(ERROR_ON_WARNING)
+    add_flag("-Werror")
+  endif()
+
+  option(DEBUG "Enable assertions and other debugging facilities" OFF)
+  if(DEBUG)
+    set(MIN_LOGGER_LEVEL DEBUG)
+    add_cflag("-g3")
+  endif()
+
   option(WARNINGS "Enable additional compiler warnings" ON)
   if(WARNINGS)
     # Add all warning flags we can.
@@ -91,12 +102,13 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_flag("-Wno-format-nonliteral")
     add_flag("-Wno-missing-field-initializers")
     add_flag("-Wno-missing-prototypes")
+    add_flag("-Wno-packed")
     add_flag("-Wno-padded")
     add_flag("-Wno-parentheses")
+    add_flag("-Wno-reserved-id-macro")
     add_flag("-Wno-return-type")
     add_flag("-Wno-sign-compare")
     add_flag("-Wno-sign-conversion")
-    add_flag("-Wno-tautological-constant-out-of-range-compare")
     # Our use of mutexes results in a false positive, see 1bbe446
     add_flag("-Wno-thread-safety-analysis")
     add_flag("-Wno-type-limits")
@@ -112,7 +124,6 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_cflag("-Wno-double-promotion")
     add_cflag("-Wno-gnu-zero-variadic-macro-arguments")
     add_cflag("-Wno-packed")
-    add_cflag("-Wno-reserved-id-macro")
     add_cflag("-Wno-shadow")
     add_cflag("-Wno-shorten-64-to-32")
     add_cflag("-Wno-unreachable-code-return")
@@ -120,28 +131,20 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_cflag("-Wno-used-but-marked-unused")
 
     # Disable specific warning flags for C++.
-    add_cxxflag("-Wno-c++11-compat")
-    add_cxxflag("-Wno-c++11-extensions")
-    add_cxxflag("-Wno-c++11-narrowing")
+    add_cxxflag("-Wno-c++98-compat")
+    add_cxxflag("-Wno-c++98-compat-pedantic")
     add_cxxflag("-Wno-c99-extensions")
+    add_cxxflag("-Wno-double-promotion")
     add_cxxflag("-Wno-narrowing")
     add_cxxflag("-Wno-old-style-cast")
+    add_cxxflag("-Wno-shadow")
+    add_cxxflag("-Wno-used-but-marked-unused")
     add_cxxflag("-Wno-variadic-macros")
     add_cxxflag("-Wno-vla-extension")
-  endif()
 
-  option(ERROR_ON_WARNING "Make compilation error on a warning" OFF)
-  if(ERROR_ON_WARNING)
-    # Set error-on-warn for C compilation. C++ compilation can't use this because
-    # treating 'c' input as 'c++' when in C++ mode is deprecated in clang and
-    # there is no way to turn off that warning.
-    add_cflag("-Werror")
-  endif()
-
-  option(DEBUG "Enable assertions and other debugging facilities" OFF)
-  if(DEBUG)
-    set(MIN_LOGGER_LEVEL DEBUG)
-    add_cflag("-g3")
+    # Downgrade to warning so we still see it.
+    add_flag("-Wno-error=unused-variable")
+    add_cxxflag("-Wno-error=zero-as-null-pointer-constant")
   endif()
 endif()
 
@@ -403,7 +406,7 @@ install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 # endif()
 # 
 # if(MSGPACK_FOUND)
-#   add_binary(toxcore-sut
+#   add_executable(toxcore-sut
 #     testing/hstox/binary_decode.c
 #     testing/hstox/binary_encode.c
 #     testing/hstox/driver.c
@@ -445,7 +448,7 @@ endif()
 
 function(auto_test target)
   if(CHECK_FOUND AND NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
-    add_binary(auto_${target}_test auto_tests/${target}_test.c)
+    add_executable(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test
       toxcore
       toxcrypto
@@ -460,7 +463,7 @@ function(auto_test target)
 endfunction()
 
 if(BUILD_TOXAV)
-  add_binary(auto_monolith_test
+  add_executable(auto_monolith_test
     auto_tests/monolith_test.cpp
     ${ANDROID_CPU_FEATURES})
   target_link_modules(auto_monolith_test
@@ -511,7 +514,7 @@ endif()
 
 option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
 if(DHT_BOOTSTRAP)
-  add_binary(DHT_bootstrap
+  add_executable(DHT_bootstrap
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
   target_link_modules(DHT_bootstrap toxnetcrypto)
@@ -523,7 +526,7 @@ if(BOOTSTRAP_DAEMON)
     message(FATAL_ERROR "Building tox-bootstrapd for Windows is not supported")
   endif()
   if(LIBCONFIG_FOUND)
-    add_binary(tox-bootstrapd
+    add_executable(tox-bootstrapd
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
       other/bootstrap_daemon/src/config.c
@@ -554,7 +557,7 @@ option(BUILD_AV_TEST "Build toxav test" ON)
 if(NOT WIN32
   AND BUILD_AV_TEST AND BUILD_TOXAV
   AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
-  add_binary(av_test testing/av_test.c)
+  add_executable(av_test testing/av_test.c)
   target_link_modules(av_test
     toxcore
     ${OPENCV_LIBRARIES}
@@ -567,23 +570,23 @@ if(NOT WIN32
   endif()
 endif()
 
-add_binary(DHT_test testing/DHT_test.c)
+add_executable(DHT_test testing/DHT_test.c)
 target_link_modules(DHT_test toxdht)
 
-add_binary(Messenger_test testing/Messenger_test.c)
+add_executable(Messenger_test testing/Messenger_test.c)
 target_link_modules(Messenger_test toxmessenger)
 
 if(NOT WIN32)
-  add_binary(tox_sync testing/tox_sync.c)
+  add_executable(tox_sync testing/tox_sync.c)
   target_link_modules(tox_sync toxcore)
 endif()
 
 if(UTIL_LIBRARIES)
-  add_binary(tox_shell testing/tox_shell.c)
+  add_executable(tox_shell testing/tox_shell.c)
   target_link_modules(tox_shell toxcore ${UTIL_LIBRARIES})
 endif()
 
 if(NOT WIN32)
-  add_binary(irc_syncbot testing/irc_syncbot.c)
+  add_executable(irc_syncbot testing/irc_syncbot.c)
   target_link_modules(irc_syncbot toxcore toxnetwork)
 endif()

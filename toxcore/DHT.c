@@ -535,7 +535,7 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
         memcpy(data + packed_length, nodes[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
         packed_length += CRYPTO_PUBLIC_KEY_SIZE;
 
-        uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
+        const uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
     }
 
@@ -571,7 +571,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
         len_processed += CRYPTO_PUBLIC_KEY_SIZE;
         ++num;
 
-        uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
+        const uint32_t increment = ipp_size + CRYPTO_PUBLIC_KEY_SIZE;
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
     }
 

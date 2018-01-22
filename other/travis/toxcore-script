@@ -10,18 +10,6 @@ set_opt() {
   set -e
 }
 
-# Try some combinations of cmake options.
-for i in `seq 0 7`; do
-  set +x
-  opts="$CMAKE_EXTRA_FLAGS -DWARNINGS=OFF"
-  set_opt STRICT_ABI
-  set_opt ENABLE_STATIC
-  set_opt ENABLE_SHARED
-  set -x
-  RUN $CMAKE -B$BUILD_DIR -H. $opts
-  RUN rm -rf $BUILD_DIR
-done
-
 if perl -e '
     use Socket qw(PF_INET6 SOCK_STREAM pack_sockaddr_in6 IN6ADDR_LOOPBACK);
 

@@ -29,6 +29,11 @@
 // Emulation using alloca.
 #ifdef _WIN32
 #include <malloc.h>
+#elif defined(__FreeBSD__)
+#include <stdlib.h>
+#if !defined(alloca) && defined(__GNUC__)
+#define alloca __builtin_alloca
+#endif
 #else
 #include <alloca.h>
 #endif

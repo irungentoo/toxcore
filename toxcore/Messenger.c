@@ -2258,9 +2258,13 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
             uint8_t filenumber = data[0];
 
+#if UINT8_MAX >= MAX_CONCURRENT_FILE_PIPES
+
             if (filenumber >= MAX_CONCURRENT_FILE_PIPES) {
                 break;
             }
+
+#endif
 
             uint64_t filesize;
             uint32_t file_type;
@@ -2318,9 +2322,13 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
             uint8_t filenumber = data[1];
             uint8_t control_type = data[2];
 
+#if UINT8_MAX >= MAX_CONCURRENT_FILE_PIPES
+
             if (filenumber >= MAX_CONCURRENT_FILE_PIPES) {
                 break;
             }
+
+#endif
 
             if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3, userdata) == -1) {
                 // TODO(iphydf): Do something different here? Right now, this
@@ -2338,9 +2346,13 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
             uint8_t filenumber = data[0];
 
+#if UINT8_MAX >= MAX_CONCURRENT_FILE_PIPES
+
             if (filenumber >= MAX_CONCURRENT_FILE_PIPES) {
                 break;
             }
+
+#endif
 
             struct File_Transfers *ft = &m->friendlist[i].file_receiving[filenumber];
 

@@ -37,6 +37,7 @@ matrix:
     addons:
       apt: *apt-dependencies
   - stage: "Stage 1"
+    if: type IN (push, api, cron)
     env: JOB=toxcore ENV=windows ARCH=i686
     group: deprecated-2017Q4
     services:

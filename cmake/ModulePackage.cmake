@@ -1,6 +1,5 @@
 option(ENABLE_SHARED "Build shared (dynamic) libraries for all modules" ON)
 option(ENABLE_STATIC "Build static libraries for all modules" ON)
-option(COMPILE_AS_CXX "Compile all C code as C++ code" OFF)
 
 if(NOT ENABLE_SHARED AND NOT ENABLE_STATIC)
   message(WARNING
@@ -11,28 +10,6 @@ if(NOT ENABLE_SHARED AND NOT ENABLE_STATIC)
 endif()
 
 find_package(PkgConfig)
-
-if(COMPILE_AS_CXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_FORMAT_MACROS=1")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_LIMIT_MACROS=1")
-endif()
-
-macro(set_source_language)
-  if(COMPILE_AS_CXX)
-    foreach(srcfile ${ARGN})
-      get_filename_component(srcext ${srcfile} EXT)
-      if(${srcext} STREQUAL ".c")
-        set_source_files_properties(${srcfile} PROPERTIES LANGUAGE CXX)
-      endif()
-    endforeach()
-  endif()
-endmacro()
-
-function(add_binary exec)
-  set_source_language(${ARGN})
-
-  add_executable(${exec} ${ARGN})
-endfunction()
 
 function(pkg_use_module mod pkg)
   if(PKG_CONFIG_FOUND)
@@ -58,7 +35,6 @@ macro(add_submodule super lib)
 endmacro()
 
 function(add_module lib)
-  set_source_language(${ARGN})
   set(${lib}_SOURCES ${ARGN} PARENT_SCOPE)
 
   if(ENABLE_SHARED)
