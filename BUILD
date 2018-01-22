@@ -18,7 +18,7 @@ genrule(
 )
 
 cc_library(
-    name = "headers",
+    name = "c-toxcore",
     hdrs = [
         "tox/tox.h",
         "tox/toxav.h",
@@ -26,4 +26,9 @@ cc_library(
     ],
     includes = ["."],
     visibility = ["//visibility:public"],
+    deps = [
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxcore",
+        "//c-toxcore/toxencryptsave",
+    ],
 )

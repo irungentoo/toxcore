@@ -5,7 +5,7 @@ cc_library(
     hdrs = [
         "misc_tools.c",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__subpackages__"],
 )
 
 cc_binary(

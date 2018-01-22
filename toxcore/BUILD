@@ -188,7 +188,7 @@ cc_library(
     copts = [
         "-Wno-parentheses",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":group",
         "//c-toxcore/toxencryptsave:defines",

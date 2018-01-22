@@ -16,7 +16,7 @@ cc_library(
     name = "toxencryptsave",
     srcs = ["toxencryptsave.c"],
     hdrs = ["toxencryptsave.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":defines",
         "//c-toxcore/toxcore:crypto_core",

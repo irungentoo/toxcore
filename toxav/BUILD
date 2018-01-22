@@ -84,11 +84,10 @@ cc_library(
         "toxav.api.h",
         "toxav.h",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":groupav",
         ":video",
-        "//c-toxcore/toxcore",
     ],
 )
 
@@ -103,7 +102,7 @@ cc_library(
         "//c-toxcore/testing:__pkg__",
     ],
     deps = [
-        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:group",
         "@libvpx",
         "@opus",
     ],
