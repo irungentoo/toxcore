@@ -9,8 +9,8 @@ language: c
 matrix:
   include:
   - stage: "Stage 1"
-    env: JOB=autotools ENV=linux
-    compiler: gcc
+    env: JOB=toxcore ENV=linux
+    compiler: clang
     addons:
       apt: &apt-dependencies
         sources:
@@ -32,8 +32,9 @@ matrix:
         - portaudio19-dev       # For av_test.
         - texinfo               # For libconfig.
   - stage: "Stage 1"
-    env: JOB=toxcore ENV=linux
-    compiler: clang
+    if: type IN (push, api, cron)
+    env: JOB=autotools ENV=linux
+    compiler: gcc
     addons:
       apt: *apt-dependencies
   - stage: "Stage 1"
