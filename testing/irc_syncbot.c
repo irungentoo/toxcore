@@ -300,8 +300,7 @@ int main(int argc, char *argv[])
         if (count > 0) {
             last_get = get_monotime_sec();
             ping_sent = 0;
-            VLA(uint8_t, data, count + 1);
-            data[count] = 0;
+            uint8_t *data = (uint8_t *)calloc(count + 1, 1);
             recv(sock, data, count, MSG_NOSIGNAL);
             printf("%s", data);
 
@@ -345,6 +344,8 @@ int main(int argc, char *argv[])
                     p_i = i + 1;
                 }
             }
+
+            free(data);
         }
 
         if (connected == 1) {

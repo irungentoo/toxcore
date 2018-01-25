@@ -184,8 +184,8 @@ END_TEST
 START_TEST(test_getself_name)
 {
     const char *nickname = "testGallop";
-    int len = strlen(nickname);
-    VLA(char, nick_check, len);
+    size_t len = strlen(nickname);
+    char *nick_check = (char *)calloc(len + 1, 1);
 
     setname(m, (const uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check);
@@ -193,6 +193,7 @@ START_TEST(test_getself_name)
     ck_assert_msg((memcmp(nickname, nick_check, len) == 0),
                   "getself_name failed to return the known name!\n"
                   "known name: %s\nreturned: %s\n", nickname, nick_check);
+    free(nick_check);
 }
 END_TEST
 
