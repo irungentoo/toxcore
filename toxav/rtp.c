@@ -123,7 +123,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
 
     struct RTPHeader *header = (struct RTPHeader *)(rdata + 1);
 
-    header->ve = 2;
+    header->protocol_version = 2;
     header->pe = 0;
     header->xe = 0;
     header->cc = 0;
@@ -135,8 +135,8 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
     header->timestamp = net_htonl(current_time_monotonic());
     header->ssrc = net_htonl(session->ssrc);
 
-    header->cpart = 0;
-    header->tlen = net_htons(length);
+    header->offset_lower = 0;
+    header->data_length_lower = net_htons(length);
 
     if (MAX_CRYPTO_DATA_SIZE > length + sizeof(struct RTPHeader) + 1) {
 
@@ -170,7 +170,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint16_t length, Log
             }
 
             sent += piece;
-            header->cpart = net_htons(sent);
+            header->offset_lower = net_htons(sent);
         }
 
         /* Send remaining */
@@ -228,8 +228,8 @@ static struct RTPMessage *new_message(size_t allocate_len, const uint8_t *data, 
     msg->header.timestamp = net_ntohl(msg->header.timestamp);
     msg->header.ssrc = net_ntohl(msg->header.ssrc);
 
-    msg->header.cpart = net_ntohs(msg->header.cpart);
-    msg->header.tlen = net_ntohs(msg->header.tlen);
+    msg->header.offset_lower = net_ntohs(msg->header.offset_lower);
+    msg->header.data_length_lower = net_ntohs(msg->header.data_length_lower);
 
     return msg;
 }
@@ -255,14 +255,14 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
         return -1;
     }
 
-    if (net_ntohs(header->cpart) >= net_ntohs(header->tlen)) {
+    if (net_ntohs(header->offset_lower) >= net_ntohs(header->data_length_lower)) {
         /* Never allow this case to happen */
         return -1;
     }
 
     bwc_feed_avg(session->bwc, length);
 
-    if (net_ntohs(header->tlen) == length - sizeof(struct RTPHeader)) {
+    if (net_ntohs(header->data_length_lower) == length - sizeof(struct RTPHeader)) {
         /* The message is sent in single part */
 
         /* Only allow messages which have arrived in order;
@@ -316,22 +316,22 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
             /* First case */
 
             /* Make sure we have enough allocated memory */
-            if (session->mp->header.tlen - session->mp->len < length - sizeof(struct RTPHeader) ||
-                    session->mp->header.tlen <= net_ntohs(header->cpart)) {
+            if (session->mp->header.data_length_lower - session->mp->len < length - sizeof(struct RTPHeader) ||
+                    session->mp->header.data_length_lower <= net_ntohs(header->offset_lower)) {
                 /* There happened to be some corruption on the stream;
                  * continue wihtout this part
                  */
                 return 0;
             }
 
-            memcpy(session->mp->data + net_ntohs(header->cpart), data + sizeof(struct RTPHeader),
+            memcpy(session->mp->data + net_ntohs(header->offset_lower), data + sizeof(struct RTPHeader),
                    length - sizeof(struct RTPHeader));
 
             session->mp->len += length - sizeof(struct RTPHeader);
 
             bwc_add_recv(session->bwc, length);
 
-            if (session->mp->len == session->mp->header.tlen) {
+            if (session->mp->len == session->mp->header.data_length_lower) {
                 /* Received a full message; now push it for the further
                  * processing.
                  */
@@ -355,10 +355,10 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
 
             /* Measure missing parts of the old message */
             bwc_add_lost(session->bwc,
-                         (session->mp->header.tlen - session->mp->len) +
+                         (session->mp->header.data_length_lower - session->mp->len) +
 
                          /* Must account sizes of rtp headers too */
-                         ((session->mp->header.tlen - session->mp->len) /
+                         ((session->mp->header.data_length_lower - session->mp->len) /
                           MAX_CRYPTO_DATA_SIZE) * sizeof(struct RTPHeader));
 
             /* Push the previous message for processing */
@@ -394,8 +394,8 @@ NEW_MULTIPARTED:
         /* Again, only store message if handler is present
          */
         if (session->mcb) {
-            session->mp = new_message(net_ntohs(header->tlen) + sizeof(struct RTPHeader), data, length);
-            memmove(session->mp->data + net_ntohs(header->cpart), session->mp->data, session->mp->len);
+            session->mp = new_message(net_ntohs(header->data_length_lower) + sizeof(struct RTPHeader), data, length);
+            memmove(session->mp->data + net_ntohs(header->offset_lower), session->mp->data, session->mp->len);
         }
     }
 
