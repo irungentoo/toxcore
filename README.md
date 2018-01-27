@@ -167,7 +167,7 @@ We glossed over a lot of details, such as the user data which we passed to
 will work in the LAN, but not on an internet server) and the fact that we now
 have no clean way of stopping the bot (`while (true)`). If you want to write a
 real bot, you will probably want to read up on all the API functions. Consult
-the API documentation in [toxcore/tox.h](tox.h) for more information.
+the API documentation in [toxcore/tox.h](toxcore/tox.h) for more information.
 
 ### Other resources
 
