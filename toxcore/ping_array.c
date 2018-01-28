@@ -57,20 +57,20 @@ struct Ping_Array {
 Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
 {
     if (size == 0 || timeout == 0) {
-        return NULL;
+        return nullptr;
     }
 
     Ping_Array *empty_array = (Ping_Array *)calloc(1, sizeof(Ping_Array));
 
-    if (empty_array == NULL) {
-        return NULL;
+    if (empty_array == nullptr) {
+        return nullptr;
     }
 
     empty_array->entries = (Ping_Array_Entry *)calloc(size, sizeof(Ping_Array_Entry));
 
-    if (empty_array->entries == NULL) {
+    if (empty_array->entries == nullptr) {
         free(empty_array);
-        return NULL;
+        return nullptr;
     }
 
     empty_array->last_deleted = empty_array->last_added = 0;
@@ -82,7 +82,7 @@ Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
 static void clear_entry(Ping_Array *array, uint32_t index)
 {
     free(array->entries[index].data);
-    array->entries[index].data = NULL;
+    array->entries[index].data = nullptr;
     array->entries[index].length =
         array->entries[index].time =
             array->entries[index].ping_id = 0;
@@ -128,14 +128,14 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
     ping_array_clear_timedout(array);
     uint32_t index = array->last_added % array->total_size;
 
-    if (array->entries[index].data != NULL) {
+    if (array->entries[index].data != nullptr) {
         array->last_deleted = array->last_added - array->total_size;
         clear_entry(array, index);
     }
 
     array->entries[index].data = malloc(length);
 
-    if (array->entries[index].data == NULL) {
+    if (array->entries[index].data == nullptr) {
         return 0;
     }
 
@@ -184,7 +184,7 @@ int32_t ping_array_check(Ping_Array *array, uint8_t *data, size_t length, uint64
         return -1;
     }
 
-    if (array->entries[index].data == NULL) {
+    if (array->entries[index].data == nullptr) {
         return -1;
     }
 

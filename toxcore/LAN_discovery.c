@@ -52,7 +52,7 @@ static void fetch_broadcast_info(uint16_t port)
     IP_ADAPTER_INFO *pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
     unsigned long ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 
-    if (pAdapterInfo == NULL) {
+    if (pAdapterInfo == nullptr) {
         return;
     }
 
@@ -60,7 +60,7 @@ static void fetch_broadcast_info(uint16_t port)
         free(pAdapterInfo);
         pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
 
-        if (pAdapterInfo == NULL) {
+        if (pAdapterInfo == nullptr) {
             return;
         }
     }
@@ -405,5 +405,5 @@ void lan_discovery_init(DHT *dht)
 
 void lan_discovery_kill(DHT *dht)
 {
-    networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, NULL, NULL);
+    networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, nullptr, nullptr);
 }

@@ -82,8 +82,8 @@ static const char *inet_ntop(Family family, const void *addr, char *buf, size_t 
 
         DWORD len = bufsize;
 
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len)) {
-            return NULL;
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
+            return nullptr;
         }
 
         return buf;
@@ -96,14 +96,14 @@ static const char *inet_ntop(Family family, const void *addr, char *buf, size_t 
 
         DWORD len = bufsize;
 
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), NULL, buf, &len)) {
-            return NULL;
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
+            return nullptr;
         }
 
         return buf;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 static int inet_pton(Family family, const char *addrString, void *addrbuf)
@@ -114,7 +114,7 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
 
         INT len = sizeof(saddr);
 
-        if (WSAStringToAddress((LPTSTR)addrString, AF_INET, NULL, (LPSOCKADDR)&saddr, &len)) {
+        if (WSAStringToAddress((LPTSTR)addrString, AF_INET, nullptr, (LPSOCKADDR)&saddr, &len)) {
             return 0;
         }
 
@@ -127,7 +127,7 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
 
         INT len = sizeof(saddr);
 
-        if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, NULL, (LPSOCKADDR)&saddr, &len)) {
+        if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, nullptr, (LPSOCKADDR)&saddr, &len)) {
             return 0;
         }
 
@@ -306,7 +306,7 @@ static uint64_t current_time_actual(void)
     return time / 10;
 #else
     struct timeval a;
-    gettimeofday(&a, NULL);
+    gettimeofday(&a, nullptr);
     time = 1000000ULL * a.tv_sec + a.tv_usec;
     return time;
 #endif
@@ -624,7 +624,7 @@ static void at_shutdown(void)
  */
 Networking_Core *new_networking(Logger *log, IP ip, uint16_t port)
 {
-    return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), 0);
+    return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
 }
 
 /* Initialize networking.
@@ -663,17 +663,17 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != TOX_AF_INET && ip.family != TOX_AF_INET6) {
         LOGGER_ERROR(log, "Invalid address family: %u\n", ip.family);
-        return NULL;
+        return nullptr;
     }
 
     if (networking_at_startup() != 0) {
-        return NULL;
+        return nullptr;
     }
 
     Networking_Core *temp = (Networking_Core *)calloc(1, sizeof(Networking_Core));
 
-    if (temp == NULL) {
-        return NULL;
+    if (temp == nullptr) {
+        return nullptr;
     }
 
     temp->log = log;
@@ -693,7 +693,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
             *error = 1;
         }
 
-        return NULL;
+        return nullptr;
     }
 
     /* Functions to increase the size of the send and receive UDP buffers.
@@ -714,7 +714,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
             *error = 1;
         }
 
-        return NULL;
+        return nullptr;
     }
 
     /* Set socket nonblocking. */
@@ -725,11 +725,11 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
             *error = 1;
         }
 
-        return NULL;
+        return nullptr;
     }
 
     /* Bind our socket to port PORT and the given IP address (usually 0.0.0.0 or ::) */
-    uint16_t *portptr = NULL;
+    uint16_t *portptr = nullptr;
     struct sockaddr_storage addr;
     size_t addrsize;
 
@@ -758,7 +758,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         portptr = &addr6->sin6_port;
     } else {
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
     if (ip.family == TOX_AF_INET6) {
@@ -841,7 +841,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         *error = 1;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 Networking_Core *new_networking_no_udp(Logger *log)
@@ -849,8 +849,8 @@ Networking_Core *new_networking_no_udp(Logger *log)
     /* this is the easiest way to completely disable UDP without changing too much code. */
     Networking_Core *net = (Networking_Core *)calloc(1, sizeof(Networking_Core));
 
-    if (net == NULL) {
-        return NULL;
+    if (net == nullptr) {
+        return nullptr;
     }
 
     net->log = log;
@@ -1076,12 +1076,12 @@ int ip_parse_addr(const IP *ip, char *address, size_t length)
 
     if (ip->family == TOX_AF_INET) {
         const struct in_addr *addr = (const struct in_addr *)&ip->ip4;
-        return inet_ntop(ip->family, addr, address, length) != NULL;
+        return inet_ntop(ip->family, addr, address, length) != nullptr;
     }
 
     if (ip->family == TOX_AF_INET6) {
         const struct in6_addr *addr = (const struct in6_addr *)&ip->ip6;
-        return inet_ntop(ip->family, addr, address, length) != NULL;
+        return inet_ntop(ip->family, addr, address, length) != nullptr;
     }
 
     return 0;
@@ -1151,8 +1151,8 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     Family tox_family = to->family;
     Family family = make_family(tox_family);
 
-    struct addrinfo *server = NULL;
-    struct addrinfo *walker = NULL;
+    struct addrinfo *server = nullptr;
+    struct addrinfo *walker = nullptr;
     struct addrinfo  hints;
     int rc;
     int result = 0;
@@ -1166,7 +1166,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
         return 0;
     }
 
-    rc = getaddrinfo(address, NULL, &hints, &server);
+    rc = getaddrinfo(address, nullptr, &hints, &server);
 
     // Lookup failed.
     if (rc != 0) {
@@ -1178,7 +1178,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     IP ip6;
     ip_init(&ip6, 1); // ipv6enabled = 1
 
-    for (walker = server; (walker != NULL) && !done; walker = walker->ai_next) {
+    for (walker = server; (walker != nullptr) && !done; walker = walker->ai_next) {
         switch (walker->ai_family) {
             case AF_INET:
                 if (walker->ai_family == family) { /* AF_INET requested, done */
@@ -1218,7 +1218,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
         if (result & TOX_ADDR_RESOLVE_INET6) {
             ip_copy(to, &ip6);
 
-            if ((result & TOX_ADDR_RESOLVE_INET) && (extra != NULL)) {
+            if ((result & TOX_ADDR_RESOLVE_INET) && (extra != nullptr)) {
                 ip_copy(extra, &ip4);
             }
         } else if (result & TOX_ADDR_RESOLVE_INET) {
@@ -1287,8 +1287,8 @@ int net_connect(Socket sock, IP_Port ip_port)
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 {
     struct addrinfo *infos;
-    int ret = getaddrinfo(node, NULL, NULL, &infos);
-    *res = NULL;
+    int ret = getaddrinfo(node, nullptr, nullptr, &infos);
+    *res = nullptr;
 
     if (ret != 0) {
         return -1;
@@ -1300,7 +1300,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     struct addrinfo *cur;
     int32_t count = 0;
 
-    for (cur = infos; count < MAX_COUNT && cur != NULL; cur = cur->ai_next) {
+    for (cur = infos; count < MAX_COUNT && cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1321,14 +1321,14 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 
     *res = (IP_Port *)malloc(sizeof(IP_Port) * count);
 
-    if (*res == NULL) {
+    if (*res == nullptr) {
         freeaddrinfo(infos);
         return -1;
     }
 
     IP_Port *ip_port = *res;
 
-    for (cur = infos; cur != NULL; cur = cur->ai_next) {
+    for (cur = infos; cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }

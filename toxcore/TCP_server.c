@@ -111,7 +111,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
 {
     if (num == 0) {
         free(TCP_server->accepted_connection_array);
-        TCP_server->accepted_connection_array = NULL;
+        TCP_server->accepted_connection_array = nullptr;
         TCP_server->size_accepted_connections = 0;
         return 0;
     }
@@ -124,7 +124,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
                 TCP_server->accepted_connection_array,
                 num * sizeof(TCP_Secure_Connection));
 
-    if (new_connections == NULL) {
+    if (new_connections == nullptr) {
         return -1;
     }
 
@@ -403,7 +403,7 @@ static int send_pending_data(TCP_Secure_Connection *con)
     con->priority_queue_start = p;
 
     if (!p) {
-        con->priority_queue_end = NULL;
+        con->priority_queue_end = nullptr;
         return 0;
     }
 
@@ -422,7 +422,7 @@ static bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint
         return 0;
     }
 
-    new_list->next = NULL;
+    new_list->next = nullptr;
     new_list->size = size;
     new_list->sent = sent;
     memcpy(new_list->data, packet, size);
@@ -1034,25 +1034,25 @@ static Socket new_listening_TCP_socket(int family, uint16_t port)
 TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
                            Onion *onion)
 {
-    if (num_sockets == 0 || ports == NULL) {
-        return NULL;
+    if (num_sockets == 0 || ports == nullptr) {
+        return nullptr;
     }
 
     if (networking_at_startup() != 0) {
-        return NULL;
+        return nullptr;
     }
 
     TCP_Server *temp = (TCP_Server *)calloc(1, sizeof(TCP_Server));
 
-    if (temp == NULL) {
-        return NULL;
+    if (temp == nullptr) {
+        return nullptr;
     }
 
     temp->socks_listening = (Socket *)calloc(num_sockets, sizeof(Socket));
 
-    if (temp->socks_listening == NULL) {
+    if (temp->socks_listening == nullptr) {
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
 #ifdef TCP_SERVER_USE_EPOLL
@@ -1061,7 +1061,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     if (temp->efd == -1) {
         free(temp->socks_listening);
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
 #endif
@@ -1101,7 +1101,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     if (temp->num_listening_socks == 0) {
         free(temp->socks_listening);
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
     if (onion) {
@@ -1429,7 +1429,7 @@ void kill_TCP_server(TCP_Server *TCP_server)
     }
 
     if (TCP_server->onion) {
-        set_callback_handle_recv_1(TCP_server->onion, NULL, NULL);
+        set_callback_handle_recv_1(TCP_server->onion, nullptr, nullptr);
     }
 
     bs_list_free(&TCP_server->accepted_key_list);

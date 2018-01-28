@@ -84,32 +84,32 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
     bool load_savedata_sk = 0, load_savedata_tox = 0;
 
-    if (options == NULL) {
+    if (options == nullptr) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     } else {
         if (tox_options_get_savedata_type(options) != TOX_SAVEDATA_TYPE_NONE) {
-            if (tox_options_get_savedata_data(options) == NULL || tox_options_get_savedata_length(options) == 0) {
+            if (tox_options_get_savedata_data(options) == nullptr || tox_options_get_savedata_length(options) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-                return NULL;
+                return nullptr;
             }
         }
 
         if (tox_options_get_savedata_type(options) == TOX_SAVEDATA_TYPE_SECRET_KEY) {
             if (tox_options_get_savedata_length(options) != TOX_SECRET_KEY_SIZE) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-                return NULL;
+                return nullptr;
             }
 
             load_savedata_sk = 1;
         } else if (tox_options_get_savedata_type(options) == TOX_SAVEDATA_TYPE_TOX_SAVE) {
             if (tox_options_get_savedata_length(options) < TOX_ENC_SAVE_MAGIC_LENGTH) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-                return NULL;
+                return nullptr;
             }
 
             if (crypto_memcmp(tox_options_get_savedata_data(options), TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
-                return NULL;
+                return nullptr;
             }
 
             load_savedata_tox = 1;
@@ -141,13 +141,13 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
             default:
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_TYPE);
-                return NULL;
+                return nullptr;
         }
 
         if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
             if (tox_options_get_proxy_port(options) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PORT);
-                return NULL;
+                return nullptr;
             }
 
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
@@ -156,10 +156,10 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 m_options.proxy_info.ip_port.ip.family = TOX_AF_UNSPEC;
             }
 
-            if (!addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, NULL)) {
+            if (!addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, nullptr)) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
                 // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
-                return NULL;
+                return nullptr;
             }
 
             m_options.proxy_info.ip_port.port = net_htons(tox_options_get_proxy_port(options));
@@ -180,7 +180,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         }
 
-        return NULL;
+        return nullptr;
     }
 
     if (load_savedata_tox
@@ -198,7 +198,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
 void tox_kill(Tox *tox)
 {
-    if (tox == NULL) {
+    if (tox == nullptr) {
         return;
     }
 

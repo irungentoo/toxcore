@@ -45,4 +45,8 @@
 
 #endif
 
+#ifndef __cplusplus
+#define nullptr NULL
+#endif
+
 #endif /* CCOMPAT_H */

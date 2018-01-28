@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
     }
 
     int *master = (int *)malloc(sizeof(int));
-    int ret = forkpty(master, NULL, NULL, NULL);
+    int ret = forkpty(master, nullptr, nullptr, nullptr);
 
     if (ret == -1) {
         printf("fork failed\n");
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     }
 
     if (ret == 0) {
-        execl("/bin/sh", "sh", NULL);
+        execl("/bin/sh", "sh", nullptr);
         return 0;
     }
 

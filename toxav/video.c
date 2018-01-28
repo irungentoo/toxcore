@@ -43,20 +43,20 @@ VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_re
 
     if (!vc) {
         LOGGER_WARNING(log, "Allocation failed! Application might misbehave!");
-        return NULL;
+        return nullptr;
     }
 
     if (create_recursive_mutex(vc->queue_mutex) != 0) {
         LOGGER_WARNING(log, "Failed to create recursive mutex!");
         free(vc);
-        return NULL;
+        return nullptr;
     }
 
     if (!(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE))) {
         goto BASE_CLEANUP;
     }
 
-    rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, NULL, 0);
+    rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, nullptr, 0);
 
     if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR(log, "Init video_decoder failed: %s", vpx_codec_err_to_string(rc));
@@ -118,7 +118,7 @@ BASE_CLEANUP:
     pthread_mutex_destroy(vc->queue_mutex);
     rb_kill((RingBuffer *)vc->vbuf_raw);
     free(vc);
-    return NULL;
+    return nullptr;
 }
 void vc_kill(VCSession *vc)
 {
@@ -157,13 +157,13 @@ void vc_iterate(VCSession *vc)
     if (rb_read((RingBuffer *)vc->vbuf_raw, (void **)&p)) {
         pthread_mutex_unlock(vc->queue_mutex);
 
-        rc = vpx_codec_decode(vc->decoder, p->data, p->len, NULL, MAX_DECODE_TIME_US);
+        rc = vpx_codec_decode(vc->decoder, p->data, p->len, nullptr, MAX_DECODE_TIME_US);
         free(p);
 
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR(vc->log, "Error decoding video: %s", vpx_codec_err_to_string(rc));
         } else {
-            vpx_codec_iter_t iter = NULL;
+            vpx_codec_iter_t iter = nullptr;
             vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
 
             /* Play decoded images */

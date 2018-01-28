@@ -355,15 +355,15 @@ Ping *ping_new(DHT *dht)
 {
     Ping *ping = (Ping *)calloc(1, sizeof(Ping));
 
-    if (ping == NULL) {
-        return NULL;
+    if (ping == nullptr) {
+        return nullptr;
     }
 
     ping->ping_array = ping_array_new(PING_NUM_MAX, PING_TIMEOUT);
 
-    if (ping->ping_array == NULL) {
+    if (ping->ping_array == nullptr) {
         free(ping);
-        return NULL;
+        return nullptr;
     }
 
     ping->dht = dht;
@@ -375,8 +375,8 @@ Ping *ping_new(DHT *dht)
 
 void ping_kill(Ping *ping)
 {
-    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, NULL, NULL);
-    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, NULL, NULL);
+    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, nullptr, nullptr);
+    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, nullptr, nullptr);
     ping_array_kill(ping->ping_array);
 
     free(ping);

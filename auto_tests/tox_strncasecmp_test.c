@@ -179,7 +179,7 @@ static Suite *tox_strncasecmp_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *s = tox_strncasecmp_suite();
     SRunner *test_runner = srunner_create(s);

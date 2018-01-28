@@ -1,4 +1,6 @@
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #include "../toxcore/tox.h"
 
@@ -106,20 +108,20 @@ int main()
     State state3 = {3};
 
     // Create toxes.
-    Tox *tox1 = tox_new_log(NULL, NULL, &state1.id);
-    Tox *tox2 = tox_new_log(NULL, NULL, &state2.id);
-    Tox *tox3 = tox_new_log(NULL, NULL, &state3.id);
+    Tox *tox1 = tox_new_log(nullptr, nullptr, &state1.id);
+    Tox *tox2 = tox_new_log(nullptr, nullptr, &state2.id);
+    Tox *tox3 = tox_new_log(nullptr, nullptr, &state3.id);
 
     // tox1 <-> tox2, tox2 <-> tox3
     uint8_t key[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_public_key(tox2, key);
-    tox_friend_add_norequest(tox1, key, NULL);  // tox1 -> tox2
+    tox_friend_add_norequest(tox1, key, nullptr);  // tox1 -> tox2
     tox_self_get_public_key(tox1, key);
-    tox_friend_add_norequest(tox2, key, NULL);  // tox2 -> tox1
+    tox_friend_add_norequest(tox2, key, nullptr);  // tox2 -> tox1
     tox_self_get_public_key(tox3, key);
-    tox_friend_add_norequest(tox2, key, NULL);  // tox2 -> tox3
+    tox_friend_add_norequest(tox2, key, nullptr);  // tox2 -> tox3
     tox_self_get_public_key(tox2, key);
-    tox_friend_add_norequest(tox3, key, NULL);  // tox3 -> tox2
+    tox_friend_add_norequest(tox3, key, nullptr);  // tox3 -> tox2
 
     // Connection callbacks.
     tox_callback_self_connection_status(tox1, handle_self_connection_status);

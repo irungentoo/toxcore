@@ -25,6 +25,7 @@
 #include "config.h"
 #endif
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/crypto_core.h"
 #include "defines.h"
 #include "toxencryptsave.h"
@@ -134,7 +135,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 {
     if (!salt || (!passphrase && pplength != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);
-        return NULL;
+        return nullptr;
     }
 
     uint8_t passkey[crypto_hash_sha256_BYTES];
@@ -152,7 +153,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
                 crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
         /* out of memory most likely */
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);
-        return NULL;
+        return nullptr;
     }
 
     sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
@@ -161,7 +162,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 
     if (!out_key) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);
-        return NULL;
+        return nullptr;
     }
 
     memcpy(out_key->salt, salt, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
@@ -320,7 +321,7 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphr
     memcpy(salt, data + TOX_ENC_SAVE_MAGIC_LENGTH, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
 
     /* derive the key */
-    Tox_Pass_Key *key = tox_pass_key_derive_with_salt(passphrase, pplength, salt, NULL);
+    Tox_Pass_Key *key = tox_pass_key_derive_with_salt(passphrase, pplength, salt, nullptr);
 
     if (!key) {
         /* out of memory most likely */

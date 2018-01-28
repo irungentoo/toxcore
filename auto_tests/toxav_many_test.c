@@ -1,4 +1,6 @@
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -96,7 +98,7 @@ static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const 
     (void) userdata;
 
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        ck_assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
+        ck_assert(tox_friend_add_norequest(m, public_key, nullptr) != (uint32_t) ~0);
     }
 }
 
@@ -160,17 +162,17 @@ static void *call_thread(void *pd)
     uint8_t *video_u = (uint8_t *)calloc(800 * 600 / 4, sizeof(uint8_t));
     uint8_t *video_v = (uint8_t *)calloc(800 * 600 / 4, sizeof(uint8_t));
 
-    time_t start_time = time(NULL);
+    time_t start_time = time(nullptr);
 
-    while (time(NULL) - start_time < 4) {
+    while (time(nullptr) - start_time < 4) {
         toxav_iterate(AliceAV);
         toxav_iterate(BobAV);
 
-        toxav_audio_send_frame(AliceAV, friend_number, PCM, 960, 1, 48000, NULL);
-        toxav_audio_send_frame(BobAV, 0, PCM, 960, 1, 48000, NULL);
+        toxav_audio_send_frame(AliceAV, friend_number, PCM, 960, 1, 48000, nullptr);
+        toxav_audio_send_frame(BobAV, 0, PCM, 960, 1, 48000, nullptr);
 
-        toxav_video_send_frame(AliceAV, friend_number, 800, 600, video_y, video_u, video_v, NULL);
-        toxav_video_send_frame(BobAV, 0, 800, 600, video_y, video_u, video_v, NULL);
+        toxav_video_send_frame(AliceAV, friend_number, 800, 600, video_y, video_u, video_v, nullptr);
+        toxav_video_send_frame(BobAV, 0, 800, 600, video_y, video_u, video_v, nullptr);
 
         c_sleep(10);
     }
@@ -192,7 +194,7 @@ static void *call_thread(void *pd)
     free(video_v);
 
     printf("Closing thread\n");
-    pthread_exit(NULL);
+    pthread_exit(nullptr);
 }
 
 
@@ -208,25 +210,25 @@ START_TEST(test_AV_three_calls)
     {
         TOX_ERR_NEW error;
 
-        bootstrap = tox_new_log(NULL, &error, &index[0]);
+        bootstrap = tox_new_log(nullptr, &error, &index[0]);
         ck_assert(error == TOX_ERR_NEW_OK);
 
-        Alice = tox_new_log(NULL, &error, &index[1]);
+        Alice = tox_new_log(nullptr, &error, &index[1]);
         ck_assert(error == TOX_ERR_NEW_OK);
 
-        Bobs[0] = tox_new_log(NULL, &error, &index[2]);
+        Bobs[0] = tox_new_log(nullptr, &error, &index[2]);
         ck_assert(error == TOX_ERR_NEW_OK);
 
-        Bobs[1] = tox_new_log(NULL, &error, &index[3]);
+        Bobs[1] = tox_new_log(nullptr, &error, &index[3]);
         ck_assert(error == TOX_ERR_NEW_OK);
 
-        Bobs[2] = tox_new_log(NULL, &error, &index[4]);
+        Bobs[2] = tox_new_log(nullptr, &error, &index[4]);
         ck_assert(error == TOX_ERR_NEW_OK);
     }
 
     printf("Created 5 instances of Tox\n");
     printf("Preparing network...\n");
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int cur_time = time(nullptr);
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
@@ -234,34 +236,34 @@ START_TEST(test_AV_three_calls)
     tox_self_get_address(Alice, address);
 
 
-    ck_assert(tox_friend_add(Bobs[0], address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
-    ck_assert(tox_friend_add(Bobs[1], address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
-    ck_assert(tox_friend_add(Bobs[2], address, (const uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[0], address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[1], address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bobs[2], address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
 
     uint8_t off = 1;
 
     while (1) {
-        tox_iterate(bootstrap, NULL);
-        tox_iterate(Alice, NULL);
-        tox_iterate(Bobs[0], NULL);
-        tox_iterate(Bobs[1], NULL);
-        tox_iterate(Bobs[2], NULL);
+        tox_iterate(bootstrap, nullptr);
+        tox_iterate(Alice, nullptr);
+        tox_iterate(Bobs[0], nullptr);
+        tox_iterate(Bobs[1], nullptr);
+        tox_iterate(Bobs[2], nullptr);
 
         if (tox_self_get_connection_status(bootstrap) &&
                 tox_self_get_connection_status(Alice) &&
                 tox_self_get_connection_status(Bobs[0]) &&
                 tox_self_get_connection_status(Bobs[1]) &&
                 tox_self_get_connection_status(Bobs[2]) && off) {
-            printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
+            printf("Toxes are online, took %llu seconds\n", time(nullptr) - cur_time);
             off = 0;
         }
 
-        if (tox_friend_get_connection_status(Alice, 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Alice, 1, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Alice, 2, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bobs[0], 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bobs[1], 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bobs[2], 0, NULL) == TOX_CONNECTION_UDP) {
+        if (tox_friend_get_connection_status(Alice, 0, nullptr) == TOX_CONNECTION_UDP &&
+                tox_friend_get_connection_status(Alice, 1, nullptr) == TOX_CONNECTION_UDP &&
+                tox_friend_get_connection_status(Alice, 2, nullptr) == TOX_CONNECTION_UDP &&
+                tox_friend_get_connection_status(Bobs[0], 0, nullptr) == TOX_CONNECTION_UDP &&
+                tox_friend_get_connection_status(Bobs[1], 0, nullptr) == TOX_CONNECTION_UDP &&
+                tox_friend_get_connection_status(Bobs[2], 0, nullptr) == TOX_CONNECTION_UDP) {
             break;
         }
 
@@ -274,7 +276,7 @@ START_TEST(test_AV_three_calls)
     BobsAV[2] = setup_av_instance(Bobs[2], BobsCC + 2);
 
     printf("Created 4 instances of ToxAV\n");
-    printf("All set after %llu seconds!\n", time(NULL) - cur_time);
+    printf("All set after %llu seconds!\n", time(nullptr) - cur_time);
 
     thread_data tds[3];
     tds[0].AliceAV = AliceAV;
@@ -296,28 +298,28 @@ START_TEST(test_AV_three_calls)
     tds[2].friend_number = 2;
 
     pthread_t tids[3];
-    (void) pthread_create(tids + 0, NULL, call_thread, tds + 0);
-    (void) pthread_create(tids + 1, NULL, call_thread, tds + 1);
-    (void) pthread_create(tids + 2, NULL, call_thread, tds + 2);
+    (void) pthread_create(tids + 0, nullptr, call_thread, tds + 0);
+    (void) pthread_create(tids + 1, nullptr, call_thread, tds + 1);
+    (void) pthread_create(tids + 2, nullptr, call_thread, tds + 2);
 
-    time_t start_time = time(NULL);
+    time_t start_time = time(nullptr);
 
-    while (time(NULL) - start_time < 5) {
-        tox_iterate(Alice, NULL);
-        tox_iterate(Bobs[0], NULL);
-        tox_iterate(Bobs[1], NULL);
-        tox_iterate(Bobs[2], NULL);
+    while (time(nullptr) - start_time < 5) {
+        tox_iterate(Alice, nullptr);
+        tox_iterate(Bobs[0], nullptr);
+        tox_iterate(Bobs[1], nullptr);
+        tox_iterate(Bobs[2], nullptr);
         c_sleep(20);
     }
 
     ck_assert(pthread_join(tids[0], &retval) == 0);
-    ck_assert(retval == NULL);
+    ck_assert(retval == nullptr);
 
     ck_assert(pthread_join(tids[1], &retval) == 0);
-    ck_assert(retval == NULL);
+    ck_assert(retval == nullptr);
 
     ck_assert(pthread_join(tids[2], &retval) == 0);
-    ck_assert(retval == NULL);
+    ck_assert(retval == nullptr);
 
     printf("Killing all instances\n");
     toxav_kill(BobsAV[0]);
@@ -355,7 +357,7 @@ int main(int argc, char *argv[])
     Suite *tox = tox_suite();
     SRunner *test_runner = srunner_create(tox);
 
-    setbuf(stdout, NULL);
+    setbuf(stdout, nullptr);
 
     srunner_run_all(test_runner, CK_NORMAL);
     int number_failed = srunner_ntests_failed(test_runner);

@@ -9,6 +9,7 @@ filegroup(
 cc_library(
     name = "ccompat",
     hdrs = ["ccompat.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
 )
 
 cc_library(
@@ -31,6 +32,7 @@ cc_library(
     name = "list",
     srcs = ["list.c"],
     hdrs = ["list.h"],
+    deps = [":ccompat"],
 )
 
 cc_library(

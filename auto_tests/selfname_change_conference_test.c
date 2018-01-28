@@ -21,7 +21,9 @@
  *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#define _XOPEN_SOURCE 500
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,11 +47,11 @@ static void cbconfmembers(Tox *tox, uint32_t conference_number, uint32_t peer_nu
         return;
     }
 
-    if (!tox_conference_peer_get_name(tox, conference_number, peer_number, new_peer_name, NULL)) {
+    if (!tox_conference_peer_get_name(tox, conference_number, peer_number, new_peer_name, nullptr)) {
         return;
     }
 
-    if (!memcmp(newname, new_peer_name, tox_conference_peer_get_name_size(tox, conference_number, peer_number, NULL))) {
+    if (!memcmp(newname, new_peer_name, tox_conference_peer_get_name_size(tox, conference_number, peer_number, nullptr))) {
         printf("success: own name was changed and updated in the conference");
         exit(0);
     }
@@ -57,12 +59,12 @@ static void cbconfmembers(Tox *tox, uint32_t conference_number, uint32_t peer_nu
 
 int main(void)
 {
-    struct Tox_Options *to = tox_options_new(NULL);
+    struct Tox_Options *to = tox_options_new(nullptr);
     Tox *t;
     TOX_ERR_CONFERENCE_NEW conference_err;
     TOX_ERR_SET_INFO name_err;
 
-    t = tox_new(to, NULL);
+    t = tox_new(to, nullptr);
     tox_options_free(to);
 
     tox_callback_conference_namelist_change(t, cbconfmembers);
@@ -73,7 +75,7 @@ int main(void)
         return 2;
     }
 
-    tox_iterate(t, NULL);
+    tox_iterate(t, nullptr);
     c_sleep(tox_iteration_interval(t));
 
     if (!tox_self_set_name(t, (const uint8_t *)newname, strlen(newname), &name_err)) {
@@ -82,9 +84,9 @@ int main(void)
         return 3;
     }
 
-    tox_iterate(t, NULL);
+    tox_iterate(t, nullptr);
     c_sleep(tox_iteration_interval(t));
-    tox_iterate(t, NULL);
+    tox_iterate(t, nullptr);
 
     fprintf(stderr, "error: name was not changed in callback. exiting.\n");
 

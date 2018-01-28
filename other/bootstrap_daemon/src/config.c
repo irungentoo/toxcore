@@ -49,7 +49,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
 
     config_setting_t *ports_array = config_lookup(cfg, NAME_TCP_RELAY_PORTS);
 
-    if (ports_array == NULL) {
+    if (ports_array == nullptr) {
         log_write(LOG_LEVEL_WARNING, "No '%s' setting in the configuration file.\n", NAME_TCP_RELAY_PORTS);
         log_write(LOG_LEVEL_WARNING, "Using default '%s':\n", NAME_TCP_RELAY_PORTS);
 
@@ -83,7 +83,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
             *tcp_relay_ports = (uint16_t *)realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
         } else {
             free(*tcp_relay_ports);
-            *tcp_relay_ports = NULL;
+            *tcp_relay_ports = nullptr;
         }
 
         return;
@@ -109,7 +109,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
     for (i = 0; i < config_port_count; i ++) {
         config_setting_t *elem = config_setting_get_elem(ports_array, i);
 
-        if (elem == NULL) {
+        if (elem == nullptr) {
             // it's NULL if `ports_array` is not an array (we have that check earlier) or if `i` is out of range, which should not be
             log_write(LOG_LEVEL_WARNING, "Port #%d: Something went wrong while parsing the port. Stopping reading ports.\n", i);
             break;
@@ -137,7 +137,7 @@ static void parse_tcp_relay_ports_config(config_t *cfg, uint16_t **tcp_relay_por
         *tcp_relay_ports = (uint16_t *)realloc(*tcp_relay_ports, (*tcp_relay_port_count) * sizeof(uint16_t));
     } else {
         free(*tcp_relay_ports);
-        *tcp_relay_ports = NULL;
+        *tcp_relay_ports = nullptr;
     }
 }
 
@@ -306,7 +306,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
 static uint8_t *hex_string_to_bin(const char *hex_string)
 {
     if (strlen(hex_string) % 2 != 0) {
-        return NULL;
+        return nullptr;
     }
 
     size_t len = strlen(hex_string) / 2;
@@ -342,7 +342,7 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
 
     config_setting_t *node_list = config_lookup(&cfg, NAME_BOOTSTRAP_NODES);
 
-    if (node_list == NULL) {
+    if (node_list == nullptr) {
         log_write(LOG_LEVEL_WARNING, "No '%s' setting in the configuration file. Skipping bootstrapping.\n",
                   NAME_BOOTSTRAP_NODES);
         config_destroy(&cfg);
@@ -369,7 +369,7 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
 
         node = config_setting_get_elem(node_list, 0);
 
-        if (node == NULL) {
+        if (node == nullptr) {
             config_destroy(&cfg);
             return 0;
         }

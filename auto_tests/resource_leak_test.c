@@ -27,8 +27,8 @@ int main(void)
 
     // Warm-up.
     for (i = 0; i < 10; i++) {
-        Tox *tox = tox_new(0, 0);
-        tox_iterate(tox, NULL);
+        Tox *tox = tox_new(nullptr, nullptr);
+        tox_iterate(tox, nullptr);
         tox_kill(tox);
     }
 
@@ -39,8 +39,8 @@ int main(void)
     printf("Creating/deleting %d tox instances\n", ITERATIONS);
 
     for (i = 0; i < ITERATIONS; i++) {
-        Tox *tox = tox_new(0, 0);
-        tox_iterate(tox, NULL);
+        Tox *tox = tox_new(nullptr, nullptr);
+        tox_iterate(tox, nullptr);
         tox_kill(tox);
 #if HAVE_SBRK
         char *next_hwm = (char *)sbrk(0);

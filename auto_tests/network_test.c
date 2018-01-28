@@ -36,7 +36,7 @@ START_TEST(test_addr_resolv_localhost)
     IP ip;
     ip_init(&ip, 0); // ipv6enabled = 0
 
-    int res = addr_resolve(localhost, &ip, NULL);
+    int res = addr_resolve(localhost, &ip, nullptr);
 
     ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
 
@@ -47,10 +47,10 @@ START_TEST(test_addr_resolv_localhost)
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 
     ip_init(&ip, 1); // ipv6enabled = 1
-    res = addr_resolve(localhost, &ip, NULL);
+    res = addr_resolve(localhost, &ip, nullptr);
 
     if (!(res & TOX_ADDR_RESOLVE_INET6)) {
-        res = addr_resolve("ip6-localhost", &ip, NULL);
+        res = addr_resolve("ip6-localhost", &ip, nullptr);
         localhost_split = 1;
     }
 
@@ -96,13 +96,13 @@ START_TEST(test_ip_equal)
     ip_reset(&ip1);
     ip_reset(&ip2);
 
-    res = ip_equal(NULL, NULL);
+    res = ip_equal(nullptr, nullptr);
     ck_assert_msg(res == 0, "ip_equal(NULL, NULL): expected result 0, got %u.", res);
 
-    res = ip_equal(&ip1, NULL);
+    res = ip_equal(&ip1, nullptr);
     ck_assert_msg(res == 0, "ip_equal(PTR, NULL): expected result 0, got %u.", res);
 
-    res = ip_equal(NULL, &ip1);
+    res = ip_equal(nullptr, &ip1);
     ck_assert_msg(res == 0, "ip_equal(NULL, PTR): expected result 0, got %u.", res);
 
     ip1.family = TOX_AF_INET;
@@ -165,7 +165,7 @@ static Suite *network_suite(void)
 
 int main(void)
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *network = network_suite();
     SRunner *test_runner = srunner_create(network);

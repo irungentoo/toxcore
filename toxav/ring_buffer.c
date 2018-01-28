@@ -21,6 +21,8 @@
  */
 #include "ring_buffer.h"
 
+#include "../toxcore/ccompat.h"
+
 #include <stdlib.h>
 
 struct RingBuffer {
@@ -46,7 +48,7 @@ bool rb_empty(const RingBuffer *b)
  */
 void *rb_write(RingBuffer *b, void *p)
 {
-    void *rc = NULL;
+    void *rc = nullptr;
 
     if ((b->end + 1) % b->size == b->start) { /* full */
         rc = b->data[b->start];
@@ -65,7 +67,7 @@ void *rb_write(RingBuffer *b, void *p)
 bool rb_read(RingBuffer *b, void **p)
 {
     if (b->end == b->start) { /* Empty */
-        *p = NULL;
+        *p = nullptr;
         return false;
     }
 
@@ -79,14 +81,14 @@ RingBuffer *rb_new(int size)
     RingBuffer *buf = (RingBuffer *)calloc(sizeof(RingBuffer), 1);
 
     if (!buf) {
-        return NULL;
+        return nullptr;
     }
 
     buf->size = size + 1; /* include empty elem */
 
     if (!(buf->data = (void **)calloc(buf->size, sizeof(void *)))) {
         free(buf);
-        return NULL;
+        return nullptr;
     }
 
     return buf;

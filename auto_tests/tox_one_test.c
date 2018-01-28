@@ -38,9 +38,9 @@ START_TEST(test_one)
     uint8_t status_message2[TOX_MAX_STATUS_MESSAGE_LENGTH];
 
     uint32_t index[] = { 1, 2 };
-    Tox *tox1 = tox_new_log(0, 0, &index[0]);
+    Tox *tox1 = tox_new_log(nullptr, nullptr, &index[0]);
     set_random_name_and_status_message(tox1, name, status_message);
-    Tox *tox2 = tox_new_log(0, 0, &index[1]);
+    Tox *tox2 = tox_new_log(nullptr, nullptr, &index[1]);
     set_random_name_and_status_message(tox2, name2, status_message2);
 
     uint8_t address[TOX_ADDRESS_SIZE];
@@ -51,7 +51,7 @@ START_TEST(test_one)
 
     tox_self_get_address(tox2, address);
     uint8_t message[TOX_MAX_FRIEND_REQUEST_LENGTH + 1];
-    ret = tox_friend_add(tox1, address, NULL, 0, &error);
+    ret = tox_friend_add(tox1, address, nullptr, 0, &error);
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_NULL, "Sending request with no message worked.");
     ret = tox_friend_add(tox1, address, message, 0, &error);
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_NO_MESSAGE, "Sending request with no message worked.");
@@ -70,10 +70,10 @@ START_TEST(test_one)
     ret = tox_friend_add(tox1, address, message, TOX_MAX_FRIEND_REQUEST_LENGTH, &error);
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_ALREADY_SENT, "Adding friend twice worked.");
 
-    tox_self_set_name(tox1, name, sizeof(name), 0);
+    tox_self_set_name(tox1, name, sizeof(name), nullptr);
     ck_assert_msg(tox_self_get_name_size(tox1) == sizeof(name), "Can't set name of TOX_MAX_NAME_LENGTH");
 
-    tox_self_set_status_message(tox1, status_message, sizeof(status_message), 0);
+    tox_self_set_status_message(tox1, status_message, sizeof(status_message), nullptr);
     ck_assert_msg(tox_self_get_status_message_size(tox1) == sizeof(status_message),
                   "Can't set status message of TOX_MAX_STATUS_MESSAGE_LENGTH");
 
@@ -85,7 +85,7 @@ START_TEST(test_one)
     tox_kill(tox2);
     TOX_ERR_NEW err_n;
 
-    struct Tox_Options *options = tox_options_new(NULL);
+    struct Tox_Options *options = tox_options_new(nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, data, save_size);
     tox2 = tox_new_log(options, &err_n, &index[1]);
@@ -151,7 +151,7 @@ static Suite *tox_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *tox = tox_suite();
     SRunner *test_runner = srunner_create(tox);

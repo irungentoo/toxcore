@@ -1,5 +1,3 @@
-load("//tools:no_undefined.bzl", "cc_library")
-
 cc_library(
     name = "helpers",
     testonly = True,
@@ -26,4 +24,29 @@ cc_library(
         "//c-toxcore/toxencryptsave",
         "@check",
     ],
-) for src in glob(["*_test.c*"])]
+) for src in glob(["*_test.c"])]
+
+cc_library(
+    name = "monolith",
+    hdrs = glob([
+        "*.c",
+        "*.h",
+    ]),
+)
+
+cc_test(
+    name = "monolith_test",
+    size = "small",
+    srcs = ["monolith_test.cpp"],
+    copts = [
+        "-Wno-parentheses",
+        "-Wno-sign-compare",
+    ],
+    deps = [
+        ":helpers",
+        ":monolith",
+        "//c-toxcore/other:monolith",
+        "//c-toxcore/testing:misc_tools",
+        "@check",
+    ],
+)

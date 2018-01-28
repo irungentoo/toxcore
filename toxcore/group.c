@@ -38,7 +38,7 @@ static uint8_t groupnumber_not_valid(const Group_Chats *g_c, int groupnumber)
         return 1;
     }
 
-    if (g_c->chats == NULL) {
+    if (g_c->chats == nullptr) {
         return 1;
     }
 
@@ -59,13 +59,13 @@ static int realloc_groupchats(Group_Chats *g_c, uint32_t num)
 {
     if (num == 0) {
         free(g_c->chats);
-        g_c->chats = NULL;
+        g_c->chats = nullptr;
         return 0;
     }
 
     Group_c *newgroup_chats = (Group_c *)realloc(g_c->chats, num * sizeof(Group_c));
 
-    if (newgroup_chats == NULL) {
+    if (newgroup_chats == nullptr) {
         return -1;
     }
 
@@ -132,7 +132,7 @@ static int wipe_group_chat(Group_Chats *g_c, int groupnumber)
 static Group_c *get_group_c(const Group_Chats *g_c, int groupnumber)
 {
     if (groupnumber_not_valid(g_c, groupnumber)) {
-        return 0;
+        return nullptr;
     }
 
     return &g_c->chats[groupnumber];
@@ -438,7 +438,7 @@ static int addpeer(Group_Chats *g_c, int groupnumber, const uint8_t *real_pk, co
 
     Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * (g->numpeers + 1));
 
-    if (temp == NULL) {
+    if (temp == nullptr) {
         return -1;
     }
 
@@ -527,7 +527,7 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index, void *user
 
     if (g->numpeers == 0) {
         free(g->group);
-        g->group = NULL;
+        g->group = nullptr;
     } else {
         if (g->numpeers != (uint32_t)peer_index) {
             memcpy(&g->group[peer_index], &g->group[g->numpeers], sizeof(Group_Peer));
@@ -535,7 +535,7 @@ static int delpeer(Group_Chats *g_c, int groupnumber, int peer_index, void *user
 
         Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * (g->numpeers));
 
-        if (temp == NULL) {
+        if (temp == nullptr) {
             return -1;
         }
 
@@ -744,13 +744,13 @@ int add_groupchat(Group_Chats *g_c, uint8_t type)
     g->identifier[0] = type;
     g->peer_number = 0; /* Founder is peer 0. */
     memcpy(g->real_pk, nc_get_self_public_key(g_c->m->net_crypto), CRYPTO_PUBLIC_KEY_SIZE);
-    int peer_index = addpeer(g_c, groupnumber, g->real_pk, dht_get_self_public_key(g_c->m->dht), 0, NULL, false);
+    int peer_index = addpeer(g_c, groupnumber, g->real_pk, dht_get_self_public_key(g_c->m->dht), 0, nullptr, false);
 
     if (peer_index == -1) {
         return -1;
     }
 
-    setnick(g_c, groupnumber, peer_index, g_c->m->name, g_c->m->name_length, NULL, false);
+    setnick(g_c, groupnumber, peer_index, g_c->m->name, g_c->m->name_length, nullptr, false);
 
     return groupnumber;
 }
@@ -1223,7 +1223,7 @@ static int send_message_group(const Group_Chats *g_c, int groupnumber, uint8_t m
 #define GROUP_MESSAGE_PING_ID 0
 static int group_ping_send(const Group_Chats *g_c, int groupnumber)
 {
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, 0, 0) > 0) {
+    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, nullptr, 0) > 0) {
         return 0;
     }
 
@@ -2349,7 +2349,7 @@ void *group_get_object(const Group_Chats *g_c, int groupnumber)
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
-        return NULL;
+        return nullptr;
     }
 
     return g->object;
@@ -2365,11 +2365,11 @@ void *group_peer_get_object(const Group_Chats *g_c, int groupnumber, int peernum
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
-        return NULL;
+        return nullptr;
     }
 
     if ((uint32_t)peernumber >= g->numpeers) {
-        return NULL;
+        return nullptr;
     }
 
     return g->group[peernumber].object;
@@ -2410,7 +2410,7 @@ static int groupchat_clear_timedout(Group_Chats *g_c, int groupnumber, void *use
             delpeer(g_c, groupnumber, i, userdata);
         }
 
-        if (g->group == NULL || i >= g->numpeers) {
+        if (g->group == nullptr || i >= g->numpeers) {
             break;
         }
     }
@@ -2441,13 +2441,13 @@ void send_name_all_groups(Group_Chats *g_c)
 Group_Chats *new_groupchats(Messenger *m)
 {
     if (!m) {
-        return NULL;
+        return nullptr;
     }
 
     Group_Chats *temp = (Group_Chats *)calloc(1, sizeof(Group_Chats));
 
-    if (temp == NULL) {
-        return NULL;
+    if (temp == nullptr) {
+        return nullptr;
     }
 
     temp->m = m;
@@ -2489,8 +2489,8 @@ void kill_groupchats(Group_Chats *g_c)
         del_groupchat(g_c, i);
     }
 
-    m_callback_conference_invite(g_c->m, NULL);
-    g_c->m->conferences_object = NULL;
+    m_callback_conference_invite(g_c->m, nullptr);
+    g_c->m->conferences_object = nullptr;
     free(g_c);
 }
 

@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(NULL, new_networking(NULL, ip, PORT), true);
+    DHT *dht = new_DHT(nullptr, new_networking(nullptr, ip, PORT), true);
     printf("OUR ID: ");
     uint32_t i;
 
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
         }
 
 #endif
-        networking_poll(dht_get_net(dht), NULL);
+        networking_poll(dht_get_net(dht), nullptr);
 
         print_clientlist(dht);
         print_friendlist(dht);

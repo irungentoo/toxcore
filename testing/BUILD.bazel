@@ -6,6 +6,7 @@ cc_library(
         "misc_tools.c",
     ],
     visibility = ["//c-toxcore:__subpackages__"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
 )
 
 cc_binary(

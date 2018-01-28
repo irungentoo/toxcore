@@ -65,7 +65,7 @@ static int manage_keys(DHT *dht, char *keys_file_path)
     // Check if file exits, proceed to open and load keys
     keys_file = fopen(keys_file_path, "r");
 
-    if (keys_file != NULL) {
+    if (keys_file != nullptr) {
         const size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
 
         if (read_size != KEYS_SIZE) {
@@ -131,7 +131,7 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
     // Open the PID file for writing
     pid_file = fopen(pid_file_path, "a+");
 
-    if (pid_file == NULL) {
+    if (pid_file == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't open the PID file for writing: %s. Exiting.\n", pid_file_path);
         exit(1);
     }
@@ -226,16 +226,16 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
-    Networking_Core *net = new_networking(NULL, ip, port);
+    Networking_Core *net = new_networking(nullptr, ip, port);
 
-    if (net == NULL) {
+    if (net == nullptr) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking(NULL, ip, port);
+            net = new_networking(nullptr, ip, port);
 
-            if (net == NULL) {
+            if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
                 return 1;
             }
@@ -245,9 +245,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    DHT *dht = new_DHT(NULL, net, true);
+    DHT *dht = new_DHT(nullptr, net, true);
 
-    if (dht == NULL) {
+    if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
         return 1;
     }
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
 
     free(keys_file_path);
 
-    TCP_Server *tcp_server = NULL;
+    TCP_Server *tcp_server = nullptr;
 
     if (enable_tcp_relay) {
         if (tcp_relay_port_count == 0) {
@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
         // tcp_relay_port_count != 0 at this point
         free(tcp_relay_ports);
 
-        if (tcp_server != NULL) {
+        if (tcp_server != nullptr) {
             log_write(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
             do_TCP_server(tcp_server);
         }
 
-        networking_poll(dht_get_net(dht), NULL);
+        networking_poll(dht_get_net(dht), nullptr);
 
         if (waiting_for_dht_connection && DHT_isconnected(dht)) {
             log_write(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");

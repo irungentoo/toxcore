@@ -24,8 +24,8 @@ int load_file(char *filename, char **result)
     int size = 0;
     FILE *f = fopen(filename, "rb");
 
-    if (f == NULL) {
-        *result = NULL;
+    if (f == nullptr) {
+        *result = nullptr;
         return -1; // -1 means file opening fail
     }
 
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 
         FILE *f = fopen(argv[4], "wb");
 
-        if (f == NULL) {
+        if (f == nullptr) {
             goto fail;
         }
 

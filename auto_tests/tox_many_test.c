@@ -1,7 +1,9 @@
 /* Auto Tests: Many clients.
  */
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -25,7 +27,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
     }
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_friend_add_norequest(m, public_key, 0);
+        tox_friend_add_norequest(m, public_key, nullptr);
     }
 }
 
@@ -35,7 +37,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 
 START_TEST(test_many_clients)
 {
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES];
     uint32_t index[NUM_TOXES];
     uint32_t i, j;
@@ -43,8 +45,8 @@ START_TEST(test_many_clients)
 
     for (i = 0; i < NUM_TOXES; ++i) {
         index[i] = i + 1;
-        toxes[i] = tox_new_log(0, 0, &index[i]);
-        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        toxes[i] = tox_new_log(nullptr, nullptr, &index[i]);
+        ck_assert_msg(toxes[i] != nullptr, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
     }
 
@@ -107,7 +109,7 @@ loop_top:
 
         for (i = 0; i < NUM_TOXES; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
-                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_UDP) {
+                if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_UDP) {
                     ++counter;
                 }
             }
@@ -133,7 +135,7 @@ loop_top:
         tox_kill(toxes[i]);
     }
 
-    printf("test_many_clients succeeded, took %llu seconds\n", time(NULL) - cur_time);
+    printf("test_many_clients succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 }
 END_TEST
 
@@ -154,7 +156,7 @@ static Suite *tox_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *tox = tox_suite();
     SRunner *test_runner = srunner_create(tox);

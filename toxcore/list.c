@@ -29,6 +29,8 @@
 
 #include "list.h"
 
+#include "ccompat.h"
+
 /* Basically, the elements in the list are placed in order so that they can be searched for easily
  * -each element is seen as a big-endian integer when ordering them
  * -the ids array is maintained so that each id always matches
@@ -148,8 +150,8 @@ int bs_list_init(BS_LIST *list, uint32_t element_size, uint32_t initial_capacity
     list->n = 0;
     list->element_size = element_size;
     list->capacity = 0;
-    list->data = NULL;
-    list->ids = NULL;
+    list->data = nullptr;
+    list->ids = nullptr;
 
     if (initial_capacity != 0) {
         if (!resize(list, initial_capacity)) {
@@ -166,10 +168,10 @@ void bs_list_free(BS_LIST *list)
 {
     //free both arrays
     free(list->data);
-    list->data = NULL;
+    list->data = nullptr;
 
     free(list->ids);
-    list->ids = NULL;
+    list->ids = nullptr;
 }
 
 int bs_list_find(const BS_LIST *list, const uint8_t *data)

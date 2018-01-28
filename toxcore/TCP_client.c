@@ -382,7 +382,7 @@ static int client_send_pending_data(TCP_Client_Connection *con)
     con->priority_queue_start = p;
 
     if (!p) {
-        con->priority_queue_end = NULL;
+        con->priority_queue_end = nullptr;
         return 0;
     }
 
@@ -401,7 +401,7 @@ static bool client_add_priority(TCP_Client_Connection *con, const uint8_t *packe
         return 0;
     }
 
-    new_list->next = NULL;
+    new_list->next = nullptr;
     new_list->size = size;
     new_list->sent = sent;
     memcpy(new_list->data, packet, size);
@@ -694,16 +694,16 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
         const uint8_t *self_secret_key, TCP_Proxy_Info *proxy_info)
 {
     if (networking_at_startup() != 0) {
-        return NULL;
+        return nullptr;
     }
 
     if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
-        return NULL;
+        return nullptr;
     }
 
     TCP_Proxy_Info default_proxyinfo;
 
-    if (proxy_info == NULL) {
+    if (proxy_info == nullptr) {
         default_proxyinfo.proxy_type = TCP_PROXY_NONE;
         proxy_info = &default_proxyinfo;
     }
@@ -717,24 +717,24 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
     Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
-        return NULL;
+        return nullptr;
     }
 
     if (!set_socket_nosigpipe(sock)) {
         kill_sock(sock);
-        return 0;
+        return nullptr;
     }
 
     if (!(set_socket_nonblock(sock) && connect_sock_to(sock, ip_port, proxy_info))) {
         kill_sock(sock);
-        return NULL;
+        return nullptr;
     }
 
     TCP_Client_Connection *temp = (TCP_Client_Connection *)calloc(sizeof(TCP_Client_Connection), 1);
 
-    if (temp == NULL) {
+    if (temp == nullptr) {
         kill_sock(sock);
-        return NULL;
+        return nullptr;
     }
 
     temp->sock = sock;
@@ -761,7 +761,7 @@ TCP_Client_Connection *new_TCP_connection(IP_Port ip_port, const uint8_t *public
             if (generate_handshake(temp) == -1) {
                 kill_sock(sock);
                 free(temp);
-                return NULL;
+                return nullptr;
             }
 
             break;
@@ -1062,7 +1062,7 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection, void *userdata)
  */
 void kill_TCP_connection(TCP_Client_Connection *TCP_connection)
 {
-    if (TCP_connection == NULL) {
+    if (TCP_connection == nullptr) {
         return;
     }
 

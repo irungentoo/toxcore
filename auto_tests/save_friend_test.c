@@ -1,7 +1,9 @@
 /* Auto Tests: Save and load friends.
  */
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #include "helpers.h"
 #include "../toxcore/ccompat.h"
@@ -28,7 +30,7 @@ static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, TO
         text[i] = rand();
     }
 
-    setter(m, text, SIZEOF_VLA(text), 0);
+    setter(m, text, SIZEOF_VLA(text), nullptr);
 }
 
 void namechange_callback(Tox *tox, uint32_t friend_number, const uint8_t *name, size_t length, void *user_data)
@@ -47,16 +49,16 @@ void statuschange_callback(Tox *tox, uint32_t friend_number, const uint8_t *mess
 
 int main(int argc, char *argv[])
 {
-    Tox *tox1 = tox_new_log(0, 0, 0);
-    Tox *tox2 = tox_new_log(0, 0, 0);
+    Tox *tox1 = tox_new_log(nullptr, nullptr, nullptr);
+    Tox *tox2 = tox_new_log(nullptr, nullptr, nullptr);
 
     struct test_data to_compare = { { 0 } };
 
     uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_public_key(tox1, public_key);
-    tox_friend_add_norequest(tox2, public_key, NULL);
+    tox_friend_add_norequest(tox2, public_key, nullptr);
     tox_self_get_public_key(tox2, public_key);
-    tox_friend_add_norequest(tox1, public_key, NULL);
+    tox_friend_add_norequest(tox1, public_key, nullptr);
 
     uint8_t reference_name[TOX_MAX_NAME_LENGTH] = { 0 };
     uint8_t reference_status[TOX_MAX_STATUS_MESSAGE_LENGTH] = { 0 };
@@ -75,13 +77,13 @@ int main(int argc, char *argv[])
     while (true) {
         if (tox_self_get_connection_status(tox1) &&
                 tox_self_get_connection_status(tox2) &&
-                tox_friend_get_connection_status(tox1, 0, 0) == TOX_CONNECTION_UDP) {
+                tox_friend_get_connection_status(tox1, 0, nullptr) == TOX_CONNECTION_UDP) {
             printf("Connected.\n");
             break;
         }
 
         tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, NULL);
+        tox_iterate(tox2, nullptr);
 
         c_sleep(tox_iteration_interval(tox1));
     }
@@ -93,7 +95,7 @@ int main(int argc, char *argv[])
         }
 
         tox_iterate(tox1, &to_compare);
-        tox_iterate(tox2, NULL);
+        tox_iterate(tox2, nullptr);
 
         c_sleep(tox_iteration_interval(tox1));
     }
@@ -102,14 +104,14 @@ int main(int argc, char *argv[])
     VLA(uint8_t, savedata, save_size);
     tox_get_savedata(tox1, savedata);
 
-    struct Tox_Options *options = tox_options_new(NULL);
+    struct Tox_Options *options = tox_options_new(nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, savedata, save_size);
 
-    Tox *tox_to_compare = tox_new(options, 0);
+    Tox *tox_to_compare = tox_new(options, nullptr);
 
-    tox_friend_get_name(tox_to_compare, 0, to_compare.name, 0);
-    tox_friend_get_status_message(tox_to_compare, 0, to_compare.status_message, 0);
+    tox_friend_get_name(tox_to_compare, 0, to_compare.name, nullptr);
+    tox_friend_get_status_message(tox_to_compare, 0, to_compare.status_message, nullptr);
 
     assert(memcmp(reference_name, to_compare.name, TOX_MAX_NAME_LENGTH) == 0);
     assert(memcmp(reference_status, to_compare.status_message, TOX_MAX_STATUS_MESSAGE_LENGTH) == 0);

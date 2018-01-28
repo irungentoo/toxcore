@@ -1,4 +1,6 @@
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -37,7 +39,7 @@ static inline IP get_loopback()
 }
 static void do_onion(Onion *onion)
 {
-    networking_poll(onion->net, NULL);
+    networking_poll(onion->net, nullptr);
     do_DHT(onion->dht);
 }
 
@@ -159,9 +161,9 @@ static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, ui
 START_TEST(test_basic)
 {
     IP ip = get_loopback();
-    Onion *onion1 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34567), true));
-    Onion *onion2 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34568), true));
-    ck_assert_msg((onion1 != NULL) && (onion2 != NULL), "Onion failed initializing.");
+    Onion *onion1 = new_onion(new_DHT(nullptr, new_networking(nullptr, ip, 34567), true));
+    Onion *onion2 = new_onion(new_DHT(nullptr, new_networking(nullptr, ip, 34568), true));
+    ck_assert_msg((onion1 != nullptr) && (onion2 != nullptr), "Onion failed initializing.");
     networking_registerhandler(onion2->net, 'I', &handle_test_1, onion2);
 
     IP_Port on1 = {ip, net_port(onion1->net)};
@@ -203,7 +205,7 @@ START_TEST(test_basic)
     Onion_Announce *onion1_a = new_onion_announce(onion1->dht);
     Onion_Announce *onion2_a = new_onion_announce(onion2->dht);
     networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_3, onion1);
-    ck_assert_msg((onion1_a != NULL) && (onion2_a != NULL), "Onion_Announce failed initializing.");
+    ck_assert_msg((onion1_a != nullptr) && (onion2_a != nullptr), "Onion_Announce failed initializing.");
     uint8_t zeroes[64] = {0};
     random_bytes(sb_data, sizeof(sb_data));
     uint64_t s;
@@ -245,8 +247,8 @@ START_TEST(test_basic)
     }
 
     c_sleep(1000);
-    Onion *onion3 = new_onion(new_DHT(NULL, new_networking(NULL, ip, 34569), true));
-    ck_assert_msg((onion3 != NULL), "Onion failed initializing.");
+    Onion *onion3 = new_onion(new_DHT(nullptr, new_networking(nullptr, ip, 34569), true));
+    ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(nonce);
     ret = send_data_request(onion3->net, &path, nodes[3].ip_port,
@@ -310,22 +312,22 @@ static Onions *new_onions(uint16_t port)
     Onions *on = (Onions *)malloc(sizeof(Onions));
 
     if (!on) {
-        return NULL;
+        return nullptr;
     }
 
-    Networking_Core *net = new_networking(NULL, ip, port);
+    Networking_Core *net = new_networking(nullptr, ip, port);
 
     if (!net) {
         free(on);
-        return NULL;
+        return nullptr;
     }
 
-    DHT *dht = new_DHT(NULL, net, true);
+    DHT *dht = new_DHT(nullptr, net, true);
 
     if (!dht) {
         kill_networking(net);
         free(on);
-        return NULL;
+        return nullptr;
     }
 
     on->onion = new_onion(dht);
@@ -334,7 +336,7 @@ static Onions *new_onions(uint16_t port)
         kill_DHT(dht);
         kill_networking(net);
         free(on);
-        return NULL;
+        return nullptr;
     }
 
     on->onion_a = new_onion_announce(dht);
@@ -344,11 +346,11 @@ static Onions *new_onions(uint16_t port)
         kill_DHT(dht);
         kill_networking(net);
         free(on);
-        return NULL;
+        return nullptr;
     }
 
     TCP_Proxy_Info inf = {{{0}}};
-    on->onion_c = new_onion_client(new_net_crypto(NULL, dht, &inf));
+    on->onion_c = new_onion_client(new_net_crypto(nullptr, dht, &inf));
 
     if (!on->onion_c) {
         kill_onion_announce(on->onion_a);
@@ -356,7 +358,7 @@ static Onions *new_onions(uint16_t port)
         kill_DHT(dht);
         kill_networking(net);
         free(on);
-        return NULL;
+        return nullptr;
     }
 
     return on;
@@ -364,7 +366,7 @@ static Onions *new_onions(uint16_t port)
 
 static void do_onions(Onions *on)
 {
-    networking_poll(on->onion->net, NULL);
+    networking_poll(on->onion->net, nullptr);
     do_DHT(on->onion->dht);
     do_onion_client(on->onion_c);
 }
@@ -447,7 +449,7 @@ START_TEST(test_announce)
 
     for (i = 0; i < NUM_ONIONS; ++i) {
         onions[i] = new_onions(i + 34655);
-        ck_assert_msg(onions[i] != 0, "Failed to create onions. %u");
+        ck_assert_msg(onions[i] != nullptr, "Failed to create onions. %u");
     }
 
     IP ip = get_loopback();
@@ -536,7 +538,7 @@ static Suite *onion_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *onion = onion_suite();
     SRunner *test_runner = srunner_create(onion);

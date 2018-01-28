@@ -39,7 +39,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
     }
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_friend_add_norequest(m, public_key, 0);
+        tox_friend_add_norequest(m, public_key, nullptr);
     }
 }
 
@@ -60,13 +60,13 @@ END_TEST
 
 START_TEST(test_save_friend)
 {
-    Tox *tox1 = tox_new_log(0, 0, 0);
-    Tox *tox2 = tox_new_log(0, 0, 0);
+    Tox *tox1 = tox_new_log(nullptr, nullptr, nullptr);
+    Tox *tox2 = tox_new_log(nullptr, nullptr, nullptr);
     ck_assert_msg(tox1 || tox2, "Failed to create 2 tox instances");
     tox_callback_friend_request(tox2, accept_friend_request);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
-    uint32_t test = tox_friend_add(tox1, address, (const uint8_t *)"Gentoo", 7, 0);
+    uint32_t test = tox_friend_add(tox1, address, (const uint8_t *)"Gentoo", 7, nullptr);
     ck_assert_msg(test != UINT32_MAX, "Failed to add friend");
 
     size_t size = tox_get_savedata_size(tox1);
@@ -79,24 +79,24 @@ START_TEST(test_save_friend)
     ck_assert_msg(ret, "failed to encrypted save: %u", error1);
     ck_assert_msg(tox_is_data_encrypted(enc_data), "magic number missing");
 
-    struct Tox_Options *options = tox_options_new(NULL);
+    struct Tox_Options *options = tox_options_new(nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, enc_data, size2);
 
     TOX_ERR_NEW err2;
-    Tox *tox3 = tox_new_log(options, &err2, 0);
+    Tox *tox3 = tox_new_log(options, &err2, nullptr);
     ck_assert_msg(err2 == TOX_ERR_NEW_LOAD_ENCRYPTED, "wrong error! %u. should fail with %u", err2,
                   TOX_ERR_NEW_LOAD_ENCRYPTED);
-    ck_assert_msg(tox3 == NULL, "tox_new with error should return NULL");
+    ck_assert_msg(tox3 == nullptr, "tox_new with error should return NULL");
     VLA(uint8_t, dec_data, size);
     TOX_ERR_DECRYPTION err3;
     ret = tox_pass_decrypt(enc_data, size2, (const uint8_t *)"correcthorsebatterystaple", 25, dec_data, &err3);
     ck_assert_msg(ret, "failed to decrypt save: %u", err3);
     tox_options_set_savedata_data(options, dec_data, size);
-    tox3 = tox_new_log(options, &err2, 0);
+    tox3 = tox_new_log(options, &err2, nullptr);
     ck_assert_msg(err2 == TOX_ERR_NEW_OK, "failed to load from decrypted data: %u", err2);
     uint8_t address2[TOX_PUBLIC_KEY_SIZE];
-    ret = tox_friend_get_public_key(tox3, 0, address2, 0);
+    ret = tox_friend_get_public_key(tox3, 0, address2, nullptr);
     ck_assert_msg(ret, "no friends!");
     ck_assert_msg(memcmp(address, address2, TOX_PUBLIC_KEY_SIZE) == 0, "addresses don't match!");
 
@@ -105,7 +105,7 @@ START_TEST(test_save_friend)
     tox_get_savedata(tox3, data2);
     TOX_ERR_KEY_DERIVATION keyerr;
     Tox_Pass_Key *key = tox_pass_key_derive((const uint8_t *)"123qweasdzxc", 12, &keyerr);
-    ck_assert_msg(key != NULL, "pass key allocation failure");
+    ck_assert_msg(key != nullptr, "pass key allocation failure");
     memcpy((uint8_t *)key, test_salt, TOX_PASS_SALT_LENGTH);
     memcpy((uint8_t *)key + TOX_PASS_SALT_LENGTH, known_key2, TOX_PASS_KEY_LENGTH);
     size2 = size + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
@@ -125,10 +125,10 @@ START_TEST(test_save_friend)
     // and now with the code in use (I only bothered with manually to debug this, and it seems a waste
     // to remove the manual check now that it's there)
     tox_options_set_savedata_data(options, out1, size);
-    Tox *tox4 = tox_new_log(options, &err2, 0);
+    Tox *tox4 = tox_new_log(options, &err2, nullptr);
     ck_assert_msg(err2 == TOX_ERR_NEW_OK, "failed to new the third");
     uint8_t address5[TOX_PUBLIC_KEY_SIZE];
-    ret = tox_friend_get_public_key(tox4, 0, address5, 0);
+    ret = tox_friend_get_public_key(tox4, 0, address5, nullptr);
     ck_assert_msg(ret, "no friends! the third");
     ck_assert_msg(memcmp(address, address2, TOX_PUBLIC_KEY_SIZE) == 0, "addresses don't match! the third");
 
@@ -148,7 +148,7 @@ START_TEST(test_keys)
     TOX_ERR_DECRYPTION decerr;
     TOX_ERR_KEY_DERIVATION keyerr;
     Tox_Pass_Key *key = tox_pass_key_derive((const uint8_t *)"123qweasdzxc", 12, &keyerr);
-    ck_assert_msg(key != NULL, "generic failure 1: %u", keyerr);
+    ck_assert_msg(key != nullptr, "generic failure 1: %u", keyerr);
     const uint8_t *string = (const uint8_t *)"No Patrick, mayonnaise is not an instrument."; // 44
 
     uint8_t encrypted[44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH];
@@ -171,7 +171,7 @@ START_TEST(test_keys)
     ck_assert_msg(ret, "generic failure 5: %u", decerr);
     ck_assert_msg(memcmp(out2, string, 44) == 0, "decryption 2 failed");
 
-    ret = tox_pass_decrypt(encrypted2, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, NULL, 0, out2, &decerr);
+    ret = tox_pass_decrypt(encrypted2, 44 + TOX_PASS_ENCRYPTION_EXTRA_LENGTH, nullptr, 0, out2, &decerr);
     ck_assert_msg(!ret, "Decrypt succeeded with wrong pass");
     ck_assert_msg(decerr != TOX_ERR_DECRYPTION_FAILED, "Bad error code %u", decerr);
 
@@ -186,7 +186,7 @@ START_TEST(test_keys)
     ck_assert_msg(tox_get_salt(encrypted, salt, &salt_err), "couldn't get salt");
     ck_assert_msg(salt_err == TOX_ERR_GET_SALT_OK, "get_salt returned an error");
     Tox_Pass_Key *key2 = tox_pass_key_derive_with_salt((const uint8_t *)"123qweasdzxc", 12, salt, &keyerr);
-    ck_assert_msg(key2 != NULL, "generic failure 7: %u", keyerr);
+    ck_assert_msg(key2 != nullptr, "generic failure 7: %u", keyerr);
     ck_assert_msg(0 == memcmp(key, key2, TOX_PASS_KEY_LENGTH + TOX_PASS_SALT_LENGTH), "salt comparison failed");
     tox_pass_key_free(key2);
     tox_pass_key_free(key);
@@ -206,7 +206,7 @@ static Suite *encryptsave_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *encryptsave =  encryptsave_suite();
     SRunner *test_runner = srunner_create(encryptsave);

@@ -148,7 +148,6 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 
     # Downgrade to warning so we still see it.
     add_flag("-Wno-error=unused-variable")
-    add_cxxflag("-Wno-error=zero-as-null-pointer-constant")
   endif()
 endif()
 
@@ -466,12 +465,13 @@ function(auto_test target)
   endif()
 endfunction()
 
-if(BUILD_TOXAV)
+if(BUILD_TOXAV AND CHECK_FOUND)
   add_definitions(-D__STDC_LIMIT_MACROS=1)
   add_executable(auto_monolith_test
     auto_tests/monolith_test.cpp
     ${ANDROID_CPU_FEATURES})
   target_link_modules(auto_monolith_test
+    ${CHECK_LIBRARIES}
     ${LIBSODIUM_LIBRARIES}
     ${OPUS_LIBRARIES}
     ${VPX_LIBRARIES}

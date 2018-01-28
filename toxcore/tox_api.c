@@ -1,5 +1,7 @@
 #include "tox.h"
 
+#include "ccompat.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -88,7 +90,7 @@ struct Tox_Options *tox_options_new(TOX_ERR_OPTIONS_NEW *error)
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_OPTIONS_NEW_MALLOC);
-    return NULL;
+    return nullptr;
 }
 
 void tox_options_free(struct Tox_Options *options)

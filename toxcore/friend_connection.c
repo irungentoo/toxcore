@@ -97,7 +97,7 @@ static uint8_t friendconn_id_not_valid(const Friend_Connections *fr_c, int frien
         return 1;
     }
 
-    if (fr_c->conns == NULL) {
+    if (fr_c->conns == nullptr) {
         return 1;
     }
 
@@ -118,13 +118,13 @@ static int realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
 {
     if (num == 0) {
         free(fr_c->conns);
-        fr_c->conns = NULL;
+        fr_c->conns = nullptr;
         return 0;
     }
 
     Friend_Conn *newgroup_cons = (Friend_Conn *)realloc(fr_c->conns, num * sizeof(Friend_Conn));
 
-    if (newgroup_cons == NULL) {
+    if (newgroup_cons == nullptr) {
         return -1;
     }
 
@@ -189,7 +189,7 @@ static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
 static Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
 {
     if (friendconn_id_not_valid(fr_c, friendcon_id)) {
-        return 0;
+        return nullptr;
     }
 
     return &fr_c->conns[friendcon_id];
@@ -483,7 +483,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
         Node_format nodes[MAX_SHARED_RELAYS];
         int n;
 
-        if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, NULL, data + 1, length - 1, 1)) == -1) {
+        if ((n = unpack_nodes(nodes, MAX_SHARED_RELAYS, nullptr, data + 1, length - 1, 1)) == -1) {
             return -1;
         }
 
@@ -873,13 +873,13 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled)
 {
     if (!onion_c) {
-        return NULL;
+        return nullptr;
     }
 
     Friend_Connections *temp = (Friend_Connections *)calloc(1, sizeof(Friend_Connections));
 
-    if (temp == NULL) {
-        return NULL;
+    if (temp == nullptr) {
+        return nullptr;
     }
 
     temp->dht = onion_get_dht(onion_c);

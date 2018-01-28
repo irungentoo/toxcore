@@ -1,4 +1,6 @@
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -11,7 +13,9 @@
 
 #include "helpers.h"
 
+#ifndef DHT_C_INCLUDED
 #include "../toxcore/DHT.c"
+#endif // DHT_C_INCLUDED
 #include "../toxcore/tox.h"
 
 
@@ -325,11 +329,11 @@ static void test_addto_lists_good(DHT            *dht,
 
 static void test_addto_lists(IP ip)
 {
-    Networking_Core *net = new_networking(NULL, ip, TOX_PORT_DEFAULT);
-    ck_assert_msg(net != 0, "Failed to create Networking_Core");
+    Networking_Core *net = new_networking(nullptr, ip, TOX_PORT_DEFAULT);
+    ck_assert_msg(net != nullptr, "Failed to create Networking_Core");
 
-    DHT *dht = new_DHT(NULL, net, true);
-    ck_assert_msg(dht != 0, "Failed to create DHT");
+    DHT *dht = new_DHT(nullptr, net, true);
+    ck_assert_msg(dht != nullptr, "Failed to create DHT");
 
     IP_Port ip_port = { .ip = ip, .port = TOX_PORT_DEFAULT };
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -466,8 +470,8 @@ static void test_list_main(void)
         IP ip;
         ip_init(&ip, 1);
 
-        dhts[i] = new_DHT(NULL, new_networking(NULL, ip, DHT_DEFAULT_PORT + i), true);
-        ck_assert_msg(dhts[i] != 0, "Failed to create dht instances %u", i);
+        dhts[i] = new_DHT(nullptr, new_networking(nullptr, ip, DHT_DEFAULT_PORT + i), true);
+        ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
 
@@ -602,8 +606,8 @@ START_TEST(test_DHT_test)
         IP ip;
         ip_init(&ip, 1);
 
-        dhts[i] = new_DHT(NULL, new_networking(NULL, ip, DHT_DEFAULT_PORT + i), true);
-        ck_assert_msg(dhts[i] != 0, "Failed to create dht instances %u", i);
+        dhts[i] = new_DHT(nullptr, new_networking(nullptr, ip, DHT_DEFAULT_PORT + i), true);
+        ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
 
@@ -652,7 +656,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_DHT; ++i) {
-            networking_poll(dhts[i]->net, NULL);
+            networking_poll(dhts[i]->net, nullptr);
             do_DHT(dhts[i]);
         }
 
@@ -715,7 +719,7 @@ static void dht_pack_unpack(const Node_format *nodes, size_t size, uint8_t *data
 
 static void random_ip(IP_Port *ipp, int family)
 {
-    uint8_t *ip = NULL;
+    uint8_t *ip = nullptr;
     size_t size;
 
     if (family == TOX_AF_INET || family == TCP_INET) {
@@ -797,7 +801,7 @@ static Suite *dht_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    srand((unsigned int) time(nullptr));
 
     Suite *dht = dht_suite();
     SRunner *test_runner = srunner_create(dht);

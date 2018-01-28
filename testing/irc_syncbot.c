@@ -94,7 +94,7 @@ static void callback_group_invite(Tox *tox, uint32_t fid, TOX_CONFERENCE_TYPE ty
                                   void *userdata)
 {
     if (current_group == -1) {
-        current_group = tox_conference_join(tox, fid, data, length, NULL);
+        current_group = tox_conference_join(tox, fid, data, length, nullptr);
     }
 }
 
@@ -103,13 +103,13 @@ static void callback_friend_message(Tox *tox, uint32_t fid, TOX_MESSAGE_TYPE typ
                                     void *userdata)
 {
     if (length == 1 && *message == 'c') {
-        if (tox_conference_delete(tox, current_group, NULL) == 0) {
+        if (tox_conference_delete(tox, current_group, nullptr) == 0) {
             current_group = -1;
         }
     }
 
     if (length == 1 && *message == 'i') {
-        tox_conference_invite(tox, fid, current_group, NULL);
+        tox_conference_invite(tox, fid, current_group, nullptr);
     }
 
     if (length == 1 && *message == 'j' && sock >= 0) {
@@ -121,14 +121,14 @@ static void copy_groupmessage(Tox *tox, uint32_t groupnumber, uint32_t friendgro
                               const uint8_t *message, size_t length,
                               void *userdata)
 {
-    if (tox_conference_peer_number_is_ours(tox, groupnumber, friendgroupnumber, NULL)) {
+    if (tox_conference_peer_number_is_ours(tox, groupnumber, friendgroupnumber, nullptr)) {
         return;
     }
 
     TOX_ERR_CONFERENCE_PEER_QUERY error;
     size_t namelen = tox_conference_peer_get_name_size(tox, groupnumber, friendgroupnumber, &error);
     uint8_t name[TOX_MAX_NAME_LENGTH];
-    tox_conference_peer_get_name(tox, groupnumber, friendgroupnumber, name, NULL);
+    tox_conference_peer_get_name(tox, groupnumber, friendgroupnumber, name, nullptr);
 
     if (namelen == 0 || error != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
         memcpy(name, "<unknown>", 9);
@@ -205,7 +205,7 @@ static void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
 
     uint8_t *pmsg = (uint8_t *)strstr((char *)req, " PRIVMSG");
 
-    if (pmsg == NULL) {
+    if (pmsg == nullptr) {
         return;
     }
 
@@ -227,7 +227,7 @@ static void send_irc_group(Tox *tox, uint8_t *msg, uint16_t len)
 
     memcpy(message + length, msg + req_len + 2, len - (req_len + 2));
     length += len - (req_len + 2);
-    tox_conference_send_message(tox, current_group, TOX_MESSAGE_TYPE_NORMAL, message, length, NULL);
+    tox_conference_send_message(tox, current_group, TOX_MESSAGE_TYPE_NORMAL, message, length, nullptr);
 }
 
 static Tox *init_tox(int argc, char *argv[])
@@ -377,7 +377,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        tox_iterate(tox, NULL);
+        tox_iterate(tox, nullptr);
         usleep(1000 * 50);
     }
 }

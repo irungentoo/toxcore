@@ -47,13 +47,13 @@ ACSession *ac_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_re
 
     if (!ac) {
         LOGGER_WARNING(log, "Allocation failed! Application might misbehave!");
-        return NULL;
+        return nullptr;
     }
 
     if (create_recursive_mutex(ac->queue_mutex) != 0) {
         LOGGER_WARNING(log, "Failed to create recursive mutex!");
         free(ac);
-        return NULL;
+        return nullptr;
     }
 
     int status;
@@ -75,7 +75,7 @@ ACSession *ac_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_re
     /* Initialize encoders with default values */
     ac->encoder = create_audio_encoder(log, AUDIO_START_BITRATE, AUDIO_START_SAMPLE_RATE, AUDIO_START_CHANNEL_COUNT);
 
-    if (ac->encoder == NULL) {
+    if (ac->encoder == nullptr) {
         goto DECODER_CLEANUP;
     }
 
@@ -106,7 +106,7 @@ DECODER_CLEANUP:
 BASE_CLEANUP:
     pthread_mutex_destroy(ac->queue_mutex);
     free(ac);
-    return NULL;
+    return nullptr;
 }
 
 void ac_kill(ACSession *ac)
@@ -147,7 +147,7 @@ void ac_iterate(ACSession *ac)
         if (rc == 2) {
             LOGGER_DEBUG(ac->log, "OPUS correction");
             int fs = (ac->lp_sampling_rate * ac->lp_frame_duration) / 1000;
-            rc = opus_decode(ac->decoder, NULL, 0, temp_audio_buffer, fs, 1);
+            rc = opus_decode(ac->decoder, nullptr, 0, temp_audio_buffer, fs, 1);
         } else {
             /* Get values from packet and decode. */
             /* NOTE: This didn't work very well */
@@ -275,14 +275,14 @@ static struct JitterBuffer *jbuf_new(uint32_t capacity)
     struct JitterBuffer *q = (struct JitterBuffer *)calloc(sizeof(struct JitterBuffer), 1);
 
     if (!q) {
-        return NULL;
+        return nullptr;
     }
 
     q->queue = (struct RTPMessage **)calloc(sizeof(struct RTPMessage *), size);
 
     if (!q->queue) {
         free(q);
-        return NULL;
+        return nullptr;
     }
 
     q->size = size;
@@ -294,7 +294,7 @@ static void jbuf_clear(struct JitterBuffer *q)
     for (; q->bottom != q->top; ++q->bottom) {
         if (q->queue[q->bottom % q->size]) {
             free(q->queue[q->bottom % q->size]);
-            q->queue[q->bottom % q->size] = NULL;
+            q->queue[q->bottom % q->size] = nullptr;
         }
     }
 }
@@ -340,14 +340,14 @@ static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
 {
     if (q->top == q->bottom) {
         *success = 0;
-        return NULL;
+        return nullptr;
     }
 
     unsigned int num = q->bottom % q->size;
 
     if (q->queue[num]) {
         struct RTPMessage *ret = q->queue[num];
-        q->queue[num] = NULL;
+        q->queue[num] = nullptr;
         ++q->bottom;
         *success = 1;
         return ret;
@@ -356,11 +356,11 @@ static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
     if ((uint32_t)(q->top - q->bottom) > q->capacity) {
         ++q->bottom;
         *success = 2;
-        return NULL;
+        return nullptr;
     }
 
     *success = 0;
-    return NULL;
+    return nullptr;
 }
 OpusEncoder *create_audio_encoder(Logger *log, int32_t bit_rate, int32_t sampling_rate, int32_t channel_count)
 {
@@ -374,7 +374,7 @@ OpusEncoder *create_audio_encoder(Logger *log, int32_t bit_rate, int32_t samplin
 
     if (status != OPUS_OK) {
         LOGGER_ERROR(log, "Error while starting audio encoder: %s", opus_strerror(status));
-        return NULL;
+        return nullptr;
     }
 
 
@@ -452,7 +452,7 @@ OpusEncoder *create_audio_encoder(Logger *log, int32_t bit_rate, int32_t samplin
 
 FAILURE:
     opus_encoder_destroy(rc);
-    return NULL;
+    return nullptr;
 }
 
 bool reconfigure_audio_encoder(Logger *log, OpusEncoder **e, int32_t new_br, int32_t new_sr, uint8_t new_ch,
@@ -462,7 +462,7 @@ bool reconfigure_audio_encoder(Logger *log, OpusEncoder **e, int32_t new_br, int
     if (*old_sr != new_sr || *old_ch != new_ch) {
         OpusEncoder *new_encoder = create_audio_encoder(log, new_br, new_sr, new_ch);
 
-        if (new_encoder == NULL) {
+        if (new_encoder == nullptr) {
             return false;
         }
 

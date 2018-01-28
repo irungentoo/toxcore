@@ -15,6 +15,7 @@ cc_library(
     name = "ring_buffer",
     srcs = ["ring_buffer.c"],
     hdrs = ["ring_buffer.h"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
 )
 
 cc_library(

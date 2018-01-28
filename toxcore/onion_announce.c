@@ -493,14 +493,14 @@ static int handle_data_request(void *object, IP_Port source, const uint8_t *pack
 
 Onion_Announce *new_onion_announce(DHT *dht)
 {
-    if (dht == NULL) {
-        return NULL;
+    if (dht == nullptr) {
+        return nullptr;
     }
 
     Onion_Announce *onion_a = (Onion_Announce *)calloc(1, sizeof(Onion_Announce));
 
-    if (onion_a == NULL) {
-        return NULL;
+    if (onion_a == nullptr) {
+        return nullptr;
     }
 
     onion_a->dht = dht;
@@ -515,11 +515,11 @@ Onion_Announce *new_onion_announce(DHT *dht)
 
 void kill_onion_announce(Onion_Announce *onion_a)
 {
-    if (onion_a == NULL) {
+    if (onion_a == nullptr) {
         return;
     }
 
-    networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, NULL, NULL);
-    networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, NULL, NULL);
+    networking_registerhandler(onion_a->net, NET_PACKET_ANNOUNCE_REQUEST, nullptr, nullptr);
+    networking_registerhandler(onion_a->net, NET_PACKET_ONION_DATA_REQUEST, nullptr, nullptr);
     free(onion_a);
 }

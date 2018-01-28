@@ -49,7 +49,7 @@ RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
 
     if (!retu) {
         LOGGER_WARNING(m->log, "Alloc failed! Program might misbehave!");
-        return NULL;
+        return nullptr;
     }
 
     retu->ssrc = random_u32();
@@ -67,7 +67,7 @@ RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
     if (-1 == rtp_allow_receiving(retu)) {
         LOGGER_WARNING(m->log, "Failed to start rtp receiving mode");
         free(retu);
-        return NULL;
+        return nullptr;
     }
 
     return retu;
@@ -85,7 +85,7 @@ void rtp_kill(RTPSession *session)
 }
 int rtp_allow_receiving(RTPSession *session)
 {
-    if (session == NULL) {
+    if (session == nullptr) {
         return -1;
     }
 
@@ -100,11 +100,11 @@ int rtp_allow_receiving(RTPSession *session)
 }
 int rtp_stop_receiving(RTPSession *session)
 {
-    if (session == NULL) {
+    if (session == nullptr) {
         return -1;
     }
 
-    m_callback_rtp_packet(session->m, session->friend_number, session->payload_type, NULL, NULL);
+    m_callback_rtp_packet(session->m, session->friend_number, session->payload_type, nullptr, nullptr);
 
     LOGGER_DEBUG(session->m->log, "Stopped receiving on session: %p", session);
     return 0;
@@ -286,7 +286,7 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
                 free(session->mp);
             }
 
-            session->mp = NULL;
+            session->mp = nullptr;
         }
 
         /* The message came in the allowed time;
@@ -341,7 +341,7 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
                     free(session->mp);
                 }
 
-                session->mp = NULL;
+                session->mp = nullptr;
             }
         } else {
             /* Second case */
@@ -368,7 +368,7 @@ int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, 
                 free(session->mp);
             }
 
-            session->mp = NULL;
+            session->mp = nullptr;
             goto NEW_MULTIPARTED;
         }
     } else {

@@ -30,15 +30,17 @@
 #include "../toxcore/tox.h"
 #include "../toxencryptsave/toxencryptsave.h"
 
+#include "../toxcore/ccompat.h"
+
 static const char *pphrase = "bar", *name = "foo", *savefile = "./save";
 
 static void save_data_encrypted(void)
 {
-    struct Tox_Options *options = tox_options_new(NULL);
-    Tox *t = tox_new(options, NULL);
+    struct Tox_Options *options = tox_options_new(nullptr);
+    Tox *t = tox_new(options, nullptr);
     tox_options_free(options);
 
-    tox_self_set_name(t, (const uint8_t *)name, strlen(name), NULL);
+    tox_self_set_name(t, (const uint8_t *)name, strlen(name), nullptr);
 
     FILE *f = fopen(savefile, "w");
 
@@ -87,7 +89,7 @@ static void load_data_decrypted(void)
         exit(3);
     }
 
-    struct Tox_Options *options = tox_options_new(NULL);
+    struct Tox_Options *options = tox_options_new(nullptr);
 
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
@@ -99,7 +101,7 @@ static void load_data_decrypted(void)
 
     tox_options_free(options);
 
-    if (t == NULL) {
+    if (t == nullptr) {
         fprintf(stderr, "error: tox_new returned the error value %d\n", err);
         return;
     }

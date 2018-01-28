@@ -635,14 +635,14 @@ void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, c
 
 Onion *new_onion(DHT *dht)
 {
-    if (dht == NULL) {
-        return NULL;
+    if (dht == nullptr) {
+        return nullptr;
     }
 
     Onion *onion = (Onion *)calloc(1, sizeof(Onion));
 
-    if (onion == NULL) {
-        return NULL;
+    if (onion == nullptr) {
+        return nullptr;
     }
 
     onion->dht = dht;
@@ -663,17 +663,17 @@ Onion *new_onion(DHT *dht)
 
 void kill_onion(Onion *onion)
 {
-    if (onion == NULL) {
+    if (onion == nullptr) {
         return;
     }
 
-    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, NULL, NULL);
-    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, NULL, NULL);
-    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_2, NULL, NULL);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, nullptr, nullptr);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, nullptr, nullptr);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_2, nullptr, nullptr);
 
-    networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_3, NULL, NULL);
-    networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_2, NULL, NULL);
-    networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_1, NULL, NULL);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_3, nullptr, nullptr);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_2, nullptr, nullptr);
+    networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_1, nullptr, nullptr);
 
     free(onion);
 }

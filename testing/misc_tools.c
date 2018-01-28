@@ -21,6 +21,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef MISC_TOOLS_C
+#define MISC_TOOLS_C
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -41,6 +44,8 @@
 #define c_sleep(x) usleep(1000*(x))
 #endif
 #endif
+
+#include "../toxcore/ccompat.h"
 
 // You are responsible for freeing the return value!
 uint8_t *hex_string_to_bin(const char *hex_string)
@@ -111,3 +116,5 @@ int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
 
     return argvoffset;
 }
+
+#endif // MISC_TOOLS_C

@@ -19,6 +19,7 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":defines",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:crypto_core",
     ],
 )

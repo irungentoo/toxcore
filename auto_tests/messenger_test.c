@@ -44,10 +44,10 @@ static const char *good_id_b_str = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc
 
 static const char *bad_id_str =    "9B569D14ff637e69f2";
 
-static unsigned char *friend_id = NULL;
-static unsigned char *good_id_a = NULL;
-static unsigned char *good_id_b = NULL;
-static unsigned char *bad_id    = NULL;
+static unsigned char *friend_id = nullptr;
+static unsigned char *good_id_a = nullptr;
+static unsigned char *good_id_b = nullptr;
+static unsigned char *bad_id    = nullptr;
 
 static int friend_id_num = 0;
 
@@ -60,10 +60,14 @@ START_TEST(test_m_sendmesage)
     int bad_len = MAX_CRYPTO_PACKET_SIZE;
 
 
-    ck_assert(m_send_message_generic(m, -1, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, 17, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, friend_id_num, MESSAGE_NORMAL, (const uint8_t *)message, bad_len, 0) == -2);
+    ck_assert(m_send_message_generic(
+                  m, -1, MESSAGE_NORMAL, (const uint8_t *)message, good_len, nullptr) == -1);
+    ck_assert(m_send_message_generic(
+                  m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (const uint8_t *)message, good_len, nullptr) == -1);
+    ck_assert(m_send_message_generic(
+                  m, 17, MESSAGE_NORMAL, (const uint8_t *)message, good_len, nullptr) == -1);
+    ck_assert(m_send_message_generic(
+                  m, friend_id_num, MESSAGE_NORMAL, (const uint8_t *)message, bad_len, nullptr) == -2);
 }
 END_TEST
 
@@ -355,7 +359,7 @@ int main(int argc, char *argv[])
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     options.log_callback = (logger_cb *)print_debug_log;
-    m = new_messenger(&options, 0);
+    m = new_messenger(&options, nullptr);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0) {
