@@ -79,7 +79,8 @@ struct ToxAV {
     PAIR(toxav_call_state_cb *, void *) scb; /* Call state callback */
     PAIR(toxav_audio_receive_frame_cb *, void *) acb; /* Audio frame receive callback */
     PAIR(toxav_video_receive_frame_cb *, void *) vcb; /* Video frame receive callback */
-    PAIR(toxav_bit_rate_status_cb *, void *) bcb; /* Bit rate control callback */
+    PAIR(toxav_audio_bit_rate_cb *, void *) abcb; /* Bit rate control callback */
+    PAIR(toxav_video_bit_rate_cb *, void *) vbcb; /* Bit rate control callback */
 
     /** Decode time measures */
     int32_t dmssc; /** Measure count */
@@ -525,7 +526,7 @@ END:
 
     return rc == TOXAV_ERR_CALL_CONTROL_OK;
 }
-bool toxav_bit_rate_set_audio(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate,
+bool toxav_audio_set_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate,
                               TOXAV_ERR_BIT_RATE_SET *error)
 {
     TOXAV_ERR_BIT_RATE_SET rc = TOXAV_ERR_BIT_RATE_SET_OK;
@@ -597,7 +598,7 @@ END:
 
     return rc == TOXAV_ERR_BIT_RATE_SET_OK;
 }
-bool toxav_bit_rate_set_video(ToxAV *av, uint32_t friend_number, uint32_t video_bit_rate,
+bool toxav_video_set_bit_rate(ToxAV *av, uint32_t friend_number, uint32_t video_bit_rate,
                               TOXAV_ERR_BIT_RATE_SET *error)
 {
     TOXAV_ERR_BIT_RATE_SET rc = TOXAV_ERR_BIT_RATE_SET_OK;
@@ -669,11 +670,18 @@ END:
 
     return rc == TOXAV_ERR_BIT_RATE_SET_OK;
 }
-void toxav_callback_bit_rate_status(ToxAV *av, toxav_bit_rate_status_cb *callback, void *user_data)
+void toxav_callback_audio_bit_rate(ToxAV *av, toxav_audio_bit_rate_cb *callback, void *user_data)
 {
     pthread_mutex_lock(av->mutex);
-    av->bcb.first = callback;
-    av->bcb.second = user_data;
+    av->abcb.first = callback;
+    av->abcb.second = user_data;
+    pthread_mutex_unlock(av->mutex);
+}
+void toxav_callback_video_bit_rate(ToxAV *av, toxav_video_bit_rate_cb *callback, void *user_data)
+{
+    pthread_mutex_lock(av->mutex);
+    av->vbcb.first = callback;
+    av->vbcb.second = user_data;
     pthread_mutex_unlock(av->mutex);
 }
 bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pcm, size_t sample_count,
@@ -911,20 +919,26 @@ void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *u
 
     pthread_mutex_lock(call->av->mutex);
 
-    if (!call->av->bcb.first) {
-        pthread_mutex_unlock(call->av->mutex);
-        LOGGER_WARNING(call->av->m->log, "No callback to report loss on");
-        return;
-    }
-
     if (call->video_bit_rate) {
-        (*call->av->bcb.first)(call->av, friend_number, call->audio_bit_rate,
-                               call->video_bit_rate - (call->video_bit_rate * loss),
-                               call->av->bcb.second);
+        if (!call->av->vbcb.first) {
+            pthread_mutex_unlock(call->av->mutex);
+            LOGGER_WARNING(call->av->m->log, "No callback to report loss on");
+            return;
+        }
+
+        (*call->av->vbcb.first)(call->av, friend_number,
+                                call->video_bit_rate - (call->video_bit_rate * loss),
+                                call->av->vbcb.second);
     } else if (call->audio_bit_rate) {
-        (*call->av->bcb.first)(call->av, friend_number,
-                               call->audio_bit_rate - (call->audio_bit_rate * loss),
-                               0, call->av->bcb.second);
+        if (!call->av->abcb.first) {
+            pthread_mutex_unlock(call->av->mutex);
+            LOGGER_WARNING(call->av->m->log, "No callback to report loss on");
+            return;
+        }
+
+        (*call->av->abcb.first)(call->av, friend_number,
+                                call->audio_bit_rate - (call->audio_bit_rate * loss),
+                                call->av->abcb.second);
     }
 
     pthread_mutex_unlock(call->av->mutex);

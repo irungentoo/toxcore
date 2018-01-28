@@ -405,43 +405,6 @@ error for bit_rate_set {
   FRIEND_NOT_IN_CALL,
 }
 
-namespace bit_rate {
-  /**
-   * Set the bit rate to be used in subsequent audio frames.
-   *
-   * @param friend_number The friend number of the friend for which to set the
-   * bit rate.
-   * @param audio_bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable.
-   *
-   */
-
-  bool set_audio(uint32_t friend_number, uint32_t audio_bit_rate) with error for bit_rate_set;
-  /**
-   * Set the bit rate to be used in subsequent video frames.
-   *
-   * @param friend_number The friend number of the friend for which to set the
-   * bit rate.
-   * @param video_bit_rate The new video bit rate in Kb/sec. Set to 0 to disable.
-   *
-   */
-  bool set_video(uint32_t friend_number, uint32_t video_bit_rate) with error for bit_rate_set;
-
-  event status {
-    /**
-     * The function type for the ${event status} callback. The event is triggered
-     * when the network becomes too saturated for current bit rates at which
-     * point core suggests new bit rates.
-     *
-     * @param friend_number The friend number of the friend for which to set the
-     * bit rate.
-     * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
-     * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
-     */
-    typedef void(uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate);
-  }
-}
-
-
 /*******************************************************************************
  *
  * :: A/V sending
@@ -506,6 +469,32 @@ namespace audio {
    */
   bool send_frame(uint32_t friend_number, const int16_t *pcm, size_t sample_count,
                   uint8_t channels, uint32_t sampling_rate) with error for send_frame;
+
+  uint32_t bit_rate {
+    /**
+     * Set the bit rate to be used in subsequent video frames.
+     *
+     * @param friend_number The friend number of the friend for which to set the
+     * bit rate.
+     * @param bit_rate The new audio bit rate in Kb/sec. Set to 0 to disable.
+     *
+     * @return true on success.
+     */
+    set(uint32_t friend_number) with error for bit_rate_set;
+  }
+
+  event bit_rate {
+    /**
+     * The function type for the ${event bit_rate} callback. The event is triggered
+     * when the network becomes too saturated for current bit rates at which
+     * point core suggests new bit rates.
+     *
+     * @param friend_number The friend number of the friend for which to set the
+     * bit rate.
+     * @param audio_bit_rate Suggested maximum audio bit rate in Kb/sec.
+     */
+    typedef void(uint32_t friend_number, uint32_t audio_bit_rate);
+  }
 }
 
 namespace video {
@@ -526,6 +515,32 @@ namespace video {
    */
   bool send_frame(uint32_t friend_number, uint16_t width, uint16_t height,
                   const uint8_t *y, const uint8_t *u, const uint8_t *v) with error for send_frame;
+
+  uint32_t bit_rate {
+    /**
+     * Set the bit rate to be used in subsequent video frames.
+     *
+     * @param friend_number The friend number of the friend for which to set the
+     * bit rate.
+     * @param bit_rate The new video bit rate in Kb/sec. Set to 0 to disable.
+     *
+     * @return true on success.
+     */
+    set(uint32_t friend_number) with error for bit_rate_set;
+  }
+
+  event bit_rate {
+    /**
+     * The function type for the ${event bit_rate} callback. The event is triggered
+     * when the network becomes too saturated for current bit rates at which
+     * point core suggests new bit rates.
+     *
+     * @param friend_number The friend number of the friend for which to set the
+     * bit rate.
+     * @param video_bit_rate Suggested maximum video bit rate in Kb/sec.
+     */
+    typedef void(uint32_t friend_number, uint32_t video_bit_rate);
+  }
 }
 
 

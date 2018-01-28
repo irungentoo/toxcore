@@ -210,11 +210,15 @@ static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     free(rb_write(cc->arb, f));
     pthread_mutex_unlock(cc->arb_mutex);
 }
-static void t_toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number,
-                                       uint32_t audio_bit_rate, uint32_t video_bit_rate,
-                                       void *user_data)
+static void t_toxav_audio_bit_rate_cb(ToxAV *av, uint32_t friend_number,
+                                      uint32_t audio_bit_rate, void *user_data)
 {
-    printf("Suggested bit rates: audio: %d video: %d\n", audio_bit_rate, video_bit_rate);
+    printf("Suggested bit rate: audio: %d\n", audio_bit_rate);
+}
+static void t_toxav_video_bit_rate_cb(ToxAV *av, uint32_t friend_number,
+                                      uint32_t video_bit_rate, void *user_data)
+{
+    printf("Suggested bit rate: video: %d\n", video_bit_rate);
 }
 static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
                                        void *userdata)
@@ -302,14 +306,16 @@ static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceC
     /* Alice */
     toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
-    toxav_callback_bit_rate_status(*AliceAV, t_toxav_bit_rate_status_cb, AliceCC);
+    toxav_callback_audio_bit_rate(*AliceAV, t_toxav_audio_bit_rate_cb, AliceCC);
+    toxav_callback_video_bit_rate(*AliceAV, t_toxav_video_bit_rate_cb, AliceCC);
     toxav_callback_video_receive_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
     toxav_callback_audio_receive_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
 
     /* Bob */
     toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
     toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
-    toxav_callback_bit_rate_status(*BobAV, t_toxav_bit_rate_status_cb, BobCC);
+    toxav_callback_audio_bit_rate(*BobAV, t_toxav_audio_bit_rate_cb, BobCC);
+    toxav_callback_video_bit_rate(*BobAV, t_toxav_video_bit_rate_cb, BobCC);
     toxav_callback_video_receive_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
     toxav_callback_audio_receive_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
 
