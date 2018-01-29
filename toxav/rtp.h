@@ -32,7 +32,19 @@
  */
 enum {
     rtp_TypeAudio = 192,
-    rtp_TypeVideo,
+    rtp_TypeVideo = 193,
+};
+
+/**
+ * A bit mask (up to 32 bits) specifying features of the current frame affecting
+ * the behaviour of the decoder.
+ */
+enum RTPCapabilities {
+    /**
+     * Support frames larger than 64KiB. The full 32 bit length and offset are
+     * set in \ref RTPHeader::data_length_full and \ref RTPHeader::offset_full.
+     */
+    RTP_LARGE_FRAME = 1 << 0,
 };
 
 struct RTPHeader {
@@ -58,11 +70,44 @@ struct RTPHeader {
     uint16_t sequnum;
     uint32_t timestamp;
     uint32_t ssrc;
-    uint32_t csrc[16];
 
-    /* Non-standard TOX-specific fields */
-    uint16_t offset_lower;/* Data offset of the current part */
-    uint16_t data_length_lower; /* Total message length */
+    /* Non-standard Tox-specific fields */
+
+    /**
+     * Bit mask of \ref RTPCapabilities setting features for the current frame.
+     */
+    uint32_t capabilities;
+
+    /**
+     * The full 32 bit data offset of the current data chunk. The \ref
+     * offset_lower data member contains the lower 16 bits of this value. For
+     * frames smaller than 64KiB, \ref offset_full and \ref offset_lower are
+     * equal.
+     */
+    uint32_t offset_full;
+    /**
+     * The full 32 bit payload length without header and packet id.
+     */
+    uint32_t data_length_full;
+    /**
+     * Only the receiver uses this field (why do we have this?).
+     */
+    uint32_t received_length_full;
+
+    /**
+     * Unused fields. If you want to add more information to this header, remove
+     * one csrc and add the appropriate number of fields in its place.
+     */
+    uint32_t csrc[12];
+
+    /**
+     * Data offset of the current part (lower bits).
+     */
+    uint16_t offset_lower;
+    /**
+     * Total message length (lower bits).
+     */
+    uint16_t data_length_lower;
 } __attribute__((packed));
 
 /* Check alignment */
