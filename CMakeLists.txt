@@ -467,6 +467,7 @@ function(auto_test target)
 endfunction()
 
 if(BUILD_TOXAV)
+  add_definitions(-D__STDC_LIMIT_MACROS=1)
   add_executable(auto_monolith_test
     auto_tests/monolith_test.cpp
     ${ANDROID_CPU_FEATURES})
