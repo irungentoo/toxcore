@@ -36,15 +36,19 @@ enum {
 };
 
 /**
- * A bit mask (up to 32 bits) specifying features of the current frame affecting
+ * A bit mask (up to 64 bits) specifying features of the current frame affecting
  * the behaviour of the decoder.
  */
-enum RTPCapabilities {
+enum RTPFlags {
     /**
      * Support frames larger than 64KiB. The full 32 bit length and offset are
      * set in \ref RTPHeader::data_length_full and \ref RTPHeader::offset_full.
      */
     RTP_LARGE_FRAME = 1 << 0,
+    /**
+     * Whether the packet is part of a key frame.
+     */
+    RTP_KEY_FRAME = 1 << 1,
 };
 
 struct RTPHeader {
@@ -74,9 +78,9 @@ struct RTPHeader {
     /* Non-standard Tox-specific fields */
 
     /**
-     * Bit mask of \ref RTPCapabilities setting features for the current frame.
+     * Bit mask of \ref RTPFlags setting features of the current frame.
      */
-    uint32_t capabilities;
+    uint64_t flags;
 
     /**
      * The full 32 bit data offset of the current data chunk. The \ref
@@ -98,7 +102,7 @@ struct RTPHeader {
      * Unused fields. If you want to add more information to this header, remove
      * one csrc and add the appropriate number of fields in its place.
      */
-    uint32_t csrc[12];
+    uint32_t csrc[11];
 
     /**
      * Data offset of the current part (lower bits).
