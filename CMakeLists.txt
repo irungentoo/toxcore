@@ -585,8 +585,3 @@ if(UTIL_LIBRARIES)
   add_executable(tox_shell testing/tox_shell.c)
   target_link_modules(tox_shell toxcore ${UTIL_LIBRARIES})
 endif()
-
-if(NOT WIN32)
-  add_executable(irc_syncbot testing/irc_syncbot.c)
-  target_link_modules(irc_syncbot toxcore toxnetwork)
-endif()
