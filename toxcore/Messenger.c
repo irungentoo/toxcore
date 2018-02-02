@@ -489,8 +489,7 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
 int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, const uint8_t *message, uint32_t length,
                            uint32_t *message_id)
 {
-    /* MESSAGE_LAST itself is incorrect value */
-    if (type >= MESSAGE_LAST) {
+    if (type > MESSAGE_ACTION) {
         return -5;
     }
 
@@ -2216,8 +2215,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
         }
 
         case PACKET_ID_MESSAGE: // fall-through
-        case PACKET_ID_ACTION:
-        case PACKET_ID_CORRECTION: {
+        case PACKET_ID_ACTION: {
             if (data_length == 0) {
                 break;
             }

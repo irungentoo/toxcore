@@ -371,12 +371,6 @@ typedef enum TOX_MESSAGE_TYPE {
      */
     TOX_MESSAGE_TYPE_ACTION,
 
-    /**
-     * Correction of the last message. With empty message body can be used to mark
-     * last message as deleted.
-     */
-    TOX_MESSAGE_TYPE_CORRECTION,
-
 } TOX_MESSAGE_TYPE;
 
 

@@ -1956,21 +1956,6 @@ int group_action_send(const Group_Chats *g_c, int groupnumber, const uint8_t *ac
     return ret;
 }
 
-/* send a group correction message
- * return 0 on success
- * see: send_message_group() for error codes.
- */
-int group_correction_send(const Group_Chats *g_c, int groupnumber, const uint8_t *action, uint16_t length)
-{
-    int ret = send_message_group(g_c, groupnumber, PACKET_ID_CORRECTION, action, length);
-
-    if (ret > 0) {
-        return 0;
-    }
-
-    return ret;
-}
-
 /* High level function to send custom lossy packets.
  *
  * return -1 on failure.
@@ -2098,9 +2083,7 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
         }
         break;
 
-        case PACKET_ID_MESSAGE:
-        case PACKET_ID_ACTION:
-        case PACKET_ID_CORRECTION: {
+        case PACKET_ID_MESSAGE: {
             if (msg_data_len == 0) {
                 return;
             }
@@ -2111,9 +2094,24 @@ static void handle_message_packet_group(Group_Chats *g_c, int groupnumber, const
 
             // TODO(irungentoo):
             if (g_c->message_callback) {
-                uint8_t chat_message_id = message_id - PACKET_ID_MESSAGE;
-                g_c->message_callback(g_c->m, groupnumber, index, chat_message_id,
-                                      newmsg, msg_data_len, userdata);
+                g_c->message_callback(g_c->m, groupnumber, index, 0, newmsg, msg_data_len, userdata);
+            }
+
+            break;
+        }
+
+        case PACKET_ID_ACTION: {
+            if (msg_data_len == 0) {
+                return;
+            }
+
+            VLA(uint8_t, newmsg, msg_data_len + 1);
+            memcpy(newmsg, msg_data, msg_data_len);
+            newmsg[msg_data_len] = 0;
+
+            // TODO(irungentoo):
+            if (g_c->message_callback) {
+                g_c->message_callback(g_c->m, groupnumber, index, 1, newmsg, msg_data_len, userdata);
             }
 
             break;

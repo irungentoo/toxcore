@@ -338,11 +338,6 @@ enum class MESSAGE_TYPE {
    * on IRC.
    */
   ACTION,
-  /**
-   * Correction of the last message. With empty message body can be used to mark
-   * last message as deleted.
-   */
-  CORRECTION,
 }
 
 
