@@ -97,7 +97,7 @@ getent passwd tox-bootstrapd >/dev/null || \
 
 %files
 %defattr(-, root, root)
-%doc COPYING README.md CHANGELOG.md
+%doc LICENSE.md README.md CHANGELOG.md
 %{_libdir}/libtoxcore.so*
 
 %files devel
