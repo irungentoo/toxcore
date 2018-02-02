@@ -49,7 +49,6 @@ There are some testing programs that you might find interesting. Note that they 
 |-------------|------------|------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | irc_syncbot | Executable | libtoxcore             | Unix-like | Bot that synchronizes an IRC channel and a Tox group chat (conference).                                                                      |
 | tox_shell   | Executable | libtoxcore, libutil    | Unix-like | Proof of concept SSH-like server software using Tox. Testing program, not intended for actual use.                                      |
-| tox_sync    | Executable | libtoxcore             | Unix-like | Bittorrent-sync-like software using Tox. Syncs two directories together.                                                                |
 
 There are also some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
 
