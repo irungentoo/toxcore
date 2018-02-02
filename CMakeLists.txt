@@ -469,6 +469,7 @@ endfunction()
 
 # The actual unit tests follow.
 #
+unit_test(toxav rtp)
 unit_test(toxcore crypto_core)
 unit_test(toxcore util)
 

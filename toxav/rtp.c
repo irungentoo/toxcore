@@ -52,8 +52,8 @@ size_t rtp_header_pack(uint8_t *const rdata, const struct RTPHeader *header)
     p += net_pack_u32(p, header->data_length_full);
     p += net_pack_u32(p, header->received_length_full);
 
-    for (size_t i = 0; i < sizeof header->csrc / sizeof header->csrc[0]; i++) {
-        p += net_pack_u32(p, header->csrc[i]);
+    for (size_t i = 0; i < RTP_PADDING_FIELDS; i++) {
+        p += net_pack_u32(p, 0);
     }
 
     p += net_pack_u16(p, header->offset_lower);
@@ -84,9 +84,7 @@ size_t rtp_header_unpack(const uint8_t *data, struct RTPHeader *header)
     p += net_unpack_u32(p, &header->data_length_full);
     p += net_unpack_u32(p, &header->received_length_full);
 
-    for (size_t i = 0; i < sizeof header->csrc / sizeof header->csrc[0]; i++) {
-        p += net_unpack_u32(p, &header->csrc[i]);
-    }
+    p += sizeof(uint32_t) * RTP_PADDING_FIELDS;
 
     p += net_unpack_u16(p, &header->offset_lower);
     p += net_unpack_u16(p, &header->data_length_lower);

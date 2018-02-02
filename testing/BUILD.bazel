@@ -30,15 +30,13 @@ cc_binary(
 cc_binary(
     name = "av_test",
     srcs = ["av_test.c"],
-    linkopts = [
-        "-lopencv_highgui",
-        "-lopencv_core",
-    ],
     deps = [
         "//c-toxcore/toxav",
         "//c-toxcore/toxav:monolith",
         "//c-toxcore/toxcore",
         "@portaudio",
         "@sndfile",
+        "@opencv//:core",
+        "@opencv//:highgui",
     ],
 )

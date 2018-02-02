@@ -10,18 +10,18 @@ cc_binary(
 cc_binary(
     name = "sign",
     srcs = ["sign.c"],
+    copts = ["-w"],
     deps = [
         "//c-toxcore/testing:misc_tools",
         "@libsodium",
     ],
-    copts = ["-w"],
 )
 
 cc_binary(
     name = "strkey",
     srcs = ["strkey.c"],
+    copts = ["-w"],
     deps = [
         "@libsodium",
     ],
-    copts = ["-w"],
 )

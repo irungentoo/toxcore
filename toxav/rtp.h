@@ -37,6 +37,12 @@ extern "C" {
 #define RTP_HEADER_SIZE 80
 
 /**
+ * Number of 32 bit padding fields between \ref RTPHeader::offset_lower and
+ * everything before it.
+ */
+#define RTP_PADDING_FIELDS 11
+
+/**
  * Payload type identifier. Also used as rtp callback prefix.
  */
 enum {
@@ -96,12 +102,6 @@ struct RTPHeader {
      * Only the receiver uses this field (why do we have this?).
      */
     uint32_t received_length_full;
-
-    /**
-     * Unused fields. If you want to add more information to this header, remove
-     * one csrc and add the appropriate number of fields in its place.
-     */
-    uint32_t csrc[11];
 
     /**
      * Data offset of the current part (lower bits).
