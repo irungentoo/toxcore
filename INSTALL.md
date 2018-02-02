@@ -43,13 +43,7 @@ This repository, although called `toxcore`, in fact contains several libraries b
 
 #### Secondary
 
-There are some testing programs that you might find interesting. Note that they are not intended for the real-world use and are not coded to the high security standards, so use them on your own risk.
-
-| Name        | Type       | Dependencies           | Platform  | Description                                                                                                                             |
-|-------------|------------|------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| tox_shell   | Executable | libtoxcore, libutil    | Unix-like | Proof of concept SSH-like server software using Tox. Testing program, not intended for actual use.                                      |
-
-There are also some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
+There are some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
 
 | Name                | Type       | Dependencies         | Platform       | Description                                                                                                                                                            |
 |---------------------|------------|----------------------|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

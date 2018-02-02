@@ -580,8 +580,3 @@ target_link_modules(DHT_test toxdht)
 
 add_executable(Messenger_test testing/Messenger_test.c)
 target_link_modules(Messenger_test toxmessenger)
-
-if(UTIL_LIBRARIES)
-  add_executable(tox_shell testing/tox_shell.c)
-  target_link_modules(tox_shell toxcore ${UTIL_LIBRARIES})
-endif()
