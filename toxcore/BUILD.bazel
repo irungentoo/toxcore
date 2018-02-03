@@ -72,6 +72,15 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "util_test",
+    srcs = ["util_test.cpp"],
+    deps = [
+        ":network",
+        "@gtest",
+    ],
+)
+
 cc_library(
     name = "ping_array",
     srcs = ["ping_array.c"],

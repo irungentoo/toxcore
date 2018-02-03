@@ -32,6 +32,10 @@
 
 #include "logger.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
@@ -60,5 +64,9 @@ int load_state(load_state_callback_func load_state_callback, Logger *log, void *
 
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif /* UTIL_H */
