@@ -339,83 +339,6 @@ START_TEST(test_memzero)
 }
 END_TEST
 
-#define CRYPTO_TEST_MEMCMP_SIZE 1024*1024  // 1MiB
-#define CRYPTO_TEST_MEMCMP_COUNT 2000
-#define CRYPTO_TEST_MEMCMP_EPS 10
-
-static int cmp(const void *a, const void *b)
-{
-    const clock_t *first = (const clock_t *) a;
-    const clock_t *second = (const clock_t *) b;
-
-    if (*first < *second) {
-        return -1;
-    }
-
-    if (*first > *second) {
-        return 1;
-    }
-
-    return 0;
-}
-
-static clock_t memcmp_time(void *a, void *b, size_t len)
-{
-    clock_t start = clock();
-    crypto_memcmp(a, b, len);
-    return clock() - start;
-}
-
-static clock_t memcmp_median(void *a, void *b, size_t len)
-{
-    size_t i;
-    clock_t results[CRYPTO_TEST_MEMCMP_COUNT];
-
-    for (i = 0; i < CRYPTO_TEST_MEMCMP_COUNT; i++) {
-        results[i] = memcmp_time(a, b, len);
-    }
-
-    qsort(results, CRYPTO_TEST_MEMCMP_COUNT, sizeof(*results), cmp);
-    return results[CRYPTO_TEST_MEMCMP_COUNT / 2];
-}
-
-START_TEST(test_memcmp)
-{
-    uint8_t *src = (uint8_t *)malloc(CRYPTO_TEST_MEMCMP_SIZE);
-    rand_bytes(src, CRYPTO_TEST_MEMCMP_SIZE);
-
-    uint8_t *same = (uint8_t *)malloc(CRYPTO_TEST_MEMCMP_SIZE);
-    memcpy(same, src, CRYPTO_TEST_MEMCMP_SIZE);
-
-    uint8_t *not_same = (uint8_t *)malloc(CRYPTO_TEST_MEMCMP_SIZE);
-    rand_bytes(not_same, CRYPTO_TEST_MEMCMP_SIZE);
-
-    printf("timing memcmp (equal arrays)\n");
-    clock_t same_median = memcmp_median(src, same, CRYPTO_TEST_MEMCMP_SIZE);
-    printf("timing memcmp (non-equal arrays)\n");
-    clock_t not_same_median = memcmp_median(src, not_same, CRYPTO_TEST_MEMCMP_SIZE);
-    printf("comparing times\n");
-
-    free(not_same);
-    free(same);
-    free(src);
-
-    clock_t delta;
-
-    if (same_median > not_same_median) {
-        delta = same_median - not_same_median;
-    } else {
-        delta = not_same_median - same_median;
-    }
-
-    ck_assert_msg(delta < CRYPTO_TEST_MEMCMP_EPS,
-                  "Delta time is too long (%d >= %d)\n"
-                  "Time of the same data comparation: %d\n"
-                  "Time of the different data comparation: %d",
-                  delta, CRYPTO_TEST_MEMCMP_EPS, same_median, not_same_median);
-}
-END_TEST
-
 static Suite *crypto_suite(void)
 {
     Suite *s = suite_create("Crypto");
@@ -427,7 +350,6 @@ static Suite *crypto_suite(void)
     DEFTESTCASE(large_data_symmetric);
     DEFTESTCASE_SLOW(increment_nonce, 20);
     DEFTESTCASE(memzero);
-    DEFTESTCASE_SLOW(memcmp, 30);
 
     return s;
 }

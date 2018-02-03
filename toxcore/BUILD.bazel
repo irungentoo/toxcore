@@ -28,6 +28,15 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "crypto_core_test",
+    srcs = ["crypto_core_test.cpp"],
+    deps = [
+        ":crypto_core",
+        "@gtest",
+    ],
+)
+
 cc_library(
     name = "list",
     srcs = ["list.c"],

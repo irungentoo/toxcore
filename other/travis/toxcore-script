@@ -2,6 +2,7 @@
 
 # Enable test coverage recording.
 export CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
+export CXXFLAGS="$CXXFLAGS -fprofile-arcs -ftest-coverage"
 
 set_opt() {
   opts="$opts -D$1="`expr ON \& \( $i % 2 \) \| OFF`

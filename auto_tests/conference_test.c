@@ -20,7 +20,7 @@
 
 #include "helpers.h"
 
-#define NUM_GROUP_TOX 8
+#define NUM_GROUP_TOX 5
 
 static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
 {

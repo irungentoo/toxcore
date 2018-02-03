@@ -137,4 +137,4 @@ compile:
 
 test:
   override:
-  - make VERBOSE=1 test || make VERBOSE=1 ARGS="--rerun-failed" test || make VERBOSE=1 ARGS="--rerun-failed" test || make VERBOSE=1 ARGS="--rerun-failed" test
+  - make test ARGS="--rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || make test ARGS="--rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || make test ARGS="--rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || make test ARGS="--rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || make test ARGS="--rerun-failed" CTEST_OUTPUT_ON_FAILURE=1

@@ -429,7 +429,49 @@ install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
 
 ################################################################################
 #
-# :: Automated regression tests
+# :: Unit tests: no networking, just pure function calls.
+#
+################################################################################
+
+# Compile the GTest library.
+#
+if(EXISTS "/usr/src/gtest/src/gtest-all.cc")
+  add_library(gtest
+    /usr/src/gtest/src/gtest-all.cc
+    /usr/src/gtest/src/gtest_main.cc)
+  target_include_directories(gtest PRIVATE /usr/src/gtest)
+  check_cxx_compiler_flag("-w" HAVE_CXX_W QUIET)
+  check_cxx_compiler_flag("-Wno-global-constructors" HAVE_CXX_W_NO_GLOBAL_CONSTRUCTORS QUIET)
+  check_cxx_compiler_flag("-Wno-zero-as-null-pointer-constant" HAVE_CXX_W_NO_ZERO_AS_NULL_POINTER_CONSTANT QUIET)
+  if(HAVE_CXX_W)
+    set_target_properties(gtest PROPERTIES COMPILE_FLAGS "-w")
+  endif()
+  set(HAVE_GTEST TRUE)
+endif()
+
+function(unit_test subdir target)
+  if(HAVE_GTEST)
+    add_executable(unit_${target}_test ${subdir}/${target}_test.cpp)
+    target_link_modules(unit_${target}_test ${toxcore_SUBLIBS} gtest)
+    set(gtest_CFLAGS "")
+    if(HAVE_CXX_W_NO_GLOBAL_CONSTRUCTORS)
+      set(gtest_CFLAGS "${gtest_CFLAGS} -Wno-global-constructors")
+    endif()
+    if(HAVE_CXX_W_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+      set(gtest_CFLAGS "${gtest_CFLAGS} -Wno-zero-as-null-pointer-constant")
+    endif()
+    set_target_properties(unit_${target}_test PROPERTIES COMPILE_FLAGS "${gtest_CFLAGS}")
+    add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} unit_${target}_test)
+  endif()
+endfunction()
+
+# The actual unit tests follow.
+#
+unit_test(toxcore crypto_core)
+
+################################################################################
+#
+# :: Automated regression tests: create a tox network and run integration tests
 #
 ################################################################################
 
