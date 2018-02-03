@@ -4,7 +4,8 @@
 
 #include <gtest/gtest.h>
 
-TEST(Rtp, Deserialisation) {
+TEST(Rtp, Deserialisation)
+{
     RTPHeader header;
     random_bytes((uint8_t *)&header, sizeof header);
 

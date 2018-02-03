@@ -45,7 +45,7 @@ if grep '<unresolved>' */*.h; then
   exit 1
 fi
 
-SOURCES=`find . -name "*.[ch]" -and -not -name "*.api.h" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
+SOURCES=`find . "-(" -name "*.[ch]" -or -name "*.cpp" "-)" -and -not -name "*.api.h" -and -not -wholename "*crypto_pwhash*" -and -not -wholename "./super_donators/*"`
 
 $ASTYLE -n --options=other/astyle/astylerc $SOURCES
 
