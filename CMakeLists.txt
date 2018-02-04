@@ -66,7 +66,7 @@ enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
 
-if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if(NOT MSVC)
   # Set standard version for compiler.
   add_cflag("-std=c99")
   add_cxxflag("-std=c++11")
@@ -183,10 +183,12 @@ include(Dependencies)
 
 if(BUILD_TOXAV)
   if(NOT OPUS_FOUND)
-    message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
+    message(WARNING "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
+    set(BUILD_TOXAV OFF)
   endif()
   if(NOT VPX_FOUND)
-    message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library VPX was not found.")
+    message(WARNING "Option BUILD_TOXAV is enabled but required library VPX was not found.")
+    set(BUILD_TOXAV OFF)
   endif()
 endif()
 
@@ -492,7 +494,7 @@ elseif(FORMAT_TEST)
 endif()
 
 function(auto_test target)
-  if(CHECK_FOUND AND NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
+  if(CHECK_FOUND AND NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
     add_executable(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test
       toxcore
@@ -568,10 +570,11 @@ if(DHT_BOOTSTRAP)
 endif()
 
 option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
+if(BOOTSTRAP_DAEMON AND WIN32)
+  message(WARNING "Building tox-bootstrapd for Windows is not supported")
+  set(BOOTSTRAP_DAEMON OFF)
+endif()
 if(BOOTSTRAP_DAEMON)
-  if(WIN32)
-    message(FATAL_ERROR "Building tox-bootstrapd for Windows is not supported")
-  endif()
   if(LIBCONFIG_FOUND)
     add_executable(tox-bootstrapd
       other/bootstrap_daemon/src/command_line_arguments.c
