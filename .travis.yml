@@ -15,22 +15,18 @@ matrix:
       apt: &apt-dependencies
         sources:
         - avsm
-        - hvr-ghc
         packages:
-        - alex-3.1.7            # For hstox.
-        - cabal-install-1.18    # For hstox.
+        - aspcud                # For Opam
         - check                 # For tests.
-        - ghc-7.8.4             # For hstox.
-        - happy-1.19.5          # For hstox.
+        - libconfig-dev         # For tox-bootstrapd.
         - libcv-dev             # For av_test.
         - libhighgui-dev        # For av_test.
         - libopencv-contrib-dev # For av_test.
+        - libopus-dev           # For toxav.
         - libsndfile1-dev       # For av_test.
         - libvpx-dev            # For toxav.
         - opam                  # For apidsl and Frama-C.
-        - aspcud                # For Opam
         - portaudio19-dev       # For av_test.
-        - texinfo               # For libconfig.
   - stage: "Stage 1"
     if: type IN (push, api, cron)
     env: JOB=autotools ENV=linux
@@ -86,13 +82,6 @@ matrix:
 
 cache:
   directories:
-  # Although Travis documentation says not to rely on the value of $HOME, we
-  # rely on it here because cabal installs its packages there by default. If
-  # that ever changes, these values need to be updated.
-  # Note that we can't use shell expressions in these paths, so we can't ask
-  # cabal where its data is stored.
-  - $HOME/.cabal
-  - $HOME/.ghc
   - $HOME/cache
   - /opt/freebsd/cache
 
@@ -108,7 +97,3 @@ notifications:
     template:
     - "%{result} %{repository_name} %{build_url}"
     - "#%{build_number} changes: %{compare_url}"
-
-branches:
-  only:
-  - master

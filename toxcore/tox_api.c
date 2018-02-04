@@ -40,20 +40,20 @@ void tox_options_set_##ns##name(struct Tox_Options *options, type name) \
     options->ns##name = name; \
 }
 
-ACCESSORS(bool, , ipv6_enabled)
-ACCESSORS(bool, , udp_enabled)
-ACCESSORS(TOX_PROXY_TYPE, proxy_ , type)
-ACCESSORS(const char *, proxy_ , host)
-ACCESSORS(uint16_t, proxy_ , port)
-ACCESSORS(uint16_t, , start_port)
-ACCESSORS(uint16_t, , end_port)
-ACCESSORS(uint16_t, , tcp_port)
-ACCESSORS(bool, , hole_punching_enabled)
+ACCESSORS(bool,, ipv6_enabled)
+ACCESSORS(bool,, udp_enabled)
+ACCESSORS(TOX_PROXY_TYPE, proxy_, type)
+ACCESSORS(const char *, proxy_, host)
+ACCESSORS(uint16_t, proxy_, port)
+ACCESSORS(uint16_t,, start_port)
+ACCESSORS(uint16_t,, end_port)
+ACCESSORS(uint16_t,, tcp_port)
+ACCESSORS(bool,, hole_punching_enabled)
 ACCESSORS(TOX_SAVEDATA_TYPE, savedata_, type)
 ACCESSORS(size_t, savedata_, length)
 ACCESSORS(tox_log_cb *, log_, callback)
 ACCESSORS(void *, log_, user_data)
-ACCESSORS(bool, , local_discovery_enabled)
+ACCESSORS(bool,, local_discovery_enabled)
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
 {

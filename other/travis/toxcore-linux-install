@@ -21,7 +21,7 @@ sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyo
 
 # Install astyle (version in ubuntu-precise too old).
 [ -f $ASTYLE ] || {
-  wget -O ../astyle.tar.gz https://launchpad.net/ubuntu/+archive/primary/+files/astyle_2.05.1.orig.tar.gz
+  wget -O ../astyle.tar.gz http://http.debian.net/debian/pool/main/a/astyle/astyle_2.06.orig.tar.gz
   tar -xf ../astyle.tar.gz -C $CACHE_DIR
   make -C $CACHE_DIR/astyle/build/gcc -j$NPROC
 }
@@ -35,61 +35,3 @@ sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyo
   make install -j$NPROC
   cd - # popd
 }
-
-# Install msgpack-c.
-[ -f $CACHE_DIR/lib/libmsgpackc.so ] || {
-  git clone --depth=1 https://github.com/msgpack/msgpack-c ../msgpack-c
-  $CC -shared -fPIC -O3 -I../msgpack-c/include ../msgpack-c/src/*.c -o $CACHE_DIR/lib/libmsgpackc.so
-  cp -a ../msgpack-c/include/* $CACHE_DIR/include/
-  sed -e "s|@prefix@|$CACHE_DIR|"            \
-      -e 's|@exec_prefix@|${prefix}|'        \
-      -e 's|@libdir@|${prefix}/lib|'         \
-      -e 's|@includedir@|${prefix}/include|' \
-      -e 's|@VERSION@|2.1.1|'                \
-      ../msgpack-c/msgpack.pc.in             \
-      > $CACHE_DIR/lib/pkgconfig/msgpack.pc
-  # TODO(iphydf): This doesn't work, because the cmake version on travis is too
-  # old. We're building it manually, instead.
-  # cd ../msgpack-c # pushd
-  # cmake . -DCMAKE_INSTALL_PREFIX:PATH=$CACHE_DIR \
-  #   -DMSGPACK_ENABLE_CXX=OFF                     \
-  #   -DMSGPACK_BUILD_EXAMPLES=OFF                 \
-  #   -DMSGPACK_BUILD_TESTS=OFF
-  # make -j$NPROC
-  # make install -j$NPROC
-  # cd - # popd
-}
-
-# Install libconfig (version in ubuntu-precise too old).
-[ -f $CACHE_DIR/lib/libconfig.a ] || {
-  git clone --depth=1 --branch=v1.7.1 https://github.com/hyperrealm/libconfig ../libconfig
-  cd ../libconfig # pushd
-  autoreconf -fi
-  ./configure --prefix=$CACHE_DIR
-  touch lib/scanner.l
-  make install -j$NPROC
-  cd - # popd
-}
-
-# Install libopus (not in ubuntu-precise).
-[ -f $CACHE_DIR/lib/libopus.a ] || {
-  git clone --depth=1 --branch=1.1.2 https://github.com/xiph/opus ../opus
-  cd ../opus # pushd
-  ./autogen.sh
-  ./configure --prefix=$CACHE_DIR
-  make install -j$NPROC
-  cd - # popd
-}
-
-if [ "$CC" = "clang" ]; then
-  # An initial update is required or the cabal cache will be empty and no packages
-  # can be installed.
-  cabal update
-
-  # Install the hstox test runner after installing libsodium.
-  CABAL_FLAGS="--disable-library-profiling"
-  CABAL_FLAGS="$CABAL_FLAGS --extra-include-dirs=$CACHE_DIR/include"
-  CABAL_FLAGS="$CABAL_FLAGS --extra-lib-dirs=$CACHE_DIR/lib"
-  git clone --recursive --depth=1 https://github.com/TokTok/hs-toxcore ../hs-toxcore
-  (cd ../hs-toxcore && cabal install $CABAL_FLAGS)
-fi
