@@ -21,7 +21,7 @@ sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyo
 
 # Install astyle (version in ubuntu-precise too old).
 [ -f $ASTYLE ] || {
-  wget -O ../astyle.tar.gz http://http.debian.net/debian/pool/main/a/astyle/astyle_2.06.orig.tar.gz
+  wget -O ../astyle.tar.gz https://deb.debian.org/debian/pool/main/a/astyle/astyle_2.06.orig.tar.gz
   tar -xf ../astyle.tar.gz -C $CACHE_DIR
   make -C $CACHE_DIR/astyle/build/gcc -j$NPROC
 }
