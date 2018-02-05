@@ -33,7 +33,7 @@ pkg_use_module(SNDFILE              sndfile      )
 # :: For MSVC Windows builds.
 #
 # These require specific installation paths of dependencies:
-# - libsodium in libsodium/Win32/Release/v140/static
+# - libsodium in libsodium/Win32/Release/v140/dynamic
 # - pthreads in pthreads-win32/Pre-built.2
 #
 ###############################################################################
@@ -44,13 +44,12 @@ if(MSVC)
   find_library(LIBSODIUM_LIBRARIES
     NAMES sodium libsodium
     PATHS
-      "libsodium/Win32/Release/v140/static"
-      "libsodium/x64/Release/v140/static"
+      "libsodium/Win32/Release/v140/dynamic"
+      "libsodium/x64/Release/v140/dynamic"
   )
   if(LIBSODIUM_LIBRARIES)
     include_directories("libsodium/include")
     set(LIBSODIUM_FOUND TRUE)
-    add_definitions(-DSODIUM_STATIC)
     message("libsodium: ${LIBSODIUM_LIBRARIES}")
   else()
     message(FATAL_ERROR "libsodium libraries not found")
