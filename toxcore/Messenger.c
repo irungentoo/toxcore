@@ -1482,119 +1482,159 @@ uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t fi
         return 0;
     }
 
+    const struct File_Transfers *const sending = &m->friendlist[friendnumber].file_sending[filenumber];
+
     if (send_receive == 0) {
-        if (m->friendlist[friendnumber].file_sending[filenumber].status == FILESTATUS_NONE) {
+        if (sending->status == FILESTATUS_NONE) {
             return 0;
         }
 
-        return m->friendlist[friendnumber].file_sending[filenumber].size -
-               m->friendlist[friendnumber].file_sending[filenumber].transferred;
+        return sending->size - sending->transferred;
     }
 
-    if (m->friendlist[friendnumber].file_receiving[filenumber].status == FILESTATUS_NONE) {
+    const struct File_Transfers *const receiving = &m->friendlist[friendnumber].file_receiving[filenumber];
+
+    if (receiving->status == FILESTATUS_NONE) {
         return 0;
     }
 
-    return m->friendlist[friendnumber].file_receiving[filenumber].size -
-           m->friendlist[friendnumber].file_receiving[filenumber].transferred;
+    return receiving->size - receiving->transferred;
 }
 
-static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdata)
+/**
+ * Iterate over all file transfers and request chunks (from the client) for each
+ * of them.
+ *
+ * The free_slots parameter is updated by this function.
+ *
+ * @param m Our messenger object.
+ * @param friendnumber The friend we're sending files to.
+ * @param userdata The client userdata to pass along to chunk request callbacks.
+ * @param free_slots A pointer to the number of free send queue slots in the
+ *   crypto connection.
+ *
+ * @return true if there are still file transfers ongoing, false if all file
+ *   transfers are complete.
+ */
+static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userdata, uint32_t *free_slots)
 {
-    if (!m->friendlist[friendnumber].num_sending_files) {
-        return;
-    }
+    Friend *const friendcon = &m->friendlist[friendnumber];
+    uint32_t num = friendcon->num_sending_files;
 
-    int free_slots = crypto_num_free_sendqueue_slots(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                     m->friendlist[friendnumber].friendcon_id));
+    bool any_active_fts = false;
 
-    if (free_slots < MIN_SLOTS_FREE) {
-        free_slots = 0;
-    } else {
-        free_slots -= MIN_SLOTS_FREE;
-    }
+    // Iterate over all file transfers, including inactive ones. I.e. we always
+    // iterate exactly MAX_CONCURRENT_FILE_PIPES times.
+    for (uint32_t i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+        struct File_Transfers *const ft = &friendcon->file_sending[i];
 
-    unsigned int i, num = m->friendlist[friendnumber].num_sending_files;
-
-    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
-        struct File_Transfers *ft = &m->friendlist[friendnumber].file_sending[i];
-
+        // Any status other than NONE means the file transfer is active.
         if (ft->status != FILESTATUS_NONE) {
+            any_active_fts = true;
             --num;
 
-            if (ft->status == FILESTATUS_FINISHED) {
-                /* Check if file was entirely sent. */
-                if (friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
-                    if (m->file_reqchunk) {
-                        (*m->file_reqchunk)(m, friendnumber, i, ft->transferred, 0, userdata);
-                    }
-
-                    ft->status = FILESTATUS_NONE;
-                    --m->friendlist[friendnumber].num_sending_files;
+            // If the file transfer is complete, we request a chunk of size 0.
+            if (ft->status == FILESTATUS_FINISHED && friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
+                if (m->file_reqchunk) {
+                    m->file_reqchunk(m, friendnumber, i, ft->transferred, 0, userdata);
                 }
+
+                // Now it's inactive, we're no longer sending this.
+                ft->status = FILESTATUS_NONE;
+                --friendcon->num_sending_files;
             }
 
-            /* TODO(irungentoo): if file is too slow, switch to the next. */
-            if (ft->slots_allocated > (unsigned int)free_slots) {
-                free_slots = 0;
-            } else {
-                free_slots -= ft->slots_allocated;
-            }
+            // Decrease free slots by the number of slots this FT uses.
+            *free_slots = max_s32(0, (int32_t) * free_slots - ft->slots_allocated);
         }
 
-        while (ft->status == FILESTATUS_TRANSFERRING && (ft->paused == FILE_PAUSE_NOT)) {
-            if (max_speed_reached(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                  m->friendlist[friendnumber].friendcon_id))) {
-                free_slots = 0;
+        if (ft->status == FILESTATUS_TRANSFERRING && ft->paused == FILE_PAUSE_NOT) {
+            if (max_speed_reached(m->net_crypto, friend_connection_crypt_connection_id(
+                                      m->fr_c, friendcon->friendcon_id))) {
+                *free_slots = 0;
             }
 
-            if (free_slots == 0) {
-                break;
+            if (*free_slots == 0) {
+                continue;
             }
-
-            uint16_t length = MAX_FILE_DATA_SIZE;
 
             if (ft->size == 0) {
                 /* Send 0 data to friend if file is 0 length. */
                 file_data(m, friendnumber, i, 0, nullptr, 0);
-                break;
+                continue;
             }
 
             if (ft->size == ft->requested) {
-                break;
+                // This file transfer is done.
+                continue;
             }
 
-            if (ft->size - ft->requested < length) {
-                length = ft->size - ft->requested;
-            }
+            // Allocate 1 slot to this file transfer.
+            ft->slots_allocated++;
 
-            ++ft->slots_allocated;
-
-            uint64_t position = ft->requested;
+            const uint16_t length = min_u64(ft->size - ft->requested, MAX_FILE_DATA_SIZE);
+            const uint64_t position = ft->requested;
             ft->requested += length;
 
             if (m->file_reqchunk) {
-                (*m->file_reqchunk)(m, friendnumber, i, position, length, userdata);
+                m->file_reqchunk(m, friendnumber, i, position, length, userdata);
             }
 
-            --free_slots;
+            // The allocated slot is no longer free.
+            --*free_slots;
         }
 
         if (num == 0) {
-            break;
+            continue;
         }
     }
+
+    return any_active_fts;
 }
+
+static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdata)
+{
+    // We're not currently doing any file transfers.
+    if (m->friendlist[friendnumber].num_sending_files == 0) {
+        return;
+    }
+
+    // The number of packet slots left in the sendbuffer.
+    // This is a per friend count (CRYPTO_PACKET_BUFFER_SIZE).
+    uint32_t free_slots = crypto_num_free_sendqueue_slots(
+                              m->net_crypto,
+                              friend_connection_crypt_connection_id(
+                                  m->fr_c,
+                                  m->friendlist[friendnumber].friendcon_id));
+
+    // We keep MIN_SLOTS_FREE slots free for other packets, otherwise file
+    // transfers might block other traffic for a long time.
+    free_slots = max_s32(0, (int32_t)free_slots - MIN_SLOTS_FREE);
+
+    bool any_active_fts = true;
+    uint32_t loop_counter = 0;
+    // Maximum number of outer loops below. If the client doesn't send file
+    // chunks from within the chunk request callback handler, we never realise
+    // that the file transfer has finished and may end up in an infinite loop.
+    //
+    // TODO(zoff99): Fix this to exit the loop properly when we're done
+    // requesting all chunks for all file transfers.
+    const uint32_t MAX_FT_LOOPS = 4;
+
+    while (((free_slots > 0) || loop_counter == 0) && any_active_fts && (loop_counter < MAX_FT_LOOPS)) {
+        any_active_fts = do_all_filetransfers(m, friendnumber, userdata, &free_slots);
+        loop_counter++;
+    }
+}
+
 
 /* Run this when the friend disconnects.
  *  Kill all current file transfers.
  */
 static void break_files(const Messenger *m, int32_t friendnumber)
 {
-    uint32_t i;
-
     // TODO(irungentoo): Inform the client which file transfers get killed with a callback?
-    for (i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+    for (uint32_t i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
         if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE) {
             m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NONE;
         }

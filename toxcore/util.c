@@ -195,3 +195,13 @@ int create_recursive_mutex(pthread_mutex_t *mutex)
 
     return 0;
 }
+
+int32_t max_s32(int32_t a, int32_t b)
+{
+    return a > b ? a : b;
+}
+
+uint64_t min_u64(uint64_t a, uint64_t b)
+{
+    return a < b ? a : b;
+}

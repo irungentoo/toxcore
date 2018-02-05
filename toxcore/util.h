@@ -65,6 +65,9 @@ int load_state(load_state_callback_func load_state_callback, Logger *log, void *
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
+int32_t max_s32(int32_t a, int32_t b);
+uint64_t min_u64(uint64_t a, uint64_t b);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
