@@ -5,8 +5,7 @@ check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test on
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
-                         $(NACL_CFLAGS) \
-                         $(CHECK_CFLAGS)
+                         $(NACL_CFLAGS)
 
 AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
@@ -15,8 +14,7 @@ AUTOTEST_LDADD = \
                         libtoxencryptsave.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(CHECK_LIBS)
+                        $(NACL_LIBS)
 
 
 

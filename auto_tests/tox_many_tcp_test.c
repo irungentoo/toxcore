@@ -259,21 +259,15 @@ loop_top:
 END_TEST
 
 
-#ifdef TRAVIS_ENV
-static const uint8_t timeout_mux = 20;
-#else
-static const uint8_t timeout_mux = 10;
-#endif
-
 static Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox many tcp");
 
     /* Each tox connects to a single tox TCP    */
-    DEFTESTCASE_SLOW(many_clients_tcp, 4 * timeout_mux);
+    DEFTESTCASE(many_clients_tcp);
 
     /* Try to make a connection to each "older sibling" tox instance via TCP */
-    DEFTESTCASE_SLOW(many_clients_tcp_b, 8 * timeout_mux);
+    DEFTESTCASE(many_clients_tcp_b);
 
     return s;
 }

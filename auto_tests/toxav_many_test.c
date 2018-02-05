@@ -341,10 +341,7 @@ static Suite *tox_suite(void)
 {
     Suite *s = suite_create("ToxAV");
 
-    TCase *tc_av_three_calls = tcase_create("AV_three_calls");
-    tcase_add_test(tc_av_three_calls, test_AV_three_calls);
-    tcase_set_timeout(tc_av_three_calls, 150);
-    suite_add_tcase(s, tc_av_three_calls);
+    DEFTESTCASE(AV_three_calls);
 
     return s;
 }

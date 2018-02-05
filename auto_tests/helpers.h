@@ -17,15 +17,6 @@
 #define c_sleep(x) usleep(1000 * (x))
 #endif
 
-#define DEFTESTCASE(NAME)                   \
-    TCase *tc_##NAME = tcase_create(#NAME); \
-    tcase_add_test(tc_##NAME, test_##NAME); \
-    suite_add_tcase(s, tc_##NAME)
-
-#define DEFTESTCASE_SLOW(NAME, TIMEOUT)     \
-    DEFTESTCASE(NAME);                      \
-    tcase_set_timeout(tc_##NAME, TIMEOUT)
-
 static const char *tox_log_level_name(TOX_LOG_LEVEL level)
 {
     switch (level) {

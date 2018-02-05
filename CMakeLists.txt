@@ -223,6 +223,7 @@ add_submodule(toxcore toxnetwork
   toxcore/util.h)
 target_link_modules(toxnetwork toxcrypto)
 
+message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
 if(CMAKE_THREAD_LIBS_INIT)
   target_link_modules(toxnetwork ${CMAKE_THREAD_LIBS_INIT})
   set(toxnetwork_PKGCONFIG_LIBS ${toxnetwork_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
@@ -497,14 +498,13 @@ elseif(FORMAT_TEST)
 endif()
 
 function(auto_test target)
-  if(CHECK_FOUND AND NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
+  if(NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
     add_executable(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test
       toxcore
       toxcrypto
       toxmessenger
-      toxnetcrypto
-      ${CHECK_LIBRARIES})
+      toxnetcrypto)
     if(NOT ARGV1 STREQUAL "DONT_RUN")
       add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
       set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
@@ -512,17 +512,16 @@ function(auto_test target)
   endif()
 endfunction()
 
-if(BUILD_TOXAV AND CHECK_FOUND)
+if(BUILD_TOXAV)
   add_definitions(-D__STDC_LIMIT_MACROS=1)
   add_executable(auto_monolith_test
     auto_tests/monolith_test.cpp
     ${ANDROID_CPU_FEATURES})
   target_link_modules(auto_monolith_test
-    ${CHECK_LIBRARIES}
+    ${toxcore_PKGCONFIG_LIBS}
     ${LIBSODIUM_LIBRARIES}
     ${OPUS_LIBRARIES}
-    ${VPX_LIBRARIES}
-    ${toxcore_PKGCONFIG_LIBS})
+    ${VPX_LIBRARIES})
   add_test(NAME monolith COMMAND ${CROSSCOMPILING_EMULATOR} auto_monolith_test)
 
   if(ANDROID_CPU_FEATURES)

@@ -38,7 +38,7 @@ START_TEST(test_addr_resolv_localhost)
 
     int res = addr_resolve(localhost, &ip, nullptr);
 
-    ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
+    ck_assert_msg(res > 0, "Resolver failed: %u, %s", errno, strerror(errno));
 
     char ip_str[IP_NTOA_LEN];
     ck_assert_msg(ip.family == TOX_AF_INET, "Expected family TOX_AF_INET, got %u.", ip.family);
@@ -54,7 +54,7 @@ START_TEST(test_addr_resolv_localhost)
         localhost_split = 1;
     }
 
-    ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
+    ck_assert_msg(res > 0, "Resolver failed: %u, %s", errno, strerror(errno));
 
     ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
     IP6 ip6_loopback = get_ip6_loopback();
@@ -71,7 +71,7 @@ START_TEST(test_addr_resolv_localhost)
     IP extra;
     ip_reset(&extra);
     res = addr_resolve(localhost, &ip, &extra);
-    ck_assert_msg(res > 0, "Resolver failed: %u, %s (%x, %x)", errno, strerror(errno));
+    ck_assert_msg(res > 0, "Resolver failed: %u, %s", errno, strerror(errno));
 
 #if USE_IPV6
     ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
@@ -149,7 +149,7 @@ START_TEST(test_ip_equal)
 
     ip2.ip6.uint8[15]++;
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %res.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %u.", res);
 }
 END_TEST
 

@@ -17,7 +17,6 @@ matrix:
         - avsm
         packages:
         - aspcud                # For Opam
-        - check                 # For tests.
         - libconfig-dev         # For tox-bootstrapd.
         - libcv-dev             # For av_test.
         - libhighgui-dev        # For av_test.

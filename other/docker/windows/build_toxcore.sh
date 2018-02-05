@@ -17,7 +17,7 @@ build()
     # toxcore dependencies that we will copy to the user for static build of toxcore (e.g. vpx, opus, sodium)
     DEP_PREFIX_DIR="/root/prefix/${ARCH}"
 
-    # toxcore dependencies that user doesn't need in build result (e.g. libcheck used for testing toxcore)
+    # toxcore dependencies that user doesn't need in build result
     EXTRA_DEP_PREFIX_DIR="/root/extra-prefix/${ARCH}"
     mkdir -p "${EXTRA_DEP_PREFIX_DIR}"
 
@@ -73,7 +73,7 @@ build()
 
         winecfg
         export CTEST_OUTPUT_ON_FAILURE=1
-        # add libgcc_s_sjlj-1.dll libwinpthread-1.dll libcheck-0.dll into PATH env var of wine
+        # add libgcc_s_sjlj-1.dll libwinpthread-1.dll into PATH env var of wine
         export WINEPATH=`cd /usr/lib/gcc/${WINDOWS_TOOLCHAIN}/*posix/ ; winepath -w $(pwd)`\;`winepath -w /usr/${WINDOWS_TOOLCHAIN}/lib/`\;`winepath -w ${EXTRA_DEP_PREFIX_DIR}/bin`
 
         if [ "${ALLOW_TEST_FAILURE}" = "true" ]; then

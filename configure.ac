@@ -26,7 +26,6 @@ TOX_LOGGER="no"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
-LIBCHECK_FOUND="no"
 WANT_NACL="no"
 ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
 SET_SO_VERSION="yes"
@@ -525,17 +524,6 @@ if test "x$BUILD_AV" = "xyes"; then
 fi
 
 if test -n "$PKG_CONFIG"; then
-    if test "x$BUILD_TESTS" = "xyes"; then
-        PKG_CHECK_MODULES([CHECK], [check],
-            [
-                LIBCHECK_FOUND="yes"
-            ],
-            [
-                AC_MSG_WARN([libcheck not found, not building unit tests: $CHECK_PKG_ERRORS])
-                BUILD_TESTS="no"
-            ])
-    fi
-
     if test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes"; then
         PKG_CHECK_MODULES([LIBCONFIG], [libconfig >= 1.4.6],
             [
@@ -569,26 +557,6 @@ if (test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes") && \
                 BUILD_DHT_BOOTSTRAP_DAEMON="no"
             ]
         )
-    fi
-fi
-
-if (test "x$BUILD_TESTS" = "xyes") && (test "x$LIBCHECK_FOUND" = "xno"); then
-    AC_CHECK_HEADER([check.h],
-        [],
-        [
-            AC_MSG_WARN([header file for check library was not found on your system, unit tests will be disabled])
-            BUILD_TESTS="no"
-        ]
-    )
-
-    if test "x$BUILD_TESTS" = "xyes"; then
-        AC_CHECK_LIB([check], [suite_create],
-            [],
-            [
-                AC_MSG_WARN([library check was not found on the system, unit tests will be disabled])
-                BUILD_TESTS="no"
-            ]
-       )
     fi
 fi
 

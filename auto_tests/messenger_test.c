@@ -249,8 +249,8 @@ START_TEST(test_dht_state_saveloadsave)
     DHT_save(m->dht, buffer + extra);
 
     for (i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", i);
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", (unsigned)i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", (unsigned)i);
     }
 
     int res = DHT_load(m->dht, buffer + extra, size);
@@ -263,11 +263,12 @@ START_TEST(test_dht_state_saveloadsave)
         uint8_t *ptr = buffer + extra + offset;
         sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, msg);
+        ck_assert_msg(res == 0, "%s", msg);
     }
 
     size_t size2 = DHT_size(m->dht);
-    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", (unsigned)size,
+                  (unsigned)size2);
 
     VLA(uint8_t, buffer2, size2);
     DHT_save(m->dht, buffer2);
@@ -291,8 +292,8 @@ START_TEST(test_messenger_state_saveloadsave)
     messenger_save(m, buffer + extra);
 
     for (i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", i);
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", (unsigned)i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", (unsigned)i);
     }
 
     int res = messenger_load(m, buffer + extra, size);
@@ -305,11 +306,12 @@ START_TEST(test_messenger_state_saveloadsave)
         uint8_t *ptr = buffer + extra + offset;
         sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, msg);
+        ck_assert_msg(res == 0, "%s", msg);
     }
 
     size_t size2 = messenger_size(m);
-    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u",
+                  (unsigned)size, (unsigned)size2);
 
     VLA(uint8_t, buffer2, size2);
     messenger_save(m, buffer2);
@@ -346,10 +348,6 @@ static Suite *messenger_suite(void)
 
 int main(int argc, char *argv[])
 {
-    Suite *messenger = messenger_suite();
-    SRunner *test_runner = srunner_create(messenger);
-    int number_failed = 0;
-
     friend_id = hex_string_to_bin(friend_id_str);
     good_id_a = hex_string_to_bin(good_id_a_str);
     good_id_b = hex_string_to_bin(good_id_b_str);
@@ -373,6 +371,10 @@ int main(int argc, char *argv[])
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
     }
+
+    Suite *messenger = messenger_suite();
+    SRunner *test_runner = srunner_create(messenger);
+    int number_failed = 0;
 
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);

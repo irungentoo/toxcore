@@ -234,7 +234,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
     }
 
     if (sending_pos != position) {
-        ck_abort_msg("Bad position %llu", position);
+        ck_abort_msg("Bad position %llu", (unsigned long long)position);
     }
 
     if (length == 0) {
@@ -614,8 +614,9 @@ START_TEST(test_few_clients)
             }
 
             ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
-                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1, totalf_size, size_recv,
-                         sending_pos);
+                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
+                         (unsigned long long)totalf_size, (unsigned long long)size_recv,
+                         (unsigned long long)sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -664,8 +665,8 @@ START_TEST(test_few_clients)
 
             ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %u %llu %llu %llu %llu", sendf_ok, file_recv,
                          m_send_reached, totalf_size == file_size, size_recv == max_sending, sending_pos == size_recv, file_accepted == 1,
-                         totalf_size, file_size,
-                         size_recv, sending_pos);
+                         (unsigned long long)totalf_size, (unsigned long long)file_size,
+                         (unsigned long long)size_recv, (unsigned long long)sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -708,8 +709,9 @@ START_TEST(test_few_clients)
             }
 
             ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
-                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1, totalf_size, size_recv,
-                         sending_pos);
+                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
+                         (unsigned long long)totalf_size, (unsigned long long)size_recv,
+                         (unsigned long long)sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -728,17 +730,11 @@ START_TEST(test_few_clients)
 }
 END_TEST
 
-#ifdef TRAVIS_ENV
-static const uint8_t timeout_mux = 20;
-#else
-static const uint8_t timeout_mux = 10;
-#endif
-
 static Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox few clients");
 
-    DEFTESTCASE_SLOW(few_clients, 8 * timeout_mux);
+    DEFTESTCASE(few_clients);
 
     return s;
 }

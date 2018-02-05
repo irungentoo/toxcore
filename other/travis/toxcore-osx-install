@@ -3,4 +3,4 @@
 # Workaround for bug in Homebrew where it only finds an old Ruby version.
 brew update
 
-brew install libsodium libvpx opus libconfig check astyle
+brew install libsodium libvpx opus libconfig astyle

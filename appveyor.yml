@@ -7,11 +7,6 @@ install:
 - choco install curl
 - refreshenv
 - if not exist %APPDATA%\downloads mkdir %APPDATA%\downloads
-# libcheck
-- if not exist %APPDATA%\downloads\check.zip curl -L https://github.com/libcheck/check/archive/0.11.0.zip -o %APPDATA%\downloads\check.zip
-- unzip %APPDATA%\downloads\check.zip && cd check-0.11.0
-- if not exist "%PROGRAMFILES%\check\include\check.h" cmake . && msbuild INSTALL.vcxproj
-- cd ..
 # libsodium
 - mkdir libsodium && cd libsodium
 - if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.12-msvc.zip -o %APPDATA%\downloads\libsodium.zip

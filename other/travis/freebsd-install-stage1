@@ -110,7 +110,6 @@ if [ ! -f ./$IMAGE_NAME.tgz ] || [ ! -f ./freebsd-install-stage1.sha256 ] || [ "
                                                   gmake \
                                                   cmake \
                                                   pkgconf \
-                                                  check \
                                                   opencv \
                                                   portaudio \
                                                   libsndfile \

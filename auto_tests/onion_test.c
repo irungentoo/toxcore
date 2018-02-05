@@ -449,7 +449,7 @@ START_TEST(test_announce)
 
     for (i = 0; i < NUM_ONIONS; ++i) {
         onions[i] = new_onions(i + 34655);
-        ck_assert_msg(onions[i] != nullptr, "Failed to create onions. %u");
+        ck_assert_msg(onions[i] != nullptr, "Failed to create onions. %u", i);
     }
 
     IP ip = get_loopback();

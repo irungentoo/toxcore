@@ -139,17 +139,11 @@ loop_top:
 }
 END_TEST
 
-#ifdef TRAVIS_ENV
-static const uint8_t timeout_mux = 20;
-#else
-static const uint8_t timeout_mux = 10;
-#endif
-
 static Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox");
 
-    DEFTESTCASE_SLOW(many_clients, 8 * timeout_mux);
+    DEFTESTCASE(many_clients);
 
     return s;
 }

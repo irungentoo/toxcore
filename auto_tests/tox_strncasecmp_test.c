@@ -29,7 +29,7 @@ void verify(const char *s1, const char *s2, size_t n, Comparison expected)
 
     ck_assert_msg(actual == expected,
                   "tox_strncasecmp(\"%s\", \"%s\", %u) == %s, but expected %s.",
-                  s1, s2, n, Comparison_Str[actual], Comparison_Str[expected]);
+                  s1, s2, (unsigned)n, Comparison_Str[actual], Comparison_Str[expected]);
 }
 
 START_TEST(test_general)

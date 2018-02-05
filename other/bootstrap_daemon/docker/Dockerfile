@@ -8,7 +8,6 @@ RUN export BUILD_PACKAGES="\
       autotools-dev \
       automake \
       checkinstall \
-      check \
       git \
       yasm \
       libsodium-dev \

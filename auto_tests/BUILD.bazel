@@ -22,7 +22,6 @@ cc_library(
         "//c-toxcore/toxav",
         "//c-toxcore/toxcore",
         "//c-toxcore/toxencryptsave",
-        "@check",
     ],
 ) for src in glob(["*_test.c"])]
 
@@ -47,6 +46,5 @@ cc_test(
         ":monolith",
         "//c-toxcore/other:monolith",
         "//c-toxcore/testing:misc_tools",
-        "@check",
     ],
 )
