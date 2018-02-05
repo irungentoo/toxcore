@@ -1,5 +1,12 @@
-/* Auto Tests: One instance.
+/* Nop-test, just to make sure our code compiles as C++.
  */
+
+#ifdef __FreeBSD__
+// Include this here, because _XOPEN_SOURCE hides symbols we need.
+//
+// https://lists.freebsd.org/pipermail/freebsd-standards/2004-March/000474.html.
+#include <net/if.h>
+#endif
 
 #define _DARWIN_C_SOURCE
 #define _XOPEN_SOURCE 600
@@ -21,6 +28,10 @@ namespace TCP_test
 {
 #include "TCP_test.c"
 }
+namespace bootstrap_test
+{
+#include "bootstrap_test.c"
+}
 namespace conference_test
 {
 #include "conference_test.c"
@@ -40,6 +51,10 @@ namespace encryptsave_test
 namespace file_saving_test
 {
 #include "file_saving_test.c"
+}
+namespace lan_discovery_test
+{
+#include "lan_discovery_test.c"
 }
 namespace messenger_test
 {

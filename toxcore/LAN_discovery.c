@@ -29,12 +29,6 @@
 
 #include "util.h"
 
-/* Used for get_broadcast(). */
-#ifdef __linux
-#include <linux/netdevice.h>
-#include <sys/ioctl.h>
-#endif
-
 #define MAX_INTERFACES 16
 
 
@@ -112,7 +106,17 @@ static void fetch_broadcast_info(uint16_t port)
     }
 }
 
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__FreeBSD__)
+
+#ifdef __linux__
+#include <linux/netdevice.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <net/if.h>
+#endif
+
+#include <sys/ioctl.h>
 
 static void fetch_broadcast_info(uint16_t port)
 {
@@ -121,9 +125,9 @@ static void fetch_broadcast_info(uint16_t port)
      * Definitely won't work like this on Windows...
      */
     broadcast_count = 0;
-    Socket sock = 0;
+    const Socket sock = net_socket(TOX_AF_INET, TOX_SOCK_STREAM, 0);
 
-    if ((sock = net_socket(TOX_AF_INET, TOX_SOCK_STREAM, 0)) < 0) {
+    if (sock < 0) {
         return;
     }
 
@@ -217,9 +221,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, const uint8
         return 0;
     }
 
-    int i;
-
-    for (i = 0; i < broadcast_count; i++) {
+    for (int i = 0; i < broadcast_count; i++) {
         sendpacket(net, broadcast_ip_ports[i], data, length);
     }
 
@@ -346,16 +348,22 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 {
     DHT *dht = (DHT *)object;
 
+    char ip_str[IP_NTOA_LEN] = { 0 };
+    ip_ntoa(&source.ip, ip_str, sizeof(ip_str));
+
+    // TODO(iphydf): Add logging for this case.
+    // Why should we reject discovery packets from outside the LAN?
+#if 0
+
     if (ip_is_lan(source.ip) == -1) {
         return 1;
     }
 
+#endif
+
     if (length != CRYPTO_PUBLIC_KEY_SIZE + 1) {
         return 1;
     }
-
-    char ip_str[IP_NTOA_LEN] = { 0 };
-    ip_ntoa(&source.ip, ip_str, sizeof(ip_str));
 
     DHT_bootstrap(dht, source, packet + 1);
     return 0;
