@@ -140,7 +140,20 @@ make install
 
 ###### Microsoft Visual Studio's Developer Command Prompt
 
-There are currently no instructions on how to build toxcore on Windows host in Microsoft Visual Studio's Developer Command Prompt. Contribution of the instructions is welcome!
+In addition to meeting the [requirements](#requirements), you need a version of Visual Studio (the [community edition](https://www.visualstudio.com/vs/visual-studio-express/) is enough) and a CMake version that's compatible with the Visual Studio version you're using.
+
+You must also ensure that the msvc versions of dependencies you're using are placed in the correct folders.
+
+For libsodium that is `c-toxcore/libsodium`, and for pthreads-w32, it's `c-toxcore/pthreads-win32`
+
+Once all of this is done, from the **Developer Command Prompt for VS**, simply run
+
+```
+mkdir _build
+cd _build
+cmake ..
+msbuild ALL_BUILD.vcxproj
+```
 
 ###### MSYS/Cygwin
 
