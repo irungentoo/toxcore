@@ -351,15 +351,9 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
     char ip_str[IP_NTOA_LEN] = { 0 };
     ip_ntoa(&source.ip, ip_str, sizeof(ip_str));
 
-    // TODO(iphydf): Add logging for this case.
-    // Why should we reject discovery packets from outside the LAN?
-#if 0
-
     if (ip_is_lan(source.ip) == -1) {
         return 1;
     }
-
-#endif
 
     if (length != CRYPTO_PUBLIC_KEY_SIZE + 1) {
         return 1;
