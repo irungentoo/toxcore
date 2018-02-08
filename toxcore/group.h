@@ -156,8 +156,7 @@ void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uin
  *  Function(Group_Chats *g_c, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
  */
 enum {
-    CHAT_CHANGE_PEER_ADD,
-    CHAT_CHANGE_PEER_DEL,
+    CHAT_CHANGE_OCCURRED,
     CHAT_CHANGE_PEER_NAME,
 };
 void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, int, int, uint8_t, void *));

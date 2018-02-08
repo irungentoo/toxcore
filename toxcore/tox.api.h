@@ -2110,13 +2110,10 @@ namespace conference {
    */
   enum class STATE_CHANGE {
     /**
-     * A peer has joined the conference.
+     * Some changes to list have occurred. Rebuild of list required.
+     * peer_number is undefined (always 0 for api compatibility)
      */
-    PEER_JOIN,
-    /**
-     * A peer has exited the conference.
-     */
-    PEER_EXIT,
+    LIST_CHANGED,
     /**
      * A peer has changed their name.
      */
