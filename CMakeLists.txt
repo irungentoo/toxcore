@@ -441,6 +441,7 @@ if(EXISTS "/usr/src/gtest/src/gtest-all.cc")
   add_library(gtest
     /usr/src/gtest/src/gtest-all.cc
     /usr/src/gtest/src/gtest_main.cc)
+  include_directories(/usr/src/gtest/include)
   target_include_directories(gtest PRIVATE /usr/src/gtest)
   check_cxx_compiler_flag("-w" HAVE_CXX_W QUIET)
   check_cxx_compiler_flag("-Wno-global-constructors" HAVE_CXX_W_NO_GLOBAL_CONSTRUCTORS QUIET)
