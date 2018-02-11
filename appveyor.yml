@@ -7,6 +7,7 @@ install:
 - choco install curl
 - refreshenv
 - if not exist %APPDATA%\downloads mkdir %APPDATA%\downloads
+- cd third_party
 # libsodium
 - mkdir libsodium && cd libsodium
 - if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.12-msvc.zip -o %APPDATA%\downloads\libsodium.zip
@@ -16,7 +17,7 @@ install:
 - mkdir pthreads-win32 && cd pthreads-win32
 - if not exist %APPDATA%\downloads\pthreads.zip curl -L ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o %APPDATA%\downloads\pthreads.zip
 - unzip %APPDATA%\downloads\pthreads.zip
-- cd ..
+- cd ../..
 
 before_build:
 - cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF
