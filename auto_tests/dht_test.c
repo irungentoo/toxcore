@@ -38,10 +38,10 @@ static inline IP get_loopback()
     IP ip;
 #if USE_IPV6
     ip.family = TOX_AF_INET6;
-    ip.ip6 = get_ip6_loopback();
+    ip.ip.v6 = get_ip6_loopback();
 #else
     ip.family = TOX_AF_INET;
-    ip.ip4 = get_ip4_loopback();
+    ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
 }
@@ -489,7 +489,7 @@ static void test_list_main(void)
 
             IP_Port ip_port;
             ip_init(&ip_port.ip, 0);
-            ip_port.ip.ip4.uint32 = rand();
+            ip_port.ip.ip.v4.uint32 = rand();
             ip_port.port = rand() % (UINT16_MAX - 1);
             ++ip_port.port;
             addto_lists(dhts[j], ip_port, dhts[i]->self_public_key);
@@ -723,11 +723,11 @@ static void random_ip(IP_Port *ipp, int family)
     size_t size;
 
     if (family == TOX_AF_INET || family == TCP_INET) {
-        ip = (uint8_t *)&ipp->ip.ip4;
-        size = sizeof(ipp->ip.ip4);
+        ip = (uint8_t *)&ipp->ip.ip.v4;
+        size = sizeof(ipp->ip.ip.v4);
     } else if (family == TOX_AF_INET6 || family == TCP_INET6) {
-        ip = (uint8_t *)&ipp->ip.ip6;
-        size = sizeof(ipp->ip.ip6);
+        ip = (uint8_t *)&ipp->ip.ip.v6;
+        size = sizeof(ipp->ip.ip.v6);
     } else {
         return;
     }

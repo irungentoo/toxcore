@@ -39,10 +39,10 @@ static inline IP get_loopback()
     IP ip;
 #if USE_IPV6
     ip.family = TOX_AF_INET6;
-    ip.ip6 = get_ip6_loopback();
+    ip.ip.v6 = get_ip6_loopback();
 #else
     ip.family = TOX_AF_INET;
-    ip.ip4 = get_ip4_loopback();
+    ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
 }

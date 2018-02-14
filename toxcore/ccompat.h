@@ -4,13 +4,6 @@
 #ifndef CCOMPAT_H
 #define CCOMPAT_H
 
-// Marking GNU extensions to avoid warnings.
-#if defined(__GNUC__)
-#define GNU_EXTENSION __extension__
-#else
-#define GNU_EXTENSION
-#endif
-
 // Variable length arrays.
 // VLA(type, name, size) allocates a variable length array with automatic
 // storage duration. VLA_SIZE(name) evaluates to the runtime size of that array

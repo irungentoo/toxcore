@@ -788,7 +788,7 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
 static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *TCP_server = (TCP_Server *)object;
-    uint32_t index = dest.ip.ip6.uint32[0];
+    uint32_t index = dest.ip.ip.v6.uint32[0];
 
     if (index >= TCP_server->size_accepted_connections) {
         return 1;
@@ -796,7 +796,7 @@ static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, 
 
     TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[index];
 
-    if (con->identifier != dest.ip.ip6.uint64[1]) {
+    if (con->identifier != dest.ip.ip.v6.uint64[1]) {
         return 1;
     }
 
@@ -896,9 +896,9 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
                 IP_Port source;
                 source.port = 0;  // dummy initialise
                 source.ip.family = TCP_ONION_FAMILY;
-                source.ip.ip6.uint32[0] = con_id;
-                source.ip.ip6.uint32[1] = 0;
-                source.ip.ip6.uint64[1] = con->identifier;
+                source.ip.ip.v6.uint32[0] = con_id;
+                source.ip.ip.v6.uint32[1] = 0;
+                source.ip.ip.v6.uint64[1] = con->identifier;
                 onion_send_1(TCP_server->onion, data + 1 + CRYPTO_NONCE_SIZE, length - (1 + CRYPTO_NONCE_SIZE), source,
                              data + 1);
             }

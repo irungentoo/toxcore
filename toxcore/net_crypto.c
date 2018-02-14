@@ -1850,7 +1850,7 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
     }
 
     if (source.ip.family == TCP_FAMILY) {
-        if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, source.ip.ip6.uint32[0]) == 0) {
+        if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, source.ip.ip.v6.uint32[0]) == 0) {
             return 1;
         }
     }
@@ -2134,7 +2134,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
         IP_Port source;
         source.port = 0;
         source.ip.family = TCP_FAMILY;
-        source.ip.ip6.uint32[0] = tcp_connections_number;
+        source.ip.ip.v6.uint32[0] = tcp_connections_number;
 
         if (handle_new_connection_handshake(c, source, data, length, userdata) != 0) {
             return -1;

@@ -55,9 +55,9 @@ static void ip_pack(uint8_t *data, IP source)
 
     if (source.family == TOX_AF_INET || source.family == TOX_TCP_INET) {
         memset(data + 1, 0, SIZE_IP6);
-        memcpy(data + 1, source.ip4.uint8, SIZE_IP4);
+        memcpy(data + 1, source.ip.v4.uint8, SIZE_IP4);
     } else {
-        memcpy(data + 1, source.ip6.uint8, SIZE_IP6);
+        memcpy(data + 1, source.ip.v6.uint8, SIZE_IP6);
     }
 }
 
@@ -71,9 +71,9 @@ static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bo
     target->family = data[0];
 
     if (target->family == TOX_AF_INET || target->family == TOX_TCP_INET) {
-        memcpy(target->ip4.uint8, data + 1, SIZE_IP4);
+        memcpy(target->ip.v4.uint8, data + 1, SIZE_IP4);
     } else {
-        memcpy(target->ip6.uint8, data + 1, SIZE_IP6);
+        memcpy(target->ip.v6.uint8, data + 1, SIZE_IP6);
     }
 
     bool valid = disable_family_check ||

@@ -406,7 +406,7 @@ int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         }
 
         data[0] = net_family;
-        memcpy(data + 1, &ip_port->ip.ip4, SIZE_IP4);
+        memcpy(data + 1, &ip_port->ip.ip.v4, SIZE_IP4);
         memcpy(data + 1 + SIZE_IP4, &ip_port->port, sizeof(uint16_t));
         return size;
     } else {
@@ -417,7 +417,7 @@ int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         }
 
         data[0] = net_family;
-        memcpy(data + 1, &ip_port->ip.ip6, SIZE_IP6);
+        memcpy(data + 1, &ip_port->ip.ip.v6, SIZE_IP6);
         memcpy(data + 1 + SIZE_IP6, &ip_port->port, sizeof(uint16_t));
         return size;
     }
@@ -491,7 +491,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, uint8
         }
 
         ip_port->ip.family = host_family;
-        memcpy(&ip_port->ip.ip4, data + 1, SIZE_IP4);
+        memcpy(&ip_port->ip.ip.v4, data + 1, SIZE_IP4);
         memcpy(&ip_port->port, data + 1 + SIZE_IP4, sizeof(uint16_t));
         return size;
     } else {
@@ -502,7 +502,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, uint8
         }
 
         ip_port->ip.family = host_family;
-        memcpy(&ip_port->ip.ip6, data + 1, SIZE_IP6);
+        memcpy(&ip_port->ip.ip.v6, data + 1, SIZE_IP6);
         memcpy(&ip_port->port, data + 1 + SIZE_IP6, sizeof(uint16_t));
         return size;
     }
@@ -1143,9 +1143,9 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     uint32_t used = 0;
 
     /* convert IPv4-in-IPv6 to IPv4 */
-    if ((ip_port.ip.family == TOX_AF_INET6) && IPV6_IPV4_IN_V6(ip_port.ip.ip6)) {
+    if ((ip_port.ip.family == TOX_AF_INET6) && IPV6_IPV4_IN_V6(ip_port.ip.ip.v6)) {
         ip_port.ip.family = TOX_AF_INET;
-        ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
+        ip_port.ip.ip.v4.uint32 = ip_port.ip.ip.v6.uint32[3];
     }
 
     /* NOTE: Current behavior if there are two clients with the same id is
@@ -1223,9 +1223,9 @@ static bool update_client_data(Client_data *array, size_t size, IP_Port ip_port,
 static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *nodepublic_key)
 {
     /* convert IPv4-in-IPv6 to IPv4 */
-    if ((ip_port.ip.family == TOX_AF_INET6) && IPV6_IPV4_IN_V6(ip_port.ip.ip6)) {
+    if ((ip_port.ip.family == TOX_AF_INET6) && IPV6_IPV4_IN_V6(ip_port.ip.ip.v6)) {
         ip_port.ip.family = TOX_AF_INET;
-        ip_port.ip.ip4.uint32 = ip_port.ip.ip6.uint32[3];
+        ip_port.ip.ip.v4.uint32 = ip_port.ip.ip.v6.uint32[3];
     }
 
     if (id_equal(public_key, dht->self_public_key)) {

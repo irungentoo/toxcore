@@ -230,12 +230,12 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *TCP_
     if (TCP_conn->ip_port.ip.family == TOX_AF_INET) {
         TCP_conn->last_packet[3] = 1; /* IPv4 address */
         ++length;
-        memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip4.uint8, sizeof(IP4));
+        memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip.v4.uint8, sizeof(IP4));
         length += sizeof(IP4);
     } else {
         TCP_conn->last_packet[3] = 4; /* IPv6 address */
         ++length;
-        memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip6.uint8, sizeof(IP6));
+        memcpy(TCP_conn->last_packet + length, TCP_conn->ip_port.ip.ip.v6.uint8, sizeof(IP6));
         length += sizeof(IP6);
     }
 

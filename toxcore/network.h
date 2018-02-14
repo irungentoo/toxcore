@@ -151,10 +151,10 @@ extern const IP6 IP6_BROADCAST;
 #define IP_DEFINED
 typedef struct IP {
     uint8_t family;
-    GNU_EXTENSION union {
-        IP4 ip4;
-        IP6 ip6;
-    };
+    union {
+        IP4 v4;
+        IP6 v6;
+    } ip;
 } IP;
 
 #define IP_PORT_DEFINED
