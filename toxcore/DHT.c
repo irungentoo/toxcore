@@ -69,8 +69,6 @@ struct DHT {
     uint64_t       close_lastgetnodes;
     uint32_t       close_bootstrap_times;
 
-    /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     /* DHT keypair */
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
@@ -2663,7 +2661,6 @@ DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled)
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_HARDENING, &handle_hardening, dht);
 
-    new_symmetric_key(dht->secret_symmetric_key);
     crypto_new_keypair(dht->self_public_key, dht->self_secret_key);
 
     dht->dht_ping_array = ping_array_new(DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
