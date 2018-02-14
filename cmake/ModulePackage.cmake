@@ -28,12 +28,6 @@ function(pkg_use_module mod pkg)
   endif()
 endfunction()
 
-macro(add_submodule super lib)
-  add_module(${lib} ${ARGN})
-  set(${super}_SUBLIBS ${${super}_SUBLIBS} ${lib})
-  set(${super}_SOURCES ${${super}_SOURCES} ${${lib}_SOURCES})
-endmacro()
-
 function(add_module lib)
   set(${lib}_SOURCES ${ARGN} PARENT_SCOPE)
 
@@ -132,8 +126,8 @@ function(target_link_modules target)
     set(_targets ${_targets} ${target})
     # Executables preferably link against static libraries, so they are
     # standalone and can be shipped without any external dependencies. As a
-    # frame of reference: tests become roughly 1-1.5M binaries instead of
-    # 100-200K on x86_64 Linux.
+    # frame of reference: tests become roughly 600-800K binaries instead of
+    # 50-100K on x86_64 Linux.
     set(${target}_primary static)
     set(${target}_secondary shared)
   endif()
