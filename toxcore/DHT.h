@@ -413,7 +413,7 @@ void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_c
 uint32_t DHT_size(const DHT *dht);
 
 /* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(DHT *dht, uint8_t *data);
+void DHT_save(const DHT *dht, uint8_t *data);
 
 /* Load the DHT from data of size size.
  *
@@ -427,15 +427,15 @@ DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled);
 
 void kill_DHT(DHT *dht);
 
-/*  return 0 if we are not connected to the DHT.
- *  return 1 if we are.
+/*  return false if we are not connected to the DHT.
+ *  return true if we are.
  */
-int DHT_isconnected(const DHT *dht);
+bool DHT_isconnected(const DHT *dht);
 
-/*  return 0 if we are not connected or only connected to lan peers with the DHT.
- *  return 1 if we are.
+/*  return false if we are not connected or only connected to lan peers with the DHT.
+ *  return true if we are.
  */
-int DHT_non_lan_connected(const DHT *dht);
+bool DHT_non_lan_connected(const DHT *dht);
 
 
 uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);

@@ -67,6 +67,7 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const 
     fr->handle_friendrequest_isset = 1;
     fr->handle_friendrequest_object = object;
 }
+
 /* Set the function used to check if a friend request should be displayed to the user or not. */
 void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata)
 {
@@ -87,20 +88,18 @@ static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 
 /* Check if a friend request was already received.
  *
- *  return 0 if it did not.
- *  return 1 if it did.
+ *  return false if it did not.
+ *  return true if it did.
  */
-static int request_received(Friend_Requests *fr, const uint8_t *real_pk)
+static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 {
-    uint32_t i;
-
-    for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
+    for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
         if (id_equal(fr->received_requests[i], real_pk)) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 /* Remove real pk from received_requests list.
@@ -110,9 +109,7 @@ static int request_received(Friend_Requests *fr, const uint8_t *real_pk)
  */
 int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 {
-    uint32_t i;
-
-    for (i = 0; i < MAX_RECEIVED_STORED; ++i) {
+    for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
         if (id_equal(fr->received_requests[i], real_pk)) {
             crypto_memzero(fr->received_requests[i], CRYPTO_PUBLIC_KEY_SIZE);
             return 0;
@@ -126,7 +123,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length,
                                   void *userdata)
 {
-    Friend_Requests *fr = (Friend_Requests *)object;
+    Friend_Requests *const fr = (Friend_Requests *)object;
 
     if (length <= 1 + sizeof(fr->nospam) || length > ONION_CLIENT_MAX_DATA_SIZE) {
         return 1;
@@ -148,19 +145,19 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
     }
 
     if (fr->filter_function) {
-        if ((*fr->filter_function)(source_pubkey, fr->filter_function_userdata) != 0) {
+        if (fr->filter_function(source_pubkey, fr->filter_function_userdata) != 0) {
             return 1;
         }
     }
 
     addto_receivedlist(fr, source_pubkey);
 
-    uint32_t message_len = length - sizeof(fr->nospam);
+    const uint32_t message_len = length - sizeof(fr->nospam);
     VLA(uint8_t, message, message_len + 1);
     memcpy(message, packet + sizeof(fr->nospam), message_len);
     message[SIZEOF_VLA(message) - 1] = 0; /* Be sure the message is null terminated. */
 
-    (*fr->handle_friendrequest)(fr->handle_friendrequest_object, source_pubkey, message, message_len, userdata);
+    fr->handle_friendrequest(fr->handle_friendrequest_object, source_pubkey, message, message_len, userdata);
     return 0;
 }
 
