@@ -42,20 +42,17 @@ if [ "${SUPPORT_TEST}" = "true" ]; then
         texinfo
 
     # Add Wine package repository to use the latest Wine
-    echo "
-    # Wine-staging
-    deb https://dl.winehq.org/wine-builds/debian/ stretch main
-    " >> /etc/apt/sources.list
+    echo "deb https://dl.winehq.org/wine-builds/debian/ stretch main" >> /etc/apt/sources.list
     curl -o Release.key https://dl.winehq.org/wine-builds/Release.key
     apt-key add Release.key
 
     dpkg --add-architecture i386
     apt-get update
     apt-get install -y \
-        wine-staging \
-        wine-staging-amd64 \
-        wine-staging-dbg \
-        winehq-staging
+        wine-devel \
+        wine-devel-amd64 \
+        wine-devel-dbg \
+        winehq-devel
 fi
 
 # Clean up to reduce image size
