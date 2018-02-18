@@ -17,6 +17,8 @@
 #define c_sleep(x) usleep(1000 * (x))
 #endif
 
+#define ITERATION_INTERVAL 200
+
 static const char *tox_log_level_name(TOX_LOG_LEVEL level)
 {
     switch (level) {
@@ -58,6 +60,7 @@ Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_d
 
     if (log_options == nullptr) {
         log_options = tox_options_new(nullptr);
+        // tox_options_set_local_discovery_enabled(log_options, false);
     }
 
     assert(log_options != nullptr);

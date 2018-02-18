@@ -52,9 +52,21 @@ namespace file_saving_test
 {
 #include "file_saving_test.c"
 }
+namespace friend_request_test
+{
+#include "friend_request_test.c"
+}
 namespace lan_discovery_test
 {
 #include "lan_discovery_test.c"
+}
+namespace lossless_packet_test
+{
+#include "lossless_packet_test.c"
+}
+namespace lossy_packet_test
+{
+#include "lossy_packet_test.c"
 }
 namespace messenger_test
 {
@@ -76,6 +88,10 @@ namespace save_friend_test
 {
 #include "save_friend_test.c"
 }
+namespace save_load_test
+{
+#include "save_load_test.c"
+}
 namespace selfname_change_conference_test
 {
 #include "selfname_change_conference_test.c"
@@ -83,6 +99,18 @@ namespace selfname_change_conference_test
 namespace self_conference_title_change_test
 {
 #include "self_conference_title_change_test.c"
+}
+namespace send_message_test
+{
+#include "send_message_test.c"
+}
+namespace set_name_test
+{
+#include "set_name_test.c"
+}
+namespace set_status_message_test
+{
+#include "set_status_message_test.c"
 }
 namespace simple_conference_test
 {
@@ -116,9 +144,9 @@ namespace tox_strncasecmp_test
 {
 #include "tox_strncasecmp_test.c"
 }
-namespace tox_test
+namespace typing_test
 {
-#include "tox_test.c"
+#include "typing_test.c"
 }
 namespace version_test
 {
