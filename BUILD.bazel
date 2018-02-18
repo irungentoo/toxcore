@@ -1,3 +1,7 @@
+load("//tools:project.bzl", "project")
+
+project("c-toxcore")
+
 genrule(
     name = "copy_headers",
     srcs = [
