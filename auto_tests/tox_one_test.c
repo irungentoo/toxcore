@@ -125,14 +125,6 @@ START_TEST(test_one)
     tox_self_get_public_key(tox2, pk);
     ck_assert_msg(memcmp(pk, address, TOX_PUBLIC_KEY_SIZE) == 0, "Wrong public key.");
 
-    {
-        TOX_ERR_GET_PORT error;
-        uint16_t port = tox_self_get_udp_port(tox1, &error);
-        ck_assert_msg(33445 <= port && port <= 33545,
-                      "First Tox instance did not bind to udp port inside [33445, 33545].\n");
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-    }
-
     tox_options_free(options);
     tox_kill(tox1);
     tox_kill(tox2);

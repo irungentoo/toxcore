@@ -202,22 +202,6 @@ START_TEST(test_few_clients)
 
     ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
 
-    {
-        TOX_ERR_GET_PORT error;
-        uint16_t first_port = tox_self_get_udp_port(tox1, &error);
-        ck_assert_msg(33445 <= first_port && first_port <= 33545 - 2,
-                      "First Tox instance did not bind to udp port inside [33445, 33543].\n");
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-
-        ck_assert_msg(tox_self_get_udp_port(tox2, &error) == first_port + 1,
-                      "Second Tox instance did not bind to udp port %d.\n", first_port + 1);
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-
-        ck_assert_msg(tox_self_get_udp_port(tox3, &error) == first_port + 2,
-                      "Third Tox instance did not bind to udp port %d.\n", first_port + 2);
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-    }
-
     tox_callback_friend_request(tox2, accept_friend_request);
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);

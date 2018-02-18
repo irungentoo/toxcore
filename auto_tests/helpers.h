@@ -65,6 +65,8 @@ Tox *tox_new_log_lan(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_us
     assert(log_options != nullptr);
 
     tox_options_set_local_discovery_enabled(log_options, lan_discovery);
+    tox_options_set_start_port(log_options, 33445);
+    tox_options_set_end_port(log_options, 33445 + 2000);
     tox_options_set_log_callback(log_options, &print_debug_log);
     tox_options_set_log_user_data(log_options, log_user_data);
     Tox *tox = tox_new(log_options, err);
