@@ -6,8 +6,9 @@
 
 int main(void)
 {
-    Tox *tox1 = tox_new_log(nullptr, nullptr, nullptr);
-    Tox *tox2 = tox_new_log(nullptr, nullptr, nullptr);
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    Tox *tox1 = tox_new_log_lan(nullptr, nullptr, nullptr, /* lan_discovery */true);
+    Tox *tox2 = tox_new_log_lan(nullptr, nullptr, nullptr, /* lan_discovery */true);
 
     printf("Waiting for LAN discovery");
 

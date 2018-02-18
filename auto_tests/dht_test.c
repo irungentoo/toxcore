@@ -801,6 +801,7 @@ static Suite *dht_suite(void)
 
 int main(int argc, char *argv[])
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     srand((unsigned int) time(nullptr));
 
     Suite *dht = dht_suite();

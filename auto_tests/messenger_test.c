@@ -348,6 +348,8 @@ static Suite *messenger_suite(void)
 
 int main(int argc, char *argv[])
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     friend_id = hex_string_to_bin(friend_id_str);
     good_id_a = hex_string_to_bin(good_id_a_str);
     good_id_b = hex_string_to_bin(good_id_b_str);

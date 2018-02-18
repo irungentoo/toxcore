@@ -13,22 +13,24 @@ static uint8_t const key[] = {
 
 int main(void)
 {
-    Tox *tox = tox_new_log(nullptr, nullptr, nullptr);
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
-    tox_bootstrap(tox, "node.tox.biribiri.org", 33445, key, nullptr);
+    Tox *tox_udp = tox_new_log(nullptr, nullptr, nullptr);
+
+    tox_bootstrap(tox_udp, "node.tox.biribiri.org", 33445, key, nullptr);
 
     printf("Waiting for connection");
 
-    while (tox_self_get_connection_status(tox) == TOX_CONNECTION_NONE) {
+    while (tox_self_get_connection_status(tox_udp) == TOX_CONNECTION_NONE) {
         printf(".");
         fflush(stdout);
 
-        tox_iterate(tox, nullptr);
-        c_sleep(1000);
+        tox_iterate(tox_udp, nullptr);
+        c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("Connection: %d\n", tox_self_get_connection_status(tox));
+    printf("Connection (UDP): %d\n", tox_self_get_connection_status(tox_udp));
 
-    tox_kill(tox);
+    tox_kill(tox_udp);
     return 0;
 }

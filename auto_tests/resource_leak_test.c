@@ -21,12 +21,12 @@
 
 int main(void)
 {
-    int i;
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
     puts("Warming up: creating/deleting 10 tox instances");
 
     // Warm-up.
-    for (i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
         Tox *tox = tox_new(nullptr, nullptr);
         tox_iterate(tox, nullptr);
         tox_kill(tox);
@@ -38,7 +38,7 @@ int main(void)
 #endif
     printf("Creating/deleting %d tox instances\n", ITERATIONS);
 
-    for (i = 0; i < ITERATIONS; i++) {
+    for (int i = 0; i < ITERATIONS; i++) {
         Tox *tox = tox_new(nullptr, nullptr);
         tox_iterate(tox, nullptr);
         tox_kill(tox);

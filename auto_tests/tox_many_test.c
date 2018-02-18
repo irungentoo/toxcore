@@ -22,10 +22,6 @@
 
 static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
-    if (*((uint32_t *)userdata) != 974536) {
-        return;
-    }
-
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
         tox_friend_add_norequest(m, public_key, nullptr);
     }
@@ -35,27 +31,17 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 #define NUM_TOXES 90
 #define NUM_FRIENDS 50
 
-START_TEST(test_many_clients)
+static void test_many_clients(void)
 {
-    long long unsigned int cur_time = time(nullptr);
+    time_t cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES];
     uint32_t index[NUM_TOXES];
-    uint32_t i, j;
-    uint32_t to_comp = 974536;
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
         index[i] = i + 1;
         toxes[i] = tox_new_log(nullptr, nullptr, &index[i]);
-        ck_assert_msg(toxes[i] != nullptr, "Failed to create tox instances %u", i);
+        ck_assert_msg(toxes[i] != nullptr, "failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
-    }
-
-    {
-        TOX_ERR_GET_PORT error;
-        uint16_t port = tox_self_get_udp_port(toxes[0], &error);
-        ck_assert_msg(33445 <= port && port <= 33545,
-                      "First Tox instance did not bind to udp port inside [33445, 33545].\n");
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
     struct {
@@ -65,20 +51,20 @@ START_TEST(test_many_clients)
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
-    unsigned int num_f = 0;
+    uint32_t num_f = 0;
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
         num_f += tox_self_get_friend_list_size(toxes[i]);
     }
 
     ck_assert_msg(num_f == 0, "bad num friends: %u", num_f);
 
-    for (i = 0; i < NUM_FRIENDS; ++i) {
+    for (uint32_t i = 0; i < NUM_FRIENDS; ++i) {
 loop_top:
         pairs[i].tox1 = rand() % NUM_TOXES;
         pairs[i].tox2 = (pairs[i].tox1 + rand() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
 
-        for (j = 0; j < i; ++j) {
+        for (uint32_t j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
                 goto loop_top;
             }
@@ -93,10 +79,16 @@ loop_top:
             goto loop_top;
         }
 
-        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
+        uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+        tox_self_get_dht_id(toxes[pairs[i].tox1], dht_key);
+        const uint16_t dht_port = tox_self_get_udp_port(toxes[pairs[i].tox1], nullptr);
+
+        tox_bootstrap(toxes[pairs[i].tox2], "localhost", dht_port, dht_key, nullptr);
+
+        ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "failed to add friend error code: %i", test);
     }
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
         num_f += tox_self_get_friend_list_size(toxes[i]);
     }
 
@@ -107,8 +99,8 @@ loop_top:
     while (1) {
         uint16_t counter = 0;
 
-        for (i = 0; i < NUM_TOXES; ++i) {
-            for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
+        for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+            for (uint32_t j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
                 if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_UDP) {
                     ++counter;
                 }
@@ -124,42 +116,24 @@ loop_top:
             break;
         }
 
-        for (i = 0; i < NUM_TOXES; ++i) {
-            tox_iterate(toxes[i], &to_comp);
+        for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+            tox_iterate(toxes[i], nullptr);
         }
 
         c_sleep(50);
     }
 
-    for (i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
         tox_kill(toxes[i]);
     }
 
-    printf("test_many_clients succeeded, took %llu seconds\n", time(nullptr) - cur_time);
-}
-END_TEST
-
-static Suite *tox_suite(void)
-{
-    Suite *s = suite_create("Tox");
-
-    DEFTESTCASE(many_clients);
-
-    return s;
+    printf("test_many_clients succeeded, took %ld seconds\n", time(nullptr) - cur_time);
 }
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(nullptr));
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *tox = tox_suite();
-    SRunner *test_runner = srunner_create(tox);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    test_many_clients();
+    return 0;
 }

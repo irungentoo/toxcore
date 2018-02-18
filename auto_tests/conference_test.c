@@ -21,10 +21,11 @@
 #include "helpers.h"
 
 #define NUM_GROUP_TOX 5
+#define GROUP_MESSAGE "Install Gentoo"
 
 static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
 {
-    int id = *(int *)user_data;
+    const int id = *(int *)user_data;
 
     if (connection_status != TOX_CONNECTION_NONE) {
         printf("tox #%d: is now connected\n", id);
@@ -36,7 +37,7 @@ static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_st
 static void handle_friend_connection_status(Tox *tox, uint32_t friendnumber, TOX_CONNECTION connection_status,
         void *user_data)
 {
-    int id = *(int *)user_data;
+    const int id = *(int *)user_data;
 
     if (connection_status != TOX_CONNECTION_NONE) {
         printf("tox #%d: is now connected to friend %d\n", id, friendnumber);
@@ -48,7 +49,7 @@ static void handle_friend_connection_status(Tox *tox, uint32_t friendnumber, TOX
 static void handle_conference_invite(Tox *tox, uint32_t friendnumber, TOX_CONFERENCE_TYPE type, const uint8_t *data,
                                      size_t length, void *user_data)
 {
-    int id = *(int *)user_data;
+    const int id = *(int *)user_data;
     ck_assert_msg(type == TOX_CONFERENCE_TYPE_TEXT, "tox #%d: wrong conference type: %d", id, type);
 
     TOX_ERR_CONFERENCE_JOIN err;
@@ -75,12 +76,12 @@ static unsigned int num_recv;
 static void handle_conference_message(Tox *tox, uint32_t groupnumber, uint32_t peernumber, TOX_MESSAGE_TYPE type,
                                       const uint8_t *message, size_t length, void *user_data)
 {
-    if (length == (sizeof("Install Gentoo") - 1) && memcmp(message, "Install Gentoo", sizeof("Install Gentoo") - 1) == 0) {
+    if (length == (sizeof(GROUP_MESSAGE) - 1) && memcmp(message, GROUP_MESSAGE, sizeof(GROUP_MESSAGE) - 1) == 0) {
         ++num_recv;
     }
 }
 
-START_TEST(test_many_group)
+static void test_many_group(void)
 {
     const time_t test_start_time = time(nullptr);
 
@@ -102,17 +103,17 @@ START_TEST(test_many_group)
         tox_callback_self_connection_status(toxes[i], &handle_self_connection_status);
         tox_callback_friend_connection_status(toxes[i], &handle_friend_connection_status);
         tox_callback_conference_invite(toxes[i], &handle_conference_invite);
+
+        if (i != 0) {
+            uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+            tox_self_get_dht_id(toxes[0], dht_key);
+            const uint16_t dht_port = tox_self_get_udp_port(toxes[0], nullptr);
+
+            tox_bootstrap(toxes[i], "localhost", dht_port, dht_key, nullptr);
+        }
     }
 
     tox_options_free(opts);
-
-    {
-        TOX_ERR_GET_PORT error;
-        const uint16_t port = tox_self_get_udp_port(toxes[0], &error);
-        ck_assert_msg(33445 <= port && port <= 33545,
-                      "First Tox instance did not bind to udp port inside [33445, 33545].\n");
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-    }
 
     printf("creating a chain of friends\n");
 
@@ -208,8 +209,8 @@ START_TEST(test_many_group)
     TOX_ERR_CONFERENCE_SEND_MESSAGE err;
     ck_assert_msg(
         tox_conference_send_message(
-            toxes[rand() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)"Install Gentoo",
-            sizeof("Install Gentoo") - 1, &err) != 0, "Failed to send group message.");
+            toxes[rand() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
+            sizeof(GROUP_MESSAGE) - 1, &err) != 0, "Failed to send group message.");
     ck_assert_msg(
         err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "Failed to send group message.");
     num_recv = 0;
@@ -236,7 +237,7 @@ START_TEST(test_many_group)
             c_sleep(50);
         }
 
-        for (unsigned i = 0; i < (k - 1); ++i) {
+        for (unsigned i = 0; i < k - 1; ++i) {
             uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
             ck_assert_msg(peer_count == (k - 1), "\n\tBad number of group peers (post check)."
                           "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
@@ -250,29 +251,11 @@ START_TEST(test_many_group)
 
     printf("test_many_group succeeded, took %d seconds\n", (int)(time(nullptr) - test_start_time));
 }
-END_TEST
-
-static Suite *tox_suite(void)
-{
-    Suite *s = suite_create("Tox conference");
-
-    DEFTESTCASE_SLOW(many_group, 80);
-
-    return s;
-}
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(nullptr));
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *tox = tox_suite();
-    SRunner *test_runner = srunner_create(tox);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    test_many_group();
+    return 0;
 }

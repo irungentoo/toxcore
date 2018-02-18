@@ -49,10 +49,19 @@ void statuschange_callback(Tox *tox, uint32_t friend_number, const uint8_t *mess
 
 int main(int argc, char *argv[])
 {
-    Tox *tox1 = tox_new_log(nullptr, nullptr, nullptr);
-    Tox *tox2 = tox_new_log(nullptr, nullptr, nullptr);
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
-    struct test_data to_compare = { { 0 } };
+    Tox *const tox1 = tox_new_log(nullptr, nullptr, nullptr);
+    Tox *const tox2 = tox_new_log(nullptr, nullptr, nullptr);
+
+    printf("bootstrapping tox2 off tox1\n");
+    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_dht_id(tox1, dht_key);
+    const uint16_t dht_port = tox_self_get_udp_port(tox1, nullptr);
+
+    tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
+
+    struct test_data to_compare = {{0}};
 
     uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_public_key(tox1, public_key);
@@ -104,11 +113,11 @@ int main(int argc, char *argv[])
     VLA(uint8_t, savedata, save_size);
     tox_get_savedata(tox1, savedata);
 
-    struct Tox_Options *options = tox_options_new(nullptr);
+    struct Tox_Options *const options = tox_options_new(nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, savedata, save_size);
 
-    Tox *tox_to_compare = tox_new(options, nullptr);
+    Tox *const tox_to_compare = tox_new_log(options, nullptr, nullptr);
 
     tox_friend_get_name(tox_to_compare, 0, to_compare.name, nullptr);
     tox_friend_get_status_message(tox_to_compare, 0, to_compare.status_message, nullptr);

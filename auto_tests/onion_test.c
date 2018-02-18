@@ -538,6 +538,7 @@ static Suite *onion_suite(void)
 
 int main(int argc, char *argv[])
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     srand((unsigned int) time(nullptr));
 
     Suite *onion = onion_suite();

@@ -47,36 +47,24 @@ typedef struct {
  */
 static void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
 {
-    (void) av;
-    (void) audio_enabled;
-    (void) video_enabled;
-
     printf("Handling CALL callback\n");
     ((CallControl *)user_data)[friend_number].incoming = true;
 }
+
 static void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
     printf("Handling CALL STATE callback: %d %p\n", state, (void *)av);
     ((CallControl *)user_data)[friend_number].state = state;
 }
+
 static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
         uint16_t width, uint16_t height,
         uint8_t const *y, uint8_t const *u, uint8_t const *v,
         int32_t ystride, int32_t ustride, int32_t vstride,
         void *user_data)
 {
-    (void) av;
-    (void) friend_number;
-    (void) width;
-    (void) height;
-    (void) y;
-    (void) u;
-    (void) v;
-    (void) ystride;
-    (void) ustride;
-    (void) vstride;
-    (void) user_data;
 }
+
 static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
         int16_t const *pcm,
         size_t sample_count,
@@ -84,19 +72,11 @@ static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
         uint32_t sampling_rate,
         void *user_data)
 {
-    (void) av;
-    (void) friend_number;
-    (void) pcm;
-    (void) sample_count;
-    (void) channels;
-    (void) sampling_rate;
-    (void) user_data;
 }
+
 static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
                                        void *userdata)
 {
-    (void) userdata;
-
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
         ck_assert(tox_friend_add_norequest(m, public_key, nullptr) != (uint32_t) ~0);
     }
@@ -120,6 +100,7 @@ static ToxAV *setup_av_instance(Tox *tox, CallControl *CC)
 
     return av;
 }
+
 static void *call_thread(void *pd)
 {
     ToxAV *AliceAV = ((thread_data *) pd)->AliceAV;
@@ -197,8 +178,7 @@ static void *call_thread(void *pd)
     pthread_exit(nullptr);
 }
 
-
-START_TEST(test_AV_three_calls)
+static void test_av_three_calls(void)
 {
     uint32_t index[] = { 1, 2, 3, 4, 5 };
     Tox *Alice, *bootstrap, *Bobs[3];
@@ -228,13 +208,23 @@ START_TEST(test_AV_three_calls)
 
     printf("Created 5 instances of Tox\n");
     printf("Preparing network...\n");
-    long long unsigned int cur_time = time(nullptr);
+    time_t cur_time = time(nullptr);
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
     tox_callback_friend_request(Alice, t_accept_friend_request_cb);
     tox_self_get_address(Alice, address);
 
+    printf("bootstrapping Alice and the %zd Bobs off a third bootstrap node\n",
+           sizeof(Bobs) / sizeof(Bobs[0]));
+    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_dht_id(bootstrap, dht_key);
+    const uint16_t dht_port = tox_self_get_udp_port(bootstrap, nullptr);
+
+    tox_bootstrap(Alice, "localhost", dht_port, dht_key, nullptr);
+    tox_bootstrap(Bobs[0], "localhost", dht_port, dht_key, nullptr);
+    tox_bootstrap(Bobs[1], "localhost", dht_port, dht_key, nullptr);
+    tox_bootstrap(Bobs[2], "localhost", dht_port, dht_key, nullptr);
 
     ck_assert(tox_friend_add(Bobs[0], address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
     ck_assert(tox_friend_add(Bobs[1], address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
@@ -254,7 +244,7 @@ START_TEST(test_AV_three_calls)
                 tox_self_get_connection_status(Bobs[0]) &&
                 tox_self_get_connection_status(Bobs[1]) &&
                 tox_self_get_connection_status(Bobs[2]) && off) {
-            printf("Toxes are online, took %llu seconds\n", time(nullptr) - cur_time);
+            printf("Toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
             off = 0;
         }
 
@@ -276,7 +266,7 @@ START_TEST(test_AV_three_calls)
     BobsAV[2] = setup_av_instance(Bobs[2], BobsCC + 2);
 
     printf("Created 4 instances of ToxAV\n");
-    printf("All set after %llu seconds!\n", time(nullptr) - cur_time);
+    printf("All set after %ld seconds!\n", time(nullptr) - cur_time);
 
     thread_data tds[3];
     tds[0].AliceAV = AliceAV;
@@ -305,6 +295,7 @@ START_TEST(test_AV_three_calls)
     time_t start_time = time(nullptr);
 
     while (time(nullptr) - start_time < 5) {
+        tox_iterate(bootstrap, nullptr);
         tox_iterate(Alice, nullptr);
         tox_iterate(Bobs[0], nullptr);
         tox_iterate(Bobs[1], nullptr);
@@ -322,44 +313,23 @@ START_TEST(test_AV_three_calls)
     ck_assert(retval == nullptr);
 
     printf("Killing all instances\n");
-    toxav_kill(BobsAV[0]);
-    toxav_kill(BobsAV[1]);
     toxav_kill(BobsAV[2]);
+    toxav_kill(BobsAV[1]);
+    toxav_kill(BobsAV[0]);
     toxav_kill(AliceAV);
-    tox_kill(Bobs[0]);
-    tox_kill(Bobs[1]);
     tox_kill(Bobs[2]);
+    tox_kill(Bobs[1]);
+    tox_kill(Bobs[0]);
     tox_kill(Alice);
     tox_kill(bootstrap);
 
     printf("\nTest successful!\n");
 }
-END_TEST
-
-
-static Suite *tox_suite(void)
-{
-    Suite *s = suite_create("ToxAV");
-
-    DEFTESTCASE(AV_three_calls);
-
-    return s;
-}
 
 int main(int argc, char *argv[])
 {
-    (void) argc;
-    (void) argv;
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *tox = tox_suite();
-    SRunner *test_runner = srunner_create(tox);
-
-    setbuf(stdout, nullptr);
-
-    srunner_run_all(test_runner, CK_NORMAL);
-    int number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    test_av_three_calls();
+    return 0;
 }

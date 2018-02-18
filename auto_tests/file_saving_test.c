@@ -27,17 +27,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../toxcore/tox.h"
-#include "../toxencryptsave/toxencryptsave.h"
+#include "helpers.h"
 
-#include "../toxcore/ccompat.h"
+#include "../toxencryptsave/toxencryptsave.h"
 
 static const char *pphrase = "bar", *name = "foo", *savefile = "./save";
 
 static void save_data_encrypted(void)
 {
     struct Tox_Options *options = tox_options_new(nullptr);
-    Tox *t = tox_new(options, nullptr);
+    Tox *t = tox_new_log(options, nullptr, nullptr);
     tox_options_free(options);
 
     tox_self_set_name(t, (const uint8_t *)name, strlen(name), nullptr);
@@ -97,7 +96,7 @@ static void load_data_decrypted(void)
 
     TOX_ERR_NEW err;
 
-    Tox *t = tox_new(options, &err);
+    Tox *t = tox_new_log(options, &err, nullptr);
 
     tox_options_free(options);
 
@@ -123,6 +122,7 @@ static void load_data_decrypted(void)
 
 int main(void)
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     save_data_encrypted();
     load_data_decrypted();
 

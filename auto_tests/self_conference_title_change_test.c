@@ -48,13 +48,15 @@ static void cbtitlechange(Tox *tox, uint32_t conference_number, uint32_t peer_nu
 
 int main(void)
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     uint32_t conference_number;
     struct Tox_Options *to = tox_options_new(nullptr);
     Tox *t;
     TOX_ERR_CONFERENCE_NEW conference_err;
     TOX_ERR_CONFERENCE_TITLE title_err;
 
-    t = tox_new(to, nullptr);
+    t = tox_new_log(to, nullptr, nullptr);
     tox_options_free(to);
 
     tox_callback_conference_title(t, &cbtitlechange);

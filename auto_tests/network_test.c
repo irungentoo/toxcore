@@ -165,6 +165,7 @@ static Suite *network_suite(void)
 
 int main(void)
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     srand((unsigned int) time(nullptr));
 
     Suite *network = network_suite();

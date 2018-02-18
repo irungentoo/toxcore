@@ -103,6 +103,8 @@ static void handle_conference_namelist_change(Tox *tox, uint32_t conference_numb
 
 int main()
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
     State state1 = {1};
     State state2 = {2};
     State state3 = {3};
@@ -122,6 +124,14 @@ int main()
     tox_friend_add_norequest(tox2, key, nullptr);  // tox2 -> tox3
     tox_self_get_public_key(tox2, key);
     tox_friend_add_norequest(tox3, key, nullptr);  // tox3 -> tox2
+
+    printf("bootstrapping tox2 and tox3 off tox1\n");
+    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+    tox_self_get_dht_id(tox1, dht_key);
+    const uint16_t dht_port = tox_self_get_udp_port(tox1, nullptr);
+
+    tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
+    tox_bootstrap(tox3, "localhost", dht_port, dht_key, nullptr);
 
     // Connection callbacks.
     tox_callback_self_connection_status(tox1, handle_self_connection_status);

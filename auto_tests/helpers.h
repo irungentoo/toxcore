@@ -54,17 +54,17 @@ static void print_debug_log(Tox *m, TOX_LOG_LEVEL level, const char *path, uint3
     fprintf(stderr, "[#%d] %s %s:%d\t%s:\t%s\n", index, tox_log_level_name(level), file, line, func, message);
 }
 
-Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data)
+Tox *tox_new_log_lan(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data, bool lan_discovery)
 {
     struct Tox_Options *log_options = options;
 
     if (log_options == nullptr) {
         log_options = tox_options_new(nullptr);
-        // tox_options_set_local_discovery_enabled(log_options, false);
     }
 
     assert(log_options != nullptr);
 
+    tox_options_set_local_discovery_enabled(log_options, lan_discovery);
     tox_options_set_log_callback(log_options, &print_debug_log);
     tox_options_set_log_user_data(log_options, log_user_data);
     Tox *tox = tox_new(log_options, err);
@@ -74,6 +74,11 @@ Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_d
     }
 
     return tox;
+}
+
+Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data)
+{
+    return tox_new_log_lan(options, err, log_user_data, false);
 }
 
 #endif // TOXCORE_TEST_HELPERS_H
