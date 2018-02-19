@@ -2388,15 +2388,51 @@ typedef void tox_conference_title_cb(Tox *tox, uint32_t conference_number, uint3
 void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback);
 
 /**
+ * @param conference_number The conference number of the conference the
+ *   peer is in.
+ * @param peer_number The ID of the peer who changed their nickname.
+ * @param name A byte array containing the new nickname.
+ * @param length The size of the name byte array.
+ */
+typedef void tox_conference_peer_name_cb(Tox *tox, uint32_t conference_number, uint32_t peer_number,
+        const uint8_t *name, size_t length, void *user_data);
+
+
+/**
+ * Set the callback for the `conference_peer_name` event. Pass NULL to unset.
+ *
+ * This event is triggered when a peer changes their name.
+ */
+void tox_callback_conference_peer_name(Tox *tox, tox_conference_peer_name_cb *callback);
+
+/**
+ * @param conference_number The conference number of the conference the
+ *   peer is in.
+ */
+typedef void tox_conference_peer_list_changed_cb(Tox *tox, uint32_t conference_number, void *user_data);
+
+
+/**
+ * Set the callback for the `conference_peer_list_changed` event. Pass NULL to unset.
+ *
+ * This event is triggered when a peer joins or leaves the conference.
+ */
+void tox_callback_conference_peer_list_changed(Tox *tox, tox_conference_peer_list_changed_cb *callback);
+
+/**
  * Peer list state change types.
  */
 typedef enum TOX_CONFERENCE_STATE_CHANGE {
 
     /**
-     * Some changes to list have occurred. Rebuild of list required.
-     * peer_number is undefined (always 0 for api compatibility)
+     * A peer has joined the conference.
      */
-    TOX_CONFERENCE_STATE_CHANGE_LIST_CHANGED,
+    TOX_CONFERENCE_STATE_CHANGE_PEER_JOIN,
+
+    /**
+     * A peer has exited the conference.
+     */
+    TOX_CONFERENCE_STATE_CHANGE_PEER_EXIT,
 
     /**
      * A peer has changed their name.
@@ -2419,6 +2455,8 @@ typedef void tox_conference_namelist_change_cb(Tox *tox, uint32_t conference_num
  * Set the callback for the `conference_namelist_change` event. Pass NULL to unset.
  *
  * This event is triggered when the peer list changes (name change, peer join, peer exit).
+ *
+ * @deprecated Use the `conference_peer_name` and `conference_peer_list_changed` events, instead.
  */
 void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback);
 

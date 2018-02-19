@@ -1103,12 +1103,23 @@ void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback)
     g_callback_group_title((Group_Chats *)m->conferences_object, callback);
 }
 
+void tox_callback_conference_peer_name(Tox *tox, tox_conference_peer_name_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_peer_name((Group_Chats *)m->conferences_object, callback);
+}
+
+void tox_callback_conference_peer_list_changed(Tox *tox, tox_conference_peer_list_changed_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_peer_list_changed((Group_Chats *)m->conferences_object, callback);
+}
+
 void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_namelistchange((Group_Chats *)m->conferences_object, (void (*)(struct Messenger *, uint32_t, uint32_t,
-                                    uint8_t,
-                                    void *))callback);
+    g_callback_group_namelistchange((Group_Chats *)m->conferences_object,
+                                    (void (*)(struct Messenger *, uint32_t, uint32_t, int, void *))callback);
 }
 
 uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error)

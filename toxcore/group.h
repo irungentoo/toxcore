@@ -117,7 +117,9 @@ typedef struct {
 
     void (*invite_callback)(Messenger *m, uint32_t, int, const uint8_t *, size_t, void *);
     void (*message_callback)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *, size_t, void *);
-    void (*group_namelistchange)(Messenger *m, uint32_t, uint32_t, uint8_t, void *);
+    void (*peer_name_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
+    void (*peer_list_changed_callback)(Messenger *m, uint32_t, void *);
+    void (*group_namelistchange)(Messenger *m, uint32_t, uint32_t, int, void *);
     void (*title_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
 
     struct {
@@ -150,17 +152,32 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, u
 void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
                             size_t, void *));
 
+/* Set callback function for peer nickname changes.
+ *
+ * It gets called every time a peer changes their nickname.
+ *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, const uint8_t *nick, size_t nick_len, void *userdata)
+ */
+void g_callback_peer_name(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                          size_t, void *));
+
+/* Set callback function for peer list changes.
+ *
+ * It gets called every time the name list changes(new peer, deleted peer)
+ *  Function(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
+ */
+void g_callback_peer_list_changed(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, void *));
+
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
- *  Function(Group_Chats *g_c, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
+ *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, TOX_CHAT_CHANGE change, void *userdata)
  */
 enum {
-    CHAT_CHANGE_OCCURRED,
+    CHAT_CHANGE_PEER_ADD,
+    CHAT_CHANGE_PEER_DEL,
     CHAT_CHANGE_PEER_NAME,
 };
-void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, uint8_t,
-                                     void *));
+void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, void *));
 
 /* Creates a new groupchat and puts it in the chats array.
  *

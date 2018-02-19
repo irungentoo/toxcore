@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
     CHECK_SIZE(Friend_Requests, 1080);
     // toxcore/group
     CHECK_SIZE(Group_c, 728);
-    CHECK_SIZE(Group_Chats, 2112);
+    CHECK_SIZE(Group_Chats, 2128);
     CHECK_SIZE(Group_Peer, 480);
     // toxcore/list
     CHECK_SIZE(BS_LIST, 32);

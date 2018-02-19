@@ -456,7 +456,11 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
     add_to_closest(g_c, groupnumber, real_pk, temp_pk);
 
     if (do_gc_callback && g_c->group_namelistchange) {
-        g_c->group_namelistchange(g_c->m, groupnumber, 0, CHAT_CHANGE_OCCURRED, userdata);
+        g_c->group_namelistchange(g_c->m, groupnumber, g->numpeers - 1, CHAT_CHANGE_PEER_ADD, userdata);
+    }
+
+    if (do_gc_callback && g_c->peer_list_changed_callback) {
+        g_c->peer_list_changed_callback(g_c->m, groupnumber, userdata);
     }
 
     if (g->peer_on_join) {
@@ -544,7 +548,11 @@ static int delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void 
     }
 
     if (g_c->group_namelistchange) {
-        g_c->group_namelistchange(g_c->m, groupnumber, 0, CHAT_CHANGE_OCCURRED, userdata);
+        g_c->group_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_DEL, userdata);
+    }
+
+    if (g_c->peer_list_changed_callback) {
+        g_c->peer_list_changed_callback(g_c->m, groupnumber, userdata);
     }
 
     if (g->peer_on_leave) {
@@ -591,6 +599,10 @@ static int setnick(Group_Chats *g_c, uint32_t groupnumber, int peer_index, const
 
     if (do_gc_callback && g_c->group_namelistchange) {
         g_c->group_namelistchange(g_c->m, groupnumber, peer_index, CHAT_CHANGE_PEER_NAME, userdata);
+    }
+
+    if (do_gc_callback && g_c->peer_name_callback) {
+        g_c->peer_name_callback(g_c->m, groupnumber, peer_index, nick, nick_len, userdata);
     }
 
     return 0;
@@ -1143,13 +1155,34 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, u
     g_c->message_callback = function;
 }
 
+/* Set callback function for peer nickname changes.
+ *
+ * It gets called every time a peer changes their nickname.
+ *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, const uint8_t *nick, size_t nick_len, void *userdata)
+ */
+void g_callback_peer_name(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
+                          size_t, void *))
+{
+    g_c->peer_name_callback = function;
+}
+
+/* Set callback function for peer list changes.
+ *
+ * It gets called every time the name list changes(new peer, deleted peer)
+ *  Function(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
+ */
+void g_callback_peer_list_changed(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, void *))
+{
+    g_c->peer_list_changed_callback = function;
+}
+
 // TODO(sudden6): function signatures in comments are incorrect
 /* Set callback function for peer name list changes.
  *
  * It gets called every time the name list changes(new peer/name, deleted peer)
  *  Function(Group_Chats *g_c, int groupnumber, int peernumber, TOX_CHAT_CHANGE change, void *userdata)
  */
-void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *, uint32_t, uint32_t, uint8_t,
+void g_callback_group_namelistchange(Group_Chats *g_c, void (*function)(Messenger *, uint32_t, uint32_t, int,
                                      void *))
 {
     g_c->group_namelistchange = function;

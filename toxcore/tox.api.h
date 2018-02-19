@@ -2105,15 +2105,47 @@ namespace conference {
     typedef void(uint32_t conference_number, uint32_t peer_number, const uint8_t[length] title);
   }
 
+  namespace peer {
+
+    /**
+     * This event is triggered when a peer changes their name.
+     */
+    event name const {
+      /**
+       * @param conference_number The conference number of the conference the
+       *   peer is in.
+       * @param peer_number The ID of the peer who changed their nickname.
+       * @param name A byte array containing the new nickname.
+       * @param length The size of the name byte array.
+       */
+      typedef void(uint32_t conference_number, uint32_t peer_number, const uint8_t[length] name);
+    }
+
+    /**
+     * This event is triggered when a peer joins or leaves the conference.
+     */
+    event list_changed const {
+      /**
+       * @param conference_number The conference number of the conference the
+       *   peer is in.
+       */
+      typedef void(uint32_t conference_number);
+    }
+
+  }
+
   /**
    * Peer list state change types.
    */
   enum class STATE_CHANGE {
     /**
-     * Some changes to list have occurred. Rebuild of list required.
-     * peer_number is undefined (always 0 for api compatibility)
+     * A peer has joined the conference.
      */
-    LIST_CHANGED,
+    PEER_JOIN,
+    /**
+     * A peer has exited the conference.
+     */
+    PEER_EXIT,
     /**
      * A peer has changed their name.
      */
@@ -2122,6 +2154,8 @@ namespace conference {
 
   /**
    * This event is triggered when the peer list changes (name change, peer join, peer exit).
+   *
+   * @deprecated Use the `${event peer.name}` and `${event peer.list_changed}` events, instead.
    */
   event namelist_change const {
     /**
