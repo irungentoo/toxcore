@@ -1106,7 +1106,8 @@ void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback)
 void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback)
 {
     Messenger *m = tox;
-    g_callback_group_namelistchange((Group_Chats *)m->conferences_object, (void (*)(struct Messenger *, int, int, uint8_t,
+    g_callback_group_namelistchange((Group_Chats *)m->conferences_object, (void (*)(struct Messenger *, uint32_t, uint32_t,
+                                    uint8_t,
                                     void *))callback);
 }
 

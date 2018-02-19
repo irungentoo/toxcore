@@ -740,12 +740,13 @@ void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb 
  * return -1 on failure.
  *
  * Audio data callback format:
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *   audio_callback(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, uint32_t sample_rate, void *userdata)
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t,
-                           unsigned int, void *), void *userdata);
+int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int,
+                           uint8_t,
+                           uint32_t, void *), void *userdata);
 
 /* Join a AV group (you need to have been invited first.)
  *
@@ -753,12 +754,13 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, int, int, co
  * returns -1 on failure.
  *
  * Audio data callback format (same as the one for toxav_add_av_groupchat()):
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *   audio_callback(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, uint32_t sample_rate, void *userdata)
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata);
+int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+                            void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
+                            void *userdata);
 
 /* Send audio to the group chat.
  *
@@ -773,8 +775,8 @@ int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data,
  *
  * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
  */
-int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                           unsigned int sample_rate);
+int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                           uint32_t sample_rate);
 
 #ifdef __cplusplus
 }

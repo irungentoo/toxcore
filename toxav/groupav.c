@@ -164,7 +164,7 @@ typedef struct {
 
     uint16_t audio_sequnum;
 
-    void (*audio_data)(Messenger *m, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples,
+    void (*audio_data)(Messenger *m, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, uint32_t samples,
                        uint8_t channels, unsigned int sample_rate, void *userdata);
     void *userdata;
 } Group_AV;
@@ -224,9 +224,8 @@ static int recreate_encoder(Group_AV *group_av)
     return 0;
 }
 
-static Group_AV *new_group_av(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int,
-                              const int16_t *,
-                              unsigned int, uint8_t, unsigned int, void *), void *userdata)
+static Group_AV *new_group_av(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
+                              const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
 {
     if (!g_c) {
         return nullptr;
@@ -247,7 +246,7 @@ static Group_AV *new_group_av(Logger *log, Group_Chats *g_c, void (*audio_callba
     return group_av;
 }
 
-static void group_av_peer_new(void *object, int groupnumber, int friendgroupnumber)
+static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t friendgroupnumber)
 {
     Group_AV *group_av = (Group_AV *)object;
     Group_Peer_AV *peer_av = (Group_Peer_AV *)calloc(1, sizeof(Group_Peer_AV));
@@ -260,7 +259,7 @@ static void group_av_peer_new(void *object, int groupnumber, int friendgroupnumb
     group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av);
 }
 
-static void group_av_peer_delete(void *object, int groupnumber, int friendgroupnumber, void *peer_object)
+static void group_av_peer_delete(void *object, uint32_t groupnumber, uint32_t friendgroupnumber, void *peer_object)
 {
     Group_Peer_AV *peer_av = (Group_Peer_AV *)peer_object;
 
@@ -276,14 +275,15 @@ static void group_av_peer_delete(void *object, int groupnumber, int friendgroupn
     free(peer_object);
 }
 
-static void group_av_groupchat_delete(void *object, int groupnumber)
+static void group_av_groupchat_delete(void *object, uint32_t groupnumber)
 {
     if (object) {
         kill_group_av((Group_AV *)object);
     }
 }
 
-static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int groupnumber, int friendgroupnumber)
+static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint32_t groupnumber,
+                               uint32_t friendgroupnumber)
 {
     if (!group_av || !peer_av) {
         return -1;
@@ -388,7 +388,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, int g
     return -1;
 }
 
-static int handle_group_audio_packet(void *object, int groupnumber, int friendgroupnumber, void *peer_object,
+static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_t friendgroupnumber, void *peer_object,
                                      const uint8_t *packet, uint16_t length)
 {
     if (!peer_object || !object || length <= sizeof(uint16_t)) {
@@ -426,14 +426,10 @@ static int handle_group_audio_packet(void *object, int groupnumber, int friendgr
  * return 0 on success.
  * return -1 on failure.
  */
-static int groupchat_enable_av(Logger *log, Group_Chats *g_c, int groupnumber, void (*audio_callback)(Messenger *, int,
-                               int,
-                               const int16_t *, unsigned int, uint8_t, unsigned int, void *), void *userdata)
+static int groupchat_enable_av(Logger *log, Group_Chats *g_c, uint32_t groupnumber, void (*audio_callback)(Messenger *,
+                               uint32_t,
+                               uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
 {
-    if (groupnumber == -1) {
-        return -1;
-    }
-
     Group_AV *group_av = new_group_av(log, g_c, audio_callback, userdata);
 
     if (group_av == nullptr) {
@@ -457,9 +453,10 @@ static int groupchat_enable_av(Logger *log, Group_Chats *g_c, int groupnumber, v
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *,
+int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
+                     const int16_t *,
                      unsigned int,
-                     uint8_t, unsigned int, void *), void *userdata)
+                     uint8_t, uint32_t, void *), void *userdata)
 {
     int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
 
@@ -480,8 +477,8 @@ int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messe
  * returns group number on success
  * returns -1 on failure.
  */
-int join_av_groupchat(Logger *log, Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                      void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
+int join_av_groupchat(Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+                      void (*audio_callback)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
                       void *userdata)
 {
     int groupnumber = join_groupchat(g_c, friendnumber, GROUPCHAT_TYPE_AV, data, length);
@@ -503,7 +500,7 @@ int join_av_groupchat(Logger *log, Group_Chats *g_c, int32_t friendnumber, const
  * return 0 on success.
  * return -1 on failure.
  */
-static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet, uint16_t length)
+static int send_audio_packet(Group_Chats *g_c, uint32_t groupnumber, uint8_t *packet, uint16_t length)
 {
     if (!length) {
         return -1;
@@ -530,8 +527,8 @@ static int send_audio_packet(Group_Chats *g_c, int groupnumber, uint8_t *packet,
  * return 0 on success.
  * return -1 on failure.
  */
-int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                     unsigned int sample_rate)
+int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                     uint32_t sample_rate)
 {
     Group_AV *group_av = (Group_AV *)group_get_object(g_c, groupnumber);
 
