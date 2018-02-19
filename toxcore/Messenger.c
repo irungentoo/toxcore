@@ -2702,15 +2702,16 @@ void do_messenger(Messenger *m, void *userdata)
             } else {
                 char id_str[IDSTRING_LEN];
                 LOGGER_TRACE(m->log, "F[--:%2u] %s", friend_idx,
-                             id_to_string(dhtfptr->public_key, id_str, sizeof(id_str)));
+                             id_to_string(dht_friend_public_key(dhtfptr), id_str, sizeof(id_str)));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
-                Client_data *cptr = &dhtfptr->client_list[client];
-                IPPTsPng *assoc = nullptr;
-                uint32_t a;
+                const Client_data *cptr = dht_friend_client(dhtfptr, client);
+                const IPPTsPng *const assocs[] = {&cptr->assoc4, &cptr->assoc6};
 
-                for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
+                for (size_t a = 0; a < sizeof(assocs) / sizeof(assocs[0]); a++) {
+                    const IPPTsPng *const assoc = assocs[a];
+
                     if (ip_isset(&assoc->ip_port.ip)) {
                         last_pinged = m->lastdump - assoc->last_pinged;
 

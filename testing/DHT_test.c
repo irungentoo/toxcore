@@ -135,7 +135,7 @@ static void print_friendlist(DHT *dht)
         printf("\nCLIENTS IN LIST:\n\n");
 
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
-            const Client_data *client = &dht_get_friend(dht, k)->client_list[i];
+            const Client_data *client = dht_friend_client(dht_get_friend(dht, k), i);
 
             if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
                 continue;
