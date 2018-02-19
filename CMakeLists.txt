@@ -399,16 +399,15 @@ set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the numb
 
 option(FORMAT_TEST "Require the format_test to be executed; fail cmake if it can't" OFF)
 
-if(APIDSL AND ASTYLE)
+if(ASTYLE)
   add_test(
     NAME format_test
     COMMAND ${toxcore_SOURCE_DIR}/other/astyle/format-source
       "${toxcore_SOURCE_DIR}"
-      "${APIDSL}"
       "${ASTYLE}")
   set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
 elseif(FORMAT_TEST)
-  message(FATAL_ERROR "format_test can not be run, because either APIDSL (${APIDSL}) or ASTYLE (${ASTYLE}) could not be found")
+  message(FATAL_ERROR "format_test can not be run, because ASTYLE (${ASTYLE}) could not be found")
 endif()
 
 function(auto_test target)

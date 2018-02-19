@@ -13,10 +13,7 @@ matrix:
     compiler: clang
     addons:
       apt: &apt-dependencies
-        sources:
-        - avsm
         packages:
-        - aspcud                # For Opam
         - libconfig-dev         # For tox-bootstrapd.
         - libcv-dev             # For av_test.
         - libhighgui-dev        # For av_test.
@@ -25,7 +22,6 @@ matrix:
         - libsndfile1-dev       # For av_test.
         - libgtest-dev          # For unit tests.
         - libvpx-dev            # For toxav.
-        - opam                  # For apidsl and Frama-C.
         - portaudio19-dev       # For av_test.
   - stage: "Stage 1"
     if: type IN (push, api, cron)

@@ -3,8 +3,8 @@
 set -e
 
 SOURCE_DIR="$1"
-APIDSL="$2"
-ASTYLE="$3"
+ASTYLE="$2"
+APIDSL="$3"
 
 # Go to the source root.
 if [ -z "$SOURCE_DIR" ]; then
