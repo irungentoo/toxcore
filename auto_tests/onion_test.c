@@ -160,9 +160,15 @@ static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, ui
 
 START_TEST(test_basic)
 {
+    uint32_t index[] = { 1, 2, 3 };
+    Logger *log1 = logger_new();
+    logger_callback_log(log1, (logger_cb *)print_debug_log, nullptr, &index[0]);
+    Logger *log2 = logger_new();
+    logger_callback_log(log2, (logger_cb *)print_debug_log, nullptr, &index[1]);
+
     IP ip = get_loopback();
-    Onion *onion1 = new_onion(new_DHT(nullptr, new_networking(nullptr, ip, 34567), true));
-    Onion *onion2 = new_onion(new_DHT(nullptr, new_networking(nullptr, ip, 34568), true));
+    Onion *onion1 = new_onion(new_DHT(log1, new_networking(log1, ip, 34567), true));
+    Onion *onion2 = new_onion(new_DHT(log2, new_networking(log2, ip, 34568), true));
     ck_assert_msg((onion1 != nullptr) && (onion2 != nullptr), "Onion failed initializing.");
     networking_registerhandler(onion2->net, 'I', &handle_test_1, onion2);
 
@@ -247,7 +253,10 @@ START_TEST(test_basic)
     }
 
     c_sleep(1000);
-    Onion *onion3 = new_onion(new_DHT(nullptr, new_networking(nullptr, ip, 34569), true));
+    Logger *log3 = logger_new();
+    logger_callback_log(log3, (logger_cb *)print_debug_log, nullptr, &index[2]);
+
+    Onion *onion3 = new_onion(new_DHT(log3, new_networking(log3, ip, 34569), true));
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(nonce);
@@ -264,17 +273,18 @@ START_TEST(test_basic)
         c_sleep(50);
     }
 
-    kill_onion_announce(onion1_a);
     kill_onion_announce(onion2_a);
+    kill_onion_announce(onion1_a);
 
     {
-        Onion *onion = onion1;
+        Onion *onion = onion3;
 
         Networking_Core *net = dht_get_net(onion->dht);
         DHT *dht = onion->dht;
         kill_onion(onion);
         kill_DHT(dht);
         kill_networking(net);
+        logger_kill(log3);
     }
 
     {
@@ -285,27 +295,30 @@ START_TEST(test_basic)
         kill_onion(onion);
         kill_DHT(dht);
         kill_networking(net);
+        logger_kill(log2);
     }
 
     {
-        Onion *onion = onion3;
+        Onion *onion = onion1;
 
         Networking_Core *net = dht_get_net(onion->dht);
         DHT *dht = onion->dht;
         kill_onion(onion);
         kill_DHT(dht);
         kill_networking(net);
+        logger_kill(log1);
     }
 }
 END_TEST
 
 typedef struct {
+    Logger *log;
     Onion *onion;
     Onion_Announce *onion_a;
     Onion_Client *onion_c;
 } Onions;
 
-static Onions *new_onions(uint16_t port)
+static Onions *new_onions(uint16_t port, uint32_t *index)
 {
     IP ip = get_loopback();
     ip.ip.v6.uint8[15] = 1;
@@ -315,17 +328,28 @@ static Onions *new_onions(uint16_t port)
         return nullptr;
     }
 
-    Networking_Core *net = new_networking(nullptr, ip, port);
+    on->log = logger_new();
 
-    if (!net) {
+    if (!on->log) {
         free(on);
         return nullptr;
     }
 
-    DHT *dht = new_DHT(nullptr, net, true);
+    logger_callback_log(on->log, (logger_cb *)print_debug_log, nullptr, index);
+
+    Networking_Core *net = new_networking(on->log, ip, port);
+
+    if (!net) {
+        logger_kill(on->log);
+        free(on);
+        return nullptr;
+    }
+
+    DHT *dht = new_DHT(on->log, net, true);
 
     if (!dht) {
         kill_networking(net);
+        logger_kill(on->log);
         free(on);
         return nullptr;
     }
@@ -335,6 +359,7 @@ static Onions *new_onions(uint16_t port)
     if (!on->onion) {
         kill_DHT(dht);
         kill_networking(net);
+        logger_kill(on->log);
         free(on);
         return nullptr;
     }
@@ -345,18 +370,20 @@ static Onions *new_onions(uint16_t port)
         kill_onion(on->onion);
         kill_DHT(dht);
         kill_networking(net);
+        logger_kill(on->log);
         free(on);
         return nullptr;
     }
 
     TCP_Proxy_Info inf = {{{0}}};
-    on->onion_c = new_onion_client(new_net_crypto(nullptr, dht, &inf));
+    on->onion_c = new_onion_client(new_net_crypto(on->log, dht, &inf));
 
     if (!on->onion_c) {
         kill_onion_announce(on->onion_a);
         kill_onion(on->onion);
         kill_DHT(dht);
         kill_networking(net);
+        logger_kill(on->log);
         free(on);
         return nullptr;
     }
@@ -382,6 +409,7 @@ static void kill_onions(Onions *on)
     kill_net_crypto(c);
     kill_DHT(dht);
     kill_networking(net);
+    logger_kill(on->log);
     free(on);
 }
 
@@ -445,10 +473,12 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
 START_TEST(test_announce)
 {
     uint32_t i, j;
+    uint32_t index[NUM_ONIONS];
     Onions *onions[NUM_ONIONS];
 
     for (i = 0; i < NUM_ONIONS; ++i) {
-        onions[i] = new_onions(i + 34655);
+        index[i] = i + 1;
+        onions[i] = new_onions(i + 34655, &index[i]);
         ck_assert_msg(onions[i] != nullptr, "Failed to create onions. %u", i);
     }
 
