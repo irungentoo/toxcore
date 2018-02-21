@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -ex
 
 SOURCE_DIR="$1"
 ASTYLE="$2"
@@ -47,12 +47,14 @@ if grep '<unresolved>' */*.h; then
   exit 1
 fi
 
-SOURCES=`find . \
-  "-(" -name "*.[ch]" -or -name "*.cpp" "-)" \
-  -and -not -name "*.api.h" \
-  -and -not -wholename "./super_donators/*" \
-  -and -not -wholename "./third_party/*" \
-  -and -not -wholename "./toxencryptsave/crypto_pwhash*"`
+FIND="find ."
+FIND="$FIND '(' -name '*.[ch]' -or -name '*.cpp' ')'"
+FIND="$FIND -and -not -name '*.api.h'"
+FIND="$FIND -and -not -wholename './super_donators/*'"
+FIND="$FIND -and -not -wholename './third_party/*'"
+FIND="$FIND -and -not -wholename './toxencryptsave/crypto_pwhash*'"
+
+SOURCES=`eval "$FIND"`
 
 $ASTYLE -n --options=other/astyle/astylerc $SOURCES
 
