@@ -232,22 +232,6 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/util.c
   toxcore/util.h)
 
-message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
-if(CMAKE_THREAD_LIBS_INIT)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${CMAKE_THREAD_LIBS_INIT})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-endif()
-
-if(RT_LIBRARIES)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${RT_LIBRARIES})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
-endif()
-
-if(WIN32)
-  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ws2_32 iphlpapi)
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
-endif()
-
 # LAYER 3: Distributed Hash Table
 # -------------------------------
 apidsl(toxcore/LAN_discovery.api.h)
@@ -355,6 +339,31 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxencryptsave/toxencryptsave.c
   toxencryptsave/toxencryptsave.h)
 set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxencryptsave/toxencryptsave.h^tox)
+
+################################################################################
+#
+# :: System dependencies
+#
+################################################################################
+
+# These need to come after other dependencies, since e.g. libvpx may depend on
+# pthread, but doesn't list it in VPX_LIBRARIES. We're adding it here, after
+# any potential libvpx linking.
+message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
+if(CMAKE_THREAD_LIBS_INIT)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${CMAKE_THREAD_LIBS_INIT})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+if(RT_LIBRARIES)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${RT_LIBRARIES})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
+endif()
+
+if(WIN32)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ws2_32 iphlpapi)
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
+endif()
 
 ################################################################################
 #
