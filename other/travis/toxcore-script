@@ -30,6 +30,7 @@ RUN $CMAKE                                      \
   -DCMAKE_INSTALL_PREFIX:PATH=$CURDIR/_install  \
   -DASAN=ON                                     \
   -DDEBUG=ON                                    \
+  -DMUST_BUILD_TOXAV=ON                         \
   -DSTRICT_ABI=ON                               \
   -DTEST_TIMEOUT_SECONDS=120                    \
   -DTRACE=ON                                    \
