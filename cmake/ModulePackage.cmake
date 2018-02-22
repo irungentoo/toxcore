@@ -39,18 +39,6 @@ function(add_module lib)
     add_library(${lib}_static STATIC ${ARGN})
     set_target_properties(${lib}_static PROPERTIES OUTPUT_NAME ${lib})
   endif()
-
-  # ${lib}_PKGCONFIG_LIBS is what's added to the Libs: line in ${lib}.pc. It
-  # needs to contain all the libraries a program using ${lib} should link against
-  # if it's statically linked. If it's dynamically linked, there is no need to
-  # explicitly link against all the dependencies, but it doesn't harm much(*)
-  # either.
-  #
-  # (*) It allows client code to use symbols from our dependencies without
-  #    explicitly linking against them.
-  set(${lib}_PKGCONFIG_LIBS PARENT_SCOPE)
-  # Requires: in pkg-config file.
-  set(${lib}_PKGCONFIG_REQUIRES PARENT_SCOPE)
 endfunction()
 
 function(install_module lib)

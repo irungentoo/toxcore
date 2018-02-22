@@ -215,6 +215,18 @@ endif()
 #
 ################################################################################
 
+# toxcore_PKGCONFIG_LIBS is what's added to the Libs: line in toxcore.pc. It
+# needs to contain all the libraries a program using toxcore should link against
+# if it's statically linked. If it's dynamically linked, there is no need to
+# explicitly link against all the dependencies, but it doesn't harm much(*)
+# either.
+#
+# (*) It allows client code to use symbols from our dependencies without
+#    explicitly linking against them.
+set(toxcore_PKGCONFIG_LIBS)
+# Requires: in pkg-config file.
+set(toxcore_PKGCONFIG_REQUIRES)
+
 # LAYER 1: Crypto core
 # --------------------
 apidsl(toxcore/crypto_core.api.h)
@@ -227,7 +239,7 @@ include(CheckFunctionExists)
 check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 check_function_exists(memset_s HAVE_MEMSET_S)
 set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${LIBSODIUM_LIBRARIES})
-set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} libsodium)
+set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 
 # LAYER 2: Basic networking
 # -------------------------
@@ -364,12 +376,12 @@ endif()
 
 if(RT_LIBRARIES)
   set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${RT_LIBRARIES})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lrt)
 endif()
 
 if(WIN32)
   set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ws2_32 iphlpapi)
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lws2_32 -liphlpapi)
 endif()
 
 ################################################################################
