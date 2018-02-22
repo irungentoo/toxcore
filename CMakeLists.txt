@@ -438,9 +438,22 @@ elseif(FORMAT_TEST)
   message(FATAL_ERROR "format_test can not be run, because ASTYLE (${ASTYLE}) could not be found")
 endif()
 
+if(ANDROID_CPU_FEATURES)
+  # We need to compile cpufeatures.c as many times as there are executables,
+  # because libvpx doesn't include it although it depends on it. We can't get
+  # the link ordering right in cmake, so we need to compile the cpufeatures
+  # library into every binary explicitly.
+  #
+  # The alternative is to #include the library in every main file, but I
+  # (@iphydf) felt that this solution was cleaner.
+  add_definitions(-DANDROID_CPU_FEATURES="${ANDROID_CPU_FEATURES}")
+  set(CPUFEATURES other/cpufeatures.c)
+endif()
+
 function(auto_test target)
   if(NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
-    add_executable(auto_${target}_test auto_tests/${target}_test.c)
+    add_executable(auto_${target}_test ${CPUFEATURES}
+      auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test toxcore)
     if(NOT ARGV1 STREQUAL "DONT_RUN")
       add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
@@ -451,15 +464,10 @@ endfunction()
 
 if(BUILD_TOXAV)
   add_definitions(-D__STDC_LIMIT_MACROS=1)
-  add_executable(auto_monolith_test
-    auto_tests/monolith_test.cpp
-    ${ANDROID_CPU_FEATURES})
+  add_executable(auto_monolith_test ${CPUFEATURES}
+    auto_tests/monolith_test.cpp)
   target_link_libraries(auto_monolith_test ${toxcore_LINK_MODULES})
   add_test(NAME monolith COMMAND ${CROSSCOMPILING_EMULATOR} auto_monolith_test)
-
-  if(ANDROID_CPU_FEATURES)
-    target_compile_definitions(auto_monolith_test PRIVATE -Dtypeof=__typeof__)
-  endif()
 endif()
 
 auto_test(TCP)
@@ -509,7 +517,7 @@ endif()
 
 option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
 if(DHT_BOOTSTRAP)
-  add_executable(DHT_bootstrap
+  add_executable(DHT_bootstrap ${CPUFEATURES}
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
   target_link_modules(DHT_bootstrap toxcore)
@@ -522,7 +530,7 @@ if(BOOTSTRAP_DAEMON AND WIN32)
 endif()
 if(BOOTSTRAP_DAEMON)
   if(LIBCONFIG_FOUND)
-    add_executable(tox-bootstrapd
+    add_executable(tox-bootstrapd ${CPUFEATURES}
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
       other/bootstrap_daemon/src/config.c
@@ -553,7 +561,8 @@ option(BUILD_AV_TEST "Build toxav test" ON)
 if(NOT WIN32
   AND BUILD_AV_TEST AND BUILD_TOXAV
   AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
-  add_executable(av_test testing/av_test.c)
+  add_executable(av_test ${CPUFEATURES}
+    testing/av_test.c)
   target_link_modules(av_test
     toxcore
     ${OPENCV_LIBRARIES}
@@ -566,8 +575,10 @@ if(NOT WIN32
   endif()
 endif()
 
-add_executable(DHT_test testing/DHT_test.c)
+add_executable(DHT_test ${CPUFEATURES}
+  testing/DHT_test.c)
 target_link_modules(DHT_test toxcore)
 
-add_executable(Messenger_test testing/Messenger_test.c)
+add_executable(Messenger_test ${CPUFEATURES}
+  testing/Messenger_test.c)
 target_link_modules(Messenger_test toxcore)
