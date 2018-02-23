@@ -37,7 +37,7 @@
 /* This cannot be bigger than 256 */
 #define MAX_CONCURRENT_FILE_PIPES 256
 
-#if MAX_CONCURRENT_FILE_PIPES > UINT8_MAX + 1
+#if !defined(__SPLINT__) && MAX_CONCURRENT_FILE_PIPES > UINT8_MAX + 1
 #error "uint8_t cannot represent all file transfer numbers"
 #endif
 
@@ -74,13 +74,13 @@ enum {
 #define PACKET_LOSSY_AV_RESERVED 8 /* Number of lossy packet types at start of range reserved for A/V. */
 
 typedef struct {
-    uint8_t ipv6enabled;
-    uint8_t udp_disabled;
+    bool ipv6enabled;
+    bool udp_disabled;
     TCP_Proxy_Info proxy_info;
     uint16_t port_range[2];
     uint16_t tcp_server_port;
 
-    uint8_t hole_punching_enabled;
+    bool hole_punching_enabled;
     bool local_discovery_enabled;
 
     logger_cb *log_callback;

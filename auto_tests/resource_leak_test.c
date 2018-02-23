@@ -5,11 +5,12 @@
 #include "helpers.h"
 
 // See man 2 sbrk.
-#if _BSD_SOURCE || _SVID_SOURCE || \
-  (_XOPEN_SOURCE >= 500 || \
-   _XOPEN_SOURCE && _XOPEN_SOURCE_EXTENDED) && \
-  !(_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600)
+#if defined(_BSD_SOURCE) || defined(_SVID_SOURCE) || \
+  defined(_XOPEN_SOURCE) && (_XOPEN_SOURCE >= 500 || defined(_XOPEN_SOURCE_EXTENDED)) && \
+  !(defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600)
 #define HAVE_SBRK 1
+#else
+#define HAVE_SBRK 0
 #endif
 
 #if HAVE_SBRK

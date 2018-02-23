@@ -83,7 +83,7 @@ static void test_friend_request(void)
     tox_kill(tox2);
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

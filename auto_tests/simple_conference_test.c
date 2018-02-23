@@ -47,11 +47,13 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
     fprintf(stderr, "\nhandle_conference_invite(#%d, %d, %d, uint8_t[%zd], _)\n", state->id, friend_number, type, length);
     fprintf(stderr, "tox%d joining conference\n", state->id);
 
-    TOX_ERR_CONFERENCE_JOIN err;
-    state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
-    assert(err == TOX_ERR_CONFERENCE_JOIN_OK);
-    fprintf(stderr, "tox%d Joined conference %d\n", state->id, state->conference);
-    state->joined = true;
+    {
+        TOX_ERR_CONFERENCE_JOIN err;
+        state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
+        assert(err == TOX_ERR_CONFERENCE_JOIN_OK);
+        fprintf(stderr, "tox%d Joined conference %d\n", state->id, state->conference);
+        state->joined = true;
+    }
 
     // We're tox2, so now we invite tox3.
     if (state->id == 2) {
@@ -101,7 +103,7 @@ static void handle_conference_namelist_change(Tox *tox, uint32_t conference_numb
     }
 }
 
-int main()
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

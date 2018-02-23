@@ -28,10 +28,8 @@
 #endif
 
 #if !USE_IPV6
-#  undef TOX_AF_INET6
-#  define TOX_AF_INET6 TOX_AF_INET
-#  define get_ip6_loopback get_ip4_loopback
-#  define IP6 IP4
+#undef TOX_AF_INET6
+#define TOX_AF_INET6 TOX_AF_INET
 #endif
 
 static inline IP get_loopback()
@@ -769,7 +767,7 @@ static Suite *TCP_suite(void)
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

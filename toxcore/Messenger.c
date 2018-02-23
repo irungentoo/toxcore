@@ -33,7 +33,6 @@
 
 #include <assert.h>
 
-static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata);
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
 
@@ -949,7 +948,7 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
     }
 }
 
-void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata)
+static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status, void *userdata)
 {
     check_friend_connectionstatus(m, friendnumber, status, userdata);
     m->friendlist[friendnumber].status = status;
@@ -1825,13 +1824,13 @@ static int m_handle_custom_lossy_packet(void *object, int friend_num, const uint
     return 1;
 }
 
-void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
+void custom_lossy_packet_registerhandler(Messenger *m, void (*lossy_packethandler)(Messenger *m,
         uint32_t friendnumber, const uint8_t *data, size_t len, void *object))
 {
-    m->lossy_packethandler = packet_handler_callback;
+    m->lossy_packethandler = lossy_packethandler;
 }
 
-int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
+int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*function)(Messenger *m,
                           uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object), void *object)
 {
     if (friend_not_valid(m, friendnumber)) {
@@ -1846,8 +1845,7 @@ int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int 
         return -1;
     }
 
-    m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_LOSSY_AV_RESERVED].function =
-        packet_handler_callback;
+    m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_LOSSY_AV_RESERVED].function = function;
     m->friendlist[friendnumber].lossy_rtp_packethandlers[byte % PACKET_LOSSY_AV_RESERVED].object = object;
     return 0;
 }
@@ -1907,10 +1905,10 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
     return 1;
 }
 
-void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
+void custom_lossless_packet_registerhandler(Messenger *m, void (*lossless_packethandler)(Messenger *m,
         uint32_t friendnumber, const uint8_t *data, size_t len, void *object))
 {
-    m->lossless_packethandler = packet_handler_callback;
+    m->lossless_packethandler = lossless_packethandler;
 }
 
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
@@ -2765,7 +2763,7 @@ struct SAVED_FRIEND {
     uint64_t last_seen_time;
 };
 
-static uint32_t friend_size()
+static uint32_t friend_size(void)
 {
     uint32_t data = 0;
     const struct SAVED_FRIEND *const temp = nullptr;

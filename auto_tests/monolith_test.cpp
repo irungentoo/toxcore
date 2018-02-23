@@ -8,8 +8,9 @@
 #include <net/if.h>
 #endif
 
+#ifdef __APPLE__
 #define _DARWIN_C_SOURCE
-#define _XOPEN_SOURCE 600
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -26,130 +27,162 @@
 
 namespace TCP_test
 {
+int main(void);
 #include "TCP_test.c"
 }
 namespace bootstrap_test
 {
+int main(void);
 #include "bootstrap_test.c"
 }
 namespace conference_test
 {
+int main(void);
 #include "conference_test.c"
 }
 namespace crypto_test
 {
+int main(void);
 #include "crypto_test.c"
 }
 namespace dht_test
 {
+int main(void);
 #include "dht_test.c"
 }
 namespace encryptsave_test
 {
+int main(void);
 #include "encryptsave_test.c"
 }
 namespace file_saving_test
 {
+int main(void);
 #include "file_saving_test.c"
 }
 namespace friend_request_test
 {
+int main(void);
 #include "friend_request_test.c"
 }
 namespace lan_discovery_test
 {
+int main(void);
 #include "lan_discovery_test.c"
 }
 namespace lossless_packet_test
 {
+int main(void);
 #include "lossless_packet_test.c"
 }
 namespace lossy_packet_test
 {
+int main(void);
 #include "lossy_packet_test.c"
 }
 namespace messenger_test
 {
+int main(void);
 #include "messenger_test.c"
 }
 namespace network_test
 {
+int main(void);
 #include "network_test.c"
 }
 namespace onion_test
 {
+int main(void);
 #include "onion_test.c"
 }
 namespace resource_leak_test
 {
+int main(void);
 #include "resource_leak_test.c"
 }
 namespace save_friend_test
 {
+int main(void);
 #include "save_friend_test.c"
 }
 namespace save_load_test
 {
+int main(void);
 #include "save_load_test.c"
 }
 namespace selfname_change_conference_test
 {
+int main(void);
 #include "selfname_change_conference_test.c"
 }
 namespace self_conference_title_change_test
 {
+int main(void);
 #include "self_conference_title_change_test.c"
 }
 namespace send_message_test
 {
+int main(void);
 #include "send_message_test.c"
 }
 namespace set_name_test
 {
+int main(void);
 #include "set_name_test.c"
 }
 namespace set_status_message_test
 {
+int main(void);
 #include "set_status_message_test.c"
 }
 namespace simple_conference_test
 {
+int main(void);
 #include "simple_conference_test.c"
 }
 namespace skeleton_test
 {
+int main(void);
 #include "skeleton_test.c"
 }
 namespace toxav_basic_test
 {
+int main(void);
 #include "toxav_basic_test.c"
 }
 namespace toxav_many_test
 {
+int main(void);
 #include "toxav_many_test.c"
 }
 namespace tox_many_tcp_test
 {
+int main(void);
 #include "tox_many_tcp_test.c"
 }
 namespace tox_many_test
 {
+int main(void);
 #include "tox_many_test.c"
 }
 namespace tox_one_test
 {
+int main(void);
 #include "tox_one_test.c"
 }
 namespace tox_strncasecmp_test
 {
+int main(void);
 #include "tox_strncasecmp_test.c"
 }
 namespace typing_test
 {
+int main(void);
 #include "typing_test.c"
 }
 namespace version_test
 {
+int main(void);
 #include "version_test.c"
 }
 

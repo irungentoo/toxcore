@@ -950,7 +950,7 @@ void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *u
     ToxAVCall *call = (ToxAVCall *)user_data;
     assert(call);
 
-    LOGGER_DEBUG(call->av->m->log, "Reported loss of %f%%", loss * 100);
+    LOGGER_DEBUG(call->av->m->log, "Reported loss of %f%%", (double)loss * 100);
 
     /* if less than 10% data loss we do nothing! */
     if (loss < 0.1f) {

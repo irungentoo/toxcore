@@ -130,7 +130,7 @@ loop_top:
     printf("test_many_clients succeeded, took %ld seconds\n", time(nullptr) - cur_time);
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

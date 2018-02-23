@@ -140,7 +140,7 @@ static void test_few_clients(void)
     tox_kill(tox3);
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

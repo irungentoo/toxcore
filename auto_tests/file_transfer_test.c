@@ -287,7 +287,11 @@ START_TEST(test_few_clients)
 
     printf("Starting file streaming transfer test.\n");
 
-    file_sending_done = file_accepted = file_size = sendf_ok = size_recv = 0;
+    file_sending_done = 0;
+    file_accepted = 0;
+    file_size = 0;
+    sendf_ok = 0;
+    size_recv = 0;
     file_recv = 0;
     tox_callback_file_recv_chunk(tox3, write_file);
     tox_callback_file_recv_control(tox2, file_print_control);
@@ -335,7 +339,11 @@ START_TEST(test_few_clients)
 
     printf("Starting file 0 transfer test.\n");
 
-    file_sending_done = file_accepted = file_size = sendf_ok = size_recv = 0;
+    file_sending_done = 0;
+    file_accepted = 0;
+    file_size = 0;
+    sendf_ok = 0;
+    size_recv = 0;
     file_recv = 0;
     tox_callback_file_recv_chunk(tox3, write_file);
     tox_callback_file_recv_control(tox2, file_print_control);
@@ -395,7 +403,7 @@ static Suite *tox_suite(void)
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
     srand((unsigned int) time(nullptr));

@@ -22,7 +22,7 @@ typedef enum {
 
 static const char *Comparison_Str[] = { "NEGATIVE", "ZERO", "POSITIVE" };
 
-void verify(const char *s1, const char *s2, size_t n, Comparison expected)
+static void verify(const char *s1, const char *s2, size_t n, Comparison expected)
 {
     int r = tox_strncasecmp(s1, s2, n);
     Comparison actual = r < 0 ? NEGATIVE : r == 0 ? ZERO : POSITIVE;
@@ -177,7 +177,7 @@ static Suite *tox_strncasecmp_suite(void)
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

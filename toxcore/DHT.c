@@ -615,8 +615,8 @@ static uint32_t index_of_node_pk(const Node_format *array, uint32_t size, const 
 static uint32_t index_of_client_ip_port(const Client_data *array, uint32_t size, const IP_Port *ip_port)
 {
     for (uint32_t i = 0; i < size; ++i) {
-        if (ip_port->ip.family == TOX_AF_INET  && ipport_equal(&array[i].assoc4.ip_port, ip_port) ||
-                ip_port->ip.family == TOX_AF_INET6 && ipport_equal(&array[i].assoc6.ip_port, ip_port)) {
+        if ((ip_port->ip.family == TOX_AF_INET && ipport_equal(&array[i].assoc4.ip_port, ip_port)) ||
+                (ip_port->ip.family == TOX_AF_INET6 && ipport_equal(&array[i].assoc6.ip_port, ip_port))) {
             return i;
         }
     }
@@ -1084,18 +1084,20 @@ static bool ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key, IP_P
         ret = true;
     }
 
-    unsigned int *const num = &dht->num_to_bootstrap;
-    const uint32_t index = index_of_node_pk(dht->to_bootstrap, *num, public_key);
-    const bool in_close_list = is_pk_in_close_list(dht, public_key, ip_port);
+    {
+        unsigned int *const num = &dht->num_to_bootstrap;
+        const uint32_t index = index_of_node_pk(dht->to_bootstrap, *num, public_key);
+        const bool in_close_list = is_pk_in_close_list(dht, public_key, ip_port);
 
-    if (ret && index == UINT32_MAX && !in_close_list) {
-        if (*num < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
-            memcpy(dht->to_bootstrap[*num].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-            dht->to_bootstrap[*num].ip_port = ip_port;
-            ++*num;
-        } else {
-            // TODO(irungentoo): ipv6 vs v4
-            add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
+        if (ret && index == UINT32_MAX && !in_close_list) {
+            if (*num < MAX_CLOSE_TO_BOOTSTRAP_NODES) {
+                memcpy(dht->to_bootstrap[*num].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
+                dht->to_bootstrap[*num].ip_port = ip_port;
+                ++*num;
+            } else {
+                // TODO(irungentoo): ipv6 vs v4
+                add_to_list(dht->to_bootstrap, MAX_CLOSE_TO_BOOTSTRAP_NODES, public_key, ip_port, dht->self_public_key);
+            }
         }
     }
 
@@ -1655,8 +1657,8 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
 
         IPPTsPng *assocs[ASSOC_COUNT] = { &client->assoc6, &client->assoc4 };
 
-        for (size_t i = 0; i < ASSOC_COUNT; i++) {
-            IPPTsPng *assoc = assocs[i];
+        for (size_t j = 0; j < ASSOC_COUNT; j++) {
+            IPPTsPng *assoc = assocs[j];
 
             if (!is_timeout(assoc->timestamp, KILL_NODE_TIMEOUT)) {
                 sort = 0;
@@ -1677,7 +1679,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
                 ++sort;
 
                 /* Timed out should be at beginning, if they are not, sort the list. */
-                if (sort > 1 && sort < (((i + 1) * 2) - 1)) {
+                if (sort > 1 && sort < (((j + 1) * 2) - 1)) {
                     sort_ok = true;
                 }
             }
@@ -2237,14 +2239,17 @@ static void do_NAT(DHT *dht)
 /*----------------------------------------------------------------------------------*/
 /*-----------------------END OF NAT PUNCHING FUNCTIONS------------------------------*/
 
+#define DHT_HARDENING 0
 #define HARDREQ_DATA_SIZE 384 /* Attempt to prevent amplification/other attacks*/
 
-#define CHECK_TYPE_ROUTE_REQ 0
-#define CHECK_TYPE_ROUTE_RES 1
-#define CHECK_TYPE_GETNODE_REQ 2
-#define CHECK_TYPE_GETNODE_RES 3
-#define CHECK_TYPE_TEST_REQ 4
-#define CHECK_TYPE_TEST_RES 5
+enum {
+    CHECK_TYPE_ROUTE_REQ = 0,
+    CHECK_TYPE_ROUTE_RES = 1,
+    CHECK_TYPE_GETNODE_REQ = 2,
+    CHECK_TYPE_GETNODE_RES = 3,
+    CHECK_TYPE_TEST_REQ = 4,
+    CHECK_TYPE_TEST_RES = 5,
+};
 
 #if DHT_HARDENING
 static int send_hardening_req(DHT *dht, Node_format *sendto, uint8_t type, uint8_t *contents, uint16_t length)
@@ -2350,7 +2355,6 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
 
 /* Interval in seconds between hardening checks */
 #define HARDENING_INTERVAL 120
-#define HARDEN_TIMEOUT 1200
 
 /* Handle a received hardening packet */
 static int handle_hardening(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
@@ -2429,6 +2433,8 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
 }
 
 #if DHT_HARDENING
+#define HARDEN_TIMEOUT 1200
+
 /* Return a random node from all the nodes we are connected to.
  * TODO(irungentoo): improve this function.
  */

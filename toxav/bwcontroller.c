@@ -33,7 +33,6 @@
 
 #define BWC_PACKET_ID 196
 #define BWC_SEND_INTERVAL_MS 950     /* 0.95s  */
-#define BWC_REFRESH_INTERVAL_MS 2000 /* 2.00s */
 #define BWC_AVG_PKT_COUNT 20
 #define BWC_AVG_LOSS_OVER_CYCLES_COUNT 30
 
@@ -137,8 +136,8 @@ void send_update(BWController *bwc)
 
         if (bwc->cycle.lost) {
             LOGGER_DEBUG(bwc->m->log, "%p Sent update rcv: %u lost: %u percent: %f %%",
-                         bwc, bwc->cycle.recv, bwc->cycle.lost,
-                         (((float) bwc->cycle.lost / (bwc->cycle.recv + bwc->cycle.lost)) * 100.0f));
+                         (void *)bwc, bwc->cycle.recv, bwc->cycle.lost,
+                         (((double) bwc->cycle.lost / (bwc->cycle.recv + bwc->cycle.lost)) * 100.0));
             uint8_t bwc_packet[sizeof(struct BWCMessage) + 1];
             struct BWCMessage *msg = (struct BWCMessage *)(bwc_packet + 1);
             bwc_packet[0] = BWC_PACKET_ID; // set packet ID
@@ -146,7 +145,7 @@ void send_update(BWController *bwc)
             msg->recv = net_htonl(bwc->cycle.recv);
 
             if (-1 == m_send_custom_lossy_packet(bwc->m, bwc->friend_number, bwc_packet, sizeof(bwc_packet))) {
-                LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %d)! std error: %s", sizeof(bwc_packet), strerror(errno));
+                LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %zu)! std error: %s", sizeof(bwc_packet), strerror(errno));
             }
         }
 
@@ -158,11 +157,11 @@ void send_update(BWController *bwc)
 
 static int on_update(BWController *bwc, const struct BWCMessage *msg)
 {
-    LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", bwc);
+    LOGGER_DEBUG(bwc->m->log, "%p Got update from peer", (void *)bwc);
 
     /* Peers sent update too soon */
     if (bwc->cycle.last_recv_timestamp + BWC_SEND_INTERVAL_MS > current_time_monotonic()) {
-        LOGGER_INFO(bwc->m->log, "%p Rejecting extra update", bwc);
+        LOGGER_INFO(bwc->m->log, "%p Rejecting extra update", (void *)bwc);
         return -1;
     }
 
@@ -173,7 +172,7 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
 
     if (lost && bwc->mcb) {
         LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u percentage: %f %%", recv, lost,
-                     (((float) lost / (recv + lost)) * 100.0f));
+                     (((double) lost / (recv + lost)) * 100.0));
         bwc->mcb(bwc, bwc->friend_number,
                  ((float) lost / (recv + lost)),
                  bwc->mcb_data);

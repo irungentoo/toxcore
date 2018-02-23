@@ -76,14 +76,13 @@
 #define VIDEO_CODEC_DECODER_MAX_WIDTH  800 // its a dummy value, because the struct needs a value there
 #define VIDEO_CODEC_DECODER_MAX_HEIGHT 600 // its a dummy value, because the struct needs a value there
 
-#define VPX_MAX_DIST_NORMAL 40
 #define VPX_MAX_DIST_START 40
 
 #define VPX_MAX_ENCODER_THREADS 4
 #define VPX_MAX_DECODER_THREADS 4
 #define VIDEO__VP8_DECODER_POST_PROCESSING_ENABLED 0
 
-void vc_init_encoder_cfg(Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t kf_max_dist)
+static void vc_init_encoder_cfg(Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t kf_max_dist)
 {
     vpx_codec_err_t rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, cfg, 0);
 
@@ -288,7 +287,7 @@ void vc_kill(VCSession *vc)
 
     rb_kill((RingBuffer *)vc->vbuf_raw);
     pthread_mutex_destroy(vc->queue_mutex);
-    LOGGER_DEBUG(vc->log, "Terminated video handler: %p", vc);
+    LOGGER_DEBUG(vc->log, "Terminated video handler: %p", (void *)vc);
     free(vc);
 }
 
@@ -417,7 +416,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
         /* Resolution is changed, must reinitialize encoder since libvpx v1.4 doesn't support
          * reconfiguring encoder to use resolutions greater than initially set.
          */
-        LOGGER_DEBUG(vc->log, "Have to reinitialize vpx encoder on session %p", vc);
+        LOGGER_DEBUG(vc->log, "Have to reinitialize vpx encoder on session %p", (void *)vc);
         vpx_codec_ctx_t new_c;
         vpx_codec_enc_cfg_t  cfg;
         vc_init_encoder_cfg(vc->log, &cfg, kf_max_dist);

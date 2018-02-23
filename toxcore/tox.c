@@ -82,7 +82,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 {
     Messenger_Options m_options = {0};
 
-    bool load_savedata_sk = 0, load_savedata_tox = 0;
+    bool load_savedata_sk = false, load_savedata_tox = false;
 
     if (options == nullptr) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
@@ -100,7 +100,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 return nullptr;
             }
 
-            load_savedata_sk = 1;
+            load_savedata_sk = true;
         } else if (tox_options_get_savedata_type(options) == TOX_SAVEDATA_TYPE_TOX_SAVE) {
             if (tox_options_get_savedata_length(options) < TOX_ENC_SAVE_MAGIC_LENGTH) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
@@ -112,7 +112,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 return nullptr;
             }
 
-            load_savedata_tox = 1;
+            load_savedata_tox = true;
         }
 
         m_options.ipv6enabled = tox_options_get_ipv6_enabled(options);
@@ -156,7 +156,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
                 m_options.proxy_info.ip_port.ip.family = TOX_AF_UNSPEC;
             }
 
-            if (!addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, nullptr)) {
+            if (addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, nullptr) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
                 // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
                 return nullptr;
@@ -457,7 +457,8 @@ void tox_self_set_status(Tox *tox, TOX_USER_STATUS status)
 TOX_USER_STATUS tox_self_get_status(const Tox *tox)
 {
     const Messenger *m = tox;
-    return (TOX_USER_STATUS)m_get_self_userstatus(m);
+    const uint8_t status = m_get_self_userstatus(m);
+    return (TOX_USER_STATUS)status;
 }
 
 static void set_friend_error(int32_t ret, TOX_ERR_FRIEND_ADD *error)

@@ -190,6 +190,7 @@ int main(int argc, char *argv[])
         FILE *file = fopen("Save.bak", "wb");
 
         if (file == nullptr) {
+            kill_messenger(m);
             return 1;
         }
 
@@ -198,12 +199,11 @@ int main(int argc, char *argv[])
         size_t write_result = fwrite(buffer, 1, messenger_size(m), file);
 
         if (write_result < messenger_size(m)) {
+            kill_messenger(m);
             return 1;
         }
 
         free(buffer);
         fclose(file);
     }
-
-    kill_messenger(m);
 }

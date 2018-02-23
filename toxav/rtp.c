@@ -694,7 +694,7 @@ void rtp_kill(RTPSession *session)
         return;
     }
 
-    LOGGER_DEBUG(session->m->log, "Terminated RTP session: %p", session);
+    LOGGER_DEBUG(session->m->log, "Terminated RTP session: %p", (void *)session);
     rtp_stop_receiving(session);
 
     LOGGER_DEBUG(session->m->log, "Terminated RTP session V3 work_buffer_list->next_free_entry: %d",
@@ -716,7 +716,7 @@ int rtp_allow_receiving(RTPSession *session)
         return -1;
     }
 
-    LOGGER_DEBUG(session->m->log, "Started receiving on session: %p", session);
+    LOGGER_DEBUG(session->m->log, "Started receiving on session: %p", (void *)session);
     return 0;
 }
 
@@ -728,7 +728,7 @@ int rtp_stop_receiving(RTPSession *session)
 
     m_callback_rtp_packet(session->m, session->friend_number, session->payload_type, nullptr, nullptr);
 
-    LOGGER_DEBUG(session->m->log, "Stopped receiving on session: %p", session);
+    LOGGER_DEBUG(session->m->log, "Stopped receiving on session: %p", (void *)session);
     return 0;
 }
 
@@ -742,12 +742,6 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
     if (!session) {
         LOGGER_ERROR(log, "No session!");
         return -1;
-    }
-
-    uint8_t is_video_payload = 0;
-
-    if (session->payload_type == rtp_TypeVideo) {
-        is_video_payload = 1;
     }
 
     struct RTPHeader header = {0};
@@ -805,7 +799,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
         memcpy(rdata + 1 + RTP_HEADER_SIZE, data, length);
 
         if (-1 == m_send_custom_lossy_packet(session->m, session->friend_number, rdata, SIZEOF_VLA(rdata))) {
-            LOGGER_WARNING(session->m->log, "RTP send failed (len: %d)! std error: %s", SIZEOF_VLA(rdata), strerror(errno));
+            LOGGER_WARNING(session->m->log, "RTP send failed (len: %zu)! std error: %s", SIZEOF_VLA(rdata), strerror(errno));
         }
     } else {
         /**

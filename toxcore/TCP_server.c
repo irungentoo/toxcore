@@ -98,8 +98,10 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server)
 
 /* This is needed to compile on Android below API 21
  */
+#ifdef TCP_SERVER_USE_EPOLL
 #ifndef EPOLLRDHUP
 #define EPOLLRDHUP 0x2000
+#endif
 #endif
 
 /* Set the size of the connection list to numfriends.

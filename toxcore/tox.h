@@ -191,19 +191,19 @@ uint32_t tox_version_patch(void);
  * features, but can't break the API.
  */
 #define TOX_VERSION_IS_API_COMPATIBLE(MAJOR, MINOR, PATCH)              \
-  (TOX_VERSION_MAJOR > 0 && TOX_VERSION_MAJOR == MAJOR) && (            \
+  ((TOX_VERSION_MAJOR > 0 && TOX_VERSION_MAJOR == MAJOR) && (           \
     /* 1.x.x, 2.x.x, etc. with matching major version. */               \
     TOX_VERSION_MINOR > MINOR ||                                        \
-    TOX_VERSION_MINOR == MINOR && TOX_VERSION_PATCH >= PATCH            \
-  ) || (TOX_VERSION_MAJOR == 0 && MAJOR == 0) && (                      \
+    (TOX_VERSION_MINOR == MINOR && TOX_VERSION_PATCH >= PATCH)          \
+  )) || ((TOX_VERSION_MAJOR == 0 && MAJOR == 0) && (                    \
     /* 0.x.x makes minor behave like major above. */                    \
-    (TOX_VERSION_MINOR > 0 && TOX_VERSION_MINOR == MINOR) && (          \
+    ((TOX_VERSION_MINOR > 0 && TOX_VERSION_MINOR == MINOR) && (         \
       TOX_VERSION_PATCH >= PATCH                                        \
-    ) || (TOX_VERSION_MINOR == 0 && MINOR == 0) && (                    \
+    )) || ((TOX_VERSION_MINOR == 0 && MINOR == 0) && (                  \
       /* 0.0.x and 0.0.y are only compatible if x == y. */              \
       TOX_VERSION_PATCH == PATCH                                        \
-    )                                                                   \
-  )
+    ))                                                                  \
+  ))
 
 /**
  * Return whether the compiled library version is compatible with the passed
