@@ -1,9 +1,153 @@
 
+
+## v0.2.0
+
+### Merged PRs:
+
+- [#821](https://github.com/TokTok/c-toxcore/pull/821) Remove deprecated conference namelist change callback.
+- [#820](https://github.com/TokTok/c-toxcore/pull/820) Fix auto_tests to stop using the deprecated conference API.
+- [#819](https://github.com/TokTok/c-toxcore/pull/819) Change default username to empty string
+- [#818](https://github.com/TokTok/c-toxcore/pull/818) Change README to talk about cmake instead of autoreconf.
+- [#817](https://github.com/TokTok/c-toxcore/pull/817) Fix warning on Mac OS X and FreeBSD.
+- [#815](https://github.com/TokTok/c-toxcore/pull/815) Some minor cleanups suggested by cppcheck.
+- [#814](https://github.com/TokTok/c-toxcore/pull/814) Fix memory leak of Logger instance on error paths.
+- [#813](https://github.com/TokTok/c-toxcore/pull/813) Minor cleanups: dead stores and avoiding complex macros.
+- [#808](https://github.com/TokTok/c-toxcore/pull/808) Fix a bunch of compiler warnings and remove suppressions.
+- [#807](https://github.com/TokTok/c-toxcore/pull/807) Link all tests to the android cpufeatures library if available.
+- [#806](https://github.com/TokTok/c-toxcore/pull/806) Fix toxcore.pc generation.
+- [#805](https://github.com/TokTok/c-toxcore/pull/805) Add an option that allows us to specify that we require toxav.
+- [#804](https://github.com/TokTok/c-toxcore/pull/804) Fix OSX tests: find(1) doesn't work like on Linux.
+- [#803](https://github.com/TokTok/c-toxcore/pull/803) Fix the windows build: pthread needs to be linked after vpx.
+- [#800](https://github.com/TokTok/c-toxcore/pull/800) Make group number in the toxav public API uint32_t
+- [#799](https://github.com/TokTok/c-toxcore/pull/799) Implement the "persistent conference" callback changes as new functions.
+- [#798](https://github.com/TokTok/c-toxcore/pull/798) Add deprecation notices to functions that will go away in v0.3.0.
+- [#796](https://github.com/TokTok/c-toxcore/pull/796) Make some sizeof tests linux-only.
+- [#794](https://github.com/TokTok/c-toxcore/pull/794) Remove apidsl from the build.
+- [#793](https://github.com/TokTok/c-toxcore/pull/793) Add a bazel test that ensures all our projects are GPL-3.0.
+- [#792](https://github.com/TokTok/c-toxcore/pull/792) Increase range of ports available to Toxes during tests
+- [#791](https://github.com/TokTok/c-toxcore/pull/791) Run all tests in parallel on Travis.
+- [#790](https://github.com/TokTok/c-toxcore/pull/790) Disable lan discovery in most tests.
+- [#789](https://github.com/TokTok/c-toxcore/pull/789) Remove tox_test from autotools build.
+- [#788](https://github.com/TokTok/c-toxcore/pull/788) Don't print trace level logging in tests.
+- [#787](https://github.com/TokTok/c-toxcore/pull/787) Split up tox_test into multiple smaller tests
+- [#783](https://github.com/TokTok/c-toxcore/pull/783) Send 0 as peer number in CHANGE_OCCURRED group event.
+- [#782](https://github.com/TokTok/c-toxcore/pull/782) Use `const` more in C code.
+- [#781](https://github.com/TokTok/c-toxcore/pull/781) Don't build all the small sub-libraries.
+- [#780](https://github.com/TokTok/c-toxcore/pull/780) Get rid of the only GNU extension we used.
+- [#779](https://github.com/TokTok/c-toxcore/pull/779) Remove leftover symmetric key from DHT struct.
+- [#778](https://github.com/TokTok/c-toxcore/pull/778) Add static asserts for all the struct sizes in toxcore.
+- [#776](https://github.com/TokTok/c-toxcore/pull/776) Optionally use newer cmake features.
+- [#774](https://github.com/TokTok/c-toxcore/pull/774) Improve gtest finding, support local checkout.
+- [#773](https://github.com/TokTok/c-toxcore/pull/773) Add gtest include directory to -I flags if found.
+- [#772](https://github.com/TokTok/c-toxcore/pull/772) Reject discovery packets coming from outside the "LAN".
+- [#771](https://github.com/TokTok/c-toxcore/pull/771) Adopt the "change occurred" API change from isotoxin-groupchat.
+- [#770](https://github.com/TokTok/c-toxcore/pull/770) Add MSVC compilation instructions
+- [#767](https://github.com/TokTok/c-toxcore/pull/767) Build toxcore with libsodium.dll instead of libsodium.lib.
+- [#766](https://github.com/TokTok/c-toxcore/pull/766) Remove libcheck from the dependencies.
+- [#764](https://github.com/TokTok/c-toxcore/pull/764) Fix LAN discovery on FreeBSD.
+- [#760](https://github.com/TokTok/c-toxcore/pull/760) Make cmake script more forgiving.
+- [#759](https://github.com/TokTok/c-toxcore/pull/759) Use more ubuntu packages; remove hstox for now.
+- [#757](https://github.com/TokTok/c-toxcore/pull/757) Improve stability of crypto_memcmp test.
+- [#756](https://github.com/TokTok/c-toxcore/pull/756) Format .cpp files with format-source.
+- [#755](https://github.com/TokTok/c-toxcore/pull/755) Add some unit tests for util.h.
+- [#754](https://github.com/TokTok/c-toxcore/pull/754) Move the tox_sync tool to the toxins repository.
+- [#753](https://github.com/TokTok/c-toxcore/pull/753) Move irc_syncbot to the toxins repository.
+- [#752](https://github.com/TokTok/c-toxcore/pull/752) Move tox_shell program to the toxins repository.
+- [#751](https://github.com/TokTok/c-toxcore/pull/751) Use the markdown GPLv3 license in the c-toxcore repo.
+- [#750](https://github.com/TokTok/c-toxcore/pull/750) Remove csrc from the RTPHeader struct.
+- [#748](https://github.com/TokTok/c-toxcore/pull/748) Revert "Add correction message type"
+- [#745](https://github.com/TokTok/c-toxcore/pull/745) Change the "capabilities" field to a "flags" field.
+- [#742](https://github.com/TokTok/c-toxcore/pull/742) Improve conference test stability.
+- [#741](https://github.com/TokTok/c-toxcore/pull/741) Add `-D__STDC_LIMIT_MACROS=1` for C++ code.
+- [#739](https://github.com/TokTok/c-toxcore/pull/739) Add RTP header fields for the full frame length and offset.
+- [#737](https://github.com/TokTok/c-toxcore/pull/737) Use nullptr as NULL pointer constant instead of NULL or 0.
+- [#736](https://github.com/TokTok/c-toxcore/pull/736) Avoid clashes with "build" directories on case-insensitive file systems.
+- [#734](https://github.com/TokTok/c-toxcore/pull/734) Make audio/video bit rates "properties"
+- [#733](https://github.com/TokTok/c-toxcore/pull/733) Fix link in README.md
+- [#730](https://github.com/TokTok/c-toxcore/pull/730) Fix out of bounds read in error case in messenger_test.
+- [#729](https://github.com/TokTok/c-toxcore/pull/729) Remove dead return statement.
+- [#728](https://github.com/TokTok/c-toxcore/pull/728) Disable the autotools build in PR builds.
+- [#727](https://github.com/TokTok/c-toxcore/pull/727) Rename some rtp header struct members to be clearer.
+- [#725](https://github.com/TokTok/c-toxcore/pull/725) Publish a single public BUILD target for c-toxcore.
+- [#723](https://github.com/TokTok/c-toxcore/pull/723) Use <stdlib.h> for alloca on FreeBSD.
+- [#722](https://github.com/TokTok/c-toxcore/pull/722) Use self-built portaudio instead of system-provided.
+- [#721](https://github.com/TokTok/c-toxcore/pull/721) Manually serialise RTPHeader struct instead of memcpy.
+- [#718](https://github.com/TokTok/c-toxcore/pull/718) Improve sending of large video frames in toxav.
+- [#716](https://github.com/TokTok/c-toxcore/pull/716) Add comment from #629 in ring_buffer.c.
+- [#714](https://github.com/TokTok/c-toxcore/pull/714) Make BUILD files more finely-grained.
+- [#713](https://github.com/TokTok/c-toxcore/pull/713) Add BUILD files for all the little tools in the repo.
+- [#711](https://github.com/TokTok/c-toxcore/pull/711) Make the monolith test a C++ binary.
+- [#710](https://github.com/TokTok/c-toxcore/pull/710) Don't allocate or dereference Tox_Options in tests.
+- [#709](https://github.com/TokTok/c-toxcore/pull/709) Remove nTox from the repo.
+- [#708](https://github.com/TokTok/c-toxcore/pull/708) Add testing/*.c (except av_test) to bazel build.
+- [#707](https://github.com/TokTok/c-toxcore/pull/707) Fix log message in simple_conference_test: invite -> message.
+- [#703](https://github.com/TokTok/c-toxcore/pull/703) Add a simple conference test with 3 friends.
+- [#701](https://github.com/TokTok/c-toxcore/pull/701) Add astyle to Circle CI build.
+- [#700](https://github.com/TokTok/c-toxcore/pull/700) Use more descriptive names in bwcontroller.
+- [#699](https://github.com/TokTok/c-toxcore/pull/699) Add some explanatory comments to the toxav audio code.
+- [#698](https://github.com/TokTok/c-toxcore/pull/698) Extract named constants from magic numbers in toxav/audio.c.
+- [#697](https://github.com/TokTok/c-toxcore/pull/697) Use C99 standard in bazel builds.
+- [#694](https://github.com/TokTok/c-toxcore/pull/694) Add bazel build scripts for c-toxcore.
+- [#693](https://github.com/TokTok/c-toxcore/pull/693) Make libcheck optional for windows builds.
+- [#691](https://github.com/TokTok/c-toxcore/pull/691) Don't install packages needlessly on Travis
+- [#690](https://github.com/TokTok/c-toxcore/pull/690) Run fewer Travis jobs during Pull Requests.
+- [#689](https://github.com/TokTok/c-toxcore/pull/689) Make Net_Crypto a module-private type.
+- [#688](https://github.com/TokTok/c-toxcore/pull/688) Make DHT a module-private type.
+- [#687](https://github.com/TokTok/c-toxcore/pull/687) Use apidsl to generate LAN_discovery.h.
+- [#686](https://github.com/TokTok/c-toxcore/pull/686) Remove hstox test for now.
+- [#685](https://github.com/TokTok/c-toxcore/pull/685) Add message type for correction
+- [#684](https://github.com/TokTok/c-toxcore/pull/684) Add random_u16 function and rename the others to match.
+- [#682](https://github.com/TokTok/c-toxcore/pull/682) Use larger arrays in crypto timing tests.
+- [#681](https://github.com/TokTok/c-toxcore/pull/681) Fix some memory or file descriptor leaks in test code.
+- [#680](https://github.com/TokTok/c-toxcore/pull/680) Filter out annoying log statements in unit tests.
+- [#679](https://github.com/TokTok/c-toxcore/pull/679) Use apidsl to generate ping.h.
+- [#678](https://github.com/TokTok/c-toxcore/pull/678) Sort monolith.h according to ls(1): uppercase first.
+- [#677](https://github.com/TokTok/c-toxcore/pull/677) Make pack/unpack_ip_port public DHT functions.
+- [#675](https://github.com/TokTok/c-toxcore/pull/675) Make Onion_Announce a module-private type.
+- [#674](https://github.com/TokTok/c-toxcore/pull/674) Make TCP_Client_Connection a module-private type.
+- [#673](https://github.com/TokTok/c-toxcore/pull/673) Move TCP_Secure_Connection from .h to .c file.
+- [#672](https://github.com/TokTok/c-toxcore/pull/672) Make Friend_Connections a module-private type.
+- [#670](https://github.com/TokTok/c-toxcore/pull/670) Make Friend_Requests a module-private type.
+- [#669](https://github.com/TokTok/c-toxcore/pull/669) Make Onion_Client a module-private type.
+- [#668](https://github.com/TokTok/c-toxcore/pull/668) Make Ping_Array a module-private type.
+- [#667](https://github.com/TokTok/c-toxcore/pull/667) pkg-config .pc files: added .private versions of Libs and Required
+- [#665](https://github.com/TokTok/c-toxcore/pull/665) Remove useless if statement
+- [#662](https://github.com/TokTok/c-toxcore/pull/662) Move Networking_Core struct into the .c file.
+- [#661](https://github.com/TokTok/c-toxcore/pull/661) Disable asan, since it seems to break on travis.
+- [#660](https://github.com/TokTok/c-toxcore/pull/660) Increase test retries to 10 (basically infinite).
+- [#659](https://github.com/TokTok/c-toxcore/pull/659) Fix formatting in some C files.
+- [#658](https://github.com/TokTok/c-toxcore/pull/658) Call freeaddrinfo on error paths in net_getipport.
+- [#657](https://github.com/TokTok/c-toxcore/pull/657) Zero-initialise stack-allocated objects in hstox driver.
+- [#656](https://github.com/TokTok/c-toxcore/pull/656) Fix file descriptor leak in hstox test.
+- [#652](https://github.com/TokTok/c-toxcore/pull/652) Add support for building the monolith test on android.
+- [#650](https://github.com/TokTok/c-toxcore/pull/650) Remove deprecated ToxDNS
+- [#648](https://github.com/TokTok/c-toxcore/pull/648) Make hstox compile on FreeBSD
+- [#624](https://github.com/TokTok/c-toxcore/pull/624) Update rpm spec and use variables in cmake instead of hardcoded paths
+- [#616](https://github.com/TokTok/c-toxcore/pull/616) Add projects link to Readme.
+- [#613](https://github.com/TokTok/c-toxcore/pull/613) Fix travis
+- [#605](https://github.com/TokTok/c-toxcore/pull/605) Fix OS X Travis.
+- [#598](https://github.com/TokTok/c-toxcore/pull/598) Fix typos in docs
+- [#578](https://github.com/TokTok/c-toxcore/pull/578) Split toxav_bit_rate_set() into two functions to hold the maximum bitrates libvpx supports
+- [#477](https://github.com/TokTok/c-toxcore/pull/477) Update install instructions to use CMake
+- [#465](https://github.com/TokTok/c-toxcore/pull/465) Add Alpine linux Dockerfile in addition to the existing Debian one
+- [#442](https://github.com/TokTok/c-toxcore/pull/442) Generate only one large library "libtoxcore".
+- [#334](https://github.com/TokTok/c-toxcore/pull/334) Change toxencryptsave API to never overwrite pass keys.
+
+### Closed issues:
+
+- [#704](https://github.com/TokTok/c-toxcore/issues/704) Add CORRECTION support to group chats
+- [#620](https://github.com/TokTok/c-toxcore/issues/620) Video bug: large video frames are not sent correctly
+- [#606](https://github.com/TokTok/c-toxcore/issues/606) groupId is int whereas friendId is uint32_t, reason?
+- [#572](https://github.com/TokTok/c-toxcore/issues/572) int32_t may be not large enough as a argument for video_bit_rate of vp8/9 codec
+- [#566](https://github.com/TokTok/c-toxcore/issues/566) LAYER #: modules for static linking - build issue
+- [#42](https://github.com/TokTok/c-toxcore/issues/42) Remove ToxDNS and related stuff from toxcore
+
 ## v0.1.11
 
 ### Merged PRs:
 
 - [#643](https://github.com/TokTok/c-toxcore/pull/643) Add .editorconfig
+- [#638](https://github.com/TokTok/c-toxcore/pull/638) Release v0.1.11
 - [#637](https://github.com/TokTok/c-toxcore/pull/637) Update tox-bootstrapd Dockerfile
 - [#635](https://github.com/TokTok/c-toxcore/pull/635) Separate FreeBSD Travis build in 2 stages
 - [#632](https://github.com/TokTok/c-toxcore/pull/632) Lift libconfig to v1.7.1
@@ -331,7 +475,7 @@
 
 ### Merged PRs:
 
-- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden against repo name changes
+- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden agains repo name changes
 - [#206](https://github.com/TokTok/c-toxcore/pull/206) Corrected libsodium tag
 - [#204](https://github.com/TokTok/c-toxcore/pull/204) Error if format_test can't be executed.
 - [#202](https://github.com/TokTok/c-toxcore/pull/202) Version Patch v0.0.2
