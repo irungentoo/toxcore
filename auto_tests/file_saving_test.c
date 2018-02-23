@@ -61,7 +61,7 @@ static void save_data_encrypted(void)
     }
 
     size_t written_value = fwrite(cipher, sizeof(*cipher), size, f);
-    printf("written written_value = %zu of %zu\n", written_value, size);
+    printf("written written_value = %u of %u\n", (unsigned)written_value, (unsigned)size);
 
     free(cipher);
     free(clear);
@@ -79,7 +79,7 @@ static void load_data_decrypted(void)
     uint8_t *cipher = (uint8_t *)malloc(size);
     uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
-    printf("read read_vavue = %zu of %ld\n", read_value, size);
+    printf("read read_vavue = %u of %ld\n", (unsigned)read_value, size);
 
     TOX_ERR_DECRYPTION derr;
 

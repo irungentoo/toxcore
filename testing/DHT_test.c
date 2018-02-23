@@ -54,22 +54,22 @@ static void print_client_id(const uint8_t *public_key)
     uint32_t j;
 
     for (j = 0; j < CRYPTO_PUBLIC_KEY_SIZE; j++) {
-        printf("%02hhX", public_key[j]);
+        printf("%02X", public_key[j]);
     }
 }
 
 static void print_hardening(const Hardening *h)
 {
     printf("Hardening:\n");
-    printf("routes_requests_ok: %hhu\n", h->routes_requests_ok);
+    printf("routes_requests_ok: %u\n", h->routes_requests_ok);
     printf("routes_requests_timestamp: %llu\n", (long long unsigned int)h->routes_requests_timestamp);
     printf("routes_requests_pingedid: ");
     print_client_id(h->routes_requests_pingedid);
-    printf("\nsend_nodes_ok: %hhu\n", h->send_nodes_ok);
+    printf("\nsend_nodes_ok: %u\n", h->send_nodes_ok);
     printf("send_nodes_timestamp: %llu\n", (long long unsigned int)h->send_nodes_timestamp);
     printf("send_nodes_pingedid: ");
     print_client_id(h->send_nodes_pingedid);
-    printf("\ntesting_requests: %hhu\n", h->testing_requests);
+    printf("\ntesting_requests: %u\n", h->testing_requests);
     printf("testing_timestamp: %llu\n", (long long unsigned int)h->testing_timestamp);
     printf("testing_pingedid: ");
     print_client_id(h->testing_pingedid);
@@ -162,7 +162,7 @@ static void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
             printf("0");
         }
 
-        printf("%hhX", data[i]);
+        printf("%X", data[i]);
     }
 
     printf("\n--------------------END-----------------------------\n\n\n");
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
             printf("0");
         }
 
-        printf("%hhX", self_public_key[i]);
+        printf("%X", self_public_key[i]);
     }
 
     char temp_id[128];

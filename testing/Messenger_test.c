@@ -55,7 +55,7 @@
 static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
                           void *userdata)
 {
-    printf("Message with length %zu received from %u: %s \n", length, friendnumber, string);
+    printf("Message with length %u received from %u: %s \n", (unsigned)length, friendnumber, string);
     m_send_message_generic(m, friendnumber, type, (const uint8_t *)"Test1", 6, 0);
 }
 
@@ -77,7 +77,7 @@ static void print_request(Messenger *m2, const uint8_t *public_key, const uint8_
         printf("%hhX", public_key[j]);
     }
 
-    printf("\nOf length: %zu with data: %s \n", length, data);
+    printf("\nOf length: %u with data: %s \n", (unsigned)length, data);
 
     if (length != sizeof("Install Gentoo")) {
         return;

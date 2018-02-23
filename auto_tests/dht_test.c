@@ -413,7 +413,7 @@ static void print_pk(uint8_t *public_key)
     uint32_t j;
 
     for (j = 0; j < CRYPTO_PUBLIC_KEY_SIZE; j++) {
-        printf("%02hhX", public_key[j]);
+        printf("%02X", public_key[j]);
     }
 
     printf("\n");

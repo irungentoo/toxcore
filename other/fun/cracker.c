@@ -24,7 +24,7 @@ void print_key(uint8_t *client_id)
     uint32_t j;
 
     for (j = 0; j < 32; j++) {
-        printf("%02hhX", client_id[j]);
+        printf("%02X", client_id[j]);
     }
 }
 

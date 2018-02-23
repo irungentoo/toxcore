@@ -81,7 +81,7 @@ void print_client_id(uint8_t *client_id, uint32_t length)
     uint32_t j;
 
     for (j = 0; j < length; j++) {
-        printf("%02hhX", client_id[j]);
+        printf("%02X", client_id[j]);
     }
 
     printf("\n");

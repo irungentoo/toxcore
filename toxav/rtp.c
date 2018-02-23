@@ -802,7 +802,8 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
         memcpy(rdata + 1 + RTP_HEADER_SIZE, data, length);
 
         if (-1 == m_send_custom_lossy_packet(session->m, session->friend_number, rdata, SIZEOF_VLA(rdata))) {
-            LOGGER_WARNING(session->m->log, "RTP send failed (len: %zu)! std error: %s", SIZEOF_VLA(rdata), strerror(errno));
+            LOGGER_WARNING(session->m->log, "RTP send failed (len: %u)! std error: %s",
+                           (unsigned)SIZEOF_VLA(rdata), strerror(errno));
         }
     } else {
         /**

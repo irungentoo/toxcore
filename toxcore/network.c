@@ -500,7 +500,7 @@ static int receivepacket(Logger *log, Socket sock, IP_Port *ip_port, uint8_t *da
     if (fail_or_len < 0) {
 
         if (fail_or_len < 0 && errno != EWOULDBLOCK) {
-            LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
+            LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s", errno, strerror(errno));
         }
 
         return -1; /* Nothing received. */
@@ -657,7 +657,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
 
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != TOX_AF_INET && ip.family != TOX_AF_INET6) {
-        LOGGER_ERROR(log, "Invalid address family: %u\n", ip.family);
+        LOGGER_ERROR(log, "Invalid address family: %u", ip.family);
         return nullptr;
     }
 
@@ -681,7 +681,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
 
     /* Check for socket error. */
     if (!sock_valid(temp->sock)) {
-        LOGGER_ERROR(log, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
+        LOGGER_ERROR(log, "Failed to get a socket?! %u, %s", errno, strerror(errno));
         free(temp);
 
         if (error) {

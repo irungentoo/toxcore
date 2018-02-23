@@ -145,7 +145,8 @@ void send_update(BWController *bwc)
             msg->recv = net_htonl(bwc->cycle.recv);
 
             if (-1 == m_send_custom_lossy_packet(bwc->m, bwc->friend_number, bwc_packet, sizeof(bwc_packet))) {
-                LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %zu)! std error: %s", sizeof(bwc_packet), strerror(errno));
+                LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %u)! std error: %s",
+                               (unsigned)sizeof(bwc_packet), strerror(errno));
             }
         }
 
