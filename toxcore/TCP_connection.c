@@ -72,13 +72,28 @@ const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c)
  *  return -1 if realloc fails.
  *  return 0 if it succeeds.
  */
-#define realloc_tox_array(array, element_type, num, temp_pointer) \
-    (num \
-        ? (temp_pointer = (element_type *)realloc( \
-              array, \
-              (num) * sizeof(element_type)), \
-          temp_pointer ? (array = temp_pointer, 0) : -1) \
-        : (free(array), array = nullptr, 0))
+#define MAKE_REALLOC(T)                                         \
+static int realloc_##T(T **array, size_t num)                   \
+{                                                               \
+    if (!num) {                                                 \
+        free(*array);                                           \
+        *array = nullptr;                                       \
+        return 0;                                               \
+    }                                                           \
+                                                                \
+    T *temp_pointer = (T *)realloc(*array, num * sizeof(T));    \
+                                                                \
+    if (!temp_pointer) {                                        \
+        return -1;                                              \
+    }                                                           \
+                                                                \
+    *array = temp_pointer;                                      \
+                                                                \
+    return 0;                                                   \
+}
+
+MAKE_REALLOC(TCP_Connection_to)
+MAKE_REALLOC(TCP_con)
 
 
 /* return 1 if the connections_number is not valid.
@@ -138,10 +153,7 @@ static int create_connection(TCP_Connections *tcp_c)
 
     int id = -1;
 
-    TCP_Connection_to *temp_pointer;
-
-    if (realloc_tox_array(tcp_c->connections, TCP_Connection_to, tcp_c->connections_length + 1,
-                          temp_pointer) == 0) {
+    if (realloc_TCP_Connection_to(&tcp_c->connections, tcp_c->connections_length + 1) == 0) {
         id = tcp_c->connections_length;
         ++tcp_c->connections_length;
         memset(&tcp_c->connections[id], 0, sizeof(TCP_Connection_to));
@@ -167,9 +179,7 @@ static int create_tcp_connection(TCP_Connections *tcp_c)
 
     int id = -1;
 
-    TCP_con *temp_pointer;
-
-    if (realloc_tox_array(tcp_c->tcp_connections, TCP_con, tcp_c->tcp_connections_length + 1, temp_pointer) == 0) {
+    if (realloc_TCP_con(&tcp_c->tcp_connections, tcp_c->tcp_connections_length + 1) == 0) {
         id = tcp_c->tcp_connections_length;
         ++tcp_c->tcp_connections_length;
         memset(&tcp_c->tcp_connections[id], 0, sizeof(TCP_con));
@@ -200,8 +210,7 @@ static int wipe_connection(TCP_Connections *tcp_c, int connections_number)
 
     if (tcp_c->connections_length != i) {
         tcp_c->connections_length = i;
-        TCP_Connection_to *temp_pointer;
-        realloc_tox_array(tcp_c->connections, TCP_Connection_to, tcp_c->connections_length, temp_pointer);
+        realloc_TCP_Connection_to(&tcp_c->connections, tcp_c->connections_length);
     }
 
     return 0;
@@ -229,8 +238,7 @@ static int wipe_tcp_connection(TCP_Connections *tcp_c, int tcp_connections_numbe
 
     if (tcp_c->tcp_connections_length != i) {
         tcp_c->tcp_connections_length = i;
-        TCP_con *temp_pointer;
-        realloc_tox_array(tcp_c->tcp_connections, TCP_con, tcp_c->tcp_connections_length, temp_pointer);
+        realloc_TCP_con(&tcp_c->tcp_connections, tcp_c->tcp_connections_length);
     }
 
     return 0;

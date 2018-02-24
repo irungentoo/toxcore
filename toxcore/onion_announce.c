@@ -390,7 +390,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     uint8_t ping_id2[ONION_PING_ID_SIZE];
     generate_ping_id(onion_a, unix_time() + PING_ID_TIMEOUT, packet_public_key, source, ping_id2);
 
-    int index = -1;
+    int index;
 
     uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE;
 

@@ -845,7 +845,7 @@ static int handle_announce_response(void *object, IP_Port source, const uint8_t 
     }
 
     VLA(uint8_t, plain, 1 + ONION_PING_ID_SIZE + len_nodes);
-    int len = -1;
+    int len;
 
     if (num == 0) {
         len = decrypt_data(public_key, nc_get_self_secret_key(onion_c->c),

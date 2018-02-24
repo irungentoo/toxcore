@@ -1484,16 +1484,18 @@ size_t net_pack_u16(uint8_t *bytes, uint16_t v)
 
 size_t net_pack_u32(uint8_t *bytes, uint32_t v)
 {
-    bytes += net_pack_u16(bytes, (v >> 16) & 0xffff);
-    bytes += net_pack_u16(bytes, v & 0xffff);
-    return sizeof(v);
+    uint8_t *p = bytes;
+    p += net_pack_u16(p, (v >> 16) & 0xffff);
+    p += net_pack_u16(p, v & 0xffff);
+    return p - bytes;
 }
 
 size_t net_pack_u64(uint8_t *bytes, uint64_t v)
 {
-    bytes += net_pack_u32(bytes, (v >> 32) & 0xffffffff);
-    bytes += net_pack_u32(bytes, v & 0xffffffff);
-    return sizeof(v);
+    uint8_t *p = bytes;
+    p += net_pack_u32(p, (v >> 32) & 0xffffffff);
+    p += net_pack_u32(p, v & 0xffffffff);
+    return p - bytes;
 }
 
 size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v)
@@ -1506,18 +1508,20 @@ size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v)
 
 size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v)
 {
+    const uint8_t *p = bytes;
     uint16_t lo, hi;
-    bytes += net_unpack_u16(bytes, &hi);
-    bytes += net_unpack_u16(bytes, &lo);
+    p += net_unpack_u16(p, &hi);
+    p += net_unpack_u16(p, &lo);
     *v = ((uint32_t)hi << 16) | lo;
-    return sizeof(*v);
+    return p - bytes;
 }
 
 size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v)
 {
+    const uint8_t *p = bytes;
     uint32_t lo, hi;
-    bytes += net_unpack_u32(bytes, &hi);
-    bytes += net_unpack_u32(bytes, &lo);
+    p += net_unpack_u32(p, &hi);
+    p += net_unpack_u32(p, &lo);
     *v = ((uint64_t)hi << 32) | lo;
-    return sizeof(*v);
+    return p - bytes;
 }
