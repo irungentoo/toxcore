@@ -1,5 +1,21 @@
-cmake_minimum_required(VERSION 2.8.6)
-cmake_policy(VERSION 2.8.6)
+################################################################################
+#
+# The main toxcore CMake build file.
+#
+# This file when processed with cmake produces:
+# - A number of small libraries (.a/.so/...) containing independent components
+#   of toxcore. E.g. the DHT has its own library, and the system/network
+#   abstractions are in their own library as well. These libraries are not
+#   installed on `make install`. The toxav, and toxencryptsave libraries are
+#   also not installed.
+# - A number of small programs, statically linked if possible.
+# - One big library containing all of the toxcore, toxav, and toxencryptsave
+#   code.
+#
+################################################################################
+
+cmake_minimum_required(VERSION 2.8.12)
+cmake_policy(VERSION 2.8.12)
 project(toxcore)
 
 set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
@@ -13,8 +29,8 @@ set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 # This version is for the entire project. All libraries (core, av, ...) move in
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
-set(PROJECT_VERSION_MINOR "1")
-set(PROJECT_VERSION_PATCH "10")
+set(PROJECT_VERSION_MINOR "2")
+set(PROJECT_VERSION_PATCH "0")
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 # set .so library version / following libtool scheme
@@ -30,7 +46,6 @@ math(EXPR SOVERSION_MAJOR ${SOVERSION_CURRENT}-${SOVERSION_AGE})
 set(SOVERSION "${SOVERSION_MAJOR}.${SOVERSION_AGE}.${SOVERSION_REVISION}")
 message("SOVERSION: ${SOVERSION}")
 
-
 ################################################################################
 #
 # :: Dependencies and configuration
@@ -39,22 +54,50 @@ message("SOVERSION: ${SOVERSION}")
 
 include(AddCompilerFlag)
 include(ApiDsl)
-include(CheckCCompilerFlag)
-include(CheckCXXCompilerFlag)
-include(MacRpath)
+include(ModulePackage)
 include(StrictAbi)
+include(GNUInstallDirs)
+
+if(APPLE)
+  include(MacRpath)
+endif()
 
 enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
 
-if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  # Set standard version for compiler.
+if(${CMAKE_VERSION} VERSION_LESS "3.1.0")
   add_cflag("-std=c99")
   add_cxxflag("-std=c++11")
+else()
+  # Set standard version for compiler.
+  set(CMAKE_C_STANDARD 99)
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_C_EXTENSIONS OFF)
+  set(CMAKE_CXX_EXTENSIONS OFF)
 
+  message(STATUS "Supported C compiler features = ${CMAKE_C_COMPILE_FEATURES}")
+  message(STATUS "Supported C++ compiler features = ${CMAKE_CXX_COMPILE_FEATURES}")
+endif()
+
+if(NOT MSVC)
   # Warn on non-ISO C.
   add_cflag("-pedantic")
+
+  option(ERROR_ON_WARNING "Make compilation error on a warning" OFF)
+  if(ERROR_ON_WARNING)
+    add_flag("-Werror")
+  endif()
+
+  option(DEBUG "Enable assertions and other debugging facilities" OFF)
+  if(DEBUG)
+    set(MIN_LOGGER_LEVEL DEBUG)
+    add_cflag("-g3")
+    if(MINGW)
+      # Allows wine to display source code file names and line numbers on crash in its backtrace
+      add_flag("-gdwarf-2")
+    endif()
+  endif()
 
   option(WARNINGS "Enable additional compiler warnings" ON)
   if(WARNINGS)
@@ -73,12 +116,13 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_flag("-Wno-format-nonliteral")
     add_flag("-Wno-missing-field-initializers")
     add_flag("-Wno-missing-prototypes")
+    add_flag("-Wno-packed")
     add_flag("-Wno-padded")
     add_flag("-Wno-parentheses")
+    add_flag("-Wno-reserved-id-macro")
     add_flag("-Wno-return-type")
     add_flag("-Wno-sign-compare")
     add_flag("-Wno-sign-conversion")
-    add_flag("-Wno-tautological-constant-out-of-range-compare")
     # Our use of mutexes results in a false positive, see 1bbe446
     add_flag("-Wno-thread-safety-analysis")
     add_flag("-Wno-type-limits")
@@ -94,7 +138,6 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_cflag("-Wno-double-promotion")
     add_cflag("-Wno-gnu-zero-variadic-macro-arguments")
     add_cflag("-Wno-packed")
-    add_cflag("-Wno-reserved-id-macro")
     add_cflag("-Wno-shadow")
     add_cflag("-Wno-shorten-64-to-32")
     add_cflag("-Wno-unreachable-code-return")
@@ -102,28 +145,19 @@ if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_cflag("-Wno-used-but-marked-unused")
 
     # Disable specific warning flags for C++.
-    add_cxxflag("-Wno-c++11-compat")
-    add_cxxflag("-Wno-c++11-extensions")
-    add_cxxflag("-Wno-c++11-narrowing")
+    add_cxxflag("-Wno-c++98-compat")
+    add_cxxflag("-Wno-c++98-compat-pedantic")
     add_cxxflag("-Wno-c99-extensions")
+    add_cxxflag("-Wno-double-promotion")
     add_cxxflag("-Wno-narrowing")
     add_cxxflag("-Wno-old-style-cast")
+    add_cxxflag("-Wno-shadow")
+    add_cxxflag("-Wno-used-but-marked-unused")
     add_cxxflag("-Wno-variadic-macros")
     add_cxxflag("-Wno-vla-extension")
-  endif()
 
-  option(ERROR_ON_WARNING "Make compilation error on a warning" OFF)
-  if(ERROR_ON_WARNING)
-    # Set error-on-warn for C compilation. C++ compilation can't use this because
-    # treating 'c' input as 'c++' when in C++ mode is deprecated in clang and
-    # there is no way to turn off that warning.
-    add_cflag("-Werror")
-  endif()
-
-  option(DEBUG "Enable assertions and other debugging facilities" OFF)
-  if(DEBUG)
-    set(MIN_LOGGER_LEVEL DEBUG)
-    add_cflag("-g3")
+    # Downgrade to warning so we still see it.
+    add_flag("-Wno-error=unused-variable")
   endif()
 endif()
 
@@ -148,16 +182,30 @@ else()
   add_dllflag("-Wl,-z,defs")
 endif()
 
+option(USE_IPV6 "Use IPv6 in tests" ON)
+if(NOT USE_IPV6)
+  add_definitions(-DUSE_IPV6=0)
+endif()
+
 option(BUILD_TOXAV "Whether to build the tox AV library" ON)
+option(MUST_BUILD_TOXAV "Fail the build if toxav cannot be built" OFF)
 
 include(Dependencies)
 
+if(MUST_BUILD_TOXAV)
+  set(NO_TOXAV_ERROR_TYPE SEND_ERROR)
+else()
+  set(NO_TOXAV_ERROR_TYPE WARNING)
+endif()
+
 if(BUILD_TOXAV)
   if(NOT OPUS_FOUND)
-    message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
+    message(${NO_TOXAV_ERROR_TYPE} "Option BUILD_TOXAV is enabled but required library OPUS was not found.")
+    set(BUILD_TOXAV OFF)
   endif()
   if(NOT VPX_FOUND)
-    message(SEND_ERROR "Option BUILD_TOXAV is enabled but required library VPX was not found.")
+    message(${NO_TOXAV_ERROR_TYPE} "Option BUILD_TOXAV is enabled but required library VPX was not found.")
+    set(BUILD_TOXAV OFF)
   endif()
 endif()
 
@@ -176,11 +224,13 @@ endif()
 # (*) It allows client code to use symbols from our dependencies without
 #    explicitly linking against them.
 set(toxcore_PKGCONFIG_LIBS)
+# Requires: in pkg-config file.
+set(toxcore_PKGCONFIG_REQUIRES)
 
 # LAYER 1: Crypto core
 # --------------------
 apidsl(toxcore/crypto_core.api.h)
-add_module(toxcrypto
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/ccompat.h
   toxcore/crypto_core.c
   toxcore/crypto_core.h
@@ -188,37 +238,25 @@ add_module(toxcrypto
 include(CheckFunctionExists)
 check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
 check_function_exists(memset_s HAVE_MEMSET_S)
-target_link_modules(toxcrypto ${LIBSODIUM_LIBRARIES})
+set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${LIBSODIUM_LIBRARIES})
+set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 
 # LAYER 2: Basic networking
 # -------------------------
-add_module(toxnetwork
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/logger.c
   toxcore/logger.h
   toxcore/network.c
   toxcore/network.h
   toxcore/util.c
   toxcore/util.h)
-target_link_modules(toxnetwork toxcrypto)
-
-if(CMAKE_THREAD_LIBS_INIT)
-  target_link_modules(toxnetwork ${CMAKE_THREAD_LIBS_INIT})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-endif()
-
-if(RT_LIBRARIES)
-  target_link_modules(toxnetwork ${RT_LIBRARIES})
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lrt")
-endif()
-
-if(WIN32)
-  target_link_modules(toxnetwork ws2_32 iphlpapi)
-  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} "-lws2_32 -liphlpapi")
-endif()
 
 # LAYER 3: Distributed Hash Table
 # -------------------------------
-add_module(toxdht
+apidsl(toxcore/LAN_discovery.api.h)
+apidsl(toxcore/ping.api.h)
+apidsl(toxcore/ping_array.api.h)
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/DHT.c
   toxcore/DHT.h
   toxcore/LAN_discovery.c
@@ -227,11 +265,10 @@ add_module(toxdht
   toxcore/ping.h
   toxcore/ping_array.c
   toxcore/ping_array.h)
-target_link_modules(toxdht toxnetwork)
 
 # LAYER 4: Onion routing, TCP connections, crypto connections
 # -----------------------------------------------------------
-add_module(toxnetcrypto
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/TCP_client.c
   toxcore/TCP_client.h
   toxcore/TCP_connection.c
@@ -248,39 +285,35 @@ add_module(toxnetcrypto
   toxcore/onion_announce.h
   toxcore/onion_client.c
   toxcore/onion_client.h)
-target_link_modules(toxnetcrypto toxdht)
 
 # LAYER 5: Friend requests and connections
 # ----------------------------------------
-add_module(toxfriends
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/friend_connection.c
   toxcore/friend_connection.h
   toxcore/friend_requests.c
   toxcore/friend_requests.h)
-target_link_modules(toxfriends toxnetcrypto)
 
 # LAYER 6: Tox messenger
 # ----------------------
-add_module(toxmessenger
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/Messenger.c
   toxcore/Messenger.h)
-target_link_modules(toxmessenger toxfriends)
 
 # LAYER 7: Group chats
 # --------------------
-add_module(toxgroup
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/group.c
   toxcore/group.h)
-target_link_modules(toxgroup toxmessenger)
 
 # LAYER 8: Public API
 # -------------------
 apidsl(toxcore/tox.api.h)
-add_module(toxcore
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/tox_api.c
   toxcore/tox.c
   toxcore/tox.h)
-target_link_modules(toxcore toxgroup)
+set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox)
 
 ################################################################################
 #
@@ -290,7 +323,7 @@ target_link_modules(toxcore toxgroup)
 
 if(BUILD_TOXAV)
   apidsl(toxav/toxav.api.h)
-  add_module(toxav
+  set(toxcore_SOURCES ${toxcore_SOURCES}
     toxav/audio.c
     toxav/audio.h
     toxav/bwcontroller.c
@@ -308,62 +341,85 @@ if(BUILD_TOXAV)
     toxav/toxav_old.c
     toxav/video.c
     toxav/video.h)
-  target_link_modules(toxav toxcore ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${OPUS_LIBRARIES} ${VPX_LIBRARIES})
+  set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} opus vpx)
+
+  set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxav/toxav.h^toxav)
 endif()
 
 ################################################################################
 #
-# :: ToxDNS and block encryption libraries
+# :: Block encryption libraries
 #
 ################################################################################
-
-add_module(toxdns
-  toxdns/toxdns.c)
-target_link_modules(toxdns toxcore)
 
 apidsl(toxencryptsave/toxencryptsave.api.h)
-add_module(toxencryptsave
+set(toxcore_SOURCES ${toxcore_SOURCES}
   toxencryptsave/toxencryptsave.c
   toxencryptsave/toxencryptsave.h)
-target_link_modules(toxencryptsave toxcore)
+set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxencryptsave/toxencryptsave.h^tox)
 
 ################################################################################
 #
-# :: Tox specification tests
+# :: System dependencies
 #
 ################################################################################
 
-find_program(SPECTEST NAMES tox-spectest)
-
-if(NOT SPECTEST)
-  find_program(STACK NAMES stack)
-  if(STACK)
-    set(SPECTEST
-      ${STACK} --stack-yaml ${toxcore_SOURCE_DIR}/../stack.yaml exec --
-      tox-spectest)
-  endif()
+# These need to come after other dependencies, since e.g. libvpx may depend on
+# pthread, but doesn't list it in VPX_LIBRARIES. We're adding it here, after
+# any potential libvpx linking.
+message("CMAKE_THREAD_LIBS_INIT: ${CMAKE_THREAD_LIBS_INIT}")
+if(CMAKE_THREAD_LIBS_INIT)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${CMAKE_THREAD_LIBS_INIT})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
-if(MSGPACK_FOUND)
-  add_c_executable(toxcore-sut
-    testing/hstox/binary_decode.c
-    testing/hstox/binary_encode.c
-    testing/hstox/driver.c
-    testing/hstox/methods.c
-    testing/hstox/packet_kinds.c
-    testing/hstox/test_main.c
-    testing/hstox/util.c)
-  target_link_modules(toxcore-sut
-    toxcore
-    ${MSGPACK_LIBRARIES})
-  if(SPECTEST)
-    add_test(NAME spectest COMMAND ${SPECTEST} $<TARGET_FILE:toxcore-sut>)
-  endif()
+if(RT_LIBRARIES)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${RT_LIBRARIES})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lrt)
+endif()
+
+if(WIN32)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ws2_32 iphlpapi)
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lws2_32 -liphlpapi)
 endif()
 
 ################################################################################
 #
-# :: Automated regression tests
+# :: All layers together in one library for ease of use
+#
+################################################################################
+
+# Create combined library from all the sources.
+add_module(toxcore ${toxcore_SOURCES})
+
+# Link it to all dependencies.
+target_link_modules(toxcore ${toxcore_LINK_MODULES})
+
+# Make version script (on systems that support it) to limit symbol visibility.
+make_version_script(toxcore ${toxcore_API_HEADERS})
+
+# Generate pkg-config file, install library to "${CMAKE_INSTALL_LIBDIR}" and install headers to
+# "${CMAKE_INSTALL_INCLUDEDIR}/tox".
+install_module(toxcore DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tox)
+
+################################################################################
+#
+# :: Unit tests: no networking, just pure function calls.
+#
+################################################################################
+
+include(CompileGTest)
+
+# The actual unit tests follow.
+#
+unit_test(toxav rtp)
+unit_test(toxcore crypto_core)
+unit_test(toxcore util)
+
+################################################################################
+#
+# :: Automated regression tests: create a tox network and run integration tests
 #
 ################################################################################
 
@@ -371,61 +427,77 @@ set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the numb
 
 option(FORMAT_TEST "Require the format_test to be executed; fail cmake if it can't" OFF)
 
-if(APIDSL AND ASTYLE)
+if(ASTYLE)
   add_test(
     NAME format_test
     COMMAND ${toxcore_SOURCE_DIR}/other/astyle/format-source
       "${toxcore_SOURCE_DIR}"
-      "${APIDSL}"
       "${ASTYLE}")
   set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
 elseif(FORMAT_TEST)
-  message(FATAL_ERROR "format_test can not be run, because either APIDSL (${APIDSL}) or ASTYLE (${ASTYLE}) could not be found")
+  message(FATAL_ERROR "format_test can not be run, because ASTYLE (${ASTYLE}) could not be found")
+endif()
+
+if(ANDROID_CPU_FEATURES)
+  # We need to compile cpufeatures.c as many times as there are executables,
+  # because libvpx doesn't include it although it depends on it. We can't get
+  # the link ordering right in cmake, so we need to compile the cpufeatures
+  # library into every binary explicitly.
+  #
+  # The alternative is to #include the library in every main file, but I
+  # (@iphydf) felt that this solution was cleaner.
+  add_definitions(-DANDROID_CPU_FEATURES="${ANDROID_CPU_FEATURES}")
+  set(CPUFEATURES other/cpufeatures.c)
 endif()
 
 function(auto_test target)
-  if(CHECK_FOUND AND NOT ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
-    add_c_executable(auto_${target}_test auto_tests/${target}_test.c)
-    target_link_modules(auto_${target}_test
-      toxcore
-      toxencryptsave
-      ${CHECK_LIBRARIES})
-    if(BUILD_TOXAV)
-      target_link_modules(auto_${target}_test toxav)
-    endif()
+  if(NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
+    add_executable(auto_${target}_test ${CPUFEATURES}
+      auto_tests/${target}_test.c)
+    target_link_modules(auto_${target}_test toxcore)
     if(NOT ARGV1 STREQUAL "DONT_RUN")
-      add_test(NAME ${target} COMMAND auto_${target}_test)
+      add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
       set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
     endif()
   endif()
 endfunction()
 
 if(BUILD_TOXAV)
-  add_c_executable(auto_monolith_test auto_tests/monolith_test.c)
-  target_link_modules(auto_monolith_test
-    ${LIBSODIUM_LIBRARIES}
-    ${OPUS_LIBRARIES}
-    ${VPX_LIBRARIES}
-    ${toxcore_PKGCONFIG_LIBS})
-  add_test(NAME monolith COMMAND auto_monolith_test)
+  add_definitions(-D__STDC_LIMIT_MACROS=1)
+  add_executable(auto_monolith_test ${CPUFEATURES}
+    auto_tests/monolith_test.cpp)
+  target_link_libraries(auto_monolith_test ${toxcore_LINK_MODULES})
+  add_test(NAME monolith COMMAND ${CROSSCOMPILING_EMULATOR} auto_monolith_test)
 endif()
 
 auto_test(TCP)
+auto_test(bootstrap)
 auto_test(conference)
 auto_test(crypto                        MSVC_DONT_BUILD)
 auto_test(dht                           MSVC_DONT_BUILD)
 auto_test(encryptsave)
+auto_test(file_transfer)
+auto_test(friend_request)
+auto_test(lan_discovery)
+auto_test(lossless_packet)
+auto_test(lossy_packet)
 auto_test(messenger                     MSVC_DONT_BUILD)
 auto_test(network)
 auto_test(onion)
 auto_test(resource_leak)
 auto_test(save_friend)
+auto_test(save_load)
+auto_test(send_message)
+auto_test(set_name)
+auto_test(set_status_message)
+auto_test(simple_conference)
 auto_test(skeleton)
-auto_test(tox)
+auto_test(tcp_relay)
 auto_test(tox_many)
 auto_test(tox_many_tcp)
 auto_test(tox_one)
 auto_test(tox_strncasecmp)
+auto_test(typing)
 auto_test(version)
 # TODO(iphydf): These tests are broken. The code needs to be fixed, as the
 # tests themselves are correct.
@@ -445,19 +517,20 @@ endif()
 
 option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
 if(DHT_BOOTSTRAP)
-  add_c_executable(DHT_bootstrap
+  add_executable(DHT_bootstrap ${CPUFEATURES}
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
-  target_link_modules(DHT_bootstrap toxnetcrypto)
+  target_link_modules(DHT_bootstrap toxcore)
 endif()
 
 option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
+if(BOOTSTRAP_DAEMON AND WIN32)
+  message(WARNING "Building tox-bootstrapd for Windows is not supported")
+  set(BOOTSTRAP_DAEMON OFF)
+endif()
 if(BOOTSTRAP_DAEMON)
-  if(WIN32)
-    message(FATAL_ERROR "Building tox-bootstrapd for Windows is not supported")
-  endif()
   if(LIBCONFIG_FOUND)
-    add_c_executable(tox-bootstrapd
+    add_executable(tox-bootstrapd ${CPUFEATURES}
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
       other/bootstrap_daemon/src/config.c
@@ -473,7 +546,7 @@ if(BOOTSTRAP_DAEMON)
       other/bootstrap_daemon/src/tox-bootstrapd.c
       other/bootstrap_node_packets.c
       other/bootstrap_node_packets.h)
-    target_link_modules(tox-bootstrapd toxnetcrypto ${LIBCONFIG_LIBRARIES})
+    target_link_modules(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
     install(TARGETS tox-bootstrapd RUNTIME DESTINATION bin)
   endif()
 endif()
@@ -486,11 +559,12 @@ endif()
 
 option(BUILD_AV_TEST "Build toxav test" ON)
 if(NOT WIN32
-   AND BUILD_AV_TEST AND BUILD_TOXAV
-   AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
-  add_c_executable(av_test testing/av_test.c)
+  AND BUILD_AV_TEST AND BUILD_TOXAV
+  AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
+  add_executable(av_test ${CPUFEATURES}
+    testing/av_test.c)
   target_link_modules(av_test
-    toxav
+    toxcore
     ${OPENCV_LIBRARIES}
     ${PORTAUDIO_LIBRARIES}
     ${SNDFILE_LIBRARIES})
@@ -501,107 +575,10 @@ if(NOT WIN32
   endif()
 endif()
 
-option(BUILD_NTOX "Build nTox client" OFF)
-if(BUILD_NTOX AND NOT WIN32)
-  add_c_executable(nTox testing/nTox.c)
-  target_link_modules(nTox toxcore ${NCURSES_LIBRARIES})
-endif()
+add_executable(DHT_test ${CPUFEATURES}
+  testing/DHT_test.c)
+target_link_modules(DHT_test toxcore)
 
-add_c_executable(DHT_test testing/DHT_test.c)
-target_link_modules(DHT_test toxdht)
-
-add_c_executable(Messenger_test testing/Messenger_test.c)
-target_link_modules(Messenger_test toxmessenger)
-
-add_c_executable(dns3_test testing/dns3_test.c)
-target_link_modules(dns3_test toxdns)
-
-if(NOT WIN32)
-  add_c_executable(tox_sync testing/tox_sync.c)
-  target_link_modules(tox_sync toxcore)
-endif()
-
-if(UTIL_LIBRARIES)
-  add_c_executable(tox_shell testing/tox_shell.c)
-  target_link_modules(tox_shell toxcore ${UTIL_LIBRARIES})
-endif()
-
-if(NOT WIN32)
-  add_c_executable(irc_syncbot testing/irc_syncbot.c)
-  target_link_modules(irc_syncbot toxcore)
-endif()
-
-################################################################################
-#
-# :: Installation and pkg-config
-#
-################################################################################
-
-string(REPLACE ";" " " toxcore_PKGCONFIG_LIBS "${toxcore_PKGCONFIG_LIBS}")
-
-if(BUILD_TOXAV)
-  configure_file(
-    "${toxcore_SOURCE_DIR}/other/pkgconfig/toxav.pc.in"
-    "${CMAKE_BINARY_DIR}/toxav.pc"
-    @ONLY
-  )
-endif()
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxcore.pc.in"
-  "${CMAKE_BINARY_DIR}/toxcore.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxdns.pc.in"
-  "${CMAKE_BINARY_DIR}/toxdns.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/toxencryptsave.pc.in"
-  "${CMAKE_BINARY_DIR}/toxencryptsave.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxcore.pc.in"
-  "${CMAKE_BINARY_DIR}/libtoxcore.pc"
-  @ONLY
-)
-
-configure_file(
-  "${toxcore_SOURCE_DIR}/other/pkgconfig/libtoxav.pc.in"
-  "${CMAKE_BINARY_DIR}/libtoxav.pc"
-  @ONLY
-)
-
-install(FILES
-  ${CMAKE_BINARY_DIR}/libtoxcore.pc
-  ${CMAKE_BINARY_DIR}/toxcore.pc
-  ${CMAKE_BINARY_DIR}/toxdns.pc
-  ${CMAKE_BINARY_DIR}/toxencryptsave.pc
-  DESTINATION "lib/pkgconfig")
-install(FILES
-  toxcore/tox.h
-  toxdns/toxdns.h
-  toxencryptsave/toxencryptsave.h
-  DESTINATION "include/tox")
-
-if(BUILD_TOXAV)
-  install(FILES
-    ${CMAKE_BINARY_DIR}/libtoxav.pc
-    ${CMAKE_BINARY_DIR}/toxav.pc
-    DESTINATION "lib/pkgconfig")
-  install(FILES
-    toxav/toxav.h
-    DESTINATION "include/tox")
-endif()
-
-if(STRICT_ABI AND SHELL AND ENABLE_SHARED)
-  if(BUILD_TOXAV)
-    make_version_script(${toxcore_SOURCE_DIR}/toxav/toxav.h toxav toxav)
-  endif()
-  make_version_script(${toxcore_SOURCE_DIR}/toxcore/tox.h tox toxcore)
-endif()
+add_executable(Messenger_test ${CPUFEATURES}
+  testing/Messenger_test.c)
+target_link_modules(Messenger_test toxcore)

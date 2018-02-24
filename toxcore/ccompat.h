@@ -4,13 +4,6 @@
 #ifndef CCOMPAT_H
 #define CCOMPAT_H
 
-// Marking GNU extensions to avoid warnings.
-#if defined(__GNUC__)
-#define GNU_EXTENSION __extension__
-#else
-#define GNU_EXTENSION
-#endif
-
 // Variable length arrays.
 // VLA(type, name, size) allocates a variable length array with automatic
 // storage duration. VLA_SIZE(name) evaluates to the runtime size of that array
@@ -29,6 +22,11 @@
 // Emulation using alloca.
 #ifdef _WIN32
 #include <malloc.h>
+#elif defined(__FreeBSD__)
+#include <stdlib.h>
+#if !defined(alloca) && defined(__GNUC__)
+#define alloca __builtin_alloca
+#endif
 #else
 #include <alloca.h>
 #endif
@@ -38,6 +36,10 @@
   type *const name = (type *)alloca(name##_size)
 #define SIZEOF_VLA(name) name##_size
 
+#endif
+
+#ifndef __cplusplus
+#define nullptr NULL
 #endif
 
 #endif /* CCOMPAT_H */

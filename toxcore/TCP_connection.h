@@ -41,7 +41,7 @@
 
 #define MAX_FRIEND_TCP_CONNECTIONS 6
 
-/* Time until connection to friend gets killed (if it doesn't get locked withing that time) */
+/* Time until connection to friend gets killed (if it doesn't get locked within that time) */
 #define TCP_CONNECTION_ANNOUNCE_TIMEOUT (TCP_CONNECTION_TIMEOUT)
 
 /* The amount of recommended connections for each friend

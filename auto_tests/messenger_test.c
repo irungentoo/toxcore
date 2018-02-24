@@ -44,10 +44,10 @@ static const char *good_id_b_str = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc
 
 static const char *bad_id_str =    "9B569D14ff637e69f2";
 
-static unsigned char *friend_id = NULL;
-static unsigned char *good_id_a = NULL;
-static unsigned char *good_id_b = NULL;
-static unsigned char *bad_id    = NULL;
+static unsigned char *friend_id = nullptr;
+static unsigned char *good_id_a = nullptr;
+static unsigned char *good_id_b = nullptr;
+static unsigned char *bad_id    = nullptr;
 
 static int friend_id_num = 0;
 
@@ -60,10 +60,14 @@ START_TEST(test_m_sendmesage)
     int bad_len = MAX_CRYPTO_PACKET_SIZE;
 
 
-    ck_assert(m_send_message_generic(m, -1, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, 17, MESSAGE_NORMAL, (const uint8_t *)message, good_len, 0) == -1);
-    ck_assert(m_send_message_generic(m, friend_id_num, MESSAGE_NORMAL, (const uint8_t *)message, bad_len, 0) == -2);
+    ck_assert(m_send_message_generic(
+                  m, -1, MESSAGE_NORMAL, (const uint8_t *)message, good_len, nullptr) == -1);
+    ck_assert(m_send_message_generic(
+                  m, REALLY_BIG_NUMBER, MESSAGE_NORMAL, (const uint8_t *)message, good_len, nullptr) == -1);
+    ck_assert(m_send_message_generic(
+                  m, 17, MESSAGE_NORMAL, (const uint8_t *)message, good_len, nullptr) == -1);
+    ck_assert(m_send_message_generic(
+                  m, friend_id_num, MESSAGE_NORMAL, (const uint8_t *)message, bad_len, nullptr) == -2);
 }
 END_TEST
 
@@ -184,8 +188,8 @@ END_TEST
 START_TEST(test_getself_name)
 {
     const char *nickname = "testGallop";
-    int len = strlen(nickname);
-    VLA(char, nick_check, len);
+    size_t len = strlen(nickname);
+    char *nick_check = (char *)calloc(len + 1, 1);
 
     setname(m, (const uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check);
@@ -193,6 +197,7 @@ START_TEST(test_getself_name)
     ck_assert_msg((memcmp(nickname, nick_check, len) == 0),
                   "getself_name failed to return the known name!\n"
                   "known name: %s\nreturned: %s\n", nickname, nick_check);
+    free(nick_check);
 }
 END_TEST
 
@@ -244,8 +249,8 @@ START_TEST(test_dht_state_saveloadsave)
     DHT_save(m->dht, buffer + extra);
 
     for (i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", i);
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", (unsigned)i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", (unsigned)i);
     }
 
     int res = DHT_load(m->dht, buffer + extra, size);
@@ -258,11 +263,12 @@ START_TEST(test_dht_state_saveloadsave)
         uint8_t *ptr = buffer + extra + offset;
         sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, msg);
+        ck_assert_msg(res == 0, "%s", msg);
     }
 
     size_t size2 = DHT_size(m->dht);
-    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", (unsigned)size,
+                  (unsigned)size2);
 
     VLA(uint8_t, buffer2, size2);
     DHT_save(m->dht, buffer2);
@@ -286,8 +292,8 @@ START_TEST(test_messenger_state_saveloadsave)
     messenger_save(m, buffer + extra);
 
     for (i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", i);
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", (unsigned)i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", (unsigned)i);
     }
 
     int res = messenger_load(m, buffer + extra, size);
@@ -300,11 +306,12 @@ START_TEST(test_messenger_state_saveloadsave)
         uint8_t *ptr = buffer + extra + offset;
         sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
                 ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, msg);
+        ck_assert_msg(res == 0, "%s", msg);
     }
 
     size_t size2 = messenger_size(m);
-    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", size, size2);
+    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u",
+                  (unsigned)size, (unsigned)size2);
 
     VLA(uint8_t, buffer2, size2);
     messenger_save(m, buffer2);
@@ -341,9 +348,7 @@ static Suite *messenger_suite(void)
 
 int main(int argc, char *argv[])
 {
-    Suite *messenger = messenger_suite();
-    SRunner *test_runner = srunner_create(messenger);
-    int number_failed = 0;
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
     friend_id = hex_string_to_bin(friend_id_str);
     good_id_a = hex_string_to_bin(good_id_a_str);
@@ -354,7 +359,7 @@ int main(int argc, char *argv[])
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     options.log_callback = (logger_cb *)print_debug_log;
-    m = new_messenger(&options, 0);
+    m = new_messenger(&options, nullptr);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0) {
@@ -368,6 +373,10 @@ int main(int argc, char *argv[])
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
     }
+
+    Suite *messenger = messenger_suite();
+    SRunner *test_runner = srunner_create(messenger);
+    int number_failed = 0;
 
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);

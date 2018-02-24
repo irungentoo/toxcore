@@ -21,14 +21,14 @@
 
 int main(void)
 {
-    int i;
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
     puts("Warming up: creating/deleting 10 tox instances");
 
     // Warm-up.
-    for (i = 0; i < 10; i++) {
-        Tox *tox = tox_new(0, 0);
-        tox_iterate(tox, NULL);
+    for (int i = 0; i < 10; i++) {
+        Tox *tox = tox_new(nullptr, nullptr);
+        tox_iterate(tox, nullptr);
         tox_kill(tox);
     }
 
@@ -38,17 +38,26 @@ int main(void)
 #endif
     printf("Creating/deleting %d tox instances\n", ITERATIONS);
 
-    for (i = 0; i < ITERATIONS; i++) {
-        Tox *tox = tox_new(0, 0);
-        tox_iterate(tox, NULL);
-        tox_kill(tox);
+    int allocated = 0;
+
+    for (int i = 0; i < ITERATIONS; i++) {
+        Tox *tox = tox_new(nullptr, nullptr);
+
+        if (tox != nullptr) {
+            tox_iterate(tox, nullptr);
+            tox_kill(tox);
+            allocated++;
+        }
+
 #if HAVE_SBRK
         char *next_hwm = (char *)sbrk(0);
         assert(hwm == next_hwm);
 #endif
     }
 
-    puts("Success: no resource leaks detected");
+    assert(allocated >= ITERATIONS / 2);
+    printf("Success: no resource leaks detected in %d tox_new calls (tried %d)\n",
+           allocated, ITERATIONS);
 
     return 0;
 }

@@ -28,6 +28,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * The number of bytes in a Tox public key.
  */
@@ -123,14 +127,29 @@ void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length);
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2);
 
 /**
+ * Return a random 16 bit integer.
+ */
+uint16_t random_u16(void);
+
+/**
  * Return a random 32 bit integer.
  */
-uint32_t random_int(void);
+uint32_t random_u32(void);
 
 /**
  * Return a random 64 bit integer.
  */
-uint64_t random_64b(void);
+uint64_t random_u64(void);
+
+/**
+ * Fill the given nonce with random bytes.
+ */
+void random_nonce(uint8_t *nonce);
+
+/**
+ * Fill an array of bytes with random values.
+ */
+void random_bytes(uint8_t *bytes, size_t length);
 
 /**
  * Check if a Tox public key CRYPTO_PUBLIC_KEY_SIZE is valid or not. This
@@ -217,18 +236,12 @@ void increment_nonce(uint8_t *nonce);
 void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num);
 
 /**
- * Fill the given nonce with random bytes.
- */
-void random_nonce(uint8_t *nonce);
-
-/**
  * Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
  */
 void new_symmetric_key(uint8_t *key);
 
-/**
- * Fill an array of bytes with random values.
- */
-void random_bytes(uint8_t *bytes, size_t length);
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif /* CRYPTO_CORE_H */

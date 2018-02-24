@@ -1,0 +1,12 @@
+#!/bin/sh
+
+cd other/docker/windows
+
+docker build \
+  --build-arg SUPPORT_ARCH_i686=${SUPPORT_ARCH_i686} \
+  --build-arg SUPPORT_ARCH_x86_64=${SUPPORT_ARCH_x86_64} \
+  --build-arg SUPPORT_TEST=${SUPPORT_TEST} \
+  -t toxcore \
+  .
+
+cd -

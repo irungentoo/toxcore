@@ -45,10 +45,10 @@
 #define TIME_TO_PING 2
 
 
-struct PING {
+struct Ping {
     DHT *dht;
 
-    Ping_Array  ping_array;
+    Ping_Array  *ping_array;
     Node_format to_ping[MAX_TO_PING];
     uint64_t    last_to_ping;
 };
@@ -58,13 +58,13 @@ struct PING {
 #define DHT_PING_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + PING_PLAIN_SIZE + CRYPTO_MAC_SIZE)
 #define PING_DATA_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(IP_Port))
 
-int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
+int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
     uint64_t  ping_id;
 
-    if (id_equal(public_key, ping->dht->self_public_key)) {
+    if (id_equal(public_key, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -76,7 +76,7 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
     uint8_t data[PING_DATA_SIZE];
     id_copy(data, public_key);
     memcpy(data + CRYPTO_PUBLIC_KEY_SIZE, &ipp, sizeof(IP_Port));
-    ping_id = ping_array_add(&ping->ping_array, data, sizeof(data));
+    ping_id = ping_array_add(ping->ping_array, data, sizeof(data));
 
     if (ping_id == 0) {
         return 1;
@@ -87,7 +87,7 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
     memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
 
     pk[0] = NET_PACKET_PING_REQUEST;
-    id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
+    id_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
     random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
 
@@ -100,16 +100,16 @@ int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key)
         return 1;
     }
 
-    return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
+    return sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
 }
 
-static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
+static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
                               uint8_t *shared_encryption_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
 
-    if (id_equal(public_key, ping->dht->self_public_key)) {
+    if (id_equal(public_key, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -118,7 +118,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
     memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
 
     pk[0] = NET_PACKET_PING_RESPONSE;
-    id_copy(pk + 1, ping->dht->self_public_key);     // Our pubkey
+    id_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
     random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
@@ -131,7 +131,7 @@ static int send_ping_response(PING *ping, IP_Port ipp, const uint8_t *public_key
         return 1;
     }
 
-    return sendpacket(ping->dht->net, ipp, pk, sizeof(pk));
+    return sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
 }
 
 static int handle_ping_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
@@ -143,9 +143,9 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    PING *ping = dht->ping;
+    Ping *ping = dht_get_ping(dht);
 
-    if (id_equal(packet + 1, ping->dht->self_public_key)) {
+    if (id_equal(packet + 1, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -171,8 +171,8 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
     uint64_t   ping_id;
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     // Send response
-    send_ping_response(ping, source, packet + 1, ping_id, shared_key);
-    add_to_ping(ping, packet + 1, source);
+    ping_send_response(ping, source, packet + 1, ping_id, shared_key);
+    ping_add(ping, packet + 1, source);
 
     return 0;
 }
@@ -186,9 +186,9 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
         return 1;
     }
 
-    PING *ping = dht->ping;
+    Ping *ping = dht_get_ping(dht);
 
-    if (id_equal(packet + 1, ping->dht->self_public_key)) {
+    if (id_equal(packet + 1, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -217,7 +217,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     uint8_t data[PING_DATA_SIZE];
 
-    if (ping_array_check(data, sizeof(data), &ping->ping_array, ping_id) != sizeof(data)) {
+    if (ping_array_check(ping->ping_array, data, sizeof(data), ping_id) != sizeof(data)) {
         return 1;
     }
 
@@ -274,7 +274,7 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
+int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
 {
     if (!ip_isset(&ip_port.ip)) {
         return -1;
@@ -284,14 +284,14 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         return -1;
     }
 
-    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port)) {
+    if (in_list(dht_get_close_clientlist(ping->dht), LCLIENT_LIST, public_key, ip_port)) {
         return -1;
     }
 
     IP_Port temp;
 
     if (DHT_getfriendip(ping->dht, public_key, &temp) == 0) {
-        send_ping_request(ping, ip_port, public_key);
+        ping_send_request(ping, ip_port, public_key);
         return -1;
     }
 
@@ -309,7 +309,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         }
     }
 
-    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, ping->dht->self_public_key)) {
+    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, dht_get_self_public_key(ping->dht))) {
         return 0;
     }
 
@@ -320,7 +320,7 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
 /* Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
  * This function must be run at least once every TIME_TO_PING seconds.
  */
-void do_to_ping(PING *ping)
+void ping_iterate(Ping *ping)
 {
     if (!is_timeout(ping->last_to_ping, TIME_TO_PING)) {
         return;
@@ -341,7 +341,7 @@ void do_to_ping(PING *ping)
             continue;
         }
 
-        send_ping_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
+        ping_send_request(ping, ping->to_ping[i].ip_port, ping->to_ping[i].public_key);
         ip_reset(&ping->to_ping[i].ip_port.ip);
     }
 
@@ -351,31 +351,33 @@ void do_to_ping(PING *ping)
 }
 
 
-PING *new_ping(DHT *dht)
+Ping *ping_new(DHT *dht)
 {
-    PING *ping = (PING *)calloc(1, sizeof(PING));
+    Ping *ping = (Ping *)calloc(1, sizeof(Ping));
 
-    if (ping == NULL) {
-        return NULL;
+    if (ping == nullptr) {
+        return nullptr;
     }
 
-    if (ping_array_init(&ping->ping_array, PING_NUM_MAX, PING_TIMEOUT) != 0) {
+    ping->ping_array = ping_array_new(PING_NUM_MAX, PING_TIMEOUT);
+
+    if (ping->ping_array == nullptr) {
         free(ping);
-        return NULL;
+        return nullptr;
     }
 
     ping->dht = dht;
-    networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
-    networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);
+    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
+    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);
 
     return ping;
 }
 
-void kill_ping(PING *ping)
+void ping_kill(Ping *ping)
 {
-    networking_registerhandler(ping->dht->net, NET_PACKET_PING_REQUEST, NULL, NULL);
-    networking_registerhandler(ping->dht->net, NET_PACKET_PING_RESPONSE, NULL, NULL);
-    ping_array_free_all(&ping->ping_array);
+    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, nullptr, nullptr);
+    networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, nullptr, nullptr);
+    ping_array_kill(ping->ping_array);
 
     free(ping);
 }

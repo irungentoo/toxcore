@@ -17,7 +17,6 @@ LT_LDFLAGS=-avoid-version
 endif
 
 include ../toxcore/Makefile.inc
-include ../toxdns/Makefile.inc
 include ../toxencryptsave/Makefile.inc
 include ../toxav/Makefile.inc
 include ../other/Makefile.inc

@@ -26,6 +26,8 @@
 
 #include "global.h"
 
+#include "../../../toxcore/ccompat.h"
+
 #include <getopt.h>
 
 #include <stdlib.h>
@@ -87,7 +89,7 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
 
     int opt;
 
-    while ((opt = getopt_long(argc, argv, ":", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, ":", long_options, nullptr)) != -1) {
 
         switch (opt) {
 

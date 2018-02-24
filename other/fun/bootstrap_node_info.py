@@ -32,7 +32,7 @@ def printHelp():
     print("Usage: " + sys.argv[0] + " <ipv4|ipv6> <ip/hostname> <port>")
     print("  Example: " + sys.argv[0] + " ipv4 192.210.149.121 33445")
     print("  Example: " + sys.argv[0] + " ipv4 23.226.230.47 33445")
-    print("  Example: " + sys.argv[0] + " ipv4 biribiri.org 33445")
+    print("  Example: " + sys.argv[0] + " ipv4 node.tox.biribiri.org 33445")
     print("  Example: " + sys.argv[0] + " ipv4 cerberus.zodiaclabs.org 33445")
     print("  Example: " + sys.argv[0] + " ipv6 2604:180:1::3ded:b280 33445")
     print("")

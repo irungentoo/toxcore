@@ -63,6 +63,10 @@
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef short Family;
 
 typedef int Socket;
@@ -125,41 +129,39 @@ typedef enum NET_PACKET_TYPE {
 #define TCP_INET6 (TOX_AF_INET6 + 3)
 #define TCP_FAMILY (TOX_AF_INET6 + 4)
 
-typedef union {
+typedef union IP4 {
     uint32_t uint32;
     uint16_t uint16[2];
     uint8_t uint8[4];
-}
-IP4;
+} IP4;
 
-extern const IP4 IP4_LOOPBACK;
+IP4 get_ip4_loopback(void);
 extern const IP4 IP4_BROADCAST;
 
-typedef union {
+typedef union IP6 {
     uint8_t uint8[16];
     uint16_t uint16[8];
     uint32_t uint32[4];
     uint64_t uint64[2];
-}
-IP6;
+} IP6;
 
-extern const IP6 IP6_LOOPBACK;
+IP6 get_ip6_loopback(void);
 extern const IP6 IP6_BROADCAST;
 
-typedef struct {
+#define IP_DEFINED
+typedef struct IP {
     uint8_t family;
-    GNU_EXTENSION union {
-        IP4 ip4;
-        IP6 ip6;
-    };
-}
-IP;
+    union {
+        IP4 v4;
+        IP6 v6;
+    } ip;
+} IP;
 
-typedef struct {
+#define IP_PORT_DEFINED
+typedef struct IP_Port {
     IP ip;
     uint16_t port;
-}
-IP_Port;
+} IP_Port;
 
 /* Convert values between host and network byte order.
  */
@@ -167,6 +169,14 @@ uint32_t net_htonl(uint32_t hostlong);
 uint16_t net_htons(uint16_t hostshort);
 uint32_t net_ntohl(uint32_t hostlong);
 uint16_t net_ntohs(uint16_t hostshort);
+
+size_t net_pack_u16(uint8_t *bytes, uint16_t v);
+size_t net_pack_u32(uint8_t *bytes, uint32_t v);
+size_t net_pack_u64(uint8_t *bytes, uint64_t v);
+
+size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v);
+size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v);
+size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 #define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == net_htonl (0xffff)))
@@ -303,20 +313,10 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len,
                                        void *userdata);
 
-typedef struct {
-    packet_handler_callback function;
-    void *object;
-} Packet_Handles;
+typedef struct Networking_Core Networking_Core;
 
-typedef struct {
-    Logger *log;
-    Packet_Handles packethandlers[256];
-
-    Family family;
-    uint16_t port;
-    /* Our UDP socket. */
-    Socket sock;
-} Networking_Core;
+Family net_family(const Networking_Core *net);
+uint16_t net_port(const Networking_Core *net);
 
 /* Run this before creating sockets.
  *
@@ -403,8 +403,6 @@ void net_freeipport(IP_Port *ip_ports);
  */
 int bind_to_port(Socket sock, int family, uint16_t port);
 
-size_t net_sendto_ip4(Socket sock, const char *buf, size_t n, IP_Port ip_port);
-
 /* Initialize networking.
  * bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
@@ -417,8 +415,13 @@ size_t net_sendto_ip4(Socket sock, const char *buf, size_t n, IP_Port ip_port);
  */
 Networking_Core *new_networking(Logger *log, IP ip, uint16_t port);
 Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
+Networking_Core *new_networking_no_udp(Logger *log);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif

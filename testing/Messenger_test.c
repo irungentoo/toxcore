@@ -83,7 +83,7 @@ static void print_request(Messenger *m2, const uint8_t *public_key, const uint8_
         return;
     }
 
-    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0)
+    if (memcmp(data, "Install Gentoo", sizeof("Install Gentoo")) == 0)
         //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     } else {
         FILE *file = fopen(argv[argvoffset + 1], "rb");
 
-        if (file == NULL) {
+        if (file == nullptr) {
             printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
             return 1;
         }
@@ -185,11 +185,11 @@ int main(int argc, char *argv[])
         printf("%s\n", name);
 
         m_send_message_generic(m, num, MESSAGE_NORMAL, (const uint8_t *)"Test", 5, 0);
-        do_messenger(m, NULL);
+        do_messenger(m, nullptr);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
 
-        if (file == NULL) {
+        if (file == nullptr) {
             return 1;
         }
 

@@ -1,9 +1,37 @@
 
+## v0.1.11
+
+### Merged PRs:
+
+- [#643](https://github.com/TokTok/c-toxcore/pull/643) Add .editorconfig
+- [#637](https://github.com/TokTok/c-toxcore/pull/637) Update tox-bootstrapd Dockerfile
+- [#635](https://github.com/TokTok/c-toxcore/pull/635) Separate FreeBSD Travis build in 2 stages
+- [#632](https://github.com/TokTok/c-toxcore/pull/632) Lift libconfig to v1.7.1
+- [#631](https://github.com/TokTok/c-toxcore/pull/631) Add aspcud for Opam
+- [#630](https://github.com/TokTok/c-toxcore/pull/630) Fix for Travis fail on addr_resolve testing
+- [#623](https://github.com/TokTok/c-toxcore/pull/623) Split video payload into multiple RTP messages when too big to fit into one
+- [#615](https://github.com/TokTok/c-toxcore/pull/615) forget DHT pubkey of offline friend after DHT timeout
+- [#611](https://github.com/TokTok/c-toxcore/pull/611) Fix typo
+- [#607](https://github.com/TokTok/c-toxcore/pull/607) set onion pingid timeout to announce timeout (300s)
+- [#592](https://github.com/TokTok/c-toxcore/pull/592) Adjust docs of few toxencrypt function to the code
+- [#587](https://github.com/TokTok/c-toxcore/pull/587) Fix tox test
+- [#586](https://github.com/TokTok/c-toxcore/pull/586) Improve LAN discovery
+- [#576](https://github.com/TokTok/c-toxcore/pull/576) Replace include(CTest) on enable_testing()
+- [#574](https://github.com/TokTok/c-toxcore/pull/574) Reset hole-punching parameters after not punching for a while
+- [#571](https://github.com/TokTok/c-toxcore/pull/571) Configure needs to find libsodium headers.
+- [#515](https://github.com/TokTok/c-toxcore/pull/515) Network cleanup: reduce dependency on system-defined constants
+- [#505](https://github.com/TokTok/c-toxcore/pull/505) Add FreeBSD Travis
+- [#500](https://github.com/TokTok/c-toxcore/pull/500) Fixed the bug when receipts for messages sent from the receipt callback never arrived.
+
+### Closed issues:
+
+- [#493](https://github.com/TokTok/c-toxcore/issues/493) Receipts for messages sent from the receipt callback never arrive
 
 ## v0.1.10
 
 ### Merged PRs:
 
+- [#575](https://github.com/TokTok/c-toxcore/pull/575) Release v0.1.10
 - [#564](https://github.com/TokTok/c-toxcore/pull/564) Fix Windows build
 - [#542](https://github.com/TokTok/c-toxcore/pull/542) Save bandwidth by moderating onion pinging
 
@@ -303,7 +331,7 @@
 
 ### Merged PRs:
 
-- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden agains repo name changes
+- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden against repo name changes
 - [#206](https://github.com/TokTok/c-toxcore/pull/206) Corrected libsodium tag
 - [#204](https://github.com/TokTok/c-toxcore/pull/204) Error if format_test can't be executed.
 - [#202](https://github.com/TokTok/c-toxcore/pull/202) Version Patch v0.0.2

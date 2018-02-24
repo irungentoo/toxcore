@@ -1,12 +1,11 @@
 if BUILD_TESTS
 
-TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest tox_strncasecmp_test
-check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test tox_test dht_autotest tox_strncasecmp_test
+TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test dht_autotest tox_strncasecmp_test
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test dht_autotest tox_strncasecmp_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
-                         $(NACL_CFLAGS) \
-                         $(CHECK_CFLAGS)
+                         $(NACL_CFLAGS)
 
 AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
@@ -15,8 +14,7 @@ AUTOTEST_LDADD = \
                         libtoxencryptsave.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(CHECK_LIBS)
+                        $(NACL_LIBS)
 
 
 
@@ -59,13 +57,6 @@ TCP_test_SOURCES = ../auto_tests/TCP_test.c
 TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 TCP_test_LDADD = $(AUTOTEST_LDADD)
-
-
-tox_test_SOURCES = ../auto_tests/tox_test.c
-
-tox_test_CFLAGS = $(AUTOTEST_CFLAGS)
-
-tox_test_LDADD = $(AUTOTEST_LDADD)
 
 
 dht_autotest_SOURCES = ../auto_tests/dht_test.c

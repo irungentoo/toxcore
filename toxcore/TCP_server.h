@@ -90,33 +90,6 @@ struct TCP_Priority_List {
     uint8_t data[];
 };
 
-typedef struct TCP_Secure_Connection {
-    Socket sock;
-    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
-    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    uint16_t next_packet_length;
-    struct {
-        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-        uint32_t index;
-        uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
-        uint8_t other_id;
-    } connections[NUM_CLIENT_CONNECTIONS];
-    uint8_t last_packet[2 + MAX_PACKET_SIZE];
-    uint8_t status;
-    uint16_t last_packet_length;
-    uint16_t last_packet_sent;
-
-    TCP_Priority_List *priority_queue_start, *priority_queue_end;
-
-    uint64_t identifier;
-
-    uint64_t last_pinged;
-    uint64_t ping_id;
-} TCP_Secure_Connection;
-
-
 typedef struct TCP_Server TCP_Server;
 
 const uint8_t *tcp_server_public_key(const TCP_Server *tcp_server);

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tox], [0.1.10])
+AC_INIT([tox], [0.2.0])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
 AC_CONFIG_HEADERS([config.h])
@@ -18,7 +18,6 @@ fi
 
 BUILD_DHT_BOOTSTRAP_DAEMON="no"
 BUILD_DHT_BOOTSTRAP="no"
-BUILD_NTOX="no"
 BUILD_TESTS="yes"
 BUILD_AV="yes"
 BUILD_TESTING="yes"
@@ -27,7 +26,6 @@ TOX_LOGGER="no"
 
 NCURSES_FOUND="no"
 LIBCONFIG_FOUND="no"
-LIBCHECK_FOUND="no"
 WANT_NACL="no"
 ADD_NACL_OBJECTS_TO_PKGCONFIG="yes"
 SET_SO_VERSION="yes"
@@ -131,17 +129,6 @@ AC_ARG_ENABLE([tests],
     ]
 )
 
-AC_ARG_ENABLE([ntox],
-    [AC_HELP_STRING([--enable-ntox], [build nTox client (default: auto)]) ],
-    [
-        if test "x$enableval" = "xno"; then
-            BUILD_NTOX="no"
-        elif test "x$enableval" = "xyes"; then
-            BUILD_NTOX="yes"
-        fi
-    ]
-)
-
 AC_ARG_ENABLE([daemon],
     [AC_HELP_STRING([--enable-daemon], [build DHT bootstrap daemon (default: auto)]) ],
     [
@@ -192,6 +179,16 @@ AC_ARG_ENABLE([[epoll]],
     [enable_epoll=${enableval}],
     [enable_epoll='auto']
   )
+
+AC_ARG_ENABLE([[ipv6]],
+  [AS_HELP_STRING([[--disable-ipv6[=ARG]]], [use ipv4 in tests (yes, no, auto) [auto]])],
+    [use_ipv6=${enableval}],
+    [use_ipv6='auto']
+  )
+
+if test "$use_ipv6" != "yes"; then
+  AC_DEFINE([USE_IPV6],[0],[define to 0 to force ipv4])
+fi
 
 AX_HAVE_EPOLL
 if test "$enable_epoll" != "no"; then
@@ -527,17 +524,6 @@ if test "x$BUILD_AV" = "xyes"; then
 fi
 
 if test -n "$PKG_CONFIG"; then
-    if test "x$BUILD_TESTS" = "xyes"; then
-        PKG_CHECK_MODULES([CHECK], [check],
-            [
-                LIBCHECK_FOUND="yes"
-            ],
-            [
-                AC_MSG_WARN([libcheck not found, not building unit tests: $CHECK_PKG_ERRORS])
-                BUILD_TESTS="no"
-            ])
-    fi
-
     if test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes"; then
         PKG_CHECK_MODULES([LIBCONFIG], [libconfig >= 1.4.6],
             [
@@ -549,82 +535,8 @@ if test -n "$PKG_CONFIG"; then
                 BUILD_DHT_BOOTSTRAP_DAEMON="no"
             ])
     fi
-
-    if test "x$BUILD_NTOX" = "xyes"; then
-        PKG_CHECK_MODULES([NCURSES], [ncurses],
-            [
-                NCURSES_FOUND="yes"
-            ],
-            [
-                AC_MSG_WARN([$NCURSES_PKG_ERRORS])
-            ])
-    fi
 else
     AC_MSG_WARN([pkg-config was not found on your system, will search for libraries manually])
-fi
-
-if (test "x$BUILD_NTOX" = "xyes") && (test "x$NCURSES_FOUND" != "xyes"); then
-    AC_PATH_PROG([CURSES_CONFIG], [ncurses5-config], [no])
-    if test "x$CURSES_CONFIG" != "xno"; then
-        AC_MSG_CHECKING(ncurses cflags)
-        NCURSES_CFLAGS=`${CURSES_CONFIG} --cflags`
-        AC_MSG_RESULT($NCURSES_CFLAGS)
-
-        AC_MSG_CHECKING(ncurses libraries)
-        NCURSES_LIBS=`${CURSES_CONFIG} --libs`
-        AC_MSG_RESULT($NCURSES_LIBS)
-
-        AC_SUBST(NCURSES_CFLAGS)
-        AC_SUBST(NCURSES_LIBS)
-        NCURSES_FOUND="yes"
-    fi
-
-    if test "x$NCURSES_FOUND" != "xyes"; then
-        AC_CHECK_HEADER([curses.h],
-            [],
-            [
-                AC_MSG_WARN([not building nTox client because headers for the curses library were not found on your system])
-                BUILD_NTOX="no"
-            ]
-        )
-        if test "x$BUILD_NTOX" = "xyes"; then
-            if test "x$WIN32" = "xyes"; then
-                AC_CHECK_LIB([pdcurses], [clear],
-                    [
-                        NCURSES_LIBS="-lpdcurses"
-                        AC_SUBST(NCURSES_LIBS)
-                    ],
-                    [
-                        AC_MSG_ERROR([required library pdcurses was not found on your system])
-                        BUILD_NTOX="no"
-                    ]
-                )
-            else
-                AC_CHECK_LIB([ncurses], [clear],
-                    [
-                        NCURSES_LIBS="-lncurses"
-                        AC_SUBST(NCURSES_LIBS)
-                    ],
-                    [
-                        unset ac_cv_lib_ncurses_clear
-                        AC_CHECK_LIB([ncurses], [clear],
-                            [
-                                NCURSES_LIBS="-lncurses -ltinfo"
-                                AC_SUBST(NCURSES_LIBS)
-                            ],
-                            [
-                                AC_MSG_WARN([not building nTox client because required library ncurses was not found on your system])
-                                BUILD_NTOX="no"
-                            ],
-                            [
-                                -ltinfo
-                            ]
-                        )
-                    ]
-                )
-            fi
-        fi
-    fi
 fi
 
 if (test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes") && \
@@ -648,26 +560,6 @@ if (test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes") && \
     fi
 fi
 
-if (test "x$BUILD_TESTS" = "xyes") && (test "x$LIBCHECK_FOUND" = "xno"); then
-    AC_CHECK_HEADER([check.h],
-        [],
-        [
-            AC_MSG_WARN([header file for check library was not found on your system, unit tests will be disabled])
-            BUILD_TESTS="no"
-        ]
-    )
-
-    if test "x$BUILD_TESTS" = "xyes"; then
-        AC_CHECK_LIB([check], [suite_create],
-            [],
-            [
-                AC_MSG_WARN([library check was not found on the system, unit tests will be disabled])
-                BUILD_TESTS="no"
-            ]
-       )
-    fi
-fi
-
 if test "x$WIN32" = "xyes"; then
     AC_CHECK_LIB(ws2_32, main,
         [
@@ -683,7 +575,6 @@ fi
 AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP_DAEMON, test "x$BUILD_DHT_BOOTSTRAP_DAEMON" = "xyes")
 AM_CONDITIONAL(BUILD_DHT_BOOTSTRAP, test "x$BUILD_DHT_BOOTSTRAP" = "xyes")
 AM_CONDITIONAL(BUILD_TESTS, test "x$BUILD_TESTS" = "xyes")
-AM_CONDITIONAL(BUILD_NTOX, test "x$BUILD_NTOX" = "xyes")
 AM_CONDITIONAL(BUILD_AV, test "x$BUILD_AV" = "xyes")
 AM_CONDITIONAL(BUILD_TESTING, test "x$BUILD_TESTING" = "xyes")
 AM_CONDITIONAL(WITH_NACL, test "x$WANT_NACL" = "xyes")

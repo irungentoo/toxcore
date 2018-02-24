@@ -1,0 +1,32 @@
+#!/bin/sh
+
+OLD_PWD="$PWD"
+
+mkdir -p /opt/freebsd/cache
+cd /opt/freebsd/cache
+
+# Extract the cached image
+tar -Sxzvf $IMAGE_NAME.tgz
+
+# Get the image we will be using out of the cached directory
+mv $IMAGE_NAME ..
+ls -lh
+
+cd ..
+
+ls -lh
+
+# === Get VM ready to build the code ===
+
+start_vm
+
+# Display FreeBSD kernel info and last login
+RUN uname -a
+RUN last
+
+cd "$OLD_PWD"
+
+# Copy over toxcore code from Travis to qemu
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P $SSH_PORT -r ./* root@localhost:~
+
+RUN ls -lh

@@ -31,9 +31,26 @@
 
 #include <stdint.h>
 
-typedef struct PING PING;
+#ifndef IP_PORT_DEFINED
+#define IP_PORT_DEFINED
+typedef struct IP_Port IP_Port;
+#endif /* IP_PORT_DEFINED */
 
-/* Add nodes to the to_ping list.
+#ifndef DHT_DEFINED
+#define DHT_DEFINED
+typedef struct DHT DHT;
+#endif /* DHT_DEFINED */
+
+#ifndef PING_DEFINED
+#define PING_DEFINED
+typedef struct Ping Ping;
+#endif /* PING_DEFINED */
+
+Ping *ping_new(DHT *dht);
+
+void ping_kill(Ping *ping);
+
+/** Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TOPING seconds
  * and are then removed from the list.
  * If the list is full the nodes farthest from our public_key are replaced.
@@ -43,12 +60,10 @@ typedef struct PING PING;
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port);
-void do_to_ping(PING *ping);
+int32_t ping_add(Ping *ping, const uint8_t *public_key, struct IP_Port ip_port);
 
-PING *new_ping(DHT *dht);
-void kill_ping(PING *ping);
+void ping_iterate(Ping *ping);
 
-int send_ping_request(PING *ping, IP_Port ipp, const uint8_t *public_key);
+int32_t ping_send_request(Ping *ping, struct IP_Port ipp, const uint8_t *public_key);
 
 #endif /* PING_H */

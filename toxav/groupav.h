@@ -29,17 +29,16 @@
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, int, int, const int16_t *,
-                     unsigned int,
-                     uint8_t, unsigned int, void *), void *userdata);
+int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
+                     const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata);
 
 /* Join a AV group (you need to have been invited first.)
  *
  * returns group number on success
  * returns -1 on failure.
  */
-int join_av_groupchat(Logger *log, Group_Chats *g_c, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                      void (*audio_callback)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
+int join_av_groupchat(Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+                      void (*audio_callback)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
                       void *userdata);
 
 
@@ -48,6 +47,6 @@ int join_av_groupchat(Logger *log, Group_Chats *g_c, int32_t friendnumber, const
  * return 0 on success.
  * return -1 on failure.
  */
-int group_send_audio(Group_Chats *g_c, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                     unsigned int sample_rate);
+int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                     uint32_t sample_rate);
 

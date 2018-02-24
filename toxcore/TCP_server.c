@@ -33,6 +33,33 @@
 #include <sys/ioctl.h>
 #endif
 
+typedef struct TCP_Secure_Connection {
+    Socket sock;
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
+    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
+    uint16_t next_packet_length;
+    struct {
+        uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+        uint32_t index;
+        uint8_t status; /* 0 if not used, 1 if other is offline, 2 if other is online. */
+        uint8_t other_id;
+    } connections[NUM_CLIENT_CONNECTIONS];
+    uint8_t last_packet[2 + MAX_PACKET_SIZE];
+    uint8_t status;
+    uint16_t last_packet_length;
+    uint16_t last_packet_sent;
+
+    TCP_Priority_List *priority_queue_start, *priority_queue_end;
+
+    uint64_t identifier;
+
+    uint64_t last_pinged;
+    uint64_t ping_id;
+} TCP_Secure_Connection;
+
+
 struct TCP_Server {
     Onion *onion;
 
@@ -84,7 +111,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
 {
     if (num == 0) {
         free(TCP_server->accepted_connection_array);
-        TCP_server->accepted_connection_array = NULL;
+        TCP_server->accepted_connection_array = nullptr;
         TCP_server->size_accepted_connections = 0;
         return 0;
     }
@@ -97,7 +124,7 @@ static int realloc_connection(TCP_Server *TCP_server, uint32_t num)
                 TCP_server->accepted_connection_array,
                 num * sizeof(TCP_Secure_Connection));
 
-    if (new_connections == NULL) {
+    if (new_connections == nullptr) {
         return -1;
     }
 
@@ -376,7 +403,7 @@ static int send_pending_data(TCP_Secure_Connection *con)
     con->priority_queue_start = p;
 
     if (!p) {
-        con->priority_queue_end = NULL;
+        con->priority_queue_end = nullptr;
         return 0;
     }
 
@@ -395,7 +422,7 @@ static bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint
         return 0;
     }
 
-    new_list->next = NULL;
+    new_list->next = nullptr;
     new_list->size = size;
     new_list->sent = sent;
     memcpy(new_list->data, packet, size);
@@ -761,7 +788,7 @@ static int rm_connection_index(TCP_Server *TCP_server, TCP_Secure_Connection *co
 static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *TCP_server = (TCP_Server *)object;
-    uint32_t index = dest.ip.ip6.uint32[0];
+    uint32_t index = dest.ip.ip.v6.uint32[0];
 
     if (index >= TCP_server->size_accepted_connections) {
         return 1;
@@ -769,7 +796,7 @@ static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, 
 
     TCP_Secure_Connection *con = &TCP_server->accepted_connection_array[index];
 
-    if (con->identifier != dest.ip.ip6.uint64[1]) {
+    if (con->identifier != dest.ip.ip.v6.uint64[1]) {
         return 1;
     }
 
@@ -869,9 +896,9 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
                 IP_Port source;
                 source.port = 0;  // dummy initialise
                 source.ip.family = TCP_ONION_FAMILY;
-                source.ip.ip6.uint32[0] = con_id;
-                source.ip.ip6.uint32[1] = 0;
-                source.ip.ip6.uint64[1] = con->identifier;
+                source.ip.ip.v6.uint32[0] = con_id;
+                source.ip.ip.v6.uint32[1] = 0;
+                source.ip.ip.v6.uint64[1] = con->identifier;
                 onion_send_1(TCP_server->onion, data + 1 + CRYPTO_NONCE_SIZE, length - (1 + CRYPTO_NONCE_SIZE), source,
                              data + 1);
             }
@@ -1007,25 +1034,25 @@ static Socket new_listening_TCP_socket(int family, uint16_t port)
 TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
                            Onion *onion)
 {
-    if (num_sockets == 0 || ports == NULL) {
-        return NULL;
+    if (num_sockets == 0 || ports == nullptr) {
+        return nullptr;
     }
 
     if (networking_at_startup() != 0) {
-        return NULL;
+        return nullptr;
     }
 
     TCP_Server *temp = (TCP_Server *)calloc(1, sizeof(TCP_Server));
 
-    if (temp == NULL) {
-        return NULL;
+    if (temp == nullptr) {
+        return nullptr;
     }
 
     temp->socks_listening = (Socket *)calloc(num_sockets, sizeof(Socket));
 
-    if (temp->socks_listening == NULL) {
+    if (temp->socks_listening == nullptr) {
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
 #ifdef TCP_SERVER_USE_EPOLL
@@ -1034,7 +1061,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     if (temp->efd == -1) {
         free(temp->socks_listening);
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
 #endif
@@ -1074,7 +1101,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     if (temp->num_listening_socks == 0) {
         free(temp->socks_listening);
         free(temp);
-        return NULL;
+        return nullptr;
     }
 
     if (onion) {
@@ -1219,7 +1246,7 @@ static void do_TCP_confirmed(TCP_Server *TCP_server)
         if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY)) {
             uint8_t ping[1 + sizeof(uint64_t)];
             ping[0] = TCP_PACKET_PING;
-            uint64_t ping_id = random_64b();
+            uint64_t ping_id = random_u64();
 
             if (!ping_id) {
                 ++ping_id;
@@ -1402,7 +1429,7 @@ void kill_TCP_server(TCP_Server *TCP_server)
     }
 
     if (TCP_server->onion) {
-        set_callback_handle_recv_1(TCP_server->onion, NULL, NULL);
+        set_callback_handle_recv_1(TCP_server->onion, nullptr, nullptr);
     }
 
     bs_list_free(&TCP_server->accepted_key_list);

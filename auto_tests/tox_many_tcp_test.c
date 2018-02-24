@@ -1,7 +1,9 @@
 /* Auto Tests: Many TCP.
  */
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -33,7 +35,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
     }
 
     if (length == 7 && memcmp("Gentoo", data, 7) == 0) {
-        tox_friend_add_norequest(m, public_key, 0);
+        tox_friend_add_norequest(m, public_key, nullptr);
     }
 }
 
@@ -43,42 +45,34 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 
 START_TEST(test_many_clients_tcp)
 {
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
     uint32_t index[NUM_TOXES_TCP];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES_TCP; ++i) {
-        struct Tox_Options *opts = tox_options_new(NULL);
+        struct Tox_Options *opts = tox_options_new(nullptr);
 
         if (i == 0) {
             tox_options_set_tcp_port(opts, TCP_RELAY_PORT);
         } else {
-            tox_options_set_udp_enabled(opts, 0);
+            tox_options_set_udp_enabled(opts, false);
         }
 
         index[i] = i + 1;
-        toxes[i] = tox_new_log(opts, 0, &index[i]);
-        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        toxes[i] = tox_new_log(opts, nullptr, &index[i]);
+        ck_assert_msg(toxes[i] != nullptr, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
         TOX_ERR_BOOTSTRAP error = TOX_ERR_BOOTSTRAP_OK;
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i,
                       error);
-        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
+        uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);
+        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, first_port, dpk, nullptr), "Bootstrap error");
 
         tox_options_free(opts);
-    }
-
-    {
-        TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-        ck_assert_msg(tox_self_get_tcp_port(toxes[0], &error) == TCP_RELAY_PORT,
-                      "First Tox instance did not bind to tcp port %u.\n", TCP_RELAY_PORT);
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
     struct {
@@ -116,7 +110,7 @@ loop_top:
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
-                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP) {
+                if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_TCP) {
                     ++counter;
                 }
             }
@@ -137,7 +131,7 @@ loop_top:
         tox_kill(toxes[i]);
     }
 
-    printf("test_many_clients_tcp succeeded, took %llu seconds\n", time(NULL) - cur_time);
+    printf("test_many_clients_tcp succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 }
 END_TEST
 
@@ -145,14 +139,14 @@ END_TEST
 
 START_TEST(test_many_clients_tcp_b)
 {
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
     uint32_t index[NUM_TOXES_TCP];
     uint32_t i, j;
     uint32_t to_comp = 974536;
 
     for (i = 0; i < NUM_TOXES_TCP; ++i) {
-        struct Tox_Options *opts = tox_options_new(NULL);
+        struct Tox_Options *opts = tox_options_new(nullptr);
 
         if (i < NUM_TCP_RELAYS) {
             tox_options_set_tcp_port(opts, TCP_RELAY_PORT + i);
@@ -161,26 +155,18 @@ START_TEST(test_many_clients_tcp_b)
         }
 
         index[i] = i + 1;
-        toxes[i] = tox_new_log(opts, 0, &index[i]);
-        ck_assert_msg(toxes[i] != 0, "Failed to create tox instances %u", i);
+        toxes[i] = tox_new_log(opts, nullptr, &index[i]);
+        ck_assert_msg(toxes[i] != nullptr, "Failed to create tox instances %u", i);
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[(i % NUM_TCP_RELAYS)], dpk);
-        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, 0),
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT + (i % NUM_TCP_RELAYS), dpk, nullptr),
                       "add relay error");
         tox_self_get_dht_id(toxes[0], dpk);
-        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, 33445, dpk, 0), "Bootstrap error");
+        uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);
+        ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, first_port, dpk, nullptr), "Bootstrap error");
 
         tox_options_free(opts);
-    }
-
-    {
-        TOX_ERR_GET_PORT error;
-        ck_assert_msg(tox_self_get_udp_port(toxes[0], &error) == 33445, "First Tox instance did not bind to udp port 33445.\n");
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
-        ck_assert_msg(tox_self_get_tcp_port(toxes[0], &error) == TCP_RELAY_PORT,
-                      "First Tox instance did not bind to tcp port %u.\n", TCP_RELAY_PORT);
-        ck_assert_msg(error == TOX_ERR_GET_PORT_OK, "wrong error");
     }
 
     struct {
@@ -220,7 +206,7 @@ loop_top:
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
             for (j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
-                if (tox_friend_get_connection_status(toxes[i], j, 0) == TOX_CONNECTION_TCP) {
+                if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_TCP) {
                     ++counter;
                 }
             }
@@ -246,33 +232,29 @@ loop_top:
         tox_kill(toxes[i]);
     }
 
-    printf("test_many_clients_tcp_b succeeded, took %llu seconds\n", time(NULL) - cur_time);
+    printf("test_many_clients_tcp_b succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 }
 END_TEST
 
-
-#ifdef TRAVIS_ENV
-static const uint8_t timeout_mux = 20;
-#else
-static const uint8_t timeout_mux = 10;
-#endif
 
 static Suite *tox_suite(void)
 {
     Suite *s = suite_create("Tox many tcp");
 
     /* Each tox connects to a single tox TCP    */
-    DEFTESTCASE_SLOW(many_clients_tcp, 4 * timeout_mux);
+    DEFTESTCASE(many_clients_tcp);
 
     /* Try to make a connection to each "older sibling" tox instance via TCP */
-    DEFTESTCASE_SLOW(many_clients_tcp_b, 8 * timeout_mux);
+    DEFTESTCASE(many_clients_tcp_b);
 
     return s;
 }
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
+    srand((unsigned int) time(nullptr));
 
     Suite *tox = tox_suite();
     SRunner *test_runner = srunner_create(tox);

@@ -27,22 +27,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../toxcore/tox.h"
+#include "helpers.h"
+
 #include "../toxencryptsave/toxencryptsave.h"
 
 static const char *pphrase = "bar", *name = "foo", *savefile = "./save";
 
 static void save_data_encrypted(void)
 {
-    struct Tox_Options options;
-    tox_options_default(&options);
-    Tox *t = tox_new(&options, NULL);
+    struct Tox_Options *options = tox_options_new(nullptr);
+    Tox *t = tox_new_log(options, nullptr, nullptr);
+    tox_options_free(options);
 
-    tox_self_set_name(t, (const uint8_t *)name, strlen(name), NULL);
+    tox_self_set_name(t, (const uint8_t *)name, strlen(name), nullptr);
 
     FILE *f = fopen(savefile, "w");
 
-    off_t size = tox_get_savedata_size(t);
+    size_t size = tox_get_savedata_size(t);
     uint8_t *clear = (uint8_t *)malloc(size);
 
     /*this function does not write any data at all*/
@@ -60,7 +61,7 @@ static void save_data_encrypted(void)
     }
 
     size_t written_value = fwrite(cipher, sizeof(*cipher), size, f);
-    printf("written written_value = %li of %li\n", written_value, size);
+    printf("written written_value = %zu of %zu\n", written_value, size);
 
     free(cipher);
     free(clear);
@@ -78,7 +79,7 @@ static void load_data_decrypted(void)
     uint8_t *cipher = (uint8_t *)malloc(size);
     uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
-    printf("read read_vavue = %li of %li\n", read_value, size);
+    printf("read read_vavue = %zu of %ld\n", read_value, size);
 
     TOX_ERR_DECRYPTION derr;
 
@@ -87,19 +88,19 @@ static void load_data_decrypted(void)
         exit(3);
     }
 
-    struct Tox_Options options;
+    struct Tox_Options *options = tox_options_new(nullptr);
 
-    tox_options_default(&options);
+    tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
-    tox_options_set_savedata_type(&options, TOX_SAVEDATA_TYPE_TOX_SAVE);
-
-    tox_options_set_savedata_data(&options, clear, size);
+    tox_options_set_savedata_data(options, clear, size);
 
     TOX_ERR_NEW err;
 
-    Tox *t = tox_new(&options, &err);
+    Tox *t = tox_new_log(options, &err, nullptr);
 
-    if (t == NULL) {
+    tox_options_free(options);
+
+    if (t == nullptr) {
         fprintf(stderr, "error: tox_new returned the error value %d\n", err);
         return;
     }
@@ -121,6 +122,7 @@ static void load_data_decrypted(void)
 
 int main(void)
 {
+    setvbuf(stdout, nullptr, _IONBF, 0);
     save_data_encrypted();
     load_data_decrypted();
 

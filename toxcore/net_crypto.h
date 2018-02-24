@@ -89,98 +89,14 @@
 #define DEFAULT_PING_CONNECTION 1000
 #define DEFAULT_TCP_PING_CONNECTION 500
 
-typedef struct {
-    uint64_t sent_time;
-    uint16_t length;
-    uint8_t data[MAX_CRYPTO_DATA_SIZE];
-} Packet_Data;
+typedef struct Net_Crypto Net_Crypto;
 
-typedef struct {
-    Packet_Data *buffer[CRYPTO_PACKET_BUFFER_SIZE];
-    uint32_t  buffer_start;
-    uint32_t  buffer_end; /* packet numbers in array: {buffer_start, buffer_end) */
-} Packets_Array;
+const uint8_t *nc_get_self_public_key(const Net_Crypto *c);
+const uint8_t *nc_get_self_secret_key(const Net_Crypto *c);
+TCP_Connections *nc_get_tcp_c(const Net_Crypto *c);
+DHT *nc_get_dht(const Net_Crypto *c);
 
-typedef struct {
-    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The real public key of the peer. */
-    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
-    uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
-    uint8_t sessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* Our public key for this session. */
-    uint8_t sessionsecret_key[CRYPTO_SECRET_KEY_SIZE]; /* Our private key for this session. */
-    uint8_t peersessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The public key of the peer. */
-    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE]; /* The precomputed shared key from encrypt_precompute. */
-    uint8_t status; /* 0 if no connection, 1 we are sending cookie request packets,
-                     * 2 if we are sending handshake packets
-                     * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
-                     * 4 if the connection is established.
-                     */
-    uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
-    uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer */
-
-    uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
-    uint16_t temp_packet_length;
-    uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */
-    uint32_t temp_packet_num_sent;
-
-    IP_Port ip_portv4; /* The ip and port to contact this guy directly.*/
-    IP_Port ip_portv6;
-    uint64_t direct_lastrecv_timev4; /* The Time at which we last received a direct packet in ms. */
-    uint64_t direct_lastrecv_timev6;
-
-    uint64_t last_tcp_sent; /* Time the last TCP packet was sent. */
-
-    Packets_Array send_array;
-    Packets_Array recv_array;
-
-    int (*connection_status_callback)(void *object, int id, uint8_t status, void *userdata);
-    void *connection_status_callback_object;
-    int connection_status_callback_id;
-
-    int (*connection_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-    void *connection_data_callback_object;
-    int connection_data_callback_id;
-
-    int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-    void *connection_lossy_data_callback_object;
-    int connection_lossy_data_callback_id;
-
-    uint64_t last_request_packet_sent;
-    uint64_t direct_send_attempt_time;
-
-    uint32_t packet_counter;
-    double packet_recv_rate;
-    uint64_t packet_counter_set;
-
-    double packet_send_rate;
-    uint32_t packets_left;
-    uint64_t last_packets_left_set;
-    double last_packets_left_rem;
-
-    double packet_send_rate_requested;
-    uint32_t packets_left_requested;
-    uint64_t last_packets_left_requested_set;
-    double last_packets_left_requested_rem;
-
-    uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
-    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE],
-         last_num_packets_resent[CONGESTION_LAST_SENT_ARRAY_SIZE];
-    uint32_t packets_sent, packets_resent;
-    uint64_t last_congestion_event;
-    uint64_t rtt_time;
-
-    /* TCP_connection connection_number */
-    unsigned int connection_number_tcp;
-
-    uint8_t maximum_speed_reached;
-
-    pthread_mutex_t mutex;
-
-    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
-    void *dht_pk_callback_object;
-    uint32_t dht_pk_callback_number;
-} Crypto_Connection;
-
-typedef struct {
+typedef struct New_Connection {
     IP_Port source;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The real public key of the peer. */
     uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer. */
@@ -189,37 +105,6 @@ typedef struct {
     uint8_t *cookie;
     uint8_t cookie_length;
 } New_Connection;
-
-typedef struct {
-    Logger *log;
-
-    DHT *dht;
-    TCP_Connections *tcp_c;
-
-    Crypto_Connection *crypto_connections;
-    pthread_mutex_t tcp_mutex;
-
-    pthread_mutex_t connections_mutex;
-    unsigned int connection_use_counter;
-
-    uint32_t crypto_connections_length; /* Length of connections array. */
-
-    /* Our public and secret keys. */
-    uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
-
-    /* The secret key used for cookies */
-    uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
-
-    int (*new_connection_callback)(void *object, New_Connection *n_c);
-    void *new_connection_callback_object;
-
-    /* The current optimal sleep time */
-    uint32_t current_sleep_time;
-
-    BS_LIST ip_port_list;
-} Net_Crypto;
-
 
 /* Set function to be called when someone requests a new connection to us.
  *

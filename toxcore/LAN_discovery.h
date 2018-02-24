@@ -26,27 +26,49 @@
 
 #include "DHT.h"
 
-/* Interval in seconds between LAN discovery packet sending. */
-#define LAN_DISCOVERY_INTERVAL 10
+#ifndef DHT_DEFINED
+#define DHT_DEFINED
+typedef struct DHT DHT;
+#endif /* DHT_DEFINED */
 
-/* Send a LAN discovery pcaket to the broadcast address with port port. */
-int send_LANdiscovery(uint16_t port, DHT *dht);
+#ifndef IP_DEFINED
+#define IP_DEFINED
+typedef struct IP IP;
+#endif /* IP_DEFINED */
 
-/* Sets up packet handlers. */
-void LANdiscovery_init(DHT *dht);
+/**
+ * Interval in seconds between LAN discovery packet sending.
+ */
+#define LAN_DISCOVERY_INTERVAL         10
 
-/* Clear packet handlers. */
-void LANdiscovery_kill(DHT *dht);
+uint32_t lan_discovery_interval(void);
 
-/* Is IP a local ip or not. */
-bool Local_ip(IP ip);
+/**
+ * Send a LAN discovery pcaket to the broadcast address with port port.
+ */
+int32_t lan_discovery_send(uint16_t port, DHT *dht);
 
-/* checks if a given IP isn't routable
+/**
+ * Sets up packet handlers.
+ */
+void lan_discovery_init(DHT *dht);
+
+/**
+ * Clear packet handlers.
+ */
+void lan_discovery_kill(DHT *dht);
+
+/**
+ * Is IP a local ip or not.
+ */
+bool ip_is_local(IP ip);
+
+/**
+ * checks if a given IP isn't routable
  *
  *  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-int LAN_ip(IP ip);
-
+int32_t ip_is_lan(IP ip);
 
 #endif

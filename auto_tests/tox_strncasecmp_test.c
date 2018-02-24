@@ -29,7 +29,7 @@ void verify(const char *s1, const char *s2, size_t n, Comparison expected)
 
     ck_assert_msg(actual == expected,
                   "tox_strncasecmp(\"%s\", \"%s\", %u) == %s, but expected %s.",
-                  s1, s2, n, Comparison_Str[actual], Comparison_Str[expected]);
+                  s1, s2, (unsigned)n, Comparison_Str[actual], Comparison_Str[expected]);
 }
 
 START_TEST(test_general)
@@ -47,7 +47,7 @@ START_TEST(test_general)
     // unequal strings with n=0 are equal
     verify("A", "B", 0, ZERO);
     verify("AAA", "BBB", 0, ZERO);
-    verify("AAA", "BBBBBB", 0 , ZERO);
+    verify("AAA", "BBBBBB", 0, ZERO);
     verify("AAAAAA", "BBB", 0, ZERO);
 
     // equal strings are equal
@@ -111,7 +111,7 @@ START_TEST(test_general)
     // unequal strings with n=0 are equal
     verify("a", "B", 0, ZERO);
     verify("aaa", "BBB", 0, ZERO);
-    verify("aaa", "BBBBBB", 0 , ZERO);
+    verify("aaa", "BBBBBB", 0, ZERO);
     verify("aaaaaa", "BBB", 0, ZERO);
 
     // equal strings are equal
@@ -179,7 +179,9 @@ static Suite *tox_strncasecmp_suite(void)
 
 int main(int argc, char *argv[])
 {
-    srand((unsigned int) time(NULL));
+    setvbuf(stdout, nullptr, _IONBF, 0);
+
+    srand((unsigned int) time(nullptr));
 
     Suite *s = tox_strncasecmp_suite();
     SRunner *test_runner = srunner_create(s);

@@ -82,8 +82,7 @@ error for key_derivation {
   NULL,
   /**
    * The crypto lib was unable to derive a key from the given passphrase,
-   * which is usually a lack of memory issue. The functions accepting keys
-   * do not produce this error.
+   * which is usually a lack of memory issue.
    */
   FAILED,
 }
@@ -192,19 +191,10 @@ class pass_Key {
    * for encryption and decryption. It is derived from a salt and the user-
    * provided password.
    *
-   * The $this structure is hidden in the implementation. It can be allocated
-   * using $new and must be deallocated using $free.
+   * The $this structure is hidden in the implementation. It can be created
+   * using $derive or $derive_with_salt and must be deallocated using $free.
    */
   struct this;
-
-  /**
-   * Create a new $this. The initial value of it is indeterminate. To
-   * initialise it, use one of the derive_* functions below.
-   *
-   * In case of failure, this function returns NULL. The only failure mode at
-   * this time is memory allocation failure, so this function has no error code.
-   */
-  static this new();
 
   /**
    * Deallocate a $this. This function behaves like free(), so NULL is an
@@ -227,7 +217,7 @@ class pass_Key {
    *
    * @return true on success.
    */
-  bool derive(const uint8_t[passphrase_len] passphrase)
+  static this derive(const uint8_t[passphrase_len] passphrase)
       with error for key_derivation;
 
   /**
@@ -239,7 +229,7 @@ class pass_Key {
    *
    * @return true on success.
    */
-  bool derive_with_salt(const uint8_t[passphrase_len] passphrase, const uint8_t[PASS_SALT_LENGTH] salt)
+  static this derive_with_salt(const uint8_t[passphrase_len] passphrase, const uint8_t[PASS_SALT_LENGTH] salt)
       with error for key_derivation;
 
   /**
@@ -283,6 +273,8 @@ class pass_Key {
  * If the passed byte arrays are smaller than required, the behaviour is
  * undefined.
  *
+ * If the cipher text pointer or the salt is NULL, this function returns false.
+ *
  * Success does not say anything about the validity of the data, only that
  * data of the appropriate size was copied.
  *
@@ -307,7 +299,7 @@ static bool get_salt(const uint8_t *ciphertext, uint8_t[PASS_SALT_LENGTH] salt) 
  * If the passed byte array is smaller than required, the behaviour is
  * undefined.
  *
- * If the cipher text pointer is NULL, this function returns false.
+ * If the data pointer is NULL, the behaviour is undefined
  *
  * @return true if the data is encrypted by this module.
  */

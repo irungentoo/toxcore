@@ -60,7 +60,7 @@ static void manage_keys(DHT *dht)
 
     FILE *keys_file = fopen("key", "r");
 
-    if (keys_file != NULL) {
+    if (keys_file != nullptr) {
         /* If file was opened successfully -- load keys,
            otherwise save new keys */
         size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
@@ -70,15 +70,15 @@ static void manage_keys(DHT *dht)
             exit(1);
         }
 
-        memcpy(dht->self_public_key, keys, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(dht->self_secret_key, keys + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_SECRET_KEY_SIZE);
+        dht_set_self_public_key(dht, keys);
+        dht_set_self_public_key(dht, keys + CRYPTO_PUBLIC_KEY_SIZE);
         printf("Keys loaded successfully.\n");
     } else {
-        memcpy(keys, dht->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht->self_secret_key, CRYPTO_SECRET_KEY_SIZE);
+        memcpy(keys, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
+        memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht_get_self_secret_key(dht), CRYPTO_SECRET_KEY_SIZE);
         keys_file = fopen("key", "w");
 
-        if (keys_file == NULL) {
+        if (keys_file == nullptr) {
             printf("Error opening key file in write mode.\nKeys will not be saved.\n");
             return;
         }
@@ -115,12 +115,12 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(NULL, new_networking(NULL, ip, PORT), true);
+    DHT *dht = new_DHT(nullptr, new_networking(nullptr, ip, PORT), true);
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
 
 #ifdef DHT_NODE_EXTRA_PACKETS
-    bootstrap_set_callbacks(dht->net, DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
+    bootstrap_set_callbacks(dht_get_net(dht), DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
 #endif
 
     if (!(onion && onion_a)) {
@@ -137,27 +137,33 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
 #define NUM_PORTS 3
     uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
-    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht->self_secret_key, onion);
+    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
 
-    if (tcp_s == NULL) {
+    if (tcp_s == nullptr) {
         printf("TCP server failed to initialize.\n");
         exit(1);
     }
 
 #endif
 
-    FILE *file;
-    file = fopen("PUBLIC_ID.txt", "w");
+    const char *const public_id_filename = "PUBLIC_ID.txt";
+    FILE *file = fopen(public_id_filename, "w");
+
+    if (file == nullptr) {
+        printf("Could not open file \"%s\" for writing. Exiting...\n", public_id_filename);
+        exit(1);
+    }
 
     for (i = 0; i < 32; i++) {
-        printf("%02hhX", dht->self_public_key[i]);
-        fprintf(file, "%02hhX", dht->self_public_key[i]);
+        const uint8_t *const self_public_key = dht_get_self_public_key(dht);
+        printf("%02hhX", self_public_key[i]);
+        fprintf(file, "%02hhX", self_public_key[i]);
     }
 
     fclose(file);
 
     printf("\n");
-    printf("Port: %u\n", net_ntohs(dht->net->port));
+    printf("Port: %u\n", net_ntohs(net_port(dht_get_net(dht))));
 
     if (argc > argvoffset + 3) {
         printf("Trying to bootstrap into the network...\n");
@@ -176,7 +182,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
 
     uint64_t last_LANdiscovery = 0;
-    LANdiscovery_init(dht);
+    lan_discovery_init(dht);
 
     while (1) {
         if (is_waiting_for_dht_connection && DHT_isconnected(dht)) {
@@ -187,14 +193,14 @@ int main(int argc, char *argv[])
         do_DHT(dht);
 
         if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
-            send_LANdiscovery(net_htons(PORT), dht);
+            lan_discovery_send(net_htons(PORT), dht);
             last_LANdiscovery = unix_time();
         }
 
 #ifdef TCP_RELAY_ENABLED
         do_TCP_server(tcp_s);
 #endif
-        networking_poll(dht->net, NULL);
+        networking_poll(dht_get_net(dht), nullptr);
 
         c_sleep(1);
     }

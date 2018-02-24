@@ -35,12 +35,12 @@
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, int, int, const int16_t *, unsigned int,
-                           uint8_t, unsigned int, void *), void *userdata)
+int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int,
+                           uint8_t, uint32_t, void *), void *userdata)
 {
     Messenger *m = (Messenger *)tox;
     return add_av_groupchat(m->log, (Group_Chats *)m->conferences_object,
-                            (void (*)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *))audio_callback,
+                            (void (*)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *))audio_callback,
                             userdata);
 }
 
@@ -54,13 +54,14 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, int, int, co
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
+int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+                            void (*audio_callback)
+                            (void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
                             void *userdata)
 {
     Messenger *m = (Messenger *)tox;
     return join_av_groupchat(m->log, (Group_Chats *)m->conferences_object, friendnumber, data, length,
-                             (void (*)(Messenger *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *))audio_callback,
+                             (void (*)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *))audio_callback,
                              userdata);
 }
 
@@ -77,8 +78,8 @@ int toxav_join_av_groupchat(Tox *tox, int32_t friendnumber, const uint8_t *data,
  *
  * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
  */
-int toxav_group_send_audio(Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                           unsigned int sample_rate)
+int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                           uint32_t sample_rate)
 {
     Messenger *m = (Messenger *)tox;
     return group_send_audio((Group_Chats *)m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);

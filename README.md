@@ -3,7 +3,7 @@
 **Current build status:** [![Build Status](https://travis-ci.org/TokTok/c-toxcore.svg?branch=master)](https://travis-ci.org/TokTok/c-toxcore)
 **Current Coverage:** [![Coverage Status](https://coveralls.io/repos/github/TokTok/toxcore/badge.svg?branch=master)](https://coveralls.io/github/TokTok/toxcore?branch=master)
 
-[**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://wiki.tox.chat/Binaries) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md)
+[**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://wiki.tox.chat/Binaries) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md) **|** [**Toxcore's Projects**](https://github.com/TokTok/c-toxcore/projects)
 
 **IRC Channels:** Users: [#tox@freenode](https://webchat.freenode.net/?channels=tox), Developers: [#toktok@freenode](https://webchat.freenode.net/?channels=toktok)
 
@@ -167,7 +167,7 @@ We glossed over a lot of details, such as the user data which we passed to
 will work in the LAN, but not on an internet server) and the fact that we now
 have no clean way of stopping the bot (`while (true)`). If you want to write a
 real bot, you will probably want to read up on all the API functions. Consult
-the API documentation in [toxcore/tox.h](tox.h) for more information.
+the API documentation in [toxcore/tox.h](toxcore/tox.h) for more information.
 
 ### Other resources
 
