@@ -130,7 +130,6 @@ int load_state(load_state_callback_func load_state_callback, Logger *log, void *
     }
 
 
-    uint16_t type;
     uint32_t length_sub, cookie_type;
     uint32_t size_head = sizeof(uint32_t) * 2;
 
@@ -152,9 +151,8 @@ int load_state(load_state_callback_func load_state_callback, Logger *log, void *
             return -1;
         }
 
-        type = lendian_to_host16(cookie_type & 0xFFFF);
-
-        int ret = load_state_callback(outer, data, length_sub, type);
+        const uint16_t type = lendian_to_host16(cookie_type & 0xFFFF);
+        const int ret = load_state_callback(outer, data, length_sub, type);
 
         if (ret == -1) {
             return -1;

@@ -332,10 +332,8 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
 
     int pos = in_entries(onion_a, public_key);
 
-    unsigned int i;
-
     if (pos == -1) {
-        for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
+        for (unsigned i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
             if (is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)) {
                 pos = i;
             }

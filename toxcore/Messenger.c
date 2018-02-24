@@ -2768,10 +2768,10 @@ struct SAVED_FRIEND {
 static uint32_t friend_size()
 {
     uint32_t data = 0;
-    const struct SAVED_FRIEND temp = { 0 };
+    const struct SAVED_FRIEND *const temp = nullptr;
 
-#define VALUE_MEMBER(NAME) data += sizeof(temp.NAME)
-#define ARRAY_MEMBER(NAME) data += sizeof(temp.NAME)
+#define VALUE_MEMBER(NAME) data += sizeof(temp->NAME)
+#define ARRAY_MEMBER(NAME) data += sizeof(temp->NAME)
 
     // Exactly the same in friend_load, friend_save, and friend_size
     VALUE_MEMBER(status);
