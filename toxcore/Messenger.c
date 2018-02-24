@@ -2003,6 +2003,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     if (m->net == nullptr) {
         friendreq_kill(m->fr);
+        logger_kill(m->log);
         free(m);
 
         if (error && net_err == 1) {
@@ -2017,6 +2018,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
     if (m->dht == nullptr) {
         kill_networking(m->net);
         friendreq_kill(m->fr);
+        logger_kill(m->log);
         free(m);
         return nullptr;
     }
@@ -2027,6 +2029,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_networking(m->net);
         kill_DHT(m->dht);
         friendreq_kill(m->fr);
+        logger_kill(m->log);
         free(m);
         return nullptr;
     }
@@ -2045,6 +2048,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         kill_DHT(m->dht);
         kill_networking(m->net);
         friendreq_kill(m->fr);
+        logger_kill(m->log);
         free(m);
         return nullptr;
     }
@@ -2062,6 +2066,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
             kill_DHT(m->dht);
             kill_networking(m->net);
             friendreq_kill(m->fr);
+            logger_kill(m->log);
             free(m);
 
             if (error) {
