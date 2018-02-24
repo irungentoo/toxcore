@@ -1,32 +1,34 @@
-/* net_crypto.h
- *
+/*
  * Functions for the core network crypto.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef NET_CRYPTO_H
 #define NET_CRYPTO_H
 
 #include "DHT.h"
 #include "LAN_discovery.h"
 #include "TCP_connection.h"
+#include "logger.h"
+
 #include <pthread.h>
 
 #define CRYPTO_CONN_NO_CONNECTION 0
@@ -47,7 +49,7 @@
 /* Maximum total size of packets that net_crypto sends. */
 #define MAX_CRYPTO_PACKET_SIZE 1400
 
-#define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + crypto_box_MACBYTES)
+#define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + CRYPTO_MAC_SIZE)
 
 /* Max size of data in packets */
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
@@ -87,135 +89,22 @@
 #define DEFAULT_PING_CONNECTION 1000
 #define DEFAULT_TCP_PING_CONNECTION 500
 
-typedef struct {
-    uint64_t sent_time;
-    uint16_t length;
-    uint8_t data[MAX_CRYPTO_DATA_SIZE];
-} Packet_Data;
+typedef struct Net_Crypto Net_Crypto;
 
-typedef struct {
-    Packet_Data *buffer[CRYPTO_PACKET_BUFFER_SIZE];
-    uint32_t  buffer_start;
-    uint32_t  buffer_end; /* packet numbers in array: {buffer_start, buffer_end) */
-} Packets_Array;
+const uint8_t *nc_get_self_public_key(const Net_Crypto *c);
+const uint8_t *nc_get_self_secret_key(const Net_Crypto *c);
+TCP_Connections *nc_get_tcp_c(const Net_Crypto *c);
+DHT *nc_get_dht(const Net_Crypto *c);
 
-typedef struct {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t sent_nonce[crypto_box_NONCEBYTES]; /* Nonce of sent packets. */
-    uint8_t sessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* Our public key for this session. */
-    uint8_t sessionsecret_key[crypto_box_SECRETKEYBYTES]; /* Our private key for this session. */
-    uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
-    uint8_t shared_key[crypto_box_BEFORENMBYTES]; /* The precomputed shared key from encrypt_precompute. */
-    uint8_t status; /* 0 if no connection, 1 we are sending cookie request packets,
-                     * 2 if we are sending handshake packets
-                     * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
-                     * 4 if the connection is established.
-                     */
-    uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer */
-
-    uint8_t *temp_packet; /* Where the cookie request/handshake packet is stored while it is being sent. */
-    uint16_t temp_packet_length;
-    uint64_t temp_packet_sent_time; /* The time at which the last temp_packet was sent in ms. */
-    uint32_t temp_packet_num_sent;
-
-    IP_Port ip_portv4; /* The ip and port to contact this guy directly.*/
-    IP_Port ip_portv6;
-    uint64_t direct_lastrecv_timev4; /* The Time at which we last received a direct packet in ms. */
-    uint64_t direct_lastrecv_timev6;
-
-    uint64_t last_tcp_sent; /* Time the last TCP packet was sent. */
-
-    Packets_Array send_array;
-    Packets_Array recv_array;
-
-    int (*connection_status_callback)(void *object, int id, uint8_t status);
-    void *connection_status_callback_object;
-    int connection_status_callback_id;
-
-    int (*connection_data_callback)(void *object, int id, uint8_t *data, uint16_t length);
-    void *connection_data_callback_object;
-    int connection_data_callback_id;
-
-    int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length);
-    void *connection_lossy_data_callback_object;
-    int connection_lossy_data_callback_id;
-
-    uint64_t last_request_packet_sent;
-    uint64_t direct_send_attempt_time;
-
-    uint32_t packet_counter;
-    double packet_recv_rate;
-    uint64_t packet_counter_set;
-
-    double packet_send_rate;
-    uint32_t packets_left;
-    uint64_t last_packets_left_set;
-    double last_packets_left_rem;
-
-    double packet_send_rate_requested;
-    uint32_t packets_left_requested;
-    uint64_t last_packets_left_requested_set;
-    double last_packets_left_requested_rem;
-
-    uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
-    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE],
-         last_num_packets_resent[CONGESTION_LAST_SENT_ARRAY_SIZE];
-    uint32_t packets_sent, packets_resent;
-    uint64_t last_congestion_event;
-    uint64_t rtt_time;
-
-    /* TCP_connection connection_number */
-    unsigned int connection_number_tcp;
-
-    uint8_t maximum_speed_reached;
-
-    pthread_mutex_t mutex;
-
-    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key);
-    void *dht_pk_callback_object;
-    uint32_t dht_pk_callback_number;
-} Crypto_Connection;
-
-typedef struct {
+typedef struct New_Connection {
     IP_Port source;
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES]; /* The real public key of the peer. */
-    uint8_t dht_public_key[crypto_box_PUBLICKEYBYTES]; /* The dht public key of the peer. */
-    uint8_t recv_nonce[crypto_box_NONCEBYTES]; /* Nonce of received packets. */
-    uint8_t peersessionpublic_key[crypto_box_PUBLICKEYBYTES]; /* The public key of the peer. */
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The real public key of the peer. */
+    uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer. */
+    uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
+    uint8_t peersessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The public key of the peer. */
     uint8_t *cookie;
     uint8_t cookie_length;
 } New_Connection;
-
-typedef struct {
-    DHT *dht;
-    TCP_Connections *tcp_c;
-
-    Crypto_Connection *crypto_connections;
-    pthread_mutex_t tcp_mutex;
-
-    pthread_mutex_t connections_mutex;
-    unsigned int connection_use_counter;
-
-    uint32_t crypto_connections_length; /* Length of connections array. */
-
-    /* Our public and secret keys. */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
-
-    /* The secret key used for cookies */
-    uint8_t secret_symmetric_key[crypto_box_KEYBYTES];
-
-    int (*new_connection_callback)(void *object, New_Connection *n_c);
-    void *new_connection_callback_object;
-
-    /* The current optimal sleep time */
-    uint32_t current_sleep_time;
-
-    BS_LIST ip_port_list;
-} Net_Crypto;
-
 
 /* Set function to be called when someone requests a new connection to us.
  *
@@ -248,7 +137,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
  * return -1 on failure.
  * return 0 on success.
  */
-int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, _Bool connected);
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, bool connected);
 
 /* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
  *
@@ -261,7 +150,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
  * return 0 on success.
  */
 int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
-                              int (*connection_status_callback)(void *object, int id, uint8_t status), void *object, int id);
+                              int (*connection_status_callback)(void *object, int id, uint8_t status, void *userdata), void *object, int id);
 
 /* Set function to be called when connection with crypt_connection_id receives a lossless data packet of length.
  *
@@ -272,7 +161,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return 0 on success.
  */
 int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
-                            int id, uint8_t *data, uint16_t length), void *object, int id);
+                            int id, const uint8_t *data, uint16_t length, void *userdata), void *object, int id);
 
 
 /* Set function to be called when connection with crypt_connection_id receives a lossy data packet of length.
@@ -284,7 +173,8 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*
  * return 0 on success.
  */
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
-                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length), void *object,
+                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
+                                  void *object,
                                   int id);
 
 /* Set the function for this friend that will be callbacked with object and number if
@@ -298,7 +188,7 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  * return 0 on success.
  */
 int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(void *data, int32_t number,
-                       const uint8_t *dht_public_key), void *object, uint32_t number);
+                       const uint8_t *dht_public_key, void *userdata), void *object, uint32_t number);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
@@ -308,7 +198,7 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
 /* Return 1 if max speed was reached for this connection (no more data can be physically through the pipe).
  * Return 0 if it wasn't reached.
  */
-_Bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
+bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
 
 /* Sends a lossless cryptopacket.
  *
@@ -364,7 +254,7 @@ int get_random_tcp_con_number(Net_Crypto *c);
  * return 0 on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(Net_Crypto *c, unsigned int TCP_conn_number, const uint8_t *data, uint16_t length);
+int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length);
 
 /* Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
@@ -386,7 +276,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, _Bool *direct_connected,
+unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
                                       unsigned int *online_tcp_relays);
 
 /* Generate our public and private keys.
@@ -395,26 +285,26 @@ unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_
 void new_keys(Net_Crypto *c);
 
 /* Save the public and private keys to the keys array.
- *  Length must be crypto_box_PUBLICKEYBYTES + crypto_box_SECRETKEYBYTES.
+ *  Length must be CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE.
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys);
 
 /* Load the secret key.
- * Length must be crypto_box_SECRETKEYBYTES.
+ * Length must be CRYPTO_SECRET_KEY_SIZE.
  */
 void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(DHT *dht, TCP_Proxy_Info *proxy_info);
+Net_Crypto *new_net_crypto(Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info);
 
 /* return the optimal interval in ms for running do_net_crypto.
  */
 uint32_t crypto_run_interval(const Net_Crypto *c);
 
 /* Main loop. */
-void do_net_crypto(Net_Crypto *c);
+void do_net_crypto(Net_Crypto *c, void *userdata);
 
 void kill_net_crypto(Net_Crypto *c);
 

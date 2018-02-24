@@ -1,0 +1,42 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
+cc_library(
+    name = "misc_tools",
+    hdrs = [
+        "misc_tools.c",
+    ],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
+)
+
+cc_binary(
+    name = "DHT_test",
+    srcs = ["DHT_test.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "Messenger_test",
+    srcs = ["Messenger_test.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "av_test",
+    srcs = ["av_test.c"],
+    deps = [
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxav:monolith",
+        "//c-toxcore/toxcore",
+        "@opencv//:core",
+        "@opencv//:highgui",
+        "@portaudio",
+        "@sndfile",
+    ],
+)

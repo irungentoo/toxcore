@@ -1,0 +1,14 @@
+#!/bin/sh
+
+. other/travis/toxcore-linux-install
+
+# Also install vanilla NaCl
+[ -f $CACHE_DIR/lib/amd64/libnacl.a ] || {
+  curl https://hyperelliptic.org/nacl/nacl-20110221.tar.bz2 | tar jx
+  cd nacl-20110221 # pushd
+  "./do"
+  # "make install"
+  mv build/*/include/* $CACHE_DIR/include
+  mv build/*/lib/* $CACHE_DIR/lib
+  cd - # popd
+}

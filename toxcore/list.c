@@ -1,29 +1,35 @@
-/* list.h
- *
+/*
  * Simple struct with functions to create a list which associates ids with data
  * -Allows for finding ids associated with data such as IPs or public keys in a short time
  * -Should only be used if there are relatively few add/remove calls to the list
- *
- *  Copyright (C) 2014 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2014 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "list.h"
+
+#include "ccompat.h"
 
 /* Basically, the elements in the list are placed in order so that they can be searched for easily
  * -each element is seen as a big-endian integer when ordering them
@@ -113,23 +119,26 @@ static int find(const BS_LIST *list, const uint8_t *data)
  */
 static int resize(BS_LIST *list, uint32_t new_size)
 {
-    void *p;
-
-    p = realloc(list->data, list->element_size * new_size);
-
-    if (!p) {
-        return 0;
-    } else {
-        list->data = p;
+    if (new_size == 0) {
+        bs_list_free(list);
+        return 1;
     }
 
-    p = realloc(list->ids, sizeof(int) * new_size);
+    uint8_t *data = (uint8_t *)realloc(list->data, list->element_size * new_size);
 
-    if (!p) {
+    if (!data) {
         return 0;
-    } else {
-        list->ids = p;
     }
+
+    list->data = data;
+
+    int *ids = (int *)realloc(list->ids, sizeof(int) * new_size);
+
+    if (!ids) {
+        return 0;
+    }
+
+    list->ids = ids;
 
     return 1;
 }
@@ -141,8 +150,8 @@ int bs_list_init(BS_LIST *list, uint32_t element_size, uint32_t initial_capacity
     list->n = 0;
     list->element_size = element_size;
     list->capacity = 0;
-    list->data = NULL;
-    list->ids = NULL;
+    list->data = nullptr;
+    list->ids = nullptr;
 
     if (initial_capacity != 0) {
         if (!resize(list, initial_capacity)) {
@@ -159,7 +168,10 @@ void bs_list_free(BS_LIST *list)
 {
     //free both arrays
     free(list->data);
+    list->data = nullptr;
+
     free(list->ids);
+    list->ids = nullptr;
 }
 
 int bs_list_find(const BS_LIST *list, const uint8_t *data)

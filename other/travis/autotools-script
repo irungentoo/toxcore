@@ -1,0 +1,35 @@
+#!/bin/sh
+
+if perl -e '
+    use Socket qw(PF_INET6 SOCK_STREAM pack_sockaddr_in6 IN6ADDR_LOOPBACK);
+
+    socket(S, PF_INET6, SOCK_STREAM, 0) || exit 1;
+    bind(S, pack_sockaddr_in6(0, IN6ADDR_LOOPBACK)) || exit 1;
+'; then
+    IPV6_FLAG="--enable-ipv6"
+else
+    IPV6_FLAG="--disable-ipv6"
+fi
+
+# Build toxcore with some custom flags here. Note that this does *not* run the
+# tests, so any flags passed here are irrelevant to testing. This only checks
+# that we can build toxcore with the specified flags. Tests run with default
+# configure flags.
+./autogen.sh
+./configure \
+  --with-nacl-libs=$CACHE_DIR/lib/amd64 \
+  --with-nacl-headers=$CACHE_DIR/include/amd64 \
+  --enable-nacl \
+  --enable-daemon \
+  --enable-logging \
+  $IPV6_FLAG \
+  --with-log-level=TRACE
+
+# We use make instead of RUN $MAKE here, because the autotools build will only
+# ever run natively on the Linux container, never on a Windows cross compilation
+# docker instance or an OSX machine.
+make -j$NPROC -k
+
+# This runs `make check` with the default configure flags, not with the ones
+# above.
+TESTS $MAX_TEST_RETRIES make distcheck -j$NPROC -k

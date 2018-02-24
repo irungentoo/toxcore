@@ -1,0 +1,44 @@
+cc_library(
+    name = "helpers",
+    testonly = True,
+    hdrs = [
+        "check_compat.h",
+        "helpers.h",
+    ],
+)
+
+[cc_test(
+    name = src[:-2],
+    size = "small",
+    srcs = [src],
+    copts = ["-Wno-sign-compare"],
+    deps = [
+        ":helpers",
+        "//c-toxcore/other:monolith",
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxcore",
+        "//c-toxcore/toxencryptsave",
+    ],
+) for src in glob(["*_test.c"])]
+
+cc_library(
+    name = "monolith",
+    hdrs = glob([
+        "*.c",
+        "*.h",
+    ]),
+)
+
+cc_test(
+    name = "monolith_test",
+    size = "small",
+    srcs = ["monolith_test.cpp"],
+    copts = ["-Wno-sign-compare"],
+    deps = [
+        ":helpers",
+        ":monolith",
+        "//c-toxcore/other:monolith",
+        "//c-toxcore/testing:misc_tools",
+    ],
+)

@@ -1,12 +1,11 @@
 if BUILD_TESTS
 
-TESTS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
-check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test assoc_test onion_test TCP_test tox_test dht_autotest
+TESTS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test dht_autotest tox_strncasecmp_test
+check_PROGRAMS = encryptsave_test messenger_autotest crypto_test network_test onion_test TCP_test dht_autotest tox_strncasecmp_test
 
 AUTOTEST_CFLAGS = \
                          $(LIBSODIUM_CFLAGS) \
-                         $(NACL_CFLAGS) \
-                         $(CHECK_CFLAGS)
+                         $(NACL_CFLAGS)
 
 AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
@@ -15,8 +14,7 @@ AUTOTEST_LDADD = \
                         libtoxencryptsave.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(CHECK_LIBS)
+                        $(NACL_LIBS)
 
 
 
@@ -47,13 +45,6 @@ network_test_CFLAGS = $(AUTOTEST_CFLAGS)
 network_test_LDADD = $(AUTOTEST_LDADD)
 
 
-assoc_test_SOURCES = ../auto_tests/assoc_test.c
-
-assoc_test_CFLAGS = $(AUTOTEST_CFLAGS)
-
-assoc_test_LDADD = $(AUTOTEST_LDADD)
-
-
 onion_test_SOURCES = ../auto_tests/onion_test.c
 
 onion_test_CFLAGS = $(AUTOTEST_CFLAGS)
@@ -68,18 +59,27 @@ TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)
 TCP_test_LDADD = $(AUTOTEST_LDADD)
 
 
-tox_test_SOURCES = ../auto_tests/tox_test.c
-
-tox_test_CFLAGS = $(AUTOTEST_CFLAGS)
-
-tox_test_LDADD = $(AUTOTEST_LDADD)
-
-
 dht_autotest_SOURCES = ../auto_tests/dht_test.c
 
 dht_autotest_CFLAGS = $(AUTOTEST_CFLAGS)
 
 dht_autotest_LDADD = $(AUTOTEST_LDADD)
+
+
+# TODO(iphydf): These tests are broken. The code needs to be fixed, as the
+# tests themselves are correct.
+#selfname_change_conference_SOURCE = ../auto_tests/selfname_change_conference_test.c
+#
+#selfname_change_conference_CFLAGS = $(AUTOTEST_CFLAGS)
+#
+#selfname_change_conference_LDADD = $(AUTOTEST_LDADD)
+#
+#
+#self_conference_title_change_SOURCE = ../auto_tests/self_conference_title_change_test.c
+#
+#self_conference_title_change_CFLAGS = $(AUTOTEST_CFLAGS)
+#
+#self_conference_title_change_LDADD = $(AUTOTEST_LDADD)
 
 
 if BUILD_AV
@@ -107,5 +107,12 @@ encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
 encryptsave_test_LDADD = $(AUTOTEST_LDADD)
 
 
-EXTRA_DIST += $(top_srcdir)/auto_tests/friends_test.c \
-              $(top_srcdir)/auto_tests/helpers.h
+tox_strncasecmp_test_SOURCES = ../auto_tests/tox_strncasecmp_test.c
+
+tox_strncasecmp_test_CFLAGS = $(AUTOTEST_CFLAGS)
+
+tox_strncasecmp_test_LDADD = $(AUTOTEST_LDADD)
+
+
+EXTRA_DIST += $(top_srcdir)/auto_tests/check_compat.h
+EXTRA_DIST += $(top_srcdir)/auto_tests/helpers.h

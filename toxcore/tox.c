@@ -1,29 +1,35 @@
-/* tox.c
- *
+/*
  * The Tox public API.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#define _XOPEN_SOURCE 600
+
+#define TOX_DEFINED
+typedef struct Messenger Tox;
+#include "tox.h"
 
 #include "Messenger.h"
 #include "group.h"
@@ -31,35 +37,30 @@
 
 #include "../toxencryptsave/defines.h"
 
-#define TOX_DEFINED
-typedef struct Messenger Tox;
-
-#include "tox.h"
-
 #define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
 
-#if TOX_HASH_LENGTH != crypto_hash_sha256_BYTES
-#error TOX_HASH_LENGTH is assumed to be equal to crypto_hash_sha256_BYTES
+#if TOX_HASH_LENGTH != CRYPTO_SHA256_SIZE
+#error TOX_HASH_LENGTH is assumed to be equal to CRYPTO_SHA256_SIZE
 #endif
 
-#if FILE_ID_LENGTH != crypto_box_KEYBYTES
-#error FILE_ID_LENGTH is assumed to be equal to crypto_box_KEYBYTES
+#if FILE_ID_LENGTH != CRYPTO_SYMMETRIC_KEY_SIZE
+#error FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE
 #endif
 
-#if TOX_FILE_ID_LENGTH != crypto_box_KEYBYTES
-#error TOX_FILE_ID_LENGTH is assumed to be equal to crypto_box_KEYBYTES
+#if TOX_FILE_ID_LENGTH != CRYPTO_SYMMETRIC_KEY_SIZE
+#error TOX_FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE
 #endif
 
 #if TOX_FILE_ID_LENGTH != TOX_HASH_LENGTH
 #error TOX_FILE_ID_LENGTH is assumed to be equal to TOX_HASH_LENGTH
 #endif
 
-#if TOX_PUBLIC_KEY_SIZE != crypto_box_PUBLICKEYBYTES
-#error TOX_PUBLIC_KEY_SIZE is assumed to be equal to crypto_box_PUBLICKEYBYTES
+#if TOX_PUBLIC_KEY_SIZE != CRYPTO_PUBLIC_KEY_SIZE
+#error TOX_PUBLIC_KEY_SIZE is assumed to be equal to CRYPTO_PUBLIC_KEY_SIZE
 #endif
 
-#if TOX_SECRET_KEY_SIZE != crypto_box_SECRETKEYBYTES
-#error TOX_SECRET_KEY_SIZE is assumed to be equal to crypto_box_SECRETKEYBYTES
+#if TOX_SECRET_KEY_SIZE != CRYPTO_SECRET_KEY_SIZE
+#error TOX_SECRET_KEY_SIZE is assumed to be equal to CRYPTO_SECRET_KEY_SIZE
 #endif
 
 #if TOX_MAX_NAME_LENGTH != MAX_NAME_LENGTH
@@ -70,107 +71,62 @@ typedef struct Messenger Tox;
 #error TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH
 #endif
 
-uint32_t tox_version_major(void)
-{
-    return TOX_VERSION_MAJOR;
-}
-
-uint32_t tox_version_minor(void)
-{
-    return TOX_VERSION_MINOR;
-}
-
-uint32_t tox_version_patch(void)
-{
-    return TOX_VERSION_PATCH;
-}
 
 bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
 {
-  return (TOX_VERSION_MAJOR == major && /* Force the major version */
-            (TOX_VERSION_MINOR > minor || /* Current minor version must be newer than requested -- or -- */
-                (TOX_VERSION_MINOR == minor && TOX_VERSION_PATCH >= patch) /* the patch must be the same or newer */
-            )
-         );
+    return TOX_VERSION_IS_API_COMPATIBLE(major, minor, patch);
 }
 
-
-void tox_options_default(struct Tox_Options *options)
-{
-    if (options) {
-        memset(options, 0, sizeof(struct Tox_Options));
-        options->ipv6_enabled = 1;
-        options->udp_enabled = 1;
-        options->proxy_type = TOX_PROXY_TYPE_NONE;
-    }
-}
-
-struct Tox_Options *tox_options_new(TOX_ERR_OPTIONS_NEW *error)
-{
-    struct Tox_Options *options = calloc(sizeof(struct Tox_Options), 1);
-
-    if (options) {
-        tox_options_default(options);
-        SET_ERROR_PARAMETER(error, TOX_ERR_OPTIONS_NEW_OK);
-        return options;
-    }
-
-    SET_ERROR_PARAMETER(error, TOX_ERR_OPTIONS_NEW_MALLOC);
-    return NULL;
-}
-
-void tox_options_free(struct Tox_Options *options)
-{
-    free(options);
-}
 
 Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 {
-    if (!logger_get_global())
-        logger_set_global(logger_new(LOGGER_OUTPUT_FILE, LOGGER_LEVEL, "toxcore"));
-
     Messenger_Options m_options = {0};
 
-    _Bool load_savedata_sk = 0, load_savedata_tox = 0;
+    bool load_savedata_sk = false, load_savedata_tox = false;
 
-    if (options == NULL) {
+    if (options == nullptr) {
         m_options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     } else {
-        if (options->savedata_type != TOX_SAVEDATA_TYPE_NONE) {
-            if (options->savedata_data == NULL || options->savedata_length == 0) {
+        if (tox_options_get_savedata_type(options) != TOX_SAVEDATA_TYPE_NONE) {
+            if (tox_options_get_savedata_data(options) == nullptr || tox_options_get_savedata_length(options) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-                return NULL;
+                return nullptr;
             }
         }
 
-        if (options->savedata_type == TOX_SAVEDATA_TYPE_SECRET_KEY) {
-            if (options->savedata_length != TOX_SECRET_KEY_SIZE) {
+        if (tox_options_get_savedata_type(options) == TOX_SAVEDATA_TYPE_SECRET_KEY) {
+            if (tox_options_get_savedata_length(options) != TOX_SECRET_KEY_SIZE) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-                return NULL;
+                return nullptr;
             }
 
-            load_savedata_sk = 1;
-        } else if (options->savedata_type == TOX_SAVEDATA_TYPE_TOX_SAVE) {
-            if (options->savedata_length < TOX_ENC_SAVE_MAGIC_LENGTH) {
+            load_savedata_sk = true;
+        } else if (tox_options_get_savedata_type(options) == TOX_SAVEDATA_TYPE_TOX_SAVE) {
+            if (tox_options_get_savedata_length(options) < TOX_ENC_SAVE_MAGIC_LENGTH) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
-                return NULL;
+                return nullptr;
             }
 
-            if (sodium_memcmp(options->savedata_data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
+            if (crypto_memcmp(tox_options_get_savedata_data(options), TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
-                return NULL;
+                return nullptr;
             }
 
-            load_savedata_tox = 1;
+            load_savedata_tox = true;
         }
 
-        m_options.ipv6enabled = options->ipv6_enabled;
-        m_options.udp_disabled = !options->udp_enabled;
-        m_options.port_range[0] = options->start_port;
-        m_options.port_range[1] = options->end_port;
-        m_options.tcp_server_port = options->tcp_port;
+        m_options.ipv6enabled = tox_options_get_ipv6_enabled(options);
+        m_options.udp_disabled = !tox_options_get_udp_enabled(options);
+        m_options.port_range[0] = tox_options_get_start_port(options);
+        m_options.port_range[1] = tox_options_get_end_port(options);
+        m_options.tcp_server_port = tox_options_get_tcp_port(options);
+        m_options.hole_punching_enabled = tox_options_get_hole_punching_enabled(options);
+        m_options.local_discovery_enabled = tox_options_get_local_discovery_enabled(options);
 
-        switch (options->proxy_type) {
+        m_options.log_callback = (logger_cb *)tox_options_get_log_callback(options);
+        m_options.log_user_data = tox_options_get_log_user_data(options);
+
+        switch (tox_options_get_proxy_type(options)) {
             case TOX_PROXY_TYPE_HTTP:
                 m_options.proxy_info.proxy_type = TCP_PROXY_HTTP;
                 break;
@@ -185,27 +141,28 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
             default:
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_TYPE);
-                return NULL;
+                return nullptr;
         }
 
         if (m_options.proxy_info.proxy_type != TCP_PROXY_NONE) {
-            if (options->proxy_port == 0) {
+            if (tox_options_get_proxy_port(options) == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PORT);
-                return NULL;
+                return nullptr;
             }
 
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
-            if (m_options.ipv6enabled)
-                m_options.proxy_info.ip_port.ip.family = AF_UNSPEC;
-
-            if (!addr_resolve_or_parse_ip(options->proxy_host, &m_options.proxy_info.ip_port.ip, NULL)) {
-                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
-                //TODO: TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
-                return NULL;
+            if (m_options.ipv6enabled) {
+                m_options.proxy_info.ip_port.ip.family = TOX_AF_UNSPEC;
             }
 
-            m_options.proxy_info.ip_port.port = htons(options->proxy_port);
+            if (addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, nullptr) == 0) {
+                SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
+                // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
+                return nullptr;
+            }
+
+            m_options.proxy_info.ip_port.port = net_htons(tox_options_get_proxy_port(options));
         }
     }
 
@@ -223,13 +180,14 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         }
 
-        return NULL;
+        return nullptr;
     }
 
-    if (load_savedata_tox && messenger_load(m, options->savedata_data, options->savedata_length) == -1) {
+    if (load_savedata_tox
+            && messenger_load(m, tox_options_get_savedata_data(options), tox_options_get_savedata_length(options)) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
     } else if (load_savedata_sk) {
-        load_secret_key(m->net_crypto, options->savedata_data);
+        load_secret_key(m->net_crypto, tox_options_get_savedata_data(options));
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_OK);
@@ -240,10 +198,13 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
 
 void tox_kill(Tox *tox)
 {
+    if (tox == nullptr) {
+        return;
+    }
+
     Messenger *m = tox;
-    kill_groupchats(m->group_chat_object);
+    kill_groupchats((Group_Chats *)m->conferences_object);
     kill_messenger(m);
-    logger_kill_global();
 }
 
 size_t tox_get_savedata_size(const Tox *tox)
@@ -252,11 +213,11 @@ size_t tox_get_savedata_size(const Tox *tox)
     return messenger_size(m);
 }
 
-void tox_get_savedata(const Tox *tox, uint8_t *data)
+void tox_get_savedata(const Tox *tox, uint8_t *savedata)
 {
-    if (data) {
+    if (savedata) {
         const Messenger *m = tox;
-        messenger_save(m, data);
+        messenger_save(m, savedata);
     }
 }
 
@@ -272,49 +233,35 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
         return 0;
     }
 
-    struct addrinfo *root, *info;
+    IP_Port *root;
 
-    if (getaddrinfo(address, NULL, NULL, &root) != 0) {
+    int32_t count = net_getipport(address, &root, TOX_SOCK_DGRAM);
+
+    if (count == -1) {
+        net_freeipport(root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
 
-    info = root;
+    unsigned int i;
 
-    unsigned int count = 0;
-
-    do {
-        IP_Port ip_port;
-        ip_port.port = htons(port);
-        ip_port.ip.family = info->ai_family;
-
-        if (info->ai_socktype && info->ai_socktype != SOCK_DGRAM) {
-            continue;
-        }
-
-        if (info->ai_family == AF_INET) {
-            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
-        } else if (info->ai_family == AF_INET6) {
-            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
-        } else {
-            continue;
-        }
+    for (i = 0; i < count; i++) {
+        root[i].port = net_htons(port);
 
         Messenger *m = tox;
-        onion_add_bs_path_node(m->onion_c, ip_port, public_key);
-        DHT_bootstrap(m->dht, ip_port, public_key);
-        ++count;
-    } while ((info = info->ai_next));
+        onion_add_bs_path_node(m->onion_c, root[i], public_key);
+        DHT_bootstrap(m->dht, root[i], public_key);
+    }
 
-    freeaddrinfo(root);
+    net_freeipport(root);
 
     if (count) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+    return 0;
 }
 
 bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key,
@@ -330,48 +277,34 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
         return 0;
     }
 
-    struct addrinfo *root, *info;
+    IP_Port *root;
 
-    if (getaddrinfo(address, NULL, NULL, &root) != 0) {
+    int32_t count = net_getipport(address, &root, TOX_SOCK_STREAM);
+
+    if (count == -1) {
+        net_freeipport(root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return 0;
     }
 
-    info = root;
+    unsigned int i;
 
-    unsigned int count = 0;
-
-    do {
-        IP_Port ip_port;
-        ip_port.port = htons(port);
-        ip_port.ip.family = info->ai_family;
-
-        if (info->ai_socktype && info->ai_socktype != SOCK_STREAM) {
-            continue;
-        }
-
-        if (info->ai_family == AF_INET) {
-            ip_port.ip.ip4.in_addr = ((struct sockaddr_in *)info->ai_addr)->sin_addr;
-        } else if (info->ai_family == AF_INET6) {
-            ip_port.ip.ip6.in6_addr = ((struct sockaddr_in6 *)info->ai_addr)->sin6_addr;
-        } else {
-            continue;
-        }
+    for (i = 0; i < count; i++) {
+        root[i].port = net_htons(port);
 
         Messenger *m = tox;
-        add_tcp_relay(m->net_crypto, ip_port, public_key);
-        ++count;
-    } while ((info = info->ai_next));
+        add_tcp_relay(m->net_crypto, root[i], public_key);
+    }
 
-    freeaddrinfo(root);
+    net_freeipport(root);
 
     if (count) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+    return 0;
 }
 
 TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
@@ -382,18 +315,20 @@ TOX_CONNECTION tox_self_get_connection_status(const Tox *tox)
 
     if (ret == 2) {
         return TOX_CONNECTION_UDP;
-    } else if (ret == 1) {
-        return TOX_CONNECTION_TCP;
-    } else {
-        return TOX_CONNECTION_NONE;
     }
+
+    if (ret == 1) {
+        return TOX_CONNECTION_TCP;
+    }
+
+    return TOX_CONNECTION_NONE;
 }
 
 
-void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *function, void *user_data)
+void tox_callback_self_connection_status(Tox *tox, tox_self_connection_status_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_core_connection(m, function, user_data);
+    m_callback_core_connection(m, (void (*)(Messenger *, unsigned int, void *))callback);
 }
 
 uint32_t tox_iteration_interval(const Tox *tox)
@@ -402,11 +337,11 @@ uint32_t tox_iteration_interval(const Tox *tox)
     return messenger_run_interval(m);
 }
 
-void tox_iterate(Tox *tox)
+void tox_iterate(Tox *tox, void *user_data)
 {
     Messenger *m = tox;
-    do_messenger(m);
-    do_groupchats(m->group_chat_object);
+    do_messenger(m, user_data);
+    do_groupchats((Group_Chats *)m->conferences_object, user_data);
 }
 
 void tox_self_get_address(const Tox *tox, uint8_t *address)
@@ -420,29 +355,31 @@ void tox_self_get_address(const Tox *tox, uint8_t *address)
 void tox_self_set_nospam(Tox *tox, uint32_t nospam)
 {
     Messenger *m = tox;
-    set_nospam(&(m->fr), nospam);
+    set_nospam(m->fr, net_htonl(nospam));
 }
 
 uint32_t tox_self_get_nospam(const Tox *tox)
 {
     const Messenger *m = tox;
-    return get_nospam(&(m->fr));
+    return net_ntohl(get_nospam(m->fr));
 }
 
 void tox_self_get_public_key(const Tox *tox, uint8_t *public_key)
 {
     const Messenger *m = tox;
 
-    if (public_key)
-        memcpy(public_key, m->net_crypto->self_public_key, crypto_box_PUBLICKEYBYTES);
+    if (public_key) {
+        memcpy(public_key, nc_get_self_public_key(m->net_crypto), CRYPTO_PUBLIC_KEY_SIZE);
+    }
 }
 
 void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key)
 {
     const Messenger *m = tox;
 
-    if (secret_key)
-        memcpy(secret_key, m->net_crypto->self_secret_key, crypto_box_SECRETKEYBYTES);
+    if (secret_key) {
+        memcpy(secret_key, nc_get_self_secret_key(m->net_crypto), CRYPTO_SECRET_KEY_SIZE);
+    }
 }
 
 bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET_INFO *error)
@@ -455,14 +392,14 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET
     Messenger *m = tox;
 
     if (setname(m, name, length) == 0) {
-        //TODO: function to set different per group names?
-        send_name_all_groups(m->group_chat_object);
+        // TODO(irungentoo): function to set different per group names?
+        send_name_all_groups((Group_Chats *)m->conferences_object);
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
+    return 0;
 }
 
 size_t tox_self_get_name_size(const Tox *tox)
@@ -479,22 +416,22 @@ void tox_self_get_name(const Tox *tox, uint8_t *name)
     }
 }
 
-bool tox_self_set_status_message(Tox *tox, const uint8_t *status, size_t length, TOX_ERR_SET_INFO *error)
+bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t length, TOX_ERR_SET_INFO *error)
 {
-    if (!status && length != 0) {
+    if (!status_message && length != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
         return 0;
     }
 
     Messenger *m = tox;
 
-    if (m_set_statusmessage(m, status, length) == 0) {
+    if (m_set_statusmessage(m, status_message, length) == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         return 1;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
-        return 0;
     }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
+    return 0;
 }
 
 size_t tox_self_get_status_message_size(const Tox *tox)
@@ -503,24 +440,25 @@ size_t tox_self_get_status_message_size(const Tox *tox)
     return m_get_self_statusmessage_size(m);
 }
 
-void tox_self_get_status_message(const Tox *tox, uint8_t *status)
+void tox_self_get_status_message(const Tox *tox, uint8_t *status_message)
 {
-    if (status) {
+    if (status_message) {
         const Messenger *m = tox;
-        m_copy_self_statusmessage(m, status);
+        m_copy_self_statusmessage(m, status_message);
     }
 }
 
-void tox_self_set_status(Tox *tox, TOX_USER_STATUS user_status)
+void tox_self_set_status(Tox *tox, TOX_USER_STATUS status)
 {
     Messenger *m = tox;
-    m_set_userstatus(m, user_status);
+    m_set_userstatus(m, status);
 }
 
 TOX_USER_STATUS tox_self_get_status(const Tox *tox)
 {
     const Messenger *m = tox;
-    return m_get_self_userstatus(m);
+    const uint8_t status = m_get_self_userstatus(m);
+    return (TOX_USER_STATUS)status;
 }
 
 static void set_friend_error(int32_t ret, TOX_ERR_FRIEND_ADD *error)
@@ -553,7 +491,6 @@ static void set_friend_error(int32_t ret, TOX_ERR_FRIEND_ADD *error)
         case FAERR_NOMEM:
             SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_MALLOC);
             break;
-
     }
 }
 
@@ -601,7 +538,7 @@ bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *
     Messenger *m = tox;
     int ret = m_delfriend(m, friend_number);
 
-    //TODO handle if realloc fails?
+    // TODO(irungentoo): handle if realloc fails?
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND);
         return 0;
@@ -674,12 +611,12 @@ size_t tox_self_get_friend_list_size(const Tox *tox)
     return count_friendlist(m);
 }
 
-void tox_self_get_friend_list(const Tox *tox, uint32_t *list)
+void tox_self_get_friend_list(const Tox *tox, uint32_t *friend_list)
 {
-    if (list) {
+    if (friend_list) {
         const Messenger *m = tox;
-        //TODO: size parameter?
-        copy_friendlist(m, list, tox_self_get_friend_list_size(tox));
+        // TODO(irungentoo): size parameter?
+        copy_friendlist(m, friend_list, tox_self_get_friend_list_size(tox));
     }
 }
 
@@ -716,10 +653,10 @@ bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, 
     return 1;
 }
 
-void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *function, void *user_data)
+void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_namechange(m, function, user_data);
+    m_callback_namechange(m, callback);
 }
 
 size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
@@ -736,17 +673,17 @@ size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number
     return ret;
 }
 
-bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8_t *message,
+bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8_t *status_message,
                                    TOX_ERR_FRIEND_QUERY *error)
 {
-    if (!message) {
+    if (!status_message) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
         return 0;
     }
 
     const Messenger *m = tox;
-    //TODO: size parameter?
-    int ret = m_copy_statusmessage(m, friend_number, message, m_get_statusmessage_size(m, friend_number));
+    // TODO(irungentoo): size parameter?
+    int ret = m_copy_statusmessage(m, friend_number, status_message, m_get_statusmessage_size(m, friend_number));
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
@@ -757,10 +694,10 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
     return 1;
 }
 
-void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *function, void *user_data)
+void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_statusmessage(m, function, user_data);
+    m_callback_statusmessage(m, callback);
 }
 
 TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
@@ -771,17 +708,17 @@ TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TO
 
     if (ret == USERSTATUS_INVALID) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
-        return TOX_USER_STATUS_BUSY + 1;
+        return (TOX_USER_STATUS)(TOX_USER_STATUS_BUSY + 1);
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
-    return ret;
+    return (TOX_USER_STATUS)ret;
 }
 
-void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *function, void *user_data)
+void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_userstatus(m, function, user_data);
+    m_callback_userstatus(m, (void (*)(Messenger *, uint32_t, unsigned int, void *))callback);
 }
 
 TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
@@ -796,13 +733,13 @@ TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
-    return ret;
+    return (TOX_CONNECTION)ret;
 }
 
-void tox_callback_friend_connection_status(Tox *tox, tox_friend_connection_status_cb *function, void *user_data)
+void tox_callback_friend_connection_status(Tox *tox, tox_friend_connection_status_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_connectionstatus(m, function, user_data);
+    m_callback_connectionstatus(m, (void (*)(Messenger *, uint32_t, unsigned int, void *))callback);
 }
 
 bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error)
@@ -819,17 +756,17 @@ bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEN
     return !!ret;
 }
 
-void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *function, void *user_data)
+void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_typingchange(m, function, user_data);
+    m_callback_typingchange(m, callback);
 }
 
-bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool is_typing, TOX_ERR_SET_TYPING *error)
+bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool typing, TOX_ERR_SET_TYPING *error)
 {
     Messenger *m = tox;
 
-    if (m_set_usertyping(m, friend_number, is_typing) == -1) {
+    if (m_set_usertyping(m, friend_number, typing) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_TYPING_FRIEND_NOT_FOUND);
         return 0;
     }
@@ -886,22 +823,22 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_T
     return message_id;
 }
 
-void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *function, void *user_data)
+void tox_callback_friend_read_receipt(Tox *tox, tox_friend_read_receipt_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_read_receipt(m, function, user_data);
+    m_callback_read_receipt(m, callback);
 }
 
-void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *function, void *user_data)
+void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_friendrequest(m, function, user_data);
+    m_callback_friendrequest(m, callback);
 }
 
-void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *function, void *user_data)
+void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback)
 {
     Messenger *m = tox;
-    m_callback_friendmessage(m, function, user_data);
+    m_callback_friendmessage(m, (void (*)(Messenger *, uint32_t, unsigned int, const uint8_t *, size_t, void *))callback);
 }
 
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
@@ -910,7 +847,7 @@ bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
         return 0;
     }
 
-    crypto_hash_sha256(hash, data, length);
+    crypto_sha256(hash, data, length);
     return 1;
 }
 
@@ -987,7 +924,7 @@ bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint6
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_NOT_FOUND);
             return 0;
 
-        case -4:
+        case -4: // fall-through
         case -5:
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_DENIED);
             return 0;
@@ -1005,10 +942,10 @@ bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint6
     return 0;
 }
 
-void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *function, void *user_data)
+void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_control(m, function, user_data);
+    callback_file_control(m, (void (*)(Messenger *, uint32_t, uint32_t, unsigned int, void *))callback);
 }
 
 bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t *file_id,
@@ -1025,7 +962,9 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_OK);
         return 1;
-    } else if (ret == -1) {
+    }
+
+    if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_FRIEND_NOT_FOUND);
     } else {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NOT_FOUND);
@@ -1125,22 +1064,370 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
     return 0;
 }
 
-void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *function, void *user_data)
+void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_reqchunk(m, function, user_data);
+    callback_file_reqchunk(m, callback);
 }
 
-void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *function, void *user_data)
+void tox_callback_file_recv(Tox *tox, tox_file_recv_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_sendrequest(m, function, user_data);
+    callback_file_sendrequest(m, callback);
 }
 
-void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *function, void *user_data)
+void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback)
 {
     Messenger *m = tox;
-    callback_file_data(m, function, user_data);
+    callback_file_data(m, callback);
+}
+
+void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_group_invite((Group_Chats *)m->conferences_object, (void (*)(Messenger * m, uint32_t, int, const uint8_t *,
+                            size_t,
+                            void *))callback);
+}
+
+void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_group_message((Group_Chats *)m->conferences_object, (void (*)(Messenger * m, uint32_t, uint32_t, int,
+                             const uint8_t *,
+                             size_t, void *))callback);
+}
+
+void tox_callback_conference_title(Tox *tox, tox_conference_title_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_group_title((Group_Chats *)m->conferences_object, callback);
+}
+
+void tox_callback_conference_peer_name(Tox *tox, tox_conference_peer_name_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_peer_name((Group_Chats *)m->conferences_object, callback);
+}
+
+void tox_callback_conference_peer_list_changed(Tox *tox, tox_conference_peer_list_changed_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_peer_list_changed((Group_Chats *)m->conferences_object, callback);
+}
+
+void tox_callback_conference_namelist_change(Tox *tox, tox_conference_namelist_change_cb *callback)
+{
+    Messenger *m = tox;
+    g_callback_group_namelistchange((Group_Chats *)m->conferences_object,
+                                    (void (*)(struct Messenger *, uint32_t, uint32_t, int, void *))callback);
+}
+
+uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error)
+{
+    Messenger *m = tox;
+    int ret = add_groupchat((Group_Chats *)m->conferences_object, GROUPCHAT_TYPE_TEXT);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_NEW_INIT);
+        return UINT32_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_NEW_OK);
+    return ret;
+}
+
+bool tox_conference_delete(Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_DELETE *error)
+{
+    Messenger *m = tox;
+    int ret = del_groupchat((Group_Chats *)m->conferences_object, conference_number);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_DELETE_OK);
+    return true;
+}
+
+uint32_t tox_conference_peer_count(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_PEER_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = group_number_peers((Group_Chats *)m->conferences_object, conference_number);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND);
+        return UINT32_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+    return ret;
+}
+
+size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
+        TOX_ERR_CONFERENCE_PEER_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = group_peername_size((Group_Chats *)m->conferences_object, conference_number, peer_number);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND);
+            return -1;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_PEER_NOT_FOUND);
+            return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+    return ret;
+}
+
+bool tox_conference_peer_get_name(const Tox *tox, uint32_t conference_number, uint32_t peer_number, uint8_t *name,
+                                  TOX_ERR_CONFERENCE_PEER_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = group_peername((Group_Chats *)m->conferences_object, conference_number, peer_number, name);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_PEER_NOT_FOUND);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+    return true;
+}
+
+bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
+                                        uint8_t *public_key, TOX_ERR_CONFERENCE_PEER_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = group_peer_pubkey((Group_Chats *)m->conferences_object, conference_number, peer_number, public_key);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_PEER_NOT_FOUND);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+    return true;
+}
+
+bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
+                                        TOX_ERR_CONFERENCE_PEER_QUERY *error)
+{
+    const Messenger *m = tox;
+    int ret = group_peernumber_is_ours((Group_Chats *)m->conferences_object, conference_number, peer_number);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_PEER_NOT_FOUND);
+            return false;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_NO_CONNECTION);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+    return ret;
+}
+
+bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t conference_number,
+                           TOX_ERR_CONFERENCE_INVITE *error)
+{
+    Messenger *m = tox;
+    int ret = invite_friend((Group_Chats *)m->conferences_object, friend_number, conference_number);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_INVITE_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_INVITE_FAIL_SEND);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_INVITE_OK);
+    return true;
+}
+
+uint32_t tox_conference_join(Tox *tox, uint32_t friend_number, const uint8_t *cookie, size_t length,
+                             TOX_ERR_CONFERENCE_JOIN *error)
+{
+    Messenger *m = tox;
+    int ret = join_groupchat((Group_Chats *)m->conferences_object, friend_number, GROUPCHAT_TYPE_TEXT, cookie, length);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_INVALID_LENGTH);
+            return UINT32_MAX;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_WRONG_TYPE);
+            return UINT32_MAX;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_FRIEND_NOT_FOUND);
+            return UINT32_MAX;
+
+        case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_DUPLICATE);
+            return UINT32_MAX;
+
+        case -5:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_INIT_FAIL);
+            return UINT32_MAX;
+
+        case -6:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_FAIL_SEND);
+            return UINT32_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_JOIN_OK);
+    return ret;
+}
+
+bool tox_conference_send_message(Tox *tox, uint32_t conference_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
+                                 size_t length, TOX_ERR_CONFERENCE_SEND_MESSAGE *error)
+{
+    Messenger *m = tox;
+    int ret = 0;
+
+    if (type == TOX_MESSAGE_TYPE_NORMAL) {
+        ret = group_message_send((Group_Chats *)m->conferences_object, conference_number, message, length);
+    } else {
+        ret = group_action_send((Group_Chats *)m->conferences_object, conference_number, message, length);
+    }
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SEND_MESSAGE_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SEND_MESSAGE_TOO_LONG);
+            return false;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SEND_MESSAGE_NO_CONNECTION);
+            return false;
+
+        case -4:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SEND_MESSAGE_FAIL_SEND);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SEND_MESSAGE_OK);
+    return true;
+}
+
+size_t tox_conference_get_title_size(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_TITLE *error)
+{
+    const Messenger *m = tox;
+    int ret = group_title_get_size((Group_Chats *)m->conferences_object, conference_number);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_CONFERENCE_NOT_FOUND);
+            return -1;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_INVALID_LENGTH);
+            return -1;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_OK);
+    return ret;
+}
+
+bool tox_conference_get_title(const Tox *tox, uint32_t conference_number, uint8_t *title,
+                              TOX_ERR_CONFERENCE_TITLE *error)
+{
+    const Messenger *m = tox;
+    int ret = group_title_get((Group_Chats *)m->conferences_object, conference_number, title);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_INVALID_LENGTH);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_OK);
+    return true;
+}
+
+bool tox_conference_set_title(Tox *tox, uint32_t conference_number, const uint8_t *title, size_t length,
+                              TOX_ERR_CONFERENCE_TITLE *error)
+{
+    Messenger *m = tox;
+    int ret = group_title_send((Group_Chats *)m->conferences_object, conference_number, title, length);
+
+    switch (ret) {
+        case -1:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_CONFERENCE_NOT_FOUND);
+            return false;
+
+        case -2:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_INVALID_LENGTH);
+            return false;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_FAIL_SEND);
+            return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_TITLE_OK);
+    return true;
+}
+
+size_t tox_conference_get_chatlist_size(const Tox *tox)
+{
+    const Messenger *m = tox;
+    return count_chatlist((Group_Chats *)m->conferences_object);
+}
+
+void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist)
+{
+    const Messenger *m = tox;
+    size_t list_size = tox_conference_get_chatlist_size(tox);
+    copy_chatlist((Group_Chats *)m->conferences_object, chatlist, list_size);
+}
+
+TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_number,
+        TOX_ERR_CONFERENCE_GET_TYPE *error)
+{
+    const Messenger *m = tox;
+    int ret = group_get_type((Group_Chats *)m->conferences_object, conference_number);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_GET_TYPE_CONFERENCE_NOT_FOUND);
+        return (TOX_CONFERENCE_TYPE)ret;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_GET_TYPE_OK);
+    return (TOX_CONFERENCE_TYPE)ret;
 }
 
 static void set_custom_packet_error(int ret, TOX_ERR_FRIEND_CUSTOM_PACKET *error)
@@ -1192,21 +1479,21 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
         return 0;
     }
 
-    int ret = send_custom_lossy_packet(m, friend_number, data, length);
+    int ret = m_send_custom_lossy_packet(m, friend_number, data, length);
 
     set_custom_packet_error(ret, error);
 
     if (ret == 0) {
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
-void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *function, void *user_data)
+void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *callback)
 {
     Messenger *m = tox;
-    custom_lossy_packet_registerhandler(m, function, user_data);
+    custom_lossy_packet_registerhandler(m, callback);
 }
 
 bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
@@ -1230,29 +1517,29 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
 
     if (ret == 0) {
         return 1;
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
-void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *function, void *user_data)
+void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *callback)
 {
     Messenger *m = tox;
-    custom_lossless_packet_registerhandler(m, function, user_data);
+    custom_lossless_packet_registerhandler(m, callback);
 }
 
 void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
 {
     if (dht_id) {
         const Messenger *m = tox;
-        memcpy(dht_id , m->dht->self_public_key, crypto_box_PUBLICKEYBYTES);
+        memcpy(dht_id, dht_get_self_public_key(m->dht), CRYPTO_PUBLIC_KEY_SIZE);
     }
 }
 
 uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
 {
     const Messenger *m = tox;
-    uint16_t port = htons(m->net->port);
+    uint16_t port = net_htons(net_port(m->net));
 
     if (port) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
@@ -1270,10 +1557,8 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error)
     if (m->tcp_server) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
         return m->options.tcp_server_port;
-    } else {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
-        return 0;
     }
-}
 
-#include "tox_old_code.h"
+    SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+    return 0;
+}

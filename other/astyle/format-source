@@ -1,0 +1,61 @@
+#!/bin/sh
+
+set -ex
+
+SOURCE_DIR="$1"
+ASTYLE="$2"
+APIDSL="$3"
+
+# Go to the source root.
+if [ -z "$SOURCE_DIR" ]; then
+  SOURCE_DIR=.
+fi
+cd "$SOURCE_DIR"
+
+if [ -z "$ASTYLE" ] || ! which "$ASTYLE"; then
+  ASTYLE=astyle
+fi
+
+if ! which "$ASTYLE"; then
+  # If we couldn't find or install an astyle binary, don't do anything.
+  echo "Could not find an astyle binary; please install astyle."
+  exit 1
+fi
+
+if ! which "$APIDSL"; then
+  if [ -f ../apidsl/apigen.native ]; then
+    APIDSL=../apidsl/apigen.native
+  else
+    APIDSL=apidsl_curl
+  fi
+fi
+
+apidsl_curl() {
+  curl -X POST --data-binary @"$1" https://apidsl.herokuapp.com/apidsl
+}
+
+# Check if apidsl generated sources are up to date.
+$APIDSL toxcore/crypto_core.api.h > toxcore/crypto_core.h &
+$APIDSL toxcore/tox.api.h > toxcore/tox.h &
+$APIDSL toxav/toxav.api.h > toxav/toxav.h &
+$APIDSL toxencryptsave/toxencryptsave.api.h > toxencryptsave/toxencryptsave.h &
+
+wait; wait; wait; wait
+
+if grep '<unresolved>' */*.h; then
+  echo "error: some apidsl references were unresolved"
+  exit 1
+fi
+
+FIND="find ."
+FIND="$FIND '(' -name '*.[ch]' -or -name '*.cpp' ')'"
+FIND="$FIND -and -not -name '*.api.h'"
+FIND="$FIND -and -not -wholename './super_donators/*'"
+FIND="$FIND -and -not -wholename './third_party/*'"
+FIND="$FIND -and -not -wholename './toxencryptsave/crypto_pwhash*'"
+
+SOURCES=`eval "$FIND"`
+
+$ASTYLE -n --options=other/astyle/astylerc $SOURCES
+
+git diff --exit-code

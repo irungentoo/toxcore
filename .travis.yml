@@ -1,58 +1,95 @@
-sudo: required
-dist: trusty
+# For Pull Requests, we build only the first three jobs: autotools on Linux,
+# cmake on Linux, and cmake on Windows 32 bit.
+#
+# For branch builds and cron builds (once a day), we build all the jobs. This
+# is achieved using the "if: type IN (push, api, cron)" fields in the matrix.
+
 language: c
-compiler:
-  - gcc
-  - clang
 
-before_script:
-  - sudo add-apt-repository ppa:avsm/ocaml42+opam12 -y
-  - sudo apt-get update -qq
-  - sudo apt-get install ocaml opam astyle -qq
-  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
-  # build apidsl
-  - git clone https://github.com/iphydf/apidsl
-  - cd apidsl
-  - export OPAMYES=1
-  - opam init
-  - opam install ocamlfind ppx_deriving menhir
-  - eval `opam config env`
-  - make -j3
-  - cd ..
-  # install sodium, as it's not in Ubuntu Trusty
-  - git clone git://github.com/jedisct1/libsodium.git
-  - cd libsodium
-  - git checkout tags/1.0.8
-  - ./autogen.sh
-  - ./configure
-  - make -j3
-  - sudo make install
-  - cd ..
-  - sudo ldconfig
+matrix:
+  include:
+  - stage: "Stage 1"
+    env: JOB=toxcore ENV=linux
+    compiler: clang
+    addons:
+      apt: &apt-dependencies
+        packages:
+        - libconfig-dev         # For tox-bootstrapd.
+        - libcv-dev             # For av_test.
+        - libhighgui-dev        # For av_test.
+        - libopencv-contrib-dev # For av_test.
+        - libopus-dev           # For toxav.
+        - libsndfile1-dev       # For av_test.
+        - libgtest-dev          # For unit tests.
+        - libvpx-dev            # For toxav.
+        - portaudio19-dev       # For av_test.
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=autotools ENV=linux
+    compiler: gcc
+    addons:
+      apt: *apt-dependencies
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=toxcore ENV=windows ARCH=i686
+    group: deprecated-2017Q4
+    services:
+    - docker
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=toxcore ENV=windows ARCH=x86_64
+    group: deprecated-2017Q4
+    services:
+    - docker
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=installmd ENV=windows SUPPORT_ARCH_i686=true SUPPORT_ARCH_x86_64=false SUPPORT_TEST=true ENABLE_ARCH_i686=true ENABLE_ARCH_x86_64=false ENABLE_TEST=true ALLOW_TEST_FAILURE=true
+    services:
+    - docker
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=installmd ENV=windows SUPPORT_ARCH_i686=false SUPPORT_ARCH_x86_64=true SUPPORT_TEST=true ENABLE_ARCH_i686=false ENABLE_ARCH_x86_64=true ENABLE_TEST=true ALLOW_TEST_FAILURE=true
+    services:
+    - docker
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=toxcore ENV=freebsd
+    dist: trusty
+    sudo: required
+    install:       other/travis/phase $JOB $ENV install       stage1
+    script:        other/travis/phase $JOB $ENV script        stage1
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
+    env: JOB=tox-bootstrapd-docker ENV=linux
+    services:
+    - docker
+    sudo: required
+  - stage: "Stage 2"
+    if: type IN (push, api, cron)
+    env: JOB=toxcore ENV=freebsd
+    dist: trusty
+    sudo: required
+    install:       other/travis/phase $JOB $ENV install       stage2
+  - stage: "Stage 2"
+    if: type IN (push, api, cron)
+    env: JOB=toxcore ENV=osx RUN_TESTS=true
+    os: osx
+  fast_finish: true
 
-script:
-  # check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h
-  # tox.h
-  - ./apidsl/_build/apigen.native ./other/apidsl/tox.in.h > tox.h
-  - astyle --options=./other/astyle/astylerc tox.h
-  - diff -u tox.h ./toxcore/tox.h
-  # toxav.h
-  - ./apidsl/_build/apigen.native ./other/apidsl/toxav.in.h > toxav.h
-  - astyle --options=./other/astyle/astylerc toxav.h
-  - diff -u toxav.h ./toxav/toxav.h
-  # build toxcore and run tests
-  - ./autogen.sh
-  - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --enable-ntox
-  - make
-  - make check
-  - cat build/test-suite.log
-  - make dist
+cache:
+  directories:
+  - $HOME/cache
+  - /opt/freebsd/cache
+
+install:       other/travis/phase $JOB $ENV install
+script:        other/travis/phase $JOB $ENV script
+after_script:  other/travis/phase $JOB $ENV after_script
+after_failure: other/travis/phase $JOB $ENV after_failure
 
 notifications:
-  email: false
-
   irc:
     channels:
-      - "chat.freenode.net#tox-dev"
-    on_success: always
-    on_failure: always
+    - "chat.freenode.net#toktok-status"
+    template:
+    - "%{result} %{repository_name} %{build_url}"
+    - "#%{build_number} changes: %{compare_url}"

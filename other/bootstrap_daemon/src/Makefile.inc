@@ -6,10 +6,15 @@ tox_bootstrapd_SOURCES = \
                         ../other/bootstrap_daemon/src/command_line_arguments.c \
                         ../other/bootstrap_daemon/src/command_line_arguments.h \
                         ../other/bootstrap_daemon/src/config.c \
-                        ../other/bootstrap_daemon/src/config_defaults.h \
                         ../other/bootstrap_daemon/src/config.h \
+                        ../other/bootstrap_daemon/src/config_defaults.h \
+                        ../other/bootstrap_daemon/src/global.h \
                         ../other/bootstrap_daemon/src/log.c \
                         ../other/bootstrap_daemon/src/log.h \
+                        ../other/bootstrap_daemon/src/log_backend_stdout.c \
+                        ../other/bootstrap_daemon/src/log_backend_stdout.h \
+                        ../other/bootstrap_daemon/src/log_backend_syslog.c \
+                        ../other/bootstrap_daemon/src/log_backend_syslog.h \
                         ../other/bootstrap_daemon/src/tox-bootstrapd.c \
                         ../other/bootstrap_daemon/src/global.h \
                         ../other/bootstrap_node_packets.c \

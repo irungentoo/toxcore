@@ -1,39 +1,46 @@
 /*
- * util.h -- Utilities.
- *
- * This file is donated to the Tox Project.
- * Copyright 2013  plutooo
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ * Utilities.
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ * Copyright © 2013 plutooo
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ * This file is donated to the Tox Project.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#ifndef UTIL_H
+#define UTIL_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <pthread.h>
+
+#include "logger.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
-void unix_time_update();
-uint64_t unix_time();
+void unix_time_update(void);
+uint64_t unix_time(void);
 int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 
@@ -52,21 +59,17 @@ void lendian_to_host32(uint32_t *dest, const uint8_t *lendian);
 
 /* state load/save */
 typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
-int load_state(load_state_callback_func load_state_callback, void *outer,
+int load_state(load_state_callback_func load_state_callback, Logger *log, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
-/* Ring buffer */
-typedef struct RingBuffer RingBuffer;
-bool rb_full(const RingBuffer *b);
-bool rb_empty(const RingBuffer *b);
-void *rb_write(RingBuffer *b, void *p);
-bool rb_read(RingBuffer *b, void **p);
-RingBuffer *rb_new(int size);
-void rb_kill(RingBuffer *b);
-uint16_t rb_size(const RingBuffer *b);
-uint16_t rb_data(const RingBuffer *b, void **dest);
+int32_t max_s32(int32_t a, int32_t b);
+uint64_t min_u64(uint64_t a, uint64_t b);
 
-#endif /* __UTIL_H__ */
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#endif /* UTIL_H */

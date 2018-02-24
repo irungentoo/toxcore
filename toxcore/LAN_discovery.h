@@ -1,54 +1,74 @@
-/*  LAN_discovery.h
- *
- *  LAN discovery implementation.
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
+/*
+ * LAN discovery implementation.
  */
 
-
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef LAN_DISCOVERY_H
 #define LAN_DISCOVERY_H
 
-
 #include "DHT.h"
 
-/* Interval in seconds between LAN discovery packet sending. */
-#define LAN_DISCOVERY_INTERVAL 10
+#ifndef DHT_DEFINED
+#define DHT_DEFINED
+typedef struct DHT DHT;
+#endif /* DHT_DEFINED */
 
-/* Send a LAN discovery pcaket to the broadcast address with port port. */
-int send_LANdiscovery(uint16_t port, DHT *dht);
+#ifndef IP_DEFINED
+#define IP_DEFINED
+typedef struct IP IP;
+#endif /* IP_DEFINED */
 
-/* Sets up packet handlers. */
-void LANdiscovery_init(DHT *dht);
+/**
+ * Interval in seconds between LAN discovery packet sending.
+ */
+#define LAN_DISCOVERY_INTERVAL         10
 
-/* Clear packet handlers. */
-void LANdiscovery_kill(DHT *dht);
+uint32_t lan_discovery_interval(void);
 
-/* Is IP a local ip or not. */
-_Bool Local_ip(IP ip);
+/**
+ * Send a LAN discovery pcaket to the broadcast address with port port.
+ */
+int32_t lan_discovery_send(uint16_t port, DHT *dht);
 
-/* checks if a given IP isn't routable
+/**
+ * Sets up packet handlers.
+ */
+void lan_discovery_init(DHT *dht);
+
+/**
+ * Clear packet handlers.
+ */
+void lan_discovery_kill(DHT *dht);
+
+/**
+ * Is IP a local ip or not.
+ */
+bool ip_is_local(IP ip);
+
+/**
+ * checks if a given IP isn't routable
  *
  *  return 0 if ip is a LAN ip.
  *  return -1 if it is not.
  */
-int LAN_ip(IP ip);
-
+int32_t ip_is_lan(IP ip);
 
 #endif

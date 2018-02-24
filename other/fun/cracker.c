@@ -13,8 +13,8 @@
 #include <time.h>
 
 /* NaCl includes*/
-#include <crypto_scalarmult_curve25519.h>
-#include <randombytes.h>
+#include <sodium/crypto_scalarmult_curve25519.h>
+#include <sodium/randombytes.h>
 
 /* Sodium include*/
 //#include <sodium.h>
@@ -42,8 +42,9 @@ int main(int argc, char *argv[])
     unsigned char *key = hex_string_to_bin(argv[1]);
     uint8_t pub_key[32], priv_key[32], c_key[32];
 
-    if (len > 32)
+    if (len > 32) {
         len = 32;
+    }
 
     memcpy(c_key, key, len);
     free(key);
@@ -53,14 +54,16 @@ int main(int argc, char *argv[])
         crypto_scalarmult_curve25519_base(pub_key, priv_key);
         uint32_t i;
 
-        if (memcmp(c_key, pub_key, len) == 0)
+        if (memcmp(c_key, pub_key, len) == 0) {
             break;
+        }
 
         for (i = 32; i != 0; --i) {
             priv_key[i - 1] += 1;
 
-            if (priv_key[i - 1] != 0)
+            if (priv_key[i - 1] != 0) {
                 break;
+            }
         }
 
         ++num_tries;

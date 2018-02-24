@@ -1,0 +1,12 @@
+#!/bin/sh
+
+docker run \
+  -e ALLOW_TEST_FAILURE=${ALLOW_TEST_FAILURE} \
+  -e ENABLE_ARCH_i686=${ENABLE_ARCH_i686} \
+  -e ENABLE_ARCH_x86_64=${ENABLE_ARCH_x86_64} \
+  -e ENABLE_TEST=${ENABLE_TEST} \
+  -e EXTRA_CMAKE_FLAGS="${CMAKE_EXTRA_FLAGS} -DDEBUG=ON -DTEST_TIMEOUT_SECONDS=90" \
+  -v ${PWD}:/toxcore \
+  -v ${PWD}/result:/prefix \
+  --rm \
+  toxcore

@@ -29,7 +29,6 @@ Development package for @PACKAGE_NAME@
     --enable-shared \
     --disable-static \
     --enable-av \
-    --disable-ntox \
     --disable-daemon \
     --disable-testing
 
@@ -53,7 +52,7 @@ rm -f %{buildroot}%{_bindir}/DHT_bootstrap
 
 %files
 %defattr(-,root,root)
-%doc COPYING README.md
+%doc LICENSE.md README.md
 %{_libdir}/libtox*.so.*
 
 %files devel

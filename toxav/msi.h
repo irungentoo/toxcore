@@ -1,33 +1,33 @@
-/**  msi.h
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  *
- *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
+ * This file is part of Tox, the free peer to peer instant messenger.
  *
- *   This file is part of Tox.
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef MSI_H
 #define MSI_H
 
-#include <inttypes.h>
-#include <pthread.h>
-
 #include "audio.h"
 #include "video.h"
+
 #include "../toxcore/Messenger.h"
+#include "../toxcore/logger.h"
+
+#include <inttypes.h>
+#include <pthread.h>
 
 /**
  * Error codes.
@@ -101,7 +101,7 @@ typedef struct MSICall_s {
  * returned the call is considered errored and will be handled
  * as such which means it will be terminated without any notice.
  */
-typedef int msi_action_cb (void *av, MSICall *call);
+typedef int msi_action_cb(void *av, MSICall *call);
 
 /**
  * Control session struct. Please do not modify outside msi.c
@@ -126,7 +126,7 @@ MSISession *msi_new(Messenger *m);
 /**
  * Terminate control session. NOTE: all calls will be freed
  */
-int msi_kill(MSISession *session);
+int msi_kill(MSISession *session, Logger *log);
 /**
  * Callback setter.
  */

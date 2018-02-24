@@ -17,25 +17,28 @@
  * Or the argument can be the path to the save file.
  *
  * EX: ./test Save.bak
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
+
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#define _XOPEN_SOURCE 600
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -44,53 +47,47 @@
 #include "../toxcore/Messenger.h"
 #include "misc_tools.c"
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#include <unistd.h>
+#if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <arpa/inet.h>
-#define c_sleep(x) usleep(1000*x)
-#define PORT 33445
 
 #endif
 
-void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
-                   void *userdata)
+static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
+                          void *userdata)
 {
-    printf("Message with length %lu received from %u: %s \n", length, friendnumber, string);
-    m_send_message_generic(m, friendnumber, type, (uint8_t *)"Test1", 6, 0);
+    printf("Message with length %zu received from %u: %s \n", length, friendnumber, string);
+    m_send_message_generic(m, friendnumber, type, (const uint8_t *)"Test1", 6, 0);
 }
 
-/* FIXME needed as print_request has to match the interface expected by
+/* TODO(irungentoo): needed as print_request has to match the interface expected by
  * networking_requesthandler and so cannot take a Messenger * */
 static Messenger *m;
 
-void print_request(Messenger *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void print_request(Messenger *m2, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {
     printf("Friend request received from: \n");
     printf("ClientID: ");
     uint32_t j;
 
     for (j = 0; j < 32; j++) {
-        if (public_key[j] < 16)
+        if (public_key[j] < 16) {
             printf("0");
+        }
 
         printf("%hhX", public_key[j]);
     }
 
-    printf("\nOf length: %lu with data: %s \n", length, data);
+    printf("\nOf length: %zu with data: %s \n", length, data);
 
     if (length != sizeof("Install Gentoo")) {
         return;
     }
 
-    if (memcmp(data , "Install Gentoo", sizeof("Install Gentoo")) == 0 )
+    if (memcmp(data, "Install Gentoo", sizeof("Install Gentoo")) == 0)
         //if the request contained the message of peace the person is obviously a friend so we add him.
     {
         printf("Friend request accepted.\n");
-        m_addfriend_norequest(m, public_key);
+        m_addfriend_norequest(m2, public_key);
     }
 }
 
@@ -100,8 +97,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     /* with optional --ipvx, now it can be 1-4 arguments... */
     if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
@@ -115,13 +113,13 @@ int main(int argc, char *argv[])
     options.ipv6enabled = ipv6enabled;
     m = new_messenger(&options, 0);
 
-    if ( !m ) {
+    if (!m) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
         exit(0);
     }
 
     if (argc == argvoffset + 4) {
-        uint16_t port = htons(atoi(argv[argvoffset + 2]));
+        uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
         int res = DHT_bootstrap_from_address(m->dht, argv[argvoffset + 1],
                                              ipv6enabled, port, bootstrap_key);
@@ -134,7 +132,7 @@ int main(int argc, char *argv[])
     } else {
         FILE *file = fopen(argv[argvoffset + 1], "rb");
 
-        if ( file == NULL ) {
+        if (file == nullptr) {
             printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
             return 1;
         }
@@ -144,11 +142,10 @@ int main(int argc, char *argv[])
         read = fread(buffer, 1, 128000, file);
         printf("Messenger loaded: %i\n", messenger_load(m, buffer, read));
         fclose(file);
-
     }
 
-    m_callback_friendrequest(m, print_request, NULL);
-    m_callback_friendmessage(m, print_message, NULL);
+    m_callback_friendrequest(m, print_request);
+    m_callback_friendmessage(m, print_message);
 
     printf("OUR ID: ");
     uint32_t i;
@@ -156,26 +153,28 @@ int main(int argc, char *argv[])
     getaddress(m, address);
 
     for (i = 0; i < FRIEND_ADDRESS_SIZE; i++) {
-        if (address[i] < 16)
+        if (address[i] < 16) {
             printf("0");
+        }
 
         printf("%hhX", address[i]);
     }
 
-    setname(m, (uint8_t *)"Anon", 5);
+    setname(m, (const uint8_t *)"Anon", 5);
 
     char temp_hex_id[128];
     printf("\nEnter the address of the friend you wish to add (38 bytes HEX format):\n");
 
-    if (!fgets(temp_hex_id, sizeof(temp_hex_id), stdin))
+    if (!fgets(temp_hex_id, sizeof(temp_hex_id), stdin)) {
         exit(0);
+    }
 
-    if ((strlen(temp_hex_id) > 0) && (temp_hex_id[strlen(temp_hex_id) - 1] == '\n'))
+    if ((strlen(temp_hex_id) > 0) && (temp_hex_id[strlen(temp_hex_id) - 1] == '\n')) {
         temp_hex_id[strlen(temp_hex_id) - 1] = '\0';
-
+    }
 
     uint8_t *bin_id = hex_string_to_bin(temp_hex_id);
-    int num = m_addfriend(m, bin_id, (uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    int num = m_addfriend(m, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     free(bin_id);
 
     perror("Initialization");
@@ -185,26 +184,26 @@ int main(int argc, char *argv[])
         getname(m, num, name);
         printf("%s\n", name);
 
-        m_send_message_generic(m, num, MESSAGE_NORMAL, (uint8_t *)"Test", 5, 0);
-        do_messenger(m);
+        m_send_message_generic(m, num, MESSAGE_NORMAL, (const uint8_t *)"Test", 5, 0);
+        do_messenger(m, nullptr);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
 
-        if ( file == NULL ) {
+        if (file == nullptr) {
+            kill_messenger(m);
             return 1;
         }
 
-        uint8_t *buffer = malloc(messenger_size(m));
+        uint8_t *buffer = (uint8_t *)malloc(messenger_size(m));
         messenger_save(m, buffer);
         size_t write_result = fwrite(buffer, 1, messenger_size(m), file);
 
         if (write_result < messenger_size(m)) {
+            kill_messenger(m);
             return 1;
         }
 
         free(buffer);
         fclose(file);
     }
-
-    kill_messenger(m);
 }

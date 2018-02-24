@@ -1,0 +1,29 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
+cc_library(
+    name = "monolith",
+    hdrs = ["monolith.h"],
+    visibility = ["//c-toxcore/auto_tests:__pkg__"],
+    deps = [
+        "//c-toxcore/toxav:monolith",
+        "//c-toxcore/toxcore:monolith",
+        "//c-toxcore/toxencryptsave:monolith",
+    ],
+)
+
+cc_library(
+    name = "bootstrap_node_packets",
+    srcs = ["bootstrap_node_packets.c"],
+    hdrs = ["bootstrap_node_packets.h"],
+    visibility = ["//c-toxcore/other/bootstrap_daemon:__pkg__"],
+    deps = ["//c-toxcore/toxcore:network"],
+)
+
+cc_binary(
+    name = "DHT_bootstrap",
+    srcs = ["DHT_bootstrap.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
