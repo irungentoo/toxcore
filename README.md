@@ -41,12 +41,11 @@ on the website, where they are updated at least once every 24 hours:
 Detailed installation instructions can be found in [INSTALL.md](INSTALL.md).
 
 In a nutshell, if you have [libsodium](https://github.com/jedisct1/libsodium)
-or [nacl](https://nacl.cr.yp.to/install.html) installed, run:
+installed, run:
 
 ```sh
-autoreconf -fi
 mkdir _build && cd _build
-../configure
+cmake ..
 make
 sudo make install
 ```
