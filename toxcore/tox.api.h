@@ -2158,38 +2158,6 @@ namespace conference {
 
   }
 
-  /**
-   * Peer list state change types.
-   */
-  enum class STATE_CHANGE {
-    /**
-     * A peer has joined the conference.
-     */
-    PEER_JOIN,
-    /**
-     * A peer has exited the conference.
-     */
-    PEER_EXIT,
-    /**
-     * A peer has changed their name.
-     */
-    PEER_NAME_CHANGE,
-  }
-
-  /**
-   * This event is triggered when the peer list changes (name change, peer join, peer exit).
-   *
-   * @deprecated Use the `${event peer.name}` and `${event peer.list_changed}` events, instead.
-   */
-  event namelist_change const {
-    /**
-     * @param conference_number The conference number of the conference the title change is intended for.
-     * @param peer_number The ID of the peer who changed the title.
-     * @param change The type of change (one of $STATE_CHANGE).
-     */
-    typedef void(uint32_t conference_number, uint32_t peer_number, STATE_CHANGE change);
-  }
-
 
   /**
    * Creates a new conference.
