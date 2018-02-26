@@ -81,26 +81,23 @@ static void handle_conference_message(Tox *tox, uint32_t conference_number, uint
     state->received = true;
 }
 
-static void handle_conference_namelist_change(Tox *tox, uint32_t conference_number, uint32_t peer_number,
-        TOX_CONFERENCE_STATE_CHANGE change, void *user_data)
+static void handle_conference_peer_list_changed(Tox *tox, uint32_t conference_number, void *user_data)
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_conference_namelist_change(#%d, %d, %d, %d, _)\n",
-            state->id, conference_number, peer_number, change);
+    fprintf(stderr, "\nhandle_conference_peer_list_changed(#%d, %d, _)\n",
+            state->id, conference_number);
 
-    if (change != TOX_CONFERENCE_STATE_CHANGE_PEER_NAME_CHANGE) {
-        TOX_ERR_CONFERENCE_PEER_QUERY err;
-        uint32_t count = tox_conference_peer_count(tox, conference_number, &err);
+    TOX_ERR_CONFERENCE_PEER_QUERY err;
+    uint32_t count = tox_conference_peer_count(tox, conference_number, &err);
 
-        if (err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
-            fprintf(stderr, "ERROR: %d\n", err);
-            exit(EXIT_FAILURE);
-        }
-
-        fprintf(stderr, "tox%d has %d peers online\n", state->id, count);
-        state->peers = count;
+    if (err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
+        fprintf(stderr, "ERROR: %d\n", err);
+        exit(EXIT_FAILURE);
     }
+
+    fprintf(stderr, "tox%d has %d peers online\n", state->id, count);
+    state->peers = count;
 }
 
 int main(void)
@@ -153,9 +150,9 @@ int main(void)
     tox_callback_conference_message(tox2, handle_conference_message);
     tox_callback_conference_message(tox3, handle_conference_message);
 
-    tox_callback_conference_namelist_change(tox1, handle_conference_namelist_change);
-    tox_callback_conference_namelist_change(tox2, handle_conference_namelist_change);
-    tox_callback_conference_namelist_change(tox3, handle_conference_namelist_change);
+    tox_callback_conference_peer_list_changed(tox1, handle_conference_peer_list_changed);
+    tox_callback_conference_peer_list_changed(tox2, handle_conference_peer_list_changed);
+    tox_callback_conference_peer_list_changed(tox3, handle_conference_peer_list_changed);
 
     // Wait for self connection.
     fprintf(stderr, "Waiting for toxes to come online");

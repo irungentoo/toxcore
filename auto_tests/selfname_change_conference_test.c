@@ -38,14 +38,10 @@
 static const char *newname = "chris";
 
 static void cbconfmembers(Tox *tox, uint32_t conference_number, uint32_t peer_number,
-                          TOX_CONFERENCE_STATE_CHANGE change,
+                          const uint8_t *name, size_t length,
                           void *user_data)
 {
     uint8_t new_peer_name[TOX_MAX_NAME_LENGTH + 1];
-
-    if (change != TOX_CONFERENCE_STATE_CHANGE_PEER_NAME_CHANGE) {
-        return;
-    }
 
     if (!tox_conference_peer_get_name(tox, conference_number, peer_number, new_peer_name, nullptr)) {
         return;
@@ -69,7 +65,7 @@ int main(void)
     t = tox_new_log(to, nullptr, nullptr);
     tox_options_free(to);
 
-    tox_callback_conference_namelist_change(t, cbconfmembers);
+    tox_callback_conference_peer_name(t, cbconfmembers);
 
     if (tox_conference_new(t, &conference_err) == UINT32_MAX) {
         tox_kill(t);
