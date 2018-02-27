@@ -160,7 +160,7 @@ const Client_data *dht_friend_client(const DHT_Friend *dht_friend, size_t index)
 /* Return packet size of packed node with ip_family on success.
  * Return -1 on failure.
  */
-int packed_node_size(uint8_t ip_family);
+int packed_node_size(Family ip_family);
 
 /* Packs an IP_Port structure into data of max size length.
  *

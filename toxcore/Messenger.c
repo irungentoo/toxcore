@@ -2599,7 +2599,7 @@ void do_messenger(Messenger *m, void *userdata)
             /* Add self tcp server. */
             IP_Port local_ip_port;
             local_ip_port.port = m->options.tcp_server_port;
-            local_ip_port.ip.family = TOX_AF_INET;
+            local_ip_port.ip.family = net_family_ipv4;
             local_ip_port.ip.ip.v4 = get_ip4_loopback();
             add_tcp_relay(m->net_crypto, local_ip_port,
                           tcp_server_public_key(m->tcp_server));
@@ -2970,8 +2970,8 @@ uint32_t messenger_size(const Messenger *m)
              + sizesubhead + m->name_length                    // Own nickname.
              + sizesubhead + m->statusmessage_length           // status message
              + sizesubhead + 1                                 // status
-             + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6) //TCP relays
-             + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6) //saved path nodes
+             + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6) //TCP relays
+             + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6) //saved path nodes
              + sizesubhead;
 }
 
@@ -3041,7 +3041,7 @@ void messenger_save(const Messenger *m, uint8_t *data)
     uint8_t *temp_data = data;
     data = messenger_save_subheader(temp_data, 0, type);
     unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
-    int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(TCP_INET6), relays, num);
+    int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6), relays, num);
 
     if (l > 0) {
         len = l;
@@ -3055,7 +3055,7 @@ void messenger_save(const Messenger *m, uint8_t *data)
     data = messenger_save_subheader(data, 0, type);
     memset(nodes, 0, sizeof(nodes));
     num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
-    l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(TCP_INET6), nodes, num);
+    l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6), nodes, num);
 
     if (l > 0) {
         len = l;

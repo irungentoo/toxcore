@@ -155,7 +155,7 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
 
             if (m_options.ipv6enabled) {
-                m_options.proxy_info.ip_port.ip.family = TOX_AF_UNSPEC;
+                m_options.proxy_info.ip_port.ip.family = net_family_unspec;
             }
 
             if (addr_resolve_or_parse_ip(tox_options_get_proxy_host(options), &m_options.proxy_info.ip_port.ip, nullptr) == 0) {

@@ -163,7 +163,7 @@ Net_Crypto *onion_get_net_crypto(const Onion_Client *onion_c)
  */
 int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key)
 {
-    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
+    if (!net_family_is_ipv4(ip_port.ip.family) && !net_family_is_ipv6(ip_port.ip.family)) {
         return -1;
     }
 
@@ -196,7 +196,7 @@ int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t
  */
 static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key)
 {
-    if (ip_port.ip.family != TOX_AF_INET && ip_port.ip.family != TOX_AF_INET6) {
+    if (!net_family_is_ipv4(ip_port.ip.family) && !net_family_is_ipv6(ip_port.ip.family)) {
         return -1;
     }
 
@@ -282,7 +282,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
         }
 
         if (num_nodes >= 2) {
-            nodes[0].ip_port.ip.family = TCP_FAMILY;
+            nodes[0].ip_port.ip.family = net_family_tcp_family;
             nodes[0].ip_port.ip.ip.v4.uint32 = random_tcp;
 
             for (i = 1; i < max_num; ++i) {
@@ -296,7 +296,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
                 return 0;
             }
 
-            nodes[0].ip_port.ip.family = TCP_FAMILY;
+            nodes[0].ip_port.ip.family = net_family_tcp_family;
             nodes[0].ip_port.ip.ip.v4.uint32 = random_tcp;
 
             for (i = 1; i < max_num; ++i) {
@@ -465,7 +465,7 @@ static uint32_t set_path_timeouts(Onion_Client *onion_c, uint32_t num, uint32_t 
 static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Path *path, IP_Port dest,
                                      const uint8_t *data, uint16_t length)
 {
-    if (path->ip_port1.ip.family == TOX_AF_INET || path->ip_port1.ip.family == TOX_AF_INET6) {
+    if (net_family_is_ipv4(path->ip_port1.ip.family) || net_family_is_ipv6(path->ip_port1.ip.family)) {
         uint8_t packet[ONION_MAX_PACKET_SIZE];
         int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
 
@@ -480,7 +480,7 @@ static int send_onion_packet_tcp_udp(const Onion_Client *onion_c, const Onion_Pa
         return 0;
     }
 
-    if (path->ip_port1.ip.family == TCP_FAMILY) {
+    if (net_family_is_tcp_family(path->ip_port1.ip.family)) {
         uint8_t packet[ONION_MAX_PACKET_SIZE];
         int len = create_onion_packet_tcp(packet, sizeof(packet), path, dest, data, length);
 
@@ -987,11 +987,11 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
         int i;
 
         for (i = 0; i < num_nodes; ++i) {
-            uint8_t family = nodes[i].ip_port.ip.family;
+            const Family family = nodes[i].ip_port.ip.family;
 
-            if (family == TOX_AF_INET || family == TOX_AF_INET6) {
+            if (net_family_is_ipv4(family) || net_family_is_ipv6(family)) {
                 DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].public_key, onion_c->friends_list[friend_num].dht_public_key);
-            } else if (family == TCP_INET || family == TCP_INET6) {
+            } else if (net_family_is_tcp_ipv4(family) || net_family_is_tcp_ipv6(family)) {
                 if (onion_c->friends_list[friend_num].tcp_relay_node_callback) {
                     void *obj = onion_c->friends_list[friend_num].tcp_relay_node_callback_object;
                     uint32_t number = onion_c->friends_list[friend_num].tcp_relay_node_callback_number;
@@ -1010,8 +1010,8 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, 
         return 1;
     }
 
-    IP_Port ip_port = {{0}};
-    ip_port.ip.family = TCP_FAMILY;
+    IP_Port ip_port = {{{0}}};
+    ip_port.ip.family = net_family_tcp_family;
 
     if (data[0] == NET_PACKET_ANNOUNCE_RESPONSE) {
         return handle_announce_response(object, ip_port, data, length, userdata);

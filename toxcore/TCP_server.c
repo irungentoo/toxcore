@@ -889,7 +889,7 @@ static int handle_TCP_packet(TCP_Server *TCP_server, uint32_t con_id, const uint
 
                 IP_Port source;
                 source.port = 0;  // dummy initialise
-                source.ip.family = TCP_ONION_FAMILY;
+                source.ip.family = net_family_tcp_onion;
                 source.ip.ip.v6.uint32[0] = con_id;
                 source.ip.ip.v6.uint32[1] = 0;
                 source.ip.ip.v6.uint64[1] = con->identifier;
@@ -1007,7 +1007,7 @@ static Socket new_listening_TCP_socket(Family family, uint16_t port)
 
     int ok = set_socket_nonblock(sock);
 
-    if (ok && family == TOX_AF_INET6) {
+    if (ok && net_family_is_ipv6(family)) {
         ok = set_socket_dualstack(sock);
     }
 
@@ -1060,13 +1060,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
 
 #endif
 
-    uint8_t family;
-
-    if (ipv6_enabled) {
-        family = TOX_AF_INET6;
-    } else {
-        family = TOX_AF_INET;
-    }
+    const Family family = ipv6_enabled ? net_family_ipv6 : net_family_ipv4;
 
     uint32_t i;
 #ifdef TCP_SERVER_USE_EPOLL

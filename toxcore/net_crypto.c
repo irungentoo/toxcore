@@ -573,7 +573,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
         return -1;
     }
 
-    if (ip_port.ip.family == TOX_AF_INET) {
+    if (net_family_is_ipv4(ip_port.ip.family)) {
         if (!ipport_equal(&ip_port, &conn->ip_portv4) && ip_is_lan(conn->ip_portv4.ip) != 0) {
             if (!bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
                 return -1;
@@ -583,7 +583,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
             conn->ip_portv4 = ip_port;
             return 0;
         }
-    } else if (ip_port.ip.family == TOX_AF_INET6) {
+    } else if (net_family_is_ipv6(ip_port.ip.family)) {
         if (!ipport_equal(&ip_port, &conn->ip_portv6)) {
             if (!bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
                 return -1;
@@ -605,7 +605,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
  */
 static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
 {
-    const IP_Port empty = {{0}};
+    const IP_Port empty = {{{0}}};
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -628,11 +628,11 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
         return conn->ip_portv4;
     }
 
-    if (v6 && conn->ip_portv6.ip.family == TOX_AF_INET6) {
+    if (v6 && net_family_is_ipv6(conn->ip_portv6.ip.family)) {
         return conn->ip_portv6;
     }
 
-    if (conn->ip_portv4.ip.family == TOX_AF_INET) {
+    if (net_family_is_ipv4(conn->ip_portv4.ip.family)) {
         return conn->ip_portv4;
     }
 
@@ -659,7 +659,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     IP_Port ip_port = return_ip_port_connection(c, crypt_connection_id);
 
     // TODO(irungentoo): on bad networks, direct connections might not last indefinitely.
-    if (ip_port.ip.family != 0) {
+    if (!net_family_is_unspec(ip_port.ip.family)) {
         bool direct_connected = 0;
         crypto_connection_status(c, crypt_connection_id, &direct_connected, nullptr);
 
@@ -1835,12 +1835,12 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         return -1;
     }
 
-    if (source.ip.family == TOX_AF_INET || source.ip.family == TOX_AF_INET6) {
+    if (net_family_is_ipv4(source.ip.family) || net_family_is_ipv6(source.ip.family)) {
         if (add_ip_port_connection(c, crypt_connection_id, source) != 0) {
             return -1;
         }
 
-        if (source.ip.family == TOX_AF_INET) {
+        if (net_family_is_ipv4(source.ip.family)) {
             conn->direct_lastrecv_timev4 = unix_time();
         } else {
             conn->direct_lastrecv_timev6 = unix_time();
@@ -1849,7 +1849,7 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         return 0;
     }
 
-    if (source.ip.family == TCP_FAMILY) {
+    if (net_family_is_tcp_family(source.ip.family)) {
         if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, source.ip.ip.v6.uint32[0]) == 0) {
             return 1;
         }
@@ -2065,13 +2065,13 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
 
     if (add_ip_port_connection(c, crypt_connection_id, ip_port) == 0) {
         if (connected) {
-            if (ip_port.ip.family == TOX_AF_INET) {
+            if (net_family_is_ipv4(ip_port.ip.family)) {
                 conn->direct_lastrecv_timev4 = unix_time();
             } else {
                 conn->direct_lastrecv_timev6 = unix_time();
             }
         } else {
-            if (ip_port.ip.family == TOX_AF_INET) {
+            if (net_family_is_ipv4(ip_port.ip.family)) {
                 conn->direct_lastrecv_timev4 = 0;
             } else {
                 conn->direct_lastrecv_timev6 = 0;
@@ -2133,7 +2133,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
     if (data[0] == NET_PACKET_CRYPTO_HS) {
         IP_Port source;
         source.port = 0;
-        source.ip.family = TCP_FAMILY;
+        source.ip.family = net_family_tcp_family;
         source.ip.ip.v6.uint32[0] = tcp_connections_number;
 
         if (handle_new_connection_handshake(c, source, data, length, userdata) != 0) {
@@ -2411,7 +2411,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 
     pthread_mutex_lock(&conn->mutex);
 
-    if (source.ip.family == TOX_AF_INET) {
+    if (net_family_is_ipv4(source.ip.family)) {
         conn->direct_lastrecv_timev4 = unix_time();
     } else {
         conn->direct_lastrecv_timev6 = unix_time();

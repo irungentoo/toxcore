@@ -29,10 +29,10 @@ static inline IP get_loopback()
 {
     IP ip;
 #if USE_IPV6
-    ip.family = TOX_AF_INET6;
+    ip.family = net_family_ipv6;
     ip.ip.v6 = get_ip6_loopback();
 #else
-    ip.family = TOX_AF_INET;
+    ip.family = net_family_ipv4;
     ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
@@ -375,7 +375,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
         return nullptr;
     }
 
-    TCP_Proxy_Info inf = {{{0}}};
+    TCP_Proxy_Info inf = {{{{0}}}};
     on->onion_c = new_onion_client(new_net_crypto(on->log, dht, &inf));
 
     if (!on->onion_c) {

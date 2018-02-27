@@ -44,7 +44,7 @@ START_TEST(test_addr_resolv_localhost)
     net_kill_strerror(strerror);
 
     char ip_str[IP_NTOA_LEN];
-    ck_assert_msg(ip.family == TOX_AF_INET, "Expected family TOX_AF_INET, got %u.", ip.family);
+    ck_assert_msg(net_family_is_ipv4(ip.family), "Expected family TOX_AF_INET, got %u.", ip.family.value);
     const uint32_t loopback = get_ip4_loopback().uint32;
     ck_assert_msg(ip.ip.v4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
@@ -62,7 +62,8 @@ START_TEST(test_addr_resolv_localhost)
     ck_assert_msg(res > 0, "Resolver failed: %d, %s", error, strerror);
     net_kill_strerror(strerror);
 
-    ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
+    ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6,
+                  ip.family.value);
     IP6 ip6_loopback = get_ip6_loopback();
     ck_assert_msg(!memcmp(&ip.ip.v6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
@@ -73,7 +74,7 @@ START_TEST(test_addr_resolv_localhost)
     }
 
     ip_init(&ip, 1); // ipv6enabled = 1
-    ip.family = TOX_AF_UNSPEC;
+    ip.family = net_family_unspec;
     IP extra;
     ip_reset(&extra);
     res = addr_resolve(localhost, &ip, &extra);
@@ -83,15 +84,17 @@ START_TEST(test_addr_resolv_localhost)
     net_kill_strerror(strerror);
 
 #if USE_IPV6
-    ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
+    ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6,
+                  ip.family.value);
     ck_assert_msg(!memcmp(&ip.ip.v6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 
-    ck_assert_msg(extra.family == TOX_AF_INET, "Expected family TOX_AF_INET (%u), got %u.", TOX_AF_INET, extra.family);
+    ck_assert_msg(net_family_is_ipv4(extra.family), "Expected family TOX_AF_INET (%d), got %u.", TOX_AF_INET,
+                  extra.family.value);
     ck_assert_msg(extra.ip.v4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 #else
-    ck_assert_msg(ip.family == TOX_AF_INET, "Expected family TOX_AF_INET (%u), got %u.", TOX_AF_INET, ip.family);
+    ck_assert_msg(net_family_is_ipv4(ip.family), "Expected family TOX_AF_INET (%d), got %u.", TOX_AF_INET, ip.family.value);
     ck_assert_msg(ip.ip.v4.uint32 == loopback, "Expected 127.0.0.1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 #endif
@@ -114,14 +117,14 @@ START_TEST(test_ip_equal)
     res = ip_equal(nullptr, &ip1);
     ck_assert_msg(res == 0, "ip_equal(NULL, PTR): expected result 0, got %u.", res);
 
-    ip1.family = TOX_AF_INET;
+    ip1.family = net_family_ipv4;
     ip1.ip.v4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_UNSPEC, 0} ): "
                   "expected result 0, got %u.", res);
 
-    ip2.family = TOX_AF_INET;
+    ip2.family = net_family_ipv4;
     ip2.ip.v4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
@@ -134,7 +137,7 @@ START_TEST(test_ip_equal)
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET, 127.0.0.2} ): "
                   "expected result 0, got %u.", res);
 
-    ip2.family = TOX_AF_INET6;
+    ip2.family = net_family_ipv6;
     ip2.ip.v6.uint32[0] = 0;
     ip2.ip.v6.uint32[1] = 0;
     ip2.ip.v6.uint32[2] = net_htonl(0xFFFF);

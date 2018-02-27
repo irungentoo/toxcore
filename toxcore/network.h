@@ -34,7 +34,29 @@
 extern "C" {
 #endif
 
-typedef uint8_t Family;
+typedef struct Family {
+    uint8_t value;
+} Family;
+
+bool net_family_is_unspec(Family family);
+bool net_family_is_ipv4(Family family);
+bool net_family_is_ipv6(Family family);
+bool net_family_is_tcp_family(Family family);
+bool net_family_is_tcp_onion(Family family);
+bool net_family_is_tcp_ipv4(Family family);
+bool net_family_is_tcp_ipv6(Family family);
+bool net_family_is_tox_tcp_ipv4(Family family);
+bool net_family_is_tox_tcp_ipv6(Family family);
+
+extern const Family net_family_unspec;
+extern const Family net_family_ipv4;
+extern const Family net_family_ipv6;
+extern const Family net_family_tcp_family;
+extern const Family net_family_tcp_onion;
+extern const Family net_family_tcp_ipv4;
+extern const Family net_family_tcp_ipv6;
+extern const Family net_family_tox_tcp_ipv4;
+extern const Family net_family_tox_tcp_ipv6;
 
 typedef struct Socket {
     int socket;
@@ -152,7 +174,7 @@ extern const IP6 IP6_BROADCAST;
 
 #define IP_DEFINED
 typedef struct IP {
-    uint8_t family;
+    Family family;
     union {
         IP4 v4;
         IP6 v6;
@@ -264,9 +286,9 @@ void ip_reset(IP *ip);
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, bool ipv6enabled);
 /* checks if ip is valid */
-int ip_isset(const IP *ip);
+bool ip_isset(const IP *ip);
 /* checks if ip is valid */
-int ipport_isset(const IP_Port *ipport);
+bool ipport_isset(const IP_Port *ipport);
 /* copies an ip structure */
 void ip_copy(IP *target, const IP *source);
 /* copies an ip_port structure */
@@ -396,7 +418,7 @@ void net_freeipport(IP_Port *ip_ports);
 /* return 1 on success
  * return 0 on failure
  */
-int bind_to_port(Socket sock, int family, uint16_t port);
+int bind_to_port(Socket sock, Family family, uint16_t port);
 
 /* Get the last networking error code.
  *

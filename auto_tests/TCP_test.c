@@ -29,18 +29,17 @@
 #endif
 
 #if !USE_IPV6
-#undef TOX_AF_INET6
-#define TOX_AF_INET6 TOX_AF_INET
+#define net_family_ipv6 net_family_ipv4
 #endif
 
 static inline IP get_loopback()
 {
     IP ip;
 #if USE_IPV6
-    ip.family = TOX_AF_INET6;
+    ip.family = net_family_ipv6;
     ip.ip.v6 = get_ip6_loopback();
 #else
-    ip.family = TOX_AF_INET;
+    ip.family = net_family_ipv4;
     ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
@@ -57,7 +56,7 @@ START_TEST(test_basic)
     ck_assert_msg(tcp_s != nullptr, "Failed to create TCP relay server");
     ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
 
-    Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+    Socket sock = net_socket(net_family_ipv6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
     IP_Port ip_port_loopback;
     ip_port_loopback.ip = get_loopback();
     ip_port_loopback.port = net_htons(ports[random_u32() % NUM_PORTS]);
@@ -157,7 +156,7 @@ struct sec_TCP_con {
 static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 {
     struct sec_TCP_con *sec_c = (struct sec_TCP_con *)malloc(sizeof(struct sec_TCP_con));
-    Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+    Socket sock = net_socket(net_family_ipv6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     IP_Port ip_port_loopback;
     ip_port_loopback.ip = get_loopback();

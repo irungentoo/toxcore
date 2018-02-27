@@ -31,10 +31,10 @@ static inline IP get_loopback()
 {
     IP ip;
 #if USE_IPV6
-    ip.family = TOX_AF_INET6;
+    ip.family = net_family_ipv6;
     ip.ip.v6 = get_ip6_loopback();
 #else
-    ip.family = TOX_AF_INET;
+    ip.family = net_family_ipv4;
     ip.ip.v4 = get_ip4_loopback();
 #endif
     return ip;
@@ -113,7 +113,7 @@ static void test_addto_lists_update(DHT            *dht,
     int used, test, test1, test2, found;
     IP_Port test_ipp;
     uint8_t test_id[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
     // check id update for existing ip_port
     test = random_u32() % length;
@@ -188,7 +188,7 @@ static void test_addto_lists_bad(DHT            *dht,
     int used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
@@ -232,7 +232,7 @@ static void test_addto_lists_possible_bad(DHT            *dht,
     int used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
     mark_all_good(list, length, ipv6);
@@ -294,7 +294,7 @@ static void test_addto_lists_good(DHT            *dht,
                                   const uint8_t  *comp_client_id)
 {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = ip_port->ip.family == TOX_AF_INET6 ? 1 : 0;
+    uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
     mark_all_good(list, length, ipv6);
 
@@ -547,7 +547,7 @@ static void test_list_main(void)
                 ck_assert_msg(count == 1, "Nodes in search don't know ip of friend. %u %u %u", i, j, count);
 
                 Node_format ln[MAX_SENT_NODES];
-                int n = get_close_nodes(dhts[(l + j) % NUM_DHT], dhts[l]->self_public_key, ln, 0, 1, 0);
+                int n = get_close_nodes(dhts[(l + j) % NUM_DHT], dhts[l]->self_public_key, ln, net_family_unspec, 1, 0);
                 ck_assert_msg(n == MAX_SENT_NODES, "bad num close %u | %u %u", n, i, j);
 
                 count = 0;
@@ -744,8 +744,8 @@ static void random_ip(IP_Port *ipp, int family)
     uint8_t *port = (uint8_t *)&ipp->port;
     random_bytes(port, sizeof(ipp->port));
     random_bytes(ip, size);
-    ipp->ip.family = family;
-
+    // TODO(iphydf): Pass the net_family variant to random_ip.
+    ipp->ip.family.value = family;
 }
 
 #define PACKED_NODES_SIZE (SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE)
