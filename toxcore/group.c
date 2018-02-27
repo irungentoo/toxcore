@@ -853,7 +853,7 @@ int group_peername_size(const Group_Chats *g_c, uint32_t groupnumber, int peernu
     }
 
     if (g->group[peernumber].nick_len == 0) {
-        return 8;
+        return 0;
     }
 
     return g->group[peernumber].nick_len;
@@ -879,8 +879,7 @@ int group_peername(const Group_Chats *g_c, uint32_t groupnumber, int peernumber,
     }
 
     if (g->group[peernumber].nick_len == 0) {
-        memcpy(name, "Tox User", 8);
-        return 8;
+        return 0;
     }
 
     memcpy(name, g->group[peernumber].nick, g->group[peernumber].nick_len);
