@@ -286,7 +286,11 @@ int main(int argc, char *argv[])
     // toxcore/TCP_server
     CHECK_SIZE(TCP_Priority_List, 16);
     CHECK_SIZE(TCP_Secure_Connection, 11816);
+#ifdef TCP_SERVER_USE_EPOLL
+    CHECK_SIZE(TCP_Server, 6049968);  // 6MB!
+#else
     CHECK_SIZE(TCP_Server, 6049952);  // 6MB!
+#endif
     // toxcore/tox
     CHECK_SIZE(Tox_Options, 64);
 #endif

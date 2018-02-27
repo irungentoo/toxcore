@@ -29,12 +29,13 @@
 
 #include "ping.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "DHT.h"
 #include "network.h"
 #include "ping_array.h"
 #include "util.h"
-
-#include <stdint.h>
 
 #define PING_NUM_MAX 512
 

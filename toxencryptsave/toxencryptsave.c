@@ -40,6 +40,7 @@
 #include <sodium.h>
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
 #if TOX_PASS_SALT_LENGTH != crypto_pwhash_scryptsalsa208sha256_SALTBYTES

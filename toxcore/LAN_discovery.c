@@ -27,6 +27,8 @@
 
 #include "LAN_discovery.h"
 
+#include <string.h>
+
 #include "util.h"
 
 #define MAX_INTERFACES 16
@@ -37,7 +39,15 @@
 static int     broadcast_count = -1;
 static IP_Port broadcast_ip_ports[MAX_INTERFACES];
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+
+// The mingw32/64 Windows library warns about including winsock2.h after
+// windows.h even though with the above it's a valid thing to do. So, to make
+// mingw32 headers happy, we include winsock2.h first.
+#include <winsock2.h>
+
+#include <windows.h>
+#include <ws2tcpip.h>
 
 #include <iphlpapi.h>
 
@@ -108,6 +118,12 @@ static void fetch_broadcast_info(uint16_t port)
 
 #elif defined(__linux__) || defined(__FreeBSD__)
 
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #ifdef __linux__
 #include <linux/netdevice.h>
 #endif
@@ -115,8 +131,6 @@ static void fetch_broadcast_info(uint16_t port)
 #ifdef __FreeBSD__
 #include <net/if.h>
 #endif
-
-#include <sys/ioctl.h>
 
 static void fetch_broadcast_info(uint16_t port)
 {
@@ -127,7 +141,7 @@ static void fetch_broadcast_info(uint16_t port)
     broadcast_count = 0;
     const Socket sock = net_socket(TOX_AF_INET, TOX_SOCK_STREAM, 0);
 
-    if (sock < 0) {
+    if (!sock_valid(sock)) {
         return;
     }
 
@@ -139,8 +153,8 @@ static void fetch_broadcast_info(uint16_t port)
     ifconf.ifc_buf = (char *)i_faces;
     ifconf.ifc_len = sizeof(i_faces);
 
-    if (ioctl(sock, SIOCGIFCONF, &ifconf) < 0) {
-        close(sock);
+    if (ioctl(sock.socket, SIOCGIFCONF, &ifconf) < 0) {
+        kill_sock(sock);
         return;
     }
 
@@ -160,12 +174,12 @@ static void fetch_broadcast_info(uint16_t port)
 
     for (int i = 0; i < n; i++) {
         /* there are interfaces with are incapable of broadcast */
-        if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+        if (ioctl(sock.socket, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
             continue;
         }
 
-        /* moot check: only TOX_AF_INET returned (backwards compat.) */
-        if (i_faces[i].ifr_broadaddr.sa_family != TOX_AF_INET) {
+        /* moot check: only AF_INET returned (backwards compat.) */
+        if (i_faces[i].ifr_broadaddr.sa_family != AF_INET) {
             continue;
         }
 
@@ -187,7 +201,7 @@ static void fetch_broadcast_info(uint16_t port)
         count++;
     }
 
-    close(sock);
+    kill_sock(sock);
 
     broadcast_count = count;
 

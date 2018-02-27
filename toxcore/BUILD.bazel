@@ -123,6 +123,11 @@ cc_library(
         "TCP_connection.c",
         "TCP_server.c",
     ],
+    copts = select({
+        "//tools/config:freebsd": [],
+        "//tools/config:linux": ["-DTCP_SERVER_USE_EPOLL=1"],
+        "//tools/config:osx": [],
+    }),
     hdrs = [
         "TCP_client.h",
         "TCP_connection.h",

@@ -27,11 +27,15 @@
 
 #include "Messenger.h"
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #include "logger.h"
 #include "network.h"
 #include "util.h"
-
-#include <assert.h>
 
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);

@@ -27,9 +27,11 @@
 
 #include "TCP_connection.h"
 
-#include "util.h"
-
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "util.h"
 
 
 struct TCP_Connections {

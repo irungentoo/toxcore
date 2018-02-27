@@ -27,6 +27,9 @@
 
 #include "ping_array.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "crypto_core.h"
 #include "util.h"
 

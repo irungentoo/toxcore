@@ -23,15 +23,16 @@
 
 #include "rtp.h"
 
+#include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "bwcontroller.h"
 
 #include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-
-#include <assert.h>
-#include <errno.h>
-#include <stdlib.h>
 
 enum {
     /**

@@ -25,6 +25,8 @@
  */
 #include "bootstrap_node_packets.h"
 
+#include <string.h>
+
 #define INFO_REQUEST_PACKET_LENGTH 78
 
 static uint32_t bootstrap_version;

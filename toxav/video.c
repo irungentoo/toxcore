@@ -23,15 +23,16 @@
 
 #include "video.h"
 
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "msi.h"
 #include "ring_buffer.h"
 #include "rtp.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/network.h"
-
-#include <assert.h>
-#include <stdlib.h>
 
 /**
  * Soft deadline the decoder should attempt to meet, in "us" (microseconds).

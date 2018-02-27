@@ -29,9 +29,11 @@
 
 #include "net_crypto.h"
 
-#include "util.h"
-
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "util.h"
 
 typedef struct {
     uint64_t sent_time;

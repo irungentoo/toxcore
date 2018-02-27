@@ -29,6 +29,9 @@
 
 #include "list.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "ccompat.h"
 
 /* Basically, the elements in the list are placed in order so that they can be searched for easily

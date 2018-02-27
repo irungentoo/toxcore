@@ -27,6 +27,9 @@
 
 #include "group.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "util.h"
 
 /* return 1 if the groupnumber is not valid.

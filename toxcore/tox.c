@@ -31,6 +31,8 @@
 typedef struct Messenger Tox;
 #include "tox.h"
 
+#include <string.h>
+
 #include "Messenger.h"
 #include "group.h"
 #include "logger.h"

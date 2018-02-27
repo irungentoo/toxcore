@@ -27,11 +27,19 @@
 
 #include "TCP_server.h"
 
-#include "util.h"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <sys/ioctl.h>
 #endif
+
+#ifdef TCP_SERVER_USE_EPOLL
+#include <sys/epoll.h>
+#include <unistd.h>
+#endif
+
+#include "util.h"
 
 typedef struct TCP_Secure_Connection {
     Socket sock;
@@ -231,22 +239,6 @@ static int del_accepted(TCP_Server *TCP_server, int index)
     return 0;
 }
 
-/* return the amount of data in the tcp recv buffer.
- * return 0 on failure.
- */
-unsigned int TCP_socket_data_recv_buffer(Socket sock)
-{
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    unsigned long count = 0;
-    ioctlsocket(sock, FIONREAD, &count);
-#else
-    int count = 0;
-    ioctl(sock, FIONREAD, &count);
-#endif
-
-    return count;
-}
-
 /* Read the next two bytes in TCP stream then convert them to
  * length (host byte order).
  *
@@ -256,11 +248,11 @@ unsigned int TCP_socket_data_recv_buffer(Socket sock)
  */
 uint16_t read_TCP_length(Socket sock)
 {
-    unsigned int count = TCP_socket_data_recv_buffer(sock);
+    const unsigned int count = net_socket_data_recv_buffer(sock);
 
     if (count >= sizeof(uint16_t)) {
         uint16_t length;
-        int len = recv(sock, (char *)&length, sizeof(uint16_t), MSG_NOSIGNAL);
+        const int len = net_recv(sock, &length, sizeof(uint16_t));
 
         if (len != sizeof(uint16_t)) {
             fprintf(stderr, "FAIL recv packet\n");
@@ -286,10 +278,10 @@ uint16_t read_TCP_length(Socket sock)
  */
 int read_TCP_packet(Socket sock, uint8_t *data, uint16_t length)
 {
-    unsigned int count = TCP_socket_data_recv_buffer(sock);
+    unsigned int count = net_socket_data_recv_buffer(sock);
 
     if (count >= length) {
-        int len = recv(sock, (char *)data, length, MSG_NOSIGNAL);
+        const int len = net_recv(sock, data, length);
 
         if (len != length) {
             fprintf(stderr, "FAIL recv packet\n");
@@ -356,8 +348,8 @@ static int send_pending_data_nonpriority(TCP_Secure_Connection *con)
         return 0;
     }
 
-    uint16_t left = con->last_packet_length - con->last_packet_sent;
-    int len = send(con->sock, (const char *)(con->last_packet + con->last_packet_sent), left, MSG_NOSIGNAL);
+    const uint16_t left = con->last_packet_length - con->last_packet_sent;
+    const int len = net_send(con->sock, con->last_packet + con->last_packet_sent, left);
 
     if (len <= 0) {
         return -1;
@@ -386,8 +378,8 @@ static int send_pending_data(TCP_Secure_Connection *con)
     TCP_Priority_List *p = con->priority_queue_start;
 
     while (p) {
-        uint16_t left = p->size - p->sent;
-        int len = send(con->sock, (const char *)(p->data + p->sent), left, MSG_NOSIGNAL);
+        const uint16_t left = p->size - p->sent;
+        const int len = net_send(con->sock, p->data + p->sent, left);
 
         if (len != left) {
             if (len > 0) {
@@ -462,7 +454,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
 
     VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
-    uint16_t c_length = net_htons(length + CRYPTO_MAC_SIZE);
+    const uint16_t c_length = net_htons(length + CRYPTO_MAC_SIZE);
     memcpy(packet, &c_length, sizeof(uint16_t));
     int len = encrypt_data_symmetric(con->shared_key, con->sent_nonce, data, length, packet + sizeof(uint16_t));
 
@@ -471,7 +463,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
     }
 
     if (priority) {
-        len = sendpriority ? send(con->sock, (const char *)packet, SIZEOF_VLA(packet), MSG_NOSIGNAL) : 0;
+        len = sendpriority ? net_send(con->sock, packet, SIZEOF_VLA(packet)) : 0;
 
         if (len <= 0) {
             len = 0;
@@ -486,7 +478,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
         return add_priority(con, packet, SIZEOF_VLA(packet), len);
     }
 
-    len = send(con->sock, (const char *)packet, SIZEOF_VLA(packet), MSG_NOSIGNAL);
+    len = net_send(con->sock, packet, SIZEOF_VLA(packet));
 
     if (len <= 0) {
         return 0;
@@ -583,7 +575,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data,
         return -1;
     }
 
-    if (TCP_SERVER_HANDSHAKE_SIZE != send(con->sock, (const char *)response, TCP_SERVER_HANDSHAKE_SIZE, MSG_NOSIGNAL)) {
+    if (TCP_SERVER_HANDSHAKE_SIZE != net_send(con->sock, response, TCP_SERVER_HANDSHAKE_SIZE)) {
         return -1;
     }
 
@@ -1005,12 +997,12 @@ static int accept_connection(TCP_Server *TCP_server, Socket sock)
     return index;
 }
 
-static Socket new_listening_TCP_socket(int family, uint16_t port)
+static Socket new_listening_TCP_socket(Family family, uint16_t port)
 {
     Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
-        return ~0;
+        return net_invalid_socket;
     }
 
     int ok = set_socket_nonblock(sock);
@@ -1023,11 +1015,11 @@ static Socket new_listening_TCP_socket(int family, uint16_t port)
         ok = set_socket_reuseaddr(sock);
     }
 
-    ok = ok && bind_to_port(sock, family, port) && (listen(sock, TCP_MAX_BACKLOG) == 0);
+    ok = ok && bind_to_port(sock, family, port) && (net_listen(sock, TCP_MAX_BACKLOG) == 0);
 
     if (!ok) {
         kill_sock(sock);
-        return ~0;
+        return net_invalid_socket;
     }
 
     return sock;
@@ -1087,9 +1079,9 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
         if (sock_valid(sock)) {
 #ifdef TCP_SERVER_USE_EPOLL
             ev.events = EPOLLIN | EPOLLET;
-            ev.data.u64 = sock | ((uint64_t)TCP_SOCKET_LISTENING << 32);
+            ev.data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_LISTENING << 32);
 
-            if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock, &ev) == -1) {
+            if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock.socket, &ev) == -1) {
                 continue;
             }
 
@@ -1119,20 +1111,20 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     return temp;
 }
 
+#ifndef TCP_SERVER_USE_EPOLL
 static void do_TCP_accept_new(TCP_Server *TCP_server)
 {
     uint32_t i;
 
     for (i = 0; i < TCP_server->num_listening_socks; ++i) {
-        struct sockaddr_storage addr;
-        socklen_t addrlen = sizeof(addr);
         Socket sock;
 
         do {
-            sock = accept(TCP_server->socks_listening[i], (struct sockaddr *)&addr, &addrlen);
+            sock = net_accept(TCP_server->socks_listening[i]);
         } while (accept_connection(TCP_server, sock) != -1);
     }
 }
+#endif
 
 static int do_incoming(TCP_Server *TCP_server, uint32_t i)
 {
@@ -1208,6 +1200,7 @@ static void do_confirmed_recv(TCP_Server *TCP_server, uint32_t i)
     }
 }
 
+#ifndef TCP_SERVER_USE_EPOLL
 static void do_TCP_incoming(TCP_Server *TCP_server)
 {
     uint32_t i;
@@ -1225,6 +1218,7 @@ static void do_TCP_unconfirmed(TCP_Server *TCP_server)
         do_unconfirmed(TCP_server, i);
     }
 }
+#endif
 
 static void do_TCP_confirmed(TCP_Server *TCP_server)
 {
@@ -1294,8 +1288,9 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
         int n;
 
         for (n = 0; n < nfds; ++n) {
-            Socket sock = events[n].data.u64 & 0xFFFFFFFF;
-            int status = (events[n].data.u64 >> 32) & 0xFF, index = (events[n].data.u64 >> 40);
+            const Socket sock = {(int)(events[n].data.u64 & 0xFFFFFFFF)};
+            const int status = (events[n].data.u64 >> 32) & 0xFF;
+            const int index = events[n].data.u64 >> 40;
 
             if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (events[n].events & EPOLLRDHUP)) {
                 switch (status) {
@@ -1331,11 +1326,8 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
             switch (status) {
                 case TCP_SOCKET_LISTENING: {
                     //socket is from socks_listening, accept connection
-                    struct sockaddr_storage addr;
-                    socklen_t addrlen = sizeof(addr);
-
                     while (1) {
-                        Socket sock_new = accept(sock, (struct sockaddr *)&addr, &addrlen);
+                        Socket sock_new = net_accept(sock);
 
                         if (!sock_valid(sock_new)) {
                             break;
@@ -1349,10 +1341,10 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
 
                         struct epoll_event ev = {
                             .events = EPOLLIN | EPOLLET | EPOLLRDHUP,
-                            .data.u64 = sock_new | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 40)
+                            .data.u64 = sock_new.socket | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 40)
                         };
 
-                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_ADD, sock_new, &ev) == -1) {
+                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_ADD, sock_new.socket, &ev) == -1) {
                             kill_TCP_secure_connection(&TCP_server->incoming_connection_queue[index_new]);
                             continue;
                         }
@@ -1366,9 +1358,9 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
 
                     if ((index_new = do_incoming(TCP_server, index)) != -1) {
                         events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
-                        events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 40);
+                        events[n].data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 40);
 
-                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
+                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock.socket, &events[n]) == -1) {
                             kill_TCP_secure_connection(&TCP_server->unconfirmed_connection_queue[index_new]);
                             break;
                         }
@@ -1382,9 +1374,9 @@ static void do_TCP_epoll(TCP_Server *TCP_server)
 
                     if ((index_new = do_unconfirmed(TCP_server, index)) != -1) {
                         events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
-                        events[n].data.u64 = sock | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 40);
+                        events[n].data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 40);
 
-                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock, &events[n]) == -1) {
+                        if (epoll_ctl(TCP_server->efd, EPOLL_CTL_MOD, sock.socket, &events[n]) == -1) {
                             //remove from confirmed connections
                             kill_accepted(TCP_server, index_new);
                             break;

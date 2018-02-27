@@ -27,6 +27,10 @@
 
 #include "friend_connection.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "util.h"
 
 #define PORTS_PER_DISCOVERY 10

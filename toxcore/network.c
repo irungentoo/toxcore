@@ -38,44 +38,65 @@
 #define _WIN32_WINNT  0x501
 #endif
 
+#if !defined(OS_WIN32) && (defined(_WIN32) || defined(__WIN32__) || defined(WIN32))
+#define OS_WIN32
+#endif
+
+#ifdef OS_WIN32
+#ifndef WINVER
+//Windows XP
+#define WINVER 0x0501
+#endif
+#endif
+
+#ifdef PLAN9
+#include <u.h> // Plan 9 requires this is imported first
+// Comment line here to avoid reordering by source code formatters.
+#include <libc.h>
+#endif
+
+#ifdef OS_WIN32 /* Put win32 includes here */
+// The mingw32/64 Windows library warns about including winsock2.h after
+// windows.h even though with the above it's a valid thing to do. So, to make
+// mingw32 headers happy, we include winsock2.h first.
+#include <winsock2.h>
+// Comment line here to avoid reordering by source code formatters.
+#include <windows.h>
+#include <ws2tcpip.h>
+#endif
+
 #include "network.h"
 
-#include "logger.h"
-#include "util.h"
-
-#include <assert.h>
 #ifdef __APPLE__
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
 
-#ifndef IPV6_ADD_MEMBERSHIP
-#ifdef  IPV6_JOIN_GROUP
-#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#endif
-#endif
+#if !defined(OS_WIN32)
 
-#if !(defined(_WIN32) || defined(__WIN32__) || defined(WIN32))
-
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define TOX_EWOULDBLOCK EWOULDBLOCK
 
 #else
-
 #ifndef IPV6_V6ONLY
 #define IPV6_V6ONLY 27
 #endif
 
 #define TOX_EWOULDBLOCK WSAEWOULDBLOCK
 
-static const char *inet_ntop(Family family, const void *addr, char *buf, size_t bufsize)
+static const char *inet_ntop(int family, const void *addr, char *buf, size_t bufsize)
 {
-    if (family == TOX_AF_INET) {
+    if (family == AF_INET) {
         struct sockaddr_in saddr;
         memset(&saddr, 0, sizeof(saddr));
 
@@ -89,7 +110,7 @@ static const char *inet_ntop(Family family, const void *addr, char *buf, size_t 
         }
 
         return buf;
-    } else if (family == TOX_AF_INET6) {
+    } else if (family == AF_INET6) {
         struct sockaddr_in6 saddr;
         memset(&saddr, 0, sizeof(saddr));
 
@@ -108,9 +129,9 @@ static const char *inet_ntop(Family family, const void *addr, char *buf, size_t 
     return nullptr;
 }
 
-static int inet_pton(Family family, const char *addrString, void *addrbuf)
+static int inet_pton(int family, const char *addrString, void *addrbuf)
 {
-    if (family == TOX_AF_INET) {
+    if (family == AF_INET) {
         struct sockaddr_in saddr;
         memset(&saddr, 0, sizeof(saddr));
 
@@ -123,7 +144,7 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
         *(struct in_addr *)addrbuf = saddr.sin_addr;
 
         return 1;
-    } else if (family == TOX_AF_INET6) {
+    } else if (family == AF_INET6) {
         struct sockaddr_in6 saddr;
         memset(&saddr, 0, sizeof(saddr));
 
@@ -143,6 +164,25 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
 
 #endif
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "logger.h"
+#include "util.h"
+
+// Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
+#if !defined(MSG_NOSIGNAL)
+#define MSG_NOSIGNAL 0
+#endif
+
+#ifndef IPV6_ADD_MEMBERSHIP
+#ifdef IPV6_JOIN_GROUP
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#endif
+#endif
+
 #if TOX_INET6_ADDRSTRLEN < INET6_ADDRSTRLEN
 #error TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)
 #endif
@@ -153,8 +193,40 @@ static int inet_pton(Family family, const char *addrString, void *addrbuf)
 
 static int make_proto(int proto);
 static int make_socktype(int type);
-static int make_family(int tox_family);
-static int make_tox_family(int family);
+
+static int make_family(Family tox_family)
+{
+    switch (tox_family) {
+        case TOX_AF_INET:
+            return AF_INET;
+
+        case TOX_AF_INET6:
+            return AF_INET6;
+
+        case TOX_AF_UNSPEC:
+            return AF_UNSPEC;
+
+        default:
+            return tox_family;
+    }
+}
+
+static Family make_tox_family(int family)
+{
+    switch (family) {
+        case AF_INET:
+            return TOX_AF_INET;
+
+        case AF_INET6:
+            return TOX_AF_INET6;
+
+        case AF_UNSPEC:
+            return TOX_AF_UNSPEC;
+
+        default:
+            return family;
+    }
+}
 
 static void get_ip4(IP4 *result, const struct in_addr *addr)
 {
@@ -201,6 +273,14 @@ IP6 get_ip6_loopback(void)
     return loopback;
 }
 
+const Socket net_invalid_socket = {
+#ifdef OS_WIN32
+    (int)INVALID_SOCKET,
+#else
+    -1,
+#endif
+};
+
 /* Check if socket is valid.
  *
  * return 1 if valid
@@ -208,27 +288,17 @@ IP6 get_ip6_loopback(void)
  */
 int sock_valid(Socket sock)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-
-    if (sock == INVALID_SOCKET) {
-#else
-
-    if (sock < 0) {
-#endif
-        return 0;
-    }
-
-    return 1;
+    return sock.socket != net_invalid_socket.socket;
 }
 
 /* Close the socket.
  */
 void kill_sock(Socket sock)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-    closesocket(sock);
+#ifdef OS_WIN32
+    closesocket(sock.socket);
 #else
-    close(sock);
+    close(sock.socket);
 #endif
 }
 
@@ -239,11 +309,11 @@ void kill_sock(Socket sock)
  */
 int set_socket_nonblock(Socket sock)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
     u_long mode = 1;
-    return (ioctlsocket(sock, FIONBIO, &mode) == 0);
+    return (ioctlsocket(sock.socket, FIONBIO, &mode) == 0);
 #else
-    return (fcntl(sock, F_SETFL, O_NONBLOCK, 1) == 0);
+    return (fcntl(sock.socket, F_SETFL, O_NONBLOCK, 1) == 0);
 #endif
 }
 
@@ -256,7 +326,7 @@ int set_socket_nosigpipe(Socket sock)
 {
 #if defined(__MACH__)
     int set = 1;
-    return (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (const char *)&set, sizeof(int)) == 0);
+    return setsockopt(sock.socket, SOL_SOCKET, SO_NOSIGPIPE, (const char *)&set, sizeof(int)) == 0;
 #else
     return 1;
 #endif
@@ -270,7 +340,7 @@ int set_socket_nosigpipe(Socket sock)
 int set_socket_reuseaddr(Socket sock)
 {
     int set = 1;
-    return (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(set)) == 0);
+    return setsockopt(sock.socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(set)) == 0;
 }
 
 /* Set socket to dual (IPv4 + IPv6 socket)
@@ -282,14 +352,14 @@ int set_socket_dualstack(Socket sock)
 {
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
+    int res = getsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0)) {
         return 1;
     }
 
     ipv6only = 0;
-    return (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&ipv6only, sizeof(ipv6only)) == 0);
+    return setsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&ipv6only, sizeof(ipv6only)) == 0;
 }
 
 
@@ -297,7 +367,7 @@ int set_socket_dualstack(Socket sock)
 static uint64_t current_time_actual(void)
 {
     uint64_t time;
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
     /* This probably works fine */
     FILETIME ft;
     GetSystemTimeAsFileTime(&ft);
@@ -315,7 +385,7 @@ static uint64_t current_time_actual(void)
 }
 
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
 static uint64_t last_monotime;
 static uint64_t add_monotime;
 #endif
@@ -324,7 +394,7 @@ static uint64_t add_monotime;
 uint64_t current_time_monotonic(void)
 {
     uint64_t time;
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
     uint64_t old_add_monotime = add_monotime;
     time = (uint64_t)GetTickCount() + add_monotime;
 
@@ -472,11 +542,11 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
     } else {
-        /* unknown address type*/
+        LOGGER_WARNING(net->log, "unknown address type: %d", ip_port.ip.family);
         return -1;
     }
 
-    const int res = sendto(net->sock, (const char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+    const int res = sendto(net->sock.socket, (const char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 
     loglogdata(net->log, "O=>", data, length, ip_port, res);
 
@@ -492,13 +562,13 @@ static int receivepacket(Logger *log, Socket sock, IP_Port *ip_port, uint8_t *da
 {
     memset(ip_port, 0, sizeof(IP_Port));
     struct sockaddr_storage addr;
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
     int addrlen = sizeof(addr);
 #else
     socklen_t addrlen = sizeof(addr);
 #endif
     *length = 0;
-    int fail_or_len = recvfrom(sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    int fail_or_len = recvfrom(sock.socket, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 
     if (fail_or_len < 0) {
         int error = net_error();
@@ -597,7 +667,7 @@ int networking_at_startup(void)
 
 #endif/*VANILLA_NACL*/
 
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
     WSADATA wsaData;
 
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != NO_ERROR) {
@@ -614,7 +684,7 @@ int networking_at_startup(void)
 #if 0
 static void at_shutdown(void)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
+#ifdef OS_WIN32
     WSACleanup();
 #endif
 }
@@ -703,12 +773,12 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     /* Functions to increase the size of the send and receive UDP buffers.
      */
     int n = 1024 * 1024 * 2;
-    setsockopt(temp->sock, SOL_SOCKET, SO_RCVBUF, (const char *)&n, sizeof(n));
-    setsockopt(temp->sock, SOL_SOCKET, SO_SNDBUF, (const char *)&n, sizeof(n));
+    setsockopt(temp->sock.socket, SOL_SOCKET, SO_RCVBUF, (const char *)&n, sizeof(n));
+    setsockopt(temp->sock.socket, SOL_SOCKET, SO_SNDBUF, (const char *)&n, sizeof(n));
 
     /* Enable broadcast on socket */
     int broadcast = 1;
-    setsockopt(temp->sock, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast));
+    setsockopt(temp->sock.socket, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast));
 
     /* iOS UDP sockets are weird and apparently can SIGPIPE */
     if (!set_socket_nosigpipe(temp->sock)) {
@@ -776,7 +846,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
-        int res = setsockopt(temp->sock, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
+        const int res = setsockopt(temp->sock.socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
 
         int neterror = net_error();
         const char *strerror = net_new_strerror(neterror);
@@ -806,7 +876,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     int tries;
 
     for (tries = port_from; tries <= port_to; tries++) {
-        int res = bind(temp->sock, (struct sockaddr *)&addr, addrsize);
+        int res = bind(temp->sock.socket, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
             temp->port = *portptr;
@@ -1290,7 +1360,7 @@ int net_connect(Socket sock, IP_Port ip_port)
         return 0;
     }
 
-    return connect(sock, (struct sockaddr *)&addr, addrsize);
+    return connect(sock.socket, (struct sockaddr *)&addr, addrsize);
 }
 
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
@@ -1391,41 +1461,7 @@ int bind_to_port(Socket sock, int family, uint16_t port)
         return 0;
     }
 
-    return (bind(sock, (struct sockaddr *)&addr, addrsize) == 0);
-}
-
-static int make_tox_family(int family)
-{
-    switch (family) {
-        case AF_INET:
-            return TOX_AF_INET;
-
-        case AF_INET6:
-            return TOX_AF_INET6;
-
-        case AF_UNSPEC:
-            return TOX_AF_UNSPEC;
-
-        default:
-            return family;
-    }
-}
-
-static int make_family(int tox_family)
-{
-    switch (tox_family) {
-        case TOX_AF_INET:
-            return AF_INET;
-
-        case TOX_AF_INET6:
-            return AF_INET6;
-
-        case TOX_AF_UNSPEC:
-            return AF_UNSPEC;
-
-        default:
-            return tox_family;
-    }
+    return bind(sock.socket, (struct sockaddr *)&addr, addrsize) == 0;
 }
 
 static int make_socktype(int type)
@@ -1456,12 +1492,47 @@ static int make_proto(int proto)
     }
 }
 
-Socket net_socket(int domain, int type, int protocol)
+Socket net_socket(Family domain, int type, int protocol)
 {
-    int platform_domain = make_family(domain);
-    int platform_type = make_socktype(type);
-    int platform_prot = make_proto(protocol);
-    return socket(platform_domain, platform_type, platform_prot);
+    const int platform_domain = make_family(domain);
+    const int platform_type = make_socktype(type);
+    const int platform_prot = make_proto(protocol);
+    const Socket sock = {(int)socket(platform_domain, platform_type, platform_prot)};
+    return sock;
+}
+
+int net_send(Socket sock, const void *buf, size_t len)
+{
+    return send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
+}
+
+int net_recv(Socket sock, void *buf, size_t len)
+{
+    return recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
+}
+
+int net_listen(Socket sock, int backlog)
+{
+    return listen(sock.socket, backlog);
+}
+
+Socket net_accept(Socket sock)
+{
+    const Socket newsock = {accept(sock.socket, nullptr, nullptr)};
+    return newsock;
+}
+
+size_t net_socket_data_recv_buffer(Socket sock)
+{
+#ifdef OS_WIN32
+    unsigned long count = 0;
+    ioctlsocket(sock.socket, FIONREAD, &count);
+#else
+    int count = 0;
+    ioctl(sock.socket, FIONREAD, &count);
+#endif
+
+    return count;
 }
 
 uint32_t net_htonl(uint32_t hostlong)

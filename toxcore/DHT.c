@@ -3,7 +3,7 @@
  */
 
 /*
- * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2016-2018 The TokTok team.
  * Copyright © 2013 Tox project.
  *
  * This file is part of Tox, the free peer to peer instant messenger.
@@ -34,6 +34,8 @@
 #include "util.h"
 
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT (BAD_NODE_TIMEOUT + PING_INTERVAL)

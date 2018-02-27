@@ -32,11 +32,6 @@
 #include <sys/epoll.h>
 #endif
 
-// Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
-#if !defined(MSG_NOSIGNAL)
-#define MSG_NOSIGNAL 0
-#endif
-
 #define MAX_INCOMING_CONNECTIONS 256
 
 #define TCP_MAX_BACKLOG MAX_INCOMING_CONNECTIONS
@@ -107,11 +102,6 @@ void do_TCP_server(TCP_Server *TCP_server);
 /* Kill the TCP server
  */
 void kill_TCP_server(TCP_Server *TCP_server);
-
-/* return the amount of data in the tcp recv buffer.
- * return 0 on failure.
- */
-unsigned int TCP_socket_data_recv_buffer(Socket sock);
 
 /* Read the next two bytes in TCP stream then convert them to
  * length (host byte order).

@@ -24,54 +24,55 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#ifdef PLAN9
-#include <u.h> // Plan 9 requires this is imported first
-// Comment line here to avoid reordering by source code formatters.
-#include <libc.h>
-#endif
-
-#include "ccompat.h"
 #include "logger.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32) /* Put win32 includes here */
-#ifndef WINVER
-//Windows XP
-#define WINVER 0x0501
-#endif
-
-// The mingw32/64 Windows library warns about including winsock2.h after
-// windows.h even though with the above it's a valid thing to do. So, to make
-// mingw32 headers happy, we include winsock2.h first.
-#include <winsock2.h>
-
-#include <windows.h>
-#include <ws2tcpip.h>
-
-#else // UNIX includes
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-
-#endif
+#include <stdbool.h>    // bool
+#include <stddef.h>     // size_t
+#include <stdint.h>     // uint*_t
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef short Family;
+typedef uint8_t Family;
 
-typedef int Socket;
-Socket net_socket(int domain, int type, int protocol);
+typedef struct Socket {
+    int socket;
+} Socket;
+
+Socket net_socket(Family domain, int type, int protocol);
+
+/* Check if socket is valid.
+ *
+ * return 1 if valid
+ * return 0 if not valid
+ */
+int sock_valid(Socket sock);
+
+extern const Socket net_invalid_socket;
+
+/**
+ * Calls send(sockfd, buf, len, MSG_NOSIGNAL).
+ */
+int net_send(Socket sockfd, const void *buf, size_t len);
+/**
+ * Calls recv(sockfd, buf, len, MSG_NOSIGNAL).
+ */
+int net_recv(Socket sockfd, void *buf, size_t len);
+/**
+ * Calls listen(sockfd, backlog).
+ */
+int net_listen(Socket sockfd, int backlog);
+/**
+ * Calls accept(sockfd, nullptr, nullptr).
+ */
+Socket net_accept(Socket sockfd);
+
+/**
+ * return the amount of data in the tcp recv buffer.
+ * return 0 on failure.
+ */
+size_t net_socket_data_recv_buffer(Socket sock);
 
 #define MAX_UDP_PACKET_SIZE 2048
 
@@ -325,13 +326,6 @@ uint16_t net_port(const Networking_Core *net);
  * return -1 on failure
  */
 int networking_at_startup(void);
-
-/* Check if socket is valid.
- *
- * return 1 if valid
- * return 0 if not valid
- */
-int sock_valid(Socket sock);
 
 /* Close the socket.
  */

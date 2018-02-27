@@ -27,6 +27,9 @@
 
 #include "onion_announce.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "LAN_discovery.h"
 #include "util.h"
 

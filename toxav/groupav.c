@@ -23,6 +23,9 @@
 
 #include "groupav.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 
