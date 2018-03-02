@@ -187,7 +187,7 @@ static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uin
     }
 }
 
-START_TEST(test_few_clients)
+static void file_transfer_test(void)
 {
     printf("Starting test: few_clients\n");
     uint32_t index[] = { 1, 2, 3 };
@@ -232,10 +232,10 @@ START_TEST(test_few_clients)
                tox_self_get_connection_status(tox3),
                tox_friend_get_connection_status(tox2, 0, nullptr),
                tox_friend_get_connection_status(tox3, 0, nullptr));
-        c_sleep(1000);
+        c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("Starting file transfer test.\n");
+    printf("Starting file transfer test: 100MiB file.\n");
 
     file_accepted = file_size = sendf_ok = size_recv = 0;
     file_recv = 0;
@@ -259,7 +259,9 @@ START_TEST(test_few_clients)
     ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
-    while (1) {
+    const size_t max_iterations = INT16_MAX;
+
+    for (size_t i = 0; i < max_iterations; i++) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);
@@ -270,20 +272,32 @@ START_TEST(test_few_clients)
                 break;
             }
 
-            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
+            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %lu %lu %lu", sendf_ok, file_recv,
                          totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
-                         (unsigned long long)totalf_size, (unsigned long long)size_recv,
-                         (unsigned long long)sending_pos);
+                         (unsigned long)totalf_size, (unsigned long)size_recv,
+                         (unsigned long)sending_pos);
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
+        if ((i + 1) % 500 == 0) {
+            printf("after %u iterations: %.2fMiB done\n", (unsigned int)i + 1, (double)size_recv / 1024 / 1024);
+        }
+
         c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
     }
 
-    printf("100MB file sent in %llu seconds\n", time(nullptr) - f_time);
+    ck_assert_msg(file_sending_done, "file sending did not complete after %u iterations: sendf_ok:%u file_recv:%u "
+                  "totalf_size==file_size:%u size_recv==file_size:%u sending_pos==size_recv:%u file_accepted:%u "
+                  "totalf_size:%lu size_recv:%lu sending_pos:%lu",
+                  (unsigned int)max_iterations, sendf_ok, file_recv,
+                  totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
+                  (unsigned long)totalf_size, (unsigned long)size_recv,
+                  (unsigned long)sending_pos);
+
+    printf("100MiB file sent in %llu seconds\n", time(nullptr) - f_time);
 
     printf("Starting file streaming transfer test.\n");
 
@@ -386,36 +400,16 @@ START_TEST(test_few_clients)
         c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
     }
 
-    printf("test_few_clients succeeded, took %llu seconds\n", time(nullptr) - cur_time);
+    printf("file_transfer_test succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 
     tox_kill(tox1);
     tox_kill(tox2);
     tox_kill(tox3);
 }
-END_TEST
-
-static Suite *tox_suite(void)
-{
-    Suite *s = suite_create("Tox few clients");
-
-    DEFTESTCASE(few_clients);
-
-    return s;
-}
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    srand((unsigned int) time(nullptr));
-
-    Suite *tox = tox_suite();
-    SRunner *test_runner = srunner_create(tox);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    file_transfer_test();
+    return 0;
 }
