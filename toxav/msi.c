@@ -128,7 +128,7 @@ MSISession *msi_new(Messenger *m)
     /* This is called when remote terminates session */
     m_callback_connectionstatus_internal_av(m, on_peer_status, retu);
 
-    LOGGER_DEBUG(m->log, "New msi session: %p ", retu);
+    LOGGER_DEBUG(m->log, "New msi session: %p ", (void *)retu);
     return retu;
 }
 int msi_kill(MSISession *session, Logger *log)
@@ -162,7 +162,7 @@ int msi_kill(MSISession *session, Logger *log)
     pthread_mutex_unlock(session->mutex);
     pthread_mutex_destroy(session->mutex);
 
-    LOGGER_DEBUG(session->messenger->log, "Terminated session: %p", session);
+    LOGGER_DEBUG(session->messenger->log, "Terminated session: %p", (void *)session);
     free(session);
     return 0;
 }
@@ -172,7 +172,7 @@ int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint
         return -1;
     }
 
-    LOGGER_DEBUG(session->messenger->log, "Session: %p Inviting friend: %u", session, friend_number);
+    LOGGER_DEBUG(session->messenger->log, "Session: %p Inviting friend: %u", (void *)session, friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
         LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
@@ -216,7 +216,7 @@ int msi_hangup(MSICall *call)
 
     MSISession *session = call->session;
 
-    LOGGER_DEBUG(session->messenger->log, "Session: %p Hanging up call with friend: %u", call->session,
+    LOGGER_DEBUG(session->messenger->log, "Session: %p Hanging up call with friend: %u", (void *)call->session,
                  call->friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
@@ -247,7 +247,8 @@ int msi_answer(MSICall *call, uint8_t capabilities)
 
     MSISession *session = call->session;
 
-    LOGGER_DEBUG(session->messenger->log, "Session: %p Answering call from: %u", call->session, call->friend_number);
+    LOGGER_DEBUG(session->messenger->log, "Session: %p Answering call from: %u", (void *)call->session,
+                 call->friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
         LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");
@@ -285,7 +286,7 @@ int msi_change_capabilities(MSICall *call, uint8_t capabilities)
 
     MSISession *session = call->session;
 
-    LOGGER_DEBUG(session->messenger->log, "Session: %p Trying to change capabilities to friend %u", call->session,
+    LOGGER_DEBUG(session->messenger->log, "Session: %p Trying to change capabilities to friend %u", (void *)call->session,
                  call->friend_number);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
@@ -340,13 +341,6 @@ int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t le
         bytes += 3; \
     } while(0)
 
-#define SET_UINT16(bytes, header) do { \
-        memcpy(&header.value, bytes + 2, 2);\
-        header.exists = true; \
-        bytes += 4; \
-    } while(0)
-
-
     assert(dest);
 
     if (length == 0 || data[length - 1]) { /* End byte must have value 0 */
@@ -394,7 +388,6 @@ int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t le
 #undef CHECK_SIZE
 #undef CHECK_ENUM_HIGH
 #undef SET_UINT8
-#undef SET_UINT16
 }
 uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len, uint16_t *length)
 {
@@ -573,7 +566,7 @@ void kill_call(MSICall *call)
 
     MSISession *session = call->session;
 
-    LOGGER_DEBUG(session->messenger->log, "Killing call: %p", call);
+    LOGGER_DEBUG(session->messenger->log, "Killing call: %p", (void *)call);
 
     MSICall *prev = call->prev;
     MSICall *next = call->next;
@@ -635,10 +628,10 @@ void handle_init(MSICall *call, const MSIMessage *msg)
 {
     assert(call);
     LOGGER_DEBUG(call->session->messenger->log,
-                 "Session: %p Handling 'init' friend: %d", call->session, call->friend_number);
+                 "Session: %p Handling 'init' friend: %d", (void *)call->session, call->friend_number);
 
     if (!msg->capabilities.exists) {
-        LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid capabilities on 'init'");
+        LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid capabilities on 'init'", (void *)call->session);
         call->error = msi_EInvalidMessage;
         goto FAILURE;
     }
@@ -681,7 +674,7 @@ void handle_init(MSICall *call, const MSIMessage *msg)
 
         case msi_CallRequested: // fall-through
         case msi_CallRequesting: {
-            LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid state on 'init'");
+            LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid state on 'init'", (void *)call->session);
             call->error = msi_EInvalidState;
             goto FAILURE;
         }
@@ -696,11 +689,11 @@ void handle_push(MSICall *call, const MSIMessage *msg)
 {
     assert(call);
 
-    LOGGER_DEBUG(call->session->messenger->log, "Session: %p Handling 'push' friend: %d", call->session,
+    LOGGER_DEBUG(call->session->messenger->log, "Session: %p Handling 'push' friend: %d", (void *)call->session,
                  call->friend_number);
 
     if (!msg->capabilities.exists) {
-        LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid capabilities on 'push'");
+        LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid capabilities on 'push'", (void *)call->session);
         call->error = msi_EInvalidMessage;
         goto FAILURE;
     }
@@ -751,7 +744,7 @@ void handle_pop(MSICall *call, const MSIMessage *msg)
 {
     assert(call);
 
-    LOGGER_DEBUG(call->session->messenger->log, "Session: %p Handling 'pop', friend id: %d", call->session,
+    LOGGER_DEBUG(call->session->messenger->log, "Session: %p Handling 'pop', friend id: %d", (void *)call->session,
                  call->friend_number);
 
     /* callback errors are ignored */

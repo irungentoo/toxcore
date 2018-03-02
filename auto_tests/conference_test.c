@@ -252,7 +252,7 @@ static void test_many_group(void)
     printf("test_many_group succeeded, took %d seconds\n", (int)(time(nullptr) - test_start_time));
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+. other/analysis/gen-file.sh
+
+put auto_tests/lan_discovery_test.c
+
+cppcheck test.c $CPPFLAGS

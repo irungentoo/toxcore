@@ -25,7 +25,10 @@
 #include "config.h"
 #endif
 
+#ifdef __APPLE__
 #define _DARWIN_C_SOURCE
+#endif
+
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -49,7 +52,6 @@
 #ifndef IPV6_ADD_MEMBERSHIP
 #ifdef  IPV6_JOIN_GROUP
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
 #endif
 
@@ -185,14 +187,14 @@ const IP6 IP6_BROADCAST = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
 };
 
-IP4 get_ip4_loopback()
+IP4 get_ip4_loopback(void)
 {
     IP4 loopback;
     loopback.uint32 = htonl(INADDR_LOOPBACK);
     return loopback;
 }
 
-IP6 get_ip6_loopback()
+IP6 get_ip6_loopback(void)
 {
     IP6 loopback;
     get_ip6(&loopback, &in6addr_loopback);
@@ -374,18 +376,18 @@ static void loglogdata(Logger *log, const char *message, const uint8_t *buffer,
     char ip_str[IP_NTOA_LEN];
 
     if (res < 0) { /* Windows doesn't necessarily know %zu */
-        LOGGER_TRACE(log, "[%2u] %s %3hu%c %s:%hu (%u: %s) | %04x%04x",
-                     buffer[0], message, (buflen < 999 ? (uint16_t)buflen : 999), 'E',
+        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
+                     buffer[0], message, (buflen < 999 ? buflen : 999), 'E',
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), errno,
                      strerror(errno), data_0(buflen, buffer), data_1(buflen, buffer));
     } else if ((res > 0) && ((size_t)res <= buflen)) {
-        LOGGER_TRACE(log, "[%2u] %s %3zu%c %s:%hu (%u: %s) | %04x%04x",
-                     buffer[0], message, (res < 999 ? (size_t)res : 999), ((size_t)res < buflen ? '<' : '='),
+        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
+                     buffer[0], message, (res < 999 ? res : 999), ((size_t)res < buflen ? '<' : '='),
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
     } else { /* empty or overwrite */
-        LOGGER_TRACE(log, "[%2u] %s %zu%c%zu %s:%hu (%u: %s) | %04x%04x",
-                     buffer[0], message, (size_t)res, (!res ? '!' : '>'), buflen,
+        LOGGER_TRACE(log, "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x",
+                     buffer[0], message, res, (!res ? '!' : '>'), buflen,
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
     }
@@ -951,7 +953,7 @@ void ip_reset(IP *ip)
 }
 
 /* nulls out ip, sets family according to flag */
-void ip_init(IP *ip, uint8_t ipv6enabled)
+void ip_init(IP *ip, bool ipv6enabled)
 {
     if (!ip) {
         return;
@@ -1298,7 +1300,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     const size_t MAX_COUNT = MIN(SIZE_MAX, INT32_MAX) / sizeof(IP_Port);
     int type = make_socktype(tox_type);
     struct addrinfo *cur;
-    int32_t count = 0;
+    size_t count = 0;
 
     for (cur = infos; count < MAX_COUNT && cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {

@@ -107,54 +107,53 @@ if(NOT MSVC)
     add_flag("-Weverything")
 
     # Disable specific warning flags for both C and C++.
+
+    # TODO(iphydf): Clean these up. Probably all of these are actual bugs.
     add_flag("-Wno-cast-align")
+    # Very verbose, not very useful. This warns about things like int -> uint
+    # conversions that change sign without a cast and narrowing conversions.
     add_flag("-Wno-conversion")
+    # TODO(iphydf): Check enum values when received from the user, then assume
+    # correctness and remove this suppression.
     add_flag("-Wno-covered-switch-default")
-    # Due to clang's tolower() macro being recursive https://github.com/TokTok/c-toxcore/pull/481
+    # Due to clang's tolower() macro being recursive
+    # https://github.com/TokTok/c-toxcore/pull/481
     add_flag("-Wno-disabled-macro-expansion")
+    # We don't put __attribute__ on the public API.
     add_flag("-Wno-documentation-deprecated-sync")
+    # Bootstrap daemon does this.
     add_flag("-Wno-format-nonliteral")
+    # struct Foo foo = {0}; is a common idiom.
     add_flag("-Wno-missing-field-initializers")
-    add_flag("-Wno-missing-prototypes")
-    add_flag("-Wno-packed")
+    # Useful sometimes, but we accept padding in structs for clarity.
+    # Reordering fields to avoid padding will reduce readability.
     add_flag("-Wno-padded")
-    add_flag("-Wno-parentheses")
+    # This warns on things like _XOPEN_SOURCE, which we currently need (we
+    # probably won't need these in the future).
     add_flag("-Wno-reserved-id-macro")
-    add_flag("-Wno-return-type")
+    # TODO(iphydf): Clean these up. They are likely not bugs, but still
+    # potential issues and probably confusing.
     add_flag("-Wno-sign-compare")
-    add_flag("-Wno-sign-conversion")
-    # Our use of mutexes results in a false positive, see 1bbe446
+    # Our use of mutexes results in a false positive, see 1bbe446.
     add_flag("-Wno-thread-safety-analysis")
+    # File transfer code has this.
     add_flag("-Wno-type-limits")
-    add_flag("-Wno-undef")
-    add_flag("-Wno-unreachable-code")
-    add_flag("-Wno-unused-macros")
+    # Callbacks often don't use all their parameters.
     add_flag("-Wno-unused-parameter")
+    # libvpx uses __attribute__((unused)) for "potentially unused" static
+    # functions to avoid unused static function warnings.
+    add_flag("-Wno-used-but-marked-unused")
+    # We use variable length arrays a lot.
     add_flag("-Wno-vla")
 
-    # Disable specific warning flags for C.
-    add_cflag("-Wno-assign-enum")
-    add_cflag("-Wno-bad-function-cast")
-    add_cflag("-Wno-double-promotion")
-    add_cflag("-Wno-gnu-zero-variadic-macro-arguments")
-    add_cflag("-Wno-packed")
-    add_cflag("-Wno-shadow")
-    add_cflag("-Wno-shorten-64-to-32")
-    add_cflag("-Wno-unreachable-code-return")
-    add_cflag("-Wno-unused-but-set-variable")
-    add_cflag("-Wno-used-but-marked-unused")
-
     # Disable specific warning flags for C++.
-    add_cxxflag("-Wno-c++98-compat")
+
+    # Comma at end of enum is supported everywhere we run.
     add_cxxflag("-Wno-c++98-compat-pedantic")
+    # TODO(iphydf): Stop using flexible array members.
     add_cxxflag("-Wno-c99-extensions")
-    add_cxxflag("-Wno-double-promotion")
-    add_cxxflag("-Wno-narrowing")
+    # We're C-compatible, so use C style casts.
     add_cxxflag("-Wno-old-style-cast")
-    add_cxxflag("-Wno-shadow")
-    add_cxxflag("-Wno-used-but-marked-unused")
-    add_cxxflag("-Wno-variadic-macros")
-    add_cxxflag("-Wno-vla-extension")
 
     # Downgrade to warning so we still see it.
     add_flag("-Wno-error=unused-variable")

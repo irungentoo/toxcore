@@ -1542,8 +1542,6 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
             return -1;
         }
 
-        // else { /* TODO(irungentoo): ? */ }
-
         set_buffer_end(&conn->recv_array, num);
     } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
         Packet_Data dt;
@@ -2517,7 +2515,6 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->last_sendqueue_size[pos] = num_packets_array(&conn->send_array);
                 ++conn->last_sendqueue_counter;
 
-                unsigned int j;
                 long signed int sum = 0;
                 sum = (long signed int)conn->last_sendqueue_size[(pos) % CONGESTION_QUEUE_ARRAY_SIZE] -
                       (long signed int)conn->last_sendqueue_size[(pos - (CONGESTION_QUEUE_ARRAY_SIZE - 1)) % CONGESTION_QUEUE_ARRAY_SIZE];
@@ -2542,7 +2539,7 @@ static void send_crypto_packets(Net_Crypto *c)
                         delay = packets_set_rem_array;
                     }
 
-                    for (j = 0; j < CONGESTION_QUEUE_ARRAY_SIZE; ++j) {
+                    for (unsigned j = 0; j < CONGESTION_QUEUE_ARRAY_SIZE; ++j) {
                         unsigned int ind = (j + (packets_set_rem_array  - delay) + n_p_pos) % CONGESTION_LAST_SENT_ARRAY_SIZE;
                         total_sent += conn->last_num_packets_sent[ind];
                         total_resent += conn->last_num_packets_resent[ind];

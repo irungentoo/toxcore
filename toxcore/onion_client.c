@@ -1351,14 +1351,14 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
  * return -1 on failure.
  * return 0 on success.
  */
-int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*tcp_relay_node_callback)(void *object,
+int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num, int (*callback)(void *object,
                            uint32_t number, IP_Port ip_port, const uint8_t *public_key), void *object, uint32_t number)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends) {
         return -1;
     }
 
-    onion_c->friends_list[friend_num].tcp_relay_node_callback = tcp_relay_node_callback;
+    onion_c->friends_list[friend_num].tcp_relay_node_callback = callback;
     onion_c->friends_list[friend_num].tcp_relay_node_callback_object = object;
     onion_c->friends_list[friend_num].tcp_relay_node_callback_number = number;
     return 0;
@@ -1551,15 +1551,15 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
         }
     }
 
-    unsigned int i, count = 0;
-    Onion_Node *list_nodes = onion_c->friends_list[friendnum].clients_list;
-
     if (!onion_c->friends_list[friendnum].is_online) {
+        unsigned int count = 0;
+        Onion_Node *list_nodes = onion_c->friends_list[friendnum].clients_list;
+
         // ensure we get a response from some node roughly once per
         // (interval / MAX_ONION_CLIENTS)
         bool ping_random = true;
 
-        for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        for (unsigned i = 0; i < MAX_ONION_CLIENTS; ++i) {
             if (!(is_timeout(list_nodes[i].timestamp, interval / MAX_ONION_CLIENTS)
                     && is_timeout(list_nodes[i].last_pinged, ONION_NODE_PING_INTERVAL))) {
                 ping_random = false;
@@ -1567,7 +1567,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
             }
         }
 
-        for (i = 0; i < MAX_ONION_CLIENTS; ++i) {
+        for (unsigned i = 0; i < MAX_ONION_CLIENTS; ++i) {
             if (onion_node_timed_out(&list_nodes[i])) {
                 continue;
             }
@@ -1800,8 +1800,6 @@ unsigned int onion_connection_status(const Onion_Client *onion_c)
 
 void do_onion_client(Onion_Client *onion_c)
 {
-    unsigned int i;
-
     if (onion_c->last_run == unix_time()) {
         return;
     }
@@ -1833,7 +1831,7 @@ void do_onion_client(Onion_Client *onion_c)
                              || get_random_tcp_onion_conn_number(nc_get_tcp_c(onion_c->c)) == -1; /* Check if connected to any TCP relays. */
 
     if (onion_connection_status(onion_c)) {
-        for (i = 0; i < onion_c->num_friends; ++i) {
+        for (unsigned i = 0; i < onion_c->num_friends; ++i) {
             do_friend(onion_c, i);
         }
     }

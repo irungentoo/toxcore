@@ -121,7 +121,7 @@ void ac_kill(ACSession *ac)
 
     pthread_mutex_destroy(ac->queue_mutex);
 
-    LOGGER_DEBUG(ac->log, "Terminated audio handler: %p", ac);
+    LOGGER_DEBUG(ac->log, "Terminated audio handler: %p", (void *)ac);
     free(ac);
 }
 
@@ -315,7 +315,7 @@ static int jbuf_write(Logger *log, struct JitterBuffer *q, struct RTPMessage *m)
     unsigned int num = sequnum % q->size;
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
-        LOGGER_DEBUG(log, "Clearing filled jitter buffer: %p", q);
+        LOGGER_DEBUG(log, "Clearing filled jitter buffer: %p", (void *)q);
 
         jbuf_clear(q);
         q->bottom = sequnum - q->capacity;

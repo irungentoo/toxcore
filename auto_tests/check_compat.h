@@ -16,26 +16,26 @@ typedef struct Suite Suite;
 typedef struct SRunner SRunner;
 enum SRunMode { CK_NORMAL };
 
-Suite *suite_create(const char *title)
+static inline Suite *suite_create(const char *title)
 {
     printf("Running test suite: %s\n", title);
     return nullptr;
 }
 
-SRunner *srunner_create(Suite *s)
+static inline SRunner *srunner_create(Suite *s)
 {
     return nullptr;
 }
 
-void srunner_free(SRunner *s)
+static inline void srunner_free(SRunner *s)
 {
 }
 
-void srunner_run_all(SRunner *r, int mode)
+static inline void srunner_run_all(SRunner *r, int mode)
 {
 }
 
-int srunner_ntests_failed(SRunner *r)
+static inline int srunner_ntests_failed(SRunner *r)
 {
     return 0;
 }

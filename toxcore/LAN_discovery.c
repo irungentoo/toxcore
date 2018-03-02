@@ -156,9 +156,9 @@ static void fetch_broadcast_info(uint16_t port)
      * a larger array, not done (640kB and 16 interfaces shall be
      * enough, for everybody!)
      */
-    int i, n = ifconf.ifc_len / sizeof(struct ifreq);
+    int n = ifconf.ifc_len / sizeof(struct ifreq);
 
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         /* there are interfaces with are incapable of broadcast */
         if (ioctl(sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
             continue;

@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 
+#include "ccompat.h"
+
 #ifndef MIN_LOGGER_LEVEL
 #define MIN_LOGGER_LEVEL LOG_INFO
 #endif
@@ -59,8 +61,8 @@ void logger_callback_log(Logger *log, logger_cb *function, void *context, void *
 /**
  * Main write function. If logging disabled does nothing.
  */
-void logger_write(Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func, const char *format,
-                  ...);
+void logger_write(
+    Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func, const char *format, ...) GNU_PRINTF;
 
 
 #define LOGGER_WRITE(log, level, ...) \

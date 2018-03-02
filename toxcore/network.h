@@ -33,6 +33,7 @@
 #include "ccompat.h"
 #include "logger.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -187,7 +188,7 @@ size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 #define SIZE_PORT 2
 #define SIZE_IPPORT (SIZE_IP + SIZE_PORT)
 
-#define TOX_ENABLE_IPV6_DEFAULT 1
+#define TOX_ENABLE_IPV6_DEFAULT true
 
 /* addr_resolve return values */
 #define TOX_ADDR_RESOLVE_INET  1
@@ -260,7 +261,7 @@ int ipport_equal(const IP_Port *a, const IP_Port *b);
 /* nulls out ip */
 void ip_reset(IP *ip);
 /* nulls out ip, sets family according to flag */
-void ip_init(IP *ip, uint8_t ipv6enabled);
+void ip_init(IP *ip, bool ipv6enabled);
 /* checks if ip is valid */
 int ip_isset(const IP *ip);
 /* checks if ip is valid */

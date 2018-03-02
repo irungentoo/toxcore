@@ -110,9 +110,9 @@ void tcp_con_set_custom_object(TCP_Client_Connection *con, void *object)
 {
     con->custom_object = object;
 }
-void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t uint)
+void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
 {
-    con->custom_uint = uint;
+    con->custom_uint = value;
 }
 
 /* return 1 on success

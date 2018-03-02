@@ -48,6 +48,7 @@ cc_library(
     name = "logger",
     srcs = ["logger.c"],
     hdrs = ["logger.h"],
+    deps = [":ccompat"],
 )
 
 cc_library(
@@ -99,9 +100,6 @@ cc_library(
         "DHT.h",
         "LAN_discovery.h",
         "ping.h",
-    ],
-    copts = [
-        "-Wno-parentheses",
     ],
     visibility = ["//c-toxcore/other/bootstrap_daemon:__pkg__"],
     deps = [
@@ -205,9 +203,6 @@ cc_library(
         "tox.h",
         "tox_api.c",
     ],
-    copts = [
-        "-Wno-parentheses",
-    ],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":group",
@@ -221,9 +216,6 @@ cc_library(
         "*.c",
         "*.h",
     ]),
-    copts = [
-        "-Wno-parentheses",
-    ],
     linkopts = ["-lpthread"],
     visibility = ["//c-toxcore/other:__pkg__"],
     deps = [

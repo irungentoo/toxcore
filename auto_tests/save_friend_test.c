@@ -33,21 +33,22 @@ static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, TO
     setter(m, text, SIZEOF_VLA(text), nullptr);
 }
 
-void namechange_callback(Tox *tox, uint32_t friend_number, const uint8_t *name, size_t length, void *user_data)
+static void namechange_callback(Tox *tox, uint32_t friend_number, const uint8_t *name, size_t length, void *user_data)
 {
     struct test_data *to_compare = (struct test_data *)user_data;
     memcpy(to_compare->name, name, length);
     to_compare->received_name = true;
 }
 
-void statuschange_callback(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length, void *user_data)
+static void statuschange_callback(Tox *tox, uint32_t friend_number, const uint8_t *message, size_t length,
+                                  void *user_data)
 {
     struct test_data *to_compare = (struct test_data *)user_data;
     memcpy(to_compare->status_message, message, length);
     to_compare->received_status_message = true;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

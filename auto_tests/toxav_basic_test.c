@@ -559,7 +559,7 @@ static void test_av_flows(void)
     printf("\nTest successful!\n");
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 

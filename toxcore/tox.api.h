@@ -188,19 +188,19 @@ const VERSION_PATCH                = 0;
  * features, but can't break the API.
  */
 #define TOX_VERSION_IS_API_COMPATIBLE(MAJOR, MINOR, PATCH)              \
-  (TOX_VERSION_MAJOR > 0 && TOX_VERSION_MAJOR == MAJOR) && (            \
+  ((TOX_VERSION_MAJOR > 0 && TOX_VERSION_MAJOR == MAJOR) && (           \
     /* 1.x.x, 2.x.x, etc. with matching major version. */               \
     TOX_VERSION_MINOR > MINOR ||                                        \
-    TOX_VERSION_MINOR == MINOR && TOX_VERSION_PATCH >= PATCH            \
-  ) || (TOX_VERSION_MAJOR == 0 && MAJOR == 0) && (                      \
+    (TOX_VERSION_MINOR == MINOR && TOX_VERSION_PATCH >= PATCH)          \
+  )) || ((TOX_VERSION_MAJOR == 0 && MAJOR == 0) && (                    \
     /* 0.x.x makes minor behave like major above. */                    \
-    (TOX_VERSION_MINOR > 0 && TOX_VERSION_MINOR == MINOR) && (          \
+    ((TOX_VERSION_MINOR > 0 && TOX_VERSION_MINOR == MINOR) && (         \
       TOX_VERSION_PATCH >= PATCH                                        \
-    ) || (TOX_VERSION_MINOR == 0 && MINOR == 0) && (                    \
+    )) || ((TOX_VERSION_MINOR == 0 && MINOR == 0) && (                  \
       /* 0.0.x and 0.0.y are only compatible if x == y. */              \
       TOX_VERSION_PATCH == PATCH                                        \
-    )                                                                   \
-  )
+    ))                                                                  \
+  ))
 
 static namespace version {
 
@@ -2156,38 +2156,6 @@ namespace conference {
       typedef void(uint32_t conference_number);
     }
 
-  }
-
-  /**
-   * Peer list state change types.
-   */
-  enum class STATE_CHANGE {
-    /**
-     * A peer has joined the conference.
-     */
-    PEER_JOIN,
-    /**
-     * A peer has exited the conference.
-     */
-    PEER_EXIT,
-    /**
-     * A peer has changed their name.
-     */
-    PEER_NAME_CHANGE,
-  }
-
-  /**
-   * This event is triggered when the peer list changes (name change, peer join, peer exit).
-   *
-   * @deprecated Use the `${event peer.name}` and `${event peer.list_changed}` events, instead.
-   */
-  event namelist_change const {
-    /**
-     * @param conference_number The conference number of the conference the title change is intended for.
-     * @param peer_number The ID of the peer who changed the title.
-     * @param change The type of change (one of $STATE_CHANGE).
-     */
-    typedef void(uint32_t conference_number, uint32_t peer_number, STATE_CHANGE change);
   }
 
 

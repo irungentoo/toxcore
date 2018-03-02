@@ -25,14 +25,13 @@
 #include <string.h>
 #include <sys/types.h>
 
-#if VANILLA_NACL
+#ifdef VANILLA_NACL
 #include <crypto_box.h> // crypto_box_PUBLICKEYBYTES and other defines.
 #else
 #include <sodium.h>
 #endif
 
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
-#define STRINGS_EQUAL(X, Y) (strcmp(X, Y) == 0)
 
 static bool enable_broken_tests = false;
 
@@ -213,7 +212,7 @@ START_TEST(test_m_copy_userstatus)
     assert(m_copy_userstatus(REALLY_BIG_NUMBER, buf, MAX_USERSTATUS_LENGTH) == -1);
     m_copy_userstatus(friend_id_num, buf, MAX_USERSTATUS_LENGTH + 6);
 
-    assert(STRINGS_EQUAL(name_buf, friend_id_status));
+    assert(strcmp(name_buf, friend_id_status) == 0);
 }
 END_TEST
 #endif
@@ -346,7 +345,7 @@ static Suite *messenger_suite(void)
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
