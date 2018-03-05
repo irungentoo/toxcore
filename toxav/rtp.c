@@ -770,7 +770,9 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
     // here the highest bits gets stripped anyway, no need to do keyframe bit magic here!
     header.data_length_lower = length;
 
-    header.flags = RTP_LARGE_FRAME;
+    if (session->payload_type == rtp_TypeVideo) {
+        header.flags = RTP_LARGE_FRAME;
+    }
 
     uint16_t length_safe = (uint16_t)length;
 
