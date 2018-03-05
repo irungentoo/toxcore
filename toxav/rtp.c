@@ -467,7 +467,8 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
         return -1;
     }
 
-    if (header.offset_full >= header.data_length_full) {
+    if (header.offset_full >= header.data_length_full
+            && (header.offset_full != 0 || header.data_length_full != 0)) {
         LOGGER_ERROR(m->log, "Invalid video packet: frame offset (%u) >= full frame length (%u)",
                      (unsigned)header.offset_full, (unsigned)header.data_length_full);
         return -1;
