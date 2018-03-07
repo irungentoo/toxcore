@@ -107,7 +107,7 @@ void tox_options_default(struct Tox_Options *options)
 
 struct Tox_Options *tox_options_new(TOX_ERR_OPTIONS_NEW *error)
 {
-    struct Tox_Options *options = calloc(sizeof(struct Tox_Options), 1);
+    struct Tox_Options *options = calloc(1, sizeof(struct Tox_Options));
 
     if (options) {
         tox_options_default(options);
