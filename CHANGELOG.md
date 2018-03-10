@@ -1,5 +1,15 @@
 
 
+## v0.2.1
+
+### Merged PRs:
+
+- [#837](https://github.com/TokTok/c-toxcore/pull/837) Update version to 0.2.1.
+- [#833](https://github.com/TokTok/c-toxcore/pull/833) Add missing tox_nospam_size() function
+- [#832](https://github.com/TokTok/c-toxcore/pull/832) Don't set RTP_LARGE_FRAME on rtp audio packets
+- [#831](https://github.com/TokTok/c-toxcore/pull/831) Don't throw away rtp packets from old Toxcore
+- [#828](https://github.com/TokTok/c-toxcore/pull/828) Make file transfers 50% faster.
+
 ## v0.2.0
 
 ### Merged PRs:
@@ -12,6 +22,7 @@
 - [#815](https://github.com/TokTok/c-toxcore/pull/815) Some minor cleanups suggested by cppcheck.
 - [#814](https://github.com/TokTok/c-toxcore/pull/814) Fix memory leak of Logger instance on error paths.
 - [#813](https://github.com/TokTok/c-toxcore/pull/813) Minor cleanups: dead stores and avoiding complex macros.
+- [#811](https://github.com/TokTok/c-toxcore/pull/811) Update changelog for 0.2.0
 - [#808](https://github.com/TokTok/c-toxcore/pull/808) Fix a bunch of compiler warnings and remove suppressions.
 - [#807](https://github.com/TokTok/c-toxcore/pull/807) Link all tests to the android cpufeatures library if available.
 - [#806](https://github.com/TokTok/c-toxcore/pull/806) Fix toxcore.pc generation.
@@ -135,6 +146,7 @@
 
 ### Closed issues:
 
+- [#810](https://github.com/TokTok/c-toxcore/issues/810) Release 0.2.0
 - [#704](https://github.com/TokTok/c-toxcore/issues/704) Add CORRECTION support to group chats
 - [#620](https://github.com/TokTok/c-toxcore/issues/620) Video bug: large video frames are not sent correctly
 - [#606](https://github.com/TokTok/c-toxcore/issues/606) groupId is int whereas friendId is uint32_t, reason?
@@ -475,7 +487,7 @@
 
 ### Merged PRs:
 
-- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden agains repo name changes
+- [#207](https://github.com/TokTok/c-toxcore/pull/207) docs: correct instructions for cloning & harden against repo name changes
 - [#206](https://github.com/TokTok/c-toxcore/pull/206) Corrected libsodium tag
 - [#204](https://github.com/TokTok/c-toxcore/pull/204) Error if format_test can't be executed.
 - [#202](https://github.com/TokTok/c-toxcore/pull/202) Version Patch v0.0.2
