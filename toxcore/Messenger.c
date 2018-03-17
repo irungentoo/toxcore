@@ -1977,26 +1977,24 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return nullptr;
     }
 
-    Logger *log = nullptr;
+    m->log = logger_new();
 
-    if (options->log_callback) {
-        log = logger_new();
-
-        if (log != nullptr) {
-            logger_callback_log(log, options->log_callback, m, options->log_user_data);
-        }
+    if (m->log == nullptr) {
+        friendreq_kill(m->fr);
+        free(m);
+        return nullptr;
     }
 
-    m->log = log;
+    logger_callback_log(m->log, options->log_callback, m, options->log_user_data);
 
     unsigned int net_err = 0;
 
     if (options->udp_disabled) {
-        m->net = new_networking_no_udp(log);
+        m->net = new_networking_no_udp(m->log);
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking_ex(log, ip, options->port_range[0], options->port_range[1], &net_err);
+        m->net = new_networking_ex(m->log, ip, options->port_range[0], options->port_range[1], &net_err);
     }
 
     if (m->net == nullptr) {

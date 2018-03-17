@@ -27,6 +27,7 @@
 
 #include "logger.h"
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +39,7 @@ struct Logger {
     void *userdata;
 };
 
-
+#ifdef USE_STDERR_LOGGER
 static const char *logger_level_name(LOGGER_LEVEL level)
 {
     switch (level) {
@@ -73,7 +74,7 @@ static const Logger logger_stderr = {
     nullptr,
     nullptr,
 };
-
+#endif
 
 /**
  * Public Functions
@@ -99,7 +100,11 @@ void logger_write(const Logger *log, LOGGER_LEVEL level, const char *file, int l
                   const char *format, ...)
 {
     if (!log) {
+#ifdef USE_STDERR_LOGGER
         log = &logger_stderr;
+#else
+        assert(!"NULL logger not permitted");
+#endif
     }
 
     if (!log->callback) {
