@@ -10,7 +10,7 @@ matrix:
   include:
   - stage: "Stage 1"
     env: JOB=toxcore ENV=linux
-    compiler: clang
+    compiler: gcc
     addons:
       apt: &apt-dependencies
         packages:
@@ -26,7 +26,7 @@ matrix:
   - stage: "Stage 1"
     if: type IN (push, api, cron)
     env: JOB=autotools ENV=linux
-    compiler: gcc
+    compiler: clang
     addons:
       apt: *apt-dependencies
   - stage: "Stage 1"
