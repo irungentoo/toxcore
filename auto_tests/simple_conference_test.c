@@ -44,7 +44,8 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_conference_invite(#%d, %d, %d, uint8_t[%zd], _)\n", state->id, friend_number, type, length);
+    fprintf(stderr, "\nhandle_conference_invite(#%d, %d, %d, uint8_t[%u], _)\n",
+            state->id, friend_number, type, (unsigned)length);
     fprintf(stderr, "tox%d joining conference\n", state->id);
 
     {
@@ -74,8 +75,8 @@ static void handle_conference_message(Tox *tox, uint32_t conference_number, uint
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_conference_message(#%d, %d, %d, %d, uint8_t[%zd], _)\n",
-            state->id, conference_number, peer_number, type, length);
+    fprintf(stderr, "\nhandle_conference_message(#%d, %d, %d, %d, uint8_t[%u], _)\n",
+            state->id, conference_number, peer_number, type, (unsigned)length);
 
     fprintf(stderr, "tox%d got message: %s\n", state->id, (const char *)message);
     state->received = true;

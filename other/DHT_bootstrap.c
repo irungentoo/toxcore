@@ -156,8 +156,8 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < 32; i++) {
         const uint8_t *const self_public_key = dht_get_self_public_key(dht);
-        printf("%02hhX", self_public_key[i]);
-        fprintf(file, "%02hhX", self_public_key[i]);
+        printf("%02X", self_public_key[i]);
+        fprintf(file, "%02X", self_public_key[i]);
     }
 
     fclose(file);

@@ -240,32 +240,31 @@ START_TEST(test_dht_state_saveloadsave)
      * b) a save()d state can be load()ed back successfully
      * c) a second save() is of equal size
      * d) the second save() is of equal content */
-    size_t i, extra = 64;
-    size_t size = DHT_size(m->dht);
+    const size_t extra = 64;
+    const size_t size = DHT_size(m->dht);
     VLA(uint8_t, buffer, size + 2 * extra);
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
     DHT_save(m->dht, buffer + extra);
 
-    for (i = 0; i < extra; i++) {
+    for (size_t i = 0; i < extra; i++) {
         ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", (unsigned)i);
         ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", (unsigned)i);
     }
 
-    int res = DHT_load(m->dht, buffer + extra, size);
+    const int res = DHT_load(m->dht, buffer + extra, size);
 
     if (res == -1) {
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
     } else {
-        char msg[128];
-        size_t offset = res >> 4;
-        uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
-                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, "%s", msg);
+        const size_t offset = res >> 4;
+        const uint8_t *ptr = buffer + extra + offset;
+        ck_assert_msg(res == 0, "Failed to load back stored buffer: 0x%02x%02x%02x%02x%02x%02x%02x%02x @%u/%u, code %d",
+                      ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5],
+                      (unsigned)offset, (unsigned)size, res & 0x0F);
     }
 
-    size_t size2 = DHT_size(m->dht);
+    const size_t size2 = DHT_size(m->dht);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", (unsigned)size,
                   (unsigned)size2);
 
@@ -283,32 +282,31 @@ START_TEST(test_messenger_state_saveloadsave)
      * b) a save()d state can be load()ed back successfully
      * c) a second save() is of equal size
      * d) the second save() is of equal content */
-    size_t i, extra = 64;
-    size_t size = messenger_size(m);
+    const size_t extra = 64;
+    const size_t size = messenger_size(m);
     VLA(uint8_t, buffer, size + 2 * extra);
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
     messenger_save(m, buffer + extra);
 
-    for (i = 0; i < extra; i++) {
+    for (size_t i = 0; i < extra; i++) {
         ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", (unsigned)i);
         ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", (unsigned)i);
     }
 
-    int res = messenger_load(m, buffer + extra, size);
+    const int res = messenger_load(m, buffer + extra, size);
 
     if (res == -1) {
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
     } else {
-        char msg[128];
-        size_t offset = res >> 4;
-        uint8_t *ptr = buffer + extra + offset;
-        sprintf(msg, "Failed to load back stored buffer: 0x%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx%02hhx @%zu/%zu, code %d",
-                ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], offset, size, res & 0x0F);
-        ck_assert_msg(res == 0, "%s", msg);
+        const size_t offset = res >> 4;
+        const uint8_t *ptr = buffer + extra + offset;
+        ck_assert_msg(res == 0, "Failed to load back stored buffer: 0x%02x%02x%02x%02x%02x%02x%02x%02x @%u/%u, code %d",
+                      ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5],
+                      (unsigned)offset, (unsigned)size, res & 0x0F);
     }
 
-    size_t size2 = messenger_size(m);
+    const size_t size2 = messenger_size(m);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u",
                   (unsigned)size, (unsigned)size2);
 

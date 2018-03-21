@@ -215,8 +215,8 @@ static void test_av_three_calls(void)
     tox_callback_friend_request(Alice, t_accept_friend_request_cb);
     tox_self_get_address(Alice, address);
 
-    printf("bootstrapping Alice and the %zd Bobs off a third bootstrap node\n",
-           sizeof(Bobs) / sizeof(Bobs[0]));
+    printf("bootstrapping Alice and the %u Bobs off a third bootstrap node\n",
+           (unsigned)(sizeof(Bobs) / sizeof(Bobs[0])));
     uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_dht_id(bootstrap, dht_key);
     const uint16_t dht_port = tox_self_get_udp_port(bootstrap, nullptr);

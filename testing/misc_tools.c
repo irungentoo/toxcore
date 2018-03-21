@@ -64,7 +64,9 @@ uint8_t *hex_string_to_bin(const char *hex_string)
     const char *pos = hex_string;
 
     for (i = 0; i < len; ++i, pos += 2) {
-        sscanf(pos, "%2hhx", &ret[i]);
+        unsigned int val;
+        sscanf(pos, "%02x", &val);
+        ret[i] = val;
     }
 
     return ret;

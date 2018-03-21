@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Install cpp-coveralls to upload test coverage results.
-pip install --user urllib3[secure] cpp-coveralls
+pip install --user ndg-httpsclient urllib3[secure] cpp-coveralls
 
 # Work around https://github.com/eddyxu/cpp-coveralls/issues/108 by manually
 # installing the pyOpenSSL module and injecting it into urllib3 as per

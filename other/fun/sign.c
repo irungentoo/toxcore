@@ -56,13 +56,13 @@ int main(int argc, char *argv[])
         int i;
 
         for (i = 0; i < crypto_sign_ed25519_PUBLICKEYBYTES; i++) {
-            printf("%02hhX", pk[i]);
+            printf("%02X", pk[i]);
         }
 
         printf("\nSecret key:\n");
 
         for (i = 0; i < crypto_sign_ed25519_SECRETKEYBYTES; i++) {
-            printf("%02hhX", sk[i]);
+            printf("%02X", sk[i]);
         }
 
         printf("\n");

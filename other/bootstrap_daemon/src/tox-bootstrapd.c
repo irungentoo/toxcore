@@ -109,7 +109,7 @@ static void print_public_key(const uint8_t *public_key)
     size_t i;
 
     for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
-        index += sprintf(buffer + index, "%02hhX", public_key[i]);
+        index += sprintf(buffer + index, "%02X", public_key[i]);
     }
 
     log_write(LOG_LEVEL_INFO, "Public Key: %s\n", buffer);

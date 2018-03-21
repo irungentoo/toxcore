@@ -423,7 +423,7 @@ uint16_t net_port(const Networking_Core *net)
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
 {
-    if (net->family == 0) { /* Socket not initialized */
+    if (net->family == TOX_AF_UNSPEC) { /* Socket not initialized */
         return -1;
     }
 
@@ -436,42 +436,35 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
 
     size_t addrsize = 0;
 
+    if (ip_port.ip.family == TOX_AF_INET && net->family == TOX_AF_INET6) {
+        /* must convert to IPV4-in-IPV6 address */
+        IP6 ip6;
+
+        /* there should be a macro for this in a standards compliant
+         * environment, not found */
+        ip6.uint32[0] = 0;
+        ip6.uint32[1] = 0;
+        ip6.uint32[2] = net_htonl(0xFFFF);
+        ip6.uint32[3] = ip_port.ip.ip.v4.uint32;
+
+        ip_port.ip.family = TOX_AF_INET6;
+        ip_port.ip.ip.v6 = ip6;
+    }
+
     if (ip_port.ip.family == TOX_AF_INET) {
-        if (net->family == TOX_AF_INET6) {
-            /* must convert to IPV4-in-IPV6 address */
-            struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
+        struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
 
-            addrsize = sizeof(struct sockaddr_in6);
-            addr6->sin6_family = AF_INET6;
-            addr6->sin6_port = ip_port.port;
-
-            /* there should be a macro for this in a standards compliant
-             * environment, not found */
-            IP6 ip6;
-
-            ip6.uint32[0] = 0;
-            ip6.uint32[1] = 0;
-            ip6.uint32[2] = net_htonl(0xFFFF);
-            ip6.uint32[3] = ip_port.ip.ip.v4.uint32;
-            fill_addr6(ip6, &addr6->sin6_addr);
-
-            addr6->sin6_flowinfo = 0;
-            addr6->sin6_scope_id = 0;
-        } else {
-            struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
-
-            addrsize = sizeof(struct sockaddr_in);
-            addr4->sin_family = AF_INET;
-            fill_addr4(ip_port.ip.ip.v4, &addr4->sin_addr);
-            addr4->sin_port = ip_port.port;
-        }
+        addrsize = sizeof(struct sockaddr_in);
+        fill_addr4(ip_port.ip.ip.v4, &addr4->sin_addr);
+        addr4->sin_family = AF_INET;
+        addr4->sin_port = ip_port.port;
     } else if (ip_port.ip.family == TOX_AF_INET6) {
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
 
         addrsize = sizeof(struct sockaddr_in6);
+        fill_addr6(ip_port.ip.ip.v6, &addr6->sin6_addr);
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = ip_port.port;
-        fill_addr6(ip_port.ip.ip.v6, &addr6->sin6_addr);
 
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
@@ -480,7 +473,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
         return -1;
     }
 
-    int res = sendto(net->sock, (const char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+    const int res = sendto(net->sock, (const char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
 
     loglogdata(net->log, "O=>", data, length, ip_port, res);
 
@@ -507,7 +500,7 @@ static int receivepacket(Logger *log, Socket sock, IP_Port *ip_port, uint8_t *da
     if (fail_or_len < 0) {
 
         if (fail_or_len < 0 && errno != EWOULDBLOCK) {
-            LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s\n", errno, strerror(errno));
+            LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s", errno, strerror(errno));
         }
 
         return -1; /* Nothing received. */
@@ -664,7 +657,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
 
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (ip.family != TOX_AF_INET && ip.family != TOX_AF_INET6) {
-        LOGGER_ERROR(log, "Invalid address family: %u\n", ip.family);
+        LOGGER_ERROR(log, "Invalid address family: %u", ip.family);
         return nullptr;
     }
 
@@ -688,7 +681,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
 
     /* Check for socket error. */
     if (!sock_valid(temp->sock)) {
-        LOGGER_ERROR(log, "Failed to get a socket?! %u, %s\n", errno, strerror(errno));
+        LOGGER_ERROR(log, "Failed to get a socket?! %u, %s", errno, strerror(errno));
         free(temp);
 
         if (error) {

@@ -322,10 +322,14 @@ static void test_addto_lists_good(DHT            *dht,
 
 static void test_addto_lists(IP ip)
 {
-    Networking_Core *net = new_networking(nullptr, ip, TOX_PORT_DEFAULT);
+    Logger *log = logger_new();
+    uint32_t index = 1;
+    logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index);
+
+    Networking_Core *net = new_networking(log, ip, TOX_PORT_DEFAULT);
     ck_assert_msg(net != nullptr, "Failed to create Networking_Core");
 
-    DHT *dht = new_DHT(nullptr, net, true);
+    DHT *dht = new_DHT(log, net, true);
     ck_assert_msg(dht != nullptr, "Failed to create DHT");
 
     IP_Port ip_port;
@@ -413,7 +417,7 @@ static void print_pk(uint8_t *public_key)
     uint32_t j;
 
     for (j = 0; j < CRYPTO_PUBLIC_KEY_SIZE; j++) {
-        printf("%02hhX", public_key[j]);
+        printf("%02X", public_key[j]);
     }
 
     printf("\n");
@@ -453,6 +457,7 @@ static void test_add_to_list(uint8_t cmp_list[][CRYPTO_PUBLIC_KEY_SIZE + 1],
 static void test_list_main(void)
 {
     DHT *dhts[NUM_DHT];
+    uint32_t index[NUM_DHT];
 
     uint8_t cmp_list1[NUM_DHT][MAX_FRIEND_CLIENTS][CRYPTO_PUBLIC_KEY_SIZE + 1];
     memset(cmp_list1, 0, sizeof(cmp_list1));
@@ -463,7 +468,11 @@ static void test_list_main(void)
         IP ip;
         ip_init(&ip, 1);
 
-        dhts[i] = new_DHT(nullptr, new_networking(nullptr, ip, DHT_DEFAULT_PORT + i), true);
+        Logger *log = logger_new();
+        index[i] = i + 1;
+        logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index[i]);
+
+        dhts[i] = new_DHT(log, new_networking(log, ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
@@ -489,15 +498,16 @@ static void test_list_main(void)
         }
     }
 
-    /*
-        print_pk(dhts[0]->self_public_key);
+#if 0
+    print_pk(dhts[0]->self_public_key);
 
-        for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-            printf("----Entry %u----\n", i);
+    for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        printf("----Entry %u----\n", i);
 
-            print_pk(cmp_list1[i]);
-        }
-    */
+        print_pk(cmp_list1[i]);
+    }
+
+#endif
     unsigned int m_count = 0;
 
     for (l = 0; l < NUM_DHT; ++l) {
@@ -592,6 +602,7 @@ START_TEST(test_DHT_test)
 {
     uint32_t to_comp = 8394782;
     DHT *dhts[NUM_DHT];
+    uint32_t index[NUM_DHT];
 
     unsigned int i, j;
 
@@ -599,7 +610,11 @@ START_TEST(test_DHT_test)
         IP ip;
         ip_init(&ip, 1);
 
-        dhts[i] = new_DHT(nullptr, new_networking(nullptr, ip, DHT_DEFAULT_PORT + i), true);
+        Logger *log = logger_new();
+        index[i] = i + 1;
+        logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index[i]);
+
+        dhts[i] = new_DHT(log, new_networking(log, ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }

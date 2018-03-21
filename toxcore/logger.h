@@ -50,6 +50,9 @@ typedef void logger_cb(void *context, LOGGER_LEVEL level, const char *file, int 
  */
 Logger *logger_new(void);
 
+/**
+ * Frees all resources associated with the logger.
+ */
 void logger_kill(Logger *log);
 
 /**
@@ -59,10 +62,18 @@ void logger_kill(Logger *log);
 void logger_callback_log(Logger *log, logger_cb *function, void *context, void *userdata);
 
 /**
- * Main write function. If logging disabled does nothing.
+ * Main write function. If logging is disabled, this does nothing.
+ *
+ * If the logger is NULL, this writes to stderr. This behaviour should not be
+ * used in production code, but can be useful for temporarily debugging a
+ * function that does not have a logger available. It's essentially
+ * fprintf(stderr, ...), but with timestamps and source location. Toxcore must
+ * be built with -DUSE_STDERR_LOGGER for this to work. It will cause an
+ * assertion failure otherwise.
  */
 void logger_write(
-    Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func, const char *format, ...) GNU_PRINTF;
+    const Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func,
+    const char *format, ...) GNU_PRINTF(6, 7);
 
 
 #define LOGGER_WRITE(log, level, ...) \

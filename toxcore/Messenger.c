@@ -1618,7 +1618,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
     //
     // TODO(zoff99): Fix this to exit the loop properly when we're done
     // requesting all chunks for all file transfers.
-    const uint32_t MAX_FT_LOOPS = 4;
+    const uint32_t MAX_FT_LOOPS = 16;
 
     while (((free_slots > 0) || loop_counter == 0) && any_active_fts && (loop_counter < MAX_FT_LOOPS)) {
         any_active_fts = do_all_filetransfers(m, friendnumber, userdata, &free_slots);
@@ -1977,26 +1977,24 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return nullptr;
     }
 
-    Logger *log = nullptr;
+    m->log = logger_new();
 
-    if (options->log_callback) {
-        log = logger_new();
-
-        if (log != nullptr) {
-            logger_callback_log(log, options->log_callback, m, options->log_user_data);
-        }
+    if (m->log == nullptr) {
+        friendreq_kill(m->fr);
+        free(m);
+        return nullptr;
     }
 
-    m->log = log;
+    logger_callback_log(m->log, options->log_callback, m, options->log_user_data);
 
     unsigned int net_err = 0;
 
     if (options->udp_disabled) {
-        m->net = new_networking_no_udp(log);
+        m->net = new_networking_no_udp(m->log);
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking_ex(log, ip, options->port_range[0], options->port_range[1], &net_err);
+        m->net = new_networking_ex(m->log, ip, options->port_range[0], options->port_range[1], &net_err);
     }
 
     if (m->net == nullptr) {
@@ -2702,15 +2700,16 @@ void do_messenger(Messenger *m, void *userdata)
             } else {
                 char id_str[IDSTRING_LEN];
                 LOGGER_TRACE(m->log, "F[--:%2u] %s", friend_idx,
-                             id_to_string(dhtfptr->public_key, id_str, sizeof(id_str)));
+                             id_to_string(dht_friend_public_key(dhtfptr), id_str, sizeof(id_str)));
             }
 
             for (client = 0; client < MAX_FRIEND_CLIENTS; client++) {
-                Client_data *cptr = &dhtfptr->client_list[client];
-                IPPTsPng *assoc = nullptr;
-                uint32_t a;
+                const Client_data *cptr = dht_friend_client(dhtfptr, client);
+                const IPPTsPng *const assocs[] = {&cptr->assoc4, &cptr->assoc6};
 
-                for (a = 0, assoc = &cptr->assoc4; a < 2; a++, assoc = &cptr->assoc6) {
+                for (size_t a = 0; a < sizeof(assocs) / sizeof(assocs[0]); a++) {
+                    const IPPTsPng *const assoc = assocs[a];
+
                     if (ip_isset(&assoc->ip_port.ip)) {
                         last_pinged = m->lastdump - assoc->last_pinged;
 

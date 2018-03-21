@@ -43,9 +43,9 @@
 #endif
 
 #ifdef __GNUC__
-#define GNU_PRINTF __attribute__((__format__(__printf__, 6, 7)))
+#define GNU_PRINTF(f, a) __attribute__((__format__(__printf__, f, a)))
 #else
-#define GNU_PRINTF
+#define GNU_PRINTF(f, a)
 #endif
 
 #endif /* CCOMPAT_H */

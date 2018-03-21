@@ -316,7 +316,9 @@ static uint8_t *hex_string_to_bin(const char *hex_string)
     size_t i;
 
     for (i = 0; i < len; ++i, pos += 2) {
-        sscanf(pos, "%2hhx", &ret[i]);
+        unsigned int val;
+        sscanf(pos, "%02x", &val);
+        ret[i] = val;
     }
 
     return ret;
