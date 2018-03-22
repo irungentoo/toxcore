@@ -184,7 +184,11 @@ if(ASAN)
 else()
   # Forbid undefined symbols in shared libraries. This is incompatible with
   # asan, so it's in the else branch here.
-  add_dllflag("-Wl,-z,defs")
+  if(APPLE)
+    add_dllflag("-undefined error")
+  else()
+    add_dllflag("-Wl,-z,defs")
+  endif()
 endif()
 
 option(USE_IPV6 "Use IPv6 in tests" ON)
