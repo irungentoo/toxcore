@@ -86,6 +86,13 @@ int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
     return crypto_verify_32(pk1, pk2);
 }
 
+uint8_t random_u08(void)
+{
+    uint8_t randnum;
+    randombytes(&randnum, 1);
+    return randnum;
+}
+
 uint16_t random_u16(void)
 {
     uint16_t randnum;

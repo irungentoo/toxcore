@@ -17,6 +17,7 @@
 #include "../toxcore/TCP_client.h"
 #include "../toxcore/TCP_server.h"
 
+#include "../toxcore/crypto_core.h"
 #include "../toxcore/util.h"
 
 #include "helpers.h"
@@ -59,7 +60,7 @@ START_TEST(test_basic)
     Socket sock = net_socket(TOX_AF_INET6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
     IP_Port ip_port_loopback;
     ip_port_loopback.ip = get_loopback();
-    ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_loopback.port = net_htons(ports[random_u32() % NUM_PORTS]);
 
     int ret = net_connect(sock, ip_port_loopback);
     ck_assert_msg(ret == 0, "Failed to connect to TCP relay server");
@@ -158,7 +159,7 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 
     IP_Port ip_port_loopback;
     ip_port_loopback.ip = get_loopback();
-    ip_port_loopback.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_loopback.port = net_htons(ports[random_u32() % NUM_PORTS]);
 
     int ret = net_connect(sock, ip_port_loopback);
     ck_assert_msg(ret == 0, "Failed to connect to TCP relay server");
@@ -423,7 +424,7 @@ START_TEST(test_client)
     crypto_new_keypair(f_public_key, f_secret_key);
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, nullptr);
     c_sleep(50);
@@ -452,7 +453,7 @@ START_TEST(test_client)
     uint8_t f2_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t f2_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(f2_public_key, f2_secret_key);
-    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     TCP_Client_Connection *conn2 = new_TCP_connection(
                                        ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key, nullptr);
     routing_response_handler(conn, response_callback, (char *)conn + 2);
@@ -521,7 +522,7 @@ START_TEST(test_client_invalid)
     crypto_new_keypair(f_public_key, f_secret_key);
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, nullptr);
     c_sleep(50);
@@ -589,7 +590,7 @@ START_TEST(test_tcp_connection)
 
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
 
     int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);
@@ -597,7 +598,7 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(add_tcp_relay_connection(tc_1, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add tcp relay to connection\n");
 
-    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     connection = new_tcp_connection_to(tc_2, tcp_connections_public_key(tc_1), 123);
     ck_assert_msg(connection == 0, "Connection id wrong");
     ck_assert_msg(add_tcp_relay_connection(tc_2, connection, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
@@ -697,7 +698,7 @@ START_TEST(test_tcp_connection2)
 
     IP_Port ip_port_tcp_s;
 
-    ip_port_tcp_s.port = net_htons(ports[rand() % NUM_PORTS]);
+    ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
 
     int connection = new_tcp_connection_to(tc_1, tcp_connections_public_key(tc_2), 123);

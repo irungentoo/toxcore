@@ -117,6 +117,11 @@ static int32_t public_key_cmp(
 namespace random {
 
 /**
+ * Return a random 8 bit integer.
+ */
+static uint8_t u08();
+
+/**
  * Return a random 16 bit integer.
  */
 static uint16_t u16();
