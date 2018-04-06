@@ -544,7 +544,10 @@ if(BOOTSTRAP_DAEMON AND WIN32)
   set(BOOTSTRAP_DAEMON OFF)
 endif()
 if(BOOTSTRAP_DAEMON)
-  if(LIBCONFIG_FOUND)
+  if(NOT LIBCONFIG_FOUND)
+    message(WARNING "Option BOOTSTRAP_DAEMON is enabled but required library LIBCONFIG was not found.")
+    set(BOOTSTRAP_DAEMON OFF)
+  else()
     add_executable(tox-bootstrapd ${CPUFEATURES}
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
