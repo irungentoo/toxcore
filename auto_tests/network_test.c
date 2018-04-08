@@ -38,7 +38,10 @@ START_TEST(test_addr_resolv_localhost)
 
     int res = addr_resolve(localhost, &ip, nullptr);
 
-    ck_assert_msg(res > 0, "Resolver failed: %u, %s", errno, strerror(errno));
+    int error = net_error();
+    const char *strerror = net_new_strerror(error);
+    ck_assert_msg(res > 0, "Resolver failed: %d, %s", error, strerror);
+    net_kill_strerror(strerror);
 
     char ip_str[IP_NTOA_LEN];
     ck_assert_msg(ip.family == TOX_AF_INET, "Expected family TOX_AF_INET, got %u.", ip.family);
@@ -54,7 +57,10 @@ START_TEST(test_addr_resolv_localhost)
         localhost_split = 1;
     }
 
-    ck_assert_msg(res > 0, "Resolver failed: %u, %s", errno, strerror(errno));
+    error = net_error();
+    strerror = net_new_strerror(error);
+    ck_assert_msg(res > 0, "Resolver failed: %d, %s", error, strerror);
+    net_kill_strerror(strerror);
 
     ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
     IP6 ip6_loopback = get_ip6_loopback();
@@ -71,7 +77,10 @@ START_TEST(test_addr_resolv_localhost)
     IP extra;
     ip_reset(&extra);
     res = addr_resolve(localhost, &ip, &extra);
-    ck_assert_msg(res > 0, "Resolver failed: %u, %s", errno, strerror(errno));
+    error = net_error();
+    strerror = net_new_strerror(error);
+    ck_assert_msg(res > 0, "Resolver failed: %d, %s", error, strerror);
+    net_kill_strerror(strerror);
 
 #if USE_IPV6
     ck_assert_msg(ip.family == TOX_AF_INET6, "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6, ip.family);
@@ -156,6 +165,8 @@ END_TEST
 static Suite *network_suite(void)
 {
     Suite *s = suite_create("Network");
+
+    networking_at_startup();
 
     DEFTESTCASE(addr_resolv_localhost);
     DEFTESTCASE(ip_equal);
