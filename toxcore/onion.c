@@ -471,6 +471,15 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
     }
 
+    if (len <= SIZE_IPPORT) {
+        return 1;
+    }
+
+    if (plain[SIZE_IPPORT] != NET_PACKET_ANNOUNCE_REQUEST &&
+            plain[SIZE_IPPORT] != NET_PACKET_ONION_DATA_REQUEST) {
+        return 1;
+    }
+
     IP_Port send_to;
 
     if (ipport_unpack(&send_to, plain, len, 0) == -1) {
@@ -511,6 +520,11 @@ static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, ui
     }
 
     if (length <= 1 + RETURN_3) {
+        return 1;
+    }
+
+    if (packet[1 + RETURN_3] != NET_PACKET_ANNOUNCE_RESPONSE &&
+            packet[1 + RETURN_3] != NET_PACKET_ONION_DATA_RESPONSE) {
         return 1;
     }
 
@@ -555,6 +569,11 @@ static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
     }
 
+    if (packet[1 + RETURN_2] != NET_PACKET_ANNOUNCE_RESPONSE &&
+            packet[1 + RETURN_2] != NET_PACKET_ONION_DATA_RESPONSE) {
+        return 1;
+    }
+
     change_symmetric_key(onion);
 
     uint8_t plain[SIZE_IPPORT + RETURN_1];
@@ -593,6 +612,11 @@ static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, ui
     }
 
     if (length <= 1 + RETURN_1) {
+        return 1;
+    }
+
+    if (packet[1 + RETURN_1] != NET_PACKET_ANNOUNCE_RESPONSE &&
+            packet[1 + RETURN_1] != NET_PACKET_ONION_DATA_RESPONSE) {
         return 1;
     }
 
