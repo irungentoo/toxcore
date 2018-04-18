@@ -171,3 +171,4 @@ the API documentation in [toxcore/tox.h](toxcore/tox.h) for more information.
 ### Other resources
 
 - [Another echo bot](https://wiki.tox.chat/developers/client_examples/echo_bot)
+- [minitox](https://github.com/hqwrong/minitox) (A minimal tox client)
