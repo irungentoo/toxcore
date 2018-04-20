@@ -34,11 +34,11 @@ static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, ui
 {
     Onion *onion = object;
 
-    if (memcmp(packet, "Install Gentoo", sizeof("Install Gentoo")) != 0)
+    if (memcmp(packet, "\x83 Install Gentoo", sizeof("\x83 Install Gentoo")) != 0)
         return 1;
 
-    if (send_onion_response(onion->net, source, (uint8_t *)"install gentoo", sizeof("install gentoo"),
-                            packet + sizeof("Install Gentoo")) == -1)
+    if (send_onion_response(onion->net, source, (uint8_t *)"\x84 install gentoo", sizeof("\x84 install gentoo"),
+                            packet + sizeof("\x83 Install Gentoo")) == -1)
         return 1;
 
     handled_test_1 = 1;
@@ -48,10 +48,10 @@ static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, ui
 static int handled_test_2;
 static int handle_test_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length)
 {
-    if (length != sizeof("install Gentoo"))
+    if (length != sizeof("\x84 install Gentoo"))
         return 1;
 
-    if (memcmp(packet, (uint8_t *)"install gentoo", sizeof("install gentoo")) != 0)
+    if (memcmp(packet, (uint8_t *)"\x84 install gentoo", sizeof("\x84 install gentoo")) != 0)
         return 1;
 
     handled_test_2 = 1;
@@ -134,7 +134,7 @@ START_TEST(test_basic)
     Onion *onion1 = new_onion(new_DHT(new_networking(ip, 34567)));
     Onion *onion2 = new_onion(new_DHT(new_networking(ip, 34568)));
     ck_assert_msg((onion1 != NULL) && (onion2 != NULL), "Onion failed initializing.");
-    networking_registerhandler(onion2->net, 'I', &handle_test_1, onion2);
+    networking_registerhandler(onion2->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_test_1, onion2);
 
     IP_Port on1 = {ip, onion1->net->port};
     Node_format n1;
@@ -153,8 +153,8 @@ START_TEST(test_basic)
     nodes[3] = n2;
     Onion_Path path;
     create_onion_path(onion1->dht, &path, nodes);
-    int ret = send_onion_packet(onion1->net, &path, nodes[3].ip_port, (uint8_t *)"Install Gentoo",
-                                sizeof("Install Gentoo"));
+    int ret = send_onion_packet(onion1->net, &path, nodes[3].ip_port, (uint8_t *)"\x83 Install Gentoo",
+                                sizeof("\x83 Install Gentoo"));
     ck_assert_msg(ret == 0, "Failed to create/send onion packet.");
 
     handled_test_1 = 0;
@@ -164,7 +164,7 @@ START_TEST(test_basic)
         do_onion(onion2);
     }
 
-    networking_registerhandler(onion1->net, 'i', &handle_test_2, onion1);
+    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_2, onion1);
     handled_test_2 = 0;
 
     while (handled_test_2 == 0) {
