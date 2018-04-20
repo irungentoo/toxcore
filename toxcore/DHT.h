@@ -240,6 +240,11 @@ const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num);
 
 /*----------------------------------------------------------------------------------*/
 
+/*
+ * Set the callback function that will be executed when we get a getnodes response.
+ */
+void DHT_callback_getnodes_response(DHT *dht, void (*func)(IP_Port *, const uint8_t *, void *), void *userdata);
+
 /* Shared key generations are costly, it is therefor smart to store commonly used
  * ones so that they can re used later without being computed again.
  *

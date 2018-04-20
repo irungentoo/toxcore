@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     // toxcore/DHT
     CHECK_SIZE(Client_data, 496);
     CHECK_SIZE(Cryptopacket_Handles, 16);
-    CHECK_SIZE(DHT, 676528);
+    CHECK_SIZE(DHT, 676544);
     CHECK_SIZE(DHT_Friend, 5104);
     CHECK_SIZE(Hardening, 144);
     CHECK_SIZE(IPPTs, 40);

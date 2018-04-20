@@ -115,7 +115,17 @@ struct DHT {
 
     Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
     unsigned int num_to_bootstrap;
+
+    void (*getnodes_response)(IP_Port *, const uint8_t *public_key, void *);
+    void *getnodes_response_data;
 };
+
+/* Set the callback function that will be executed when we get a getnodes response. */
+void DHT_callback_getnodes_response(DHT *dht, void (*func)(IP_Port *, const uint8_t *, void *), void *userdata)
+{
+    dht->getnodes_response = func;
+    dht->getnodes_response_data = userdata;
+}
 
 const uint8_t *dht_friend_public_key(const DHT_Friend *dht_friend)
 {
@@ -1529,6 +1539,10 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
         if (ipport_isset(&plain_nodes[i].ip_port)) {
             ping_node_from_getnodes_ok(dht, plain_nodes[i].public_key, plain_nodes[i].ip_port);
             returnedip_ports(dht, plain_nodes[i].ip_port, plain_nodes[i].public_key, packet + 1);
+        }
+
+        if (dht->getnodes_response) {
+            dht->getnodes_response(&plain_nodes[i].ip_port, plain_nodes[i].public_key, dht->getnodes_response_data);
         }
     }
 
