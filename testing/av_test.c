@@ -64,7 +64,6 @@ extern "C" {
 #include <opencv/highgui.h>
 
 #include <assert.h>
-#include <errno.h>
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>

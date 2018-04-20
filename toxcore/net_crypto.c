@@ -2755,6 +2755,13 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  *
  * return -1 on failure.
  * return 0 on success.
+ *
+ * Note: The condition `buffer_end - buffer_start < packet_number - buffer_start` is
+ * a trick which handles situations `buffer_end >= buffer_start` and
+ * `buffer_end < buffer_start`(when buffer_end overflowed) both correctly
+ *
+ * It CANNOT be simplified to `packet_number < buffer_start`, as it will fail
+ * when `buffer_end < buffer_start`.
  */
 int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number)
 {

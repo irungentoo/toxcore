@@ -11,6 +11,7 @@
 #include <time.h>
 
 #include "../toxcore/ccompat.h"
+#include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
@@ -21,11 +22,11 @@ static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t 
     int i;
 
     for (i = 0; i < TOX_MAX_NAME_LENGTH; ++i) {
-        name[i] = rand();
+        name[i] = random_u08();
     }
 
     for (i = 0; i < TOX_MAX_STATUS_MESSAGE_LENGTH; ++i) {
-        status_message[i] = rand();
+        status_message[i] = random_u08();
     }
 }
 

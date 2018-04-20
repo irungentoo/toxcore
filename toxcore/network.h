@@ -404,6 +404,34 @@ void net_freeipport(IP_Port *ip_ports);
  */
 int bind_to_port(Socket sock, int family, uint16_t port);
 
+/* Get the last networking error code.
+ *
+ * Similar to Unix's errno, but cross-platform, as not all platforms use errno
+ * to indicate networking errors.
+ *
+ * Note that different platforms may return different codes for the same error,
+ * so you likely shouldn't be checking the value returned by this function
+ * unless you know what you are doing, you likely just want to use it in
+ * combination with net_new_strerror() to print the error.
+ *
+ * return platform-dependent network error code, if any.
+ */
+int net_error(void);
+
+/* Get a text explanation for the error code from net_error().
+ *
+ * return NULL on failure.
+ * return pointer to a NULL-terminated string describing the error code on
+ * success. The returned string must be freed using net_kill_strerror().
+ */
+const char *net_new_strerror(int error);
+
+/* Frees the string returned by net_new_strerror().
+ * It's valid to pass NULL as the argument, the function does nothing in this
+ * case.
+ */
+void net_kill_strerror(const char *strerror);
+
 /* Initialize networking.
  * bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).

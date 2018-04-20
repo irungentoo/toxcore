@@ -12,6 +12,7 @@
 
 #include "helpers.h"
 
+#include "../toxcore/crypto_core.h"
 #include "../toxcore/net_crypto.h"
 
 static void rand_bytes(uint8_t *b, size_t blen)
@@ -19,7 +20,7 @@ static void rand_bytes(uint8_t *b, size_t blen)
     size_t i;
 
     for (i = 0; i < blen; i++) {
-        b[i] = rand();
+        b[i] = random_u08();
     }
 }
 
@@ -166,7 +167,7 @@ START_TEST(test_endtoend)
     // Test 100 random messages and keypairs
     for (testno = 0; testno < 100; testno++) {
         //Generate random message (random length from 100 to 500)
-        mlen = (rand() % 400) + 100;
+        mlen = (random_u32() % 400) + 100;
         rand_bytes(m, mlen);
         rand_bytes(n, CRYPTO_NONCE_SIZE);
 
@@ -303,7 +304,7 @@ START_TEST(test_increment_nonce)
     uint8_t n[CRYPTO_NONCE_SIZE];
 
     for (i = 0; i < CRYPTO_NONCE_SIZE; ++i) {
-        n[i] = rand();
+        n[i] = random_u08();
     }
 
     uint8_t n1[CRYPTO_NONCE_SIZE];
@@ -317,7 +318,7 @@ START_TEST(test_increment_nonce)
     }
 
     for (i = 0; i < (1 << 18); ++i) {
-        uint32_t r = rand();
+        const uint32_t r = random_u32();
         increment_nonce_number_cmp(n, r);
         increment_nonce_number(n1, r);
         ck_assert_msg(memcmp(n, n1, CRYPTO_NONCE_SIZE) == 0, "Bad increment_nonce_number function");

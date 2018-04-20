@@ -1,9 +1,28 @@
 
 
+## v0.2.2
+
+### Merged PRs:
+
+- [#872](https://github.com/TokTok/c-toxcore/issues/872) Restrict packet kinds that can be sent through onion path.
+- [#864](https://github.com/TokTok/c-toxcore/issues/864) CMake warn if libconfig not found
+- [#863](https://github.com/TokTok/c-toxcore/issues/863) Remove broken and unmaintained scripts.
+- [#859](https://github.com/TokTok/c-toxcore/issues/859) Add clarifying comment to cryptpacket_received function.
+- [#857](https://github.com/TokTok/c-toxcore/issues/857) Avoid the use of rand() in tests.
+- [#846](https://github.com/TokTok/c-toxcore/issues/846) Disallow stderr logger by default.
+- [#845](https://github.com/TokTok/c-toxcore/issues/845) Fix coveralls reporting.
+- [#844](https://github.com/TokTok/c-toxcore/issues/844) Add COVERAGE cmake flag for clang.
+- [#825](https://github.com/TokTok/c-toxcore/issues/825) Add default stderr logger for logging to nullptr.
+- [#824](https://github.com/TokTok/c-toxcore/issues/824) Simplify sendpacket function, deduplicate some logic.
+- [#809](https://github.com/TokTok/c-toxcore/issues/809) Remove the use of the 'hh' format specifier.
+- [#801](https://github.com/TokTok/c-toxcore/issues/801) Add logging to the onion_test.
+- [#797](https://github.com/TokTok/c-toxcore/issues/797) Move struct DHT_Friend into DHT.c.
+
 ## v0.2.1
 
 ### Merged PRs:
 
+- [#839](https://github.com/TokTok/c-toxcore/pull/839) Update changelog for 0.2.1
 - [#837](https://github.com/TokTok/c-toxcore/pull/837) Update version to 0.2.1.
 - [#833](https://github.com/TokTok/c-toxcore/pull/833) Add missing tox_nospam_size() function
 - [#832](https://github.com/TokTok/c-toxcore/pull/832) Don't set RTP_LARGE_FRAME on rtp audio packets

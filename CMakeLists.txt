@@ -30,7 +30,7 @@ set(CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 # versions in a synchronised way.
 set(PROJECT_VERSION_MAJOR "0")
 set(PROJECT_VERSION_MINOR "2")
-set(PROJECT_VERSION_PATCH "1")
+set(PROJECT_VERSION_PATCH "2")
 set(PROJECT_VERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
 
 # set .so library version / following libtool scheme
@@ -184,7 +184,11 @@ if(ASAN)
 else()
   # Forbid undefined symbols in shared libraries. This is incompatible with
   # asan, so it's in the else branch here.
-  add_dllflag("-Wl,-z,defs")
+  if(APPLE)
+    add_dllflag("-undefined error")
+  else()
+    add_dllflag("-Wl,-z,defs")
+  endif()
 endif()
 
 option(USE_IPV6 "Use IPv6 in tests" ON)
@@ -540,7 +544,10 @@ if(BOOTSTRAP_DAEMON AND WIN32)
   set(BOOTSTRAP_DAEMON OFF)
 endif()
 if(BOOTSTRAP_DAEMON)
-  if(LIBCONFIG_FOUND)
+  if(NOT LIBCONFIG_FOUND)
+    message(WARNING "Option BOOTSTRAP_DAEMON is enabled but required library LIBCONFIG was not found.")
+    set(BOOTSTRAP_DAEMON OFF)
+  else()
     add_executable(tox-bootstrapd ${CPUFEATURES}
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h

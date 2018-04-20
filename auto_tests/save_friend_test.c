@@ -7,6 +7,7 @@
 
 #include "helpers.h"
 #include "../toxcore/ccompat.h"
+#include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 
 #include <assert.h>
@@ -27,7 +28,7 @@ static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, TO
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
-        text[i] = rand();
+        text[i] = random_u08();
     }
 
     setter(m, text, SIZEOF_VLA(text), nullptr);

@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
@@ -209,7 +210,7 @@ static void test_many_group(void)
     TOX_ERR_CONFERENCE_SEND_MESSAGE err;
     ck_assert_msg(
         tox_conference_send_message(
-            toxes[rand() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
+            toxes[random_u32() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
             sizeof(GROUP_MESSAGE) - 1, &err) != 0, "Failed to send group message.");
     ck_assert_msg(
         err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "Failed to send group message.");
