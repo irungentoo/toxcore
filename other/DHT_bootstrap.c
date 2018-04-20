@@ -71,7 +71,7 @@ static void manage_keys(DHT *dht)
         }
 
         dht_set_self_public_key(dht, keys);
-        dht_set_self_public_key(dht, keys + CRYPTO_PUBLIC_KEY_SIZE);
+        dht_set_self_secret_key(dht, keys + CRYPTO_PUBLIC_KEY_SIZE);
         printf("Keys loaded successfully.\n");
     } else {
         memcpy(keys, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
