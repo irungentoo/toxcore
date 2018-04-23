@@ -62,6 +62,18 @@ if(APPLE)
   include(MacRpath)
 endif()
 
+if(UNIX)
+    if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
+        set(LINUX TRUE)
+    elseif(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
+        set(OPENBSD TRUE)
+    elseif(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
+        set(NETBSD TRUE)
+    elseif(CMAKE_SYSTEM_NAME MATCHES "kFreeBSD.*|FreeBSD")
+        set(FREEBSD TRUE)
+    endif()
+endif()
+
 enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
@@ -184,10 +196,10 @@ if(ASAN)
 else()
   # Forbid undefined symbols in shared libraries. This is incompatible with
   # asan, so it's in the else branch here.
-  if(APPLE)
-    add_dllflag("-undefined error")
-  else()
+  if(LINUX)
     add_dllflag("-Wl,-z,defs")
+  else()
+    add_dllflag("-undefined error")
   endif()
 endif()
 
