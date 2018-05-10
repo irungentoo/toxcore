@@ -21,6 +21,7 @@
 # package updates, and we do incremental system and package updates on every
 # change to the list of git tags (i.e. on every toxcore release, presumably).
 
+sudo apt-get update
 sudo apt-get install -y qemu
 
 OLD_PWD="$PWD"
