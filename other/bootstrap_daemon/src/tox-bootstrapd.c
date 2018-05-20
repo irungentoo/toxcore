@@ -37,6 +37,7 @@
 #include "../../../toxcore/tox.h"
 #include "../../../toxcore/LAN_discovery.h"
 #include "../../../toxcore/TCP_server.h"
+#include "../../../toxcore/logger.h"
 #include "../../../toxcore/onion_announce.h"
 #include "../../../toxcore/util.h"
 
@@ -245,10 +246,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    DHT *dht = new_DHT(nullptr, net, true);
+    Logger *logger = logger_new();
+    DHT *dht = new_DHT(logger, net, true);
 
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
+        logger_kill(logger);
         return 1;
     }
 
@@ -257,6 +260,7 @@ int main(int argc, char *argv[])
 
     if (!(onion && onion_a)) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
+        logger_kill(logger);
         return 1;
     }
 
@@ -265,6 +269,7 @@ int main(int argc, char *argv[])
             log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
+            logger_kill(logger);
             return 1;
         }
 
@@ -275,6 +280,7 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "Keys are managed successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
+        logger_kill(logger);
         return 1;
     }
 
@@ -285,6 +291,7 @@ int main(int argc, char *argv[])
     if (enable_tcp_relay) {
         if (tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
+            logger_kill(logger);
             return 1;
         }
 
@@ -297,6 +304,7 @@ int main(int argc, char *argv[])
             log_write(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
+            logger_kill(logger);
             return 1;
         }
     }
@@ -305,6 +313,7 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
+        logger_kill(logger);
         return 1;
     }
 

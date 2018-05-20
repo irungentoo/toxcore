@@ -30,8 +30,9 @@
 #endif
 
 #include "../toxcore/DHT.h"
-#include "../toxcore/friend_requests.h"
 #include "../toxcore/LAN_discovery.h"
+#include "../toxcore/friend_requests.h"
+#include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 
@@ -115,7 +116,8 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(nullptr, new_networking(nullptr, ip, PORT), true);
+    Logger *logger = logger_new();
+    DHT *dht = new_DHT(logger, new_networking(nullptr, ip, PORT), true);
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
 
