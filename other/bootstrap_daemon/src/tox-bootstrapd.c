@@ -227,26 +227,29 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
-    Networking_Core *net = new_networking(nullptr, ip, port);
+    Logger *logger = logger_new();
+
+    Networking_Core *net = new_networking(logger, ip, port);
 
     if (net == nullptr) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking(nullptr, ip, port);
+            net = new_networking(logger, ip, port);
 
             if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
+                logger_kill(logger);
                 return 1;
             }
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize networking. Exiting.\n");
+            logger_kill(logger);
             return 1;
         }
     }
 
-    Logger *logger = logger_new();
     DHT *dht = new_DHT(logger, net, true);
 
     if (dht == nullptr) {
