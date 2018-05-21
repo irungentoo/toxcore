@@ -178,6 +178,44 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
     }
 }
 
+void print_log(void *context, LOGGER_LEVEL level, const char *file, int line,
+               const char *func, const char *message, void *userdata)
+{
+    if (MIN_LOGGER_LEVEL != LOG_TRACE && MIN_LOGGER_LEVEL != LOG_DEBUG) {
+        return;
+    }
+
+    char *strlevel;
+
+    switch (level) {
+        case LOG_TRACE:
+            strlevel = "TRACE";
+            break;
+
+        case LOG_DEBUG:
+            strlevel = "DEBUG";
+            break;
+
+        case LOG_INFO:
+            strlevel = "INFO";
+            break;
+
+        case LOG_WARNING:
+            strlevel = "WARNING";
+            break;
+
+        case LOG_ERROR:
+            strlevel = "ERROR";
+            break;
+
+        default:
+            strlevel = "<unknown>";
+            break;
+    }
+
+    fprintf(stderr, "[%s] %s:%d(%s) %s\n", strlevel, file, line, func, message);
+}
+
 int main(int argc, char *argv[])
 {
     umask(077);
@@ -231,6 +269,7 @@ int main(int argc, char *argv[])
     ip_init(&ip, enable_ipv6);
 
     Logger *logger = logger_new();
+    logger_callback_log(logger, print_log, nullptr, nullptr);
 
     Networking_Core *net = new_networking(logger, ip, port);
 

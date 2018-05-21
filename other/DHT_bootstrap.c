@@ -94,6 +94,40 @@ static void manage_keys(DHT *dht)
     fclose(keys_file);
 }
 
+static void print_log(void *context, Logger_Level level, const char *file, int line,
+                      const char *func, const char *message, void *userdata)
+{
+    char *strlevel;
+
+    switch (level) {
+        case LOGGER_LEVEL_TRACE:
+            strlevel = "TRACE";
+            break;
+
+        case LOGGER_LEVEL_DEBUG:
+            strlevel = "DEBUG";
+            break;
+
+        case LOGGER_LEVEL_INFO:
+            strlevel = "INFO";
+            break;
+
+        case LOGGER_LEVEL_WARNING:
+            strlevel = "WARNING";
+            break;
+
+        case LOGGER_LEVEL_ERROR:
+            strlevel = "ERROR";
+            break;
+
+        default:
+            strlevel = "<unknown>";
+            break;
+    }
+
+    fprintf(stderr, "[%s] %s:%d(%s) %s\n", strlevel, file, line, func, message);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc == 2 && !tox_strncasecmp(argv[1], "-h", 3)) {
@@ -116,6 +150,11 @@ int main(int argc, char *argv[])
     ip_init(&ip, ipv6enabled);
 
     Logger *logger = logger_new();
+
+    if (MIN_LOGGER_LEVEL == LOGGER_LEVEL_TRACE || MIN_LOGGER_LEVEL == LOGGER_LEVEL_DEBUG) {
+        logger_callback_log(logger, print_log, nullptr, nullptr);
+    }
+
     Mono_Time *mono_time = mono_time_new();
     DHT *dht = new_dht(logger, mono_time, new_networking(logger, ip, PORT), true);
     Onion *onion = new_onion(mono_time, dht);
