@@ -1128,11 +1128,11 @@ bool ip_isset(const IP *ip)
 bool ipport_isset(const IP_Port *ipport)
 {
     if (!ipport) {
-        return true;
+        return false;
     }
 
     if (!ipport->port) {
-        return true;
+        return false;
     }
 
     return ip_isset(&ipport->ip);
