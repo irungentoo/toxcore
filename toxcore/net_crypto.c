@@ -2240,7 +2240,7 @@ static void do_tcp(Net_Crypto *c, void *userdata)
         Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == nullptr) {
-            return;
+            continue;
         }
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
@@ -2990,7 +2990,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
         Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == nullptr) {
-            return;
+            continue;
         }
 
         if (conn->status == CRYPTO_CONN_NO_CONNECTION) {
