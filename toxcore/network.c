@@ -379,7 +379,7 @@ int set_socket_nonblock(Socket sock)
  */
 int set_socket_nosigpipe(Socket sock)
 {
-#if defined(__MACH__)
+#if defined(__APPLE__)
     int set = 1;
     return setsockopt(sock.socket, SOL_SOCKET, SO_NOSIGPIPE, (const char *)&set, sizeof(int)) == 0;
 #else
