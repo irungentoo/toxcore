@@ -31,6 +31,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 struct Logger {
@@ -111,7 +112,19 @@ void logger_write(const Logger *log, LOGGER_LEVEL level, const char *file, int l
         return;
     }
 
-    /* Format message */
+    // Only pass the file name, not the entire file path, for privacy reasons.
+    // The full path may contain PII of the person compiling toxcore (their
+    // username and directory layout).
+    const char *filename = strrchr(file, '/');
+    file = filename ? filename + 1 : file;
+#if defined(_WIN32) || defined(__CYGWIN__)
+    // On Windows, the path separator *may* be a backslash, so we look for that
+    // one too.
+    const char *windows_filename = strrchr(file, '\\');
+    file = windows_filename ? windows_filename + 1 : file;
+#endif
+
+    // Format message
     char msg[1024];
     va_list args;
     va_start(args, format);
