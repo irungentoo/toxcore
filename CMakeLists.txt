@@ -115,6 +115,8 @@ if(NOT MSVC)
       # Allows wine to display source code file names and line numbers on crash in its backtrace
       add_flag("-gdwarf-2")
     endif()
+    # Crash on signed integer overflow.
+    add_flag("-ftrapv")
   endif()
 
   option(WARNINGS "Enable additional compiler warnings" ON)
