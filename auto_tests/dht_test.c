@@ -411,7 +411,7 @@ START_TEST(test_addto_lists_ipv6)
 }
 END_TEST
 
-#define DHT_DEFAULT_PORT (TOX_PORT_DEFAULT + 20)
+#define DHT_DEFAULT_PORT (TOX_PORT_DEFAULT + 1000)
 
 static void print_pk(uint8_t *public_key)
 {
@@ -475,7 +475,8 @@ static void test_list_main(void)
 
         dhts[i] = new_DHT(log, new_networking(log, ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
-        ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
+        ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i,
+                      "Bound to wrong port: %d", net_port(dhts[i]->net));
     }
 
     for (j = 0; j < NUM_DHT; ++j) {
