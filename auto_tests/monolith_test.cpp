@@ -95,11 +95,6 @@ namespace onion_test
 int main(void);
 #include "onion_test.c"
 }
-namespace resource_leak_test
-{
-int main(void);
-#include "resource_leak_test.c"
-}
 namespace save_friend_test
 {
 int main(void);
