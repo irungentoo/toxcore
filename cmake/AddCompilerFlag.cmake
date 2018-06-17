@@ -37,6 +37,7 @@ function(add_dllflag flag)
   check_c_compiler_flag("${flag}" HAVE_LD${var} QUIET)
   if(HAVE_LD${var})
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${flag}" PARENT_SCOPE)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${flag}" PARENT_SCOPE)
   endif()
 endfunction()
 

@@ -191,18 +191,14 @@ endif()
 
 option(ASAN "Enable address-sanitizer to detect invalid memory accesses" OFF)
 if(ASAN)
-  set(SAFE_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-  set(CMAKE_REQUIRED_LIBRARIES "-fsanitize=address")
   add_cflag("-fsanitize=address")
-  set(CMAKE_REQUIRED_LIBRARIES "${SAFE_CMAKE_REQUIRED_LIBRARIES}")
+  add_dllflag("-fsanitize=address")
+endif()
+
+if(LINUX)
+  add_dllflag("-Wl,-z,defs")
 else()
-  # Forbid undefined symbols in shared libraries. This is incompatible with
-  # asan, so it's in the else branch here.
-  if(LINUX)
-    add_dllflag("-Wl,-z,defs")
-  else()
-    add_dllflag("-undefined error")
-  endif()
+  add_dllflag("-undefined error")
 endif()
 
 option(USE_IPV6 "Use IPv6 in tests" ON)
