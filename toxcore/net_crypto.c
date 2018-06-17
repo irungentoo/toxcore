@@ -2063,25 +2063,19 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
         return -1;
     }
 
-    if (add_ip_port_connection(c, crypt_connection_id, ip_port) == 0) {
-        if (connected) {
-            if (net_family_is_ipv4(ip_port.ip.family)) {
-                conn->direct_lastrecv_timev4 = unix_time();
-            } else {
-                conn->direct_lastrecv_timev6 = unix_time();
-            }
-        } else {
-            if (net_family_is_ipv4(ip_port.ip.family)) {
-                conn->direct_lastrecv_timev4 = 0;
-            } else {
-                conn->direct_lastrecv_timev6 = 0;
-            }
-        }
-
-        return 0;
+    if (add_ip_port_connection(c, crypt_connection_id, ip_port) != 0) {
+        return -1;
     }
 
-    return -1;
+    const uint64_t direct_lastrecv_time = connected ? unix_time() : 0;
+
+    if (net_family_is_ipv4(ip_port.ip.family)) {
+        conn->direct_lastrecv_timev4 = direct_lastrecv_time;
+    } else {
+        conn->direct_lastrecv_timev6 = direct_lastrecv_time;
+    }
+
+    return 0;
 }
 
 
