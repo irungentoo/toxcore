@@ -40,3 +40,12 @@ cc_binary(
         "@sndfile",
     ],
 )
+
+cc_binary(
+    name = "random_testing",
+    srcs = ["random_testing.cc"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)

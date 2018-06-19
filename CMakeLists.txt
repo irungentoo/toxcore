@@ -612,3 +612,7 @@ target_link_modules(DHT_test toxcore)
 add_executable(Messenger_test ${CPUFEATURES}
   testing/Messenger_test.c)
 target_link_modules(Messenger_test toxcore)
+
+add_executable(random_testing ${CPUFEATURES}
+  testing/random_testing.cc)
+target_link_modules(random_testing toxcore)
