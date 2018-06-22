@@ -55,11 +55,14 @@ typedef struct {
     uint8_t sessionsecret_key[CRYPTO_SECRET_KEY_SIZE]; /* Our private key for this session. */
     uint8_t peersessionpublic_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The public key of the peer. */
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE]; /* The precomputed shared key from encrypt_precompute. */
-    uint8_t status; /* 0 if no connection, 1 we are sending cookie request packets,
-                     * 2 if we are sending handshake packets
-                     * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
-                     * 4 if the connection is established.
-                     */
+    /**
+     * 0 if no connection,
+     * 1 we are sending cookie request packets,
+     * 2 if we are sending handshake packets,
+     * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
+     * 4 if the connection is established.
+     */
+    CRYPTO_CONN_STATE status;
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer */
 
@@ -2867,8 +2870,8 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
-                                      unsigned int *online_tcp_relays)
+CRYPTO_CONN_STATE crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
+        unsigned int *online_tcp_relays)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 

@@ -31,11 +31,13 @@
 
 #include <pthread.h>
 
-#define CRYPTO_CONN_NO_CONNECTION 0
-#define CRYPTO_CONN_COOKIE_REQUESTING 1 //send cookie request packets
-#define CRYPTO_CONN_HANDSHAKE_SENT 2 //send handshake packets
-#define CRYPTO_CONN_NOT_CONFIRMED 3 //send handshake packets, we have received one from the other
-#define CRYPTO_CONN_ESTABLISHED 4
+typedef enum CRYPTO_CONN_STATE {
+    CRYPTO_CONN_NO_CONNECTION = 0,
+    CRYPTO_CONN_COOKIE_REQUESTING = 1,  // send cookie request packets
+    CRYPTO_CONN_HANDSHAKE_SENT = 2,     // send handshake packets
+    CRYPTO_CONN_NOT_CONFIRMED = 3,      // send handshake packets, we have received one from the other
+    CRYPTO_CONN_ESTABLISHED = 4,
+} CRYPTO_CONN_STATE;
 
 /* Maximum size of receiving and sending packet buffers. */
 #define CRYPTO_PACKET_BUFFER_SIZE 32768 /* Must be a power of 2 */
@@ -47,9 +49,9 @@
 #define CRYPTO_MIN_QUEUE_LENGTH 64
 
 /* Maximum total size of packets that net_crypto sends. */
-#define MAX_CRYPTO_PACKET_SIZE 1400
+#define MAX_CRYPTO_PACKET_SIZE (uint16_t)1400
 
-#define CRYPTO_DATA_PACKET_MIN_SIZE (1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + CRYPTO_MAC_SIZE)
+#define CRYPTO_DATA_PACKET_MIN_SIZE (uint16_t)(1 + sizeof(uint16_t) + (sizeof(uint32_t) + sizeof(uint32_t)) + CRYPTO_MAC_SIZE)
 
 /* Max size of data in packets */
 #define MAX_CRYPTO_DATA_SIZE (MAX_CRYPTO_PACKET_SIZE - CRYPTO_DATA_PACKET_MIN_SIZE)
@@ -276,8 +278,8 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-unsigned int crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
-                                      unsigned int *online_tcp_relays);
+CRYPTO_CONN_STATE crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
+        unsigned int *online_tcp_relays);
 
 /* Generate our public and private keys.
  *  Only call this function the first time the program starts.
