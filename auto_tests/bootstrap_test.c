@@ -29,6 +29,7 @@ int main(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
+    assert(tox_self_get_connection_status(tox_udp) == TOX_CONNECTION_UDP);
     printf("Connection (UDP): %d\n", tox_self_get_connection_status(tox_udp));
 
     tox_kill(tox_udp);

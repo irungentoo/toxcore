@@ -33,6 +33,7 @@ int main(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
+    assert(tox_self_get_connection_status(tox_tcp) == TOX_CONNECTION_TCP);
     printf("Connection (TCP): %d\n", tox_self_get_connection_status(tox_tcp));
 
     tox_kill(tox_tcp);
