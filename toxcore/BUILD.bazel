@@ -30,7 +30,7 @@ cc_library(
 
 cc_test(
     name = "crypto_core_test",
-    srcs = ["crypto_core_test.cpp"],
+    srcs = ["crypto_core_test.cc"],
     deps = [
         ":crypto_core",
         "@com_google_googletest//:gtest_main",
@@ -75,7 +75,7 @@ cc_library(
 
 cc_test(
     name = "util_test",
-    srcs = ["util_test.cpp"],
+    srcs = ["util_test.cc"],
     deps = [
         ":network",
         "@com_google_googletest//:gtest_main",

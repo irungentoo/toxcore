@@ -37,7 +37,7 @@ cc_library(
 
 cc_test(
     name = "rtp_test",
-    srcs = ["rtp_test.cpp"],
+    srcs = ["rtp_test.cc"],
     deps = [
         ":rtp",
         "//c-toxcore/toxcore:crypto_core",
