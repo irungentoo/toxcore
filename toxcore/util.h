@@ -59,7 +59,7 @@ void lendian_to_host32(uint32_t *dest, const uint8_t *lendian);
 
 /* state load/save */
 typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
-int load_state(load_state_callback_func load_state_callback, Logger *log, void *outer,
+int load_state(load_state_callback_func load_state_callback, const Logger *log, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner);
 
 /* Returns -1 if failed or 0 if success */

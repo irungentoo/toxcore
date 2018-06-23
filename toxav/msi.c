@@ -74,7 +74,7 @@ typedef struct {
 
 
 void msg_init(MSIMessage *dest, MSIRequest request);
-int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
+int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
 uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len, uint16_t *length);
 static int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *msg);
 int send_error(Messenger *m, uint32_t friend_number, MSIError error);
@@ -131,7 +131,7 @@ MSISession *msi_new(Messenger *m)
     LOGGER_DEBUG(m->log, "New msi session: %p ", (void *)retu);
     return retu;
 }
-int msi_kill(MSISession *session, Logger *log)
+int msi_kill(MSISession *session, const Logger *log)
 {
     if (session == nullptr) {
         LOGGER_ERROR(log, "Tried to terminate non-existing session");
@@ -324,7 +324,7 @@ void msg_init(MSIMessage *dest, MSIRequest request)
     dest->request.exists = true;
     dest->request.value = request;
 }
-int msg_parse_in(Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length)
+int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length)
 {
     /* Parse raw data received from socket into MSIMessage struct */
 

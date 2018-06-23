@@ -85,7 +85,7 @@ struct DHT_Friend {
 };
 
 struct DHT {
-    Logger *log;
+    const Logger *log;
     Networking_Core *net;
 
     bool hole_punching_enabled;
@@ -658,7 +658,7 @@ static uint32_t index_of_client_ip_port(const Client_data *array, uint32_t size,
 
 /* Update ip_port of client if it's needed.
  */
-static void update_client(Logger *log, int index, Client_data *client, IP_Port ip_port)
+static void update_client(const Logger *log, int index, Client_data *client, IP_Port ip_port)
 {
     IPPTsPng *assoc;
     int ip_version;
@@ -698,7 +698,7 @@ static void update_client(Logger *log, int index, Client_data *client, IP_Port i
  *
  *  return True(1) or False(0)
  */
-static int client_or_ip_port_in_list(Logger *log, Client_data *list, uint16_t length, const uint8_t *public_key,
+static int client_or_ip_port_in_list(const Logger *log, Client_data *list, uint16_t length, const uint8_t *public_key,
                                      IP_Port ip_port)
 {
     const uint64_t temp_time = unix_time();
@@ -2673,7 +2673,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_DHT(Logger *log, Networking_Core *net, bool holepunching_enabled)
+DHT *new_DHT(const Logger *log, Networking_Core *net, bool holepunching_enabled)
 {
     /* init time */
     unix_time_update();

@@ -122,7 +122,7 @@ void lendian_to_host32(uint32_t *dest, const uint8_t *lendian)
 }
 
 /* state load/save */
-int load_state(load_state_callback_func load_state_callback, Logger *log, void *outer,
+int load_state(load_state_callback_func load_state_callback, const Logger *log, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (!load_state_callback || !data) {

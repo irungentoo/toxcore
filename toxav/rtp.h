@@ -213,7 +213,7 @@ int rtp_stop_receiving(RTPSession *session);
  *   audio frame, this parameter is ignored.
  */
 int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
-                  bool is_keyframe, Logger *log);
+                  bool is_keyframe, const Logger *log);
 
 #ifdef __cplusplus
 }  // extern "C"

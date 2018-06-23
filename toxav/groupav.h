@@ -29,7 +29,7 @@
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
+int add_av_groupchat(const Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
                      const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata);
 
 /* Join a AV group (you need to have been invited first.)
@@ -37,7 +37,7 @@ int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messe
  * returns group number on success
  * returns -1 on failure.
  */
-int join_av_groupchat(Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                       void (*audio_callback)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
                       void *userdata);
 

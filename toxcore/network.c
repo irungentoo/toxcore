@@ -495,7 +495,7 @@ static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
     return buflen > 7 ? net_ntohl(*(const uint32_t *)&buffer[5]) : 0;
 }
 
-static void loglogdata(Logger *log, const char *message, const uint8_t *buffer,
+static void loglogdata(const Logger *log, const char *message, const uint8_t *buffer,
                        uint16_t buflen, IP_Port ip_port, int res)
 {
     char ip_str[IP_NTOA_LEN];
@@ -527,7 +527,7 @@ typedef struct {
 } Packet_Handler;
 
 struct Networking_Core {
-    Logger *log;
+    const Logger *log;
     Packet_Handler packethandlers[256];
 
     Family family;
@@ -616,7 +616,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
  *  Packet data is put into data.
  *  Packet length is put into length.
  */
-static int receivepacket(Logger *log, Socket sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
+static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
 {
     memset(ip_port, 0, sizeof(IP_Port));
     struct sockaddr_storage addr;
@@ -766,7 +766,7 @@ static void at_shutdown(void)
 /* Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
-Networking_Core *new_networking(Logger *log, IP ip, uint16_t port)
+Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port)
 {
     return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
 }
@@ -781,7 +781,7 @@ Networking_Core *new_networking(Logger *log, IP ip, uint16_t port)
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
+Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error)
 {
     /* If both from and to are 0, use default port range
      * If one is 0 and the other is non-0, use the non-0 value as only port
@@ -996,7 +996,7 @@ Networking_Core *new_networking_ex(Logger *log, IP ip, uint16_t port_from, uint1
     return nullptr;
 }
 
-Networking_Core *new_networking_no_udp(Logger *log)
+Networking_Core *new_networking_no_udp(const Logger *log)
 {
     /* this is the easiest way to completely disable UDP without changing too much code. */
     Networking_Core *net = (Networking_Core *)calloc(1, sizeof(Networking_Core));

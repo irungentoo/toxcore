@@ -159,7 +159,7 @@ static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
 }
 
 typedef struct {
-    Logger *log;
+    const Logger *log;
     Group_Chats *g_c;
     OpusEncoder *audio_encoder;
 
@@ -227,8 +227,8 @@ static int recreate_encoder(Group_AV *group_av)
     return 0;
 }
 
-static Group_AV *new_group_av(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
-                              const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
+static Group_AV *new_group_av(const Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t,
+                              uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
 {
     if (!g_c) {
         return nullptr;
@@ -429,9 +429,9 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
  * return 0 on success.
  * return -1 on failure.
  */
-static int groupchat_enable_av(Logger *log, Group_Chats *g_c, uint32_t groupnumber, void (*audio_callback)(Messenger *,
-                               uint32_t,
-                               uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
+static int groupchat_enable_av(const Logger *log, Group_Chats *g_c, uint32_t groupnumber,
+                               void (*audio_callback)(Messenger *,
+                                       uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
 {
     Group_AV *group_av = new_group_av(log, g_c, audio_callback, userdata);
 
@@ -456,10 +456,8 @@ static int groupchat_enable_av(Logger *log, Group_Chats *g_c, uint32_t groupnumb
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
-                     const int16_t *,
-                     unsigned int,
-                     uint8_t, uint32_t, void *), void *userdata)
+int add_av_groupchat(const Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
+                     const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata)
 {
     int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
 
@@ -480,7 +478,7 @@ int add_av_groupchat(Logger *log, Group_Chats *g_c, void (*audio_callback)(Messe
  * returns group number on success
  * returns -1 on failure.
  */
-int join_av_groupchat(Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                       void (*audio_callback)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
                       void *userdata)
 {

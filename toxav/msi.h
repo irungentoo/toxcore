@@ -126,7 +126,7 @@ MSISession *msi_new(Messenger *m);
 /**
  * Terminate control session. NOTE: all calls will be freed
  */
-int msi_kill(MSISession *session, Logger *log);
+int msi_kill(MSISession *session, const Logger *log);
 /**
  * Callback setter.
  */

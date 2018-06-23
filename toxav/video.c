@@ -83,7 +83,7 @@
 #define VPX_MAX_DECODER_THREADS 4
 #define VIDEO__VP8_DECODER_POST_PROCESSING_ENABLED 0
 
-static void vc_init_encoder_cfg(Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t kf_max_dist)
+static void vc_init_encoder_cfg(const Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t kf_max_dist)
 {
     vpx_codec_err_t rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, cfg, 0);
 
@@ -152,7 +152,7 @@ static void vc_init_encoder_cfg(Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t k
 #endif
 }
 
-VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
+VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
 {
     VCSession *vc = (VCSession *)calloc(sizeof(VCSession), 1);
     vpx_codec_err_t rc;

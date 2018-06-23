@@ -50,7 +50,7 @@ typedef struct VCSession_s {
     uint64_t linfts; /* Last received frame time stamp */
     uint32_t lcfd; /* Last calculated frame duration for incoming video payload */
 
-    Logger *log;
+    const Logger *log;
     ToxAV *av;
     uint32_t friend_number;
 
@@ -59,7 +59,8 @@ typedef struct VCSession_s {
     pthread_mutex_t queue_mutex[1];
 } VCSession;
 
-VCSession *vc_new(Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data);
+VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb,
+                  void *cb_data);
 void vc_kill(VCSession *vc);
 void vc_iterate(VCSession *vc);
 int vc_queue_message(void *vcp, struct RTPMessage *msg);
