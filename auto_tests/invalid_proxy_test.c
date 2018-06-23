@@ -1,5 +1,5 @@
-// Test that if UDP is enabled, and an invalid proxy is provided, then we get a
-// UDP connection only.
+// Test that if UDP is enabled, and a proxy is provided that does not support
+// UDP proxying, we disable UDP.
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
 #endif
@@ -12,6 +12,9 @@ static uint8_t const key[] = {
     0xE1, 0x5F, 0x38, 0x03, 0xB1, 0xBF, 0xF0, 0x65,
     0x36, 0xAE, 0x2E, 0x5B, 0xA5, 0xE4, 0x69, 0x0E,
 };
+
+// Try to bootstrap for 30 seconds.
+#define NUM_ITERATIONS (unsigned)(30.0 / (ITERATION_INTERVAL / 1000.0))
 
 int main(void)
 {
@@ -30,16 +33,12 @@ int main(void)
 
     printf("Waiting for connection");
 
-    while (tox_self_get_connection_status(tox) == TOX_CONNECTION_NONE) {
-        printf(".");
-        fflush(stdout);
-
+    for (unsigned i = 0; i < NUM_ITERATIONS; i++) {
         tox_iterate(tox, nullptr);
         c_sleep(ITERATION_INTERVAL);
+        // None of the iterations should have a connection.
+        assert(tox_self_get_connection_status(tox) == TOX_CONNECTION_NONE);
     }
-
-    assert(tox_self_get_connection_status(tox) == TOX_CONNECTION_UDP);
-    printf("Connection (UDP): %d\n", tox_self_get_connection_status(tox));
 
     tox_kill(tox);
     return 0;

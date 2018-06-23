@@ -1993,6 +1993,12 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
 
     unsigned int net_err = 0;
 
+    if (!options->udp_disabled && options->proxy_info.proxy_type != TCP_PROXY_NONE) {
+        // We don't currently support UDP over proxy.
+        LOGGER_WARNING(m->log, "UDP enabled and proxy set: disabling UDP");
+        options->udp_disabled = true;
+    }
+
     if (options->udp_disabled) {
         m->net = new_networking_no_udp(m->log);
     } else {
