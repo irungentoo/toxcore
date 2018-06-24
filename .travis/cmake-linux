@@ -1,0 +1,75 @@
+#!/bin/sh
+
+ACTION="$1"
+
+set -eu
+
+CACHEDIR="$HOME/cache"
+NPROC=`nproc`
+ASTYLE="$CACHEDIR/astyle/build/gcc/bin/astyle"
+
+travis_install() {
+  which coveralls || {
+    # Install cpp-coveralls to upload test coverage results.
+    pip install --user ndg-httpsclient urllib3[secure] cpp-coveralls
+
+    # Work around https://github.com/eddyxu/cpp-coveralls/issues/108 by manually
+    # installing the pyOpenSSL module and injecting it into urllib3 as per
+    # https://urllib3.readthedocs.io/en/latest/user-guide.html#ssl-py2
+    sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyopenssl.inject_into_urllib3()' `which coveralls`
+  }
+
+  # Install astyle (version in ubuntu-precise too old).
+  [ -f "$ASTYLE" ] || {
+    wget -O ../astyle.tar.gz https://deb.debian.org/debian/pool/main/a/astyle/astyle_2.06.orig.tar.gz
+    tar -xf ../astyle.tar.gz -C "$CACHEDIR"
+    make -C "$CACHEDIR/astyle/build/gcc" "-j$NPROC"
+  }
+
+  # Install libsodium (not in ubuntu-precise).
+  [ -f "$CACHEDIR/lib/libsodium.a" ] || {
+    git clone --depth=1 --branch=stable https://github.com/jedisct1/libsodium ../libsodium
+    cd ../libsodium  # pushd
+    ./autogen.sh
+    ./configure --prefix="$CACHEDIR"
+    make install "-j$NPROC"
+    cd -  # popd
+  }
+}
+
+travis_script() {
+  . ".travis/flags-$CC.sh"
+
+  add_ld_flag -Wl,-z,defs
+
+  # Make compilation error on a warning
+  add_flag -Werror
+
+  # Coverage flags.
+  add_flag -fprofile-arcs -ftest-coverage
+
+  cmake -B_build -H. \
+    -DCMAKE_C_FLAGS="$C_FLAGS" \
+    -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+    -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+    -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+    -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
+    -DTRACE=ON \
+    -DMUST_BUILD_TOXAV=ON \
+    -DSTRICT_ABI=ON \
+    -DTEST_TIMEOUT_SECONDS=120 \
+    -DUSE_IPV6=OFF
+
+  cd _build  # pushd
+  make "-j$NPROC" -k install
+  make "-j$NPROC" test ARGS="-j50" CTEST_OUTPUT_ON_FAILURE=1
+  cd -  # popd
+
+  other/astyle/format-source . "$ASTYLE"
+}
+
+if [ "-z" "$ACTION" ]; then
+  "travis_script"
+else
+  "travis_$ACTION"
+fi

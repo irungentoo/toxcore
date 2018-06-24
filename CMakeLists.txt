@@ -52,7 +52,6 @@ message("SOVERSION: ${SOVERSION}")
 #
 ################################################################################
 
-include(AddCompilerFlag)
 include(ApiDsl)
 include(ModulePackage)
 include(StrictAbi)
@@ -63,25 +62,22 @@ if(APPLE)
 endif()
 
 if(UNIX)
-    if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
-        set(LINUX TRUE)
-    elseif(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
-        set(OPENBSD TRUE)
-    elseif(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
-        set(NETBSD TRUE)
-    elseif(CMAKE_SYSTEM_NAME MATCHES "kFreeBSD.*|FreeBSD")
-        set(FREEBSD TRUE)
-    endif()
+  if(CMAKE_SYSTEM_NAME MATCHES ".*Linux")
+    set(LINUX TRUE)
+  elseif(CMAKE_SYSTEM_NAME MATCHES "kOpenBSD.*|OpenBSD.*")
+    set(OPENBSD TRUE)
+  elseif(CMAKE_SYSTEM_NAME MATCHES "kNetBSD.*|NetBSD.*")
+    set(NETBSD TRUE)
+  elseif(CMAKE_SYSTEM_NAME MATCHES "kFreeBSD.*|FreeBSD")
+    set(FREEBSD TRUE)
+  endif()
 endif()
 
 enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
 
-if(${CMAKE_VERSION} VERSION_LESS "3.1.0")
-  add_cflag("-std=c99")
-  add_cxxflag("-std=c++11")
-else()
+if(NOT ${CMAKE_VERSION} VERSION_LESS "3.1.0")
   # Set standard version for compiler.
   set(CMAKE_C_STANDARD 99)
   set(CMAKE_CXX_STANDARD 11)
@@ -92,93 +88,9 @@ else()
   message(STATUS "Supported C++ compiler features = ${CMAKE_CXX_COMPILE_FEATURES}")
 endif()
 
-if(NOT MSVC)
-  # Warn on non-ISO C.
-  add_cflag("-pedantic")
-
-  option(ERROR_ON_WARNING "Make compilation error on a warning" OFF)
-  if(ERROR_ON_WARNING)
-    add_flag("-Werror")
-  endif()
-
-  option(COVERAGE "Track code coverage" OFF)
-  if(COVERAGE)
-    add_flag("-fprofile-instr-generate")
-    add_flag("-fcoverage-mapping")
-  endif()
-
-  option(DEBUG "Enable assertions and other debugging facilities" OFF)
-  if(DEBUG)
-    set(MIN_LOGGER_LEVEL DEBUG)
-    add_cflag("-g3")
-    if(MINGW)
-      # Allows wine to display source code file names and line numbers on crash in its backtrace
-      add_flag("-gdwarf-2")
-    endif()
-    # Crash on signed integer overflow.
-    add_flag("-ftrapv")
-  endif()
-
-  option(WARNINGS "Enable additional compiler warnings" ON)
-  if(WARNINGS)
-    # Add all warning flags we can.
-    add_flag("-Wall")
-    add_flag("-Wextra")
-    add_flag("-Weverything")
-
-    # Disable specific warning flags for both C and C++.
-
-    # TODO(iphydf): Clean these up. Probably all of these are actual bugs.
-    add_flag("-Wno-cast-align")
-    # Very verbose, not very useful. This warns about things like int -> uint
-    # conversions that change sign without a cast and narrowing conversions.
-    add_flag("-Wno-conversion")
-    # TODO(iphydf): Check enum values when received from the user, then assume
-    # correctness and remove this suppression.
-    add_flag("-Wno-covered-switch-default")
-    # Due to clang's tolower() macro being recursive
-    # https://github.com/TokTok/c-toxcore/pull/481
-    add_flag("-Wno-disabled-macro-expansion")
-    # We don't put __attribute__ on the public API.
-    add_flag("-Wno-documentation-deprecated-sync")
-    # Bootstrap daemon does this.
-    add_flag("-Wno-format-nonliteral")
-    # struct Foo foo = {0}; is a common idiom.
-    add_flag("-Wno-missing-field-initializers")
-    # Useful sometimes, but we accept padding in structs for clarity.
-    # Reordering fields to avoid padding will reduce readability.
-    add_flag("-Wno-padded")
-    # This warns on things like _XOPEN_SOURCE, which we currently need (we
-    # probably won't need these in the future).
-    add_flag("-Wno-reserved-id-macro")
-    # TODO(iphydf): Clean these up. They are likely not bugs, but still
-    # potential issues and probably confusing.
-    add_flag("-Wno-sign-compare")
-    # Our use of mutexes results in a false positive, see 1bbe446.
-    add_flag("-Wno-thread-safety-analysis")
-    # File transfer code has this.
-    add_flag("-Wno-type-limits")
-    # Callbacks often don't use all their parameters.
-    add_flag("-Wno-unused-parameter")
-    # libvpx uses __attribute__((unused)) for "potentially unused" static
-    # functions to avoid unused static function warnings.
-    add_flag("-Wno-used-but-marked-unused")
-    # We use variable length arrays a lot.
-    add_flag("-Wno-vla")
-
-    # Disable specific warning flags for C++.
-
-    # Comma at end of enum is supported everywhere we run.
-    add_cxxflag("-Wno-c++98-compat-pedantic")
-    # TODO(iphydf): Stop using flexible array members.
-    add_cxxflag("-Wno-c99-extensions")
-    # We're C-compatible, so use C style casts.
-    add_cxxflag("-Wno-old-style-cast")
-
-    # Downgrade to warning so we still see it.
-    add_flag("-Wno-error=unreachable-code")
-    add_flag("-Wno-error=unused-variable")
-  endif()
+option(TRACE "Enable DEBUG level logging (default)" ON)
+if(DEBUG)
+  set(MIN_LOGGER_LEVEL DEBUG)
 endif()
 
 option(TRACE "Enable TRACE level logging (expensive, for network debugging)" OFF)
@@ -188,18 +100,6 @@ endif()
 
 if(MIN_LOGGER_LEVEL)
   add_definitions(-DMIN_LOGGER_LEVEL=LOG_${MIN_LOGGER_LEVEL})
-endif()
-
-option(ASAN "Enable address-sanitizer to detect invalid memory accesses" OFF)
-if(ASAN)
-  add_cflag("-fsanitize=address")
-  add_dllflag("-fsanitize=address")
-endif()
-
-if(LINUX)
-  add_dllflag("-Wl,-z,defs")
-else()
-  add_dllflag("-undefined error")
 endif()
 
 option(USE_IPV6 "Use IPv6 in tests" ON)

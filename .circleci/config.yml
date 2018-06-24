@@ -10,13 +10,33 @@ jobs:
   x86_64:
     working_directory: ~/work
     docker:
-    - image: circleci/builder-base:latest
+    - image: ubuntu
 
     steps:
     - checkout
-    - run: add-apt-repository ppa:chris-lea/libsodium
     - run: apt update
-    - run: apt install -y clang cmake libgtest-dev libopus-dev libsodium-dev libvpx-dev pkg-config
-    - run: cmake -H. -B_build -DDEBUG=ON -DTRACE=ON -DERROR_ON_WARNING=ON -DASAN=ON -DMUST_BUILD_TOXAV=ON -DSTRICT_ABI=ON -DTEST_TIMEOUT_SECONDS=90 -DUSE_IPV6=OFF
-    - run: make -C _build -j$(nproc)
-    - run: make -C _build test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || make -C _build test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
+    - run: apt install -y --no-install-recommends
+             clang
+             cmake
+             libconfig-dev
+             libgtest-dev
+             libopus-dev
+             libsodium-dev
+             libvpx-dev
+             ninja-build
+             pkg-config
+    - run: . .travis/flags-clang.sh;
+           add_flag -fsanitize=address;
+           cmake -H. -B_build -GNinja
+             -DCMAKE_C_FLAGS="$C_FLAGS"
+             -DCMAKE_CXX_FLAGS="$CXX_FLAGS"
+             -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS"
+             -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS"
+             -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install"
+             -DTRACE=ON
+             -DMUST_BUILD_TOXAV=ON
+             -DSTRICT_ABI=ON
+             -DTEST_TIMEOUT_SECONDS=120
+             -DUSE_IPV6=OFF
+    - run: cd _build && ninja install -j$(nproc)
+    - run: cd _build && ctest -j50 --output-on-failure

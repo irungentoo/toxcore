@@ -89,28 +89,28 @@ int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 uint8_t random_u08(void)
 {
     uint8_t randnum;
-    randombytes(&randnum, 1);
+    random_bytes(&randnum, 1);
     return randnum;
 }
 
 uint16_t random_u16(void)
 {
     uint16_t randnum;
-    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    random_bytes((uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
 uint32_t random_u32(void)
 {
     uint32_t randnum;
-    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    random_bytes((uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
 uint64_t random_u64(void)
 {
     uint64_t randnum;
-    randombytes((uint8_t *)&randnum, sizeof(randnum));
+    random_bytes((uint8_t *)&randnum, sizeof(randnum));
     return randnum;
 }
 
@@ -266,13 +266,13 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num)
 /* Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce)
 {
-    randombytes(nonce, crypto_box_NONCEBYTES);
+    random_bytes(nonce, crypto_box_NONCEBYTES);
 }
 
 /* Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes */
 void new_symmetric_key(uint8_t *key)
 {
-    randombytes(key, CRYPTO_SYMMETRIC_KEY_SIZE);
+    random_bytes(key, CRYPTO_SYMMETRIC_KEY_SIZE);
 }
 
 int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key)

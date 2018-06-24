@@ -1,0 +1,23 @@
+#!/bin/sh
+
+ACTION="$1"
+
+set -eu
+
+. other/travis/env.sh
+. other/travis/env-freebsd.sh
+
+travis_install() {
+  . other/travis/freebsd-install
+  . other/travis/freebsd-install-stage1
+}
+
+travis_script() {
+  echo "Nothing to do here. Building happens in stage 2."
+}
+
+if [ "-z" "$ACTION" ]; then
+  "travis_script"
+else
+  "travis_$ACTION"
+fi

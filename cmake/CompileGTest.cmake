@@ -1,5 +1,8 @@
 # Find and compile the GTest library.
 
+include(CheckCXXCompilerFlag)
+include(CheckIncludeFileCXX)
+
 message(STATUS "Checking for gtest")
 
 # Look for the sources.

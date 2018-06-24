@@ -33,6 +33,7 @@ tox_bootstrapd_LDADD = \
                         libtoxcore.la \
                         $(LIBCONFIG_LIBS) \
                         $(LIBSODIUM_LIBS) \
+                        $(NACL_OBJECTS) \
                         $(NACL_LIBS)
 
 endif

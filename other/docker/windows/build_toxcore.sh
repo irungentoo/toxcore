@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 set -e -x
 
@@ -57,9 +57,13 @@ build()
         -DCMAKE_INSTALL_PREFIX="${STATIC_TOXCORE_PREFIX_DIR}" \
         -DENABLE_SHARED=OFF \
         -DENABLE_STATIC=ON \
+        -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" \
+        -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" \
+        -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" \
+        -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" \
         ${EXTRA_CMAKE_FLAGS} \
         ..
-    cmake --build . --target install
+    cmake --build . --target install -- -j$(nproc)
 
     if [ "${ENABLE_TEST}" = "true" ]; then
         rm -rf /root/.wine
@@ -79,7 +83,7 @@ build()
         if [ "${ALLOW_TEST_FAILURE}" = "true" ]; then
             set +e
         fi
-        cmake --build . --target test
+        cmake --build . --target test -- ARGS="-j50"
         if [ "${ALLOW_TEST_FAILURE}" = "true" ]; then
             set -e
         fi
