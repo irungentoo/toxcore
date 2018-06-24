@@ -26,7 +26,7 @@ static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_st
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nself_connection_status(#%d, %d, _)\n", state->id, connection_status);
+    fprintf(stderr, "self_connection_status(#%d, %d, _)\n", state->id, connection_status);
     state->self_online = connection_status != TOX_CONNECTION_NONE;
 }
 
@@ -35,7 +35,7 @@ static void handle_friend_connection_status(Tox *tox, uint32_t friend_number, TO
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_friend_connection_status(#%d, %d, %d, _)\n", state->id, friend_number, connection_status);
+    fprintf(stderr, "handle_friend_connection_status(#%d, %d, %d, _)\n", state->id, friend_number, connection_status);
     state->friend_online = connection_status != TOX_CONNECTION_NONE;
 }
 
@@ -44,7 +44,7 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_conference_invite(#%d, %d, %d, uint8_t[%u], _)\n",
+    fprintf(stderr, "handle_conference_invite(#%d, %d, %d, uint8_t[%u], _)\n",
             state->id, friend_number, type, (unsigned)length);
     fprintf(stderr, "tox%d joining conference\n", state->id);
 
@@ -75,7 +75,7 @@ static void handle_conference_message(Tox *tox, uint32_t conference_number, uint
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_conference_message(#%d, %d, %d, %d, uint8_t[%u], _)\n",
+    fprintf(stderr, "handle_conference_message(#%d, %d, %d, %d, uint8_t[%u], _)\n",
             state->id, conference_number, peer_number, type, (unsigned)length);
 
     fprintf(stderr, "tox%d got message: %s\n", state->id, (const char *)message);
@@ -86,7 +86,7 @@ static void handle_conference_peer_list_changed(Tox *tox, uint32_t conference_nu
 {
     State *state = (State *)user_data;
 
-    fprintf(stderr, "\nhandle_conference_peer_list_changed(#%d, %d, _)\n",
+    fprintf(stderr, "handle_conference_peer_list_changed(#%d, %d, _)\n",
             state->id, conference_number);
 
     TOX_ERR_CONFERENCE_PEER_QUERY err;
@@ -156,32 +156,30 @@ int main(void)
     tox_callback_conference_peer_list_changed(tox3, handle_conference_peer_list_changed);
 
     // Wait for self connection.
-    fprintf(stderr, "Waiting for toxes to come online");
+    fprintf(stderr, "Waiting for toxes to come online\n");
 
     while (!state1.self_online || !state2.self_online || !state3.self_online) {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
-        c_sleep(1000);
-        fprintf(stderr, ".");
+        c_sleep(100);
     }
 
-    fprintf(stderr, "\nToxes are online\n");
+    fprintf(stderr, "Toxes are online\n");
 
     // Wait for friend connection.
-    fprintf(stderr, "Waiting for friends to connect");
+    fprintf(stderr, "Waiting for friends to connect\n");
 
     while (!state1.friend_online || !state2.friend_online || !state3.friend_online) {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
-        c_sleep(1000);
-        fprintf(stderr, ".");
+        c_sleep(100);
     }
 
-    fprintf(stderr, "\nFriends are connected\n");
+    fprintf(stderr, "Friends are connected\n");
 
     {
         // Create new conference, tox1 is the founder.
@@ -200,31 +198,29 @@ int main(void)
         fprintf(stderr, "tox1 invited tox2\n");
     }
 
-    fprintf(stderr, "Waiting for invitation to arrive");
+    fprintf(stderr, "Waiting for invitation to arrive\n");
 
     while (!state1.joined || !state2.joined || !state3.joined) {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
-        c_sleep(1000);
-        fprintf(stderr, ".");
+        c_sleep(100);
     }
 
-    fprintf(stderr, "\nInvitations accepted\n");
+    fprintf(stderr, "Invitations accepted\n");
 
-    fprintf(stderr, "Waiting for peers to come online");
+    fprintf(stderr, "Waiting for peers to come online\n");
 
     while (state1.peers == 0 || state2.peers == 0 || state3.peers == 0) {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
-        c_sleep(1000);
-        fprintf(stderr, ".");
+        c_sleep(100);
     }
 
-    fprintf(stderr, "\nAll peers are online\n");
+    fprintf(stderr, "All peers are online\n");
 
     {
         fprintf(stderr, "tox1 sends a message to the group: \"hello!\"\n");
@@ -238,18 +234,17 @@ int main(void)
         }
     }
 
-    fprintf(stderr, "Waiting for messages to arrive");
+    fprintf(stderr, "Waiting for messages to arrive\n");
 
     while (!state2.received || !state3.received) {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
-        c_sleep(1000);
-        fprintf(stderr, ".");
+        c_sleep(100);
     }
 
-    fprintf(stderr, "\nMessages received. Test complete.\n");
+    fprintf(stderr, "Messages received. Test complete.\n");
 
     tox_kill(tox3);
     tox_kill(tox2);
