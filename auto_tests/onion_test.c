@@ -167,8 +167,8 @@ START_TEST(test_basic)
     logger_callback_log(log2, (logger_cb *)print_debug_log, nullptr, &index[1]);
 
     IP ip = get_loopback();
-    Onion *onion1 = new_onion(new_DHT(log1, new_networking(log1, ip, 34567), true));
-    Onion *onion2 = new_onion(new_DHT(log2, new_networking(log2, ip, 34568), true));
+    Onion *onion1 = new_onion(new_DHT(log1, new_networking(log1, ip, 36567), true));
+    Onion *onion2 = new_onion(new_DHT(log2, new_networking(log2, ip, 36568), true));
     ck_assert_msg((onion1 != nullptr) && (onion2 != nullptr), "Onion failed initializing.");
     networking_registerhandler(onion2->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_test_1, onion2);
 
@@ -256,7 +256,7 @@ START_TEST(test_basic)
     Logger *log3 = logger_new();
     logger_callback_log(log3, (logger_cb *)print_debug_log, nullptr, &index[2]);
 
-    Onion *onion3 = new_onion(new_DHT(log3, new_networking(log3, ip, 34569), true));
+    Onion *onion3 = new_onion(new_DHT(log3, new_networking(log3, ip, 36569), true));
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(nonce);
@@ -478,7 +478,7 @@ START_TEST(test_announce)
 
     for (i = 0; i < NUM_ONIONS; ++i) {
         index[i] = i + 1;
-        onions[i] = new_onions(i + 34655, &index[i]);
+        onions[i] = new_onions(i + 36655, &index[i]);
         ck_assert_msg(onions[i] != nullptr, "Failed to create onions. %u", i);
     }
 

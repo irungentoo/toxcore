@@ -1,0 +1,22 @@
+version: 2
+
+workflows:
+  version: 2
+  build_linux:
+    jobs:
+    - x86_64
+
+jobs:
+  x86_64:
+    working_directory: ~/work
+    docker:
+    - image: circleci/builder-base:latest
+
+    steps:
+    - checkout
+    - run: add-apt-repository ppa:chris-lea/libsodium
+    - run: apt update
+    - run: apt install -y clang cmake libgtest-dev libopus-dev libsodium-dev libvpx-dev pkg-config
+    - run: cmake -H. -B_build -DDEBUG=ON -DTRACE=ON -DERROR_ON_WARNING=ON -DASAN=ON -DMUST_BUILD_TOXAV=ON -DSTRICT_ABI=ON -DTEST_TIMEOUT_SECONDS=90 -DUSE_IPV6=OFF
+    - run: make -C _build -j$(nproc)
+    - run: make -C _build test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || make -C _build test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1

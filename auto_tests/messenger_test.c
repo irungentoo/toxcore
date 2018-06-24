@@ -355,6 +355,8 @@ int main(void)
     /* IPv6 status from global define */
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
+    options.port_range[0] = 41234;
+    options.port_range[1] = 44234;
     options.log_callback = (logger_cb *)print_debug_log;
     m = new_messenger(&options, nullptr);
 

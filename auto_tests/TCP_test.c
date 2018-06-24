@@ -45,7 +45,7 @@ static inline IP get_loopback()
     return ip;
 }
 
-static uint16_t ports[NUM_PORTS] = {1234, 33445, 25643};
+static uint16_t ports[NUM_PORTS] = {13215, 33445, 25643};
 
 START_TEST(test_basic)
 {

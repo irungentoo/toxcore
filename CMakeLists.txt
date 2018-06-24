@@ -176,6 +176,7 @@ if(NOT MSVC)
     add_cxxflag("-Wno-old-style-cast")
 
     # Downgrade to warning so we still see it.
+    add_flag("-Wno-error=unreachable-code")
     add_flag("-Wno-error=unused-variable")
   endif()
 endif()
