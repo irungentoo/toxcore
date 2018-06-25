@@ -450,19 +450,6 @@ unit_test(toxcore util)
 
 set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")
 
-option(FORMAT_TEST "Require the format_test to be executed; fail cmake if it can't" OFF)
-
-if(ASTYLE)
-  add_test(
-    NAME format_test
-    COMMAND ${toxcore_SOURCE_DIR}/other/astyle/format-source
-      "${toxcore_SOURCE_DIR}"
-      "${ASTYLE}")
-  set_tests_properties(format_test PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
-elseif(FORMAT_TEST)
-  message(FATAL_ERROR "format_test can not be run, because ASTYLE (${ASTYLE}) could not be found")
-endif()
-
 if(ANDROID_CPU_FEATURES)
   # We need to compile cpufeatures.c as many times as there are executables,
   # because libvpx doesn't include it although it depends on it. We can't get
