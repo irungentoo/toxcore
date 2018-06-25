@@ -1,22 +1,72 @@
 
 
+## v0.2.3
+
+### Merged PRs:
+
+- [#951](https://github.com/TokTok/c-toxcore/pull/951) Only run astyle if the astyle binary exists.
+- [#950](https://github.com/TokTok/c-toxcore/pull/950) Remove utils.c and utils.h from toxencryptsave build.
+- [#949](https://github.com/TokTok/c-toxcore/pull/949) Fixes to the imported sodium sources to compile without warnings.
+- [#948](https://github.com/TokTok/c-toxcore/pull/948) Add a MAX_HOSTNAME_LENGTH constant.
+- [#947](https://github.com/TokTok/c-toxcore/pull/947) Remove the format test.
+- [#937](https://github.com/TokTok/c-toxcore/pull/937) Add new Circle CI configuration.
+- [#935](https://github.com/TokTok/c-toxcore/pull/935) Add a test for double conference invite.
+- [#933](https://github.com/TokTok/c-toxcore/pull/933) Add Logger to various net_crypto functions, and add `const` to Logger where possible.
+- [#931](https://github.com/TokTok/c-toxcore/pull/931) Avoid conditional-uninitialised warning for tcp test.
+- [#930](https://github.com/TokTok/c-toxcore/pull/930) Disable UDP when proxy is enabled.
+- [#928](https://github.com/TokTok/c-toxcore/pull/928) Use clang-format for C++ code.
+- [#927](https://github.com/TokTok/c-toxcore/pull/927) Add assertions to bootstrap tests for correct connection type.
+- [#926](https://github.com/TokTok/c-toxcore/pull/926) Make NULL options behave the same as default options.
+- [#925](https://github.com/TokTok/c-toxcore/pull/925) Add tests for what happens when passing an invalid proxy host.
+- [#924](https://github.com/TokTok/c-toxcore/pull/924) Make the net_crypto connection state an enum.
+- [#922](https://github.com/TokTok/c-toxcore/pull/922) Clarify/Improve test_some test
+- [#921](https://github.com/TokTok/c-toxcore/pull/921) Beginnings of a TCP_test.c overhaul
+- [#920](https://github.com/TokTok/c-toxcore/pull/920) Add test for creating multiple conferences in one tox.
+- [#918](https://github.com/TokTok/c-toxcore/pull/918) Merge irungentoo/master into toktok
+- [#917](https://github.com/TokTok/c-toxcore/pull/917) Add random testing program.
+- [#916](https://github.com/TokTok/c-toxcore/pull/916) Fix linking with address sanitizer.
+- [#915](https://github.com/TokTok/c-toxcore/pull/915) Remove resource_leak_test.
+- [#914](https://github.com/TokTok/c-toxcore/pull/914) Make dht_test more stable.
+- [#913](https://github.com/TokTok/c-toxcore/pull/913) Minor cleanup: return early on error condition.
+- [#906](https://github.com/TokTok/c-toxcore/pull/906) Sort bazel build file according to buildifier standard.
+- [#905](https://github.com/TokTok/c-toxcore/pull/905) In DEBUG mode, make toxcore crash on signed integer overflow.
+- [#902](https://github.com/TokTok/c-toxcore/pull/902) Log only the filename, not the full path in LOGGER.
+- [#899](https://github.com/TokTok/c-toxcore/pull/899) Fix macOS macro because of GNU Mach
+- [#898](https://github.com/TokTok/c-toxcore/pull/898) Fix enumeration of Crypto_Connection instances
+- [#897](https://github.com/TokTok/c-toxcore/pull/897) Fix ipport_isset: port 0 is not a valid port.
+- [#894](https://github.com/TokTok/c-toxcore/pull/894) Fix logging related crash in bootstrap node
+- [#893](https://github.com/TokTok/c-toxcore/pull/893) Fix bootstrap crashes, still
+- [#892](https://github.com/TokTok/c-toxcore/pull/892) Add empty logger to DHT bootstrap daemons.
+- [#887](https://github.com/TokTok/c-toxcore/pull/887) Fix FreeBSD build on Travis
+- [#884](https://github.com/TokTok/c-toxcore/pull/884) Fix the often call of event tox_friend_connection_status
+- [#883](https://github.com/TokTok/c-toxcore/pull/883) Make toxcore compile on BSD
+- [#878](https://github.com/TokTok/c-toxcore/pull/878) fix DHT_bootstrap key loading
+- [#877](https://github.com/TokTok/c-toxcore/pull/877) Add minitox to under "Other resources" section in the README
+- [#875](https://github.com/TokTok/c-toxcore/pull/875) Make bootstrap daemon use toxcore's version
+- [#867](https://github.com/TokTok/c-toxcore/pull/867) Improve network error reporting on Windows
+- [#841](https://github.com/TokTok/c-toxcore/pull/841) Only check full rtp offset if RTP_LARGE_FRAME is set
+- [#823](https://github.com/TokTok/c-toxcore/pull/823) Finish @Diadlo's network Family abstraction.
+- [#822](https://github.com/TokTok/c-toxcore/pull/822) Move system header includes from network.h to network.c
+
 ## v0.2.2
 
 ### Merged PRs:
 
-- [#872](https://github.com/TokTok/c-toxcore/issues/872) Restrict packet kinds that can be sent through onion path.
-- [#864](https://github.com/TokTok/c-toxcore/issues/864) CMake warn if libconfig not found
-- [#863](https://github.com/TokTok/c-toxcore/issues/863) Remove broken and unmaintained scripts.
-- [#859](https://github.com/TokTok/c-toxcore/issues/859) Add clarifying comment to cryptpacket_received function.
-- [#857](https://github.com/TokTok/c-toxcore/issues/857) Avoid the use of rand() in tests.
-- [#846](https://github.com/TokTok/c-toxcore/issues/846) Disallow stderr logger by default.
-- [#845](https://github.com/TokTok/c-toxcore/issues/845) Fix coveralls reporting.
-- [#844](https://github.com/TokTok/c-toxcore/issues/844) Add COVERAGE cmake flag for clang.
-- [#825](https://github.com/TokTok/c-toxcore/issues/825) Add default stderr logger for logging to nullptr.
-- [#824](https://github.com/TokTok/c-toxcore/issues/824) Simplify sendpacket function, deduplicate some logic.
-- [#809](https://github.com/TokTok/c-toxcore/issues/809) Remove the use of the 'hh' format specifier.
-- [#801](https://github.com/TokTok/c-toxcore/issues/801) Add logging to the onion_test.
-- [#797](https://github.com/TokTok/c-toxcore/issues/797) Move struct DHT_Friend into DHT.c.
+- [#872](https://github.com/TokTok/c-toxcore/pull/872) Restrict packet kinds that can be sent through onion path.
+- [#864](https://github.com/TokTok/c-toxcore/pull/864) CMake warn if libconfig not found
+- [#863](https://github.com/TokTok/c-toxcore/pull/863) Remove broken and unmaintained scripts.
+- [#862](https://github.com/TokTok/c-toxcore/pull/862) Release v0.2.2
+- [#859](https://github.com/TokTok/c-toxcore/pull/859) Add clarifying comment to cryptpacket_received function.
+- [#857](https://github.com/TokTok/c-toxcore/pull/857) Avoid the use of rand() in tests.
+- [#852](https://github.com/TokTok/c-toxcore/pull/852) bugfix build error on MacOS
+- [#846](https://github.com/TokTok/c-toxcore/pull/846) Disallow stderr logger by default.
+- [#845](https://github.com/TokTok/c-toxcore/pull/845) Fix coveralls reporting.
+- [#844](https://github.com/TokTok/c-toxcore/pull/844) Add COVERAGE cmake flag for clang.
+- [#825](https://github.com/TokTok/c-toxcore/pull/825) Add default stderr logger for logging to nullptr.
+- [#824](https://github.com/TokTok/c-toxcore/pull/824) Simplify sendpacket function, deduplicate some logic.
+- [#809](https://github.com/TokTok/c-toxcore/pull/809) Remove the use of the 'hh' format specifier.
+- [#801](https://github.com/TokTok/c-toxcore/pull/801) Add logging to the onion_test.
+- [#797](https://github.com/TokTok/c-toxcore/pull/797) Move struct DHT_Friend into DHT.c.
 
 ## v0.2.1
 
