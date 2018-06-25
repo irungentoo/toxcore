@@ -332,6 +332,18 @@ uint32_t tox_file_id_length(void);
 
 uint32_t tox_max_filename_length(void);
 
+/**
+ * Maximum length of a hostname, e.g. proxy or bootstrap node names.
+ *
+ * This length includes the NUL byte. Hostnames are NUL-terminated C strings, so
+ * they are 255 characters plus one NUL byte.
+ *
+ * @deprecated The macro will be removed in 0.3.0. Use the function instead.
+ */
+#define TOX_MAX_HOSTNAME_LENGTH        256
+
+uint32_t tox_max_hostname_length(void);
+
 
 /*******************************************************************************
  *
@@ -551,8 +563,8 @@ struct Tox_Options {
      * The IP address or DNS name of the proxy to be used.
      *
      * If used, this must be non-NULL and be a valid DNS name. The name must not
-     * exceed 255 characters, and be in a NUL-terminated C string format
-     * (255 chars + 1 NUL byte).
+     * exceed TOX_MAX_HOSTNAME_LENGTH characters, and be in a NUL-terminated C string
+     * format (TOX_MAX_HOSTNAME_LENGTH includes the NUL byte).
      *
      * This member is ignored (it can be NULL) if proxy_type is TOX_PROXY_TYPE_NONE.
      *
@@ -913,7 +925,8 @@ typedef enum TOX_ERR_BOOTSTRAP {
  * This function will attempt to connect to the node using UDP. You must use
  * this function even if Tox_Options.udp_enabled was set to false.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the node.
+ * @param address The hostname or IP address (IPv4 or IPv6) of the node. Must be
+ *   at most TOX_MAX_HOSTNAME_LENGTH chars, including the NUL byte.
  * @param port The port on the host on which the bootstrap Tox instance is
  *   listening.
  * @param public_key The long term public key of the bootstrap node

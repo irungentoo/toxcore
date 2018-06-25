@@ -307,6 +307,16 @@ const FILE_ID_LENGTH              = 32;
  */
 const MAX_FILENAME_LENGTH         = 255;
 
+/**
+ * Maximum length of a hostname, e.g. proxy or bootstrap node names.
+ *
+ * This length includes the NUL byte. Hostnames are NUL-terminated C strings, so
+ * they are 255 characters plus one NUL byte.
+ *
+ * @deprecated The macro will be removed in 0.3.0. Use the function instead.
+ */
+const MAX_HOSTNAME_LENGTH         = 256;
+
 
 /*******************************************************************************
  *
@@ -496,8 +506,8 @@ static class options {
        * The IP address or DNS name of the proxy to be used.
        *
        * If used, this must be non-NULL and be a valid DNS name. The name must not
-       * exceed 255 characters, and be in a NUL-terminated C string format
-       * (255 chars + 1 NUL byte).
+       * exceed $MAX_HOSTNAME_LENGTH characters, and be in a NUL-terminated C string
+       * format ($MAX_HOSTNAME_LENGTH includes the NUL byte).
        *
        * This member is ignored (it can be NULL) if proxy_type is ${PROXY_TYPE.NONE}.
        *
@@ -746,7 +756,8 @@ uint8_t[size] savedata {
  * This function will attempt to connect to the node using UDP. You must use
  * this function even if ${options.this.udp_enabled} was set to false.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the node.
+ * @param address The hostname or IP address (IPv4 or IPv6) of the node. Must be
+ *   at most $MAX_HOSTNAME_LENGTH chars, including the NUL byte.
  * @param port The port on the host on which the bootstrap Tox instance is
  *   listening.
  * @param public_key The long term public key of the bootstrap node
