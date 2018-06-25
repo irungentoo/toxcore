@@ -18,8 +18,12 @@ typedef struct CPUFeatures_ {
 
 static CPUFeatures _cpu_features;
 
+#ifdef HAVE_EMMINTRIN_H
 #define CPUID_SSE2     0x04000000
+#endif
+#ifdef HAVE_PMMINTRIN_H
 #define CPUIDECX_SSE3  0x00000001
+#endif
 
 static int
 _sodium_runtime_arm_cpu_features(CPUFeatures * const cpu_features)

@@ -396,3 +396,6 @@ escrypt_kdf_sse(escrypt_local_t * local,
 #endif
 
 #endif
+
+/* ISO C requires a translation unit to contain at least one declaration */
+extern int non_empty_tu_decl;

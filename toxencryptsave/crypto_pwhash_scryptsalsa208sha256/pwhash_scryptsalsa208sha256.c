@@ -12,8 +12,7 @@
 
 #include "crypto_pwhash_scryptsalsa208sha256.h"
 #include "crypto_scrypt.h"
-#include "randombytes.h"
-#include "utils.h"
+#include "../../toxcore/crypto_core.h"
 
 #define SETTING_SIZE(saltbytes) \
     (sizeof "$7$" - 1U) + \
@@ -150,7 +149,7 @@ crypto_pwhash_scryptsalsa208sha256_str(char out[crypto_pwhash_scryptsalsa208sha2
         errno = EINVAL;
         return -1;
     }
-    randombytes(salt, sizeof salt);
+    random_bytes(salt, sizeof salt);
     if (escrypt_gensalt_r(N_log2, r, p, salt, sizeof salt,
                           (uint8_t *) setting, sizeof setting) == NULL) {
         errno = EINVAL;
@@ -202,8 +201,8 @@ crypto_pwhash_scryptsalsa208sha256_str_verify(const char str[crypto_pwhash_scryp
         return -1;
     }
     escrypt_free_local(&escrypt_local);
-    ret = sodium_memcmp(wanted, str, sizeof wanted);
-    sodium_memzero(wanted, sizeof wanted);
+    ret = crypto_memcmp(wanted, str, sizeof wanted);
+    crypto_memzero(wanted, sizeof wanted);
 
     return ret;
 }

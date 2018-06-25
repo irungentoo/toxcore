@@ -124,7 +124,7 @@ Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
                                   TOX_ERR_KEY_DERIVATION *error)
 {
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
-    randombytes(salt, sizeof salt);
+    random_bytes(salt, sizeof salt);
     return tox_pass_key_derive_with_salt(passphrase, pplength, salt, error);
 }
 
@@ -157,7 +157,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
         return nullptr;
     }
 
-    sodium_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
+    crypto_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
 
     Tox_Pass_Key *out_key = (Tox_Pass_Key *)malloc(sizeof(Tox_Pass_Key));
 
