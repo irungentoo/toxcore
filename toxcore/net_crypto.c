@@ -727,7 +727,7 @@ static uint32_t num_packets_array(const Packets_Array *array)
  */
 static int add_data_to_buffer(const Logger *log, Packets_Array *array, uint32_t number, const Packet_Data *data)
 {
-    if (number - array->buffer_start > CRYPTO_PACKET_BUFFER_SIZE) {
+    if (number - array->buffer_start >= CRYPTO_PACKET_BUFFER_SIZE) {
         return -1;
     }
 
