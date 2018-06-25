@@ -16,14 +16,12 @@ libtoxencryptsave_la_SOURCES += ../toxencryptsave/crypto_pwhash_scryptsalsa208sh
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/pbkdf2-sha256.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/pwhash_scryptsalsa208sha256.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/runtime.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/utils.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_scrypt-common.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/export.h \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/pbkdf2-sha256.h \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/runtime.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/scrypt_platform.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/sysendian.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/utils.h \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.c \
                         ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/sse/pwhash_scryptsalsa208sha256_sse.c
 endif
