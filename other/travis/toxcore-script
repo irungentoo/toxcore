@@ -44,4 +44,6 @@ if $RUN_TESTS; then
   TESTS $MAX_TEST_RETRIES $MAKE -C$BUILD_DIR -j$NPROC test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE="$CTEST_OUTPUT_ON_FAILURE"
 fi
 
-other/astyle/format-source . $ASTYLE
+if [ -f "$ASTYLE" ]; then
+  other/astyle/format-source . $ASTYLE
+fi
