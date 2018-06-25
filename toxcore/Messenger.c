@@ -493,18 +493,22 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
                            uint32_t *message_id)
 {
     if (type > MESSAGE_ACTION) {
+        LOGGER_ERROR(m->log, "Message type %d is invalid", type);
         return -5;
     }
 
     if (friend_not_valid(m, friendnumber)) {
+        LOGGER_ERROR(m->log, "Friend number %d is invalid", friendnumber);
         return -1;
     }
 
     if (length >= MAX_CRYPTO_DATA_SIZE) {
+        LOGGER_ERROR(m->log, "Message length %d is too large", friendnumber);
         return -2;
     }
 
     if (m->friendlist[friendnumber].status != FRIEND_ONLINE) {
+        LOGGER_ERROR(m->log, "Friend %d is not online", friendnumber);
         return -3;
     }
 
@@ -519,6 +523,8 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
                                            m->friendlist[friendnumber].friendcon_id), packet, length + 1, 0);
 
     if (packet_num == -1) {
+        LOGGER_ERROR(m->log, "Failed to write crypto packet for message of length %d to friend %d",
+                     length, friendnumber);
         return -4;
     }
 

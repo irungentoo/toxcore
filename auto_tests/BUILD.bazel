@@ -4,6 +4,7 @@ cc_library(
     hdrs = [
         "check_compat.h",
         "helpers.h",
+        "run_auto_test.h",
     ],
 )
 
