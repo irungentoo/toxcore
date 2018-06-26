@@ -943,6 +943,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
  * bootstrap nodes.
  *
  * @param host The hostname or IP address (IPv4 or IPv6) of the TCP relay.
+ *   Must be at most TOX_MAX_HOSTNAME_LENGTH chars, including the NUL byte.
  * @param port The port on the host on which the TCP relay is listening.
  * @param public_key The long term public key of the TCP relay
  *   (TOX_PUBLIC_KEY_SIZE bytes).
