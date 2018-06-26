@@ -756,7 +756,7 @@ uint8_t[size] savedata {
  * This function will attempt to connect to the node using UDP. You must use
  * this function even if ${options.this.udp_enabled} was set to false.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the node. Must be
+ * @param host The hostname or IP address (IPv4 or IPv6) of the node. Must be
  *   at most $MAX_HOSTNAME_LENGTH chars, including the NUL byte.
  * @param port The port on the host on which the bootstrap Tox instance is
  *   listening.
@@ -764,10 +764,10 @@ uint8_t[size] savedata {
  *   ($PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool bootstrap(string address, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public_key) {
+bool bootstrap(string host, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public_key) {
   NULL,
   /**
-   * The address could not be resolved to an IP address, or the IP address
+   * The hostname could not be resolved to an IP address, or the IP address
    * passed was invalid.
    */
   BAD_HOST,
@@ -785,13 +785,13 @@ bool bootstrap(string address, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] pub
  * the same bootstrap node, or to add TCP relays without using them as
  * bootstrap nodes.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the TCP relay.
+ * @param host The hostname or IP address (IPv4 or IPv6) of the TCP relay.
  * @param port The port on the host on which the TCP relay is listening.
  * @param public_key The long term public key of the TCP relay
  *   ($PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool add_tcp_relay(string address, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public_key)
+bool add_tcp_relay(string host, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] public_key)
     with error for bootstrap;
 
 

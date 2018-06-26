@@ -248,9 +248,9 @@ void tox_get_savedata(const Tox *tox, uint8_t *savedata)
     }
 }
 
-bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error)
+bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error)
 {
-    if (!address || !public_key) {
+    if (!host || !public_key) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
         return 0;
     }
@@ -262,7 +262,7 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
 
     IP_Port *root;
 
-    int32_t count = net_getipport(address, &root, TOX_SOCK_DGRAM);
+    int32_t count = net_getipport(host, &root, TOX_SOCK_DGRAM);
 
     if (count == -1) {
         net_freeipport(root);
@@ -291,10 +291,10 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
     return 0;
 }
 
-bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key,
+bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key,
                        TOX_ERR_BOOTSTRAP *error)
 {
-    if (!address || !public_key) {
+    if (!host || !public_key) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
         return 0;
     }
@@ -306,7 +306,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8
 
     IP_Port *root;
 
-    int32_t count = net_getipport(address, &root, TOX_SOCK_STREAM);
+    int32_t count = net_getipport(host, &root, TOX_SOCK_STREAM);
 
     if (count == -1) {
         net_freeipport(root);

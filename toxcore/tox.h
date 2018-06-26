@@ -905,7 +905,7 @@ typedef enum TOX_ERR_BOOTSTRAP {
     TOX_ERR_BOOTSTRAP_NULL,
 
     /**
-     * The address could not be resolved to an IP address, or the IP address
+     * The hostname could not be resolved to an IP address, or the IP address
      * passed was invalid.
      */
     TOX_ERR_BOOTSTRAP_BAD_HOST,
@@ -925,7 +925,7 @@ typedef enum TOX_ERR_BOOTSTRAP {
  * This function will attempt to connect to the node using UDP. You must use
  * this function even if Tox_Options.udp_enabled was set to false.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the node. Must be
+ * @param host The hostname or IP address (IPv4 or IPv6) of the node. Must be
  *   at most TOX_MAX_HOSTNAME_LENGTH chars, including the NUL byte.
  * @param port The port on the host on which the bootstrap Tox instance is
  *   listening.
@@ -933,7 +933,7 @@ typedef enum TOX_ERR_BOOTSTRAP {
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
+bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
 
 /**
  * Adds additional host:port pair as TCP relay.
@@ -942,14 +942,13 @@ bool tox_bootstrap(Tox *tox, const char *address, uint16_t port, const uint8_t *
  * the same bootstrap node, or to add TCP relays without using them as
  * bootstrap nodes.
  *
- * @param address The hostname or IP address (IPv4 or IPv6) of the TCP relay.
+ * @param host The hostname or IP address (IPv4 or IPv6) of the TCP relay.
  * @param port The port on the host on which the TCP relay is listening.
  * @param public_key The long term public key of the TCP relay
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_add_tcp_relay(Tox *tox, const char *address, uint16_t port, const uint8_t *public_key,
-                       TOX_ERR_BOOTSTRAP *error);
+bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
 
 /**
  * Protocols that can be used to connect to the network or friends.
