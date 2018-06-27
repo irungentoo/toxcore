@@ -45,6 +45,12 @@ static inline IP get_loopback()
     return ip;
 }
 
+static void do_TCP_server_delay(TCP_Server *tcp_s, int delay)
+{
+    c_sleep(delay);
+    do_TCP_server(tcp_s);
+    c_sleep(delay);
+}
 static uint16_t ports[NUM_PORTS] = {13215, 33445, 25643};
 
 START_TEST(test_basic)
@@ -100,16 +106,13 @@ START_TEST(test_basic)
     // Sending the handshake
     ck_assert_msg(net_send(sock, handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1) == TCP_CLIENT_HANDSHAKE_SIZE - 1,
                   "An attempt to send the initial handshake minus last byte failed.");
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
 
     ck_assert_msg(net_send(sock, handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1), 1) == 1,
                   "The attempt to send the last byte of handshake failed.");
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
 
     // Receiving server response and decrypting it
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
@@ -213,15 +216,13 @@ static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s)
 
     ck_assert_msg(net_send(sock, handshake, TCP_CLIENT_HANDSHAKE_SIZE - 1) == TCP_CLIENT_HANDSHAKE_SIZE - 1,
                   "Failed to send the first portion of the handshake to the TCP relay server.");
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
 
     ck_assert_msg(net_send(sock, handshake + (TCP_CLIENT_HANDSHAKE_SIZE - 1), 1) == 1,
                   "Failed to send last byte of handshake.");
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
 
     uint8_t response[TCP_SERVER_HANDSHAKE_SIZE];
     uint8_t response_plain[TCP_HANDSHAKE_PLAIN_SIZE];
@@ -256,7 +257,7 @@ static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *
 
     increment_nonce(con->sent_nonce);
 
-    ck_assert_msg(net_send(con->sock, packet, SIZEOF_VLA(packet)) == SIZEOF_VLA(packet), "Failed to send a packet");
+    ck_assert_msg(net_send(con->sock, packet, SIZEOF_VLA(packet)) == SIZEOF_VLA(packet), "Failed to send a packet.");
     return 0;
 }
 
@@ -277,7 +278,7 @@ START_TEST(test_some)
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, nullptr);
     ck_assert_msg(tcp_s != nullptr, "Failed to create TCP relay server");
-    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
+    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports.");
 
     struct sec_TCP_con *con1 = new_TCP_con(tcp_s);
     struct sec_TCP_con *con2 = new_TCP_con(tcp_s);
@@ -292,9 +293,7 @@ START_TEST(test_some)
     memcpy(requ_p + 1, con1->public_key, CRYPTO_PUBLIC_KEY_SIZE);
     write_packet_TCP_secure_connection(con3, requ_p, sizeof(requ_p));
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
 
     // Testing response from connection 1
     uint8_t data[2048];
@@ -311,15 +310,13 @@ START_TEST(test_some)
     ck_assert_msg(data[1] == 16, "Server didn't refuse connection using wrong public key.");
     ck_assert_msg(public_key_cmp(data + 2, con1->public_key) == 0, "Key in response packet wrong.");
 
-    uint8_t test_packet[512] = {16, 17, 16, 86, 99, 127, 255, 189, 78}; //What is this packet????
+    uint8_t test_packet[512] = {16, 17, 16, 86, 99, 127, 255, 189, 78}; // What is this packet????
 
     write_packet_TCP_secure_connection(con3, test_packet, sizeof(test_packet));
     write_packet_TCP_secure_connection(con3, test_packet, sizeof(test_packet));
     write_packet_TCP_secure_connection(con3, test_packet, sizeof(test_packet));
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
 
     len = read_packet_sec_TCP(con1, data, 2 + 2 + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == 2, "wrong len %d", len);
@@ -344,9 +341,7 @@ START_TEST(test_some)
     write_packet_TCP_secure_connection(con1, test_packet, sizeof(test_packet));
     write_packet_TCP_secure_connection(con1, test_packet, sizeof(test_packet));
     write_packet_TCP_secure_connection(con1, test_packet, sizeof(test_packet));
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
     len = read_packet_sec_TCP(con3, data, 2 + sizeof(test_packet) + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == sizeof(test_packet), "wrong len %d", len);
     ck_assert_msg(memcmp(data, test_packet, sizeof(test_packet)) == 0, "packet is wrong %u %u %u %u", data[0], data[1],
@@ -362,9 +357,9 @@ START_TEST(test_some)
 
     uint8_t ping_packet[1 + sizeof(uint64_t)] = {4, 8, 6, 9, 67};
     write_packet_TCP_secure_connection(con1, ping_packet, sizeof(ping_packet));
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     len = read_packet_sec_TCP(con1, data, 2 + sizeof(ping_packet) + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == sizeof(ping_packet), "wrong len %d", len);
     ck_assert_msg(data[0] == 5, "wrong packet id %u", data[0]);
@@ -466,8 +461,8 @@ START_TEST(test_client)
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(USE_IPV6, NUM_PORTS, ports, self_secret_key, nullptr);
-    ck_assert_msg(tcp_s != nullptr, "Failed to create TCP relay server");
-    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind to all ports");
+    ck_assert_msg(tcp_s != nullptr, "Failed to create a TCP relay server.");
+    ck_assert_msg(tcp_server_listen_count(tcp_s) == NUM_PORTS, "Failed to bind the relay server to all ports.");
 
     uint8_t f_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t f_secret_key[CRYPTO_SECRET_KEY_SIZE];
@@ -476,28 +471,34 @@ START_TEST(test_client)
 
     ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
+
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, nullptr);
-    c_sleep(50);
     do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_UNCONFIRMED, "Wrong status. Expected: %u, is: %u",
+    c_sleep(50);
+
+    // The connection status should be unconfirmed here because we have finished
+    // sending our data and are awaiting a response.
+    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_UNCONFIRMED, "Wrong connection status. Expected: %d, is: %d.",
                   TCP_CLIENT_UNCONFIRMED, tcp_con_status(conn));
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
-    do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
-                  tcp_con_status(conn));
-    c_sleep(500);
-    do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
-                  tcp_con_status(conn));
-    c_sleep(500);
-    do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
-                  tcp_con_status(conn));
-    do_TCP_server(tcp_s);
-    c_sleep(50);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %u, is: %u", TCP_CLIENT_CONFIRMED,
+
+    do_TCP_server_delay(tcp_s, 50); // Now let the server handle requests...
+
+    const uint8_t LOOP_SIZE = 3;
+
+    for (uint8_t i = 0; i < LOOP_SIZE; i++) {
+        do_TCP_connection(conn, nullptr); // Run the connection loop.
+
+        // The status of the connection should continue to be TCP_CLIENT_CONFIRMED after multiple subsequent do_TCP_connection() calls.
+        ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONFIRMED, "Wrong connection status. Expected: %d, is: %d",
+                      TCP_CLIENT_CONFIRMED, tcp_con_status(conn));
+
+        c_sleep(i == LOOP_SIZE - 1 ? 0 : 500); // Sleep for 500ms on all except third loop.
+    }
+
+    do_TCP_server_delay(tcp_s, 50);
+
+    // And still after the server runs again.
+    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONFIRMED, "Wrong status. Expected: %d, is: %d", TCP_CLIENT_CONFIRMED,
                   tcp_con_status(conn));
 
     uint8_t f2_public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -506,60 +507,75 @@ START_TEST(test_client)
     ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     TCP_Client_Connection *conn2 = new_TCP_connection(
                                        ip_port_tcp_s, self_public_key, f2_public_key, f2_secret_key, nullptr);
+
+    // The client should call this function (defined earlier) during the routing process.
     routing_response_handler(conn, response_callback, (char *)conn + 2);
+    // The client should call this function when it receives a connection notification.
     routing_status_handler(conn, status_callback, (void *)2);
+    // The client should call this function when
     routing_data_handler(conn, data_callback, (void *)3);
+    // The client should call this function when sending out of band packets.
     oob_data_handler(conn, oob_data_callback, (void *)4);
+
+    // These integers will increment per successful callback.
     oob_data_callback_good = response_callback_good = status_callback_good = data_callback_good = 0;
-    c_sleep(50);
+
+    do_TCP_connection(conn, nullptr);
+    do_TCP_connection(conn2, nullptr);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_TCP_connection(conn, nullptr);
     do_TCP_connection(conn2, nullptr);
     c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
-    do_TCP_connection(conn, nullptr);
-    do_TCP_connection(conn2, nullptr);
-    c_sleep(50);
+
     uint8_t data[5] = {1, 2, 3, 4, 5};
     memcpy(oob_pubkey, f2_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     send_oob_packet(conn2, f_public_key, data, 5);
     send_routing_request(conn, f2_public_key);
     send_routing_request(conn2, f_public_key);
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_TCP_connection(conn, nullptr);
     do_TCP_connection(conn2, nullptr);
-    ck_assert_msg(oob_data_callback_good == 1, "oob callback not called");
-    ck_assert_msg(response_callback_good == 1, "response callback not called");
-    ck_assert_msg(public_key_cmp(response_callback_public_key, f2_public_key) == 0, "wrong public key");
-    ck_assert_msg(status_callback_good == 1, "status callback not called");
-    ck_assert_msg(status_callback_status == 2, "wrong status");
-    ck_assert_msg(status_callback_connection_id == response_callback_connection_id, "connection ids not equal");
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    ck_assert_msg(send_data(conn2, 0, data, 5) == 1, "send data failed");
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    // All callback methods save data should have run during the above network prodding.
+    ck_assert_msg(oob_data_callback_good == 1, "OOB callback not called");
+    ck_assert_msg(response_callback_good == 1, "Response callback not called.");
+    ck_assert_msg(public_key_cmp(response_callback_public_key, f2_public_key) == 0, "Wrong public key.");
+    ck_assert_msg(status_callback_good == 1, "Status callback not called.");
+    ck_assert_msg(status_callback_status == 2, "Wrong status callback status.");
+    ck_assert_msg(status_callback_connection_id == response_callback_connection_id,
+                  "Status and response callback connection IDs are not equal.");
+
+    do_TCP_server_delay(tcp_s, 50);
+
+    ck_assert_msg(send_data(conn2, 0, data, 5) == 1, "Failed a send_data() call.");
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_TCP_connection(conn, nullptr);
     do_TCP_connection(conn2, nullptr);
-    ck_assert_msg(data_callback_good == 1, "data callback not called");
+    ck_assert_msg(data_callback_good == 1, "Data callback was not called.");
     status_callback_good = 0;
     send_disconnect_request(conn2, 0);
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_TCP_connection(conn, nullptr);
     do_TCP_connection(conn2, nullptr);
-    ck_assert_msg(status_callback_good == 1, "status callback not called");
-    ck_assert_msg(status_callback_status == 1, "wrong status");
+    ck_assert_msg(status_callback_good == 1, "Status callback not called");
+    ck_assert_msg(status_callback_status == 1, "Wrong status callback status.");
+
+    // Kill off all connections and servers.
     kill_TCP_server(tcp_s);
     kill_TCP_connection(conn);
     kill_TCP_connection(conn2);
 }
 END_TEST
 
+// Test how the client handles servers that don't respond.
 START_TEST(test_client_invalid)
 {
     unix_time_update();
@@ -575,17 +591,23 @@ START_TEST(test_client_invalid)
     ip_port_tcp_s.port = net_htons(ports[random_u32() % NUM_PORTS]);
     ip_port_tcp_s.ip = get_loopback();
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, nullptr);
-    c_sleep(50);
+
+    // Run the client's main loop but not the server.
     do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %u, is: %u",
+    c_sleep(50);
+
+    // After 50ms of no response...
+    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %d, is: %d.",
                   TCP_CLIENT_CONNECTING, tcp_con_status(conn));
+    // After 5s...
     c_sleep(5000);
     do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %u, is: %u",
+    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %d, is: %d.",
                   TCP_CLIENT_CONNECTING, tcp_con_status(conn));
+    // 11s... (Should wait for 10 before giving up.)
     c_sleep(6000);
     do_TCP_connection(conn, nullptr);
-    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_DISCONNECTED, "Wrong status. Expected: %u, is: %u",
+    ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_DISCONNECTED, "Wrong status. Expected: %d, is: %d.",
                   TCP_CLIENT_DISCONNECTED, tcp_con_status(conn));
 
     kill_TCP_connection(conn);
@@ -657,19 +679,18 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(new_tcp_connection_to(tc_2, tcp_connections_public_key(tc_1), 123) == -1,
                   "Managed to readd same connection\n");
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
 
@@ -677,9 +698,7 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(ret == 0, "could not send packet.");
     set_packet_tcp_connection_callback(tc_2, &tcp_data_callback, (void *) 120397);
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
 
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
@@ -688,9 +707,8 @@ START_TEST(test_tcp_connection)
     ck_assert_msg(tcp_connection_to_online_tcp_relays(tc_1, 0) == 1, "Wrong number of connected relays");
     ck_assert_msg(kill_tcp_connection_to(tc_1, 0) == 0, "could not kill connection to\n");
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
 
@@ -759,19 +777,18 @@ START_TEST(test_tcp_connection2)
     ck_assert_msg(add_tcp_relay_global(tc_2, ip_port_tcp_s, tcp_server_public_key(tcp_s)) == 0,
                   "Could not add global relay");
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+
+    do_TCP_server_delay(tcp_s, 50);
+
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
 
@@ -780,18 +797,14 @@ START_TEST(test_tcp_connection2)
     set_oob_packet_tcp_connection_callback(tc_2, &tcp_oobdata_callback, tc_2);
     set_packet_tcp_connection_callback(tc_1, &tcp_data_callback, (void *) 120397);
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
 
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
 
     ck_assert_msg(tcp_oobdata_callback_called, "could not recv packet.");
 
-    c_sleep(50);
-    do_TCP_server(tcp_s);
-    c_sleep(50);
+    do_TCP_server_delay(tcp_s, 50);
 
     do_tcp_connections(tc_1, nullptr);
     do_tcp_connections(tc_2, nullptr);
