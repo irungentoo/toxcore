@@ -89,14 +89,6 @@ namespace save_load_test {
 int main(void);
 #include "save_load_test.c"
 }  // namespace save_load_test
-namespace selfname_change_conference_test {
-int main(void);
-#include "selfname_change_conference_test.c"
-}  // namespace selfname_change_conference_test
-namespace self_conference_title_change_test {
-int main(void);
-#include "self_conference_title_change_test.c"
-}  // namespace self_conference_title_change_test
 namespace send_message_test {
 int main(void);
 #include "send_message_test.c"

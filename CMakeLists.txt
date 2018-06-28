@@ -515,10 +515,6 @@ auto_test(tox_one)
 auto_test(tox_strncasecmp)
 auto_test(typing)
 auto_test(version)
-# TODO(iphydf): These tests are broken. The code needs to be fixed, as the
-# tests themselves are correct.
-auto_test(selfname_change_conference    DONT_RUN)
-auto_test(self_conference_title_change  DONT_RUN)
 
 if(BUILD_TOXAV)
   auto_test(toxav_basic)

@@ -30,6 +30,10 @@ cc_binary(
 cc_binary(
     name = "av_test",
     srcs = ["av_test.c"],
+    # We must always optimise this program, because otherwise GCC won't inline
+    # cvArcLength but also not emit it out of line, resulting in undefined
+    # reference errors.
+    copts = ["-O1"],
     deps = [
         "//c-toxcore/toxav",
         "//c-toxcore/toxav:monolith",

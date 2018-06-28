@@ -33,7 +33,7 @@ cc_library(
 cc_test(
     name = "monolith_test",
     size = "small",
-    srcs = ["monolith_test.cpp"],
+    srcs = ["monolith_test.cc"],
     copts = ["-Wno-sign-compare"],
     deps = [
         ":helpers",
