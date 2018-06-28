@@ -393,6 +393,7 @@ static void test_addto_lists(IP ip)
 
     kill_DHT(dht);
     kill_networking(net);
+    logger_kill(log);
 }
 
 START_TEST(test_addto_lists_ipv4)
@@ -458,6 +459,7 @@ static void test_add_to_list(uint8_t cmp_list[][CRYPTO_PUBLIC_KEY_SIZE + 1],
 static void test_list_main(void)
 {
     DHT *dhts[NUM_DHT];
+    Logger *logs[NUM_DHT];
     uint32_t index[NUM_DHT];
 
     uint8_t cmp_list1[NUM_DHT][MAX_FRIEND_CLIENTS][CRYPTO_PUBLIC_KEY_SIZE + 1];
@@ -469,11 +471,11 @@ static void test_list_main(void)
         IP ip;
         ip_init(&ip, 1);
 
-        Logger *log = logger_new();
+        logs[i] = logger_new();
         index[i] = i + 1;
-        logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index[i]);
+        logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
-        dhts[i] = new_DHT(log, new_networking(log, ip, DHT_DEFAULT_PORT + i), true);
+        dhts[i] = new_DHT(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i,
                       "Bound to wrong port: %d", net_port(dhts[i]->net));
@@ -580,6 +582,7 @@ static void test_list_main(void)
         Networking_Core *n = dhts[i]->net;
         kill_DHT(dhts[i]);
         kill_networking(n);
+        logger_kill(logs[i]);
     }
 }
 
@@ -604,6 +607,7 @@ START_TEST(test_DHT_test)
 {
     uint32_t to_comp = 8394782;
     DHT *dhts[NUM_DHT];
+    Logger *logs[NUM_DHT];
     uint32_t index[NUM_DHT];
 
     unsigned int i, j;
@@ -612,11 +616,11 @@ START_TEST(test_DHT_test)
         IP ip;
         ip_init(&ip, 1);
 
-        Logger *log = logger_new();
+        logs[i] = logger_new();
         index[i] = i + 1;
-        logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index[i]);
+        logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
-        dhts[i] = new_DHT(log, new_networking(log, ip, DHT_DEFAULT_PORT + i), true);
+        dhts[i] = new_DHT(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
@@ -677,6 +681,7 @@ loop_top:
         Networking_Core *n = dhts[i]->net;
         kill_DHT(dhts[i]);
         kill_networking(n);
+        logger_kill(logs[i]);
     }
 }
 END_TEST
