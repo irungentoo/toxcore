@@ -97,7 +97,7 @@ static void manage_keys(DHT *dht)
 static void print_log(void *context, Logger_Level level, const char *file, int line,
                       const char *func, const char *message, void *userdata)
 {
-    char *strlevel;
+    const char *strlevel;
 
     switch (level) {
         case LOGGER_LEVEL_TRACE:

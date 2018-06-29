@@ -178,42 +178,40 @@ static void daemonize(LOG_BACKEND log_backend, char *pid_file_path)
     }
 }
 
-void print_log(void *context, LOGGER_LEVEL level, const char *file, int line,
-               const char *func, const char *message, void *userdata)
-{
-    if (MIN_LOGGER_LEVEL != LOG_TRACE && MIN_LOGGER_LEVEL != LOG_DEBUG) {
-        return;
-    }
+// Logs toxcore logger message using our logger facility
 
-    char *strlevel;
+static void toxcore_logger_callback(void *context, Logger_Level level, const char *file, int line,
+                                    const char *func, const char *message, void *userdata)
+{
+    LOG_LEVEL log_level;
 
     switch (level) {
-        case LOG_TRACE:
-            strlevel = "TRACE";
+        case LOGGER_LEVEL_TRACE:
+            log_level = LOG_LEVEL_INFO;
             break;
 
-        case LOG_DEBUG:
-            strlevel = "DEBUG";
+        case LOGGER_LEVEL_DEBUG:
+            log_level = LOG_LEVEL_INFO;
             break;
 
-        case LOG_INFO:
-            strlevel = "INFO";
+        case LOGGER_LEVEL_INFO:
+            log_level = LOG_LEVEL_INFO;
             break;
 
-        case LOG_WARNING:
-            strlevel = "WARNING";
+        case LOGGER_LEVEL_WARNING:
+            log_level = LOG_LEVEL_WARNING;
             break;
 
-        case LOG_ERROR:
-            strlevel = "ERROR";
+        case LOGGER_LEVEL_ERROR:
+            log_level = LOG_LEVEL_ERROR;
             break;
 
         default:
-            strlevel = "<unknown>";
+            log_level = LOG_LEVEL_INFO;
             break;
     }
 
-    fprintf(stderr, "[%s] %s:%d(%s) %s\n", strlevel, file, line, func, message);
+    log_write(log_level, "%s:%d(%s) %s\n", file, line, func, message);
 }
 
 int main(int argc, char *argv[])
@@ -269,7 +267,10 @@ int main(int argc, char *argv[])
     ip_init(&ip, enable_ipv6);
 
     Logger *logger = logger_new();
-    logger_callback_log(logger, print_log, nullptr, nullptr);
+
+    if (MIN_LOGGER_LEVEL == LOGGER_LEVEL_TRACE || MIN_LOGGER_LEVEL == LOGGER_LEVEL_DEBUG) {
+        logger_callback_log(logger, toxcore_logger_callback, nullptr, nullptr);
+    }
 
     Networking_Core *net = new_networking(logger, ip, port);
 
