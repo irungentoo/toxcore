@@ -1856,6 +1856,13 @@ int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, m_lo
 }
 
 
+/* TODO(oxij): this name is confusing, because this function sends both av and custom lossy packets.
+ * Meanwhile, m_handle_lossy_packet routes custom packets to custom_lossy_packet_registerhandler
+ * as you would expect from its name.
+ *
+ * I.e. custom_lossy_packet_registerhandler's "custom lossy packet" and this "custom lossy packet"
+ * are not the same set of packets.
+ */
 int m_send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
 {
     if (friend_not_valid(m, friendnumber)) {
@@ -1866,6 +1873,7 @@ int m_send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const u
         return -2;
     }
 
+    // TODO(oxij): send_lossy_cryptpacket makes this check already, similarly for other similar places
     if (data[0] < PACKET_ID_RANGE_LOSSY_START || data[0] > PACKET_ID_RANGE_LOSSY_END) {
         return -3;
     }
