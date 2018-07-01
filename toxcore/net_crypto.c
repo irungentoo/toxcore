@@ -1549,7 +1549,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
         }
 
         set_buffer_end(c->log, &conn->recv_array, num);
-    } else if (real_data[0] >= CRYPTO_RESERVED_PACKETS && real_data[0] < PACKET_ID_LOSSY_RANGE_START) {
+    } else if (real_data[0] >= PACKET_ID_RANGE_LOSSLESS_START && real_data[0] <= PACKET_ID_RANGE_LOSSLESS_END) {
         Packet_Data dt = {0};
         dt.length = real_length;
         memcpy(dt.data, real_data, real_length);
@@ -1582,8 +1582,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
 
         /* Packet counter. */
         ++conn->packet_counter;
-    } else if (real_data[0] >= PACKET_ID_LOSSY_RANGE_START &&
-               real_data[0] < (PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE)) {
+    } else if (real_data[0] >= PACKET_ID_RANGE_LOSSY_START && real_data[0] <= PACKET_ID_RANGE_LOSSY_END) {
 
         set_buffer_end(c->log, &conn->recv_array, num);
 
@@ -2702,6 +2701,8 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  * return -1 if data could not be put in packet queue.
  * return positive packet number if data was put into the queue.
  *
+ * The first byte of data must in the PACKET_ID_RANGE_LOSSLESS.
+ *
  * congestion_control: should congestion control apply to this packet?
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length,
@@ -2711,11 +2712,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         return -1;
     }
 
-    if (data[0] < CRYPTO_RESERVED_PACKETS) {
-        return -1;
-    }
-
-    if (data[0] >= PACKET_ID_LOSSY_RANGE_START) {
+    if (data[0] < PACKET_ID_RANGE_LOSSLESS_START || data[0] > PACKET_ID_RANGE_LOSSLESS_END) {
         return -1;
     }
 
@@ -2780,10 +2777,12 @@ int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet
     return 0;
 }
 
-/* return -1 on failure.
+/* Sends a lossy cryptopacket.
+ *
+ * return -1 on failure.
  * return 0 on success.
  *
- * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
+ * The first byte of data must in the PACKET_ID_RANGE_LOSSY.
  */
 int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length)
 {
@@ -2791,11 +2790,7 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
         return -1;
     }
 
-    if (data[0] < PACKET_ID_LOSSY_RANGE_START) {
-        return -1;
-    }
-
-    if (data[0] >= PACKET_ID_LOSSY_RANGE_START + PACKET_ID_LOSSY_RANGE_SIZE) {
+    if (data[0] < PACKET_ID_RANGE_LOSSY_START || data[0] > PACKET_ID_RANGE_LOSSY_END) {
         return -1;
     }
 

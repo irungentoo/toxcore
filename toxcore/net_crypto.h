@@ -31,6 +31,57 @@
 
 #include <pthread.h>
 
+/*** Crypto payloads. ***/
+
+/** Ranges. **/
+
+/* Packets in this range are reserved for net_crypto internal use. */
+#define PACKET_ID_RANGE_RESERVED_START 0
+#define PACKET_ID_RANGE_RESERVED_END 15
+/* Packets in this range are reserved for Messenger use. */
+#define PACKET_ID_RANGE_LOSSLESS_START 16
+#define PACKET_ID_RANGE_LOSSLESS_NORMAL_START 16
+#define PACKET_ID_RANGE_LOSSLESS_NORMAL_END 159
+/* Packets in this range can be used for anything. */
+#define PACKET_ID_RANGE_LOSSLESS_CUSTOM_START 160
+#define PACKET_ID_RANGE_LOSSLESS_CUSTOM_END 191
+#define PACKET_ID_RANGE_LOSSLESS_END 191
+/* Packets in this range are reserved for AV use. */
+#define PACKET_ID_RANGE_LOSSY_START 192
+#define PACKET_ID_RANGE_LOSSY_AV_START 192
+#define PACKET_ID_RANGE_LOSSY_AV_SIZE 8
+#define PACKET_ID_RANGE_LOSSY_AV_END 199
+/* Packets in this range can be used for anything. */
+#define PACKET_ID_RANGE_LOSSY_CUSTOM_START 200
+#define PACKET_ID_RANGE_LOSSY_CUSTOM_END 254
+#define PACKET_ID_RANGE_LOSSY_END 254
+
+/** Messages. **/
+
+#define PACKET_ID_PADDING 0 /* Denotes padding */
+#define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
+#define PACKET_ID_KILL    2 /* Used to kill connection */
+
+#define PACKET_ID_ONLINE 24
+#define PACKET_ID_OFFLINE 25
+#define PACKET_ID_NICKNAME 48
+#define PACKET_ID_STATUSMESSAGE 49
+#define PACKET_ID_USERSTATUS 50
+#define PACKET_ID_TYPING 51
+#define PACKET_ID_MESSAGE 64
+#define PACKET_ID_ACTION 65 /* PACKET_ID_MESSAGE + MESSAGE_ACTION */
+#define PACKET_ID_MSI 69    /* Used by AV to setup calls and etc */
+#define PACKET_ID_FILE_SENDREQUEST 80
+#define PACKET_ID_FILE_CONTROL 81
+#define PACKET_ID_FILE_DATA 82
+#define PACKET_ID_INVITE_CONFERENCE 96
+#define PACKET_ID_ONLINE_PACKET 97
+#define PACKET_ID_DIRECT_CONFERENCE 98
+#define PACKET_ID_MESSAGE_CONFERENCE 99
+#define PACKET_ID_LOSSY_CONFERENCE 199
+
+/*** Crypto connections. ***/
+
 typedef enum Crypto_Conn_State {
     CRYPTO_CONN_NO_CONNECTION = 0,
     CRYPTO_CONN_COOKIE_REQUESTING = 1,  // send cookie request packets
@@ -66,19 +117,8 @@ typedef enum Crypto_Conn_State {
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
 #define UDP_DIRECT_TIMEOUT 8
 
-#define PACKET_ID_PADDING 0 /* Denotes padding */
-#define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
-#define PACKET_ID_KILL    2 /* Used to kill connection */
-
-/* Packet ids 0 to CRYPTO_RESERVED_PACKETS - 1 are reserved for use by net_crypto. */
-#define CRYPTO_RESERVED_PACKETS 16
-
 #define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
-
-/* All packets starting with a byte in this range are considered lossy packets. */
-#define PACKET_ID_LOSSY_RANGE_START 192
-#define PACKET_ID_LOSSY_RANGE_SIZE 63
 
 #define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
 
@@ -209,7 +249,7 @@ bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
  * return -1 if data could not be put in packet queue.
  * return positive packet number if data was put into the queue.
  *
- * The first byte of data must be in the CRYPTO_RESERVED_PACKETS to PACKET_ID_LOSSY_RANGE_START range.
+ * The first byte of data must be in the PACKET_ID_RANGE_LOSSLESS.
  *
  * congestion_control: should congestion control apply to this packet?
  */
@@ -225,10 +265,12 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  */
 int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
 
-/* return -1 on failure.
+/* Sends a lossy cryptopacket.
+ *
+ * return -1 on failure.
  * return 0 on success.
  *
- * Sends a lossy cryptopacket. (first byte must in the PACKET_ID_LOSSY_RANGE_*)
+ * The first byte of data must be in the PACKET_ID_RANGE_LOSSY.
  */
 int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length);
 
