@@ -172,8 +172,8 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
 
 static int m_handle_status(void *object, int i, uint8_t status, void *userdata);
 static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
-static int m_handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
-                                        void *userdata);
+static int m_handle_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+                                 void *userdata);
 
 static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t status)
 {
@@ -203,7 +203,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
             m->friendlist[i].is_typing = 0;
             m->friendlist[i].message_id = 0;
             friend_connection_callbacks(m->fr_c, friendcon_id, MESSENGER_CALLBACK_INDEX, &m_handle_status, &m_handle_packet,
-                                        &m_handle_custom_lossy_packet, m, i);
+                                        &m_handle_lossy_packet, m, i);
 
             if (m->numfriends == i) {
                 ++m->numfriends;
@@ -1807,8 +1807,8 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, 0);
 }
 
-static int m_handle_custom_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
-                                        void *userdata)
+static int m_handle_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
+                                 void *userdata)
 {
     Messenger *m = (Messenger *)object;
 
