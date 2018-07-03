@@ -338,6 +338,7 @@ include(CompileGTest)
 
 # The actual unit tests follow.
 #
+unit_test(toxav ring_buffer)
 unit_test(toxav rtp)
 unit_test(toxcore crypto_core)
 unit_test(toxcore util)

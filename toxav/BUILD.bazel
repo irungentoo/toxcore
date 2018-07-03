@@ -18,6 +18,15 @@ cc_library(
     deps = ["//c-toxcore/toxcore:ccompat"],
 )
 
+cc_test(
+    name = "ring_buffer_test",
+    srcs = ["ring_buffer_test.cc"],
+    deps = [
+        ":ring_buffer",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "bwcontroller",
     srcs = ["bwcontroller.c"],

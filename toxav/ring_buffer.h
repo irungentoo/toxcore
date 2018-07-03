@@ -25,6 +25,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Ring buffer */
 typedef struct RingBuffer RingBuffer;
 bool rb_full(const RingBuffer *b);
@@ -35,5 +39,9 @@ RingBuffer *rb_new(int size);
 void rb_kill(RingBuffer *b);
 uint16_t rb_size(const RingBuffer *b);
 uint16_t rb_data(const RingBuffer *b, void **dest);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RING_BUFFER_H */
