@@ -9,9 +9,7 @@
 #define _XOPEN_SOURCE 600
 #endif
 
-#include "check_compat.h"
-
-#include "../toxcore/tox.h"
+#include <stdint.h>
 
 typedef struct State {
     uint32_t index;

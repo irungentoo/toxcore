@@ -62,7 +62,8 @@ travis_script() {
 
   cd _build  # pushd
   make "-j$NPROC" -k install
-  make "-j$NPROC" test ARGS="-j50" CTEST_OUTPUT_ON_FAILURE=1
+  make "-j$NPROC" test ARGS="-j50" || \
+    make "-j$NPROC" test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
   cd -  # popd
 
   other/astyle/format-source . "$ASTYLE"
