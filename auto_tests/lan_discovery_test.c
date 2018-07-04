@@ -10,7 +10,7 @@ int main(void)
     Tox *tox1 = tox_new_log_lan(nullptr, nullptr, nullptr, /* lan_discovery */true);
     Tox *tox2 = tox_new_log_lan(nullptr, nullptr, nullptr, /* lan_discovery */true);
 
-    printf("Waiting for LAN discovery");
+    printf("Waiting for LAN discovery. This loop will attempt to run until successful.");
 
     while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
