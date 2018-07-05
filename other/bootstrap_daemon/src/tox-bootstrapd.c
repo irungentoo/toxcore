@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    DHT *dht = new_DHT(logger, net, true);
+    DHT *dht = new_dht(logger, net, true);
 
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
     }
 
     while (1) {
-        do_DHT(dht);
+        do_dht(dht);
 
         if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(net_htons_port, dht);
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 
         networking_poll(dht_get_net(dht), nullptr);
 
-        if (waiting_for_dht_connection && DHT_isconnected(dht)) {
+        if (waiting_for_dht_connection && dht_isconnected(dht)) {
             log_write(LOG_LEVEL_INFO, "Connected to another bootstrap node successfully.\n");
             waiting_for_dht_connection = 0;
         }

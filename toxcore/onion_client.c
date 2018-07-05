@@ -265,8 +265,8 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
 
     unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
 
-    //if (DHT_non_lan_connected(onion_c->dht)) {
-    if (DHT_isconnected(onion_c->dht)) {
+    //if (dht_non_lan_connected(onion_c->dht)) {
+    if (dht_isconnected(onion_c->dht)) {
         if (num_nodes == 0) {
             return 0;
         }
@@ -990,7 +990,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
             const Family family = nodes[i].ip_port.ip.family;
 
             if (net_family_is_ipv4(family) || net_family_is_ipv6(family)) {
-                DHT_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].public_key, onion_c->friends_list[friend_num].dht_public_key);
+                dht_getnodes(onion_c->dht, &nodes[i].ip_port, nodes[i].public_key, onion_c->friends_list[friend_num].dht_public_key);
             } else if (net_family_is_tcp_ipv4(family) || net_family_is_tcp_ipv6(family)) {
                 if (onion_c->friends_list[friend_num].tcp_relay_node_callback) {
                     void *obj = onion_c->friends_list[friend_num].tcp_relay_node_callback_object;
@@ -1326,8 +1326,13 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
         return -1;
     }
 
-    //if (onion_c->friends_list[friend_num].know_dht_public_key)
-    //    DHT_delfriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, 0);
+#if 0
+
+    if (onion_c->friends_list[friend_num].know_dht_public_key) {
+        dht_delfriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, 0);
+    }
+
+#endif
 
     crypto_memzero(&onion_c->friends_list[friend_num], sizeof(Onion_Friend));
     unsigned int i;
@@ -1456,7 +1461,7 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
         return -1;
     }
 
-    return DHT_getfriendip(onion_c->dht, dht_public_key, ip_port);
+    return dht_getfriendip(onion_c->dht, dht_public_key, ip_port);
 }
 
 
@@ -1824,7 +1829,7 @@ void do_onion_client(Onion_Client *onion_c)
         }
     }
 
-    bool UDP_connected = DHT_non_lan_connected(onion_c->dht);
+    bool UDP_connected = dht_non_lan_connected(onion_c->dht);
 
     if (is_timeout(onion_c->first_run, ONION_CONNECTION_SECONDS * 2)) {
         set_tcp_onion_status(nc_get_tcp_c(onion_c->c), !UDP_connected);

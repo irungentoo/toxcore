@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
+#define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
 
 
 #define CONST_FUNCTION(lowercase, uppercase) \

@@ -241,18 +241,18 @@ START_TEST(test_dht_state_saveloadsave)
      * c) a second save() is of equal size
      * d) the second save() is of equal content */
     const size_t extra = 64;
-    const size_t size = DHT_size(m->dht);
+    const size_t size = dht_size(m->dht);
     VLA(uint8_t, buffer, size + 2 * extra);
     memset(buffer, 0xCD, extra);
     memset(buffer + extra + size, 0xCD, extra);
-    DHT_save(m->dht, buffer + extra);
+    dht_save(m->dht, buffer + extra);
 
     for (size_t i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from DHT_save() @%u", (unsigned)i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from DHT_save() @%u", (unsigned)i);
+        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from dht_save() @%u", (unsigned)i);
+        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from dht_save() @%u", (unsigned)i);
     }
 
-    const int res = DHT_load(m->dht, buffer + extra, size);
+    const int res = dht_load(m->dht, buffer + extra, size);
 
     if (res == -1) {
         ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
@@ -264,12 +264,12 @@ START_TEST(test_dht_state_saveloadsave)
                       (unsigned)offset, (unsigned)size, res & 0x0F);
     }
 
-    const size_t size2 = DHT_size(m->dht);
+    const size_t size2 = dht_size(m->dht);
     ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u", (unsigned)size,
                   (unsigned)size2);
 
     VLA(uint8_t, buffer2, size2);
-    DHT_save(m->dht, buffer2);
+    dht_save(m->dht, buffer2);
 
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "DHT state changed by store/load/store cycle");
 }

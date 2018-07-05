@@ -29,7 +29,7 @@
 #include "../toxcore/crypto_core.h"
 #include "defines.h"
 #include "toxencryptsave.h"
-#define SET_ERROR_PARAMETER(param, x) {if(param) {*param = x;}}
+#define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
 
 #ifdef VANILLA_NACL
 #include <crypto_box.h>

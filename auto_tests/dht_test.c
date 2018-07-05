@@ -330,7 +330,7 @@ static void test_addto_lists(IP ip)
     Networking_Core *net = new_networking(log, ip, TOX_PORT_DEFAULT);
     ck_assert_msg(net != nullptr, "Failed to create Networking_Core");
 
-    DHT *dht = new_DHT(log, net, true);
+    DHT *dht = new_dht(log, net, true);
     ck_assert_msg(dht != nullptr, "Failed to create DHT");
 
     IP_Port ip_port;
@@ -391,7 +391,7 @@ static void test_addto_lists(IP ip)
         test_addto_lists_good(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
                               dht->friends_list[i].public_key);
 
-    kill_DHT(dht);
+    kill_dht(dht);
     kill_networking(net);
     logger_kill(log);
 }
@@ -475,7 +475,7 @@ static void test_list_main(void)
         index[i] = i + 1;
         logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
-        dhts[i] = new_DHT(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
+        dhts[i] = new_dht(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i,
                       "Bound to wrong port: %d", net_port(dhts[i]->net));
@@ -580,7 +580,7 @@ static void test_list_main(void)
 
     for (i = 0; i < NUM_DHT; ++i) {
         Networking_Core *n = dhts[i]->net;
-        kill_DHT(dhts[i]);
+        kill_dht(dhts[i]);
         kill_networking(n);
         logger_kill(logs[i]);
     }
@@ -620,7 +620,7 @@ START_TEST(test_DHT_test)
         index[i] = i + 1;
         logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
-        dhts[i] = new_DHT(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
+        dhts[i] = new_dht(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
@@ -642,7 +642,7 @@ loop_top:
         }
 
         uint16_t lock_count = 0;
-        ck_assert_msg(DHT_addfriend(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &ip_callback, &to_comp, 1337,
+        ck_assert_msg(dht_addfriend(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &ip_callback, &to_comp, 1337,
                                     &lock_count) == 0, "Failed to add friend");
         ck_assert_msg(lock_count == 1, "bad lock count: %u %u", lock_count, i);
     }
@@ -651,7 +651,7 @@ loop_top:
         IP_Port ip_port;
         ip_port.ip = get_loopback();
         ip_port.port = net_htons(DHT_DEFAULT_PORT + i);
-        DHT_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
+        dht_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
     }
 
     while (1) {
@@ -660,7 +660,7 @@ loop_top:
         for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
             IP_Port a;
 
-            if (DHT_getfriendip(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &a) == 1) {
+            if (dht_getfriendip(dhts[pairs[i].tox2], dhts[pairs[i].tox1]->self_public_key, &a) == 1) {
                 ++counter;
             }
         }
@@ -671,7 +671,7 @@ loop_top:
 
         for (i = 0; i < NUM_DHT; ++i) {
             networking_poll(dhts[i]->net, nullptr);
-            do_DHT(dhts[i]);
+            do_dht(dhts[i]);
         }
 
         c_sleep(500);
@@ -679,7 +679,7 @@ loop_top:
 
     for (i = 0; i < NUM_DHT; ++i) {
         Networking_Core *n = dhts[i]->net;
-        kill_DHT(dhts[i]);
+        kill_dht(dhts[i]);
         kill_networking(n);
         logger_kill(logs[i]);
     }
@@ -694,7 +694,7 @@ START_TEST(test_dht_create_packet)
     uint8_t key[CRYPTO_SYMMETRIC_KEY_SIZE];
     new_symmetric_key(key);
 
-    int length = DHT_create_packet(key, key, NET_PACKET_GET_NODES, plain, sizeof(plain), pkt);
+    int length = dht_create_packet(key, key, NET_PACKET_GET_NODES, plain, sizeof(plain), pkt);
 
     ck_assert_msg(pkt[0] == NET_PACKET_GET_NODES, "Malformed packet.");
     ck_assert_msg(memcmp(pkt + 1, key, CRYPTO_SYMMETRIC_KEY_SIZE) == 0, "Malformed packet.");

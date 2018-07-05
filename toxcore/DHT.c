@@ -283,7 +283,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
-void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
+void dht_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
 {
     get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, public_key);
 }
@@ -291,7 +291,7 @@ void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *publi
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
-void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
+void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
 {
     get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, public_key);
 }
@@ -455,7 +455,7 @@ int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
     }
 }
 
-static int DHT_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
+static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                              const uint8_t *shared_key, const uint8_t type, uint8_t *plain, size_t plain_length, uint8_t *packet)
 {
     VLA(uint8_t, encrypted, plain_length + CRYPTO_MAC_SIZE);
@@ -1315,9 +1315,9 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     memcpy(plain + CRYPTO_PUBLIC_KEY_SIZE, &ping_id, sizeof(ping_id));
 
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    DHT_get_shared_key_sent(dht, shared_key, public_key);
+    dht_get_shared_key_sent(dht, shared_key, public_key);
 
-    const int len = DHT_create_packet(dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
+    const int len = dht_create_packet(dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
                                       plain, sizeof(plain), data);
 
     if (len != sizeof(data)) {
@@ -1364,7 +1364,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
     const uint32_t crypto_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_MAC_SIZE;
     VLA(uint8_t, data, 1 + nodes_length + length + crypto_size);
 
-    const int len = DHT_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
+    const int len = dht_create_packet(dht->self_public_key, shared_encryption_key, NET_PACKET_SEND_NODES_IPV6,
                                       plain, 1 + nodes_length + length, data);
 
     if (len != SIZEOF_VLA(data)) {
@@ -1392,7 +1392,7 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
     uint8_t plain[CRYPTO_NODE_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
-    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
+    dht_get_shared_key_recv(dht, shared_key, packet + 1);
     const int len = decrypt_data_symmetric(
                         shared_key,
                         packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
@@ -1462,7 +1462,7 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
 
     VLA(uint8_t, plain, 1 + data_size + sizeof(uint64_t));
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    DHT_get_shared_key_sent(dht, shared_key, packet + 1);
+    dht_get_shared_key_sent(dht, shared_key, packet + 1);
     const int len = decrypt_data_symmetric(
                         shared_key,
                         packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
@@ -1538,7 +1538,7 @@ static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *pa
 /*----------------------------------------------------------------------------------*/
 /*------------------------END of packet handling functions--------------------------*/
 
-int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int dht_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count)
 {
     const uint32_t friend_num = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
@@ -1595,7 +1595,7 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
     return 0;
 }
 
-int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
+int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
 {
     const uint32_t friend_num = index_of_friend_pk(dht->friends_list, dht->num_friends, public_key);
 
@@ -1639,7 +1639,7 @@ int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
 }
 
 /* TODO(irungentoo): Optimize this. */
-int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
+int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
 {
     ip_reset(&ip_port->ip);
     ip_port->port = 0;
@@ -1743,7 +1743,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
 /* Ping each client in the "friends" list every PING_INTERVAL seconds. Send a get nodes request
  * every GET_NODE_INTERVAL seconds to a random good node for each "friend" in our "friends" list.
  */
-static void do_DHT_friends(DHT *dht)
+static void do_dht_friends(DHT *dht)
 {
     for (size_t i = 0; i < dht->num_friends; ++i) {
         DHT_Friend *const dht_friend = &dht->friends_list[i];
@@ -1803,16 +1803,16 @@ static void do_Close(DHT *dht)
     }
 }
 
-void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id)
+void dht_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id)
 {
     getnodes(dht, *from_ipp, from_id, which_id, nullptr);
 }
 
-void DHT_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
+void dht_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 {
     getnodes(dht, ip_port, public_key, dht->self_public_key, nullptr);
 }
-int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, const uint8_t *public_key)
 {
     IP_Port ip_port_v64;
@@ -1829,11 +1829,11 @@ int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
 
     if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
         ip_port_v64.port = port;
-        DHT_bootstrap(dht, ip_port_v64, public_key);
+        dht_bootstrap(dht, ip_port_v64, public_key);
 
         if ((ip_extra != nullptr) && ip_isset(ip_extra)) {
             ip_port_v4.port = port;
-            DHT_bootstrap(dht, ip_port_v4, public_key);
+            dht_bootstrap(dht, ip_port_v4, public_key);
         }
 
         return 1;
@@ -2673,7 +2673,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_DHT(const Logger *log, Networking_Core *net, bool holepunching_enabled)
+DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled)
 {
     /* init time */
     unix_time_update();
@@ -2696,7 +2696,7 @@ DHT *new_DHT(const Logger *log, Networking_Core *net, bool holepunching_enabled)
     dht->ping = ping_new(dht);
 
     if (dht->ping == nullptr) {
-        kill_DHT(dht);
+        kill_dht(dht);
         return nullptr;
     }
 
@@ -2715,8 +2715,8 @@ DHT *new_DHT(const Logger *log, Networking_Core *net, bool holepunching_enabled)
         uint8_t random_key_bytes[CRYPTO_PUBLIC_KEY_SIZE];
         random_bytes(random_key_bytes, sizeof(random_key_bytes));
 
-        if (DHT_addfriend(dht, random_key_bytes, nullptr, nullptr, 0, nullptr) != 0) {
-            kill_DHT(dht);
+        if (dht_addfriend(dht, random_key_bytes, nullptr, nullptr, 0, nullptr) != 0) {
+            kill_dht(dht);
             return nullptr;
         }
     }
@@ -2724,7 +2724,7 @@ DHT *new_DHT(const Logger *log, Networking_Core *net, bool holepunching_enabled)
     return dht;
 }
 
-void do_DHT(DHT *dht)
+void do_dht(DHT *dht)
 {
     unix_time_update();
 
@@ -2732,13 +2732,13 @@ void do_DHT(DHT *dht)
         return;
     }
 
-    // Load friends/clients if first call to do_DHT
+    // Load friends/clients if first call to do_dht
     if (dht->loaded_num_nodes) {
-        DHT_connect_after_load(dht);
+        dht_connect_after_load(dht);
     }
 
     do_Close(dht);
-    do_DHT_friends(dht);
+    do_dht_friends(dht);
     do_NAT(dht);
     ping_iterate(dht->ping);
 #if DHT_HARDENING
@@ -2747,7 +2747,7 @@ void do_DHT(DHT *dht)
     dht->last_run = unix_time();
 }
 
-void kill_DHT(DHT *dht)
+void kill_dht(DHT *dht)
 {
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, nullptr, nullptr);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, nullptr, nullptr);
@@ -2771,7 +2771,7 @@ void kill_DHT(DHT *dht)
 #define MAX_SAVED_DHT_NODES (((DHT_FAKE_FRIEND_NUMBER * MAX_FRIEND_CLIENTS) + LCLIENT_LIST) * 2)
 
 /* Get the size of the DHT (for saving). */
-uint32_t DHT_size(const DHT *dht)
+uint32_t dht_size(const DHT *dht)
 {
     uint32_t numv4 = 0;
     uint32_t numv6 = 0;
@@ -2796,7 +2796,7 @@ uint32_t DHT_size(const DHT *dht)
     return size32 + sizesubhead + packed_node_size(net_family_ipv4) * numv4 + packed_node_size(net_family_ipv6) * numv6;
 }
 
-static uint8_t *DHT_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
+static uint8_t *dht_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 {
     host_to_lendian32(data, len);
     data += sizeof(uint32_t);
@@ -2806,8 +2806,8 @@ static uint8_t *DHT_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
 }
 
 
-/* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(const DHT *dht, uint8_t *data)
+/* Save the DHT in data where data is an array of size dht_size(). */
+void dht_save(const DHT *dht, uint8_t *data)
 {
     host_to_lendian32(data,  DHT_STATE_COOKIE_GLOBAL);
     data += sizeof(uint32_t);
@@ -2815,7 +2815,7 @@ void DHT_save(const DHT *dht, uint8_t *data)
     uint8_t *const old_data = data;
 
     /* get right offset. we write the actual header later. */
-    data = DHT_save_subheader(data, 0, 0);
+    data = dht_save_subheader(data, 0, 0);
 
     Node_format clients[MAX_SAVED_DHT_NODES];
 
@@ -2853,14 +2853,14 @@ void DHT_save(const DHT *dht, uint8_t *data)
         }
     }
 
-    DHT_save_subheader(old_data, pack_nodes(data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
+    dht_save_subheader(old_data, pack_nodes(data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
 }
 
-/* Bootstrap from this number of nodes every time DHT_connect_after_load() is called */
+/* Bootstrap from this number of nodes every time dht_connect_after_load() is called */
 #define SAVE_BOOTSTAP_FREQUENCY 8
 
 /* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set */
-int DHT_connect_after_load(DHT *dht)
+int dht_connect_after_load(DHT *dht)
 {
     if (dht == nullptr) {
         return -1;
@@ -2871,7 +2871,7 @@ int DHT_connect_after_load(DHT *dht)
     }
 
     /* DHT is connected, stop. */
-    if (DHT_non_lan_connected(dht)) {
+    if (dht_non_lan_connected(dht)) {
         free(dht->loaded_nodes_list);
         dht->loaded_nodes_list = nullptr;
         dht->loaded_num_nodes = 0;
@@ -2880,7 +2880,7 @@ int DHT_connect_after_load(DHT *dht)
 
     for (uint32_t i = 0; i < dht->loaded_num_nodes && i < SAVE_BOOTSTAP_FREQUENCY; ++i) {
         const unsigned int index = dht->loaded_nodes_index % dht->loaded_num_nodes;
-        DHT_bootstrap(dht, dht->loaded_nodes_list[index].ip_port, dht->loaded_nodes_list[index].public_key);
+        dht_bootstrap(dht, dht->loaded_nodes_list[index].ip_port, dht->loaded_nodes_list[index].public_key);
         ++dht->loaded_nodes_index;
     }
 
@@ -2926,7 +2926,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
+int dht_load(DHT *dht, const uint8_t *data, uint32_t length)
 {
     const uint32_t cookie_len = sizeof(uint32_t);
 
@@ -2946,7 +2946,7 @@ int DHT_load(DHT *dht, const uint8_t *data, uint32_t length)
 /*  return false if we are not connected to the DHT.
  *  return true if we are.
  */
-bool DHT_isconnected(const DHT *dht)
+bool dht_isconnected(const DHT *dht)
 {
     unix_time_update();
 
@@ -2965,7 +2965,7 @@ bool DHT_isconnected(const DHT *dht)
 /*  return false if we are not connected or only connected to lan peers with the DHT.
  *  return true if we are.
  */
-bool DHT_non_lan_connected(const DHT *dht)
+bool dht_non_lan_connected(const DHT *dht)
 {
     unix_time_update();
 

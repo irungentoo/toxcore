@@ -252,14 +252,14 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
-void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
+void dht_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
-void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
+void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
-void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
+void dht_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
 
 /* Add a new friend to the friends list.
  * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
@@ -267,13 +267,13 @@ void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, con
  * ip_callback is the callback of a function that will be called when the ip address
  * is found along with arguments data and number.
  *
- * lock_count will be set to a non zero number that must be passed to DHT_delfriend()
+ * lock_count will be set to a non zero number that must be passed to dht_delfriend()
  * to properly remove the callback.
  *
  *  return 0 if success.
  *  return -1 if failure (friends list is full).
  */
-int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int dht_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
                   void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
@@ -282,20 +282,20 @@ int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void 
  *  return 0 if success.
  *  return -1 if failure (public_key not in friends list).
  */
-int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
+int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
 
 /* Get ip of friend.
  *  public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *
- * int DHT_getfriendip(DHT *dht, uint8_t *public_key, IP_Port *ip_port);
+ * int dht_getfriendip(DHT *dht, uint8_t *public_key, IP_Port *ip_port);
  *
  *  return -1, -- if public_key does NOT refer to a friend
  *  return  0, -- if public_key refers to a friend and we failed to find the friend (yet)
  *  return  1, ip if public_key refers to a friend and we found him
  */
-int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port);
+int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port);
 
 /* Compares pk1 and pk2 with pk.
  *
@@ -341,7 +341,7 @@ uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
 /* Run this function at least a couple times per second (It's the main loop). */
-void do_DHT(DHT *dht);
+void do_dht(DHT *dht);
 
 /*
  *  Use these two functions to bootstrap the client.
@@ -349,7 +349,7 @@ void do_DHT(DHT *dht);
 /* Sends a "get nodes" request to the given node with ip, port and public_key
  *   to setup connections
  */
-void DHT_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+void dht_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 /* Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *
@@ -361,7 +361,7 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
  *  returns 1 if the address could be converted into an IP address
  *  returns 0 otherwise
  */
-int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, const uint8_t *public_key);
 
 /* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set.
@@ -369,7 +369,7 @@ int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
  * returns 0 if successful
  * returns -1 otherwise
  */
-int DHT_connect_after_load(DHT *dht);
+int dht_connect_after_load(DHT *dht);
 
 /* ROUTING FUNCTIONS */
 
@@ -392,32 +392,32 @@ void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_c
 /* SAVE/LOAD functions */
 
 /* Get the size of the DHT (for saving). */
-uint32_t DHT_size(const DHT *dht);
+uint32_t dht_size(const DHT *dht);
 
-/* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(const DHT *dht, uint8_t *data);
+/* Save the DHT in data where data is an array of size dht_size(). */
+void dht_save(const DHT *dht, uint8_t *data);
 
 /* Load the DHT from data of size size.
  *
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load(DHT *dht, const uint8_t *data, uint32_t length);
+int dht_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_DHT(const Logger *log, Networking_Core *net, bool holepunching_enabled);
+DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled);
 
-void kill_DHT(DHT *dht);
+void kill_dht(DHT *dht);
 
 /*  return false if we are not connected to the DHT.
  *  return true if we are.
  */
-bool DHT_isconnected(const DHT *dht);
+bool dht_isconnected(const DHT *dht);
 
 /*  return false if we are not connected or only connected to lan peers with the DHT.
  *  return true if we are.
  */
-bool DHT_non_lan_connected(const DHT *dht);
+bool dht_non_lan_connected(const DHT *dht);
 
 
 uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);

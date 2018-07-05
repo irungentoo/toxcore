@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     ip_init(&ip, ipv6enabled);
 
     Logger *logger = logger_new();
-    DHT *dht = new_DHT(logger, new_networking(logger, ip, PORT), true);
+    DHT *dht = new_dht(logger, new_networking(logger, ip, PORT), true);
     Onion *onion = new_onion(dht);
     Onion_Announce *onion_a = new_onion_announce(dht);
 
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
         printf("Trying to bootstrap into the network...\n");
         uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
         uint8_t *bootstrap_key = hex_string_to_bin(argv[argvoffset + 3]);
-        int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1],
+        int res = dht_bootstrap_from_address(dht, argv[argvoffset + 1],
                                              ipv6enabled, port, bootstrap_key);
         free(bootstrap_key);
 
@@ -187,12 +187,12 @@ int main(int argc, char *argv[])
     lan_discovery_init(dht);
 
     while (1) {
-        if (is_waiting_for_dht_connection && DHT_isconnected(dht)) {
+        if (is_waiting_for_dht_connection && dht_isconnected(dht)) {
             printf("Connected to other bootstrap node successfully.\n");
             is_waiting_for_dht_connection = 0;
         }
 
-        do_DHT(dht);
+        do_dht(dht);
 
         if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(net_htons(PORT), dht);

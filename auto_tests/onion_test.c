@@ -40,7 +40,7 @@ static inline IP get_loopback()
 static void do_onion(Onion *onion)
 {
     networking_poll(onion->net, nullptr);
-    do_DHT(onion->dht);
+    do_dht(onion->dht);
 }
 
 static int handled_test_1;
@@ -167,8 +167,8 @@ START_TEST(test_basic)
     logger_callback_log(log2, (logger_cb *)print_debug_log, nullptr, &index[1]);
 
     IP ip = get_loopback();
-    Onion *onion1 = new_onion(new_DHT(log1, new_networking(log1, ip, 36567), true));
-    Onion *onion2 = new_onion(new_DHT(log2, new_networking(log2, ip, 36568), true));
+    Onion *onion1 = new_onion(new_dht(log1, new_networking(log1, ip, 36567), true));
+    Onion *onion2 = new_onion(new_dht(log2, new_networking(log2, ip, 36568), true));
     ck_assert_msg((onion1 != nullptr) && (onion2 != nullptr), "Onion failed initializing.");
     networking_registerhandler(onion2->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_test_1, onion2);
 
@@ -256,7 +256,7 @@ START_TEST(test_basic)
     Logger *log3 = logger_new();
     logger_callback_log(log3, (logger_cb *)print_debug_log, nullptr, &index[2]);
 
-    Onion *onion3 = new_onion(new_DHT(log3, new_networking(log3, ip, 36569), true));
+    Onion *onion3 = new_onion(new_dht(log3, new_networking(log3, ip, 36569), true));
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(nonce);
@@ -282,7 +282,7 @@ START_TEST(test_basic)
         Networking_Core *net = dht_get_net(onion->dht);
         DHT *dht = onion->dht;
         kill_onion(onion);
-        kill_DHT(dht);
+        kill_dht(dht);
         kill_networking(net);
         logger_kill(log3);
     }
@@ -293,7 +293,7 @@ START_TEST(test_basic)
         Networking_Core *net = dht_get_net(onion->dht);
         DHT *dht = onion->dht;
         kill_onion(onion);
-        kill_DHT(dht);
+        kill_dht(dht);
         kill_networking(net);
         logger_kill(log2);
     }
@@ -304,7 +304,7 @@ START_TEST(test_basic)
         Networking_Core *net = dht_get_net(onion->dht);
         DHT *dht = onion->dht;
         kill_onion(onion);
-        kill_DHT(dht);
+        kill_dht(dht);
         kill_networking(net);
         logger_kill(log1);
     }
@@ -345,7 +345,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
         return nullptr;
     }
 
-    DHT *dht = new_DHT(on->log, net, true);
+    DHT *dht = new_dht(on->log, net, true);
 
     if (!dht) {
         kill_networking(net);
@@ -357,7 +357,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
     on->onion = new_onion(dht);
 
     if (!on->onion) {
-        kill_DHT(dht);
+        kill_dht(dht);
         kill_networking(net);
         logger_kill(on->log);
         free(on);
@@ -368,7 +368,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
 
     if (!on->onion_a) {
         kill_onion(on->onion);
-        kill_DHT(dht);
+        kill_dht(dht);
         kill_networking(net);
         logger_kill(on->log);
         free(on);
@@ -381,7 +381,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
     if (!on->onion_c) {
         kill_onion_announce(on->onion_a);
         kill_onion(on->onion);
-        kill_DHT(dht);
+        kill_dht(dht);
         kill_networking(net);
         logger_kill(on->log);
         free(on);
@@ -394,7 +394,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
 static void do_onions(Onions *on)
 {
     networking_poll(on->onion->net, nullptr);
-    do_DHT(on->onion->dht);
+    do_dht(on->onion->dht);
     do_onion_client(on->onion_c);
 }
 
@@ -407,7 +407,7 @@ static void kill_onions(Onions *on)
     kill_onion_announce(on->onion_a);
     kill_onion(on->onion);
     kill_net_crypto(c);
-    kill_DHT(dht);
+    kill_dht(dht);
     kill_networking(net);
     logger_kill(on->log);
     free(on);
@@ -442,8 +442,8 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     if ((NUM_FIRST == number && !first) || (NUM_LAST == number && !last)) {
         Onions *on = (Onions *)object;
         uint16_t count = 0;
-        int ret = DHT_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
-        ck_assert_msg(ret == 0, "DHT_addfriend() did not return 0");
+        int ret = dht_addfriend(on->onion->dht, dht_public_key, &dht_ip_callback, object, number, &count);
+        ck_assert_msg(ret == 0, "dht_addfriend() did not return 0");
         ck_assert_msg(count == 1, "Count not 1, count is %u", count);
 
         if (NUM_FIRST == number && !first) {
@@ -486,11 +486,11 @@ START_TEST(test_announce)
 
     for (i = 3; i < NUM_ONIONS; ++i) {
         IP_Port ip_port = {ip, net_port(onions[i - 1]->onion->net)};
-        DHT_bootstrap(onions[i]->onion->dht, ip_port, dht_get_self_public_key(onions[i - 1]->onion->dht));
+        dht_bootstrap(onions[i]->onion->dht, ip_port, dht_get_self_public_key(onions[i - 1]->onion->dht));
         IP_Port ip_port1 = {ip, net_port(onions[i - 2]->onion->net)};
-        DHT_bootstrap(onions[i]->onion->dht, ip_port1, dht_get_self_public_key(onions[i - 2]->onion->dht));
+        dht_bootstrap(onions[i]->onion->dht, ip_port1, dht_get_self_public_key(onions[i - 2]->onion->dht));
         IP_Port ip_port2 = {ip, net_port(onions[i - 3]->onion->net)};
-        DHT_bootstrap(onions[i]->onion->dht, ip_port2, dht_get_self_public_key(onions[i - 3]->onion->dht));
+        dht_bootstrap(onions[i]->onion->dht, ip_port2, dht_get_self_public_key(onions[i - 3]->onion->dht));
     }
 
     uint32_t connected = 0;
@@ -500,7 +500,7 @@ START_TEST(test_announce)
 
         for (i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
-            connected += DHT_isconnected(onions[i]->onion->dht);
+            connected += dht_isconnected(onions[i]->onion->dht);
         }
 
         c_sleep(50);

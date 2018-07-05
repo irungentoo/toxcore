@@ -371,7 +371,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    DHT_bootstrap(dht, source, packet + 1);
+    dht_bootstrap(dht, source, packet + 1);
     return 0;
 }
 

@@ -128,7 +128,7 @@ static void print_friendlist(DHT *dht)
 
         print_client_id(dht_get_friend_public_key(dht, k));
 
-        int friendok = DHT_getfriendip(dht, dht_get_friend_public_key(dht, k), &p_ip);
+        int friendok = dht_getfriendip(dht, dht_get_friend_public_key(dht, k), &p_ip);
         char ip_str[IP_NTOA_LEN];
         printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip, ip_str, sizeof(ip_str)), net_ntohs(p_ip.port), friendok);
 
@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(nullptr, new_networking(nullptr, ip, PORT), true);
+    DHT *dht = new_dht(nullptr, new_networking(nullptr, ip, PORT), true);
     printf("OUR ID: ");
     uint32_t i;
 
@@ -216,14 +216,14 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    DHT_addfriend(dht, bin_id, 0, 0, 0, 0);
+    dht_addfriend(dht, bin_id, 0, 0, 0, 0);
     free(bin_id);
 
     perror("Initialization");
 
     uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+    int res = dht_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);
 
     if (!res) {
@@ -238,12 +238,12 @@ int main(int argc, char *argv[])
 #endif
 
     while (1) {
-        do_DHT(dht);
+        do_dht(dht);
 
 #if 0 /* TODO(slvr): */
 
         while (receivepacket(&ip_port, data, &length) != -1) {
-            if (DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
+            if (dht_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
                 //unhandled packet
                 printpacket(data, length, ip_port);
             } else {

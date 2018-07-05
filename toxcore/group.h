@@ -108,6 +108,9 @@ typedef struct {
     void (*group_on_delete)(void *, uint32_t);
 } Group_c;
 
+typedef void g_conference_invite_cb(Messenger *, uint32_t, int, const uint8_t *, size_t, void *);
+typedef void g_conference_message_cb(Messenger *m, uint32_t, uint32_t, int, const uint8_t *, size_t, void *);
+
 typedef struct {
     Messenger *m;
     Friend_Connections *fr_c;
@@ -115,8 +118,8 @@ typedef struct {
     Group_c *chats;
     uint32_t num_chats;
 
-    void (*invite_callback)(Messenger *m, uint32_t, int, const uint8_t *, size_t, void *);
-    void (*message_callback)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *, size_t, void *);
+    g_conference_invite_cb *invite_callback;
+    g_conference_message_cb *message_callback;
     void (*peer_name_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);
     void (*peer_list_changed_callback)(Messenger *m, uint32_t, void *);
     void (*title_callback)(Messenger *m, uint32_t, uint32_t, const uint8_t *, size_t, void *);

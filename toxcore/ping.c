@@ -72,7 +72,7 @@ int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
     // generate key to encrypt ping_id with recipient privkey
-    DHT_get_shared_key_sent(ping->dht, shared_key, public_key);
+    dht_get_shared_key_sent(ping->dht, shared_key, public_key);
     // Generate random ping_id.
     uint8_t data[PING_DATA_SIZE];
     id_copy(data, public_key);
@@ -154,7 +154,7 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
     // Decrypt ping_id
-    DHT_get_shared_key_recv(dht, shared_key, packet + 1);
+    dht_get_shared_key_recv(dht, shared_key, packet + 1);
     rc = decrypt_data_symmetric(shared_key,
                                 packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                 packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
@@ -196,7 +196,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
 
     // generate key to encrypt ping_id with recipient privkey
-    DHT_get_shared_key_sent(ping->dht, shared_key, packet + 1);
+    dht_get_shared_key_sent(ping->dht, shared_key, packet + 1);
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
     // Decrypt ping_id
@@ -291,7 +291,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
 
     IP_Port temp;
 
-    if (DHT_getfriendip(ping->dht, public_key, &temp) == 0) {
+    if (dht_getfriendip(ping->dht, public_key, &temp) == 0) {
         ping_send_request(ping, ip_port, public_key);
         return -1;
     }

@@ -41,11 +41,12 @@ uint32_t get_nospam(const Friend_Requests *fr);
  */
 int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk);
 
+typedef void fr_friend_request_cb(void *, const uint8_t *, const uint8_t *, size_t, void *);
+
 /* Set the function that will be executed when a friend request for us is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length, void * userdata)
  */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, size_t,
-                            void *), void *object);
+void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object);
 
 /* Set the function used to check if a friend request should be displayed to the user or not.
  * Function format is int function(uint8_t * public_key, void * userdata)
