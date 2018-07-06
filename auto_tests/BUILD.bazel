@@ -8,9 +8,13 @@ cc_library(
     ],
 )
 
+test_sizes = {
+    "conference_peer_nick_test": "medium",
+}
+
 [cc_test(
     name = src[:-2],
-    size = "small",
+    size = test_sizes.get(src[:-2], "small"),
     srcs = [src],
     copts = ["-Wno-sign-compare"],
     deps = [
