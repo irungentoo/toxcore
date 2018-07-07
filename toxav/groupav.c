@@ -406,11 +406,9 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
         return -1;
     }
 
-    uint16_t sequnum;
-    memcpy(&sequnum, packet, sizeof(sequnum));
-    pk->sequnum = net_ntohs(sequnum);
+    net_unpack_u16(packet, &pk->sequnum);
     pk->length = length - sizeof(uint16_t);
-    memcpy(pk->data, packet + sizeof(uint16_t), length - sizeof(uint16_t));
+    memcpy(pk->data, packet + sizeof(uint16_t), pk->length);
 
     if (queue(peer_av->buffer, pk) == -1) {
         free(pk);
@@ -503,19 +501,26 @@ int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber
  */
 static int send_audio_packet(Group_Chats *g_c, uint32_t groupnumber, uint8_t *packet, uint16_t length)
 {
-    if (!length) {
+    if (length == 0 || length > MAX_CRYPTO_DATA_SIZE - 1 - sizeof(uint16_t)) {
         return -1;
     }
 
-    Group_AV *group_av = (Group_AV *)group_get_object(g_c, groupnumber);
-    VLA(uint8_t, data, 1 + sizeof(uint16_t) + length);
-    data[0] = GROUP_AUDIO_PACKET_ID;
+    const uint16_t plen = 1 + sizeof(uint16_t) + length;
 
-    uint16_t sequnum = net_htons(group_av->audio_sequnum);
-    memcpy(data + 1, &sequnum, sizeof(sequnum));
-    memcpy(data + 1 + sizeof(sequnum), packet, length);
+    Group_AV *const group_av = (Group_AV *)group_get_object(g_c, groupnumber);
 
-    if (send_group_lossy_packet(g_c, groupnumber, data, SIZEOF_VLA(data)) == -1) {
+    if (!group_av) {
+        return -1;
+    }
+
+    uint8_t data[MAX_CRYPTO_DATA_SIZE];
+    uint8_t *ptr = data;
+    *ptr++ = GROUP_AUDIO_PACKET_ID;
+
+    ptr += net_pack_u16(ptr, group_av->audio_sequnum);
+    memcpy(ptr, packet, length);
+
+    if (send_group_lossy_packet(g_c, groupnumber, data, plen) == -1) {
         return -1;
     }
 
