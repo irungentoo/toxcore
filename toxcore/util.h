@@ -39,10 +39,20 @@ extern "C" {
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
 
+typedef struct Unix_Time Unix_Time;
+
+Unix_Time *unix_time_new(void);
+void unix_time_free(Unix_Time *unixtime);
+
+// TODO(#405): Use per-tox unixtime, remove unix_time_update, and rename
+// unix_time_update_r to unix_time_update.
+void unix_time_update_r(Unix_Time *unixtime);
+uint64_t unix_time_get(const Unix_Time *unixtime);
+int unix_time_is_timeout(const Unix_Time *unixtime, uint64_t timestamp, uint64_t timeout);
+
 void unix_time_update(void);
 uint64_t unix_time(void);
 int is_timeout(uint64_t timestamp, uint64_t timeout);
-
 
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
