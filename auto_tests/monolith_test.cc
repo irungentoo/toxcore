@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
   CHECK_SIZE(Group_Chats, 2120);
   CHECK_SIZE(Group_Peer, 480);
   // toxcore/list
-  CHECK_SIZE(BS_LIST, 32);
+  CHECK_SIZE(BS_List, 32);
   // toxcore/logger
   CHECK_SIZE(Logger, 24);
   // toxcore/Messenger

@@ -34,7 +34,7 @@
 #include "util.h"
 
 
-typedef struct {
+typedef struct Ping_Array_Entry {
     void *data;
     uint32_t length;
     uint64_t time;
@@ -76,7 +76,8 @@ Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
         return nullptr;
     }
 
-    empty_array->last_deleted = empty_array->last_added = 0;
+    empty_array->last_deleted = 0;
+    empty_array->last_added = 0;
     empty_array->total_size = size;
     empty_array->timeout = timeout;
     return empty_array;
@@ -86,9 +87,9 @@ static void clear_entry(Ping_Array *array, uint32_t index)
 {
     free(array->entries[index].data);
     array->entries[index].data = nullptr;
-    array->entries[index].length =
-        array->entries[index].time =
-            array->entries[index].ping_id = 0;
+    array->entries[index].length = 0;
+    array->entries[index].time = 0;
+    array->entries[index].ping_id = 0;
 }
 
 /* Free all the allocated memory in a Ping_Array.

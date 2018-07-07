@@ -91,7 +91,7 @@ struct TCP_Server {
 
     uint64_t counter;
 
-    BS_LIST accepted_key_list;
+    BS_List accepted_key_list;
 };
 
 const uint8_t *tcp_server_public_key(const TCP_Server *tcp_server)

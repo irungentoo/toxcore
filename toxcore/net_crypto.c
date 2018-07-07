@@ -156,7 +156,7 @@ struct Net_Crypto {
     /* The current optimal sleep time */
     uint32_t current_sleep_time;
 
-    BS_LIST ip_port_list;
+    BS_List ip_port_list;
 };
 
 const uint8_t *nc_get_self_public_key(const Net_Crypto *c)
