@@ -551,7 +551,7 @@ static int delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void 
     }
 
     if (g->peer_on_leave) {
-        g->peer_on_leave(g->object, groupnumber, peer_index, peer_object);
+        g->peer_on_leave(g->object, groupnumber, peer_object);
     }
 
     return 0;
@@ -787,10 +787,8 @@ int del_groupchat(Group_Chats *g_c, uint32_t groupnumber)
         kill_friend_connection(g_c->fr_c, g->close[i].number);
     }
 
-    for (i = 0; i < g->numpeers; ++i) {
-        if (g->peer_on_leave) {
-            g->peer_on_leave(g->object, groupnumber, i, g->group[i].object);
-        }
+    if (g->peer_on_leave) {
+        g->peer_on_leave(g->object, groupnumber, g->group[i].object);
     }
 
     free(g->group);
@@ -1205,8 +1203,7 @@ int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, vo
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t, uint32_t,
-                                   void *))
+int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t, void *))
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 

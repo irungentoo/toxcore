@@ -104,7 +104,7 @@ typedef struct {
     void *object;
 
     void (*peer_on_join)(void *, uint32_t, uint32_t);
-    void (*peer_on_leave)(void *, uint32_t, uint32_t, void *);
+    void (*peer_on_leave)(void *, uint32_t, void *);
     void (*group_on_delete)(void *, uint32_t);
 } Group_c;
 
@@ -377,13 +377,12 @@ int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, vo
 
 /* Set a function to be called when a peer leaves a group chat.
  *
- * Function(void *group object (set with group_set_object), uint32_t groupnumber, uint32_t friendgroupnumber, void *group peer object (set with group_peer_set_object))
+ * Function(void *group object (set with group_set_object), uint32_t groupnumber, void *group peer object (set with group_peer_set_object))
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t, uint32_t,
-                                   void *));
+int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t, void *));
 
 /* Set a function to be called when the group chat is deleted.
  *

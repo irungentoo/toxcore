@@ -262,7 +262,7 @@ static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t frien
     group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av);
 }
 
-static void group_av_peer_delete(void *object, uint32_t groupnumber, uint32_t friendgroupnumber, void *peer_object)
+static void group_av_peer_delete(void *object, uint32_t groupnumber, void *peer_object)
 {
     Group_Peer_AV *peer_av = (Group_Peer_AV *)peer_object;
 
