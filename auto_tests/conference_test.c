@@ -24,7 +24,8 @@
 #define NUM_GROUP_TOX 5
 #define GROUP_MESSAGE "Install Gentoo"
 
-static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
+static void handle_self_connection_status(
+    Tox *tox, TOX_CONNECTION connection_status, void *user_data)
 {
     const int id = *(int *)user_data;
 
@@ -35,8 +36,8 @@ static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_st
     }
 }
 
-static void handle_friend_connection_status(Tox *tox, uint32_t friendnumber, TOX_CONNECTION connection_status,
-        void *user_data)
+static void handle_friend_connection_status(
+    Tox *tox, uint32_t friendnumber, TOX_CONNECTION connection_status, void *user_data)
 {
     const int id = *(int *)user_data;
 
@@ -47,8 +48,9 @@ static void handle_friend_connection_status(Tox *tox, uint32_t friendnumber, TOX
     }
 }
 
-static void handle_conference_invite(Tox *tox, uint32_t friendnumber, TOX_CONFERENCE_TYPE type, const uint8_t *data,
-                                     size_t length, void *user_data)
+static void handle_conference_invite(
+    Tox *tox, uint32_t friendnumber, TOX_CONFERENCE_TYPE type,
+    const uint8_t *data, size_t length, void *user_data)
 {
     const int id = *(int *)user_data;
     ck_assert_msg(type == TOX_CONFERENCE_TYPE_TEXT, "tox #%d: wrong conference type: %d", id, type);
@@ -74,11 +76,58 @@ static void handle_conference_invite(Tox *tox, uint32_t friendnumber, TOX_CONFER
 
 static unsigned int num_recv;
 
-static void handle_conference_message(Tox *tox, uint32_t groupnumber, uint32_t peernumber, TOX_MESSAGE_TYPE type,
-                                      const uint8_t *message, size_t length, void *user_data)
+static void handle_conference_message(
+    Tox *tox, uint32_t groupnumber, uint32_t peernumber, TOX_MESSAGE_TYPE type,
+    const uint8_t *message, size_t length, void *user_data)
 {
     if (length == (sizeof(GROUP_MESSAGE) - 1) && memcmp(message, GROUP_MESSAGE, sizeof(GROUP_MESSAGE) - 1) == 0) {
         ++num_recv;
+    }
+}
+
+static void run_conference_tests(Tox **toxes, uint32_t *tox_index)
+{
+    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+        tox_callback_conference_message(toxes[i], &handle_conference_message);
+    }
+
+    TOX_ERR_CONFERENCE_SEND_MESSAGE err;
+    ck_assert_msg(
+        tox_conference_send_message(
+            toxes[random_u32() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
+            sizeof(GROUP_MESSAGE) - 1, &err) != 0, "Failed to send group message.");
+    ck_assert_msg(
+        err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "Failed to send group message.");
+    num_recv = 0;
+
+    for (unsigned j = 0; j < 20; ++j) {
+        for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+            tox_iterate(toxes[i], &tox_index[i]);
+        }
+
+        c_sleep(25);
+    }
+
+    c_sleep(25);
+    ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
+
+    for (unsigned k = NUM_GROUP_TOX; k != 0 ; --k) {
+        tox_conference_delete(toxes[k - 1], 0, nullptr);
+
+        for (unsigned j = 0; j < 10; ++j) {
+            for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+                tox_iterate(toxes[i], &tox_index[i]);
+            }
+
+            c_sleep(50);
+        }
+
+        for (unsigned i = 0; i < k - 1; ++i) {
+            uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
+            ck_assert_msg(peer_count == (k - 1), "\n\tBad number of group peers (post check)."
+                          "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
+                          (k - 1), i, peer_count);
+        }
     }
 }
 
@@ -203,48 +252,9 @@ static void test_many_group(void)
 
     printf("group connected, took %d seconds\n", (int)(time(nullptr) - cur_time));
 
-    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
-        tox_callback_conference_message(toxes[i], &handle_conference_message);
-    }
+    run_conference_tests(toxes, tox_index);
 
-    TOX_ERR_CONFERENCE_SEND_MESSAGE err;
-    ck_assert_msg(
-        tox_conference_send_message(
-            toxes[random_u32() % NUM_GROUP_TOX], 0, TOX_MESSAGE_TYPE_NORMAL, (const uint8_t *)GROUP_MESSAGE,
-            sizeof(GROUP_MESSAGE) - 1, &err) != 0, "Failed to send group message.");
-    ck_assert_msg(
-        err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "Failed to send group message.");
-    num_recv = 0;
-
-    for (unsigned j = 0; j < 20; ++j) {
-        for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
-            tox_iterate(toxes[i], &tox_index[i]);
-        }
-
-        c_sleep(25);
-    }
-
-    c_sleep(25);
-    ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
-
-    for (unsigned k = NUM_GROUP_TOX; k != 0 ; --k) {
-        tox_conference_delete(toxes[k - 1], 0, nullptr);
-
-        for (unsigned j = 0; j < 10; ++j) {
-            for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
-                tox_iterate(toxes[i], &tox_index[i]);
-            }
-
-            c_sleep(50);
-        }
-
-        for (unsigned i = 0; i < k - 1; ++i) {
-            uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
-            ck_assert_msg(peer_count == (k - 1), "\n\tBad number of group peers (post check)."
-                          "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
-                          (k - 1), i, peer_count);
-        }
-    }
+    printf("tearing down toxes\n");
 
     for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
         tox_kill(toxes[i]);

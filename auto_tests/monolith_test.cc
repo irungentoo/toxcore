@@ -33,6 +33,10 @@ namespace bootstrap_test {
 int main(void);
 #include "bootstrap_test.c"
 }  // namespace bootstrap_test
+namespace conference_simple_test {
+int main(void);
+#include "conference_simple_test.c"
+}  // namespace conference_simple_test
 namespace conference_test {
 int main(void);
 #include "conference_test.c"
@@ -101,10 +105,6 @@ namespace set_status_message_test {
 int main(void);
 #include "set_status_message_test.c"
 }  // namespace set_status_message_test
-namespace simple_conference_test {
-int main(void);
-#include "simple_conference_test.c"
-}  // namespace simple_conference_test
 namespace skeleton_test {
 int main(void);
 #include "skeleton_test.c"
