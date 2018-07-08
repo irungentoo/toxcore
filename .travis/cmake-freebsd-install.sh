@@ -30,7 +30,7 @@ mkdir -p /opt/freebsd/cache
 cd /opt/freebsd/cache
 
 # Make sure to update DL_SHA512 when bumping the version
-FREEBSD_VERSION="11.1"
+FREEBSD_VERSION="11.2"
 IMAGE_NAME=FreeBSD-${FREEBSD_VERSION}-RELEASE-amd64.raw
 
 # Sends keys to the VM as they are
@@ -56,7 +56,7 @@ start_vm()
   # Start emulator. 2000mb RAM should be enough, right? The build machine has over 7gb.
   screen -L -S $SCREEN_SESSION -d -m \
     qemu-system-x86_64 -curses -m 2000 -smp $NPROC \
-    -net user,hostfwd=tcp::${SSH_PORT}-:22 -net nic $IMAGE_NAME
+    -net user,hostfwd=tcp::${SSH_PORT}-:22 -net nic "$IMAGE_NAME"
 
   # Wait for the boot screen options
   wait_for "Autoboot in"
@@ -73,7 +73,8 @@ start_vm()
 stop_vm()
 {
   # Turn it off
-  RUN poweroff
+  send_keys 'poweroff
+'
 
   # Wait for qemu process to terminate
   while ps aux | grep qemu | grep -vq grep
