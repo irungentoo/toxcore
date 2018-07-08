@@ -29,6 +29,7 @@
 
 #include "LAN_discovery.h"
 #include "logger.h"
+#include "mono_time.h"
 #include "network.h"
 #include "ping.h"
 #include "state.h"

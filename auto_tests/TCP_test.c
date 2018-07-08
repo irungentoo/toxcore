@@ -18,6 +18,7 @@
 #include "../toxcore/TCP_server.h"
 
 #include "../toxcore/crypto_core.h"
+#include "../toxcore/mono_time.h"
 #include "../toxcore/util.h"
 
 #include "helpers.h"

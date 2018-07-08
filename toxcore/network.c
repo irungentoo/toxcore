@@ -170,6 +170,7 @@ static int inet_pton(int family, const char *addrString, void *addrbuf)
 #include <string.h>
 
 #include "logger.h"
+#include "mono_time.h"
 #include "util.h"
 
 // Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
@@ -417,74 +418,6 @@ int set_socket_dualstack(Socket sock)
     return setsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&ipv6only, sizeof(ipv6only)) == 0;
 }
 
-
-/*  return current UNIX time in microseconds (us). */
-static uint64_t current_time_actual(void)
-{
-    uint64_t time;
-#ifdef OS_WIN32
-    /* This probably works fine */
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    time = ft.dwHighDateTime;
-    time <<= 32;
-    time |= ft.dwLowDateTime;
-    time -= 116444736000000000ULL;
-    return time / 10;
-#else
-    struct timeval a;
-    gettimeofday(&a, nullptr);
-    time = 1000000ULL * a.tv_sec + a.tv_usec;
-    return time;
-#endif
-}
-
-
-#ifdef OS_WIN32
-static uint64_t last_monotime;
-static uint64_t add_monotime;
-#endif
-
-/* return current monotonic time in milliseconds (ms). */
-uint64_t current_time_monotonic(void)
-{
-    uint64_t time;
-#ifdef OS_WIN32
-    uint64_t old_add_monotime = add_monotime;
-    time = (uint64_t)GetTickCount() + add_monotime;
-
-    /* Check if time has decreased because of 32 bit wrap from GetTickCount(), while avoiding false positives from race
-     * conditions when multiple threads call this function at once */
-    if (time + 0x10000 < last_monotime) {
-        uint32_t add = ~0;
-        /* use old_add_monotime rather than simply incrementing add_monotime, to handle the case that many threads
-         * simultaneously detect an overflow */
-        add_monotime = old_add_monotime + add;
-        time += add;
-    }
-
-    last_monotime = time;
-#else
-    struct timespec monotime;
-#if defined(__linux__) && defined(CLOCK_MONOTONIC_RAW)
-    clock_gettime(CLOCK_MONOTONIC_RAW, &monotime);
-#elif defined(__APPLE__)
-    clock_serv_t muhclock;
-    mach_timespec_t machtime;
-
-    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &muhclock);
-    clock_get_time(muhclock, &machtime);
-    mach_port_deallocate(mach_task_self(), muhclock);
-
-    monotime.tv_sec = machtime.tv_sec;
-    monotime.tv_nsec = machtime.tv_nsec;
-#else
-    clock_gettime(CLOCK_MONOTONIC, &monotime);
-#endif
-    time = 1000ULL * monotime.tv_sec + (monotime.tv_nsec / 1000000ULL);
-#endif
-    return time;
-}
 
 static uint32_t data_0(uint16_t buflen, const uint8_t *buffer)
 {

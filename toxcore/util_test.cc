@@ -4,28 +4,7 @@
 
 #include <gtest/gtest.h>
 
-TEST(Util, UnixTimeIncreasesOverTime) {
-  unix_time_update();
-  uint64_t const start = unix_time();
-
-  while (start == unix_time()) {
-    unix_time_update();
-  }
-
-  uint64_t const end = unix_time();
-  EXPECT_GT(end, start);
-}
-
-TEST(Util, IsTimeout) {
-  uint64_t const start = unix_time();
-  EXPECT_FALSE(is_timeout(start, 1));
-
-  while (start == unix_time()) {
-    unix_time_update();
-  }
-
-  EXPECT_TRUE(is_timeout(start, 1));
-}
+namespace {
 
 TEST(Util, TwoRandomIdsAreNotEqual) {
   uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE];
@@ -49,3 +28,5 @@ TEST(Util, IdCopyMakesKeysEqual) {
 
   EXPECT_TRUE(id_equal(pk1, pk2));
 }
+
+}  // namespace

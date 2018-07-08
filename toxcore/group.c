@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mono_time.h"
 #include "util.h"
 
 /* return 1 if the groupnumber is not valid.

@@ -28,14 +28,12 @@ RUN $CMAKE                                      \
   -B$BUILD_DIR                                  \
   -H.                                           \
   -DCMAKE_INSTALL_PREFIX:PATH=$CURDIR/_install  \
-  -DASAN=ON                                     \
   -DDEBUG=ON                                    \
   -DMUST_BUILD_TOXAV=ON                         \
   -DSTRICT_ABI=ON                               \
   -DTEST_TIMEOUT_SECONDS=120                    \
   -DTRACE=ON                                    \
-  -DUSE_IPV6=$USE_IPV6                          \
-  $CMAKE_EXTRA_FLAGS
+  -DUSE_IPV6=$USE_IPV6
 
 export CTEST_OUTPUT_ON_FAILURE=1
 

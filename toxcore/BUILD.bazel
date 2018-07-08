@@ -59,6 +59,22 @@ cc_library(
 )
 
 cc_library(
+    name = "mono_time",
+    srcs = ["mono_time.c"],
+    hdrs = ["mono_time.h"],
+    deps = [":ccompat"],
+)
+
+cc_test(
+    name = "mono_time_test",
+    srcs = ["mono_time_test.cc"],
+    deps = [
+        ":mono_time",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "network",
     srcs = [
         "network.c",
@@ -77,6 +93,7 @@ cc_library(
         ":ccompat",
         ":crypto_core",
         ":logger",
+        ":mono_time",
     ],
 )
 

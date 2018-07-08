@@ -171,6 +171,8 @@ set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/logger.c
   toxcore/logger.h
+  toxcore/mono_time.c
+  toxcore/mono_time.h
   toxcore/network.c
   toxcore/network.h
   toxcore/state.c
@@ -343,6 +345,7 @@ include(CompileGTest)
 unit_test(toxav ring_buffer)
 unit_test(toxav rtp)
 unit_test(toxcore crypto_core)
+unit_test(toxcore mono_time)
 unit_test(toxcore util)
 
 ################################################################################

@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include "LAN_discovery.h"
+#include "mono_time.h"
 #include "util.h"
 
 #define PING_ID_TIMEOUT ONION_ANNOUNCE_TIMEOUT

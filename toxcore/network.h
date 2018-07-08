@@ -381,9 +381,6 @@ int set_socket_reuseaddr(Socket sock);
  */
 int set_socket_dualstack(Socket sock);
 
-/* return current monotonic time in milliseconds (ms). */
-uint64_t current_time_monotonic(void);
-
 /* Basic network functions: */
 
 /* Function to send packet(data) of length length to ip_port. */

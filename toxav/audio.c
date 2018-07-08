@@ -29,6 +29,7 @@
 #include "rtp.h"
 
 #include "../toxcore/logger.h"
+#include "../toxcore/mono_time.h"
 
 static struct JitterBuffer *jbuf_new(uint32_t capacity);
 static void jbuf_clear(struct JitterBuffer *q);

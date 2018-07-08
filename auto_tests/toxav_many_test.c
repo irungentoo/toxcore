@@ -176,6 +176,8 @@ static void *call_thread(void *pd)
 
     printf("Closing thread\n");
     pthread_exit(nullptr);
+
+    return nullptr;
 }
 
 static void test_av_three_calls(void)

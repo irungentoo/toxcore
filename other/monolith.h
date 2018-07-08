@@ -13,6 +13,7 @@
 #include "../toxcore/group.c"
 #include "../toxcore/list.c"
 #include "../toxcore/logger.c"
+#include "../toxcore/mono_time.c"
 #include "../toxcore/network.c"
 #include "../toxcore/net_crypto.c"
 #include "../toxcore/onion.c"

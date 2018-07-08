@@ -518,6 +518,11 @@ static void set_friend_error(int32_t ret, Tox_Err_Friend_Add *error)
         case FAERR_NOMEM:
             SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_MALLOC);
             break;
+
+        default:
+            /* can't happen */
+            assert(!"impossible: unknown friend-add error");
+            break;
     }
 }
 
@@ -826,7 +831,9 @@ static void set_message_error(int ret, Tox_Err_Friend_Send_Message *error)
             break;
 
         case -5:
+        default:
             /* can't happen */
+            assert(!"impossible: unknown send-message error");
             break;
     }
 }

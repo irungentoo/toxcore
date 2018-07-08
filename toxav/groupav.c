@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "../toxcore/logger.h"
+#include "../toxcore/mono_time.h"
 #include "../toxcore/util.h"
 
 #define GROUP_JBUF_SIZE 6

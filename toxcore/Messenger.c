@@ -34,6 +34,7 @@
 #include <time.h>
 
 #include "logger.h"
+#include "mono_time.h"
 #include "network.h"
 #include "state.h"
 #include "util.h"
@@ -1764,8 +1765,8 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
 
             if (position >= ft->size) {
                 LOGGER_DEBUG(m->log,
-                             "file control (friend %d, file %d): seek position %lld exceeds file size %lld",
-                             friendnumber, filenumber, (unsigned long long)position, (unsigned long long)ft->size);
+                             "file control (friend %d, file %d): seek position %ld exceeds file size %ld",
+                             friendnumber, filenumber, (unsigned long)position, (unsigned long)ft->size);
                 return -1;
             }
 

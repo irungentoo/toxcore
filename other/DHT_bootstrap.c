@@ -33,6 +33,7 @@
 #include "../toxcore/LAN_discovery.h"
 #include "../toxcore/friend_requests.h"
 #include "../toxcore/logger.h"
+#include "../toxcore/mono_time.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 

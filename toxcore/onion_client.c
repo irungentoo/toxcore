@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "LAN_discovery.h"
+#include "mono_time.h"
 #include "util.h"
 
 /* defines for the array size and

@@ -39,6 +39,7 @@
 #include <unistd.h>
 #endif
 
+#include "mono_time.h"
 #include "util.h"
 
 typedef struct TCP_Secure_Connection {

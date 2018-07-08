@@ -45,7 +45,7 @@ extern "C" {
 #include "../toxav/ring_buffer.c"
 
 #include "../toxav/toxav.h"
-#include "../toxcore/network.h" /* current_time_monotonic() */
+#include "../toxcore/mono_time.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 

@@ -32,6 +32,7 @@
 
 #include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
+#include "../toxcore/mono_time.h"
 #include "../toxcore/util.h"
 
 enum {

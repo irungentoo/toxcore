@@ -38,6 +38,7 @@
 #include "../../../toxcore/LAN_discovery.h"
 #include "../../../toxcore/TCP_server.h"
 #include "../../../toxcore/logger.h"
+#include "../../../toxcore/mono_time.h"
 #include "../../../toxcore/onion_announce.h"
 #include "../../../toxcore/util.h"
 

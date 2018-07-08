@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "mono_time.h"
 #include "util.h"
 
 #define PORTS_PER_DISCOVERY 10

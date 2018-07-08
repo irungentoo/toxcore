@@ -8,7 +8,6 @@ export PKG_CONFIG_PATH=$CACHE_DIR/lib/pkgconfig
 export ASTYLE=$CACHE_DIR/astyle/build/gcc/bin/astyle
 export CFLAGS="-O3 -DTRAVIS_ENV=1"
 export CXXFLAGS="-O3 -DTRAVIS_ENV=1"
-export CMAKE_EXTRA_FLAGS="-DERROR_ON_WARNING=ON"
 export MAKE=make
 
 BUILD_DIR=_build
