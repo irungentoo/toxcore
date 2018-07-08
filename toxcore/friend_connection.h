@@ -101,6 +101,10 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  */
 int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
 
+typedef int fc_status_cb(void *object, int id, uint8_t status, void *userdata);
+typedef int fc_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+typedef int fc_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
  *
@@ -108,9 +112,9 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
  * return -1 on failure
  */
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
-                                int (*status_callback)(void *object, int id, uint8_t status, void *userdata),
-                                int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t len, void *userdata),
-                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
+                                fc_status_cb *status_callback,
+                                fc_data_cb *data_callback,
+                                fc_lossy_data_cb *lossy_data_callback,
                                 void *object, int number);
 
 /* return the crypt_connection_id for the connection.
@@ -144,12 +148,14 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id);
 int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
                                uint16_t length);
 
+typedef int fr_request_cb(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len,
+                          void *userdata);
+
 /* Set friend request callback.
  *
  * This function will be called every time a friend request is received.
  */
-void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint16_t, void *), void *object);
+void set_friend_request_callback(Friend_Connections *fr_c, fr_request_cb *fr_request_callback, void *object);
 
 /* Create new friend_connections instance. */
 Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled);

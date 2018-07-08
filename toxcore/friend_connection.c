@@ -35,29 +35,33 @@
 
 #define PORTS_PER_DISCOVERY 10
 
-typedef struct {
+typedef struct Friend_Conn_Callbacks {
+    fc_status_cb *status_callback;
+    fc_data_cb *data_callback;
+    fc_lossy_data_cb *lossy_data_callback;
+
+    void *callback_object;
+    int callback_id;
+} Friend_Conn_Callbacks;
+
+typedef struct Friend_Conn {
     uint8_t status;
 
     uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t dht_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint16_t dht_lock;
     IP_Port dht_ip_port;
-    uint64_t dht_pk_lastrecv, dht_ip_port_lastrecv;
+    uint64_t dht_pk_lastrecv;
+    uint64_t dht_ip_port_lastrecv;
 
     int onion_friendnum;
     int crypt_connection_id;
 
-    uint64_t ping_lastrecv, ping_lastsent;
+    uint64_t ping_lastrecv;
+    uint64_t ping_lastsent;
     uint64_t share_relays_lastsent;
 
-    struct {
-        int (*status_callback)(void *object, int id, uint8_t status, void *userdata);
-        int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-        int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
-
-        void *callback_object;
-        int callback_id;
-    } callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
+    Friend_Conn_Callbacks callbacks[MAX_FRIEND_CONNECTION_CALLBACKS];
 
     uint16_t lock_count;
 
@@ -76,12 +80,11 @@ struct Friend_Connections {
     Friend_Conn *conns;
     uint32_t num_cons;
 
-    int (*fr_request_callback)(void *object, const uint8_t *source_pubkey, const uint8_t *data, uint16_t len,
-                               void *userdata);
+    fr_request_cb *fr_request_callback;
     void *fr_request_object;
 
-    uint64_t last_LANdiscovery;
-    uint16_t next_LANport;
+    uint64_t last_lan_discovery;
+    uint16_t next_lan_port;
 
     bool local_discovery_enabled;
 };
@@ -375,17 +378,17 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
         return -1;
     }
 
-    bool call_cb = 0;
+    bool status_changed = 0;
 
     if (status) {  /* Went online. */
-        call_cb = 1;
+        status_changed = 1;
         friend_con->status = FRIENDCONN_STATUS_CONNECTED;
         friend_con->ping_lastrecv = unix_time();
         friend_con->share_relays_lastsent = 0;
         onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     } else {  /* Went offline. */
         if (friend_con->status != FRIENDCONN_STATUS_CONNECTING) {
-            call_cb = 1;
+            status_changed = 1;
             friend_con->dht_pk_lastrecv = unix_time();
             onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
         }
@@ -395,7 +398,7 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
         friend_con->hosting_tcp_relay = 0;
     }
 
-    if (call_cb) {
+    if (status_changed) {
         unsigned int i;
 
         for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
@@ -471,7 +474,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
             return -1;
         }
 
-        for (int j = 0; j < n; j++) {
+        for (int j = 0; j < n; ++j) {
             friend_add_tcp_relay(fr_c, number, nodes[j].ip_port, nodes[j].public_key);
         }
 
@@ -686,9 +689,9 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  * return -1 on failure
  */
 int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
-                                int (*status_callback)(void *object, int id, uint8_t status, void *userdata),
-                                int (*data_callback)(void *object, int id, const uint8_t *data, uint16_t len, void *userdata),
-                                int (*lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
+                                fc_status_cb *status_callback,
+                                fc_data_cb *data_callback,
+                                fc_lossy_data_cb *lossy_data_callback,
                                 void *object, int number)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
@@ -800,8 +803,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
  *
  * This function will be called every time a friend request packet is received.
  */
-void set_friend_request_callback(Friend_Connections *fr_c, int (*fr_request_callback)(void *, const uint8_t *,
-                                 const uint8_t *, uint16_t, void *), void *object)
+void set_friend_request_callback(Friend_Connections *fr_c, fr_request_cb *fr_request_callback, void *object)
 {
     fr_c->fr_request_callback = fr_request_callback;
     fr_c->fr_request_object = object;
@@ -864,7 +866,7 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
     temp->onion_c = onion_c;
     temp->local_discovery_enabled = local_discovery_enabled;
     // Don't include default port in port range
-    temp->next_LANport = TOX_PORTRANGE_FROM + 1;
+    temp->next_lan_port = TOX_PORTRANGE_FROM + 1;
 
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
@@ -876,10 +878,10 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
 }
 
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
-static void LANdiscovery(Friend_Connections *fr_c)
+static void lan_discovery(Friend_Connections *fr_c)
 {
-    if (fr_c->last_LANdiscovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
-        const uint16_t first = fr_c->next_LANport;
+    if (fr_c->last_lan_discovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+        const uint16_t first = fr_c->next_lan_port;
         uint16_t last = first + PORTS_PER_DISCOVERY;
         last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
 
@@ -887,13 +889,13 @@ static void LANdiscovery(Friend_Connections *fr_c)
         lan_discovery_send(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
 
         // And check some extra ports
-        for (uint16_t port = first; port < last; port++) {
+        for (uint16_t port = first; port < last; ++port) {
             lan_discovery_send(net_htons(port), fr_c->dht);
         }
 
         // Don't include default port in port range
-        fr_c->next_LANport = last != TOX_PORTRANGE_TO ? last : TOX_PORTRANGE_FROM + 1;
-        fr_c->last_LANdiscovery = unix_time();
+        fr_c->next_lan_port = last != TOX_PORTRANGE_TO ? last : TOX_PORTRANGE_FROM + 1;
+        fr_c->last_lan_discovery = unix_time();
     }
 }
 
@@ -945,7 +947,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
     }
 
     if (fr_c->local_discovery_enabled) {
-        LANdiscovery(fr_c);
+        lan_discovery(fr_c);
     }
 }
 
