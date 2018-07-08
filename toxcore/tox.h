@@ -1833,6 +1833,14 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback);
  */
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length);
 
+/**
+ * A list of pre-defined file kinds. Toxcore itself does not behave
+ * differently for different file kinds. These are a hint to the client
+ * telling it what use the sender intended for the file. The `kind` parameter
+ * in the send function and recv callback are `uint32_t`, not TOX_FILE_KIND, because
+ * clients can invent their own file kind. Unknown file kinds should be
+ * treated as TOX_FILE_KIND_DATA.
+ */
 enum TOX_FILE_KIND {
 
     /**
@@ -2295,7 +2303,7 @@ void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *callba
  *   transfer request.
  * @param file_number The friend-specific file number the data received is
  *   associated with.
- * @param kind The meaning of the file to be sent.
+ * @param kind The meaning of the file that was sent.
  * @param file_size Size in bytes of the file the client wants to send,
  *   UINT64_MAX if unknown or streaming.
  * @param filename Name of the file. Does not need to be the actual name. This

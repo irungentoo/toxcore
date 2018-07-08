@@ -1647,6 +1647,14 @@ static bool hash(uint8_t[HASH_LENGTH] hash, const uint8_t[length] data);
 
 namespace file {
 
+  /**
+   * A list of pre-defined file kinds. Toxcore itself does not behave
+   * differently for different file kinds. These are a hint to the client
+   * telling it what use the sender intended for the file. The `kind` parameter
+   * in the send function and recv callback are `uint32_t`, not $KIND, because
+   * clients can invent their own file kind. Unknown file kinds should be
+   * treated as ${KIND.DATA}.
+   */
   enum KIND {
     /**
      * Arbitrary file data. Clients can choose to handle it based on the file name
@@ -2031,7 +2039,7 @@ namespace file {
      *   transfer request.
      * @param file_number The friend-specific file number the data received is
      *   associated with.
-     * @param kind The meaning of the file to be sent.
+     * @param kind The meaning of the file that was sent.
      * @param file_size Size in bytes of the file the client wants to send,
      *   UINT64_MAX if unknown or streaming.
      * @param filename Name of the file. Does not need to be the actual name. This
