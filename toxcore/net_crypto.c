@@ -35,19 +35,19 @@
 
 #include "util.h"
 
-typedef struct {
+typedef struct Packet_Data {
     uint64_t sent_time;
     uint16_t length;
     uint8_t data[MAX_CRYPTO_DATA_SIZE];
 } Packet_Data;
 
-typedef struct {
+typedef struct Packets_Array {
     Packet_Data *buffer[CRYPTO_PACKET_BUFFER_SIZE];
     uint32_t  buffer_start;
     uint32_t  buffer_end; /* packet numbers in array: {buffer_start, buffer_end) */
 } Packets_Array;
 
-typedef struct {
+typedef struct Crypto_Connection {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The real public key of the peer. */
     uint8_t recv_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of received packets. */
     uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
@@ -62,7 +62,7 @@ typedef struct {
      * 3 if connection is not confirmed yet (we have received a handshake but no data packets yet),
      * 4 if the connection is established.
      */
-    CRYPTO_CONN_STATE status;
+    Crypto_Conn_State status;
     uint64_t cookie_request_number; /* number used in the cookie request packets for this connection */
     uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer */
 
@@ -81,15 +81,15 @@ typedef struct {
     Packets_Array send_array;
     Packets_Array recv_array;
 
-    int (*connection_status_callback)(void *object, int id, uint8_t status, void *userdata);
+    connection_status_cb *connection_status_callback;
     void *connection_status_callback_object;
     int connection_status_callback_id;
 
-    int (*connection_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+    connection_data_cb *connection_data_callback;
     void *connection_data_callback_object;
     int connection_data_callback_id;
 
-    int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+    connection_lossy_data_cb *connection_lossy_data_callback;
     void *connection_lossy_data_callback_object;
     int connection_lossy_data_callback_id;
 
@@ -110,10 +110,12 @@ typedef struct {
     uint64_t last_packets_left_requested_set;
     double last_packets_left_requested_rem;
 
-    uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE], last_sendqueue_counter;
-    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE],
-         last_num_packets_resent[CONGESTION_LAST_SENT_ARRAY_SIZE];
-    uint32_t packets_sent, packets_resent;
+    uint32_t last_sendqueue_size[CONGESTION_QUEUE_ARRAY_SIZE];
+    uint32_t last_sendqueue_counter;
+    long signed int last_num_packets_sent[CONGESTION_LAST_SENT_ARRAY_SIZE];
+    long signed int last_num_packets_resent[CONGESTION_LAST_SENT_ARRAY_SIZE];
+    uint32_t packets_sent;
+    uint32_t packets_resent;
     uint64_t last_congestion_event;
     uint64_t rtt_time;
 
@@ -124,7 +126,7 @@ typedef struct {
 
     pthread_mutex_t mutex;
 
-    void (*dht_pk_callback)(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
+    dht_pk_cb *dht_pk_callback;
     void *dht_pk_callback_object;
     uint32_t dht_pk_callback_number;
 } Crypto_Connection;
@@ -150,7 +152,7 @@ struct Net_Crypto {
     /* The secret key used for cookies */
     uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
 
-    int (*new_connection_callback)(void *object, New_Connection *n_c);
+    new_connection_cb *new_connection_callback;
     void *new_connection_callback_object;
 
     /* The current optimal sleep time */
@@ -1863,8 +1865,7 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
  *
  * n_c is only valid for the duration of the function call.
  */
-void new_connection_handler(Net_Crypto *c, int (*new_connection_callback)(void *object, New_Connection *n_c),
-                            void *object)
+void new_connection_handler(Net_Crypto *c, new_connection_cb *new_connection_callback, void *object)
 {
     c->new_connection_callback = new_connection_callback;
     c->new_connection_callback_object = object;
@@ -2267,7 +2268,7 @@ static void do_tcp(Net_Crypto *c, void *userdata)
  * return 0 on success.
  */
 int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
-                              int (*connection_status_callback)(void *object, int id, uint8_t status, void *userdata), void *object, int id)
+                              connection_status_cb *connection_status_callback, void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -2289,8 +2290,8 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*connection_data_callback)(void *object,
-                            int id, const uint8_t *data, uint16_t length, void *userdata), void *object, int id)
+int connection_data_handler(const Net_Crypto *c, int crypt_connection_id,
+                            connection_data_cb *connection_data_callback, void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -2313,7 +2314,7 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id, int (*
  * return 0 on success.
  */
 int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
-                                  int (*connection_lossy_data_callback)(void *object, int id, const uint8_t *data, uint16_t length, void *userdata),
+                                  connection_lossy_data_cb *connection_lossy_data_callback,
                                   void *object, int id)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
@@ -2339,8 +2340,7 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, void (*function)(void *data, int32_t number,
-                       const uint8_t *dht_public_key, void *userdata), void *object, uint32_t number)
+int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, dht_pk_cb *function, void *object, uint32_t number)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -2523,9 +2523,8 @@ static void send_crypto_packets(Net_Crypto *c)
                 bool direct_connected = 0;
                 crypto_connection_status(c, i, &direct_connected, nullptr);
 
-                if (direct_connected && conn->last_tcp_sent + CONGESTION_EVENT_TIMEOUT > temp_time) {
-                    /* When switching from TCP to UDP, don't change the packet send rate for CONGESTION_EVENT_TIMEOUT ms. */
-                } else {
+                /* When switching from TCP to UDP, don't change the packet send rate for CONGESTION_EVENT_TIMEOUT ms. */
+                if (!(direct_connected && conn->last_tcp_sent + CONGESTION_EVENT_TIMEOUT > temp_time)) {
                     long signed int total_sent = 0, total_resent = 0;
 
                     // TODO(irungentoo): use real delay
@@ -2586,8 +2585,10 @@ static void send_crypto_packets(Net_Crypto *c)
             }
 
             if (conn->last_packets_left_set == 0 || conn->last_packets_left_requested_set == 0) {
-                conn->last_packets_left_requested_set = conn->last_packets_left_set = temp_time;
-                conn->packets_left_requested = conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
+                conn->last_packets_left_requested_set = temp_time;
+                conn->last_packets_left_set = temp_time;
+                conn->packets_left_requested = CRYPTO_MIN_QUEUE_LENGTH;
+                conn->packets_left = CRYPTO_MIN_QUEUE_LENGTH;
             } else {
                 if (((uint64_t)((1000.0 / conn->packet_send_rate) + 0.5) + conn->last_packets_left_set) <= temp_time) {
                     double n_packets = conn->packet_send_rate * (((double)(temp_time - conn->last_packets_left_set)) / 1000.0);
@@ -2740,7 +2741,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     if (congestion_control) {
         --conn->packets_left;
         --conn->packets_left_requested;
-        conn->packets_sent++;
+        ++conn->packets_sent;
     }
 
     return ret;
@@ -2868,7 +2869,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-CRYPTO_CONN_STATE crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
+Crypto_Conn_State crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
         unsigned int *online_tcp_relays)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
@@ -3002,6 +3003,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
             // TODO(irungentoo): add a timeout here?
+            do_timeout_here();
         }
 
 #endif
