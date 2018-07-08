@@ -655,7 +655,7 @@ static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, ui
     return 0;
 }
 
-void set_callback_handle_recv_1(Onion *onion, int (*function)(void *, IP_Port, const uint8_t *, uint16_t), void *object)
+void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *object)
 {
     onion->recv_1_function = function;
     onion->callback_object = object;
