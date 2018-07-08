@@ -39,4 +39,5 @@ jobs:
              -DTEST_TIMEOUT_SECONDS=120
              -DUSE_IPV6=OFF
     - run: cd _build && ninja install -j$(nproc)
-    - run: cd _build && ctest -j50 --output-on-failure
+    - run: cd _build && ctest -j50 --output-on-failure ||
+                        ctest -j50 --output-on-failure --rerun-failed

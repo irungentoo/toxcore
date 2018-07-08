@@ -66,7 +66,9 @@ ACSession *ac_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_au
         goto BASE_CLEANUP;
     }
 
-    if (!(ac->j_buf = jbuf_new(AUDIO_JITTERBUFFER_COUNT))) {
+    ac->j_buf = jbuf_new(AUDIO_JITTERBUFFER_COUNT);
+
+    if (ac->j_buf == nullptr) {
         LOGGER_WARNING(log, "Jitter buffer creaton failed!");
         opus_decoder_destroy(ac->decoder);
         goto BASE_CLEANUP;
@@ -138,12 +140,13 @@ void ac_iterate(ACSession *ac)
     /* Enough space for the maximum frame size (120 ms 48 KHz stereo audio) */
     int16_t temp_audio_buffer[AUDIO_MAX_BUFFER_SIZE_PCM16 * AUDIO_MAX_CHANNEL_COUNT];
 
-    struct RTPMessage *msg;
-    int rc = 0;
-
     pthread_mutex_lock(ac->queue_mutex);
+    struct JitterBuffer *const j_buf = (struct JitterBuffer *)ac->j_buf;
 
-    while ((msg = jbuf_read((struct JitterBuffer *)ac->j_buf, &rc)) || rc == 2) {
+    int rc = 0;
+    struct RTPMessage *msg = jbuf_read(j_buf, &rc);
+
+    for (; msg != nullptr || rc == 2; msg = jbuf_read(j_buf, &rc)) {
         pthread_mutex_unlock(ac->queue_mutex);
 
         if (rc == 2) {
