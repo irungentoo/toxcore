@@ -32,22 +32,26 @@
 
 #include "util.h"
 
+/* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
+ * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
+ */
+#define MAX_RECEIVED_STORED 32
+
+struct Received_Requests {
+    uint8_t requests[MAX_RECEIVED_STORED][CRYPTO_PUBLIC_KEY_SIZE];
+    uint16_t requests_index;
+};
+
 struct Friend_Requests {
     uint32_t nospam;
-    void (*handle_friendrequest)(void *, const uint8_t *, const uint8_t *, size_t, void *);
+    fr_friend_request_cb *handle_friendrequest;
     uint8_t handle_friendrequest_isset;
     void *handle_friendrequest_object;
 
-    int (*filter_function)(const uint8_t *, void *);
+    filter_function_cb *filter_function;
     void *filter_function_userdata;
-    /* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
-     * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
-     */
 
-#define MAX_RECEIVED_STORED 32
-
-    uint8_t received_requests[MAX_RECEIVED_STORED][CRYPTO_PUBLIC_KEY_SIZE];
-    uint16_t received_requests_index;
+    struct Received_Requests received;
 };
 
 /* Set and get the nospam variable used to prevent one type of friend request spam. */
@@ -63,8 +67,7 @@ uint32_t get_nospam(const Friend_Requests *fr)
 
 
 /* Set the function that will be executed when a friend request is received. */
-void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const uint8_t *, const uint8_t *, size_t,
-                            void *), void *object)
+void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object)
 {
     fr->handle_friendrequest = function;
     fr->handle_friendrequest_isset = 1;
@@ -72,7 +75,7 @@ void callback_friendrequest(Friend_Requests *fr, void (*function)(void *, const 
 }
 
 /* Set the function used to check if a friend request should be displayed to the user or not. */
-void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata)
+void set_filter_function(Friend_Requests *fr, filter_function_cb *function, void *userdata)
 {
     fr->filter_function = function;
     fr->filter_function_userdata = userdata;
@@ -81,12 +84,12 @@ void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, v
 /* Add to list of received friend requests. */
 static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 {
-    if (fr->received_requests_index >= MAX_RECEIVED_STORED) {
-        fr->received_requests_index = 0;
+    if (fr->received.requests_index >= MAX_RECEIVED_STORED) {
+        fr->received.requests_index = 0;
     }
 
-    id_copy(fr->received_requests[fr->received_requests_index], real_pk);
-    ++fr->received_requests_index;
+    id_copy(fr->received.requests[fr->received.requests_index], real_pk);
+    ++fr->received.requests_index;
 }
 
 /* Check if a friend request was already received.
@@ -97,7 +100,7 @@ static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
-        if (id_equal(fr->received_requests[i], real_pk)) {
+        if (id_equal(fr->received.requests[i], real_pk)) {
             return true;
         }
     }
@@ -105,7 +108,7 @@ static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
     return false;
 }
 
-/* Remove real pk from received_requests list.
+/* Remove real pk from received.requests list.
  *
  *  return 0 if it removed it successfully.
  *  return -1 if it didn't find it.
@@ -113,8 +116,8 @@ static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
-        if (id_equal(fr->received_requests[i], real_pk)) {
-            crypto_memzero(fr->received_requests[i], CRYPTO_PUBLIC_KEY_SIZE);
+        if (id_equal(fr->received.requests[i], real_pk)) {
+            crypto_memzero(fr->received.requests[i], CRYPTO_PUBLIC_KEY_SIZE);
             return 0;
         }
     }

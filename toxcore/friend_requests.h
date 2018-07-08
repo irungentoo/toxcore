@@ -48,11 +48,13 @@ typedef void fr_friend_request_cb(void *, const uint8_t *, const uint8_t *, size
  */
 void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object);
 
+typedef int filter_function_cb(const uint8_t *, void *);
+
 /* Set the function used to check if a friend request should be displayed to the user or not.
  * Function format is int function(uint8_t * public_key, void * userdata)
  * It must return 0 if the request is ok (anything else if it is bad.)
  */
-void set_filter_function(Friend_Requests *fr, int (*function)(const uint8_t *, void *), void *userdata);
+void set_filter_function(Friend_Requests *fr, filter_function_cb *function, void *userdata);
 
 /* Sets up friendreq packet handlers. */
 void friendreq_init(Friend_Requests *fr, Friend_Connections *fr_c);
