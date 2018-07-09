@@ -45,6 +45,7 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
                 break;
 
             case STATE_LOAD_STATUS_ERROR:
+                LOGGER_ERROR(log, "Error occcured in state file (type: %u).", type);
                 return -1;
 
             case STATE_LOAD_STATUS_END:
@@ -58,6 +59,15 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
     }
 
     return 0;
+}
+
+uint8_t *state_write_section_header(uint8_t *data, uint16_t cookie_type, uint32_t len, uint32_t section_type)
+{
+    host_to_lendian32(data, len);
+    data += sizeof(uint32_t);
+    host_to_lendian32(data, (host_tolendian16(cookie_type) << 16) | host_tolendian16(section_type));
+    data += sizeof(uint32_t);
+    return data;
 }
 
 uint16_t lendian_to_host16(uint16_t lendian)

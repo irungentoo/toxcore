@@ -41,6 +41,7 @@
 
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
+static void m_register_default_plugins(Messenger *m);
 
 // friend_not_valid determines if the friendnumber passed is valid in the Messenger object
 static uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
@@ -2083,6 +2084,8 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
 
     m->lastdump = 0;
 
+    m_register_default_plugins(m);
+
     if (error) {
         *error = MESSENGER_ERROR_NONE;
     }
@@ -2118,6 +2121,8 @@ void kill_messenger(Messenger *m)
     logger_kill(m->log);
     free(m->friendlist);
     friendreq_kill(m->fr);
+
+    free(m->options.state_plugins);
     free(m);
 }
 
@@ -2737,15 +2742,6 @@ void do_messenger(Messenger *m, void *userdata)
 #define MESSENGER_STATE_COOKIE_GLOBAL 0x15ed1b1f
 
 #define MESSENGER_STATE_COOKIE_TYPE      0x01ce
-#define MESSENGER_STATE_TYPE_NOSPAMKEYS    1
-#define MESSENGER_STATE_TYPE_DHT           2
-#define MESSENGER_STATE_TYPE_FRIENDS       3
-#define MESSENGER_STATE_TYPE_NAME          4
-#define MESSENGER_STATE_TYPE_STATUSMESSAGE 5
-#define MESSENGER_STATE_TYPE_STATUS        6
-#define MESSENGER_STATE_TYPE_TCP_RELAY     10
-#define MESSENGER_STATE_TYPE_PATH_NODE     11
-#define MESSENGER_STATE_TYPE_END           255
 
 #define SAVED_FRIEND_REQUEST_SIZE 1024
 #define NUM_SAVED_PATH_NODES 8
@@ -2794,11 +2790,6 @@ static uint32_t friend_size(void)
     return data;
 }
 
-static uint32_t saved_friendslist_size(const Messenger *m)
-{
-    return count_friendlist(m) * friend_size();
-}
-
 static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
 {
 #define VALUE_MEMBER(name) do {                     \
@@ -2833,13 +2824,202 @@ static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
     return data;
 }
 
-static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
+
+static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data)
 {
-    uint32_t i;
+#define VALUE_MEMBER(name) do {                     \
+    memcpy(&temp->name, data, sizeof(temp->name));  \
+    data += sizeof(temp->name);                     \
+} while (0)
+
+#define ARRAY_MEMBER(name) do {                     \
+    memcpy(temp->name, data, sizeof(temp->name));   \
+    data += sizeof(temp->name);                     \
+} while (0)
+
+    // Exactly the same in friend_load, friend_save, and friend_size
+    VALUE_MEMBER(status);
+    ARRAY_MEMBER(real_pk);
+    ARRAY_MEMBER(info);
+    ++data; // padding
+    VALUE_MEMBER(info_size);
+    ARRAY_MEMBER(name);
+    VALUE_MEMBER(name_length);
+    ARRAY_MEMBER(statusmessage);
+    ++data; // padding
+    VALUE_MEMBER(statusmessage_length);
+    VALUE_MEMBER(userstatus);
+    data += 3; // padding
+    VALUE_MEMBER(friendrequest_nospam);
+    VALUE_MEMBER(last_seen_time);
+
+#undef VALUE_MEMBER
+#undef ARRAY_MEMBER
+
+    return data;
+}
+
+
+static uint32_t m_state_plugins_size(const Messenger *m)
+{
+    const uint32_t size32 = sizeof(uint32_t);
+    const uint32_t sizesubhead = size32 * 2;
+
+    uint32_t size = 0;
+
+    for (const Messenger_State_Plugin *plugin = m->options.state_plugins;
+            plugin != m->options.state_plugins + m->options.state_plugins_length;
+            ++plugin) {
+        size += sizesubhead + plugin->size(m);
+    }
+
+    return size;
+}
+
+/*
+ * Registers a state plugin with the messenger
+ * returns true on success
+ * returns false on failure
+ */
+bool m_register_state_plugin(Messenger *m, Messenger_State_Type type, m_state_size_cb size_callback,
+                             m_state_load_cb load_callback,
+                             m_state_save_cb save_callback)
+{
+    Messenger_State_Plugin *temp = (Messenger_State_Plugin *)realloc(m->options.state_plugins,
+                                   sizeof(Messenger_State_Plugin) * (m->options.state_plugins_length + 1));
+
+    if (!temp) {
+        return false;
+    }
+
+    m->options.state_plugins = temp;
+    ++m->options.state_plugins_length;
+
+    const uint8_t index = m->options.state_plugins_length - 1;
+    m->options.state_plugins[index].type = type;
+    m->options.state_plugins[index].size = size_callback;
+    m->options.state_plugins[index].load = load_callback;
+    m->options.state_plugins[index].save = save_callback;
+
+    return true;
+}
+
+static uint32_t m_plugin_size(const Messenger *m, Messenger_State_Type type)
+{
+    for (uint8_t i = 0; i < m->options.state_plugins_length; ++i) {
+        const Messenger_State_Plugin plugin = m->options.state_plugins[i];
+
+        if (plugin.type == type) {
+            return plugin.size(m);
+        }
+    }
+
+    LOGGER_ERROR(m->log, "Unknown type encountered: %u", type);
+
+    return UINT32_MAX;
+}
+
+/*  return size of the messenger data (for saving) */
+uint32_t messenger_size(const Messenger *m)
+{
+    const uint32_t size32 = sizeof(uint32_t);
+    const uint32_t sizesubhead = size32 * 2;
+    return   size32 * 2                       // global cookie
+             + m_state_plugins_size(m)
+             + sizesubhead;
+}
+
+/* Save the messenger in data of size Messenger_size(). */
+void messenger_save(const Messenger *m, uint8_t *data)
+{
+    memset(data, 0, messenger_size(m));
+
+    const uint32_t size32 = sizeof(uint32_t);
+
+    // write cookie
+    memset(data, 0, size32);
+    data += size32;
+    host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
+    data += size32;
+
+    for (uint8_t i = 0; i < m->options.state_plugins_length; ++i) {
+        const Messenger_State_Plugin plugin = m->options.state_plugins[i];
+        data = plugin.save(m, data);
+    }
+}
+
+// nospam state plugin
+static uint32_t nospam_keys_size(const Messenger *m)
+{
+    return sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE;
+}
+
+static State_Load_Status load_nospam_keys(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length != m_plugin_size(m, MESSENGER_STATE_TYPE_NOSPAMKEYS)) {
+        return STATE_LOAD_STATUS_ERROR;
+    }
+
+    uint32_t nospam;
+    lendian_to_host32(&nospam, data);
+    set_nospam(m->fr, nospam);
+    load_secret_key(m->net_crypto, data + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE);
+
+    if (public_key_cmp(data + sizeof(uint32_t), nc_get_self_public_key(m->net_crypto)) != 0) {
+        return STATE_LOAD_STATUS_ERROR;
+    }
+
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+static uint8_t *save_nospam_keys(const Messenger *m, uint8_t *data)
+{
+    const uint32_t len = m_plugin_size(m, MESSENGER_STATE_TYPE_NOSPAMKEYS);
+    assert(sizeof(get_nospam(m->fr)) == sizeof(uint32_t));
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_NOSPAMKEYS);
+    uint32_t nospam = get_nospam(m->fr);
+    host_to_lendian32(data, nospam);
+    save_keys(m->net_crypto, data + sizeof(uint32_t));
+    data += len;
+    return data;
+}
+
+// DHT state plugin
+static uint32_t m_dht_size(const Messenger *m)
+{
+    return dht_size(m->dht);
+}
+
+static uint8_t *save_dht(const Messenger *m, uint8_t *data)
+{
+    const uint32_t len = m_plugin_size(m, MESSENGER_STATE_TYPE_DHT);
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_DHT);
+    dht_save(m->dht, data);
+    data += len;
+    return data;
+}
+
+static State_Load_Status m_dht_load(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    dht_load(m->dht, data, length); // TODO(endoffile78): Should we throw an error if dht_load fails?
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+// friendlist state plugin
+static uint32_t saved_friendslist_size(const Messenger *m)
+{
+    return count_friendlist(m) * friend_size();
+}
+
+static uint8_t *friends_list_save(const Messenger *m, uint8_t *data)
+{
+    const uint32_t len = m_plugin_size(m, MESSENGER_STATE_TYPE_FRIENDS);
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_FRIENDS);
+
     uint32_t num = 0;
     uint8_t *cur_data = data;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status > 0) {
             struct Saved_Friend temp = { 0 };
             temp.status = m->friendlist[i].status;
@@ -2878,47 +3058,15 @@ static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
     }
 
     assert(cur_data - data == num * friend_size());
-    return cur_data - data;
-}
-
-static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data)
-{
-#define VALUE_MEMBER(name) do {                     \
-    memcpy(&temp->name, data, sizeof(temp->name));  \
-    data += sizeof(temp->name);                     \
-} while (0)
-
-#define ARRAY_MEMBER(name) do {                     \
-    memcpy(temp->name, data, sizeof(temp->name));   \
-    data += sizeof(temp->name);                     \
-} while (0)
-
-    // Exactly the same in friend_load, friend_save, and friend_size
-    VALUE_MEMBER(status);
-    ARRAY_MEMBER(real_pk);
-    ARRAY_MEMBER(info);
-    ++data; // padding
-    VALUE_MEMBER(info_size);
-    ARRAY_MEMBER(name);
-    VALUE_MEMBER(name_length);
-    ARRAY_MEMBER(statusmessage);
-    ++data; // padding
-    VALUE_MEMBER(statusmessage_length);
-    VALUE_MEMBER(userstatus);
-    data += 3; // padding
-    VALUE_MEMBER(friendrequest_nospam);
-    VALUE_MEMBER(last_seen_time);
-
-#undef VALUE_MEMBER
-#undef ARRAY_MEMBER
+    data += len;
 
     return data;
 }
 
-static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
+static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
 {
     if (length % friend_size() != 0) {
-        return -1;
+        return STATE_LOAD_STATUS_ERROR; // TODO(endoffile78): error or continue?
     }
 
     uint32_t num = length / friend_size();
@@ -2959,204 +3107,201 @@ static int friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
         }
     }
 
-    return num;
+    return STATE_LOAD_STATUS_CONTINUE;
 }
 
-/*  return size of the messenger data (for saving) */
-uint32_t messenger_size(const Messenger *m)
+// name state plugin
+static uint32_t name_size(const Messenger *m)
 {
-    uint32_t size32 = sizeof(uint32_t), sizesubhead = size32 * 2;
-    return   size32 * 2                                      // global cookie
-             + sizesubhead + sizeof(uint32_t) + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE
-             + sizesubhead + dht_size(m->dht)                  // DHT
-             + sizesubhead + saved_friendslist_size(m)         // Friendlist itself.
-             + sizesubhead + m->name_length                    // Own nickname.
-             + sizesubhead + m->statusmessage_length           // status message
-             + sizesubhead + 1                                 // status
-             + sizesubhead + NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6) // TCP relays
-             + sizesubhead + NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6) // saved path nodes
-             + sizesubhead;
+    return m->name_length;
 }
 
-static uint8_t *messenger_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
+static uint8_t *save_name(const Messenger *m, uint8_t *data)
 {
-    host_to_lendian32(data, len);
-    data += sizeof(uint32_t);
-    host_to_lendian32(data, (host_tolendian16(MESSENGER_STATE_COOKIE_TYPE) << 16) | host_tolendian16(type));
-    data += sizeof(uint32_t);
+    const uint32_t len = m_plugin_size(m, MESSENGER_STATE_TYPE_NAME);
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_NAME);
+    memcpy(data, m->name, len);
+    data += len;
     return data;
 }
 
-/* Save the messenger in data of size Messenger_size(). */
-void messenger_save(const Messenger *m, uint8_t *data)
+static State_Load_Status load_name(Messenger *m, const uint8_t *data, uint32_t length)
 {
-    memset(data, 0, messenger_size(m));
+    if (length > 0 && length <= MAX_NAME_LENGTH) {
+        setname(m, data, length);
+    }
 
-    uint32_t len;
-    uint16_t type;
-    uint32_t size32 = sizeof(uint32_t);
+    return STATE_LOAD_STATUS_CONTINUE;
+}
 
-    memset(data, 0, size32);
-    data += size32;
-    host_to_lendian32(data, MESSENGER_STATE_COOKIE_GLOBAL);
-    data += size32;
+// status message state plugin
+static uint32_t status_message_size(const Messenger *m)
+{
+    return m->statusmessage_length;
+}
 
-    assert(sizeof(get_nospam(m->fr)) == sizeof(uint32_t));
-    len = size32 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE;
-    type = MESSENGER_STATE_TYPE_NOSPAMKEYS;
-    data = messenger_save_subheader(data, len, type);
-    *(uint32_t *)data = get_nospam(m->fr);
-    save_keys(m->net_crypto, data + size32);
-    data += len;
-
-    len = saved_friendslist_size(m);
-    type = MESSENGER_STATE_TYPE_FRIENDS;
-    data = messenger_save_subheader(data, len, type);
-    friends_list_save(m, data);
-    data += len;
-
-    len = m->name_length;
-    type = MESSENGER_STATE_TYPE_NAME;
-    data = messenger_save_subheader(data, len, type);
-    memcpy(data, m->name, len);
-    data += len;
-
-    len = m->statusmessage_length;
-    type = MESSENGER_STATE_TYPE_STATUSMESSAGE;
-    data = messenger_save_subheader(data, len, type);
+static uint8_t *save_status_message(const Messenger *m, uint8_t *data)
+{
+    const uint32_t len = m_plugin_size(m, MESSENGER_STATE_TYPE_STATUSMESSAGE);
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_STATUSMESSAGE);
     memcpy(data, m->statusmessage, len);
     data += len;
+    return data;
+}
 
-    len = 1;
-    type = MESSENGER_STATE_TYPE_STATUS;
-    data = messenger_save_subheader(data, len, type);
+static State_Load_Status load_status_message(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length > 0 && length <= MAX_STATUSMESSAGE_LENGTH) {
+        m_set_statusmessage(m, data, length);
+    }
+
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+// status state plugin
+static uint32_t status_size(const Messenger *m)
+{
+    return 1;
+}
+
+static uint8_t *save_status(const Messenger *m, uint8_t *data)
+{
+    const uint32_t len = m_plugin_size(m, MESSENGER_STATE_TYPE_STATUS);
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_STATUS);
     *data = m->userstatus;
     data += len;
+    return data;
+}
 
-    len = dht_size(m->dht);
-    type = MESSENGER_STATE_TYPE_DHT;
-    data = messenger_save_subheader(data, len, type);
-    dht_save(m->dht, data);
-    data += len;
+static State_Load_Status load_status(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length == 1) {
+        m_set_userstatus(m, *data);
+    }
 
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+// TCP Relay state plugin
+static uint32_t tcp_relay_size(const Messenger *m)
+{
+    return NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6);
+}
+
+static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
+{
     Node_format relays[NUM_SAVED_TCP_RELAYS];
-    type = MESSENGER_STATE_TYPE_TCP_RELAY;
     uint8_t *temp_data = data;
-    data = messenger_save_subheader(temp_data, 0, type);
+    data = state_write_section_header(temp_data, MESSENGER_STATE_COOKIE_TYPE, 0, MESSENGER_STATE_TYPE_TCP_RELAY);
     unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
     int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6), relays, num);
 
     if (l > 0) {
-        len = l;
-        data = messenger_save_subheader(temp_data, len, type);
+        const uint32_t len = l;
+        data = state_write_section_header(temp_data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_TCP_RELAY);
         data += len;
     }
 
+    return data;
+}
+
+static State_Load_Status load_tcp_replays(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length != 0) {
+        unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
+        m->has_added_relays = 0;
+    }
+
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+// path node state plugin
+static uint32_t path_node_size(const Messenger *m)
+{
+    return NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6);
+}
+
+static uint8_t *save_path_nodes(const Messenger *m, uint8_t *data)
+{
     Node_format nodes[NUM_SAVED_PATH_NODES];
-    type = MESSENGER_STATE_TYPE_PATH_NODE;
-    temp_data = data;
-    data = messenger_save_subheader(data, 0, type);
+    uint8_t *temp_data = data;
+    data = state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, 0, MESSENGER_STATE_TYPE_PATH_NODE);
     memset(nodes, 0, sizeof(nodes));
-    num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
-    l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6), nodes, num);
+    const unsigned int num = onion_backup_nodes(m->onion_c, nodes, NUM_SAVED_PATH_NODES);
+    const int l = pack_nodes(data, NUM_SAVED_PATH_NODES * packed_node_size(net_family_tcp_ipv6), nodes, num);
 
     if (l > 0) {
-        len = l;
-        data = messenger_save_subheader(temp_data, len, type);
+        const uint32_t len = l;
+        data = state_write_section_header(temp_data, MESSENGER_STATE_COOKIE_TYPE, len, MESSENGER_STATE_TYPE_PATH_NODE);
         data += len;
     }
 
-    messenger_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
+    return data;
+}
+
+static State_Load_Status load_path_nodes(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    Node_format nodes[NUM_SAVED_PATH_NODES];
+
+    if (length != 0) {
+        const int num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, nullptr, data, length, 0);
+
+        for (int i = 0; i < num; ++i) {
+            onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
+        }
+    }
+
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+// end state plugin
+static uint32_t end_size(const Messenger *m)
+{
+    return 0;
+}
+
+static uint8_t *save_end(const Messenger *m, uint8_t *data)
+{
+    return state_write_section_header(data, MESSENGER_STATE_COOKIE_TYPE, 0, MESSENGER_STATE_TYPE_END);
+}
+
+static State_Load_Status load_end(Messenger *m, const uint8_t *data, uint32_t length)
+{
+    if (length != 0) {
+        return STATE_LOAD_STATUS_ERROR;
+    }
+
+    return STATE_LOAD_STATUS_END;
+}
+
+static void m_register_default_plugins(Messenger *m)
+{
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_NOSPAMKEYS, nospam_keys_size, load_nospam_keys, save_nospam_keys);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_DHT, m_dht_size, m_dht_load, save_dht);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_FRIENDS, saved_friendslist_size, friends_list_load, friends_list_save);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_NAME, name_size, load_name, save_name);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_STATUSMESSAGE, status_message_size, load_status_message,
+                            save_status_message);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_STATUS, status_size, load_status, save_status);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_TCP_RELAY, tcp_relay_size, load_tcp_replays, save_tcp_relays);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_PATH_NODE, path_node_size, load_path_nodes, save_path_nodes);
+    m_register_state_plugin(m, MESSENGER_STATE_TYPE_END, end_size, load_end, save_end);
 }
 
 static State_Load_Status messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     Messenger *m = (Messenger *)outer;
 
-    switch (type) {
-        case MESSENGER_STATE_TYPE_NOSPAMKEYS:
-            if (length == CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE + sizeof(uint32_t)) {
-                set_nospam(m->fr, *(const uint32_t *)data);
-                load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + CRYPTO_PUBLIC_KEY_SIZE);
+    for (uint8_t i = 0; i < m->options.state_plugins_length; ++i) {
+        const Messenger_State_Plugin *const plugin = &m->options.state_plugins[i];
 
-                if (public_key_cmp((&data[sizeof(uint32_t)]), nc_get_self_public_key(m->net_crypto)) != 0) {
-                    return STATE_LOAD_STATUS_ERROR;
-                }
-            } else {
-                return STATE_LOAD_STATUS_ERROR;    /* critical */
-            }
-
-            break;
-
-        case MESSENGER_STATE_TYPE_DHT:
-            dht_load(m->dht, data, length);
-            break;
-
-        case MESSENGER_STATE_TYPE_FRIENDS:
-            friends_list_load(m, data, length);
-            break;
-
-        case MESSENGER_STATE_TYPE_NAME:
-            if ((length > 0) && (length <= MAX_NAME_LENGTH)) {
-                setname(m, data, length);
-            }
-
-            break;
-
-        case MESSENGER_STATE_TYPE_STATUSMESSAGE:
-            if ((length > 0) && (length <= MAX_STATUSMESSAGE_LENGTH)) {
-                m_set_statusmessage(m, data, length);
-            }
-
-            break;
-
-        case MESSENGER_STATE_TYPE_STATUS:
-            if (length == 1) {
-                m_set_userstatus(m, *data);
-            }
-
-            break;
-
-        case MESSENGER_STATE_TYPE_TCP_RELAY: {
-            if (length == 0) {
-                break;
-            }
-
-            unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
-            m->has_added_relays = 0;
-
-            break;
+        if (plugin->type == type) {
+            return plugin->load(m, data, length);
         }
-
-        case MESSENGER_STATE_TYPE_PATH_NODE: {
-            Node_format nodes[NUM_SAVED_PATH_NODES];
-
-            if (length == 0) {
-                break;
-            }
-
-            int i, num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, nullptr, data, length, 0);
-
-            for (i = 0; i < num; ++i) {
-                onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
-            }
-
-            break;
-        }
-
-        case MESSENGER_STATE_TYPE_END: {
-            if (length != 0) {
-                return STATE_LOAD_STATUS_ERROR;
-            }
-
-            return STATE_LOAD_STATUS_END;
-        }
-
-        default:
-            LOGGER_ERROR(m->log, "Load state: contains unrecognized part (len %u, type %u)\n",
-                         length, type);
-            break;
     }
+
+    LOGGER_ERROR(m->log, "Load state: contains unrecognized part (len %u, type %u)\n",
+                 length, type);
 
     return STATE_LOAD_STATUS_CONTINUE;
 }

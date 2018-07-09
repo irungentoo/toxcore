@@ -2823,26 +2823,16 @@ uint32_t dht_size(const DHT *dht)
     return size32 + sizesubhead + packed_node_size(net_family_ipv4) * numv4 + packed_node_size(net_family_ipv6) * numv6;
 }
 
-static uint8_t *dht_save_subheader(uint8_t *data, uint32_t len, uint16_t type)
-{
-    host_to_lendian32(data, len);
-    data += sizeof(uint32_t);
-    host_to_lendian32(data, (host_tolendian16(DHT_STATE_COOKIE_TYPE) << 16) | host_tolendian16(type));
-    data += sizeof(uint32_t);
-    return data;
-}
-
-
 /* Save the DHT in data where data is an array of size dht_size(). */
 void dht_save(const DHT *dht, uint8_t *data)
 {
-    host_to_lendian32(data,  DHT_STATE_COOKIE_GLOBAL);
+    host_to_lendian32(data, DHT_STATE_COOKIE_GLOBAL);
     data += sizeof(uint32_t);
 
     uint8_t *const old_data = data;
 
     /* get right offset. we write the actual header later. */
-    data = dht_save_subheader(data, 0, 0);
+    data = state_write_section_header(data, DHT_STATE_COOKIE_TYPE, 0, 0);
 
     Node_format clients[MAX_SAVED_DHT_NODES];
 
@@ -2880,7 +2870,8 @@ void dht_save(const DHT *dht, uint8_t *data)
         }
     }
 
-    dht_save_subheader(old_data, pack_nodes(data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
+    state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(data, sizeof(Node_format) * num, clients, num),
+                               DHT_STATE_TYPE_NODES);
 }
 
 /* Bootstrap from this number of nodes every time dht_connect_after_load() is called */
