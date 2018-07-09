@@ -64,10 +64,10 @@
 
 #define MAX_CRYPTO_REQUEST_SIZE 1024
 
-#define CRYPTO_PACKET_FRIEND_REQ    32  /* Friend request crypto packet ID. */
-#define CRYPTO_PACKET_HARDENING     48  /* Hardening crypto packet ID. */
+#define CRYPTO_PACKET_FRIEND_REQ    32  // Friend request crypto packet ID.
+#define CRYPTO_PACKET_HARDENING     48  // Hardening crypto packet ID.
 #define CRYPTO_PACKET_DHTPK         156
-#define CRYPTO_PACKET_NAT_PING      254 /* NAT ping crypto packet ID. */
+#define CRYPTO_PACKET_NAT_PING      254 // NAT ping crypto packet ID.
 
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.
@@ -89,12 +89,12 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length);
 
-typedef struct {
+typedef struct IPPTs {
     IP_Port     ip_port;
     uint64_t    timestamp;
 } IPPTs;
 
-typedef struct {
+typedef struct Hardening {
     /* Node routes request correctly (true (1) or false/didn't check (0)) */
     uint8_t     routes_requests_ok;
     /* Time which we last checked this.*/
@@ -112,7 +112,7 @@ typedef struct {
     uint8_t     testing_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
 } Hardening;
 
-typedef struct {
+typedef struct IPPTsPng {
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
@@ -123,7 +123,7 @@ typedef struct {
     uint64_t    ret_timestamp;
 } IPPTsPng;
 
-typedef struct {
+typedef struct Client_data {
     uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
@@ -131,7 +131,7 @@ typedef struct {
 
 /*----------------------------------------------------------------------------------*/
 
-typedef struct {
+typedef struct NAT {
     /* 1 if currently hole punching, otherwise 0 */
     uint8_t     hole_punching;
     uint32_t    punching_index;
@@ -139,18 +139,17 @@ typedef struct {
     uint32_t    punching_index2;
 
     uint64_t    punching_timestamp;
-    uint64_t    recvNATping_timestamp;
-    uint64_t    NATping_id;
-    uint64_t    NATping_timestamp;
+    uint64_t    recv_nat_ping_timestamp;
+    uint64_t    nat_ping_id;
+    uint64_t    nat_ping_timestamp;
 } NAT;
 
 #define DHT_FRIEND_MAX_LOCKS 32
 
-typedef struct {
+typedef struct Node_format {
     uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port     ip_port;
-}
-Node_format;
+} Node_format;
 
 typedef struct DHT_Friend DHT_Friend;
 
@@ -199,7 +198,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
 #define MAX_KEYS_PER_SLOT 4
 #define KEYS_TIMEOUT 600
 
-typedef struct {
+typedef struct Shared_Key {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     uint32_t times_requested;
@@ -207,19 +206,14 @@ typedef struct {
     uint64_t time_last_requested;
 } Shared_Key;
 
-typedef struct {
+typedef struct Shared_Keys {
     Shared_Key keys[256 * MAX_KEYS_PER_SLOT];
 } Shared_Keys;
 
 /*----------------------------------------------------------------------------------*/
 
-typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
-        const uint8_t *data, uint16_t len, void *userdata);
-
-typedef struct {
-    cryptopacket_handler_callback function;
-    void *object;
-} Cryptopacket_Handles;
+typedef int cryptopacket_handler_cb(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
+                                    const uint8_t *data, uint16_t len, void *userdata);
 
 #define DHT_DEFINED
 typedef struct DHT DHT;
@@ -261,6 +255,8 @@ void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
 
 void dht_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
 
+typedef void dht_ip_cb(void *object, int32_t number, IP_Port ip_port);
+
 /* Add a new friend to the friends list.
  * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *
@@ -273,7 +269,7 @@ void dht_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, con
  *  return 0 if success.
  *  return -1 if failure (friends list is full).
  */
-int dht_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
                   void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
@@ -387,7 +383,7 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
 
 /* Function to handle crypto packets.
  */
-void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object);
+void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_cb *cb, void *object);
 
 /* SAVE/LOAD functions */
 

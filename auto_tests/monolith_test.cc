@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
 #if defined(__x86_64__) && defined(__LP64__)
   // toxcore/DHT
   CHECK_SIZE(Client_data, 496);
-  CHECK_SIZE(Cryptopacket_Handles, 16);
+  CHECK_SIZE(Cryptopacket_Handler, 16);
   CHECK_SIZE(DHT, 676528);
   CHECK_SIZE(DHT_Friend, 5104);
   CHECK_SIZE(Hardening, 144);
