@@ -35,6 +35,7 @@
 
 #include "logger.h"
 #include "network.h"
+#include "state.h"
 #include "util.h"
 
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
@@ -3075,7 +3076,7 @@ void messenger_save(const Messenger *m, uint8_t *data)
     messenger_save_subheader(data, 0, MESSENGER_STATE_TYPE_END);
 }
 
-static int messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
+static State_Load_Status messenger_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     Messenger *m = (Messenger *)outer;
 
@@ -3086,10 +3087,10 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
                 load_secret_key(m->net_crypto, (&data[sizeof(uint32_t)]) + CRYPTO_PUBLIC_KEY_SIZE);
 
                 if (public_key_cmp((&data[sizeof(uint32_t)]), nc_get_self_public_key(m->net_crypto)) != 0) {
-                    return -1;
+                    return STATE_LOAD_STATUS_ERROR;
                 }
             } else {
-                return -1;    /* critical */
+                return STATE_LOAD_STATUS_ERROR;    /* critical */
             }
 
             break;
@@ -3152,10 +3153,10 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
 
         case MESSENGER_STATE_TYPE_END: {
             if (length != 0) {
-                return -1;
+                return STATE_LOAD_STATUS_ERROR;
             }
 
-            return -2;
+            return STATE_LOAD_STATUS_END;
         }
 
         default:
@@ -3164,7 +3165,7 @@ static int messenger_load_state_callback(void *outer, const uint8_t *data, uint3
             break;
     }
 
-    return 0;
+    return STATE_LOAD_STATUS_CONTINUE;
 }
 
 /* Load the messenger from data of size length. */
@@ -3181,7 +3182,7 @@ int messenger_load(Messenger *m, const uint8_t *data, uint32_t length)
     lendian_to_host32(data32 + 1, data + sizeof(uint32_t));
 
     if (!data32[0] && (data32[1] == MESSENGER_STATE_COOKIE_GLOBAL)) {
-        return load_state(messenger_load_state_callback, m->log, m, data + cookie_len,
+        return state_load(m->log, messenger_load_state_callback, m, data + cookie_len,
                           length - cookie_len, MESSENGER_STATE_COOKIE_TYPE);
     }
 

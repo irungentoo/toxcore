@@ -20,6 +20,7 @@
 #include "../toxcore/onion_client.c"
 #include "../toxcore/ping.c"
 #include "../toxcore/ping_array.c"
+#include "../toxcore/state.c"
 #include "../toxcore/tox_api.c"
 #include "../toxcore/util.c"
 

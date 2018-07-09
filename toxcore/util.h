@@ -51,17 +51,6 @@ uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_I
 void host_to_net(uint8_t *num, uint16_t numbytes);
 #define net_to_host(x, y) host_to_net(x, y)
 
-uint16_t lendian_to_host16(uint16_t lendian);
-#define host_tolendian16(x) lendian_to_host16(x)
-
-void host_to_lendian32(uint8_t *dest,  uint32_t num);
-void lendian_to_host32(uint32_t *dest, const uint8_t *lendian);
-
-/* state load/save */
-typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
-int load_state(load_state_callback_func load_state_callback, const Logger *log, void *outer,
-               const uint8_t *data, uint32_t length, uint16_t cookie_inner);
-
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 

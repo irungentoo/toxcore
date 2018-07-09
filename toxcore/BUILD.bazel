@@ -52,6 +52,13 @@ cc_library(
 )
 
 cc_library(
+    name = "state",
+    srcs = ["state.c"],
+    hdrs = ["state.h"],
+    deps = [":logger"],
+)
+
+cc_library(
     name = "network",
     srcs = [
         "network.c",
@@ -106,6 +113,7 @@ cc_library(
         ":crypto_core",
         ":logger",
         ":ping_array",
+        ":state",
     ],
 )
 
@@ -190,7 +198,10 @@ cc_library(
     srcs = ["Messenger.c"],
     hdrs = ["Messenger.h"],
     visibility = ["//c-toxcore/toxav:__pkg__"],
-    deps = [":friend_requests"],
+    deps = [
+        ":friend_requests",
+        ":state",
+    ],
 )
 
 cc_library(

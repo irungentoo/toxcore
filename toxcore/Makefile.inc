@@ -27,6 +27,8 @@ libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
                         ../toxcore/Messenger.c \
                         ../toxcore/ping.h \
                         ../toxcore/ping.c \
+                        ../toxcore/state.h \
+                        ../toxcore/state.c \
                         ../toxcore/tox.h \
                         ../toxcore/tox.c \
                         ../toxcore/tox_api.c \

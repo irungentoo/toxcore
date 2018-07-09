@@ -31,6 +31,7 @@
 #include "logger.h"
 #include "network.h"
 #include "ping.h"
+#include "state.h"
 #include "util.h"
 
 #include <assert.h>
@@ -2887,7 +2888,7 @@ int dht_connect_after_load(DHT *dht)
     return 0;
 }
 
-static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
+static State_Load_Status dht_load_state_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
 {
     DHT *dht = (DHT *)outer;
 
@@ -2918,7 +2919,7 @@ static int dht_load_state_callback(void *outer, const uint8_t *data, uint32_t le
             break;
     }
 
-    return 0;
+    return STATE_LOAD_STATUS_CONTINUE;
 }
 
 /* Load the DHT from data of size size.
@@ -2935,7 +2936,7 @@ int dht_load(DHT *dht, const uint8_t *data, uint32_t length)
         lendian_to_host32(&data32, data);
 
         if (data32 == DHT_STATE_COOKIE_GLOBAL) {
-            return load_state(dht_load_state_callback, dht->log, dht, data + cookie_len,
+            return state_load(dht->log, dht_load_state_callback, dht, data + cookie_len,
                               length - cookie_len, DHT_STATE_COOKIE_TYPE);
         }
     }

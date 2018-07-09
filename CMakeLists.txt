@@ -173,6 +173,8 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/logger.h
   toxcore/network.c
   toxcore/network.h
+  toxcore/state.c
+  toxcore/state.h
   toxcore/util.c
   toxcore/util.h)
 
