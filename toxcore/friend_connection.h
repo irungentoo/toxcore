@@ -55,11 +55,11 @@
 #define SHARE_RELAYS_INTERVAL (5 * 60)
 
 
-enum {
+typedef enum Friendconn_Status {
     FRIENDCONN_STATUS_NONE,
     FRIENDCONN_STATUS_CONNECTING,
     FRIENDCONN_STATUS_CONNECTED
-};
+} Friendconn_Status;
 
 typedef struct Friend_Connections Friend_Connections;
 

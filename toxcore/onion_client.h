@@ -30,7 +30,7 @@
 #include "ping_array.h"
 
 #define MAX_ONION_CLIENTS 8
-#define MAX_ONION_CLIENTS_ANNOUNCE 12 /* Number of nodes to announce ourselves to. */
+#define MAX_ONION_CLIENTS_ANNOUNCE 12 // Number of nodes to announce ourselves to.
 #define ONION_NODE_PING_INTERVAL 15
 #define ONION_NODE_TIMEOUT ONION_NODE_PING_INTERVAL
 

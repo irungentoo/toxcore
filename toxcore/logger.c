@@ -41,7 +41,7 @@ struct Logger {
 };
 
 #ifdef USE_STDERR_LOGGER
-static const char *logger_level_name(LOGGER_LEVEL level)
+static const char *logger_level_name(Logger_Level level)
 {
     switch (level) {
         case LOG_TRACE:
@@ -63,7 +63,7 @@ static const char *logger_level_name(LOGGER_LEVEL level)
     return "<unknown>";
 }
 
-static void logger_stderr_handler(void *context, LOGGER_LEVEL level, const char *file, int line, const char *func,
+static void logger_stderr_handler(void *context, Logger_Level level, const char *file, int line, const char *func,
                                   const char *message, void *userdata)
 {
     // GL stands for "global logger".
@@ -97,7 +97,7 @@ void logger_callback_log(Logger *log, logger_cb *function, void *context, void *
     log->userdata = userdata;
 }
 
-void logger_write(const Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func,
+void logger_write(const Logger *log, Logger_Level level, const char *file, int line, const char *func,
                   const char *format, ...)
 {
     if (!log) {

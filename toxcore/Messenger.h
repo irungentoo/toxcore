@@ -44,10 +44,10 @@
 
 #define FRIEND_ADDRESS_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 
-enum {
+typedef enum Message_Type {
     MESSAGE_NORMAL,
     MESSAGE_ACTION
-};
+} Message_Type;
 
 /* NOTE: Packet ids below 24 must never be used. */
 #define PACKET_ID_ONLINE 24
@@ -57,7 +57,7 @@ enum {
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
 #define PACKET_ID_MESSAGE 64
-#define PACKET_ID_ACTION (PACKET_ID_MESSAGE + MESSAGE_ACTION) /* 65 */
+#define PACKET_ID_ACTION (PACKET_ID_MESSAGE + MESSAGE_ACTION) // 65
 #define PACKET_ID_MSI 69
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
@@ -71,9 +71,9 @@ enum {
 /* All packets starting with a byte in this range can be used for anything. */
 #define PACKET_ID_LOSSLESS_RANGE_START 160
 #define PACKET_ID_LOSSLESS_RANGE_SIZE 32
-#define PACKET_LOSSY_AV_RESERVED 8 /* Number of lossy packet types at start of range reserved for A/V. */
+#define PACKET_LOSSY_AV_RESERVED 8 // Number of lossy packet types at start of range reserved for A/V.
 
-typedef struct {
+typedef struct Messenger_Options {
     bool ipv6enabled;
     bool udp_disabled;
     TCP_Proxy_Info proxy_info;
@@ -95,18 +95,18 @@ struct Receipts {
 };
 
 /* Status definitions. */
-enum {
+typedef enum Friend_Status {
     NOFRIEND,
     FRIEND_ADDED,
     FRIEND_REQUESTED,
     FRIEND_CONFIRMED,
     FRIEND_ONLINE,
-};
+} Friend_Status;
 
 /* Errors for m_addfriend
  * FAERR - Friend Add Error
  */
-enum {
+typedef enum Friend_Add_Error {
     FAERR_TOOLONG = -1,
     FAERR_NOMESSAGE = -2,
     FAERR_OWNKEY = -3,
@@ -114,24 +114,24 @@ enum {
     FAERR_BADCHECKSUM = -6,
     FAERR_SETNEWNOSPAM = -7,
     FAERR_NOMEM = -8
-};
+} Friend_Add_Error;
 
 
 /* Default start timeout in seconds between friend requests. */
-#define FRIENDREQUEST_TIMEOUT 5;
+#define FRIENDREQUEST_TIMEOUT 5
 
-enum {
+typedef enum Connection_Status {
     CONNECTION_NONE,
     CONNECTION_TCP,
     CONNECTION_UDP,
     CONNECTION_UNKNOWN
-};
+} Connection_Status;
 
 /* USERSTATUS -
  * Represents userstatuses someone can have.
  */
 
-typedef enum {
+typedef enum Userstatus {
     USERSTATUS_NONE,
     USERSTATUS_AWAY,
     USERSTATUS_BUSY,
@@ -150,57 +150,76 @@ struct File_Transfers {
     unsigned int slots_allocated; /* number of slots allocated to this transfer. */
     uint8_t id[FILE_ID_LENGTH];
 };
-enum {
+typedef enum Filestatus {
     FILESTATUS_NONE,
     FILESTATUS_NOT_ACCEPTED,
     FILESTATUS_TRANSFERRING,
-    //FILESTATUS_BROKEN,
+    // FILESTATUS_BROKEN,
     FILESTATUS_FINISHED
-};
+} Filestatus;
 
-enum {
+typedef enum File_Pause {
     FILE_PAUSE_NOT,
     FILE_PAUSE_US,
     FILE_PAUSE_OTHER,
     FILE_PAUSE_BOTH
-};
+} File_Pause;
 
-enum {
+typedef enum Filecontrol {
     FILECONTROL_ACCEPT,
     FILECONTROL_PAUSE,
     FILECONTROL_KILL,
     FILECONTROL_SEEK
-};
+} Filecontrol;
 
-enum {
+typedef enum Filekind {
     FILEKIND_DATA,
     FILEKIND_AVATAR
-};
+} Filekind;
 
 
 typedef struct Messenger Messenger;
 
-typedef void m_self_connection_status_cb(Messenger *, unsigned int, void *);
-typedef void m_friend_status_cb(Messenger *, uint32_t, unsigned int, void *);
-typedef void m_friend_connection_status_cb(Messenger *, uint32_t, unsigned int, void *);
-typedef void m_friend_message_cb(Messenger *, uint32_t, unsigned int, const uint8_t *, size_t, void *);
-typedef void m_file_recv_control_cb(Messenger *, uint32_t, uint32_t, unsigned int, void *);
-typedef void m_friend_request_cb(Messenger *, const uint8_t *, const uint8_t *, size_t, void *);
-typedef void m_friend_name_cb(Messenger *m, uint32_t, const uint8_t *, size_t, void *);
-typedef void m_friend_status_message_cb(Messenger *m, uint32_t, const uint8_t *, size_t, void *);
-typedef void m_friend_typing_cb(Messenger *m, uint32_t, bool, void *);
-typedef void m_friend_read_receipt_cb(Messenger *m, uint32_t, uint32_t, void *);
-typedef void m_file_recv_cb(Messenger *m, uint32_t, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t, void *);
-typedef void m_file_chunk_request_cb(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *);
-typedef void m_file_recv_chunk_cb(Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *, size_t, void *);
-typedef void m_friend_lossy_packet_cb(Messenger *m, uint32_t, const uint8_t *, size_t, void *);
-typedef void m_friend_lossless_packet_cb(Messenger *m, uint32_t, const uint8_t *, size_t, void *);
-typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t, uint8_t, void *);
-typedef void m_conference_invite_cb(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
-typedef void m_msi_packet_cb(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *);
+typedef void m_self_connection_status_cb(Messenger *m, unsigned int connection_status, void *user_data);
+typedef void m_friend_status_cb(Messenger *m, uint32_t friend_number, unsigned int status, void *user_data);
+typedef void m_friend_connection_status_cb(Messenger *m, uint32_t friend_number, unsigned int connection_status,
+        void *user_data);
+typedef void m_friend_message_cb(Messenger *m, uint32_t friend_number, unsigned int message_type,
+                                 const uint8_t *message, size_t length, void *user_data);
+typedef void m_file_recv_control_cb(Messenger *m, uint32_t friend_number, uint32_t file_number, unsigned int control,
+                                    void *user_data);
+typedef void m_friend_request_cb(Messenger *m, const uint8_t *public_key, const uint8_t *message, size_t length,
+                                 void *user_data);
+typedef void m_friend_name_cb(Messenger *m, uint32_t friend_number, const uint8_t *name, size_t length,
+                              void *user_data);
+typedef void m_friend_status_message_cb(Messenger *m, uint32_t friend_number, const uint8_t *message, size_t length,
+                                        void *user_data);
+typedef void m_friend_typing_cb(Messenger *m, uint32_t friend_number, bool is_typing, void *user_data);
+typedef void m_friend_read_receipt_cb(Messenger *m, uint32_t friend_number, uint32_t message_id, void *user_data);
+typedef void m_file_recv_cb(Messenger *m, uint32_t friend_number, uint32_t file_number, uint32_t kind,
+                            uint64_t file_size, const uint8_t *filename, size_t filename_length, void *user_data);
+typedef void m_file_chunk_request_cb(Messenger *m, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                                     size_t length, void *user_data);
+typedef void m_file_recv_chunk_cb(Messenger *m, uint32_t friend_number, uint32_t file_number, uint64_t position,
+                                  const uint8_t *data, size_t length, void *user_data);
+typedef void m_friend_lossy_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, size_t length,
+                                      void *user_data);
+typedef void m_friend_lossless_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, size_t length,
+        void *user_data);
+typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t friend_number,
+        uint8_t connection_status, void *user_data);
+typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
+                                    void *user_data);
+typedef void m_msi_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length,
+                             void *user_data);
 typedef int m_lossy_rtp_packet_cb(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object);
 
-typedef struct {
+typedef struct RTP_Packet_Handler {
+    m_lossy_rtp_packet_cb *function;
+    void *object;
+} RTP_Packet_Handler;
+
+typedef struct Friend {
     uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     int friendcon_id;
 
@@ -228,10 +247,7 @@ typedef struct {
     uint32_t num_sending_files;
     struct File_Transfers file_receiving[MAX_CONCURRENT_FILE_PIPES];
 
-    struct {
-        m_lossy_rtp_packet_cb *function;
-        void *object;
-    } lossy_rtp_packethandlers[PACKET_LOSSY_AV_RESERVED];
+    RTP_Packet_Handler lossy_rtp_packethandlers[PACKET_LOSSY_AV_RESERVED];
 
     struct Receipts *receipts_start;
     struct Receipts *receipts_end;
@@ -494,37 +510,35 @@ void m_callback_log(Messenger *m, logger_cb *function, void *context, void *user
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length)
  */
-void m_callback_friendrequest(Messenger *m, void (*function)(Messenger *m, const uint8_t *, const uint8_t *, size_t,
-                              void *));
+void m_callback_friendrequest(Messenger *m, m_friend_request_cb *function);
 
 /* Set the function that will be executed when a message from a friend is received.
  *  Function format is: function(uint32_t friendnumber, unsigned int type, uint8_t * message, uint32_t length)
  */
-void m_callback_friendmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, const uint8_t *,
-                              size_t, void *));
+void m_callback_friendmessage(Messenger *m, m_friend_message_cb *function);
 
 /* Set the callback for name changes.
  *  Function(uint32_t friendnumber, uint8_t *newname, size_t length)
  *  You are not responsible for freeing newname.
  */
-void m_callback_namechange(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *));
+void m_callback_namechange(Messenger *m, m_friend_name_cb *function);
 
 /* Set the callback for status message changes.
  *  Function(uint32_t friendnumber, uint8_t *newstatus, size_t length)
  *
  *  You are not responsible for freeing newstatus
  */
-void m_callback_statusmessage(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, size_t, void *));
+void m_callback_statusmessage(Messenger *m, m_friend_status_message_cb *function);
 
 /* Set the callback for status type changes.
  *  Function(uint32_t friendnumber, Userstatus kind)
  */
-void m_callback_userstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *));
+void m_callback_userstatus(Messenger *m, m_friend_status_cb *function);
 
 /* Set the callback for typing changes.
  *  Function(uint32_t friendnumber, uint8_t is_typing)
  */
-void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_t, bool, void *));
+void m_callback_typingchange(Messenger *m, m_friend_typing_cb *function);
 
 /* Set the callback for read receipts.
  *  Function(uint32_t friendnumber, uint32_t receipt)
@@ -535,7 +549,7 @@ void m_callback_typingchange(Messenger *m, void(*function)(Messenger *m, uint32_
  *  Since core doesn't track ids for you, receipt may not correspond to any message.
  *  In that case, you should discard it.
  */
-void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, void *));
+void m_callback_read_receipt(Messenger *m, m_friend_read_receipt_cb *function);
 
 /* Set the callback for connection status changes.
  *  function(uint32_t friendnumber, uint8_t status)
@@ -548,17 +562,17 @@ void m_callback_read_receipt(Messenger *m, void (*function)(Messenger *m, uint32
  *  being previously online" part.
  *  It's assumed that when adding friends, their connection status is offline.
  */
-void m_callback_connectionstatus(Messenger *m, void (*function)(Messenger *m, uint32_t, unsigned int, void *));
+void m_callback_connectionstatus(Messenger *m, m_friend_connection_status_cb *function);
 
 /* Same as previous but for internal A/V core usage only */
-void m_callback_connectionstatus_internal_av(Messenger *m, void (*function)(Messenger *m, uint32_t, uint8_t, void *),
+void m_callback_connectionstatus_internal_av(Messenger *m, m_friend_connectionstatuschange_internal_cb *function,
         void *userdata);
 
 
 /* Set the callback for typing changes.
  *  Function(unsigned int connection_status (0 = not connected, 1 = TCP only, 2 = UDP + TCP))
  */
-void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, unsigned int, void *));
+void m_callback_core_connection(Messenger *m, m_self_connection_status_cb *function);
 
 /**********CONFERENCES************/
 
@@ -566,8 +580,7 @@ void m_callback_core_connection(Messenger *m, void (*function)(Messenger *m, uns
  *
  *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_conference_invite(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t,
-                                  void *));
+void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function);
 
 /* Send a conference invite packet.
  *
@@ -583,8 +596,7 @@ int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, cons
  *
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint32_t filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
  */
-void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uint32_t, uint32_t, uint32_t, uint64_t,
-                               const uint8_t *, size_t, void *));
+void callback_file_sendrequest(Messenger *m, m_file_recv_cb *function);
 
 
 /* Set the callback for file control requests.
@@ -592,22 +604,21 @@ void callback_file_sendrequest(Messenger *m, void (*function)(Messenger *m,  uin
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int control_type, void *userdata)
  *
  */
-void callback_file_control(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, unsigned int, void *));
+void callback_file_control(Messenger *m, m_file_recv_control_cb *function);
 
 /* Set the callback for file data.
  *
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, uint8_t *data, size_t length, void *userdata)
  *
  */
-void callback_file_data(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, const uint8_t *,
-                        size_t, void *));
+void callback_file_data(Messenger *m, m_file_recv_chunk_cb *function);
 
 /* Set the callback for file request chunk.
  *
  *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, size_t length, void *userdata)
  *
  */
-void callback_file_reqchunk(Messenger *m, void (*function)(Messenger *m, uint32_t, uint32_t, uint64_t, size_t, void *));
+void callback_file_reqchunk(Messenger *m, m_file_chunk_request_cb *function);
 
 
 /* Copy the file transfer file id to file_id
@@ -686,8 +697,7 @@ uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t fi
  *
  *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
-void m_callback_msi_packet(Messenger *m, void (*function)(Messenger *m, uint32_t, const uint8_t *, uint16_t, void *),
-                           void *userdata);
+void m_callback_msi_packet(Messenger *m, m_msi_packet_cb *function, void *userdata);
 
 /* Send an msi packet.
  *
@@ -701,16 +711,15 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
  * return -1 on failure.
  * return 0 on success.
  */
-int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, int (*packet_handler_callback)(Messenger *m,
-                          uint32_t friendnumber, const uint8_t *data, uint16_t len, void *object), void *object);
+int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte,
+                          m_lossy_rtp_packet_cb *packet_handler_callback, void *object);
 
 /**********************************************/
 
 /* Set handlers for custom lossy packets.
  *
  */
-void custom_lossy_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
-        uint32_t friendnumber, const uint8_t *data, size_t len, void *object));
+void custom_lossy_packet_registerhandler(Messenger *m, m_friend_lossy_packet_cb *packet_handler_callback);
 
 /* High level function to send custom lossy packets.
  *
@@ -727,8 +736,7 @@ int m_send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const u
 /* Set handlers for custom lossless packets.
  *
  */
-void custom_lossless_packet_registerhandler(Messenger *m, void (*packet_handler_callback)(Messenger *m,
-        uint32_t friendnumber, const uint8_t *data, size_t len, void *object));
+void custom_lossless_packet_registerhandler(Messenger *m, m_friend_lossless_packet_cb *packet_handler_callback);
 
 /* High level function to send custom lossless packets.
  *
@@ -743,12 +751,12 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
 
 /**********************************************/
 
-enum {
+typedef enum Messenger_Error {
     MESSENGER_ERROR_NONE,
     MESSENGER_ERROR_PORT,
     MESSENGER_ERROR_TCP_SERVER,
     MESSENGER_ERROR_OTHER
-};
+} Messenger_Error;
 
 /* Run this at startup.
  *  return allocated instance of Messenger on success.

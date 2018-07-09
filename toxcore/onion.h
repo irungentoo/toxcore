@@ -26,7 +26,9 @@
 
 #include "DHT.h"
 
-typedef struct {
+typedef int onion_recv_1_cb(void *object, IP_Port dest, const uint8_t *data, uint16_t length);
+
+typedef struct Onion {
     DHT     *dht;
     Networking_Core *net;
     uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
@@ -36,7 +38,7 @@ typedef struct {
     Shared_Keys shared_keys_2;
     Shared_Keys shared_keys_3;
 
-    int (*recv_1_function)(void *, IP_Port, const uint8_t *, uint16_t);
+    onion_recv_1_cb *recv_1_function;
     void *callback_object;
 } Onion;
 
@@ -56,7 +58,7 @@ typedef struct {
 
 #define ONION_PATH_LENGTH 3
 
-typedef struct {
+typedef struct Onion_Path {
     uint8_t shared_key1[CRYPTO_SHARED_KEY_SIZE];
     uint8_t shared_key2[CRYPTO_SHARED_KEY_SIZE];
     uint8_t shared_key3[CRYPTO_SHARED_KEY_SIZE];
@@ -149,8 +151,6 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
  * when the response is received.
  */
 int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port source, const uint8_t *nonce);
-
-typedef int onion_recv_1_cb(void *, IP_Port, const uint8_t *, uint16_t);
 
 /* Set the callback to be called when the dest ip_port doesn't have TOX_AF_INET6 or TOX_AF_INET as the family.
  *

@@ -32,17 +32,17 @@
 #define MIN_LOGGER_LEVEL LOG_INFO
 #endif
 
-typedef enum {
+typedef enum Logger_Level {
     LOG_TRACE,
     LOG_DEBUG,
     LOG_INFO,
     LOG_WARNING,
     LOG_ERROR
-} LOGGER_LEVEL;
+} Logger_Level;
 
 typedef struct Logger Logger;
 
-typedef void logger_cb(void *context, LOGGER_LEVEL level, const char *file, int line,
+typedef void logger_cb(void *context, Logger_Level level, const char *file, int line,
                        const char *func, const char *message, void *userdata);
 
 /**
@@ -72,7 +72,7 @@ void logger_callback_log(Logger *log, logger_cb *function, void *context, void *
  * assertion failure otherwise.
  */
 void logger_write(
-    const Logger *log, LOGGER_LEVEL level, const char *file, int line, const char *func,
+    const Logger *log, Logger_Level level, const char *file, int line, const char *func,
     const char *format, ...) GNU_PRINTF(6, 7);
 
 

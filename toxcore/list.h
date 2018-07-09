@@ -28,12 +28,12 @@
 
 #include <stdint.h>
 
-typedef struct {
-    uint32_t n; //number of elements
-    uint32_t capacity; //number of elements memory is allocated for
-    uint32_t element_size; //size of the elements
-    uint8_t *data; //array of elements
-    int *ids; //array of element ids
+typedef struct BS_List {
+    uint32_t n; // number of elements
+    uint32_t capacity; // number of elements memory is allocated for
+    uint32_t element_size; // size of the elements
+    uint8_t *data; // array of elements
+    int *ids; // array of element ids
 } BS_List;
 
 /* Initialize a list, element_size is the size of the elements in the list and
