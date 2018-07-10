@@ -38,6 +38,30 @@ matrix:
     install:       .travis/$JOB install
     script:        .travis/$JOB script
   - stage: "Stage 1"
+    env: JOB=bazel-linux
+    compiler: clang
+    addons:
+      apt:
+        packages:
+        - libcv-dev             # For av_test.
+        - libhighgui-dev        # For av_test.
+        - libopencv-contrib-dev # For av_test.
+        - portaudio19-dev       # For av_test.
+    before_install:
+    # Clear bazel installation.
+    - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
+    # Get toktok-stack, which contains the bazel workspace.
+    - cd ..
+    - git clone https://github.com/TokTok/toktok-stack
+    - rm -rf toktok-stack/c-toxcore
+    - mv c-toxcore toktok-stack/
+    - cd toktok-stack/c-toxcore
+    install:       .travis/$JOB install
+    script:        .travis/$JOB script
+    before_cache:
+    # Clear bazel installation.
+    - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
+  - stage: "Stage 1"
     if: type IN (push, api, cron)
     env: JOB=cmake-win32
     services: [docker]
@@ -76,6 +100,7 @@ matrix:
 
 cache:
   directories:
+  - $HOME/.cache/bazel
   - $HOME/cache
   - /opt/freebsd/cache
 
