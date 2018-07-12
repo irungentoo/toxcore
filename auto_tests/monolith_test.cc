@@ -161,6 +161,9 @@ void check_size(char const *type) {
  * switch on the PRINT_SIZE above and copy the number into this function.
  */
 int main(int argc, char *argv[]) {
+  static_assert(sizeof(uint64_t) >= sizeof(size_t),
+                "Assumption violated: size_t is more than 64 bits wide");
+
 #if defined(__x86_64__) && defined(__LP64__)
   // toxcore/DHT
   CHECK_SIZE(Client_data, 496);

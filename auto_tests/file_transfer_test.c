@@ -286,7 +286,7 @@ static void file_transfer_test(void)
             printf("after %u iterations: %.2fMiB done\n", (unsigned int)i + 1, (double)size_recv / 1024 / 1024);
         }
 
-        c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
+        c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
     }
 
     ck_assert_msg(file_sending_done, "file sending did not complete after %u iterations: sendf_ok:%u file_recv:%u "
@@ -348,7 +348,7 @@ static void file_transfer_test(void)
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
-        c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
+        c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
     }
 
     printf("Starting file 0 transfer test.\n");
@@ -397,7 +397,7 @@ static void file_transfer_test(void)
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
-        c_sleep(MIN(tox1_interval, MIN(tox2_interval, tox3_interval)));
+        c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
     }
 
     printf("file_transfer_test succeeded, took %llu seconds\n", time(nullptr) - cur_time);

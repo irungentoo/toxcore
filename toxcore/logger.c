@@ -128,7 +128,7 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
     char msg[1024];
     va_list args;
     va_start(args, format);
-    vsnprintf(msg, sizeof msg, format, args);
+    vsnprintf(msg, sizeof(msg), format, args);
     va_end(args);
 
     log->callback(log->context, level, file, line, func, msg, log->userdata);

@@ -24,6 +24,7 @@
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+#include "pair.h"
 
 #include <opus.h>
 #include <pthread.h>

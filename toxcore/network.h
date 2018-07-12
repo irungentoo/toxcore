@@ -98,7 +98,7 @@ size_t net_socket_data_recv_buffer(Socket sock);
 
 #define MAX_UDP_PACKET_SIZE 2048
 
-typedef enum NET_PACKET_TYPE {
+typedef enum Net_Packet_Type {
     NET_PACKET_PING_REQUEST         = 0x00, /* Ping request packet ID. */
     NET_PACKET_PING_RESPONSE        = 0x01, /* Ping response packet ID. */
     NET_PACKET_GET_NODES            = 0x02, /* Get nodes request packet ID. */
@@ -127,7 +127,7 @@ typedef enum NET_PACKET_TYPE {
     BOOTSTRAP_INFO_PACKET_ID        = 0xf0, /* Only used for bootstrap nodes */
 
     NET_PACKET_MAX                  = 0xff, /* This type must remain within a single uint8. */
-} NET_PACKET_TYPE;
+} Net_Packet_Type;
 
 
 #define TOX_PORTRANGE_FROM 33445
@@ -160,7 +160,7 @@ typedef union IP4 {
 } IP4;
 
 IP4 get_ip4_loopback(void);
-extern const IP4 IP4_BROADCAST;
+extern const IP4 ip4_broadcast;
 
 typedef union IP6 {
     uint8_t uint8[16];
@@ -170,15 +170,17 @@ typedef union IP6 {
 } IP6;
 
 IP6 get_ip6_loopback(void);
-extern const IP6 IP6_BROADCAST;
+extern const IP6 ip6_broadcast;
+
+typedef union IP_Union {
+    IP4 v4;
+    IP6 v6;
+} IP_Union;
 
 #define IP_DEFINED
 typedef struct IP {
     Family family;
-    union {
-        IP4 v4;
-        IP6 v6;
-    } ip;
+    IP_Union ip;
 } IP;
 
 #define IP_PORT_DEFINED
@@ -203,7 +205,7 @@ size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v);
 size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 
 /* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
-#define IPV6_IPV4_IN_V6(a) ((a.uint64[0] == 0) && (a.uint32[2] == net_htonl (0xffff)))
+bool ipv6_ipv4_in_v6(IP6 a);
 
 #define SIZE_IP4 4
 #define SIZE_IP6 16
@@ -334,8 +336,7 @@ int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int (*packet_handler_callback)(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len,
-                                       void *userdata);
+typedef int packet_handler_cb(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len, void *userdata);
 
 typedef struct Networking_Core Networking_Core;
 
@@ -387,7 +388,7 @@ int set_socket_dualstack(Socket sock);
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
 
 /* Function to call when packet beginning with byte is received. */
-void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object);
+void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_cb *cb, void *object);
 
 /* Call this several times a second. */
 void networking_poll(Networking_Core *net, void *userdata);

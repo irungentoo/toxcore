@@ -51,20 +51,22 @@
 /* Number of TCP connections used for onion purposes. */
 #define NUM_ONION_TCP_CONNECTIONS RECOMMENDED_FRIEND_TCP_CONNECTIONS
 
-typedef struct {
+typedef struct TCP_Conn_to {
+    uint32_t tcp_connection;
+    unsigned int status;
+    unsigned int connection_id;
+} TCP_Conn_to;
+
+typedef struct TCP_Connection_to {
     uint8_t status;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE]; /* The dht public key of the peer */
 
-    struct {
-        uint32_t tcp_connection;
-        unsigned int status;
-        unsigned int connection_id;
-    } connections[MAX_FRIEND_TCP_CONNECTIONS];
+    TCP_Conn_to connections[MAX_FRIEND_TCP_CONNECTIONS];
 
     int id; /* id used in callbacks. */
 } TCP_Connection_to;
 
-typedef struct {
+typedef struct TCP_con {
     uint8_t status;
     TCP_Client_Connection *connection;
     uint64_t connected_time;
@@ -124,21 +126,24 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status);
 int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *public_key,
                         const uint8_t *packet, uint16_t length);
 
+typedef int tcp_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+
 /* Set the callback for TCP data packets.
  */
-void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_data_callback)(void *object, int id,
-                                        const uint8_t *data, uint16_t length, void *userdata), void *object);
+void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_data_cb *tcp_data_callback, void *object);
+
+typedef int tcp_onion_cb(void *object, const uint8_t *data, uint16_t length, void *userdata);
 
 /* Set the callback for TCP onion packets.
  */
-void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_onion_callback)(void *object,
-        const uint8_t *data, uint16_t length, void *userdata), void *object);
+void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_onion_cb *tcp_onion_callback, void *object);
+
+typedef int tcp_oob_cb(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
+                       const uint8_t *data, uint16_t length, void *userdata);
 
 /* Set the callback for TCP oob data packets.
  */
-void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, int (*tcp_oob_callback)(void *object,
-        const uint8_t *public_key, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length, void *userdata),
-        void *object);
+void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_oob_cb *tcp_oob_callback, void *object);
 
 /* Create a new TCP connection to public_key.
  *

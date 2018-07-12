@@ -144,8 +144,8 @@ START_TEST(test_ip_equal)
     ip2.ip.v6.uint32[2] = net_htonl(0xFFFF);
     ip2.ip.v6.uint32[3] = net_htonl(0x7F000001);
 
-    ck_assert_msg(IPV6_IPV4_IN_V6(ip2.ip.v6) != 0,
-                  "IPV6_IPV4_IN_V6(::ffff:127.0.0.1): expected != 0, got 0.");
+    ck_assert_msg(ipv6_ipv4_in_v6(ip2.ip.v6) != 0,
+                  "ipv6_ipv4_in_v6(::ffff:127.0.0.1): expected != 0, got 0.");
 
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res != 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET6, ::ffff:127.0.0.1} ): "

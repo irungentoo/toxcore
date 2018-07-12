@@ -261,6 +261,7 @@ if(BUILD_TOXAV)
     toxav/groupav.h
     toxav/msi.c
     toxav/msi.h
+    toxav/pair.h
     toxav/ring_buffer.c
     toxav/ring_buffer.h
     toxav/rtp.c

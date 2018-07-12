@@ -47,42 +47,43 @@
 #endif
 
 #if CRYPTO_PUBLIC_KEY_SIZE != crypto_box_PUBLICKEYBYTES
-#error CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES
+#error "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES"
 #endif
 
 #if CRYPTO_SECRET_KEY_SIZE != crypto_box_SECRETKEYBYTES
-#error CRYPTO_SECRET_KEY_SIZE should be equal to crypto_box_SECRETKEYBYTES
+#error "CRYPTO_SECRET_KEY_SIZE should be equal to crypto_box_SECRETKEYBYTES"
 #endif
 
 #if CRYPTO_SHARED_KEY_SIZE != crypto_box_BEFORENMBYTES
-#error CRYPTO_SHARED_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES
+#error "CRYPTO_SHARED_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES"
 #endif
 
 #if CRYPTO_SYMMETRIC_KEY_SIZE != crypto_box_BEFORENMBYTES
-#error CRYPTO_SYMMETRIC_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES
+#error "CRYPTO_SYMMETRIC_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES"
 #endif
 
 #if CRYPTO_MAC_SIZE != crypto_box_MACBYTES
-#error CRYPTO_MAC_SIZE should be equal to crypto_box_MACBYTES
+#error "CRYPTO_MAC_SIZE should be equal to crypto_box_MACBYTES"
 #endif
 
 #if CRYPTO_NONCE_SIZE != crypto_box_NONCEBYTES
-#error CRYPTO_NONCE_SIZE should be equal to crypto_box_NONCEBYTES
+#error "CRYPTO_NONCE_SIZE should be equal to crypto_box_NONCEBYTES"
 #endif
 
 #if CRYPTO_SHA256_SIZE != crypto_hash_sha256_BYTES
-#error CRYPTO_SHA256_SIZE should be equal to crypto_hash_sha256_BYTES
+#error "CRYPTO_SHA256_SIZE should be equal to crypto_hash_sha256_BYTES"
 #endif
 
 #if CRYPTO_SHA512_SIZE != crypto_hash_sha512_BYTES
-#error CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES
+#error "CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES"
+#endif
+
+#if CRYPTO_PUBLIC_KEY_SIZE != 32
+#error "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work,"
 #endif
 
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
-#if CRYPTO_PUBLIC_KEY_SIZE != 32
-#error CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work,
-#endif
     return crypto_verify_32(pk1, pk2);
 }
 
@@ -186,7 +187,7 @@ int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     uint8_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
     int ret = encrypt_data_symmetric(k, nonce, plain, length, encrypted);
-    crypto_memzero(k, sizeof k);
+    crypto_memzero(k, sizeof(k));
     return ret;
 }
 
@@ -200,7 +201,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     uint8_t k[crypto_box_BEFORENMBYTES];
     encrypt_precompute(public_key, secret_key, k);
     int ret = decrypt_data_symmetric(k, nonce, encrypted, length, plain);
-    crypto_memzero(k, sizeof k);
+    crypto_memzero(k, sizeof(k));
     return ret;
 }
 
@@ -258,7 +259,7 @@ void increment_nonce_number(uint8_t *nonce, uint32_t host_order_num)
 
     for (; i != 0; --i) {
         carry += (uint_fast16_t) nonce[i - 1] + (uint_fast16_t) num_as_nonce[i - 1];
-        nonce[i - 1] = (unsigned char) carry;
+        nonce[i - 1] = (uint8_t)carry;
         carry >>= 8;
     }
 }

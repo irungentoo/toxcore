@@ -1192,7 +1192,7 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     uint32_t used = 0;
 
     /* convert IPv4-in-IPv6 to IPv4 */
-    if (net_family_is_ipv6(ip_port.ip.family) && IPV6_IPV4_IN_V6(ip_port.ip.ip.v6)) {
+    if (net_family_is_ipv6(ip_port.ip.family) && ipv6_ipv4_in_v6(ip_port.ip.ip.v6)) {
         ip_port.ip.family = net_family_ipv4;
         ip_port.ip.ip.v4.uint32 = ip_port.ip.ip.v6.uint32[3];
     }
@@ -1272,7 +1272,7 @@ static bool update_client_data(Client_data *array, size_t size, IP_Port ip_port,
 static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *nodepublic_key)
 {
     /* convert IPv4-in-IPv6 to IPv4 */
-    if (net_family_is_ipv6(ip_port.ip.family) && IPV6_IPV4_IN_V6(ip_port.ip.ip.v6)) {
+    if (net_family_is_ipv6(ip_port.ip.family) && ipv6_ipv4_in_v6(ip_port.ip.ip.v6)) {
         ip_port.ip.family = net_family_ipv4;
         ip_port.ip.ip.v4.uint32 = ip_port.ip.ip.v6.uint32[3];
     }

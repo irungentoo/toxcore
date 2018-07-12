@@ -717,7 +717,9 @@ int m_copy_statusmessage(const Messenger *m, int32_t friendnumber, uint8_t *buf,
         return -1;
     }
 
-    int msglen = MIN(maxlen, m->friendlist[friendnumber].statusmessage_length);
+    // TODO(iphydf): This should be uint16_t and min_u16. If maxlen exceeds
+    // uint16_t's range, it won't affect the result.
+    uint32_t msglen = min_u32(maxlen, m->friendlist[friendnumber].statusmessage_length);
 
     memcpy(buf, m->friendlist[friendnumber].statusmessage, msglen);
     memset(buf + msglen, 0, maxlen - msglen);
@@ -2855,9 +2857,10 @@ static uint32_t friends_list_save(const Messenger *m, uint8_t *data)
             memcpy(temp.real_pk, m->friendlist[i].real_pk, CRYPTO_PUBLIC_KEY_SIZE);
 
             if (temp.status < 3) {
+                // TODO(iphydf): Use uint16_t and min_u16 here.
                 const size_t friendrequest_length =
-                    MIN(m->friendlist[i].info_size,
-                        MIN(SAVED_FRIEND_REQUEST_SIZE, MAX_FRIEND_REQUEST_DATA_SIZE));
+                    min_u32(m->friendlist[i].info_size,
+                            min_u32(SAVED_FRIEND_REQUEST_SIZE, MAX_FRIEND_REQUEST_DATA_SIZE));
                 memcpy(temp.info, m->friendlist[i].info, friendrequest_length);
 
                 temp.info_size = net_htons(m->friendlist[i].info_size);

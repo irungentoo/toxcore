@@ -36,8 +36,11 @@
 
 /* TODO: multiple threads might concurrently try to set these, and it isn't clear that this couldn't lead to undesirable
  * behaviour. Consider storing the data in per-instance variables instead. */
+//!TOKSTYLE-
+// No global mutable state in Tokstyle.
 static int     broadcast_count = -1;
 static IP_Port broadcast_ip_ports[MAX_INTERFACES];
+//!TOKSTYLE+
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 
@@ -76,9 +79,9 @@ static void fetch_broadcast_info(uint16_t port)
     int count = 0;
     IP_Port ip_ports[MAX_INTERFACES];
 
-    int ret;
+    const int ret = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 
-    if ((ret = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
+    if (ret == NO_ERROR) {
         IP_ADAPTER_INFO *pAdapter = pAdapterInfo;
 
         while (pAdapter) {
@@ -93,7 +96,7 @@ static void fetch_broadcast_info(uint16_t port)
                     uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
                     ip_port->ip.ip.v4.uint32 = net_htonl(broadcast_ip);
                     ip_port->port = port;
-                    count++;
+                    ++count;
 
                     if (count >= MAX_INTERFACES) {
                         break;
@@ -111,7 +114,7 @@ static void fetch_broadcast_info(uint16_t port)
 
     broadcast_count = count;
 
-    for (uint32_t i = 0; i < count; i++) {
+    for (uint32_t i = 0; i < count; ++i) {
         broadcast_ip_ports[i] = ip_ports[i];
     }
 }
@@ -149,11 +152,11 @@ static void fetch_broadcast_info(uint16_t port)
     struct ifreq i_faces[MAX_INTERFACES];
     memset(i_faces, 0, sizeof(struct ifreq) * MAX_INTERFACES);
 
-    struct ifconf ifconf;
-    ifconf.ifc_buf = (char *)i_faces;
-    ifconf.ifc_len = sizeof(i_faces);
+    struct ifconf ifc;
+    ifc.ifc_buf = (char *)i_faces;
+    ifc.ifc_len = sizeof(i_faces);
 
-    if (ioctl(sock.socket, SIOCGIFCONF, &ifconf) < 0) {
+    if (ioctl(sock.socket, SIOCGIFCONF, &ifc) < 0) {
         kill_sock(sock);
         return;
     }
@@ -165,14 +168,14 @@ static void fetch_broadcast_info(uint16_t port)
     int count = 0;
     IP_Port ip_ports[MAX_INTERFACES];
 
-    /* ifconf.ifc_len is set by the ioctl() to the actual length used;
+    /* ifc.ifc_len is set by the ioctl() to the actual length used;
      * on usage of the complete array the call should be repeated with
      * a larger array, not done (640kB and 16 interfaces shall be
      * enough, for everybody!)
      */
-    int n = ifconf.ifc_len / sizeof(struct ifreq);
+    int n = ifc.ifc_len / sizeof(struct ifreq);
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         /* there are interfaces with are incapable of broadcast */
         if (ioctl(sock.socket, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
             continue;
@@ -198,14 +201,14 @@ static void fetch_broadcast_info(uint16_t port)
         }
 
         ip_port->port = port;
-        count++;
+        ++count;
     }
 
     kill_sock(sock);
 
     broadcast_count = count;
 
-    for (uint32_t i = 0; i < count; i++) {
+    for (uint32_t i = 0; i < count; ++i) {
         broadcast_ip_ports[i] = ip_ports[i];
     }
 }
@@ -235,7 +238,7 @@ static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, const uint8
         return 0;
     }
 
-    for (int i = 0; i < broadcast_count; i++) {
+    for (int i = 0; i < broadcast_count; ++i) {
         sendpacket(net, broadcast_ip_ports[i], data, length);
     }
 
@@ -259,11 +262,11 @@ static IP broadcast_ip(Family family_socket, Family family_broadcast)
             ip.ip.v6.uint8[15] = 0x01;
         } else if (net_family_is_ipv4(family_broadcast)) {
             ip.family = net_family_ipv6;
-            ip.ip.v6 = IP6_BROADCAST;
+            ip.ip.v6 = ip6_broadcast;
         }
     } else if (net_family_is_ipv4(family_socket) && net_family_is_ipv4(family_broadcast)) {
         ip.family = net_family_ipv4;
-        ip.ip.v4 = IP4_BROADCAST;
+        ip.ip.v4 = ip4_broadcast;
     }
 
     return ip;
@@ -281,7 +284,7 @@ bool ip_is_local(IP ip)
         }
     } else {
         /* embedded IPv4-in-IPv6 */
-        if (IPV6_IPV4_IN_V6(ip.ip.v6)) {
+        if (ipv6_ipv4_in_v6(ip.ip.v6)) {
             IP ip4;
             ip4.family = net_family_ipv4;
             ip4.ip.v4.uint32 = ip.ip.v6.uint32[3];
@@ -345,7 +348,7 @@ int ip_is_lan(IP ip)
         }
 
         /* embedded IPv4-in-IPv6 */
-        if (IPV6_IPV4_IN_V6(ip.ip.v6)) {
+        if (ipv6_ipv4_in_v6(ip.ip.v6)) {
             IP ip4;
             ip4.family = net_family_ipv4;
             ip4.ip.v4.uint32 = ip.ip.v6.uint32[3];

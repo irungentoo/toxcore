@@ -24,6 +24,7 @@
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+#include "pair.h"
 
 #include <vpx/vpx_decoder.h>
 #include <vpx/vpx_encoder.h>

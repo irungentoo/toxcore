@@ -36,20 +36,18 @@
 extern "C" {
 #endif
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
-
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 
 void host_to_net(uint8_t *num, uint16_t numbytes);
-#define net_to_host(x, y) host_to_net(x, y)
+void net_to_host(uint8_t *num, uint16_t numbytes);
 
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
 int32_t max_s32(int32_t a, int32_t b);
+uint32_t min_u32(uint32_t a, uint32_t b);
 uint64_t min_u64(uint64_t a, uint64_t b);
 
 #ifdef __cplusplus

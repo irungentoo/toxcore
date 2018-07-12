@@ -44,7 +44,7 @@
 
 #ifdef OS_WIN32
 #ifndef WINVER
-//Windows XP
+// Windows XP
 #define WINVER 0x0501
 #endif
 #endif
@@ -185,11 +185,11 @@ static int inet_pton(int family, const char *addrString, void *addrbuf)
 #endif
 
 #if TOX_INET6_ADDRSTRLEN < INET6_ADDRSTRLEN
-#error TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)
+#error "TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)"
 #endif
 
 #if TOX_INET_ADDRSTRLEN < INET_ADDRSTRLEN
-#error TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)
+#error "TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)"
 #endif
 
 static int make_proto(int proto);
@@ -255,8 +255,8 @@ static void fill_addr6(IP6 ip, struct in6_addr *addr)
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 
-const IP4 IP4_BROADCAST = { INADDR_BROADCAST };
-const IP6 IP6_BROADCAST = {
+const IP4 ip4_broadcast = { INADDR_BROADCAST };
+const IP6 ip6_broadcast = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
 };
 
@@ -274,13 +274,11 @@ IP6 get_ip6_loopback(void)
     return loopback;
 }
 
-const Socket net_invalid_socket = {
-#ifdef OS_WIN32
-    (int)INVALID_SOCKET,
-#else
-    -1,
+#ifndef OS_WIN32
+#define INVALID_SOCKET -1
 #endif
-};
+
+const Socket net_invalid_socket = { (int)INVALID_SOCKET };
 
 const Family net_family_unspec = {TOX_AF_UNSPEC};
 const Family net_family_ipv4 = {TOX_AF_INET};
@@ -421,11 +419,16 @@ int set_socket_dualstack(Socket sock)
 
 static uint32_t data_0(uint16_t buflen, const uint8_t *buffer)
 {
-    return buflen > 4 ? net_ntohl(*(const uint32_t *)&buffer[1]) : 0;
+    // TODO(iphydf): Do this differently. Right now this is most likely a
+    // misaligned memory access in reality, and definitely undefined behaviour
+    // in terms of C standard.
+    const uint8_t *const start = buffer + 1;
+    return buflen > 4 ? net_ntohl(*(const uint32_t *)start) : 0;
 }
 static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
 {
-    return buflen > 7 ? net_ntohl(*(const uint32_t *)&buffer[5]) : 0;
+    const uint8_t *const start = buffer + 5;
+    return buflen > 7 ? net_ntohl(*(const uint32_t *)start) : 0;
 }
 
 static void loglogdata(const Logger *log, const char *message, const uint8_t *buffer,
@@ -454,8 +457,8 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
     }
 }
 
-typedef struct {
-    packet_handler_callback function;
+typedef struct Packet_Handler {
+    packet_handler_cb *function;
     void *object;
 } Packet_Handler;
 
@@ -537,7 +540,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
         return -1;
     }
 
-    const int res = sendto(net->sock.socket, (const char *) data, length, 0, (struct sockaddr *)&addr, addrsize);
+    const int res = sendto(net->sock.socket, (const char *)data, length, 0, (struct sockaddr *)&addr, addrsize);
 
     loglogdata(net->log, "O=>", data, length, ip_port, res);
 
@@ -601,7 +604,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
         get_ip6(&ip_port->ip.ip.v6, &addr_in6->sin6_addr);
         ip_port->port = addr_in6->sin6_port;
 
-        if (IPV6_IPV4_IN_V6(ip_port->ip.ip.v6)) {
+        if (ipv6_ipv4_in_v6(ip_port->ip.ip.v6)) {
             ip_port->ip.family = net_family_ipv4;
             ip_port->ip.ip.v4.uint32 = ip_port->ip.ip.v6.uint32[3];
         }
@@ -614,7 +617,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
     return 0;
 }
 
-void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_callback cb, void *object)
+void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_cb *cb, void *object)
 {
     net->packethandlers[byte].function = cb;
     net->packethandlers[byte].object = object;
@@ -652,7 +655,10 @@ void networking_poll(Networking_Core *net, void *userdata)
 #include <sodium.h>
 #endif
 
+//!TOKSTYLE-
+// Global mutable state is not allowed in Tokstyle.
 static uint8_t at_startup_ran = 0;
+//!TOKSTYLE+
 int networking_at_startup(void)
 {
     if (at_startup_ran != 0) {
@@ -881,7 +887,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
     *portptr = net_htons(port_to_try);
     int tries;
 
-    for (tries = port_from; tries <= port_to; tries++) {
+    for (tries = port_from; tries <= port_to; ++tries) {
         int res = bind(temp->sock.socket, (struct sockaddr *)&addr, addrsize);
 
         if (!res) {
@@ -905,7 +911,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
             return temp;
         }
 
-        port_to_try++;
+        ++port_to_try;
 
         if (port_to_try > port_to) {
             port_to_try = port_from;
@@ -991,13 +997,13 @@ int ip_equal(const IP *a, const IP *b)
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
     if (net_family_is_ipv4(a->family) && net_family_is_ipv6(b->family)) {
-        if (IPV6_IPV4_IN_V6(b->ip.v6)) {
+        if (ipv6_ipv4_in_v6(b->ip.v6)) {
             struct in_addr addr_a;
             fill_addr4(a->ip.v4, &addr_a);
             return addr_a.s_addr == b->ip.v6.uint32[3];
         }
     } else if (net_family_is_ipv6(a->family) && net_family_is_ipv4(b->family)) {
-        if (IPV6_IPV4_IN_V6(a->ip.v6)) {
+        if (ipv6_ipv4_in_v6(a->ip.v6)) {
             struct in_addr addr_b;
             fill_addr4(b->ip.v4, &addr_b);
             return a->ip.v6.uint32[3] == addr_b.s_addr;
@@ -1381,12 +1387,12 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     }
 
     // Used to avoid malloc parameter overflow
-    const size_t MAX_COUNT = MIN(SIZE_MAX, INT32_MAX) / sizeof(IP_Port);
+    const size_t max_count = min_u64(SIZE_MAX, INT32_MAX) / sizeof(IP_Port);
     int type = make_socktype(tox_type);
     struct addrinfo *cur;
     size_t count = 0;
 
-    for (cur = infos; count < MAX_COUNT && cur != nullptr; cur = cur->ai_next) {
+    for (cur = infos; count < max_count && cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1395,10 +1401,10 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
             continue;
         }
 
-        count++;
+        ++count;
     }
 
-    assert(count <= MAX_COUNT);
+    assert(count <= max_count);
 
     if (count == 0) {
         freeaddrinfo(infos);
@@ -1439,7 +1445,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 
         ip_port->ip.family = *family;
 
-        ip_port++;
+        ++ip_port;
     }
 
     freeaddrinfo(infos);
@@ -1619,6 +1625,11 @@ size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v)
     p += net_unpack_u32(p, &lo);
     *v = ((uint64_t)hi << 32) | lo;
     return p - bytes;
+}
+
+bool ipv6_ipv4_in_v6(IP6 a)
+{
+    return a.uint64[0] == 0 && a.uint32[2] == net_htonl(0xffff);
 }
 
 int net_error(void)

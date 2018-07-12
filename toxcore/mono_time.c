@@ -69,7 +69,10 @@ bool mono_time_is_timeout(const Mono_Time *monotime, uint64_t timestamp, uint64_
 }
 
 
+//!TOKSTYLE-
+// No global mutable state in Tokstyle.
 static Mono_Time global_time;
+//!TOKSTYLE+
 
 /* XXX: note that this is not thread-safe; if multiple threads call unix_time_update() concurrently, the return value of
  * unix_time() may fail to increase monotonically with increasing time */
@@ -110,10 +113,13 @@ uint64_t current_time_actual(void)
 }
 
 
+//!TOKSTYLE-
+// No global mutable state in Tokstyle.
 #ifdef OS_WIN32
 static uint64_t last_monotime;
 static uint64_t add_monotime;
 #endif
+//!TOKSTYLE+
 
 /* return current monotonic time in milliseconds (ms). */
 uint64_t current_time_monotonic(void)
