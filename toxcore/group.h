@@ -138,7 +138,7 @@ typedef struct Group_Chats {
     Friend_Connections *fr_c;
 
     Group_c *chats;
-    uint32_t num_chats;
+    uint16_t num_chats;
 
     g_conference_invite_cb *invite_callback;
     g_conference_message_cb *message_callback;
