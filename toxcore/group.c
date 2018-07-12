@@ -221,11 +221,11 @@ static uint64_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
     return (cmp1 - cmp2);
 }
 
-enum {
+typedef enum Groupchat_Closest {
     GROUPCHAT_CLOSEST_NONE,
     GROUPCHAT_CLOSEST_ADDED,
     GROUPCHAT_CLOSEST_REMOVED
-};
+} Groupchat_Closest;
 
 static int friend_in_close(Group_c *g, int friendcon_id);
 static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, uint32_t groupnumber, uint8_t closest,
@@ -1114,9 +1114,7 @@ int join_groupchat(Group_Chats *g_c, uint32_t friendnumber, uint8_t expected_typ
  *
  * Function(void *group object (set with group_set_object), uint32_t groupnumber, uint32_t friendgroupnumber, void *group peer object (set with group_peer_set_object), const uint8_t *packet, uint16_t length)
  */
-void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*function)(void *, uint32_t, uint32_t,
-                                        void *,
-                                        const uint8_t *, uint16_t))
+void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, lossy_packet_cb *function)
 {
     g_c->lossy_packethandlers[byte].function = function;
 }
@@ -1127,8 +1125,7 @@ void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, int (*fu
  *
  *  data of length is what needs to be passed to join_groupchat().
  */
-void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, int, const uint8_t *,
-                             size_t, void *))
+void g_callback_group_invite(Group_Chats *g_c, g_conference_invite_cb *function)
 {
     g_c->invite_callback = function;
 }
@@ -1138,8 +1135,7 @@ void g_callback_group_invite(Group_Chats *g_c, void (*function)(Messenger *m, ui
  *
  *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t friendgroupnumber, uint8_t * message, size_t length, void *userdata)
  */
-void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, int, const uint8_t *,
-                              size_t, void *))
+void g_callback_group_message(Group_Chats *g_c, g_conference_message_cb *function)
 {
     g_c->message_callback = function;
 }
@@ -1149,8 +1145,7 @@ void g_callback_group_message(Group_Chats *g_c, void (*function)(Messenger *m, u
  * It gets called every time a peer changes their nickname.
  *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, const uint8_t *nick, size_t nick_len, void *userdata)
  */
-void g_callback_peer_name(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
-                          size_t, void *))
+void g_callback_peer_name(Group_Chats *g_c, peer_name_cb *function)
 {
     g_c->peer_name_callback = function;
 }
@@ -1160,7 +1155,7 @@ void g_callback_peer_name(Group_Chats *g_c, void (*function)(Messenger *m, uint3
  * It gets called every time the name list changes(new peer, deleted peer)
  *  Function(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
  */
-void g_callback_peer_list_changed(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, void *))
+void g_callback_peer_list_changed(Group_Chats *g_c, peer_list_changed_cb *function)
 {
     g_c->peer_list_changed_callback = function;
 }
@@ -1171,8 +1166,7 @@ void g_callback_peer_list_changed(Group_Chats *g_c, void (*function)(Messenger *
  * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
  * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
  */
-void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uint32_t, uint32_t, const uint8_t *,
-                            size_t, void *))
+void g_callback_group_title(Group_Chats *g_c, title_cb *function)
 {
     g_c->title_callback = function;
 }
@@ -1184,8 +1178,7 @@ void g_callback_group_title(Group_Chats *g_c, void (*function)(Messenger *m, uin
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t,
-                                uint32_t))
+int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, peer_on_join_cb *function)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -1204,7 +1197,7 @@ int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, vo
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t, void *))
+int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, peer_on_leave_cb *function)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -1223,7 +1216,7 @@ int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, void 
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_delete(Group_Chats *g_c, uint32_t groupnumber, void (*function)(void *, uint32_t))
+int callback_groupchat_delete(Group_Chats *g_c, uint32_t groupnumber, group_on_delete_cb *function)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
@@ -1414,7 +1407,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
             if (groupnumber == -1) {
                 if (g_c->invite_callback) {
-                    g_c->invite_callback(m, friendnumber, *(invite_data + sizeof(uint16_t)), invite_data, invite_length, userdata);
+                    g_c->invite_callback(m, friendnumber, invite_data[sizeof(uint16_t)], invite_data, invite_length, userdata);
                 }
 
                 return;
@@ -1631,22 +1624,24 @@ static unsigned int send_peers(Group_Chats *g_c, uint32_t groupnumber, int frien
         return 0;
     }
 
-    uint8_t packet[MAX_CRYPTO_DATA_SIZE - (1 + sizeof(uint16_t))];
-    packet[0] = PEER_RESPONSE_ID;
-    uint8_t *p = packet + 1;
+    uint8_t response_packet[MAX_CRYPTO_DATA_SIZE - (1 + sizeof(uint16_t))];
+    response_packet[0] = PEER_RESPONSE_ID;
+    uint8_t *p = response_packet + 1;
 
     uint16_t sent = 0;
     unsigned int i;
 
     for (i = 0; i < g->numpeers; ++i) {
-        if ((p - packet) + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2 + 1 + g->group[i].nick_len > sizeof(packet)) {
-            if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, (p - packet))) {
+        if ((p - response_packet) + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2 + 1 + g->group[i].nick_len > sizeof(
+                    response_packet)) {
+            if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, response_packet,
+                                       (p - response_packet))) {
                 sent = i;
             } else {
                 return sent;
             }
 
-            p = packet + 1;
+            p = response_packet + 1;
         }
 
         uint16_t peer_num = net_htons(g->group[i].peer_number);
@@ -1663,16 +1658,18 @@ static unsigned int send_peers(Group_Chats *g_c, uint32_t groupnumber, int frien
     }
 
     if (sent != i) {
-        if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, packet, (p - packet))) {
+        if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, response_packet,
+                                   (p - response_packet))) {
             sent = i;
         }
     }
 
     if (g->title_len) {
-        VLA(uint8_t, Packet, 1 + g->title_len);
-        Packet[0] = PEER_TITLE_ID;
-        memcpy(Packet + 1, g->title, g->title_len);
-        send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, Packet, SIZEOF_VLA(Packet));
+        VLA(uint8_t, title_packet, 1 + g->title_len);
+        title_packet[0] = PEER_TITLE_ID;
+        memcpy(title_packet + 1, g->title, g->title_len);
+        send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, title_packet,
+                               SIZEOF_VLA(title_packet));
     }
 
     return sent;
@@ -2528,9 +2525,9 @@ uint32_t count_chatlist(Group_Chats *g_c)
     uint32_t ret = 0;
     uint32_t i;
 
-    for (i = 0; i < g_c->num_chats; i++) {
+    for (i = 0; i < g_c->num_chats; ++i) {
         if (g_c->chats[i].status != GROUPCHAT_STATUS_NONE) {
-            ret++;
+            ++ret;
         }
     }
 
@@ -2561,7 +2558,7 @@ uint32_t copy_chatlist(Group_Chats *g_c, uint32_t *out_list, uint32_t list_size)
 
         if (g_c->chats[i].status > GROUPCHAT_STATUS_NONE) {
             out_list[ret] = i;
-            ret++;
+            ++ret;
         }
     }
 

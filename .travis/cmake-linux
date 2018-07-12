@@ -48,6 +48,8 @@ travis_script() {
   # Coverage flags.
   add_flag -fprofile-arcs -ftest-coverage
 
+  other/astyle/format-source . "$ASTYLE"
+
   cmake -B_build -H. \
     -DCMAKE_C_FLAGS="$C_FLAGS" \
     -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
@@ -65,8 +67,6 @@ travis_script() {
   make "-j$NPROC" test ARGS="-j50" || \
     make "-j$NPROC" test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
   cd -  # popd
-
-  other/astyle/format-source . "$ASTYLE"
 }
 
 if [ "-z" "$ACTION" ]; then
