@@ -41,7 +41,8 @@ extern "C" {
 
 
 
-/** \page core Public core API for Tox clients.
+/**
+ * @page core Public core API for Tox clients.
  *
  * Every function that can fail takes a function-specific error code pointer
  * that can be used to diagnose problems with the Tox state or the function
@@ -79,7 +80,8 @@ extern "C" {
  * Integer constants and the memory layout of publicly exposed structs are not
  * part of the ABI.
  */
-/** \subsection events Events and callbacks
+/**
+ * @subsection events Events and callbacks
  *
  * Events are handled by callbacks. One callback can be registered per event.
  * All events have a callback function type named `tox_{event}_cb` and a
@@ -101,7 +103,8 @@ extern "C" {
  * receive that pointer as argument when they are called. They can each have
  * their own user data pointer of their own type.
  */
-/** \subsection threading Threading implications
+/**
+ * @subsection threading Threading implications
  *
  * It is possible to run multiple concurrent threads with a Tox instance for
  * each thread. It is also possible to run all Tox instances in the same thread.
@@ -123,12 +126,12 @@ extern "C" {
  *
  * E.g. to get the current nickname, one would write
  *
- * \code
+ * @code
  * size_t length = tox_self_get_name_size(tox);
  * uint8_t *name = malloc(length);
  * if (!name) abort();
  * tox_self_get_name(tox, name);
- * \endcode
+ * @endcode
  *
  * If any other thread calls tox_self_set_name while this thread is allocating
  * memory, the length may have become invalid, and the call to
@@ -244,6 +247,13 @@ uint32_t tox_public_key_size(void);
 #define TOX_SECRET_KEY_SIZE            32
 
 uint32_t tox_secret_key_size(void);
+
+/**
+ * The size of a Tox Conference unique id in bytes.
+ */
+#define TOX_CONFERENCE_UID_SIZE        32
+
+uint32_t tox_conference_uid_size(void);
 
 /**
  * The size of the nospam in bytes when written in a Tox address.
@@ -1269,7 +1279,7 @@ typedef enum TOX_ERR_FRIEND_ADD {
  * @param message The message that will be sent along with the friend request.
  * @param length The length of the data byte array.
  *
- * @return the friend number on success, UINT32_MAX on failure.
+ * @return the friend number on success, an unspecified value on failure.
  */
 uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message, size_t length,
                         TOX_ERR_FRIEND_ADD *error);
@@ -1289,7 +1299,7 @@ uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message
  * @param public_key A byte array of length TOX_PUBLIC_KEY_SIZE containing the
  *   Public Key (not the Address) of the friend to add.
  *
- * @return the friend number on success, UINT32_MAX on failure.
+ * @return the friend number on success, an unspecified value on failure.
  * @see tox_friend_add for a more detailed description of friend numbers.
  */
 uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_ADD *error);
@@ -1354,7 +1364,7 @@ typedef enum TOX_ERR_FRIEND_BY_PUBLIC_KEY {
 /**
  * Return the friend number associated with that Public Key.
  *
- * @return the friend number on success, UINT32_MAX on failure.
+ * @return the friend number on success, an unspecified value on failure.
  * @param public_key A byte array containing the Public Key.
  */
 uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error);
@@ -2172,7 +2182,7 @@ typedef enum TOX_ERR_FILE_SEND {
  *
  * @return A file number used as an identifier in subsequent callbacks. This
  *   number is per friend. File numbers are reused after a transfer terminates.
- *   On failure, this function returns UINT32_MAX. Any pattern in file numbers
+ *   On failure, this function returns an unspecified value. Any pattern in file numbers
  *   should not be relied on.
  */
 uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *file_id,
@@ -2486,7 +2496,7 @@ typedef enum TOX_ERR_CONFERENCE_NEW {
  *
  * This function creates a new text conference.
  *
- * @return conference number on success, or UINT32_MAX on failure.
+ * @return conference number on success, or an unspecified value on failure.
  */
 uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error);
 
@@ -2655,7 +2665,7 @@ typedef enum TOX_ERR_CONFERENCE_JOIN {
  * @param cookie Received via the `conference_invite` event.
  * @param length The size of cookie.
  *
- * @return conference number on success, UINT32_MAX on failure.
+ * @return conference number on success, an unspecified value on failure.
  */
 uint32_t tox_conference_join(Tox *tox, uint32_t friend_number, const uint8_t *cookie, size_t length,
                              TOX_ERR_CONFERENCE_JOIN *error);
@@ -2803,6 +2813,46 @@ typedef enum TOX_ERR_CONFERENCE_GET_TYPE {
 
 TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_number,
         TOX_ERR_CONFERENCE_GET_TYPE *error);
+
+/**
+ * Get the conference unique ID.
+ *
+ * If uid is NULL, this function has no effect.
+ *
+ * @param uid A memory region large enough to store TOX_CONFERENCE_UID_SIZE bytes.
+ *
+ * @return true on success.
+ */
+bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid);
+
+typedef enum TOX_ERR_CONFERENCE_BY_UID {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_BY_UID_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
+     */
+    TOX_ERR_CONFERENCE_BY_UID_NULL,
+
+    /**
+     * No conference with the given uid exists on the conference list.
+     */
+    TOX_ERR_CONFERENCE_BY_UID_NOT_FOUND,
+
+} TOX_ERR_CONFERENCE_BY_UID;
+
+
+/**
+ * Return the conference number associated with the specified uid.
+ *
+ * @param uid A byte array containing the conference id (TOX_CONFERENCE_UID_SIZE).
+ *
+ * @return the conference number on success, an unspecified value on failure.
+ */
+uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, TOX_ERR_CONFERENCE_BY_UID *error);
 
 
 /*******************************************************************************
@@ -3004,6 +3054,7 @@ typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
 typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
 typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
 typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
+typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
 typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;
 typedef TOX_ERR_CONFERENCE_JOIN Tox_Err_Conference_Join;
 typedef TOX_ERR_CONFERENCE_SEND_MESSAGE Tox_Err_Conference_Send_Message;

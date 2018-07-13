@@ -183,6 +183,17 @@ static int32_t get_group_num(const Group_Chats *g_c, const uint8_t *identifier)
     return -1;
 }
 
+int32_t conference_by_uid(const Group_Chats *g_c, const uint8_t *uid)
+{
+    for (uint16_t i = 0; i < g_c->num_chats; ++i) {
+        if (crypto_memcmp(g_c->chats[i].identifier + 1, uid, GROUP_IDENTIFIER_LENGTH - 1) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 /*
  * check if peer with peer_number is in peer array.
  *
@@ -942,13 +953,33 @@ int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, int p
  */
 int group_get_type(const Group_Chats *g_c, uint32_t groupnumber)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
     }
 
     return g->identifier[0];
+}
+
+/* Copies the unique id of group_chat[groupnumber] into uid.
+*
+* return false on failure.
+* return true on success.
+*/
+bool conference_get_uid(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *uid)
+{
+    const Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g) {
+        return false;
+    }
+
+    if (uid != nullptr) {
+        memcpy(uid, g->identifier + 1, sizeof(g->identifier) - 1);
+    }
+
+    return true;
 }
 
 /* Send a group packet to friendcon_id.
@@ -2504,7 +2535,7 @@ void kill_groupchats(Group_Chats *g_c)
  * You should use this to determine how much memory to allocate
  * for copy_chatlist.
  */
-uint32_t count_chatlist(Group_Chats *g_c)
+uint32_t count_chatlist(const Group_Chats *g_c)
 {
     uint32_t ret = 0;
 
@@ -2522,7 +2553,7 @@ uint32_t count_chatlist(Group_Chats *g_c)
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
  * of out_list will be truncated to list_size. */
-uint32_t copy_chatlist(Group_Chats *g_c, uint32_t *out_list, uint32_t list_size)
+uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list_size)
 {
     if (!out_list) {
         return 0;

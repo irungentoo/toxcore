@@ -1453,6 +1453,31 @@ Tox_Conference_Type tox_conference_get_type(const Tox *tox, uint32_t conference_
     return (Tox_Conference_Type)ret;
 }
 
+bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid /* TOX_CONFERENCE_ID_SIZE bytes */)
+{
+    const Messenger *m = tox;
+    return conference_get_uid((Group_Chats *)m->conferences_object, conference_number, uid);
+}
+
+uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, Tox_Err_Conference_By_Uid *error)
+{
+    if (!uid) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_NULL);
+        return UINT32_MAX;
+    }
+
+    const Messenger *m = tox;
+    int32_t ret = conference_by_uid((Group_Chats *)m->conferences_object, uid);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_NOT_FOUND);
+        return UINT32_MAX;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_OK);
+    return ret;
+}
+
 static void set_custom_packet_error(int ret, Tox_Err_Friend_Custom_Packet *error)
 {
     switch (ret) {

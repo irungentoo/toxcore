@@ -42,7 +42,8 @@ extern "C" {
  *****************************************************************************/
 
 
-/** \page core Public core API for Tox clients.
+/**
+ * @page core Public core API for Tox clients.
  *
  * Every function that can fail takes a function-specific error code pointer
  * that can be used to diagnose problems with the Tox state or the function
@@ -81,7 +82,8 @@ extern "C" {
  * part of the ABI.
  */
 
-/** \subsection events Events and callbacks
+/**
+ * @subsection events Events and callbacks
  *
  * Events are handled by callbacks. One callback can be registered per event.
  * All events have a callback function type named `tox_{event}_cb` and a
@@ -104,7 +106,8 @@ extern "C" {
  * their own user data pointer of their own type.
  */
 
-/** \subsection threading Threading implications
+/**
+ * @subsection threading Threading implications
  *
  * It is possible to run multiple concurrent threads with a Tox instance for
  * each thread. It is also possible to run all Tox instances in the same thread.
@@ -126,12 +129,12 @@ extern "C" {
  *
  * E.g. to get the current nickname, one would write
  *
- * \code
+ * @code
  * size_t length = ${tox.self.name.size}(tox);
  * uint8_t *name = malloc(length);
  * if (!name) abort();
  * ${tox.self.name.get}(tox, name);
- * \endcode
+ * @endcode
  *
  * If any other thread calls ${tox.self.name.set} while this thread is allocating
  * memory, the length may have become invalid, and the call to
@@ -239,6 +242,11 @@ const PUBLIC_KEY_SIZE              = 32;
  * The size of a Tox Secret Key in bytes.
  */
 const SECRET_KEY_SIZE              = 32;
+
+/**
+ * The size of a Tox Conference unique id in bytes.
+ */
+const CONFERENCE_UID_SIZE          = 32;
 
 /**
  * The size of the nospam in bytes when written in a Tox address.
@@ -1078,7 +1086,7 @@ namespace friend {
    * @param message The message that will be sent along with the friend request.
    * @param length The length of the data byte array.
    *
-   * @return the friend number on success, UINT32_MAX on failure.
+   * @return the friend number on success, an unspecified value on failure.
    */
   uint32_t add(
       const uint8_t[ADDRESS_SIZE] address,
@@ -1134,7 +1142,7 @@ namespace friend {
    * @param public_key A byte array of length $PUBLIC_KEY_SIZE containing the
    *   Public Key (not the Address) of the friend to add.
    *
-   * @return the friend number on success, UINT32_MAX on failure.
+   * @return the friend number on success, an unspecified value on failure.
    * @see $add for a more detailed description of friend numbers.
    */
   uint32_t add_norequest(const uint8_t[PUBLIC_KEY_SIZE] public_key)
@@ -1173,7 +1181,7 @@ namespace friend {
   /**
    * Return the friend number associated with that Public Key.
    *
-   * @return the friend number on success, UINT32_MAX on failure.
+   * @return the friend number on success, an unspecified value on failure.
    * @param public_key A byte array containing the Public Key.
    */
   const uint32_t by_public_key(const uint8_t[PUBLIC_KEY_SIZE] public_key) {
@@ -1901,7 +1909,7 @@ namespace file {
    *
    * @return A file number used as an identifier in subsequent callbacks. This
    *   number is per friend. File numbers are reused after a transfer terminates.
-   *   On failure, this function returns UINT32_MAX. Any pattern in file numbers
+   *   On failure, this function returns an unspecified value. Any pattern in file numbers
    *   should not be relied on.
    */
   uint32_t send(uint32_t friend_number, uint32_t kind, uint64_t file_size,
@@ -2186,7 +2194,7 @@ namespace conference {
    *
    * This function creates a new text conference.
    *
-   * @return conference number on success, or UINT32_MAX on failure.
+   * @return conference number on success, or an unspecified value on failure.
    */
   uint32_t new() {
     /**
@@ -2301,7 +2309,7 @@ namespace conference {
    * @param cookie Received via the `${event invite}` event.
    * @param length The size of cookie.
    *
-   * @return conference number on success, UINT32_MAX on failure.
+   * @return conference number on success, an unspecified value on failure.
    */
   uint32_t join(uint32_t friend_number, const uint8_t[length] cookie) {
     /**
@@ -2451,6 +2459,32 @@ namespace conference {
        */
       CONFERENCE_NOT_FOUND,
     }
+  }
+
+  /**
+   * Get the conference unique ID.
+   *
+   * If uid is NULL, this function has no effect.
+   *
+   * @param uid A memory region large enough to store $CONFERENCE_UID_SIZE bytes.
+   *
+   * @return true on success.
+   */
+  const bool get_uid(uint32_t conference_number, uint8_t[CONFERENCE_UID_SIZE] uid);
+
+  /**
+   * Return the conference number associated with the specified uid.
+   *
+   * @param uid A byte array containing the conference id ($CONFERENCE_UID_SIZE).
+   *
+   * @return the conference number on success, an unspecified value on failure.
+   */
+  const uint32_t by_uid(const uint8_t[CONFERENCE_UID_SIZE] uid) {
+    NULL,
+    /**
+     * No conference with the given uid exists on the conference list.
+     */
+    NOT_FOUND,
   }
 
 }
@@ -2644,6 +2678,7 @@ typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
 typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
 typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
 typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
+typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
 typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;
 typedef TOX_ERR_CONFERENCE_JOIN Tox_Err_Conference_Join;
 typedef TOX_ERR_CONFERENCE_SEND_MESSAGE Tox_Err_Conference_Send_Message;
