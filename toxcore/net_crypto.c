@@ -1174,7 +1174,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         }
     } else {
         conn->maximum_speed_reached = 1;
-        LOGGER_ERROR(c->log, "send_data_packet failed");
+        LOGGER_DEBUG(c->log, "send_data_packet failed");
     }
 
     return packet_num;
