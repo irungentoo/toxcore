@@ -77,7 +77,12 @@ enable_testing()
 
 set(CMAKE_MACOSX_RPATH ON)
 
-if(NOT ${CMAKE_VERSION} VERSION_LESS "3.1.0")
+if(${CMAKE_VERSION} VERSION_LESS "3.1.0")
+  if(NOT MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  endif()
+else()
   # Set standard version for compiler.
   set(CMAKE_C_STANDARD 99)
   set(CMAKE_CXX_STANDARD 11)

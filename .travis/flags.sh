@@ -28,6 +28,8 @@ add_flag -O3 -march=native
 
 # Warn on non-ISO C.
 add_c_flag -pedantic
+add_c_flag -std=c99
+add_cxx_flag -std=c++11
 
 add_flag -g3
 add_flag -ftrapv
