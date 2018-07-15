@@ -1,7 +1,7 @@
-# ![Project Tox](https://raw.github.com/TokTok/toxcore/master/other/tox.png "Project Tox")
+# ![Project Tox](https://raw.github.com/TokTok/c-toxcore/master/other/tox.png "Project Tox")
 
 **Current build status:** [![Build Status](https://travis-ci.org/TokTok/c-toxcore.svg?branch=master)](https://travis-ci.org/TokTok/c-toxcore)
-**Current Coverage:** [![Coverage Status](https://coveralls.io/repos/github/TokTok/toxcore/badge.svg?branch=master)](https://coveralls.io/github/TokTok/toxcore?branch=master)
+**Current Coverage:** [![Coverage Status](https://coveralls.io/repos/github/TokTok/c-toxcore/badge.svg?branch=master)](https://coveralls.io/github/TokTok/c-toxcore?branch=master)
 
 [**Website**](https://tox.chat) **|** [**Wiki**](https://wiki.tox.chat/) **|** [**Blog**](https://blog.tox.chat/) **|** [**FAQ**](https://wiki.tox.chat/doku.php?id=users:faq) **|** [**Binaries/Downloads**](https://wiki.tox.chat/Binaries) **|** [**Clients**](https://wiki.tox.chat/doku.php?id=clients) **|** [**Compiling**](/INSTALL.md) **|** [**Toxcore's Projects**](https://github.com/TokTok/c-toxcore/projects)
 
