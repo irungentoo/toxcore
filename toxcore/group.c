@@ -33,6 +33,41 @@
 #include "mono_time.h"
 #include "util.h"
 
+/**
+ * Packet type IDs as per the protocol specification.
+ */
+typedef enum Group_Message_Id {
+    GROUP_MESSAGE_PING_ID        = 0,
+    GROUP_MESSAGE_NEW_PEER_ID    = 16,
+    GROUP_MESSAGE_KILL_PEER_ID   = 17,
+    GROUP_MESSAGE_NAME_ID        = 48,
+    GROUP_MESSAGE_TITLE_ID       = 49,
+} Group_Message_Id;
+
+#define GROUP_MESSAGE_NEW_PEER_LENGTH (sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2)
+#define GROUP_MESSAGE_KILL_PEER_LENGTH (sizeof(uint16_t))
+
+#define MAX_GROUP_MESSAGE_DATA_LEN (MAX_CRYPTO_DATA_SIZE - (1 + MIN_MESSAGE_PACKET_LEN))
+
+typedef enum Invite_Id {
+    INVITE_ID             = 0,
+    INVITE_RESPONSE_ID    = 1,
+} Invite_Id;
+
+#define INVITE_PACKET_SIZE (1 + sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
+#define INVITE_RESPONSE_PACKET_SIZE (1 + sizeof(uint16_t) * 2 + GROUP_IDENTIFIER_LENGTH)
+
+#define ONLINE_PACKET_DATA_SIZE (sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
+
+typedef enum Peer_Id {
+    PEER_KILL_ID      = 1,
+    PEER_QUERY_ID     = 8,
+    PEER_RESPONSE_ID  = 9,
+    PEER_TITLE_ID     = 10,
+} Peer_Id;
+
+#define MIN_MESSAGE_PACKET_LEN (sizeof(uint16_t) * 2 + sizeof(uint32_t) + 1)
+
 /* return false if the groupnumber is not valid.
  * return true if the groupnumber is valid.
  */
@@ -218,14 +253,12 @@ static uint64_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
 {
     uint64_t cmp1 = 0, cmp2 = 0;
 
-    unsigned int i;
-
-    for (i = 0; i < sizeof(uint64_t); ++i) {
+    for (size_t i = 0; i < sizeof(uint64_t); ++i) {
         cmp1 = (cmp1 << 8) + (uint64_t)pk1[i];
         cmp2 = (cmp2 << 8) + (uint64_t)pk2[i];
     }
 
-    return (cmp1 - cmp2);
+    return cmp1 - cmp2;
 }
 
 typedef enum Groupchat_Closest {
@@ -1024,12 +1057,6 @@ static unsigned int send_lossy_group_peer(Friend_Connections *fr_c, int friendco
                                   packet, SIZEOF_VLA(packet)) != -1;
 }
 
-#define INVITE_PACKET_SIZE (1 + sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
-#define INVITE_ID 0
-
-#define INVITE_RESPONSE_PACKET_SIZE (1 + sizeof(uint16_t) * 2 + GROUP_IDENTIFIER_LENGTH)
-#define INVITE_RESPONSE_ID 1
-
 /* invite friendnumber to groupnumber.
  *
  * return 0 on success.
@@ -1254,7 +1281,6 @@ int callback_groupchat_delete(Group_Chats *g_c, uint32_t groupnumber, group_on_d
 static int send_message_group(const Group_Chats *g_c, uint32_t groupnumber, uint8_t message_id, const uint8_t *data,
                               uint16_t len);
 
-#define GROUP_MESSAGE_PING_ID 0
 static int group_ping_send(const Group_Chats *g_c, uint32_t groupnumber)
 {
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, nullptr, 0) > 0) {
@@ -1264,8 +1290,6 @@ static int group_ping_send(const Group_Chats *g_c, uint32_t groupnumber)
     return -1;
 }
 
-#define GROUP_MESSAGE_NEW_PEER_ID 16
-#define GROUP_MESSAGE_NEW_PEER_LENGTH (sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2)
 /* send a new_peer message
  * return 0 on success
  * return -1 on failure
@@ -1287,9 +1311,6 @@ static int group_new_peer_send(const Group_Chats *g_c, uint32_t groupnumber, uin
     return -1;
 }
 
-#define GROUP_MESSAGE_KILL_PEER_ID 17
-#define GROUP_MESSAGE_KILL_PEER_LENGTH (sizeof(uint16_t))
-
 /* send a kill_peer message
  * return 0 on success
  * return -1 on failure
@@ -1308,8 +1329,6 @@ static int group_kill_peer_send(const Group_Chats *g_c, uint32_t groupnumber, ui
     return -1;
 }
 
-#define GROUP_MESSAGE_NAME_ID 48
-
 /* send a name message
  * return 0 on success
  * return -1 on failure
@@ -1326,8 +1345,6 @@ static int group_name_send(const Group_Chats *g_c, uint32_t groupnumber, const u
 
     return -1;
 }
-
-#define GROUP_MESSAGE_TITLE_ID 49
 
 /* set the group's title, limited to MAX_NAME_LENGTH
  * return 0 on success
@@ -1536,8 +1553,6 @@ static unsigned int count_close_connected(Group_c *g)
     return count;
 }
 
-#define ONLINE_PACKET_DATA_SIZE (sizeof(uint16_t) + GROUP_IDENTIFIER_LENGTH)
-
 static int send_packet_online(Friend_Connections *fr_c, int friendcon_id, uint16_t group_num, uint8_t *identifier)
 {
     uint8_t packet[1 + ONLINE_PACKET_DATA_SIZE];
@@ -1609,10 +1624,6 @@ static int handle_packet_online(Group_Chats *g_c, int friendcon_id, const uint8_
     return 0;
 }
 
-#define PEER_KILL_ID 1
-#define PEER_QUERY_ID 8
-#define PEER_RESPONSE_ID 9
-#define PEER_TITLE_ID 10
 // we could send title with invite, but then if it changes between sending and accepting inv, joinee won't see it
 
 /* return 1 on success.
@@ -1795,8 +1806,6 @@ static void handle_direct_packet(Group_Chats *g_c, uint32_t groupnumber, const u
     }
 }
 
-#define MIN_MESSAGE_PACKET_LEN (sizeof(uint16_t) * 2 + sizeof(uint32_t) + 1)
-
 /* Send message to all close except receiver (if receiver isn't -1)
  * NOTE: this function appends the group chat number to the data passed to it.
  *
@@ -1919,8 +1928,6 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, uint32_t groupn
 
     return sent;
 }
-
-#define MAX_GROUP_MESSAGE_DATA_LEN (MAX_CRYPTO_DATA_SIZE - (1 + MIN_MESSAGE_PACKET_LEN))
 
 /* Send data of len with message_id to groupnumber.
  *
