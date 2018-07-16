@@ -2,14 +2,14 @@
 //
 // This test triggers a different code path than if we only allocate a single
 // conference. This is the simplest test possible that triggers it.
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/tox.h"
-
 #include "check_compat.h"
-#include "helpers.h"
 
 int main(void)
 {

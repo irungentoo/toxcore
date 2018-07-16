@@ -2,17 +2,11 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 
-#include "helpers.h"
-
-#include "../testing/misc_tools.c"
+#include "../testing/misc_tools.h"
+#include "check_compat.h"
 
 typedef enum {
     NEGATIVE,
@@ -180,8 +174,6 @@ static Suite *tox_strncasecmp_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    srand((unsigned int) time(nullptr));
 
     Suite *s = tox_strncasecmp_suite();
     SRunner *test_runner = srunner_create(s);

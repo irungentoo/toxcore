@@ -1,7 +1,7 @@
 #include <stdlib.h>  // calloc, free
 
 #include "check_compat.h"
-#include "helpers.h"
+#include "../testing/misc_tools.h"
 
 static bool all_connected(uint32_t tox_count, Tox **toxes)
 {

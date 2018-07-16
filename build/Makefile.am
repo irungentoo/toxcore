@@ -1,5 +1,6 @@
 bin_PROGRAMS =
 noinst_PROGRAMS =
+noinst_LTLIBRARIES =
 lib_LTLIBRARIES =
 noinst_bindir = $(top_builddir)/build
 EXTRA_DIST=

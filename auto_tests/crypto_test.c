@@ -2,18 +2,14 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 
-#include "helpers.h"
-
+#include "../testing/misc_tools.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/net_crypto.h"
+#include "check_compat.h"
 
 static void rand_bytes(uint8_t *b, size_t blen)
 {
@@ -356,7 +352,6 @@ static Suite *crypto_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    srand((unsigned int) time(nullptr));
 
     Suite *crypto = crypto_suite();
     SRunner *test_runner = srunner_create(crypto);

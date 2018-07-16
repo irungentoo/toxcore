@@ -23,11 +23,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define _XOPEN_SOURCE 600
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../toxcore/DHT.h"
 #include "../toxcore/LAN_discovery.h"
@@ -43,7 +41,7 @@
 #include "../toxcore/TCP_server.h"
 #endif
 
-#include "../testing/misc_tools.c"
+#include "../testing/misc_tools.h"
 
 #ifdef DHT_NODE_EXTRA_PACKETS
 #include "./bootstrap_node_packets.h"

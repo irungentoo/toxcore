@@ -1,11 +1,13 @@
 cc_library(
-    name = "helpers",
+    name = "check_compat",
     testonly = True,
-    hdrs = [
-        "check_compat.h",
-        "helpers.h",
-        "run_auto_test.h",
-    ],
+    hdrs = ["check_compat.h"],
+)
+
+cc_library(
+    name = "run_auto_test",
+    testonly = True,
+    hdrs = ["run_auto_test.h"],
 )
 
 test_sizes = {
@@ -21,7 +23,8 @@ test_sizes = {
     srcs = [src],
     copts = ["-Wno-sign-compare"],
     deps = [
-        ":helpers",
+        ":check_compat",
+        ":run_auto_test",
         "//c-toxcore/other:monolith",
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxav",
@@ -44,8 +47,9 @@ cc_test(
     srcs = ["monolith_test.cc"],
     copts = ["-Wno-sign-compare"],
     deps = [
-        ":helpers",
+        ":check_compat",
         ":monolith",
+        ":run_auto_test",
         "//c-toxcore/other:monolith",
         "//c-toxcore/testing:misc_tools",
     ],

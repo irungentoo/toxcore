@@ -14,6 +14,7 @@ DHT_bootstrap_CFLAGS = -I$(top_srcdir)/other \
 
 DHT_bootstrap_LDADD =   $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        libmisc_tools.la \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \

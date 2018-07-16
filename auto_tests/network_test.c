@@ -2,18 +2,12 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
-#include <errno.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/network.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 #ifndef USE_IPV6
 #define USE_IPV6 1
@@ -181,7 +175,6 @@ static Suite *network_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    srand((unsigned int) time(nullptr));
 
     Suite *network = network_suite();
     SRunner *test_runner = srunner_create(network);

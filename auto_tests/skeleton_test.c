@@ -2,12 +2,10 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdlib.h>
-#include <time.h>
 
-#include "helpers.h"
+#include "../testing/misc_tools.h"
+#include "check_compat.h"
 
 /*
 #include "../<stuff to test>"
@@ -32,8 +30,6 @@ static Suite *creativesuitenamegoeshere_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    srand((unsigned int) time(nullptr));
 
     Suite *creativesuitenamegoeshere = creativesuitenamegoeshere_suite();
     SRunner *test_runner = srunner_create(creativesuitenamegoeshere);

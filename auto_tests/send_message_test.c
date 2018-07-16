@@ -1,12 +1,13 @@
 /* Tests that we can send messages to friends.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef struct State {
     uint32_t index;

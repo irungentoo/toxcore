@@ -1,8 +1,9 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../toxcore/tox.h"
 #include "check_compat.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 #define check(major, minor, patch, expected)                            \
   do_check(TOX_VERSION_MAJOR, TOX_VERSION_MINOR, TOX_VERSION_PATCH,     \

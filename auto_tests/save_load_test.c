@@ -1,25 +1,20 @@
 /* Tests that we can save and load Tox data.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {

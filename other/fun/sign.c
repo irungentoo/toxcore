@@ -15,9 +15,11 @@
  *
  * NOTE: The signature is appended to the end of the file.
  */
-#include "../../testing/misc_tools.c" // hex_string_to_bin
 #include <sodium.h>
 #include <string.h>
+
+#include "../../testing/misc_tools.h" // hex_string_to_bin
+#include "../../toxcore/ccompat.h"
 
 int load_file(char *filename, char **result)
 {

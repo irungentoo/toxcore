@@ -2,26 +2,23 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <time.h>
 
-#include "helpers.h"
-
-#include "../toxcore/tox.h"
-
-#include "../toxcore/ccompat.h"
-#include "../toxcore/crypto_core.h"
-#include "../toxencryptsave/toxencryptsave.h"
 #ifdef VANILLA_NACL
 #include "../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #else
 #include <sodium.h>
 #endif
+
+#include "../testing/misc_tools.h"
+#include "../toxcore/ccompat.h"
+#include "../toxcore/crypto_core.h"
+#include "../toxcore/tox.h"
+#include "../toxencryptsave/toxencryptsave.h"
+#include "check_compat.h"
 
 static unsigned char test_salt[TOX_PASS_SALT_LENGTH] = {0xB1, 0xC2, 0x09, 0xEE, 0x50, 0x6C, 0xF0, 0x20, 0xC4, 0xD6, 0xEB, 0xC0, 0x44, 0x51, 0x3B, 0x60, 0x4B, 0x39, 0x4A, 0xCF, 0x09, 0x53, 0x4F, 0xEA, 0x08, 0x41, 0xFA, 0xCA, 0x66, 0xD2, 0x68, 0x7F};
 static unsigned char known_key[TOX_PASS_KEY_LENGTH] = {0x29, 0x36, 0x1c, 0x9e, 0x65, 0xbb, 0x46, 0x8b, 0xde, 0xa1, 0xac, 0xf, 0xd5, 0x11, 0x81, 0xc8, 0x29, 0x28, 0x17, 0x23, 0xa6, 0xc3, 0x6b, 0x77, 0x2e, 0xd7, 0xd3, 0x10, 0xeb, 0xd2, 0xf7, 0xc8};
@@ -207,7 +204,6 @@ static Suite *encryptsave_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    srand((unsigned int) time(nullptr));
 
     Suite *encryptsave =  encryptsave_suite();
     SRunner *test_runner = srunner_create(encryptsave);

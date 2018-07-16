@@ -371,6 +371,11 @@ unit_test(toxcore util)
 #
 ################################################################################
 
+add_library(misc_tools
+  testing/misc_tools.c
+  testing/misc_tools.h)
+target_link_modules(misc_tools toxcore)
+
 set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")
 
 if(ANDROID_CPU_FEATURES)
@@ -389,7 +394,7 @@ function(auto_test target)
   if(NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
     add_executable(auto_${target}_test ${CPUFEATURES}
       auto_tests/${target}_test.c)
-    target_link_modules(auto_${target}_test toxcore)
+    target_link_modules(auto_${target}_test toxcore misc_tools)
     if(NOT ARGV1 STREQUAL "DONT_RUN")
       add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
       set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
@@ -459,7 +464,7 @@ if(DHT_BOOTSTRAP)
   add_executable(DHT_bootstrap ${CPUFEATURES}
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
-  target_link_modules(DHT_bootstrap toxcore)
+  target_link_modules(DHT_bootstrap toxcore misc_tools)
 endif()
 
 option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
@@ -519,12 +524,12 @@ endif()
 
 add_executable(DHT_test ${CPUFEATURES}
   testing/DHT_test.c)
-target_link_modules(DHT_test toxcore)
+target_link_modules(DHT_test toxcore misc_tools)
 
 add_executable(Messenger_test ${CPUFEATURES}
   testing/Messenger_test.c)
-target_link_modules(Messenger_test toxcore)
+target_link_modules(Messenger_test toxcore misc_tools)
 
 add_executable(random_testing ${CPUFEATURES}
   testing/random_testing.cc)
-target_link_modules(random_testing toxcore)
+target_link_modules(random_testing toxcore misc_tools)

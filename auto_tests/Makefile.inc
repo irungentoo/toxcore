@@ -10,6 +10,7 @@ AUTOTEST_CFLAGS = \
 AUTOTEST_LDADD = \
                         $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        libmisc_tools.la \
                         libtoxcore.la \
                         libtoxencryptsave.la \
                         $(LIBSODIUM_LIBS) \
@@ -115,4 +116,3 @@ tox_strncasecmp_test_LDADD = $(AUTOTEST_LDADD)
 
 
 EXTRA_DIST += $(top_srcdir)/auto_tests/check_compat.h
-EXTRA_DIST += $(top_srcdir)/auto_tests/helpers.h

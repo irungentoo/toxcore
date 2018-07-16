@@ -1,5 +1,5 @@
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <stdbool.h>
@@ -57,15 +57,18 @@ static void rebuild_peer_list(Tox *tox)
             ++conference_number) {
         TOX_ERR_CONFERENCE_PEER_QUERY err;
         uint32_t const count = tox_conference_peer_count(tox, conference_number, &err);
-        assert(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
+                      "failed to get conference peer count for conference %u: err = %d", conference_number, err);
 
         for (uint32_t peer_number = 0; peer_number < count; peer_number++) {
             size_t size = tox_conference_peer_get_name_size(tox, conference_number, peer_number, &err);
-            assert(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+            ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
+                          "failed to get conference peer %u's name size (conference = %u): err = %d", peer_number, conference_number, err);
 
             uint8_t *const name = malloc(size);
             tox_conference_peer_get_name(tox, conference_number, peer_number, name, &err);
-            assert(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK);
+            ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
+                          "failed to get conference peer %u's name (conference = %u): err = %d", peer_number, conference_number, err);
             free(name);
         }
     }

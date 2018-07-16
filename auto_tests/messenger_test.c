@@ -14,22 +14,17 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
-#include "helpers.h"
-
-#include "../testing/misc_tools.c" // hex_string_to_bin
-#include "../toxcore/Messenger.h"
-
-#include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
 
 #ifdef VANILLA_NACL
 #include <crypto_box.h> // crypto_box_PUBLICKEYBYTES and other defines.
 #else
 #include <sodium.h>
 #endif
+
+#include "check_compat.h"
+#include "../testing/misc_tools.h"
+#include "../toxcore/Messenger.h"
 
 #define REALLY_BIG_NUMBER ((1) << (sizeof(uint16_t) * 7))
 

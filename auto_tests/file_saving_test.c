@@ -23,15 +23,21 @@
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "helpers.h"
-
+#include "../testing/misc_tools.h"
+#include "../toxcore/ccompat.h"
 #include "../toxencryptsave/toxencryptsave.h"
 
-static const char *pphrase = "bar", *name = "foo", *savefile = "./save";
+static const char *pphrase = "bar";
+static const char *name = "foo";
+static const char *savefile = "./save";
 
 static void save_data_encrypted(void)
 {

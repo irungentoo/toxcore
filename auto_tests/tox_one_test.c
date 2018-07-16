@@ -5,17 +5,15 @@
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdlib.h>
-#include <time.h>
+#include <string.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t *status_message)
 {
@@ -145,8 +143,6 @@ static Suite *tox_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    srand((unsigned int) time(nullptr));
 
     Suite *tox = tox_suite();
     SRunner *test_runner = srunner_create(tox);

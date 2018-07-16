@@ -1,26 +1,17 @@
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/mono_time.h"
 #include "../toxcore/onion.h"
 #include "../toxcore/onion_announce.h"
 #include "../toxcore/onion_client.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 #ifndef USE_IPV6
 #define USE_IPV6 1
@@ -570,7 +561,6 @@ static Suite *onion_suite(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    srand((unsigned int) time(nullptr));
 
     Suite *onion = onion_suite();
     SRunner *test_runner = srunner_create(onion);

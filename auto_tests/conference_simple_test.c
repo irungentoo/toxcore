@@ -1,13 +1,13 @@
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
-#include "../toxcore/tox.h"
-
-#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
-#include "helpers.h"
+#include "../testing/misc_tools.h"
+#include "../toxcore/tox.h"
+#include "check_compat.h"
 
 typedef struct State {
     uint32_t id;
@@ -51,7 +51,7 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
     {
         TOX_ERR_CONFERENCE_JOIN err;
         state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
-        assert(err == TOX_ERR_CONFERENCE_JOIN_OK);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK, "failed to join a conference: err = %d", err);
         fprintf(stderr, "tox%d Joined conference %d\n", state->id, state->conference);
         state->joined = true;
     }
@@ -186,7 +186,7 @@ int main(void)
         TOX_ERR_CONFERENCE_NEW err;
         state1.conference = tox_conference_new(tox1, &err);
         state1.joined = true;
-        assert(err == TOX_ERR_CONFERENCE_NEW_OK);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_NEW_OK, "failed to create a conference: err = %d", err);
         fprintf(stderr, "Created conference: id=%d\n", state1.conference);
     }
 
@@ -194,7 +194,7 @@ int main(void)
         // Invite friend.
         TOX_ERR_CONFERENCE_INVITE err;
         tox_conference_invite(tox1, 0, state1.conference, &err);
-        assert(err == TOX_ERR_CONFERENCE_INVITE_OK);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "failed to invite a friend: err = %d", err);
         fprintf(stderr, "tox1 invited tox2\n");
     }
 

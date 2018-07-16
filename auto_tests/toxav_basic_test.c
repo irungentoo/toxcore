@@ -1,29 +1,21 @@
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <time.h>
 
 #include <vpx/vpx_image.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxav/toxav.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 #define TEST_REGULAR_AV 1
 #define TEST_REGULAR_A 1

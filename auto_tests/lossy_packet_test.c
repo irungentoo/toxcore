@@ -1,25 +1,18 @@
 /* Tests that we can send lossy packets.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-#include "../toxcore/ccompat.h"
-#include "../toxcore/tox.h"
+#include "../testing/misc_tools.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 #define LOSSY_PACKET_FILLER 200
 

@@ -1,10 +1,14 @@
 // Test to make sure that when UDP is disabled, and we set an invalid proxy,
 // i.e. one that doesn't run a proxy server, then we don't get any connection.
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
-#include "helpers.h"
+#include <stdio.h>
+
+#include "../testing/misc_tools.h"
+#include "check_compat.h"
 
 static uint8_t const key[] = {
     0x15, 0xE9, 0xC3, 0x09, 0xCF, 0xCB, 0x79, 0xFD,
@@ -37,7 +41,9 @@ int main(void)
         tox_iterate(tox, nullptr);
         c_sleep(ITERATION_INTERVAL);
         // None of the iterations should have a connection.
-        assert(tox_self_get_connection_status(tox) == TOX_CONNECTION_NONE);
+        const TOX_CONNECTION status = tox_self_get_connection_status(tox);
+        ck_assert_msg(status == TOX_CONNECTION_NONE,
+                      "unexpectedly got a connection (%d)", status);
     }
 
     tox_kill(tox);

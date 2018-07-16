@@ -1,3 +1,13 @@
+if BUILD_TESTS
+TEST_LIB = misc_tools
+endif
+if BUILD_TESTING
+TEST_LIB = misc_tools
+endif
+
+noinst_LTLIBRARIES += libmisc_tools.la
+libmisc_tools_la_SOURCES = ../testing/misc_tools.c ../testing/misc_tools.h
+
 if BUILD_TESTING
 
 noinst_PROGRAMS +=      DHT_test \
@@ -10,6 +20,7 @@ DHT_test_CFLAGS =       $(LIBSODIUM_CFLAGS) \
 
 DHT_test_LDADD =        $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        libmisc_tools.la \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
@@ -25,13 +36,11 @@ Messenger_test_CFLAGS = $(LIBSODIUM_CFLAGS) \
 
 Messenger_test_LDADD =  $(LIBSODIUM_LDFLAGS) \
                         $(NACL_LDFLAGS) \
+                        libmisc_tools.la \
                         libtoxcore.la \
                         $(LIBSODIUM_LIBS) \
                         $(NACL_OBJECTS) \
                         $(NACL_LIBS) \
                         $(WINSOCK2_LIBS)
-
-
-EXTRA_DIST += 			$(top_srcdir)/testing/misc_tools.c
 
 endif

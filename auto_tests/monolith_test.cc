@@ -21,7 +21,6 @@
 
 #include "../testing/misc_tools.c"
 #include "check_compat.h"
-#include "helpers.h"
 
 #include <ctype.h>
 

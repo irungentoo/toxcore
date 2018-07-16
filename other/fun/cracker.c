@@ -9,15 +9,16 @@
  * Will try to find a public key starting with: ABCDEF
  */
 
-#include "../../testing/misc_tools.c"
-#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-/* NaCl includes*/
+/* Sodium includes*/
 #include <sodium/crypto_scalarmult_curve25519.h>
 #include <sodium/randombytes.h>
 
-/* Sodium include*/
-//#include <sodium.h>
+#include "../../testing/misc_tools.h"
+#include "../../toxcore/ccompat.h"
 
 void print_key(uint8_t *client_id)
 {

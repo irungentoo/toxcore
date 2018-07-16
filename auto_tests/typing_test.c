@@ -1,25 +1,19 @@
 /* Tests that our typing notifications work.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include "check_compat.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 static void typing_callback(Tox *m, uint32_t friendnumber, bool typing, void *userdata)
 {

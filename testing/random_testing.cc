@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "../toxcore/tox.h"
-#include "misc_tools.c"
+#include "misc_tools.h"
 
 namespace {
 
@@ -32,8 +32,6 @@ constexpr uint32_t MAX_ACTIONS = 10000;
 constexpr uint32_t MAX_ACTION_ATTEMPTS = 100;
 // Number of tox_iterate calls between each action.
 constexpr uint32_t ITERATIONS_PER_ACTION = 1;
-// Amount of time in milliseconds to wait between tox_iterate calls.
-constexpr uint32_t ITERATION_INTERVAL = 5;
 
 struct Tox_Options_Deleter {
   void operator()(Tox_Options *options) const { tox_options_free(options); }

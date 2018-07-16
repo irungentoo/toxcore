@@ -1,19 +1,19 @@
 /* Auto Tests: Save and load friends.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
-#include "helpers.h"
-#include "../toxcore/ccompat.h"
-#include "../toxcore/crypto_core.h"
-#include "../toxcore/tox.h"
-
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../testing/misc_tools.h"
+#include "../toxcore/ccompat.h"
+#include "../toxcore/crypto_core.h"
+#include "../toxcore/tox.h"
+#include "check_compat.h"
 
 struct test_data {
     uint8_t name[TOX_MAX_NAME_LENGTH];
@@ -124,8 +124,10 @@ int main(void)
     tox_friend_get_name(tox_to_compare, 0, to_compare.name, nullptr);
     tox_friend_get_status_message(tox_to_compare, 0, to_compare.status_message, nullptr);
 
-    assert(memcmp(reference_name, to_compare.name, TOX_MAX_NAME_LENGTH) == 0);
-    assert(memcmp(reference_status, to_compare.status_message, TOX_MAX_STATUS_MESSAGE_LENGTH) == 0);
+    ck_assert_msg(memcmp(reference_name, to_compare.name, TOX_MAX_NAME_LENGTH) == 0,
+                  "incorrect name: should be all zeroes");
+    ck_assert_msg(memcmp(reference_status, to_compare.status_message, TOX_MAX_STATUS_MESSAGE_LENGTH) == 0,
+                  "incorrect status message: should be all zeroes");
 
     tox_options_free(options);
     tox_kill(tox1);

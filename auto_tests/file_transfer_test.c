@@ -1,25 +1,20 @@
 /* File transfer test.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 /* The Travis-CI container responds poorly to ::1 as a localhost address
  * You're encouraged to -D FORCE_TESTS_IPV6 on a local test  */

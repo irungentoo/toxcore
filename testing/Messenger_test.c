@@ -38,19 +38,16 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define _XOPEN_SOURCE 600
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include "../toxcore/Messenger.h"
-#include "misc_tools.c"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <arpa/inet.h>
-
 #endif
+
+#include "../toxcore/Messenger.h"
+#include "misc_tools.h"
 
 static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
                           void *userdata)

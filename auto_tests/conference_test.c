@@ -1,25 +1,19 @@
 /* Auto Tests: Conferences.
  */
 
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "check_compat.h"
-
-#include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
+#include "../testing/misc_tools.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-
-#include "helpers.h"
+#include "check_compat.h"
 
 #define NUM_GROUP_TOX 5
 #define GROUP_MESSAGE "Install Gentoo"
@@ -125,8 +119,8 @@ static void run_conference_tests(Tox **toxes, uint32_t *tox_index)
         for (uint16_t i = 0; i < k - 1; ++i) {
             uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
             ck_assert_msg(peer_count == (k - 1), "\n\tBad number of group peers (post check)."
-                          "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
-                          (k - 1), i, peer_count);
+                          "\n\t\t\tExpected: %u but tox_instance(%u) only has: %u\n\n",
+                          k - 1, i, (unsigned)peer_count);
         }
     }
 }
@@ -240,8 +234,8 @@ static void test_many_group(void)
         uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
 
         ck_assert_msg(peer_count == NUM_GROUP_TOX, "\n\tBad number of group peers (pre check)."
-                      "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
-                      NUM_GROUP_TOX, i, peer_count);
+                      "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %u\n\n",
+                      NUM_GROUP_TOX, i, (unsigned)peer_count);
 
         uint8_t title[2048];
         size_t ret = tox_conference_get_title_size(toxes[i], 0, nullptr);

@@ -46,6 +46,7 @@ matrix:
         - libcv-dev             # For av_test.
         - libhighgui-dev        # For av_test.
         - libopencv-contrib-dev # For av_test.
+        - libsndfile1-dev       # For av_test.
         - portaudio19-dev       # For av_test.
     before_install:
     # Clear bazel installation.

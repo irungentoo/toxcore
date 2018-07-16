@@ -1,8 +1,11 @@
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
-#include "helpers.h"
+#include <stdio.h>
+
+#include "../testing/misc_tools.h"
+#include "check_compat.h"
 
 static uint8_t const key[] = {
     0x15, 0xE9, 0xC3, 0x09, 0xCF, 0xCB, 0x79, 0xFD,
@@ -29,7 +32,9 @@ int main(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
-    assert(tox_self_get_connection_status(tox_udp) == TOX_CONNECTION_UDP);
+    const TOX_CONNECTION status = tox_self_get_connection_status(tox_udp);
+    ck_assert_msg(status == TOX_CONNECTION_UDP,
+                  "expected connection status to be UDP, but got %d", status);
     printf("Connection (UDP): %d\n", tox_self_get_connection_status(tox_udp));
 
     tox_kill(tox_udp);

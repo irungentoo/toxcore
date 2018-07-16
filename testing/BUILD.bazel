@@ -2,11 +2,10 @@ load("//tools:no_undefined.bzl", "cc_library")
 
 cc_library(
     name = "misc_tools",
-    hdrs = [
-        "misc_tools.c",
-    ],
+    srcs = ["misc_tools.c"],
+    hdrs = ["misc_tools.h"],
     visibility = ["//c-toxcore:__subpackages__"],
-    deps = ["//c-toxcore/toxcore:ccompat"],
+    deps = ["//c-toxcore/toxcore"],
 )
 
 cc_binary(
@@ -52,4 +51,14 @@ cc_binary(
         ":misc_tools",
         "//c-toxcore/toxcore",
     ],
+)
+
+cc_library(
+    name = "monolith",
+    hdrs = [
+        "misc_tools.c",
+        "misc_tools.h",
+    ],
+    visibility = ["//c-toxcore/other:__pkg__"],
+    deps = ["//c-toxcore/toxcore"],
 )
