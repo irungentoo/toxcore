@@ -92,7 +92,7 @@ START_TEST(test_known)
 {
     unsigned char c[147];
     unsigned char m[131];
-    int clen, mlen;
+    uint16_t clen, mlen;
 
     ck_assert_msg(sizeof(c) == sizeof(m) + CRYPTO_MAC_SIZE * sizeof(unsigned char),
                   "cyphertext should be CRYPTO_MAC_SIZE bytes longer than plaintext");
@@ -116,7 +116,7 @@ START_TEST(test_fast_known)
     unsigned char k[CRYPTO_SHARED_KEY_SIZE];
     unsigned char c[147];
     unsigned char m[131];
-    int clen, mlen;
+    uint16_t clen, mlen;
 
     encrypt_precompute(bobpk, alicesk, k);
 
@@ -158,11 +158,11 @@ START_TEST(test_endtoend)
     unsigned char m3[sizeof(m)];
     unsigned char m4[sizeof(m)];
 
-    int mlen;
-    int c1len, c2len, c3len, c4len;
-    int m1len, m2len, m3len, m4len;
+    uint16_t mlen;
+    uint16_t c1len, c2len, c3len, c4len;
+    uint16_t m1len, m2len, m3len, m4len;
 
-    int testno;
+    uint8_t testno;
 
     // Test 100 random messages and keypairs
     for (testno = 0; testno < 100; testno++) {
@@ -188,7 +188,7 @@ START_TEST(test_endtoend)
         c4len = encrypt_data_symmetric(k2, n, m, mlen, c4);
 
         ck_assert_msg(c1len == c2len && c1len == c3len && c1len == c4len, "cyphertext lengths differ");
-        ck_assert_msg(c1len == mlen + (int)CRYPTO_MAC_SIZE, "wrong cyphertext length");
+        ck_assert_msg(c1len == mlen + (uint16_t)CRYPTO_MAC_SIZE, "wrong cyphertext length");
         ck_assert_msg(memcmp(c1, c2, c1len) == 0 && memcmp(c1, c3, c1len) == 0
                       && memcmp(c1, c4, c1len) == 0, "crypertexts differ");
 
@@ -220,8 +220,8 @@ START_TEST(test_large_data)
     unsigned char m2[MAX_CRYPTO_PACKET_SIZE];
     unsigned char c2[sizeof(m2) + CRYPTO_MAC_SIZE];
 
-    int c1len, c2len;
-    int m1plen;
+    uint16_t c1len, c2len;
+    uint16_t m1plen;
 
     //Generate random messages
     rand_bytes(m1, sizeof(m1));
@@ -254,8 +254,8 @@ START_TEST(test_large_data_symmetric)
     unsigned char c1[sizeof(m1) + CRYPTO_MAC_SIZE];
     unsigned char m1prime[sizeof(m1)];
 
-    int c1len;
-    int m1plen;
+    uint16_t c1len;
+    uint16_t m1plen;
 
     //Generate random messages
     rand_bytes(m1, sizeof(m1));
@@ -282,9 +282,7 @@ static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
     num2 = num + num1;
 
     if (num2 < num1) {
-        uint32_t i;
-
-        for (i = CRYPTO_NONCE_SIZE - sizeof(num1); i != 0; --i) {
+        for (uint16_t i = CRYPTO_NONCE_SIZE - sizeof(num1); i != 0; --i) {
             ++nonce[i - 1];
 
             if (nonce[i - 1] != 0) {
@@ -299,7 +297,7 @@ static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
 
 START_TEST(test_increment_nonce)
 {
-    long long unsigned int i;
+    uint32_t i;
 
     uint8_t n[CRYPTO_NONCE_SIZE];
 
@@ -362,7 +360,7 @@ int main(void)
 
     Suite *crypto = crypto_suite();
     SRunner *test_runner = srunner_create(crypto);
-    int number_failed = 0;
+    uint8_t number_failed = 0;
 
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);

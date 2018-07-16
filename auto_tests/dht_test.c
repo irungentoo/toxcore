@@ -94,9 +94,9 @@ static uint8_t is_furthest(const uint8_t *comp_client_id, Client_data *list, uin
 
 static int client_in_list(Client_data *list, uint32_t length, const uint8_t *public_key)
 {
-    int i;
+    uint32_t i;
 
-    for (i = 0; i < (int)length; ++i) {
+    for (i = 0; i < (uint32_t)length; ++i) {
         if (id_equal(public_key, list[i].public_key)) {
             return i;
         }
@@ -110,7 +110,7 @@ static void test_addto_lists_update(DHT            *dht,
                                     uint32_t        length,
                                     IP_Port        *ip_port)
 {
-    int used, test, test1, test2, found;
+    uint32_t used, test, test1, test2, found;
     IP_Port test_ipp;
     uint8_t test_id[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
@@ -229,7 +229,7 @@ static void test_addto_lists_possible_bad(DHT            *dht,
         const uint8_t  *comp_client_id)
 {
     // check "possibly bad" clients replacement
-    int used, test1, test2, test3;
+    uint32_t used, test1, test2, test3;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
             test_id3[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
@@ -263,9 +263,9 @@ static void test_addto_lists_possible_bad(DHT            *dht,
 
     ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Client id is not in the list");
 
-    int inlist_id1 = client_in_list(list, length, test_id1) >= 0;
-    int inlist_id2 = client_in_list(list, length, test_id2) >= 0;
-    int inlist_id3 = client_in_list(list, length, test_id3) >= 0;
+    bool inlist_id1 = client_in_list(list, length, test_id1) >= 0;
+    bool inlist_id2 = client_in_list(list, length, test_id2) >= 0;
+    bool inlist_id3 = client_in_list(list, length, test_id3) >= 0;
 
     ck_assert_msg(inlist_id1 + inlist_id2 + inlist_id3 == 2, "Wrong client removed");
 
@@ -337,7 +337,7 @@ static void test_addto_lists(IP ip)
     ip_port.ip = ip;
     ip_port.port = TOX_PORT_DEFAULT;
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    int i, used;
+    uint16_t i, used;
 
     // check lists filling
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
@@ -426,11 +426,11 @@ static void print_pk(uint8_t *public_key)
 }
 
 static void test_add_to_list(uint8_t cmp_list[][CRYPTO_PUBLIC_KEY_SIZE + 1],
-                             unsigned int length, const uint8_t *pk,
+                             uint16_t length, const uint8_t *pk,
                              const uint8_t *cmp_pk)
 {
     uint8_t p_b[CRYPTO_PUBLIC_KEY_SIZE];
-    unsigned int i;
+    uint16_t i;
 
     for (i = 0; i < length; ++i) {
         if (!cmp_list[i][CRYPTO_PUBLIC_KEY_SIZE]) {
@@ -465,7 +465,7 @@ static void test_list_main(void)
     uint8_t cmp_list1[NUM_DHT][MAX_FRIEND_CLIENTS][CRYPTO_PUBLIC_KEY_SIZE + 1];
     memset(cmp_list1, 0, sizeof(cmp_list1));
 
-    unsigned int i, j, k, l;
+    uint16_t i, j, k, l;
 
     for (i = 0; i < NUM_DHT; ++i) {
         IP ip;
@@ -481,14 +481,14 @@ static void test_list_main(void)
                       "Bound to wrong port: %d", net_port(dhts[i]->net));
     }
 
-    for (j = 0; j < NUM_DHT; ++j) {
-        for (i = 1; i < NUM_DHT; ++i) {
-            test_add_to_list(cmp_list1[j], MAX_FRIEND_CLIENTS, dhts[(i + j) % NUM_DHT]->self_public_key, dhts[j]->self_public_key);
+    for (i = 0; i < NUM_DHT; ++i) {
+        for (j = 1; j < NUM_DHT; ++j) {
+            test_add_to_list(cmp_list1[i], MAX_FRIEND_CLIENTS, dhts[(i + j) % NUM_DHT]->self_public_key, dhts[i]->self_public_key);
         }
     }
 
-    for (j = 0; j < NUM_DHT; ++j) {
-        for (i = 0; i < NUM_DHT; ++i) {
+    for (i = 0; i < NUM_DHT; ++i) {
+        for (j = 0; j < NUM_DHT; ++j) {
             if (i == j) {
                 continue;
             }
@@ -498,7 +498,7 @@ static void test_list_main(void)
             ip_port.ip.ip.v4.uint32 = random_u32();
             ip_port.port = random_u32() % (UINT16_MAX - 1);
             ++ip_port.port;
-            addto_lists(dhts[j], ip_port, dhts[i]->self_public_key);
+            addto_lists(dhts[i], ip_port, dhts[j]->self_public_key);
         }
     }
 
@@ -512,7 +512,7 @@ static void test_list_main(void)
     }
 
 #endif
-    unsigned int m_count = 0;
+    uint16_t m_count = 0;
 
     for (l = 0; l < NUM_DHT; ++l) {
         for (i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
@@ -521,7 +521,7 @@ static void test_list_main(void)
                     continue;
                 }
 
-                unsigned int count = 0;
+                uint16_t count = 0;
 
                 for (k = 0; k < LCLIENT_LIST; ++k) {
                     if (memcmp(dhts[l]->self_public_key, dhts[(l + j) % NUM_DHT]->close_clientlist[k].public_key,
@@ -550,7 +550,7 @@ static void test_list_main(void)
                 ck_assert_msg(count == 1, "Nodes in search don't know ip of friend. %u %u %u", i, j, count);
 
                 Node_format ln[MAX_SENT_NODES];
-                int n = get_close_nodes(dhts[(l + j) % NUM_DHT], dhts[l]->self_public_key, ln, net_family_unspec, 1, 0);
+                uint16_t n = get_close_nodes(dhts[(l + j) % NUM_DHT], dhts[l]->self_public_key, ln, net_family_unspec, 1, 0);
                 ck_assert_msg(n == MAX_SENT_NODES, "bad num close %u | %u %u", n, i, j);
 
                 count = 0;
@@ -589,7 +589,7 @@ static void test_list_main(void)
 
 START_TEST(test_list)
 {
-    unsigned int i;
+    uint8_t i;
 
     for (i = 0; i < 10; ++i) {
         test_list_main();
@@ -610,7 +610,7 @@ START_TEST(test_DHT_test)
     Logger *logs[NUM_DHT];
     uint32_t index[NUM_DHT];
 
-    unsigned int i, j;
+    uint32_t i, j;
 
     for (i = 0; i < NUM_DHT; ++i) {
         IP ip;
@@ -631,6 +631,7 @@ START_TEST(test_DHT_test)
     } pairs[NUM_DHT_FRIENDS];
 
     for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
+        //TODO: Hugbubby say goto bad >:(
 loop_top:
         pairs[i].tox1 = random_u32() % NUM_DHT;
         pairs[i].tox2 = (pairs[i].tox1 + (random_u32() % (NUM_DHT - 1)) + 1) % NUM_DHT;
@@ -694,7 +695,7 @@ START_TEST(test_dht_create_packet)
     uint8_t key[CRYPTO_SYMMETRIC_KEY_SIZE];
     new_symmetric_key(key);
 
-    int length = dht_create_packet(key, key, NET_PACKET_GET_NODES, plain, sizeof(plain), pkt);
+    uint16_t length = dht_create_packet(key, key, NET_PACKET_GET_NODES, plain, sizeof(plain), pkt);
 
     ck_assert_msg(pkt[0] == NET_PACKET_GET_NODES, "Malformed packet.");
     ck_assert_msg(memcmp(pkt + 1, key, CRYPTO_SYMMETRIC_KEY_SIZE) == 0, "Malformed packet.");
@@ -709,14 +710,14 @@ END_TEST
 
 static void dht_pack_unpack(const Node_format *nodes, size_t size, uint8_t *data, size_t length)
 {
-    int packed_size = pack_nodes(data, length, nodes, size);
+    uint16_t packed_size = pack_nodes(data, length, nodes, size);
     ck_assert_msg(packed_size != -1, "Wrong pack_nodes result");
 
     uint16_t processed = 0;
     VLA(Node_format, nodes_unpacked, size);
     const uint8_t tcp_enabled = 1;
 
-    int unpacked_count = unpack_nodes(nodes_unpacked, size, &processed, data, length, tcp_enabled);
+    uint16_t unpacked_count = unpack_nodes(nodes_unpacked, size, &processed, data, length, tcp_enabled);
     ck_assert_msg(unpacked_count == size, "Wrong unpack_nodes result");
     ck_assert_msg(processed == packed_size, "unpack_nodes did not process all data");
 
@@ -822,7 +823,7 @@ int main(void)
     Suite *dht = dht_suite();
     SRunner *test_runner = srunner_create(dht);
 
-    int number_failed = 0;
+    uint8_t number_failed = 0;
     //srunner_set_fork_status(test_runner, CK_NOFORK);
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);

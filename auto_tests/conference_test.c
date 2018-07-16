@@ -27,7 +27,7 @@
 static void handle_self_connection_status(
     Tox *tox, TOX_CONNECTION connection_status, void *user_data)
 {
-    const int id = *(int *)user_data;
+    const uint16_t id = *(uint16_t *)user_data;
 
     if (connection_status != TOX_CONNECTION_NONE) {
         printf("tox #%d: is now connected\n", id);
@@ -39,7 +39,7 @@ static void handle_self_connection_status(
 static void handle_friend_connection_status(
     Tox *tox, uint32_t friendnumber, TOX_CONNECTION connection_status, void *user_data)
 {
-    const int id = *(int *)user_data;
+    const uint16_t id = *(uint16_t *)user_data;
 
     if (connection_status != TOX_CONNECTION_NONE) {
         printf("tox #%d: is now connected to friend %d\n", id, friendnumber);
@@ -52,7 +52,7 @@ static void handle_conference_invite(
     Tox *tox, uint32_t friendnumber, TOX_CONFERENCE_TYPE type,
     const uint8_t *data, size_t length, void *user_data)
 {
-    const int id = *(int *)user_data;
+    const uint16_t id = *(uint16_t *)user_data;
     ck_assert_msg(type == TOX_CONFERENCE_TYPE_TEXT, "tox #%d: wrong conference type: %d", id, type);
 
     TOX_ERR_CONFERENCE_JOIN err;
@@ -74,7 +74,7 @@ static void handle_conference_invite(
     }
 }
 
-static unsigned int num_recv;
+static uint16_t num_recv;
 
 static void handle_conference_message(
     Tox *tox, uint32_t groupnumber, uint32_t peernumber, TOX_MESSAGE_TYPE type,
@@ -87,7 +87,7 @@ static void handle_conference_message(
 
 static void run_conference_tests(Tox **toxes, uint32_t *tox_index)
 {
-    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
         tox_callback_conference_message(toxes[i], &handle_conference_message);
     }
 
@@ -100,8 +100,8 @@ static void run_conference_tests(Tox **toxes, uint32_t *tox_index)
         err == TOX_ERR_CONFERENCE_SEND_MESSAGE_OK, "Failed to send group message.");
     num_recv = 0;
 
-    for (unsigned j = 0; j < 20; ++j) {
-        for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+    for (uint8_t j = 0; j < 20; ++j) {
+        for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
             tox_iterate(toxes[i], &tox_index[i]);
         }
 
@@ -111,18 +111,18 @@ static void run_conference_tests(Tox **toxes, uint32_t *tox_index)
     c_sleep(25);
     ck_assert_msg(num_recv == NUM_GROUP_TOX, "Failed to recv group messages.");
 
-    for (unsigned k = NUM_GROUP_TOX; k != 0 ; --k) {
+    for (uint16_t k = NUM_GROUP_TOX; k != 0 ; --k) {
         tox_conference_delete(toxes[k - 1], 0, nullptr);
 
-        for (unsigned j = 0; j < 10; ++j) {
-            for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+        for (uint8_t j = 0; j < 10; ++j) {
+            for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
                 tox_iterate(toxes[i], &tox_index[i]);
             }
 
             c_sleep(50);
         }
 
-        for (unsigned i = 0; i < k - 1; ++i) {
+        for (uint16_t i = 0; i < k - 1; ++i) {
             uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
             ck_assert_msg(peer_count == (k - 1), "\n\tBad number of group peers (post check)."
                           "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %" PRIu32 "\n\n",
@@ -144,7 +144,7 @@ static void test_many_group(void)
 
     printf("creating %d toxes\n", NUM_GROUP_TOX);
 
-    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
         TOX_ERR_NEW err;
         tox_index[i] = i + 1;
         toxes[i] = tox_new_log(opts, &err, &tox_index[i]);
@@ -186,7 +186,7 @@ static void test_many_group(void)
     while (online_count != NUM_GROUP_TOX) {
         online_count = 0;
 
-        for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+        for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
             tox_iterate(toxes[i], &tox_index[i]);
             online_count += tox_friend_get_connection_status(toxes[i], 0, nullptr) != TOX_CONNECTION_NONE;
         }
@@ -197,7 +197,7 @@ static void test_many_group(void)
         c_sleep(1000);
     }
 
-    printf("friends connected, took %d seconds\n", (int)(time(nullptr) - cur_time));
+    printf("friends connected, took %d seconds\n", (uint16_t)(time(nullptr) - cur_time));
 
     ck_assert_msg(tox_conference_new(toxes[0], nullptr) != UINT32_MAX, "Failed to create group");
     printf("tox #%d: inviting its first friend\n", tox_index[0]);
@@ -206,7 +206,7 @@ static void test_many_group(void)
                   "Failed to set group title");
 
     // One iteration for all the invitations to happen.
-    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
         tox_iterate(toxes[i], &tox_index[i]);
     }
 
@@ -218,7 +218,7 @@ static void test_many_group(void)
         invited_count = 0;
         printf("current peer counts: [");
 
-        for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+        for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
             tox_iterate(toxes[i], &tox_index[i]);
             uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
             invited_count += peer_count == NUM_GROUP_TOX;
@@ -236,7 +236,7 @@ static void test_many_group(void)
         c_sleep(1000);
     }
 
-    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
         uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
 
         ck_assert_msg(peer_count == NUM_GROUP_TOX, "\n\tBad number of group peers (pre check)."
@@ -250,17 +250,17 @@ static void test_many_group(void)
         ck_assert_msg(memcmp("Gentoo", title, ret) == 0, "Wrong title");
     }
 
-    printf("group connected, took %d seconds\n", (int)(time(nullptr) - cur_time));
+    printf("group connected, took %d seconds\n", (uint16_t)(time(nullptr) - cur_time));
 
     run_conference_tests(toxes, tox_index);
 
     printf("tearing down toxes\n");
 
-    for (unsigned i = 0; i < NUM_GROUP_TOX; ++i) {
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
         tox_kill(toxes[i]);
     }
 
-    printf("test_many_group succeeded, took %d seconds\n", (int)(time(nullptr) - test_start_time));
+    printf("test_many_group succeeded, took %d seconds\n", (uint16_t)(time(nullptr) - test_start_time));
 }
 
 int main(void)
