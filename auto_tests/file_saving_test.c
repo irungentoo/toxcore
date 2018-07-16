@@ -33,6 +33,8 @@
 
 #include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
+#include "check_compat.h"
+
 #include "../toxencryptsave/toxencryptsave.h"
 
 static const char *pphrase = "bar";
@@ -60,11 +62,9 @@ static void save_data_encrypted(void)
 
     TOX_ERR_ENCRYPTION eerr;
 
-    if (!tox_pass_encrypt(clear, size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH, (const uint8_t *)pphrase, strlen(pphrase), cipher,
-                          &eerr)) {
-        fprintf(stderr, "error: could not encrypt, error code %d\n", eerr);
-        exit(4);
-    }
+    ck_assert_msg(tox_pass_encrypt(clear, size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH, (const uint8_t *)pphrase,
+                                   strlen(pphrase), cipher,
+                                   &eerr), "Could not encrypt, error code %d.", eerr);
 
     size_t written_value = fwrite(cipher, sizeof(*cipher), size, f);
     printf("written written_value = %u of %u\n", (unsigned)written_value, (unsigned)size);
@@ -79,20 +79,18 @@ static void load_data_decrypted(void)
 {
     FILE *f = fopen(savefile, "r");
     fseek(f, 0, SEEK_END);
-    long size = ftell(f);
+    int64_t size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
     uint8_t *cipher = (uint8_t *)malloc(size);
     uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
-    printf("read read_vavue = %u of %ld\n", (unsigned)read_value, size);
+    printf("Read read_vavue = %u of %ld\n", (unsigned)read_value, size);
 
     TOX_ERR_DECRYPTION derr;
 
-    if (!tox_pass_decrypt(cipher, size, (const uint8_t *)pphrase, strlen(pphrase), clear, &derr)) {
-        fprintf(stderr, "error: could not decrypt, error code %d\n", derr);
-        exit(3);
-    }
+    ck_assert_msg(tox_pass_decrypt(cipher, size, (const uint8_t *)pphrase, strlen(pphrase), clear, &derr),
+                  "Could not decrypt, error code %d.", derr);
 
     struct Tox_Options *options = tox_options_new(nullptr);
 
@@ -106,19 +104,14 @@ static void load_data_decrypted(void)
 
     tox_options_free(options);
 
-    if (t == nullptr) {
-        fprintf(stderr, "error: tox_new returned the error value %d\n", err);
-        return;
-    }
+    ck_assert_msg(t != nullptr, "tox_new returned the error value %d", err);
 
     uint8_t readname[TOX_MAX_NAME_LENGTH];
     tox_self_get_name(t, readname);
     readname[tox_self_get_name_size(t)] = '\0';
 
-    if (strcmp((const char *)readname, name)) {
-        fprintf(stderr, "error: name returned by tox_self_get_name does not match expected result\n");
-        exit(2);
-    }
+    ck_assert_msg(strcmp((const char *)readname, name) == 0,
+                  "name returned by tox_self_get_name does not match expected result");
 
     free(cipher);
     free(clear);
@@ -132,11 +125,7 @@ int main(void)
     save_data_encrypted();
     load_data_decrypted();
 
-    int ret = remove(savefile);
-
-    if (ret != 0) {
-        fprintf(stderr, "error: could not remove savefile\n");
-    }
+    ck_assert_msg(remove(savefile) == 0, "Could not remove the savefile.");
 
     return 0;
 }

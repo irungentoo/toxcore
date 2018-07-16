@@ -40,29 +40,20 @@ static uint64_t file_size;
 static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_number, uint32_t kind, uint64_t filesize,
                              const uint8_t *filename, size_t filename_length, void *userdata)
 {
-    if (kind != TOX_FILE_KIND_DATA) {
-        ck_abort_msg("Bad kind");
-    }
+    ck_assert_msg(kind == TOX_FILE_KIND_DATA, "bad kind");
 
-    if (!(filename_length == sizeof("Gentoo.exe") && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0)) {
-        ck_abort_msg("Bad filename");
-    }
+    ck_assert_msg(filename_length == sizeof("Gentoo.exe")
+                  && memcmp(filename, "Gentoo.exe", sizeof("Gentoo.exe")) == 0, "bad filename");
 
     uint8_t file_id[TOX_FILE_ID_LENGTH];
 
-    if (!tox_file_get_file_id(tox, friend_number, file_number, file_id, nullptr)) {
-        ck_abort_msg("tox_file_get_file_id error");
-    }
+    ck_assert_msg(tox_file_get_file_id(tox, friend_number, file_number, file_id, nullptr), "tox_file_get_file_id error");
 
-    if (memcmp(file_id, file_cmp_id, TOX_FILE_ID_LENGTH) != 0) {
-        ck_abort_msg("bad file_id");
-    }
+    ck_assert_msg(memcmp(file_id, file_cmp_id, TOX_FILE_ID_LENGTH) == 0, "bad file_id");
 
     uint8_t empty[TOX_FILE_ID_LENGTH] = {0};
 
-    if (memcmp(empty, file_cmp_id, TOX_FILE_ID_LENGTH) == 0) {
-        ck_abort_msg("empty file_id");
-    }
+    ck_assert_msg(memcmp(empty, file_cmp_id, TOX_FILE_ID_LENGTH) != 0, "empty file_id");
 
     file_size = filesize;
 
@@ -71,28 +62,23 @@ static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_num
 
         TOX_ERR_FILE_SEEK err_s;
 
-        if (!tox_file_seek(tox, friend_number, file_number, 1337, &err_s)) {
-            ck_abort_msg("tox_file_seek error");
-        }
+        ck_assert_msg(tox_file_seek(tox, friend_number, file_number, 1337, &err_s), "tox_file_seek error");
 
         ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_OK, "tox_file_seek wrong error");
+
     } else {
         sending_pos = size_recv = 0;
     }
 
     TOX_ERR_FILE_CONTROL error;
 
-    if (tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error)) {
-        ++file_accepted;
-    } else {
-        ck_abort_msg("tox_file_control failed. %i", error);
-    }
+    ck_assert_msg(tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error),
+                  "tox_file_control failed. %i", error);
+    ++file_accepted;
 
     TOX_ERR_FILE_SEEK err_s;
 
-    if (tox_file_seek(tox, friend_number, file_number, 1234, &err_s)) {
-        ck_abort_msg("tox_file_seek no error");
-    }
+    ck_assert_msg(!tox_file_seek(tox, friend_number, file_number, 1234, &err_s), "tox_file_seek no error");
 
     ck_assert_msg(err_s == TOX_ERR_FILE_SEEK_DENIED, "tox_file_seek wrong error");
 }
@@ -114,27 +100,19 @@ static bool file_sending_done;
 static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
                                    size_t length, void *user_data)
 {
-    if (!sendf_ok) {
-        ck_abort_msg("Didn't get resume control");
-    }
+    ck_assert_msg(sendf_ok, "didn't get resume control");
 
-    if (sending_pos != position) {
-        ck_abort_msg("Bad position %llu", (unsigned long long)position);
-    }
+    ck_assert_msg(sending_pos == position, "bad position %lu", (unsigned long)position);
 
     if (length == 0) {
-        if (file_sending_done) {
-            ck_abort_msg("File sending already done.");
-        }
+        ck_assert_msg(!file_sending_done, "file sending already done");
 
         file_sending_done = 1;
         return;
     }
 
     if (position + length > max_sending) {
-        if (m_send_reached) {
-            ck_abort_msg("Requested done file transfer.");
-        }
+        ck_assert_msg(!m_send_reached, "requested done file transfer");
 
         length = max_sending - position;
         m_send_reached = 1;
@@ -146,9 +124,9 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
     TOX_ERR_FILE_SEND_CHUNK error;
     tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error);
 
-    if (error != TOX_ERR_FILE_SEND_CHUNK_OK) {
-        ck_abort_msg("Could not send chunk, error num=%d pos=%d len=%d", (int)error, (int)position, (int)length);
-    }
+
+    ck_assert_msg(error == TOX_ERR_FILE_SEND_CHUNK_OK,
+                  "could not send chunk, error num=%d pos=%d len=%d", (int)error, (int)position, (int)length);
 
     ++sending_num;
     sending_pos += length;
@@ -160,9 +138,7 @@ static bool file_recv;
 static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
                        size_t length, void *user_data)
 {
-    if (size_recv != position) {
-        ck_abort_msg("Bad position");
-    }
+    ck_assert_msg(size_recv == position, "bad position");
 
     if (length == 0) {
         file_recv = 1;
@@ -173,11 +149,9 @@ static void write_file(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uin
     memset(f_data, num, length);
     ++num;
 
-    if (memcmp(f_data, data, length) == 0) {
-        size_recv += length;
-    } else {
-        ck_abort_msg("FILE_CORRUPTED");
-    }
+    ck_assert_msg(memcmp(f_data, data, length) == 0, "FILE_CORRUPTED");
+
+    size_recv += length;
 }
 
 static void file_transfer_test(void)
@@ -233,7 +207,7 @@ static void file_transfer_test(void)
     file_accepted = file_size = sendf_ok = size_recv = 0;
     file_recv = 0;
     max_sending = UINT64_MAX;
-    long long unsigned int f_time = time(nullptr);
+    uint64_t f_time = time(nullptr);
     tox_callback_file_recv_chunk(tox3, write_file);
     tox_callback_file_recv_control(tox2, file_print_control);
     tox_callback_file_chunk_request(tox2, tox_file_chunk_request);
@@ -260,15 +234,13 @@ static void file_transfer_test(void)
         tox_iterate(tox3, nullptr);
 
         if (file_sending_done) {
-            if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
-                    && file_accepted == 1) {
-                break;
-            }
-
-            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %lu %lu %lu", sendf_ok, file_recv,
-                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
-                         (unsigned long)totalf_size, (unsigned long)size_recv,
-                         (unsigned long)sending_pos);
+            ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
+                          && file_accepted == 1,
+                          "Something went wrong in file transfer %u %u %u %u %u %u %lu %lu %lu",
+                          sendf_ok, file_recv, totalf_size == file_size, size_recv == file_size, sending_pos == size_recv,
+                          file_accepted == 1, (unsigned long)totalf_size, (unsigned long)size_recv,
+                          (unsigned long)sending_pos);
+            break;
         }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
@@ -290,7 +262,7 @@ static void file_transfer_test(void)
                   (unsigned long)totalf_size, (unsigned long)size_recv,
                   (unsigned long)sending_pos);
 
-    printf("100MiB file sent in %llu seconds\n", time(nullptr) - f_time);
+    printf("100MiB file sent in %lu seconds\n", (unsigned long)(time(nullptr) - f_time));
 
     printf("Starting file streaming transfer test.\n");
 
@@ -320,22 +292,10 @@ static void file_transfer_test(void)
     max_sending = 100 * 1024;
     m_send_reached = 0;
 
-    while (1) {
+    while (!file_sending_done) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);
-
-        if (file_sending_done) {
-            if (sendf_ok && file_recv && m_send_reached && totalf_size == file_size && size_recv == max_sending
-                    && sending_pos == size_recv && file_accepted == 1) {
-                break;
-            }
-
-            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %u %llu %llu %llu %llu", sendf_ok, file_recv,
-                         m_send_reached, totalf_size == file_size, size_recv == max_sending, sending_pos == size_recv, file_accepted == 1,
-                         (unsigned long long)totalf_size, (unsigned long long)file_size,
-                         (unsigned long long)size_recv, (unsigned long long)sending_pos);
-        }
 
         uint32_t tox1_interval = tox_iteration_interval(tox1);
         uint32_t tox2_interval = tox_iteration_interval(tox2);
@@ -344,7 +304,14 @@ static void file_transfer_test(void)
         c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
     }
 
-    printf("Starting file 0 transfer test.\n");
+    ck_assert_msg(sendf_ok && file_recv && m_send_reached && totalf_size == file_size && size_recv == max_sending
+                  && sending_pos == size_recv && file_accepted == 1,
+                  "something went wrong in file transfer %u %u %u %u %u %u %u %lu %lu %lu %lu", sendf_ok, file_recv,
+                  m_send_reached, totalf_size == file_size, size_recv == max_sending, sending_pos == size_recv, file_accepted == 1,
+                  (unsigned long)totalf_size, (unsigned long)file_size,
+                  (unsigned long)size_recv, (unsigned long)sending_pos);
+
+    printf("starting file 0 transfer test.\n");
 
     file_sending_done = 0;
     file_accepted = 0;
@@ -369,29 +336,24 @@ static void file_transfer_test(void)
     ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
-    while (1) {
-        tox_iterate(tox1, nullptr);
-        tox_iterate(tox2, nullptr);
-        tox_iterate(tox3, nullptr);
-
-        if (file_sending_done) {
-            if (sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size && sending_pos == size_recv
-                    && file_accepted == 1) {
-                break;
-            }
-
-            ck_abort_msg("Something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
-                         totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
-                         (unsigned long long)totalf_size, (unsigned long long)size_recv,
-                         (unsigned long long)sending_pos);
-        }
-
+    while (!file_sending_done) {
         uint32_t tox1_interval = tox_iteration_interval(tox1);
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
         c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
+
+        tox_iterate(tox1, nullptr);
+        tox_iterate(tox2, nullptr);
+        tox_iterate(tox3, nullptr);
     }
+
+    ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size
+                  && sending_pos == size_recv && file_accepted == 1,
+                  "something went wrong in file transfer %u %u %u %u %u %u %llu %llu %llu", sendf_ok, file_recv,
+                  totalf_size == file_size, size_recv == file_size, sending_pos == size_recv, file_accepted == 1,
+                  (unsigned long long)totalf_size, (unsigned long long)size_recv,
+                  (unsigned long long)sending_pos);
 
     printf("file_transfer_test succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 

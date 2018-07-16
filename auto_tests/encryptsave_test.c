@@ -40,22 +40,21 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
     }
 }
 
-START_TEST(test_known_kdf)
+static void test_known_kdf(void)
 {
     unsigned char out[CRYPTO_SHARED_KEY_SIZE];
-    int res = crypto_pwhash_scryptsalsa208sha256(out,
-              CRYPTO_SHARED_KEY_SIZE,
-              pw,
-              pwlen,
-              test_salt,
-              crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 8,
-              crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE);
+    int16_t res = crypto_pwhash_scryptsalsa208sha256(out,
+                  CRYPTO_SHARED_KEY_SIZE,
+                  pw,
+                  pwlen,
+                  test_salt,
+                  crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 8,
+                  crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE);
     ck_assert_msg(res != -1, "crypto function failed");
     ck_assert_msg(memcmp(out, known_key, CRYPTO_SHARED_KEY_SIZE) == 0, "derived key is wrong");
 }
-END_TEST
 
-START_TEST(test_save_friend)
+static void test_save_friend(void)
 {
     Tox *tox1 = tox_new_log(nullptr, nullptr, nullptr);
     Tox *tox2 = tox_new_log(nullptr, nullptr, nullptr);
@@ -137,9 +136,8 @@ START_TEST(test_save_friend)
     tox_kill(tox3);
     tox_kill(tox4);
 }
-END_TEST
 
-START_TEST(test_keys)
+static void test_keys(void)
 {
     TOX_ERR_ENCRYPTION encerr;
     TOX_ERR_DECRYPTION decerr;
@@ -188,31 +186,13 @@ START_TEST(test_keys)
     tox_pass_key_free(key2);
     tox_pass_key_free(key);
 }
-END_TEST
-
-static Suite *encryptsave_suite(void)
-{
-    Suite *s = suite_create("encryptsave");
-
-    DEFTESTCASE_SLOW(known_kdf, 60);
-    DEFTESTCASE_SLOW(save_friend, 20);
-    DEFTESTCASE_SLOW(keys, 30);
-
-    return s;
-}
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
+    test_known_kdf();
+    test_save_friend();
+    test_keys();
 
-    Suite *encryptsave =  encryptsave_suite();
-    SRunner *test_runner = srunner_create(encryptsave);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    return 0;
 }
