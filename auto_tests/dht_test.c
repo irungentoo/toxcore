@@ -96,7 +96,7 @@ static int client_in_list(Client_data *list, uint32_t length, const uint8_t *pub
 {
     uint32_t i;
 
-    for (i = 0; i < (uint32_t)length; ++i) {
+    for (i = 0; i < length; ++i) {
         if (id_equal(public_key, list[i].public_key)) {
             return i;
         }
@@ -710,7 +710,7 @@ END_TEST
 
 static void dht_pack_unpack(const Node_format *nodes, size_t size, uint8_t *data, size_t length)
 {
-    uint16_t packed_size = pack_nodes(data, length, nodes, size);
+    int16_t packed_size = pack_nodes(data, length, nodes, size);
     ck_assert_msg(packed_size != -1, "Wrong pack_nodes result");
 
     uint16_t processed = 0;
