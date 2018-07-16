@@ -30,7 +30,7 @@
 #endif
 
 #ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE 700
 #endif
 
 #if defined(_WIN32) && _WIN32_WINNT >= _WIN32_WINNT_WINXP
