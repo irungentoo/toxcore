@@ -1,18 +1,6 @@
 load("//tools:no_undefined.bzl", "cc_library")
 
 cc_library(
-    name = "monolith",
-    hdrs = ["monolith.h"],
-    visibility = ["//c-toxcore/auto_tests:__pkg__"],
-    deps = [
-        "//c-toxcore/testing:monolith",
-        "//c-toxcore/toxav:monolith",
-        "//c-toxcore/toxcore:monolith",
-        "//c-toxcore/toxencryptsave:monolith",
-    ],
-)
-
-cc_library(
     name = "bootstrap_node_packets",
     srcs = ["bootstrap_node_packets.c"],
     hdrs = ["bootstrap_node_packets.h"],

@@ -303,7 +303,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
  * @return binary on success,
  *         NULL on failure.
  */
-static uint8_t *hex_string_to_bin(const char *hex_string)
+static uint8_t *bootstrap_hex_string_to_bin(const char *hex_string)
 {
     if (strlen(hex_string) % 2 != 0) {
         return nullptr;
@@ -407,7 +407,7 @@ int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6)
             goto next;
         }
 
-        bs_public_key_bin = hex_string_to_bin(bs_public_key);
+        bs_public_key_bin = bootstrap_hex_string_to_bin(bs_public_key);
         address_resolved = dht_bootstrap_from_address(dht, bs_address, enable_ipv6, net_htons(bs_port),
                            bs_public_key_bin);
         free(bs_public_key_bin);

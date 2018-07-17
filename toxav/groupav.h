@@ -17,6 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef C_TOXCORE_TOXAV_GROUPAV_H
+#define C_TOXCORE_TOXAV_GROUPAV_H
+
 #include "../toxcore/group.h"
 
 /* Audio encoding/decoding */
@@ -50,3 +53,5 @@ int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber
 int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      uint32_t sample_rate);
 
+
+#endif // C_TOXCORE_TOXAV_GROUPAV_H

@@ -2,6 +2,22 @@
 
 . other/analysis/gen-file.sh
 
-put auto_tests/lan_discovery_test.c
-
-clang --analyze test.c $CPPFLAGS
+echo "Running Clang compiler"
+clang++ -o /dev/null amalgamation.cc		\
+	$CPPFLAGS				\
+	$LDFLAGS				\
+	-std=c++11				\
+	-Weverything				\
+	-Wno-c++98-compat-pedantic		\
+	-Wno-c99-extensions			\
+	-Wno-cast-align				\
+	-Wno-conversion				\
+	-Wno-covered-switch-default		\
+	-Wno-documentation-deprecated-sync	\
+	-Wno-missing-field-initializers		\
+	-Wno-old-style-cast			\
+	-Wno-padded				\
+	-Wno-sign-compare			\
+	-Wno-unreachable-code-return		\
+	-Wno-unused-parameter			\
+	-Wno-used-but-marked-unused		\

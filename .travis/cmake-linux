@@ -37,6 +37,13 @@ travis_install() {
   }
 }
 
+run_static_analysis() {
+  export CPPFLAGS="-isystem $CACHEDIR/include"
+  export LDFLAGS="-L $CACHEDIR/lib"
+  other/analysis/run-clang
+  other/analysis/run-clang-analyze
+}
+
 travis_script() {
   . ".travis/flags-$CC.sh"
 
@@ -49,6 +56,9 @@ travis_script() {
   add_flag -fprofile-arcs -ftest-coverage
 
   other/astyle/format-source . "$ASTYLE"
+
+  # Use () to run in a separate process so the exports are local.
+  (run_static_analysis)
 
   cmake -B_build -H. \
     -DCMAKE_C_FLAGS="$C_FLAGS" \

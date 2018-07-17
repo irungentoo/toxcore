@@ -27,6 +27,7 @@ CTestTestfile.cmake
 *.pc
 
 # Testing
+/amalgamation.*
 testing/data
 *~
 

@@ -24,16 +24,16 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 }
 
 
-#define NUM_TOXES 90
-#define NUM_FRIENDS 50
+#define TCP_TEST_NUM_TOXES 90
+#define TCP_TEST_NUM_FRIENDS 50
 
 static void test_many_clients(void)
 {
     time_t cur_time = time(nullptr);
-    Tox *toxes[NUM_TOXES];
-    uint32_t index[NUM_TOXES];
+    Tox *toxes[TCP_TEST_NUM_TOXES];
+    uint32_t index[TCP_TEST_NUM_TOXES];
 
-    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {
         index[i] = i + 1;
         toxes[i] = tox_new_log(nullptr, nullptr, &index[i]);
         ck_assert_msg(toxes[i] != nullptr, "failed to create tox instances %u", i);
@@ -43,22 +43,22 @@ static void test_many_clients(void)
     struct {
         uint16_t tox1;
         uint16_t tox2;
-    } pairs[NUM_FRIENDS];
+    } pairs[TCP_TEST_NUM_FRIENDS];
 
     uint8_t address[TOX_ADDRESS_SIZE];
 
     uint32_t num_f = 0;
 
-    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {
         num_f += tox_self_get_friend_list_size(toxes[i]);
     }
 
     ck_assert_msg(num_f == 0, "bad num friends: %u", num_f);
 
-    for (uint32_t i = 0; i < NUM_FRIENDS; ++i) {
+    for (uint32_t i = 0; i < TCP_TEST_NUM_FRIENDS; ++i) {
 loop_top:
-        pairs[i].tox1 = random_u32() % NUM_TOXES;
-        pairs[i].tox2 = (pairs[i].tox1 + random_u32() % (NUM_TOXES - 1) + 1) % NUM_TOXES;
+        pairs[i].tox1 = random_u32() % TCP_TEST_NUM_TOXES;
+        pairs[i].tox2 = (pairs[i].tox1 + random_u32() % (TCP_TEST_NUM_TOXES - 1) + 1) % TCP_TEST_NUM_TOXES;
 
         for (uint32_t j = 0; j < i; ++j) {
             if (pairs[j].tox2 == pairs[i].tox1 && pairs[j].tox1 == pairs[i].tox2) {
@@ -84,18 +84,18 @@ loop_top:
         ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "failed to add friend error code: %i", test);
     }
 
-    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {
         num_f += tox_self_get_friend_list_size(toxes[i]);
     }
 
-    ck_assert_msg(num_f == NUM_FRIENDS, "bad num friends: %u", num_f);
+    ck_assert_msg(num_f == TCP_TEST_NUM_FRIENDS, "bad num friends: %u", num_f);
 
     uint16_t last_count = 0;
 
     while (1) {
         uint16_t counter = 0;
 
-        for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+        for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {
             for (uint32_t j = 0; j < tox_self_get_friend_list_size(toxes[i]); ++j) {
                 if (tox_friend_get_connection_status(toxes[i], j, nullptr) == TOX_CONNECTION_UDP) {
                     ++counter;
@@ -108,18 +108,18 @@ loop_top:
             last_count = counter;
         }
 
-        if (counter == NUM_FRIENDS * 2) {
+        if (counter == TCP_TEST_NUM_FRIENDS * 2) {
             break;
         }
 
-        for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+        for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {
             tox_iterate(toxes[i], nullptr);
         }
 
         c_sleep(50);
     }
 
-    for (uint32_t i = 0; i < NUM_TOXES; ++i) {
+    for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {
         tox_kill(toxes[i]);
     }
 

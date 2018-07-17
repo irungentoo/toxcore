@@ -20,7 +20,7 @@
 #include "../../testing/misc_tools.h"
 #include "../../toxcore/ccompat.h"
 
-void print_key(uint8_t *client_id)
+static void print_key(uint8_t *client_id)
 {
     uint32_t j;
 

@@ -25,10 +25,14 @@
 #include "config.h"
 #endif
 
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
+#endif
 
+#ifndef TOX_DEFINED
 #define TOX_DEFINED
 typedef struct Messenger Tox;
+#endif
 #include "tox.h"
 
 #include <assert.h>

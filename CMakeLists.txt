@@ -104,7 +104,7 @@ if(TRACE)
 endif()
 
 if(MIN_LOGGER_LEVEL)
-  add_definitions(-DMIN_LOGGER_LEVEL=LOG_${MIN_LOGGER_LEVEL})
+  add_definitions(-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_${MIN_LOGGER_LEVEL})
 endif()
 
 option(USE_IPV6 "Use IPv6 in tests" ON)
@@ -402,14 +402,6 @@ function(auto_test target)
     endif()
   endif()
 endfunction()
-
-if(BUILD_TOXAV)
-  add_definitions(-D__STDC_LIMIT_MACROS=1)
-  add_executable(auto_monolith_test ${CPUFEATURES}
-    auto_tests/monolith_test.cc)
-  target_link_libraries(auto_monolith_test ${toxcore_LINK_MODULES})
-  add_test(NAME monolith COMMAND ${CROSSCOMPILING_EMULATOR} auto_monolith_test)
-endif()
 
 auto_test(TCP)
 auto_test(bootstrap)

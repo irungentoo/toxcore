@@ -44,19 +44,19 @@ struct Logger {
 static const char *logger_level_name(Logger_Level level)
 {
     switch (level) {
-        case LOG_TRACE:
+        case LOGGER_LEVEL_TRACE:
             return "TRACE";
 
-        case LOG_DEBUG:
+        case LOGGER_LEVEL_DEBUG:
             return "DEBUG";
 
-        case LOG_INFO:
+        case LOGGER_LEVEL_INFO:
             return "INFO";
 
-        case LOG_WARNING:
+        case LOGGER_LEVEL_WARNING:
             return "WARNING";
 
-        case LOG_ERROR:
+        case LOGGER_LEVEL_ERROR:
             return "ERROR";
     }
 

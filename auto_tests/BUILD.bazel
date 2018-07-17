@@ -25,32 +25,10 @@ test_sizes = {
     deps = [
         ":check_compat",
         ":run_auto_test",
-        "//c-toxcore/other:monolith",
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxav",
         "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:DHT_srcs",
         "//c-toxcore/toxencryptsave",
     ],
 ) for src in glob(["*_test.c"])]
-
-cc_library(
-    name = "monolith",
-    hdrs = glob([
-        "*.c",
-        "*.h",
-    ]),
-)
-
-cc_test(
-    name = "monolith_test",
-    size = "small",
-    srcs = ["monolith_test.cc"],
-    copts = ["-Wno-sign-compare"],
-    deps = [
-        ":check_compat",
-        ":monolith",
-        ":run_auto_test",
-        "//c-toxcore/other:monolith",
-        "//c-toxcore/testing:misc_tools",
-    ],
-)

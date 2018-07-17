@@ -28,6 +28,16 @@ cc_test(
 )
 
 cc_library(
+    name = "ring_buffer_srcs",
+    hdrs = [
+        "ring_buffer.c",
+        "ring_buffer.h",
+    ],
+    visibility = ["//c-toxcore/testing:__pkg__"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
+)
+
+cc_library(
     name = "bwcontroller",
     srcs = ["bwcontroller.c"],
     hdrs = ["bwcontroller.h"],
@@ -115,22 +125,5 @@ cc_library(
     deps = [
         ":groupav",
         ":video",
-    ],
-)
-
-cc_library(
-    name = "monolith",
-    hdrs = glob([
-        "*.c",
-        "*.h",
-    ]),
-    visibility = [
-        "//c-toxcore/other:__pkg__",
-        "//c-toxcore/testing:__pkg__",
-    ],
-    deps = [
-        "//c-toxcore/toxcore:group",
-        "@libvpx",
-        "@opus",
     ],
 )

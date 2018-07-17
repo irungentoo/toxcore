@@ -135,6 +135,27 @@ cc_library(
 )
 
 cc_library(
+    name = "DHT_srcs",
+    hdrs = [
+        "DHT.c",
+        "DHT.h",
+        "LAN_discovery.c",
+        "LAN_discovery.h",
+        "ping.c",
+        "ping.h",
+    ],
+    visibility = [
+        "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+    ],
+    deps = [
+        ":logger",
+        ":ping_array",
+        ":state",
+    ],
+)
+
+cc_library(
     name = "onion",
     srcs = ["onion.c"],
     hdrs = ["onion.h"],
@@ -240,19 +261,5 @@ cc_library(
     deps = [
         ":group",
         "//c-toxcore/toxencryptsave:defines",
-    ],
-)
-
-cc_library(
-    name = "monolith",
-    hdrs = glob([
-        "*.c",
-        "*.h",
-    ]),
-    linkopts = ["-lpthread"],
-    visibility = ["//c-toxcore/other:__pkg__"],
-    deps = [
-        "//c-toxcore/toxencryptsave:defines",
-        "@libsodium",
     ],
 )

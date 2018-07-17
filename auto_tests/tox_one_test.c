@@ -28,7 +28,7 @@ static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t 
     }
 }
 
-START_TEST(test_one)
+static void test_one(void)
 {
     uint8_t name[TOX_MAX_NAME_LENGTH];
     uint8_t status_message[TOX_MAX_STATUS_MESSAGE_LENGTH];
@@ -128,30 +128,13 @@ START_TEST(test_one)
     tox_kill(tox1);
     tox_kill(tox2);
 }
-END_TEST
 
-
-static Suite *tox_suite(void)
-{
-    Suite *s = suite_create("Tox one");
-
-    DEFTESTCASE(one);
-
-    return s;
-}
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *tox = tox_suite();
-    SRunner *test_runner = srunner_create(tox);
+    test_one();
 
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    return 0;
 }

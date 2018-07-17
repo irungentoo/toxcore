@@ -29,15 +29,15 @@
 #include "ccompat.h"
 
 #ifndef MIN_LOGGER_LEVEL
-#define MIN_LOGGER_LEVEL LOG_INFO
+#define MIN_LOGGER_LEVEL LOGGER_LEVEL_INFO
 #endif
 
 typedef enum Logger_Level {
-    LOG_TRACE,
-    LOG_DEBUG,
-    LOG_INFO,
-    LOG_WARNING,
-    LOG_ERROR
+    LOGGER_LEVEL_TRACE,
+    LOGGER_LEVEL_DEBUG,
+    LOGGER_LEVEL_INFO,
+    LOGGER_LEVEL_WARNING,
+    LOGGER_LEVEL_ERROR
 } Logger_Level;
 
 typedef struct Logger Logger;
@@ -84,10 +84,10 @@ void logger_write(
     } while (0)
 
 /* To log with an logger */
-#define LOGGER_TRACE(log, ...)   LOGGER_WRITE(log, LOG_TRACE  , __VA_ARGS__)
-#define LOGGER_DEBUG(log, ...)   LOGGER_WRITE(log, LOG_DEBUG  , __VA_ARGS__)
-#define LOGGER_INFO(log, ...)    LOGGER_WRITE(log, LOG_INFO   , __VA_ARGS__)
-#define LOGGER_WARNING(log, ...) LOGGER_WRITE(log, LOG_WARNING, __VA_ARGS__)
-#define LOGGER_ERROR(log, ...)   LOGGER_WRITE(log, LOG_ERROR  , __VA_ARGS__)
+#define LOGGER_TRACE(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_TRACE  , __VA_ARGS__)
+#define LOGGER_DEBUG(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_DEBUG  , __VA_ARGS__)
+#define LOGGER_INFO(log, ...)    LOGGER_WRITE(log, LOGGER_LEVEL_INFO   , __VA_ARGS__)
+#define LOGGER_WARNING(log, ...) LOGGER_WRITE(log, LOGGER_LEVEL_WARNING, __VA_ARGS__)
+#define LOGGER_ERROR(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_ERROR  , __VA_ARGS__)
 
 #endif /* TOXLOGGER_H */

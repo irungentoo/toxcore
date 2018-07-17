@@ -140,20 +140,18 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
         m_send_reached = 1;
     }
 
-    TOX_ERR_FILE_SEND_CHUNK error;
     VLA(uint8_t, f_data, length);
     memset(f_data, sending_num, length);
 
-    if (tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error)) {
-        ++sending_num;
-        sending_pos += length;
-    } else {
+    TOX_ERR_FILE_SEND_CHUNK error;
+    tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error);
+
+    if (error != TOX_ERR_FILE_SEND_CHUNK_OK) {
         ck_abort_msg("Could not send chunk, error num=%d pos=%d len=%d", (int)error, (int)position, (int)length);
     }
 
-    if (error != TOX_ERR_FILE_SEND_CHUNK_OK) {
-        ck_abort_msg("Wrong error code");
-    }
+    ++sending_num;
+    sending_pos += length;
 }
 
 

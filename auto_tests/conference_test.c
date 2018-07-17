@@ -234,7 +234,7 @@ static void test_many_group(void)
         uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);
 
         ck_assert_msg(peer_count == NUM_GROUP_TOX, "\n\tBad number of group peers (pre check)."
-                      "\n\t\t\tExpected: %u but tox_instance(%u)  only has: %u\n\n",
+                      "\n\t\t\tExpected: %d but tox_instance(%u)  only has: %u\n\n",
                       NUM_GROUP_TOX, i, (unsigned)peer_count);
 
         uint8_t title[2048];

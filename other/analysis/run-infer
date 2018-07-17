@@ -5,6 +5,4 @@ SKIP_LINES=1
 
 . other/analysis/gen-file.sh
 
-put auto_tests/lan_discovery_test.c
-
-infer -- clang -fsyntax-only test.c $CPPFLAGS
+infer -- clang++ -fsyntax-only amalgamation.cc $CPPFLAGS

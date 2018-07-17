@@ -35,7 +35,7 @@ cc_binary(
     copts = ["-O1"],
     deps = [
         "//c-toxcore/toxav",
-        "//c-toxcore/toxav:monolith",
+        "//c-toxcore/toxav:ring_buffer_srcs",
         "//c-toxcore/toxcore",
         "@opencv//:core",
         "@opencv//:highgui",
@@ -51,14 +51,4 @@ cc_binary(
         ":misc_tools",
         "//c-toxcore/toxcore",
     ],
-)
-
-cc_library(
-    name = "monolith",
-    hdrs = [
-        "misc_tools.c",
-        "misc_tools.h",
-    ],
-    visibility = ["//c-toxcore/other:__pkg__"],
-    deps = ["//c-toxcore/toxcore"],
 )

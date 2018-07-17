@@ -2,12 +2,14 @@
 
 . other/analysis/gen-file.sh
 
-put auto_tests/lan_discovery_test.c
-
+echo "Running GCC"
 # TODO(iphydf): Get rid of all VLAs, then enable -fstack-protector -Wstack-protector
-gcc -O3 -c -o /dev/null test.c $CPPFLAGS	\
-	-std=c99				\
+g++ -O3 -o /dev/null amalgamation.cc		\
+	$CPPFLAGS				\
+	$LDFLAGS				\
+	-std=c++11				\
 	-pedantic				\
+	-fdiagnostics-color=always		\
 	-Wall					\
 	-Wextra					\
 	-Wno-aggregate-return			\
@@ -22,18 +24,9 @@ gcc -O3 -c -o /dev/null test.c $CPPFLAGS	\
 	-Wno-unused-parameter			\
 	-Wstrict-aliasing=0			\
 	-Wstrict-overflow=1			\
-        					\
-	-Wbad-function-cast			\
+						\
 	-Wmissing-declarations			\
-	-Wmissing-parameter-type		\
-	-Wmissing-prototypes			\
-	-Wnested-externs 			\
-	-Wold-style-declaration			\
-	-Wold-style-definition			\
-	-Wstrict-prototypes			\
 	-Wbool-compare				\
-	-Wc99-c11-compat			\
-	-Wc++-compat				\
 	-Wcast-align				\
 	-Wcast-qual				\
 	-Wchar-subscripts			\
@@ -45,10 +38,8 @@ gcc -O3 -c -o /dev/null test.c $CPPFLAGS	\
 	-Wformat=2				\
 	-Wframe-address				\
 	-Wframe-larger-than=133168		\
-	-Wjump-misses-init			\
 	-Wignored-qualifiers			\
 	-Wignored-attributes			\
-	-Wincompatible-pointer-types		\
 	-Winit-self				\
 	-Winline				\
 	-Wlarger-than=133120			\

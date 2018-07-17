@@ -1,9 +1,0 @@
-#!/bin/sh
-
-. other/analysis/gen-file.sh
-
-put auto_tests/lan_discovery_test.c
-
-sparse test.c $CPPFLAGS				\
-	-Wsparse-all				\
-        -Wno-declaration-after-statement

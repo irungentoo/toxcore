@@ -72,7 +72,7 @@ AC_ARG_ENABLE([logging],
         if test "x$enableval" = "xyes"; then
             TOX_LOGGER="yes"
 
-            AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
+            AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_DEBUG], [Logger_Level value])
         fi
     ]
 )
@@ -85,19 +85,19 @@ AC_ARG_WITH(log-level,
             AC_MSG_WARN([Logging disabled!])
         else
             if test "x$withval" = "xTRACE"; then
-                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_TRACE], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_TRACE], [Logger_Level value])
 
             elif test "x$withval" = "xDEBUG"; then
-                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_DEBUG], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_DEBUG], [Logger_Level value])
 
             elif test "x$withval" = "xINFO"; then
-                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_INFO], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_INFO], [Logger_Level value])
 
             elif test "x$withval" = "xWARNING"; then
-                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_WARNING], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_WARNING], [Logger_Level value])
 
             elif test "x$withval" = "xERROR"; then
-                AC_DEFINE([MIN_LOGGER_LEVEL], [LOG_ERROR], [LOG_LEVEL value])
+                AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_ERROR], [Logger_Level value])
             else
                 AC_MSG_WARN([Invalid logger level: $withval. Using default 'DEBUG'])
             fi

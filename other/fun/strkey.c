@@ -43,7 +43,7 @@
 
 #define PRINT_TRIES_COUNT
 
-void print_key(unsigned char *key)
+static void print_key(unsigned char *key)
 {
     size_t i;
 
