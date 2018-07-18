@@ -345,12 +345,12 @@ uint32_t tox_max_filename_length(void);
 /**
  * Maximum length of a hostname, e.g. proxy or bootstrap node names.
  *
- * This length includes the NUL byte. Hostnames are NUL-terminated C strings, so
- * they are 255 characters plus one NUL byte.
+ * This length does not include the NUL byte. Hostnames are NUL-terminated C
+ * strings, so they are 255 characters plus one NUL byte.
  *
  * @deprecated The macro will be removed in 0.3.0. Use the function instead.
  */
-#define TOX_MAX_HOSTNAME_LENGTH        256
+#define TOX_MAX_HOSTNAME_LENGTH        255
 
 uint32_t tox_max_hostname_length(void);
 
