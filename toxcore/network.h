@@ -76,19 +76,19 @@ extern const Socket net_invalid_socket;
 /**
  * Calls send(sockfd, buf, len, MSG_NOSIGNAL).
  */
-int net_send(Socket sockfd, const void *buf, size_t len);
+int net_send(Socket sock, const void *buf, size_t len);
 /**
  * Calls recv(sockfd, buf, len, MSG_NOSIGNAL).
  */
-int net_recv(Socket sockfd, void *buf, size_t len);
+int net_recv(Socket sock, void *buf, size_t len);
 /**
  * Calls listen(sockfd, backlog).
  */
-int net_listen(Socket sockfd, int backlog);
+int net_listen(Socket sock, int backlog);
 /**
  * Calls accept(sockfd, nullptr, nullptr).
  */
-Socket net_accept(Socket sockfd);
+Socket net_accept(Socket sock);
 
 /**
  * return the amount of data in the tcp recv buffer.

@@ -689,14 +689,14 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
  * return 0 on success.
  */
 int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte,
-                          m_lossy_rtp_packet_cb *packet_handler_callback, void *object);
+                          m_lossy_rtp_packet_cb *function, void *object);
 
 /**********************************************/
 
 /* Set handlers for custom lossy packets.
  *
  */
-void custom_lossy_packet_registerhandler(Messenger *m, m_friend_lossy_packet_cb *packet_handler_callback);
+void custom_lossy_packet_registerhandler(Messenger *m, m_friend_lossy_packet_cb *lossy_packethandler);
 
 /* High level function to send custom lossy packets.
  *
@@ -713,7 +713,7 @@ int m_send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const u
 /* Set handlers for custom lossless packets.
  *
  */
-void custom_lossless_packet_registerhandler(Messenger *m, m_friend_lossless_packet_cb *packet_handler_callback);
+void custom_lossless_packet_registerhandler(Messenger *m, m_friend_lossless_packet_cb *lossless_packethandler);
 
 /* High level function to send custom lossless packets.
  *

@@ -60,7 +60,7 @@ TCP_Client_Status tcp_con_status(const TCP_Client_Connection *con);
 void *tcp_con_custom_object(const TCP_Client_Connection *con);
 uint32_t tcp_con_custom_uint(const TCP_Client_Connection *con);
 void tcp_con_set_custom_object(TCP_Client_Connection *con, void *object);
-void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t uint);
+void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value);
 
 /* Create new TCP connection to ip_port/public_key
  */

@@ -135,7 +135,7 @@ typedef int recv_tcp_relay_cb(void *object, uint32_t number, IP_Port ip_port, co
  * return 0 on success.
  */
 int recv_tcp_relay_handler(Onion_Client *onion_c, int friend_num,
-                           recv_tcp_relay_cb *tcp_relay_node_callback, void *object, uint32_t number);
+                           recv_tcp_relay_cb *callback, void *object, uint32_t number);
 
 typedef void onion_dht_pk_cb(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
 
