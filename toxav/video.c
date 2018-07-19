@@ -41,7 +41,7 @@
  *
  * By convention, the value 1 is used to mean "return as fast as possible."
  */
-// TODO: don't hardcode this, let the application choose it
+// TODO(zoff99): don't hardcode this, let the application choose it
 #define WANTED_MAX_DECODER_FPS 40
 
 /**

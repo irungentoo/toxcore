@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// TODO: don't hardcode this, let the application choose it
+// TODO(zoff99): don't hardcode this, let the application choose it
 // VPX Info: Time to spend encoding, in microseconds (it's a *soft* deadline)
 #define WANTED_MAX_ENCODER_FPS (40)
 #define MAX_ENCODE_TIME_US (1000000 / WANTED_MAX_ENCODER_FPS) // to allow x fps

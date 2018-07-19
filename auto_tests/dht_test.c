@@ -632,7 +632,7 @@ START_TEST(test_DHT_test)
     } pairs[NUM_DHT_FRIENDS];
 
     for (i = 0; i < NUM_DHT_FRIENDS; ++i) {
-        //TODO: Hugbubby say goto bad >:(
+        // TODO(hugbubby): remove use of goto.
 loop_top:
         pairs[i].tox1 = random_u32() % NUM_DHT;
         pairs[i].tox2 = (pairs[i].tox1 + (random_u32() % (NUM_DHT - 1)) + 1) % NUM_DHT;
