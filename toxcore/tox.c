@@ -1719,7 +1719,7 @@ Tox_Conference_Type tox_conference_get_type(const Tox *tox, uint32_t conference_
 
 bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *id /* TOX_CONFERENCE_ID_SIZE bytes */)
 {
-    return conference_get_uid((Group_Chats *)tox->m->conferences_object, conference_number, id);
+    return conference_get_id((Group_Chats *)tox->m->conferences_object, conference_number, id);
 }
 
 // TODO(iphydf): Delete in 0.3.0.
@@ -1735,7 +1735,7 @@ uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, Tox_Err_Confere
         return UINT32_MAX;
     }
 
-    int32_t ret = conference_by_uid((Group_Chats *)tox->m->conferences_object, id);
+    int32_t ret = conference_by_id((Group_Chats *)tox->m->conferences_object, id);
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND);

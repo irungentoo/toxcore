@@ -71,7 +71,7 @@ typedef struct Group_Peer {
 
 #define DESIRED_CLOSE_CONNECTIONS 4
 #define MAX_GROUP_CONNECTIONS 16
-#define GROUP_IDENTIFIER_LENGTH (1 + CRYPTO_SYMMETRIC_KEY_SIZE) // type + CRYPTO_SYMMETRIC_KEY_SIZE so we can use new_symmetric_key(...) to fill it
+#define GROUP_ID_LENGTH CRYPTO_SYMMETRIC_KEY_SIZE
 
 typedef enum Groupchat_Close_Type {
     GROUPCHAT_CLOSE_NONE,
@@ -111,7 +111,8 @@ typedef struct Group_c {
     Groupchat_Close_Connection closest_peers[DESIRED_CLOSE_CONNECTIONS];
     uint8_t changed;
 
-    uint8_t identifier[GROUP_IDENTIFIER_LENGTH];
+    uint8_t type;
+    uint8_t id[GROUP_ID_LENGTH];
 
     uint8_t title[MAX_NAME_LENGTH];
     uint8_t title_len;
@@ -361,14 +362,14 @@ uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list
  */
 int group_get_type(const Group_Chats *g_c, uint32_t groupnumber);
 
-/* Copies the unique id of group_chat[groupnumber] into uid.
+/* Copies the unique id of group_chat[groupnumber] into id.
 *
 * return false on failure.
 * return true on success.
 */
-bool conference_get_uid(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *uid);
+bool conference_get_id(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *id);
 
-int32_t conference_by_uid(const Group_Chats *g_c, const uint8_t *uid);
+int32_t conference_by_id(const Group_Chats *g_c, const uint8_t *id);
 
 /* Send current name (set in messenger) to all online groups.
  */
