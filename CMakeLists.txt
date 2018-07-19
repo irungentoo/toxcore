@@ -309,9 +309,20 @@ if(CMAKE_THREAD_LIBS_INIT)
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
+
+if(NSL_LIBRARIES)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${NSL_LIBRARIES})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lnsl)
+endif()
+
 if(RT_LIBRARIES)
   set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${RT_LIBRARIES})
   set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lrt)
+endif()
+
+if(SOCKET_LIBRARIES)
+  set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${SOCKET_LIBRARIES})
+  set(toxcore_PKGCONFIG_LIBS ${toxcore_PKGCONFIG_LIBS} -lsocket)
 endif()
 
 if(WIN32)

@@ -8,7 +8,9 @@ include(ModulePackage)
 
 find_package(Threads REQUIRED)
 
+find_library(NSL_LIBRARIES          nsl          )
 find_library(RT_LIBRARIES           rt           )
+find_library(SOCKET_LIBRARIES       socket       )
 
 # For toxcore.
 pkg_use_module(LIBSODIUM            libsodium    )

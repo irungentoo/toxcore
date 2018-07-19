@@ -29,6 +29,12 @@
 #define _DARWIN_C_SOURCE
 #endif
 
+// For Solaris.
+#ifdef __sun
+#define __EXTENSIONS__ 1
+#endif
+
+// For Linux (and some BSDs).
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 700
 #endif
@@ -84,6 +90,11 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#ifdef __sun
+#include <stropts.h>
+#include <sys/filio.h>
+#endif
 
 #define TOX_EWOULDBLOCK EWOULDBLOCK
 
