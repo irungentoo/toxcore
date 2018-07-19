@@ -387,9 +387,10 @@ static void test_addto_lists(IP ip)
     // check "good" entries
     test_addto_lists_good(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
 
-    for (i = 0; i < dht->num_friends; ++i)
+    for (i = 0; i < dht->num_friends; ++i) {
         test_addto_lists_good(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
                               dht->friends_list[i].public_key);
+    }
 
     kill_dht(dht);
     kill_networking(net);
