@@ -2270,12 +2270,9 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
         g->group[peer_index].top_lossy_number = message_number;
         g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
-
-        return 0;
     } else {  // top_distance < MAX_LOSSY_COUNT
-        unsigned int i;
-
-        for (i = g->group[peer_index].bottom_lossy_number; i != (g->group[peer_index].bottom_lossy_number + top_distance);
+        for (unsigned int i = g->group[peer_index].bottom_lossy_number;
+                i != g->group[peer_index].bottom_lossy_number + top_distance;
                 ++i) {
             g->group[peer_index].recv_lossy[i % MAX_LOSSY_COUNT] = 0;
         }
@@ -2283,9 +2280,10 @@ static unsigned int lossy_packet_not_received(Group_c *g, int peer_index, uint16
         g->group[peer_index].top_lossy_number = message_number;
         g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
         g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
-
-        return 0;
     }
+
+    return 0;
+
 }
 
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
