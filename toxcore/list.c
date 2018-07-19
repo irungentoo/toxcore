@@ -29,6 +29,7 @@
 
 #include "list.h"
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -118,23 +119,22 @@ static int find(const BS_List *list, const uint8_t *data)
     }
 }
 
-/* Resized the list list
+/**
+ * Resizes the list.
  *
- * return value:
- *  1 : success
- *  0 : failure
+ * @return true on success.
  */
-static int resize(BS_List *list, uint32_t new_size)
+static bool resize(BS_List *list, uint32_t new_size)
 {
     if (new_size == 0) {
         bs_list_free(list);
-        return 1;
+        return true;
     }
 
     uint8_t *data = (uint8_t *)realloc(list->data, list->element_size * new_size);
 
     if (!data) {
-        return 0;
+        return false;
     }
 
     list->data = data;
@@ -142,12 +142,12 @@ static int resize(BS_List *list, uint32_t new_size)
     int *ids = (int *)realloc(list->ids, sizeof(int) * new_size);
 
     if (!ids) {
-        return 0;
+        return false;
     }
 
     list->ids = ids;
 
-    return 1;
+    return true;
 }
 
 
