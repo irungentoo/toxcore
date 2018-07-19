@@ -268,7 +268,7 @@ BASE_CLEANUP_1:
     vpx_codec_destroy(vc->decoder);
 BASE_CLEANUP:
     pthread_mutex_destroy(vc->queue_mutex);
-    rb_kill((RingBuffer *)vc->vbuf_raw);
+    rb_kill(vc->vbuf_raw);
     free(vc);
     return nullptr;
 }
@@ -283,11 +283,11 @@ void vc_kill(VCSession *vc)
     vpx_codec_destroy(vc->decoder);
     void *p;
 
-    while (rb_read((RingBuffer *)vc->vbuf_raw, &p)) {
+    while (rb_read(vc->vbuf_raw, &p)) {
         free(p);
     }
 
-    rb_kill((RingBuffer *)vc->vbuf_raw);
+    rb_kill(vc->vbuf_raw);
     pthread_mutex_destroy(vc->queue_mutex);
     LOGGER_DEBUG(vc->log, "Terminated video handler: %p", (void *)vc);
     free(vc);
@@ -303,7 +303,7 @@ void vc_iterate(VCSession *vc)
 
     struct RTPMessage *p;
 
-    if (!rb_read((RingBuffer *)vc->vbuf_raw, (void **)&p)) {
+    if (!rb_read(vc->vbuf_raw, (void **)&p)) {
         LOGGER_TRACE(vc->log, "no Video frame data available");
         pthread_mutex_unlock(vc->queue_mutex);
         return;
@@ -323,7 +323,7 @@ void vc_iterate(VCSession *vc)
     }
 
     LOGGER_DEBUG(vc->log, "vc_iterate: rb_read p->len=%d p->header.xe=%d", (int)full_data_len, p->header.xe);
-    LOGGER_DEBUG(vc->log, "vc_iterate: rb_read rb size=%d", (int)rb_size((RingBuffer *)vc->vbuf_raw));
+    LOGGER_DEBUG(vc->log, "vc_iterate: rb_read rb size=%d", (int)rb_size(vc->vbuf_raw));
     const vpx_codec_err_t rc = vpx_codec_decode(vc->decoder, p->data, full_data_len, nullptr, MAX_DECODE_TIME_US);
     free(p);
 
@@ -378,7 +378,7 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
         LOGGER_DEBUG(vc->log, "rb_write msg->len=%d b0=%d b1=%d", (int)msg->len, (int)msg->data[0], (int)msg->data[1]);
     }
 
-    free(rb_write((RingBuffer *)vc->vbuf_raw, msg));
+    free(rb_write(vc->vbuf_raw, msg));
 
     /* Calculate time it took for peer to send us this frame */
     uint32_t t_lcfd = current_time_monotonic() - vc->linfts;

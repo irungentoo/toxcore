@@ -138,7 +138,7 @@ int msi_kill(MSISession *session, const Logger *log)
         return -1;
     }
 
-    m_callback_msi_packet((struct Messenger *) session->messenger, nullptr, nullptr);
+    m_callback_msi_packet(session->messenger, nullptr, nullptr);
 
     if (pthread_mutex_trylock(session->mutex) != 0) {
         LOGGER_ERROR(session->messenger->log, "Failed to acquire lock on msi mutex");

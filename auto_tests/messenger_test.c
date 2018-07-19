@@ -36,17 +36,12 @@
 static bool enable_broken_tests = false;
 
 static const char *friend_id_str = "e4b3d5030bc99494605aecc33ceec8875640c1d74aa32790e821b17e98771c4a00000000f1db";
+static const char *good_id_str   = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc29744785291fa4ef4d64";
+static const char *bad_id_str    = "9B569D14ff637e69f2";
 
-/* in case we need more than one ID for a test */
-static const char *good_id_a_str = "DB9B569D14850ED8364C3744CAC2C8FF78985D213E980C7C508D0E91E8E45441";
-static const char *good_id_b_str = "d3f14b6d384d8f5f2a66cff637e69f28f539c5de61bc29744785291fa4ef4d64";
-
-static const char *bad_id_str =    "9B569D14ff637e69f2";
-
-static unsigned char *friend_id = nullptr;
-static unsigned char *good_id_a = nullptr;
-static unsigned char *good_id_b = nullptr;
-static unsigned char *bad_id    = nullptr;
+static uint8_t *friend_id = nullptr;
+static uint8_t *good_id   = nullptr;
+static uint8_t *bad_id    = nullptr;
 
 static int friend_id_num = 0;
 
@@ -146,24 +141,24 @@ START_TEST(test_m_addfriend)
                           + crypto_box_ZEROBYTES + 100);
 
     /* TODO(irungentoo): Update this properly to latest master */
-    if (m_addfriend(m, (const uint8_t *)friend_id, (const uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG) {
+    if (m_addfriend(m, friend_id, (const uint8_t *)good_data, really_bad_len) != FAERR_TOOLONG) {
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", really_bad_len);
     }
 
     /* this will return an error if the original m_addfriend_norequest() failed */
-    if (m_addfriend(m, (const uint8_t *)friend_id, (const uint8_t *)good_data, good_len) != FAERR_ALREADYSENT) {
+    if (m_addfriend(m, friend_id, (const uint8_t *)good_data, good_len) != FAERR_ALREADYSENT) {
         ck_abort_msg("m_addfriend did NOT catch adding a friend we already have.\n"
                      "(this can be caused by the error of m_addfriend_norequest in"
                      " the beginning of the suite)\n");
     }
 
-    if (m_addfriend(m, (const uint8_t *)good_id_b, (const uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE) {
+    if (m_addfriend(m, good_id, (const uint8_t *)bad_data, bad_len) != FAERR_NOMESSAGE) {
         ck_abort_msg("m_addfriend did NOT catch the following length: %d\n", bad_len);
     }
 
     /* this should REALLY return an error */
     /* TODO(irungentoo): validate client_id in m_addfriend? */
-    if (m_addfriend(m, (const uint8_t *)bad_id, (const uint8_t *)good_data, good_len) >= 0) {
+    if (m_addfriend(m, bad_id, (const uint8_t *)good_data, good_len) >= 0) {
         ck_abort_msg("The following ID passed through "
                      "m_addfriend without an error:\n'%s'\n", bad_id_str);
     }
@@ -348,8 +343,7 @@ int main(void)
     setvbuf(stdout, nullptr, _IONBF, 0);
 
     friend_id = hex_string_to_bin(friend_id_str);
-    good_id_a = hex_string_to_bin(good_id_a_str);
-    good_id_b = hex_string_to_bin(good_id_b_str);
+    good_id   = hex_string_to_bin(good_id_str);
     bad_id    = hex_string_to_bin(bad_id_str);
 
     /* IPv6 status from global define */
@@ -361,13 +355,13 @@ int main(void)
     m = new_messenger(&options, nullptr);
 
     /* setup a default friend and friendnum */
-    if (m_addfriend_norequest(m, (uint8_t *)friend_id) < 0) {
+    if (m_addfriend_norequest(m, friend_id) < 0) {
         fputs("m_addfriend_norequest() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
     }
 
-    if ((friend_id_num = getfriend_id(m, (uint8_t *)friend_id)) < 0) {
+    if ((friend_id_num = getfriend_id(m, friend_id)) < 0) {
         fputs("getfriend_id() failed on a valid ID!\n"
               "this was CRITICAL to the test, and the build WILL fail.\n"
               "the tests will continue now...\n\n", stderr);
@@ -382,8 +376,7 @@ int main(void)
 
     srunner_free(test_runner);
     free(friend_id);
-    free(good_id_a);
-    free(good_id_b);
+    free(good_id);
     free(bad_id);
 
     kill_messenger(m);
