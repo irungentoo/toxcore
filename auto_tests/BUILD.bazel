@@ -14,7 +14,10 @@ test_sizes = {
 
 [cc_test(
     name = src[:-2],
-    size = test_sizes.get(src[:-2], "small"),
+    size = test_sizes.get(
+        src[:-2],
+        "small",
+    ),
     srcs = [src],
     copts = ["-Wno-sign-compare"],
     deps = [
