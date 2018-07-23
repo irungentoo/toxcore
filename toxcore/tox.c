@@ -1457,29 +1457,58 @@ Tox_Conference_Type tox_conference_get_type(const Tox *tox, uint32_t conference_
     return (Tox_Conference_Type)ret;
 }
 
-bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid /* TOX_CONFERENCE_ID_SIZE bytes */)
+bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *id /* TOX_CONFERENCE_ID_SIZE bytes */)
 {
     const Messenger *m = tox;
-    return conference_get_uid((Group_Chats *)m->conferences_object, conference_number, uid);
+    return conference_get_uid((Group_Chats *)m->conferences_object, conference_number, id);
 }
 
-uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, Tox_Err_Conference_By_Uid *error)
+// TODO(iphydf): Delete in 0.3.0.
+bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid /* TOX_CONFERENCE_ID_SIZE bytes */)
 {
-    if (!uid) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_NULL);
+    return tox_conference_get_id(tox, conference_number, uid);
+}
+
+uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, Tox_Err_Conference_By_Id *error)
+{
+    if (!id) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_ID_NULL);
         return UINT32_MAX;
     }
 
     const Messenger *m = tox;
-    int32_t ret = conference_by_uid((Group_Chats *)m->conferences_object, uid);
+    int32_t ret = conference_by_uid((Group_Chats *)m->conferences_object, id);
 
     if (ret == -1) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_NOT_FOUND);
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND);
         return UINT32_MAX;
     }
 
-    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_OK);
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_ID_OK);
     return ret;
+}
+
+// TODO(iphydf): Delete in 0.3.0.
+uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, Tox_Err_Conference_By_Uid *error)
+{
+    Tox_Err_Conference_By_Id id_error;
+    const uint32_t res = tox_conference_by_id(tox, uid, &id_error);
+
+    switch (id_error) {
+        case TOX_ERR_CONFERENCE_BY_ID_OK:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_OK);
+            break;
+
+        case TOX_ERR_CONFERENCE_BY_ID_NULL:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_NULL);
+            break;
+
+        case TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_UID_NOT_FOUND);
+            break;
+    }
+
+    return res;
 }
 
 static void set_custom_packet_error(int ret, Tox_Err_Friend_Custom_Packet *error)

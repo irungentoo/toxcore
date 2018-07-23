@@ -250,10 +250,19 @@ uint32_t tox_secret_key_size(void);
 
 /**
  * The size of a Tox Conference unique id in bytes.
+ *
+ * @deprecated Use TOX_CONFERENCE_ID_SIZE instead.
  */
 #define TOX_CONFERENCE_UID_SIZE        32
 
 uint32_t tox_conference_uid_size(void);
+
+/**
+ * The size of a Tox Conference unique id in bytes.
+ */
+#define TOX_CONFERENCE_ID_SIZE         32
+
+uint32_t tox_conference_id_size(void);
 
 /**
  * The size of the nospam in bytes when written in a Tox address.
@@ -2817,11 +2826,52 @@ TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_
 /**
  * Get the conference unique ID.
  *
+ * If id is NULL, this function has no effect.
+ *
+ * @param id A memory region large enough to store TOX_CONFERENCE_ID_SIZE bytes.
+ *
+ * @return true on success.
+ */
+bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *id);
+
+typedef enum TOX_ERR_CONFERENCE_BY_ID {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_BY_ID_OK,
+
+    /**
+     * One of the arguments to the function was NULL when it was not expected.
+     */
+    TOX_ERR_CONFERENCE_BY_ID_NULL,
+
+    /**
+     * No conference with the given id exists on the conference list.
+     */
+    TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND,
+
+} TOX_ERR_CONFERENCE_BY_ID;
+
+
+/**
+ * Return the conference number associated with the specified id.
+ *
+ * @param id A byte array containing the conference id (TOX_CONFERENCE_ID_SIZE).
+ *
+ * @return the conference number on success, an unspecified value on failure.
+ */
+uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, TOX_ERR_CONFERENCE_BY_ID *error);
+
+/**
+ * Get the conference unique ID.
+ *
  * If uid is NULL, this function has no effect.
  *
  * @param uid A memory region large enough to store TOX_CONFERENCE_UID_SIZE bytes.
  *
  * @return true on success.
+ * @deprecated use tox_conference_get_id instead (exactly the same function, just renamed).
  */
 bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid);
 
@@ -2851,6 +2901,7 @@ typedef enum TOX_ERR_CONFERENCE_BY_UID {
  * @param uid A byte array containing the conference id (TOX_CONFERENCE_UID_SIZE).
  *
  * @return the conference number on success, an unspecified value on failure.
+ * @deprecated use tox_conference_by_id instead (exactly the same function, just renamed).
  */
 uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, TOX_ERR_CONFERENCE_BY_UID *error);
 
@@ -3054,6 +3105,7 @@ typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
 typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
 typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
 typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
+typedef TOX_ERR_CONFERENCE_BY_ID Tox_Err_Conference_By_Id;
 typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
 typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;
 typedef TOX_ERR_CONFERENCE_JOIN Tox_Err_Conference_Join;

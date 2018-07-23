@@ -245,8 +245,15 @@ const SECRET_KEY_SIZE              = 32;
 
 /**
  * The size of a Tox Conference unique id in bytes.
+ *
+ * @deprecated Use $CONFERENCE_ID_SIZE instead.
  */
 const CONFERENCE_UID_SIZE          = 32;
+
+/**
+ * The size of a Tox Conference unique id in bytes.
+ */
+const CONFERENCE_ID_SIZE           = 32;
 
 /**
  * The size of the nospam in bytes when written in a Tox address.
@@ -2464,11 +2471,38 @@ namespace conference {
   /**
    * Get the conference unique ID.
    *
+   * If id is NULL, this function has no effect.
+   *
+   * @param id A memory region large enough to store $CONFERENCE_ID_SIZE bytes.
+   *
+   * @return true on success.
+   */
+  const bool get_id(uint32_t conference_number, uint8_t[CONFERENCE_ID_SIZE] id);
+
+  /**
+   * Return the conference number associated with the specified id.
+   *
+   * @param id A byte array containing the conference id ($CONFERENCE_ID_SIZE).
+   *
+   * @return the conference number on success, an unspecified value on failure.
+   */
+  const uint32_t by_id(const uint8_t[CONFERENCE_ID_SIZE] id) {
+    NULL,
+    /**
+     * No conference with the given id exists on the conference list.
+     */
+    NOT_FOUND,
+  }
+
+  /**
+   * Get the conference unique ID.
+   *
    * If uid is NULL, this function has no effect.
    *
    * @param uid A memory region large enough to store $CONFERENCE_UID_SIZE bytes.
    *
    * @return true on success.
+   * @deprecated use $get_id instead (exactly the same function, just renamed).
    */
   const bool get_uid(uint32_t conference_number, uint8_t[CONFERENCE_UID_SIZE] uid);
 
@@ -2478,6 +2512,7 @@ namespace conference {
    * @param uid A byte array containing the conference id ($CONFERENCE_UID_SIZE).
    *
    * @return the conference number on success, an unspecified value on failure.
+   * @deprecated use $by_id instead (exactly the same function, just renamed).
    */
   const uint32_t by_uid(const uint8_t[CONFERENCE_UID_SIZE] uid) {
     NULL,
@@ -2678,6 +2713,7 @@ typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
 typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
 typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
 typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
+typedef TOX_ERR_CONFERENCE_BY_ID Tox_Err_Conference_By_Id;
 typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
 typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;
 typedef TOX_ERR_CONFERENCE_JOIN Tox_Err_Conference_Join;
