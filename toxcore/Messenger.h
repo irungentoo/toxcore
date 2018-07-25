@@ -61,6 +61,7 @@ typedef struct Messenger_Options {
     bool local_discovery_enabled;
 
     logger_cb *log_callback;
+    void *log_context;
     void *log_user_data;
 } Messenger_Options;
 

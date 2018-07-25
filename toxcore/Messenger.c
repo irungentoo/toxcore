@@ -1985,7 +1985,7 @@ Messenger *new_messenger(Messenger_Options *options, unsigned int *error)
         return nullptr;
     }
 
-    logger_callback_log(m->log, options->log_callback, m, options->log_user_data);
+    logger_callback_log(m->log, options->log_callback, options->log_context, options->log_user_data);
 
     unsigned int net_err = 0;
 

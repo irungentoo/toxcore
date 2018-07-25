@@ -40,9 +40,6 @@ echo "#include <cstdio>" >> amalgamation.cc
 echo "#include <memory>" >> amalgamation.cc
 echo "#include <random>" >> amalgamation.cc
 
-echo "#define TOX_DEFINED" >> amalgamation.cc
-echo "typedef struct Messenger Tox;" >> amalgamation.cc
-
 put auto_tests/check_compat.h
 
 FIND_QUERY="find . '-(' -name '*.cc' -or -name '*.c' '-)'"

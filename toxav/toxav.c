@@ -123,12 +123,15 @@ ToxAV *toxav_new(Tox *tox, TOXAV_ERR_NEW *error)
 {
     TOXAV_ERR_NEW rc = TOXAV_ERR_NEW_OK;
     ToxAV *av = nullptr;
-    Messenger *m = (Messenger *)tox;
 
     if (tox == nullptr) {
         rc = TOXAV_ERR_NEW_NULL;
         goto END;
     }
+
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m;
+    m = *(Messenger **)tox;
 
     if (m->msi_packet) {
         rc = TOXAV_ERR_NEW_MULTIPLE;
