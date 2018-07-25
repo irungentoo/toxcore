@@ -35,9 +35,9 @@ int main(void)
     tox_add_tcp_relay(tox, "tox.ngc.zone", 33445, key, nullptr);
     tox_bootstrap(tox, "tox.ngc.zone", 33445, key, nullptr);
 
-    printf("Waiting for connection");
+    printf("Waiting for connection...");
 
-    for (unsigned i = 0; i < NUM_ITERATIONS; i++) {
+    for (uint16_t i = 0; i < NUM_ITERATIONS; i++) {
         tox_iterate(tox, nullptr);
         c_sleep(ITERATION_INTERVAL);
         // None of the iterations should have a connection.
