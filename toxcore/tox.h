@@ -2613,6 +2613,11 @@ typedef enum TOX_ERR_CONFERENCE_INVITE {
      */
     TOX_ERR_CONFERENCE_INVITE_FAIL_SEND,
 
+    /**
+     * The client is not connected to the conference.
+     */
+    TOX_ERR_CONFERENCE_INVITE_NO_CONNECTION,
+
 } TOX_ERR_CONFERENCE_INVITE;
 
 

@@ -2306,6 +2306,10 @@ namespace conference {
      * The invite packet failed to send.
      */
     FAIL_SEND,
+    /**
+     * The client is not connected to the conference.
+     */
+    NO_CONNECTION,
   }
 
 

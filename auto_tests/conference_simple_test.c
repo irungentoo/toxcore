@@ -13,6 +13,7 @@ typedef struct State {
     uint32_t id;
     bool self_online;
     bool friend_online;
+    bool invited_next;
 
     bool joined;
     uint32_t conference;
@@ -55,19 +56,6 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
         fprintf(stderr, "tox%d Joined conference %d\n", state->id, state->conference);
         state->joined = true;
     }
-
-    // We're tox2, so now we invite tox3.
-    if (state->id == 2) {
-        TOX_ERR_CONFERENCE_INVITE err;
-        tox_conference_invite(tox, 1, state->conference, &err);
-
-        if (err != TOX_ERR_CONFERENCE_INVITE_OK) {
-            fprintf(stderr, "ERROR: %d\n", err);
-            exit(EXIT_FAILURE);
-        }
-
-        fprintf(stderr, "tox2 invited tox3\n");
-    }
 }
 
 static void handle_conference_message(Tox *tox, uint32_t conference_number, uint32_t peer_number,
@@ -99,6 +87,25 @@ static void handle_conference_peer_list_changed(Tox *tox, uint32_t conference_nu
 
     fprintf(stderr, "tox%d has %d peers online\n", state->id, count);
     state->peers = count;
+
+    // We're tox2, so now we invite tox3.
+    if (state->id == 2 && !state->invited_next) {
+        // TODO(zugz): neater way to determine whether we are connected, and when
+        // we become so
+        TOX_ERR_CONFERENCE_PEER_QUERY peer_err;
+        tox_conference_peer_number_is_ours(tox, 0, 0, &peer_err);
+
+        if (peer_err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
+            return;
+        }
+
+        TOX_ERR_CONFERENCE_INVITE err;
+        tox_conference_invite(tox, 1, state->conference, &err);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "tox2 failed to invite tox3: err = %d", err);
+
+        state->invited_next = true;
+        fprintf(stderr, "tox2 invited tox3\n");
+    }
 }
 
 int main(void)
@@ -195,6 +202,7 @@ int main(void)
         TOX_ERR_CONFERENCE_INVITE err;
         tox_conference_invite(tox1, 0, state1.conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "failed to invite a friend: err = %d", err);
+        state1.invited_next = true;
         fprintf(stderr, "tox1 invited tox2\n");
     }
 

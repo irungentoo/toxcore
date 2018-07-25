@@ -39,15 +39,26 @@ typedef enum Groupchat_Type {
 
 #define MAX_LOSSY_COUNT 256
 
+typedef struct Message_Info {
+    uint32_t message_number;
+    uint8_t  message_id;
+} Message_Info;
+
+#define MAX_LAST_MESSAGE_INFOS 8
+
 typedef struct Group_Peer {
     uint8_t     real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t     temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
 
     uint64_t    last_recv;
-    uint32_t    last_message_number;
+
+    Message_Info
+    last_message_infos[MAX_LAST_MESSAGE_INFOS]; /* received messages, strictly decreasing in message_number */
+    uint8_t         num_last_message_infos;
 
     uint8_t     nick[MAX_NAME_LENGTH];
     uint8_t     nick_len;
+    bool        nick_updated;
 
     uint16_t peer_number;
 
@@ -70,7 +81,9 @@ typedef enum Groupchat_Close_Type {
 
 typedef struct Groupchat_Close {
     uint8_t type; /* GROUPCHAT_CLOSE_* */
-    uint8_t closest;
+    bool closest; /* connected to peer because it is one of our closest peers */
+    bool introducer; /* connected to peer because it introduced us to the group */
+    bool introduced; /* connected to peer because we introduced it to the group */
     uint32_t number;
     uint16_t group_number;
 } Groupchat_Close;
@@ -91,6 +104,7 @@ typedef struct Group_c {
     Group_Peer *group;
     uint32_t numpeers;
 
+    /* TODO(zugz) rename close to something more accurate - "connected"? */
     Groupchat_Close close[MAX_GROUP_CONNECTIONS];
 
     uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];

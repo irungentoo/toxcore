@@ -1290,6 +1290,10 @@ bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t conference
         case -2:
             SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_INVITE_FAIL_SEND);
             return false;
+
+        case -3:
+            SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_INVITE_NO_CONNECTION);
+            return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_INVITE_OK);
