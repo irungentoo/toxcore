@@ -27,6 +27,6 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(2, friend_connection_test);
+    run_auto_test(2, friend_connection_test, false);
     return 0;
 }

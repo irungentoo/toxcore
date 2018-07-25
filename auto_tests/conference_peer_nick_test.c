@@ -129,6 +129,6 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(2, conference_peer_nick_test);
+    run_auto_test(2, conference_peer_nick_test, false);
     return 0;
 }

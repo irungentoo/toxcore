@@ -61,6 +61,6 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(2, test_lossless_packet);
+    run_auto_test(2, test_lossless_packet, false);
     return 0;
 }

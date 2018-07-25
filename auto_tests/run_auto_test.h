@@ -48,7 +48,7 @@ static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
     return state->clock;
 }
 
-static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *state))
+static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *state), bool chain)
 {
     printf("initialising %u toxes\n", tox_count);
     Tox **toxes = (Tox **)calloc(tox_count, sizeof(Tox *));
@@ -66,18 +66,33 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
         mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &state[i]);
     }
 
-    printf("toxes all add each other as friends\n");
+    if (chain) {
+        printf("each tox adds adjacent toxes as friends\n");
 
-    for (uint32_t i = 0; i < tox_count; i++) {
-        for (uint32_t j = 0; j < tox_count; j++) {
-            if (i != j) {
+        for (uint32_t i = 0; i < tox_count; i++) {
+            for (uint32_t j = i - 1; j != i + 3; j += 2) {
+                if (j >= tox_count) {
+                    continue;
+                }
+
                 uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
                 tox_self_get_public_key(toxes[j], public_key);
                 tox_friend_add_norequest(toxes[i], public_key, nullptr);
             }
         }
-    }
+    } else {
+        printf("toxes all add each other as friends\n");
 
+        for (uint32_t i = 0; i < tox_count; i++) {
+            for (uint32_t j = 0; j < tox_count; j++) {
+                if (i != j) {
+                    uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
+                    tox_self_get_public_key(toxes[j], public_key);
+                    tox_friend_add_norequest(toxes[i], public_key, nullptr);
+                }
+            }
+        }
+    }
 
     printf("bootstrapping all toxes off toxes[0]\n");
     uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
