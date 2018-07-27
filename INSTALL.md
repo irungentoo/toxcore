@@ -31,7 +31,7 @@
 
 On Gentoo:
 ```
-# layman -f && layman -a tox-overlay && emerge net-libs/tox
+# emerge net-libs/tox
 ```
 
 And you're done `:)`</br>

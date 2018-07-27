@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include "tox.h"
 
 #if defined(_WIN32) || defined(__WIN32__) || defined (WIN32) /* Put win32 includes here */
 #ifndef WINVER
@@ -378,6 +379,8 @@ void networking_poll(Networking_Core *net);
  */
 Networking_Core *new_networking(IP ip, uint16_t port);
 Networking_Core *new_networking_ex(IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
+Networking_Core *new_networking_nat(IP ip, uint16_t port_from, uint16_t port_to, TOX_TRAVERSAL_TYPE traversal_type,
+                                    unsigned int *error);
 
 /* Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);

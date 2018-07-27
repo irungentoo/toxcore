@@ -220,33 +220,6 @@ static int handle_ping_response(void *_dht, IP_Port source, const uint8_t *packe
     return 0;
 }
 
-/* Check if public_key with ip_port is in the list.
- *
- * return 1 if it is.
- * return 0 if it isn't.
- */
-static int in_list(const Client_data *list, uint16_t length, const uint8_t *public_key, IP_Port ip_port)
-{
-    unsigned int i;
-
-    for (i = 0; i < length; ++i) {
-        if (id_equal(list[i].public_key, public_key)) {
-            const IPPTsPng *ipptp;
-
-            if (ip_port.ip.family == AF_INET) {
-                ipptp = &list[i].assoc4;
-            } else {
-                ipptp = &list[i].assoc6;
-            }
-
-            if (!is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT) && ipport_equal(&ipptp->ip_port, &ip_port))
-                return 1;
-        }
-    }
-
-    return 0;
-}
-
 /* Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TO_PING seconds
  * and are then removed from the list.
@@ -263,9 +236,6 @@ int add_to_ping(PING *ping, const uint8_t *public_key, IP_Port ip_port)
         return -1;
 
     if (!node_addable_to_close_list(ping->dht, public_key, ip_port))
-        return -1;
-
-    if (in_list(ping->dht->close_clientlist, LCLIENT_LIST, public_key, ip_port))
         return -1;
 
     IP_Port temp;

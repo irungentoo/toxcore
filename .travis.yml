@@ -9,7 +9,7 @@ before_script:
   - sudo add-apt-repository ppa:avsm/ocaml42+opam12 -y
   - sudo apt-get update -qq
   - sudo apt-get install ocaml opam astyle -qq
-  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
+  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev libminiupnpc-dev libnatpmp-dev check -qq
   # build apidsl
   - git clone https://github.com/iphydf/apidsl
   - cd apidsl
@@ -20,9 +20,9 @@ before_script:
   - make -j3
   - cd ..
   # install sodium, as it's not in Ubuntu Trusty
-  - git clone git://github.com/jedisct1/libsodium.git
+  - git clone https://github.com/jedisct1/libsodium.git
   - cd libsodium
-  - git checkout tags/1.0.8
+  - git checkout tags/1.0.10
   - ./autogen.sh
   - ./configure
   - make -j3

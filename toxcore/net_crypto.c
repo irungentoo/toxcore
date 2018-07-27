@@ -2668,7 +2668,7 @@ static void kill_timedout(Net_Crypto *c)
                 continue;
 
             connection_kill(c, i);
-
+            continue;
         }
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
