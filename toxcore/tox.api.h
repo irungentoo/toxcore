@@ -342,6 +342,9 @@ const MAX_HOSTNAME_LENGTH         = 255;
 
 /**
  * Represents the possible statuses a client can have.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 enum class USER_STATUS {
   /**
@@ -364,6 +367,9 @@ enum class USER_STATUS {
 /**
  * Represents message types for ${tox.friend.send.message} and conference
  * messages.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 enum class MESSAGE_TYPE {
   /**
@@ -387,6 +393,9 @@ enum class MESSAGE_TYPE {
 
 /**
  * Type of proxy used to connect to TCP relays.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 enum class PROXY_TYPE {
   /**
@@ -405,6 +414,9 @@ enum class PROXY_TYPE {
 
 /**
  * Type of savedata to create the Tox instance from.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 enum class SAVEDATA_TYPE {
   /**
@@ -424,6 +436,9 @@ enum class SAVEDATA_TYPE {
 
 /**
  * Severity level of log messages.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 enum class LOG_LEVEL {
   /**
@@ -813,6 +828,9 @@ bool add_tcp_relay(string host, uint16_t port, const uint8_t[PUBLIC_KEY_SIZE] pu
 
 /**
  * Protocols that can be used to connect to the network or friends.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 enum class CONNECTION {
   /**
@@ -2104,6 +2122,9 @@ namespace conference {
 
   /**
    * Conference types for the ${event invite} event.
+   *
+   * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+   *   Camel_Snake_Case versions, instead.
    */
   enum class TYPE {
     /**

@@ -374,6 +374,9 @@ uint32_t tox_max_hostname_length(void);
 
 /**
  * Represents the possible statuses a client can have.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_USER_STATUS {
 
@@ -400,6 +403,9 @@ typedef enum TOX_USER_STATUS {
 /**
  * Represents message types for tox_friend_send_message and conference
  * messages.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_MESSAGE_TYPE {
 
@@ -428,6 +434,9 @@ typedef enum TOX_MESSAGE_TYPE {
 
 /**
  * Type of proxy used to connect to TCP relays.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_PROXY_TYPE {
 
@@ -451,6 +460,9 @@ typedef enum TOX_PROXY_TYPE {
 
 /**
  * Type of savedata to create the Tox instance from.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_SAVEDATA_TYPE {
 
@@ -474,6 +486,9 @@ typedef enum TOX_SAVEDATA_TYPE {
 
 /**
  * Severity level of log messages.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_LOG_LEVEL {
 
@@ -972,6 +987,9 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 
 /**
  * Protocols that can be used to connect to the network or friends.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_CONNECTION {
 
@@ -2379,6 +2397,9 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback);
 
 /**
  * Conference types for the conference_invite event.
+ *
+ * @deprecated All UPPER_CASE enum type names are deprecated. Use the
+ *   Camel_Snake_Case versions, instead.
  */
 typedef enum TOX_CONFERENCE_TYPE {
 
