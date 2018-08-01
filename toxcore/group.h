@@ -172,6 +172,8 @@ typedef struct Group_Lossy_Handler {
 } Group_Lossy_Handler;
 
 typedef struct Group_Chats {
+    const Mono_Time *mono_time;
+
     Messenger *m;
     Friend_Connections *fr_c;
 
@@ -433,7 +435,7 @@ int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, peer_
 int callback_groupchat_delete(Group_Chats *g_c, uint32_t groupnumber, group_on_delete_cb *function);
 
 /* Create new groupchat instance. */
-Group_Chats *new_groupchats(Messenger *m);
+Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m);
 
 /* main groupchats loop. */
 void do_groupchats(Group_Chats *g_c, void *userdata);

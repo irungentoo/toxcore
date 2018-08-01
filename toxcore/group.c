@@ -497,7 +497,7 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
     id_copy(g->group[g->numpeers].temp_pk, temp_pk);
     g->group[g->numpeers].peer_number = peer_number;
 
-    g->group[g->numpeers].last_recv = unix_time();
+    g->group[g->numpeers].last_recv = mono_time_get(g_c->mono_time);
     ++g->numpeers;
 
     add_to_closest(g_c, groupnumber, real_pk, temp_pk);
@@ -2158,7 +2158,7 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
                 return;
             }
 
-            g->group[index].last_recv = unix_time();
+            g->group[index].last_recv = mono_time_get(g_c->mono_time);
         }
         break;
 
@@ -2508,9 +2508,9 @@ static int ping_groupchat(Group_Chats *g_c, uint32_t groupnumber)
         return -1;
     }
 
-    if (is_timeout(g->last_sent_ping, GROUP_PING_INTERVAL)) {
+    if (mono_time_is_timeout(g_c->mono_time, g->last_sent_ping, GROUP_PING_INTERVAL)) {
         if (group_ping_send(g_c, groupnumber) != -1) { /* Ping */
-            g->last_sent_ping = unix_time();
+            g->last_sent_ping = mono_time_get(g_c->mono_time);
         }
     }
 
@@ -2526,7 +2526,8 @@ static int groupchat_clear_timedout(Group_Chats *g_c, uint32_t groupnumber, void
     }
 
     for (uint32_t i = 0; i < g->numpeers; ++i) {
-        if (g->peer_number != g->group[i].peer_number && is_timeout(g->group[i].last_recv, GROUP_PING_INTERVAL * 3)) {
+        if (g->peer_number != g->group[i].peer_number
+                && mono_time_is_timeout(g_c->mono_time, g->group[i].last_recv, GROUP_PING_INTERVAL * 3)) {
             delpeer(g_c, groupnumber, i, userdata);
         }
 
@@ -2556,7 +2557,7 @@ void send_name_all_groups(Group_Chats *g_c)
 }
 
 /* Create new groupchat instance. */
-Group_Chats *new_groupchats(Messenger *m)
+Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m)
 {
     if (!m) {
         return nullptr;
@@ -2568,6 +2569,7 @@ Group_Chats *new_groupchats(Messenger *m)
         return nullptr;
     }
 
+    temp->mono_time = mono_time;
     temp->m = m;
     temp->fr_c = m->fr_c;
     m->conferences_object = temp;

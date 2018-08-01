@@ -28,6 +28,8 @@
 #include "network.h"
 %}
 
+class mono_Time { struct this; }
+
 class ping_Array {
 
 struct this;
@@ -53,7 +55,7 @@ void kill();
  * return ping_id on success.
  * return 0 on failure.
  */
-uint64_t add(const uint8_t *data, uint32_t length);
+uint64_t add(const mono_Time::this *mono_time, const uint8_t *data, uint32_t length);
 
 /**
  * Check if ping_id is valid and not timed out.
@@ -63,7 +65,7 @@ uint64_t add(const uint8_t *data, uint32_t length);
  * return length of data copied on success.
  * return -1 on failure.
  */
-int32_t check(uint8_t[length] data, uint64_t ping_id);
+int32_t check(const mono_Time::this *mono_time, uint8_t[length] data, uint64_t ping_id);
 
 }
 

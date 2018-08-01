@@ -41,6 +41,8 @@ Mono_Time *mono_time_new(void)
     monotime->time = 0;
     monotime->base_time = 0;
 
+    mono_time_update(monotime);
+
     return monotime;
 }
 
@@ -66,27 +68,6 @@ uint64_t mono_time_get(const Mono_Time *monotime)
 bool mono_time_is_timeout(const Mono_Time *monotime, uint64_t timestamp, uint64_t timeout)
 {
     return timestamp + timeout <= mono_time_get(monotime);
-}
-
-
-//!TOKSTYLE-
-// No global mutable state in Tokstyle.
-static Mono_Time global_time;
-//!TOKSTYLE+
-
-/* XXX: note that this is not thread-safe; if multiple threads call unix_time_update() concurrently, the return value of
- * unix_time() may fail to increase monotonically with increasing time */
-void unix_time_update(void)
-{
-    mono_time_update(&global_time);
-}
-uint64_t unix_time(void)
-{
-    return mono_time_get(&global_time);
-}
-int is_timeout(uint64_t timestamp, uint64_t timeout)
-{
-    return mono_time_is_timeout(&global_time, timestamp, timeout);
 }
 
 

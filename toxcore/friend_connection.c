@@ -74,6 +74,7 @@ typedef struct Friend_Conn {
 
 
 struct Friend_Connections {
+    const Mono_Time *mono_time;
     Net_Crypto *net_crypto;
     DHT *dht;
     Onion_Client *onion_c;
@@ -298,7 +299,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
     ++length;
 
     if (write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, data, length, 0) != -1) {
-        friend_con->share_relays_lastsent = unix_time();
+        friend_con->share_relays_lastsent = mono_time_get(fr_c->mono_time);
         return 1;
     }
 
@@ -339,7 +340,7 @@ static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
 
     set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, ip_port, 1);
     friend_con->dht_ip_port = ip_port;
-    friend_con->dht_ip_port_lastrecv = unix_time();
+    friend_con->dht_ip_port_lastrecv = mono_time_get(fr_c->mono_time);
 
     if (friend_con->hosting_tcp_relay) {
         friend_add_tcp_relay(fr_c, number, ip_port, friend_con->dht_temp_pk);
@@ -355,7 +356,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
         return;
     }
 
-    friend_con->dht_pk_lastrecv = unix_time();
+    friend_con->dht_pk_lastrecv = mono_time_get(fr_c->mono_time);
 
     if (friend_con->dht_lock) {
         if (dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock) != 0) {
@@ -384,13 +385,13 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
     if (status) {  /* Went online. */
         status_changed = 1;
         friend_con->status = FRIENDCONN_STATUS_CONNECTED;
-        friend_con->ping_lastrecv = unix_time();
+        friend_con->ping_lastrecv = mono_time_get(fr_c->mono_time);
         friend_con->share_relays_lastsent = 0;
         onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     } else {  /* Went offline. */
         if (friend_con->status != FRIENDCONN_STATUS_CONNECTING) {
             status_changed = 1;
-            friend_con->dht_pk_lastrecv = unix_time();
+            friend_con->dht_pk_lastrecv = mono_time_get(fr_c->mono_time);
             onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
         }
 
@@ -463,7 +464,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
     }
 
     if (data[0] == PACKET_ID_ALIVE) {
-        friend_con->ping_lastrecv = unix_time();
+        friend_con->ping_lastrecv = mono_time_get(fr_c->mono_time);
         return 0;
     }
 
@@ -558,7 +559,7 @@ static int handle_new_connections(void *object, New_Connection *n_c)
         set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
     } else {
         friend_con->dht_ip_port = n_c->source;
-        friend_con->dht_ip_port_lastrecv = unix_time();
+        friend_con->dht_ip_port_lastrecv = mono_time_get(fr_c->mono_time);
     }
 
     if (public_key_cmp(friend_con->dht_temp_pk, n_c->dht_public_key) != 0) {
@@ -613,7 +614,7 @@ static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
     const int64_t ret = write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, &ping, sizeof(ping), 0);
 
     if (ret != -1) {
-        friend_con->ping_lastsent = unix_time();
+        friend_con->ping_lastsent = mono_time_get(fr_c->mono_time);
         return 0;
     }
 
@@ -850,7 +851,8 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 }
 
 /* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled)
+Friend_Connections *new_friend_connections(const Mono_Time *mono_time, Onion_Client *onion_c,
+        bool local_discovery_enabled)
 {
     if (onion_c == nullptr) {
         return nullptr;
@@ -862,6 +864,7 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
         return nullptr;
     }
 
+    temp->mono_time = mono_time;
     temp->dht = onion_get_dht(onion_c);
     temp->net_crypto = onion_get_net_crypto(onion_c);
     temp->onion_c = onion_c;
@@ -881,7 +884,7 @@ Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_dis
 /* Send a LAN discovery packet every LAN_DISCOVERY_INTERVAL seconds. */
 static void lan_discovery(Friend_Connections *fr_c)
 {
-    if (fr_c->last_lan_discovery + LAN_DISCOVERY_INTERVAL < unix_time()) {
+    if (fr_c->last_lan_discovery + LAN_DISCOVERY_INTERVAL < mono_time_get(fr_c->mono_time)) {
         const uint16_t first = fr_c->next_lan_port;
         uint16_t last = first + PORTS_PER_DISCOVERY;
         last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
@@ -896,14 +899,14 @@ static void lan_discovery(Friend_Connections *fr_c)
 
         // Don't include default port in port range
         fr_c->next_lan_port = last != TOX_PORTRANGE_TO ? last : TOX_PORTRANGE_FROM + 1;
-        fr_c->last_lan_discovery = unix_time();
+        fr_c->last_lan_discovery = mono_time_get(fr_c->mono_time);
     }
 }
 
 /* main friend_connections loop. */
 void do_friend_connections(Friend_Connections *fr_c, void *userdata)
 {
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(fr_c->mono_time);
 
     for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         Friend_Conn *const friend_con = get_conn(fr_c, i);

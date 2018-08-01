@@ -230,8 +230,6 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
-    unix_time_update();
-
     Logger *logger = logger_new();
 
     Networking_Core *net = new_networking(logger, ip, port);
@@ -255,19 +253,31 @@ int main(int argc, char *argv[])
         }
     }
 
-    DHT *dht = new_dht(logger, net, true);
+    Mono_Time *const mono_time = mono_time_new();
 
-    if (dht == nullptr) {
-        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
+    if (mono_time == nullptr) {
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize monotonic timer. Exiting.\n");
         logger_kill(logger);
         return 1;
     }
 
-    Onion *onion = new_onion(dht);
-    Onion_Announce *onion_a = new_onion_announce(dht);
+    mono_time_update(mono_time);
+
+    DHT *const dht = new_dht(logger, mono_time, net, true);
+
+    if (dht == nullptr) {
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
+        mono_time_free(mono_time);
+        logger_kill(logger);
+        return 1;
+    }
+
+    Onion *onion = new_onion(mono_time, dht);
+    Onion_Announce *onion_a = new_onion_announce(mono_time, dht);
 
     if (!(onion && onion_a)) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
+        mono_time_free(mono_time);
         logger_kill(logger);
         return 1;
     }
@@ -277,6 +287,7 @@ int main(int argc, char *argv[])
             log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
+            mono_time_free(mono_time);
             logger_kill(logger);
             return 1;
         }
@@ -288,6 +299,7 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "Keys are managed successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
+        mono_time_free(mono_time);
         logger_kill(logger);
         return 1;
     }
@@ -299,6 +311,7 @@ int main(int argc, char *argv[])
     if (enable_tcp_relay) {
         if (tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
+            mono_time_free(mono_time);
             logger_kill(logger);
             return 1;
         }
@@ -312,6 +325,7 @@ int main(int argc, char *argv[])
             log_write(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
+            mono_time_free(mono_time);
             logger_kill(logger);
             return 1;
         }
@@ -321,6 +335,7 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
+        mono_time_free(mono_time);
         logger_kill(logger);
         return 1;
     }
@@ -338,17 +353,17 @@ int main(int argc, char *argv[])
     }
 
     while (1) {
-        unix_time_update();
+        mono_time_update(mono_time);
 
         do_dht(dht);
 
-        if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
+        if (enable_lan_discovery && mono_time_is_timeout(mono_time, last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(net_htons_port, dht);
-            last_LANdiscovery = unix_time();
+            last_LANdiscovery = mono_time_get(mono_time);
         }
 
         if (enable_tcp_relay) {
-            do_TCP_server(tcp_server);
+            do_TCP_server(tcp_server, mono_time);
         }
 
         networking_poll(dht_get_net(dht), nullptr);

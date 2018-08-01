@@ -233,6 +233,7 @@ typedef struct Friend {
 
 struct Messenger {
     Logger *log;
+    Mono_Time *mono_time;
 
     Networking_Core *net;
     Net_Crypto *net_crypto;
@@ -738,7 +739,7 @@ typedef enum Messenger_Error {
  *
  *  if error is not NULL it will be set to one of the values in the enum above.
  */
-Messenger *new_messenger(Messenger_Options *options, unsigned int *error);
+Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsigned int *error);
 
 /* Run this before closing shop
  * Free all datastructures.

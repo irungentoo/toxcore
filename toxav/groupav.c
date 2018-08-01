@@ -97,13 +97,13 @@ static void terminate_queue(Group_JitterBuffer *q)
 
 /* Return 0 if packet was queued, -1 if it wasn't.
  */
-static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
+static int queue(Group_JitterBuffer *q, const Mono_Time *mono_time, Group_Audio_Packet *pk)
 {
     uint16_t sequnum = pk->sequnum;
 
     unsigned int num = sequnum % q->size;
 
-    if (!is_timeout(q->last_queued_time, GROUP_JBUF_DEAD_SECONDS)) {
+    if (!mono_time_is_timeout(mono_time, q->last_queued_time, GROUP_JBUF_DEAD_SECONDS)) {
         if ((uint32_t)(sequnum - q->bottom) > (1 << 15)) {
             /* Drop old packet. */
             return -1;
@@ -115,7 +115,7 @@ static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
         q->bottom = sequnum - q->capacity;
         q->queue[num] = pk;
         q->top = sequnum + 1;
-        q->last_queued_time = unix_time();
+        q->last_queued_time = mono_time_get(mono_time);
         return 0;
     }
 
@@ -129,7 +129,7 @@ static int queue(Group_JitterBuffer *q, Group_Audio_Packet *pk)
         q->top = sequnum + 1;
     }
 
-    q->last_queued_time = unix_time();
+    q->last_queued_time = mono_time_get(mono_time);
     return 0;
 }
 
@@ -178,6 +178,7 @@ typedef struct Group_AV {
 } Group_AV;
 
 typedef struct Group_Peer_AV {
+    const Mono_Time *mono_time;
     Group_JitterBuffer *buffer;
 
     OpusDecoder *audio_decoder;
@@ -264,6 +265,7 @@ static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t frien
         return;
     }
 
+    peer_av->mono_time = group_av->g_c->mono_time;
     peer_av->buffer = create_queue(GROUP_JBUF_SIZE);
 
     if (group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av) == -1) {
@@ -419,7 +421,7 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
     pk->length = length - sizeof(uint16_t);
     memcpy(pk->data, packet + sizeof(uint16_t), pk->length);
 
-    if (queue(peer_av->buffer, pk) == -1) {
+    if (queue(peer_av->buffer, peer_av->mono_time, pk) == -1) {
         free(pk);
         return -1;
     }

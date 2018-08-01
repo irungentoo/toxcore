@@ -115,12 +115,11 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    unix_time_update();
-
     Logger *logger = logger_new();
-    DHT *dht = new_dht(logger, new_networking(logger, ip, PORT), true);
-    Onion *onion = new_onion(dht);
-    Onion_Announce *onion_a = new_onion_announce(dht);
+    Mono_Time *mono_time = mono_time_new();
+    DHT *dht = new_dht(logger, mono_time, new_networking(logger, ip, PORT), true);
+    Onion *onion = new_onion(mono_time, dht);
+    Onion_Announce *onion_a = new_onion_announce(mono_time, dht);
 
 #ifdef DHT_NODE_EXTRA_PACKETS
     bootstrap_set_callbacks(dht_get_net(dht), DHT_VERSION_NUMBER, DHT_MOTD, sizeof(DHT_MOTD));
@@ -188,7 +187,7 @@ int main(int argc, char *argv[])
     lan_discovery_init(dht);
 
     while (1) {
-        unix_time_update();
+        mono_time_update(mono_time);
 
         if (is_waiting_for_dht_connection && dht_isconnected(dht)) {
             printf("Connected to other bootstrap node successfully.\n");
@@ -197,13 +196,13 @@ int main(int argc, char *argv[])
 
         do_dht(dht);
 
-        if (is_timeout(last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
+        if (mono_time_is_timeout(mono_time, last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
             lan_discovery_send(net_htons(PORT), dht);
-            last_LANdiscovery = unix_time();
+            last_LANdiscovery = mono_time_get(mono_time);
         }
 
 #ifdef TCP_RELAY_ENABLED
-        do_TCP_server(tcp_s);
+        do_TCP_server(tcp_s, mono_time);
 #endif
         networking_poll(dht_get_net(dht), nullptr);
 

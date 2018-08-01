@@ -35,12 +35,13 @@
 
 class iP_Port { struct this; }
 class dHT { struct this; }
+class mono_Time { struct this; }
 
 class ping {
 
 struct this;
 
-static this new(dHT::this *dht);
+static this new(const mono_Time::this *mono_time, dHT::this *dht);
 void kill();
 
 /** Add nodes to the to_ping list.

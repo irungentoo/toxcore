@@ -26,6 +26,7 @@
 
 #include "crypto_core.h"
 #include "logger.h"
+#include "mono_time.h"
 #include "network.h"
 #include "ping_array.h"
 
@@ -240,8 +241,8 @@ const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num);
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key,
-                    const uint8_t *public_key);
+void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
+                    const uint8_t *secret_key, const uint8_t *public_key);
 
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
@@ -401,7 +402,7 @@ void dht_save(const DHT *dht, uint8_t *data);
 int dht_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled);
+DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool holepunching_enabled);
 
 void kill_dht(DHT *dht);
 

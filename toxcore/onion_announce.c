@@ -50,6 +50,7 @@ typedef struct Onion_Announce_Entry {
 } Onion_Announce_Entry;
 
 struct Onion_Announce {
+    Mono_Time *mono_time;
     DHT     *dht;
     Networking_Core *net;
     Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
@@ -256,7 +257,7 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
     unsigned int i;
 
     for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
-        if (!is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
+        if (!mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
                 && public_key_cmp(onion_a->entries[i].public_key, public_key) == 0) {
             return i;
         }
@@ -266,6 +267,7 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 }
 
 typedef struct Cmp_data {
+    const Mono_Time *mono_time;
     const uint8_t *base_public_key;
     Onion_Announce_Entry entry;
 } Cmp_data;
@@ -279,8 +281,8 @@ static int cmp_entry(const void *a, const void *b)
     Onion_Announce_Entry entry2 = cmp2.entry;
     const uint8_t *cmp_public_key = cmp1.base_public_key;
 
-    int t1 = is_timeout(entry1.time, ONION_ANNOUNCE_TIMEOUT);
-    int t2 = is_timeout(entry2.time, ONION_ANNOUNCE_TIMEOUT);
+    int t1 = mono_time_is_timeout(cmp1.mono_time, entry1.time, ONION_ANNOUNCE_TIMEOUT);
+    int t2 = mono_time_is_timeout(cmp1.mono_time, entry2.time, ONION_ANNOUNCE_TIMEOUT);
 
     if (t1 && t2) {
         return 0;
@@ -307,13 +309,15 @@ static int cmp_entry(const void *a, const void *b)
     return 0;
 }
 
-static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int length, const uint8_t *comp_public_key)
+static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int length, const Mono_Time *mono_time,
+                                     const uint8_t *comp_public_key)
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
     VLA(Cmp_data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; ++i) {
+        cmp_list[i].mono_time = mono_time;
         cmp_list[i].base_public_key = comp_public_key;
         cmp_list[i].entry = list[i];
     }
@@ -338,7 +342,7 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
 
     if (pos == -1) {
         for (unsigned i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
-            if (is_timeout(onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)) {
+            if (mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)) {
                 pos = i;
             }
         }
@@ -358,9 +362,10 @@ static int add_to_entries(Onion_Announce *onion_a, IP_Port ret_ip_port, const ui
     onion_a->entries[pos].ret_ip_port = ret_ip_port;
     memcpy(onion_a->entries[pos].ret, ret, ONION_RETURN_3);
     memcpy(onion_a->entries[pos].data_public_key, data_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    onion_a->entries[pos].time = unix_time();
+    onion_a->entries[pos].time = mono_time_get(onion_a->mono_time);
 
-    sort_onion_announce_list(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, dht_get_self_public_key(onion_a->dht));
+    sort_onion_announce_list(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, onion_a->mono_time,
+                             dht_get_self_public_key(onion_a->dht));
     return in_entries(onion_a, public_key);
 }
 
@@ -374,7 +379,8 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     const uint8_t *packet_public_key = packet + 1 + CRYPTO_NONCE_SIZE;
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion_a->shared_keys_recv, shared_key, dht_get_self_secret_key(onion_a->dht), packet_public_key);
+    get_shared_key(onion_a->mono_time, &onion_a->shared_keys_recv, shared_key, dht_get_self_secret_key(onion_a->dht),
+                   packet_public_key);
 
     uint8_t plain[ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE +
                                      ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
@@ -387,10 +393,10 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
     }
 
     uint8_t ping_id1[ONION_PING_ID_SIZE];
-    generate_ping_id(onion_a, unix_time(), packet_public_key, source, ping_id1);
+    generate_ping_id(onion_a, mono_time_get(onion_a->mono_time), packet_public_key, source, ping_id1);
 
     uint8_t ping_id2[ONION_PING_ID_SIZE];
-    generate_ping_id(onion_a, unix_time() + PING_ID_TIMEOUT, packet_public_key, source, ping_id2);
+    generate_ping_id(onion_a, mono_time_get(onion_a->mono_time) + PING_ID_TIMEOUT, packet_public_key, source, ping_id2);
 
     int index;
 
@@ -493,7 +499,7 @@ static int handle_data_request(void *object, IP_Port source, const uint8_t *pack
     return 0;
 }
 
-Onion_Announce *new_onion_announce(DHT *dht)
+Onion_Announce *new_onion_announce(Mono_Time *mono_time, DHT *dht)
 {
     if (dht == nullptr) {
         return nullptr;
@@ -505,6 +511,7 @@ Onion_Announce *new_onion_announce(DHT *dht)
         return nullptr;
     }
 
+    onion_a->mono_time = mono_time;
     onion_a->dht = dht;
     onion_a->net = dht_get_net(dht);
     new_symmetric_key(onion_a->secret_bytes);

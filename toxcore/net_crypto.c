@@ -134,6 +134,7 @@ typedef struct Crypto_Connection {
 
 struct Net_Crypto {
     const Logger *log;
+    Mono_Time *mono_time;
 
     DHT *dht;
     TCP_Connections *tcp_c;
@@ -248,10 +249,11 @@ static int create_cookie_request(const Net_Crypto *c, uint8_t *packet, uint8_t *
  * return -1 on failure.
  * return 0 on success.
  */
-static int create_cookie(const Logger *log, uint8_t *cookie, const uint8_t *bytes, const uint8_t *encryption_key)
+static int create_cookie(const Logger *log, const Mono_Time *mono_time, uint8_t *cookie, const uint8_t *bytes,
+                         const uint8_t *encryption_key)
 {
     uint8_t contents[COOKIE_CONTENTS_LENGTH];
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(mono_time);
     memcpy(contents, &temp_time, sizeof(temp_time));
     memcpy(contents + sizeof(temp_time), bytes, COOKIE_DATA_LENGTH);
     random_nonce(cookie);
@@ -269,7 +271,8 @@ static int create_cookie(const Logger *log, uint8_t *cookie, const uint8_t *byte
  * return -1 on failure.
  * return 0 on success.
  */
-static int open_cookie(const Logger *log, uint8_t *bytes, const uint8_t *cookie, const uint8_t *encryption_key)
+static int open_cookie(const Logger *log, const Mono_Time *mono_time, uint8_t *bytes, const uint8_t *cookie,
+                       const uint8_t *encryption_key)
 {
     uint8_t contents[COOKIE_CONTENTS_LENGTH];
     const int len = decrypt_data_symmetric(encryption_key, cookie, cookie + CRYPTO_NONCE_SIZE,
@@ -281,7 +284,7 @@ static int open_cookie(const Logger *log, uint8_t *bytes, const uint8_t *cookie,
 
     uint64_t cookie_time;
     memcpy(&cookie_time, contents, sizeof(cookie_time));
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(mono_time);
 
     if (cookie_time + COOKIE_TIMEOUT < temp_time || temp_time < cookie_time) {
         return -1;
@@ -307,7 +310,7 @@ static int create_cookie_response(const Net_Crypto *c, uint8_t *packet, const ui
     memcpy(cookie_plain + CRYPTO_PUBLIC_KEY_SIZE, dht_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     uint8_t plain[COOKIE_LENGTH + sizeof(uint64_t)];
 
-    if (create_cookie(c->log, plain, cookie_plain, c->secret_symmetric_key) != 0) {
+    if (create_cookie(c->log, c->mono_time, plain, cookie_plain, c->secret_symmetric_key) != 0) {
         return -1;
     }
 
@@ -475,8 +478,8 @@ static int create_crypto_handshake(const Net_Crypto *c, uint8_t *packet, const u
     memcpy(cookie_plain, peer_real_pk, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(cookie_plain + CRYPTO_PUBLIC_KEY_SIZE, peer_dht_pubkey, CRYPTO_PUBLIC_KEY_SIZE);
 
-    if (create_cookie(c->log, plain + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SHA512_SIZE, cookie_plain,
-                      c->secret_symmetric_key) != 0) {
+    if (create_cookie(c->log, c->mono_time, plain + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SHA512_SIZE,
+                      cookie_plain, c->secret_symmetric_key) != 0) {
         return -1;
     }
 
@@ -521,7 +524,7 @@ static int handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t 
 
     uint8_t cookie_plain[COOKIE_DATA_LENGTH];
 
-    if (open_cookie(c->log, cookie_plain, packet + 1, c->secret_symmetric_key) != 0) {
+    if (open_cookie(c->log, c->mono_time, cookie_plain, packet + 1, c->secret_symmetric_key) != 0) {
         return -1;
     }
 
@@ -620,7 +623,7 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
         return empty;
     }
 
-    uint64_t current_time = unix_time();
+    const uint64_t current_time = mono_time_get(c->mono_time);
     bool v6 = 0, v4 = 0;
 
     if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev4) > current_time) {
@@ -681,13 +684,13 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         }
 
         // TODO(irungentoo): a better way of sending packets directly to confirm the others ip.
-        uint64_t current_time = unix_time();
+        const uint64_t current_time = mono_time_get(c->mono_time);
 
         if ((((UDP_DIRECT_TIMEOUT / 2) + conn->direct_send_attempt_time) > current_time && length < 96)
                 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
             if ((uint32_t)sendpacket(dht_get_net(c->dht), ip_port, data, length) == length) {
                 direct_send_attempt = 1;
-                conn->direct_send_attempt_time = unix_time();
+                conn->direct_send_attempt_time = mono_time_get(c->mono_time);
             }
         }
     }
@@ -1841,9 +1844,9 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         }
 
         if (net_family_is_ipv4(source.ip.family)) {
-            conn->direct_lastrecv_timev4 = unix_time();
+            conn->direct_lastrecv_timev4 = mono_time_get(c->mono_time);
         } else {
-            conn->direct_lastrecv_timev6 = unix_time();
+            conn->direct_lastrecv_timev6 = mono_time_get(c->mono_time);
         }
 
         return 0;
@@ -2069,7 +2072,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, 
         return -1;
     }
 
-    const uint64_t direct_lastrecv_time = connected ? unix_time() : 0;
+    const uint64_t direct_lastrecv_time = connected ? mono_time_get(c->mono_time) : 0;
 
     if (net_family_is_ipv4(ip_port.ip.family)) {
         conn->direct_lastrecv_timev4 = direct_lastrecv_time;
@@ -2409,9 +2412,9 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
     pthread_mutex_lock(&conn->mutex);
 
     if (net_family_is_ipv4(source.ip.family)) {
-        conn->direct_lastrecv_timev4 = unix_time();
+        conn->direct_lastrecv_timev4 = mono_time_get(c->mono_time);
     } else {
-        conn->direct_lastrecv_timev6 = unix_time();
+        conn->direct_lastrecv_timev6 = mono_time_get(c->mono_time);
     }
 
     pthread_mutex_unlock(&conn->mutex);
@@ -2877,7 +2880,7 @@ Crypto_Conn_State crypto_connection_status(const Net_Crypto *c, int crypt_connec
     if (direct_connected) {
         *direct_connected = 0;
 
-        uint64_t current_time = unix_time();
+        const uint64_t current_time = mono_time_get(c->mono_time);
 
         if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev4) > current_time) {
             *direct_connected = 1;
@@ -2923,7 +2926,7 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk)
 /* Run this to (re)initialize net_crypto.
  * Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(const Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info)
+Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, TCP_Proxy_Info *proxy_info)
 {
     if (dht == nullptr) {
         return nullptr;
@@ -2936,8 +2939,9 @@ Net_Crypto *new_net_crypto(const Logger *log, DHT *dht, TCP_Proxy_Info *proxy_in
     }
 
     temp->log = log;
+    temp->mono_time = mono_time;
 
-    temp->tcp_c = new_tcp_connections(dht_get_self_secret_key(dht), proxy_info);
+    temp->tcp_c = new_tcp_connections(mono_time, dht_get_self_secret_key(dht), proxy_info);
 
     if (temp->tcp_c == nullptr) {
         free(temp);

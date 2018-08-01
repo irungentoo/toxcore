@@ -25,11 +25,13 @@
 #define ONION_H
 
 #include "DHT.h"
+#include "mono_time.h"
 
 typedef int onion_recv_1_cb(void *object, IP_Port dest, const uint8_t *data, uint16_t length);
 
 typedef struct Onion {
-    DHT     *dht;
+    Mono_Time *mono_time;
+    DHT *dht;
     Networking_Core *net;
     uint8_t secret_symmetric_key[CRYPTO_SYMMETRIC_KEY_SIZE];
     uint64_t timestamp;
@@ -158,7 +160,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
  */
 void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *object);
 
-Onion *new_onion(DHT *dht);
+Onion *new_onion(Mono_Time *mono_time, DHT *dht);
 
 void kill_onion(Onion *onion);
 

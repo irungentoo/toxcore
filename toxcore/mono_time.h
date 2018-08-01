@@ -8,7 +8,39 @@
 extern "C" {
 #endif
 
+#ifndef MONO_TIME_DEFINED
+#define MONO_TIME_DEFINED
+/**
+ * The timer portion of the toxcore event loop.
+ *
+ * We update the time exactly once per tox_iterate call. Programs built on lower
+ * level APIs such as the DHT bootstrap node must update the time manually in
+ * each iteration.
+ *
+ * Time is kept per Tox instance, not globally, even though "time" as a concept
+ * is global. This is because by definition `mono_time` represents the time at
+ * the start of an iteration, and also by definition the time when all network
+ * events for the current iteration occurred. This affects mainly two situations:
+ *
+ * 1. Two timers started in the same iteration: e.g. two timers set to expire in
+ *    10 seconds will both expire at the same time, i.e. about 10 seconds later.
+ *    If the time were global, `mono_time` would be a random number that is
+ *    either the time at the start of an iteration, or 1 second later (since the
+ *    timer resolution is 1 second). This can happen when one update happens at
+ *    e.g. 10:00:00.995 and a few milliseconds later a concurrently running
+ *    instance updates the time at 10:00:01.005, making one timer expire a
+ *    second after the other.
+ * 2. One timer based on an event: if we want to encode a behaviour of a timer
+ *    expiring e.g. 10 seconds after a network event occurred, we simply start a
+ *    timer in the event handler. If a concurrent instance updates the time
+ *    underneath us, it may instead expire 9 seconds after the event.
+ *
+ * Both these situations cause incorrect behaviour randomly. In practice,
+ * toxcore is somewhat robust against strange timer behaviour, but the
+ * implementation should at least theoretically match the specification.
+ */
 typedef struct Mono_Time Mono_Time;
+#endif /* MONO_TIME_DEFINED */
 
 Mono_Time *mono_time_new(void);
 void mono_time_free(Mono_Time *monotime);
@@ -16,11 +48,6 @@ void mono_time_free(Mono_Time *monotime);
 void mono_time_update(Mono_Time *monotime);
 uint64_t mono_time_get(const Mono_Time *monotime);
 bool mono_time_is_timeout(const Mono_Time *monotime, uint64_t timestamp, uint64_t timeout);
-
-// TODO(#405): Use per-tox monotime, delete these functions.
-void unix_time_update(void);
-uint64_t unix_time(void);
-int is_timeout(uint64_t timestamp, uint64_t timeout);
 
 /* return current monotonic time in milliseconds (ms). */
 uint64_t current_time_monotonic(void);

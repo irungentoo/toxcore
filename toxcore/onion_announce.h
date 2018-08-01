@@ -120,7 +120,7 @@ int send_data_request(Networking_Core *net, const Onion_Path *path, IP_Port dest
                       const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length);
 
 
-Onion_Announce *new_onion_announce(DHT *dht);
+Onion_Announce *new_onion_announce(Mono_Time *mono_time, DHT *dht);
 
 void kill_onion_announce(Onion_Announce *onion_a);
 

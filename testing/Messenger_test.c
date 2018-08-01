@@ -107,11 +107,16 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    unix_time_update();
+    Mono_Time *const mono_time = mono_time_new();
+
+    if (mono_time == nullptr) {
+        fputs("Failed to allocate monotonic timer datastructure\n", stderr);
+        exit(0);
+    }
 
     Messenger_Options options = {0};
     options.ipv6enabled = ipv6enabled;
-    m = new_messenger(&options, nullptr);
+    m = new_messenger(mono_time, &options, nullptr);
 
     if (!m) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
@@ -180,7 +185,7 @@ int main(int argc, char *argv[])
     perror("Initialization");
 
     while (1) {
-        unix_time_update();
+        mono_time_update(mono_time);
 
         uint8_t name[128];
         const char *const filename = "Save.bak";

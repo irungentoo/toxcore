@@ -87,7 +87,7 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
 
 /* Run the TCP_server
  */
-void do_TCP_server(TCP_Server *tcp_server);
+void do_TCP_server(TCP_Server *tcp_server, Mono_Time *mono_time);
 
 /* Kill the TCP server
  */

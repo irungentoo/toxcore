@@ -158,7 +158,8 @@ typedef int fr_request_cb(void *object, const uint8_t *source_pubkey, const uint
 void set_friend_request_callback(Friend_Connections *fr_c, fr_request_cb *fr_request_callback, void *object);
 
 /* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(Onion_Client *onion_c, bool local_discovery_enabled);
+Friend_Connections *new_friend_connections(const Mono_Time *mono_time, Onion_Client *onion_c,
+        bool local_discovery_enabled);
 
 /* main friend_connections loop. */
 void do_friend_connections(Friend_Connections *fr_c, void *userdata);

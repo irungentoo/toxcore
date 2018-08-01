@@ -32,39 +32,39 @@ static inline IP get_loopback()
     return ip;
 }
 
-static void mark_bad(IPPTsPng *ipptp)
+static void mark_bad(const Mono_Time *mono_time, IPPTsPng *ipptp)
 {
-    ipptp->timestamp = unix_time() - 2 * BAD_NODE_TIMEOUT;
+    ipptp->timestamp = mono_time_get(mono_time) - 2 * BAD_NODE_TIMEOUT;
     ipptp->hardening.routes_requests_ok = 0;
     ipptp->hardening.send_nodes_ok = 0;
     ipptp->hardening.testing_requests = 0;
 }
 
-static void mark_possible_bad(IPPTsPng *ipptp)
+static void mark_possible_bad(const Mono_Time *mono_time, IPPTsPng *ipptp)
 {
-    ipptp->timestamp = unix_time();
+    ipptp->timestamp = mono_time_get(mono_time);
     ipptp->hardening.routes_requests_ok = 0;
     ipptp->hardening.send_nodes_ok = 0;
     ipptp->hardening.testing_requests = 0;
 }
 
-static void mark_good(IPPTsPng *ipptp)
+static void mark_good(const Mono_Time *mono_time, IPPTsPng *ipptp)
 {
-    ipptp->timestamp = unix_time();
+    ipptp->timestamp = mono_time_get(mono_time);
     ipptp->hardening.routes_requests_ok = (HARDENING_ALL_OK >> 0) & 1;
     ipptp->hardening.send_nodes_ok = (HARDENING_ALL_OK >> 1) & 1;
     ipptp->hardening.testing_requests = (HARDENING_ALL_OK >> 2) & 1;
 }
 
-static void mark_all_good(Client_data *list, uint32_t length, uint8_t ipv6)
+static void mark_all_good(const Mono_Time *mono_time, Client_data *list, uint32_t length, uint8_t ipv6)
 {
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
         if (ipv6) {
-            mark_good(&list[i].assoc6);
+            mark_good(mono_time, &list[i].assoc6);
         } else {
-            mark_good(&list[i].assoc4);
+            mark_good(mono_time, &list[i].assoc4);
         }
     }
 }
@@ -183,7 +183,7 @@ static void test_addto_lists_bad(DHT            *dht,
     uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
-    mark_all_good(list, length, ipv6);
+    mark_all_good(dht->mono_time, list, length, ipv6);
 
     test1 = random_u32() % (length / 3);
     test2 = random_u32() % (length / 3) + length / 3;
@@ -196,13 +196,13 @@ static void test_addto_lists_bad(DHT            *dht,
 
     // mark nodes as "bad"
     if (ipv6) {
-        mark_bad(&list[test1].assoc6);
-        mark_bad(&list[test2].assoc6);
-        mark_bad(&list[test3].assoc6);
+        mark_bad(dht->mono_time, &list[test1].assoc6);
+        mark_bad(dht->mono_time, &list[test2].assoc6);
+        mark_bad(dht->mono_time, &list[test3].assoc6);
     } else {
-        mark_bad(&list[test1].assoc4);
-        mark_bad(&list[test2].assoc4);
-        mark_bad(&list[test3].assoc4);
+        mark_bad(dht->mono_time, &list[test1].assoc4);
+        mark_bad(dht->mono_time, &list[test2].assoc4);
+        mark_bad(dht->mono_time, &list[test3].assoc4);
     }
 
     ip_port->port += 1;
@@ -227,7 +227,7 @@ static void test_addto_lists_possible_bad(DHT            *dht,
     uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
     random_bytes(public_key, sizeof(public_key));
-    mark_all_good(list, length, ipv6);
+    mark_all_good(dht->mono_time, list, length, ipv6);
 
     test1 = random_u32() % (length / 3);
     test2 = random_u32() % (length / 3) + length / 3;
@@ -240,13 +240,13 @@ static void test_addto_lists_possible_bad(DHT            *dht,
 
     // mark nodes as "possibly bad"
     if (ipv6) {
-        mark_possible_bad(&list[test1].assoc6);
-        mark_possible_bad(&list[test2].assoc6);
-        mark_possible_bad(&list[test3].assoc6);
+        mark_possible_bad(dht->mono_time, &list[test1].assoc6);
+        mark_possible_bad(dht->mono_time, &list[test2].assoc6);
+        mark_possible_bad(dht->mono_time, &list[test3].assoc6);
     } else {
-        mark_possible_bad(&list[test1].assoc4);
-        mark_possible_bad(&list[test2].assoc4);
-        mark_possible_bad(&list[test3].assoc4);
+        mark_possible_bad(dht->mono_time, &list[test1].assoc4);
+        mark_possible_bad(dht->mono_time, &list[test2].assoc4);
+        mark_possible_bad(dht->mono_time, &list[test3].assoc4);
     }
 
     ip_port->port += 1;
@@ -288,7 +288,7 @@ static void test_addto_lists_good(DHT            *dht,
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
 
-    mark_all_good(list, length, ipv6);
+    mark_all_good(dht->mono_time, list, length, ipv6);
 
     // check "good" client id replacement
     do {
@@ -319,10 +319,13 @@ static void test_addto_lists(IP ip)
     uint32_t index = 1;
     logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index);
 
+    Mono_Time *mono_time = mono_time_new();
+    ck_assert_msg(mono_time != nullptr, "Failed to create Mono_Time");
+
     Networking_Core *net = new_networking(log, ip, TOX_PORT_DEFAULT);
     ck_assert_msg(net != nullptr, "Failed to create Networking_Core");
 
-    DHT *dht = new_dht(log, net, true);
+    DHT *dht = new_dht(log, mono_time, net, true);
     ck_assert_msg(dht != nullptr, "Failed to create DHT");
 
     IP_Port ip_port;
@@ -451,6 +454,7 @@ static void test_list_main(void)
 {
     DHT *dhts[NUM_DHT];
     Logger *logs[NUM_DHT];
+    Mono_Time *mono_times[NUM_DHT];
     uint32_t index[NUM_DHT];
 
     uint8_t cmp_list1[NUM_DHT][MAX_FRIEND_CLIENTS][CRYPTO_PUBLIC_KEY_SIZE + 1];
@@ -466,7 +470,9 @@ static void test_list_main(void)
         index[i] = i + 1;
         logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
-        dhts[i] = new_dht(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
+        mono_times[i] = mono_time_new();
+
+        dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i,
                       "Bound to wrong port: %d", net_port(dhts[i]->net));
@@ -573,6 +579,7 @@ static void test_list_main(void)
         Networking_Core *n = dhts[i]->net;
         kill_dht(dhts[i]);
         kill_networking(n);
+        mono_time_free(mono_times[i]);
         logger_kill(logs[i]);
     }
 }
@@ -598,9 +605,8 @@ static void test_DHT_test(void)
     uint32_t to_comp = 8394782;
     DHT *dhts[NUM_DHT];
     Logger *logs[NUM_DHT];
+    Mono_Time *mono_times[NUM_DHT];
     uint32_t index[NUM_DHT];
-
-    unix_time_update();
 
     uint32_t i, j;
 
@@ -612,7 +618,9 @@ static void test_DHT_test(void)
         index[i] = i + 1;
         logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
-        dhts[i] = new_dht(logs[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
+        mono_times[i] = mono_time_new();
+
+        dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }
@@ -663,7 +671,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_DHT; ++i) {
-            unix_time_update();
+            mono_time_update(mono_times[i]);
             networking_poll(dhts[i]->net, nullptr);
             do_dht(dhts[i]);
         }
@@ -675,6 +683,7 @@ loop_top:
         Networking_Core *n = dhts[i]->net;
         kill_dht(dhts[i]);
         kill_networking(n);
+        mono_time_free(mono_times[i]);
         logger_kill(logs[i]);
     }
 }
@@ -791,8 +800,6 @@ static void test_dht_node_packing(void)
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    unix_time_update();
 
     test_dht_create_packet();
     test_dht_node_packing();

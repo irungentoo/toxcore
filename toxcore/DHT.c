@@ -93,6 +93,7 @@ typedef struct Cryptopacket_Handler {
 
 struct DHT {
     const Logger *log;
+    Mono_Time *mono_time;
     Networking_Core *net;
 
     bool hole_punching_enabled;
@@ -243,7 +244,8 @@ static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key, const uint8_t *public_key)
+void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
+                    const uint8_t *secret_key, const uint8_t *public_key)
 {
     uint32_t num = ~0;
     uint32_t curr = 0;
@@ -256,12 +258,12 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
             if (id_equal(public_key, key->public_key)) {
                 memcpy(shared_key, key->shared_key, CRYPTO_SHARED_KEY_SIZE);
                 ++key->times_requested;
-                key->time_last_requested = unix_time();
+                key->time_last_requested = mono_time_get(mono_time);
                 return;
             }
 
             if (num != 0) {
-                if (is_timeout(key->time_last_requested, KEYS_TIMEOUT)) {
+                if (mono_time_is_timeout(mono_time, key->time_last_requested, KEYS_TIMEOUT)) {
                     num = 0;
                     curr = index;
                 } else if (num > key->times_requested) {
@@ -283,7 +285,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
         key->times_requested = 1;
         memcpy(key->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(key->shared_key, shared_key, CRYPTO_SHARED_KEY_SIZE);
-        key->time_last_requested = unix_time();
+        key->time_last_requested = mono_time_get(mono_time);
     }
 }
 
@@ -292,7 +294,7 @@ void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t
  */
 void dht_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
 {
-    get_shared_key(&dht->shared_keys_recv, shared_key, dht->self_secret_key, public_key);
+    get_shared_key(dht->mono_time, &dht->shared_keys_recv, shared_key, dht->self_secret_key, public_key);
 }
 
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
@@ -300,7 +302,7 @@ void dht_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *publi
  */
 void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key)
 {
-    get_shared_key(&dht->shared_keys_sent, shared_key, dht->self_secret_key, public_key);
+    get_shared_key(dht->mono_time, &dht->shared_keys_sent, shared_key, dht->self_secret_key, public_key);
 }
 
 #define CRYPTO_SIZE 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE
@@ -667,7 +669,8 @@ static uint32_t index_of_client_ip_port(const Client_data *array, uint32_t size,
 
 /* Update ip_port of client if it's needed.
  */
-static void update_client(const Logger *log, int index, Client_data *client, IP_Port ip_port)
+static void update_client(const Logger *log, const Mono_Time *mono_time, int index, Client_data *client,
+                          IP_Port ip_port)
 {
     IPPTsPng *assoc;
     int ip_version;
@@ -697,7 +700,7 @@ static void update_client(const Logger *log, int index, Client_data *client, IP_
     }
 
     assoc->ip_port = ip_port;
-    assoc->timestamp = unix_time();
+    assoc->timestamp = mono_time_get(mono_time);
 }
 
 /* Check if client with public_key is already in list of length length.
@@ -707,15 +710,15 @@ static void update_client(const Logger *log, int index, Client_data *client, IP_
  *
  *  return True(1) or False(0)
  */
-static int client_or_ip_port_in_list(const Logger *log, Client_data *list, uint16_t length, const uint8_t *public_key,
-                                     IP_Port ip_port)
+static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_time, Client_data *list, uint16_t length,
+                                     const uint8_t *public_key, IP_Port ip_port)
 {
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(mono_time);
     uint32_t index = index_of_client_pk(list, length, public_key);
 
     /* if public_key is in list, find it and maybe overwrite ip_port */
     if (index != UINT32_MAX) {
-        update_client(log, index, &list[index], ip_port);
+        update_client(log, mono_time, index, &list[index], ip_port);
         return 1;
     }
 
@@ -793,7 +796,7 @@ static uint8_t hardening_correct(const Hardening *h)
 /*
  * helper for get_close_nodes(). argument list is a monster :D
  */
-static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_list,
+static void get_close_nodes_inner(const Mono_Time *mono_time, const uint8_t *public_key, Node_format *nodes_list,
                                   Family sa_family, const Client_data *client_list, uint32_t client_list_length,
                                   uint32_t *num_nodes_ptr, uint8_t is_LAN, uint8_t want_good)
 {
@@ -824,7 +827,7 @@ static void get_close_nodes_inner(const uint8_t *public_key, Node_format *nodes_
         }
 
         /* node not in a good condition? */
-        if (is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT)) {
+        if (mono_time_is_timeout(mono_time, ipptp->timestamp, BAD_NODE_TIMEOUT)) {
             continue;
         }
 
@@ -862,14 +865,14 @@ static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, N
                                     Family sa_family, uint8_t is_LAN, uint8_t want_good)
 {
     uint32_t num_nodes = 0;
-    get_close_nodes_inner(public_key, nodes_list, sa_family,
+    get_close_nodes_inner(dht->mono_time, public_key, nodes_list, sa_family,
                           dht->close_clientlist, LCLIENT_LIST, &num_nodes, is_LAN, 0);
 
     /* TODO(irungentoo): uncomment this when hardening is added to close friend clients */
 #if 0
 
     for (uint32_t i = 0; i < dht->num_friends; ++i) {
-        get_close_nodes_inner(dht, public_key, nodes_list, sa_family,
+        get_close_nodes_inner(dht->mono_time, public_key, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
                               &num_nodes, is_LAN, want_good);
     }
@@ -877,7 +880,7 @@ static int get_somewhat_close_nodes(const DHT *dht, const uint8_t *public_key, N
 #endif
 
     for (uint32_t i = 0; i < dht->num_friends; ++i) {
-        get_close_nodes_inner(public_key, nodes_list, sa_family,
+        get_close_nodes_inner(dht->mono_time, public_key, nodes_list, sa_family,
                               dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS,
                               &num_nodes, is_LAN, 0);
     }
@@ -893,13 +896,14 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
 }
 
 typedef struct DHT_Cmp_data {
+    const Mono_Time *mono_time;
     const uint8_t *base_public_key;
     Client_data entry;
 } DHT_Cmp_data;
 
-static bool assoc_timeout(const IPPTsPng *assoc)
+static bool assoc_timeout(const Mono_Time *mono_time, const IPPTsPng *assoc)
 {
-    return is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT);
+    return mono_time_is_timeout(mono_time, assoc->timestamp, BAD_NODE_TIMEOUT);
 }
 
 static bool incorrect_hardening(const IPPTsPng *assoc)
@@ -916,8 +920,8 @@ static int cmp_dht_entry(const void *a, const void *b)
     const Client_data entry2 = cmp2.entry;
     const uint8_t *cmp_public_key = cmp1.base_public_key;
 
-    bool t1 = assoc_timeout(&entry1.assoc4) && assoc_timeout(&entry1.assoc6);
-    bool t2 = assoc_timeout(&entry2.assoc4) && assoc_timeout(&entry2.assoc6);
+    bool t1 = assoc_timeout(cmp1.mono_time, &entry1.assoc4) && assoc_timeout(cmp1.mono_time, &entry1.assoc6);
+    bool t2 = assoc_timeout(cmp2.mono_time, &entry2.assoc4) && assoc_timeout(cmp2.mono_time, &entry2.assoc6);
 
     if (t1 && t2) {
         return 0;
@@ -960,20 +964,23 @@ static int cmp_dht_entry(const void *a, const void *b)
  * return 0 if node can't be stored.
  * return 1 if it can.
  */
-static unsigned int store_node_ok(const Client_data *client, const uint8_t *public_key, const uint8_t *comp_public_key)
+static unsigned int store_node_ok(const Client_data *client, const Mono_Time *mono_time, const uint8_t *public_key,
+                                  const uint8_t *comp_public_key)
 {
-    return (is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT)
-            && is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT))
+    return (mono_time_is_timeout(mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT)
+            && mono_time_is_timeout(mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT))
            || id_closest(comp_public_key, client->public_key, public_key) == 2;
 }
 
-static void sort_client_list(Client_data *list, unsigned int length, const uint8_t *comp_public_key)
+static void sort_client_list(Client_data *list, const Mono_Time *mono_time, unsigned int length,
+                             const uint8_t *comp_public_key)
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
     VLA(DHT_Cmp_data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; ++i) {
+        cmp_list[i].mono_time = mono_time;
         cmp_list[i].base_public_key = comp_public_key;
         cmp_list[i].entry = list[i];
     }
@@ -985,7 +992,7 @@ static void sort_client_list(Client_data *list, unsigned int length, const uint8
     }
 }
 
-static void update_client_with_reset(Client_data *client, const IP_Port *ip_port)
+static void update_client_with_reset(const Mono_Time *mono_time, Client_data *client, const IP_Port *ip_port)
 {
     IPPTsPng *ipptp_write = nullptr;
     IPPTsPng *ipptp_clear = nullptr;
@@ -999,7 +1006,7 @@ static void update_client_with_reset(Client_data *client, const IP_Port *ip_port
     }
 
     ipptp_write->ip_port = *ip_port;
-    ipptp_write->timestamp = unix_time();
+    ipptp_write->timestamp = mono_time_get(mono_time);
 
     ip_reset(&ipptp_write->ret_ip_port.ip);
     ipptp_write->ret_ip_port.port = 0;
@@ -1022,7 +1029,8 @@ static void update_client_with_reset(Client_data *client, const IP_Port *ip_port
  *  than public_key.
  *
  *  returns true when the item was stored, false otherwise */
-static bool replace_all(Client_data    *list,
+static bool replace_all(const Mono_Time *mono_time,
+                        Client_data    *list,
                         uint16_t        length,
                         const uint8_t  *public_key,
                         IP_Port         ip_port,
@@ -1032,17 +1040,17 @@ static bool replace_all(Client_data    *list,
         return false;
     }
 
-    if (!store_node_ok(&list[1], public_key, comp_public_key) &&
-            !store_node_ok(&list[0], public_key, comp_public_key)) {
+    if (!store_node_ok(&list[1], mono_time, public_key, comp_public_key) &&
+            !store_node_ok(&list[0], mono_time, public_key, comp_public_key)) {
         return false;
     }
 
-    sort_client_list(list, length, comp_public_key);
+    sort_client_list(list, mono_time, length, comp_public_key);
 
     Client_data *const client = &list[0];
     id_copy(client->public_key, public_key);
 
-    update_client_with_reset(client, &ip_port);
+    update_client_with_reset(mono_time, client, &ip_port);
     return true;
 }
 
@@ -1066,8 +1074,8 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bo
          * index is left as >= LCLIENT_LENGTH */
         Client_data *const client = &dht->close_clientlist[(index * LCLIENT_NODES) + i];
 
-        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
-                !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                !mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
             continue;
         }
 
@@ -1076,7 +1084,7 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bo
         }
 
         id_copy(client->public_key, public_key);
-        update_client_with_reset(client, &ip_port);
+        update_client_with_reset(dht->mono_time, client, &ip_port);
         return 0;
     }
 
@@ -1090,8 +1098,8 @@ bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
     return add_to_close(dht, public_key, ip_port, 1) == 0;
 }
 
-static bool is_pk_in_client_list(const Client_data *list, unsigned int client_list_length, const uint8_t *public_key,
-                                 IP_Port ip_port)
+static bool is_pk_in_client_list(const Client_data *list, unsigned int client_list_length, const Mono_Time *mono_time,
+                                 const uint8_t *public_key, IP_Port ip_port)
 {
     const uint32_t index = index_of_client_pk(list, client_list_length, public_key);
 
@@ -1103,7 +1111,7 @@ static bool is_pk_in_client_list(const Client_data *list, unsigned int client_li
                             ? &list[index].assoc4
                             : &list[index].assoc6;
 
-    return !is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT);
+    return !mono_time_is_timeout(mono_time, assoc->timestamp, BAD_NODE_TIMEOUT);
 }
 
 static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
@@ -1114,7 +1122,8 @@ static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
         index = LCLIENT_LENGTH - 1;
     }
 
-    return is_pk_in_client_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_NODES, public_key, ip_port);
+    return is_pk_in_client_list(dht->close_clientlist + index * LCLIENT_NODES, LCLIENT_NODES, dht->mono_time, public_key,
+                                ip_port);
 }
 
 /* Check if the node obtained with a get_nodes with public_key should be pinged.
@@ -1153,17 +1162,18 @@ static bool ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key, IP_P
 
         bool store_ok = false;
 
-        if (store_node_ok(&dht_friend->client_list[1], public_key, dht_friend->public_key)) {
+        if (store_node_ok(&dht_friend->client_list[1], dht->mono_time, public_key, dht_friend->public_key)) {
             store_ok = true;
         }
 
-        if (store_node_ok(&dht_friend->client_list[0], public_key, dht_friend->public_key)) {
+        if (store_node_ok(&dht_friend->client_list[0], dht->mono_time, public_key, dht_friend->public_key)) {
             store_ok = true;
         }
 
         unsigned int *const friend_num = &dht_friend->num_to_bootstrap;
         const uint32_t index = index_of_node_pk(dht_friend->to_bootstrap, *friend_num, public_key);
-        const bool pk_in_list = is_pk_in_client_list(dht_friend->client_list, MAX_FRIEND_CLIENTS, public_key, ip_port);
+        const bool pk_in_list = is_pk_in_client_list(dht_friend->client_list, MAX_FRIEND_CLIENTS, dht->mono_time, public_key,
+                                ip_port);
 
         if (store_ok && index == UINT32_MAX && !pk_in_list) {
             if (*friend_num < MAX_SENT_NODES) {
@@ -1200,8 +1210,8 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     /* NOTE: Current behavior if there are two clients with the same id is
      * to replace the first ip by the second.
      */
-    const bool in_close_list = client_or_ip_port_in_list(dht->log, dht->close_clientlist,
-                               LCLIENT_LIST, public_key, ip_port);
+    const bool in_close_list = client_or_ip_port_in_list(dht->log, dht->mono_time, dht->close_clientlist, LCLIENT_LIST,
+                               public_key, ip_port);
 
     /* add_to_close should be called only if !in_list (don't extract to variable) */
     if (in_close_list || add_to_close(dht, public_key, ip_port, 0)) {
@@ -1211,12 +1221,13 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     DHT_Friend *friend_foundip = nullptr;
 
     for (uint32_t i = 0; i < dht->num_friends; ++i) {
-        const bool in_list = client_or_ip_port_in_list(dht->log, dht->friends_list[i].client_list,
+        const bool in_list = client_or_ip_port_in_list(dht->log, dht->mono_time, dht->friends_list[i].client_list,
                              MAX_FRIEND_CLIENTS, public_key, ip_port);
 
         /* replace_all should be called only if !in_list (don't extract to variable) */
-        if (in_list || replace_all(dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, public_key,
-                                   ip_port, dht->friends_list[i].public_key)) {
+        if (in_list
+                || replace_all(dht->mono_time, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, public_key, ip_port,
+                               dht->friends_list[i].public_key)) {
             DHT_Friend *dht_friend = &dht->friends_list[i];
 
             if (id_equal(public_key, dht_friend->public_key)) {
@@ -1241,9 +1252,10 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     return used;
 }
 
-static bool update_client_data(Client_data *array, size_t size, IP_Port ip_port, const uint8_t *pk)
+static bool update_client_data(const Mono_Time *mono_time, Client_data *array, size_t size, IP_Port ip_port,
+                               const uint8_t *pk)
 {
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(mono_time);
     const uint32_t index = index_of_client_pk(array, size, pk);
 
     if (index == UINT32_MAX) {
@@ -1278,7 +1290,7 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_ke
     }
 
     if (id_equal(public_key, dht->self_public_key)) {
-        update_client_data(dht->close_clientlist, LCLIENT_LIST, ip_port, nodepublic_key);
+        update_client_data(dht->mono_time, dht->close_clientlist, LCLIENT_LIST, ip_port, nodepublic_key);
         return;
     }
 
@@ -1286,7 +1298,7 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_ke
         if (id_equal(public_key, dht->friends_list[i].public_key)) {
             Client_data *const client_list = dht->friends_list[i].client_list;
 
-            if (update_client_data(client_list, MAX_FRIEND_CLIENTS, ip_port, nodepublic_key)) {
+            if (update_client_data(dht->mono_time, client_list, MAX_FRIEND_CLIENTS, ip_port, nodepublic_key)) {
                 return;
             }
         }
@@ -1314,9 +1326,9 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
 
     if (sendback_node != nullptr) {
         memcpy(plain_message + sizeof(receiver), sendback_node, sizeof(Node_format));
-        ping_id = ping_array_add(dht->dht_harden_ping_array, plain_message, sizeof(plain_message));
+        ping_id = ping_array_add(dht->dht_harden_ping_array, dht->mono_time, plain_message, sizeof(plain_message));
     } else {
-        ping_id = ping_array_add(dht->dht_ping_array, plain_message, sizeof(receiver));
+        ping_id = ping_array_add(dht->dht_ping_array, dht->mono_time, plain_message, sizeof(receiver));
     }
 
     if (ping_id == 0) {
@@ -1433,9 +1445,9 @@ static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port no
 {
     uint8_t data[sizeof(Node_format) * 2];
 
-    if (ping_array_check(dht->dht_ping_array, data, sizeof(data), ping_id) == sizeof(Node_format)) {
+    if (ping_array_check(dht->dht_ping_array, dht->mono_time, data, sizeof(data), ping_id) == sizeof(Node_format)) {
         memset(sendback_node, 0, sizeof(Node_format));
-    } else if (ping_array_check(dht->dht_harden_ping_array, data, sizeof(data), ping_id) == sizeof(data)) {
+    } else if (ping_array_check(dht->dht_harden_ping_array, dht->mono_time, data, sizeof(data), ping_id) == sizeof(data)) {
         memcpy(sendback_node, data + sizeof(Node_format), sizeof(Node_format));
     } else {
         return false;
@@ -1678,7 +1690,7 @@ int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     for (const IPPTsPng * const *it = assocs; *it; ++it) {
         const IPPTsPng *const assoc = *it;
 
-        if (!is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT)) {
+        if (!mono_time_is_timeout(dht->mono_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
             *ip_port = assoc->ip_port;
             return 1;
         }
@@ -1692,7 +1704,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         Client_data *list, uint32_t list_count, uint32_t *bootstrap_times, bool sortable)
 {
     uint8_t not_kill = 0;
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(dht->mono_time);
 
     uint32_t num_nodes = 0;
     VLA(Client_data *, client_list, list_count * 2);
@@ -1709,17 +1721,17 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         for (uint32_t j = 0; j < sizeof(assocs) / sizeof(assocs[0]); ++j) {
             IPPTsPng *const assoc = assocs[j];
 
-            if (!is_timeout(assoc->timestamp, KILL_NODE_TIMEOUT)) {
+            if (!mono_time_is_timeout(dht->mono_time, assoc->timestamp, KILL_NODE_TIMEOUT)) {
                 sort = 0;
                 ++not_kill;
 
-                if (is_timeout(assoc->last_pinged, PING_INTERVAL)) {
+                if (mono_time_is_timeout(dht->mono_time, assoc->last_pinged, PING_INTERVAL)) {
                     getnodes(dht, assoc->ip_port, client->public_key, public_key, nullptr);
                     assoc->last_pinged = temp_time;
                 }
 
                 /* If node is good. */
-                if (!is_timeout(assoc->timestamp, BAD_NODE_TIMEOUT)) {
+                if (!mono_time_is_timeout(dht->mono_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
                     client_list[num_nodes] = client;
                     assoc_list[num_nodes] = assoc;
                     ++num_nodes;
@@ -1736,10 +1748,11 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     }
 
     if (sortable && sort_ok) {
-        sort_client_list(list, list_count, public_key);
+        sort_client_list(list, dht->mono_time, list_count, public_key);
     }
 
-    if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
+    if ((num_nodes != 0) && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
+                             || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
         uint32_t rand_node = random_u32() % num_nodes;
 
         if ((num_nodes - 1) != rand_node) {
@@ -1801,7 +1814,7 @@ static void do_Close(DHT *dht)
      *
      * so: reset all nodes to be BAD_NODE_TIMEOUT, but not
      * KILL_NODE_TIMEOUT, so we at least keep trying pings */
-    const uint64_t badonly = unix_time() - BAD_NODE_TIMEOUT;
+    const uint64_t badonly = mono_time_get(dht->mono_time) - BAD_NODE_TIMEOUT;
 
     for (size_t i = 0; i < LCLIENT_LIST; ++i) {
         Client_data *const client = &dht->close_clientlist[i];
@@ -1906,19 +1919,21 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
         const Client_data *const client = &dht_friend->client_list[i];
 
         /* If ip is not zero and node is good. */
-        if (ip_isset(&client->assoc4.ret_ip_port.ip) && !is_timeout(client->assoc4.ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (ip_isset(&client->assoc4.ret_ip_port.ip)
+                && !mono_time_is_timeout(dht->mono_time, client->assoc4.ret_timestamp, BAD_NODE_TIMEOUT)) {
             ipv4s[num_ipv4s] = client->assoc4.ret_ip_port;
             ++num_ipv4s;
         }
 
-        if (ip_isset(&client->assoc6.ret_ip_port.ip) && !is_timeout(client->assoc6.ret_timestamp, BAD_NODE_TIMEOUT)) {
+        if (ip_isset(&client->assoc6.ret_ip_port.ip)
+                && !mono_time_is_timeout(dht->mono_time, client->assoc6.ret_timestamp, BAD_NODE_TIMEOUT)) {
             ipv6s[num_ipv6s] = client->assoc6.ret_ip_port;
             ++num_ipv6s;
         }
 
         if (id_equal(client->public_key, dht_friend->public_key)) {
-            if (!is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)
-                    || !is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT)) {
+            if (!mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)
+                    || !mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT)) {
                 return 0; /* direct connectivity */
             }
         }
@@ -1997,7 +2012,7 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
             const IPPTsPng *const assoc = *it;
 
             /* If ip is not zero and node is good. */
-            if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            if (ip_isset(&assoc->ret_ip_port.ip) && !mono_time_is_timeout(dht->mono_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
                 const int retval = sendpacket(dht->net, assoc->ip_port, packet, length);
 
                 if ((unsigned int)retval == length) {
@@ -2039,7 +2054,7 @@ static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *
             const IPPTsPng *const assoc = *it;
 
             /* If ip is not zero and node is good. */
-            if (ip_isset(&assoc->ret_ip_port.ip) && !is_timeout(assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+            if (ip_isset(&assoc->ret_ip_port.ip) && !mono_time_is_timeout(dht->mono_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
                 ip_list[n] = assoc->ip_port;
                 ++n;
             }
@@ -2116,7 +2131,7 @@ static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pu
     if (packet[0] == NAT_PING_REQUEST) {
         /* 1 is reply */
         send_NATping(dht, source_pubkey, ping_id, NAT_PING_RESPONSE);
-        dht_friend->nat.recv_nat_ping_timestamp = unix_time();
+        dht_friend->nat.recv_nat_ping_timestamp = mono_time_get(dht->mono_time);
         return 0;
     }
 
@@ -2243,7 +2258,7 @@ static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports,
 
 static void do_NAT(DHT *dht)
 {
-    const uint64_t temp_time = unix_time();
+    const uint64_t temp_time = mono_time_get(dht->mono_time);
 
     for (uint32_t i = 0; i < dht->num_friends; ++i) {
         IP_Port ip_list[MAX_FRIEND_CLIENTS];
@@ -2393,7 +2408,7 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
         const IPPTsPng *const temp = get_closelist_IPPTsPng(dht, nodes[i].public_key, nodes[i].ip_port.ip.family);
 
         if (temp) {
-            if (!is_timeout(temp->timestamp, BAD_NODE_TIMEOUT)) {
+            if (!mono_time_is_timeout(dht->mono_time, temp->timestamp, BAD_NODE_TIMEOUT)) {
                 ++counter;
             }
         }
@@ -2464,7 +2479,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
                 return 1;
             }
 
-            if (is_timeout(temp->hardening.send_nodes_timestamp, HARDENING_INTERVAL)) {
+            if (mono_time_is_timeout(dht->mono_time, temp->hardening.send_nodes_timestamp, HARDENING_INTERVAL)) {
                 return 1;
             }
 
@@ -2512,7 +2527,8 @@ static Node_format random_node(DHT *dht, Family sa_family)
  *
  * return the number of nodes.
  */
-static uint16_t list_nodes(Client_data *list, size_t length, Node_format *nodes, uint16_t max_num)
+static uint16_t list_nodes(Client_data *list, size_t length, const Mono_Time *mono_time, Node_format *nodes,
+                           uint16_t max_num)
 {
     if (max_num == 0) {
         return 0;
@@ -2523,11 +2539,11 @@ static uint16_t list_nodes(Client_data *list, size_t length, Node_format *nodes,
     for (size_t i = length; i != 0; --i) {
         const IPPTsPng *assoc = nullptr;
 
-        if (!is_timeout(list[i - 1].assoc4.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!mono_time_is_timeout(mono_time, list[i - 1].assoc4.timestamp, BAD_NODE_TIMEOUT)) {
             assoc = &list[i - 1].assoc4;
         }
 
-        if (!is_timeout(list[i - 1].assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!mono_time_is_timeout(mono_time, list[i - 1].assoc6.timestamp, BAD_NODE_TIMEOUT)) {
             if (assoc == nullptr) {
                 assoc = &list[i - 1].assoc6;
             } else if (random_u08() % 2) {
@@ -2563,8 +2579,8 @@ uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
     const uint32_t r = random_u32();
 
     for (size_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
-        count += list_nodes(dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list, MAX_FRIEND_CLIENTS, nodes + count,
-                            max_num - count);
+        count += list_nodes(dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list, MAX_FRIEND_CLIENTS, dht->mono_time,
+                            nodes + count, max_num - count);
 
         if (count >= max_num) {
             break;
@@ -2580,7 +2596,7 @@ uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
  */
 uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
 {
-    return list_nodes(dht->close_clientlist, LCLIENT_LIST, nodes, max_num);
+    return list_nodes(dht->close_clientlist, LCLIENT_LIST, dht->mono_time, nodes, max_num);
 }
 
 #if DHT_HARDENING
@@ -2599,12 +2615,12 @@ static void do_hardening(DHT *dht)
             sa_family = net_family_ipv6;
         }
 
-        if (is_timeout(cur_iptspng->timestamp, BAD_NODE_TIMEOUT)) {
+        if (mono_time_is_timeout(dht->mono_time, cur_iptspng->timestamp, BAD_NODE_TIMEOUT)) {
             continue;
         }
 
         if (cur_iptspng->hardening.send_nodes_ok == 0) {
-            if (is_timeout(cur_iptspng->hardening.send_nodes_timestamp, HARDENING_INTERVAL)) {
+            if (mono_time_is_timeout(dht->mono_time, cur_iptspng->hardening.send_nodes_timestamp, HARDENING_INTERVAL)) {
                 Node_format rand_node = random_node(dht, sa_family);
 
                 if (!ipport_isset(&rand_node.ip_port)) {
@@ -2622,11 +2638,11 @@ static void do_hardening(DHT *dht)
                 // TODO(irungentoo): The search id should maybe not be ours?
                 if (send_hardening_getnode_req(dht, &rand_node, &to_test, dht->self_public_key) > 0) {
                     memcpy(cur_iptspng->hardening.send_nodes_pingedid, rand_node.public_key, CRYPTO_PUBLIC_KEY_SIZE);
-                    cur_iptspng->hardening.send_nodes_timestamp = unix_time();
+                    cur_iptspng->hardening.send_nodes_timestamp = mono_time_get(dht->mono_time);
                 }
             }
         } else {
-            if (is_timeout(cur_iptspng->hardening.send_nodes_timestamp, HARDEN_TIMEOUT)) {
+            if (mono_time_is_timeout(dht->mono_time, cur_iptspng->hardening.send_nodes_timestamp, HARDEN_TIMEOUT)) {
                 cur_iptspng->hardening.send_nodes_ok = 0;
             }
         }
@@ -2688,7 +2704,7 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled)
+DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool holepunching_enabled)
 {
     if (net == nullptr) {
         return nullptr;
@@ -2700,12 +2716,13 @@ DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled)
         return nullptr;
     }
 
+    dht->mono_time = mono_time;
     dht->log = log;
     dht->net = net;
 
     dht->hole_punching_enabled = holepunching_enabled;
 
-    dht->ping = ping_new(dht);
+    dht->ping = ping_new(mono_time, dht);
 
     if (dht->ping == nullptr) {
         kill_dht(dht);
@@ -2738,7 +2755,7 @@ DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled)
 
 void do_dht(DHT *dht)
 {
-    if (dht->last_run == unix_time()) {
+    if (dht->last_run == mono_time_get(dht->mono_time)) {
         return;
     }
 
@@ -2754,7 +2771,7 @@ void do_dht(DHT *dht)
 #if DHT_HARDENING
     do_hardening(dht);
 #endif
-    dht->last_run = unix_time();
+    dht->last_run = mono_time_get(dht->mono_time);
 }
 
 void kill_dht(DHT *dht)
@@ -2961,8 +2978,8 @@ bool dht_isconnected(const DHT *dht)
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *const client = &dht->close_clientlist[i];
 
-        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
-                !is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
+                !mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
             return true;
         }
     }
@@ -2978,11 +2995,13 @@ bool dht_non_lan_connected(const DHT *dht)
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *const client = &dht->close_clientlist[i];
 
-        if (!is_timeout(client->assoc4.timestamp, BAD_NODE_TIMEOUT) && ip_is_lan(client->assoc4.ip_port.ip) == -1) {
+        if (!mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT)
+                && ip_is_lan(client->assoc4.ip_port.ip) == -1) {
             return true;
         }
 
-        if (!is_timeout(client->assoc6.timestamp, BAD_NODE_TIMEOUT) && ip_is_lan(client->assoc6.ip_port.ip) == -1) {
+        if (!mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)
+                && ip_is_lan(client->assoc6.ip_port.ip) == -1) {
             return true;
         }
     }

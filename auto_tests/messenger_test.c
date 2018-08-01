@@ -341,13 +341,15 @@ int main(void)
     good_id   = hex_string_to_bin(good_id_str);
     bad_id    = hex_string_to_bin(bad_id_str);
 
+    Mono_Time *mono_time = mono_time_new();
+
     /* IPv6 status from global define */
     Messenger_Options options = {0};
     options.ipv6enabled = TOX_ENABLE_IPV6_DEFAULT;
     options.port_range[0] = 41234;
     options.port_range[1] = 44234;
     options.log_callback = (logger_cb *)print_debug_log;
-    m = new_messenger(&options, nullptr);
+    m = new_messenger(mono_time, &options, nullptr);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, friend_id) < 0) {
@@ -375,6 +377,7 @@ int main(void)
     free(bad_id);
 
     kill_messenger(m);
+    mono_time_free(mono_time);
 
     return number_failed;
 }

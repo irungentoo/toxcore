@@ -190,11 +190,11 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_dht(nullptr, new_networking(nullptr, ip, PORT), true);
+    Mono_Time *const mono_time = mono_time_new();
+    DHT *dht = new_dht(nullptr, mono_time, new_networking(nullptr, ip, PORT), true);
     printf("OUR ID: ");
-    uint32_t i;
 
-    for (i = 0; i < 32; i++) {
+    for (uint32_t i = 0; i < 32; i++) {
         const uint8_t *const self_public_key = dht_get_self_public_key(dht);
 
         if (self_public_key[i] < 16) {
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 #endif
 
     while (1) {
-        unix_time_update();
+        mono_time_update(mono_time);
 
         do_dht(dht);
 

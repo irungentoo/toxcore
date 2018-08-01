@@ -36,11 +36,13 @@ apidsl_curl() {
 
 # Check if apidsl generated sources are up to date.
 $APIDSL toxcore/crypto_core.api.h > toxcore/crypto_core.h &
+$APIDSL toxcore/ping.api.h > toxcore/ping.h &
+$APIDSL toxcore/ping_array.api.h > toxcore/ping_array.h &
 $APIDSL toxcore/tox.api.h > toxcore/tox.h &
 $APIDSL toxav/toxav.api.h > toxav/toxav.h &
 $APIDSL toxencryptsave/toxencryptsave.api.h > toxencryptsave/toxencryptsave.h &
 
-wait; wait; wait; wait
+wait; wait; wait; wait; wait; wait
 
 if grep '<unresolved>' */*.h; then
   echo "error: some apidsl references were unresolved"

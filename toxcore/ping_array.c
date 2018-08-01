@@ -109,12 +109,12 @@ void ping_array_kill(Ping_Array *array)
 
 /* Clear timed out entries.
  */
-static void ping_array_clear_timedout(Ping_Array *array)
+static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_time)
 {
     while (array->last_deleted != array->last_added) {
         uint32_t index = array->last_deleted % array->total_size;
 
-        if (!is_timeout(array->entries[index].time, array->timeout)) {
+        if (!mono_time_is_timeout(mono_time, array->entries[index].time, array->timeout)) {
             break;
         }
 
@@ -128,9 +128,9 @@ static void ping_array_clear_timedout(Ping_Array *array)
  * return ping_id on success.
  * return 0 on failure.
  */
-uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
+uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uint8_t *data, uint32_t length)
 {
-    ping_array_clear_timedout(array);
+    ping_array_clear_timedout(array, mono_time);
     uint32_t index = array->last_added % array->total_size;
 
     if (array->entries[index].data != nullptr) {
@@ -146,7 +146,7 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
 
     memcpy(array->entries[index].data, data, length);
     array->entries[index].length = length;
-    array->entries[index].time = unix_time();
+    array->entries[index].time = mono_time_get(mono_time);
     ++array->last_added;
     uint64_t ping_id = random_u64();
     ping_id /= array->total_size;
@@ -169,7 +169,7 @@ uint64_t ping_array_add(Ping_Array *array, const uint8_t *data, uint32_t length)
  * return length of data copied on success.
  * return -1 on failure.
  */
-int32_t ping_array_check(Ping_Array *array, uint8_t *data, size_t length, uint64_t ping_id)
+int32_t ping_array_check(Ping_Array *array, const Mono_Time *mono_time, uint8_t *data, size_t length, uint64_t ping_id)
 {
     if (ping_id == 0) {
         return -1;
@@ -181,7 +181,7 @@ int32_t ping_array_check(Ping_Array *array, uint8_t *data, size_t length, uint64
         return -1;
     }
 
-    if (is_timeout(array->entries[index].time, array->timeout)) {
+    if (mono_time_is_timeout(mono_time, array->entries[index].time, array->timeout)) {
         return -1;
     }
 

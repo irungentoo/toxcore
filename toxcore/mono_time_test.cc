@@ -5,26 +5,34 @@
 namespace {
 
 TEST(Util, UnixTimeIncreasesOverTime) {
-  unix_time_update();
-  uint64_t const start = unix_time();
+  Mono_Time *mono_time = mono_time_new();
 
-  while (start == unix_time()) {
-    unix_time_update();
+  mono_time_update(mono_time);
+  uint64_t const start = mono_time_get(mono_time);
+
+  while (start == mono_time_get(mono_time)) {
+    mono_time_update(mono_time);
   }
 
-  uint64_t const end = unix_time();
+  uint64_t const end = mono_time_get(mono_time);
   EXPECT_GT(end, start);
+
+  mono_time_free(mono_time);
 }
 
 TEST(Util, IsTimeout) {
-  uint64_t const start = unix_time();
-  EXPECT_FALSE(is_timeout(start, 1));
+  Mono_Time *mono_time = mono_time_new();
 
-  while (start == unix_time()) {
-    unix_time_update();
+  uint64_t const start = mono_time_get(mono_time);
+  EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 1));
+
+  while (start == mono_time_get(mono_time)) {
+    mono_time_update(mono_time);
   }
 
-  EXPECT_TRUE(is_timeout(start, 1));
+  EXPECT_TRUE(mono_time_is_timeout(mono_time, start, 1));
+
+  mono_time_free(mono_time);
 }
 
 }  // namespace

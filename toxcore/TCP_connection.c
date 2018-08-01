@@ -36,6 +36,7 @@
 
 
 struct TCP_Connections {
+    Mono_Time *mono_time;
     DHT *dht;
 
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -794,8 +795,8 @@ static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connec
     uint8_t relay_pk[CRYPTO_PUBLIC_KEY_SIZE];
     memcpy(relay_pk, tcp_con_public_key(tcp_con->connection), CRYPTO_PUBLIC_KEY_SIZE);
     kill_TCP_connection(tcp_con->connection);
-    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key,
-                          &tcp_c->proxy_info);
+    tcp_con->connection = new_TCP_connection(tcp_c->mono_time, ip_port, relay_pk, tcp_c->self_public_key,
+                          tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (!tcp_con->connection) {
         kill_tcp_relay_connection(tcp_c, tcp_connections_number);
@@ -884,7 +885,7 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
         return -1;
     }
 
-    tcp_con->connection = new_TCP_connection(tcp_con->ip_port, tcp_con->relay_pk, tcp_c->self_public_key,
+    tcp_con->connection = new_TCP_connection(tcp_c->mono_time, tcp_con->ip_port, tcp_con->relay_pk, tcp_c->self_public_key,
                           tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (!tcp_con->connection) {
@@ -1122,7 +1123,7 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
 
     /* If this connection isn't used by any connection, we don't need to wait for them to come online. */
     if (sent) {
-        tcp_con->connected_time = unix_time();
+        tcp_con->connected_time = mono_time_get(tcp_c->mono_time);
     } else {
         tcp_con->connected_time = 0;
     }
@@ -1155,8 +1156,8 @@ static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const
 
     TCP_con *tcp_con = &tcp_c->tcp_connections[tcp_connections_number];
 
-    tcp_con->connection = new_TCP_connection(ip_port, relay_pk, tcp_c->self_public_key, tcp_c->self_secret_key,
-                          &tcp_c->proxy_info);
+    tcp_con->connection = new_TCP_connection(tcp_c->mono_time, ip_port, relay_pk, tcp_c->self_public_key,
+                          tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (!tcp_con->connection) {
         return -1;
@@ -1216,7 +1217,7 @@ int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_numb
 
     if (tcp_con->status == TCP_CONN_CONNECTED) {
         if (send_tcp_relay_routing_request(tcp_c, tcp_connections_number, con_to->public_key) == 0) {
-            tcp_con->connected_time = unix_time();
+            tcp_con->connected_time = mono_time_get(tcp_c->mono_time);
         }
     }
 
@@ -1391,7 +1392,7 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
  *
  * Returns NULL on failure.
  */
-TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *proxy_info)
+TCP_Connections *new_tcp_connections(Mono_Time *mono_time, const uint8_t *secret_key, TCP_Proxy_Info *proxy_info)
 {
     if (secret_key == nullptr) {
         return nullptr;
@@ -1402,6 +1403,8 @@ TCP_Connections *new_tcp_connections(const uint8_t *secret_key, TCP_Proxy_Info *
     if (temp == nullptr) {
         return nullptr;
     }
+
+    temp->mono_time = mono_time;
 
     memcpy(temp->self_secret_key, secret_key, CRYPTO_SECRET_KEY_SIZE);
     crypto_derive_public_key(temp->self_public_key, temp->self_secret_key);
@@ -1419,7 +1422,7 @@ static void do_tcp_conns(TCP_Connections *tcp_c, void *userdata)
 
         if (tcp_con) {
             if (tcp_con->status != TCP_CONN_SLEEPING) {
-                do_TCP_connection(tcp_con->connection, userdata);
+                do_TCP_connection(tcp_c->mono_time, tcp_con->connection, userdata);
 
                 /* callbacks can change TCP connection address. */
                 tcp_con = get_tcp_connection(tcp_c, i);
@@ -1443,7 +1446,7 @@ static void do_tcp_conns(TCP_Connections *tcp_c, void *userdata)
 
                 if (tcp_con->status == TCP_CONN_CONNECTED && !tcp_con->onion && tcp_con->lock_count
                         && tcp_con->lock_count == tcp_con->sleep_count
-                        && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
+                        && mono_time_is_timeout(tcp_c->mono_time, tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
                     sleep_tcp_relay_connection(tcp_c, i);
                 }
             }
@@ -1471,7 +1474,8 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
 
         if (tcp_con) {
             if (tcp_con->status == TCP_CONN_CONNECTED) {
-                if (!tcp_con->onion && !tcp_con->lock_count && is_timeout(tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
+                if (!tcp_con->onion && !tcp_con->lock_count
+                        && mono_time_is_timeout(tcp_c->mono_time, tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
                     to_kill[num_kill] = i;
                     ++num_kill;
                 }

@@ -26,6 +26,11 @@
 
 #include "network.h"
 
+#ifndef MONO_TIME_DEFINED
+#define MONO_TIME_DEFINED
+typedef struct Mono_Time Mono_Time;
+#endif /* MONO_TIME_DEFINED */
+
 #ifndef PING_ARRAY_DEFINED
 #define PING_ARRAY_DEFINED
 typedef struct Ping_Array Ping_Array;
@@ -52,7 +57,8 @@ void ping_array_kill(struct Ping_Array *_array);
  * return ping_id on success.
  * return 0 on failure.
  */
-uint64_t ping_array_add(struct Ping_Array *_array, const uint8_t *data, uint32_t length);
+uint64_t ping_array_add(struct Ping_Array *_array, const struct Mono_Time *mono_time, const uint8_t *data,
+                        uint32_t length);
 
 /**
  * Check if ping_id is valid and not timed out.
@@ -62,6 +68,7 @@ uint64_t ping_array_add(struct Ping_Array *_array, const uint8_t *data, uint32_t
  * return length of data copied on success.
  * return -1 on failure.
  */
-int32_t ping_array_check(struct Ping_Array *_array, uint8_t *data, size_t length, uint64_t ping_id);
+int32_t ping_array_check(struct Ping_Array *_array, const struct Mono_Time *mono_time, uint8_t *data, size_t length,
+                         uint64_t ping_id);
 
 #endif

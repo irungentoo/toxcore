@@ -177,7 +177,7 @@ static int kill_accepted(TCP_Server *tcp_server, int index);
  * return index on success
  * return -1 on failure
  */
-static int add_accepted(TCP_Server *tcp_server, const TCP_Secure_Connection *con)
+static int add_accepted(TCP_Server *tcp_server, const Mono_Time *mono_time, const TCP_Secure_Connection *con)
 {
     int index = get_TCP_connection_index(tcp_server, con->public_key);
 
@@ -216,7 +216,7 @@ static int add_accepted(TCP_Server *tcp_server, const TCP_Secure_Connection *con
     tcp_server->accepted_connection_array[index].status = TCP_STATUS_CONFIRMED;
     ++tcp_server->num_accepted_connections;
     tcp_server->accepted_connection_array[index].identifier = ++tcp_server->counter;
-    tcp_server->accepted_connection_array[index].last_pinged = unix_time();
+    tcp_server->accepted_connection_array[index].last_pinged = mono_time_get(mono_time);
     tcp_server->accepted_connection_array[index].ping_id = 0;
 
     return index;
@@ -954,10 +954,11 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
 }
 
 
-static int confirm_TCP_connection(TCP_Server *tcp_server, TCP_Secure_Connection *con, const uint8_t *data,
+static int confirm_TCP_connection(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_Secure_Connection *con,
+                                  const uint8_t *data,
                                   uint16_t length)
 {
-    int index = add_accepted(tcp_server, con);
+    int index = add_accepted(tcp_server, mono_time, con);
 
     if (index == -1) {
         kill_TCP_secure_connection(con);
@@ -1161,7 +1162,7 @@ static int do_incoming(TCP_Server *tcp_server, uint32_t i)
     return -1;
 }
 
-static int do_unconfirmed(TCP_Server *tcp_server, uint32_t i)
+static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, uint32_t i)
 {
     TCP_Secure_Connection *conn = &tcp_server->unconfirmed_connection_queue[i];
 
@@ -1182,7 +1183,7 @@ static int do_unconfirmed(TCP_Server *tcp_server, uint32_t i)
         return -1;
     }
 
-    return confirm_TCP_connection(tcp_server, conn, packet, len);
+    return confirm_TCP_connection(tcp_server, mono_time, conn, packet, len);
 }
 
 static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
@@ -1221,32 +1222,28 @@ static void do_confirmed_recv(TCP_Server *tcp_server, uint32_t i)
 #ifndef TCP_SERVER_USE_EPOLL
 static void do_TCP_incoming(TCP_Server *tcp_server)
 {
-    uint32_t i;
-
-    for (i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
+    for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
         do_incoming(tcp_server, i);
     }
 }
 
-static void do_TCP_unconfirmed(TCP_Server *tcp_server)
+static void do_TCP_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
-    uint32_t i;
-
-    for (i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
-        do_unconfirmed(tcp_server, i);
+    for (uint32_t i = 0; i < MAX_INCOMING_CONNECTIONS; ++i) {
+        do_unconfirmed(tcp_server, mono_time, i);
     }
 }
 #endif
 
-static void do_TCP_confirmed(TCP_Server *tcp_server)
+static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
 #ifdef TCP_SERVER_USE_EPOLL
 
-    if (tcp_server->last_run_pinged == unix_time()) {
+    if (tcp_server->last_run_pinged == mono_time_get(mono_time)) {
         return;
     }
 
-    tcp_server->last_run_pinged = unix_time();
+    tcp_server->last_run_pinged = mono_time_get(mono_time);
 #endif
     uint32_t i;
 
@@ -1257,7 +1254,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server)
             continue;
         }
 
-        if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY)) {
+        if (mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_FREQUENCY)) {
             uint8_t ping[1 + sizeof(uint64_t)];
             ping[0] = TCP_PACKET_PING;
             uint64_t ping_id = random_u64();
@@ -1270,17 +1267,17 @@ static void do_TCP_confirmed(TCP_Server *tcp_server)
             int ret = write_packet_TCP_secure_connection(conn, ping, sizeof(ping), 1);
 
             if (ret == 1) {
-                conn->last_pinged = unix_time();
+                conn->last_pinged = mono_time_get(mono_time);
                 conn->ping_id = ping_id;
             } else {
-                if (is_timeout(conn->last_pinged, TCP_PING_FREQUENCY + TCP_PING_TIMEOUT)) {
+                if (mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_FREQUENCY + TCP_PING_TIMEOUT)) {
                     kill_accepted(tcp_server, i);
                     continue;
                 }
             }
         }
 
-        if (conn->ping_id && is_timeout(conn->last_pinged, TCP_PING_TIMEOUT)) {
+        if (conn->ping_id && mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_TIMEOUT)) {
             kill_accepted(tcp_server, i);
             continue;
         }
@@ -1296,7 +1293,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server)
 }
 
 #ifdef TCP_SERVER_USE_EPOLL
-static bool tcp_epoll_process(TCP_Server *tcp_server)
+static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
 #define MAX_EVENTS 16
     struct epoll_event events[MAX_EVENTS];
@@ -1387,7 +1384,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server)
             }
 
             case TCP_SOCKET_UNCONFIRMED: {
-                const int index_new = do_unconfirmed(tcp_server, index);
+                const int index_new = do_unconfirmed(tcp_server, mono_time, index);
 
                 if (index_new != -1) {
                     events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
@@ -1413,27 +1410,27 @@ static bool tcp_epoll_process(TCP_Server *tcp_server)
     return nfds > 0;
 }
 
-static void do_TCP_epoll(TCP_Server *tcp_server)
+static void do_TCP_epoll(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
-    while (tcp_epoll_process(tcp_server)) {
+    while (tcp_epoll_process(tcp_server, mono_time)) {
         // Keep processing packets until there are no more FDs ready for reading.
         continue;
     }
 }
 #endif
 
-void do_TCP_server(TCP_Server *tcp_server)
+void do_TCP_server(TCP_Server *tcp_server, Mono_Time *mono_time)
 {
 #ifdef TCP_SERVER_USE_EPOLL
-    do_TCP_epoll(tcp_server);
+    do_TCP_epoll(tcp_server, mono_time);
 
 #else
     do_TCP_accept_new(tcp_server);
     do_TCP_incoming(tcp_server);
-    do_TCP_unconfirmed(tcp_server);
+    do_TCP_unconfirmed(tcp_server, mono_time);
 #endif
 
-    do_TCP_confirmed(tcp_server);
+    do_TCP_confirmed(tcp_server, mono_time);
 }
 
 void kill_TCP_server(TCP_Server *tcp_server)

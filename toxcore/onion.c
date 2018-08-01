@@ -46,9 +46,9 @@
 #define KEY_REFRESH_INTERVAL (2 * 60 * 60)
 static void change_symmetric_key(Onion *onion)
 {
-    if (is_timeout(onion->timestamp, KEY_REFRESH_INTERVAL)) {
+    if (mono_time_is_timeout(onion->mono_time, onion->timestamp, KEY_REFRESH_INTERVAL)) {
         new_symmetric_key(onion->secret_symmetric_key);
-        onion->timestamp = unix_time();
+        onion->timestamp = mono_time_get(onion->mono_time);
     }
 }
 
@@ -343,7 +343,8 @@ static int handle_send_initial(void *object, IP_Port source, const uint8_t *pack
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion->shared_keys_1, shared_key, dht_get_self_secret_key(onion->dht), packet + 1 + CRYPTO_NONCE_SIZE);
+    get_shared_key(onion->mono_time, &onion->shared_keys_1, shared_key, dht_get_self_secret_key(onion->dht),
+                   packet + 1 + CRYPTO_NONCE_SIZE);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE), plain);
 
@@ -412,7 +413,8 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion->shared_keys_2, shared_key, dht_get_self_secret_key(onion->dht), packet + 1 + CRYPTO_NONCE_SIZE);
+    get_shared_key(onion->mono_time, &onion->shared_keys_2, shared_key, dht_get_self_secret_key(onion->dht),
+                   packet + 1 + CRYPTO_NONCE_SIZE);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + RETURN_1), plain);
 
@@ -468,7 +470,8 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 
     uint8_t plain[ONION_MAX_PACKET_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-    get_shared_key(&onion->shared_keys_3, shared_key, dht_get_self_secret_key(onion->dht), packet + 1 + CRYPTO_NONCE_SIZE);
+    get_shared_key(onion->mono_time, &onion->shared_keys_3, shared_key, dht_get_self_secret_key(onion->dht),
+                   packet + 1 + CRYPTO_NONCE_SIZE);
     int len = decrypt_data_symmetric(shared_key, packet + 1, packet + 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE,
                                      length - (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + RETURN_2), plain);
 
@@ -662,7 +665,7 @@ void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *o
     onion->callback_object = object;
 }
 
-Onion *new_onion(DHT *dht)
+Onion *new_onion(Mono_Time *mono_time, DHT *dht)
 {
     if (dht == nullptr) {
         return nullptr;
@@ -676,8 +679,9 @@ Onion *new_onion(DHT *dht)
 
     onion->dht = dht;
     onion->net = dht_get_net(dht);
+    onion->mono_time = mono_time;
     new_symmetric_key(onion->secret_symmetric_key);
-    onion->timestamp = unix_time();
+    onion->timestamp = mono_time_get(onion->mono_time);
 
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_INITIAL, &handle_send_initial, onion);
     networking_registerhandler(onion->net, NET_PACKET_ONION_SEND_1, &handle_send_1, onion);

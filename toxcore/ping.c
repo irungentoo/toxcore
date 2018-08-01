@@ -48,6 +48,7 @@
 
 
 struct Ping {
+    const Mono_Time *mono_time;
     DHT *dht;
 
     Ping_Array  *ping_array;
@@ -78,7 +79,7 @@ int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
     uint8_t data[PING_DATA_SIZE];
     id_copy(data, public_key);
     memcpy(data + CRYPTO_PUBLIC_KEY_SIZE, &ipp, sizeof(IP_Port));
-    ping_id = ping_array_add(ping->ping_array, data, sizeof(data));
+    ping_id = ping_array_add(ping->ping_array, ping->mono_time, data, sizeof(data));
 
     if (ping_id == 0) {
         return 1;
@@ -219,7 +220,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     uint8_t data[PING_DATA_SIZE];
 
-    if (ping_array_check(ping->ping_array, data, sizeof(data), ping_id) != sizeof(data)) {
+    if (ping_array_check(ping->ping_array, ping->mono_time, data, sizeof(data), ping_id) != sizeof(data)) {
         return 1;
     }
 
@@ -243,7 +244,8 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
  * return 1 if it is.
  * return 0 if it isn't.
  */
-static int in_list(const Client_data *list, uint16_t length, const uint8_t *public_key, IP_Port ip_port)
+static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mono_time, const uint8_t *public_key,
+                   IP_Port ip_port)
 {
     unsigned int i;
 
@@ -257,7 +259,7 @@ static int in_list(const Client_data *list, uint16_t length, const uint8_t *publ
                 ipptp = &list[i].assoc6;
             }
 
-            if (!is_timeout(ipptp->timestamp, BAD_NODE_TIMEOUT) && ipport_equal(&ipptp->ip_port, &ip_port)) {
+            if (!mono_time_is_timeout(mono_time, ipptp->timestamp, BAD_NODE_TIMEOUT) && ipport_equal(&ipptp->ip_port, &ip_port)) {
                 return 1;
             }
         }
@@ -286,7 +288,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
         return -1;
     }
 
-    if (in_list(dht_get_close_clientlist(ping->dht), LCLIENT_LIST, public_key, ip_port)) {
+    if (in_list(dht_get_close_clientlist(ping->dht), LCLIENT_LIST, ping->mono_time, public_key, ip_port)) {
         return -1;
     }
 
@@ -324,7 +326,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
  */
 void ping_iterate(Ping *ping)
 {
-    if (!is_timeout(ping->last_to_ping, TIME_TO_PING)) {
+    if (!mono_time_is_timeout(ping->mono_time, ping->last_to_ping, TIME_TO_PING)) {
         return;
     }
 
@@ -348,12 +350,12 @@ void ping_iterate(Ping *ping)
     }
 
     if (i != 0) {
-        ping->last_to_ping = unix_time();
+        ping->last_to_ping = mono_time_get(ping->mono_time);
     }
 }
 
 
-Ping *ping_new(DHT *dht)
+Ping *ping_new(const Mono_Time *mono_time, DHT *dht)
 {
     Ping *ping = (Ping *)calloc(1, sizeof(Ping));
 
@@ -368,6 +370,7 @@ Ping *ping_new(DHT *dht)
         return nullptr;
     }
 
+    ping->mono_time = mono_time;
     ping->dht = dht;
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, &handle_ping_request, dht);
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, &handle_ping_response, dht);
