@@ -22,9 +22,6 @@ void unix_time_update(void);
 uint64_t unix_time(void);
 int is_timeout(uint64_t timestamp, uint64_t timeout);
 
-/* return current UNIX time in microseconds (us). */
-uint64_t current_time_actual(void);
-
 /* return current monotonic time in milliseconds (ms). */
 uint64_t current_time_monotonic(void);
 

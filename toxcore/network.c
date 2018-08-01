@@ -698,7 +698,6 @@ int networking_at_startup(void)
     }
 
 #endif
-    srand((uint32_t)current_time_actual());
     at_startup_ran = 1;
     return 0;
 }

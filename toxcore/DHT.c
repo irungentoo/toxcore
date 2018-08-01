@@ -1740,10 +1740,10 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     }
 
     if ((num_nodes != 0) && (is_timeout(*lastgetnode, GET_NODE_INTERVAL) || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
-        uint32_t rand_node = rand() % num_nodes;
+        uint32_t rand_node = random_u32() % num_nodes;
 
         if ((num_nodes - 1) != rand_node) {
-            rand_node += rand() % (num_nodes - (rand_node + 1));
+            rand_node += random_u32() % (num_nodes - (rand_node + 1));
         }
 
         getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key, nullptr);
@@ -2050,7 +2050,7 @@ static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *
         return 0;
     }
 
-    const int retval = sendpacket(dht->net, ip_list[rand() % n], packet, length);
+    const int retval = sendpacket(dht->net, ip_list[random_u32() % n], packet, length);
 
     if ((unsigned int)retval == length) {
         return 1;
@@ -2492,7 +2492,7 @@ static Node_format random_node(DHT *dht, Family sa_family)
     uint8_t id[CRYPTO_PUBLIC_KEY_SIZE];
 
     for (uint32_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE / 4; ++i) { /* populate the id with pseudorandom bytes.*/
-        const uint32_t t = rand();
+        const uint32_t t = random_u32();
         memcpy(id + i * sizeof(t), &t, sizeof(t));
     }
 
@@ -2504,7 +2504,7 @@ static Node_format random_node(DHT *dht, Family sa_family)
         return nodes_list[0];
     }
 
-    return nodes_list[rand() % num_nodes];
+    return nodes_list[random_u32() % num_nodes];
 }
 #endif
 
@@ -2530,7 +2530,7 @@ static uint16_t list_nodes(Client_data *list, size_t length, Node_format *nodes,
         if (!is_timeout(list[i - 1].assoc6.timestamp, BAD_NODE_TIMEOUT)) {
             if (assoc == nullptr) {
                 assoc = &list[i - 1].assoc6;
-            } else if (rand() % 2) {
+            } else if (random_u08() % 2) {
                 assoc = &list[i - 1].assoc6;
             }
         }
@@ -2560,7 +2560,7 @@ uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
     }
 
     uint16_t count = 0;
-    const unsigned int r = rand();
+    const uint32_t r = random_u32();
 
     for (size_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
         count += list_nodes(dht->friends_list[(i + r) % DHT_FAKE_FRIEND_NUMBER].client_list, MAX_FRIEND_CLIENTS, nodes + count,

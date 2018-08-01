@@ -1490,12 +1490,12 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
             /* TODO(irungentoo): what if two people enter the group at the same time and
                are given the same peer_number by different nodes? */
-            uint16_t peer_number = rand();
+            uint16_t peer_number = random_u16();
 
             unsigned int tries = 0;
 
             while (get_peer_index(g, peer_number) != -1) {
-                peer_number = rand();
+                peer_number = random_u16();
                 ++tries;
 
                 if (tries > 32) {

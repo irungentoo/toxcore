@@ -90,29 +90,6 @@ int is_timeout(uint64_t timestamp, uint64_t timeout)
 }
 
 
-
-/* return current UNIX time in microseconds (us). */
-uint64_t current_time_actual(void)
-{
-    uint64_t time;
-#ifdef OS_WIN32
-    /* This probably works fine */
-    FILETIME ft;
-    GetSystemTimeAsFileTime(&ft);
-    time = ft.dwHighDateTime;
-    time <<= 32;
-    time |= ft.dwLowDateTime;
-    time -= 116444736000000000ULL;
-    return time / 10;
-#else
-    struct timeval a;
-    gettimeofday(&a, nullptr);
-    time = 1000000ULL * a.tv_sec + a.tv_usec;
-    return time;
-#endif
-}
-
-
 //!TOKSTYLE-
 // No global mutable state in Tokstyle.
 #ifdef OS_WIN32

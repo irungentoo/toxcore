@@ -210,7 +210,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
-unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
+uint32_t tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
 /* Returns a new TCP_Connections object associated with the secret_key.
  *

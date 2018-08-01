@@ -371,10 +371,10 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
  */
 int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c)
 {
-    unsigned int i, r = rand();
+    const uint32_t r = random_u32();
 
-    for (i = 0; i < tcp_c->tcp_connections_length; ++i) {
-        unsigned int index = ((i + r) % tcp_c->tcp_connections_length);
+    for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
+        uint32_t index = ((i + r) % tcp_c->tcp_connections_length);
 
         if (tcp_c->tcp_connections[index].onion && tcp_c->tcp_connections[index].status == TCP_CONN_CONNECTED) {
             return index;
@@ -1283,11 +1283,12 @@ unsigned int tcp_connection_to_online_tcp_relays(TCP_Connections *tcp_c, int con
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
-unsigned int tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num)
+uint32_t tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num)
 {
-    unsigned int i, copied = 0, r = rand();
+    const uint32_t r = random_u32();
+    uint32_t copied = 0;
 
-    for (i = 0; (i < tcp_c->tcp_connections_length) && (copied < max_num); ++i) {
+    for (uint32_t i = 0; (i < tcp_c->tcp_connections_length) && (copied < max_num); ++i) {
         TCP_con *tcp_con = get_tcp_connection(tcp_c, (i + r) % tcp_c->tcp_connections_length);
 
         if (!tcp_con) {
