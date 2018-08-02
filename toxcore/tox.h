@@ -2438,6 +2438,20 @@ typedef void tox_conference_invite_cb(Tox *tox, uint32_t friend_number, TOX_CONF
 void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback);
 
 /**
+ * @param conference_number The conference number of the conference to which we have connected.
+ */
+typedef void tox_conference_connected_cb(Tox *tox, uint32_t conference_number, void *user_data);
+
+
+/**
+ * Set the callback for the `conference_connected` event. Pass NULL to unset.
+ *
+ * This event is triggered when the client successfully connects to a
+ * conference after joining it with the tox_conference_join function.
+ */
+void tox_callback_conference_connected(Tox *tox, tox_conference_connected_cb *callback);
+
+/**
  * @param conference_number The conference number of the conference the message is intended for.
  * @param peer_number The ID of the peer who sent the message.
  * @param type The type of message (normal, action, ...).
@@ -2644,6 +2658,10 @@ typedef enum TOX_ERR_CONFERENCE_INVITE {
 
 /**
  * Invites a friend to a conference.
+ *
+ * We must be connected to the conference, meaning that the conference has not
+ * been deleted, and either we created the conference with the tox_conference_new function,
+ * or a `conference_connected` event has occurred for the conference.
  *
  * @param friend_number The friend number of the friend we want to invite.
  * @param conference_number The conference number of the conference we want to invite the friend to.

@@ -91,6 +91,7 @@ struct Tox {
     tox_file_recv_cb *file_recv_callback;
     tox_file_recv_chunk_cb *file_recv_chunk_callback;
     tox_conference_invite_cb *conference_invite_callback;
+    tox_conference_connected_cb *conference_connected_callback;
     tox_conference_message_cb *conference_message_callback;
     tox_conference_title_cb *conference_title_callback;
     tox_conference_peer_name_cb *conference_peer_name_callback;
@@ -244,6 +245,15 @@ static void tox_conference_invite_handler(Messenger *m, uint32_t friend_number, 
     if (tox_data->tox->conference_invite_callback != nullptr) {
         tox_data->tox->conference_invite_callback(tox_data->tox, friend_number, (Tox_Conference_Type)type, cookie, length,
                 tox_data->user_data);
+    }
+}
+
+static void tox_conference_connected_handler(Messenger *m, uint32_t conference_number, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->conference_connected_callback != nullptr) {
+        tox_data->tox->conference_connected_callback(tox_data->tox, conference_number, tox_data->user_data);
     }
 }
 
@@ -488,6 +498,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     callback_file_sendrequest(m, tox_file_recv_handler);
     callback_file_data(m, tox_file_recv_chunk_handler);
     g_callback_group_invite((Group_Chats *)m->conferences_object, tox_conference_invite_handler);
+    g_callback_group_connected((Group_Chats *)m->conferences_object, tox_conference_connected_handler);
     g_callback_group_message((Group_Chats *)m->conferences_object, tox_conference_message_handler);
     g_callback_group_title((Group_Chats *)m->conferences_object, tox_conference_title_handler);
     g_callback_peer_name((Group_Chats *)m->conferences_object, tox_conference_peer_name_handler);
@@ -1384,6 +1395,11 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback)
 void tox_callback_conference_invite(Tox *tox, tox_conference_invite_cb *callback)
 {
     tox->conference_invite_callback = callback;
+}
+
+void tox_callback_conference_connected(Tox *tox, tox_conference_connected_cb *callback)
+{
+    tox->conference_connected_callback = callback;
 }
 
 void tox_callback_conference_message(Tox *tox, tox_conference_message_cb *callback)

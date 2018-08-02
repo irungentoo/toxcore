@@ -1174,33 +1174,25 @@ int join_groupchat(Group_Chats *g_c, uint32_t friendnumber, uint8_t expected_typ
     return -6;
 }
 
-/* Set handlers for custom lossy packets.
- *
- * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
- *
- * Function(void *group object (set with group_set_object), uint32_t groupnumber, uint32_t friendgroupnumber, void *group peer object (set with group_peer_set_object), const uint8_t *packet, uint16_t length)
- */
+/* Set handlers for custom lossy packets. */
 void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, lossy_packet_cb *function)
 {
     g_c->lossy_packethandlers[byte].function = function;
 }
 
-/* Set the callback for group invites.
- *
- *  Function(Group_Chats *g_c, int32_t friendnumber, uint8_t type, uint8_t *data, size_t length, void *userdata)
- *
- *  data of length is what needs to be passed to join_groupchat().
- */
+/* Set the callback for group invites. */
 void g_callback_group_invite(Group_Chats *g_c, g_conference_invite_cb *function)
 {
     g_c->invite_callback = function;
 }
 
-// TODO(sudden6): function signatures in comments are incorrect
-/* Set the callback for group messages.
- *
- *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t friendgroupnumber, uint8_t * message, size_t length, void *userdata)
- */
+/* Set the callback for group connection. */
+void g_callback_group_connected(Group_Chats *g_c, g_conference_connected_cb *function)
+{
+    g_c->connected_callback = function;
+}
+
+/* Set the callback for group messages. */
 void g_callback_group_message(Group_Chats *g_c, g_conference_message_cb *function)
 {
     g_c->message_callback = function;
@@ -1209,7 +1201,6 @@ void g_callback_group_message(Group_Chats *g_c, g_conference_message_cb *functio
 /* Set callback function for peer nickname changes.
  *
  * It gets called every time a peer changes their nickname.
- *  Function(Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, const uint8_t *nick, size_t nick_len, void *userdata)
  */
 void g_callback_peer_name(Group_Chats *g_c, peer_name_cb *function)
 {
@@ -1219,27 +1210,19 @@ void g_callback_peer_name(Group_Chats *g_c, peer_name_cb *function)
 /* Set callback function for peer list changes.
  *
  * It gets called every time the name list changes(new peer, deleted peer)
- *  Function(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
  */
 void g_callback_peer_list_changed(Group_Chats *g_c, peer_list_changed_cb *function)
 {
     g_c->peer_list_changed_callback = function;
 }
 
-// TODO(sudden6): function signatures are incorrect
-/* Set callback function for title changes.
- *
- * Function(Group_Chats *g_c, int groupnumber, int friendgroupnumber, uint8_t * title, uint8_t length, void *userdata)
- * if friendgroupnumber == -1, then author is unknown (e.g. initial joining the group)
- */
+/* Set callback function for title changes. */
 void g_callback_group_title(Group_Chats *g_c, title_cb *function)
 {
     g_c->title_callback = function;
 }
 
 /* Set a function to be called when a new peer joins a group chat.
- *
- * Function(void *group object (set with group_set_object), uint32_t groupnumber, uint32_t friendgroupnumber)
  *
  * return 0 on success.
  * return -1 on failure.
@@ -1258,8 +1241,6 @@ int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, pe
 
 /* Set a function to be called when a peer leaves a group chat.
  *
- * Function(void *group object (set with group_set_object), uint32_t groupnumber, uint32_t friendgroupnumber, void *group peer object (set with group_peer_set_object))
- *
  * return 0 on success.
  * return -1 on failure.
  */
@@ -1276,8 +1257,6 @@ int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, peer_
 }
 
 /* Set a function to be called when the group chat is deleted.
- *
- * Function(void *group object (set with group_set_object), int groupnumber)
  *
  * return 0 on success.
  * return -1 on failure.
@@ -1742,6 +1721,11 @@ static int handle_send_peers(Group_Chats *g_c, uint32_t groupnumber, const uint8
                 && public_key_cmp(d, nc_get_self_public_key(g_c->m->net_crypto)) == 0) {
             g->peer_number = peer_num;
             g->status = GROUPCHAT_STATUS_CONNECTED;
+
+            if (g_c->connected_callback) {
+                g_c->connected_callback(g_c->m, groupnumber, userdata);
+            }
+
             group_name_send(g_c, groupnumber, g_c->m->name, g_c->m->name_length);
         }
 

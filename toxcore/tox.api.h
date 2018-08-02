@@ -2157,6 +2157,18 @@ namespace conference {
 
 
   /**
+   * This event is triggered when the client successfully connects to a
+   * conference after joining it with the $join function.
+   */
+  event connected const {
+    /**
+     * @param conference_number The conference number of the conference to which we have connected.
+     */
+    typedef void(uint32_t conference_number);
+  }
+
+
+  /**
    * This event is triggered when the client receives a conference message.
    */
   event message const {
@@ -2312,6 +2324,10 @@ namespace conference {
 
   /**
    * Invites a friend to a conference.
+   *
+   * We must be connected to the conference, meaning that the conference has not
+   * been deleted, and either we created the conference with the $new function,
+   * or a `${event connected}` event has occurred for the conference.
    *
    * @param friend_number The friend number of the friend we want to invite.
    * @param conference_number The conference number of the conference we want to invite the friend to.

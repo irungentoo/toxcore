@@ -87,22 +87,17 @@ static void handle_conference_peer_list_changed(Tox *tox, uint32_t conference_nu
 
     fprintf(stderr, "tox%d has %d peers online\n", state->id, count);
     state->peers = count;
+}
+
+static void handle_conference_connected(Tox *tox, uint32_t conference_number, void *user_data)
+{
+    State *state = (State *)user_data;
 
     // We're tox2, so now we invite tox3.
     if (state->id == 2 && !state->invited_next) {
-        // TODO(zugz): neater way to determine whether we are connected, and when
-        // we become so
-        TOX_ERR_CONFERENCE_PEER_QUERY peer_err;
-        tox_conference_peer_number_is_ours(tox, 0, 0, &peer_err);
-
-        if (peer_err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
-            return;
-        }
-
-        TOX_ERR_CONFERENCE_INVITE err_invite;
-        tox_conference_invite(tox, 1, state->conference, &err_invite);
-        ck_assert_msg(err_invite == TOX_ERR_CONFERENCE_INVITE_OK,
-                      "tox2 failed to invite tox3: err = %d", err_invite);
+        TOX_ERR_CONFERENCE_INVITE err;
+        tox_conference_invite(tox, 1, state->conference, &err);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "tox2 failed to invite tox3: err = %d", err);
 
         state->invited_next = true;
         fprintf(stderr, "tox2 invited tox3\n");
@@ -154,6 +149,10 @@ int main(void)
     tox_callback_conference_invite(tox1, handle_conference_invite);
     tox_callback_conference_invite(tox2, handle_conference_invite);
     tox_callback_conference_invite(tox3, handle_conference_invite);
+
+    tox_callback_conference_connected(tox1, handle_conference_connected);
+    tox_callback_conference_connected(tox2, handle_conference_connected);
+    tox_callback_conference_connected(tox3, handle_conference_connected);
 
     tox_callback_conference_message(tox1, handle_conference_message);
     tox_callback_conference_message(tox2, handle_conference_message);

@@ -70,21 +70,12 @@ static void handle_conference_invite(
                   "tox #%u: joining groupchat twice should be impossible.", state->id);
 }
 
-static void handle_conference_peer_list_changed(
+static void handle_conference_connected(
     Tox *tox, uint32_t conference_number, void *user_data)
 {
     State *state = (State *)user_data;
 
     if (state->invited_next || tox_self_get_friend_list_size(tox) <= 1) {
-        return;
-    }
-
-    // TODO(zugz): neater way to determine whether we are connected, and when
-    // we become so
-    TOX_ERR_CONFERENCE_PEER_QUERY peer_err;
-    tox_conference_peer_number_is_ours(tox, 0, 0, &peer_err);
-
-    if (peer_err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
         return;
     }
 
@@ -190,7 +181,7 @@ static void test_many_group(void)
         tox_callback_self_connection_status(toxes[i], &handle_self_connection_status);
         tox_callback_friend_connection_status(toxes[i], &handle_friend_connection_status);
         tox_callback_conference_invite(toxes[i], &handle_conference_invite);
-        tox_callback_conference_peer_list_changed(toxes[i], &handle_conference_peer_list_changed);
+        tox_callback_conference_connected(toxes[i], &handle_conference_connected);
 
         char name[NAMELEN + 1];
         snprintf(name, NAMELEN + 1, NAME_FORMAT_STR, state[i].id);
