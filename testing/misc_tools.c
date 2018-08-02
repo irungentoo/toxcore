@@ -21,6 +21,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifndef _POSIX_C_SOURCE
 // For nanosleep().
 #define _POSIX_C_SOURCE 199309L
@@ -34,6 +38,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef VANILLA_NACL
+#include "sodium.h"
+#endif
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <windows.h>
@@ -189,3 +197,70 @@ Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_d
 {
     return tox_new_log_lan(options, err, log_user_data, false);
 }
+
+
+#ifndef VANILLA_NACL
+static const char *test_rng_name(void)
+{
+    return "test_rng";
+}
+
+static uint32_t rng_state;
+
+static uint32_t test_rng_random(void)
+{
+    rng_state = 2624534371 * rng_state + 1;
+    return rng_state;
+}
+
+static void test_rng_buf(void *const buf, const size_t size)
+{
+    uint8_t *p = (uint8_t *)buf;
+    uint32_t r = 0;
+
+    for (size_t i = 0; i < size; i++) {
+        if ((i % 4) == 0) {
+            r = test_rng_random();
+        }
+
+        *p = (r >> ((i % 4) * 8)) & 0xff;
+        ++p;
+    }
+}
+
+static uint32_t test_rng_uniform(const uint32_t upper_bound)
+{
+    // XXX: Not uniform! But that's ok for testing purposes.
+    return test_rng_random() % upper_bound;
+}
+
+static void test_rng_stir(void) { }
+static int test_rng_close(void)
+{
+    return 0;
+}
+
+static randombytes_implementation test_rng = {
+    test_rng_name,
+    test_rng_random,
+    test_rng_stir,
+    test_rng_uniform,
+    test_rng_buf,
+    test_rng_close
+};
+
+/* Simple insecure PRNG for testing purposes */
+int use_test_rng(uint32_t seed)
+{
+    rng_state = seed;
+
+    return randombytes_set_implementation(&test_rng);
+}
+
+#else
+
+int use_test_rng(uint32_t seed)
+{
+    assert(!"libsodium required for use_test_rng");
+}
+#endif

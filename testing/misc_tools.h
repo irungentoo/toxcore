@@ -22,6 +22,8 @@ void print_debug_log(Tox *m, TOX_LOG_LEVEL level, const char *file, uint32_t lin
 Tox *tox_new_log(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data);
 Tox *tox_new_log_lan(struct Tox_Options *options, TOX_ERR_NEW *err, void *log_user_data, bool lan_discovery);
 
+int use_test_rng(uint32_t seed);
+
 #ifdef __cplusplus
 }
 #endif
