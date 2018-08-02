@@ -2631,10 +2631,11 @@ void do_messenger(Messenger *m, void *userdata)
 
         for (client = 0; client < LCLIENT_LIST; ++client) {
             const Client_data *cptr = dht_get_close_client(m->dht, client);
-            const IPPTsPng *assoc = nullptr;
-            uint32_t a;
+            const IPPTsPng *const assocs[] = { &cptr->assoc4, &cptr->assoc4, nullptr };
 
-            for (a = 0, assoc = &cptr->assoc4; a < 2; ++a, assoc = &cptr->assoc6) {
+            for (const IPPTsPng * const *it = assocs; *it; ++it) {
+                const IPPTsPng *const assoc = *it;
+
                 if (ip_isset(&assoc->ip_port.ip)) {
                     last_pinged = m->lastdump - assoc->last_pinged;
 

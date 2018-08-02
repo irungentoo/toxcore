@@ -1704,12 +1704,10 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         /* If node is not dead. */
         Client_data *client = &list[i];
 
-        IPPTsPng *const assocs[] = { &client->assoc6, &client->assoc4, nullptr };
+        IPPTsPng *const assocs[] = { &client->assoc6, &client->assoc4 };
 
-        uint32_t j = 0;
-
-        for (IPPTsPng * const *it = assocs; *it; ++it, ++j) {
-            IPPTsPng *const assoc = *it;
+        for (uint32_t j = 0; j < sizeof(assocs) / sizeof(assocs[0]); ++j) {
+            IPPTsPng *const assoc = assocs[j];
 
             if (!is_timeout(assoc->timestamp, KILL_NODE_TIMEOUT)) {
                 sort = 0;
