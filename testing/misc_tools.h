@@ -13,6 +13,7 @@ extern "C" {
 void c_sleep(uint32_t x);
 
 uint8_t *hex_string_to_bin(const char *hex_string);
+void to_hex(char *out, uint8_t *in, int size);
 int tox_strncasecmp(const char *s1, const char *s2, size_t n);
 int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled);
 

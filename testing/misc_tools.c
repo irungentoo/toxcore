@@ -85,6 +85,25 @@ uint8_t *hex_string_to_bin(const char *hex_string)
     return ret;
 }
 
+void to_hex(char *out, uint8_t *in, int size)
+{
+    while (size--) {
+        if (*in >> 4 < 0xA) {
+            *out++ = '0' + (*in >> 4);
+        } else {
+            *out++ = 'A' + (*in >> 4) - 0xA;
+        }
+
+        if ((*in & 0xf) < 0xA) {
+            *out++ = '0' + (*in & 0xF);
+        } else {
+            *out++ = 'A' + (*in & 0xF) - 0xA;
+        }
+
+        in++;
+    }
+}
+
 /* Reimplementation of strncasecmp() function from strings.h, as strings.h is
  * POSIX and not portable. Specifically it doesn't exist on MSVC.
  */

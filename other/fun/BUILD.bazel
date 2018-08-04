@@ -25,3 +25,12 @@ cc_binary(
         "@libsodium",
     ],
 )
+
+cc_binary(
+    name = "save-generator",
+    srcs = ["save-generator.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
