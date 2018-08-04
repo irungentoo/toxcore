@@ -505,7 +505,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
     }
 
     if (length >= MAX_CRYPTO_DATA_SIZE) {
-        LOGGER_ERROR(m->log, "Message length %d is too large", friendnumber);
+        LOGGER_ERROR(m->log, "Message length %u is too large", length);
         return -2;
     }
 
