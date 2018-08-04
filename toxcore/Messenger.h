@@ -481,10 +481,6 @@ int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing);
  */
 int m_get_istyping(const Messenger *m, int32_t friendnumber);
 
-/* Set the logger callback.
- */
-void m_callback_log(Messenger *m, logger_cb *function, void *context, void *userdata);
-
 /* Set the function that will be executed when a friend request is received.
  *  Function format is function(uint8_t * public_key, uint8_t * data, size_t length)
  */
