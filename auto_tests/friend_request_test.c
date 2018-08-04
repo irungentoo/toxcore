@@ -61,7 +61,7 @@ static void test_friend_request(void)
     tox_self_get_address(tox2, address);
 
     const uint32_t test = tox_friend_add(tox1, address, (const uint8_t *)FR_MESSAGE, sizeof(FR_MESSAGE), nullptr);
-    ck_assert_msg(test == 0, "failed to add friend error code: %i", test);
+    ck_assert_msg(test == 0, "failed to add friend error code: %u", test);
 
     while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
             tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {

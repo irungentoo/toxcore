@@ -173,7 +173,7 @@ static void file_transfer_test(void)
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox2, address);
     uint32_t test = tox_friend_add(tox3, address, (const uint8_t *)"Gentoo", 7, nullptr);
-    ck_assert_msg(test == 0, "Failed to add friend error code: %i", test);
+    ck_assert_msg(test == 0, "Failed to add friend error code: %u", test);
 
     uint8_t dhtKey[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_dht_id(tox1, dhtKey);

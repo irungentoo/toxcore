@@ -212,12 +212,12 @@ static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
 static void t_toxav_audio_bit_rate_cb(ToxAV *av, uint32_t friend_number,
                                       uint32_t audio_bit_rate, void *user_data)
 {
-    printf("Suggested bit rate: audio: %d\n", audio_bit_rate);
+    printf("Suggested bit rate: audio: %u\n", audio_bit_rate);
 }
 static void t_toxav_video_bit_rate_cb(ToxAV *av, uint32_t friend_number,
                                       uint32_t video_bit_rate, void *user_data)
 {
-    printf("Suggested bit rate: video: %d\n", video_bit_rate);
+    printf("Suggested bit rate: video: %u\n", video_bit_rate);
 }
 static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
                                        void *userdata)

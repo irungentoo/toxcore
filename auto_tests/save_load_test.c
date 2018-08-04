@@ -30,7 +30,7 @@ static void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, vo
         ck_abort_msg("Tox went offline");
     }
 
-    ck_assert_msg(connection_status == TOX_CONNECTION_UDP, "wrong status %u", connection_status);
+    ck_assert_msg(connection_status == TOX_CONNECTION_UDP, "wrong status %d", connection_status);
 
     connected_t1 = connection_status;
 }

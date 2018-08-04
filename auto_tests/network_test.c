@@ -104,20 +104,20 @@ START_TEST(test_ip_equal)
     ip_reset(&ip2);
 
     res = ip_equal(nullptr, nullptr);
-    ck_assert_msg(res == 0, "ip_equal(NULL, NULL): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal(NULL, NULL): expected result 0, got %d.", res);
 
     res = ip_equal(&ip1, nullptr);
-    ck_assert_msg(res == 0, "ip_equal(PTR, NULL): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal(PTR, NULL): expected result 0, got %d.", res);
 
     res = ip_equal(nullptr, &ip1);
-    ck_assert_msg(res == 0, "ip_equal(NULL, PTR): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal(NULL, PTR): expected result 0, got %d.", res);
 
     ip1.family = net_family_ipv4;
     ip1.ip.v4.uint32 = net_htonl(0x7F000001);
 
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_UNSPEC, 0} ): "
-                  "expected result 0, got %u.", res);
+                  "expected result 0, got %d.", res);
 
     ip2.family = net_family_ipv4;
     ip2.ip.v4.uint32 = net_htonl(0x7F000001);
@@ -130,7 +130,7 @@ START_TEST(test_ip_equal)
 
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET, 127.0.0.2} ): "
-                  "expected result 0, got %u.", res);
+                  "expected result 0, got %d.", res);
 
     ip2.family = net_family_ipv6;
     ip2.ip.v6.uint32[0] = 0;
@@ -148,7 +148,7 @@ START_TEST(test_ip_equal)
     IP6 ip6_loopback = get_ip6_loopback();
     memcpy(&ip2.ip.v6, &ip6_loopback, sizeof(IP6));
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET6, ::1} ): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET, 127.0.0.1}, {TOX_AF_INET6, ::1} ): expected result 0, got %d.", res);
 
     memcpy(&ip1, &ip2, sizeof(IP));
     res = ip_equal(&ip1, &ip2);
@@ -156,7 +156,7 @@ START_TEST(test_ip_equal)
 
     ip2.ip.v6.uint8[15]++;
     res = ip_equal(&ip1, &ip2);
-    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %u.", res);
+    ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %d.", res);
 }
 END_TEST
 

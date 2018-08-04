@@ -63,7 +63,7 @@ START_TEST(test_many_clients_tcp)
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
         TOX_ERR_BOOTSTRAP error = TOX_ERR_BOOTSTRAP_OK;
-        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %i, %i", i,
+        ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %u, %d", i,
                       error);
         uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);
         ck_assert_msg(tox_bootstrap(toxes[i], TOX_LOCALHOST, first_port, dpk, nullptr), "Bootstrap error");
