@@ -8,7 +8,22 @@ CACHEDIR="$HOME/cache"
 NPROC=`nproc`
 ASTYLE="$CACHEDIR/astyle/build/gcc/bin/astyle"
 
+install_tool() {
+  SLUG="$1"
+  TOOL="$2"
+  TARGET="$3"
+
+  VERSION=$(curl -L -s -H 'Accept: application/json' \
+    "https://github.com/$SLUG/releases/latest" \
+    | egrep -o '"v[0-9][^"]+"' \
+    | egrep -o '[^"]+')
+  URL="https://github.com/$SLUG/releases/download/$VERSION/$TOOL-x86_64-linux-$VERSION.tar.gz"
+  curl -L -s "$URL" | tar xzv -C "$TARGET"
+}
+
 travis_install() {
+  install_tool TokTok/hs-tokstyle tokstyle "$HOME/.local"
+
   which coveralls || {
     # Install cpp-coveralls to upload test coverage results.
     pip install --user ndg-httpsclient urllib3[secure] cpp-coveralls
@@ -56,6 +71,9 @@ travis_script() {
   add_flag -fprofile-arcs -ftest-coverage
 
   other/astyle/format-source . "$ASTYLE"
+
+  echo "Running TokTok style checker"
+  "$HOME/.local/bin/check-cimple"
 
   # Use () to run in a separate process so the exports are local.
   (run_static_analysis)
