@@ -2626,7 +2626,7 @@ void do_messenger(Messenger *m, void *userdata)
 
         for (client = 0; client < LCLIENT_LIST; ++client) {
             const Client_data *cptr = dht_get_close_client(m->dht, client);
-            const IPPTsPng *const assocs[] = { &cptr->assoc4, &cptr->assoc4, nullptr };
+            const IPPTsPng *const assocs[] = { &cptr->assoc4, &cptr->assoc6, nullptr };
 
             for (const IPPTsPng * const *it = assocs; *it; ++it) {
                 const IPPTsPng *const assoc = *it;
