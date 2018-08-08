@@ -1,9 +1,38 @@
 
 
+## v0.2.5
+
+### Merged PRs:
+
+- [#1048](https://github.com/TokTok/c-toxcore/pull/1048) Fix error message in m_send_generic_message
+- [#1047](https://github.com/TokTok/c-toxcore/pull/1047) Remove unused `m_callback_log` function.
+- [#1041](https://github.com/TokTok/c-toxcore/pull/1041) Avoid multiple for-next expressions.
+- [#1037](https://github.com/TokTok/c-toxcore/pull/1037) Run all tests in the Autotools build
+- [#1035](https://github.com/TokTok/c-toxcore/pull/1035) Fix problems with initial connections and name-setting in conferences
+- [#1032](https://github.com/TokTok/c-toxcore/pull/1032) Use auto_test fixture in some tests and standardise filenames
+- [#1030](https://github.com/TokTok/c-toxcore/pull/1030) Make a separate `struct Tox` containing the Messenger.
+- [#1029](https://github.com/TokTok/c-toxcore/pull/1029) Add `by_id` and `get_id` functions, renaming from `*_uid`.
+- [#1025](https://github.com/TokTok/c-toxcore/pull/1025) More fixed_width ints and incorporating file_saving_test.c
+- [#1023](https://github.com/TokTok/c-toxcore/pull/1023) Run buildifier on c-toxcore BUILD files.
+- [#1022](https://github.com/TokTok/c-toxcore/pull/1022) Make `resize` in `list.c` return bool instead of 0/1.
+- [#1021](https://github.com/TokTok/c-toxcore/pull/1021) Remove redundant casts to the same type.
+- [#1020](https://github.com/TokTok/c-toxcore/pull/1020) Add github usernames to TODOs.
+- [#1019](https://github.com/TokTok/c-toxcore/pull/1019) Synchronise parameter names in headers with those in the implementation.
+- [#1018](https://github.com/TokTok/c-toxcore/pull/1018) Reduce nesting by doing more early returns on error.
+- [#1017](https://github.com/TokTok/c-toxcore/pull/1017) Add missing braces in dht_test.c.
+- [#1011](https://github.com/TokTok/c-toxcore/pull/1011) Run Clang global static analysis on Travis.
+- [#1010](https://github.com/TokTok/c-toxcore/pull/1010) Avoid implementations in .h files or #including .c files.
+
+### Closed issues:
+
+- [#1028](https://github.com/TokTok/c-toxcore/issues/1028) qTox crashes 1-2 times a day after update to 0.2.4
+- [#1002](https://github.com/TokTok/c-toxcore/issues/1002) Implement an abstraction over pthread and windows thread synchronisation primitives
+
 ## v0.2.4
 
 ### Merged PRs:
 
+- [#1024](https://github.com/TokTok/c-toxcore/pull/1024) Release v0.2.4
 - [#1014](https://github.com/TokTok/c-toxcore/pull/1014) Use string comparison operator in configure.ac.
 - [#1013](https://github.com/TokTok/c-toxcore/pull/1013) Link -lsocket and -lnsl for socket functions on Solaris.
 - [#1012](https://github.com/TokTok/c-toxcore/pull/1012) Correct the max hostname length constant.
