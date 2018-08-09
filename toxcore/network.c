@@ -641,8 +641,6 @@ void networking_poll(Networking_Core *net, void *userdata)
         return;
     }
 
-    unix_time_update();
-
     IP_Port ip_port;
     uint8_t data[MAX_UDP_PACKET_SIZE];
     uint32_t length;

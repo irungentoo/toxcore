@@ -230,6 +230,8 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, enable_ipv6);
 
+    unix_time_update();
+
     Logger *logger = logger_new();
 
     Networking_Core *net = new_networking(logger, ip, port);
@@ -336,6 +338,8 @@ int main(int argc, char *argv[])
     }
 
     while (1) {
+        unix_time_update();
+
         do_dht(dht);
 
         if (enable_lan_discovery && is_timeout(last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {

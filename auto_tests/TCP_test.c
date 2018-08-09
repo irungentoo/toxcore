@@ -39,6 +39,7 @@ static inline IP get_loopback()
 static void do_TCP_server_delay(TCP_Server *tcp_s, int delay)
 {
     c_sleep(delay);
+    unix_time_update();
     do_TCP_server(tcp_s);
     c_sleep(delay);
 }
@@ -141,6 +142,7 @@ START_TEST(test_basic)
         i += msg_length;
 
         c_sleep(50);
+        unix_time_update();
         do_TCP_server(tcp_s);
     }
 
@@ -477,6 +479,7 @@ START_TEST(test_client)
     const uint8_t LOOP_SIZE = 3;
 
     for (uint8_t i = 0; i < LOOP_SIZE; i++) {
+        unix_time_update();
         do_TCP_connection(conn, nullptr); // Run the connection loop.
 
         // The status of the connection should continue to be TCP_CLIENT_CONFIRMED after multiple subsequent do_TCP_connection() calls.
@@ -584,6 +587,7 @@ START_TEST(test_client_invalid)
     TCP_Client_Connection *conn = new_TCP_connection(ip_port_tcp_s, self_public_key, f_public_key, f_secret_key, nullptr);
 
     // Run the client's main loop but not the server.
+    unix_time_update();
     do_TCP_connection(conn, nullptr);
     c_sleep(50);
 
@@ -592,11 +596,13 @@ START_TEST(test_client_invalid)
                   TCP_CLIENT_CONNECTING, tcp_con_status(conn));
     // After 5s...
     c_sleep(5000);
+    unix_time_update();
     do_TCP_connection(conn, nullptr);
     ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_CONNECTING, "Wrong status. Expected: %d, is: %d.",
                   TCP_CLIENT_CONNECTING, tcp_con_status(conn));
     // 11s... (Should wait for 10 before giving up.)
     c_sleep(6000);
+    unix_time_update();
     do_TCP_connection(conn, nullptr);
     ck_assert_msg(tcp_con_status(conn) == TCP_CLIENT_DISCONNECTED, "Wrong status. Expected: %d, is: %d.",
                   TCP_CLIENT_DISCONNECTED, tcp_con_status(conn));

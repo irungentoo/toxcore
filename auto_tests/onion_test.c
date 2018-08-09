@@ -31,6 +31,8 @@ static inline IP get_loopback()
 }
 static void do_onion(Onion *onion)
 {
+    unix_time_update();
+
     networking_poll(onion->net, nullptr);
     do_dht(onion->dht);
 }
@@ -327,6 +329,8 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
         return nullptr;
     }
 
+    unix_time_update();
+
     logger_callback_log(on->log, (logger_cb *)print_debug_log, nullptr, index);
 
     Networking_Core *net = new_networking(on->log, ip, port);
@@ -385,6 +389,8 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
 
 static void do_onions(Onions *on)
 {
+    unix_time_update();
+
     networking_poll(on->onion->net, nullptr);
     do_dht(on->onion->dht);
     do_onion_client(on->onion_c);

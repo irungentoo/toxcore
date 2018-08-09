@@ -2690,9 +2690,6 @@ static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *pack
 
 DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled)
 {
-    /* init time */
-    unix_time_update();
-
     if (net == nullptr) {
         return nullptr;
     }
@@ -2741,8 +2738,6 @@ DHT *new_dht(const Logger *log, Networking_Core *net, bool holepunching_enabled)
 
 void do_dht(DHT *dht)
 {
-    unix_time_update();
-
     if (dht->last_run == unix_time()) {
         return;
     }
@@ -2963,8 +2958,6 @@ int dht_load(DHT *dht, const uint8_t *data, uint32_t length)
  */
 bool dht_isconnected(const DHT *dht)
 {
-    unix_time_update();
-
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *const client = &dht->close_clientlist[i];
 
@@ -2982,8 +2975,6 @@ bool dht_isconnected(const DHT *dht)
  */
 bool dht_non_lan_connected(const DHT *dht)
 {
-    unix_time_update();
-
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *const client = &dht->close_clientlist[i];
 

@@ -2603,8 +2603,6 @@ void do_messenger(Messenger *m, void *userdata)
         }
     }
 
-    unix_time_update();
-
     if (!m->options.udp_disabled) {
         networking_poll(m->net, userdata);
         do_dht(m->dht);

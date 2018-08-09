@@ -115,6 +115,8 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
+    unix_time_update();
+
     Logger *logger = logger_new();
     DHT *dht = new_dht(logger, new_networking(logger, ip, PORT), true);
     Onion *onion = new_onion(dht);
@@ -186,6 +188,8 @@ int main(int argc, char *argv[])
     lan_discovery_init(dht);
 
     while (1) {
+        unix_time_update();
+
         if (is_waiting_for_dht_connection && dht_isconnected(dht)) {
             printf("Connected to other bootstrap node successfully.\n");
             is_waiting_for_dht_connection = 0;

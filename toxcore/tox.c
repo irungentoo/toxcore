@@ -38,6 +38,7 @@
 #include "Messenger.h"
 #include "group.h"
 #include "logger.h"
+#include "mono_time.h"
 
 #include "../toxencryptsave/defines.h"
 
@@ -334,6 +335,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);
         return nullptr;
     }
+
+    unix_time_update();
 
     Messenger_Options m_options = {0};
 
@@ -653,6 +656,8 @@ uint32_t tox_iteration_interval(const Tox *tox)
 
 void tox_iterate(Tox *tox, void *user_data)
 {
+    unix_time_update();
+
     Messenger *m = tox->m;
     struct Tox_Userdata tox_data = { tox, user_data };
     do_messenger(m, &tox_data);

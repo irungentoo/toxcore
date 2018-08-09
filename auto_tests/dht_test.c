@@ -389,21 +389,19 @@ static void test_addto_lists(IP ip)
     logger_kill(log);
 }
 
-START_TEST(test_addto_lists_ipv4)
+static void test_addto_lists_ipv4(void)
 {
     IP ip;
     ip_init(&ip, 0);
     test_addto_lists(ip);
 }
-END_TEST
 
-START_TEST(test_addto_lists_ipv6)
+static void test_addto_lists_ipv6(void)
 {
     IP ip;
     ip_init(&ip, 1);
     test_addto_lists(ip);
 }
-END_TEST
 
 #define DHT_DEFAULT_PORT (TOX_PORT_DEFAULT + 1000)
 
@@ -580,7 +578,7 @@ static void test_list_main(void)
 }
 
 
-START_TEST(test_list)
+static void test_list(void)
 {
     uint8_t i;
 
@@ -588,7 +586,6 @@ START_TEST(test_list)
         test_list_main();
     }
 }
-END_TEST
 
 static void ip_callback(void *data, int32_t number, IP_Port ip_port)
 {
@@ -596,12 +593,14 @@ static void ip_callback(void *data, int32_t number, IP_Port ip_port)
 
 #define NUM_DHT_FRIENDS 20
 
-START_TEST(test_DHT_test)
+static void test_DHT_test(void)
 {
     uint32_t to_comp = 8394782;
     DHT *dhts[NUM_DHT];
     Logger *logs[NUM_DHT];
     uint32_t index[NUM_DHT];
+
+    unix_time_update();
 
     uint32_t i, j;
 
@@ -664,6 +663,7 @@ loop_top:
         }
 
         for (i = 0; i < NUM_DHT; ++i) {
+            unix_time_update();
             networking_poll(dhts[i]->net, nullptr);
             do_dht(dhts[i]);
         }
@@ -678,9 +678,8 @@ loop_top:
         logger_kill(logs[i]);
     }
 }
-END_TEST
 
-START_TEST(test_dht_create_packet)
+static void test_dht_create_packet(void)
 {
     uint8_t plain[100] = {0};
     uint8_t pkt[1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + sizeof(plain) + CRYPTO_MAC_SIZE];
@@ -697,7 +696,6 @@ START_TEST(test_dht_create_packet)
 
     printf("Create Packet Successful!\n");
 }
-END_TEST
 
 #define MAX_COUNT 3
 
@@ -750,7 +748,7 @@ static void random_ip(IP_Port *ipp, int family)
 
 #define PACKED_NODES_SIZE (SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE)
 
-START_TEST(test_dht_node_packing)
+static void test_dht_node_packing(void)
 {
     const uint16_t length = MAX_COUNT * PACKED_NODES_SIZE;
     uint8_t *data = (uint8_t *)malloc(length);
@@ -789,38 +787,23 @@ START_TEST(test_dht_node_packing)
 
     free(data);
 }
-END_TEST
-
-static Suite *dht_suite(void)
-{
-    Suite *s = suite_create("DHT");
-    DEFTESTCASE(dht_create_packet);
-    DEFTESTCASE(dht_node_packing);
-
-    DEFTESTCASE_SLOW(list, 20);
-    DEFTESTCASE_SLOW(DHT_test, 50);
-
-    if (enable_broken_tests) {
-        DEFTESTCASE(addto_lists_ipv4);
-        DEFTESTCASE(addto_lists_ipv6);
-    }
-
-    return s;
-}
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *dht = dht_suite();
-    SRunner *test_runner = srunner_create(dht);
+    unix_time_update();
 
-    uint8_t number_failed = 0;
-    //srunner_set_fork_status(test_runner, CK_NOFORK);
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
+    test_dht_create_packet();
+    test_dht_node_packing();
 
-    srunner_free(test_runner);
+    test_list();
+    test_DHT_test();
 
-    return number_failed;
+    if (enable_broken_tests) {
+        test_addto_lists_ipv4();
+        test_addto_lists_ipv6();
+    }
+
+    return 0;
 }

@@ -1424,8 +1424,6 @@ static void do_TCP_epoll(TCP_Server *tcp_server)
 
 void do_TCP_server(TCP_Server *tcp_server)
 {
-    unix_time_update();
-
 #ifdef TCP_SERVER_USE_EPOLL
     do_TCP_epoll(tcp_server);
 

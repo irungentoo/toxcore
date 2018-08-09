@@ -985,8 +985,6 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn, void *userdata)
  */
 void do_TCP_connection(TCP_Client_Connection *tcp_connection, void *userdata)
 {
-    unix_time_update();
-
     if (tcp_connection->status == TCP_CLIENT_DISCONNECTED) {
         return;
     }

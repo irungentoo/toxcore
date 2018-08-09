@@ -47,6 +47,7 @@
 #endif
 
 #include "../toxcore/Messenger.h"
+#include "../toxcore/mono_time.h"
 #include "misc_tools.h"
 
 static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type, const uint8_t *string, size_t length,
@@ -105,6 +106,8 @@ int main(int argc, char *argv[])
         printf("       %s [--ipv4|--ipv6] Save.bak (to read Save.bak as state file)\n", argv[0]);
         exit(0);
     }
+
+    unix_time_update();
 
     Messenger_Options options = {0};
     options.ipv6enabled = ipv6enabled;
@@ -177,6 +180,8 @@ int main(int argc, char *argv[])
     perror("Initialization");
 
     while (1) {
+        unix_time_update();
+
         uint8_t name[128];
         const char *const filename = "Save.bak";
         getname(m, num, name);

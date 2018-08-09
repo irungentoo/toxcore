@@ -42,6 +42,7 @@
 
 #include "../toxcore/DHT.h"
 #include "../toxcore/friend_requests.h"
+#include "../toxcore/mono_time.h"
 #include "misc_tools.h"
 
 #define PORT 33445
@@ -237,6 +238,8 @@ int main(int argc, char *argv[])
 #endif
 
     while (1) {
+        unix_time_update();
+
         do_dht(dht);
 
 #if 0 /* TODO(slvr): */

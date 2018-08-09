@@ -2925,8 +2925,6 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk)
  */
 Net_Crypto *new_net_crypto(const Logger *log, DHT *dht, TCP_Proxy_Info *proxy_info)
 {
-    unix_time_update();
-
     if (dht == nullptr) {
         return nullptr;
     }
@@ -3016,7 +3014,6 @@ uint32_t crypto_run_interval(const Net_Crypto *c)
 /* Main loop. */
 void do_net_crypto(Net_Crypto *c, void *userdata)
 {
-    unix_time_update();
     kill_timedout(c, userdata);
     do_tcp(c, userdata);
     send_crypto_packets(c);
