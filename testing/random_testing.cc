@@ -299,10 +299,12 @@ int main() {
             return tox_conference_get_chatlist_size(state.tox()) != 0;
           },
           [](Local_State *state, Random *rnd, std::mt19937 *rng) {
+            size_t chat_count = tox_conference_get_chatlist_size(state->tox());
+            assert(chat_count != 0);  // Condition above.
             TOX_ERR_CONFERENCE_INVITE err;
             tox_conference_invite(
                 state->tox(), rnd->friend_selector(*rng),
-                state->next_invite % tox_conference_get_chatlist_size(state->tox()), &err);
+                state->next_invite % chat_count, &err);
             state->next_invite++;
             assert(err == TOX_ERR_CONFERENCE_INVITE_OK);
           },
