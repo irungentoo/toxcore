@@ -80,6 +80,7 @@ typedef struct ToxAVCall_s {
 } ToxAVCall;
 
 struct ToxAV {
+    Tox *tox;
     Messenger *m;
     MSISession *msi;
 
@@ -166,6 +167,7 @@ ToxAV *toxav_new(Tox *tox, TOXAV_ERR_NEW *error)
         goto END;
     }
 
+    av->tox = tox;
     av->m = m;
     av->msi = msi_new(av->m);
 
@@ -230,7 +232,7 @@ void toxav_kill(ToxAV *av)
 }
 Tox *toxav_get_tox(const ToxAV *av)
 {
-    return (Tox *) av->m;
+    return av->tox;
 }
 uint32_t toxav_iteration_interval(const ToxAV *av)
 {

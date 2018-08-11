@@ -163,6 +163,7 @@ static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
 
 typedef struct Group_AV {
     const Logger *log;
+    Tox *tox;
     Group_Chats *g_c;
     OpusEncoder *audio_encoder;
 
@@ -231,7 +232,8 @@ static int recreate_encoder(Group_AV *group_av)
     return 0;
 }
 
-static Group_AV *new_group_av(const Logger *log, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
+static Group_AV *new_group_av(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback,
+                              void *userdata)
 {
     if (!g_c) {
         return nullptr;
@@ -244,6 +246,7 @@ static Group_AV *new_group_av(const Logger *log, Group_Chats *g_c, audio_data_cb
     }
 
     group_av->log = log;
+    group_av->tox = tox;
     group_av->g_c = g_c;
 
     group_av->audio_data = audio_callback;
@@ -386,7 +389,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
     if (out_audio) {
 
         if (group_av->audio_data) {
-            group_av->audio_data(group_av->g_c->m, groupnumber, friendgroupnumber, out_audio, out_audio_samples,
+            group_av->audio_data(group_av->tox, groupnumber, friendgroupnumber, out_audio, out_audio_samples,
                                  peer_av->decoder_channels, sample_rate, group_av->userdata);
         }
 
@@ -433,10 +436,10 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
  * return 0 on success.
  * return -1 on failure.
  */
-static int groupchat_enable_av(const Logger *log, Group_Chats *g_c, uint32_t groupnumber,
+static int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t groupnumber,
                                audio_data_cb *audio_callback, void *userdata)
 {
-    Group_AV *group_av = new_group_av(log, g_c, audio_callback, userdata);
+    Group_AV *group_av = new_group_av(log, tox, g_c, audio_callback, userdata);
 
     if (group_av == nullptr) {
         return -1;
@@ -459,7 +462,7 @@ static int groupchat_enable_av(const Logger *log, Group_Chats *g_c, uint32_t gro
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(const Logger *log, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
+int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
 {
     int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
 
@@ -467,7 +470,7 @@ int add_av_groupchat(const Logger *log, Group_Chats *g_c, audio_data_cb *audio_c
         return -1;
     }
 
-    if (groupchat_enable_av(log, g_c, groupnumber, audio_callback, userdata) == -1) {
+    if (groupchat_enable_av(log, tox, g_c, groupnumber, audio_callback, userdata) == -1) {
         del_groupchat(g_c, groupnumber);
         return -1;
     }
@@ -480,8 +483,8 @@ int add_av_groupchat(const Logger *log, Group_Chats *g_c, audio_data_cb *audio_c
  * returns group number on success
  * returns -1 on failure.
  */
-int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
-                      audio_data_cb *audio_callback, void *userdata)
+int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data,
+                      uint16_t length, audio_data_cb *audio_callback, void *userdata)
 {
     int groupnumber = join_groupchat(g_c, friendnumber, GROUPCHAT_TYPE_AV, data, length);
 
@@ -489,7 +492,7 @@ int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber
         return -1;
     }
 
-    if (groupchat_enable_av(log, g_c, groupnumber, audio_callback, userdata) == -1) {
+    if (groupchat_enable_av(log, tox, g_c, groupnumber, audio_callback, userdata) == -1) {
         del_groupchat(g_c, groupnumber);
         return -1;
     }

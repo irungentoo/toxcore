@@ -37,8 +37,9 @@
  */
 int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userdata)
 {
-    Messenger *m = (Messenger *)tox;
-    return add_av_groupchat(m->log, m->conferences_object, audio_callback, userdata);
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return add_av_groupchat(m->log, tox, m->conferences_object, audio_callback, userdata);
 }
 
 /* Join a AV group (you need to have been invited first.)
@@ -54,8 +55,9 @@ int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userda
 int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                             audio_data_cb *audio_callback, void *userdata)
 {
-    Messenger *m = (Messenger *)tox;
-    return join_av_groupchat(m->log, m->conferences_object, friendnumber, data, length, audio_callback, userdata);
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return join_av_groupchat(m->log, tox, m->conferences_object, friendnumber, data, length, audio_callback, userdata);
 }
 
 /* Send audio to the group chat.
@@ -74,6 +76,7 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
 int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            uint32_t sample_rate)
 {
-    Messenger *m = (Messenger *)tox;
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
     return group_send_audio(m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
 }
