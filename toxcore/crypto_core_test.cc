@@ -29,7 +29,8 @@ enum {
 
 clock_t memcmp_time(void *a, void *b, size_t len) {
   clock_t start = clock();
-  crypto_memcmp(a, b, len);
+  volatile int result = crypto_memcmp(a, b, len);
+  (void)result;
   return clock() - start;
 }
 
