@@ -1492,7 +1492,13 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             memcpy(&other_groupnum, data + 1, sizeof(uint16_t));
             other_groupnum = net_ntohs(other_groupnum);
 
-            int friendcon_id = getfriendcon_id(m, friendnumber);
+            const int friendcon_id = getfriendcon_id(m, friendnumber);
+
+            if (friendcon_id == -1) {
+                // TODO(iphydf): Log something?
+                return;
+            }
+
             uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE], temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
             get_friendcon_public_keys(real_pk, temp_pk, g_c->fr_c, friendcon_id);
 
