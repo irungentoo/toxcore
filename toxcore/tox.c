@@ -1000,14 +1000,16 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
         return 0;
     }
 
-    const Messenger *m = tox->m;
-    // TODO(irungentoo): size parameter?
-    int ret = m_copy_statusmessage(m, friend_number, status_message, m_get_statusmessage_size(m, friend_number));
+    const Messenger *const m = tox->m;
+    const int size = m_get_statusmessage_size(m, friend_number);
 
-    if (ret == -1) {
+    if (size == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
         return 0;
     }
+
+    const int ret = m_copy_statusmessage(m, friend_number, status_message, size);
+    assert(ret == size && "concurrency problem: friend status message changed");
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
     return 1;
