@@ -1423,7 +1423,7 @@ int group_title_get(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *title
 static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                                         void *userdata)
 {
-    Group_Chats *g_c = (Group_Chats *)m->conferences_object;
+    Group_Chats *g_c = m->conferences_object;
 
     if (length <= 1) {
         return;

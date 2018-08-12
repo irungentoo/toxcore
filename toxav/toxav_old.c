@@ -39,7 +39,7 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, ui
                            uint8_t, uint32_t, void *), void *userdata)
 {
     Messenger *m = (Messenger *)tox;
-    return add_av_groupchat(m->log, (Group_Chats *)m->conferences_object,
+    return add_av_groupchat(m->log, m->conferences_object,
                             (void (*)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *))audio_callback,
                             userdata);
 }
@@ -60,7 +60,7 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
                             void *userdata)
 {
     Messenger *m = (Messenger *)tox;
-    return join_av_groupchat(m->log, (Group_Chats *)m->conferences_object, friendnumber, data, length,
+    return join_av_groupchat(m->log, m->conferences_object, friendnumber, data, length,
                              (void (*)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *))audio_callback,
                              userdata);
 }
@@ -82,5 +82,5 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
                            uint32_t sample_rate)
 {
     Messenger *m = (Messenger *)tox;
-    return group_send_audio((Group_Chats *)m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
+    return group_send_audio(m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
 }
