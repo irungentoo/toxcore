@@ -482,11 +482,11 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
         return -1;
     }
 
-    LOGGER_DEBUG(m->log, "header.pt %d, video %d", (uint8_t)header.pt, (rtp_TypeVideo % 128));
+    LOGGER_DEBUG(m->log, "header.pt %d, video %d", (uint8_t)header.pt, (RTP_TYPE_VIDEO % 128));
 
     // The sender uses the new large-frame capable protocol and is sending a
     // video packet.
-    if ((header.flags & RTP_LARGE_FRAME) && header.pt == (rtp_TypeVideo % 128)) {
+    if ((header.flags & RTP_LARGE_FRAME) && header.pt == (RTP_TYPE_VIDEO % 128)) {
         return handle_video_packet(session, &header, data + RTP_HEADER_SIZE, length - RTP_HEADER_SIZE, m->log);
     }
 
@@ -667,7 +667,7 @@ RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
     // First entry is free.
     session->work_buffer_list->next_free_entry = 0;
 
-    session->ssrc = payload_type == rtp_TypeVideo ? 0 : random_u32();
+    session->ssrc = payload_type == RTP_TYPE_VIDEO ? 0 : random_u32();
     session->payload_type = payload_type;
     session->m = m;
     session->friend_number = friendnumber;
@@ -772,7 +772,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
     // here the highest bits gets stripped anyway, no need to do keyframe bit magic here!
     header.data_length_lower = length;
 
-    if (session->payload_type == rtp_TypeVideo) {
+    if (session->payload_type == RTP_TYPE_VIDEO) {
         header.flags = RTP_LARGE_FRAME;
     }
 

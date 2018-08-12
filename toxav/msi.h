@@ -33,24 +33,24 @@
  * Error codes.
  */
 typedef enum {
-    msi_ENone,
-    msi_EInvalidMessage,
-    msi_EInvalidParam,
-    msi_EInvalidState,
-    msi_EStrayMessage,
-    msi_ESystem,
-    msi_EHandle,
-    msi_EUndisclosed, /* NOTE: must be last enum otherwise parsing will not work */
+    MSI_E_NONE,
+    MSI_E_INVALID_MESSAGE,
+    MSI_E_INVALID_PARAM,
+    MSI_E_INVALID_STATE,
+    MSI_E_STRAY_MESSAGE,
+    MSI_E_SYSTEM,
+    MSI_E_HANDLE,
+    MSI_E_UNDISCLOSED, /* NOTE: must be last enum otherwise parsing will not work */
 } MSIError;
 
 /**
  * Supported capabilities
  */
 typedef enum {
-    msi_CapSAudio = 4,  /* sending audio */
-    msi_CapSVideo = 8,  /* sending video */
-    msi_CapRAudio = 16, /* receiving audio */
-    msi_CapRVideo = 32, /* receiving video */
+    MSI_CAP_S_AUDIO = 4,  /* sending audio */
+    MSI_CAP_S_VIDEO = 8,  /* sending video */
+    MSI_CAP_R_AUDIO = 16, /* receiving audio */
+    MSI_CAP_R_VIDEO = 32, /* receiving video */
 } MSICapabilities;
 
 
@@ -58,22 +58,22 @@ typedef enum {
  * Call state identifiers.
  */
 typedef enum {
-    msi_CallInactive, /* Default */
-    msi_CallActive,
-    msi_CallRequesting, /* when sending call invite */
-    msi_CallRequested, /* when getting call invite */
+    MSI_CALL_INACTIVE, /* Default */
+    MSI_CALL_ACTIVE,
+    MSI_CALL_REQUESTING, /* when sending call invite */
+    MSI_CALL_REQUESTED, /* when getting call invite */
 } MSICallState;
 
 /**
  * Callbacks ids that handle the states
  */
 typedef enum {
-    msi_OnInvite, /* Incoming call */
-    msi_OnStart, /* Call (RTP transmission) started */
-    msi_OnEnd, /* Call that was active ended */
-    msi_OnError, /* On protocol error */
-    msi_OnPeerTimeout, /* Peer timed out; stop the call */
-    msi_OnCapabilities, /* Peer requested capabilities change */
+    MSI_ON_INVITE, /* Incoming call */
+    MSI_ON_START, /* Call (RTP transmission) started */
+    MSI_ON_END, /* Call that was active ended */
+    MSI_ON_ERROR, /* On protocol error */
+    MSI_ON_PEERTIMEOUT, /* Peer timed out; stop the call */
+    MSI_ON_CAPABILITIES, /* Peer requested capabilities change */
 } MSICallbackID;
 
 /**

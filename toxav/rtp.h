@@ -46,8 +46,8 @@ extern "C" {
  * Payload type identifier. Also used as rtp callback prefix.
  */
 enum {
-    rtp_TypeAudio = 192,
-    rtp_TypeVideo = 193,
+    RTP_TYPE_AUDIO = 192,
+    RTP_TYPE_VIDEO = 193,
 };
 
 /**

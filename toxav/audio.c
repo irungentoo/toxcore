@@ -222,13 +222,13 @@ int ac_queue_message(void *acp, struct RTPMessage *msg)
 
     ACSession *ac = (ACSession *)acp;
 
-    if ((msg->header.pt & 0x7f) == (rtp_TypeAudio + 2) % 128) {
+    if ((msg->header.pt & 0x7f) == (RTP_TYPE_AUDIO + 2) % 128) {
         LOGGER_WARNING(ac->log, "Got dummy!");
         free(msg);
         return 0;
     }
 
-    if ((msg->header.pt & 0x7f) != rtp_TypeAudio % 128) {
+    if ((msg->header.pt & 0x7f) != RTP_TYPE_AUDIO % 128) {
         LOGGER_WARNING(ac->log, "Invalid payload type!");
         free(msg);
         return -1;
