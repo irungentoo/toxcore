@@ -605,6 +605,10 @@ namespace video {
 %{
 /**
  * NOTE Compatibility with old toxav group calls. TODO(iphydf): remove
+ *
+ * TODO(iphydf): Use proper new API guidelines for these. E.g. don't use inline
+ * function types, don't have per-callback userdata, especially don't have one
+ * userdata per group.
  */
 /* Create a new toxav group.
  *
@@ -616,8 +620,9 @@ namespace video {
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t,
-                           uint32_t, void *), void *userdata);
+int toxav_add_av_groupchat(Tox *tox,
+                           void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
+                           void *userdata);
 
 /* Join a AV group (you need to have been invited first.)
  *
@@ -630,7 +635,8 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, ui
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
 int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata);
+                            void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
+                            void *userdata);
 
 /* Send audio to the group chat.
  *
@@ -651,5 +657,16 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
 #ifdef __cplusplus
 }
 #endif
+
+typedef void toxav_group_audio_cb(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, uint32_t samples, uint8_t channels, uint32_t sample_rate, void *user_data);
+
+typedef TOXAV_ERR_CALL Toxav_Err_Call;
+typedef TOXAV_ERR_NEW Toxav_Err_New;
+typedef TOXAV_ERR_ANSWER Toxav_Err_Answer;
+typedef TOXAV_ERR_CALL_CONTROL Toxav_Err_Call_Control;
+typedef TOXAV_ERR_BIT_RATE_SET Toxav_Err_Bit_Rate_Set;
+typedef TOXAV_ERR_SEND_FRAME Toxav_Err_Send_Frame;
+typedef TOXAV_CALL_CONTROL Toxav_Call_Control;
+
 #endif /* TOXAV_H */
 %}
