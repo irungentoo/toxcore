@@ -258,8 +258,8 @@ VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_vi
      */
     vc->linfts = current_time_monotonic();
     vc->lcfd = 60;
-    vc->vcb.first = cb;
-    vc->vcb.second = cb_data;
+    vc->vcb = cb;
+    vc->vcb_user_data = cb_data;
     vc->friend_number = friend_number;
     vc->av = av;
     vc->log = log;
@@ -337,10 +337,10 @@ void vc_iterate(VCSession *vc)
     vpx_image_t *dest = nullptr;
 
     while ((dest = vpx_codec_get_frame(vc->decoder, &iter)) != nullptr) {
-        if (vc->vcb.first) {
-            vc->vcb.first(vc->av, vc->friend_number, dest->d_w, dest->d_h,
-                          (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
-                          dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb.second);
+        if (vc->vcb) {
+            vc->vcb(vc->av, vc->friend_number, dest->d_w, dest->d_h,
+                    (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
+                    dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb_user_data);
         }
 
         vpx_img_free(dest); // is this needed? none of the VPx examples show that

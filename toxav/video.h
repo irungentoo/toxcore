@@ -24,7 +24,6 @@
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-#include "pair.h"
 
 #include <vpx/vpx_decoder.h>
 #include <vpx/vpx_encoder.h>
@@ -55,7 +54,9 @@ typedef struct VCSession_s {
     ToxAV *av;
     uint32_t friend_number;
 
-    PAIR(toxav_video_receive_frame_cb *, void *) vcb; /* Video frame receive callback */
+    /* Video frame receive callback */
+    toxav_video_receive_frame_cb *vcb;
+    void *vcb_user_data;
 
     pthread_mutex_t queue_mutex[1];
 } VCSession;

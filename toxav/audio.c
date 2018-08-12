@@ -100,8 +100,8 @@ ACSession *ac_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_au
 
     ac->av = av;
     ac->friend_number = friend_number;
-    ac->acb.first = cb;
-    ac->acb.second = cb_data;
+    ac->acb = cb;
+    ac->acb_user_data = cb_data;
 
     return ac;
 
@@ -201,11 +201,11 @@ void ac_iterate(ACSession *ac)
 
         if (rc < 0) {
             LOGGER_WARNING(ac->log, "Decoding error: %s", opus_strerror(rc));
-        } else if (ac->acb.first) {
+        } else if (ac->acb) {
             ac->lp_frame_duration = (rc * 1000) / ac->lp_sampling_rate;
 
-            ac->acb.first(ac->av, ac->friend_number, temp_audio_buffer, rc, ac->lp_channel_count,
-                          ac->lp_sampling_rate, ac->acb.second);
+            ac->acb(ac->av, ac->friend_number, temp_audio_buffer, rc, ac->lp_channel_count,
+                    ac->lp_sampling_rate, ac->acb_user_data);
         }
 
         return;

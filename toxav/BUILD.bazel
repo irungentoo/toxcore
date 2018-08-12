@@ -65,16 +65,10 @@ cc_test(
 )
 
 cc_library(
-    name = "pair",
-    hdrs = ["pair.h"],
-)
-
-cc_library(
     name = "audio",
     srcs = ["audio.c"],
     hdrs = ["audio.h"],
     deps = [
-        ":pair",
         ":public",
         ":rtp",
         "//c-toxcore/toxcore:network",
@@ -94,7 +88,6 @@ cc_library(
     ],
     deps = [
         ":audio",
-        ":pair",
         ":public",
         "//c-toxcore/toxcore:network",
         "@libvpx",

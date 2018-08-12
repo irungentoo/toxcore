@@ -24,7 +24,6 @@
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
-#include "pair.h"
 
 #include <opus.h>
 #include <pthread.h>
@@ -74,7 +73,9 @@ typedef struct ACSession_s {
 
     ToxAV *av;
     uint32_t friend_number;
-    PAIR(toxav_audio_receive_frame_cb *, void *) acb; /* Audio frame receive callback */
+    /* Audio frame receive callback */
+    toxav_audio_receive_frame_cb *acb;
+    void *acb_user_data;
 } ACSession;
 
 ACSession *ac_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_audio_receive_frame_cb *cb,
