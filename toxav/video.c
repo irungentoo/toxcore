@@ -72,8 +72,14 @@
 #define VIDEO_BITRATE_INITIAL_VALUE 5000
 #define VIDEO_DECODE_BUFFER_SIZE 5 // this buffer has normally max. 1 entry
 
-#define VIDEO_CODEC_DECODER_INTERFACE (vpx_codec_vp8_dx())
-#define VIDEO_CODEC_ENCODER_INTERFACE (vpx_codec_vp8_cx())
+static const vpx_codec_iface_t *video_codec_decoder_interface(void)
+{
+    return vpx_codec_vp8_dx();
+}
+static const vpx_codec_iface_t *video_codec_encoder_interface(void)
+{
+    return vpx_codec_vp8_cx();
+}
 
 #define VIDEO_CODEC_DECODER_MAX_WIDTH  800 // its a dummy value, because the struct needs a value there
 #define VIDEO_CODEC_DECODER_MAX_HEIGHT 600 // its a dummy value, because the struct needs a value there
@@ -86,7 +92,7 @@
 
 static void vc_init_encoder_cfg(const Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t kf_max_dist)
 {
-    vpx_codec_err_t rc = vpx_codec_enc_config_default(VIDEO_CODEC_ENCODER_INTERFACE, cfg, 0);
+    vpx_codec_err_t rc = vpx_codec_enc_config_default(video_codec_encoder_interface(), cfg, 0);
 
     if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR(log, "vc_init_encoder_cfg:Failed to get config: %s", vpx_codec_err_to_string(rc));
@@ -171,7 +177,9 @@ VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_vi
 
     int cpu_used_value = VP8E_SET_CPUUSED_VALUE;
 
-    if (!(vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE))) {
+    vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE);
+
+    if (!vc->vbuf_raw) {
         goto BASE_CLEANUP;
     }
 
@@ -188,12 +196,12 @@ VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_vi
     dec_cfg.h = VIDEO_CODEC_DECODER_MAX_HEIGHT;
 
     LOGGER_DEBUG(log, "Using VP8 codec for decoder (0)");
-    rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, &dec_cfg,
+    rc = vpx_codec_dec_init(vc->decoder, video_codec_decoder_interface(), &dec_cfg,
                             VPX_CODEC_USE_FRAME_THREADING | VPX_CODEC_USE_POSTPROC);
 
     if (rc == VPX_CODEC_INCAPABLE) {
         LOGGER_WARNING(log, "Postproc not supported by this decoder (0)");
-        rc = vpx_codec_dec_init(vc->decoder, VIDEO_CODEC_DECODER_INTERFACE, &dec_cfg, VPX_CODEC_USE_FRAME_THREADING);
+        rc = vpx_codec_dec_init(vc->decoder, video_codec_decoder_interface(), &dec_cfg, VPX_CODEC_USE_FRAME_THREADING);
     }
 
     if (rc != VPX_CODEC_OK) {
@@ -227,7 +235,7 @@ VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_vi
     vc_init_encoder_cfg(log, &cfg, 1);
 
     LOGGER_DEBUG(log, "Using VP8 codec for encoder (0.1)");
-    rc = vpx_codec_enc_init(vc->encoder, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, VPX_CODEC_USE_FRAME_THREADING);
+    rc = vpx_codec_enc_init(vc->encoder, video_codec_encoder_interface(), &cfg, VPX_CODEC_USE_FRAME_THREADING);
 
     if (rc != VPX_CODEC_OK) {
         LOGGER_ERROR(log, "Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
@@ -424,7 +432,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
         cfg.g_h = height;
 
         LOGGER_DEBUG(vc->log, "Using VP8 codec for encoder");
-        rc = vpx_codec_enc_init(&new_c, VIDEO_CODEC_ENCODER_INTERFACE, &cfg, VPX_CODEC_USE_FRAME_THREADING);
+        rc = vpx_codec_enc_init(&new_c, video_codec_encoder_interface(), &cfg, VPX_CODEC_USE_FRAME_THREADING);
 
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR(vc->log, "Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));
