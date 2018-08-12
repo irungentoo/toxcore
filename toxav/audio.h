@@ -24,6 +24,7 @@
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
+#include "rtp.h"
 
 #include <opus.h>
 #include <pthread.h>
@@ -47,8 +48,6 @@
 // These are per frame and per channel.
 #define AUDIO_MAX_BUFFER_SIZE_PCM16 ((AUDIO_MAX_SAMPLE_RATE * AUDIO_MAX_FRAME_DURATION_MS) / 1000)
 #define AUDIO_MAX_BUFFER_SIZE_BYTES (AUDIO_MAX_BUFFER_SIZE_PCM16 * 2)
-
-struct RTPMessage;
 
 typedef struct ACSession_s {
     const Logger *log;
