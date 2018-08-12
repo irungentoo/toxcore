@@ -262,7 +262,10 @@ static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t frien
     }
 
     peer_av->buffer = create_queue(GROUP_JBUF_SIZE);
-    group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av);
+
+    if (group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av) == -1) {
+        free(peer_av);
+    }
 }
 
 static void group_av_peer_delete(void *object, uint32_t groupnumber, void *peer_object)
