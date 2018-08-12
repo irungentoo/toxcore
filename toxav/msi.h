@@ -32,7 +32,7 @@
 /**
  * Error codes.
  */
-typedef enum {
+typedef enum MSIError {
     MSI_E_NONE,
     MSI_E_INVALID_MESSAGE,
     MSI_E_INVALID_PARAM,
@@ -46,7 +46,7 @@ typedef enum {
 /**
  * Supported capabilities
  */
-typedef enum {
+typedef enum MSICapabilities {
     MSI_CAP_S_AUDIO = 4,  /* sending audio */
     MSI_CAP_S_VIDEO = 8,  /* sending video */
     MSI_CAP_R_AUDIO = 16, /* receiving audio */
@@ -57,7 +57,7 @@ typedef enum {
 /**
  * Call state identifiers.
  */
-typedef enum {
+typedef enum MSICallState {
     MSI_CALL_INACTIVE, /* Default */
     MSI_CALL_ACTIVE,
     MSI_CALL_REQUESTING, /* when sending call invite */
@@ -67,7 +67,7 @@ typedef enum {
 /**
  * Callbacks ids that handle the states
  */
-typedef enum {
+typedef enum MSICallbackID {
     MSI_ON_INVITE, /* Incoming call */
     MSI_ON_START, /* Call (RTP transmission) started */
     MSI_ON_END, /* Call that was active ended */
@@ -89,7 +89,7 @@ typedef struct MSICall_s {
     uint32_t             friend_number;     /* Index of this call in MSISession */
     MSIError             error;             /* Last error */
 
-    void                *av_call;           /* Pointer to av call handler */
+    struct ToxAVCall_s  *av_call;           /* Pointer to av call handler */
 
     struct MSICall_s    *next;
     struct MSICall_s    *prev;

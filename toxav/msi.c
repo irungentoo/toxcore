@@ -40,33 +40,37 @@
  * |id [1 byte]| |size [1 byte]| |data [$size bytes]| |...{repeat}| |0 {end byte}|
  */
 
-typedef enum {
+typedef enum MSIHeaderID {
     ID_REQUEST = 1,
     ID_ERROR,
     ID_CAPABILITIES,
 } MSIHeaderID;
 
 
-typedef enum {
+typedef enum MSIRequest {
     REQU_INIT,
     REQU_PUSH,
     REQU_POP,
 } MSIRequest;
 
 
-#define GENERIC_HEADER(header, val_type) \
-typedef struct { \
-    val_type value; \
-    bool exists; \
-} MSIHeader##header
+typedef struct MSIHeaderRequest {
+    MSIRequest value;
+    bool exists;
+} MSIHeaderRequest;
+
+typedef struct MSIHeaderError {
+    MSIError value;
+    bool exists;
+} MSIHeaderError;
+
+typedef struct MSIHeaderCapabilities {
+    uint8_t value;
+    bool exists;
+} MSIHeaderCapabilities;
 
 
-GENERIC_HEADER(Request, MSIRequest);
-GENERIC_HEADER(Error, MSIError);
-GENERIC_HEADER(Capabilities, uint8_t);
-
-
-typedef struct {
+typedef struct MSIMessage {
     MSIHeaderRequest      request;
     MSIHeaderError        error;
     MSIHeaderCapabilities capabilities;
@@ -185,14 +189,14 @@ int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint
         return -1;
     }
 
-    (*call) = new_call(session, friend_number);
+    MSICall *temp = new_call(session, friend_number);
 
-    if (*call == nullptr) {
+    if (temp == nullptr) {
         pthread_mutex_unlock(session->mutex);
         return -1;
     }
 
-    (*call)->self_capabilities = capabilities;
+    temp->self_capabilities = capabilities;
 
     MSIMessage msg;
     msg_init(&msg, REQU_INIT);
@@ -200,9 +204,11 @@ int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint
     msg.capabilities.exists = true;
     msg.capabilities.value = capabilities;
 
-    send_message((*call)->session->messenger, (*call)->friend_number, &msg);
+    send_message(temp->session->messenger, temp->friend_number, &msg);
 
-    (*call)->state = MSI_CALL_REQUESTING;
+    temp->state = MSI_CALL_REQUESTING;
+
+    *call = temp;
 
     LOGGER_DEBUG(session->messenger->log, "Invite sent");
     pthread_mutex_unlock(session->mutex);
@@ -328,18 +334,27 @@ int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint1
 {
     /* Parse raw data received from socket into MSIMessage struct */
 
-#define CHECK_SIZE(bytes, constraint, size) \
-    if ((constraint -= (2 + size)) < 1) { LOGGER_ERROR(log, "Read over length!"); return -1; } \
-    if (bytes[1] != size) { LOGGER_ERROR(log, "Invalid data size!"); return -1; }
+#define CHECK_SIZE(bytes, constraint, size)          \
+    do {                                             \
+        constraint -= 2 + size;                      \
+        if (constraint < 1) {                        \
+            LOGGER_ERROR(log, "Read over length!");  \
+            return -1;                               \
+        }                                            \
+        if (bytes[1] != size) {                      \
+            LOGGER_ERROR(log, "Invalid data size!"); \
+            return -1;                               \
+        }                                            \
+    } while (0)
 
-#define CHECK_ENUM_HIGH(bytes, enum_high) /* Assumes size == 1 */ \
-    if (bytes[2] > enum_high) { LOGGER_ERROR(log, "Failed enum high limit!"); return -1; }
-
-#define SET_UINT8(type, bytes, header) do { \
-        header.value = (type)bytes[2]; \
-        header.exists = true; \
-        bytes += 3; \
-    } while(0)
+    /* Assumes size == 1 */
+#define CHECK_ENUM_HIGH(bytes, enum_high)                 \
+    do {                                                  \
+        if (bytes[2] > enum_high) {                       \
+            LOGGER_ERROR(log, "Failed enum high limit!"); \
+            return -1;                                    \
+        }                                                 \
+    } while (0)
 
     assert(dest);
 
@@ -358,18 +373,24 @@ int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint1
             case ID_REQUEST:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, REQU_POP);
-                SET_UINT8(MSIRequest, it, dest->request);
+                dest->request.value = (MSIRequest)it[2];
+                dest->request.exists = true;
+                it += 3;
                 break;
 
             case ID_ERROR:
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, MSI_E_UNDISCLOSED);
-                SET_UINT8(MSIError, it, dest->error);
+                dest->error.value = (MSIError)it[2];
+                dest->error.exists = true;
+                it += 3;
                 break;
 
             case ID_CAPABILITIES:
                 CHECK_SIZE(it, size_constraint, 1);
-                SET_UINT8(uint8_t, it, dest->capabilities);
+                dest->capabilities.value = it[2];
+                dest->capabilities.exists = true;
+                it += 3;
                 break;
 
             default:
@@ -383,11 +404,10 @@ int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint1
         return -1;
     }
 
-    return 0;
-
-#undef CHECK_SIZE
 #undef CHECK_ENUM_HIGH
-#undef SET_UINT8
+#undef CHECK_SIZE
+
+    return 0;
 }
 uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len, uint16_t *length)
 {
@@ -397,9 +417,9 @@ uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, 
     assert(value_len);
 
     *dest = id;
-    dest ++;
+    ++dest;
     *dest = value_len;
-    dest ++;
+    ++dest;
 
     memcpy(dest, value, value_len);
 
@@ -443,7 +463,7 @@ int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *msg)
     }
 
     *it = 0;
-    size ++;
+    ++size;
 
     if (m_msi_packet(m, friend_number, parsed, size)) {
         LOGGER_DEBUG(m->log, "Sent message");
@@ -526,7 +546,8 @@ MSICall *new_call(MSISession *session, uint32_t friend_number)
             return nullptr;
         }
 
-        session->calls_tail = session->calls_head = friend_number;
+        session->calls_tail = friend_number;
+        session->calls_head = friend_number;
     } else if (session->calls_tail < friend_number) { /* Appending */
         MSICall **tmp = (MSICall **)realloc(session->calls, sizeof(MSICall *) * (friend_number + 1));
 
@@ -540,7 +561,7 @@ MSICall *new_call(MSISession *session, uint32_t friend_number)
         /* Set fields in between to null */
         uint32_t i = session->calls_tail + 1;
 
-        for (; i < friend_number; i ++) {
+        for (; i < friend_number; ++i) {
             session->calls[i] = nullptr;
         }
 
@@ -592,14 +613,14 @@ void kill_call(MSICall *call)
     return;
 
 CLEAR_CONTAINER:
-    session->calls_head = session->calls_tail = 0;
+    session->calls_head = 0;
+    session->calls_tail = 0;
     free(session->calls);
     free(call);
     session->calls = nullptr;
 }
 void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data)
 {
-    (void)m;
     MSISession *session = (MSISession *)data;
 
     switch (status) {
