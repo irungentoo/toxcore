@@ -30,6 +30,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <syslog.h>
 
 void log_backend_syslog_open(void)
@@ -72,8 +73,9 @@ void log_backend_syslog_write(LOG_LEVEL level, const char *format, va_list args)
         return;
     }
 
-    VLA(char, buf, size + 1);
+    char *buf = (char *)malloc(size + 1);
     vsnprintf(buf, size + 1, format, args);
 
     syslog(log_backend_syslog_level(level), "%s", buf);
+    free(buf);
 }

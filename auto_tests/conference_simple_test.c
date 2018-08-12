@@ -99,9 +99,10 @@ static void handle_conference_peer_list_changed(Tox *tox, uint32_t conference_nu
             return;
         }
 
-        TOX_ERR_CONFERENCE_INVITE err;
-        tox_conference_invite(tox, 1, state->conference, &err);
-        ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "tox2 failed to invite tox3: err = %d", err);
+        TOX_ERR_CONFERENCE_INVITE err_invite;
+        tox_conference_invite(tox, 1, state->conference, &err_invite);
+        ck_assert_msg(err_invite == TOX_ERR_CONFERENCE_INVITE_OK,
+                      "tox2 failed to invite tox3: err = %d", err_invite);
 
         state->invited_next = true;
         fprintf(stderr, "tox2 invited tox3\n");

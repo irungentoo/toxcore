@@ -73,13 +73,13 @@ void handle_command_line_arguments(int argc, char *argv[], char **cfg_file_path,
 
     opterr = 0;
 
-    static struct option long_options[] = {
-        {"config",      required_argument, 0, 'c'}, // required option
-        {"foreground",  no_argument,       0, 'f'},
-        {"help",        no_argument,       0, 'h'},
-        {"log-backend", required_argument, 0, 'l'}, // optional, defaults to syslog
-        {"version",     no_argument,       0, 'v'},
-        {0,             0,                 0,  0 }
+    static const struct option long_options[] = {
+        {"config",      required_argument, nullptr, 'c'}, // required option
+        {"foreground",  no_argument,       nullptr, 'f'},
+        {"help",        no_argument,       nullptr, 'h'},
+        {"log-backend", required_argument, nullptr, 'l'}, // optional, defaults to syslog
+        {"version",     no_argument,       nullptr, 'v'},
+        {nullptr,       0,                 nullptr,  0 }
     };
 
     bool cfg_file_path_set = false;

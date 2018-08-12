@@ -73,7 +73,7 @@ static void conference_double_invite_test(Tox **toxes, State *state)
     fprintf(stderr, "Invitations accepted\n");
 
     // Invite one more time, resulting in friend -1 inviting tox1 (toxes[1]).
-    tox_conference_invite(toxes[0], 0, state[0].conference, 0);
+    tox_conference_invite(toxes[0], 0, state[0].conference, nullptr);
 
     tox_iterate(toxes[0], &state[0]);
     tox_iterate(toxes[1], &state[1]);

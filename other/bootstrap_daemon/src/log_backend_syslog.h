@@ -31,6 +31,6 @@
 
 void log_backend_syslog_open(void);
 void log_backend_syslog_close(void);
-void log_backend_syslog_write(LOG_LEVEL level, const char *format, va_list args);
+void log_backend_syslog_write(LOG_LEVEL level, const char *format, va_list args) GNU_PRINTF(2, 0);
 
 #endif // LOG_BACKEND_SYSLOG_H

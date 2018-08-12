@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    dht_addfriend(dht, bin_id, 0, 0, 0, 0);
+    dht_addfriend(dht, bin_id, nullptr, nullptr, 0, nullptr);
     free(bin_id);
 
     perror("Initialization");

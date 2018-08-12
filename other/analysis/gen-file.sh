@@ -43,6 +43,7 @@ echo "#include <random>" >> amalgamation.cc
 put auto_tests/check_compat.h
 
 FIND_QUERY="find . '-(' -name '*.cc' -or -name '*.c' '-)'"
+FIND_QUERY="$FIND_QUERY -and -not -wholename './_build/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './super_donators/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './toxav/*.cc'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './toxcore/*.cc'"

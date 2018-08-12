@@ -53,7 +53,7 @@ static void print_message(Messenger *m, uint32_t friendnumber, unsigned int type
                           void *userdata)
 {
     printf("Message with length %u received from %u: %s \n", (unsigned)length, friendnumber, string);
-    m_send_message_generic(m, friendnumber, type, (const uint8_t *)"Test1", 6, 0);
+    m_send_message_generic(m, friendnumber, type, (const uint8_t *)"Test1", 6, nullptr);
 }
 
 /* TODO(irungentoo): needed as print_request has to match the interface expected by
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     Messenger_Options options = {0};
     options.ipv6enabled = ipv6enabled;
-    m = new_messenger(&options, 0);
+    m = new_messenger(&options, nullptr);
 
     if (!m) {
         fputs("Failed to allocate messenger datastructure\n", stderr);
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
         getname(m, num, name);
         printf("%s\n", name);
 
-        m_send_message_generic(m, num, MESSAGE_NORMAL, (const uint8_t *)"Test", 5, 0);
+        m_send_message_generic(m, num, MESSAGE_NORMAL, (const uint8_t *)"Test", 5, nullptr);
         do_messenger(m, nullptr);
         c_sleep(30);
         FILE *file = fopen("Save.bak", "wb");
