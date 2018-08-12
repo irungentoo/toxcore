@@ -24,9 +24,9 @@
 
 typedef struct BWController_s BWController;
 
-BWController *bwc_new(Messenger *m, uint32_t friendnumber,
-                      void (*mcb)(BWController *, uint32_t, float, void *),
-                      void *udata);
+typedef void m_cb(BWController *bwc, uint32_t friend_number, float todo, void *user_data);
+
+BWController *bwc_new(Messenger *m, uint32_t friendnumber, m_cb *mcb, void *mcb_user_data);
 
 void bwc_kill(BWController *bwc);
 
