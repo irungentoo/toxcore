@@ -147,6 +147,16 @@ travis_install() {
 
     start_vm
 
+    # Login as root user
+    send_keys 'root
+
+'
+    wait_for "Password:"
+    send_keys '
+'
+    # Wait for the prompt
+    wait_for "root@.*:~"
+
     # Update system
     RUN PAGER=cat ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron fetch
     RUN PAGER=cat ASSUME_ALWAYS_YES=YES freebsd-update --not-running-from-cron install || true
