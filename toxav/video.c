@@ -343,9 +343,10 @@ void vc_iterate(VCSession *vc)
 
     /* Play decoded images */
     vpx_codec_iter_t iter = nullptr;
-    vpx_image_t *dest = nullptr;
 
-    while ((dest = vpx_codec_get_frame(vc->decoder, &iter)) != nullptr) {
+    for (vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
+            dest != nullptr;
+            dest = vpx_codec_get_frame(vc->decoder, &iter)) {
         if (vc->vcb) {
             vc->vcb(vc->av, vc->friend_number, dest->d_w, dest->d_h,
                     (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],

@@ -58,9 +58,9 @@
 
 /** Messages. **/
 
-#define PACKET_ID_PADDING 0 /* Denotes padding */
-#define PACKET_ID_REQUEST 1 /* Used to request unreceived packets */
-#define PACKET_ID_KILL    2 /* Used to kill connection */
+#define PACKET_ID_PADDING 0 // Denotes padding
+#define PACKET_ID_REQUEST 1 // Used to request unreceived packets
+#define PACKET_ID_KILL    2 // Used to kill connection
 
 #define PACKET_ID_ONLINE 24
 #define PACKET_ID_OFFLINE 25
@@ -69,8 +69,8 @@
 #define PACKET_ID_USERSTATUS 50
 #define PACKET_ID_TYPING 51
 #define PACKET_ID_MESSAGE 64
-#define PACKET_ID_ACTION 65 /* PACKET_ID_MESSAGE + MESSAGE_ACTION */
-#define PACKET_ID_MSI 69    /* Used by AV to setup calls and etc */
+#define PACKET_ID_ACTION 65 // PACKET_ID_MESSAGE + MESSAGE_ACTION
+#define PACKET_ID_MSI 69    // Used by AV to setup calls and etc
 #define PACKET_ID_FILE_SENDREQUEST 80
 #define PACKET_ID_FILE_CONTROL 81
 #define PACKET_ID_FILE_DATA 82
@@ -91,7 +91,7 @@ typedef enum Crypto_Conn_State {
 } Crypto_Conn_State;
 
 /* Maximum size of receiving and sending packet buffers. */
-#define CRYPTO_PACKET_BUFFER_SIZE 32768 /* Must be a power of 2 */
+#define CRYPTO_PACKET_BUFFER_SIZE 32768 // Must be a power of 2
 
 /* Minimum packet rate per second. */
 #define CRYPTO_PACKET_MIN_RATE 4.0
@@ -120,7 +120,8 @@ typedef enum Crypto_Conn_State {
 #define MAX_TCP_CONNECTIONS 64
 #define MAX_TCP_RELAYS_PEER 4
 
-#define CRYPTO_MAX_PADDING 8 /* All packets will be padded a number of bytes based on this number. */
+/* All packets will be padded a number of bytes based on this number. */
+#define CRYPTO_MAX_PADDING 8
 
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
    at the dT defined in net_crypto.c */
