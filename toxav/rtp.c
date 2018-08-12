@@ -35,13 +35,11 @@
 #include "../toxcore/mono_time.h"
 #include "../toxcore/util.h"
 
-enum {
-    /**
-     * The number of milliseconds we want to keep a keyframe in the buffer for,
-     * even though there are no free slots for incoming frames.
-     */
-    VIDEO_KEEP_KEYFRAME_IN_BUFFER_FOR_MS = 15,
-};
+/**
+ * The number of milliseconds we want to keep a keyframe in the buffer for,
+ * even though there are no free slots for incoming frames.
+ */
+#define VIDEO_KEEP_KEYFRAME_IN_BUFFER_FOR_MS 15
 
 // allocate_len is NOT including header!
 static struct RTPMessage *new_message(const struct RTPHeader *header, size_t allocate_len, const uint8_t *data,
@@ -60,16 +58,15 @@ static struct RTPMessage *new_message(const struct RTPHeader *header, size_t all
     return msg;
 }
 
-enum {
-    /**
-     * Instruct the caller to clear slot 0.
-     */
-    GET_SLOT_RESULT_DROP_OLDEST_SLOT = -1,
-    /**
-     * Instruct the caller to drop the incoming packet.
-     */
-    GET_SLOT_RESULT_DROP_INCOMING = -2,
-};
+/**
+ * Instruct the caller to clear slot 0.
+ */
+#define GET_SLOT_RESULT_DROP_OLDEST_SLOT (-1)
+
+/**
+ * Instruct the caller to drop the incoming packet.
+ */
+#define GET_SLOT_RESULT_DROP_INCOMING (-2)
 
 /**
  * Find the next free slot in work_buffer for the incoming data packet.
@@ -89,7 +86,7 @@ static int8_t get_slot(const Logger *log, struct RTPWorkBufferList *wkbl, bool i
     if (is_multipart) {
         // This RTP message is part of a multipart frame, so we try to find an
         // existing slot with the previous parts of the frame in it.
-        for (uint8_t i = 0; i < wkbl->next_free_entry; i++) {
+        for (uint8_t i = 0; i < wkbl->next_free_entry; ++i) {
             const struct RTPWorkBuffer *slot = &wkbl->work_buffer[i];
 
             if ((slot->buf->header.sequnum == header->sequnum) && (slot->buf->header.timestamp == header->timestamp)) {
@@ -228,14 +225,14 @@ static struct RTPMessage *process_frame(const Logger *log, struct RTPWorkBufferL
     if (slot_id != wkbl->next_free_entry - 1) {
         // The slot is not the last slot, so we created a gap. We move all the
         // entries after it one step up.
-        for (uint8_t i = slot_id; i < wkbl->next_free_entry - 1; i++) {
+        for (uint8_t i = slot_id; i < wkbl->next_free_entry - 1; ++i) {
             // Move entry (i+1) into entry (i).
             wkbl->work_buffer[i] = wkbl->work_buffer[i + 1];
         }
     }
 
     // We now have a free entry at the end of the array.
-    wkbl->next_free_entry--;
+    --wkbl->next_free_entry;
 
     // Clear the newly freed entry.
     const struct RTPWorkBuffer empty = {0};
@@ -290,7 +287,7 @@ static bool fill_data_into_slot(const Logger *log, struct RTPWorkBufferList *wkb
         slot->received_len = 0;
 
         assert(wkbl->next_free_entry < USED_RTP_WORKBUFFER_COUNT);
-        wkbl->next_free_entry++;
+        ++wkbl->next_free_entry;
     }
 
     // We already checked this when we received the packet, but we rely on it
@@ -317,7 +314,7 @@ static bool fill_data_into_slot(const Logger *log, struct RTPWorkBufferList *wkb
 static void update_bwc_values(const Logger *log, RTPSession *session, const struct RTPMessage *msg)
 {
     if (session->first_packets_counter < DISMISS_FIRST_LOST_VIDEO_PACKET_COUNT) {
-        session->first_packets_counter++;
+        ++session->first_packets_counter;
     } else {
         uint32_t data_length_full = msg->header.data_length_full; // without header
         uint32_t received_length_full = msg->header.received_length_full; // without header
@@ -586,12 +583,14 @@ NEW_MULTIPARTED:
 size_t rtp_header_pack(uint8_t *const rdata, const struct RTPHeader *header)
 {
     uint8_t *p = rdata;
-    *p++ = (header->ve & 3) << 6
-           | (header->pe & 1) << 5
-           | (header->xe & 1) << 4
-           | (header->cc & 0xf);
-    *p++ = (header->ma & 1) << 7
-           | (header->pt & 0x7f);
+    *p = (header->ve & 3) << 6
+         | (header->pe & 1) << 5
+         | (header->xe & 1) << 4
+         | (header->cc & 0xf);
+    ++p;
+    *p = (header->ma & 1) << 7
+         | (header->pt & 0x7f);
+    ++p;
 
     p += net_pack_u16(p, header->sequnum);
     p += net_pack_u32(p, header->timestamp);
@@ -601,7 +600,7 @@ size_t rtp_header_pack(uint8_t *const rdata, const struct RTPHeader *header)
     p += net_pack_u32(p, header->data_length_full);
     p += net_pack_u32(p, header->received_length_full);
 
-    for (size_t i = 0; i < RTP_PADDING_FIELDS; i++) {
+    for (size_t i = 0; i < RTP_PADDING_FIELDS; ++i) {
         p += net_pack_u32(p, 0);
     }
 
@@ -640,10 +639,8 @@ size_t rtp_header_unpack(const uint8_t *data, struct RTPHeader *header)
     return p - data;
 }
 
-
 RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
-                    BWController *bwc, void *cs,
-                    int (*mcb)(void *, struct RTPMessage *))
+                    BWController *bwc, void *cs, rtp_m_cb *mcb)
 {
     assert(mcb != nullptr);
     assert(cs != nullptr);
@@ -851,6 +848,6 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
         }
     }
 
-    session->sequnum ++;
+    ++session->sequnum;
     return 0;
 }
