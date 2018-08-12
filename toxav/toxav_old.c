@@ -35,13 +35,10 @@
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int,
-                           uint8_t, uint32_t, void *), void *userdata)
+int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userdata)
 {
     Messenger *m = (Messenger *)tox;
-    return add_av_groupchat(m->log, m->conferences_object,
-                            (void (*)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *))audio_callback,
-                            userdata);
+    return add_av_groupchat(m->log, m->conferences_object, audio_callback, userdata);
 }
 
 /* Join a AV group (you need to have been invited first.)
@@ -55,14 +52,10 @@ int toxav_add_av_groupchat(Tox *tox, void (*audio_callback)(void *, uint32_t, ui
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
 int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)
-                            (void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
-                            void *userdata)
+                            audio_data_cb *audio_callback, void *userdata)
 {
     Messenger *m = (Messenger *)tox;
-    return join_av_groupchat(m->log, m->conferences_object, friendnumber, data, length,
-                             (void (*)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *))audio_callback,
-                             userdata);
+    return join_av_groupchat(m->log, m->conferences_object, friendnumber, data, length, audio_callback, userdata);
 }
 
 /* Send audio to the group chat.

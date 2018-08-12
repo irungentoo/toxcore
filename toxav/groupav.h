@@ -27,13 +27,15 @@
 
 #define GROUP_AUDIO_PACKET_ID 192
 
+typedef void audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm,
+                           uint32_t samples, uint8_t channels, uint32_t sample_rate, void *userdata);
+
 /* Create a new toxav group.
  *
  * return group number on success.
  * return -1 on failure.
  */
-int add_av_groupchat(const Logger *log, Group_Chats *g_c, void (*audio_callback)(Messenger *, uint32_t, uint32_t,
-                     const int16_t *, unsigned int, uint8_t, uint32_t, void *), void *userdata);
+int add_av_groupchat(const Logger *log, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata);
 
 /* Join a AV group (you need to have been invited first.)
  *
@@ -41,8 +43,7 @@ int add_av_groupchat(const Logger *log, Group_Chats *g_c, void (*audio_callback)
  * returns -1 on failure.
  */
 int join_av_groupchat(const Logger *log, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data, uint16_t length,
-                      void (*audio_callback)(Messenger *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
-                      void *userdata);
+                      audio_data_cb *audio_callback, void *userdata);
 
 
 /* Send audio to the group chat.
