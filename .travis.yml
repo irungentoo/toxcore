@@ -82,6 +82,12 @@ matrix:
     script:        .travis/$JOB-stage1 script
   - stage: "Stage 1"
     if: type IN (push, api, cron)
+    env: JOB=cmake-osx
+    os: osx
+    install:       .travis/$JOB install
+    script:        .travis/$JOB script
+  - stage: "Stage 1"
+    if: type IN (push, api, cron)
     env: JOB=tox-bootstrapd-docker
     services: [docker]
     script:        .travis/$JOB
@@ -91,12 +97,6 @@ matrix:
     sudo: required
     install:       .travis/$JOB-stage2 install
     script:        .travis/$JOB-stage2 script
-  - stage: "Stage 2"
-    if: type IN (push, api, cron)
-    env: JOB=cmake-osx
-    os: osx
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
   fast_finish: true
 
 cache:
