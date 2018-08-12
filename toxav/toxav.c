@@ -245,18 +245,14 @@ void toxav_iterate(ToxAV *av)
             ac_iterate(i->audio.second);
             vc_iterate(i->video.second);
 
-            // TODO(iphydf): Find out what MIN-semantics are desired here and
-            // use a min_* function from util.h.
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
             if (i->msi_call->self_capabilities & msi_CapRAudio &&
                     i->msi_call->peer_capabilities & msi_CapSAudio) {
-                rc = MIN(i->audio.second->lp_frame_duration, rc);
+                rc = min_s32(i->audio.second->lp_frame_duration, rc);
             }
 
             if (i->msi_call->self_capabilities & msi_CapRVideo &&
                     i->msi_call->peer_capabilities & msi_CapSVideo) {
-                rc = MIN(i->video.second->lcfd, (uint32_t) rc);
+                rc = min_u32(i->video.second->lcfd, rc);
             }
 
             uint32_t fid = i->friend_number;
