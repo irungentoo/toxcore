@@ -24,6 +24,7 @@ TESTS = \
 	onion_test \
 	overflow_recvq_test \
 	overflow_sendq_test \
+	reconnect_test \
 	save_compatibility_test \
 	save_friend_test \
 	save_load_test \
@@ -153,6 +154,10 @@ overflow_recvq_test_LDADD = $(AUTOTEST_LDADD)
 overflow_sendq_test_SOURCES = ../auto_tests/overflow_sendq_test.c
 overflow_sendq_test_CFLAGS = $(AUTOTEST_CFLAGS)
 overflow_sendq_test_LDADD = $(AUTOTEST_LDADD)
+
+reconnect_test_SOURCES = ../auto_tests/reconnect_test.c
+reconnect_test_CFLAGS = $(AUTO_TEST_CFLAGS)
+reconnect_test_LDADD = $(AUTOTEST_LDADD)
 
 save_compatibility_test_SOURCES = ../auto_tests/save_compatibility_test.c
 save_compatibility_test_CFLAGS = $(AUTOTEST_CFLAGS)

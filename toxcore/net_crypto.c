@@ -634,11 +634,26 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
         v6 = 1;
     }
 
+    /* Prefer IP_Ports which haven't timed out to those which have.
+     * To break ties, prefer ipv4 lan, then ipv6, then non-lan ipv4.
+     */
     if (v4 && ip_is_lan(conn->ip_portv4.ip)) {
         return conn->ip_portv4;
     }
 
     if (v6 && net_family_is_ipv6(conn->ip_portv6.ip.family)) {
+        return conn->ip_portv6;
+    }
+
+    if (v4 && net_family_is_ipv4(conn->ip_portv4.ip.family)) {
+        return conn->ip_portv4;
+    }
+
+    if (ip_is_lan(conn->ip_portv4.ip)) {
+        return conn->ip_portv4;
+    }
+
+    if (net_family_is_ipv6(conn->ip_portv6.ip.family)) {
         return conn->ip_portv6;
     }
 
