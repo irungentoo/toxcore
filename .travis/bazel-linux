@@ -10,7 +10,8 @@ travis_install() {
   chmod +x bazel-0.15.0-installer-linux-x86_64.sh
   ./bazel-0.15.0-installer-linux-x86_64.sh --user
   echo 'build --jobs=4 --curses=no --verbose_failures' >> $HOME/.bazelrc
-  echo "import %workspace%/tools/bazelrc/linux-$CC" >> $HOME/.bazelrc
+  echo 'build --config=linux' >> $HOME/.bazelrc
+  echo "build --config=$CC" >> $HOME/.bazelrc
 }
 
 travis_script() {
