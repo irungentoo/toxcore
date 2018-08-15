@@ -27,6 +27,7 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,12 +83,12 @@ static void load_data_decrypted(void)
     int64_t size = ftell(f);
     fseek(f, 0, SEEK_SET);
 
-    ck_assert_msg(0 <= size && size <= SIZE_MAX, "file size out of range");
+    ck_assert_msg(0 <= size && size <= UINT_MAX, "file size out of range");
 
     uint8_t *cipher = (uint8_t *)malloc(size);
     uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
-    printf("Read read_vavue = %u of %lu\n", (unsigned)read_value, (unsigned long)size);
+    printf("Read read_value = %u of %u\n", (unsigned)read_value, (unsigned)size);
 
     TOX_ERR_DECRYPTION derr;
 
