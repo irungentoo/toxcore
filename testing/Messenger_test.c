@@ -171,31 +171,43 @@ int main(int argc, char *argv[])
     }
 
     uint8_t *bin_id = hex_string_to_bin(temp_hex_id);
-    int num = m_addfriend(m, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
+    const int num = m_addfriend(m, bin_id, (const uint8_t *)"Install Gentoo", sizeof("Install Gentoo"));
     free(bin_id);
 
     perror("Initialization");
 
     while (1) {
         uint8_t name[128];
+        const char *const filename = "Save.bak";
         getname(m, num, name);
         printf("%s\n", name);
 
         m_send_message_generic(m, num, MESSAGE_NORMAL, (const uint8_t *)"Test", 5, nullptr);
         do_messenger(m, nullptr);
         c_sleep(30);
-        FILE *file = fopen("Save.bak", "wb");
+        FILE *file = fopen(filename, "wb");
 
         if (file == nullptr) {
+            printf("Failed to open file %s\n", filename);
             kill_messenger(m);
             return 1;
         }
 
         uint8_t *buffer = (uint8_t *)malloc(messenger_size(m));
+
+        if (buffer == nullptr) {
+            fputs("Failed to allocate memory\n", stderr);
+            fclose(file);
+            kill_messenger(m);
+            return 1;
+        }
+
         messenger_save(m, buffer);
-        size_t write_result = fwrite(buffer, 1, messenger_size(m), file);
+        const size_t write_result = fwrite(buffer, 1, messenger_size(m), file);
 
         if (write_result < messenger_size(m)) {
+            free(buffer);
+            fclose(file);
             kill_messenger(m);
             return 1;
         }
