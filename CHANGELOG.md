@@ -1,9 +1,48 @@
 
 
+## v0.2.6
+
+### Merged PRs:
+
+- [#1090](https://github.com/TokTok/c-toxcore/pull/1090) Fix possible resource leaks in test
+- [#1089](https://github.com/TokTok/c-toxcore/pull/1089) Limit the size of a save file in file_saving_test.
+- [#1088](https://github.com/TokTok/c-toxcore/pull/1088) Use `--config` to tell bazel about the environment.
+- [#1085](https://github.com/TokTok/c-toxcore/pull/1085) Prune long long warnings.
+- [#1084](https://github.com/TokTok/c-toxcore/pull/1084) Fix style in toxav.c.
+- [#1083](https://github.com/TokTok/c-toxcore/pull/1083) Fix coding style in rtp module.
+- [#1082](https://github.com/TokTok/c-toxcore/pull/1082) Fix groupav.c style and avoid casts in toxav_old.c.
+- [#1080](https://github.com/TokTok/c-toxcore/pull/1080) Fix memory leak in error path in group A/V.
+- [#1079](https://github.com/TokTok/c-toxcore/pull/1079) Fix style in video.c.
+- [#1078](https://github.com/TokTok/c-toxcore/pull/1078) Fix style in msi.c.
+- [#1077](https://github.com/TokTok/c-toxcore/pull/1077) Make `conferences_object` properly typed.
+- [#1076](https://github.com/TokTok/c-toxcore/pull/1076) Fix style in bwcontroller module.
+- [#1074](https://github.com/TokTok/c-toxcore/pull/1074) Move OSX to stage 1 of Travis.
+- [#1073](https://github.com/TokTok/c-toxcore/pull/1073) Stop running tests in the bazel build.
+- [#1072](https://github.com/TokTok/c-toxcore/pull/1072) Avoid forward declaration of rtp structs.
+- [#1071](https://github.com/TokTok/c-toxcore/pull/1071) Temporarily disable FreeBSD build, since it times out.
+- [#1070](https://github.com/TokTok/c-toxcore/pull/1070) Fix enumerator names in toxav to comply with toxcore naming standards.
+- [#1068](https://github.com/TokTok/c-toxcore/pull/1068) Fix a few warnings from clang.
+- [#1067](https://github.com/TokTok/c-toxcore/pull/1067) Remove last use of the `MIN` macro.
+- [#1066](https://github.com/TokTok/c-toxcore/pull/1066) Remove all uses of the PAIR macro in toxav.
+- [#1064](https://github.com/TokTok/c-toxcore/pull/1064) Fix ToxAv's use of `struct Tox`.
+- [#1063](https://github.com/TokTok/c-toxcore/pull/1063) Avoid passing -1 as friend connection to new groups.
+- [#1062](https://github.com/TokTok/c-toxcore/pull/1062) Check that the save file size isn't larger than our address space.
+- [#1060](https://github.com/TokTok/c-toxcore/pull/1060) Avoid implicit conversion of negative value to uint32_t.
+- [#1059](https://github.com/TokTok/c-toxcore/pull/1059) Assert that we don't divide by 0 in random_testing.cc.
+- [#1056](https://github.com/TokTok/c-toxcore/pull/1056) Fix typo in loop over assocs.
+- [#1053](https://github.com/TokTok/c-toxcore/pull/1053) Use tokstyle in the cmake travis build.
+- [#1049](https://github.com/TokTok/c-toxcore/pull/1049) Fix some printf format specifiers.
+- [#1043](https://github.com/TokTok/c-toxcore/pull/1043) Add simple deterministic random number generator for tests
+- [#1042](https://github.com/TokTok/c-toxcore/pull/1042) Add callback for successful connection to a conference
+- [#1039](https://github.com/TokTok/c-toxcore/pull/1039) Use the crypto random functions instead of `rand()`.
+- [#1036](https://github.com/TokTok/c-toxcore/pull/1036) Add deprecation notice to some UPPER_CASE enums.
+- [#1016](https://github.com/TokTok/c-toxcore/pull/1016) Split out conference type (text/av) from identifier.
+
 ## v0.2.5
 
 ### Merged PRs:
 
+- [#1054](https://github.com/TokTok/c-toxcore/pull/1054) Release 0.2.5
 - [#1048](https://github.com/TokTok/c-toxcore/pull/1048) Fix error message in m_send_generic_message
 - [#1047](https://github.com/TokTok/c-toxcore/pull/1047) Remove unused `m_callback_log` function.
 - [#1041](https://github.com/TokTok/c-toxcore/pull/1041) Avoid multiple for-next expressions.
