@@ -240,7 +240,7 @@ static void test_av_three_calls(void)
                 tox_self_get_connection_status(Bobs[0]) &&
                 tox_self_get_connection_status(Bobs[1]) &&
                 tox_self_get_connection_status(Bobs[2]) && off) {
-            printf("Toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
+            printf("Toxes are online, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
             off = 0;
         }
 
@@ -262,7 +262,7 @@ static void test_av_three_calls(void)
     BobsAV[2] = setup_av_instance(Bobs[2], BobsCC + 2);
 
     printf("Created 4 instances of ToxAV\n");
-    printf("All set after %ld seconds!\n", time(nullptr) - cur_time);
+    printf("All set after %lu seconds!\n", (unsigned long)(time(nullptr) - cur_time));
 
     thread_data tds[3];
     tds[0].AliceAV = AliceAV;

@@ -51,7 +51,7 @@ static void test_friend_request(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("Toxes are online, took %ld seconds.\n", time(nullptr) - cur_time);
+    printf("Toxes are online, took %lu seconds.\n", (unsigned long)(time(nullptr) - cur_time));
     const time_t con_time = time(nullptr);
 
     printf("Tox1 adds tox2 as friend, tox2 accepts.\n");
@@ -71,8 +71,8 @@ static void test_friend_request(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("Tox clients connected took %ld seconds.\n", time(nullptr) - con_time);
-    printf("friend_request_test succeeded, took %ld seconds.\n", time(nullptr) - cur_time);
+    printf("Tox clients connected took %lu seconds.\n", (unsigned long)(time(nullptr) - con_time));
+    printf("friend_request_test succeeded, took %lu seconds.\n", (unsigned long)(time(nullptr) - cur_time));
 
     tox_kill(tox1);
     tox_kill(tox2);

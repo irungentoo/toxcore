@@ -71,7 +71,7 @@ static void test_few_clients(void)
         if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
                 && tox_self_get_connection_status(tox3)) {
             if (off) {
-                printf("Toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
+                printf("Toxes are online, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
                 con_time = time(nullptr);
                 off = 0;
             }
@@ -86,7 +86,7 @@ static void test_few_clients(void)
     }
 
     ck_assert_msg(connected_t1, "Tox1 isn't connected. %u", connected_t1);
-    printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
+    printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
     const size_t save_size1 = tox_get_savedata_size(tox2);
     ck_assert_msg(save_size1 != 0, "save is invalid size %u", (unsigned)save_size1);
@@ -111,7 +111,7 @@ static void test_few_clients(void)
         if (tox_self_get_connection_status(tox1) && tox_self_get_connection_status(tox2)
                 && tox_self_get_connection_status(tox3)) {
             if (off) {
-                printf("Toxes are online again after reloading, took %ld seconds\n", time(nullptr) - cur_time);
+                printf("Toxes are online again after reloading, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
                 con_time = time(nullptr);
                 off = 0;
             }
@@ -125,9 +125,9 @@ static void test_few_clients(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
+    printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
-    printf("test_few_clients succeeded, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("test_few_clients succeeded, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
 
     tox_options_free(options);
     tox_kill(tox1);

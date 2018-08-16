@@ -87,7 +87,7 @@ static void load_data_decrypted(void)
     uint8_t *cipher = (uint8_t *)malloc(size);
     uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
-    printf("Read read_vavue = %u of %ld\n", (unsigned)read_value, size);
+    printf("Read read_vavue = %u of %lu\n", (unsigned)read_value, (unsigned long)size);
 
     TOX_ERR_DECRYPTION derr;
 

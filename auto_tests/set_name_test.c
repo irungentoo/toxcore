@@ -56,7 +56,7 @@ static void test_set_name(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("toxes are online, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
     const time_t con_time = time(nullptr);
 
     while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
@@ -66,7 +66,7 @@ static void test_set_name(void)
         c_sleep(ITERATION_INTERVAL);
     }
 
-    printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
+    printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
     tox_callback_friend_name(tox2, nickchange_callback);
     TOX_ERR_SET_INFO err_n;
@@ -86,7 +86,7 @@ static void test_set_name(void)
     tox_friend_get_name(tox2, 0, temp_name, nullptr);
     ck_assert_msg(memcmp(temp_name, NICKNAME, sizeof(NICKNAME)) == 0, "Name not correct");
 
-    printf("test_set_name succeeded, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("test_set_name succeeded, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
 
     tox_kill(tox1);
     tox_kill(tox2);

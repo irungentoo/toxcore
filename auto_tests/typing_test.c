@@ -53,7 +53,7 @@ static void test_typing(void)
         c_sleep(200);
     }
 
-    printf("toxes are online, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("toxes are online, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
     const time_t con_time = time(nullptr);
 
     while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
@@ -64,7 +64,7 @@ static void test_typing(void)
         c_sleep(200);
     }
 
-    printf("tox clients connected took %ld seconds\n", time(nullptr) - con_time);
+    printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
     tox_callback_friend_typing(tox2, &typing_callback);
     tox_self_set_typing(tox1, 0, true, nullptr);
@@ -90,7 +90,7 @@ static void test_typing(void)
     ck_assert_msg(tox_friend_get_typing(tox2, 0, &err_t) == 0, "Typing failure");
     ck_assert_msg(err_t == TOX_ERR_FRIEND_QUERY_OK, "Typing failure");
 
-    printf("test_typing succeeded, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("test_typing succeeded, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
 
     tox_kill(tox1);
     tox_kill(tox2);

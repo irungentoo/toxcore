@@ -123,7 +123,7 @@ loop_top:
         tox_kill(toxes[i]);
     }
 
-    printf("test_many_clients succeeded, took %ld seconds\n", time(nullptr) - cur_time);
+    printf("test_many_clients succeeded, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
 }
 
 int main(void)
