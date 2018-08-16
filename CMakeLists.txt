@@ -458,6 +458,7 @@ if(DHT_BOOTSTRAP)
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
   target_link_modules(DHT_bootstrap toxcore misc_tools)
+  install(TARGETS DHT_bootstrap RUNTIME DESTINATION bin)
 endif()
 
 option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
