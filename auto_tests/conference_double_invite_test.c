@@ -7,6 +7,8 @@
 
 typedef struct State {
     uint32_t index;
+    uint64_t clock;
+
     bool self_online;
     bool friend_online;
 
@@ -64,10 +66,7 @@ static void conference_double_invite_test(Tox **toxes, State *state)
     fprintf(stderr, "Waiting for invitation to arrive\n");
 
     do {
-        tox_iterate(toxes[0], &state[0]);
-        tox_iterate(toxes[1], &state[1]);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(2, toxes, state, ITERATION_INTERVAL);
     } while (!state[0].joined || !state[1].joined);
 
     fprintf(stderr, "Invitations accepted\n");
@@ -75,8 +74,7 @@ static void conference_double_invite_test(Tox **toxes, State *state)
     // Invite one more time, resulting in friend -1 inviting tox1 (toxes[1]).
     tox_conference_invite(toxes[0], 0, state[0].conference, nullptr);
 
-    tox_iterate(toxes[0], &state[0]);
-    tox_iterate(toxes[1], &state[1]);
+    iterate_all_wait(2, toxes, state, ITERATION_INTERVAL);
 }
 
 int main(void)

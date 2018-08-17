@@ -18,6 +18,8 @@
 
 typedef struct State {
     uint32_t index;
+    uint64_t clock;
+
     bool custom_packet_received;
 } State;
 
@@ -51,10 +53,7 @@ static void test_lossless_packet(Tox **toxes, State *state)
     ck_assert_msg(ret == true, "tox_friend_send_lossless_packet fail %i", ret);
 
     do {
-        tox_iterate(toxes[0], nullptr);
-        tox_iterate(toxes[1], &state[1]);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(2, toxes, state, ITERATION_INTERVAL);
     } while (!state[1].custom_packet_received);
 }
 

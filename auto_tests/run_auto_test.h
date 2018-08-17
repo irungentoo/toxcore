@@ -2,6 +2,8 @@
 
 #include "check_compat.h"
 #include "../testing/misc_tools.h"
+#include "../toxcore/Messenger.h"
+#include "../toxcore/mono_time.h"
 
 static bool all_connected(uint32_t tox_count, Tox **toxes)
 {
@@ -29,13 +31,20 @@ static bool all_friends_connected(uint32_t tox_count, Tox **toxes)
     return true;
 }
 
-static bool iterate_all(uint32_t tox_count, Tox **toxes, State *state)
+static void iterate_all_wait(uint32_t tox_count, Tox **toxes, State *state, uint32_t wait)
 {
     for (uint32_t i = 0; i < tox_count; i++) {
         tox_iterate(toxes[i], &state[i]);
+        state[i].clock += wait;
     }
 
-    return true;
+    /* Also actually sleep a little, to allow for local network processing */
+    c_sleep(20);
+}
+
+static uint64_t get_state_clock_callback(void *user_data)
+{
+    return ((State *)user_data)->clock;
 }
 
 static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *state))
@@ -48,6 +57,12 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
         state[i].index = i;
         toxes[i] = tox_new_log(nullptr, nullptr, &state[i].index);
         ck_assert_msg(toxes[i], "failed to create %u tox instances", i + 1);
+
+        // TODO(iphydf): Don't rely on toxcore internals.
+        Mono_Time *mono_time = (*(Messenger **)toxes[i])->mono_time;
+
+        state[i].clock = current_time_monotonic(mono_time);
+        mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &state[i]);
     }
 
     printf("toxes all add each other as friends\n");
@@ -73,17 +88,13 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
     }
 
     do {
-        iterate_all(tox_count, toxes, state);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(tox_count, toxes, state, ITERATION_INTERVAL);
     } while (!all_connected(tox_count, toxes));
 
     printf("toxes are online\n");
 
     do {
-        iterate_all(tox_count, toxes, state);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(tox_count, toxes, state, ITERATION_INTERVAL);
     } while (!all_friends_connected(tox_count, toxes));
 
     printf("tox clients connected\n");

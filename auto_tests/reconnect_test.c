@@ -24,6 +24,7 @@
 
 typedef struct State {
     uint32_t index;
+    uint64_t clock;
 } State;
 
 #include "run_auto_test.h"
@@ -64,9 +65,7 @@ static void test_reconnect(Tox **toxes, State *state)
     printf("letting connections settle\n");
 
     do {
-        iterate_all(TOX_COUNT, toxes, state);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(TOX_COUNT, toxes, state, ITERATION_INTERVAL);
     } while (time(nullptr) - test_start_time < 2);
 
     uint16_t disconnect = random_u16() % TOX_COUNT;
@@ -76,25 +75,24 @@ static void test_reconnect(Tox **toxes, State *state)
         for (uint16_t i = 0; i < TOX_COUNT; ++i) {
             if (i != disconnect) {
                 tox_iterate(toxes[i], &state[i]);
+                state[i].clock += 1000;
             }
         }
 
-        c_sleep(ITERATION_INTERVAL);
+        c_sleep(20);
     } while (!all_disconnected_from(TOX_COUNT, toxes, state, disconnect));
 
-    const time_t reconnect_start_time = time(nullptr);
+    const uint64_t reconnect_start_time = state[0].clock;
 
     printf("reconnecting\n");
 
     do {
-        iterate_all(TOX_COUNT, toxes, state);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(TOX_COUNT, toxes, state, ITERATION_INTERVAL);
     } while (!all_friends_connected(TOX_COUNT, toxes));
 
-    const int reconnect_time = (int)(time(nullptr) - reconnect_start_time);
-    ck_assert_msg(reconnect_time <= RECONNECT_TIME_MAX, "reconnection took %d seconds; expected at most %d seconds",
-                  reconnect_time, RECONNECT_TIME_MAX);
+    const uint64_t reconnect_time = state[0].clock - reconnect_start_time;
+    ck_assert_msg(reconnect_time <= RECONNECT_TIME_MAX * 1000, "reconnection took %d seconds; expected at most %d seconds",
+                  (int)(reconnect_time / 1000), RECONNECT_TIME_MAX);
 
     printf("test_reconnect succeeded, took %d seconds\n", (int)(time(nullptr) - test_start_time));
 }

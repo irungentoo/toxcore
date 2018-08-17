@@ -9,6 +9,8 @@
 
 typedef struct State {
     uint32_t index;
+    uint64_t clock;
+
     uint32_t recv_count;
 } State;
 
@@ -50,8 +52,7 @@ static void net_crypto_overflow_test(Tox **toxes, State *state)
     // TODO(iphydf): Wait until all messages have arrived. Currently, not all
     // messages arrive, so this test would always fail.
     for (uint32_t i = 0; i < 200; i++) {
-        iterate_all(3, toxes, state);
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(3, toxes, state, ITERATION_INTERVAL);
     }
 
     printf("tox%u received %u messages\n", state[0].index, state[0].recv_count);

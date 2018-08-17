@@ -600,12 +600,18 @@ static void ip_callback(void *data, int32_t number, IP_Port ip_port)
 
 #define NUM_DHT_FRIENDS 20
 
+static uint64_t get_clock_callback(void *user_data)
+{
+    return *(uint64_t *)user_data;
+}
+
 static void test_DHT_test(void)
 {
     uint32_t to_comp = 8394782;
     DHT *dhts[NUM_DHT];
     Logger *logs[NUM_DHT];
     Mono_Time *mono_times[NUM_DHT];
+    uint64_t clock[NUM_DHT];
     uint32_t index[NUM_DHT];
 
     uint32_t i, j;
@@ -619,6 +625,8 @@ static void test_DHT_test(void)
         logger_callback_log(logs[i], (logger_cb *)print_debug_log, nullptr, &index[i]);
 
         mono_times[i] = mono_time_new();
+        clock[i] = current_time_monotonic(mono_times[i]);
+        mono_time_set_current_time_callback(mono_times[i], get_clock_callback, &clock[i]);
 
         dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
@@ -674,9 +682,10 @@ loop_top:
             mono_time_update(mono_times[i]);
             networking_poll(dhts[i]->net, nullptr);
             do_dht(dhts[i]);
+            clock[i] += 500;
         }
 
-        c_sleep(500);
+        c_sleep(20);
     }
 
     for (i = 0; i < NUM_DHT; ++i) {

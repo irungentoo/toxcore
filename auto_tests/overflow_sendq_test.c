@@ -9,6 +9,7 @@
 
 typedef struct State {
     uint32_t index;
+    uint64_t clock;
 } State;
 
 #include "run_auto_test.h"

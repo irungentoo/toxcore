@@ -7,6 +7,8 @@
 
 typedef struct State {
     uint32_t index;
+    uint64_t clock;
+
     bool self_online;
     bool friend_online;
     bool friend_in_group;
@@ -108,21 +110,16 @@ static void conference_peer_nick_test(Tox **toxes, State *state)
     fprintf(stderr, "Waiting for invitation to arrive and peers to be in the group\n");
 
     do {
-        tox_iterate(toxes[0], &state[0]);
-        tox_iterate(toxes[1], &state[1]);
-
-        c_sleep(ITERATION_INTERVAL);
+        iterate_all_wait(2, toxes, state, ITERATION_INTERVAL);
     } while (!state[0].joined || !state[1].joined || !state[0].friend_in_group || !state[1].friend_in_group);
 
     fprintf(stderr, "Running tox0, but not tox1, waiting for tox1 to drop out\n");
 
     do {
-        tox_iterate(toxes[0], &state[0]);
+        iterate_all_wait(1, toxes, state, 1000);
 
         // Rebuild peer list after every iteration.
         rebuild_peer_list(toxes[0]);
-
-        c_sleep(ITERATION_INTERVAL);
     } while (state[0].friend_in_group);
 
     fprintf(stderr, "Invitations accepted\n");
