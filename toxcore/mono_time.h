@@ -43,14 +43,14 @@ typedef struct Mono_Time Mono_Time;
 #endif /* MONO_TIME_DEFINED */
 
 Mono_Time *mono_time_new(void);
-void mono_time_free(Mono_Time *monotime);
+void mono_time_free(Mono_Time *mono_time);
 
-void mono_time_update(Mono_Time *monotime);
-uint64_t mono_time_get(const Mono_Time *monotime);
-bool mono_time_is_timeout(const Mono_Time *monotime, uint64_t timestamp, uint64_t timeout);
+void mono_time_update(Mono_Time *mono_time);
+uint64_t mono_time_get(const Mono_Time *mono_time);
+bool mono_time_is_timeout(const Mono_Time *mono_time, uint64_t timestamp, uint64_t timeout);
 
 /* return current monotonic time in milliseconds (ms). */
-uint64_t current_time_monotonic(const Mono_Time *monotime);
+uint64_t current_time_monotonic(const Mono_Time *mono_time);
 
 #ifdef __cplusplus
 }
