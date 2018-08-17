@@ -1,3 +1,4 @@
+---
 # For Pull Requests, we build only the first three jobs: autotools on Linux,
 # cmake on Linux, and cmake on Windows 32 bit.
 #
@@ -8,105 +9,105 @@ language: c
 
 matrix:
   include:
-  - stage: "Stage 1"
-    env: JOB=cmake-linux
-    compiler: gcc
-    addons:
-      apt:
-        packages:
-        - libconfig-dev         # For tox-bootstrapd.
-        - libcv-dev             # For av_test.
-        - libhighgui-dev        # For av_test.
-        - libopencv-contrib-dev # For av_test.
-        - libopus-dev           # For toxav.
-        - libsndfile1-dev       # For av_test.
-        - libgtest-dev          # For unit tests.
-        - libvpx-dev            # For toxav.
-        - portaudio19-dev       # For av_test.
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
-    after_script:  .travis/upload-coverage
-  - stage: "Stage 1"
-    env: JOB=autotools-linux
-    compiler: clang
-    addons:
-      apt:
-        packages:
-        - libconfig-dev         # For tox-bootstrapd.
-        - libopus-dev           # For toxav.
-        - libvpx-dev            # For toxav.
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
-  - stage: "Stage 1"
-    env: JOB=bazel-linux
-    compiler: clang
-    addons:
-      apt:
-        packages:
-        - libcv-dev             # For av_test.
-        - libhighgui-dev        # For av_test.
-        - libopencv-contrib-dev # For av_test.
-    before_install:
-    # Clear bazel installation.
-    - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
-    # Get toktok-stack, which contains the bazel workspace.
-    - cd ..
-    - git clone https://github.com/TokTok/toktok-stack
-    - rm -rf toktok-stack/c-toxcore
-    - mv c-toxcore toktok-stack/
-    - cd toktok-stack/c-toxcore
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
-    before_cache:
-    # Clear bazel installation.
-    - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
-  - stage: "Stage 1"
-    if: type IN (push, api, cron)
-    env: JOB=cmake-win32
-    services: [docker]
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
-  - stage: "Stage 1"
-    if: type IN (push, api, cron)
-    env: JOB=cmake-win64
-    services: [docker]
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
-# - stage: "Stage 1"
-#   env: JOB=cmake-freebsd
-#   if: type IN (push, api, cron)
-#   sudo: required
-#   install:       .travis/$JOB-stage1 install
-#   script:        .travis/$JOB-stage1 script
-  - stage: "Stage 1"
-    if: type IN (push, api, cron)
-    env: JOB=cmake-osx
-    os: osx
-    install:       .travis/$JOB install
-    script:        .travis/$JOB script
-  - stage: "Stage 1"
-    if: type IN (push, api, cron)
-    env: JOB=tox-bootstrapd-docker
-    services: [docker]
-    script:        .travis/$JOB
-# - stage: "Stage 2"
-#   env: JOB=cmake-freebsd
-#   if: type IN (push, api, cron)
-#   sudo: required
-#   install:       .travis/$JOB-stage2 install
-#   script:        .travis/$JOB-stage2 script
+    - stage: "Stage 1"
+      env: JOB=cmake-linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - libconfig-dev          # For tox-bootstrapd.
+            - libcv-dev              # For av_test.
+            - libhighgui-dev         # For av_test.
+            - libopencv-contrib-dev  # For av_test.
+            - libopus-dev            # For toxav.
+            - libsndfile1-dev        # For av_test.
+            - libgtest-dev           # For unit tests.
+            - libvpx-dev             # For toxav.
+            - portaudio19-dev        # For av_test.
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+      after_script:  .travis/upload-coverage
+    - stage: "Stage 1"
+      env: JOB=autotools-linux
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - libconfig-dev         # For tox-bootstrapd.
+            - libopus-dev           # For toxav.
+            - libvpx-dev            # For toxav.
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 1"
+      env: JOB=bazel-linux
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - libcv-dev              # For av_test.
+            - libhighgui-dev         # For av_test.
+            - libopencv-contrib-dev  # For av_test.
+      before_install:
+        # Clear bazel installation.
+        - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
+        # Get toktok-stack, which contains the bazel workspace.
+        - cd ..
+        - git clone https://github.com/TokTok/toktok-stack
+        - rm -rf toktok-stack/c-toxcore
+        - mv c-toxcore toktok-stack/
+        - cd toktok-stack/c-toxcore
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+      before_cache:
+        # Clear bazel installation.
+        - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-win32
+      services: [docker]
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-win64
+      services: [docker]
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+#   - stage: "Stage 1"
+#     env: JOB=cmake-freebsd
+#     if: type IN (push, api, cron)
+#     sudo: required
+#     install:       .travis/$JOB-stage1 install
+#     script:        .travis/$JOB-stage1 script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-osx
+      os: osx
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=tox-bootstrapd-docker
+      services: [docker]
+      script:        .travis/$JOB
+#   - stage: "Stage 2"
+#     env: JOB=cmake-freebsd
+#     if: type IN (push, api, cron)
+#     sudo: required
+#     install:       .travis/$JOB-stage2 install
+#     script:        .travis/$JOB-stage2 script
   fast_finish: true
 
 cache:
   directories:
-  - $HOME/.cache/bazel
-  - $HOME/cache
-  - /opt/freebsd/cache
+    - $HOME/.cache/bazel
+    - $HOME/cache
+    - /opt/freebsd/cache
 
 notifications:
   irc:
     channels:
-    - "chat.freenode.net#toktok-status"
+      - "chat.freenode.net#toktok-status"
     template:
-    - "%{result} %{repository_name} %{build_url}"
-    - "#%{build_number} changes: %{compare_url}"
+      - "%{result} %{repository_name} %{build_url}"
+      - "#%{build_number} changes: %{compare_url}"

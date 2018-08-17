@@ -1,6 +1,6 @@
-load("//tools:project.bzl", "project")
+load("//tools/project:build_defs.bzl", "project")
 
-project("c-toxcore")
+project()
 
 genrule(
     name = "copy_headers",
