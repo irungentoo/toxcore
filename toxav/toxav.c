@@ -248,7 +248,7 @@ void toxav_iterate(ToxAV *av)
         return;
     }
 
-    uint64_t start = current_time_monotonic();
+    uint64_t start = current_time_monotonic(av->m->mono_time);
     int32_t rc = 500;
 
     ToxAVCall *i = av->calls[av->calls_head];
@@ -286,7 +286,7 @@ void toxav_iterate(ToxAV *av)
     pthread_mutex_unlock(av->mutex);
 
     av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
-    av->dmsst += current_time_monotonic() - start;
+    av->dmsst += current_time_monotonic(av->m->mono_time) - start;
 
     if (++av->dmssc == 3) {
         av->dmssa = av->dmsst / 3 + 5 /* NOTE Magic Offset for precission */;
@@ -1325,7 +1325,7 @@ bool call_prepare_transmission(ToxAVCall *call)
     call->bwc = bwc_new(av->m, call->friend_number, callback_bwc, call);
 
     { /* Prepare audio */
-        call->audio = ac_new(av->m->log, av, call->friend_number, av->acb, av->acb_user_data);
+        call->audio = ac_new(av->m->mono_time, av->m->log, av, call->friend_number, av->acb, av->acb_user_data);
 
         if (!call->audio) {
             LOGGER_ERROR(av->m->log, "Failed to create audio codec session");
@@ -1341,7 +1341,7 @@ bool call_prepare_transmission(ToxAVCall *call)
         }
     }
     { /* Prepare video */
-        call->video = vc_new(av->m->log, av, call->friend_number, av->vcb, av->vcb_user_data);
+        call->video = vc_new(av->m->mono_time, av->m->log, av, call->friend_number, av->vcb, av->vcb_user_data);
 
         if (!call->video) {
             LOGGER_ERROR(av->m->log, "Failed to create video codec session");

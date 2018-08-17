@@ -703,7 +703,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     pthread_mutex_lock(&conn->mutex);
 
     if (ret == 0) {
-        conn->last_tcp_sent = current_time_monotonic();
+        conn->last_tcp_sent = current_time_monotonic(c->mono_time);
     }
 
     pthread_mutex_unlock(&conn->mutex);
@@ -957,8 +957,8 @@ static int generate_request_packet(const Logger *log, uint8_t *data, uint16_t le
  * return -1 on failure.
  * return number of requested packets on success.
  */
-static int handle_request_packet(const Logger *log, Packets_Array *send_array, const uint8_t *data, uint16_t length,
-                                 uint64_t *latest_send_time, uint64_t rtt_time)
+static int handle_request_packet(const Mono_Time *mono_time, const Logger *log, Packets_Array *send_array,
+                                 const uint8_t *data, uint16_t length, uint64_t *latest_send_time, uint64_t rtt_time)
 {
     if (length == 0) {
         return -1;
@@ -978,7 +978,7 @@ static int handle_request_packet(const Logger *log, Packets_Array *send_array, c
     uint32_t n = 1;
     uint32_t requested = 0;
 
-    const uint64_t temp_time = current_time_monotonic();
+    const uint64_t temp_time = current_time_monotonic(mono_time);
     uint64_t l_sent_time = ~0;
 
     for (uint32_t i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
@@ -1120,7 +1120,7 @@ static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)
                 return -1;
             }
 
-            dt->sent_time = current_time_monotonic();
+            dt->sent_time = current_time_monotonic(c->mono_time);
         }
 
         conn->maximum_speed_reached = 0;
@@ -1173,7 +1173,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         Packet_Data *dt1 = nullptr;
 
         if (get_data_pointer(c->log, &conn->send_array, &dt1, packet_num) == 1) {
-            dt1->sent_time = current_time_monotonic();
+            dt1->sent_time = current_time_monotonic(c->mono_time);
         }
     } else {
         conn->maximum_speed_reached = 1;
@@ -1279,7 +1279,7 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
         return -1;
     }
 
-    const uint64_t temp_time = current_time_monotonic();
+    const uint64_t temp_time = current_time_monotonic(c->mono_time);
     uint32_t i, num_sent = 0, array_size = num_packets_array(&conn->send_array);
 
     for (i = 0; i < array_size; ++i) {
@@ -1395,7 +1395,7 @@ static int send_temp_packet(Net_Crypto *c, int crypt_connection_id)
         return -1;
     }
 
-    conn->temp_packet_sent_time = current_time_monotonic();
+    conn->temp_packet_sent_time = current_time_monotonic(c->mono_time);
     ++conn->temp_packet_num_sent;
     return 0;
 }
@@ -1545,7 +1545,8 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
             rtt_time = DEFAULT_TCP_PING_CONNECTION;
         }
 
-        int requested = handle_request_packet(c->log, &conn->send_array, real_data, real_length, &rtt_calc_time, rtt_time);
+        int requested = handle_request_packet(c->mono_time, c->log, &conn->send_array, real_data, real_length, &rtt_calc_time,
+                                              rtt_time);
 
         if (requested == -1) {
             return -1;
@@ -1598,7 +1599,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
     }
 
     if (rtt_calc_time != 0) {
-        uint64_t rtt_time = current_time_monotonic() - rtt_calc_time;
+        uint64_t rtt_time = current_time_monotonic(c->mono_time) - rtt_calc_time;
 
         if (rtt_time < conn->rtt_time) {
             conn->rtt_time = rtt_time;
@@ -2441,7 +2442,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 
 static void send_crypto_packets(Net_Crypto *c)
 {
-    const uint64_t temp_time = current_time_monotonic();
+    const uint64_t temp_time = current_time_monotonic(c->mono_time);
     double total_send_rate = 0;
     uint32_t peak_request_packet_interval = ~0;
 

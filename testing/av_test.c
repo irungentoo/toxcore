@@ -45,6 +45,7 @@ extern "C" {
 #include "../toxav/ring_buffer.c"
 
 #include "../toxav/toxav.h"
+#include "../toxcore/Messenger.h"
 #include "../toxcore/mono_time.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
@@ -564,6 +565,9 @@ CHECK_ARG:
 
     initialize_tox(&bootstrap, &AliceAV, &AliceCC, &BobAV, &BobCC);
 
+    // TODO(iphydf): Don't depend on toxcore internals
+    const Mono_Time *mono_time = (*(Messenger **)bootstrap)->mono_time;
+
     if (TEST_TRANSFER_A) {
         SNDFILE *af_handle;
         SF_INFO af_info;
@@ -657,7 +661,7 @@ CHECK_ARG:
         printf("Sample rate %d\n", af_info.samplerate);
 
         while (start_time + expected_time > time(nullptr)) {
-            uint64_t enc_start_time = current_time_monotonic();
+            uint64_t enc_start_time = current_time_monotonic(mono_time);
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
 
             if (count > 0) {
@@ -670,7 +674,7 @@ CHECK_ARG:
             }
 
             iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
-            c_sleep((audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
+            c_sleep((audio_frame_duration - (current_time_monotonic(mono_time) - enc_start_time) - 1));
         }
 
         printf("Played file in: %lu; stopping stream...\n", time(nullptr) - start_time);

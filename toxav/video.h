@@ -60,11 +60,11 @@ typedef struct VCSession_s {
     pthread_mutex_t queue_mutex[1];
 } VCSession;
 
-VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb,
-                  void *cb_data);
+VCSession *vc_new(const Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t friend_number,
+                  toxav_video_receive_frame_cb *cb, void *cb_data);
 void vc_kill(VCSession *vc);
 void vc_iterate(VCSession *vc);
-int vc_queue_message(void *vcp, struct RTPMessage *msg);
+int vc_queue_message(const Mono_Time *mono_time, void *vcp, struct RTPMessage *msg);
 int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height, int16_t kf_max_dist);
 
 #endif /* VIDEO_H */

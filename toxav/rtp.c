@@ -389,7 +389,7 @@ static int handle_video_packet(RTPSession *session, const struct RTPHeader *head
         LOGGER_DEBUG(log, "-- handle_video_packet -- CALLBACK-001a b0=%d b1=%d", (int)m_new->data[0], (int)m_new->data[1]);
         update_bwc_values(log, session, m_new);
         // Pass ownership of m_new to the callback.
-        session->mcb(session->cs, m_new);
+        session->mcb(session->m->mono_time, session->cs, m_new);
         // Now we no longer own m_new.
         m_new = nullptr;
 
@@ -426,7 +426,7 @@ static int handle_video_packet(RTPSession *session, const struct RTPHeader *head
     if (m_new) {
         LOGGER_DEBUG(log, "-- handle_video_packet -- CALLBACK-003a b0=%d b1=%d", (int)m_new->data[0], (int)m_new->data[1]);
         update_bwc_values(log, session, m_new);
-        session->mcb(session->cs, m_new);
+        session->mcb(session->m->mono_time, session->cs, m_new);
 
         m_new = nullptr;
     }
@@ -499,15 +499,15 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
 
         /* Invoke processing of active multiparted message */
         if (session->mp) {
-            session->mcb(session->cs, session->mp);
+            session->mcb(session->m->mono_time, session->cs, session->mp);
             session->mp = nullptr;
         }
 
         /* The message came in the allowed time;
          */
 
-        return session->mcb(session->cs, new_message(&header, length - RTP_HEADER_SIZE, data + RTP_HEADER_SIZE,
-                            length - RTP_HEADER_SIZE));
+        return session->mcb(session->m->mono_time, session->cs, new_message(&header, length - RTP_HEADER_SIZE,
+                            data + RTP_HEADER_SIZE, length - RTP_HEADER_SIZE));
     }
 
     /* The message is sent in multiple parts */
@@ -542,7 +542,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
                 /* Received a full message; now push it for the further
                  * processing.
                  */
-                session->mcb(session->cs, session->mp);
+                session->mcb(session->m->mono_time, session->cs, session->mp);
                 session->mp = nullptr;
             }
         } else {
@@ -555,7 +555,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
             }
 
             /* Push the previous message for processing */
-            session->mcb(session->cs, session->mp);
+            session->mcb(session->m->mono_time, session->cs, session->mp);
 
             session->mp = nullptr;
             goto NEW_MULTIPARTED;
@@ -760,7 +760,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
 
     header.sequnum = session->sequnum;
 
-    header.timestamp = current_time_monotonic();
+    header.timestamp = current_time_monotonic(session->m->mono_time);
 
     header.ssrc = session->ssrc;
 

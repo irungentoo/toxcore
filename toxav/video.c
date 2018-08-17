@@ -159,7 +159,8 @@ static void vc_init_encoder_cfg(const Logger *log, vpx_codec_enc_cfg_t *cfg, int
 #endif
 }
 
-VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_video_receive_frame_cb *cb, void *cb_data)
+VCSession *vc_new(const Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t friend_number,
+                  toxav_video_receive_frame_cb *cb, void *cb_data)
 {
     VCSession *vc = (VCSession *)calloc(sizeof(VCSession), 1);
     vpx_codec_err_t rc;
@@ -264,7 +265,7 @@ VCSession *vc_new(const Logger *log, ToxAV *av, uint32_t friend_number, toxav_vi
           goto BASE_CLEANUP_1;
       }
      */
-    vc->linfts = current_time_monotonic();
+    vc->linfts = current_time_monotonic(mono_time);
     vc->lcfd = 60;
     vc->vcb = cb;
     vc->vcb_user_data = cb_data;
@@ -355,7 +356,7 @@ void vc_iterate(VCSession *vc)
     }
 }
 
-int vc_queue_message(void *vcp, struct RTPMessage *msg)
+int vc_queue_message(const Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
 {
     /* This function is called with complete messages
      * they have already been assembled.
@@ -389,9 +390,9 @@ int vc_queue_message(void *vcp, struct RTPMessage *msg)
     free(rb_write(vc->vbuf_raw, msg));
 
     /* Calculate time it took for peer to send us this frame */
-    uint32_t t_lcfd = current_time_monotonic() - vc->linfts;
+    uint32_t t_lcfd = current_time_monotonic(mono_time) - vc->linfts;
     vc->lcfd = t_lcfd > 100 ? vc->lcfd : t_lcfd;
-    vc->linfts = current_time_monotonic();
+    vc->linfts = current_time_monotonic(mono_time);
     pthread_mutex_unlock(vc->queue_mutex);
     return 0;
 }

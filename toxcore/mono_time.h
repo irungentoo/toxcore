@@ -50,7 +50,7 @@ uint64_t mono_time_get(const Mono_Time *monotime);
 bool mono_time_is_timeout(const Mono_Time *monotime, uint64_t timestamp, uint64_t timeout);
 
 /* return current monotonic time in milliseconds (ms). */
-uint64_t current_time_monotonic(void);
+uint64_t current_time_monotonic(const Mono_Time *monotime);
 
 #ifdef __cplusplus
 }

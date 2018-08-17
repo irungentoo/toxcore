@@ -159,7 +159,7 @@ struct RTPWorkBufferList {
 
 #define DISMISS_FIRST_LOST_VIDEO_PACKET_COUNT 10
 
-typedef int rtp_m_cb(void *cs, struct RTPMessage *msg);
+typedef int rtp_m_cb(const Mono_Time *mono_time, void *cs, struct RTPMessage *msg);
 
 /**
  * RTP control session.
