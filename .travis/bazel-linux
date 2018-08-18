@@ -6,15 +6,20 @@ set -eu
 
 travis_install() {
   # Get bazel.
-  wget https://github.com/bazelbuild/bazel/releases/download/0.15.0/bazel-0.15.0-installer-linux-x86_64.sh
-  chmod +x bazel-0.15.0-installer-linux-x86_64.sh
-  ./bazel-0.15.0-installer-linux-x86_64.sh --user
+  wget https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel-0.16.0-installer-linux-x86_64.sh
+  chmod +x bazel-0.16.0-installer-linux-x86_64.sh
+  ./bazel-0.16.0-installer-linux-x86_64.sh --user
   echo 'build --jobs=4 --curses=no --verbose_failures' >> $HOME/.bazelrc
   echo 'build --config=linux' >> $HOME/.bazelrc
   echo "build --config=$CC" >> $HOME/.bazelrc
+  pip install --user yamllint
 }
 
 travis_script() {
+  bazel test //c-toxcore:license_test
+  bazel test //c-toxcore:readme_test
+  bazel test //c-toxcore:yamllint_test
+
   # TODO(iphydf): Make tests have a chance to succeed.
   # Run the tests, but if they fail, at least we should be able to build.
   # bazel test //c-toxcore/... || bazel build //c-toxcore/...
