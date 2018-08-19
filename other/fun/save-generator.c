@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
     Tox_Err_Set_Info err;
     const uint8_t *name = (uint8_t *)argv[1];
-    tox_self_set_name(tox, name, strlen((char *)name), &err);
+    tox_self_set_name(tox, name, strlen((const char *)name), &err);
 
     if (err != TOX_ERR_SET_INFO_OK) {
         printf("Failed to set name. Error number %d\n", err);
