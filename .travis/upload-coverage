@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # We only submit coverage from the Linux build.
 coveralls               \
@@ -6,3 +6,5 @@ coveralls               \
   --exclude other       \
   --exclude testing     \
   --gcov-options '\-lp'
+
+bash <(curl -s https://codecov.io/bash)
