@@ -6,6 +6,7 @@ CACHEDIR="$HOME/cache"
 
 . ".travis/flags-$CC.sh"
 add_flag -Werror
+add_flag -fdiagnostics-color=always
 add_flag -fsanitize=thread
 cmake -H. -B_build -GNinja			\
   -DCMAKE_C_FLAGS="$C_FLAGS"			\
