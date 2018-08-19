@@ -7,16 +7,16 @@
 #include "../../toxcore/ccompat.h"
 #include "../../toxcore/tox.h"
 
-#define SAVE_FILE "save.tox"
-#define STATUS_MESSAGE "Hello World"
-#define REQUEST_MESSAGE "Add me."
+#define GENERATED_SAVE_FILE "save.tox"
+#define GENERATED_STATUS_MESSAGE "Hello World"
+#define GENERATED_REQUEST_MESSAGE "Add me."
 #define BOOTSTRAP_IP "185.14.30.213"
 #define BOOTSTRAP_ADDRESS "2555763C8C460495B14157D234DD56B86300A2395554BCAE4621AC345B8C1B1B"
-#define UDP_PORT 443
+#define BOOTSTRAP_UDP_PORT 443
 
 static bool write_save(const uint8_t *data, size_t length)
 {
-    FILE *fp = fopen(SAVE_FILE, "w");
+    FILE *fp = fopen(GENERATED_SAVE_FILE, "w");
 
     if (!fp) {
         return false;
@@ -41,7 +41,7 @@ static bool bootstrap_tox(Tox *tox)
     }
 
     Tox_Err_Bootstrap err;
-    tox_bootstrap(tox, BOOTSTRAP_IP, UDP_PORT, key, &err);
+    tox_bootstrap(tox, BOOTSTRAP_IP, BOOTSTRAP_UDP_PORT, key, &err);
     free(key);
 
     if (err != TOX_ERR_BOOTSTRAP_OK) {
@@ -80,7 +80,7 @@ static void print_information(Tox *tox)
     printf("Tox ID: %.*s.\n", (int)TOX_ADDRESS_SIZE * 2, tox_id_str);
     printf("Nospam: %s.\n", nospam_str);
     printf("Name: %s.\n", name);
-    printf("Status message: %s.\n", STATUS_MESSAGE);
+    printf("Status message: %s.\n", GENERATED_STATUS_MESSAGE);
     printf("Number of friends: %zu.\n", tox_self_get_friend_list_size(tox));
     printf("----------------------------------\n");
 }
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
         printf("Failed to set name. Error number %d\n", err);
     }
 
-    tox_self_set_status_message(tox, (const uint8_t *)STATUS_MESSAGE, strlen(STATUS_MESSAGE), &err);
+    tox_self_set_status_message(tox, (const uint8_t *)GENERATED_STATUS_MESSAGE, strlen(GENERATED_STATUS_MESSAGE), &err);
 
     if (err != TOX_ERR_SET_INFO_OK) {
         printf("Failed to set status. Error number: %d\n", err);
@@ -130,7 +130,8 @@ int main(int argc, char *argv[])
     for (unsigned int i = 2; i < argc; i++) { //start at 2 because that is where the tox ids are
         uint8_t *address = hex_string_to_bin(argv[i]);
         Tox_Err_Friend_Add friend_err;
-        tox_friend_add(tox, address, (const uint8_t *)REQUEST_MESSAGE, strlen(REQUEST_MESSAGE), &friend_err);
+        tox_friend_add(tox, address, (const uint8_t *)GENERATED_REQUEST_MESSAGE, strlen(GENERATED_REQUEST_MESSAGE),
+                       &friend_err);
         free(address);
 
         if (friend_err != TOX_ERR_FRIEND_ADD_OK) {
@@ -158,7 +159,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    printf("Wrote tox save to %s\n", SAVE_FILE);
+    printf("Wrote tox save to %s\n", GENERATED_SAVE_FILE);
 
     print_information(tox);
 

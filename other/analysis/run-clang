@@ -7,6 +7,7 @@ clang++ -o /dev/null amalgamation.cc		\
 	$CPPFLAGS				\
 	$LDFLAGS				\
 	-std=c++11				\
+	-Werror					\
 	-Weverything				\
 	-Wno-c++98-compat-pedantic		\
 	-Wno-c99-extensions			\

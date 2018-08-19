@@ -88,7 +88,7 @@ static const vpx_codec_iface_t *video_codec_encoder_interface(void)
 
 #define VPX_MAX_ENCODER_THREADS 4
 #define VPX_MAX_DECODER_THREADS 4
-#define VIDEO__VP8_DECODER_POST_PROCESSING_ENABLED 0
+#define VIDEO_VP8_DECODER_POST_PROCESSING_ENABLED 0
 
 static void vc_init_encoder_cfg(const Logger *log, vpx_codec_enc_cfg_t *cfg, int16_t kf_max_dist)
 {
@@ -210,7 +210,7 @@ VCSession *vc_new(const Mono_Time *mono_time, const Logger *log, ToxAV *av, uint
         goto BASE_CLEANUP;
     }
 
-    if (VIDEO__VP8_DECODER_POST_PROCESSING_ENABLED == 1) {
+    if (VIDEO_VP8_DECODER_POST_PROCESSING_ENABLED == 1) {
         vp8_postproc_cfg_t pp = {VP8_DEBLOCK, 1, 0};
         vpx_codec_err_t cc_res = vpx_codec_control(vc->decoder, VP8_SET_POSTPROC, &pp);
 
