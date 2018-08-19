@@ -21,7 +21,9 @@ test_sizes = {
         "small",
     ),
     srcs = [src],
+    args = ["$(location %s)" % src],
     copts = ["-Wno-sign-compare"],
+    data = glob(["data/*"]),
     deps = [
         ":check_compat",
         ":run_auto_test",

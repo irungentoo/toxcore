@@ -17,39 +17,36 @@
 #define NOSPAM "4C762C7D"
 #define TOX_ID "B70E97D41F69B7F4C42A5BC7BD7A76B95B8030BE1B7C0E9E6FC19FC4ABEB195B4C762C7D800B"
 
-static size_t get_file_size(void)
+static size_t get_file_size(const char *save_path)
 {
-    size_t size = 0;
-
-    FILE *fp = fopen(SAVE_FILE, "r");
+    FILE *const fp = fopen(save_path, "r");
 
     if (fp == nullptr) {
-        return size;
+        return 0;
     }
 
     fseek(fp, 0, SEEK_END);
-    size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    const size_t size = ftell(fp);
     fclose(fp);
 
     return size;
 }
 
-static uint8_t *read_save(size_t *length)
+static uint8_t *read_save(const char *save_path, size_t *length)
 {
-    const size_t size = get_file_size();
+    const size_t size = get_file_size(save_path);
 
     if (size == 0) {
         return nullptr;
     }
 
-    FILE *fp = fopen(SAVE_FILE, "r");
+    FILE *const fp = fopen(save_path, "r");
 
     if (!fp) {
         return nullptr;
     }
 
-    uint8_t *data = (uint8_t *)malloc(size);
+    uint8_t *const data = (uint8_t *)malloc(size);
 
     if (!data) {
         fclose(fp);
@@ -68,13 +65,13 @@ static uint8_t *read_save(size_t *length)
     return data;
 }
 
-static void test_save_compatibility(void)
+static void test_save_compatibility(const char *save_path)
 {
     struct Tox_Options options = { 0 };
     tox_options_default(&options);
 
     size_t size = 0;
-    uint8_t *save_data = read_save(&size);
+    uint8_t *save_data = read_save(save_path, &size);
     ck_assert_msg(save_data != nullptr, "Error while reading save file.");
 
     options.savedata_data = save_data;
@@ -85,14 +82,14 @@ static void test_save_compatibility(void)
 
     free(save_data);
 
-    size_t name_size = tox_self_get_name_size(tox);
+    const size_t name_size = tox_self_get_name_size(tox);
     ck_assert_msg(name_size == NAME_SIZE, "name sizes do not match expected %zu got %zu", NAME_SIZE, name_size);
 
     uint8_t name[TOX_MAX_NAME_LENGTH];
     tox_self_get_name(tox, name);
     ck_assert_msg(strncmp((const char *)name, NAME, name_size) == 0, "names do not match, expected %s got %s", NAME, name);
 
-    size_t status_message_size = tox_self_get_status_message_size(tox);
+    const size_t status_message_size = tox_self_get_status_message_size(tox);
     ck_assert_msg(status_message_size == STATUS_MESSAGE_SIZE, "status message sizes do not match, expected %zu got %zu",
                   STATUS_MESSAGE_SIZE, status_message_size);
 
@@ -102,13 +99,13 @@ static void test_save_compatibility(void)
                   "status messages do not match, expected %s got %s",
                   STATUS_MESSAGE, status_message);
 
-    size_t num_friends = tox_self_get_friend_list_size(tox);
+    const size_t num_friends = tox_self_get_friend_list_size(tox);
     ck_assert_msg(num_friends == NUM_FRIENDS, "number of friends do not match, expected %d got %zu", NUM_FRIENDS,
                   num_friends);
 
-    uint32_t nospam = tox_self_get_nospam(tox);
+    const uint32_t nospam = tox_self_get_nospam(tox);
     char nospam_str[(TOX_NOSPAM_SIZE * 2) + 1];
-    size_t length = snprintf(nospam_str, sizeof(nospam_str), "%08X", nospam);
+    const size_t length = snprintf(nospam_str, sizeof(nospam_str), "%08X", nospam);
     nospam_str[length] = '\0';
     ck_assert_msg(strcmp(nospam_str, NOSPAM) == 0, "nospam does not match, expected %s got %s", NOSPAM, nospam_str);
 
@@ -122,11 +119,23 @@ static void test_save_compatibility(void)
     tox_kill(tox);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    test_save_compatibility();
+    char base_path[4096];
+
+    if (argc <= 1) {
+        strcpy(base_path, ".");
+    } else {
+        strcpy(base_path, argv[1]);
+        base_path[strrchr(base_path, '/') - base_path] = 0;
+    }
+
+    char save_path[4096];
+    snprintf(save_path, sizeof(save_path), "%s/%s", base_path, SAVE_FILE);
+
+    test_save_compatibility(save_path);
 
     return 0;
 }
