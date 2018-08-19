@@ -4,18 +4,20 @@ workflows:
   version: 2
   build_linux:
     jobs:
-    - x86_64
+    - asan
+    - tsan
 
 jobs:
-  x86_64:
+  asan:
     working_directory: ~/work
     docker:
     - image: ubuntu
 
     steps:
     - checkout
-    - run: apt update
-    - run: apt install -y --no-install-recommends
+    - run: &apt_install
+           apt update &&
+           apt install -y --no-install-recommends
              clang
              cmake
              libconfig-dev
@@ -25,19 +27,14 @@ jobs:
              libvpx-dev
              ninja-build
              pkg-config
-    - run: . .travis/flags-clang.sh;
-           add_flag -fsanitize=address;
-           cmake -H. -B_build -GNinja
-             -DCMAKE_C_FLAGS="$C_FLAGS"
-             -DCMAKE_CXX_FLAGS="$CXX_FLAGS"
-             -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS"
-             -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS"
-             -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install"
-             -DTRACE=ON
-             -DMUST_BUILD_TOXAV=ON
-             -DSTRICT_ABI=ON
-             -DTEST_TIMEOUT_SECONDS=120
-             -DUSE_IPV6=OFF
-    - run: cd _build && ninja install -j$(nproc)
-    - run: cd _build && ctest -j50 --output-on-failure ||
-                        ctest -j50 --output-on-failure --rerun-failed
+    - run: CC=clang .circleci/cmake-asan
+
+  tsan:
+    working_directory: ~/work
+    docker:
+    - image: ubuntu
+
+    steps:
+    - checkout
+    - run: *apt_install
+    - run: CC=clang .circleci/cmake-tsan

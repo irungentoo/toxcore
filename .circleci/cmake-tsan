@@ -1,0 +1,28 @@
+#!/bin/sh
+
+set -eu
+
+CACHEDIR="$HOME/cache"
+
+. ".travis/flags-$CC.sh"
+add_flag -Werror
+add_flag -fsanitize=thread
+cmake -H. -B_build -GNinja			\
+  -DCMAKE_C_FLAGS="$C_FLAGS"			\
+  -DCMAKE_CXX_FLAGS="$CXX_FLAGS"		\
+  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS"		\
+  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS"	\
+  -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install"	\
+  -DTRACE=ON					\
+  -DMUST_BUILD_TOXAV=ON				\
+  -DSTRICT_ABI=ON				\
+  -DTEST_TIMEOUT_SECONDS=120			\
+  -DUSE_IPV6=OFF
+
+cd _build
+
+ninja install -j$(nproc)
+
+ctest -j50 --output-on-failure ||
+ctest -j50 --output-on-failure --rerun-failed ||
+true  # TODO(iphydf): remove this line once the data races are fixed.
