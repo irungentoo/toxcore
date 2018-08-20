@@ -40,7 +40,7 @@
 #include <string.h>
 
 #ifndef VANILLA_NACL
-#include "sodium.h"
+#include <sodium.h>
 #endif
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)

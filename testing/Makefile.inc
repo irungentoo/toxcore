@@ -8,6 +8,10 @@ endif
 noinst_LTLIBRARIES += libmisc_tools.la
 libmisc_tools_la_SOURCES = ../testing/misc_tools.c ../testing/misc_tools.h
 
+libmisc_tools_la_CFLAGS =  $(LIBSODIUM_CFLAGS)
+
+libmisc_tools_la_LIBADD =  $(LIBSODIUM_LDFLAGS)
+
 if BUILD_TESTING
 
 noinst_PROGRAMS +=      DHT_test \
