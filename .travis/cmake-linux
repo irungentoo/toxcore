@@ -92,8 +92,8 @@ travis_script() {
 
   cd _build  # pushd
   make "-j$NPROC" -k install
-  make "-j$NPROC" test ARGS="-j50" || \
-    make "-j$NPROC" test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
+  ctest -j50 --output-on-failure || \
+    ctest -j50 --output-on-failure --rerun-failed
   cd -  # popd
 }
 
