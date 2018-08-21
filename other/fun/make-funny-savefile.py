@@ -7,7 +7,7 @@ with externally generated keys.
 (c) 2015 Alexandre Erwin Ittner
 
 Distributed under the GNU GPL v3 or later, WITHOUT ANY WARRANTY. See the
-file "COPYING" for license information.
+file "LICENSE.md" for license information.
 
 
 Usage:

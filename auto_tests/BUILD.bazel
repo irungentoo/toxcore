@@ -1,0 +1,36 @@
+cc_library(
+    name = "check_compat",
+    testonly = True,
+    hdrs = ["check_compat.h"],
+)
+
+cc_library(
+    name = "run_auto_test",
+    testonly = True,
+    hdrs = ["run_auto_test.h"],
+)
+
+test_sizes = {
+    "conference_peer_nick_test": "medium",
+}
+
+[cc_test(
+    name = src[:-2],
+    size = test_sizes.get(
+        src[:-2],
+        "small",
+    ),
+    srcs = [src],
+    args = ["$(location %s)" % src],
+    copts = ["-Wno-sign-compare"],
+    data = glob(["data/*"]),
+    deps = [
+        ":check_compat",
+        ":run_auto_test",
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:DHT_srcs",
+        "//c-toxcore/toxencryptsave",
+    ],
+) for src in glob(["*_test.c"])]

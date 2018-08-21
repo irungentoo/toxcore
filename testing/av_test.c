@@ -1,32 +1,58 @@
-/**  av_test.c
- *
- *   Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- *   This file is part of Tox.
- *
- *   Tox is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   Tox is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
- *   Compile with (Linux only; in newly created directory toxcore/dir_name):
- *   gcc -o av_test ../toxav/av_test.c ../build/.libs/libtox*.a -lopencv_core \
- *   -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
+/*
+ * Compile with (Linux only; in newly created directory toxcore/dir_name):
+ * gcc -o av_test ../toxav/av_test.c ../build/.libs/libtox*.a -lopencv_core \
+ * -lopencv_highgui -lopencv_imgproc -lsndfile -pthread -lvpx -lopus -lsodium -lportaudio
  */
 
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#define _XOPEN_SOURCE 600
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// XXX: Hack because toxav doesn't really expose ring_buffer, but this av test
+// uses it. Not all of these functions are used, but when linking statically,
+// not renaming them will cause multiple definition errors, so we need to rename
+// all of them.
+#define RingBuffer TestRingBuffer
+#define rb_full  test_rb_full
+#define rb_empty test_rb_empty
+#define rb_write test_rb_write
+#define rb_read  test_rb_read
+#define rb_new   test_rb_new
+#define rb_kill  test_rb_kill
+#define rb_size  test_rb_size
+#define rb_data  test_rb_data
+#include "../toxav/ring_buffer.c"
 
 #include "../toxav/toxav.h"
+#include "../toxcore/Messenger.h"
+#include "../toxcore/mono_time.h" /* current_time_monotonic() */
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
-#include "../toxcore/network.h" /* current_time_monotonic() */
+
+#ifdef __cplusplus
+}
+#endif
 
 /* Playing audio data */
 #include <portaudio.h>
@@ -35,19 +61,19 @@
 
 /* Reading and Displaying video data */
 #include <opencv/cv.h>
-#include <opencv/highgui.h>
 #include <opencv/cvwimage.h>
+#include <opencv/highgui.h>
 
-#include <sys/stat.h>
 #include <assert.h>
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
-#include <errno.h>
+#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 
-#define c_sleep(x) usleep(1000*x)
+#define c_sleep(x) usleep(1000*(x))
 
 
 #define CLIP(X) ((X) > 255 ? 255 : (X) < 0 ? 0 : X)
@@ -76,7 +102,6 @@ typedef struct {
     uint32_t state;
     pthread_mutex_t arb_mutex[1];
     RingBuffer *arb; /* Audio ring buffer */
-
 } CallControl;
 
 struct toxav_thread_data {
@@ -85,20 +110,20 @@ struct toxav_thread_data {
     int32_t sig;
 };
 
-const char *vdout = "AV Test"; /* Video output */
-PaStream *adout = NULL; /* Audio output */
+static const char *vdout = "AV Test"; /* Video output */
+static PaStream *adout = nullptr; /* Audio output */
 
 typedef struct {
     uint16_t size;
     int16_t data[];
 } frame;
 
-void *pa_write_thread (void *d)
+static void *pa_write_thread(void *d)
 {
     /* The purpose of this thread is to make sure Pa_WriteStream will not block
      * toxav_iterate thread
      */
-    CallControl *cc = d;
+    CallControl *cc = (CallControl *)d;
 
     while (Pa_IsStreamActive(adout)) {
         frame *f;
@@ -113,32 +138,34 @@ void *pa_write_thread (void *d)
             c_sleep(10);
         }
     }
+
+    return nullptr;
 }
 
 /**
  * Callbacks
  */
-void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
+static void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enabled, bool video_enabled, void *user_data)
 {
     printf("Handling CALL callback\n");
     ((CallControl *)user_data)->incoming = true;
 }
-void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
+static void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
     printf("Handling CALL STATE callback: %d\n", state);
     ((CallControl *)user_data)->state = state;
 }
-void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    uint16_t width, uint16_t height,
-                                    uint8_t const *y, uint8_t const *u, uint8_t const *v,
-                                    int32_t ystride, int32_t ustride, int32_t vstride,
-                                    void *user_data)
+static void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
+        uint16_t width, uint16_t height,
+        uint8_t const *y, uint8_t const *u, uint8_t const *v,
+        int32_t ystride, int32_t ustride, int32_t vstride,
+        void *user_data)
 {
     ystride = abs(ystride);
     ustride = abs(ustride);
     vstride = abs(vstride);
 
-    uint16_t *img_data = malloc(height * width * 6);
+    uint16_t *img_data = (uint16_t *)malloc(height * width * 6);
 
     unsigned long int i, j;
 
@@ -158,22 +185,24 @@ void t_toxav_receive_video_frame_cb(ToxAV *av, uint32_t friend_number,
 
     CvMat mat = cvMat(height, width, CV_8UC3, img_data);
 
-    CvSize sz = {.height = height, .width = width};
+    CvSize sz;
+    sz.height = height;
+    sz.width = width;
 
     IplImage *header = cvCreateImageHeader(sz, 1, 3);
     IplImage *img = cvGetImage(&mat, header);
     cvShowImage(vdout, img);
     free(img_data);
 }
-void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
-                                    int16_t const *pcm,
-                                    size_t sample_count,
-                                    uint8_t channels,
-                                    uint32_t sampling_rate,
-                                    void *user_data)
+static void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
+        int16_t const *pcm,
+        size_t sample_count,
+        uint8_t channels,
+        uint32_t sampling_rate,
+        void *user_data)
 {
-    CallControl *cc = user_data;
-    frame *f = malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t) * channels);
+    CallControl *cc = (CallControl *)user_data;
+    frame *f = (frame *)malloc(sizeof(uint16_t) + sample_count * sizeof(int16_t) * channels);
     memcpy(f->data, pcm, sample_count * sizeof(int16_t) * channels);
     f->size = sample_count;
 
@@ -181,78 +210,86 @@ void t_toxav_receive_audio_frame_cb(ToxAV *av, uint32_t friend_number,
     free(rb_write(cc->arb, f));
     pthread_mutex_unlock(cc->arb_mutex);
 }
-void t_toxav_bit_rate_status_cb(ToxAV *av, uint32_t friend_number,
-                                uint32_t audio_bit_rate, uint32_t video_bit_rate,
-                                void *user_data)
+static void t_toxav_audio_bit_rate_cb(ToxAV *av, uint32_t friend_number,
+                                      uint32_t audio_bit_rate, void *user_data)
 {
-    printf ("Suggested bit rates: audio: %d video: %d\n", audio_bit_rate, video_bit_rate);
+    printf("Suggested bit rate: audio: %u\n", audio_bit_rate);
 }
-void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
+static void t_toxav_video_bit_rate_cb(ToxAV *av, uint32_t friend_number,
+                                      uint32_t video_bit_rate, void *user_data)
+{
+    printf("Suggested bit rate: video: %u\n", video_bit_rate);
+}
+static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length,
+                                       void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        assert(tox_friend_add_norequest(m, public_key, NULL) != (uint32_t) ~0);
+        assert(tox_friend_add_norequest(m, public_key, nullptr) != (uint32_t) ~0);
     }
 }
 
 /**
  */
-void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxAV **BobAV, CallControl *BobCC)
+static void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxAV **BobAV, CallControl *BobCC)
 {
     Tox *Alice;
     Tox *Bob;
 
-    struct Tox_Options opts;
-    tox_options_default(&opts);
+    struct Tox_Options *opts = tox_options_new(nullptr);
+    assert(opts != nullptr);
 
-    opts.end_port = 0;
-    opts.ipv6_enabled = false;
+    tox_options_set_end_port(opts, 0);
+    tox_options_set_ipv6_enabled(opts, false);
 
     {
         TOX_ERR_NEW error;
 
-        opts.start_port = 33445;
-        *bootstrap = tox_new(&opts, &error);
+        tox_options_set_start_port(opts, 33445);
+        *bootstrap = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
-        opts.start_port = 33455;
-        Alice = tox_new(&opts, &error);
+        tox_options_set_start_port(opts, 33455);
+        Alice = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
 
-        opts.start_port = 33465;
-        Bob = tox_new(&opts, &error);
+        tox_options_set_start_port(opts, 33465);
+        Bob = tox_new(opts, &error);
         assert(error == TOX_ERR_NEW_OK);
     }
 
+    tox_options_free(opts);
+
     printf("Created 3 instances of Tox\n");
     printf("Preparing network...\n");
-    long long unsigned int cur_time = time(NULL);
+    long long unsigned int cur_time = time(nullptr);
 
     uint32_t to_compare = 974536;
     uint8_t address[TOX_ADDRESS_SIZE];
 
-    tox_callback_friend_request(Alice, t_accept_friend_request_cb, &to_compare);
+    tox_callback_friend_request(Alice, t_accept_friend_request_cb);
     tox_self_get_address(Alice, address);
 
 
-    assert(tox_friend_add(Bob, address, (uint8_t *)"gentoo", 7, NULL) != (uint32_t) ~0);
+    assert(tox_friend_add(Bob, address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
 
     uint8_t off = 1;
 
     while (1) {
-        tox_iterate(*bootstrap);
-        tox_iterate(Alice);
-        tox_iterate(Bob);
+        tox_iterate(*bootstrap, &to_compare);
+        tox_iterate(Alice, &to_compare);
+        tox_iterate(Bob, &to_compare);
 
         if (tox_self_get_connection_status(*bootstrap) &&
                 tox_self_get_connection_status(Alice) &&
                 tox_self_get_connection_status(Bob) && off) {
-            printf("Toxes are online, took %llu seconds\n", time(NULL) - cur_time);
+            printf("Toxes are online, took %llu seconds\n", time(nullptr) - cur_time);
             off = 0;
         }
 
-        if (tox_friend_get_connection_status(Alice, 0, NULL) == TOX_CONNECTION_UDP &&
-                tox_friend_get_connection_status(Bob, 0, NULL) == TOX_CONNECTION_UDP)
+        if (tox_friend_get_connection_status(Alice, 0, nullptr) == TOX_CONNECTION_UDP &&
+                tox_friend_get_connection_status(Bob, 0, nullptr) == TOX_CONNECTION_UDP) {
             break;
+        }
 
         c_sleep(20);
     }
@@ -269,32 +306,34 @@ void initialize_tox(Tox **bootstrap, ToxAV **AliceAV, CallControl *AliceCC, ToxA
     /* Alice */
     toxav_callback_call(*AliceAV, t_toxav_call_cb, AliceCC);
     toxav_callback_call_state(*AliceAV, t_toxav_call_state_cb, AliceCC);
-    toxav_callback_bit_rate_status(*AliceAV, t_toxav_bit_rate_status_cb, AliceCC);
+    toxav_callback_audio_bit_rate(*AliceAV, t_toxav_audio_bit_rate_cb, AliceCC);
+    toxav_callback_video_bit_rate(*AliceAV, t_toxav_video_bit_rate_cb, AliceCC);
     toxav_callback_video_receive_frame(*AliceAV, t_toxav_receive_video_frame_cb, AliceCC);
     toxav_callback_audio_receive_frame(*AliceAV, t_toxav_receive_audio_frame_cb, AliceCC);
 
     /* Bob */
     toxav_callback_call(*BobAV, t_toxav_call_cb, BobCC);
     toxav_callback_call_state(*BobAV, t_toxav_call_state_cb, BobCC);
-    toxav_callback_bit_rate_status(*BobAV, t_toxav_bit_rate_status_cb, BobCC);
+    toxav_callback_audio_bit_rate(*BobAV, t_toxav_audio_bit_rate_cb, BobCC);
+    toxav_callback_video_bit_rate(*BobAV, t_toxav_video_bit_rate_cb, BobCC);
     toxav_callback_video_receive_frame(*BobAV, t_toxav_receive_video_frame_cb, BobCC);
     toxav_callback_audio_receive_frame(*BobAV, t_toxav_receive_audio_frame_cb, BobCC);
 
 
     printf("Created 2 instances of ToxAV\n");
-    printf("All set after %llu seconds!\n", time(NULL) - cur_time);
+    printf("All set after %llu seconds!\n", time(nullptr) - cur_time);
 }
-int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV)
+static int iterate_tox(Tox *bootstrap, ToxAV *AliceAV, ToxAV *BobAV, void *userdata)
 {
-    tox_iterate(bootstrap);
-    tox_iterate(toxav_get_tox(AliceAV));
-    tox_iterate(toxav_get_tox(BobAV));
+    tox_iterate(bootstrap, userdata);
+    tox_iterate(toxav_get_tox(AliceAV), userdata);
+    tox_iterate(toxav_get_tox(BobAV), userdata);
 
     return MIN(tox_iteration_interval(toxav_get_tox(AliceAV)), tox_iteration_interval(toxav_get_tox(BobAV)));
 }
-void *iterate_toxav (void *data)
+static void *iterate_toxav(void *data)
 {
-    struct toxav_thread_data *data_cast = data;
+    struct toxav_thread_data *data_cast = (struct toxav_thread_data *)data;
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
     cvNamedWindow(vdout, CV_WINDOW_AUTOSIZE);
 #endif
@@ -309,8 +348,9 @@ void *iterate_toxav (void *data)
 
 #if defined TEST_TRANSFER_V && TEST_TRANSFER_V == 1
 
-        if (!rc)
+        if (!rc) {
             rc = 1;
+        }
 
         cvWaitKey(rc);
 #else
@@ -324,16 +364,16 @@ void *iterate_toxav (void *data)
     cvDestroyWindow(vdout);
 #endif
 
-    pthread_exit(NULL);
+    pthread_exit(nullptr);
 }
 
-int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
+static int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
 {
-    int32_t strides[3] = { 1280, 640, 640 };
+    int32_t strides[3] = { img->width, img->width / 2, img->width / 2 };
     uint8_t *planes[3] = {
-        malloc(img->height * img->width),
-        malloc(img->height * img->width / 4),
-        malloc(img->height * img->width / 4),
+        (uint8_t *)malloc(img->height * img->width),
+        (uint8_t *)malloc(img->height * img->width / 4),
+        (uint8_t *)malloc(img->height * img->width / 4),
     };
 
     int x_chroma_shift = 1;
@@ -359,26 +399,27 @@ int send_opencv_img(ToxAV *av, uint32_t friend_number, const IplImage *img)
     }
 
     int rc = toxav_video_send_frame(av, friend_number, img->width, img->height,
-                                    planes[0], planes[1], planes[2], NULL);
+                                    planes[0], planes[1], planes[2], nullptr);
     free(planes[0]);
     free(planes[1]);
     free(planes[2]);
     return rc;
 }
-int print_audio_devices()
+static int print_audio_devices(void)
 {
     int i = 0;
 
     for (i = 0; i < Pa_GetDeviceCount(); ++i) {
         const PaDeviceInfo *info = Pa_GetDeviceInfo(i);
 
-        if (info)
+        if (info) {
             printf("%d) %s\n", i, info->name);
+        }
     }
 
     return 0;
 }
-int print_help (const char *name)
+static int print_help(const char *name)
 {
     printf("Usage: %s -[a:v:o:dh]\n"
            "-a <path> audio input file\n"
@@ -392,7 +433,7 @@ int print_help (const char *name)
     return 0;
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
     freopen("/dev/zero", "w", stderr);
     Pa_Initialize();
@@ -400,12 +441,15 @@ int main (int argc, char **argv)
     struct stat st;
 
     /* AV files for testing */
-    const char *af_name = NULL;
-    const char *vf_name = NULL;
+    const char *af_name = nullptr;
+    const char *vf_name = nullptr;
     long audio_out_dev_idx = -1;
 
     int32_t audio_frame_duration = 20;
+#if 0
+    // TODO(mannol): Put this to use.
     int32_t video_frame_duration = 10;
+#endif
 
     /* Parse settings */
 CHECK_ARG:
@@ -431,6 +475,8 @@ CHECK_ARG:
             vf_name = optarg;
             goto CHECK_ARG;
 
+#if 0
+
         case 'x': {
             char *d;
             video_frame_duration = strtol(optarg, &d, 10);
@@ -442,6 +488,8 @@ CHECK_ARG:
 
             goto CHECK_ARG;
         }
+
+#endif
 
         case 'o': {
             char *d;
@@ -491,8 +539,9 @@ CHECK_ARG:
         }
     }
 
-    if (audio_out_dev_idx < 0)
+    if (audio_out_dev_idx < 0) {
         audio_out_dev_idx = Pa_GetDefaultOutputDevice();
+    }
 
     const PaDeviceInfo *audio_dev = Pa_GetDeviceInfo(audio_out_dev_idx);
 
@@ -516,6 +565,9 @@ CHECK_ARG:
 
     initialize_tox(&bootstrap, &AliceAV, &AliceCC, &BobAV, &BobCC);
 
+    // TODO(iphydf): Don't depend on toxcore internals
+    const Mono_Time *mono_time = (*(Messenger **)bootstrap)->mono_time;
+
     if (TEST_TRANSFER_A) {
         SNDFILE *af_handle;
         SF_INFO af_info;
@@ -525,8 +577,8 @@ CHECK_ARG:
         memset(&AliceCC, 0, sizeof(CallControl));
         memset(&BobCC, 0, sizeof(CallControl));
 
-        pthread_mutex_init(AliceCC.arb_mutex, NULL);
-        pthread_mutex_init(BobCC.arb_mutex, NULL);
+        pthread_mutex_init(AliceCC.arb_mutex, nullptr);
+        pthread_mutex_init(BobCC.arb_mutex, nullptr);
 
         AliceCC.arb = rb_new(16);
         BobCC.arb = rb_new(16);
@@ -541,8 +593,9 @@ CHECK_ARG:
             }
         }
 
-        while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
+        while (!BobCC.incoming) {
+            iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
+        }
 
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
@@ -554,32 +607,33 @@ CHECK_ARG:
             }
         }
 
-        while (AliceCC.state == 0)
-            iterate_tox(bootstrap, AliceAV, BobAV);
+        while (AliceCC.state == 0) {
+            iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
+        }
 
         /* Open audio file */
         af_handle = sf_open(af_name, SFM_READ, &af_info);
 
-        if (af_handle == NULL) {
+        if (af_handle == nullptr) {
             printf("Failed to open the file.\n");
             exit(1);
         }
 
         int16_t PCM[5760];
 
-        time_t start_time = time(NULL);
+        time_t start_time = time(nullptr);
         time_t expected_time = af_info.frames / af_info.samplerate + 2;
 
 
         /* Start decode thread */
         struct toxav_thread_data data = {
-            .AliceAV = AliceAV,
-            .BobAV = BobAV,
-            .sig = 0
+            AliceAV,
+            BobAV,
+            0,
         };
 
         pthread_t dect;
-        pthread_create(&dect, NULL, iterate_toxav, &data);
+        pthread_create(&dect, nullptr, iterate_toxav, &data);
         pthread_detach(dect);
 
         int frame_size = (af_info.samplerate * audio_frame_duration / 1000) * af_info.channels;
@@ -589,25 +643,25 @@ CHECK_ARG:
         output.channelCount = af_info.channels;
         output.sampleFormat = paInt16;
         output.suggestedLatency = audio_dev->defaultHighOutputLatency;
-        output.hostApiSpecificStreamInfo = NULL;
+        output.hostApiSpecificStreamInfo = nullptr;
 
-        PaError err = Pa_OpenStream(&adout, NULL, &output, af_info.samplerate, frame_size, paNoFlag, NULL, NULL);
+        PaError err = Pa_OpenStream(&adout, nullptr, &output, af_info.samplerate, frame_size, paNoFlag, nullptr, nullptr);
         assert(err == paNoError);
 
         err = Pa_StartStream(adout);
         assert(err == paNoError);
 
-//         toxav_audio_bit_rate_set(AliceAV, 0, 64, false, NULL);
+//         toxav_audio_bit_rate_set(AliceAV, 0, 64, false, nullptr);
 
         /* Start write thread */
         pthread_t t;
-        pthread_create(&t, NULL, pa_write_thread, &BobCC);
+        pthread_create(&t, nullptr, pa_write_thread, &BobCC);
         pthread_detach(t);
 
         printf("Sample rate %d\n", af_info.samplerate);
 
-        while (start_time + expected_time > time(NULL) ) {
-            uint64_t enc_start_time = current_time_monotonic();
+        while (start_time + expected_time > time(nullptr)) {
+            uint64_t enc_start_time = current_time_monotonic(mono_time);
             int64_t count = sf_read_short(af_handle, PCM, frame_size);
 
             if (count > 0) {
@@ -615,15 +669,15 @@ CHECK_ARG:
 
                 if (toxav_audio_send_frame(AliceAV, 0, PCM, count / af_info.channels, af_info.channels, af_info.samplerate,
                                            &rc) == false) {
-                    printf("Error sending frame of size %ld: %d\n", count, rc);
+                    printf("Error sending frame of size %ld: %d\n", (long)count, rc);
                 }
             }
 
-            iterate_tox(bootstrap, AliceAV, BobAV);
-            c_sleep(abs(audio_frame_duration - (current_time_monotonic() - enc_start_time) - 1));
+            iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
+            c_sleep((audio_frame_duration - (current_time_monotonic(mono_time) - enc_start_time) - 1));
         }
 
-        printf("Played file in: %lu; stopping stream...\n", time(NULL) - start_time);
+        printf("Played file in: %lu; stopping stream...\n", time(nullptr) - start_time);
 
         Pa_StopStream(adout);
         sf_close(af_handle);
@@ -638,25 +692,28 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
         assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         /* Stop decode thread */
         data.sig = -1;
 
-        while (data.sig != 1)
-            pthread_yield();
+        while (data.sig != 1) {
+            sched_yield();
+        }
 
         pthread_mutex_destroy(AliceCC.arb_mutex);
         pthread_mutex_destroy(BobCC.arb_mutex);
 
-        void *f = NULL;
+        void *f = nullptr;
 
-        while (rb_read(AliceCC.arb, &f))
+        while (rb_read(AliceCC.arb, &f)) {
             free(f);
+        }
 
-        while (rb_read(BobCC.arb, &f))
+        while (rb_read(BobCC.arb, &f)) {
             free(f);
+        }
 
         printf("Success!");
     }
@@ -677,8 +734,9 @@ CHECK_ARG:
             }
         }
 
-        while (!BobCC.incoming)
-            iterate_tox(bootstrap, AliceAV, BobAV);
+        while (!BobCC.incoming) {
+            iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
+        }
 
         { /* Answer */
             TOXAV_ERR_ANSWER rc;
@@ -690,17 +748,17 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
 
         /* Start decode thread */
         struct toxav_thread_data data = {
-            .AliceAV = AliceAV,
-            .BobAV = BobAV,
-            .sig = 0
+            AliceAV,
+            BobAV,
+            0,
         };
 
         pthread_t dect;
-        pthread_create(&dect, NULL, iterate_toxav, &data);
+        pthread_create(&dect, nullptr, iterate_toxav, &data);
         pthread_detach(dect);
 
         CvCapture *capture = cvCreateFileCapture(vf_name);
@@ -710,18 +768,21 @@ CHECK_ARG:
             exit(1);
         }
 
-//         toxav_video_bit_rate_set(AliceAV, 0, 5000, false, NULL);
+#if 0
+        toxav_video_bit_rate_set(AliceAV, 0, 5000, false, nullptr);
+#endif
 
-        time_t start_time = time(NULL);
+        time_t start_time = time(nullptr);
 
-        while (start_time + 90 > time(NULL)) {
-            IplImage *frame = cvQueryFrame(capture );
+        while (start_time + 90 > time(nullptr)) {
+            IplImage *frame = cvQueryFrame(capture);
 
-            if (!frame)
+            if (!frame) {
                 break;
+            }
 
             send_opencv_img(AliceAV, 0, frame);
-            iterate_tox(bootstrap, AliceAV, BobAV);
+            iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
             c_sleep(10);
         }
 
@@ -737,15 +798,16 @@ CHECK_ARG:
             }
         }
 
-        iterate_tox(bootstrap, AliceAV, BobAV);
+        iterate_tox(bootstrap, AliceAV, BobAV, nullptr);
         assert(BobCC.state == TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         /* Stop decode thread */
         printf("Stopping decode thread\n");
         data.sig = -1;
 
-        while (data.sig != 1)
-            pthread_yield();
+        while (data.sig != 1) {
+            sched_yield();
+        }
 
         printf("Success!");
     }

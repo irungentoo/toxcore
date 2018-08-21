@@ -1,0 +1,36 @@
+cc_binary(
+    name = "cracker",
+    srcs = ["cracker.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "sign",
+    srcs = ["sign.c"],
+    copts = ["-w"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "strkey",
+    srcs = ["strkey.c"],
+    copts = ["-w"],
+    deps = [
+        "@libsodium",
+    ],
+)
+
+cc_binary(
+    name = "save-generator",
+    srcs = ["save-generator.c"],
+    deps = [
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)

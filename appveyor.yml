@@ -1,0 +1,34 @@
+cache:
+- '%APPDATA%\downloads'
+
+install:
+# TODO(iphydf): Remove this when appveyor gets curl back, which it should have
+# according to https://www.appveyor.com/docs/how-to/download-file/.
+- choco install curl
+- refreshenv
+- if not exist %APPDATA%\downloads mkdir %APPDATA%\downloads
+- cd third_party
+# libsodium
+- mkdir libsodium && cd libsodium
+- if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.16-msvc.zip -o %APPDATA%\downloads\libsodium.zip
+- unzip %APPDATA%\downloads\libsodium.zip
+- cd ..
+# pthreads-win32
+- mkdir pthreads-win32 && cd pthreads-win32
+- if not exist %APPDATA%\downloads\pthreads.zip curl -L ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o %APPDATA%\downloads\pthreads.zip
+- unzip %APPDATA%\downloads\pthreads.zip
+- cd ../..
+
+before_build:
+- cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF
+
+build:
+  project: INSTALL.vcxproj
+
+# TODO(iphydf): Tests all segfault on Windows at the moment.
+#test_script:
+#- ctest -C Debug
+
+branches:
+  only:
+  - master

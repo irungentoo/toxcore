@@ -9,22 +9,23 @@
  * Will try to find a public key starting with: ABCDEF
  */
 
-#include "../../testing/misc_tools.c"
-#include <time.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-/* NaCl includes*/
-#include <crypto_scalarmult_curve25519.h>
-#include <randombytes.h>
+/* Sodium includes*/
+#include <sodium/crypto_scalarmult_curve25519.h>
+#include <sodium/randombytes.h>
 
-/* Sodium include*/
-//#include <sodium.h>
+#include "../../testing/misc_tools.h"
+#include "../../toxcore/ccompat.h"
 
-void print_key(uint8_t *client_id)
+static void print_key(uint8_t *client_id)
 {
     uint32_t j;
 
     for (j = 0; j < 32; j++) {
-        printf("%02hhX", client_id[j]);
+        printf("%02X", client_id[j]);
     }
 }
 
@@ -42,8 +43,9 @@ int main(int argc, char *argv[])
     unsigned char *key = hex_string_to_bin(argv[1]);
     uint8_t pub_key[32], priv_key[32], c_key[32];
 
-    if (len > 32)
+    if (len > 32) {
         len = 32;
+    }
 
     memcpy(c_key, key, len);
     free(key);
@@ -53,14 +55,16 @@ int main(int argc, char *argv[])
         crypto_scalarmult_curve25519_base(pub_key, priv_key);
         uint32_t i;
 
-        if (memcmp(c_key, pub_key, len) == 0)
+        if (memcmp(c_key, pub_key, len) == 0) {
             break;
+        }
 
         for (i = 32; i != 0; --i) {
             priv_key[i - 1] += 1;
 
-            if (priv_key[i - 1] != 0)
+            if (priv_key[i - 1] != 0) {
                 break;
+            }
         }
 
         ++num_tries;

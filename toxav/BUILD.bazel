@@ -1,0 +1,122 @@
+load("//tools:no_undefined.bzl", "cc_library")
+
+filegroup(
+    name = "public_headers",
+    srcs = ["toxav.h"],
+    visibility = ["//c-toxcore:__pkg__"],
+)
+
+cc_library(
+    name = "public",
+    hdrs = [":public_headers"],
+)
+
+cc_library(
+    name = "ring_buffer",
+    srcs = ["ring_buffer.c"],
+    hdrs = ["ring_buffer.h"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
+)
+
+cc_test(
+    name = "ring_buffer_test",
+    srcs = ["ring_buffer_test.cc"],
+    deps = [
+        ":ring_buffer",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "ring_buffer_srcs",
+    hdrs = [
+        "ring_buffer.c",
+        "ring_buffer.h",
+    ],
+    visibility = ["//c-toxcore/testing:__pkg__"],
+    deps = ["//c-toxcore/toxcore:ccompat"],
+)
+
+cc_library(
+    name = "bwcontroller",
+    srcs = ["bwcontroller.c"],
+    hdrs = ["bwcontroller.h"],
+    deps = [
+        ":ring_buffer",
+        "//c-toxcore/toxcore:Messenger",
+    ],
+)
+
+cc_library(
+    name = "rtp",
+    srcs = ["rtp.c"],
+    hdrs = ["rtp.h"],
+    deps = [":bwcontroller"],
+)
+
+cc_test(
+    name = "rtp_test",
+    srcs = ["rtp_test.cc"],
+    deps = [
+        ":rtp",
+        "//c-toxcore/toxcore:crypto_core",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "audio",
+    srcs = ["audio.c"],
+    hdrs = ["audio.h"],
+    deps = [
+        ":public",
+        ":rtp",
+        "//c-toxcore/toxcore:network",
+        "@opus",
+    ],
+)
+
+cc_library(
+    name = "video",
+    srcs = [
+        "msi.c",
+        "video.c",
+    ],
+    hdrs = [
+        "msi.h",
+        "video.h",
+    ],
+    deps = [
+        ":audio",
+        ":public",
+        "//c-toxcore/toxcore:network",
+        "@libvpx",
+    ],
+)
+
+cc_library(
+    name = "groupav",
+    srcs = ["groupav.c"],
+    hdrs = ["groupav.h"],
+    deps = [
+        "//c-toxcore/toxcore",
+        "@opus",
+    ],
+)
+
+cc_library(
+    name = "toxav",
+    srcs = [
+        "toxav.c",
+        "toxav_old.c",
+    ],
+    hdrs = [
+        "toxav.api.h",
+        "toxav.h",
+    ],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":groupav",
+        ":video",
+    ],
+)

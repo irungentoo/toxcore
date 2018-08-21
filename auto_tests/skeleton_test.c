@@ -2,14 +2,10 @@
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <stdint.h>
-#include <string.h>
-#include <check.h>
 #include <stdlib.h>
-#include <time.h>
 
-#include "helpers.h"
+#include "../testing/misc_tools.h"
+#include "check_compat.h"
 
 /*
 #include "../<stuff to test>"
@@ -22,7 +18,7 @@ START_TEST(test_creativetestnamegoeshere)
 }
 END_TEST
 
-Suite *creativesuitenamegoeshere_suite(void)
+static Suite *creativesuitenamegoeshere_suite(void)
 {
     Suite *s = suite_create("creativesuitedescritptiongoeshere");
 
@@ -31,9 +27,9 @@ Suite *creativesuitenamegoeshere_suite(void)
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
-    srand((unsigned int) time(NULL));
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
     Suite *creativesuitenamegoeshere = creativesuitenamegoeshere_suite();
     SRunner *test_runner = srunner_create(creativesuitenamegoeshere);
@@ -46,4 +42,3 @@ int main(int argc, char *argv[])
 
     return number_failed;
 }
-

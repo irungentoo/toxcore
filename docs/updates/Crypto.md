@@ -46,7 +46,7 @@ Crypto request packets
 --------------------------------------
 
 ```
-[char with a value of 32][Bob (The reciever's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted message]
+[char with a value of 32][Bob (The receiver's) Public key (client_id) (32 bytes))][Alice's (The sender's) Public key (client_id) (32 bytes)][Random nonce (24 bytes)][Encrypted message]
 ```
 
 The encrypted message is encrypted with crypto_box() (using Bob's public key, Alice's private key and the nonce (randomly generated 24 bytes)) and is a message from Alice in which she tells Bob who she is.

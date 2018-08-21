@@ -1,0 +1,130 @@
+#!/bin/sh
+
+set -eu
+
+SOURCE_DIR=$1
+MAJOR=$2
+MINOR=$3
+PATCH=$4
+
+VER="$MAJOR.$MINOR.$PATCH"
+
+update() {
+  file="$SOURCE_DIR/$1"
+  expr="$2"
+
+  sed -e "$expr" "$file" > "$file.updated-version"
+  if diff "$file" "$file.updated-version"; then
+    rm "$file.updated-version"
+  else
+    # use cat > and rm instead of move to keep file permissions
+    cat "$file.updated-version" > "$file"
+    rm "$file.updated-version"
+  fi
+}
+
+update 'configure.ac' 's/AC_INIT(\[tox\], \[.*\])/AC_INIT([tox], ['$VER'])/'
+
+update 'toxcore/tox.api.h' 's/\(const VERSION_MAJOR *= \).*;/\1'$MAJOR';/'
+update 'toxcore/tox.api.h' 's/\(const VERSION_MINOR *= \).*;/\1'$MINOR';/'
+update 'toxcore/tox.api.h' 's/\(const VERSION_PATCH *= \).*;/\1'$PATCH';/'
+
+update 'CMakeLists.txt' 's/\(PROJECT_VERSION_MAJOR "\).*"/\1'$MAJOR'"/'
+update 'CMakeLists.txt' 's/\(PROJECT_VERSION_MINOR "\).*"/\1'$MINOR'"/'
+update 'CMakeLists.txt' 's/\(PROJECT_VERSION_PATCH "\).*"/\1'$PATCH'"/'
+
+#
+# calculating the SO version
+#
+# The SO version reflects changes in the ABI compatibility of the library [1].
+# The general convention on this is that the SO version is a monotonically
+# increasing number. The major version reflects breaking changes and the minor
+# number reflect non-breaking updates [2].
+#
+# The SO version for tox libraries consists of two parts: `A.B`.
+# - incrementing A reflects an ABI breaking change.
+# - incrementing B reflects a non-ABI-breaking update. B is set to 0 when A is incremented.
+#
+# As the tox versioning scheme directly reflects ABI compatibility, we can use it
+# to construct the SO version.
+#
+# In the `0.y.z` release cycle, breaking changes are allowed in every increment of `y`,
+# so we can build the SO version just by taking `y.z`.
+# In the `x.y.z` release cycle with `x > 0` the SO version must be calculated by taking
+# the major of the tox version and add a hardcoded number that is the last A of the 0.y.z
+# release cycle.
+#
+# References:
+#
+# [1]: https://autotools.io/libtool/version.html
+# [2]: http://www.ibm.com/developerworks/linux/library/l-shlibs/index.html#N1006E
+#
+
+# the last major version number from the 0.x release cycle
+# this must be constant starting from the 1.0 release
+LAST_SOMAJOR=2
+
+if [ $MAJOR -eq 0 ]; then
+  SOMAJOR=$MINOR
+  SOMINOR=$PATCH
+
+  # update lastmajor above
+  update 'other/version-sync' 's/^\(LAST_SOMAJOR=\).*/\1'$SOMAJOR'/'
+else
+  SOMAJOR=$(expr $MAJOR + $LAST_SOMAJOR)
+  SOMINOR=$MINOR
+fi
+
+#
+# libtool has a quite cryptic implementation of the versioning system, which also
+# changes between systems, see https://github.com/lxde/lxqt/issues/488#issuecomment-238084222
+#
+# .so library version, following the libtool scheme:
+#
+#            current:revision:age
+#
+# current:  increment if interfaces have been added, removed or changed
+# revision: increment if source code has changed, set to zero if current is
+#           incremented
+# age:      increment if interfaces have been added, set to zero if
+#           interfaces have been removed or changed
+#
+# For a full reference see:
+# https://www.gnu.org/software/libtool/manual/libtool.html#Updating-version-info
+#
+# Passing such a version string to libtool will generate the following version number
+# on the library binary file on GNU/Linux:
+#
+# (current - age).(age).(revision)
+#
+# We do not want to use a separate version numbering for the library because the package versioning is equally good:
+#
+# Semver non-breaking: 0.y.(z+1) or x.(y+1).0:
+#
+# This would mean to increment current and age, which leave the major of SOVERSION the same.
+# Revision is incremented.
+#
+# Semver breaking: 0.(y+1).0 or (x+1).0.0:
+#
+# This would mean to increment current, set age and revision to zero.
+#
+# Thus to make libtool use our version, we have to pass (major + minor):patch:minor as current:revision:age to get:
+#
+#     (current - age).(age).(revision)
+# <=> (major + minor - minor).minor.patch
+# <=> major.minor.patch
+#
+
+if [ $MAJOR -eq 0 ]; then
+  LIBTOOL_CURRENT=$(expr $SOMAJOR + $SOMINOR)
+  LIBTOOL_AGE=$SOMINOR
+  LIBTOOL_REVISION=0
+else
+  LIBTOOL_CURRENT=$(expr $SOMAJOR + $SOMINOR)
+  LIBTOOL_AGE=$SOMINOR
+  LIBTOOL_REVISION=$PATCH
+fi
+
+update 'so.version' 's/^\(CURRENT=\).*/\1'$LIBTOOL_CURRENT'/'
+update 'so.version' 's/^\(AGE=\).*/\1'$LIBTOOL_AGE'/'
+update 'so.version' 's/^\(REVISION=\).*/\1'$LIBTOOL_REVISION'/'

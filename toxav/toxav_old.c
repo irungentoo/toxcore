@@ -1,8 +1,8 @@
-/* toxav_old.h
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013-2015 Tox project.
  *
- * Copyright (C) 2013-2015 Tox project All Rights Reserved.
- *
- * This file is part of Tox.
+ * This file is part of Tox, the free peer to peer instant messenger.
  *
  * Tox is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +15,15 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Tox. If not, see <http://www.gnu.org/licenses/>.
- *
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
  * This file contains the group chats code for the backwards compatibility.
  */
 
 #include "toxav.h"
-#include "group.h"
+
+#include "groupav.h"
 
 /* Create a new toxav group.
  *
@@ -35,11 +35,11 @@
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_add_av_groupchat(struct Tox *tox, void (*audio_callback)(void *, int, int, const int16_t *, unsigned int,
-                           uint8_t, unsigned int, void *), void *userdata)
+int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userdata)
 {
-    Messenger *m = (Messenger *)tox;
-    return add_av_groupchat(m->group_chat_object, audio_callback, userdata);
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return add_av_groupchat(m->log, tox, m->conferences_object, audio_callback, userdata);
 }
 
 /* Join a AV group (you need to have been invited first.)
@@ -52,12 +52,12 @@ int toxav_add_av_groupchat(struct Tox *tox, void (*audio_callback)(void *, int, 
  *
  * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
  */
-int toxav_join_av_groupchat(struct Tox *tox, int32_t friendnumber, const uint8_t *data, uint16_t length,
-                            void (*audio_callback)(void *, int, int, const int16_t *, unsigned int, uint8_t, unsigned int, void *),
-                            void *userdata)
+int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
+                            audio_data_cb *audio_callback, void *userdata)
 {
-    Messenger *m = (Messenger *)tox;
-    return join_av_groupchat(m->group_chat_object, friendnumber, data, length, audio_callback, userdata);
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return join_av_groupchat(m->log, tox, m->conferences_object, friendnumber, data, length, audio_callback, userdata);
 }
 
 /* Send audio to the group chat.
@@ -73,9 +73,10 @@ int toxav_join_av_groupchat(struct Tox *tox, int32_t friendnumber, const uint8_t
  *
  * Recommended values are: samples = 960, channels = 1, sample_rate = 48000
  */
-int toxav_group_send_audio(struct Tox *tox, int groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
-                           unsigned int sample_rate)
+int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
+                           uint32_t sample_rate)
 {
-    Messenger *m = (Messenger *)tox;
-    return group_send_audio(m->group_chat_object, groupnumber, pcm, samples, channels, sample_rate);
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return group_send_audio(m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
 }

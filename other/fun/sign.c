@@ -17,22 +17,24 @@
  */
 #include <sodium.h>
 #include <string.h>
-#include "../../testing/misc_tools.c" // hex_string_to_bin
 
-int load_file(char *filename, char **result)
+#include "../../testing/misc_tools.h" // hex_string_to_bin
+#include "../../toxcore/ccompat.h"
+
+static int load_file(char *filename, unsigned char **result)
 {
     int size = 0;
     FILE *f = fopen(filename, "rb");
 
-    if (f == NULL) {
-        *result = NULL;
+    if (f == nullptr) {
+        *result = nullptr;
         return -1; // -1 means file opening fail
     }
 
     fseek(f, 0, SEEK_END);
     size = ftell(f);
     fseek(f, 0, SEEK_SET);
-    *result = (char *)malloc(size + 1);
+    *result = (unsigned char *)malloc(size + 1);
 
     if (size != fread(*result, sizeof(char), size, f)) {
         free(*result);
@@ -56,13 +58,13 @@ int main(int argc, char *argv[])
         int i;
 
         for (i = 0; i < crypto_sign_ed25519_PUBLICKEYBYTES; i++) {
-            printf("%02hhX", pk[i]);
+            printf("%02X", pk[i]);
         }
 
         printf("\nSecret key:\n");
 
         for (i = 0; i < crypto_sign_ed25519_SECRETKEYBYTES; i++) {
-            printf("%02hhX", sk[i]);
+            printf("%02X", sk[i]);
         }
 
         printf("\n");
@@ -70,29 +72,33 @@ int main(int argc, char *argv[])
 
     if (argc == 5 && argv[1][0] == 's') {
         unsigned char *secret_key = hex_string_to_bin(argv[2]);
-        char *data;
+        unsigned char *data;
         int size = load_file(argv[3], &data);
 
-        if (size < 0)
+        if (size < 0) {
             goto fail;
+        }
 
         unsigned long long smlen;
-        char *sm = malloc(size + crypto_sign_ed25519_BYTES * 2);
+        unsigned char *sm = (unsigned char *)malloc(size + crypto_sign_ed25519_BYTES * 2);
         crypto_sign_ed25519(sm, &smlen, data, size, secret_key);
         free(secret_key);
 
-        if (smlen - size != crypto_sign_ed25519_BYTES)
+        if (smlen - size != crypto_sign_ed25519_BYTES) {
             goto fail;
+        }
 
         FILE *f = fopen(argv[4], "wb");
 
-        if (f == NULL)
+        if (f == nullptr) {
             goto fail;
+        }
 
         memcpy(sm + smlen, sm, crypto_sign_ed25519_BYTES); // Move signature from beginning to end of file.
 
-        if (fwrite(sm + (smlen - size), 1, smlen, f) != smlen)
+        if (fwrite(sm + (smlen - size), 1, smlen, f) != smlen) {
             goto fail;
+        }
 
         fclose(f);
         printf("Signed successfully.\n");
@@ -100,18 +106,18 @@ int main(int argc, char *argv[])
 
     if (argc == 4 && argv[1][0] == 'c') {
         unsigned char *public_key = hex_string_to_bin(argv[2]);
-        char *data;
+        unsigned char *data;
         int size = load_file(argv[3], &data);
 
-        if (size < 0)
+        if (size < 0) {
             goto fail;
+        }
 
-        char *signe = malloc(size + crypto_sign_ed25519_BYTES);
+        unsigned char *signe = (unsigned char *)malloc(size + crypto_sign_ed25519_BYTES);
         memcpy(signe, data + size - crypto_sign_ed25519_BYTES,
                crypto_sign_ed25519_BYTES); // Move signature from end to beginning of file.
         memcpy(signe + crypto_sign_ed25519_BYTES, data, size - crypto_sign_ed25519_BYTES);
-        unsigned long long smlen;
-        char *m = malloc(size);
+        unsigned char *m = (unsigned char *)malloc(size);
         unsigned long long mlen;
 
         if (crypto_sign_ed25519_open(m, &mlen, signe, size, public_key) == -1) {

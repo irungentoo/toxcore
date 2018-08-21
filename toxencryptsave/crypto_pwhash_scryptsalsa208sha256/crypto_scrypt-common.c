@@ -29,7 +29,7 @@
 #include "crypto_pwhash_scryptsalsa208sha256.h"
 #include "crypto_scrypt.h"
 #include "runtime.h"
-#include "utils.h"
+#include "../../toxcore/crypto_core.h"
 
 static const char * const itoa64 =
     "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -147,11 +147,11 @@ escrypt_r(escrypt_local_t * local, const uint8_t * passwd, size_t passwdlen,
     prefixlen = src - setting;
 
     salt = src;
-    src = (uint8_t *) strrchr((char *)salt, '$');
+    src = (uint8_t *) strrchr((const char *)salt, '$');
     if (src) {
         saltlen = src - salt;
     } else {
-        saltlen = strlen((char *)salt);
+        saltlen = strlen((const char *)salt);
     }
     need = prefixlen + saltlen + 1 +
         crypto_pwhash_scryptsalsa208sha256_STRHASHBYTES_ENCODED + 1;
@@ -175,7 +175,7 @@ escrypt_r(escrypt_local_t * local, const uint8_t * passwd, size_t passwdlen,
     *dst++ = '$';
 
     dst = encode64(dst, buflen - (dst - buf), hash, sizeof(hash));
-    sodium_memzero(hash, sizeof hash);
+    crypto_memzero(hash, sizeof hash);
     if (!dst || dst >= buf + buflen) { /* Can't happen */
         return NULL;
     }

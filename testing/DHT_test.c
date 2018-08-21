@@ -7,109 +7,106 @@
  * EX: ./test 127.0.0.1 33445 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
  *
  * The test will then ask you for the id (in hex format) of the friend you wish to add
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+/*
+ * Copyright © 2016-2017 The TokTok team.
+ * Copyright © 2013 Tox project.
+ *
+ * This file is part of Tox, the free peer to peer instant messenger.
+ *
+ * Tox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Tox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 600
 #endif
 
-//#include "../core/network.h"
-#include "../toxcore/DHT.h"
-#include "../toxcore/friend_requests.h"
-#include "misc_tools.c"
-
+#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
-//Sleep function (x = milliseconds)
-#if defined(_WIN32) || defined(__WIN32__) || defined (WIN32)
-
-#define c_sleep(x) Sleep(1*x)
-
-#else
-#include <unistd.h>
+#if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
 #include <arpa/inet.h>
-#define c_sleep(x) usleep(1000*x)
-
 #endif
+
+#include "../toxcore/DHT.h"
+#include "../toxcore/friend_requests.h"
+#include "../toxcore/mono_time.h"
+#include "misc_tools.h"
 
 #define PORT 33445
 
-uint8_t zeroes_cid[crypto_box_PUBLICKEYBYTES];
+static uint8_t zeroes_cid[CRYPTO_PUBLIC_KEY_SIZE];
 
-void print_client_id(uint8_t *public_key)
+static void print_client_id(const uint8_t *public_key)
 {
     uint32_t j;
 
-    for (j = 0; j < crypto_box_PUBLICKEYBYTES; j++) {
-        printf("%02hhX", public_key[j]);
+    for (j = 0; j < CRYPTO_PUBLIC_KEY_SIZE; j++) {
+        printf("%02X", public_key[j]);
     }
 }
 
-void print_hardening(Hardening *h)
+static void print_hardening(const Hardening *h)
 {
     printf("Hardening:\n");
-    printf("routes_requests_ok: %hhu\n", h->routes_requests_ok);
+    printf("routes_requests_ok: %u\n", h->routes_requests_ok);
     printf("routes_requests_timestamp: %llu\n", (long long unsigned int)h->routes_requests_timestamp);
     printf("routes_requests_pingedid: ");
     print_client_id(h->routes_requests_pingedid);
-    printf("\nsend_nodes_ok: %hhu\n", h->send_nodes_ok);
+    printf("\nsend_nodes_ok: %u\n", h->send_nodes_ok);
     printf("send_nodes_timestamp: %llu\n", (long long unsigned int)h->send_nodes_timestamp);
     printf("send_nodes_pingedid: ");
     print_client_id(h->send_nodes_pingedid);
-    printf("\ntesting_requests: %hhu\n", h->testing_requests);
+    printf("\ntesting_requests: %u\n", h->testing_requests);
     printf("testing_timestamp: %llu\n", (long long unsigned int)h->testing_timestamp);
     printf("testing_pingedid: ");
     print_client_id(h->testing_pingedid);
     printf("\n\n");
 }
 
-void print_assoc(IPPTsPng *assoc, uint8_t ours)
+static void print_assoc(const IPPTsPng *assoc, uint8_t ours)
 {
-    IP_Port *ipp = &assoc->ip_port;
-    printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip), ntohs(ipp->port));
+    const IP_Port *ipp = &assoc->ip_port;
+    char ip_str[IP_NTOA_LEN];
+    printf("\nIP: %s Port: %u", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
     printf("\nTimestamp: %llu", (long long unsigned int) assoc->timestamp);
     printf("\nLast pinged: %llu\n", (long long unsigned int) assoc->last_pinged);
 
     ipp = &assoc->ret_ip_port;
 
-    if (ours)
-        printf("OUR IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
-    else
-        printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip), ntohs(ipp->port));
+    if (ours) {
+        printf("OUR IP: %s Port: %u\n", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
+    } else {
+        printf("RET IP: %s Port: %u\n", ip_ntoa(&ipp->ip, ip_str, sizeof(ip_str)), net_ntohs(ipp->port));
+    }
 
     printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
     print_hardening(&assoc->hardening);
-
 }
 
-void print_clientlist(DHT *dht)
+static void print_clientlist(DHT *dht)
 {
     uint32_t i;
     printf("___________________CLOSE________________________________\n");
 
     for (i = 0; i < LCLIENT_LIST; i++) {
-        Client_data *client = &dht->close_clientlist[i];
+        const Client_data *client = dht_get_close_client(dht, i);
 
-        if (public_key_cmp(client->public_key, zeroes_cid) == 0)
+        if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
             continue;
+        }
 
         printf("ClientID: ");
         print_client_id(client->public_key);
@@ -119,28 +116,30 @@ void print_clientlist(DHT *dht)
     }
 }
 
-void print_friendlist(DHT *dht)
+static void print_friendlist(DHT *dht)
 {
     uint32_t i, k;
     IP_Port p_ip;
     printf("_________________FRIENDS__________________________________\n");
 
-    for (k = 0; k < dht->num_friends; k++) {
+    for (k = 0; k < dht_get_num_friends(dht); k++) {
         printf("FRIEND %u\n", k);
         printf("ID: ");
 
-        print_client_id(dht->friends_list[k].public_key);
+        print_client_id(dht_get_friend_public_key(dht, k));
 
-        int friendok = DHT_getfriendip(dht, dht->friends_list[k].public_key, &p_ip);
-        printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip), ntohs(p_ip.port), friendok);
+        int friendok = dht_getfriendip(dht, dht_get_friend_public_key(dht, k), &p_ip);
+        char ip_str[IP_NTOA_LEN];
+        printf("\nIP: %s:%u (%d)", ip_ntoa(&p_ip.ip, ip_str, sizeof(ip_str)), net_ntohs(p_ip.port), friendok);
 
         printf("\nCLIENTS IN LIST:\n\n");
 
         for (i = 0; i < MAX_FRIEND_CLIENTS; i++) {
-            Client_data *client = &dht->friends_list[k].client_list[i];
+            const Client_data *client = dht_friend_client(dht_get_friend(dht, k), i);
 
-            if (public_key_cmp(client->public_key, zeroes_cid) == 0)
+            if (public_key_cmp(client->public_key, zeroes_cid) == 0) {
                 continue;
+            }
 
             printf("ClientID: ");
             print_client_id(client->public_key);
@@ -151,21 +150,24 @@ void print_friendlist(DHT *dht)
     }
 }
 
-void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
+#if 0 /* TODO(slvr): */
+static void printpacket(uint8_t *data, uint32_t length, IP_Port ip_port)
 {
     uint32_t i;
     printf("UNHANDLED PACKET RECEIVED\nLENGTH:%u\nCONTENTS:\n", length);
     printf("--------------------BEGIN-----------------------------\n");
 
     for (i = 0; i < length; i++) {
-        if (data[i] < 16)
+        if (data[i] < 16) {
             printf("0");
+        }
 
-        printf("%hhX", data[i]);
+        printf("%X", data[i]);
     }
 
     printf("\n--------------------END-----------------------------\n\n\n");
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -178,8 +180,9 @@ int main(int argc, char *argv[])
     uint8_t ipv6enabled = TOX_ENABLE_IPV6_DEFAULT; /* x */
     int argvoffset = cmdline_parsefor_ipv46(argc, argv, &ipv6enabled);
 
-    if (argvoffset < 0)
+    if (argvoffset < 0) {
         exit(1);
+    }
 
     //memcpy(self_client_id, "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", 32);
     /* initialize networking */
@@ -187,35 +190,40 @@ int main(int argc, char *argv[])
     IP ip;
     ip_init(&ip, ipv6enabled);
 
-    DHT *dht = new_DHT(new_networking(ip, PORT));
+    Mono_Time *const mono_time = mono_time_new();
+    DHT *dht = new_dht(nullptr, mono_time, new_networking(nullptr, ip, PORT), true);
     printf("OUR ID: ");
-    uint32_t i;
 
-    for (i = 0; i < 32; i++) {
-        if (dht->self_public_key[i] < 16)
+    for (uint32_t i = 0; i < 32; i++) {
+        const uint8_t *const self_public_key = dht_get_self_public_key(dht);
+
+        if (self_public_key[i] < 16) {
             printf("0");
+        }
 
-        printf("%hhX", dht->self_public_key[i]);
+        printf("%X", self_public_key[i]);
     }
 
     char temp_id[128];
     printf("\nEnter the public_key of the friend you wish to add (32 bytes HEX format):\n");
 
-    if (!fgets(temp_id, sizeof(temp_id), stdin))
+    if (!fgets(temp_id, sizeof(temp_id), stdin)) {
         exit(0);
+    }
 
-    if ((strlen(temp_id) > 0) && (temp_id[strlen(temp_id) - 1] == '\n'))
+    if ((strlen(temp_id) > 0) && (temp_id[strlen(temp_id) - 1] == '\n')) {
         temp_id[strlen(temp_id) - 1] = '\0';
+    }
 
     uint8_t *bin_id = hex_string_to_bin(temp_id);
-    DHT_addfriend(dht, bin_id, 0, 0, 0, 0);
+    dht_addfriend(dht, bin_id, nullptr, nullptr, 0, nullptr);
     free(bin_id);
 
     perror("Initialization");
 
-    uint16_t port = htons(atoi(argv[argvoffset + 2]));
+    uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
-    int res = DHT_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
+    int res = dht_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);
 
     if (!res) {
@@ -223,32 +231,33 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /*
-        IP_Port ip_port;
-        uint8_t data[MAX_UDP_PACKET_SIZE];
-        uint32_t length;
-    */
+#if 0 /* TODO(slvr): */
+    IP_Port ip_port;
+    uint8_t data[MAX_UDP_PACKET_SIZE];
+    uint32_t length;
+#endif
 
     while (1) {
+        mono_time_update(mono_time);
 
-        do_DHT(dht);
+        do_dht(dht);
 
-        /* slvrTODO:
-                while(receivepacket(&ip_port, data, &length) != -1) {
-                    if(DHT_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
-                        //unhandled packet
-                        printpacket(data, length, ip_port);
-                    } else {
-                        printf("Received handled packet with length: %u\n", length);
-                    }
-                }
-        */
-        networking_poll(dht->net);
+#if 0 /* TODO(slvr): */
+
+        while (receivepacket(&ip_port, data, &length) != -1) {
+            if (dht_handlepacket(data, length, ip_port) && friendreq_handlepacket(data, length, ip_port)) {
+                //unhandled packet
+                printpacket(data, length, ip_port);
+            } else {
+                printf("Received handled packet with length: %u\n", length);
+            }
+        }
+
+#endif
+        networking_poll(dht_get_net(dht), nullptr);
 
         print_clientlist(dht);
         print_friendlist(dht);
         c_sleep(300);
     }
-
-    return 0;
 }

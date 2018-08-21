@@ -1,0 +1,40 @@
+version: 2
+
+workflows:
+  version: 2
+  build_linux:
+    jobs:
+    - asan
+    - tsan
+
+jobs:
+  asan:
+    working_directory: ~/work
+    docker:
+    - image: ubuntu
+
+    steps:
+    - checkout
+    - run: &apt_install
+           apt update &&
+           apt install -y --no-install-recommends
+             clang
+             cmake
+             libconfig-dev
+             libgtest-dev
+             libopus-dev
+             libsodium-dev
+             libvpx-dev
+             ninja-build
+             pkg-config
+    - run: CC=clang .circleci/cmake-asan
+
+  tsan:
+    working_directory: ~/work
+    docker:
+    - image: ubuntu
+
+    steps:
+    - checkout
+    - run: *apt_install
+    - run: CC=clang .circleci/cmake-tsan
