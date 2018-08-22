@@ -78,7 +78,9 @@ static void test_save_compatibility(const char *save_path)
     options.savedata_length = size;
     options.savedata_type = TOX_SAVEDATA_TYPE_TOX_SAVE;
 
-    Tox *tox = tox_new(&options, nullptr);
+    Tox_Err_New err;
+    Tox *tox = tox_new(&options, &err);
+    ck_assert_msg(tox, "failed to create tox, error number: %d", err);
 
     free(save_data);
 
