@@ -822,9 +822,7 @@ int del_groupchat(Group_Chats *g_c, uint32_t groupnumber)
 
     group_kill_peer_send(g_c, groupnumber, g->peer_number);
 
-    unsigned int i;
-
-    for (i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
+    for (uint32_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
         if (g->close[i].type == GROUPCHAT_CLOSE_NONE) {
             continue;
         }
@@ -833,8 +831,10 @@ int del_groupchat(Group_Chats *g_c, uint32_t groupnumber)
         kill_friend_connection(g_c->fr_c, g->close[i].number);
     }
 
-    if (g->peer_on_leave) {
-        g->peer_on_leave(g->object, groupnumber, g->group[i].object);
+    for (uint32_t i = 0; i < g->numpeers; ++i) {
+        if (g->peer_on_leave) {
+            g->peer_on_leave(g->object, groupnumber, g->group[i].object);
+        }
     }
 
     free(g->group);
