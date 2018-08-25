@@ -72,19 +72,19 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
         tox_bootstrap(toxes[i], "localhost", dht_port, dht_key, nullptr);
     }
 
-    while (!all_connected(tox_count, toxes)) {
+    do {
         iterate_all(tox_count, toxes, state);
 
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (!all_connected(tox_count, toxes));
 
     printf("toxes are online\n");
 
-    while (!all_friends_connected(tox_count, toxes)) {
+    do {
         iterate_all(tox_count, toxes, state);
 
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (!all_friends_connected(tox_count, toxes));
 
     printf("tox clients connected\n");
 

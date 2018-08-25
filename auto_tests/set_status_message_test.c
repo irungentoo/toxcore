@@ -51,24 +51,24 @@ static void test_set_status_message(void)
 
     tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
 
-    while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
-            tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
+             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE);
 
     printf("toxes are online, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
     const time_t con_time = time(nullptr);
 
-    while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
-            tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
+             tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP);
 
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
@@ -80,11 +80,11 @@ static void test_set_status_message(void)
 
     bool status_updated = false;
 
-    while (!status_updated) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &status_updated);
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (!status_updated);
 
     ck_assert_msg(tox_friend_get_status_message_size(tox2, 0, nullptr) == sizeof(STATUS_MESSAGE),
                   "status message length not correct");

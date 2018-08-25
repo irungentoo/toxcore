@@ -655,7 +655,7 @@ loop_top:
         dht_bootstrap(dhts[(i - 1) % NUM_DHT], ip_port, dhts[i]->self_public_key);
     }
 
-    while (1) {
+    while (true) {
         uint16_t counter = 0;
 
         for (i = 0; i < NUM_DHT_FRIENDS; ++i) {

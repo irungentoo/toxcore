@@ -121,9 +121,9 @@ static void regular_call_flow(
         ck_assert(0);
     }
 
-    time_t start_time = time(nullptr);
+    const time_t start_time = time(nullptr);
 
-    while (BobCC->state != TOXAV_FRIEND_CALL_STATE_FINISHED) {
+    do {
         if (BobCC->incoming) {
             TOXAV_ERR_ANSWER answer_err;
             toxav_answer(BobAV, 0, a_br, v_br, &answer_err);
@@ -148,7 +148,7 @@ static void regular_call_flow(
         }
 
         iterate_tox(bootstrap, Alice, Bob);
-    }
+    } while (BobCC->state != TOXAV_FRIEND_CALL_STATE_FINISHED);
 
     printf("Success!\n");
 }
@@ -195,7 +195,7 @@ static void test_av_flows(void)
 
     uint8_t off = 1;
 
-    while (1) {
+    while (true) {
         iterate_tox(bootstrap, Alice, Bob);
 
         if (tox_self_get_connection_status(bootstrap) &&
@@ -270,9 +270,9 @@ static void test_av_flows(void)
             }
         }
 
-        while (!BobCC.incoming) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (!BobCC.incoming);
 
         /* Reject */
         {
@@ -285,9 +285,9 @@ static void test_av_flows(void)
             }
         }
 
-        while (AliceCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (AliceCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         printf("Success!\n");
     }
@@ -308,9 +308,9 @@ static void test_av_flows(void)
             }
         }
 
-        while (!BobCC.incoming) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (!BobCC.incoming);
 
         /* Cancel */
         {
@@ -324,9 +324,9 @@ static void test_av_flows(void)
         }
 
         /* Alice will not receive end state */
-        while (BobCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (BobCC.state != TOXAV_FRIEND_CALL_STATE_FINISHED);
 
         printf("Success!\n");
     }
@@ -348,9 +348,9 @@ static void test_av_flows(void)
             }
         }
 
-        while (!BobCC.incoming) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (!BobCC.incoming);
 
         /* At first try all stuff while in invalid state */
         ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE, nullptr));
@@ -438,9 +438,9 @@ static void test_av_flows(void)
             }
         }
 
-        while (!BobCC.incoming) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (!BobCC.incoming);
 
         {
             TOXAV_ERR_ANSWER rc;
@@ -506,9 +506,9 @@ static void test_av_flows(void)
             }
         }
 
-        while (!BobCC.incoming) {
+        do {
             iterate_tox(bootstrap, Alice, Bob);
-        }
+        } while (!BobCC.incoming);
 
         {
             TOXAV_ERR_ANSWER rc;

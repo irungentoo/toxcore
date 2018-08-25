@@ -165,26 +165,26 @@ int main(void)
     // Wait for self connection.
     fprintf(stderr, "Waiting for toxes to come online\n");
 
-    while (!state1.self_online || !state2.self_online || !state3.self_online) {
+    do {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
         c_sleep(100);
-    }
+    } while (!state1.self_online || !state2.self_online || !state3.self_online);
 
     fprintf(stderr, "Toxes are online\n");
 
     // Wait for friend connection.
     fprintf(stderr, "Waiting for friends to connect\n");
 
-    while (!state1.friend_online || !state2.friend_online || !state3.friend_online) {
+    do {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
         c_sleep(100);
-    }
+    } while (!state1.friend_online || !state2.friend_online || !state3.friend_online);
 
     fprintf(stderr, "Friends are connected\n");
 
@@ -208,25 +208,25 @@ int main(void)
 
     fprintf(stderr, "Waiting for invitation to arrive\n");
 
-    while (!state1.joined || !state2.joined || !state3.joined) {
+    do {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
         c_sleep(100);
-    }
+    } while (!state1.joined || !state2.joined || !state3.joined);
 
     fprintf(stderr, "Invitations accepted\n");
 
     fprintf(stderr, "Waiting for peers to come online\n");
 
-    while (state1.peers == 0 || state2.peers == 0 || state3.peers == 0) {
+    do {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
         c_sleep(100);
-    }
+    } while (state1.peers == 0 || state2.peers == 0 || state3.peers == 0);
 
     fprintf(stderr, "All peers are online\n");
 
@@ -244,13 +244,13 @@ int main(void)
 
     fprintf(stderr, "Waiting for messages to arrive\n");
 
-    while (!state2.received || !state3.received) {
+    do {
         tox_iterate(tox1, &state1);
         tox_iterate(tox2, &state2);
         tox_iterate(tox3, &state3);
 
         c_sleep(100);
-    }
+    } while (!state2.received || !state3.received);
 
     fprintf(stderr, "Messages received. Test complete.\n");
 

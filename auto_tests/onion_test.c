@@ -192,18 +192,18 @@ static void test_basic(void)
 
     handled_test_1 = 0;
 
-    while (handled_test_1 == 0) {
+    do {
         do_onion(onion1);
         do_onion(onion2);
-    }
+    } while (handled_test_1 == 0);
 
     networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_2, onion1);
     handled_test_2 = 0;
 
-    while (handled_test_2 == 0) {
+    do {
         do_onion(onion1);
         do_onion(onion2);
-    }
+    } while (handled_test_2 == 0);
 
     Onion_Announce *onion1_a = new_onion_announce(mono_time1, onion1->dht);
     Onion_Announce *onion2_a = new_onion_announce(mono_time2, onion2->dht);
@@ -223,11 +223,11 @@ static void test_basic(void)
     ck_assert_msg(ret == 0, "Failed to create/send onion announce_request packet.");
     handled_test_3 = 0;
 
-    while (handled_test_3 == 0) {
+    do {
         do_onion(onion1);
         do_onion(onion2);
         c_sleep(50);
-    }
+    } while (handled_test_3 == 0);
 
     random_bytes(sb_data, sizeof(sb_data));
     memcpy(&s, sb_data, sizeof(uint64_t));
@@ -241,13 +241,13 @@ static void test_basic(void)
                           dht_get_self_public_key(onion1->dht),
                           dht_get_self_public_key(onion1->dht), s);
 
-    while (memcmp(onion_announce_entry_public_key(onion2_a, ONION_ANNOUNCE_MAX_ENTRIES - 2),
-                  dht_get_self_public_key(onion1->dht),
-                  CRYPTO_PUBLIC_KEY_SIZE) != 0) {
+    do {
         do_onion(onion1);
         do_onion(onion2);
         c_sleep(50);
-    }
+    } while (memcmp(onion_announce_entry_public_key(onion2_a, ONION_ANNOUNCE_MAX_ENTRIES - 2),
+                    dht_get_self_public_key(onion1->dht),
+                    CRYPTO_PUBLIC_KEY_SIZE) != 0);
 
     c_sleep(1000);
     Logger *log3 = logger_new();
@@ -266,11 +266,11 @@ static void test_basic(void)
     ck_assert_msg(ret == 0, "Failed to create/send onion data_request packet.");
     handled_test_4 = 0;
 
-    while (handled_test_4 == 0) {
+    do {
         do_onion(onion1);
         do_onion(onion2);
         c_sleep(50);
-    }
+    } while (handled_test_4 == 0);
 
     kill_onion_announce(onion2_a);
     kill_onion_announce(onion1_a);
@@ -513,7 +513,7 @@ static void test_announce(void)
 
     uint32_t connected = 0;
 
-    while (connected != NUM_ONIONS) {
+    do {
         connected = 0;
 
         for (i = 0; i < NUM_ONIONS; ++i) {
@@ -522,7 +522,7 @@ static void test_announce(void)
         }
 
         c_sleep(50);
-    }
+    } while (connected != NUM_ONIONS);
 
     printf("connected\n");
 
@@ -548,23 +548,23 @@ static void test_announce(void)
 
     IP_Port ip_port;
 
-    while (!first || !last) {
+    do {
         for (i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
         }
 
         c_sleep(50);
-    }
+    } while (!first || !last);
 
     printf("Waiting for ips\n");
 
-    while (!first_ip || !last_ip) {
+    do {
         for (i = 0; i < NUM_ONIONS; ++i) {
             do_onions(onions[i]);
         }
 
         c_sleep(50);
-    }
+    } while (!first_ip || !last_ip);
 
     onion_getfriendip(onions[NUM_LAST]->onion_c, frnum, &ip_port);
     ck_assert_msg(ip_port.port == net_port(onions[NUM_FIRST]->onion->net), "Port in returned ip not correct.");

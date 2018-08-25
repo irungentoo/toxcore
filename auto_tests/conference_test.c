@@ -216,7 +216,7 @@ static void test_many_group(void)
     printf("waiting for everyone to come online\n");
     unsigned online_count = 0;
 
-    while (online_count != NUM_GROUP_TOX) {
+    do {
         online_count = 0;
 
         for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
@@ -228,7 +228,7 @@ static void test_many_group(void)
         fflush(stdout);
 
         c_sleep(1000);
-    }
+    } while (online_count != NUM_GROUP_TOX);
 
     printf("friends connected, took %d seconds\n", (int)(time(nullptr) - cur_time));
 
@@ -243,7 +243,7 @@ static void test_many_group(void)
     printf("waiting for invitations to be made\n");
     uint16_t invited_count = 0;
 
-    while (invited_count != NUM_GROUP_TOX - 1) {
+    do {
         invited_count = 0;
 
         for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
@@ -252,13 +252,13 @@ static void test_many_group(void)
         }
 
         c_sleep(50);
-    }
+    } while (invited_count != NUM_GROUP_TOX - 1);
 
     cur_time = time(nullptr);
     printf("waiting for all toxes to be in the group\n");
     uint16_t fully_connected_count = 0;
 
-    while (fully_connected_count != NUM_GROUP_TOX) {
+    do {
         fully_connected_count = 0;
         printf("current peer counts: [");
 
@@ -284,7 +284,7 @@ static void test_many_group(void)
         fflush(stdout);
 
         c_sleep(200);
-    }
+    } while (fully_connected_count != NUM_GROUP_TOX);
 
     for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
         uint32_t peer_count = tox_conference_peer_count(toxes[i], 0, nullptr);

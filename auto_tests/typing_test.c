@@ -45,24 +45,24 @@ static void test_typing(void)
 
     tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
 
-    while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
-            tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
         c_sleep(200);
-    }
+    } while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
+             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE);
 
     printf("toxes are online, took %lu seconds\n", (unsigned long)(time(nullptr) - cur_time));
     const time_t con_time = time(nullptr);
 
-    while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
-            tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
         c_sleep(200);
-    }
+    } while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
+             tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP);
 
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
@@ -71,20 +71,20 @@ static void test_typing(void)
 
     bool is_typing = false;
 
-    while (!is_typing) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &is_typing);
         c_sleep(200);
-    }
+    } while (!is_typing);
 
     ck_assert_msg(tox_friend_get_typing(tox2, 0, nullptr) == 1, "Typing failure");
     tox_self_set_typing(tox1, 0, false, nullptr);
 
-    while (is_typing) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, &is_typing);
         c_sleep(200);
-    }
+    } while (is_typing);
 
     TOX_ERR_FRIEND_QUERY err_t;
     ck_assert_msg(tox_friend_get_typing(tox2, 0, &err_t) == 0, "Typing failure");

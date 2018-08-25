@@ -101,7 +101,7 @@ loop_top:
         ck_assert_msg(num != UINT32_MAX && test == TOX_ERR_FRIEND_ADD_OK, "Failed to add friend error code: %i", test);
     }
 
-    while (1) {
+    while (true) {
         uint16_t counter = 0;
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {
@@ -197,7 +197,7 @@ loop_top:
 
     uint16_t last_count = 0;
 
-    while (1) {
+    while (true) {
         uint16_t counter = 0;
 
         for (i = 0; i < NUM_TOXES_TCP; ++i) {

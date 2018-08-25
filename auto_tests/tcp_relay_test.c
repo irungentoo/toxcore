@@ -28,13 +28,13 @@ int main(void)
 
     printf("Waiting for connection");
 
-    while (tox_self_get_connection_status(tox_tcp) == TOX_CONNECTION_NONE) {
+    do {
         printf(".");
         fflush(stdout);
 
         tox_iterate(tox_tcp, nullptr);
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_self_get_connection_status(tox_tcp) == TOX_CONNECTION_NONE);
 
     const TOX_CONNECTION status = tox_self_get_connection_status(tox_tcp);
     ck_assert_msg(status == TOX_CONNECTION_TCP,

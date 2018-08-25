@@ -63,7 +63,7 @@ static void test_few_clients(void)
 
     uint8_t off = 1;
 
-    while (1) {
+    while (true) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);
@@ -103,7 +103,7 @@ static void test_few_clients(void)
     cur_time = time(nullptr);
     off = 1;
 
-    while (1) {
+    while (true) {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);

@@ -116,9 +116,9 @@ static void *call_thread(void *pd)
         }
     }
 
-    while (!BobCC->incoming) {
+    do {
         c_sleep(10);
-    }
+    } while (!BobCC->incoming);
 
     { /* Answer */
         TOXAV_ERR_ANSWER rc;
@@ -139,7 +139,7 @@ static void *call_thread(void *pd)
 
     time_t start_time = time(nullptr);
 
-    while (time(nullptr) - start_time < 4) {
+    do {
         toxav_iterate(AliceAV);
         toxav_iterate(BobAV);
 
@@ -150,7 +150,7 @@ static void *call_thread(void *pd)
         toxav_video_send_frame(BobAV, 0, 800, 600, video_y, video_u, video_v, nullptr);
 
         c_sleep(10);
-    }
+    } while (time(nullptr) - start_time < 4);
 
     { /* Hangup */
         TOXAV_ERR_CALL_CONTROL rc;
@@ -228,7 +228,7 @@ static void test_av_three_calls(void)
 
     uint8_t off = 1;
 
-    while (1) {
+    while (true) {
         tox_iterate(bootstrap, nullptr);
         tox_iterate(Alice, nullptr);
         tox_iterate(Bobs[0], nullptr);
@@ -290,14 +290,14 @@ static void test_av_three_calls(void)
 
     time_t start_time = time(nullptr);
 
-    while (time(nullptr) - start_time < 5) {
+    do {
         tox_iterate(bootstrap, nullptr);
         tox_iterate(Alice, nullptr);
         tox_iterate(Bobs[0], nullptr);
         tox_iterate(Bobs[1], nullptr);
         tox_iterate(Bobs[2], nullptr);
         c_sleep(20);
-    }
+    } while (time(nullptr) - start_time < 5);
 
     ck_assert(pthread_join(tids[0], &retval) == 0);
     ck_assert(retval == nullptr);

@@ -184,11 +184,7 @@ static void file_transfer_test(void)
 
     printf("Waiting for toxes to come online\n");
 
-    while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
-            tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE ||
-            tox_self_get_connection_status(tox3) == TOX_CONNECTION_NONE ||
-            tox_friend_get_connection_status(tox2, 0, nullptr) == TOX_CONNECTION_NONE ||
-            tox_friend_get_connection_status(tox3, 0, nullptr) == TOX_CONNECTION_NONE) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);
@@ -200,7 +196,11 @@ static void file_transfer_test(void)
                tox_friend_get_connection_status(tox2, 0, nullptr),
                tox_friend_get_connection_status(tox3, 0, nullptr));
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
+             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE ||
+             tox_self_get_connection_status(tox3) == TOX_CONNECTION_NONE ||
+             tox_friend_get_connection_status(tox2, 0, nullptr) == TOX_CONNECTION_NONE ||
+             tox_friend_get_connection_status(tox3, 0, nullptr) == TOX_CONNECTION_NONE);
 
     printf("Starting file transfer test: 100MiB file.\n");
 
@@ -292,7 +292,7 @@ static void file_transfer_test(void)
     max_sending = 100 * 1024;
     m_send_reached = 0;
 
-    while (!file_sending_done) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);
@@ -302,7 +302,7 @@ static void file_transfer_test(void)
         uint32_t tox3_interval = tox_iteration_interval(tox3);
 
         c_sleep(min_u32(tox1_interval, min_u32(tox2_interval, tox3_interval)));
-    }
+    } while (!file_sending_done);
 
     ck_assert_msg(sendf_ok && file_recv && m_send_reached && totalf_size == file_size && size_recv == max_sending
                   && sending_pos == size_recv && file_accepted == 1,
@@ -336,7 +336,7 @@ static void file_transfer_test(void)
     ck_assert_msg(tox_file_get_file_id(tox2, 0, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id failed");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_OK, "wrong error");
 
-    while (!file_sending_done) {
+    do {
         uint32_t tox1_interval = tox_iteration_interval(tox1);
         uint32_t tox2_interval = tox_iteration_interval(tox2);
         uint32_t tox3_interval = tox_iteration_interval(tox3);
@@ -346,7 +346,7 @@ static void file_transfer_test(void)
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         tox_iterate(tox3, nullptr);
-    }
+    } while (!file_sending_done);
 
     ck_assert_msg(sendf_ok && file_recv && totalf_size == file_size && size_recv == file_size
                   && sending_pos == size_recv && file_accepted == 1,

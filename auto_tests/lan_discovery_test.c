@@ -16,15 +16,15 @@ int main(void)
 
     printf("Waiting for LAN discovery. This loop will attempt to run until successful.");
 
-    while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
-            tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
+    do {
         printf(".");
         fflush(stdout);
 
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
         c_sleep(1000);
-    }
+    } while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
+             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE);
 
     printf(" %d <-> %d\n",
            tox_self_get_connection_status(tox1),

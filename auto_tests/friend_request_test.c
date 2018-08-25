@@ -43,13 +43,13 @@ static void test_friend_request(void)
 
     tox_bootstrap(tox2, "localhost", dht_port, dht_key, nullptr);
 
-    while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
-            tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_self_get_connection_status(tox1) == TOX_CONNECTION_NONE ||
+             tox_self_get_connection_status(tox2) == TOX_CONNECTION_NONE);
 
     printf("Toxes are online, took %lu seconds.\n", (unsigned long)(time(nullptr) - cur_time));
     const time_t con_time = time(nullptr);
@@ -63,13 +63,13 @@ static void test_friend_request(void)
     const uint32_t test = tox_friend_add(tox1, address, (const uint8_t *)FR_MESSAGE, sizeof(FR_MESSAGE), nullptr);
     ck_assert_msg(test == 0, "failed to add friend error code: %u", test);
 
-    while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
-            tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP) {
+    do {
         tox_iterate(tox1, nullptr);
         tox_iterate(tox2, nullptr);
 
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_friend_get_connection_status(tox1, 0, nullptr) != TOX_CONNECTION_UDP ||
+             tox_friend_get_connection_status(tox2, 0, nullptr) != TOX_CONNECTION_UDP);
 
     printf("Tox clients connected took %lu seconds.\n", (unsigned long)(time(nullptr) - con_time));
     printf("friend_request_test succeeded, took %lu seconds.\n", (unsigned long)(time(nullptr) - cur_time));

@@ -24,13 +24,13 @@ int main(void)
 
     printf("Waiting for connection");
 
-    while (tox_self_get_connection_status(tox_udp) == TOX_CONNECTION_NONE) {
+    do {
         printf(".");
         fflush(stdout);
 
         tox_iterate(tox_udp, nullptr);
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (tox_self_get_connection_status(tox_udp) == TOX_CONNECTION_NONE);
 
     const TOX_CONNECTION status = tox_self_get_connection_status(tox_udp);
     ck_assert_msg(status == TOX_CONNECTION_UDP,

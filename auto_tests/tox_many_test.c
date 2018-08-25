@@ -92,7 +92,7 @@ loop_top:
 
     uint16_t last_count = 0;
 
-    while (1) {
+    while (true) {
         uint16_t counter = 0;
 
         for (uint32_t i = 0; i < TCP_TEST_NUM_TOXES; ++i) {

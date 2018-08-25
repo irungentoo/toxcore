@@ -46,11 +46,11 @@ static void test_lossy_packet(Tox **toxes, State *state)
     ret = tox_friend_send_lossy_packet(toxes[0], 0, packet, TOX_MAX_CUSTOM_PACKET_SIZE, nullptr);
     ck_assert_msg(ret == true, "tox_friend_send_lossy_packet fail %i", ret);
 
-    while (!state[1].custom_packet_received) {
+    do {
         tox_iterate(toxes[0], nullptr);
         tox_iterate(toxes[1], &state[1]);
         c_sleep(ITERATION_INTERVAL);
-    }
+    } while (!state[1].custom_packet_received);
 }
 
 int main(void)
