@@ -1,9 +1,11 @@
-//Tests to make sure new save code is compatible with old save files
+// Tests to make sure new save code is compatible with old save files
 
 #include "../testing/misc_tools.h"
 #include "../toxcore/tox.h"
 #include "check_compat.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define LOADED_SAVE_FILE "../auto_tests/data/save.tox"
@@ -67,12 +69,12 @@ static uint8_t *read_save(const char *save_path, size_t *length)
 
 static void test_save_compatibility(const char *save_path)
 {
-    struct Tox_Options options = { 0 };
+    struct Tox_Options options = {0};
     tox_options_default(&options);
 
     size_t size = 0;
     uint8_t *save_data = read_save(save_path, &size);
-    ck_assert_msg(save_data != nullptr, "Error while reading save file.");
+    ck_assert_msg(save_data != nullptr, "error while reading save file '%s'", save_path);
 
     options.savedata_data = save_data;
     options.savedata_length = size;
@@ -109,14 +111,14 @@ static void test_save_compatibility(const char *save_path)
                   "number of friends do not match, expected %d got %zu",  EXPECTED_NUM_FRIENDS, num_friends);
 
     const uint32_t nospam = tox_self_get_nospam(tox);
-    char nospam_str[(TOX_NOSPAM_SIZE * 2) + 1];
+    char nospam_str[TOX_NOSPAM_SIZE * 2 + 1];
     const size_t length = snprintf(nospam_str, sizeof(nospam_str), "%08X", nospam);
     nospam_str[length] = '\0';
     ck_assert_msg(strcmp(nospam_str, EXPECTED_NOSPAM) == 0,
                   "nospam does not match, expected %s got %s", EXPECTED_NOSPAM, nospam_str);
 
     uint8_t tox_id[TOX_ADDRESS_SIZE];
-    char tox_id_str[TOX_ADDRESS_SIZE * 2];
+    char tox_id_str[TOX_ADDRESS_SIZE * 2 + 1] = {0};
     tox_self_get_address(tox, tox_id);
     to_hex(tox_id_str, tox_id, TOX_ADDRESS_SIZE);
     ck_assert_msg(strncmp(tox_id_str, EXPECTED_TOX_ID, TOX_ADDRESS_SIZE * 2) == 0,
@@ -127,12 +129,16 @@ static void test_save_compatibility(const char *save_path)
 
 int main(int argc, char *argv[])
 {
-    setvbuf(stdout, nullptr, _IONBF, 0);
-
     char base_path[4096];
 
     if (argc <= 1) {
-        strcpy(base_path, ".");
+        const char *srcdir = getenv("srcdir");
+
+        if (srcdir == nullptr) {
+            srcdir = ".";
+        }
+
+        strcpy(base_path, srcdir);
     } else {
         strcpy(base_path, argv[1]);
         base_path[strrchr(base_path, '/') - base_path] = 0;

@@ -1,69 +1,66 @@
 if BUILD_TESTS
 
-TESTS = bootstrap_test \
-        conference_double_invite_test \
-        conference_peer_nick_test \
-        conference_simple_test \
-        conference_test \
-        conference_two_test \
-        crypto_test \
-        dht_test \
-        encryptsave_test \
-        file_saving_test \
-        file_transfer_test \
-        friend_connection_test \
-        friend_request_test \
-        invalid_tcp_proxy_test \
-        invalid_udp_proxy_test \
-        lan_discovery_test \
-        lossless_packet_test \
-        lossy_packet_test \
-        messenger_test \
-        network_test \
-        onion_test \
-        overflow_recvq_test \
-        overflow_sendq_test \
-        save_friend_test \
-        save_load_test \
-        send_message_test \
-        set_name_test \
-        set_status_message_test \
-        skeleton_test \
-        tcp_relay_test \
-        TCP_test \
-        tox_many_tcp_test \
-        tox_many_test \
-        tox_one_test \
-        tox_strncasecmp_test \
-        typing_test \
-        version_test
-
-# TODO(iphydf): make save_compatibility_test work with travis autotools build.
-#       save_compatibility_test
-
-check_PROGRAMS = $(TESTS)
+TESTS = \
+	bootstrap_test \
+	conference_double_invite_test \
+	conference_peer_nick_test \
+	conference_simple_test \
+	conference_test \
+	conference_two_test \
+	crypto_test \
+	dht_test \
+	encryptsave_test \
+	file_saving_test \
+	file_transfer_test \
+	friend_connection_test \
+	friend_request_test \
+	invalid_tcp_proxy_test \
+	invalid_udp_proxy_test \
+	lan_discovery_test \
+	lossless_packet_test \
+	lossy_packet_test \
+	messenger_test \
+	network_test \
+	onion_test \
+	overflow_recvq_test \
+	overflow_sendq_test \
+	save_compatibility_test \
+	save_friend_test \
+	save_load_test \
+	send_message_test \
+	set_name_test \
+	set_status_message_test \
+	skeleton_test \
+	tcp_relay_test \
+	TCP_test \
+	tox_many_tcp_test \
+	tox_many_test \
+	tox_one_test \
+	tox_strncasecmp_test \
+	typing_test \
+	version_test
 
 AUTOTEST_CFLAGS = \
-                         $(LIBSODIUM_CFLAGS) \
-                         $(NACL_CFLAGS)
+	$(LIBSODIUM_CFLAGS) \
+	$(NACL_CFLAGS)
 
 AUTOTEST_LDADD = \
-                        $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
-                        libmisc_tools.la \
-                        libtoxcore.la \
-                        libtoxencryptsave.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS)
-
+	$(LIBSODIUM_LDFLAGS) \
+	$(NACL_LDFLAGS) \
+	libmisc_tools.la \
+	libtoxcore.la \
+	libtoxencryptsave.la \
+	$(LIBSODIUM_LIBS) \
+	$(NACL_OBJECTS) \
+	$(NACL_LIBS)
 
 
 if BUILD_AV
 TESTS += toxav_basic_test toxav_many_test
-check_PROGRAMS += toxav_basic_test toxav_many_test
 AUTOTEST_LDADD += libtoxav.la
 endif
+
+check_PROGRAMS = $(TESTS)
 
 bootstrap_test_SOURCES = ../auto_tests/bootstrap_test.c
 bootstrap_test_CFLAGS = $(AUTOTEST_CFLAGS)
@@ -157,9 +154,9 @@ overflow_sendq_test_SOURCES = ../auto_tests/overflow_sendq_test.c
 overflow_sendq_test_CFLAGS = $(AUTOTEST_CFLAGS)
 overflow_sendq_test_LDADD = $(AUTOTEST_LDADD)
 
-#save_compatibility_test_SOURCES = ../auto_tests/save_compatibility_test.c
-#save_compatibility_test_CFLAGS = $(AUTOTEST_CFLAGS)
-#save_compatibility_test_LDADD = $(AUTOTEST_LDADD)
+save_compatibility_test_SOURCES = ../auto_tests/save_compatibility_test.c
+save_compatibility_test_CFLAGS = $(AUTOTEST_CFLAGS)
+save_compatibility_test_LDADD = $(AUTOTEST_LDADD)
 
 save_friend_test_SOURCES = ../auto_tests/save_friend_test.c
 save_friend_test_CFLAGS = $(AUTOTEST_CFLAGS)
@@ -232,4 +229,7 @@ endif
 endif
 
 
-EXTRA_DIST += $(top_srcdir)/auto_tests/check_compat.h $(top_srcdir)/auto_tests/run_auto_test.h
+EXTRA_DIST += \
+	$(top_srcdir)/auto_tests/data/save.tox \
+	$(top_srcdir)/auto_tests/check_compat.h \
+	$(top_srcdir)/auto_tests/run_auto_test.h
