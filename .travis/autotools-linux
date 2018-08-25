@@ -41,7 +41,7 @@ travis_script() {
   cd _build  # pushd
   ../configure $CONFIG_FLAGS || (cat config.log && false)
   make "-j$NPROC" -k CFLAGS="$C_FLAGS" LDFLAGS="$LD_FLAGS"
-  make "-j$NPROC" -k distcheck DISTCHECK_CONFIGURE_FLAGS="$CONFIG_FLAGS"
+  make -j50 -k distcheck DISTCHECK_CONFIGURE_FLAGS="$CONFIG_FLAGS"
   cd -  # popd
 }
 
