@@ -24,6 +24,7 @@ cd _build
 
 ninja install -j$(nproc)
 
+export TSAN_OPTIONS="halt_on_error=1"
+export TSAN_OPTIONS="$TSAN_OPTIONS,second_deadlock_stack=1"
 ctest -j50 --output-on-failure ||
-ctest -j50 --output-on-failure --rerun-failed ||
-true  # TODO(iphydf): remove this line once the data races are fixed.
+ctest -j50 --output-on-failure --rerun-failed
