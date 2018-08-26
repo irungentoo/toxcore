@@ -120,9 +120,7 @@ static uint64_t current_time_monotonic_default(void *user_data)
     last_clock_mono = time;
 #else
     struct timespec clock_mono;
-#if defined(__linux__) && defined(CLOCK_MONOTONIC_RAW)
-    clock_gettime(CLOCK_MONOTONIC_RAW, &clock_mono);
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
     clock_serv_t muhclock;
     mach_timespec_t machtime;
 
