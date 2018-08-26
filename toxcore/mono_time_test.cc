@@ -4,7 +4,7 @@
 
 namespace {
 
-TEST(Util, UnixTimeIncreasesOverTime) {
+TEST(MonoTime, UnixTimeIncreasesOverTime) {
   Mono_Time *mono_time = mono_time_new();
 
   mono_time_update(mono_time);
@@ -20,7 +20,7 @@ TEST(Util, UnixTimeIncreasesOverTime) {
   mono_time_free(mono_time);
 }
 
-TEST(Util, IsTimeout) {
+TEST(MonoTime, IsTimeout) {
   Mono_Time *mono_time = mono_time_new();
 
   uint64_t const start = mono_time_get(mono_time);
