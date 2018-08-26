@@ -33,25 +33,25 @@ These instructions will guide you through the process of building and installing
 
 This repository, although called `toxcore`, in fact contains several libraries besides `toxcore` which complement it, as well as several executables. However, note that although these are separate libraries, at the moment, when building the libraries, they are all merged into a single `toxcore` library. Here is the full list of the main components that can be built using the CMake, their dependencies and descriptions.
 
-| Name           | Type       | Dependencies                                  | Platform       | Description                                                                |
-|----------------|------------|-----------------------------------------------|----------------|----------------------------------------------------------------------------|
-| toxcore        | Library    | libnacl or libsodium, libm, libpthread, librt | Cross-platform | The main Tox library that provides the messenger functionality.            |
-| toxav          | Library    | libtoxcore, libopus, libvpx                   | Cross-platform | Provides audio/video functionality.                                        |
-| toxencryptsave | Library    | libtoxcore, libnacl or libsodium              | Cross-platform | Provides encryption of Tox profiles (savedata), as well as arbitrary data. |
-| DHT_bootstrap  | Executable | libtoxcore                                    | Cross-platform | A simple DHT bootstrap node.                                               |
-| tox-bootstrapd | Executable | libtoxcore, libconfig                         | Unix-like      | Highly configurable DHT bootstrap node daemon (systemd, SysVinit, Docker). |
+| Name             | Type       | Dependencies                                  | Platform       | Description                                                                |
+|------------------|------------|-----------------------------------------------|----------------|----------------------------------------------------------------------------|
+| `toxcore`        | Library    | libnacl or libsodium, libm, libpthread, librt | Cross-platform | The main Tox library that provides the messenger functionality.            |
+| `toxav`          | Library    | libtoxcore, libopus, libvpx                   | Cross-platform | Provides audio/video functionality.                                        |
+| `toxencryptsave` | Library    | libtoxcore, libnacl or libsodium              | Cross-platform | Provides encryption of Tox profiles (savedata), as well as arbitrary data. |
+| `DHT_bootstrap`  | Executable | libtoxcore                                    | Cross-platform | A simple DHT bootstrap node.                                               |
+| `tox-bootstrapd` | Executable | libtoxcore, libconfig                         | Unix-like      | Highly configurable DHT bootstrap node daemon (systemd, SysVinit, Docker). |
 
 #### Secondary
 
 There are some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
 
-| Name                | Type       | Dependencies         | Platform       | Description                                                                                                                                                            |
-|---------------------|------------|----------------------|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| bootstrap_node_info | Script     | python3              | Cross-platform | Script for getting version and Message Of The Day (MOTD) information from a DHT bootstrap node.                                                                        |
-| cracker             | Executable | libnacl or libsodium | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which starts with the specified byte sequence.                                            |
-| strkey              | Executable | libsodium            | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which contains a specified byte pattern at the specified position or at any position.     |
-| make-funny-savefile | Script     | python               | Cross-platform | Generates Tox profile file (savedata file) with provided key pair. Useful for generating Tox profiles from the output of cracker or strkey programs.                   |
-| sign                | Executable | libsodium            | Cross-platform | Program for ed25519 file signing.                                                                                                                                      |
+| Name                  | Type       | Dependencies         | Platform       | Description                                                                                                                                                            |
+|-----------------------|------------|----------------------|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bootstrap_node_info` | Script     | python3              | Cross-platform | Script for getting version and Message Of The Day (MOTD) information from a DHT bootstrap node.                                                                        |
+| `cracker`             | Executable | libnacl or libsodium | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which starts with the specified byte sequence.                                            |
+| `strkey`              | Executable | libsodium            | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which contains a specified byte pattern at the specified position or at any position.     |
+| `make-funny-savefile` | Script     | python               | Cross-platform | Generates Tox profile file (savedata file) with provided key pair. Useful for generating Tox profiles from the output of cracker or strkey programs.                   |
+| `sign`                | Executable | libsodium            | Cross-platform | Program for ed25519 file signing.                                                                                                                                      |
 
 ## Building
 
@@ -81,24 +81,20 @@ There is some experimental accommodation for building natively on Windows, i.e. 
 
 There are some options that are available to configure the build.
 
-| Name                 | Description                                                                                   | Expected Value                             | Default Value                                     |
-|----------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------|
-| ASAN                 | Enable address-sanitizer to detect invalid memory accesses.                                   | ON or OFF                                  | OFF                                               |
-| BOOTSTRAP_DAEMON     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                  | ON                                                |
-| BUILD_AV_TEST        | Build toxav test.                                                                             | ON or OFF                                  | ON                                                |
-| BUILD_TOXAV          | Whether to build the tox AV library.                                                          | ON or OFF                                  | ON                                                |
-| CMAKE_INSTALL_PREFIX | Path to where everything should be installed.                                                 | Directory path.                            | Platform-dependent. Refer to CMake documentation. |
-| DEBUG                | Enable assertions and other debugging facilities.                                             | ON or OFF                                  | OFF                                               |
-| DHT_BOOTSTRAP        | Enable building of DHT_bootstrap                                                              | ON or OFF                                  | ON                                                |
-| ENABLE_SHARED        | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                  | ON                                                |
-| ENABLE_STATIC        | Build static libraries for all modules.                                                       | ON or OFF                                  | ON                                                |
-| ERROR_ON_WARNING     | Make compilation error on a warning.                                                          | ON or OFF                                  | OFF                                               |
-| FORMAT_TEST          | Require the format_test to be executed; fail cmake if it can't.                               | ON or OFF                                  | OFF                                               |
-| STRICT_ABI           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                  | OFF                                               |
-| TEST_TIMEOUT_SECONDS | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string). | Empty string.                                     |
-| TRACE                | Enable TRACE level logging (expensive, for network debugging).                                | ON or OFF                                  | OFF                                               |
-| USE_IPV6             | Use IPv6 in tests.                                                                            | ON or OFF                                  | ON                                                |
-| WARNINGS             | Enable additional compiler warnings.                                                          | ON or OFF                                  | ON                                                |
+| Name                   | Description                                                                                   | Expected Value                             | Default Value                                     |
+|------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------|
+| `BOOTSTRAP_DAEMON`     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                  | ON                                                |
+| `BUILD_AV_TEST`        | Build toxav test.                                                                             | ON or OFF                                  | ON                                                |
+| `BUILD_TOXAV`          | Whether to build the tox AV library.                                                          | ON or OFF                                  | ON                                                |
+| `CMAKE_INSTALL_PREFIX` | Path to where everything should be installed.                                                 | Directory path.                            | Platform-dependent. Refer to CMake documentation. |
+| `DEBUG`                | Enable assertions and other debugging facilities.                                             | ON or OFF                                  | OFF                                               |
+| `DHT_BOOTSTRAP`        | Enable building of `DHT_bootstrap`                                                            | ON or OFF                                  | ON                                                |
+| `ENABLE_SHARED`        | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                  | ON                                                |
+| `ENABLE_STATIC`        | Build static libraries for all modules.                                                       | ON or OFF                                  | ON                                                |
+| `STRICT_ABI`           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                  | OFF                                               |
+| `TEST_TIMEOUT_SECONDS` | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string). | Empty string.                                     |
+| `TRACE`                | Enable TRACE level logging (expensive, for network debugging).                                | ON or OFF                                  | OFF                                               |
+| `USE_IPV6`             | Use IPv6 in tests.                                                                            | ON or OFF                                  | ON                                                |
 
 You can get this list of option using the following commands
 
@@ -176,14 +172,14 @@ Get the toxcore source code and navigate to `other/docker/windows`.
 
 Build the container image based on the Dockerfile. The following options are available to customize the building of the container image.
 
-| Name                | Description                                                    | Expected Value                      | Default Value |
-|---------------------|----------------------------------------------------------------|-------------------------------------|---------------|
-| SUPPORT_ARCH_i686   | Support building 32-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
-| SUPPORT_ARCH_x86_64 | Support building 64-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
-| SUPPORT_TEST        | Support running toxcore automated tests.                       | "true" or "false" (case sensitive). | false         |
-| VERSION_OPUS        | Version of libopus to build toxcore with.                      | Git branch name.                    | v1.2.1        |
-| VERSION_SODIUM      | Version of libsodium to build toxcore with.                    | Git branch name.                    | 1.0.16        |
-| VERSION_VPX         | Version of libvpx to build toxcore with.                       | Git branch name.                    | v1.6.1        |
+| Name                  | Description                                                    | Expected Value                      | Default Value |
+|-----------------------|----------------------------------------------------------------|-------------------------------------|---------------|
+| `SUPPORT_ARCH_i686`   | Support building 32-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
+| `SUPPORT_ARCH_x86_64` | Support building 64-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
+| `SUPPORT_TEST`        | Support running toxcore automated tests.                       | "true" or "false" (case sensitive). | false         |
+| `VERSION_OPUS`        | Version of libopus to build toxcore with.                      | Git branch name.                    | v1.2.1        |
+| `VERSION_SODIUM`      | Version of libsodium to build toxcore with.                    | Git branch name.                    | 1.0.16        |
+| `VERSION_VPX`         | Version of libvpx to build toxcore with.                       | Git branch name.                    | v1.6.1        |
 
 Example of building a container image with options
 
@@ -197,13 +193,13 @@ docker build \
 
 Run the container to build toxcore. The following options are available to customize the running of the container image.
 
-| Name               | Description                                                                              | Expected Value                      | Default Value                                                      |
-|--------------------|------------------------------------------------------------------------------------------|-------------------------------------|--------------------------------------------------------------------|
-| ALLOW_TEST_FAILURE | Don't stop if a test suite fails.                                                        | "true" or "false" (case sensitive). | false                                                              |
-| ENABLE_ARCH_i686   | Build 32-bit toxcore. The image should have been built with SUPPORT_ARCH_i686 enabled.   | "true" or "false" (case sensitive). | true                                                               |
-| ENABLE_ARCH_x86_64 | Build 64-bit toxcore. The image should have been built with SUPPORT_ARCH_x86_64 enabled. | "true" or "false" (case sensitive). | true                                                               |
-| ENABLE_TEST        | Run the test suite. The image should have been built with SUPPORT_TEST enabled.          | "true" or "false" (case sensitive). | false                                                              |
-| EXTRA_CMAKE_FLAGS  | Extra arguments to pass to the CMake command when building toxcore.                      | CMake options.                      | "-DWARNINGS=OFF -DBOOTSTRAP_DAEMON=OFF -DTEST_TIMEOUT_SECONDS=300" |
+| Name                 | Description                                                                                | Expected Value                      | Default Value                                                      |
+|----------------------|--------------------------------------------------------------------------------------------|-------------------------------------|--------------------------------------------------------------------|
+| `ALLOW_TEST_FAILURE` | Don't stop if a test suite fails.                                                          | "true" or "false" (case sensitive). | `false`                                                            |
+| `ENABLE_ARCH_i686`   | Build 32-bit toxcore. The image should have been built with `SUPPORT_ARCH_i686` enabled.   | "true" or "false" (case sensitive). | `true`                                                             |
+| `ENABLE_ARCH_x86_64` | Build 64-bit toxcore. The image should have been built with `SUPPORT_ARCH_x86_64` enabled. | "true" or "false" (case sensitive). | `true`                                                             |
+| `ENABLE_TEST`        | Run the test suite. The image should have been built with `SUPPORT_TEST` enabled.          | "true" or "false" (case sensitive). | `false`                                                            |
+| `EXTRA_CMAKE_FLAGS`  | Extra arguments to pass to the CMake command when building toxcore.                        | CMake options.                      | `-DWARNINGS=OFF -DBOOTSTRAP_DAEMON=OFF -DTEST_TIMEOUT_SECONDS=300` |
 
 Example of running the container with options
 
