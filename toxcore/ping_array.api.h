@@ -22,10 +22,15 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef PING_ARRAY_H
-#define PING_ARRAY_H
+#ifndef C_TOXCORE_TOXCORE_PING_ARRAY_H
+#define C_TOXCORE_TOXCORE_PING_ARRAY_H
 
-#include "network.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 %}
 
 class mono_Time { struct this; }
@@ -36,11 +41,11 @@ struct this;
 
 /**
  * Initialize a Ping_Array.
- * size represents the total size of the array and should be a power of 2.
- * timeout represents the maximum timeout in seconds for the entry.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @param size represents the total size of the array and should be a power of 2.
+ * @param timeout represents the maximum timeout in seconds for the entry.
+ *
+ * @return 0 on success, -1 on failure.
  */
 static this new(uint32_t size, uint32_t timeout);
 
@@ -52,8 +57,7 @@ void kill();
 /**
  * Add a data with length to the Ping_Array list and return a ping_id.
  *
- * return ping_id on success.
- * return 0 on failure.
+ * @return ping_id on success, 0 on failure.
  */
 uint64_t add(const mono_Time::this *mono_time, const uint8_t *data, uint32_t length);
 
@@ -62,13 +66,16 @@ uint64_t add(const mono_Time::this *mono_time, const uint8_t *data, uint32_t len
  *
  * On success, copies the data into data of length,
  *
- * return length of data copied on success.
- * return -1 on failure.
+ * @return length of data copied on success, -1 on failure.
  */
 int32_t check(const mono_Time::this *mono_time, uint8_t[length] data, uint64_t ping_id);
 
 }
 
 %{
+#ifdef __cplusplus
+}  // extern "C"
 #endif
+
+#endif  // C_TOXCORE_TOXCORE_PING_ARRAY_H
 %}

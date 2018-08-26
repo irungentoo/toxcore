@@ -34,7 +34,6 @@
 #include "mono_time.h"
 #include "util.h"
 
-
 typedef struct Ping_Array_Entry {
     void *data;
     uint32_t length;
@@ -46,25 +45,23 @@ struct Ping_Array {
     Ping_Array_Entry *entries;
 
     uint32_t last_deleted; /* number representing the next entry to be deleted. */
-    uint32_t last_added; /* number representing the last entry to be added. */
-    uint32_t total_size; /* The length of entries */
-    uint32_t timeout; /* The timeout after which entries are cleared. */
+    uint32_t last_added;   /* number representing the last entry to be added. */
+    uint32_t total_size;   /* The length of entries */
+    uint32_t timeout;      /* The timeout after which entries are cleared. */
 };
 
-/* Initialize a Ping_Array.
- * size represents the total size of the array and should be a power of 2.
- * timeout represents the maximum timeout in seconds for the entry.
- *
- * return 0 on success.
- * return -1 on failure.
- */
 Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
 {
     if (size == 0 || timeout == 0) {
         return nullptr;
     }
 
-    Ping_Array *empty_array = (Ping_Array *)calloc(1, sizeof(Ping_Array));
+    if ((size & (size - 1)) != 0) {
+        // Not a power of 2.
+        return nullptr;
+    }
+
+    Ping_Array *const empty_array = (Ping_Array *)calloc(1, sizeof(Ping_Array));
 
     if (empty_array == nullptr) {
         return nullptr;
@@ -86,19 +83,15 @@ Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
 
 static void clear_entry(Ping_Array *array, uint32_t index)
 {
+    const Ping_Array_Entry empty = {nullptr};
     free(array->entries[index].data);
-    array->entries[index].data = nullptr;
-    array->entries[index].length = 0;
-    array->entries[index].time = 0;
-    array->entries[index].ping_id = 0;
+    array->entries[index] = empty;
 }
 
-/* Free all the allocated memory in a Ping_Array.
- */
 void ping_array_kill(Ping_Array *array)
 {
     while (array->last_deleted != array->last_added) {
-        uint32_t index = array->last_deleted % array->total_size;
+        const uint32_t index = array->last_deleted % array->total_size;
         clear_entry(array, index);
         ++array->last_deleted;
     }
@@ -112,7 +105,7 @@ void ping_array_kill(Ping_Array *array)
 static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_time)
 {
     while (array->last_deleted != array->last_added) {
-        uint32_t index = array->last_deleted % array->total_size;
+        const uint32_t index = array->last_deleted % array->total_size;
 
         if (!mono_time_is_timeout(mono_time, array->entries[index].time, array->timeout)) {
             break;
@@ -123,15 +116,11 @@ static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_t
     }
 }
 
-/* Add a data with length to the Ping_Array list and return a ping_id.
- *
- * return ping_id on success.
- * return 0 on failure.
- */
-uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uint8_t *data, uint32_t length)
+uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uint8_t *data,
+                        uint32_t length)
 {
     ping_array_clear_timedout(array, mono_time);
-    uint32_t index = array->last_added % array->total_size;
+    const uint32_t index = array->last_added % array->total_size;
 
     if (array->entries[index].data != nullptr) {
         array->last_deleted = array->last_added - array->total_size;
@@ -161,21 +150,14 @@ uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uin
     return ping_id;
 }
 
-
-/* Check if ping_id is valid and not timed out.
- *
- * On success, copies the data into data of length,
- *
- * return length of data copied on success.
- * return -1 on failure.
- */
-int32_t ping_array_check(Ping_Array *array, const Mono_Time *mono_time, uint8_t *data, size_t length, uint64_t ping_id)
+int32_t ping_array_check(Ping_Array *array, const Mono_Time *mono_time, uint8_t *data,
+                         size_t length, uint64_t ping_id)
 {
     if (ping_id == 0) {
         return -1;
     }
 
-    uint32_t index = ping_id % array->total_size;
+    const uint32_t index = ping_id % array->total_size;
 
     if (array->entries[index].ping_id != ping_id) {
         return -1;
@@ -189,12 +171,13 @@ int32_t ping_array_check(Ping_Array *array, const Mono_Time *mono_time, uint8_t 
         return -1;
     }
 
+    // TODO(iphydf): This can't happen? If it indeed can't, turn it into an assert.
     if (array->entries[index].data == nullptr) {
         return -1;
     }
 
     memcpy(data, array->entries[index].data, array->entries[index].length);
-    uint32_t len = array->entries[index].length;
+    const uint32_t len = array->entries[index].length;
     clear_entry(array, index);
     return len;
 }

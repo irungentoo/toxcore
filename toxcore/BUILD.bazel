@@ -113,6 +113,15 @@ cc_library(
     deps = [":network"],
 )
 
+cc_test(
+    name = "ping_array_test",
+    srcs = ["ping_array_test.cc"],
+    deps = [
+        ":ping_array",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "DHT",
     srcs = [

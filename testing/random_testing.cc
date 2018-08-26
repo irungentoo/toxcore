@@ -283,7 +283,8 @@ bool attempt_action(Global_State *toxes, std::mt19937 *rng) {
 int main() {
   std::vector<Action> const actions = {
       {
-          10, "creates a new conference",
+          10,
+          "creates a new conference",
           [](Local_State const &state) {
             return tox_conference_get_chatlist_size(state.tox()) < MAX_CONFERENCES_PER_USER;
           },
@@ -294,7 +295,8 @@ int main() {
           },
       },
       {
-          10, "invites a random friend to a conference",
+          10,
+          "invites a random friend to a conference",
           [](Local_State const &state) {
             return tox_conference_get_chatlist_size(state.tox()) != 0;
           },
@@ -302,15 +304,15 @@ int main() {
             size_t chat_count = tox_conference_get_chatlist_size(state->tox());
             assert(chat_count != 0);  // Condition above.
             TOX_ERR_CONFERENCE_INVITE err;
-            tox_conference_invite(
-                state->tox(), rnd->friend_selector(*rng),
-                state->next_invite % chat_count, &err);
+            tox_conference_invite(state->tox(), rnd->friend_selector(*rng),
+                                  state->next_invite % chat_count, &err);
             state->next_invite++;
             assert(err == TOX_ERR_CONFERENCE_INVITE_OK);
           },
       },
       {
-          10, "deletes the last conference",
+          10,
+          "deletes the last conference",
           [](Local_State const &state) {
             return tox_conference_get_chatlist_size(state.tox()) != 0;
           },
@@ -322,7 +324,8 @@ int main() {
           },
       },
       {
-          10, "sends a message to the last conference",
+          10,
+          "sends a message to the last conference",
           [](Local_State const &state) {
             return tox_conference_get_chatlist_size(state.tox()) != 0;
           },
@@ -344,7 +347,9 @@ int main() {
           },
       },
       {
-          10, "changes their name", [](Local_State const &state) { return true; },
+          10,
+          "changes their name",
+          [](Local_State const &state) { return true; },
           [](Local_State *state, Random *rnd, std::mt19937 *rng) {
             std::vector<uint8_t> name(rnd->name_length_selector(*rng));
             for (uint8_t &byte : name) {
@@ -359,7 +364,9 @@ int main() {
           },
       },
       {
-          10, "sets their name to empty", [](Local_State const &state) { return true; },
+          10,
+          "sets their name to empty",
+          [](Local_State const &state) { return true; },
           [](Local_State *state, Random *rnd, std::mt19937 *rng) {
             TOX_ERR_SET_INFO err;
             tox_self_set_name(state->tox(), nullptr, 0, &err);

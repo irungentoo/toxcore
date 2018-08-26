@@ -10,8 +10,10 @@ enum {
   /**
    * The size of the arrays to compare. This was chosen to take around 2000
    * CPU clocks on x86_64.
+   *
+   * This is 1MiB.
    */
-  CRYPTO_TEST_MEMCMP_SIZE = 1024 * 1024,  // 1 MiB
+  CRYPTO_TEST_MEMCMP_SIZE = 1024 * 1024,
   /**
    * The number of times we run memcmp in the test.
    *
