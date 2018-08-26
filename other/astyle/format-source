@@ -50,6 +50,7 @@ if grep '<unresolved>' */*.h; then
 fi
 
 CC_SOURCES=`find . '(' -name '*.cc' ')'`
+CC_SOURCES="$CC_SOURCES toxcore/crypto_core.c"
 CC_SOURCES="$CC_SOURCES toxcore/ping_array.c"
 
 for bin in clang-format-6.0 clang-format-5.0 clang-format; do
