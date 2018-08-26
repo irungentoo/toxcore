@@ -44,7 +44,7 @@ static inline int srunner_ntests_failed(SRunner *r)
 #define ck_assert(ok) do {                                              \
   if (!(ok)) {                                                          \
     fprintf(stderr, "%s:%d: failed `%s'\n", __FILE__, __LINE__, #ok);   \
-    exit(EXIT_FAILURE);                                                 \
+    abort();                                                            \
   }                                                                     \
 } while (0)
 
@@ -53,7 +53,7 @@ static inline int srunner_ntests_failed(SRunner *r)
     fprintf(stderr, "%s:%d: failed `%s': ", __FILE__, __LINE__, #ok);   \
     fprintf(stderr, __VA_ARGS__);                                       \
     fprintf(stderr, "\n");                                              \
-    exit(EXIT_FAILURE);                                                 \
+    abort();                                                            \
   }                                                                     \
 } while (0)
 
@@ -61,7 +61,7 @@ static inline int srunner_ntests_failed(SRunner *r)
   fprintf(stderr, "%s:%d: ", __FILE__, __LINE__);                       \
   fprintf(stderr, __VA_ARGS__);                                         \
   fprintf(stderr, "\n");                                                \
-  exit(EXIT_FAILURE);                                                   \
+  abort();                                                              \
 } while (0)
 
 #endif // CHECK_COMPAT_H
