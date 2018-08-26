@@ -569,7 +569,7 @@ CHECK_ARG:
     initialize_tox(&bootstrap, &AliceAV, &AliceCC, &BobAV, &BobCC);
 
     // TODO(iphydf): Don't depend on toxcore internals
-    const Mono_Time *mono_time = (*(Messenger **)bootstrap)->mono_time;
+    Mono_Time *mono_time = (*(Messenger **)bootstrap)->mono_time;
 
     if (TEST_TRANSFER_A) {
         SNDFILE *af_handle;

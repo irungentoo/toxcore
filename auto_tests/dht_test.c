@@ -600,9 +600,10 @@ static void ip_callback(void *data, int32_t number, IP_Port ip_port)
 
 #define NUM_DHT_FRIENDS 20
 
-static uint64_t get_clock_callback(void *user_data)
+static uint64_t get_clock_callback(Mono_Time *mono_time, void *user_data)
 {
-    return *(uint64_t *)user_data;
+    const uint64_t *clock = (const uint64_t *)user_data;
+    return *clock;
 }
 
 static void test_DHT_test(void)

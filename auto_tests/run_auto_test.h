@@ -42,9 +42,10 @@ static void iterate_all_wait(uint32_t tox_count, Tox **toxes, State *state, uint
     c_sleep(20);
 }
 
-static uint64_t get_state_clock_callback(void *user_data)
+static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
 {
-    return ((State *)user_data)->clock;
+    const State *state = (const State *)user_data;
+    return state->clock;
 }
 
 static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *state))

@@ -35,7 +35,9 @@ TEST(MonoTime, IsTimeout) {
   mono_time_free(mono_time);
 }
 
-static uint64_t test_current_time_callback(void *user_data) { return *(uint64_t *)user_data; }
+uint64_t test_current_time_callback(Mono_Time *mono_time, void *user_data) {
+  return *(uint64_t *)user_data;
+}
 
 TEST(MonoTime, CustomTime) {
   Mono_Time *mono_time = mono_time_new();

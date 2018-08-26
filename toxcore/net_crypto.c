@@ -972,7 +972,7 @@ static int generate_request_packet(const Logger *log, uint8_t *data, uint16_t le
  * return -1 on failure.
  * return number of requested packets on success.
  */
-static int handle_request_packet(const Mono_Time *mono_time, const Logger *log, Packets_Array *send_array,
+static int handle_request_packet(Mono_Time *mono_time, const Logger *log, Packets_Array *send_array,
                                  const uint8_t *data, uint16_t length, uint64_t *latest_send_time, uint64_t rtt_time)
 {
     if (length == 0) {

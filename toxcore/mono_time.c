@@ -28,12 +28,52 @@
 struct Mono_Time {
     uint64_t time;
     uint64_t base_time;
+#ifdef OS_WIN32
+    uint64_t last_clock_mono;
+    uint64_t add_clock_mono;
+#endif
 
     mono_time_current_time_cb *current_time_callback;
     void *user_data;
 };
 
-static mono_time_current_time_cb current_time_monotonic_default;
+static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_data)
+{
+    uint64_t time;
+#ifdef OS_WIN32
+    uint64_t old_add_clock_mono = mono_time->add_clock_mono;
+    time = (uint64_t)GetTickCount() + mono_time->add_clock_mono;
+
+    /* Check if time has decreased because of 32 bit wrap from GetTickCount(), while avoiding false positives from race
+     * conditions when multiple threads call this function at once */
+    if (time + 0x10000 < mono_time->last_clock_mono) {
+        uint32_t add = ~0;
+        /* use old_add_clock_mono rather than simply incrementing add_clock_mono, to handle the case that many threads
+         * simultaneously detect an overflow */
+        mono_time->add_clock_mono = old_add_clock_mono + add;
+        time += add;
+    }
+
+    mono_time->last_clock_mono = time;
+#else
+    struct timespec clock_mono;
+#if defined(__APPLE__)
+    clock_serv_t muhclock;
+    mach_timespec_t machtime;
+
+    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &muhclock);
+    clock_get_time(muhclock, &machtime);
+    mach_port_deallocate(mach_task_self(), muhclock);
+
+    clock_mono.tv_sec = machtime.tv_sec;
+    clock_mono.tv_nsec = machtime.tv_nsec;
+#else
+    clock_gettime(CLOCK_MONOTONIC, &clock_mono);
+#endif
+    time = 1000ULL * clock_mono.tv_sec + (clock_mono.tv_nsec / 1000000ULL);
+#endif
+    return time;
+}
 
 Mono_Time *mono_time_new(void)
 {
@@ -45,6 +85,11 @@ Mono_Time *mono_time_new(void)
 
     mono_time->current_time_callback = current_time_monotonic_default;
     mono_time->user_data = nullptr;
+
+#ifdef OS_WIN32
+    mono_time->last_clock_mono = 0;
+    mono_time->add_clock_mono = 0;
+#endif
 
     mono_time->time = 0;
     mono_time->base_time = (uint64_t)time(nullptr) - (current_time_monotonic(mono_time) / 1000ULL);
@@ -87,53 +132,7 @@ void mono_time_set_current_time_callback(Mono_Time *mono_time,
 }
 
 /* return current monotonic time in milliseconds (ms). */
-uint64_t current_time_monotonic(const Mono_Time *mono_time)
+uint64_t current_time_monotonic(Mono_Time *mono_time)
 {
-    return mono_time->current_time_callback(mono_time->user_data);
-}
-
-//!TOKSTYLE-
-// No global mutable state in Tokstyle.
-#ifdef OS_WIN32
-static uint64_t last_clock_mono;
-static uint64_t add_clock_mono;
-#endif
-//!TOKSTYLE+
-
-static uint64_t current_time_monotonic_default(void *user_data)
-{
-    uint64_t time;
-#ifdef OS_WIN32
-    uint64_t old_add_clock_mono = add_clock_mono;
-    time = (uint64_t)GetTickCount() + add_clock_mono;
-
-    /* Check if time has decreased because of 32 bit wrap from GetTickCount(), while avoiding false positives from race
-     * conditions when multiple threads call this function at once */
-    if (time + 0x10000 < last_clock_mono) {
-        uint32_t add = ~0;
-        /* use old_add_clock_mono rather than simply incrementing add_clock_mono, to handle the case that many threads
-         * simultaneously detect an overflow */
-        add_clock_mono = old_add_clock_mono + add;
-        time += add;
-    }
-
-    last_clock_mono = time;
-#else
-    struct timespec clock_mono;
-#if defined(__APPLE__)
-    clock_serv_t muhclock;
-    mach_timespec_t machtime;
-
-    host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &muhclock);
-    clock_get_time(muhclock, &machtime);
-    mach_port_deallocate(mach_task_self(), muhclock);
-
-    clock_mono.tv_sec = machtime.tv_sec;
-    clock_mono.tv_nsec = machtime.tv_nsec;
-#else
-    clock_gettime(CLOCK_MONOTONIC, &clock_mono);
-#endif
-    time = 1000ULL * clock_mono.tv_sec + (clock_mono.tv_nsec / 1000000ULL);
-#endif
-    return time;
+    return mono_time->current_time_callback(mono_time, mono_time->user_data);
 }
