@@ -174,7 +174,7 @@ int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port);
  * Return size of unpacked ip_port on success.
  * Return -1 on failure.
  */
-int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, uint8_t tcp_enabled);
+int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool tcp_enabled);
 
 /* Pack number of nodes into data of maxlength length.
  *
@@ -191,7 +191,7 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
  * return -1 on failure.
  */
 int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, const uint8_t *data,
-                 uint16_t length, uint8_t tcp_enabled);
+                 uint16_t length, bool tcp_enabled);
 
 
 /*----------------------------------------------------------------------------------*/
@@ -203,7 +203,7 @@ typedef struct Shared_Key {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     uint32_t times_requested;
-    uint8_t  stored; /* 0 if not, 1 if is */
+    bool stored;
     uint64_t time_last_requested;
 } Shared_Key;
 

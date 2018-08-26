@@ -281,7 +281,7 @@ void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_
 
     if (num != UINT32_MAX) {
         Shared_Key *const key = &shared_keys->keys[curr];
-        key->stored = 1;
+        key->stored = true;
         key->times_requested = 1;
         memcpy(key->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(key->shared_key, shared_key, CRYPTO_SHARED_KEY_SIZE);
@@ -491,7 +491,7 @@ static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
  * Return size of unpacked ip_port on success.
  * Return -1 on failure.
  */
-int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, uint8_t tcp_enabled)
+int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool tcp_enabled)
 {
     if (data == nullptr) {
         return -1;
@@ -589,7 +589,7 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
  * return -1 on failure.
  */
 int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, const uint8_t *data,
-                 uint16_t length, uint8_t tcp_enabled)
+                 uint16_t length, bool tcp_enabled)
 {
     uint32_t num = 0, len_processed = 0;
 

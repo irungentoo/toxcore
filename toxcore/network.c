@@ -346,12 +346,7 @@ bool net_family_is_tox_tcp_ipv6(Family family)
     return family.value == net_family_tox_tcp_ipv6.value;
 }
 
-/* Check if socket is valid.
- *
- * return 1 if valid
- * return 0 if not valid
- */
-int sock_valid(Socket sock)
+bool sock_valid(Socket sock)
 {
     return sock.socket != net_invalid_socket.socket;
 }
@@ -367,60 +362,40 @@ void kill_sock(Socket sock)
 #endif
 }
 
-/* Set socket as nonblocking
- *
- * return 1 on success
- * return 0 on failure
- */
-int set_socket_nonblock(Socket sock)
+bool set_socket_nonblock(Socket sock)
 {
 #ifdef OS_WIN32
     u_long mode = 1;
-    return (ioctlsocket(sock.socket, FIONBIO, &mode) == 0);
+    return ioctlsocket(sock.socket, FIONBIO, &mode) == 0;
 #else
-    return (fcntl(sock.socket, F_SETFL, O_NONBLOCK, 1) == 0);
+    return fcntl(sock.socket, F_SETFL, O_NONBLOCK, 1) == 0;
 #endif
 }
 
-/* Set socket to not emit SIGPIPE
- *
- * return 1 on success
- * return 0 on failure
- */
-int set_socket_nosigpipe(Socket sock)
+bool set_socket_nosigpipe(Socket sock)
 {
 #if defined(__APPLE__)
     int set = 1;
     return setsockopt(sock.socket, SOL_SOCKET, SO_NOSIGPIPE, (const char *)&set, sizeof(int)) == 0;
 #else
-    return 1;
+    return true;
 #endif
 }
 
-/* Enable SO_REUSEADDR on socket.
- *
- * return 1 on success
- * return 0 on failure
- */
-int set_socket_reuseaddr(Socket sock)
+bool set_socket_reuseaddr(Socket sock)
 {
     int set = 1;
     return setsockopt(sock.socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(set)) == 0;
 }
 
-/* Set socket to dual (IPv4 + IPv6 socket)
- *
- * return 1 on success
- * return 0 on failure
- */
-int set_socket_dualstack(Socket sock)
+bool set_socket_dualstack(Socket sock)
 {
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
     int res = getsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0)) {
-        return 1;
+        return true;
     }
 
     ipv6only = 0;
@@ -973,16 +948,10 @@ void kill_networking(Networking_Core *net)
 }
 
 
-/* ip_equal
- *  compares two IPAny structures
- *  unset means unequal
- *
- * returns 0 when not equal or when uninitialized
- */
-int ip_equal(const IP *a, const IP *b)
+bool ip_equal(const IP *a, const IP *b)
 {
     if (!a || !b) {
-        return 0;
+        return false;
     }
 
     /* same family */
@@ -1000,7 +969,7 @@ int ip_equal(const IP *a, const IP *b)
                    a->ip.v6.uint64[1] == b->ip.v6.uint64[1];
         }
 
-        return 0;
+        return false;
     }
 
     /* different family: check on the IPv6 one if it is the IPv4 one embedded */
@@ -1018,23 +987,17 @@ int ip_equal(const IP *a, const IP *b)
         }
     }
 
-    return 0;
+    return false;
 }
 
-/* ipport_equal
- *  compares two IPAny_Port structures
- *  unset means unequal
- *
- * returns 0 when not equal or when uninitialized
- */
-int ipport_equal(const IP_Port *a, const IP_Port *b)
+bool ipport_equal(const IP_Port *a, const IP_Port *b)
 {
     if (!a || !b) {
-        return 0;
+        return false;
     }
 
     if (!a->port || (a->port != b->port)) {
-        return 0;
+        return false;
     }
 
     return ip_equal(&a->ip, &b->ip);
@@ -1153,25 +1116,10 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
     return ip_str;
 }
 
-/*
- * ip_parse_addr
- *  parses IP structure into an address string
- *
- * input
- *  ip: ip of TOX_AF_INET or TOX_AF_INET6 families
- *  length: length of the address buffer
- *          Must be at least INET_ADDRSTRLEN for TOX_AF_INET
- *          and INET6_ADDRSTRLEN for TOX_AF_INET6
- *
- * output
- *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
- *
- * returns 1 on success, 0 on failure
- */
-int ip_parse_addr(const IP *ip, char *address, size_t length)
+bool ip_parse_addr(const IP *ip, char *address, size_t length)
 {
     if (!address || !ip) {
-        return 0;
+        return false;
     }
 
     if (net_family_is_ipv4(ip->family)) {
@@ -1184,26 +1132,13 @@ int ip_parse_addr(const IP *ip, char *address, size_t length)
         return inet_ntop(make_family(ip->family), addr, address, length) != nullptr;
     }
 
-    return 0;
+    return false;
 }
 
-/*
- * addr_parse_ip
- *  directly parses the input into an IP structure
- *  tries IPv4 first, then IPv6
- *
- * input
- *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
- *
- * output
- *  IP: family and the value is set on success
- *
- * returns 1 on success, 0 on failure
- */
-int addr_parse_ip(const char *address, IP *to)
+bool addr_parse_ip(const char *address, IP *to)
 {
     if (!address || !to) {
-        return 0;
+        return false;
     }
 
     struct in_addr addr4;
@@ -1211,7 +1146,7 @@ int addr_parse_ip(const char *address, IP *to)
     if (inet_pton(AF_INET, address, &addr4) == 1) {
         to->family = net_family_ipv4;
         get_ip4(&to->ip.v4, &addr4);
-        return 1;
+        return true;
     }
 
     struct in6_addr addr6;
@@ -1219,29 +1154,12 @@ int addr_parse_ip(const char *address, IP *to)
     if (inet_pton(AF_INET6, address, &addr6) == 1) {
         to->family = net_family_ipv6;
         get_ip6(&to->ip.v6, &addr6);
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
-/*
- * addr_resolve():
- *  uses getaddrinfo to resolve an address into an IP address
- *  uses the first IPv4/IPv6 addresses returned by getaddrinfo
- *
- * input
- *  address: a hostname (or something parseable to an IP address)
- *  to: to.family MUST be initialized, either set to a specific IP version
- *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
- *     IP versions are acceptable
- *  extra can be NULL and is only set in special circumstances, see returns
- *
- * returns in *to a valid IPAny (v4/v6),
- *     prefers v6 if ip.family was AF_UNSPEC and both available
- * returns in *extra an IPv4 address, if family was AF_UNSPEC and *to is TOX_AF_INET6
- * returns 0 on failure, TOX_ADDR_RESOLVE_* on success.
- */
 int addr_resolve(const char *address, IP *to, IP *extra)
 {
     if (!address || !to) {
@@ -1332,30 +1250,15 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     return result;
 }
 
-/*
- * addr_resolve_or_parse_ip
- *  resolves string into an IP address
- *
- *  address: a hostname (or something parseable to an IP address)
- *  to: to.family MUST be initialized, either set to a specific IP version
- *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified AF_UNSPEC (= 0), if both
- *     IP versions are acceptable
- *  extra can be NULL and is only set in special circumstances, see returns
- *
- *  returns in *tro a matching address (IPv6 or IPv4)
- *  returns in *extra, if not NULL, an IPv4 address, if to->family was AF_UNSPEC
- *  returns 1 on success
- *  returns 0 on failure
- */
-int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
+bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 {
     if (!addr_resolve(address, to, extra)) {
         if (!addr_parse_ip(address, to)) {
-            return 0;
+            return false;
         }
     }
 
-    return 1;
+    return true;
 }
 
 int net_connect(Socket sock, IP_Port ip_port)
@@ -1466,10 +1369,7 @@ void net_freeipport(IP_Port *ip_ports)
     free(ip_ports);
 }
 
-/* return 1 on success
- * return 0 on failure
- */
-int bind_to_port(Socket sock, Family family, uint16_t port)
+bool bind_to_port(Socket sock, Family family, uint16_t port)
 {
     struct sockaddr_storage addr = {0};
     size_t addrsize;
@@ -1487,7 +1387,7 @@ int bind_to_port(Socket sock, Family family, uint16_t port)
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = net_htons(port);
     } else {
-        return 0;
+        return false;
     }
 
     return bind(sock.socket, (struct sockaddr *)&addr, addrsize) == 0;

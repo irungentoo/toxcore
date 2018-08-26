@@ -64,12 +64,12 @@ typedef struct Socket {
 
 Socket net_socket(Family domain, int type, int protocol);
 
-/* Check if socket is valid.
+/**
+ * Check if socket is valid.
  *
- * return 1 if valid
- * return 0 if not valid
+ * @return true if valid, false otherwise.
  */
-int sock_valid(Socket sock);
+bool sock_valid(Socket sock);
 
 extern const Socket net_invalid_socket;
 
@@ -235,53 +235,49 @@ bool ipv6_ipv4_in_v6(IP6 a);
 #define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
 const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
 
-/*
- * ip_parse_addr
- *  parses IP structure into an address string
+/**
+ * Parses IP structure into an address string.
  *
- * input
- *  ip: ip of TOX_AF_INET or TOX_AF_INET6 families
- *  length: length of the address buffer
- *          Must be at least TOX_INET_ADDRSTRLEN for TOX_AF_INET
- *          and TOX_INET6_ADDRSTRLEN for TOX_AF_INET6
+ * @param ip IP of TOX_AF_INET or TOX_AF_INET6 families.
+ * @param length length of the address buffer.
+ *   Must be at least TOX_INET_ADDRSTRLEN for TOX_AF_INET
+ *   and TOX_INET6_ADDRSTRLEN for TOX_AF_INET6
  *
- * output
- *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ * @param address dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6).
  *
- * returns 1 on success, 0 on failure
+ * @return true on success, false on failure.
  */
-int ip_parse_addr(const IP *ip, char *address, size_t length);
+bool ip_parse_addr(const IP *ip, char *address, size_t length);
 
-/*
- * addr_parse_ip
- *  directly parses the input into an IP structure
- *  tries IPv4 first, then IPv6
+/**
+ * Directly parses the input into an IP structure.
  *
- * input
- *  address: dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6)
+ * Tries IPv4 first, then IPv6.
  *
- * output
- *  IP: family and the value is set on success
+ * @param address dotted notation (IPv4: quad, IPv6: 16) or colon notation (IPv6).
+ * @param to family and the value is set on success.
  *
- * returns 1 on success, 0 on failure
+ * @return true on success, false on failure.
  */
-int addr_parse_ip(const char *address, IP *to);
+bool addr_parse_ip(const char *address, IP *to);
 
-/* ip_equal
- *  compares two IPAny structures
- *  unset means unequal
+/**
+ * Compares two IPAny structures.
  *
- * returns 0 when not equal or when uninitialized
+ * Unset means unequal.
+ *
+ * @return false when not equal or when uninitialized.
  */
-int ip_equal(const IP *a, const IP *b);
+bool ip_equal(const IP *a, const IP *b);
 
-/* ipport_equal
- *  compares two IPAny_Port structures
- *  unset means unequal
+/**
+ * Compares two IPAny_Port structures.
  *
- * returns 0 when not equal or when uninitialized
+ * Unset means unequal.
+ *
+ * @return false when not equal or when uninitialized.
  */
-int ipport_equal(const IP_Port *a, const IP_Port *b);
+bool ipport_equal(const IP_Port *a, const IP_Port *b);
 
 /* nulls out ip */
 void ip_reset(IP *ip);
@@ -296,41 +292,40 @@ void ip_copy(IP *target, const IP *source);
 /* copies an ip_port structure */
 void ipport_copy(IP_Port *target, const IP_Port *source);
 
-/*
- * addr_resolve():
- *  uses getaddrinfo to resolve an address into an IP address
- *  uses the first IPv4/IPv6 addresses returned by getaddrinfo
+/**
+ * Uses getaddrinfo to resolve an address into an IP address.
  *
- * input
- *  address: a hostname (or something parseable to an IP address)
- *  to: to.family MUST be initialized, either set to a specific IP version
+ * Uses the first IPv4/IPv6 addresses returned by getaddrinfo.
+ *
+ * @param address a hostname (or something parseable to an IP address)
+ * @param to to.family MUST be initialized, either set to a specific IP version
  *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (= 0), if both
  *     IP versions are acceptable
- *  extra can be NULL and is only set in special circumstances, see returns
+ * @param extra can be NULL and is only set in special circumstances, see returns
  *
  * returns in *to a valid IPAny (v4/v6),
  *     prefers v6 if ip.family was TOX_AF_UNSPEC and both available
  * returns in *extra an IPv4 address, if family was TOX_AF_UNSPEC and *to is TOX_AF_INET6
- * returns 0 on failure
+ *
+ * @return 0 on failure, TOX_ADDR_RESOLVE_* on success.
  */
 int addr_resolve(const char *address, IP *to, IP *extra);
 
-/*
- * addr_resolve_or_parse_ip
- *  resolves string into an IP address
+/**
+ * Resolves string into an IP address
  *
- *  address: a hostname (or something parseable to an IP address)
- *  to: to.family MUST be initialized, either set to a specific IP version
+ * @param address a hostname (or something parseable to an IP address)
+ * @param to to.family MUST be initialized, either set to a specific IP version
  *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (= 0), if both
  *     IP versions are acceptable
- *  extra can be NULL and is only set in special circumstances, see returns
+ * @param extra can be NULL and is only set in special circumstances, see returns
  *
- *  returns in *tro a matching address (IPv6 or IPv4)
- *  returns in *extra, if not NULL, an IPv4 address, if to->family was TOX_AF_UNSPEC
- *  returns 1 on success
- *  returns 0 on failure
+ * returns in *tro a matching address (IPv6 or IPv4)
+ * returns in *extra, if not NULL, an IPv4 address, if to->family was TOX_AF_UNSPEC
+ *
+ * @return true on success, false on failure
  */
-int addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
+bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 
 /* Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
@@ -354,33 +349,33 @@ int networking_at_startup(void);
  */
 void kill_sock(Socket sock);
 
-/* Set socket as nonblocking
+/**
+ * Set socket as nonblocking
  *
- * return 1 on success
- * return 0 on failure
+ * @return true on success, false on failure.
  */
-int set_socket_nonblock(Socket sock);
+bool set_socket_nonblock(Socket sock);
 
-/* Set socket to not emit SIGPIPE
+/**
+ * Set socket to not emit SIGPIPE
  *
- * return 1 on success
- * return 0 on failure
+ * @return true on success, false on failure.
  */
-int set_socket_nosigpipe(Socket sock);
+bool set_socket_nosigpipe(Socket sock);
 
-/* Enable SO_REUSEADDR on socket.
+/**
+ * Enable SO_REUSEADDR on socket.
  *
- * return 1 on success
- * return 0 on failure
+ * @return true on success, false on failure.
  */
-int set_socket_reuseaddr(Socket sock);
+bool set_socket_reuseaddr(Socket sock);
 
-/* Set socket to dual (IPv4 + IPv6 socket)
+/**
+ * Set socket to dual (IPv4 + IPv6 socket)
  *
- * return 1 on success
- * return 0 on failure
+ * @return true on success, false on failure.
  */
-int set_socket_dualstack(Socket sock);
+bool set_socket_dualstack(Socket sock);
 
 /* Basic network functions: */
 
@@ -413,10 +408,10 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type);
  */
 void net_freeipport(IP_Port *ip_ports);
 
-/* return 1 on success
- * return 0 on failure
+/**
+ * @return true on success, false on failure.
  */
-int bind_to_port(Socket sock, Family family, uint16_t port);
+bool bind_to_port(Socket sock, Family family, uint16_t port);
 
 /* Get the last networking error code.
  *
