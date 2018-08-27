@@ -322,7 +322,7 @@ bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
  *
  */
 int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
-                    uint8_t is_LAN, uint8_t want_good);
+                    bool is_LAN, uint8_t want_good);
 
 
 /* Put up to max_num nodes in nodes from the random friends.

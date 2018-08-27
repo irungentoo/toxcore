@@ -806,13 +806,11 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
         last_pinged_index = &onion_c->friends_list[num - 1].last_pinged_index;
     }
 
-    unsigned int i, j;
-    int lan_ips_accepted = (ip_is_lan(source.ip) == 0);
+    const bool lan_ips_accepted = ip_is_lan(source.ip);
 
-    for (i = 0; i < num_nodes; ++i) {
-
+    for (uint32_t i = 0; i < num_nodes; ++i) {
         if (!lan_ips_accepted) {
-            if (ip_is_lan(nodes[i].ip_port.ip) == 0) {
+            if (ip_is_lan(nodes[i].ip_port.ip)) {
                 continue;
             }
         }
@@ -821,6 +819,8 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
                 || id_closest(reference_id, list_nodes[0].public_key, nodes[i].public_key) == 2
                 || onion_node_timed_out(&list_nodes[1], onion_c->mono_time)
                 || id_closest(reference_id, list_nodes[1].public_key, nodes[i].public_key) == 2) {
+            uint32_t j;
+
             /* check if node is already in list. */
             for (j = 0; j < list_length; ++j) {
                 if (public_key_cmp(list_nodes[j].public_key, nodes[i].public_key) == 0) {

@@ -300,13 +300,10 @@ bool ip_is_local(IP ip)
     return 0;
 }
 
-/*  return 0 if ip is a LAN ip.
- *  return -1 if it is not.
- */
-int ip_is_lan(IP ip)
+bool ip_is_lan(IP ip)
 {
     if (ip_is_local(ip)) {
-        return 0;
+        return true;
     }
 
     if (net_family_is_ipv4(ip.family)) {
@@ -314,29 +311,29 @@ int ip_is_lan(IP ip)
 
         /* 10.0.0.0 to 10.255.255.255 range. */
         if (ip4.uint8[0] == 10) {
-            return 0;
+            return true;
         }
 
         /* 172.16.0.0 to 172.31.255.255 range. */
         if (ip4.uint8[0] == 172 && ip4.uint8[1] >= 16 && ip4.uint8[1] <= 31) {
-            return 0;
+            return true;
         }
 
         /* 192.168.0.0 to 192.168.255.255 range. */
         if (ip4.uint8[0] == 192 && ip4.uint8[1] == 168) {
-            return 0;
+            return true;
         }
 
         /* 169.254.1.0 to 169.254.254.255 range. */
         if (ip4.uint8[0] == 169 && ip4.uint8[1] == 254 && ip4.uint8[2] != 0
                 && ip4.uint8[2] != 255) {
-            return 0;
+            return true;
         }
 
         /* RFC 6598: 100.64.0.0 to 100.127.255.255 (100.64.0.0/10)
          * (shared address space to stack another layer of NAT) */
         if ((ip4.uint8[0] == 100) && ((ip4.uint8[1] & 0xC0) == 0x40)) {
-            return 0;
+            return true;
         }
     } else if (net_family_is_ipv6(ip.family)) {
 
@@ -344,7 +341,7 @@ int ip_is_lan(IP ip)
            FF02::1 is - according to RFC 4291 - multicast all-nodes link-local */
         if (((ip.ip.v6.uint8[0] == 0xFF) && (ip.ip.v6.uint8[1] < 3) && (ip.ip.v6.uint8[15] == 1)) ||
                 ((ip.ip.v6.uint8[0] == 0xFE) && ((ip.ip.v6.uint8[1] & 0xC0) == 0x80))) {
-            return 0;
+            return true;
         }
 
         /* embedded IPv4-in-IPv6 */
@@ -356,7 +353,7 @@ int ip_is_lan(IP ip)
         }
     }
 
-    return -1;
+    return false;
 }
 
 static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
@@ -366,7 +363,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
     char ip_str[IP_NTOA_LEN] = { 0 };
     ip_ntoa(&source.ip, ip_str, sizeof(ip_str));
 
-    if (ip_is_lan(source.ip) == -1) {
+    if (!ip_is_lan(source.ip)) {
         return 1;
     }
 

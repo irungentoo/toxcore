@@ -61,12 +61,11 @@ static void kill(dHT::this *dht);
 static bool ip_is_local(iP::this ip);
 
 /**
- * checks if a given IP isn't routable
+ * Checks if a given IP isn't routable.
  *
- *  return 0 if ip is a LAN ip.
- *  return -1 if it is not.
+ * @return true if ip is a LAN ip, false if it is not.
  */
-static int32_t ip_is_lan(iP::this ip);
+static bool ip_is_lan(iP::this ip);
 
 %{
 #endif

@@ -64,11 +64,10 @@ void lan_discovery_kill(DHT *dht);
 bool ip_is_local(IP ip);
 
 /**
- * checks if a given IP isn't routable
+ * Checks if a given IP isn't routable.
  *
- *  return 0 if ip is a LAN ip.
- *  return -1 if it is not.
+ * @return true if ip is a LAN ip, false if it is not.
  */
-int32_t ip_is_lan(IP ip);
+bool ip_is_lan(IP ip);
 
 #endif

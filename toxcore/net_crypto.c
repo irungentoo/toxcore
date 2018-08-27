@@ -584,7 +584,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
     }
 
     if (net_family_is_ipv4(ip_port.ip.family)) {
-        if (!ipport_equal(&ip_port, &conn->ip_portv4) && ip_is_lan(conn->ip_portv4.ip) != 0) {
+        if (!ipport_equal(&ip_port, &conn->ip_portv4) && !ip_is_lan(conn->ip_portv4.ip)) {
             if (!bs_list_add(&c->ip_port_list, (uint8_t *)&ip_port, crypt_connection_id)) {
                 return -1;
             }
@@ -634,7 +634,7 @@ static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
         v6 = 1;
     }
 
-    if (v4 && ip_is_lan(conn->ip_portv4.ip) == 0) {
+    if (v4 && ip_is_lan(conn->ip_portv4.ip)) {
         return conn->ip_portv4;
     }
 
