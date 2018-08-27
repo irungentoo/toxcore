@@ -302,9 +302,12 @@ int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
  */
 int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 
-/* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
+/**
+ * Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
+ *
+ * @return true iff the node was added to the list.
  */
-bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
+bool add_to_list(Node_format *nodes_list, uint32_t length, const uint8_t *pk, IP_Port ip_port,
                  const uint8_t *cmp_pk);
 
 /* Return 1 if node can be added to close list, 0 if it can't.

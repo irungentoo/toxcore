@@ -755,30 +755,26 @@ static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_ti
     return 1;
 }
 
-/* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
- */
-bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
+bool add_to_list(Node_format *nodes_list, uint32_t length, const uint8_t *pk, IP_Port ip_port,
                  const uint8_t *cmp_pk)
 {
-    uint8_t pk_bak[CRYPTO_PUBLIC_KEY_SIZE];
-    IP_Port ip_port_bak;
-
-    for (size_t i = 0; i < length; ++i) {
+    for (uint32_t i = 0; i < length; ++i) {
         if (id_closest(cmp_pk, nodes_list[i].public_key, pk) == 2) {
+            uint8_t pk_bak[CRYPTO_PUBLIC_KEY_SIZE];
             memcpy(pk_bak, nodes_list[i].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-            ip_port_bak = nodes_list[i].ip_port;
+            const IP_Port ip_port_bak = nodes_list[i].ip_port;
             memcpy(nodes_list[i].public_key, pk, CRYPTO_PUBLIC_KEY_SIZE);
             nodes_list[i].ip_port = ip_port;
 
-            if (i != (length - 1)) {
+            if (i != length - 1) {
                 add_to_list(nodes_list, length, pk_bak, ip_port_bak, cmp_pk);
             }
 
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 /* TODO(irungentoo): change this to 7 when done*/
