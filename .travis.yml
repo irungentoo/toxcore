@@ -24,6 +24,7 @@ matrix:
             - libgtest-dev           # For unit tests.
             - libvpx-dev             # For toxav.
             - portaudio19-dev        # For av_test.
+            - pylint
       install:       .travis/$JOB install
       script:        .travis/$JOB script
       after_script:  .travis/upload-coverage
