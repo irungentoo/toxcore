@@ -63,6 +63,9 @@ extern "C" {
 #include <opencv/cv.h>
 #include <opencv/cvwimage.h>
 #include <opencv/highgui.h>
+#ifdef __APPLE__
+#include <opencv2/videoio/videoio_c.h>
+#endif
 
 #include <assert.h>
 #include <sched.h>
