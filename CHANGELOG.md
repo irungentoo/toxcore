@@ -1,9 +1,53 @@
 
 
+## v0.2.7
+
+### Merged PRs:
+
+- [#1137](https://github.com/TokTok/c-toxcore/pull/1137) Make `ip_is_lan` return bool instead of 0/-1.
+- [#1133](https://github.com/TokTok/c-toxcore/pull/1133) Make the tsan build fail instead of swallowing its errors.
+- [#1132](https://github.com/TokTok/c-toxcore/pull/1132) Use `bool` in place of 0/1 int values.
+- [#1131](https://github.com/TokTok/c-toxcore/pull/1131) Format crypto_core.c.
+- [#1130](https://github.com/TokTok/c-toxcore/pull/1130) Fix test class name for mono_time_test.
+- [#1129](https://github.com/TokTok/c-toxcore/pull/1129) Call `abort` instead of `exit` on test failure.
+- [#1128](https://github.com/TokTok/c-toxcore/pull/1128) Add some tests for `ping_array`.
+- [#1127](https://github.com/TokTok/c-toxcore/pull/1127) Update copyright to 2018.
+- [#1125](https://github.com/TokTok/c-toxcore/pull/1125) Run save_compatibility_test in the autotools build.
+- [#1124](https://github.com/TokTok/c-toxcore/pull/1124) Fix the `PORT_ALLOC` failure of `save_compatibility_test`.
+- [#1123](https://github.com/TokTok/c-toxcore/pull/1123) Add support for setting a custom monotonic time function in mono_time
+- [#1122](https://github.com/TokTok/c-toxcore/pull/1122) Run all tests (and compilation) in parallel with autotools.
+- [#1120](https://github.com/TokTok/c-toxcore/pull/1120) Stop using massive macros in `toxav_basic_test`.
+- [#1119](https://github.com/TokTok/c-toxcore/pull/1119) Use do-while instead of while in tests.
+- [#1117](https://github.com/TokTok/c-toxcore/pull/1117) Fix leave callback calling in del_groupchat
+- [#1112](https://github.com/TokTok/c-toxcore/pull/1112) Fix auto_tests Makefile
+- [#1110](https://github.com/TokTok/c-toxcore/pull/1110) Add check to make sure tox was created successfully
+- [#1109](https://github.com/TokTok/c-toxcore/pull/1109) Consistently use 'mono_time' rather than 'monotime'
+- [#1107](https://github.com/TokTok/c-toxcore/pull/1107) Always print output on failure in cmake tests on Travis.
+- [#1106](https://github.com/TokTok/c-toxcore/pull/1106) Fix libmisc_tools building
+- [#1104](https://github.com/TokTok/c-toxcore/pull/1104) Avoid redefining macros from different files.
+- [#1103](https://github.com/TokTok/c-toxcore/pull/1103) Upload coverage to codecov as well as coveralls.
+- [#1102](https://github.com/TokTok/c-toxcore/pull/1102) Enable color diagnostics on circleci.
+- [#1101](https://github.com/TokTok/c-toxcore/pull/1101) Make the save_compatibility_test work with bazel.
+- [#1100](https://github.com/TokTok/c-toxcore/pull/1100) Make Mono_Time an argument to current_time_monotonic
+- [#1099](https://github.com/TokTok/c-toxcore/pull/1099) Fix const cast in save-generator.
+- [#1098](https://github.com/TokTok/c-toxcore/pull/1098) Run both asan and tsan on Circle CI.
+- [#1097](https://github.com/TokTok/c-toxcore/pull/1097) Run project tests like yamllint_test.
+- [#1096](https://github.com/TokTok/c-toxcore/pull/1096) Enable .travis.yml check and use non-markdown license.
+- [#1094](https://github.com/TokTok/c-toxcore/pull/1094) Set `_POSIX_C_SOURCE` to 200112L. We need it for C99 compat.
+- [#1092](https://github.com/TokTok/c-toxcore/pull/1092) Install the `DHT_bootstrap` binary on `make install`.
+- [#1086](https://github.com/TokTok/c-toxcore/pull/1086) Try ipv6 connections even after udp timeout
+- [#1081](https://github.com/TokTok/c-toxcore/pull/1081) Change while-loop to for-loop to express for-each-frame.
+- [#1075](https://github.com/TokTok/c-toxcore/pull/1075) Fix FreeBSD VM on Travis not shutting down
+- [#1061](https://github.com/TokTok/c-toxcore/pull/1061) Force storing the result of crypto_memcmp in the test.
+- [#1057](https://github.com/TokTok/c-toxcore/pull/1057) Reduce the number of times `unix_time_update` is called.
+- [#1051](https://github.com/TokTok/c-toxcore/pull/1051) Add save file generator, compatibility test, and generate a savefile
+- [#1038](https://github.com/TokTok/c-toxcore/pull/1038) Use per-instance `Mono_Time` instead of a global `unix_time`
+
 ## v0.2.6
 
 ### Merged PRs:
 
+- [#1093](https://github.com/TokTok/c-toxcore/pull/1093) Release 0.2.6
 - [#1090](https://github.com/TokTok/c-toxcore/pull/1090) Fix possible resource leaks in test
 - [#1089](https://github.com/TokTok/c-toxcore/pull/1089) Limit the size of a save file in file_saving_test.
 - [#1088](https://github.com/TokTok/c-toxcore/pull/1088) Use `--config` to tell bazel about the environment.
