@@ -438,7 +438,10 @@ static int print_help(const char *name)
 
 int main(int argc, char **argv)
 {
-    freopen("/dev/zero", "w", stderr);
+    if (freopen("/dev/zero", "w", stderr) == nullptr) {
+        return EXIT_FAILURE;
+    }
+
     Pa_Initialize();
 
     struct stat st;
@@ -649,10 +652,16 @@ CHECK_ARG:
         output.hostApiSpecificStreamInfo = nullptr;
 
         PaError err = Pa_OpenStream(&adout, nullptr, &output, af_info.samplerate, frame_size, paNoFlag, nullptr, nullptr);
-        assert(err == paNoError);
+
+        if (err != paNoError) {
+            return EXIT_FAILURE;
+        }
 
         err = Pa_StartStream(adout);
-        assert(err == paNoError);
+
+        if (err != paNoError) {
+            return EXIT_FAILURE;
+        }
 
 //         toxav_audio_bit_rate_set(AliceAV, 0, 64, false, nullptr);
 

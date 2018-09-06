@@ -1013,7 +1013,7 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
 {
     if (!status_message) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
-        return 0;
+        return false;
     }
 
     const Messenger *const m = tox->m;
@@ -1021,14 +1021,14 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
 
     if (size == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
-        return 0;
+        return false;
     }
 
     const int ret = m_copy_statusmessage(m, friend_number, status_message, size);
     assert(ret == size && "concurrency problem: friend status message changed");
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
-    return 1;
+    return ret == size;
 }
 
 void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *callback)
