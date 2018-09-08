@@ -23,7 +23,7 @@
 #define net_family_ipv6 net_family_ipv4
 #endif
 
-static inline IP get_loopback()
+static inline IP get_loopback(void)
 {
     IP ip;
 #if USE_IPV6

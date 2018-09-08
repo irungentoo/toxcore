@@ -17,7 +17,7 @@
 #define USE_IPV6 1
 #endif
 
-static inline IP get_loopback()
+static inline IP get_loopback(void)
 {
     IP ip;
 #if USE_IPV6
