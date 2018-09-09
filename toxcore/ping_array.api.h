@@ -77,5 +77,5 @@ int32_t check(const mono_Time::this *mono_time, uint8_t[length] data, uint64_t p
 }  // extern "C"
 #endif
 
-#endif  // C_TOXCORE_TOXCORE_PING_ARRAY_H
+#endif // C_TOXCORE_TOXCORE_PING_ARRAY_H
 %}

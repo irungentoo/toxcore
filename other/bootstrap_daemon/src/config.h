@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_H
+#define C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_H
 
 #include "../../../toxcore/DHT.h"
 
@@ -49,4 +49,4 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
  */
 int bootstrap_from_config(const char *cfg_file_path, DHT *dht, int enable_ipv6);
 
-#endif // CONFIG_H
+#endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_H

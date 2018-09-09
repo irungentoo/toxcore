@@ -1,8 +1,8 @@
 /*
  * C language compatibility macros for varying compiler support.
  */
-#ifndef CCOMPAT_H
-#define CCOMPAT_H
+#ifndef C_TOXCORE_TOXCORE_CCOMPAT_H
+#define C_TOXCORE_TOXCORE_CCOMPAT_H
 
 // Variable length arrays.
 // VLA(type, name, size) allocates a variable length array with automatic
@@ -48,4 +48,4 @@
 #define GNU_PRINTF(f, a)
 #endif
 
-#endif /* CCOMPAT_H */
+#endif // C_TOXCORE_TOXCORE_CCOMPAT_H

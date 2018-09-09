@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TOX_H
-#define TOX_H
+#ifndef C_TOXCORE_TOXCORE_TOX_H
+#define C_TOXCORE_TOXCORE_TOX_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -2772,5 +2772,5 @@ typedef TOX_CONNECTION Tox_Connection;
 typedef TOX_FILE_CONTROL Tox_File_Control;
 typedef TOX_CONFERENCE_TYPE Tox_Conference_Type;
 
-#endif
+#endif // C_TOXCORE_TOXCORE_TOX_H
 %}

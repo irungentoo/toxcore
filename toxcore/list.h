@@ -23,8 +23,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LIST_H
-#define LIST_H
+#ifndef C_TOXCORE_TOXCORE_LIST_H
+#define C_TOXCORE_TOXCORE_LIST_H
 
 #include <stdint.h>
 

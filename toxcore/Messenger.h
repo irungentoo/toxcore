@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MESSENGER_H
-#define MESSENGER_H
+#ifndef C_TOXCORE_TOXCORE_MESSENGER_H
+#define C_TOXCORE_TOXCORE_MESSENGER_H
 
 #include "friend_connection.h"
 #include "friend_requests.h"

@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CRYPTO_CORE_H
-#define CRYPTO_CORE_H
+#ifndef C_TOXCORE_TOXCORE_CRYPTO_CORE_H
+#define C_TOXCORE_TOXCORE_CRYPTO_CORE_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -264,5 +264,5 @@ static void new_symmetric_key(uint8_t[CRYPTO_SYMMETRIC_KEY_SIZE] key);
 }  // extern "C"
 #endif
 
-#endif /* CRYPTO_CORE_H */
+#endif // C_TOXCORE_TOXCORE_CRYPTO_CORE_H
 %}

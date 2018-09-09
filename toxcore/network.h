@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef NETWORK_H
-#define NETWORK_H
+#ifndef C_TOXCORE_TOXCORE_NETWORK_H
+#define C_TOXCORE_TOXCORE_NETWORK_H
 
 #include "logger.h"
 

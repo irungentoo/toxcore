@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef GLOBAL_H
-#define GLOBAL_H
+#ifndef C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_GLOBAL_H
+#define C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_GLOBAL_H
 
 #include "../../../toxcore/tox.h"
 
@@ -56,4 +56,4 @@
 #define MIN_ALLOWED_PORT 1
 #define MAX_ALLOWED_PORT 65535
 
-#endif // GLOBAL_H
+#endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_GLOBAL_H

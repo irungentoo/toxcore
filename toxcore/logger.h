@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TOXLOGGER_H
-#define TOXLOGGER_H
+#ifndef C_TOXCORE_TOXCORE_LOGGER_H
+#define C_TOXCORE_TOXCORE_LOGGER_H
 
 #include <stdint.h>
 
@@ -90,4 +90,4 @@ void logger_write(
 #define LOGGER_WARNING(log, ...) LOGGER_WRITE(log, LOGGER_LEVEL_WARNING, __VA_ARGS__)
 #define LOGGER_ERROR(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_ERROR  , __VA_ARGS__)
 
-#endif /* TOXLOGGER_H */
+#endif // C_TOXCORE_TOXCORE_LOGGER_H

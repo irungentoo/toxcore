@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef ONION_CLIENT_H
-#define ONION_CLIENT_H
+#ifndef C_TOXCORE_TOXCORE_ONION_CLIENT_H
+#define C_TOXCORE_TOXCORE_ONION_CLIENT_H
 
 #include "net_crypto.h"
 #include "onion_announce.h"

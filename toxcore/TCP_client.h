@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TCP_CLIENT_H
-#define TCP_CLIENT_H
+#ifndef C_TOXCORE_TOXCORE_TCP_CLIENT_H
+#define C_TOXCORE_TOXCORE_TCP_CLIENT_H
 
 #include "TCP_server.h"
 #include "crypto_core.h"

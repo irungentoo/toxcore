@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef NET_CRYPTO_H
-#define NET_CRYPTO_H
+#ifndef C_TOXCORE_TOXCORE_NET_CRYPTO_H
+#define C_TOXCORE_TOXCORE_NET_CRYPTO_H
 
 #include "DHT.h"
 #include "LAN_discovery.h"

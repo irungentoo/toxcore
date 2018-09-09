@@ -1,3 +1,6 @@
+#ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_SYSENDIAN_H
+#define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_SYSENDIAN_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -149,5 +152,7 @@ le64enc(void *pp, uint64_t x)
 }
 
 #endif /* !_SYSENDIAN_H_ */
+
+#endif
 
 #endif

@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef RTP_H
-#define RTP_H
+#ifndef C_TOXCORE_TOXAV_RTP_H
+#define C_TOXCORE_TOXAV_RTP_H
 
 #include "bwcontroller.h"
 
@@ -220,4 +220,4 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
 }  // extern "C"
 #endif
 
-#endif /* RTP_H */
+#endif // C_TOXCORE_TOXAV_RTP_H

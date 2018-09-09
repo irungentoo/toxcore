@@ -19,8 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef RING_BUFFER_H
-#define RING_BUFFER_H
+#ifndef C_TOXCORE_TOXAV_RING_BUFFER_H
+#define C_TOXCORE_TOXAV_RING_BUFFER_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -44,4 +44,4 @@ uint16_t rb_data(const RingBuffer *b, void **dest);
 }
 #endif
 
-#endif /* RING_BUFFER_H */
+#endif // C_TOXCORE_TOXAV_RING_BUFFER_H

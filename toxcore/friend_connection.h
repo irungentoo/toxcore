@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef FRIEND_CONNECTION_H
-#define FRIEND_CONNECTION_H
+#ifndef C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
+#define C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
 
 #include "DHT.h"
 #include "LAN_discovery.h"

@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef CONFIG_DEFAULTS_H
-#define CONFIG_DEFAULTS_H
+#ifndef C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_DEFAULTS_H
+#define C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_DEFAULTS_H
 
 #include "global.h"
 
@@ -39,4 +39,4 @@
 #define DEFAULT_ENABLE_MOTD           1 // 1 - true, 0 - false
 #define DEFAULT_MOTD                  DAEMON_NAME
 
-#endif // CONFIG_DEFAULTS_H
+#endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_CONFIG_DEFAULTS_H

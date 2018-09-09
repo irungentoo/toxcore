@@ -23,8 +23,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef PING_H
-#define PING_H
+#ifndef C_TOXCORE_TOXCORE_PING_H
+#define C_TOXCORE_TOXCORE_PING_H
 
 #include "DHT.h"
 #include "network.h"
@@ -71,4 +71,4 @@ void ping_iterate(Ping *ping);
 
 int32_t ping_send_request(Ping *ping, struct IP_Port ipp, const uint8_t *public_key);
 
-#endif /* PING_H */
+#endif // C_TOXCORE_TOXCORE_PING_H

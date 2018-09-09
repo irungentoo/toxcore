@@ -18,8 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TOXAV_H
-#define TOXAV_H
+#ifndef C_TOXCORE_TOXAV_TOXAV_H
+#define C_TOXCORE_TOXAV_TOXAV_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -668,5 +668,5 @@ typedef TOXAV_ERR_BIT_RATE_SET Toxav_Err_Bit_Rate_Set;
 typedef TOXAV_ERR_SEND_FRAME Toxav_Err_Send_Frame;
 typedef TOXAV_CALL_CONTROL Toxav_Call_Control;
 
-#endif /* TOXAV_H */
+#endif // C_TOXCORE_TOXAV_TOXAV_H
 %}

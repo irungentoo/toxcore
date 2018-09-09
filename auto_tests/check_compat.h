@@ -1,5 +1,5 @@
-#ifndef CHECK_COMPAT_H
-#define CHECK_COMPAT_H
+#ifndef C_TOXCORE_AUTO_TESTS_CHECK_COMPAT_H
+#define C_TOXCORE_AUTO_TESTS_CHECK_COMPAT_H
 
 #include "../toxcore/ccompat.h"
 
@@ -64,4 +64,4 @@ static inline int srunner_ntests_failed(SRunner *r)
   abort();                                                              \
 } while (0)
 
-#endif // CHECK_COMPAT_H
+#endif // C_TOXCORE_AUTO_TESTS_CHECK_COMPAT_H

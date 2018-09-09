@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MSI_H
-#define MSI_H
+#ifndef C_TOXCORE_TOXAV_MSI_H
+#define C_TOXCORE_TOXAV_MSI_H
 
 #include "audio.h"
 #include "video.h"
@@ -148,4 +148,4 @@ int msi_answer(MSICall *call, uint8_t capabilities);
  */
 int msi_change_capabilities(MSICall *call, uint8_t capabilities);
 
-#endif /* MSI_H */
+#endif // C_TOXCORE_TOXAV_MSI_H

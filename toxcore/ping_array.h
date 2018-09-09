@@ -78,4 +78,4 @@ int32_t ping_array_check(struct Ping_Array *_array, const struct Mono_Time *mono
 }  // extern "C"
 #endif
 
-#endif  // C_TOXCORE_TOXCORE_PING_ARRAY_H
+#endif // C_TOXCORE_TOXCORE_PING_ARRAY_H

@@ -66,4 +66,4 @@ void mono_time_set_current_time_callback(Mono_Time *mono_time,
 }
 #endif
 
-#endif  // C_TOXCORE_TOXCORE_MONO_TIME_H
+#endif // C_TOXCORE_TOXCORE_MONO_TIME_H

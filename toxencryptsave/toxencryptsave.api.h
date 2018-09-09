@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef TOXENCRYPTSAVE_H
-#define TOXENCRYPTSAVE_H
+#ifndef C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
+#define C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -313,5 +313,5 @@ static bool is_data_encrypted(const uint8_t *data);
 }
 #endif
 
-#endif
+#endif // C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 %}

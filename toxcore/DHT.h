@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef DHT_H
-#define DHT_H
+#ifndef C_TOXCORE_TOXCORE_DHT_H
+#define C_TOXCORE_TOXCORE_DHT_H
 
 #include "crypto_core.h"
 #include "logger.h"

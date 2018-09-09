@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef ONION_ANNOUNCE_H
-#define ONION_ANNOUNCE_H
+#ifndef C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
+#define C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
 
 #include "onion.h"
 

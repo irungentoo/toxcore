@@ -21,8 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef GROUP_H
-#define GROUP_H
+#ifndef C_TOXCORE_TOXCORE_GROUP_H
+#define C_TOXCORE_TOXCORE_GROUP_H
 
 #include "Messenger.h"
 

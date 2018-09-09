@@ -22,8 +22,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Tox.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LOG_H
-#define LOG_H
+#ifndef C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H
+#define C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H
 
 #include <stdbool.h>
 
@@ -63,4 +63,4 @@ bool log_close(void);
 bool log_write(LOG_LEVEL level, const char *format, ...) GNU_PRINTF(2, 3);
 
 
-#endif // LOG_H
+#endif // C_TOXCORE_OTHER_BOOTSTRAP_DAEMON_SRC_LOG_H
