@@ -16,10 +16,10 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
 
     while (length >= size_head) {
         uint32_t length_sub;
-        lendian_to_host32(&length_sub, data);
+        lendian_bytes_to_host32(&length_sub, data);
 
         uint32_t cookie_type;
-        lendian_to_host32(&cookie_type, data + sizeof(uint32_t));
+        lendian_bytes_to_host32(&cookie_type, data + sizeof(uint32_t));
 
         data += size_head;
         length -= size_head;
@@ -63,9 +63,9 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
 
 uint8_t *state_write_section_header(uint8_t *data, uint16_t cookie_type, uint32_t len, uint32_t section_type)
 {
-    host_to_lendian32(data, len);
+    host_to_lendian_bytes32(data, len);
     data += sizeof(uint32_t);
-    host_to_lendian32(data, (host_tolendian16(cookie_type) << 16) | host_tolendian16(section_type));
+    host_to_lendian_bytes32(data, (host_to_lendian16(cookie_type) << 16) | host_to_lendian16(section_type));
     data += sizeof(uint32_t);
     return data;
 }
@@ -79,12 +79,12 @@ uint16_t lendian_to_host16(uint16_t lendian)
 #endif
 }
 
-uint16_t host_tolendian16(uint16_t host)
+uint16_t host_to_lendian16(uint16_t host)
 {
     return lendian_to_host16(host);
 }
 
-void host_to_lendian32(uint8_t *dest,  uint32_t num)
+void host_to_lendian_bytes32(uint8_t *dest, uint32_t num)
 {
 #ifdef WORDS_BIGENDIAN
     num = ((num << 8) & 0xFF00FF00) | ((num >> 8) & 0xFF00FF);
@@ -93,13 +93,31 @@ void host_to_lendian32(uint8_t *dest,  uint32_t num)
     memcpy(dest, &num, sizeof(uint32_t));
 }
 
-void lendian_to_host32(uint32_t *dest, const uint8_t *lendian)
+void lendian_bytes_to_host32(uint32_t *dest, const uint8_t *lendian)
 {
     uint32_t d;
     memcpy(&d, lendian, sizeof(uint32_t));
 #ifdef WORDS_BIGENDIAN
     d = ((d << 8) & 0xFF00FF00) | ((d >> 8) & 0xFF00FF);
     d = (d << 16) | (d >> 16);
+#endif
+    *dest = d;
+}
+
+void host_to_lendian_bytes16(uint8_t *dest, uint16_t num)
+{
+#ifdef WORDS_BIGENDIAN
+    num = (num << 8) | (num >> 8);
+#endif
+    memcpy(dest, &num, sizeof(uint16_t));
+}
+
+void lendian_bytes_to_host16(uint16_t *dest, const uint8_t *lendian)
+{
+    uint16_t d;
+    memcpy(&d, lendian, sizeof(uint16_t));
+#ifdef WORDS_BIGENDIAN
+    d = (d << 8) | (d >> 8);
 #endif
     *dest = d;
 }

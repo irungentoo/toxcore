@@ -2875,6 +2875,22 @@ void send_name_all_groups(Group_Chats *g_c)
     }
 }
 
+uint32_t conferences_size(const Group_Chats *g_c)
+{
+    return 0;
+}
+
+uint8_t *conferences_save(const Group_Chats *g_c, uint8_t *data)
+{
+    return data;
+}
+
+bool conferences_load_state_section(Group_Chats *g_c, const uint8_t *data, uint32_t length, uint16_t type,
+                                    State_Load_Status *status)
+{
+    return false;
+}
+
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m)
 {

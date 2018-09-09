@@ -328,6 +328,51 @@ bool tox_version_is_compatible(uint32_t major, uint32_t minor, uint32_t patch)
     return TOX_VERSION_IS_API_COMPATIBLE(major, minor, patch);
 }
 
+static State_Load_Status state_load_callback(void *outer, const uint8_t *data, uint32_t length, uint16_t type)
+{
+    Tox *tox = (Tox *)outer;
+    State_Load_Status status = STATE_LOAD_STATUS_CONTINUE;
+
+    if (messenger_load_state_section(tox->m, data, length, type, &status)
+            || conferences_load_state_section(tox->m->conferences_object, data, length, type, &status)) {
+        return status;
+    }
+
+    if (type == STATE_TYPE_END) {
+        if (length != 0) {
+            return STATE_LOAD_STATUS_ERROR;
+        }
+
+        return STATE_LOAD_STATUS_END;
+    }
+
+    LOGGER_ERROR(tox->m->log, "Load state: contains unrecognized part (len %u, type %u)\n",
+                 length, type);
+
+    return STATE_LOAD_STATUS_CONTINUE;
+}
+
+/* Load tox from data of size length. */
+static int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
+{
+    uint32_t data32[2];
+    uint32_t cookie_len = sizeof(data32);
+
+    if (length < cookie_len) {
+        return -1;
+    }
+
+    memcpy(data32, data, sizeof(uint32_t));
+    lendian_bytes_to_host32(data32 + 1, data + sizeof(uint32_t));
+
+    if (data32[0] != 0 || data32[1] != STATE_COOKIE_GLOBAL) {
+        return -1;
+    }
+
+    return state_load(tox->m->log, state_load_callback, tox, data + cookie_len,
+                      length - cookie_len, STATE_COOKIE_TYPE);
+}
+
 
 Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 {
@@ -488,7 +533,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     }
 
     if (load_savedata_tox
-            && messenger_load(m, tox_options_get_savedata_data(opts), tox_options_get_savedata_length(opts)) == -1) {
+            && tox_load(tox, tox_options_get_savedata_data(opts), tox_options_get_savedata_length(opts)) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_BAD_FORMAT);
     } else if (load_savedata_sk) {
         load_secret_key(m->net_crypto, tox_options_get_savedata_data(opts));
@@ -537,18 +582,45 @@ void tox_kill(Tox *tox)
     free(tox);
 }
 
+static uint32_t end_size(void)
+{
+    return 2 * sizeof(uint32_t);
+}
+
+static void end_save(uint8_t *data)
+{
+    state_write_section_header(data, STATE_COOKIE_TYPE, 0, STATE_TYPE_END);
+}
+
 size_t tox_get_savedata_size(const Tox *tox)
 {
     const Messenger *m = tox->m;
-    return messenger_size(m);
+    return 2 * sizeof(uint32_t)
+           + messenger_size(m)
+           + conferences_size(m->conferences_object)
+           + end_size();
 }
 
 void tox_get_savedata(const Tox *tox, uint8_t *savedata)
 {
-    if (savedata) {
-        const Messenger *m = tox->m;
-        messenger_save(m, savedata);
+    if (savedata == nullptr) {
+        return;
     }
+
+    memset(savedata, 0, tox_get_savedata_size(tox));
+
+    const uint32_t size32 = sizeof(uint32_t);
+
+    // write cookie
+    memset(savedata, 0, size32);
+    savedata += size32;
+    host_to_lendian_bytes32(savedata, STATE_COOKIE_GLOBAL);
+    savedata += size32;
+
+    const Messenger *m = tox->m;
+    savedata = messenger_save(m, savedata);
+    savedata = conferences_save(m->conferences_object, savedata);
+    end_save(savedata);
 }
 
 bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, Tox_Err_Bootstrap *error)

@@ -265,54 +265,11 @@ START_TEST(test_dht_state_saveloadsave)
 }
 END_TEST
 
-START_TEST(test_messenger_state_saveloadsave)
-{
-    /* validate that:
-     * a) saving stays within the confined space
-     * b) a save()d state can be load()ed back successfully
-     * c) a second save() is of equal size
-     * d) the second save() is of equal content */
-    const size_t extra = 64;
-    const size_t size = messenger_size(m);
-    VLA(uint8_t, buffer, size + 2 * extra);
-    memset(buffer, 0xCD, extra);
-    memset(buffer + extra + size, 0xCD, extra);
-    messenger_save(m, buffer + extra);
-
-    for (size_t i = 0; i < extra; i++) {
-        ck_assert_msg(buffer[i] == 0xCD, "Buffer underwritten from messenger_save() @%u", (unsigned)i);
-        ck_assert_msg(buffer[extra + size + i] == 0xCD, "Buffer overwritten from messenger_save() @%u", (unsigned)i);
-    }
-
-    const int res = messenger_load(m, buffer + extra, size);
-
-    if (res == -1) {
-        ck_assert_msg(res == 0, "Failed to load back stored buffer: res == -1");
-    } else {
-        const size_t offset = res >> 4;
-        const uint8_t *ptr = buffer + extra + offset;
-        ck_assert_msg(res == 0, "Failed to load back stored buffer: 0x%02x%02x%02x%02x%02x%02x%02x%02x @%u/%u, code %d",
-                      ptr[-2], ptr[-1], ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5],
-                      (unsigned)offset, (unsigned)size, res & 0x0F);
-    }
-
-    const size_t size2 = messenger_size(m);
-    ck_assert_msg(size == size2, "Messenger \"grew\" in size from a store/load cycle: %u -> %u",
-                  (unsigned)size, (unsigned)size2);
-
-    VLA(uint8_t, buffer2, size2);
-    messenger_save(m, buffer2);
-
-    ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "Messenger state changed by store/load/store cycle");
-}
-END_TEST
-
 static Suite *messenger_suite(void)
 {
     Suite *s = suite_create("Messenger");
 
     DEFTESTCASE(dht_state_saveloadsave);
-    DEFTESTCASE(messenger_state_saveloadsave);
 
     DEFTESTCASE(getself_name);
     DEFTESTCASE(m_get_userstatus_size);

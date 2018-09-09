@@ -2831,7 +2831,7 @@ uint32_t dht_size(const DHT *dht)
 /* Save the DHT in data where data is an array of size dht_size(). */
 void dht_save(const DHT *dht, uint8_t *data)
 {
-    host_to_lendian32(data, DHT_STATE_COOKIE_GLOBAL);
+    host_to_lendian_bytes32(data, DHT_STATE_COOKIE_GLOBAL);
     data += sizeof(uint32_t);
 
     uint8_t *const old_data = data;
@@ -2960,7 +2960,7 @@ int dht_load(DHT *dht, const uint8_t *data, uint32_t length)
 
     if (length > cookie_len) {
         uint32_t data32;
-        lendian_to_host32(&data32, data);
+        lendian_bytes_to_host32(&data32, data);
 
         if (data32 == DHT_STATE_COOKIE_GLOBAL) {
             return state_load(dht->log, dht_load_state_callback, dht, data + cookie_len,

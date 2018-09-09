@@ -100,10 +100,8 @@ int main(int argc, char *argv[])
     }
 
     /* with optional --ipvx, now it can be 1-4 arguments... */
-    if ((argc != argvoffset + 2) && (argc != argvoffset + 4)) {
+    if (argc != argvoffset + 4) {
         printf("Usage: %s [--ipv4|--ipv6] ip port public_key (of the DHT bootstrap node)\n", argv[0]);
-        printf("or\n");
-        printf("       %s [--ipv4|--ipv6] Save.bak (to read Save.bak as state file)\n", argv[0]);
         exit(0);
     }
 
@@ -134,19 +132,6 @@ int main(int argc, char *argv[])
             printf("Failed to convert \"%s\" into an IP address. Exiting...\n", argv[argvoffset + 1]);
             exit(1);
         }
-    } else {
-        FILE *file = fopen(argv[argvoffset + 1], "rb");
-
-        if (file == nullptr) {
-            printf("Failed to open \"%s\" - does it exist?\n", argv[argvoffset + 1]);
-            return 1;
-        }
-
-        int read;
-        uint8_t buffer[128000];
-        read = fread(buffer, 1, 128000, file);
-        printf("Messenger loaded: %i\n", messenger_load(m, buffer, read));
-        fclose(file);
     }
 
     m_callback_friendrequest(m, print_request);

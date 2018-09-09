@@ -448,6 +448,21 @@ int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, peer_
  */
 int callback_groupchat_delete(Group_Chats *g_c, uint32_t groupnumber, group_on_delete_cb *function);
 
+/* Return size of the conferences data (for saving). */
+uint32_t conferences_size(const Group_Chats *g_c);
+
+/* Save the conferences in data (must be allocated memory of size at least conferences_size()) */
+uint8_t *conferences_save(const Group_Chats *g_c, uint8_t *data);
+
+/**
+ * Load a section.
+ *
+ * @param status Result of loading section is stored here if the section is handled.
+ * @return true iff section handled.
+ */
+bool conferences_load_state_section(Group_Chats *g_c, const uint8_t *data, uint32_t length, uint16_t type,
+                                    State_Load_Status *status);
+
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m);
 
