@@ -530,6 +530,7 @@ void tox_kill(Tox *tox)
     }
 
     Messenger *m = tox->m;
+    assert(m->msi_packet == nullptr && "Attempted to kill tox while toxav is still alive");
     kill_groupchats(m->conferences_object);
     kill_messenger(m);
     mono_time_free(tox->mono_time);
