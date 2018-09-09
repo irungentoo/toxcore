@@ -85,6 +85,9 @@ struct Friend_Connections {
     fr_request_cb *fr_request_callback;
     void *fr_request_object;
 
+    global_status_cb *global_status_callback;
+    void *global_status_callback_object;
+
     uint64_t last_lan_discovery;
     uint16_t next_lan_port;
 
@@ -401,9 +404,11 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
     }
 
     if (status_changed) {
-        unsigned int i;
+        if (fr_c->global_status_callback) {
+            fr_c->global_status_callback(fr_c->global_status_callback_object, number, status, userdata);
+        }
 
-        for (i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
+        for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
             if (friend_con->callbacks[i].status_callback) {
                 friend_con->callbacks[i].status_callback(
                     friend_con->callbacks[i].callback_object,
@@ -714,6 +719,13 @@ int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsi
     friend_con->callbacks[index].callback_id = number;
 
     return 0;
+}
+
+/* Set global status callback for friend connections. */
+void set_global_status_callback(Friend_Connections *fr_c, global_status_cb *global_status_callback, void *object)
+{
+    fr_c->global_status_callback = global_status_callback;
+    fr_c->global_status_callback_object = object;
 }
 
 /* return the crypt_connection_id for the connection.

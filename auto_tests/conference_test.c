@@ -167,13 +167,34 @@ static void run_conference_tests(Tox **toxes, State *state)
 
     printf("letting random toxes timeout\n");
     bool disconnected[NUM_GROUP_TOX] = {0};
+    bool restarting[NUM_GROUP_TOX] = {0};
 
     ck_assert(NUM_DISCONNECT < NUM_GROUP_TOX);
 
     for (uint16_t i = 0; i < NUM_DISCONNECT; ++i) {
         uint32_t disconnect = random_false_index(disconnected, NUM_GROUP_TOX);
         disconnected[disconnect] = true;
-        printf("Disconnecting #%u\n", state[disconnect].index);
+
+        if (i < NUM_DISCONNECT / 2) {
+            restarting[disconnect] = true;
+            printf("Restarting #%u\n", state[disconnect].index);
+        } else {
+            printf("Disconnecting #%u\n", state[disconnect].index);
+        }
+    }
+
+    uint8_t *save[NUM_GROUP_TOX];
+    size_t save_size[NUM_GROUP_TOX];
+
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
+        if (restarting[i]) {
+            save_size[i] = tox_get_savedata_size(toxes[i]);
+            ck_assert_msg(save_size[i] != 0, "save is invalid size %u", (unsigned)save_size[i]);
+            save[i] = (uint8_t *)malloc(save_size[i]);
+            ck_assert_msg(save[i] != nullptr, "malloc failed");
+            tox_get_savedata(toxes[i], save[i]);
+            tox_kill(toxes[i]);
+        }
     }
 
     do {
@@ -186,6 +207,17 @@ static void run_conference_tests(Tox **toxes, State *state)
 
         c_sleep(20);
     } while (!toxes_are_disconnected_from_group(NUM_GROUP_TOX, toxes, NUM_DISCONNECT, disconnected));
+
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
+        if (restarting[i]) {
+            struct Tox_Options *const options = tox_options_new(nullptr);
+            tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
+            tox_options_set_savedata_data(options, save[i], save_size[i]);
+            toxes[i] = tox_new_log(options, nullptr, &state[i].index);
+            tox_options_free(options);
+            free(save[i]);
+        }
+    }
 
     if (check_name_change_propagation) {
         printf("changing names\n");

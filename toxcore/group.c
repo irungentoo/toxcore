@@ -27,10 +27,12 @@
 
 #include "group.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mono_time.h"
+#include "state.h"
 #include "util.h"
 
 /**
@@ -880,13 +882,23 @@ static void rejoin_frozen_friend(Group_Chats *g_c, int friendcon_id)
     }
 }
 
+static int g_handle_any_status(void *object, int friendcon_id, uint8_t status, void *userdata)
+{
+    Group_Chats *g_c = (Group_Chats *)object;
+
+    if (status) {
+        rejoin_frozen_friend(g_c, friendcon_id);
+    }
+
+    return 0;
+}
+
 static int g_handle_status(void *object, int friendcon_id, uint8_t status, void *userdata)
 {
     Group_Chats *g_c = (Group_Chats *)object;
 
     if (status) { /* Went online */
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CLOSE_ONLINE, userdata);
-        rejoin_frozen_friend(g_c, friendcon_id);
     } else { /* Went offline */
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CLOSE_CONNECTION, userdata);
         // TODO(irungentoo): remove timedout connections?
@@ -1021,7 +1033,6 @@ int add_groupchat(Group_Chats *g_c, uint8_t type)
     return groupnumber;
 }
 
-static int group_kill_peer_send(const Group_Chats *g_c, uint32_t groupnumber, uint16_t peer_num);
 /* Delete a groupchat from the chats array.
  *
  * return 0 on success.
@@ -1034,8 +1045,6 @@ int del_groupchat(Group_Chats *g_c, uint32_t groupnumber)
     if (!g) {
         return -1;
     }
-
-    group_kill_peer_send(g_c, groupnumber, g->peer_number);
 
     for (uint32_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
         if (g->close[i].type == GROUPCHAT_CLOSE_NONE) {
@@ -1586,6 +1595,22 @@ static int group_name_send(const Group_Chats *g_c, uint32_t groupnumber, const u
 
     return -1;
 }
+
+/* send message to announce leaving group
+ * return true on success
+ * return false on failure
+ */
+bool group_leave(const Group_Chats *g_c, uint32_t groupnumber)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g) {
+        return false;
+    }
+
+    return group_kill_peer_send(g_c, groupnumber, g->peer_number) == 0;
+}
+
 
 /* set the group's title, limited to MAX_NAME_LENGTH
  * return 0 on success
@@ -2875,21 +2900,241 @@ void send_name_all_groups(Group_Chats *g_c)
     }
 }
 
+#define SAVED_PEER_SIZE_CONSTANT (2 * CRYPTO_PUBLIC_KEY_SIZE + 2 + 1)
+
+static uint32_t saved_peer_size(const Group_Peer *peer)
+{
+    return SAVED_PEER_SIZE_CONSTANT + peer->nick_len;
+}
+
+static uint8_t *save_peer(const Group_Peer *peer, uint8_t *data)
+{
+    memcpy(data, peer->real_pk, CRYPTO_PUBLIC_KEY_SIZE);
+    data += CRYPTO_PUBLIC_KEY_SIZE;
+
+    memcpy(data, peer->temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
+    data += CRYPTO_PUBLIC_KEY_SIZE;
+
+    host_to_lendian_bytes16(data, peer->peer_number);
+    data += sizeof(uint16_t);
+
+    *data = peer->nick_len;
+    ++data;
+
+    memcpy(data, peer->nick, peer->nick_len);
+    data += peer->nick_len;
+
+    return data;
+}
+
+#define SAVED_CONF_SIZE_CONSTANT (1 + GROUP_ID_LENGTH + sizeof(uint32_t) \
+      + sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint32_t) + 1)
+
+static uint32_t saved_conf_size(const Group_c *g)
+{
+    uint32_t len = SAVED_CONF_SIZE_CONSTANT + g->title_len;
+
+    for (uint32_t j = 0; j < g->numpeers + g->numfrozen; ++j) {
+        const Group_Peer *peer = (j < g->numpeers) ? &g->group[j] : &g->frozen[j - g->numpeers];
+
+        if (id_equal(peer->real_pk, g->real_pk)) {
+            continue;
+        }
+
+        len += saved_peer_size(peer);
+    }
+
+    return len;
+}
+
+static uint8_t *save_conf(const Group_c *g, uint8_t *data)
+{
+    *data = g->type;
+    ++data;
+
+    memcpy(data, g->id, GROUP_ID_LENGTH);
+    data += GROUP_ID_LENGTH;
+
+    host_to_lendian_bytes32(data, g->message_number);
+    data += sizeof(uint32_t);
+
+    host_to_lendian_bytes16(data, g->lossy_message_number);
+    data += sizeof(uint16_t);
+
+    host_to_lendian_bytes16(data, g->peer_number);
+    data += sizeof(uint16_t);
+
+    host_to_lendian_bytes32(data, g->numpeers - 1 + g->numfrozen);
+    data += sizeof(uint32_t);
+
+    *data = g->title_len;
+    ++data;
+
+    memcpy(data, g->title, g->title_len);
+    data += g->title_len;
+
+#ifndef NDEBUG
+    bool found_self = false;
+#endif
+
+    for (uint32_t j = 0; j < g->numpeers + g->numfrozen; ++j) {
+        const Group_Peer *peer = (j < g->numpeers) ? &g->group[j] : &g->frozen[j - g->numpeers];
+
+        if (id_equal(peer->real_pk, g->real_pk)) {
+#ifndef NDEBUG
+            found_self = true;
+#endif
+            continue;
+        }
+
+        data = save_peer(peer, data);
+    }
+
+    assert(found_self);
+
+    return data;
+}
+
+static uint32_t conferences_section_size(const Group_Chats *g_c)
+{
+    uint32_t len = 0;
+
+    for (uint16_t i = 0; i < g_c->num_chats; ++i) {
+        Group_c *g = get_group_c(g_c, i);
+
+        if (!g || g->status != GROUPCHAT_STATUS_CONNECTED) {
+            continue;
+        }
+
+        len += saved_conf_size(g);
+    }
+
+    return len;
+}
+
 uint32_t conferences_size(const Group_Chats *g_c)
 {
-    return 0;
+    return 2 * sizeof(uint32_t) + conferences_section_size(g_c);
 }
 
 uint8_t *conferences_save(const Group_Chats *g_c, uint8_t *data)
 {
+    const uint32_t len = conferences_section_size(g_c);
+    data = state_write_section_header(data, STATE_COOKIE_TYPE, len, STATE_TYPE_CONFERENCES);
+
+    for (uint16_t i = 0; i < g_c->num_chats; ++i) {
+        Group_c *g = get_group_c(g_c, i);
+
+        if (!g || g->status != GROUPCHAT_STATUS_CONNECTED) {
+            continue;
+        }
+
+        data = save_conf(g, data);
+    }
+
     return data;
+}
+
+static State_Load_Status load_conferences(Group_Chats *g_c, const uint8_t *data, uint32_t length)
+{
+    const uint8_t *init_data = data;
+
+    while (length >= (uint32_t)(data - init_data) + SAVED_CONF_SIZE_CONSTANT) {
+        const int groupnumber = create_group_chat(g_c);
+
+        if (groupnumber == -1) {
+            return STATE_LOAD_STATUS_ERROR;
+        }
+
+        Group_c *g = &g_c->chats[groupnumber];
+
+        g->type = *data;
+        ++data;
+
+        memcpy(g->id, data, GROUP_ID_LENGTH);
+        data += GROUP_ID_LENGTH;
+
+        lendian_bytes_to_host32(&g->message_number, data);
+        data += sizeof(uint32_t);
+
+        lendian_bytes_to_host16(&g->lossy_message_number, data);
+        data += sizeof(uint16_t);
+
+        lendian_bytes_to_host16(&g->peer_number, data);
+        data += sizeof(uint16_t);
+
+        lendian_bytes_to_host32(&g->numfrozen, data);
+        data += sizeof(uint32_t);
+
+        g->frozen = (Group_Peer *)malloc(sizeof(Group_Peer) * g->numfrozen);
+
+        if (g->frozen == nullptr) {
+            return STATE_LOAD_STATUS_ERROR;
+        }
+
+        g->title_len = *data;
+        ++data;
+
+        if (length < (uint32_t)(data - init_data) + g->title_len) {
+            return STATE_LOAD_STATUS_ERROR;
+        }
+
+        memcpy(g->title, data, g->title_len);
+        data += g->title_len;
+
+        for (uint32_t j = 0; j < g->numfrozen; ++j) {
+            if (length < (uint32_t)(data - init_data) + SAVED_PEER_SIZE_CONSTANT) {
+                return STATE_LOAD_STATUS_ERROR;
+            }
+
+            Group_Peer *peer = &g->frozen[j];
+            memset(peer, 0, sizeof(Group_Peer));
+
+            id_copy(peer->real_pk, data);
+            data += CRYPTO_PUBLIC_KEY_SIZE;
+            id_copy(peer->temp_pk, data);
+            data += CRYPTO_PUBLIC_KEY_SIZE;
+
+            lendian_bytes_to_host16(&peer->peer_number, data);
+            data += sizeof(uint16_t);
+
+            peer->nick_len = *data;
+            ++data;
+
+            if (length < (uint32_t)(data - init_data) + peer->nick_len) {
+                return STATE_LOAD_STATUS_ERROR;
+            }
+
+            memcpy(peer->nick, data, peer->nick_len);
+            data += peer->nick_len;
+        }
+
+        g->status = GROUPCHAT_STATUS_CONNECTED;
+        memcpy(g->real_pk, nc_get_self_public_key(g_c->m->net_crypto), CRYPTO_PUBLIC_KEY_SIZE);
+        const int peer_index = addpeer(g_c, groupnumber, g->real_pk, dht_get_self_public_key(g_c->m->dht), g->peer_number,
+                                       nullptr, true, false);
+
+        if (peer_index == -1) {
+            return STATE_LOAD_STATUS_ERROR;
+        }
+
+        setnick(g_c, groupnumber, peer_index, g_c->m->name, g_c->m->name_length, nullptr, false);
+    }
+
+    return STATE_LOAD_STATUS_CONTINUE;
 }
 
 bool conferences_load_state_section(Group_Chats *g_c, const uint8_t *data, uint32_t length, uint16_t type,
                                     State_Load_Status *status)
 {
-    return false;
+    if (type != STATE_TYPE_CONFERENCES) {
+        return false;
+    }
+
+    *status = load_conferences(g_c, data, length);
+    return true;
 }
+
 
 /* Create new groupchat instance. */
 Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m)
@@ -2909,6 +3154,8 @@ Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m)
     temp->fr_c = m->fr_c;
     m->conferences_object = temp;
     m_callback_conference_invite(m, &handle_friend_invite_packet);
+
+    set_global_status_callback(m->fr_c, &g_handle_any_status, temp);
 
     return temp;
 }

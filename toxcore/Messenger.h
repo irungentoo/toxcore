@@ -796,6 +796,9 @@ uint8_t *messenger_save(const Messenger *m, uint8_t *data);
 
 /* Load a state section.
  *
+ * @param data Data to load.
+ * @param length Length of data.
+ * @param type Type of section (STATE_TYPE_*).
  * @param status Result of loading section is stored here if the section is handled.
  * @return true iff section handled.
  */

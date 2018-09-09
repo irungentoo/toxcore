@@ -1533,6 +1533,7 @@ uint32_t tox_conference_new(Tox *tox, Tox_Err_Conference_New *error)
 bool tox_conference_delete(Tox *tox, uint32_t conference_number, Tox_Err_Conference_Delete *error)
 {
     Messenger *m = tox->m;
+    group_leave(m->conferences_object, conference_number);
     int ret = del_groupchat(m->conferences_object, conference_number);
 
     if (ret == -1) {

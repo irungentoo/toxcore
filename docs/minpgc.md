@@ -29,7 +29,7 @@ packet from it, or a New Peer message for it.
 
 If a frozen peer is seen to be active, we remove its 'frozen' flag and send a
 Name group message. (We can hold off on sending this message until the next
-tox\_iterate, and only send one message if many frozen peers become active at
+`tox_iterate`, and only send one message if many frozen peers become active at
 once).
 
 If we receive a New Peer message for a peer, we update its DHT pubkey.
@@ -102,13 +102,13 @@ actually make more sense in the implementation to have a separate list for
 frozen peers.
 
 ## Saving
-Saving could be implemented by simply saving all live groups with their group
-numbers and full peer info for all peers. On reload, all peers would be set as
-frozen.
+Saving is implemented by simply saving all live groups with their group numbers
+and full peer info for all peers. On reload, all peers are set as frozen.
 
-The client would need to support this by understanding that these groups exist
-on start-up (e.g. starting windows for them), and by not automatically killing
-groups on closing the client.
+Clients needs to support this by understanding that groups may exist on
+start-up. Clients should call `tox_conference_get_chatlist` to obtain them. A
+group which is deleted (with `tox_conference_delete`) is removed permanently
+and will not be saved.
 
 ## Limitations
 If a peer disconnects from the group for a period short enough that group

@@ -101,9 +101,14 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  */
 int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
 
+typedef int global_status_cb(void *object, int id, uint8_t status, void *userdata);
+
 typedef int fc_status_cb(void *object, int id, uint8_t status, void *userdata);
 typedef int fc_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef int fc_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
+
+/* Set global status callback for friend connections. */
+void set_global_status_callback(Friend_Connections *fr_c, global_status_cb *global_status_callback, void *object);
 
 /* Set the callbacks for the friend connection.
  * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
