@@ -47,7 +47,7 @@ TEST(Rtp, SerialisingAllOnes) {
   uint8_t rdata[RTP_HEADER_SIZE];
   rtp_header_pack(rdata, &header);
 
-  EXPECT_EQ(std::string((char const *)rdata, sizeof rdata),
+  EXPECT_EQ(std::string(reinterpret_cast<char const *>(rdata), sizeof rdata),
             std::string("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
                         "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
                         "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
