@@ -6,9 +6,9 @@ set -eu
 
 travis_install() {
   # Get bazel.
-  wget https://github.com/bazelbuild/bazel/releases/download/0.16.0/bazel-0.16.0-installer-linux-x86_64.sh
-  chmod +x bazel-0.16.0-installer-linux-x86_64.sh
-  ./bazel-0.16.0-installer-linux-x86_64.sh --user
+  wget https://github.com/bazelbuild/bazel/releases/download/0.17.1/bazel-0.17.1-installer-linux-x86_64.sh
+  chmod +x bazel-0.17.1-installer-linux-x86_64.sh
+  ./bazel-0.17.1-installer-linux-x86_64.sh --user
   echo 'build --jobs=4 --curses=no --verbose_failures' >> $HOME/.bazelrc
   echo 'build --config=linux' >> $HOME/.bazelrc
   echo "build --config=$CC" >> $HOME/.bazelrc
