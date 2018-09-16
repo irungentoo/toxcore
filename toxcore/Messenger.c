@@ -2590,8 +2590,8 @@ uint32_t messenger_run_interval(const Messenger *m)
 void do_messenger(Messenger *m, void *userdata)
 {
     // Add the TCP relays, but only if this is the first time calling do_messenger
-    if (m->has_added_relays == 0) {
-        m->has_added_relays = 1;
+    if (!m->has_added_relays) {
+        m->has_added_relays = true;
 
         int i;
 
@@ -3209,7 +3209,7 @@ static State_Load_Status load_tcp_relays(Messenger *m, const uint8_t *data, uint
 {
     if (length != 0) {
         unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
-        m->has_added_relays = 0;
+        m->has_added_relays = false;
     }
 
     return STATE_LOAD_STATUS_CONTINUE;
