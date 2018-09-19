@@ -702,6 +702,8 @@ static int delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void 
     return 0;
 }
 
+static bool try_send_rejoin(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_pk);
+
 static int freeze_peer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void *userdata)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
@@ -709,6 +711,8 @@ static int freeze_peer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, v
     if (!g) {
         return -1;
     }
+
+    try_send_rejoin(g_c, groupnumber, g->group[peer_index].real_pk);
 
     Group_Peer *temp = (Group_Peer *)realloc(g->frozen, sizeof(Group_Peer) * (g->numfrozen + 1));
 
@@ -854,8 +858,6 @@ static void set_conns_status_groups(Group_Chats *g_c, int friendcon_id, uint8_t 
         set_conns_type_close(g_c, i, friendcon_id, type, userdata);
     }
 }
-
-static bool try_send_rejoin(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_pk);
 
 static void rejoin_frozen_friend(Group_Chats *g_c, int friendcon_id)
 {
@@ -2844,7 +2846,6 @@ static int groupchat_freeze_timedout(Group_Chats *g_c, uint32_t groupnumber, voi
         }
 
         if (mono_time_is_timeout(g_c->mono_time, g->group[i].last_active, GROUP_PING_INTERVAL * 3)) {
-            try_send_rejoin(g_c, groupnumber, g->group[i].real_pk);
             freeze_peer(g_c, groupnumber, i, userdata);
         }
     }
