@@ -16,10 +16,10 @@ travis_install() {
 }
 
 travis_script() {
+  yamllint -c ../tools/project/yamllint.rc .
   bazel test \
     //c-toxcore:license_test \
-    //c-toxcore:readme_test \
-    //c-toxcore:yamllint_test
+    //c-toxcore:readme_test
 
   # TODO(iphydf): Make tests have a chance to succeed.
   # Run the tests, but if they fail, at least we should be able to build.
