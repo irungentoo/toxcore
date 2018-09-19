@@ -87,8 +87,8 @@ TEST(CryptoCore, MemcmpTimingIsDataIndependent) {
 
   EXPECT_LT(delta, CRYPTO_TEST_MEMCMP_EPS)
       << "Delta time is too long (" << delta << " >= " << CRYPTO_TEST_MEMCMP_EPS << ")\n"
-      << "Time of the same data comparation: " << same_median << " clocks\n"
-      << "Time of the different data comparation: " << not_same_median << " clocks";
+      << "Time of the same data comparison: " << same_median << " clocks\n"
+      << "Time of the different data comparison: " << not_same_median << " clocks";
 }
 
 }  // namespace

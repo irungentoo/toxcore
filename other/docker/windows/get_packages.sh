@@ -33,7 +33,7 @@ if [ "${SUPPORT_ARCH_x86_64}" = "true" ]; then
         gcc-mingw-w64-x86-64
 fi
 
-# Pacakges needed for running toxcore tests
+# Packages needed for running toxcore tests
 if [ "${SUPPORT_TEST}" = "true" ]; then
     apt-get install -y \
         apt-transport-https \

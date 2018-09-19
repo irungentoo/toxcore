@@ -71,12 +71,12 @@ static struct RTPMessage *new_message(const struct RTPHeader *header, size_t all
 /**
  * Find the next free slot in work_buffer for the incoming data packet.
  *
- * - If the data packet belongs to a frame thats already in the work_buffer then
+ * - If the data packet belongs to a frame that's already in the work_buffer then
  *   use that slot.
  * - If there is no free slot return GET_SLOT_RESULT_DROP_OLDEST_SLOT.
  * - If the data packet is too old return GET_SLOT_RESULT_DROP_INCOMING.
  *
- * If there is a keyframe beeing assembled in slot 0, keep it a bit longer and
+ * If there is a keyframe being assembled in slot 0, keep it a bit longer and
  * do not kick it out right away if all slots are full instead kick out the new
  * incoming interframe.
  */

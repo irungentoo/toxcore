@@ -207,7 +207,7 @@ static int32_t decrypt_data(
 /**
  * Fast encrypt/decrypt operations. Use if this is not a one-time communication.
  * $encrypt_precompute does the shared-key generation once so it does not have
- * to be preformed on every encrypt/decrypt.
+ * to be performed on every encrypt/decrypt.
  */
 static int32_t encrypt_precompute(
     const uint8_t[CRYPTO_PUBLIC_KEY_SIZE] public_key,

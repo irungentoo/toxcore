@@ -235,7 +235,7 @@ const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num);
 
 /*----------------------------------------------------------------------------------*/
 
-/* Shared key generations are costly, it is therefor smart to store commonly used
+/* Shared key generations are costly, it is therefore smart to store commonly used
  * ones so that they can re used later without being computed again.
  *
  * If shared key is already in shared_keys, copy it to shared_key.

@@ -85,7 +85,7 @@ typedef struct Onion_Path {
  *
  * Create a new onion path out of nodes (nodes is a list of ONION_PATH_LENGTH nodes)
  *
- * new_path must be an empty memory location of atleast Onion_Path size.
+ * new_path must be an empty memory location of at least Onion_Path size.
  *
  * return -1 on failure.
  * return 0 on success.

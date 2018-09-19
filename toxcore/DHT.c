@@ -76,7 +76,7 @@ struct DHT_Friend {
     /* number of times get_node packets were sent. */
     uint32_t    bootstrap_times;
 
-    /* Symetric NAT hole punching stuff. */
+    /* Symmetric NAT hole punching stuff. */
     NAT         nat;
 
     uint16_t lock_count;
@@ -238,7 +238,7 @@ static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
     return i * 8 + j;
 }
 
-/* Shared key generations are costly, it is therefor smart to store commonly used
+/* Shared key generations are costly, it is therefore smart to store commonly used
  * ones so that they can re used later without being computed again.
  *
  * If shared key is already in shared_keys, copy it to shared_key.

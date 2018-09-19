@@ -202,7 +202,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
 /**
  * Fast encrypt/decrypt operations. Use if this is not a one-time communication.
  * encrypt_precompute does the shared-key generation once so it does not have
- * to be preformed on every encrypt/decrypt.
+ * to be performed on every encrypt/decrypt.
  */
 int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key, uint8_t *shared_key);
 

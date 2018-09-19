@@ -1,6 +1,6 @@
 FROM debian:stretch-slim
 
-# Build-time enviroment variables
+# Build-time environment variables
 ARG VERSION_SODIUM=1.0.16
 ARG VERSION_OPUS=v1.2.1
 ARG VERSION_VPX=v1.6.1

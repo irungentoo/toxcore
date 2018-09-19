@@ -691,7 +691,7 @@ START_TEST(test_tcp_connection)
                   "Could not add tcp relay to connection\n");
 
     ck_assert_msg(new_tcp_connection_to(tc_2, tcp_connections_public_key(tc_1), 123) == -1,
-                  "Managed to readd same connection\n");
+                  "Managed to read same connection\n");
 
     do_TCP_server_delay(tcp_s, mono_time, 50);
 
