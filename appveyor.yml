@@ -18,10 +18,12 @@ install:
   - mkdir pthreads-win32 && cd pthreads-win32
   - if not exist %APPDATA%\downloads\pthreads.zip curl -L ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o %APPDATA%\downloads\pthreads.zip
   - unzip %APPDATA%\downloads\pthreads.zip
+  - copy Pre-built.2\lib\x86\* Pre-built.2\lib\
   - cd ../..
 
+# TODO currently don't have prebuilt libraries for libvpx and libopus so we will just build with BUILD_TOXAV=OFF for now
 before_build:
-  - cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF
+  - cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF -DCMAKE_PREFIX_PATH="third_party\pthreads-win32\Pre-built.2;third_party\libsodium"
 
 build:
   project: INSTALL.vcxproj

@@ -47,17 +47,23 @@ function(install_module lib)
       VERSION ${SOVERSION}
       SOVERSION ${SOVERSION_MAJOR}
     )
-    install(TARGETS ${lib}_shared
+    install(TARGETS ${lib}_shared EXPORT ${lib}Targets
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
   if(ENABLE_STATIC)
-    install(TARGETS ${lib}_static
+    install(TARGETS ${lib}_static EXPORT ${lib}Targets
       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
   endif()
+
+  install(EXPORT ${lib}Targets
+    FILE ${lib}Targets.cmake
+    NAMESPACE ${lib}::
+    DESTINATION lib/cmake/${lib}
+  )
 
   string(REPLACE ";" " " ${lib}_PKGCONFIG_LIBS "${${lib}_PKGCONFIG_LIBS}")
   string(REPLACE ";" " " ${lib}_PKGCONFIG_REQUIRES "${${lib}_PKGCONFIG_REQUIRES}")
