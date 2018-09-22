@@ -20,6 +20,7 @@ cc_library(
 
 cc_test(
     name = "ring_buffer_test",
+    size = "small",
     srcs = ["ring_buffer_test.cc"],
     deps = [
         ":ring_buffer",
@@ -56,6 +57,7 @@ cc_library(
 
 cc_test(
     name = "rtp_test",
+    size = "small",
     srcs = ["rtp_test.cc"],
     deps = [
         ":rtp",

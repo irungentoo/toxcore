@@ -30,6 +30,7 @@ cc_library(
 
 cc_test(
     name = "crypto_core_test",
+    size = "small",
     srcs = ["crypto_core_test.cc"],
     deps = [
         ":crypto_core",
@@ -67,6 +68,7 @@ cc_library(
 
 cc_test(
     name = "mono_time_test",
+    size = "small",
     srcs = ["mono_time_test.cc"],
     deps = [
         ":mono_time",
@@ -99,6 +101,7 @@ cc_library(
 
 cc_test(
     name = "util_test",
+    size = "small",
     srcs = ["util_test.cc"],
     deps = [
         ":network",
@@ -115,6 +118,7 @@ cc_library(
 
 cc_test(
     name = "ping_array_test",
+    size = "small",
     srcs = ["ping_array_test.cc"],
     deps = [
         ":ping_array",
