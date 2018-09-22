@@ -21,13 +21,18 @@ install:
   - copy Pre-built.2\lib\x86\* Pre-built.2\lib\
   - cd ../..
 
-# TODO currently don't have prebuilt libraries for libvpx and libopus so we will just build with BUILD_TOXAV=OFF for now
+# TODO(sphaerophoria): currently don't have prebuilt libraries for libvpx and
+# libopus so we will just build with BUILD_TOXAV=OFF for now.
 before_build:
-  - cmake . -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF -DCMAKE_PREFIX_PATH="third_party\pthreads-win32\Pre-built.2;third_party\libsodium"
+  - cmake -B_build -H. -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF -DTEST_TIMEOUT_SECONDS=120 -DCMAKE_PREFIX_PATH="third_party\pthreads-win32\Pre-built.2;third_party\libsodium"
 
 build:
-  project: INSTALL.vcxproj
+  project: _build/INSTALL.vcxproj
 
-# TODO(iphydf): Tests all segfault on Windows at the moment.
-# test_script:
-#   - ctest -C Debug
+test_script:
+  - copy third_party\pthreads-win32\Pre-built.2\dll\x86\*.dll _build
+  - copy third_party\libsodium\Win32\Debug\v140\dynamic\libsodium.dll _build
+  - cd _build
+  # TODO(iphydf): Tests are unstable and slow on windows at the moment.
+  - ctest -j50 --output-on-failure -C Debug &
+    exit 0
