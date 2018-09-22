@@ -86,7 +86,6 @@ cc_library(
         "network.h",
         "util.h",
     ],
-    linkopts = ["-lpthread"],
     visibility = [
         "//c-toxcore/other:__pkg__",
         "//c-toxcore/toxav:__pkg__",
@@ -96,6 +95,8 @@ cc_library(
         ":crypto_core",
         ":logger",
         ":mono_time",
+        "@psocket",
+        "@pthread",
     ],
 )
 
@@ -188,9 +189,8 @@ cc_library(
         "TCP_server.h",
     ],
     copts = select({
-        "//tools/config:freebsd": [],
         "//tools/config:linux": ["-DTCP_SERVER_USE_EPOLL=1"],
-        "//tools/config:osx": [],
+        "//conditions:default": [],
     }),
     deps = [
         ":crypto_core",
