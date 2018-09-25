@@ -70,4 +70,4 @@ bool ip_is_local(IP ip);
  */
 bool ip_is_lan(IP ip);
 
-#endif
+#endif // C_TOXCORE_TOXCORE_LAN_DISCOVERY_H
