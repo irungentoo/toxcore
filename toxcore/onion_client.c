@@ -232,27 +232,35 @@ static int onion_add_path_node(Onion_Client *onion_c, IP_Port ip_port, const uin
  */
 uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num)
 {
-    unsigned int i;
-
     if (!max_num) {
         return 0;
     }
 
-    unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+    const uint16_t num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+    uint16_t i = 0;
 
-    if (num_nodes == 0) {
-        return 0;
-    }
-
-    if (num_nodes < max_num) {
-        max_num = num_nodes;
-    }
-
-    for (i = 0; i < max_num; ++i) {
+    while (i < max_num && i < num_nodes) {
         nodes[i] = onion_c->path_nodes[(onion_c->path_nodes_index - (1 + i)) % num_nodes];
+        ++i;
     }
 
-    return max_num;
+    for (uint16_t j = 0; i < max_num && j < MAX_PATH_NODES && j < onion_c->path_nodes_index_bs; ++j) {
+        bool already_saved = false;
+
+        for (uint16_t k = 0; k < num_nodes; ++k) {
+            if (public_key_cmp(nodes[k].public_key, onion_c->path_nodes_bs[j].public_key) == 0) {
+                already_saved = true;
+                break;
+            }
+        }
+
+        if (!already_saved) {
+            nodes[i] = onion_c->path_nodes_bs[j];
+            ++i;
+        }
+    }
+
+    return i;
 }
 
 /* Put up to max_num random nodes in nodes.

@@ -2593,11 +2593,11 @@ void do_messenger(Messenger *m, void *userdata)
     if (!m->has_added_relays) {
         m->has_added_relays = true;
 
-        int i;
-
-        for (i = 0; i < NUM_SAVED_TCP_RELAYS; ++i) {
+        for (uint16_t i = 0; i < m->num_loaded_relays; ++i) {
             add_tcp_relay(m->net_crypto, m->loaded_relays[i].ip_port, m->loaded_relays[i].public_key);
         }
+
+        m->num_loaded_relays = 0;
 
         if (m->tcp_server) {
             /* Add self tcp server. */
@@ -3035,6 +3035,7 @@ static uint8_t *friends_list_save(const Messenger *m, uint8_t *data)
                 temp.info_size = net_htons(m->friendlist[i].info_size);
                 temp.friendrequest_nospam = m->friendlist[i].friendrequest_nospam;
             } else {
+                temp.status = 3;
                 memcpy(temp.name, m->friendlist[i].name, m->friendlist[i].name_length);
                 temp.name_length = net_htons(m->friendlist[i].name_length);
                 memcpy(temp.statusmessage, m->friendlist[i].statusmessage, m->friendlist[i].statusmessage_length);
@@ -3193,7 +3194,13 @@ static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
     Node_format relays[NUM_SAVED_TCP_RELAYS];
     uint8_t *temp_data = data;
     data = state_write_section_header(temp_data, MESSENGER_STATE_COOKIE_TYPE, 0, MESSENGER_STATE_TYPE_TCP_RELAY);
-    unsigned int num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
+    uint32_t num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
+
+    if (m->num_loaded_relays > 0) {
+        memcpy(relays, m->loaded_relays, sizeof(Node_format) * m->num_loaded_relays);
+        num = min_u32(num + m->num_loaded_relays, NUM_SAVED_TCP_RELAYS);
+    }
+
     int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6), relays, num);
 
     if (l > 0) {
@@ -3208,7 +3215,7 @@ static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
 static State_Load_Status load_tcp_relays(Messenger *m, const uint8_t *data, uint32_t length)
 {
     if (length != 0) {
-        unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
+        m->num_loaded_relays = unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
         m->has_added_relays = false;
     }
 

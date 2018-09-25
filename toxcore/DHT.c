@@ -2803,6 +2803,11 @@ uint32_t dht_size(const DHT *dht)
     uint32_t numv4 = 0;
     uint32_t numv6 = 0;
 
+    for (uint32_t i = 0; i < dht->loaded_num_nodes; ++i) {
+        numv4 += net_family_is_ipv4(dht->loaded_nodes_list[i].ip_port.ip.family);
+        numv6 += net_family_is_ipv6(dht->loaded_nodes_list[i].ip_port.ip.family);
+    }
+
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         numv4 += (dht->close_clientlist[i].assoc4.timestamp != 0);
         numv6 += (dht->close_clientlist[i].assoc6.timestamp != 0);
@@ -2837,6 +2842,11 @@ void dht_save(const DHT *dht, uint8_t *data)
     Node_format clients[MAX_SAVED_DHT_NODES];
 
     uint32_t num = 0;
+
+    if (dht->loaded_num_nodes > 0) {
+        memcpy(clients, dht->loaded_nodes_list, sizeof(Node_format) * dht->loaded_num_nodes);
+        num += dht->loaded_num_nodes;
+    }
 
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         if (dht->close_clientlist[i].assoc4.timestamp != 0) {
