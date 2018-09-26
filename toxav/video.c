@@ -72,11 +72,11 @@
 #define VIDEO_BITRATE_INITIAL_VALUE 5000
 #define VIDEO_DECODE_BUFFER_SIZE 5 // this buffer has normally max. 1 entry
 
-static const vpx_codec_iface_t *video_codec_decoder_interface(void)
+static vpx_codec_iface_t *video_codec_decoder_interface(void)
 {
     return vpx_codec_vp8_dx();
 }
-static const vpx_codec_iface_t *video_codec_encoder_interface(void)
+static vpx_codec_iface_t *video_codec_encoder_interface(void)
 {
     return vpx_codec_vp8_cx();
 }
