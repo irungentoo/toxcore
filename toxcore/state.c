@@ -79,6 +79,11 @@ uint16_t lendian_to_host16(uint16_t lendian)
 #endif
 }
 
+uint16_t host_tolendian16(uint16_t host)
+{
+    return lendian_to_host16(host);
+}
+
 void host_to_lendian32(uint8_t *dest,  uint32_t num)
 {
 #ifdef WORDS_BIGENDIAN
