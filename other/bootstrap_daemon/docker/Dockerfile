@@ -21,6 +21,8 @@ RUN export BUILD_PACKAGES="\
 # install toxcore and daemon
     git clone https://github.com/TokTok/c-toxcore && \
     cd c-toxcore && \
+    # checkout latest release version
+    git checkout $(git tag --list | grep -P '^v(\d+).(\d+).(\d+)$' | sed "s/v/v /g" | sed "s/\./ /g" | sort -snk4,4 | sort -snk3,3 | sort -snk2,2 | tail -n 1 | sed 's/v /v/g' | sed 's/ /\./g') && \
     ./autogen.sh && \
     ./configure --enable-daemon && \
     make -j`nproc` && \

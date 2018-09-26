@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -exu
+
 # Copy source code to other/bootstrap_daemon/docker/c-toxcore
 OLD_PWD=$PWD
 cd /tmp
@@ -13,7 +15,8 @@ cd other/bootstrap_daemon
 
 # Make Docker container use our current source code instead of master branch
 sed -i "s|WORKDIR /tmp/tox|WORKDIR /tmp/tox\nADD /c-toxcore ./c-toxcore/|g" docker/Dockerfile
-sed -i '/git clone/d' docker/Dockerfile
+sed -i 's|git clone|echo \\\#git clone|g' docker/Dockerfile
+sed -i 's|git checkout|echo \\\#git checkout|g' docker/Dockerfile
 
 cat docker/Dockerfile
 
