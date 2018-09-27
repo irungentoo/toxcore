@@ -93,7 +93,7 @@ else()
   message(STATUS "Supported C++ compiler features = ${CMAKE_CXX_COMPILE_FEATURES}")
 endif()
 
-option(TRACE "Enable DEBUG level logging (default)" ON)
+option(DEBUG "Enable DEBUG level logging (default)" ON)
 if(DEBUG)
   set(MIN_LOGGER_LEVEL DEBUG)
 endif()
