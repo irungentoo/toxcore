@@ -4,14 +4,10 @@ WORKDIR /tmp/tox
 
 RUN export BUILD_PACKAGES="\
       build-essential \
-      libtool \
-      autotools-dev \
-      automake \
-      checkinstall \
+      cmake \
       git \
-      yasm \
-      libsodium-dev \
       libconfig-dev \
+      libsodium-dev \
       python3" && \
     export RUNTIME_PACKAGES="\
       libconfig9 \
@@ -22,12 +18,21 @@ RUN export BUILD_PACKAGES="\
     git clone https://github.com/TokTok/c-toxcore && \
     cd c-toxcore && \
     # checkout latest release version
-    git checkout $(git tag --list | grep -P '^v(\d+).(\d+).(\d+)$' | sed "s/v/v /g" | sed "s/\./ /g" | sort -snk4,4 | sort -snk3,3 | sort -snk2,2 | tail -n 1 | sed 's/v /v/g' | sed 's/ /\./g') && \
-    ./autogen.sh && \
-    ./configure --enable-daemon && \
+    git checkout $(git tag --list | grep -P '^v(\d+).(\d+).(\d+)$' | \
+      sed "s/v/v /g" | sed "s/\./ /g" | \
+      sort -snk4,4 | sort -snk3,3 | sort -snk2,2 | tail -n 1 | \
+      sed 's/v /v/g' | sed 's/ /\./g') && \
+    mkdir _build && \
+    cd _build && \
+    cmake .. \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DENABLE_SHARED=ON \
+      -DENABLE_STATIC=OFF \
+      -DBUILD_TOXAV=OFF \
+      -DBOOTSTRAP_DAEMON=ON && \
     make -j`nproc` && \
     make install -j`nproc` && \
-    ldconfig && \
+    cd .. && \
 # add new user
     useradd --home-dir /var/lib/tox-bootstrapd --create-home \
       --system --shell /sbin/nologin \
