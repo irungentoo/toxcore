@@ -75,6 +75,8 @@ struct TCP_Priority_List {
     uint8_t data[];
 };
 
+void wipe_priority_list(TCP_Priority_List *p);
+
 typedef struct TCP_Server TCP_Server;
 
 const uint8_t *tcp_server_public_key(const TCP_Server *tcp_server);
