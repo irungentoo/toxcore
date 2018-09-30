@@ -119,7 +119,7 @@ static void fetch_broadcast_info(uint16_t port)
     }
 }
 
-#elif defined(__linux__) || defined(__FreeBSD__)
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__)
 
 #include <netinet/in.h>
 #include <sys/ioctl.h>
@@ -131,7 +131,7 @@ static void fetch_broadcast_info(uint16_t port)
 #include <linux/netdevice.h>
 #endif
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__DragonFly__)
 #include <net/if.h>
 #endif
 
