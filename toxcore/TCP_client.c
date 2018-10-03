@@ -128,12 +128,22 @@ static int proxy_http_read_connection_response(TCP_Client_Connection *TCP_conn)
 
     return -1;
 }
-
 static void proxy_socks5_generate_handshake(TCP_Client_Connection *TCP_conn)
 {
     TCP_conn->last_packet[0] = 5; /* SOCKSv5 */
     TCP_conn->last_packet[1] = 1; /* number of authentication methods supported */
-    TCP_conn->last_packet[2] = 0; /* No authentication */
+
+    /*
+      if the client specified a username and password, we should only try to auth with that
+
+      this can be important because tor (for example) makes sure circuits aren't shared 
+      between streams for which different credentials were provided 
+    */
+    if (TCP_conn->proxy_info.enable_auth) {
+        TCP_conn->last_packet[2] = 2; /* Username/password authentication */
+    } else {
+        TCP_conn->last_packet[2] = 0; /* No authentication */
+    }
 
     TCP_conn->last_packet_length = 3;
     TCP_conn->last_packet_sent = 0;
@@ -151,7 +161,7 @@ static int socks5_read_handshake_response(TCP_Client_Connection *TCP_conn)
     if (ret == -1)
         return 0;
 
-    if (data[0] == 5 && data[1] == 0) // FIXME magic numbers
+    if (data[0] == 5 && (data[1] == 0 || data[1] == 2)) // FIXME magic numbers
         return 1;
 
     return -1;
@@ -183,6 +193,25 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *TCP_
     TCP_conn->last_packet_sent = 0;
 }
 
+static void proxy_socks5_generate_auth_request(TCP_Client_Connection *TCP_conn)
+{
+    TCP_conn->last_packet[0] = 1; //version of the subnegotiation
+    TCP_conn->last_packet[1] = TCP_conn->proxy_info.username_len;
+    uint16_t length = 2;
+
+    memcpy(TCP_conn->last_packet + length, TCP_conn->proxy_info.username, TCP_conn->proxy_info.username_len);
+    length += TCP_conn->proxy_info.username_len;
+
+    TCP_conn->last_packet[length] = TCP_conn->proxy_info.password_len;
+    length++;
+
+    memcpy(TCP_conn->last_packet + length, TCP_conn->proxy_info.password, TCP_conn->proxy_info.password_len);
+    length += TCP_conn->proxy_info.password_len;
+
+    TCP_conn->last_packet_length = length;
+    TCP_conn->last_packet_sent = 0;
+}
+
 /* return 1 on success.
  * return 0 if no data received.
  * return -1 on failure (connection refused).
@@ -209,6 +238,24 @@ static int proxy_socks5_read_connection_response(TCP_Client_Connection *TCP_conn
         if (data[0] == 5 && data[1] == 0)
             return 1;
     }
+
+    return -1;
+}
+
+/* return 1 on success.
+ * return 0 if no data received.
+ * return -1 on failure (connection refused).
+ */
+static int proxy_socks5_read_auth_response(TCP_Client_Connection *TCP_conn)
+{
+    uint8_t data[2];
+    int ret = read_TCP_packet(TCP_conn->sock, data, sizeof(data));
+
+    if (ret == -1)
+        return 0;
+
+    if (data[0] == 1 && data[1] == 0)
+        return 1;
 
     return -1;
 }
@@ -889,8 +936,13 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
             }
 
             if (ret == 1) {
-                proxy_socks5_generate_connection_request(TCP_connection);
-                TCP_connection->status = TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED;
+                if (TCP_connection->proxy_info.enable_auth) {
+                    proxy_socks5_generate_auth_request(TCP_connection);
+                    TCP_connection->status = TCP_CLIENT_PROXY_SOCKS5_AUTH;
+                } else {
+                    proxy_socks5_generate_connection_request(TCP_connection);
+                    TCP_connection->status = TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED; 
+                }
             }
         }
     }
@@ -907,6 +959,22 @@ void do_TCP_connection(TCP_Client_Connection *TCP_connection)
             if (ret == 1) {
                 generate_handshake(TCP_connection);
                 TCP_connection->status = TCP_CLIENT_CONNECTING;
+            }
+        }
+    }
+
+    if (TCP_connection->status == TCP_CLIENT_PROXY_SOCKS5_AUTH) {
+        if (send_pending_data(TCP_connection) ==0) {
+            int ret = proxy_socks5_read_auth_response(TCP_connection);
+
+            if (ret == -1) {
+                TCP_connection->kill_at = 0;
+                TCP_connection->status = TCP_CLIENT_DISCONNECTED;
+            }
+
+            if (ret == 1) {
+                proxy_socks5_generate_connection_request(TCP_connection);
+                TCP_connection->status = TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED;
             }
         }
     }

@@ -70,6 +70,14 @@ typedef struct Messenger Tox;
 #error TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH
 #endif
 
+#if TOX_MAX_PROXY_USER_PASS_LENGTH != MAX_PROXY_USER_PASS_LENGTH
+#error TOX_MAX_PROXY_USER_PASS_LENGTH is assumed to be equal to MAX_PROXY_USER_PASS_LENGTH
+#endif
+
+#if TOX_MIN_PROXY_USER_PASS_LENGTH != MIN_PROXY_USER_PASS_LENGTH
+#error TOX_MIN_PROXY_USER_PASS_LENGTH is assumed to be equal to MIN_PROXY_USERPASS_LENGTH
+#endif
+
 uint32_t tox_version_major(void)
 {
     return TOX_VERSION_MAJOR;
@@ -192,6 +200,28 @@ Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error)
             if (options->proxy_port == 0) {
                 SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PORT);
                 return NULL;
+            }
+
+            if (options->proxy_username != NULL && options->proxy_password != NULL) {
+                size_t username_len = strlen(options->proxy_username);
+
+                if (username_len > TOX_MAX_PROXY_USER_PASS_LENGTH || username_len < TOX_MIN_PROXY_USER_PASS_LENGTH) {
+                    SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_USERNAME);
+                    return NULL;
+                }
+
+                size_t password_len = strlen(options->proxy_password);
+
+                if (password_len > TOX_MAX_PROXY_USER_PASS_LENGTH || password_len < TOX_MIN_PROXY_USER_PASS_LENGTH) {
+                    SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_PASSWORD);
+                    return NULL;
+                }
+
+                memcpy(m_options.proxy_info.username, options->proxy_username, username_len);
+                memcpy(m_options.proxy_info.password, options->proxy_password, password_len);
+                m_options.proxy_info.username_len = username_len;
+                m_options.proxy_info.password_len = password_len;
+                m_options.proxy_info.enable_auth = true;
             }
 
             ip_init(&m_options.proxy_info.ip_port.ip, m_options.ipv6enabled);
