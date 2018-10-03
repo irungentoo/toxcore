@@ -93,18 +93,17 @@ else()
   message(STATUS "Supported C++ compiler features = ${CMAKE_CXX_COMPILE_FEATURES}")
 endif()
 
-option(DEBUG "Enable DEBUG level logging (default)" ON)
-if(DEBUG)
-  set(MIN_LOGGER_LEVEL DEBUG)
-endif()
-
-option(TRACE "Enable TRACE level logging (expensive, for network debugging)" OFF)
-if(TRACE)
-  set(MIN_LOGGER_LEVEL TRACE)
-endif()
-
+set(MIN_LOGGER_LEVEL "" CACHE STRING "Logging level to use (TRACE, DEBUG, INFO, WARNING, ERROR)")
 if(MIN_LOGGER_LEVEL)
-  add_definitions(-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_${MIN_LOGGER_LEVEL})
+  if(("${MIN_LOGGER_LEVEL}" STREQUAL "TRACE") OR
+     ("${MIN_LOGGER_LEVEL}" STREQUAL "DEBUG") OR
+     ("${MIN_LOGGER_LEVEL}" STREQUAL "INFO") OR
+     ("${MIN_LOGGER_LEVEL}" STREQUAL "WARNING") OR
+     ("${MIN_LOGGER_LEVEL}" STREQUAL "ERROR"))
+    add_definitions(-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_${MIN_LOGGER_LEVEL})
+  else()
+    message(FATAL_ERROR "Unknown value provided for MIN_LOGGER_LEVEL: \"${MIN_LOGGER_LEVEL}\", must be one of TRACE, DEBUG, INFO, WARNING or ERROR")
+  endif()
 endif()
 
 option(USE_IPV6 "Use IPv6 in tests" ON)

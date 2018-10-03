@@ -81,20 +81,19 @@ There is some experimental accommodation for building natively on Windows, i.e. 
 
 There are some options that are available to configure the build.
 
-| Name                   | Description                                                                                   | Expected Value                             | Default Value                                     |
-|------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------|---------------------------------------------------|
-| `BOOTSTRAP_DAEMON`     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                  | ON                                                |
-| `BUILD_AV_TEST`        | Build toxav test.                                                                             | ON or OFF                                  | ON                                                |
-| `BUILD_TOXAV`          | Whether to build the tox AV library.                                                          | ON or OFF                                  | ON                                                |
-| `CMAKE_INSTALL_PREFIX` | Path to where everything should be installed.                                                 | Directory path.                            | Platform-dependent. Refer to CMake documentation. |
-| `DEBUG`                | Enable assertions and other debugging facilities.                                             | ON or OFF                                  | OFF                                               |
-| `DHT_BOOTSTRAP`        | Enable building of `DHT_bootstrap`                                                            | ON or OFF                                  | ON                                                |
-| `ENABLE_SHARED`        | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                  | ON                                                |
-| `ENABLE_STATIC`        | Build static libraries for all modules.                                                       | ON or OFF                                  | ON                                                |
-| `STRICT_ABI`           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                  | OFF                                               |
-| `TEST_TIMEOUT_SECONDS` | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string). | Empty string.                                     |
-| `TRACE`                | Enable TRACE level logging (expensive, for network debugging).                                | ON or OFF                                  | OFF                                               |
-| `USE_IPV6`             | Use IPv6 in tests.                                                                            | ON or OFF                                  | ON                                                |
+| Name                   | Description                                                                                   | Expected Value                                                            | Default Value                                     |
+|------------------------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------|
+| `BOOTSTRAP_DAEMON`     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                                                 | ON                                                |
+| `BUILD_AV_TEST`        | Build toxav test.                                                                             | ON or OFF                                                                 | ON                                                |
+| `BUILD_TOXAV`          | Whether to build the tox AV library.                                                          | ON or OFF                                                                 | ON                                                |
+| `CMAKE_INSTALL_PREFIX` | Path to where everything should be installed.                                                 | Directory path.                                                           | Platform-dependent. Refer to CMake documentation. |
+| `DHT_BOOTSTRAP`        | Enable building of `DHT_bootstrap`                                                            | ON or OFF                                                                 | ON                                                |
+| `ENABLE_SHARED`        | Build shared (dynamic) libraries for all modules.                                             | ON or OFF                                                                 | ON                                                |
+| `ENABLE_STATIC`        | Build static libraries for all modules.                                                       | ON or OFF                                                                 | ON                                                |
+| `MIN_LOGGER_LEVEL`     | Logging level to use.                                                                         | TRACE, DEBUG, INFO, WARNING, ERROR or nothing (empty string) for default. | Empty string.                                     |
+| `STRICT_ABI`           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                                                 | OFF                                               |
+| `TEST_TIMEOUT_SECONDS` | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string).                                | Empty string.                                     |
+| `USE_IPV6`             | Use IPv6 in tests.                                                                            | ON or OFF                                                                 | ON                                                |
 
 You can get this list of option using the following commands
 
@@ -110,7 +109,7 @@ Example of calling cmake with options
 ```sh
 cmake \
   -D ENABLE_STATIC=OFF \
-  -D DEBUG=ON \
+  -D MIN_LOGGER_LEVEL=DEBUG \
   -D CMAKE_INSTALL_PREFIX=/opt \
   -D TEST_TIMEOUT_SECONDS=120 \
   ..

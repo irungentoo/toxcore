@@ -82,7 +82,7 @@ AC_ARG_WITH(log-level,
         elif test "x$withval" = "xERROR"; then
             AC_DEFINE([MIN_LOGGER_LEVEL], [LOGGER_LEVEL_ERROR], [Logger_Level value])
         else
-            AC_MSG_WARN([Invalid logger level: $withval. Using default 'DEBUG'])
+            AC_MSG_WARN([Invalid logger level: $withval. Using default.])
         fi
     ]
 )
