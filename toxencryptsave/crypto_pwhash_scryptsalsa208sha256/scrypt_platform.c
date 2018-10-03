@@ -41,13 +41,13 @@ alloc_region(escrypt_region_t * region, size_t size)
 {
 	uint8_t * base, * aligned;
 #ifdef MAP_ANON
-	if ((base = (uint8_t *) mmap(NULL, size, PROT_READ | PROT_WRITE,
+	int flags;
 #ifdef MAP_NOCORE
-	    MAP_ANON | MAP_PRIVATE | MAP_NOCORE,
+	flags = MAP_ANON | MAP_PRIVATE | MAP_NOCORE;
 #else
-	    MAP_ANON | MAP_PRIVATE,
+	flags = MAP_ANON | MAP_PRIVATE;
 #endif
-	    -1, 0)) == MAP_FAILED)
+	if ((base = (uint8_t *) mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0)) == MAP_FAILED)
 		base = NULL;
 	aligned = base;
 #elif defined(HAVE_POSIX_MEMALIGN)

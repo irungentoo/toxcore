@@ -257,11 +257,11 @@ escrypt_kdf_nosse(escrypt_local_t * local,
 		errno = EINVAL;
 		return -1;
 	}
-	if ((r > SIZE_MAX / 128 / p) ||
+	_Bool test_size_max = (r > SIZE_MAX / 128 / p) || (N > SIZE_MAX / 128 / r);
 #if SIZE_MAX / 256 <= UINT32_MAX
-	    (r > SIZE_MAX / 256) ||
+	test_size_max = test_size_max || (r > SIZE_MAX / 256);
 #endif
-	    (N > SIZE_MAX / 128 / r)) {
+	if (test_size_max) {
 		errno = ENOMEM;
 		return -1;
 	}
