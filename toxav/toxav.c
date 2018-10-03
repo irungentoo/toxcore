@@ -34,8 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_ENCODE_TIME_US ((1000 / 24) * 1000)
-
 typedef struct ToxAVCall_s {
     ToxAV *av;
 
@@ -787,21 +785,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
     }
 
     { /* Encode */
-        vpx_image_t img;
-        img.w = img.h = img.d_w = img.d_h = 0;
-        vpx_img_alloc(&img, VPX_IMG_FMT_I420, width, height, 0);
-
-        /* I420 "It comprises an NxM Y plane followed by (N/2)x(M/2) V and U planes."
-         * http://fourcc.org/yuv.php#IYUV
-         */
-        memcpy(img.planes[VPX_PLANE_Y], y, width * height);
-        memcpy(img.planes[VPX_PLANE_U], u, (width / 2) * (height / 2));
-        memcpy(img.planes[VPX_PLANE_V], v, (width / 2) * (height / 2));
-
-        int vrc = vpx_codec_encode(call->video.second->encoder, &img,
-                                   call->video.second->frame_counter, 1, 0, MAX_ENCODE_TIME_US);
-
-        vpx_img_free(&img);
+        int vrc = vc_encode_frame(call->video.second, y, u, v);
 
         if (vrc != VPX_CODEC_OK) {
             pthread_mutex_unlock(call->mutex_video);
