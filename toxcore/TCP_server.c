@@ -169,6 +169,7 @@ static int del_accepted(TCP_Server *TCP_server, int index)
     if (!bs_list_remove(&TCP_server->accepted_key_list, TCP_server->accepted_connection_array[index].public_key, index))
         return -1;
 
+    wipe_priority_list(TCP_server->accepted_connection_array[index].priority_queue_start);
     sodium_memzero(&TCP_server->accepted_connection_array[index], sizeof(TCP_Secure_Connection));
     --TCP_server->num_accepted_connections;
 
@@ -315,6 +316,15 @@ static int send_pending_data_nonpriority(TCP_Secure_Connection *con)
 
 }
 
+void wipe_priority_list(TCP_Priority_List *p)
+{
+    while (p) {
+        TCP_Priority_List *pp = p;
+        p = p->next;
+        free(pp);
+    }
+}
+
 /* return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
@@ -446,6 +456,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
  */
 static void kill_TCP_connection(TCP_Secure_Connection *con)
 {
+    wipe_priority_list(con->priority_queue_start);
     kill_sock(con->sock);
     sodium_memzero(con, sizeof(TCP_Secure_Connection));
 }

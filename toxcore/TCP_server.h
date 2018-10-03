@@ -146,6 +146,8 @@ typedef struct {
 TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
                            Onion *onion);
 
+void wipe_priority_list(TCP_Priority_List *p);
+
 /* Run the TCP_server
  */
 void do_TCP_server(TCP_Server *TCP_server);
