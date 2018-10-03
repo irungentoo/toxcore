@@ -1,5 +1,7 @@
 #!/bin/sh
 
+[ -f android.settings ] && source ./android.settings
+
 if [ -z "$ANDROID_NDK_HOME" ]; then
     echo "You should probably set ANDROID_NDK_HOME to the directory containing"
     echo "the Android NDK"
@@ -25,7 +27,7 @@ if [ -z "$TOOLCHAIN_DIR" ]; then
   export TOOLCHAIN_DIR="$(pwd)/android-toolchain-${TARGET_ARCH}"
   export MAKE_TOOLCHAIN="${ANDROID_NDK_HOME}/build/tools/make-standalone-toolchain.sh"
   
-  if [ -z "$MAKE_TOOLCHAIN" ]; then
+  if [ ! -f "$MAKE_TOOLCHAIN" ]; then
     echo "Cannot find a make-standalone-toolchain.sh in ndk dir, interrupt..."
     exit 1
   fi
@@ -37,7 +39,7 @@ if [ -z "$TOOLCHAIN_DIR" ]; then
 fi
 
 export PREFIX="$(pwd)/toxcore-android-${TARGET_ARCH}"
-export SYSROOT="${TOOLCHAIN_DIR}/sysroot"
+export SYSROOT=${SYSROOT-${TOOLCHAIN_DIR}/sysroot}
 export PATH="${PATH}:${TOOLCHAIN_DIR}/bin"
 
 # Clean up before build
@@ -47,13 +49,26 @@ export CFLAGS="${CFLAGS} --sysroot=${SYSROOT} -I${SYSROOT}/usr/include"
 export CPPFLAGS="${CFLAGS}"
 export LDFLAGS="${LDFLAGS} -L${SYSROOT}/usr/lib"
 
-./configure --host="${HOST_COMPILER}" \
+# here SODIUM_ARCH must be armv6, while TARGET_ARCH is arm
+# permit override...
+SODIUM_ARCH=${SODIUM_ARCH-${TARGET_ARCH}}
+
+SODIUM_PREFIX="${SODIUM_HOME}/libsodium-android-${SODIUM_ARCH}"
+SODIUM_HDR=${SODIUM_HDR---with-libsodium-headers="${SODIUM_PREFIX}/include"}
+SODIUM_LIB=${SODIUM_LIB---with-libsodium-libs="${SODIUM_PREFIX}/lib"}
+
+builddir="build-${TARGET_ARCH}"
+mkdir -p $builddir
+cd $builddir
+
+../configure --host="${HOST_COMPILER}" \
             --with-sysroot="${SYSROOT}" \
-            --with-libsodium-headers="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/include" \
-            --with-libsodium-libs="${SODIUM_HOME}/libsodium-android-${TARGET_ARCH}/lib" \
-            --disable-av \
-            --prefix="${PREFIX}" && \
+            "${SODIUM_HDR}" \
+            "${SODIUM_LIB}" \
+            --disable-rt \
+            --disable-testing \
+            --prefix=/ && \
 
 make clean && \
-make -j3 install && \
+make -j3 install DESTDIR=${PREFIX} && \
 echo "libtoxcore has been installed into ${PREFIX}"

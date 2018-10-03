@@ -106,6 +106,15 @@ encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
 
 encryptsave_test_LDADD = $(AUTOTEST_LDADD)
 
+M=0
+MORE_TESTS_1=\#
+MORE_TESTS_TRUE = $(MORE_TESTS_$M)
+$(MORE_TESTS_TRUE)onion_test.log: LOG_COMPILER=sh -c 'exit 77'
+$(MORE_TESTS_TRUE)TCP_test.log: LOG_COMPILER=sh -c 'exit 77'
+$(MORE_TESTS_TRUE)tox_test.log: LOG_COMPILER=sh -c 'exit 77'
+$(MORE_TESTS_TRUE)dht_autotest.log: LOG_COMPILER=sh -c 'exit 77'
+
+.PHONY: $(TESTS:%=%.log)
 
 EXTRA_DIST += $(top_srcdir)/auto_tests/friends_test.c \
               $(top_srcdir)/auto_tests/helpers.h
