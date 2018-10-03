@@ -33,6 +33,10 @@
 #ifdef VANILLA_NACL
 #include "crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
 #include <crypto_hash_sha256.h>
+#else
+#include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
+#include <sodium/utils.h> /* sodium_memzero */
+#include <sodium/crypto_hash_sha256.h>
 #endif
 
 #if TOX_PASS_SALT_LENGTH != crypto_pwhash_scryptsalsa208sha256_SALTBYTES
