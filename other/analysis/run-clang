@@ -14,6 +14,7 @@ clang++ -o /dev/null amalgamation.cc		\
 	-Wno-cast-align				\
 	-Wno-conversion				\
 	-Wno-covered-switch-default		\
+	-Wno-disabled-macro-expansion		\
 	-Wno-documentation-deprecated-sync	\
 	-Wno-missing-field-initializers		\
 	-Wno-old-style-cast			\
