@@ -28,6 +28,7 @@
 
 // system provided
 #include <sys/stat.h>
+#include <signal.h> // for POSIX sigaction(2)
 #include <unistd.h>
 
 // C
@@ -214,6 +215,13 @@ static void toxcore_logger_callback(void *context, Logger_Level level, const cha
     log_write(log_level, "%s:%d(%s) %s\n", file, line, func, message);
 }
 
+static volatile sig_atomic_t caught_signal = 0;
+
+static void handle_signal(int signum)
+{
+    caught_signal = signum;
+}
+
 int main(int argc, char *argv[])
 {
     umask(077);
@@ -232,16 +240,17 @@ int main(int argc, char *argv[])
 
     log_write(LOG_LEVEL_INFO, "Running \"%s\" version %lu.\n", DAEMON_NAME, DAEMON_VERSION_NUMBER);
 
-    char *pid_file_path, *keys_file_path;
+    char *pid_file_path = nullptr;
+    char *keys_file_path = nullptr;
     int port;
     int enable_ipv6;
     int enable_ipv4_fallback;
     int enable_lan_discovery;
     int enable_tcp_relay;
-    uint16_t *tcp_relay_ports;
+    uint16_t *tcp_relay_ports = nullptr;
     int tcp_relay_port_count;
     int enable_motd;
-    char *motd;
+    char *motd = nullptr;
 
     if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_ipv4_fallback,
                            &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count, &enable_motd, &motd)) {
@@ -254,6 +263,10 @@ int main(int argc, char *argv[])
     if (port < MIN_ALLOWED_PORT || port > MAX_ALLOWED_PORT) {
         log_write(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT,
                   MAX_ALLOWED_PORT);
+        free(motd);
+        free(tcp_relay_ports);
+        free(keys_file_path);
+        free(pid_file_path);
         return 1;
     }
 
@@ -284,11 +297,17 @@ int main(int argc, char *argv[])
             if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
                 logger_kill(logger);
+                free(motd);
+                free(tcp_relay_ports);
+                free(keys_file_path);
                 return 1;
             }
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize networking. Exiting.\n");
             logger_kill(logger);
+            free(motd);
+            free(tcp_relay_ports);
+            free(keys_file_path);
             return 1;
         }
     }
@@ -297,7 +316,11 @@ int main(int argc, char *argv[])
 
     if (mono_time == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize monotonic timer. Exiting.\n");
+        kill_networking(net);
         logger_kill(logger);
+        free(motd);
+        free(tcp_relay_ports);
+        free(keys_file_path);
         return 1;
     }
 
@@ -308,64 +331,106 @@ int main(int argc, char *argv[])
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
         mono_time_free(mono_time);
+        kill_networking(net);
         logger_kill(logger);
+        free(motd);
+        free(tcp_relay_ports);
+        free(keys_file_path);
         return 1;
     }
 
     Onion *onion = new_onion(mono_time, dht);
+
+    if (!onion) {
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
+        kill_dht(dht);
+        mono_time_free(mono_time);
+        kill_networking(net);
+        logger_kill(logger);
+        free(motd);
+        free(tcp_relay_ports);
+        free(keys_file_path);
+        return 1;
+    }
+
     Onion_Announce *onion_a = new_onion_announce(mono_time, dht);
 
-    if (!(onion && onion_a)) {
-        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
+    if (!onion_a) {
+        log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion Announce. Exiting.\n");
+        kill_onion(onion);
+        kill_dht(dht);
         mono_time_free(mono_time);
+        kill_networking(net);
         logger_kill(logger);
+        free(motd);
+        free(tcp_relay_ports);
+        free(keys_file_path);
         return 1;
     }
 
     if (enable_motd) {
         if (bootstrap_set_callbacks(dht_get_net(dht), DAEMON_VERSION_NUMBER, (uint8_t *)motd, strlen(motd) + 1) == 0) {
             log_write(LOG_LEVEL_INFO, "Set MOTD successfully.\n");
+            free(motd);
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't set MOTD: %s. Exiting.\n", motd);
+            kill_onion_announce(onion_a);
+            kill_onion(onion);
+            kill_dht(dht);
             mono_time_free(mono_time);
+            kill_networking(net);
             logger_kill(logger);
+            free(motd);
+            free(tcp_relay_ports);
+            free(keys_file_path);
             return 1;
         }
-
-        free(motd);
     }
 
     if (manage_keys(dht, keys_file_path)) {
         log_write(LOG_LEVEL_INFO, "Keys are managed successfully.\n");
+        free(keys_file_path);
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read/write: %s. Exiting.\n", keys_file_path);
+        kill_onion_announce(onion_a);
+        kill_onion(onion);
+        kill_dht(dht);
         mono_time_free(mono_time);
+        kill_networking(net);
         logger_kill(logger);
+        free(tcp_relay_ports);
+        free(keys_file_path);
         return 1;
     }
-
-    free(keys_file_path);
 
     TCP_Server *tcp_server = nullptr;
 
     if (enable_tcp_relay) {
         if (tcp_relay_port_count == 0) {
             log_write(LOG_LEVEL_ERROR, "No TCP relay ports read. Exiting.\n");
+            kill_onion_announce(onion_a);
+            kill_onion(onion);
+            kill_dht(dht);
             mono_time_free(mono_time);
+            kill_networking(net);
             logger_kill(logger);
+            free(tcp_relay_ports);
             return 1;
         }
 
         tcp_server = new_TCP_server(enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht_get_self_secret_key(dht), onion);
 
-        // tcp_relay_port_count != 0 at this point
         free(tcp_relay_ports);
 
         if (tcp_server != nullptr) {
             log_write(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
+            kill_onion_announce(onion_a);
+            kill_onion(onion);
+            kill_dht(dht);
             mono_time_free(mono_time);
+            kill_networking(net);
             logger_kill(logger);
             return 1;
         }
@@ -375,7 +440,12 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "List of bootstrap nodes read successfully.\n");
     } else {
         log_write(LOG_LEVEL_ERROR, "Couldn't read list of bootstrap nodes in %s. Exiting.\n", cfg_file_path);
+        kill_TCP_server(tcp_server);
+        kill_onion_announce(onion_a);
+        kill_onion(onion);
+        kill_dht(dht);
         mono_time_free(mono_time);
+        kill_networking(net);
         logger_kill(logger);
         return 1;
     }
@@ -392,7 +462,25 @@ int main(int argc, char *argv[])
         log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
 
-    while (1) {
+    struct sigaction sa;
+
+    sa.sa_handler = handle_signal;
+
+    // Try to restart interrupted system calls if they are restartable
+    sa.sa_flags = SA_RESTART;
+
+    // Prevent the signal handler from being called again before it returns
+    sigfillset(&sa.sa_mask);
+
+    if (sigaction(SIGINT, &sa, nullptr)) {
+        log_write(LOG_LEVEL_WARNING, "Couldn't set signal handler for SIGINT. Continuing without the signal handler set.\n");
+    }
+
+    if (sigaction(SIGTERM, &sa, nullptr)) {
+        log_write(LOG_LEVEL_WARNING, "Couldn't set signal handler for SIGTERM. Continuing without the signal handler set.\n");
+    }
+
+    while (!caught_signal) {
         mono_time_update(mono_time);
 
         do_dht(dht);
@@ -415,4 +503,31 @@ int main(int argc, char *argv[])
 
         SLEEP_MILLISECONDS(30);
     }
+
+    switch (caught_signal) {
+        case SIGINT:
+            log_write(LOG_LEVEL_INFO, "Received SIGINT (%d) signal. Exiting.\n", SIGINT);
+            break;
+
+        case SIGTERM:
+            log_write(LOG_LEVEL_INFO, "Received SIGTERM (%d) signal. Exiting.\n", SIGTERM);
+            break;
+
+        default:
+            log_write(LOG_LEVEL_INFO, "Received (%d) signal. Exiting.\n", caught_signal);
+    }
+
+    if (enable_lan_discovery) {
+        lan_discovery_kill(dht);
+    }
+
+    kill_TCP_server(tcp_server);
+    kill_onion_announce(onion_a);
+    kill_onion(onion);
+    kill_dht(dht);
+    mono_time_free(mono_time);
+    kill_networking(net);
+    logger_kill(logger);
+
+    return 0;
 }
