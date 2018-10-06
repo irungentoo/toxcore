@@ -25,7 +25,6 @@ START_TEST(test_addr_resolv_localhost)
 #endif
 
     const char localhost[] = "localhost";
-    int localhost_split = 0;
 
     IP ip;
     ip_init(&ip, 0); // ipv6enabled = 0
@@ -45,6 +44,10 @@ START_TEST(test_addr_resolv_localhost)
 
     ip_init(&ip, 1); // ipv6enabled = 1
     res = addr_resolve(localhost, &ip, nullptr);
+
+#if USE_IPV6
+
+    int localhost_split = 0;
 
     if (!(res & TOX_ADDR_RESOLVE_INET6)) {
         res = addr_resolve("ip6-localhost", &ip, nullptr);
@@ -66,6 +69,8 @@ START_TEST(test_addr_resolv_localhost)
         printf("Localhost seems to be split in two.\n");
         return;
     }
+
+#endif
 
     ip_init(&ip, 1); // ipv6enabled = 1
     ip.family = net_family_unspec;
