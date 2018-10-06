@@ -18,7 +18,8 @@ cmake -H. -B_build -GNinja			\
   -DMUST_BUILD_TOXAV=ON				\
   -DSTRICT_ABI=ON				\
   -DTEST_TIMEOUT_SECONDS=120			\
-  -DUSE_IPV6=OFF
+  -DUSE_IPV6=OFF				\
+  -DAUTOTEST=ON
 
 cd _build
 

@@ -31,7 +31,8 @@ travis_script() {
     -DMIN_LOGGER_LEVEL=TRACE \
     -DMUST_BUILD_TOXAV=ON \
     -DTEST_TIMEOUT_SECONDS=120 \
-    -DUSE_IPV6=OFF
+    -DUSE_IPV6=OFF \
+    -DAUTOTEST=ON
 
   cd _build  # pushd
   make "-j$NPROC" -k install

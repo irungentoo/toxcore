@@ -389,8 +389,10 @@ if(ANDROID_CPU_FEATURES)
   set(CPUFEATURES other/cpufeatures.c)
 endif()
 
+option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
+
 function(auto_test target)
-  if(NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
+  if(AUTOTEST AND NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
     add_executable(auto_${target}_test ${CPUFEATURES}
       auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test toxcore misc_tools)
