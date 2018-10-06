@@ -32,6 +32,7 @@
 #define MIN_LOGGER_LEVEL LOGGER_LEVEL_INFO
 #endif
 
+// NOTE: Don't forget to update build system files after modifying the enum.
 typedef enum Logger_Level {
     LOGGER_LEVEL_TRACE,
     LOGGER_LEVEL_DEBUG,
