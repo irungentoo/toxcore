@@ -1,9 +1,62 @@
 
 
+## v0.2.8
+
+### Merged PRs:
+
+- [#1224](https://github.com/TokTok/c-toxcore/pull/1224) Avoid use of IPv6 in tests if not supported (e.g. on Travis).
+- [#1216](https://github.com/TokTok/c-toxcore/pull/1216) Fix memleak in tcp server by wiping priority queues on deletion
+- [#1212](https://github.com/TokTok/c-toxcore/pull/1212) Fix logger level defaulting to TRACE in CMake
+- [#1208](https://github.com/TokTok/c-toxcore/pull/1208) Remove a function-like macro and replace it with a function.
+- [#1205](https://github.com/TokTok/c-toxcore/pull/1205) Use a working DHT node for bootstrap tests.
+- [#1203](https://github.com/TokTok/c-toxcore/pull/1203) Revert "Improve cmake build for MSVC."
+- [#1202](https://github.com/TokTok/c-toxcore/pull/1202) Reset onion search rate for a friend when we see evidence that they are online
+- [#1199](https://github.com/TokTok/c-toxcore/pull/1199) Run tests on Appveyor (Windows native build).
+- [#1198](https://github.com/TokTok/c-toxcore/pull/1198) Add Cirrus CI configuration.
+- [#1197](https://github.com/TokTok/c-toxcore/pull/1197) Use new `@pthread` library from toktok-stack for Windows compat.
+- [#1196](https://github.com/TokTok/c-toxcore/pull/1196) Run UBSAN (undefined behaviour sanitizer) on Circle CI.
+- [#1195](https://github.com/TokTok/c-toxcore/pull/1195) Fix using uninitialized mutex on call end
+- [#1192](https://github.com/TokTok/c-toxcore/pull/1192) Send rejoin packets on conference disconnection
+- [#1191](https://github.com/TokTok/c-toxcore/pull/1191) Improve cmake build for MSVC
+- [#1188](https://github.com/TokTok/c-toxcore/pull/1188) Fix yamllint test (it's gone from bazel, add a new one).
+- [#1187](https://github.com/TokTok/c-toxcore/pull/1187) Fix typos in comments and log and test assertion messages.
+- [#1165](https://github.com/TokTok/c-toxcore/pull/1165) Fixed a silly boolean practice using uint8_t
+- [#1164](https://github.com/TokTok/c-toxcore/pull/1164) Format yaml files according to yamllint's requirements and remove branch filter for appveyor.
+- [#1161](https://github.com/TokTok/c-toxcore/pull/1161) Use most recent version of Bazel (0.17.1).
+- [#1158](https://github.com/TokTok/c-toxcore/pull/1158) Use C++ style casts in C++ code.
+- [#1157](https://github.com/TokTok/c-toxcore/pull/1157) Use run_auto_test fixture in typing_test.c
+- [#1155](https://github.com/TokTok/c-toxcore/pull/1155) Standardise header guards.
+- [#1154](https://github.com/TokTok/c-toxcore/pull/1154) Assert that we don't kill tox before killing toxav.
+- [#1153](https://github.com/TokTok/c-toxcore/pull/1153) Always use the passed logger (from Messenger) in msi_kill.
+- [#1151](https://github.com/TokTok/c-toxcore/pull/1151) Fix typo: tcp_replays -> tcp_relays.
+- [#1150](https://github.com/TokTok/c-toxcore/pull/1150) Use `(void)` for empty parameter lists in C.
+- [#1147](https://github.com/TokTok/c-toxcore/pull/1147) Ignore "unused-result" warning in super_donators code.
+- [#1145](https://github.com/TokTok/c-toxcore/pull/1145) Fix login issue on Travis-CI FreeBSD build
+- [#1141](https://github.com/TokTok/c-toxcore/pull/1141) Include necessary opencv2 header on OSX.
+- [#1140](https://github.com/TokTok/c-toxcore/pull/1140) Clean up `add_to_list` function a bit.
+- [#1139](https://github.com/TokTok/c-toxcore/pull/1139) Avoid recursion in `ip_is_lan` and `ip_is_local`.
+- [#1138](https://github.com/TokTok/c-toxcore/pull/1138) Add tool to find directly recursive calls in toxcore.
+- [#1136](https://github.com/TokTok/c-toxcore/pull/1136) Remove the use of `CLOCK_MONOTONIC_RAW`.
+- [#1135](https://github.com/TokTok/c-toxcore/pull/1135) Avoid use of global mutable state in mono_time on win32.
+- [#1134](https://github.com/TokTok/c-toxcore/pull/1134) Use `code font` for tool names and flags in INSTALL.md.
+- [#1126](https://github.com/TokTok/c-toxcore/pull/1126) Simplify configure.ac for faster autotools build.
+- [#1095](https://github.com/TokTok/c-toxcore/pull/1095) Use test clock in run_auto_test tests and dht test
+- [#1069](https://github.com/TokTok/c-toxcore/pull/1069) Add mechanism for recovering from disconnections in conferences
+- [#1046](https://github.com/TokTok/c-toxcore/pull/1046) Finish the messenger state plugin system
+- [#895](https://github.com/TokTok/c-toxcore/pull/895) Feature bootstrap trace/debug log output
+
+### Closed issues:
+
+- [#1201](https://github.com/TokTok/c-toxcore/issues/1201) Windows cross-compilation is broken
+- [#961](https://github.com/TokTok/c-toxcore/issues/961) Can't send messages in persistent group chat
+- [#960](https://github.com/TokTok/c-toxcore/issues/960) Persistent groups don't work properly when using toxync bot
+- [#838](https://github.com/TokTok/c-toxcore/issues/838) How to get groupchat identifier?
+
 ## v0.2.7
 
 ### Merged PRs:
 
+- [#1142](https://github.com/TokTok/c-toxcore/pull/1142) Release 0.2.7
 - [#1137](https://github.com/TokTok/c-toxcore/pull/1137) Make `ip_is_lan` return bool instead of 0/-1.
 - [#1133](https://github.com/TokTok/c-toxcore/pull/1133) Make the tsan build fail instead of swallowing its errors.
 - [#1132](https://github.com/TokTok/c-toxcore/pull/1132) Use `bool` in place of 0/1 int values.
@@ -42,6 +95,10 @@
 - [#1057](https://github.com/TokTok/c-toxcore/pull/1057) Reduce the number of times `unix_time_update` is called.
 - [#1051](https://github.com/TokTok/c-toxcore/pull/1051) Add save file generator, compatibility test, and generate a savefile
 - [#1038](https://github.com/TokTok/c-toxcore/pull/1038) Use per-instance `Mono_Time` instead of a global `unix_time`
+
+### Closed issues:
+
+- [#1105](https://github.com/TokTok/c-toxcore/issues/1105) Sodium.h missing?
 
 ## v0.2.6
 
