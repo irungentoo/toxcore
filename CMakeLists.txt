@@ -53,6 +53,7 @@ message("SOVERSION: ${SOVERSION}")
 ################################################################################
 
 include(ApiDsl)
+include(CTest)
 include(ModulePackage)
 include(StrictAbi)
 include(GNUInstallDirs)
