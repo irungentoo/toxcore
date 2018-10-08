@@ -530,7 +530,7 @@ void tox_kill(Tox *tox)
     }
 
     Messenger *m = tox->m;
-    assert(m->msi_packet == nullptr && "Attempted to kill tox while toxav is still alive");
+    LOGGER_ASSERT(m->log, m->msi_packet == nullptr, "Attempted to kill tox while toxav is still alive");
     kill_groupchats(m->conferences_object);
     kill_messenger(m);
     mono_time_free(tox->mono_time);
@@ -793,7 +793,7 @@ Tox_User_Status tox_self_get_status(const Tox *tox)
     return (Tox_User_Status)status;
 }
 
-static void set_friend_error(int32_t ret, Tox_Err_Friend_Add *error)
+static void set_friend_error(const Logger *log, int32_t ret, Tox_Err_Friend_Add *error)
 {
     switch (ret) {
         case FAERR_TOOLONG:
@@ -826,7 +826,7 @@ static void set_friend_error(int32_t ret, Tox_Err_Friend_Add *error)
 
         default:
             /* can't happen */
-            assert(!"impossible: unknown friend-add error");
+            LOGGER_FATAL(log, "impossible: unknown friend-add error");
             break;
     }
 }
@@ -847,7 +847,7 @@ uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message
         return ret;
     }
 
-    set_friend_error(ret, error);
+    set_friend_error(m->log, ret, error);
     return UINT32_MAX;
 }
 
@@ -866,7 +866,7 @@ uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, Tox_Err_F
         return ret;
     }
 
-    set_friend_error(ret, error);
+    set_friend_error(m->log, ret, error);
     return UINT32_MAX;
 }
 
@@ -1026,7 +1026,7 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
     }
 
     const int ret = m_copy_statusmessage(m, friend_number, status_message, size);
-    assert(ret == size && "concurrency problem: friend status message changed");
+    LOGGER_ASSERT(m->log, ret == size, "concurrency problem: friend status message changed");
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
     return ret == size;
@@ -1109,7 +1109,7 @@ bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool typing, Tox_Err_
     return 1;
 }
 
-static void set_message_error(int ret, Tox_Err_Friend_Send_Message *error)
+static void set_message_error(const Logger *log, int ret, Tox_Err_Friend_Send_Message *error)
 {
     switch (ret) {
         case 0:
@@ -1133,9 +1133,12 @@ static void set_message_error(int ret, Tox_Err_Friend_Send_Message *error)
             break;
 
         case -5:
+            LOGGER_FATAL(log, "impossible: Messenger and Tox disagree on message types");
+            break;
+
         default:
             /* can't happen */
-            assert(!"impossible: unknown send-message error");
+            LOGGER_FATAL(log, "impossible: unknown send-message error: %d", ret);
             break;
     }
 }
@@ -1155,7 +1158,7 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, Tox_Message_T
 
     Messenger *m = tox->m;
     uint32_t message_id = 0;
-    set_message_error(m_send_message_generic(m, friend_number, type, message, length, &message_id), error);
+    set_message_error(m->log, m_send_message_generic(m, friend_number, type, message, length, &message_id), error);
     return message_id;
 }
 

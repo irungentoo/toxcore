@@ -104,7 +104,8 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
 #ifdef USE_STDERR_LOGGER
         log = &logger_stderr;
 #else
-        assert(!"NULL logger not permitted");
+        fprintf(stderr, "NULL logger not permitted.\n");
+        abort();
 #endif
     }
 
