@@ -44,7 +44,7 @@ static void test_one(void)
 
     uint8_t address[TOX_ADDRESS_SIZE];
     tox_self_get_address(tox1, address);
-    TOX_ERR_FRIEND_ADD error;
+    Tox_Err_Friend_Add error;
     uint32_t ret = tox_friend_add(tox1, address, (const uint8_t *)"m", 1, &error);
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_OWN_KEY, "Adding own address worked.");
 
@@ -82,7 +82,7 @@ static void test_one(void)
     tox_get_savedata(tox1, data);
 
     tox_kill(tox2);
-    TOX_ERR_NEW err_n;
+    Tox_Err_New err_n;
 
     struct Tox_Options *options = tox_options_new(nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);

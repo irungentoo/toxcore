@@ -61,7 +61,7 @@ static void save_data_encrypted(void)
     size += TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     uint8_t *cipher = (uint8_t *)malloc(size);
 
-    TOX_ERR_ENCRYPTION eerr;
+    Tox_Err_Encryption eerr;
 
     ck_assert_msg(tox_pass_encrypt(clear, size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH, (const uint8_t *)pphrase,
                                    strlen(pphrase), cipher,
@@ -90,7 +90,7 @@ static void load_data_decrypted(void)
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
     printf("Read read_value = %u of %u\n", (unsigned)read_value, (unsigned)size);
 
-    TOX_ERR_DECRYPTION derr;
+    Tox_Err_Decryption derr;
 
     ck_assert_msg(tox_pass_decrypt(cipher, size, (const uint8_t *)pphrase, strlen(pphrase), clear, &derr),
                   "Could not decrypt, error code %d.", derr);
@@ -101,7 +101,7 @@ static void load_data_decrypted(void)
 
     tox_options_set_savedata_data(options, clear, size);
 
-    TOX_ERR_NEW err;
+    Tox_Err_New err;
 
     Tox *t = tox_new_log(options, &err, nullptr);
 

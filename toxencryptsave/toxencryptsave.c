@@ -91,7 +91,7 @@ void tox_pass_key_free(Tox_Pass_Key *pass_key)
  * success does not say anything about the validity of the data, only that data of
  * the appropriate size was copied
  */
-bool tox_get_salt(const uint8_t *data, uint8_t *salt, TOX_ERR_GET_SALT *error)
+bool tox_get_salt(const uint8_t *data, uint8_t *salt, Tox_Err_Get_Salt *error)
 {
     if (!data || !salt) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_NULL);
@@ -121,7 +121,7 @@ bool tox_get_salt(const uint8_t *data, uint8_t *salt, TOX_ERR_GET_SALT *error)
  * returns true on success
  */
 Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
-                                  TOX_ERR_KEY_DERIVATION *error)
+                                  Tox_Err_Key_Derivation *error)
 {
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
     random_bytes(salt, sizeof salt);
@@ -132,7 +132,7 @@ Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  */
 Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pplength,
-        const uint8_t *salt, TOX_ERR_KEY_DERIVATION *error)
+        const uint8_t *salt, Tox_Err_Key_Derivation *error)
 {
     if (!salt || (!passphrase && pplength != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);
@@ -181,7 +181,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
  * returns true on success
  */
 bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t data_len, uint8_t *out,
-                          TOX_ERR_ENCRYPTION *error)
+                          Tox_Err_Encryption *error)
 {
     if (data_len == 0 || !data || !key || !out) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
@@ -227,9 +227,9 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t d
  * returns true on success
  */
 bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passphrase, size_t pplength, uint8_t *out,
-                      TOX_ERR_ENCRYPTION *error)
+                      Tox_Err_Encryption *error)
 {
-    TOX_ERR_KEY_DERIVATION _error;
+    Tox_Err_Key_Derivation _error;
     Tox_Pass_Key *key = tox_pass_key_derive(passphrase, pplength, &_error);
 
     if (!key) {
@@ -255,7 +255,7 @@ bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passp
  * returns true on success
  */
 bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t length, uint8_t *out,
-                          TOX_ERR_DECRYPTION *error)
+                          Tox_Err_Decryption *error)
 {
     if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
@@ -301,7 +301,7 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t l
  * returns true on success
  */
 bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphrase, size_t pplength, uint8_t *out,
-                      TOX_ERR_DECRYPTION *error)
+                      Tox_Err_Decryption *error)
 {
     if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);

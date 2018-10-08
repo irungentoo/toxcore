@@ -62,7 +62,7 @@ START_TEST(test_many_clients_tcp)
         tox_callback_friend_request(toxes[i], accept_friend_request);
         uint8_t dpk[TOX_PUBLIC_KEY_SIZE];
         tox_self_get_dht_id(toxes[0], dpk);
-        TOX_ERR_BOOTSTRAP error = TOX_ERR_BOOTSTRAP_OK;
+        Tox_Err_Bootstrap error = TOX_ERR_BOOTSTRAP_OK;
         ck_assert_msg(tox_add_tcp_relay(toxes[i], TOX_LOCALHOST, TCP_RELAY_PORT, dpk, &error), "add relay error, %u, %d", i,
                       error);
         uint16_t first_port = tox_self_get_udp_port(toxes[0], nullptr);
@@ -91,7 +91,7 @@ loop_top:
 
         tox_self_get_address(toxes[pairs[i].tox1], address);
 
-        TOX_ERR_FRIEND_ADD test;
+        Tox_Err_Friend_Add test;
         uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
 
         if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {
@@ -185,7 +185,7 @@ loop_top:
 
         tox_self_get_address(toxes[pairs[i].tox1], address);
 
-        TOX_ERR_FRIEND_ADD test;
+        Tox_Err_Friend_Add test;
         uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
 
         if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {

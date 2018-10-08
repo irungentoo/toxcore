@@ -20,7 +20,7 @@ typedef struct State {
 #include "run_auto_test.h"
 
 static void handle_conference_invite(
-    Tox *tox, uint32_t friend_number, TOX_CONFERENCE_TYPE type,
+    Tox *tox, uint32_t friend_number, Tox_Conference_Type type,
     const uint8_t *cookie, size_t length, void *user_data)
 {
     State *state = (State *)user_data;
@@ -29,7 +29,7 @@ static void handle_conference_invite(
             state->index, friend_number, type, (unsigned)length);
     fprintf(stderr, "tox%u joining conference\n", state->index);
 
-    TOX_ERR_CONFERENCE_JOIN err;
+    Tox_Err_Conference_Join err;
     state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK,
                   "attempting to join the conference returned with an error: %d", err);
@@ -44,7 +44,7 @@ static void handle_peer_list_changed(Tox *tox, uint32_t conference_number, void 
     fprintf(stderr, "handle_peer_list_changed(#%u, %u, _)\n",
             state->index, conference_number);
 
-    TOX_ERR_CONFERENCE_PEER_QUERY err;
+    Tox_Err_Conference_Peer_Query err;
     uint32_t const count = tox_conference_peer_count(tox, conference_number, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
                   "failed to get conference peer count: err = %d", err);
@@ -57,7 +57,7 @@ static void rebuild_peer_list(Tox *tox)
     for (uint32_t conference_number = 0;
             conference_number < tox_conference_get_chatlist_size(tox);
             ++conference_number) {
-        TOX_ERR_CONFERENCE_PEER_QUERY err;
+        Tox_Err_Conference_Peer_Query err;
         uint32_t const count = tox_conference_peer_count(tox, conference_number, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
                       "failed to get conference peer count for conference %u: err = %d", conference_number, err);
@@ -90,7 +90,7 @@ static void conference_peer_nick_test(Tox **toxes, State *state)
 
     {
         // Create new conference, tox0 is the founder.
-        TOX_ERR_CONFERENCE_NEW err;
+        Tox_Err_Conference_New err;
         state[0].conference = tox_conference_new(toxes[0], &err);
         state[0].joined = true;
         ck_assert_msg(err == TOX_ERR_CONFERENCE_NEW_OK,
@@ -100,7 +100,7 @@ static void conference_peer_nick_test(Tox **toxes, State *state)
 
     {
         // Invite friend.
-        TOX_ERR_CONFERENCE_INVITE err;
+        Tox_Err_Conference_Invite err;
         tox_conference_invite(toxes[0], 0, state[0].conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK,
                       "attempting to invite a friend returned with an error: %d", err);

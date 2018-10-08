@@ -22,7 +22,7 @@ static void net_crypto_overflow_test(Tox **toxes, State *state)
     bool errored = false;
 
     for (uint32_t i = 0; i < NUM_MSGS; i++) {
-        TOX_ERR_FRIEND_SEND_MESSAGE err;
+        Tox_Err_Friend_Send_Message err;
         tox_friend_send_message(toxes[0], 0, TOX_MESSAGE_TYPE_NORMAL, message, sizeof message, &err);
 
         if (err != TOX_ERR_FRIEND_SEND_MESSAGE_OK) {

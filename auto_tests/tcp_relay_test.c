@@ -36,7 +36,7 @@ int main(void)
         c_sleep(ITERATION_INTERVAL);
     } while (tox_self_get_connection_status(tox_tcp) == TOX_CONNECTION_NONE);
 
-    const TOX_CONNECTION status = tox_self_get_connection_status(tox_tcp);
+    const Tox_Connection status = tox_self_get_connection_status(tox_tcp);
     ck_assert_msg(status == TOX_CONNECTION_TCP,
                   "expected TCP connection, but got %d", status);
     printf("Connection (TCP): %d\n", status);

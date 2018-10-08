@@ -28,7 +28,7 @@
 
 
 #define ck_assert_call_control(a, b, c) do { \
-    TOXAV_ERR_CALL_CONTROL cc_err; \
+    Toxav_Err_Call_Control cc_err; \
     bool ok = toxav_call_control(a, b, c, &cc_err); \
     if (!ok) { \
         printf("toxav_call_control returned error %d\n", cc_err); \
@@ -113,7 +113,7 @@ static void regular_call_flow(
     clear_call_control(AliceCC);
     clear_call_control(BobCC);
 
-    TOXAV_ERR_CALL call_err;
+    Toxav_Err_Call call_err;
     toxav_call(AliceAV, 0, a_br, v_br, &call_err);
 
     if (call_err != TOXAV_ERR_CALL_OK) {
@@ -125,7 +125,7 @@ static void regular_call_flow(
 
     do {
         if (BobCC->incoming) {
-            TOXAV_ERR_ANSWER answer_err;
+            Toxav_Err_Answer answer_err;
             toxav_answer(BobAV, 0, a_br, v_br, &answer_err);
 
             if (answer_err != TOXAV_ERR_ANSWER_OK) {
@@ -137,7 +137,7 @@ static void regular_call_flow(
         } else { /* TODO(mannol): rtp */
             if (time(nullptr) - start_time >= 1) {
 
-                TOXAV_ERR_CALL_CONTROL cc_err;
+                Toxav_Err_Call_Control cc_err;
                 toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &cc_err);
 
                 if (cc_err != TOXAV_ERR_CALL_CONTROL_OK) {
@@ -162,7 +162,7 @@ static void test_av_flows(void)
     CallControl AliceCC, BobCC;
 
     {
-        TOX_ERR_NEW error;
+        Tox_Err_New error;
 
         bootstrap = tox_new_log(nullptr, &error, &index[0]);
         ck_assert(error == TOX_ERR_NEW_OK);
@@ -215,7 +215,7 @@ static void test_av_flows(void)
 
 
     {
-        TOXAV_ERR_NEW error;
+        Toxav_Err_New error;
         AliceAV = toxav_new(Alice, &error);
         ck_assert(error == TOXAV_ERR_NEW_OK);
 
@@ -261,7 +261,7 @@ static void test_av_flows(void)
         clear_call_control(&BobCC);
 
         {
-            TOXAV_ERR_CALL rc;
+            Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
             if (rc != TOXAV_ERR_CALL_OK) {
@@ -276,7 +276,7 @@ static void test_av_flows(void)
 
         /* Reject */
         {
-            TOXAV_ERR_CALL_CONTROL rc;
+            Toxav_Err_Call_Control rc;
             toxav_call_control(BobAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
@@ -299,7 +299,7 @@ static void test_av_flows(void)
         clear_call_control(&BobCC);
 
         {
-            TOXAV_ERR_CALL rc;
+            Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
             if (rc != TOXAV_ERR_CALL_OK) {
@@ -314,7 +314,7 @@ static void test_av_flows(void)
 
         /* Cancel */
         {
-            TOXAV_ERR_CALL_CONTROL rc;
+            Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
@@ -339,7 +339,7 @@ static void test_av_flows(void)
 
         /* Assume sending audio and video */
         {
-            TOXAV_ERR_CALL rc;
+            Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 1000, &rc);
 
             if (rc != TOXAV_ERR_CALL_OK) {
@@ -361,7 +361,7 @@ static void test_av_flows(void)
         ck_assert(!toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_SHOW_VIDEO, nullptr));
 
         {
-            TOXAV_ERR_ANSWER rc;
+            Toxav_Err_Answer rc;
             toxav_answer(BobAV, 0, 48, 4000, &rc);
 
             if (rc != TOXAV_ERR_ANSWER_OK) {
@@ -406,7 +406,7 @@ static void test_av_flows(void)
         ck_assert(BobCC.state & TOXAV_FRIEND_CALL_STATE_ACCEPTING_V);
 
         {
-            TOXAV_ERR_CALL_CONTROL rc;
+            Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
@@ -429,7 +429,7 @@ static void test_av_flows(void)
 
         /* Assume sending audio and video */
         {
-            TOXAV_ERR_CALL rc;
+            Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
             if (rc != TOXAV_ERR_CALL_OK) {
@@ -443,7 +443,7 @@ static void test_av_flows(void)
         } while (!BobCC.incoming);
 
         {
-            TOXAV_ERR_ANSWER rc;
+            Toxav_Err_Answer rc;
             toxav_answer(BobAV, 0, 48, 0, &rc);
 
             if (rc != TOXAV_ERR_ANSWER_OK) {
@@ -474,7 +474,7 @@ static void test_av_flows(void)
         ck_assert(!(BobCC.state & TOXAV_FRIEND_CALL_STATE_SENDING_A));
 
         {
-            TOXAV_ERR_CALL_CONTROL rc;
+            Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
@@ -497,7 +497,7 @@ static void test_av_flows(void)
 
         /* Assume sending audio and video */
         {
-            TOXAV_ERR_CALL rc;
+            Toxav_Err_Call rc;
             toxav_call(AliceAV, 0, 48, 0, &rc);
 
             if (rc != TOXAV_ERR_CALL_OK) {
@@ -511,7 +511,7 @@ static void test_av_flows(void)
         } while (!BobCC.incoming);
 
         {
-            TOXAV_ERR_ANSWER rc;
+            Toxav_Err_Answer rc;
             toxav_answer(BobAV, 0, 48, 0, &rc);
 
             if (rc != TOXAV_ERR_ANSWER_OK) {
@@ -534,7 +534,7 @@ static void test_av_flows(void)
         iterate_tox(bootstrap, Alice, Bob);
 
         {
-            TOXAV_ERR_CALL_CONTROL rc;
+            Toxav_Err_Call_Control rc;
             toxav_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
             if (rc != TOXAV_ERR_CALL_CONTROL_OK) {

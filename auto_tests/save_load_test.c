@@ -24,7 +24,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 }
 
 static unsigned int connected_t1;
-static void tox_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
+static void tox_connection_status(Tox *tox, Tox_Connection connection_status, void *user_data)
 {
     if (connected_t1 && !connection_status) {
         ck_abort_msg("Tox went offline");

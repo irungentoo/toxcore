@@ -32,7 +32,7 @@ int main(void)
         c_sleep(ITERATION_INTERVAL);
     } while (tox_self_get_connection_status(tox_udp) == TOX_CONNECTION_NONE);
 
-    const TOX_CONNECTION status = tox_self_get_connection_status(tox_udp);
+    const Tox_Connection status = tox_self_get_connection_status(tox_udp);
     ck_assert_msg(status == TOX_CONNECTION_UDP,
                   "expected connection status to be UDP, but got %d", status);
     printf("Connection (UDP): %d\n", tox_self_get_connection_status(tox_udp));

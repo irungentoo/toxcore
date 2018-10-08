@@ -18,7 +18,7 @@ typedef struct State {
 
 #define NUM_MSGS 40000
 
-static void handle_friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type,
+static void handle_friend_message(Tox *tox, uint32_t friend_number, Tox_Message_Type type,
                                   const uint8_t *message, size_t length, void *user_data)
 {
     State *state = (State *)user_data;
@@ -36,7 +36,7 @@ static void net_crypto_overflow_test(Tox **toxes, State *state)
             uint8_t message[128] = {0};
             snprintf((char *)message, sizeof(message), "%u-%u", tox_index, i);
 
-            TOX_ERR_FRIEND_SEND_MESSAGE err;
+            Tox_Err_Friend_Send_Message err;
             tox_friend_send_message(toxes[tox_index], 0, TOX_MESSAGE_TYPE_NORMAL, message, sizeof message, &err);
 
             if (err == TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ) {

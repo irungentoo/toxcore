@@ -48,7 +48,7 @@ static void test_typing(Tox **toxes, State *state)
         iterate_all_wait(2, toxes, state, 200);
     } while (state[1].friend_is_typing);
 
-    TOX_ERR_FRIEND_QUERY err_t;
+    Tox_Err_Friend_Query err_t;
     ck_assert_msg(tox_friend_get_typing(toxes[1], 0, &err_t) == 0,
                   "tox_friend_get_typing should have returned false, but it didn't");
     ck_assert_msg(err_t == TOX_ERR_FRIEND_QUERY_OK, "tox_friend_get_typing call did not return correct error");

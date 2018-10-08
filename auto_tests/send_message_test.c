@@ -21,7 +21,7 @@ typedef struct State {
 #define MESSAGE_FILLER 'G'
 
 static void message_callback(
-    Tox *m, uint32_t friendnumber, TOX_MESSAGE_TYPE type,
+    Tox *m, uint32_t friendnumber, Tox_Message_Type type,
     const uint8_t *string, size_t length, void *userdata)
 {
     State *state = (State *)userdata;
@@ -45,7 +45,7 @@ static void send_message_test(Tox **toxes, State *state)
     uint8_t msgs[TOX_MAX_MESSAGE_LENGTH + 1];
     memset(msgs, MESSAGE_FILLER, sizeof(msgs));
 
-    TOX_ERR_FRIEND_SEND_MESSAGE errm;
+    Tox_Err_Friend_Send_Message errm;
     tox_friend_send_message(toxes[0], 0, TOX_MESSAGE_TYPE_NORMAL, msgs, TOX_MAX_MESSAGE_LENGTH + 1, &errm);
     ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_TOO_LONG, "TOX_MAX_MESSAGE_LENGTH is too small? error=%d", errm);
 

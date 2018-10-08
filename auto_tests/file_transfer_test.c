@@ -60,7 +60,7 @@ static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_num
     if (filesize) {
         sending_pos = size_recv = 1337;
 
-        TOX_ERR_FILE_SEEK err_s;
+        Tox_Err_File_Seek err_s;
 
         ck_assert_msg(tox_file_seek(tox, friend_number, file_number, 1337, &err_s), "tox_file_seek error");
 
@@ -70,13 +70,13 @@ static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_num
         sending_pos = size_recv = 0;
     }
 
-    TOX_ERR_FILE_CONTROL error;
+    Tox_Err_File_Control error;
 
     ck_assert_msg(tox_file_control(tox, friend_number, file_number, TOX_FILE_CONTROL_RESUME, &error),
                   "tox_file_control failed. %i", error);
     ++file_accepted;
 
-    TOX_ERR_FILE_SEEK err_s;
+    Tox_Err_File_Seek err_s;
 
     ck_assert_msg(!tox_file_seek(tox, friend_number, file_number, 1234, &err_s), "tox_file_seek no error");
 
@@ -84,7 +84,7 @@ static void tox_file_receive(Tox *tox, uint32_t friend_number, uint32_t file_num
 }
 
 static uint32_t sendf_ok;
-static void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+static void file_print_control(Tox *tox, uint32_t friend_number, uint32_t file_number, Tox_File_Control control,
                                void *userdata)
 {
     /* First send file num is 0.*/
@@ -121,7 +121,7 @@ static void tox_file_chunk_request(Tox *tox, uint32_t friend_number, uint32_t fi
     VLA(uint8_t, f_data, length);
     memset(f_data, sending_num, length);
 
-    TOX_ERR_FILE_SEND_CHUNK error;
+    Tox_Err_File_Send_Chunk error;
     tox_file_send_chunk(tox, friend_number, file_number, position, f_data, length, &error);
 
 
@@ -159,7 +159,7 @@ static void file_transfer_test(void)
     printf("Starting test: few_clients\n");
     uint32_t index[] = { 1, 2, 3 };
     long long unsigned int cur_time = time(nullptr);
-    TOX_ERR_NEW t_n_error;
+    Tox_Err_New t_n_error;
     Tox *tox1 = tox_new_log(nullptr, &t_n_error, &index[0]);
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "wrong error");
     Tox *tox2 = tox_new_log(nullptr, &t_n_error, &index[1]);
@@ -218,7 +218,7 @@ static void file_transfer_test(void)
                                   sizeof("Gentoo.exe"), nullptr);
     ck_assert_msg(fnum != UINT32_MAX, "tox_new_file_sender fail");
 
-    TOX_ERR_FILE_GET gfierr;
+    Tox_Err_File_Get gfierr;
     ck_assert_msg(!tox_file_get_file_id(tox2, 1, fnum, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");
     ck_assert_msg(gfierr == TOX_ERR_FILE_GET_FRIEND_NOT_FOUND, "wrong error");
     ck_assert_msg(!tox_file_get_file_id(tox2, 0, fnum + 1, file_cmp_id, &gfierr), "tox_file_get_file_id didn't fail");

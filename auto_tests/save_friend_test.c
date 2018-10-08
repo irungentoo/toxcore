@@ -22,7 +22,7 @@ struct test_data {
     bool received_status_message;
 };
 
-static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, TOX_ERR_SET_INFO *), size_t length)
+static void set_random(Tox *m, bool (*setter)(Tox *, const uint8_t *, size_t, Tox_Err_Set_Info *), size_t length)
 {
     VLA(uint8_t, text, length);
     uint32_t i;

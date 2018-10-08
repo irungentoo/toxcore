@@ -82,7 +82,7 @@ static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const 
  */
 static ToxAV *setup_av_instance(Tox *tox, CallControl *CC)
 {
-    TOXAV_ERR_NEW error;
+    Toxav_Err_New error;
 
     ToxAV *av = toxav_new(tox, &error);
     ck_assert(error == TOXAV_ERR_NEW_OK);
@@ -107,7 +107,7 @@ static void *call_thread(void *pd)
     memset(BobCC, 0, sizeof(CallControl));
 
     { /* Call */
-        TOXAV_ERR_CALL rc;
+        Toxav_Err_Call rc;
         toxav_call(AliceAV, friend_number, 48, 3000, &rc);
 
         if (rc != TOXAV_ERR_CALL_OK) {
@@ -121,7 +121,7 @@ static void *call_thread(void *pd)
     } while (!BobCC->incoming);
 
     { /* Answer */
-        TOXAV_ERR_ANSWER rc;
+        Toxav_Err_Answer rc;
         toxav_answer(BobAV, 0, 8, 500, &rc);
 
         if (rc != TOXAV_ERR_ANSWER_OK) {
@@ -153,7 +153,7 @@ static void *call_thread(void *pd)
     } while (time(nullptr) - start_time < 4);
 
     { /* Hangup */
-        TOXAV_ERR_CALL_CONTROL rc;
+        Toxav_Err_Call_Control rc;
         toxav_call_control(AliceAV, friend_number, TOXAV_CALL_CONTROL_CANCEL, &rc);
 
         if (rc != TOXAV_ERR_CALL_CONTROL_OK) {
@@ -184,7 +184,7 @@ static void test_av_three_calls(void)
     CallControl AliceCC[3], BobsCC[3];
 
     {
-        TOX_ERR_NEW error;
+        Tox_Err_New error;
 
         bootstrap = tox_new_log(nullptr, &error, &index[0]);
         ck_assert(error == TOX_ERR_NEW_OK);

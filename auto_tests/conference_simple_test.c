@@ -23,7 +23,7 @@ typedef struct State {
     uint32_t peers;
 } State;
 
-static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_status, void *user_data)
+static void handle_self_connection_status(Tox *tox, Tox_Connection connection_status, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -31,7 +31,7 @@ static void handle_self_connection_status(Tox *tox, TOX_CONNECTION connection_st
     state->self_online = connection_status != TOX_CONNECTION_NONE;
 }
 
-static void handle_friend_connection_status(Tox *tox, uint32_t friend_number, TOX_CONNECTION connection_status,
+static void handle_friend_connection_status(Tox *tox, uint32_t friend_number, Tox_Connection connection_status,
         void *user_data)
 {
     State *state = (State *)user_data;
@@ -40,7 +40,7 @@ static void handle_friend_connection_status(Tox *tox, uint32_t friend_number, TO
     state->friend_online = connection_status != TOX_CONNECTION_NONE;
 }
 
-static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFERENCE_TYPE type, const uint8_t *cookie,
+static void handle_conference_invite(Tox *tox, uint32_t friend_number, Tox_Conference_Type type, const uint8_t *cookie,
                                      size_t length, void *user_data)
 {
     State *state = (State *)user_data;
@@ -50,7 +50,7 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
     fprintf(stderr, "tox%u joining conference\n", state->id);
 
     {
-        TOX_ERR_CONFERENCE_JOIN err;
+        Tox_Err_Conference_Join err;
         state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK, "failed to join a conference: err = %d", err);
         fprintf(stderr, "tox%u Joined conference %u\n", state->id, state->conference);
@@ -59,7 +59,7 @@ static void handle_conference_invite(Tox *tox, uint32_t friend_number, TOX_CONFE
 }
 
 static void handle_conference_message(Tox *tox, uint32_t conference_number, uint32_t peer_number,
-                                      TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data)
+                                      Tox_Message_Type type, const uint8_t *message, size_t length, void *user_data)
 {
     State *state = (State *)user_data;
 
@@ -77,7 +77,7 @@ static void handle_conference_peer_list_changed(Tox *tox, uint32_t conference_nu
     fprintf(stderr, "handle_conference_peer_list_changed(#%u, %u, _)\n",
             state->id, conference_number);
 
-    TOX_ERR_CONFERENCE_PEER_QUERY err;
+    Tox_Err_Conference_Peer_Query err;
     uint32_t count = tox_conference_peer_count(tox, conference_number, &err);
 
     if (err != TOX_ERR_CONFERENCE_PEER_QUERY_OK) {
@@ -95,7 +95,7 @@ static void handle_conference_connected(Tox *tox, uint32_t conference_number, vo
 
     // We're tox2, so now we invite tox3.
     if (state->id == 2 && !state->invited_next) {
-        TOX_ERR_CONFERENCE_INVITE err;
+        Tox_Err_Conference_Invite err;
         tox_conference_invite(tox, 1, state->conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "tox2 failed to invite tox3: err = %d", err);
 
@@ -190,7 +190,7 @@ int main(void)
 
     {
         // Create new conference, tox1 is the founder.
-        TOX_ERR_CONFERENCE_NEW err;
+        Tox_Err_Conference_New err;
         state1.conference = tox_conference_new(tox1, &err);
         state1.joined = true;
         ck_assert_msg(err == TOX_ERR_CONFERENCE_NEW_OK, "failed to create a conference: err = %d", err);
@@ -199,7 +199,7 @@ int main(void)
 
     {
         // Invite friend.
-        TOX_ERR_CONFERENCE_INVITE err;
+        Tox_Err_Conference_Invite err;
         tox_conference_invite(tox1, 0, state1.conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK, "failed to invite a friend: err = %d", err);
         state1.invited_next = true;
@@ -232,7 +232,7 @@ int main(void)
 
     {
         fprintf(stderr, "tox1 sends a message to the group: \"hello!\"\n");
-        TOX_ERR_CONFERENCE_SEND_MESSAGE err;
+        Tox_Err_Conference_Send_Message err;
         tox_conference_send_message(tox1, state1.conference, TOX_MESSAGE_TYPE_NORMAL,
                                     (const uint8_t *)"hello!", 7, &err);
 

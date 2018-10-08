@@ -68,7 +68,7 @@ loop_top:
 
         tox_self_get_address(toxes[pairs[i].tox1], address);
 
-        TOX_ERR_FRIEND_ADD test;
+        Tox_Err_Friend_Add test;
         uint32_t num = tox_friend_add(toxes[pairs[i].tox2], address, (const uint8_t *)"Gentoo", 7, &test);
 
         if (test == TOX_ERR_FRIEND_ADD_ALREADY_SENT) {

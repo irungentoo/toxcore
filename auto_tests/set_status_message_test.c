@@ -72,7 +72,7 @@ static void test_set_status_message(void)
 
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
-    TOX_ERR_SET_INFO err_n;
+    Tox_Err_Set_Info err_n;
     tox_callback_friend_status_message(tox2, status_callback);
     bool ret = tox_self_set_status_message(tox1, (const uint8_t *)STATUS_MESSAGE, sizeof(STATUS_MESSAGE),
                                            &err_n);

@@ -41,7 +41,7 @@ int main(void)
         tox_iterate(tox, nullptr);
         c_sleep(ITERATION_INTERVAL);
         // None of the iterations should have a connection.
-        const TOX_CONNECTION status = tox_self_get_connection_status(tox);
+        const Tox_Connection status = tox_self_get_connection_status(tox);
         ck_assert_msg(status == TOX_CONNECTION_NONE,
                       "unexpectedly got a connection (%d)", status);
     }

@@ -19,7 +19,7 @@ typedef struct State {
 #include "run_auto_test.h"
 
 static void handle_conference_invite(
-    Tox *tox, uint32_t friend_number, TOX_CONFERENCE_TYPE type,
+    Tox *tox, uint32_t friend_number, Tox_Conference_Type type,
     const uint8_t *cookie, size_t length, void *user_data)
 {
     State *state = (State *)user_data;
@@ -29,7 +29,7 @@ static void handle_conference_invite(
     fprintf(stderr, "tox%u joining conference\n", state->index);
 
     if (friend_number != -1) {
-        TOX_ERR_CONFERENCE_JOIN err;
+        Tox_Err_Conference_Join err;
         state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK,
                       "attempting to join the conference returned with an error: %d", err);
@@ -46,7 +46,7 @@ static void conference_double_invite_test(Tox **toxes, State *state)
 
     {
         // Create new conference, tox0 is the founder.
-        TOX_ERR_CONFERENCE_NEW err;
+        Tox_Err_Conference_New err;
         state[0].conference = tox_conference_new(toxes[0], &err);
         state[0].joined = true;
         ck_assert_msg(err == TOX_ERR_CONFERENCE_NEW_OK,
@@ -56,7 +56,7 @@ static void conference_double_invite_test(Tox **toxes, State *state)
 
     {
         // Invite friend.
-        TOX_ERR_CONFERENCE_INVITE err;
+        Tox_Err_Conference_Invite err;
         tox_conference_invite(toxes[0], 0, state[0].conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK,
                       "attempting to invite a friend returned with an error: %d", err);
