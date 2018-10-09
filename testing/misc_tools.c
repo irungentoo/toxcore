@@ -121,7 +121,7 @@ int tox_strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
+int cmdline_parsefor_ipv46(int argc, char **argv, bool *ipv6enabled)
 {
     int argvoffset = 0, argi;
 
@@ -131,9 +131,9 @@ int cmdline_parsefor_ipv46(int argc, char **argv, uint8_t *ipv6enabled)
                 char c = argv[argi][5];
 
                 if (c == '4') {
-                    *ipv6enabled = 0;
+                    *ipv6enabled = false;
                 } else if (c == '6') {
-                    *ipv6enabled = 1;
+                    *ipv6enabled = true;
                 } else {
                     printf("Invalid argument: %s. Try --ipv4 or --ipv6!\n", argv[argi]);
                     return -1;
