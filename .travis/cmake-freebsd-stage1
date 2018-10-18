@@ -111,6 +111,7 @@ travis_install() {
     # Install required toxcore dependencies
     RUN PAGER=cat ASSUME_ALWAYS_YES=YES pkg install git \
                                                     opus \
+                                                    libconfig \
                                                     libvpx \
                                                     libsodium \
                                                     gmake \
