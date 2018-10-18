@@ -27,11 +27,14 @@
 #endif
 
 // system provided
+#include <sys/resource.h>
 #include <sys/stat.h>
-#include <signal.h> // for POSIX sigaction(2)
+#include <signal.h> // system header, rather than C, because we need it for POSIX sigaction(2)
 #include <unistd.h>
 
 // C
+#include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -424,6 +427,30 @@ int main(int argc, char *argv[])
 
         if (tcp_server != nullptr) {
             log_write(LOG_LEVEL_INFO, "Initialized Tox TCP server successfully.\n");
+
+            struct rlimit limit;
+
+            const rlim_t rlim_suggested = 32768;
+            const rlim_t rlim_min = 4096;
+
+            assert(rlim_suggested >= rlim_min);
+
+            if (!getrlimit(RLIMIT_NOFILE, &limit)) {
+                if (limit.rlim_cur < limit.rlim_max) {
+                    // Some systems have a hard limit of over 1000000 open file descriptors, so let's cap it at something reasonable
+                    // so that we don't set it to an unreasonably high number.
+                    limit.rlim_cur = limit.rlim_max > rlim_suggested ? rlim_suggested : limit.rlim_max;
+                    setrlimit(RLIMIT_NOFILE, &limit);
+                }
+            }
+
+            if (!getrlimit(RLIMIT_NOFILE, &limit) && limit.rlim_cur < rlim_min) {
+                log_write(LOG_LEVEL_WARNING,
+                          "Current limit on the number of files this process can open (%ju) is rather low for the proper functioning of the TCP server. "
+                          "Consider raising the limit to at least %ju or the recommended %ju. "
+                          "Continuing using the current limit (%ju).\n",
+                          (uintmax_t)limit.rlim_cur, (uintmax_t)rlim_min, (uintmax_t)rlim_suggested, (uintmax_t)limit.rlim_cur);
+            }
         } else {
             log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox TCP server. Exiting.\n");
             kill_onion_announce(onion_a);

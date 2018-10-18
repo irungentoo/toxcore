@@ -23,7 +23,7 @@ cat docker/Dockerfile
 sudo docker build -t tox-bootstrapd docker/
 sudo useradd --home-dir /var/lib/tox-bootstrapd --create-home --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
 sudo chmod 700 /var/lib/tox-bootstrapd
-sudo docker run -d --name tox-bootstrapd -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
+sudo docker run -d --name tox-bootstrapd -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ --ulimit nofile=32768:32768 -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
 
 sudo ls -lbh /var/lib/tox-bootstrapd
 
@@ -56,6 +56,12 @@ sudo docker ps -a
 
 if [ "`sudo docker inspect -f {{.State.Running}} tox-bootstrapd`" != "true" ]; then
   echo "Error: Container is not running"
+  exit 1
+fi
+
+cat /proc/$(pidof tox-bootstrapd)/limits
+if ! cat /proc/$(pidof tox-bootstrapd)/limits | grep -P '^Max open files(\s+)32768(\s+)32768(\s+)files'; then
+  echo "Error: ulimit is not set to the expected value"
   exit 1
 fi
 
