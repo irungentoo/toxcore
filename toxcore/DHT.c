@@ -2741,10 +2741,12 @@ DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool
     dht->dht_harden_ping_array = ping_array_new(DHT_PING_ARRAY_SIZE, PING_TIMEOUT);
 
     for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER; ++i) {
-        uint8_t random_key_bytes[CRYPTO_PUBLIC_KEY_SIZE];
-        random_bytes(random_key_bytes, sizeof(random_key_bytes));
+        uint8_t random_public_key_bytes[CRYPTO_PUBLIC_KEY_SIZE];
+        uint8_t random_secret_key_bytes[CRYPTO_SECRET_KEY_SIZE];
 
-        if (dht_addfriend(dht, random_key_bytes, nullptr, nullptr, 0, nullptr) != 0) {
+        crypto_new_keypair(random_public_key_bytes, random_secret_key_bytes);
+
+        if (dht_addfriend(dht, random_public_key_bytes, nullptr, nullptr, 0, nullptr) != 0) {
             kill_dht(dht);
             return nullptr;
         }
