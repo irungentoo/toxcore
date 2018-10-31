@@ -473,7 +473,7 @@ int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_c
     }
 
     if (groupchat_enable_av(log, tox, g_c, groupnumber, audio_callback, userdata) == -1) {
-        del_groupchat(g_c, groupnumber);
+        del_groupchat(g_c, groupnumber, true);
         return -1;
     }
 
@@ -495,7 +495,7 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
     }
 
     if (groupchat_enable_av(log, tox, g_c, groupnumber, audio_callback, userdata) == -1) {
-        del_groupchat(g_c, groupnumber);
+        del_groupchat(g_c, groupnumber, true);
         return -1;
     }
 

@@ -58,6 +58,9 @@ uint8_t *state_write_section_header(uint8_t *data, uint16_t cookie_type, uint32_
 uint16_t lendian_to_host16(uint16_t lendian);
 uint16_t host_to_lendian16(uint16_t host);
 
+void host_to_lendian_bytes64(uint8_t *dest, uint64_t num);
+void lendian_bytes_to_host64(uint64_t *dest, const uint8_t *lendian);
+
 void host_to_lendian_bytes32(uint8_t *dest, uint32_t num);
 void lendian_bytes_to_host32(uint32_t *dest, const uint8_t *lendian);
 

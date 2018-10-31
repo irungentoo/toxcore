@@ -2257,32 +2257,32 @@ namespace conference {
     CONFERENCE_NOT_FOUND,
   }
 
+  /**
+   * Error codes for peer info queries.
+   */
+  error for peer_query {
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    CONFERENCE_NOT_FOUND,
+    /**
+     * The peer number passed did not designate a valid peer.
+     */
+    PEER_NOT_FOUND,
+    /**
+     * The client is not connected to the conference.
+     */
+    NO_CONNECTION,
+  }
+
 
   namespace peer {
-
-    /**
-     * Error codes for peer info queries.
-     */
-    error for query {
-      /**
-       * The conference number passed did not designate a valid conference.
-       */
-      CONFERENCE_NOT_FOUND,
-      /**
-       * The peer number passed did not designate a valid peer.
-       */
-      PEER_NOT_FOUND,
-      /**
-       * The client is not connected to the conference.
-       */
-      NO_CONNECTION,
-    }
 
     /**
      * Return the number of peers in the conference. Return value is unspecified on failure.
      */
     const uint32_t count(uint32_t conference_number)
-        with error for query;
+        with error for peer_query;
 
     uint8_t[size] name {
 
@@ -2290,7 +2290,7 @@ namespace conference {
        * Return the length of the peer's name. Return value is unspecified on failure.
        */
       size(uint32_t conference_number, uint32_t peer_number)
-          with error for query;
+          with error for peer_query;
 
       /**
        * Copy the name of peer_number who is in conference_number to name.
@@ -2299,7 +2299,7 @@ namespace conference {
        * @return true on success.
        */
       get(uint32_t conference_number, uint32_t peer_number)
-          with error for query;
+          with error for peer_query;
     }
 
     /**
@@ -2310,17 +2310,63 @@ namespace conference {
      */
     uint8_t[PUBLIC_KEY_SIZE] public_key {
       get(uint32_t conference_number, uint32_t peer_number)
-          with error for query;
+          with error for peer_query;
     }
 
     /**
      * Return true if passed peer_number corresponds to our own.
      */
     const bool number_is_ours(uint32_t conference_number, uint32_t peer_number)
-        with error for query;
+        with error for peer_query;
 
   }
 
+  namespace offline_peer {
+
+    /**
+     * Return the number of offline peers in the conference. Return value is unspecified on failure.
+     */
+    const uint32_t count(uint32_t conference_number)
+        with error for peer_query;
+
+    uint8_t[size] name {
+
+      /**
+       * Return the length of the offline peer's name. Return value is unspecified on failure.
+       */
+      size(uint32_t conference_number, uint32_t offline_peer_number)
+          with error for peer_query;
+
+      /**
+       * Copy the name of offline_peer_number who is in conference_number to name.
+       * name must be at least $MAX_NAME_LENGTH long.
+       *
+       * @return true on success.
+       */
+      get(uint32_t conference_number, uint32_t offline_peer_number)
+          with error for peer_query;
+    }
+
+    /**
+     * Copy the public key of offline_peer_number who is in conference_number to public_key.
+     * public_key must be $PUBLIC_KEY_SIZE long.
+     *
+     * @return true on success.
+     */
+    uint8_t[PUBLIC_KEY_SIZE] public_key {
+      get(uint32_t conference_number, uint32_t offline_peer_number)
+          with error for peer_query;
+    }
+
+    /**
+     * Return a unix-time timestamp of the last time offline_peer_number was seen to be active.
+     */
+    uint64_t last_active {
+      get(uint32_t conference_number, uint32_t offline_peer_number)
+        with error for peer_query;
+    }
+
+  }
 
   /**
    * Invites a friend to a conference.

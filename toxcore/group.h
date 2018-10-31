@@ -238,38 +238,51 @@ void g_callback_peer_list_changed(Group_Chats *g_c, peer_list_changed_cb *functi
  */
 int add_groupchat(Group_Chats *g_c, uint8_t type);
 
-/* Delete a groupchat from the chats array.
+/* Delete a groupchat from the chats array, informing the group first as
+ * appropriate.
  *
  * return 0 on success.
  * return -1 if groupnumber is invalid.
  */
-int del_groupchat(Group_Chats *g_c, uint32_t groupnumber);
+int del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently);
 
-/* Copy the public key of peernumber who is in groupnumber to pk.
+/* Copy the public key of (frozen, if frozen is true) peernumber who is in
+ * groupnumber to pk.
  * pk must be CRYPTO_PUBLIC_KEY_SIZE long.
  *
  * return 0 on success
  * return -1 if groupnumber is invalid.
  * return -2 if peernumber is invalid.
  */
-int group_peer_pubkey(const Group_Chats *g_c, uint32_t groupnumber, int peernumber, uint8_t *pk);
+int group_peer_pubkey(const Group_Chats *g_c, uint32_t groupnumber, int peernumber, uint8_t *pk, bool frozen);
 
 /*
- * Return the size of peernumber's name.
+ * Return the size of (frozen, if frozen is true) peernumber's name.
  *
  * return -1 if groupnumber is invalid.
  * return -2 if peernumber is invalid.
  */
-int group_peername_size(const Group_Chats *g_c, uint32_t groupnumber, int32_t peernumber);
+int group_peername_size(const Group_Chats *g_c, uint32_t groupnumber, int32_t peernumber, bool frozen);
 
-/* Copy the name of peernumber who is in groupnumber to name.
+/* Copy the name of (frozen, if frozen is true) peernumber who is in
+ * groupnumber to name.
  * name must be at least MAX_NAME_LENGTH long.
  *
  * return length of name if success
  * return -1 if groupnumber is invalid.
  * return -2 if peernumber is invalid.
  */
-int group_peername(const Group_Chats *g_c, uint32_t groupnumber, int peernumber, uint8_t *name);
+int group_peername(const Group_Chats *g_c, uint32_t groupnumber, int peernumber, uint8_t *name, bool frozen);
+
+/* Copy last active timestamp of frozen peernumber who is in groupnumber to
+ * last_active.
+ *
+ * return 0 on success.
+ * return -1 if groupnumber is invalid.
+ * return -2 if peernumber is invalid.
+ */
+int group_frozen_last_active(const Group_Chats *g_c, uint32_t groupnumber, int peernumber,
+                             uint64_t *last_active);
 
 /* invite friendnumber to groupnumber
  *
@@ -306,12 +319,6 @@ int group_message_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8
  */
 int group_action_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *action, uint16_t length);
 
-/* send message to announce leaving group
- * return true on success
- * return false on failure
- */
-bool group_leave(const Group_Chats *g_c, uint32_t groupnumber);
-
 /* set the group's title, limited to MAX_NAME_LENGTH
  * return 0 on success
  * return -1 if groupnumber is invalid.
@@ -336,10 +343,11 @@ int group_title_get_size(const Group_Chats *g_c, uint32_t groupnumber);
  */
 int group_title_get(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *title);
 
-/* Return the number of peers in the group chat on success.
+/* Return the number of (frozen, if frozen is true) peers in the group chat on
+ * success.
  * return -1 if groupnumber is invalid.
  */
-int group_number_peers(const Group_Chats *g_c, uint32_t groupnumber);
+int group_number_peers(const Group_Chats *g_c, uint32_t groupnumber, bool frozen);
 
 /* return 1 if the peernumber corresponds to ours.
  * return 0 if the peernumber is not ours.
@@ -349,7 +357,7 @@ int group_number_peers(const Group_Chats *g_c, uint32_t groupnumber);
  */
 int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, int peernumber);
 
-/* List all the peers in the group chat.
+/* List all the (frozen, if frozen is true) peers in the group chat.
  *
  * Copies the names of the peers to the name[length][MAX_NAME_LENGTH] array.
  *
@@ -360,7 +368,7 @@ int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, int p
  * return -1 on failure.
  */
 int group_names(const Group_Chats *g_c, uint32_t groupnumber, uint8_t names[][MAX_NAME_LENGTH], uint16_t lengths[],
-                uint16_t length);
+                uint16_t length, bool frozen);
 
 /* Set handlers for custom lossy packets. */
 void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, lossy_packet_cb *function);

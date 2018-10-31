@@ -84,6 +84,28 @@ uint16_t host_to_lendian16(uint16_t host)
     return lendian_to_host16(host);
 }
 
+void host_to_lendian_bytes64(uint8_t *dest, uint64_t num)
+{
+#ifdef WORDS_BIGENDIAN
+    num = ((num << 8) & 0xFF00FF00FF00FF00) | ((num >> 8) & 0xFF00FF00FF00FF);
+    num = ((num << 16) & 0xFFFF0000FFFF0000) | ((num >> 16) & 0xFFFF0000FFFF);
+    num = (num << 32) | (num >> 32);
+#endif
+    memcpy(dest, &num, sizeof(uint64_t));
+}
+
+void lendian_bytes_to_host64(uint64_t *dest, const uint8_t *lendian)
+{
+    uint64_t d;
+    memcpy(&d, lendian, sizeof(uint64_t));
+#ifdef WORDS_BIGENDIAN
+    d = ((d << 8) & 0xFF00FF00FF00FF00) | ((d >> 8) & 0xFF00FF00FF00FF);
+    d = ((d << 16) & 0xFFFF0000FFFF0000) | ((d >> 16) & 0xFFFF0000FFFF);
+    d = (d << 32) | (d >> 32);
+#endif
+    *dest = d;
+}
+
 void host_to_lendian_bytes32(uint8_t *dest, uint32_t num)
 {
 #ifdef WORDS_BIGENDIAN

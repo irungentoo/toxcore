@@ -2631,6 +2631,42 @@ bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t conference_numb
 bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
                                         TOX_ERR_CONFERENCE_PEER_QUERY *error);
 
+/**
+ * Return the number of offline peers in the conference. Return value is unspecified on failure.
+ */
+uint32_t tox_conference_offline_peer_count(const Tox *tox, uint32_t conference_number,
+        TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+/**
+ * Return the length of the offline peer's name. Return value is unspecified on failure.
+ */
+size_t tox_conference_offline_peer_get_name_size(const Tox *tox, uint32_t conference_number,
+        uint32_t offline_peer_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+/**
+ * Copy the name of offline_peer_number who is in conference_number to name.
+ * name must be at least TOX_MAX_NAME_LENGTH long.
+ *
+ * @return true on success.
+ */
+bool tox_conference_offline_peer_get_name(const Tox *tox, uint32_t conference_number, uint32_t offline_peer_number,
+        uint8_t *name, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+/**
+ * Copy the public key of offline_peer_number who is in conference_number to public_key.
+ * public_key must be TOX_PUBLIC_KEY_SIZE long.
+ *
+ * @return true on success.
+ */
+bool tox_conference_offline_peer_get_public_key(const Tox *tox, uint32_t conference_number,
+        uint32_t offline_peer_number, uint8_t *public_key, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
+/**
+ * Return a unix-time timestamp of the last time offline_peer_number was seen to be active.
+ */
+uint64_t tox_conference_offline_peer_get_last_active(const Tox *tox, uint32_t conference_number,
+        uint32_t offline_peer_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+
 typedef enum TOX_ERR_CONFERENCE_INVITE {
 
     /**
