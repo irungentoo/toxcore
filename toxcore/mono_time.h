@@ -45,11 +45,26 @@ typedef struct Mono_Time Mono_Time;
 Mono_Time *mono_time_new(void);
 void mono_time_free(Mono_Time *mono_time);
 
+/**
+ * Update mono_time; subsequent calls to mono_time_get or mono_time_is_timeout
+ * will use the time at the call to mono_time_update.
+ */
 void mono_time_update(Mono_Time *mono_time);
+
+/**
+ * Return unix time since epoch in seconds.
+ */
 uint64_t mono_time_get(const Mono_Time *mono_time);
+
+/**
+ * Return true iff timestamp is at least timeout seconds in the past.
+ */
 bool mono_time_is_timeout(const Mono_Time *mono_time, uint64_t timestamp, uint64_t timeout);
 
-/* return current monotonic time in milliseconds (ms). */
+/**
+ * Return current monotonic time in milliseconds (ms). The starting point is
+ * unspecified.
+ */
 uint64_t current_time_monotonic(Mono_Time *mono_time);
 
 typedef uint64_t mono_time_current_time_cb(Mono_Time *mono_time, void *user_data);
