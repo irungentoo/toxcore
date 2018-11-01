@@ -30,6 +30,7 @@
 #include "ccompat.h"
 #include "crypto_core.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef VANILLA_NACL
@@ -81,6 +82,20 @@
 #if CRYPTO_PUBLIC_KEY_SIZE != 32
 #error "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work,"
 #endif
+
+static uint8_t *crypto_malloc(size_t bytes)
+{
+    return (uint8_t *)malloc(bytes);
+}
+
+static void crypto_free(uint8_t *ptr, size_t bytes)
+{
+    if (ptr != nullptr) {
+        crypto_memzero(ptr, bytes);
+    }
+
+    free(ptr);
+}
 
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
@@ -142,8 +157,17 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
         return -1;
     }
 
-    VLA(uint8_t, temp_plain, length + crypto_box_ZEROBYTES);
-    VLA(uint8_t, temp_encrypted, length + crypto_box_MACBYTES + crypto_box_BOXZEROBYTES);
+    const size_t size_temp_plain = length + crypto_box_ZEROBYTES;
+    const size_t size_temp_encrypted = length + crypto_box_MACBYTES + crypto_box_BOXZEROBYTES;
+
+    uint8_t *temp_plain = crypto_malloc(size_temp_plain);
+    uint8_t *temp_encrypted = crypto_malloc(size_temp_encrypted);
+
+    if (temp_plain == nullptr || temp_encrypted == nullptr) {
+        crypto_free(temp_plain, size_temp_plain);
+        crypto_free(temp_encrypted, size_temp_encrypted);
+        return -1;
+    }
 
     memset(temp_plain, 0, crypto_box_ZEROBYTES);
     // Pad the message with 32 0 bytes.
@@ -151,11 +175,17 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
 
     if (crypto_box_afternm(temp_encrypted, temp_plain, length + crypto_box_ZEROBYTES, nonce,
                            secret_key) != 0) {
+        crypto_free(temp_plain, size_temp_plain);
+        crypto_free(temp_encrypted, size_temp_encrypted);
         return -1;
     }
 
     // Unpad the encrypted message.
     memcpy(encrypted, temp_encrypted + crypto_box_BOXZEROBYTES, length + crypto_box_MACBYTES);
+
+    crypto_free(temp_plain, size_temp_plain);
+    crypto_free(temp_encrypted, size_temp_encrypted);
+
     return length + crypto_box_MACBYTES;
 }
 
@@ -166,8 +196,17 @@ int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
         return -1;
     }
 
-    VLA(uint8_t, temp_plain, length + crypto_box_ZEROBYTES);
-    VLA(uint8_t, temp_encrypted, length + crypto_box_BOXZEROBYTES);
+    const size_t size_temp_plain = length + crypto_box_ZEROBYTES;
+    const size_t size_temp_encrypted = length + crypto_box_BOXZEROBYTES;
+
+    uint8_t *temp_plain = crypto_malloc(size_temp_plain);
+    uint8_t *temp_encrypted = crypto_malloc(size_temp_encrypted);
+
+    if (temp_plain == nullptr || temp_encrypted == nullptr) {
+        crypto_free(temp_plain, size_temp_plain);
+        crypto_free(temp_encrypted, size_temp_encrypted);
+        return -1;
+    }
 
     memset(temp_encrypted, 0, crypto_box_BOXZEROBYTES);
     // Pad the message with 16 0 bytes.
@@ -175,10 +214,15 @@ int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
 
     if (crypto_box_open_afternm(temp_plain, temp_encrypted, length + crypto_box_BOXZEROBYTES, nonce,
                                 secret_key) != 0) {
+        crypto_free(temp_plain, size_temp_plain);
+        crypto_free(temp_encrypted, size_temp_encrypted);
         return -1;
     }
 
     memcpy(plain, temp_plain + crypto_box_ZEROBYTES, length - crypto_box_MACBYTES);
+
+    crypto_free(temp_plain, size_temp_plain);
+    crypto_free(temp_encrypted, size_temp_encrypted);
     return length - crypto_box_MACBYTES;
 }
 
