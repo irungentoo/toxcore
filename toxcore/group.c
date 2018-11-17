@@ -42,6 +42,7 @@ typedef enum Group_Message_Id {
     GROUP_MESSAGE_PING_ID        = 0,
     GROUP_MESSAGE_NEW_PEER_ID    = 16,
     GROUP_MESSAGE_KILL_PEER_ID   = 17,
+    GROUP_MESSAGE_FREEZE_PEER_ID = 18,
     GROUP_MESSAGE_NAME_ID        = 48,
     GROUP_MESSAGE_TITLE_ID       = 49,
 } Group_Message_Id;
@@ -194,6 +195,17 @@ static int peer_in_chat(const Group_c *chat, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < chat->numpeers; ++i) {
         if (id_equal(chat->group[i].real_pk, real_pk)) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static int frozen_in_chat(const Group_c *chat, const uint8_t *real_pk)
+{
+    for (uint32_t i = 0; i < chat->numfrozen; ++i) {
+        if (id_equal(chat->frozen[i].real_pk, real_pk)) {
             return i;
         }
     }
@@ -457,6 +469,34 @@ static int get_frozen_index(Group_c *g, uint16_t peer_number)
     return -1;
 }
 
+static bool delete_frozen(Group_c *g, uint32_t frozen_index)
+{
+    if (frozen_index >= g->numfrozen) {
+        return false;
+    }
+
+    --g->numfrozen;
+
+    if (g->numfrozen == 0) {
+        free(g->frozen);
+        g->frozen = nullptr;
+    } else {
+        if (g->numfrozen != frozen_index) {
+            g->frozen[frozen_index] = g->frozen[g->numfrozen];
+        }
+
+        Group_Peer *frozen_temp = (Group_Peer *)realloc(g->frozen, sizeof(Group_Peer) * (g->numfrozen));
+
+        if (frozen_temp == nullptr) {
+            return false;
+        }
+
+        g->frozen = frozen_temp;
+    }
+
+    return true;
+}
+
 /* Update last_active timestamp on peer, and thaw the peer if it is frozen.
  *
  * return peer index if peer is in the conference.
@@ -500,23 +540,8 @@ static int note_peer_active(Group_Chats *g_c, uint32_t groupnumber, uint16_t pee
 
     ++g->numpeers;
 
-    --g->numfrozen;
-
-    if (g->numfrozen == 0) {
-        free(g->frozen);
-        g->frozen = nullptr;
-    } else {
-        if (g->numfrozen != (uint32_t)frozen_index) {
-            g->frozen[frozen_index] = g->frozen[g->numfrozen];
-        }
-
-        Group_Peer *frozen_temp = (Group_Peer *)realloc(g->frozen, sizeof(Group_Peer) * (g->numfrozen));
-
-        if (frozen_temp == nullptr) {
-            return -1;
-        }
-
-        g->frozen = frozen_temp;
+    if (!delete_frozen(g, frozen_index)) {
+        return -1;
     }
 
     if (g_c->peer_list_changed_callback) {
@@ -530,6 +555,29 @@ static int note_peer_active(Group_Chats *g_c, uint32_t groupnumber, uint16_t pee
     g->need_send_name = true;
 
     return g->numpeers - 1;
+}
+
+static int delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void *userdata, bool keep_connection);
+
+static void delete_any_peer_with_pk(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_pk, void *userdata)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    if (!g) {
+        return;
+    }
+
+    int prev_peer_index = peer_in_chat(g, real_pk);
+
+    if (prev_peer_index >= 0) {
+        delpeer(g_c, groupnumber, prev_peer_index, userdata, false);
+    }
+
+    int prev_frozen_index = frozen_in_chat(g, real_pk);
+
+    if (prev_frozen_index >= 0) {
+        delete_frozen(g, prev_frozen_index);
+    }
 }
 
 /* Add a peer to the group chat, or update an existing peer.
@@ -583,6 +631,8 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
             return -1;
         }
     }
+
+    delete_any_peer_with_pk(g_c, groupnumber, real_pk, userdata);
 
     Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * (g->numpeers + 1));
 
@@ -1034,7 +1084,7 @@ int add_groupchat(Group_Chats *g_c, uint8_t type)
     return groupnumber;
 }
 
-static int group_leave(const Group_Chats *g_c, uint32_t groupnumber);
+static bool group_leave(const Group_Chats *g_c, uint32_t groupnumber, bool permanent);
 
 /* Delete a groupchat from the chats array, informing the group first as
  * appropriate.
@@ -1050,9 +1100,7 @@ int del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently
         return -1;
     }
 
-    if (leave_permanently) {
-        group_leave(g_c, groupnumber);
-    }
+    group_leave(g_c, groupnumber, leave_permanently);
 
     for (uint32_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
         if (g->close[i].type == GROUPCHAT_CLOSE_NONE) {
@@ -1606,10 +1654,9 @@ static int group_new_peer_send(const Group_Chats *g_c, uint32_t groupnumber, uin
 }
 
 /* send a kill_peer message
- * return 0 on success
- * return -1 on failure
+ * return true on success
  */
-static int group_kill_peer_send(const Group_Chats *g_c, uint32_t groupnumber, uint16_t peer_num)
+static bool group_kill_peer_send(const Group_Chats *g_c, uint32_t groupnumber, uint16_t peer_num)
 {
     uint8_t packet[GROUP_MESSAGE_KILL_PEER_LENGTH];
 
@@ -1617,10 +1664,27 @@ static int group_kill_peer_send(const Group_Chats *g_c, uint32_t groupnumber, ui
     memcpy(packet, &peer_num, sizeof(uint16_t));
 
     if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_KILL_PEER_ID, packet, sizeof(packet)) > 0) {
-        return 0;
+        return true;
     }
 
-    return -1;
+    return false;
+}
+
+/* send a freeze_peer message
+ * return true on success
+ */
+static bool group_freeze_peer_send(const Group_Chats *g_c, uint32_t groupnumber, uint16_t peer_num)
+{
+    uint8_t packet[GROUP_MESSAGE_KILL_PEER_LENGTH];
+
+    peer_num = net_htons(peer_num);
+    memcpy(packet, &peer_num, sizeof(uint16_t));
+
+    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_FREEZE_PEER_ID, packet, sizeof(packet)) > 0) {
+        return true;
+    }
+
+    return false;
 }
 
 /* send a name message
@@ -1641,18 +1705,21 @@ static int group_name_send(const Group_Chats *g_c, uint32_t groupnumber, const u
 }
 
 /* send message to announce leaving group
- * return 0 on success
- * return -1 on failure
+ * return true on success
  */
-static int group_leave(const Group_Chats *g_c, uint32_t groupnumber)
+static bool group_leave(const Group_Chats *g_c, uint32_t groupnumber, bool permanent)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
-        return -1;
+        return false;
     }
 
-    return group_kill_peer_send(g_c, groupnumber, g->peer_number);
+    if (permanent) {
+        return group_kill_peer_send(g_c, groupnumber, g->peer_number);
+    } else {
+        return group_freeze_peer_send(g_c, groupnumber, g->peer_number);
+    }
 }
 
 
@@ -1744,11 +1811,11 @@ static bool get_peer_number(const Group_c *g, const uint8_t *real_pk, uint16_t *
         return true;
     }
 
-    for (uint32_t i = 0; i < g->numfrozen; ++i) {
-        if (id_equal(g->frozen[i].real_pk, real_pk)) {
-            *peer_number = g->frozen[i].peer_number;
-            return true;
-        }
+    const int frozen_index = frozen_in_chat(g, real_pk);
+
+    if (frozen_index >= 0) {
+        *peer_number = g->frozen[frozen_index].peer_number;
+        return true;
     }
 
     return false;
@@ -2497,9 +2564,24 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
     memcpy(&peer_number, data, sizeof(uint16_t));
     peer_number = net_ntohs(peer_number);
 
-    const int index = note_peer_active(g_c, groupnumber, peer_number, userdata);
+    uint32_t message_number;
+    memcpy(&message_number, data + sizeof(uint16_t), sizeof(message_number));
+    message_number = net_ntohl(message_number);
+
+    const uint8_t message_id = data[sizeof(uint16_t) + sizeof(message_number)];
+    const uint8_t *msg_data = data + sizeof(uint16_t) + sizeof(message_number) + 1;
+    const uint16_t msg_data_len = length - (sizeof(uint16_t) + sizeof(message_number) + 1);
+
+    const bool ignore_frozen = message_id == GROUP_MESSAGE_FREEZE_PEER_ID;
+
+    const int index = ignore_frozen ? get_peer_index(g, peer_number)
+                      : note_peer_active(g_c, groupnumber, peer_number, userdata);
 
     if (index == -1) {
+        if (ignore_frozen) {
+            return;
+        }
+
         /* If we don't know the peer this packet came from, then we query the
          * list of peers from the relaying peer.
          * (They would not have relayed it if they didn't know the peer.) */
@@ -2526,14 +2608,6 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
         }
     }
 
-    uint32_t message_number;
-    memcpy(&message_number, data + sizeof(uint16_t), sizeof(message_number));
-    message_number = net_ntohl(message_number);
-
-    const uint8_t message_id = data[sizeof(uint16_t) + sizeof(message_number)];
-    const uint8_t *msg_data = data + sizeof(uint16_t) + sizeof(message_number) + 1;
-    const uint16_t msg_data_len = length - (sizeof(uint16_t) + sizeof(message_number) + 1);
-
     if (!check_message_info(message_number, message_id, &g->group[index])) {
         return;
     }
@@ -2555,7 +2629,8 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
         }
         break;
 
-        case GROUP_MESSAGE_KILL_PEER_ID: {
+        case GROUP_MESSAGE_KILL_PEER_ID:
+        case GROUP_MESSAGE_FREEZE_PEER_ID: {
             if (msg_data_len != GROUP_MESSAGE_KILL_PEER_LENGTH) {
                 return;
             }
@@ -2565,7 +2640,11 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
             kill_peer_number = net_ntohs(kill_peer_number);
 
             if (peer_number == kill_peer_number) {
-                delpeer(g_c, groupnumber, index, userdata, false);
+                if (message_id == GROUP_MESSAGE_KILL_PEER_ID) {
+                    delpeer(g_c, groupnumber, index, userdata, false);
+                } else {
+                    freeze_peer(g_c, groupnumber, index, userdata);
+                }
             } else {
                 return;
                 // TODO(irungentoo):
@@ -3011,7 +3090,7 @@ static uint8_t *save_conf(const Group_c *g, uint8_t *data)
     host_to_lendian_bytes16(data, g->peer_number);
     data += sizeof(uint16_t);
 
-    host_to_lendian_bytes32(data, g->numpeers - 1 + g->numfrozen);
+    uint8_t *numsaved_location = data;
     data += sizeof(uint32_t);
 
     *data = g->title_len;
@@ -3020,24 +3099,20 @@ static uint8_t *save_conf(const Group_c *g, uint8_t *data)
     memcpy(data, g->title, g->title_len);
     data += g->title_len;
 
-#ifndef NDEBUG
-    bool found_self = false;
-#endif
+    uint32_t numsaved = 0;
 
     for (uint32_t j = 0; j < g->numpeers + g->numfrozen; ++j) {
         const Group_Peer *peer = (j < g->numpeers) ? &g->group[j] : &g->frozen[j - g->numpeers];
 
         if (id_equal(peer->real_pk, g->real_pk)) {
-#ifndef NDEBUG
-            found_self = true;
-#endif
             continue;
         }
 
         data = save_peer(peer, data);
+        ++numsaved;
     }
 
-    assert(found_self);
+    host_to_lendian_bytes32(numsaved_location, numsaved);
 
     return data;
 }
