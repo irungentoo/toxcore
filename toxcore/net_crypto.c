@@ -2529,15 +2529,17 @@ static void send_crypto_packets(Net_Crypto *c)
 
                 unsigned int pos = conn->last_sendqueue_counter % CONGESTION_QUEUE_ARRAY_SIZE;
                 conn->last_sendqueue_size[pos] = num_packets_array(&conn->send_array);
-                ++conn->last_sendqueue_counter;
 
                 long signed int sum = 0;
-                sum = (long signed int)conn->last_sendqueue_size[(pos) % CONGESTION_QUEUE_ARRAY_SIZE] -
-                      (long signed int)conn->last_sendqueue_size[(pos - (CONGESTION_QUEUE_ARRAY_SIZE - 1)) % CONGESTION_QUEUE_ARRAY_SIZE];
+                sum = (long signed int)conn->last_sendqueue_size[pos] -
+                      (long signed int)conn->last_sendqueue_size[(pos + 1) % CONGESTION_QUEUE_ARRAY_SIZE];
 
                 unsigned int n_p_pos = conn->last_sendqueue_counter % CONGESTION_LAST_SENT_ARRAY_SIZE;
                 conn->last_num_packets_sent[n_p_pos] = packets_sent;
                 conn->last_num_packets_resent[n_p_pos] = packets_resent;
+
+                conn->last_sendqueue_counter = (conn->last_sendqueue_counter + 1) %
+                                               (CONGESTION_QUEUE_ARRAY_SIZE * CONGESTION_LAST_SENT_ARRAY_SIZE);
 
                 bool direct_connected = 0;
                 crypto_connection_status(c, i, &direct_connected, nullptr);
