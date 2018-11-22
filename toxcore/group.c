@@ -2257,7 +2257,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, uint32_t groupn
  * return -1 if groupnumber is invalid.
  * return -2 if message is too long.
  * return -3 if we are not connected to the group.
- * reutrn -4 if message failed to send.
+ * return -4 if message failed to send.
  */
 static int send_message_group(const Group_Chats *g_c, uint32_t groupnumber, uint8_t message_id, const uint8_t *data,
                               uint16_t len)
@@ -2272,7 +2272,7 @@ static int send_message_group(const Group_Chats *g_c, uint32_t groupnumber, uint
         return -2;
     }
 
-    if (g->status != GROUPCHAT_STATUS_CONNECTED) {
+    if (g->status != GROUPCHAT_STATUS_CONNECTED || count_close_connected(g) == 0) {
         return -3;
     }
 
