@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
         base_path[strrchr(base_path, '/') - base_path] = 0;
     }
 
-    char save_path[4096];
+    char save_path[4096 + sizeof(LOADED_SAVE_FILE)];
     snprintf(save_path, sizeof(save_path), "%s/%s", base_path, LOADED_SAVE_FILE);
 
     test_save_compatibility(save_path);
