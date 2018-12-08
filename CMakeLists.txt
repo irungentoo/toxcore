@@ -508,18 +508,21 @@ if(NOT WIN32
   endif()
 endif()
 
-add_executable(DHT_test ${CPUFEATURES}
-  testing/DHT_test.c)
-target_link_modules(DHT_test toxcore misc_tools)
+option(BUILD_MISC_TESTS "Build additional tests" OFF)
+if (BUILD_MISC_TESTS)
+  add_executable(DHT_test ${CPUFEATURES}
+    testing/DHT_test.c)
+  target_link_modules(DHT_test toxcore misc_tools)
 
-add_executable(Messenger_test ${CPUFEATURES}
-  testing/Messenger_test.c)
-target_link_modules(Messenger_test toxcore misc_tools)
+  add_executable(Messenger_test ${CPUFEATURES}
+    testing/Messenger_test.c)
+  target_link_modules(Messenger_test toxcore misc_tools)
 
-add_executable(random_testing ${CPUFEATURES}
-  testing/random_testing.cc)
-target_link_modules(random_testing toxcore misc_tools)
+  add_executable(random_testing ${CPUFEATURES}
+    testing/random_testing.cc)
+  target_link_modules(random_testing toxcore misc_tools)
 
-add_executable(save-generator
-  other/fun/save-generator.c)
-target_link_modules(save-generator toxcore misc_tools)
+  add_executable(save-generator
+    other/fun/save-generator.c)
+  target_link_modules(save-generator toxcore misc_tools)
+endif()

@@ -83,8 +83,10 @@ There are some options that are available to configure the build.
 
 | Name                   | Description                                                                                   | Expected Value                                                            | Default Value                                     |
 |------------------------|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------|
+| `AUTOTEST`             | Enable autotests (mainly for CI).                                                             | ON or OFF                                                                 | OFF                                               |
 | `BOOTSTRAP_DAEMON`     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                                                 | ON                                                |
 | `BUILD_AV_TEST`        | Build toxav test.                                                                             | ON or OFF                                                                 | ON                                                |
+| `BUILD_MISC_TESTS`     | Build additional tests.                                                                       | ON or OFF                                                                 | OFF                                               |
 | `BUILD_TOXAV`          | Whether to build the tox AV library.                                                          | ON or OFF                                                                 | ON                                                |
 | `CMAKE_INSTALL_PREFIX` | Path to where everything should be installed.                                                 | Directory path.                                                           | Platform-dependent. Refer to CMake documentation. |
 | `DHT_BOOTSTRAP`        | Enable building of `DHT_bootstrap`                                                            | ON or OFF                                                                 | ON                                                |
@@ -94,7 +96,6 @@ There are some options that are available to configure the build.
 | `STRICT_ABI`           | Enforce strict ABI export in dynamic libraries.                                               | ON or OFF                                                                 | OFF                                               |
 | `TEST_TIMEOUT_SECONDS` | Limit runtime of each test to the number of seconds specified.                                | Positive number or nothing (empty string).                                | Empty string.                                     |
 | `USE_IPV6`             | Use IPv6 in tests.                                                                            | ON or OFF                                                                 | ON                                                |
-| `AUTOTEST`             | Enable autotests (mainly for CI).                                                             | ON or OFF                                                                 | OFF                                               |
 
 You can get this list of option using the following commands
 

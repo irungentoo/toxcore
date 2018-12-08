@@ -52,3 +52,25 @@ if(WIN32 OR APPLE)
   # Windows and OSX don't have this linker functionality.
   set(STRICT_ABI OFF)
 endif()
+
+if(STRICT_ABI)
+  if(AUTOTEST)
+    message("AUTOTEST option is incompatible with STRICT_ABI. Disabling AUTOTEST.")
+  endif()
+  set(AUTOTEST OFF)
+
+  if(BUILD_MISC_TESTS)
+    message("BUILD_MISC_TESTS option is incompatible with STRICT_ABI. Disabling BUILD_MISC_TESTS.")
+  endif()
+  set(BUILD_MISC_TESTS OFF)
+
+  if(BOOTSTRAP_DAEMON)
+    message("BOOTSTRAP_DAEMON option is incompatible with STRICT_ABI. Disabling BOOTSTRAP_DAEMON.")
+  endif()
+  set(BOOTSTRAP_DAEMON OFF)
+
+  if(DHT_BOOTSTRAP)
+    message("DHT_BOOTSTRAP option is incompatible with STRICT_ABI. Disabling DHT_BOOTSTRAP.")
+  endif()
+  set(DHT_BOOTSTRAP OFF)
+endif()
