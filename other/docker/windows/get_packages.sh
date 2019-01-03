@@ -48,7 +48,7 @@ if [ "${SUPPORT_TEST}" = "true" ]; then
 
     dpkg --add-architecture i386
     apt-get update
-    apt-get install -y \
+    apt-get install -y --allow-unauthenticated \
         wine-devel \
         wine-devel-amd64 \
         wine-devel-dbg \
