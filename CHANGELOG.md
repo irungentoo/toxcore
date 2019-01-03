@@ -1,11 +1,78 @@
 
 
+## v0.2.9
+
+### Merged PRs:
+
+- [#1296](https://github.com/TokTok/c-toxcore/pull/1296) Add some const qualifiers
+- [#1295](https://github.com/TokTok/c-toxcore/pull/1295) Implement all min/max functions for (un)signed int types.
+- [#1293](https://github.com/TokTok/c-toxcore/pull/1293) Fix misaligned 4-byte access in trace logging.
+- [#1291](https://github.com/TokTok/c-toxcore/pull/1291) Use correct path to test log to cat on error.
+- [#1290](https://github.com/TokTok/c-toxcore/pull/1290) Display build log for autotools build on failure.
+- [#1289](https://github.com/TokTok/c-toxcore/pull/1289) Enable auto tests under STRICT_ABI if static libs are available.
+- [#1288](https://github.com/TokTok/c-toxcore/pull/1288) Add MIN_LOGGER_LEVEL to the Circle CI builds.
+- [#1287](https://github.com/TokTok/c-toxcore/pull/1287) Avoid sending group messages to a peer before we have its group number
+- [#1284](https://github.com/TokTok/c-toxcore/pull/1284) Use new WineHQ Debian package repository key
+- [#1282](https://github.com/TokTok/c-toxcore/pull/1282) Merge irungentoo/master back into toktok/master.
+- [#1281](https://github.com/TokTok/c-toxcore/pull/1281) Allow unauthenticated wine packages in the Windows build.
+- [#1278](https://github.com/TokTok/c-toxcore/pull/1278) Add cmake option for building additional tests
+- [#1277](https://github.com/TokTok/c-toxcore/pull/1277) Define tox_conference_id_size and tox_conference_uid_size
+- [#1273](https://github.com/TokTok/c-toxcore/pull/1273) Avoid format truncation in save compatibility test
+- [#1272](https://github.com/TokTok/c-toxcore/pull/1272) Upgrade bazel to 0.19.0 to fix the bazel build.
+- [#1271](https://github.com/TokTok/c-toxcore/pull/1271) Return TOX_ERR_CONFERENCE_SEND_MESSAGE_NO_CONNECTION if we are not connected to any peers
+- [#1268](https://github.com/TokTok/c-toxcore/pull/1268) Fix indices calculation for congestion control.
+- [#1267](https://github.com/TokTok/c-toxcore/pull/1267) Improve handling of peers entering and leaving conferences
+- [#1266](https://github.com/TokTok/c-toxcore/pull/1266) Expose offline conference peers in API
+- [#1242](https://github.com/TokTok/c-toxcore/pull/1242) Fix critical stack overflow arising from VLA usage
+- [#1239](https://github.com/TokTok/c-toxcore/pull/1239) Add some hopefully helpful documentation to the functions in mono_time.h
+- [#1235](https://github.com/TokTok/c-toxcore/pull/1235) Change method of PK production for FAKE friend in DHT
+- [#1234](https://github.com/TokTok/c-toxcore/pull/1234)  Increase NOFILE limit for tox-bootstrapd
+- [#1231](https://github.com/TokTok/c-toxcore/pull/1231) Use `bool` for IPv6 flag in test programs and `DHT_bootstrap`.
+- [#1230](https://github.com/TokTok/c-toxcore/pull/1230) Add `LOGGER_ASSERT` for checking fatal error conditions.
+- [#1229](https://github.com/TokTok/c-toxcore/pull/1229) Include `CTest` in CMakeLists.txt to get valgrind support.
+- [#1228](https://github.com/TokTok/c-toxcore/pull/1228) Consistently use camel case enum names.
+- [#1223](https://github.com/TokTok/c-toxcore/pull/1223) Add AUTOTEST option to CMakeLists.txt
+- [#1221](https://github.com/TokTok/c-toxcore/pull/1221) Make tox-bootstrapd free memory on SIGINT and SIGTERM
+- [#1218](https://github.com/TokTok/c-toxcore/pull/1218) Support DragonFlyBSD and prune unused variables.
+- [#1215](https://github.com/TokTok/c-toxcore/pull/1215) Ensure save data unchanged after save and load
+- [#1213](https://github.com/TokTok/c-toxcore/pull/1213) Make saving and loading the responsibility of Tox rather than Messenger
+- [#1211](https://github.com/TokTok/c-toxcore/pull/1211) Some improvements to tox-bootstrapd's Dockerfile
+- [#1210](https://github.com/TokTok/c-toxcore/pull/1210) Remove Alpine Linux bootstrap daemon dockerfile.
+- [#1209](https://github.com/TokTok/c-toxcore/pull/1209) Improve Windows compatibility of toxav code.
+- [#1206](https://github.com/TokTok/c-toxcore/pull/1206) Add LAN_discovery to the list of apidsl-generated files.
+- [#1156](https://github.com/TokTok/c-toxcore/pull/1156) conferences saving
+
+### Closed issues:
+
+- [#1285](https://github.com/TokTok/c-toxcore/issues/1285) Persistent group titles get mixed up
+- [#1276](https://github.com/TokTok/c-toxcore/issues/1276) How to run test case?
+- [#1264](https://github.com/TokTok/c-toxcore/issues/1264) tox_conference_id_size() symbol missing
+- [#1262](https://github.com/TokTok/c-toxcore/issues/1262) Fails to build with STRICT_ABI option
+- [#1169](https://github.com/TokTok/c-toxcore/issues/1169) PK should not be generated with random_bytes
+- [#1143](https://github.com/TokTok/c-toxcore/issues/1143) Test #1081
+- [#956](https://github.com/TokTok/c-toxcore/issues/956) friendlist access (add, delete, ...) causes crashes sometimes
+- [#777](https://github.com/TokTok/c-toxcore/issues/777) Proposal: TFCL [Tox Friend Capabilities Level]
+- [#762](https://github.com/TokTok/c-toxcore/issues/762) packet ranges not very clearly explained
+- [#743](https://github.com/TokTok/c-toxcore/issues/743) Proposal: reduce Video corruption even more by negotating the reference frame between sender and receiver
+- [#735](https://github.com/TokTok/c-toxcore/issues/735) Proposal: Tox MessageV2
+- [#663](https://github.com/TokTok/c-toxcore/issues/663) libvpx vulnerability
+- [#626](https://github.com/TokTok/c-toxcore/issues/626) please add documentation to: bwcontroller.c
+- [#625](https://github.com/TokTok/c-toxcore/issues/625) function names misleading in ToxAV
+- [#617](https://github.com/TokTok/c-toxcore/issues/617) WIP: ToxIdenticon - howto
+- [#610](https://github.com/TokTok/c-toxcore/issues/610) PACKET_LOSSY_AV_RESERVED 8 # why?
+- [#609](https://github.com/TokTok/c-toxcore/issues/609) payload_type hardcoded
+- [#589](https://github.com/TokTok/c-toxcore/issues/589) running a normal tox node as tcp relay is not possible
+- [#584](https://github.com/TokTok/c-toxcore/issues/584) [INFO]: network graphs 0.1.9 vs 0.1.10
+- [#548](https://github.com/TokTok/c-toxcore/issues/548) toxcore removes message receipts and filetransfers from memory, when client has short network outage
+- [#375](https://github.com/TokTok/c-toxcore/issues/375) Invalid bit rate prevents call
+
 ## v0.2.8
 
 ### Merged PRs:
 
+- [#1225](https://github.com/TokTok/c-toxcore/pull/1225) Release 0.2.8
 - [#1224](https://github.com/TokTok/c-toxcore/pull/1224) Avoid use of IPv6 in tests if not supported (e.g. on Travis).
-- [#1216](https://github.com/TokTok/c-toxcore/pull/1216) Fix memleak in tcp server by wiping priority queues on deletion
+- [#1216](https://github.com/TokTok/c-toxcore/pull/1216) Fix memory leak in tcp server by wiping priority queues on deletion.
 - [#1212](https://github.com/TokTok/c-toxcore/pull/1212) Fix logger level defaulting to TRACE in CMake
 - [#1208](https://github.com/TokTok/c-toxcore/pull/1208) Remove a function-like macro and replace it with a function.
 - [#1205](https://github.com/TokTok/c-toxcore/pull/1205) Use a working DHT node for bootstrap tests.
@@ -47,6 +114,7 @@
 
 ### Closed issues:
 
+- [#1214](https://github.com/TokTok/c-toxcore/issues/1214) Massive red shutdown of nodes
 - [#1201](https://github.com/TokTok/c-toxcore/issues/1201) Windows cross-compilation is broken
 - [#961](https://github.com/TokTok/c-toxcore/issues/961) Can't send messages in persistent group chat
 - [#960](https://github.com/TokTok/c-toxcore/issues/960) Persistent groups don't work properly when using toxync bot
