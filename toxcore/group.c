@@ -1041,7 +1041,10 @@ static void remove_conn_reason(Group_Chats *g_c, uint32_t groupnumber, uint16_t 
 
     if (reason == GROUPCHAT_CLOSE_REASON_INTRODUCER) {
         --g->num_introducer_connections;
-        send_peer_introduced(g_c, g->close[i].number, g->close[i].group_number);
+
+        if (g->close[i].type == GROUPCHAT_CLOSE_ONLINE) {
+            send_peer_introduced(g_c, g->close[i].number, g->close[i].group_number);
+        }
     }
 
     if (g->close[i].reasons == 0) {
@@ -2237,6 +2240,10 @@ static void handle_direct_packet(Group_Chats *g_c, uint32_t groupnumber, const u
                 return;
             }
 
+            if (g->close[close_index].type != GROUPCHAT_CLOSE_ONLINE) {
+                return;
+            }
+
             send_peers(g_c, groupnumber, g->close[close_index].number, g->close[close_index].group_number);
         }
 
@@ -2579,6 +2586,10 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
 
     if (index == -1) {
         if (ignore_frozen) {
+            return;
+        }
+
+        if (g->close[close_index].type != GROUPCHAT_CLOSE_ONLINE) {
             return;
         }
 
