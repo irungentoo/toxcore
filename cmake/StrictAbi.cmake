@@ -53,7 +53,7 @@ if(WIN32 OR APPLE)
   set(STRICT_ABI OFF)
 endif()
 
-if(STRICT_ABI)
+if(STRICT_ABI AND NOT ENABLE_STATIC)
   if(AUTOTEST)
     message("AUTOTEST option is incompatible with STRICT_ABI. Disabling AUTOTEST.")
   endif()
