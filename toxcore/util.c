@@ -95,21 +95,53 @@ int create_recursive_mutex(pthread_mutex_t *mutex)
     return 0;
 }
 
+int16_t max_s16(int16_t a, int16_t b)
+{
+    return a > b ? a : b;
+}
 int32_t max_s32(int32_t a, int32_t b)
 {
     return a > b ? a : b;
 }
+int64_t max_s64(int64_t a, int64_t b)
+{
+    return a > b ? a : b;
+}
 
+int16_t min_s16(int16_t a, int16_t b)
+{
+    return a < b ? a : b;
+}
 int32_t min_s32(int32_t a, int32_t b)
 {
     return a < b ? a : b;
 }
-
-uint32_t min_u32(uint32_t a, uint32_t b)
+int64_t min_s64(int64_t a, int64_t b)
 {
     return a < b ? a : b;
 }
 
+uint16_t max_u16(uint16_t a, uint16_t b)
+{
+    return a > b ? a : b;
+}
+uint32_t max_u32(uint32_t a, uint32_t b)
+{
+    return a > b ? a : b;
+}
+uint64_t max_u64(uint64_t a, uint64_t b)
+{
+    return a > b ? a : b;
+}
+
+uint16_t min_u16(uint16_t a, uint16_t b)
+{
+    return a < b ? a : b;
+}
+uint32_t min_u32(uint32_t a, uint32_t b)
+{
+    return a < b ? a : b;
+}
 uint64_t min_u64(uint64_t a, uint64_t b)
 {
     return a < b ? a : b;

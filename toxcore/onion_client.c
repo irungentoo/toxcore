@@ -236,7 +236,7 @@ uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uin
         return 0;
     }
 
-    const uint16_t num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+    const uint16_t num_nodes = min_u16(onion_c->path_nodes_index, MAX_PATH_NODES);
     uint16_t i = 0;
 
     while (i < max_num && i < num_nodes) {
@@ -275,7 +275,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
         return 0;
     }
 
-    const uint32_t num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+    const uint16_t num_nodes = min_u16(onion_c->path_nodes_index, MAX_PATH_NODES);
 
     // if (dht_non_lan_connected(onion_c->dht)) {
     if (dht_isconnected(onion_c->dht)) {
@@ -301,8 +301,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
                 nodes[i] = onion_c->path_nodes[random_u32() % num_nodes];
             }
         } else {
-            unsigned int num_nodes_bs = (onion_c->path_nodes_index_bs < MAX_PATH_NODES) ? onion_c->path_nodes_index_bs :
-                                        MAX_PATH_NODES;
+            const uint16_t num_nodes_bs = min_u16(onion_c->path_nodes_index_bs, MAX_PATH_NODES);
 
             if (num_nodes_bs == 0) {
                 return 0;
@@ -1619,9 +1618,8 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
         }
 
         if (count != MAX_ONION_CLIENTS) {
-            unsigned int num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
-
-            unsigned int n = num_nodes;
+            const uint16_t num_nodes = min_u16(onion_c->path_nodes_index, MAX_PATH_NODES);
+            uint16_t n = num_nodes;
 
             if (num_nodes > (MAX_ONION_CLIENTS / 2)) {
                 n = (MAX_ONION_CLIENTS / 2);
@@ -1740,14 +1738,14 @@ static void do_announce(Onion_Client *onion_c)
     }
 
     if (count != MAX_ONION_CLIENTS_ANNOUNCE) {
-        unsigned int num_nodes;
+        uint16_t num_nodes;
         Node_format *path_nodes;
 
         if (random_u08() % 2 == 0 || onion_c->path_nodes_index == 0) {
-            num_nodes = (onion_c->path_nodes_index_bs < MAX_PATH_NODES) ? onion_c->path_nodes_index_bs : MAX_PATH_NODES;
+            num_nodes = min_u16(onion_c->path_nodes_index_bs, MAX_PATH_NODES);
             path_nodes = onion_c->path_nodes_bs;
         } else {
-            num_nodes = (onion_c->path_nodes_index < MAX_PATH_NODES) ? onion_c->path_nodes_index : MAX_PATH_NODES;
+            num_nodes = min_u16(onion_c->path_nodes_index, MAX_PATH_NODES);
             path_nodes = onion_c->path_nodes;
         }
 
