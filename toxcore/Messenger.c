@@ -1122,8 +1122,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
     packet[0] = filenumber;
     file_type = net_htonl(file_type);
     memcpy(packet + 1, &file_type, sizeof(file_type));
-    host_to_net((uint8_t *)&filesize, sizeof(filesize));
-    memcpy(packet + 1 + sizeof(file_type), &filesize, sizeof(filesize));
+    net_pack_u64(packet + 1 + sizeof(file_type), filesize);
     memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize), file_id, FILE_ID_LENGTH);
 
     if (filename_length) {
@@ -1362,10 +1361,10 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
         return -6;
     }
 
-    uint64_t sending_pos = position;
-    host_to_net((uint8_t *)&sending_pos, sizeof(sending_pos));
+    uint8_t sending_pos[sizeof(uint64_t)];
+    net_pack_u64(sending_pos, position);
 
-    if (send_file_control_packet(m, friendnumber, 1, file_number, FILECONTROL_SEEK, (uint8_t *)&sending_pos,
+    if (send_file_control_packet(m, friendnumber, 1, file_number, FILECONTROL_SEEK, sending_pos,
                                  sizeof(sending_pos))) {
         ft->transferred = position;
     } else {
@@ -1760,8 +1759,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
                 return -1;
             }
 
-            memcpy(&position, data, sizeof(position));
-            net_to_host((uint8_t *) &position, sizeof(position));
+            net_unpack_u64(data, &position);
 
             if (position >= ft->size) {
                 LOGGER_DEBUG(m->log,
@@ -2327,8 +2325,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
             memcpy(&file_type, data + 1, sizeof(file_type));
             file_type = net_ntohl(file_type);
 
-            memcpy(&filesize, data + 1 + sizeof(uint32_t), sizeof(filesize));
-            net_to_host((uint8_t *) &filesize, sizeof(filesize));
+            net_unpack_u64(data + 1 + sizeof(uint32_t), &filesize);
             struct File_Transfers *ft = &m->friendlist[i].file_receiving[filenumber];
 
             if (ft->status != FILESTATUS_NONE) {
@@ -2755,7 +2752,7 @@ struct Saved_Friend {
     uint16_t statusmessage_length;
     uint8_t userstatus;
     uint32_t friendrequest_nospam;
-    uint64_t last_seen_time;
+    uint8_t last_seen_time[sizeof(uint64_t)];
 };
 
 static uint32_t friend_size(void)
@@ -2780,7 +2777,7 @@ static uint32_t friend_size(void)
     VALUE_MEMBER(userstatus);
     data += 3; // padding
     VALUE_MEMBER(friendrequest_nospam);
-    VALUE_MEMBER(last_seen_time);
+    ARRAY_MEMBER(last_seen_time);
 
 #undef VALUE_MEMBER
 #undef ARRAY_MEMBER
@@ -2814,7 +2811,7 @@ static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
     VALUE_MEMBER(userstatus);
     data += 3; // padding
     VALUE_MEMBER(friendrequest_nospam);
-    VALUE_MEMBER(last_seen_time);
+    ARRAY_MEMBER(last_seen_time);
 
 #undef VALUE_MEMBER
 #undef ARRAY_MEMBER
@@ -2849,7 +2846,7 @@ static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data
     VALUE_MEMBER(userstatus);
     data += 3; // padding
     VALUE_MEMBER(friendrequest_nospam);
-    VALUE_MEMBER(last_seen_time);
+    ARRAY_MEMBER(last_seen_time);
 
 #undef VALUE_MEMBER
 #undef ARRAY_MEMBER
@@ -3028,10 +3025,7 @@ static uint8_t *friends_list_save(const Messenger *m, uint8_t *data)
                 temp.statusmessage_length = net_htons(m->friendlist[i].statusmessage_length);
                 temp.userstatus = m->friendlist[i].userstatus;
 
-                uint8_t last_seen_time[sizeof(uint64_t)];
-                memcpy(last_seen_time, &m->friendlist[i].last_seen_time, sizeof(uint64_t));
-                host_to_net(last_seen_time, sizeof(uint64_t));
-                memcpy(&temp.last_seen_time, last_seen_time, sizeof(uint64_t));
+                net_pack_u64(temp.last_seen_time, m->friendlist[i].last_seen_time);
             }
 
             uint8_t *next_data = friend_save(&temp, cur_data);
@@ -3079,10 +3073,7 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
             setfriendname(m, fnum, temp.name, net_ntohs(temp.name_length));
             set_friend_statusmessage(m, fnum, temp.statusmessage, net_ntohs(temp.statusmessage_length));
             set_friend_userstatus(m, fnum, temp.userstatus);
-            uint8_t last_seen_time[sizeof(uint64_t)];
-            memcpy(last_seen_time, &temp.last_seen_time, sizeof(uint64_t));
-            net_to_host(last_seen_time, sizeof(uint64_t));
-            memcpy(&m->friendlist[fnum].last_seen_time, last_seen_time, sizeof(uint64_t));
+            net_unpack_u64(temp.last_seen_time, &m->friendlist[fnum].last_seen_time);
         } else if (temp.status != 0) {
             /* TODO(irungentoo): This is not a good way to do this. */
             uint8_t address[FRIEND_ADDRESS_SIZE];

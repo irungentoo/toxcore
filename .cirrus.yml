@@ -13,5 +13,6 @@ cirrus-ci_task:
     - git clone --branch=upgrade-bazel --depth=1 https://github.com/iphydf/toktok-stack cirrus-ci-build
     - mv c-toxcore cirrus-ci-build
     - cd -
+    - bazel version
   test_all_script:
     - bazel test --copt=-DUSE_IPV6=0 -c opt -k //c-toxcore/...

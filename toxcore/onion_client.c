@@ -971,8 +971,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
     }
 
     uint64_t no_replay;
-    memcpy(&no_replay, data + 1, sizeof(uint64_t));
-    net_to_host((uint8_t *) &no_replay, sizeof(no_replay));
+    net_unpack_u64(data + 1, &no_replay);
 
     if (no_replay <= onion_c->friends_list[friend_num].last_noreplay) {
         return 1;
@@ -1207,9 +1206,8 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
 
     uint8_t data[DHTPK_DATA_MAX_LENGTH];
     data[0] = ONION_DATA_DHTPK;
-    uint64_t no_replay = mono_time_get(onion_c->mono_time);
-    host_to_net((uint8_t *)&no_replay, sizeof(no_replay));
-    memcpy(data + 1, &no_replay, sizeof(no_replay));
+    const uint64_t no_replay = mono_time_get(onion_c->mono_time);
+    net_pack_u64(data + 1, no_replay);
     memcpy(data + 1 + sizeof(uint64_t), dht_get_self_public_key(onion_c->dht), CRYPTO_PUBLIC_KEY_SIZE);
     Node_format nodes[MAX_SENT_NODES];
     uint16_t num_relays = copy_connected_tcp_relays(onion_c->c, nodes, (MAX_SENT_NODES / 2));
