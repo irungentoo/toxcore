@@ -1556,7 +1556,7 @@ size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number
  * Write the status message of the friend designated by the given friend number to a byte
  * array.
  *
- * Call tox_friend_get_status_message_size to determine the allocation size for the `status_name`
+ * Call tox_friend_get_status_message_size to determine the allocation size for the `status_message`
  * parameter.
  *
  * The data written to `status_message` is equal to the data received by the last
@@ -2609,7 +2609,10 @@ size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t conference_num
 
 /**
  * Copy the name of peer_number who is in conference_number to name.
- * name must be at least TOX_MAX_NAME_LENGTH long.
+ *
+ * Call tox_conference_peer_get_name_size to determine the allocation size for the `name` parameter.
+ *
+ * @param name A valid memory region large enough to store the peer's name.
  *
  * @return true on success.
  */
@@ -2645,7 +2648,10 @@ size_t tox_conference_offline_peer_get_name_size(const Tox *tox, uint32_t confer
 
 /**
  * Copy the name of offline_peer_number who is in conference_number to name.
- * name must be at least TOX_MAX_NAME_LENGTH long.
+ *
+ * Call tox_conference_offline_peer_get_name_size to determine the allocation size for the `name` parameter.
+ *
+ * @param name A valid memory region large enough to store the peer's name.
  *
  * @return true on success.
  */
