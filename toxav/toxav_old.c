@@ -83,6 +83,14 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
 
 /* Enable A/V in a groupchat.
  *
+ * A/V must be enabled on a groupchat for audio to be sent to it and for
+ * received audio to be handled.
+ *
+ * An A/V group created with toxav_add_av_groupchat or toxav_join_av_groupchat
+ * will start with A/V enabled.
+ *
+ * An A/V group loaded from a savefile will start with A/V disabled.
+ *
  * return 0 on success.
  * return -1 on failure.
  *
