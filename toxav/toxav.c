@@ -35,6 +35,9 @@
  * VPX_DL_BEST_QUALITY   (0)       deadline parameter analogous to VPx BEST QUALITY mode.
  */
 
+// iteration interval that is used when no call is active
+#define IDLE_ITERATION_INTERVAL_MS 200
+
 typedef struct ToxAVCall_s {
     ToxAV *av;
 
@@ -166,7 +169,7 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
         goto RETURN;
     }
 
-    av->interval = 200;
+    av->interval = IDLE_ITERATION_INTERVAL_MS;
     av->msi->av = av;
 
     msi_register_callback(av->msi, callback_invite, MSI_ON_INVITE);
@@ -227,8 +230,7 @@ Tox *toxav_get_tox(const ToxAV *av)
 }
 uint32_t toxav_iteration_interval(const ToxAV *av)
 {
-    /* If no call is active interval is 200 */
-    return av->calls ? av->interval : 200;
+    return av->calls ? av->interval : IDLE_ITERATION_INTERVAL_MS;
 }
 void toxav_iterate(ToxAV *av)
 {
@@ -240,7 +242,8 @@ void toxav_iterate(ToxAV *av)
     }
 
     uint64_t start = current_time_monotonic(av->toxav_mono_time);
-    int32_t rc = 500;
+    // time until this audio or video frame is over
+    int32_t frame_time = IDLE_ITERATION_INTERVAL_MS;
 
     for (ToxAVCall *i = av->calls[av->calls_head]; i; i = i->next) {
         if (i->active) {
@@ -252,13 +255,13 @@ void toxav_iterate(ToxAV *av)
 
             if (i->msi_call->self_capabilities & MSI_CAP_R_AUDIO &&
                     i->msi_call->peer_capabilities & MSI_CAP_S_AUDIO) {
-                rc = min_s32(i->audio->lp_frame_duration, rc);
+                frame_time = min_s32(i->audio->lp_frame_duration, frame_time);
             }
 
             if (i->msi_call->self_capabilities & MSI_CAP_R_VIDEO &&
                     i->msi_call->peer_capabilities & MSI_CAP_S_VIDEO) {
                 pthread_mutex_lock(i->video->queue_mutex);
-                rc = min_u32(i->video->lcfd, rc);
+                frame_time = min_u32(i->video->lcfd, frame_time);
                 pthread_mutex_unlock(i->video->queue_mutex);
             }
 
@@ -274,7 +277,7 @@ void toxav_iterate(ToxAV *av)
         }
     }
 
-    av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
+    av->interval = frame_time < av->dmssa ? 0 : (frame_time - av->dmssa);
     av->dmsst += current_time_monotonic(av->toxav_mono_time) - start;
 
     if (++av->dmssc == 3) {
