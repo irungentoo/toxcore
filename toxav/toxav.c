@@ -67,6 +67,16 @@ typedef struct ToxAVCall_s {
     struct ToxAVCall_s *next;
 } ToxAVCall;
 
+
+/** Decode time statistics */
+typedef struct DecodeTimeStats_s {
+    int32_t count; /** Measure count */
+    int32_t total; /** Last cycle total */
+    int32_t average; /** Average decoding time in ms */
+
+    uint32_t interval; /** Calculated iteration interval */
+} DecodeTimeStats;
+
 struct ToxAV {
     Tox *tox;
     Messenger *m;
@@ -97,12 +107,9 @@ struct ToxAV {
     toxav_video_bit_rate_cb *vbcb;
     void *vbcb_user_data;
 
-    /** Decode time measures */
-    int32_t dmssc; /** Measure count */
-    int32_t dmsst; /** Last cycle total */
-    int32_t dmssa; /** Average decoding time in ms */
-
-    uint32_t interval; /** Calculated interval */
+    /* keep track of decode times for audio and video */
+    DecodeTimeStats audio_stats;
+    DecodeTimeStats video_stats;
     Mono_Time *toxav_mono_time; /** ToxAV's own mono_time instance */
 };
 
@@ -122,6 +129,19 @@ static ToxAVCall *call_get(ToxAV *av, uint32_t friend_number);
 static ToxAVCall *call_remove(ToxAVCall *call);
 static bool call_prepare_transmission(ToxAVCall *call);
 static void call_kill_transmission(ToxAVCall *call);
+
+/**
+ * @brief initialize d with default values
+ * @param d struct to be initialized, must not be nullptr
+ */
+static void init_decode_time_stats(DecodeTimeStats *d)
+{
+    assert(d != nullptr);
+    d->count = 0;
+    d->total = 0;
+    d->average = 0;
+    d->interval = IDLE_ITERATION_INTERVAL_MS;
+}
 
 ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
 {
@@ -169,7 +189,8 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
         goto RETURN;
     }
 
-    av->interval = IDLE_ITERATION_INTERVAL_MS;
+    init_decode_time_stats(&av->audio_stats);
+    init_decode_time_stats(&av->video_stats);
     av->msi->av = av;
 
     msi_register_callback(av->msi, callback_invite, MSI_ON_INVITE);
@@ -228,11 +249,48 @@ Tox *toxav_get_tox(const ToxAV *av)
 {
     return av->tox;
 }
+
+uint32_t toxav_audio_iteration_interval(const ToxAV *av)
+{
+    return av->calls ? av->audio_stats.interval : IDLE_ITERATION_INTERVAL_MS;
+}
+
+uint32_t toxav_video_iteration_interval(const ToxAV *av)
+{
+    return av->calls ? av->video_stats.interval : IDLE_ITERATION_INTERVAL_MS;
+}
+
 uint32_t toxav_iteration_interval(const ToxAV *av)
 {
-    return av->calls ? av->interval : IDLE_ITERATION_INTERVAL_MS;
+    return min_u32(toxav_audio_iteration_interval(av),
+                   toxav_video_iteration_interval(av));
 }
-void toxav_iterate(ToxAV *av)
+
+/**
+ * @brief calc_interval Calculates the needed iteration interval based on previous decode times
+ * @param av ToxAV struct to work on
+ * @param stats Statistics to update
+ * @param frame_time the duration of the current frame in ms
+ * @param start_time the timestamp when decoding of this frame started
+ */
+static void calc_interval(ToxAV *av, DecodeTimeStats *stats, int32_t frame_time, uint64_t start_time)
+{
+    stats->interval = frame_time < stats->average ? 0 : (frame_time - stats->average);
+    stats->total += current_time_monotonic(av->m->mono_time) - start_time;
+
+    if (++stats->count == 3) {
+        stats->average = stats->total / 3 + 5; /* NOTE: Magic Offset for precision */
+        stats->count = 0;
+        stats->total = 0;
+    }
+}
+
+/**
+ * @brief common iterator function for audio and video calls
+ * @param av pointer to ToxAV structure of current instance
+ * @param audio if true, iterate audio, video else
+ */
+static void iterate_common(ToxAV *av, bool audio)
 {
     pthread_mutex_lock(av->mutex);
 
@@ -242,21 +300,26 @@ void toxav_iterate(ToxAV *av)
     }
 
     uint64_t start = current_time_monotonic(av->toxav_mono_time);
-    // time until this audio or video frame is over
+    // time until the first audio or video frame is over
     int32_t frame_time = IDLE_ITERATION_INTERVAL_MS;
 
     for (ToxAVCall *i = av->calls[av->calls_head]; i; i = i->next) {
-        if (i->active) {
-            pthread_mutex_lock(i->toxav_call_mutex);
-            pthread_mutex_unlock(av->mutex);
+        if (!i->active) {
+            continue;
+        }
 
+        pthread_mutex_lock(i->toxav_call_mutex);
+        pthread_mutex_unlock(av->mutex);
+
+        if (audio) {
             ac_iterate(i->audio);
-            vc_iterate(i->video);
 
             if (i->msi_call->self_capabilities & MSI_CAP_R_AUDIO &&
                     i->msi_call->peer_capabilities & MSI_CAP_S_AUDIO) {
                 frame_time = min_s32(i->audio->lp_frame_duration, frame_time);
             }
+        } else {
+            vc_iterate(i->video);
 
             if (i->msi_call->self_capabilities & MSI_CAP_R_VIDEO &&
                     i->msi_call->peer_capabilities & MSI_CAP_S_VIDEO) {
@@ -264,30 +327,39 @@ void toxav_iterate(ToxAV *av)
                 frame_time = min_u32(i->video->lcfd, frame_time);
                 pthread_mutex_unlock(i->video->queue_mutex);
             }
+        }
 
-            uint32_t fid = i->friend_number;
+        uint32_t fid = i->friend_number;
 
-            pthread_mutex_unlock(i->toxav_call_mutex);
-            pthread_mutex_lock(av->mutex);
+        pthread_mutex_unlock(i->toxav_call_mutex);
+        pthread_mutex_lock(av->mutex);
 
-            /* In case this call is popped from container stop iteration */
-            if (call_get(av, fid) != i) {
-                break;
-            }
+        /* In case this call is popped from container stop iteration */
+        if (call_get(av, fid) != i) {
+            break;
         }
     }
 
-    av->interval = frame_time < av->dmssa ? 0 : (frame_time - av->dmssa);
-    av->dmsst += current_time_monotonic(av->toxav_mono_time) - start;
-
-    if (++av->dmssc == 3) {
-        av->dmssa = av->dmsst / 3 + 5; /* NOTE Magic Offset 5 for precision */
-        av->dmssc = 0;
-        av->dmsst = 0;
-    }
-
+    DecodeTimeStats *stats = audio ? &av->audio_stats : &av->video_stats;
+    calc_interval(av, stats, frame_time, start);
     pthread_mutex_unlock(av->mutex);
 }
+void toxav_audio_iterate(ToxAV *av)
+{
+    iterate_common(av, true);
+}
+
+void toxav_video_iterate(ToxAV *av)
+{
+    iterate_common(av, false);
+}
+
+void toxav_iterate(ToxAV *av)
+{
+    toxav_audio_iterate(av);
+    toxav_video_iterate(av);
+}
+
 bool toxav_call(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate,
                 Toxav_Err_Call *error)
 {

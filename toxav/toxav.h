@@ -39,6 +39,10 @@ extern "C" {
  * Only toxav_iterate is thread-safe, all other functions must run from the
  * tox thread.
  *
+ * Important exceptions are the `*_iterate` and `*_iterate_interval`
+ * functions. You have to choose either the single thread or the multi thread
+ * functions and read their documentation.
+ *
  * A common way to run ToxAV (multiple or single instance) is to have a thread,
  * separate from tox instance thread, running a simple toxav_iterate loop,
  * sleeping for toxav_iteration_interval * milliseconds on each iteration.
@@ -50,6 +54,15 @@ extern "C" {
  * Tox thread has priority with mutex mechanisms. Any api function can
  * fail if mutexes are held by tox thread in which case they will set SYNC
  * error code.
+ */
+/** \subsection multi-threading Separate audio and video threads
+ *
+ * ToxAV supports either a single thread for audio and video or decoding and
+ * encoding them in separate threads. You have to choose one mode and can not
+ * mix function calls to those different modes.
+ *
+ * For best results use the multi-threaded mode and run the audio thread with
+ * higher priority than the video thread. This prioritizes audio over video.
  */
 /**
  * External Tox type.
@@ -132,7 +145,7 @@ Tox *toxav_get_tox(const ToxAV *av);
 
 /*******************************************************************************
  *
- * :: A/V event loop
+ * :: A/V event loop, single thread
  *
  ******************************************************************************/
 
@@ -141,6 +154,7 @@ Tox *toxav_get_tox(const ToxAV *av);
 /**
  * Returns the interval in milliseconds when the next toxav_iterate call should
  * be. If no call is active at the moment, this function returns 200.
+ * This function MUST be called from the same thread as toxav_iterate.
  */
 uint32_t toxav_iteration_interval(const ToxAV *av);
 
@@ -150,6 +164,47 @@ uint32_t toxav_iteration_interval(const ToxAV *av);
  * thread from tox_iterate.
  */
 void toxav_iterate(ToxAV *av);
+
+
+/*******************************************************************************
+ *
+ * :: A/V event loop, multiple threads
+ *
+ ******************************************************************************/
+
+
+
+/**
+ * Returns the interval in milliseconds when the next toxav_audio_iterate call
+ * should be. If no call is active at the moment, this function returns 200.
+ * This function MUST be called from the same thread as toxav_audio_iterate.
+ */
+uint32_t toxav_audio_iteration_interval(const ToxAV *av);
+
+/**
+ * Main loop for the session. This function needs to be called in intervals of
+ * toxav_audio_iteration_interval() milliseconds. It is best called in a
+ * separate thread from tox_iterate and toxav_video_iterate. The thread calling
+ * this function should have higher priority than the one calling
+ * toxav_video_iterate to prioritize audio over video.
+ */
+void toxav_audio_iterate(ToxAV *av);
+
+/**
+ * Returns the interval in milliseconds when the next toxav_video_iterate call
+ * should be. If no call is active at the moment, this function returns 200.
+ * This function MUST be called from the same thread as toxav_video_iterate.
+ */
+uint32_t toxav_video_iteration_interval(const ToxAV *av);
+
+/**
+ * Main loop for the session. This function needs to be called in intervals of
+ * toxav_video_iteration_interval() milliseconds. It is best called in a
+ * separate thread from tox_iterate and toxav_audio_iterate. The thread calling
+ * this function should have lower priority than the one calling
+ * toxav_audio_iterate to prioritize audio over video.
+ */
+void toxav_video_iterate(ToxAV *av);
 
 
 /*******************************************************************************
