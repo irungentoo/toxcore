@@ -434,6 +434,7 @@ auto_test(version)
 auto_test(save_compatibility)
 
 if(BUILD_TOXAV)
+  auto_test(conference_av)
   auto_test(toxav_basic)
   auto_test(toxav_many)
 endif()

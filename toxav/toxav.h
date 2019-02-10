@@ -782,6 +782,27 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
 int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            uint32_t sample_rate);
 
+/* Enable A/V in a groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ *
+ * Audio data callback format (same as the one for toxav_add_av_groupchat()):
+ *   audio_callback(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, uint32_t sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ */
+int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber,
+                              void (*audio_callback)(void *, uint32_t, uint32_t, const int16_t *, unsigned int, uint8_t, uint32_t, void *),
+                              void *userdata);
+
+/* Disable A/V in a groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber);
+
 #ifdef __cplusplus
 }
 #endif

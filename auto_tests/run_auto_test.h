@@ -48,6 +48,15 @@ static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
     return state->clock;
 }
 
+static void set_mono_time_callback(Tox *tox, State *state)
+{
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Mono_Time *mono_time = ((Messenger *)tox)->mono_time;
+
+    state->clock = current_time_monotonic(mono_time);
+    mono_time_set_current_time_callback(mono_time, get_state_clock_callback, state);
+}
+
 static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *state), bool chain)
 {
     printf("initialising %u toxes\n", tox_count);
@@ -59,11 +68,7 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
         toxes[i] = tox_new_log(nullptr, nullptr, &state[i].index);
         ck_assert_msg(toxes[i], "failed to create %u tox instances", i + 1);
 
-        // TODO(iphydf): Don't rely on toxcore internals.
-        Mono_Time *mono_time = (*(Messenger **)toxes[i])->mono_time;
-
-        state[i].clock = current_time_monotonic(mono_time);
-        mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &state[i]);
+        set_mono_time_callback(toxes[i], &state[i]);
     }
 
     if (chain) {

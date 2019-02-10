@@ -59,5 +59,19 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
 int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      uint32_t sample_rate);
 
+/* Enable A/V in a groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t groupnumber,
+                        audio_data_cb *audio_callback, void *userdata);
+
+/* Disable A/V in a groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int groupchat_disable_av(Group_Chats *g_c, uint32_t groupnumber);
 
 #endif // C_TOXCORE_TOXAV_GROUPAV_H

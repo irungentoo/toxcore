@@ -539,9 +539,7 @@ static int note_peer_active(Group_Chats *g_c, uint32_t groupnumber, uint16_t pee
 
     ++g->numpeers;
 
-    if (!delete_frozen(g, frozen_index)) {
-        return -1;
-    }
+    delete_frozen(g, frozen_index);
 
     if (g_c->peer_list_changed_callback) {
         g_c->peer_list_changed_callback(g_c->m, groupnumber, userdata);
@@ -774,6 +772,7 @@ static int freeze_peer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, v
 
     g->frozen = temp;
     g->frozen[g->numfrozen] = g->group[peer_index];
+    g->frozen[g->numfrozen].object = nullptr;
     ++g->numfrozen;
 
     return delpeer(g_c, groupnumber, peer_index, userdata, true);
@@ -2831,6 +2830,12 @@ static unsigned int lossy_packet_not_received(const Group_c *g, int peer_index, 
 
 }
 
+/* Does this group type make use of lossy packets? */
+static bool type_uses_lossy(uint8_t type)
+{
+    return (type == GROUPCHAT_TYPE_AV);
+}
+
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
 {
     Group_Chats *g_c = (Group_Chats *)object;
@@ -2854,6 +2859,10 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
+        return -1;
+    }
+
+    if (!type_uses_lossy(g->type)) {
         return -1;
     }
 
@@ -2883,6 +2892,8 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
     ++lossy_data;
     --lossy_length;
 
+    send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index);
+
     if (g_c->lossy_packethandlers[message_id].function) {
         if (g_c->lossy_packethandlers[message_id].function(g->object, groupnumber, peer_index, g->group[peer_index].object,
                 lossy_data, lossy_length) == -1) {
@@ -2892,7 +2903,6 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
         return -1;
     }
 
-    send_lossy_all_close(g_c, groupnumber, data + 1 + sizeof(uint16_t), length - (1 + sizeof(uint16_t)), index);
     return 0;
 }
 
@@ -2934,7 +2944,7 @@ int group_peer_set_object(const Group_Chats *g_c, uint32_t groupnumber, int peer
     return 0;
 }
 
-/* Return the object tide to the group chat previously set by group_set_object.
+/* Return the object tied to the group chat previously set by group_set_object.
  *
  * return NULL on failure.
  * return object on success.
@@ -2950,7 +2960,7 @@ void *group_get_object(const Group_Chats *g_c, uint32_t groupnumber)
     return g->object;
 }
 
-/* Return the object tide to the group chat peer previously set by group_peer_set_object.
+/* Return the object tied to the group chat peer previously set by group_peer_set_object.
  *
  * return NULL on failure.
  * return object on success.

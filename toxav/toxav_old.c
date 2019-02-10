@@ -80,3 +80,32 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
     Messenger *m = *(Messenger **)tox;
     return group_send_audio(m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
 }
+
+/* Enable A/V in a groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ *
+ * Audio data callback format (same as the one for toxav_add_av_groupchat()):
+ *   audio_callback(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, uint32_t sample_rate, void *userdata)
+ *
+ * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ */
+int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber, audio_data_cb *audio_callback, void *userdata)
+{
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return groupchat_enable_av(m->log, tox, m->conferences_object, groupnumber, audio_callback, userdata);
+}
+
+/* Disable A/V in a groupchat.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber)
+{
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return groupchat_disable_av(m->conferences_object, groupnumber);
+}
