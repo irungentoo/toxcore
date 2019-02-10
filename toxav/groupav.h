@@ -74,4 +74,8 @@ int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t 
  */
 int groupchat_disable_av(Group_Chats *g_c, uint32_t groupnumber);
 
+/* Return whether A/V is enabled in the groupchat.
+ */
+bool groupchat_av_enabled(Group_Chats *g_c, uint32_t groupnumber);
+
 #endif // C_TOXCORE_TOXAV_GROUPAV_H

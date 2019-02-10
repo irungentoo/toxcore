@@ -352,8 +352,12 @@ static void run_conference_tests(Tox **toxes, State *state)
 
     for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
         if (restarting[i]) {
+            ck_assert_msg(!toxav_groupchat_av_enabled(toxes[i], 0),
+                          "#%u restarted but av enabled", state[i].index);
             ck_assert_msg(toxav_groupchat_enable_av(toxes[i], 0, audio_callback, &state[i]) == 0,
                           "#%u failed to re-enable av", state[i].index);
+            ck_assert_msg(toxav_groupchat_av_enabled(toxes[i], 0),
+                          "#%u av not enabled even after enabling", state[i].index);
         }
     }
 
@@ -393,6 +397,8 @@ static void run_conference_tests(Tox **toxes, State *state)
         disabled[i] = false;
         ck_assert_msg(toxav_groupchat_disable_av(toxes[i], 0) != 0,
                       "#%u could disable already disabled av!", state[i].index);
+        ck_assert_msg(!toxav_groupchat_av_enabled(toxes[i], 0),
+                      "#%u av enabled after disabling", state[i].index);
         ck_assert_msg(toxav_groupchat_enable_av(toxes[i], 0, audio_callback, &state[i]) == 0,
                       "#%u failed to re-enable av", state[i].index);
     }

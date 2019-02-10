@@ -109,3 +109,12 @@ int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber)
     Messenger *m = *(Messenger **)tox;
     return groupchat_disable_av(m->conferences_object, groupnumber);
 }
+
+/* Return whether A/V is enabled in the groupchat.
+ */
+bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber)
+{
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Messenger *m = *(Messenger **)tox;
+    return groupchat_av_enabled(m->conferences_object, groupnumber);
+}

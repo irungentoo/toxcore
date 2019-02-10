@@ -803,6 +803,10 @@ int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber,
  */
 int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber);
 
+/* Return whether A/V is enabled in the groupchat.
+ */
+bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber);
+
 #ifdef __cplusplus
 }
 #endif

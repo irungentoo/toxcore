@@ -506,6 +506,13 @@ int groupchat_disable_av(Group_Chats *g_c, uint32_t groupnumber)
     return 0;
 }
 
+/* Return whether A/V is enabled in the groupchat.
+ */
+bool groupchat_av_enabled(Group_Chats *g_c, uint32_t groupnumber)
+{
+    return group_get_object(g_c, groupnumber) != nullptr;
+}
+
 /* Create a new toxav group.
  *
  * return group number on success.
