@@ -2673,6 +2673,27 @@ bool tox_conference_offline_peer_get_public_key(const Tox *tox, uint32_t confere
 uint64_t tox_conference_offline_peer_get_last_active(const Tox *tox, uint32_t conference_number,
         uint32_t offline_peer_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
 
+typedef enum TOX_ERR_CONFERENCE_SET_MAX_OFFLINE {
+
+    /**
+     * The function returned successfully.
+     */
+    TOX_ERR_CONFERENCE_SET_MAX_OFFLINE_OK,
+
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    TOX_ERR_CONFERENCE_SET_MAX_OFFLINE_CONFERENCE_NOT_FOUND,
+
+} TOX_ERR_CONFERENCE_SET_MAX_OFFLINE;
+
+
+/**
+ * Set maximum number of offline peers to store, overriding the default.
+ */
+bool tox_conference_set_max_offline(Tox *tox, uint32_t conference_number, uint32_t max_offline_peers,
+                                    TOX_ERR_CONFERENCE_SET_MAX_OFFLINE *error);
+
 typedef enum TOX_ERR_CONFERENCE_INVITE {
 
     /**
@@ -3191,6 +3212,7 @@ typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
 typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
 typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
 typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
+typedef TOX_ERR_CONFERENCE_SET_MAX_OFFLINE Tox_Err_Conference_Set_Max_Offline;
 typedef TOX_ERR_CONFERENCE_BY_ID Tox_Err_Conference_By_Id;
 typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
 typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;

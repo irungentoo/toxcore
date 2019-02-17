@@ -2375,6 +2375,17 @@ namespace conference {
   }
 
   /**
+   * Set maximum number of offline peers to store, overriding the default.
+   */
+  bool set_max_offline(uint32_t conference_number, uint32_t max_offline_peers) {
+    /**
+     * The conference number passed did not designate a valid conference.
+     */
+    CONFERENCE_NOT_FOUND,
+  }
+
+
+  /**
    * Invites a friend to a conference.
    *
    * We must be connected to the conference, meaning that the conference has not
@@ -2806,6 +2817,7 @@ typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
 typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
 typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
 typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
+typedef TOX_ERR_CONFERENCE_SET_MAX_OFFLINE Tox_Err_Conference_Set_Max_Offline;
 typedef TOX_ERR_CONFERENCE_BY_ID Tox_Err_Conference_By_Id;
 typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
 typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;

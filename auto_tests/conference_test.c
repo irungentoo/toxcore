@@ -10,6 +10,8 @@
 #include <time.h>
 #include <stdint.h>
 
+#include "../toxcore/util.h"
+
 #include "check_compat.h"
 
 #define NUM_GROUP_TOX 16
@@ -199,6 +201,18 @@ static void run_conference_tests(Tox **toxes, State *state)
      * fails due to disconnections too short to trigger freezing */
     const bool check_name_change_propagation = false;
 
+    /* each peer should freeze at least its two friends, but freezing more
+     * should not be necessary */
+    const uint32_t max_frozen = max_u32(2, NUM_DISCONNECT / 2);
+    printf("restricting number of frozen peers to %u\n", max_frozen);
+
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
+        Tox_Err_Conference_Set_Max_Offline err;
+        tox_conference_set_max_offline(toxes[i], 0, max_frozen, &err);
+        ck_assert_msg(err == TOX_ERR_CONFERENCE_SET_MAX_OFFLINE_OK,
+                      "tox #%u failed to set max offline: err = %d", state[i].index, err);
+    }
+
     printf("letting random toxes timeout\n");
     bool disconnected[NUM_GROUP_TOX] = {0};
     bool restarting[NUM_GROUP_TOX] = {0};
@@ -243,6 +257,7 @@ static void run_conference_tests(Tox **toxes, State *state)
             free(save[i]);
 
             set_mono_time_callback(toxes[i], &state[i]);
+            tox_conference_set_max_offline(toxes[i], 0, max_frozen, nullptr);
         }
     }
 
@@ -254,6 +269,13 @@ static void run_conference_tests(Tox **toxes, State *state)
             snprintf(name, NAMELEN + 1, NEW_NAME_FORMAT_STR, state[i].index);
             tox_self_set_name(toxes[i], (const uint8_t *)name, NAMELEN, nullptr);
         }
+    }
+
+    for (uint16_t i = 0; i < NUM_GROUP_TOX; ++i) {
+        const uint32_t num_frozen = tox_conference_offline_peer_count(toxes[i], 0, nullptr);
+        ck_assert_msg(num_frozen <= max_frozen,
+                      "tox #%u has too many offline peers: %u\n",
+                      state[i].index, num_frozen);
     }
 
     printf("reconnecting toxes\n");

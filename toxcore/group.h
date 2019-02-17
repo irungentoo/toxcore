@@ -50,6 +50,7 @@ typedef struct Group_Peer {
     uint8_t     real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t     temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
     bool        temp_pk_updated;
+    bool        is_friend;
 
     uint64_t    last_active;
 
@@ -106,6 +107,9 @@ typedef void peer_on_join_cb(void *object, uint32_t conference_number, uint32_t 
 typedef void peer_on_leave_cb(void *object, uint32_t conference_number, void *peer_object);
 typedef void group_on_delete_cb(void *object, uint32_t conference_number);
 
+// maximum number of frozen peers to store; group_set_max_frozen() overrides.
+#define MAX_FROZEN_DEFAULT 128
+
 typedef struct Group_c {
     uint8_t status;
 
@@ -117,6 +121,8 @@ typedef struct Group_c {
 
     Group_Peer *frozen;
     uint32_t numfrozen;
+
+    uint32_t maxfrozen;
 
     /* TODO(zugz) rename close to something more accurate - "connected"? */
     Groupchat_Close close[MAX_GROUP_CONNECTIONS];
@@ -283,6 +289,13 @@ int group_peername(const Group_Chats *g_c, uint32_t groupnumber, int peernumber,
  */
 int group_frozen_last_active(const Group_Chats *g_c, uint32_t groupnumber, int peernumber,
                              uint64_t *last_active);
+
+/* Set maximum number of frozen peers.
+ *
+ * return 0 on success.
+ * return -1 if groupnumber is invalid.
+ */
+int group_set_max_frozen(const Group_Chats *g_c, uint32_t groupnumber, uint32_t maxfrozen);
 
 /* invite friendnumber to groupnumber
  *

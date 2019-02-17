@@ -1742,6 +1742,22 @@ uint64_t tox_conference_offline_peer_get_last_active(const Tox *tox, uint32_t co
     return last_active;
 }
 
+bool tox_conference_set_max_offline(Tox *tox, uint32_t conference_number,
+                                    uint32_t max_offline_peers,
+                                    Tox_Err_Conference_Set_Max_Offline *error)
+{
+    const Messenger *m = tox->m;
+    const int ret = group_set_max_frozen(m->conferences_object, conference_number, max_offline_peers);
+
+    if (ret == -1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SET_MAX_OFFLINE_CONFERENCE_NOT_FOUND);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_SET_MAX_OFFLINE_OK);
+    return true;
+}
+
 bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t conference_number,
                            Tox_Err_Conference_Invite *error)
 {
