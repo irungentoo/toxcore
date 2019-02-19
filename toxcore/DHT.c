@@ -1986,7 +1986,6 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
     }
 
     uint32_t sent = 0;
-    uint8_t friend_sent[MAX_FRIEND_CLIENTS] = {0};
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     const int ip_num = friend_iplist(dht, ip_list, num);
@@ -2001,10 +2000,6 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
      * is *usually* good(tm) (bites us in the behind in this case though) */
 
     for (uint32_t i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        if (friend_sent[i]) {/* Send one packet per client.*/
-            continue;
-        }
-
         const Client_data *const client = &dht_friend->client_list[i];
         const IPPTsPng *const assocs[] = { &client->assoc4, &client->assoc6, nullptr };
 
@@ -2017,7 +2012,7 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
 
                 if ((unsigned int)retval == length) {
                     ++sent;
-                    friend_sent[i] = 1;
+                    break; /* Send one packet per client.*/
                 }
             }
         }
