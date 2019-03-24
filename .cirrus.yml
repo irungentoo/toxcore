@@ -1,7 +1,7 @@
 ---
 cirrus-ci_task:
   container:
-    image: cirrusci/bazel:latest
+    image: cirrusci/bazel:0.22.0
     cpu: 8
     memory: 12G
   configure_script:
