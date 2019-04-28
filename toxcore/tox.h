@@ -2541,7 +2541,7 @@ typedef enum TOX_ERR_CONFERENCE_NEW {
 /**
  * Creates a new conference.
  *
- * This function creates a new text conference.
+ * This function creates and connects to a new text conference.
  *
  * @return conference number on success, or an unspecified value on failure.
  */
@@ -2600,7 +2600,10 @@ typedef enum TOX_ERR_CONFERENCE_PEER_QUERY {
 
 
 /**
- * Return the number of peers in the conference. Return value is unspecified on failure.
+ * Return the number of online peers in the conference. The unsigned
+ * integers less than this number are the valid values of peer_number for
+ * the functions querying these peers. Return value is unspecified on
+ * failure.
  */
 uint32_t tox_conference_peer_count(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
 
@@ -2638,7 +2641,9 @@ bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_numb
                                         TOX_ERR_CONFERENCE_PEER_QUERY *error);
 
 /**
- * Return the number of offline peers in the conference. Return value is unspecified on failure.
+ * Return the number of offline peers in the conference. The unsigned
+ * integers less than this number are the valid values of offline_peer_number for
+ * the functions querying these peers. Return value is unspecified on failure.
  */
 uint32_t tox_conference_offline_peer_count(const Tox *tox, uint32_t conference_number,
         TOX_ERR_CONFERENCE_PEER_QUERY *error);
@@ -2725,10 +2730,6 @@ typedef enum TOX_ERR_CONFERENCE_INVITE {
 /**
  * Invites a friend to a conference.
  *
- * We must be connected to the conference, meaning that the conference has not
- * been deleted, and either we created the conference with the tox_conference_new function,
- * or a `conference_connected` event has occurred for the conference.
- *
  * @param friend_number The friend number of the friend we want to invite.
  * @param conference_number The conference number of the conference we want to invite the friend to.
  *
@@ -2779,6 +2780,14 @@ typedef enum TOX_ERR_CONFERENCE_JOIN {
 
 /**
  * Joins a conference that the client has been invited to.
+ *
+ * After successfully joining the conference, the client will not be "connected"
+ * to it until a handshaking procedure has been completed. A
+ * `conference_connected` event will then occur for the conference. The client
+ * will then remain connected to the conference until the conference is deleted,
+ * even across core restarts. Many operations on a conference will fail with a
+ * corresponding error if attempted on a conference to which the client is not
+ * yet connected.
  *
  * @param friend_number The friend number of the friend who sent the invite.
  * @param cookie Received via the `conference_invite` event.
@@ -2906,8 +2915,16 @@ bool tox_conference_set_title(Tox *tox, uint32_t conference_number, const uint8_
 size_t tox_conference_get_chatlist_size(const Tox *tox);
 
 /**
- * Copy a list of valid conference IDs into the array chatlist. Determine how much space
- * to allocate for the array with the `tox_conference_get_chatlist_size` function.
+ * Copy a list of valid conference numbers into the array chatlist. Determine
+ * how much space to allocate for the array with the `tox_conference_get_chatlist_size` function.
+ *
+ * Note that `tox_get_savedata` saves all connected conferences;
+ * when toxcore is created from savedata in which conferences were saved, those
+ * conferences will be connected at startup, and will be listed by
+ * `tox_conference_get_chatlist`.
+ *
+ * The conference number of a loaded conference may differ from the conference
+ * number it had when it was saved.
  */
 void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist);
 

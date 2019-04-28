@@ -136,8 +136,6 @@ int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, onion_dht_pk_cb
                           uint32_t number);
 
 /* Set a friends DHT public key.
- * timestamp is the time (current_time_monotonic()) at which the key was last confirmed belonging to
- * the other peer.
  *
  * return -1 on failure.
  * return 0 on success.

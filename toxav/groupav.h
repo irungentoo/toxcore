@@ -19,7 +19,7 @@
 typedef void audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm,
                            uint32_t samples, uint8_t channels, uint32_t sample_rate, void *userdata);
 
-/* Create a new toxav group.
+/* Create and connect to a new toxav group.
  *
  * return group number on success.
  * return -1 on failure.
