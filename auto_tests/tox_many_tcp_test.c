@@ -39,6 +39,10 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 
 #define NUM_FRIENDS 50
 #define NUM_TOXES_TCP 40
+
+#ifdef TCP_RELAY_PORT
+#undef TCP_RELAY_PORT
+#endif
 #define TCP_RELAY_PORT 33448
 
 START_TEST(test_many_clients_tcp)
