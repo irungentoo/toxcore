@@ -1,4 +1,25 @@
 
+## v0.2.10
+
+### Merged PRs:
+
+- [#1320](https://github.com/TokTok/c-toxcore/pull/1320) add undef guard in tox_many_tcp_test
+- [#1314](https://github.com/TokTok/c-toxcore/pull/1314) Fix bazel build version at 0.22.0 for CI.
+- [#1311](https://github.com/TokTok/c-toxcore/pull/1311) Disable failing TCP server test
+- [#1310](https://github.com/TokTok/c-toxcore/pull/1310) Do not send the same packet to the same node twice
+- [#1309](https://github.com/TokTok/c-toxcore/pull/1309) add configurable limit on number of stored frozen peers
+- [#1305](https://github.com/TokTok/c-toxcore/pull/1305) Expose api functions for enabling and disabling AV in AV groups
+- [#1302](https://github.com/TokTok/c-toxcore/pull/1302) Specify that buffer size for tox_conference_peer_get_name is given by $size
+
+### Closed issues:
+
+- [#1313](https://github.com/TokTok/c-toxcore/issues/1313) CirrusCI is failing and blocking PRs
+- [#1312](https://github.com/TokTok/c-toxcore/issues/1312) Onion client review
+- [#1306](https://github.com/TokTok/c-toxcore/issues/1306) Persistent conference's offline peer list always grows and never decreases
+- [#1303](https://github.com/TokTok/c-toxcore/issues/1303) Loaded persistent groups fail to send audio
+- [#1298](https://github.com/TokTok/c-toxcore/issues/1298) How to make libtox4j-c.so for android?
+- [#1261](https://github.com/TokTok/c-toxcore/issues/1261) Bump so version
+- [#1116](https://github.com/TokTok/c-toxcore/issues/1116) Message length is too large log spam
 
 ## v0.2.9
 
@@ -13,6 +34,7 @@
 - [#1288](https://github.com/TokTok/c-toxcore/pull/1288) Add MIN_LOGGER_LEVEL to the Circle CI builds.
 - [#1287](https://github.com/TokTok/c-toxcore/pull/1287) Avoid sending group messages to a peer before we have its group number
 - [#1284](https://github.com/TokTok/c-toxcore/pull/1284) Use new WineHQ Debian package repository key
+- [#1283](https://github.com/TokTok/c-toxcore/pull/1283) Release 0.2.9
 - [#1282](https://github.com/TokTok/c-toxcore/pull/1282) Merge irungentoo/master back into toktok/master.
 - [#1281](https://github.com/TokTok/c-toxcore/pull/1281) Allow unauthenticated wine packages in the Windows build.
 - [#1278](https://github.com/TokTok/c-toxcore/pull/1278) Add cmake option for building additional tests
@@ -46,6 +68,7 @@
 
 - [#1285](https://github.com/TokTok/c-toxcore/issues/1285) Persistent group titles get mixed up
 - [#1276](https://github.com/TokTok/c-toxcore/issues/1276) How to run test case?
+- [#1275](https://github.com/TokTok/c-toxcore/issues/1275) Save file corruption
 - [#1264](https://github.com/TokTok/c-toxcore/issues/1264) tox_conference_id_size() symbol missing
 - [#1262](https://github.com/TokTok/c-toxcore/issues/1262) Fails to build with STRICT_ABI option
 - [#1169](https://github.com/TokTok/c-toxcore/issues/1169) PK should not be generated with random_bytes
@@ -116,7 +139,6 @@
 
 - [#1214](https://github.com/TokTok/c-toxcore/issues/1214) Massive red shutdown of nodes
 - [#1201](https://github.com/TokTok/c-toxcore/issues/1201) Windows cross-compilation is broken
-- [#961](https://github.com/TokTok/c-toxcore/issues/961) Can't send messages in persistent group chat
 - [#960](https://github.com/TokTok/c-toxcore/issues/960) Persistent groups don't work properly when using toxync bot
 - [#838](https://github.com/TokTok/c-toxcore/issues/838) How to get groupchat identifier?
 
