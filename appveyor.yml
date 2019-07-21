@@ -11,7 +11,7 @@ install:
   - cd third_party
   # libsodium
   - mkdir libsodium && cd libsodium
-  - if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.16-msvc.zip -o %APPDATA%\downloads\libsodium.zip
+  - if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-msvc.zip -o %APPDATA%\downloads\libsodium.zip
   - unzip %APPDATA%\downloads\libsodium.zip
   - cd ..
   # pthreads-win32
