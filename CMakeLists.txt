@@ -510,4 +510,7 @@ if (BUILD_MISC_TESTS)
   add_executable(save-generator
     other/fun/save-generator.c)
   target_link_modules(save-generator toxcore misc_tools)
+  add_executable(afl_toxsave
+    testing/afl_toxsave.c)
+  target_link_modules(afl_toxsave toxcore)
 endif()

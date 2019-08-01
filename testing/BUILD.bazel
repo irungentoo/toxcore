@@ -35,3 +35,11 @@ cc_binary(
         "//c-toxcore/toxcore",
     ],
 )
+
+cc_binary(
+    name = "afl_toxsave",
+    srcs = ["afl_toxsave.c"],
+    deps = [
+        "//c-toxcore/toxcore",
+    ],
+)
