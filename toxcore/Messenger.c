@@ -2966,21 +2966,21 @@ static uint8_t *friends_list_save(const Messenger *m, uint8_t *data)
 
 static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, uint32_t length)
 {
-    if (length % friend_size() != 0) {
+    const uint32_t l_friend_size = friend_size();
+
+    if (length % l_friend_size != 0) {
         return STATE_LOAD_STATUS_ERROR; // TODO(endoffile78): error or continue?
     }
 
-    uint32_t num = length / friend_size();
+    uint32_t num = length / l_friend_size;
     uint32_t i;
     const uint8_t *cur_data = data;
 
     for (i = 0; i < num; ++i) {
         struct Saved_Friend temp = { 0 };
         const uint8_t *next_data = friend_load(&temp, cur_data);
-        assert(next_data - cur_data == friend_size());
-#ifdef __LP64__
-        assert(memcmp(&temp, cur_data, friend_size()) == 0);
-#endif
+        assert(next_data - cur_data == l_friend_size);
+
         cur_data = next_data;
 
         if (temp.status >= 3) {
