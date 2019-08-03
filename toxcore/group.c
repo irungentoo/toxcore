@@ -3294,6 +3294,11 @@ static State_Load_Status load_conferences(Group_Chats *g_c, const uint8_t *data,
         }
 
         g->title_len = *data;
+
+        if (g->title_len > MAX_NAME_LENGTH) {
+            return STATE_LOAD_STATUS_ERROR;
+        }
+
         ++data;
 
         if (length < (uint32_t)(data - init_data) + g->title_len) {
