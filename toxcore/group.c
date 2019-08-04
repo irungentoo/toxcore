@@ -3328,6 +3328,11 @@ static State_Load_Status load_conferences(Group_Chats *g_c, const uint8_t *data,
             data += sizeof(uint64_t);
 
             peer->nick_len = *data;
+
+            if (peer->nick_len > MAX_NAME_LENGTH) {
+                return STATE_LOAD_STATUS_ERROR;
+            }
+
             ++data;
 
             if (length < (uint32_t)(data - init_data) + peer->nick_len) {
