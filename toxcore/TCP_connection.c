@@ -486,6 +486,30 @@ void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_onion_
     tcp_c->tcp_onion_callback_object = object;
 }
 
+/** @brief Encode tcp_connections_number as a custom ip_port.
+ *
+ * return ip_port.
+ */
+IP_Port tcp_connections_number_to_ip_port(unsigned int tcp_connections_number)
+{
+    IP_Port ip_port = {{{0}}};
+    ip_port.ip.family = net_family_tcp_server;
+    ip_port.ip.ip.v6.uint32[0] = tcp_connections_number;
+    return ip_port;
+}
+
+/** @brief Decode ip_port created by tcp_connections_number_to_ip_port to tcp_connections_number.
+ *
+ * return true on success.
+ * return false if ip_port is invalid.
+ */
+non_null()
+bool ip_port_to_tcp_connections_number(const IP_Port *ip_port, unsigned int *tcp_connections_number)
+{
+    *tcp_connections_number = ip_port->ip.ip.v6.uint32[0];
+    return net_family_is_tcp_server(ip_port->ip.family);
+}
+
 /** @brief Find the TCP connection with public_key.
  *
  * return connections_number on success.

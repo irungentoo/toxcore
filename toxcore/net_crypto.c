@@ -1983,8 +1983,10 @@ static int crypto_connection_add_source(Net_Crypto *c, int crypt_connection_id, 
         return 0;
     }
 
-    if (net_family_is_tcp_family(source->ip.family)) {
-        if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, source->ip.ip.v6.uint32[0]) == 0) {
+    unsigned int tcp_connections_number;
+
+    if (ip_port_to_tcp_connections_number(source, &tcp_connections_number)) {
+        if (add_tcp_number_relay_connection(c->tcp_c, conn->connection_number_tcp, tcp_connections_number) == 0) {
             return 1;
         }
     }
@@ -2268,10 +2270,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
     }
 
     if (data[0] == NET_PACKET_CRYPTO_HS) {
-        IP_Port source;
-        source.port = 0;
-        source.ip.family = net_family_tcp_family;
-        source.ip.ip.v6.uint32[0] = tcp_connections_number;
+        IP_Port source = tcp_connections_number_to_ip_port(tcp_connections_number);
 
         if (handle_new_connection_handshake(c, &source, data, length, userdata) != 0) {
             return -1;

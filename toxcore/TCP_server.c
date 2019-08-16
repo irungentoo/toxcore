@@ -566,21 +566,46 @@ static int rm_connection_index(TCP_Server *tcp_server, TCP_Secure_Connection *co
     return -1;
 }
 
+/* Encode con_id and identifier as a custom IP_Port.
+ *
+ * return ip_port.
+ */
+static IP_Port con_id_to_ip_port(uint32_t con_id, uint64_t identifier)
+{
+    IP_Port ip_port = {{{0}}};
+    ip_port.ip.family = net_family_tcp_client;
+    ip_port.ip.ip.v6.uint32[0] = con_id;
+    ip_port.ip.ip.v6.uint64[1] = identifier;
+    return ip_port;
+
+}
+
+/* Decode ip_port created by con_id_to_ip_port to con_id.
+ *
+ * return true on success.
+ * return false if ip_port is invalid.
+ */
+non_null()
+static bool ip_port_to_con_id(const TCP_Server *tcp_server, const IP_Port *ip_port, uint32_t *con_id)
+{
+    *con_id = ip_port->ip.ip.v6.uint32[0];
+
+    return (net_family_is_tcp_client(ip_port->ip.family) &&
+            *con_id < tcp_server->size_accepted_connections &&
+            tcp_server->accepted_connection_array[*con_id].identifier == ip_port->ip.ip.v6.uint64[1]);
+}
+
 non_null()
 static int handle_onion_recv_1(void *object, const IP_Port *dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *tcp_server = (TCP_Server *)object;
-    const uint32_t index = dest->ip.ip.v6.uint32[0];
+    uint32_t index;
 
-    if (index >= tcp_server->size_accepted_connections) {
+    if (!ip_port_to_con_id(tcp_server, dest, &index)) {
         return 1;
     }
 
     TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[index];
-
-    if (con->identifier != dest->ip.ip.v6.uint64[1]) {
-        return 1;
-    }
 
     VLA(uint8_t, packet, 1 + length);
     memcpy(packet + 1, data, length);
@@ -688,12 +713,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                     return -1;
                 }
 
-                IP_Port source;
-                source.port = 0;  // dummy initialise
-                source.ip.family = net_family_tcp_onion;
-                source.ip.ip.v6.uint32[0] = con_id;
-                source.ip.ip.v6.uint32[1] = 0;
-                source.ip.ip.v6.uint64[1] = con->identifier;
+                IP_Port source = con_id_to_ip_port(con_id, con->identifier);
                 onion_send_1(tcp_server->onion, data + 1 + CRYPTO_NONCE_SIZE, length - (1 + CRYPTO_NONCE_SIZE), &source,
                              data + 1);
             }

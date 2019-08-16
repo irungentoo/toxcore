@@ -371,8 +371,8 @@ const Socket net_invalid_socket = { (int)INVALID_SOCKET };
 const Family net_family_unspec = {TOX_AF_UNSPEC};
 const Family net_family_ipv4 = {TOX_AF_INET};
 const Family net_family_ipv6 = {TOX_AF_INET6};
-const Family net_family_tcp_family = {TCP_FAMILY};
-const Family net_family_tcp_onion = {TCP_ONION_FAMILY};
+const Family net_family_tcp_server = {TCP_SERVER_FAMILY};
+const Family net_family_tcp_client = {TCP_CLIENT_FAMILY};
 const Family net_family_tcp_ipv4 = {TCP_INET};
 const Family net_family_tcp_ipv6 = {TCP_INET6};
 const Family net_family_tox_tcp_ipv4 = {TOX_TCP_INET};
@@ -393,14 +393,14 @@ bool net_family_is_ipv6(Family family)
     return family.value == net_family_ipv6.value;
 }
 
-bool net_family_is_tcp_family(Family family)
+bool net_family_is_tcp_server(Family family)
 {
-    return family.value == net_family_tcp_family.value;
+    return family.value == net_family_tcp_server.value;
 }
 
-bool net_family_is_tcp_onion(Family family)
+bool net_family_is_tcp_client(Family family)
 {
-    return family.value == net_family_tcp_onion.value;
+    return family.value == net_family_tcp_client.value;
 }
 
 bool net_family_is_tcp_ipv4(Family family)
