@@ -283,8 +283,6 @@ void toxav_iterate(ToxAV *av)
         }
     }
 
-    pthread_mutex_unlock(av->mutex);
-
     av->interval = rc < av->dmssa ? 0 : (rc - av->dmssa);
     av->dmsst += current_time_monotonic(av->m->mono_time) - start;
 
@@ -293,6 +291,8 @@ void toxav_iterate(ToxAV *av)
         av->dmssc = 0;
         av->dmsst = 0;
     }
+
+    pthread_mutex_unlock(av->mutex);
 }
 bool toxav_call(ToxAV *av, uint32_t friend_number, uint32_t audio_bit_rate, uint32_t video_bit_rate,
                 Toxav_Err_Call *error)
