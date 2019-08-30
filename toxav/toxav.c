@@ -268,7 +268,9 @@ void toxav_iterate(ToxAV *av)
 
             if (i->msi_call->self_capabilities & MSI_CAP_R_VIDEO &&
                     i->msi_call->peer_capabilities & MSI_CAP_S_VIDEO) {
+                pthread_mutex_lock(i->video->queue_mutex);
                 rc = min_u32(i->video->lcfd, rc);
+                pthread_mutex_unlock(i->video->queue_mutex);
             }
 
             uint32_t fid = i->friend_number;
