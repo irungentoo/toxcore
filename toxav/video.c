@@ -318,6 +318,7 @@ void vc_iterate(VCSession *vc)
         return;
     }
 
+    uint16_t log_rb_size = rb_size(vc->vbuf_raw);
     pthread_mutex_unlock(vc->queue_mutex);
     const struct RTPHeader *const header = &p->header;
 
@@ -332,7 +333,7 @@ void vc_iterate(VCSession *vc)
     }
 
     LOGGER_DEBUG(vc->log, "vc_iterate: rb_read p->len=%d p->header.xe=%d", (int)full_data_len, p->header.xe);
-    LOGGER_DEBUG(vc->log, "vc_iterate: rb_read rb size=%d", (int)rb_size(vc->vbuf_raw));
+    LOGGER_DEBUG(vc->log, "vc_iterate: rb_read rb size=%d", (int)log_rb_size);
     const vpx_codec_err_t rc = vpx_codec_decode(vc->decoder, p->data, full_data_len, nullptr, MAX_DECODE_TIME_US);
     free(p);
 
