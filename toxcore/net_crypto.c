@@ -1486,7 +1486,18 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
                                          userdata);
     }
 
+    while (1) { /* TODO(irungentoo): is this really the best way to do this? */
+        pthread_mutex_lock(&c->connections_mutex);
+
+        if (!c->connection_use_counter) {
+            break;
+        }
+
+        pthread_mutex_unlock(&c->connections_mutex);
+    }
+
     crypto_kill(c, crypt_connection_id);
+    pthread_mutex_unlock(&c->connections_mutex);
 }
 
 /* Handle a received data packet.
@@ -2889,16 +2900,6 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 {
-    while (1) { /* TODO(irungentoo): is this really the best way to do this? */
-        pthread_mutex_lock(&c->connections_mutex);
-
-        if (!c->connection_use_counter) {
-            break;
-        }
-
-        pthread_mutex_unlock(&c->connections_mutex);
-    }
-
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     int ret = -1;
@@ -2919,8 +2920,6 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
         clear_buffer(&conn->recv_array);
         ret = wipe_crypto_connection(c, crypt_connection_id);
     }
-
-    pthread_mutex_unlock(&c->connections_mutex);
 
     return ret;
 }
