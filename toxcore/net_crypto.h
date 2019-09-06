@@ -81,16 +81,6 @@
 #define PACKET_ID_REJOIN_CONFERENCE 100
 #define PACKET_ID_LOSSY_CONFERENCE 199
 
-/*** Crypto connections. ***/
-
-typedef enum Crypto_Conn_State {
-    CRYPTO_CONN_NO_CONNECTION = 0,
-    CRYPTO_CONN_COOKIE_REQUESTING = 1,  // send cookie request packets
-    CRYPTO_CONN_HANDSHAKE_SENT = 2,     // send handshake packets
-    CRYPTO_CONN_NOT_CONFIRMED = 3,      // send handshake packets, we have received one from the other
-    CRYPTO_CONN_ESTABLISHED = 4,
-} Crypto_Conn_State;
-
 /* Maximum size of receiving and sending packet buffers. */
 #define CRYPTO_PACKET_BUFFER_SIZE 32768 // Must be a power of 2
 
@@ -319,13 +309,13 @@ unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, u
  */
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
-/* return one of CRYPTO_CONN_* values indicating the state of the connection.
+/* return true if connection is valid, false otherwise
  *
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-Crypto_Conn_State crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
-        unsigned int *online_tcp_relays);
+bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
+                              unsigned int *online_tcp_relays);
 
 /* Generate our public and private keys.
  *  Only call this function the first time the program starts.

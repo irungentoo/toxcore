@@ -458,6 +458,8 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
         bool direct_connected = 0;
         unsigned int num_online_relays = 0;
         int crypt_conn_id = friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id);
+
+        // FIXME(sudden6): handle return value
         crypto_connection_status(m->net_crypto, crypt_conn_id, &direct_connected, &num_online_relays);
 
         if (direct_connected) {
