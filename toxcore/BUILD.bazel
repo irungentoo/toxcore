@@ -63,7 +63,10 @@ cc_library(
     name = "mono_time",
     srcs = ["mono_time.c"],
     hdrs = ["mono_time.h"],
-    deps = [":ccompat"],
+    deps = [
+        ":ccompat",
+        "@pthread",
+    ],
 )
 
 cc_test(

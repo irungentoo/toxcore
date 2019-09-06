@@ -19,6 +19,7 @@
 
 #include "mono_time.h"
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -29,9 +30,11 @@ struct Mono_Time {
     uint64_t time;
     uint64_t base_time;
 #ifdef OS_WIN32
-    uint64_t last_clock_mono;
-    uint64_t add_clock_mono;
+    uint32_t last_clock_mono;
 #endif
+
+    /* protect `time` and `last_clock_mono` from concurrent access */
+    pthread_rwlock_t *time_update_lock;
 
     mono_time_current_time_cb *current_time_callback;
     void *user_data;
@@ -39,22 +42,32 @@ struct Mono_Time {
 
 static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_data)
 {
-    uint64_t time;
+    uint64_t time = 0;
 #ifdef OS_WIN32
-    uint64_t old_add_clock_mono = mono_time->add_clock_mono;
-    time = (uint64_t)GetTickCount() + mono_time->add_clock_mono;
+    /* let only one thread at a time check for overflow */
+    pthread_rwlock_wrlock(mono_time->time_update_lock);
 
-    /* Check if time has decreased because of 32 bit wrap from GetTickCount(), while avoiding false positives from race
-     * conditions when multiple threads call this function at once */
-    if (time + 0x10000 < mono_time->last_clock_mono) {
-        uint32_t add = ~0;
-        /* use old_add_clock_mono rather than simply incrementing add_clock_mono, to handle the case that many threads
-         * simultaneously detect an overflow */
-        mono_time->add_clock_mono = old_add_clock_mono + add;
-        time += add;
+    /* GetTickCount provides only a 32 bit counter, but we can't use
+     * GetTickCount64 for backwards compatibility, so we handle wraparound
+     * ourselfes.
+     */
+    uint32_t ticks = GetTickCount();
+
+    /* the higher 32 bits count the amount of overflows */
+    uint64_t old_ovf = mono_time->time & ~((uint64_t)UINT32_MAX);
+
+    /* Check if time has decreased because of 32 bit wrap from GetTickCount() */
+    if (ticks < mono_time->last_clock_mono) {
+        /* account for overflow */
+        old_ovf += UINT32_MAX + UINT64_C(1);
     }
 
-    mono_time->last_clock_mono = time;
+    mono_time->last_clock_mono = ticks;
+
+    /* splice the low and high bits back together */
+    time = old_ovf + ticks;
+
+    pthread_rwlock_unlock(mono_time->time_update_lock);
 #else
     struct timespec clock_mono;
 #if defined(__APPLE__)
@@ -83,16 +96,29 @@ Mono_Time *mono_time_new(void)
         return nullptr;
     }
 
+    mono_time->time_update_lock = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
+
+    if (mono_time->time_update_lock == nullptr) {
+        free(mono_time);
+        return nullptr;
+    }
+
+    if (pthread_rwlock_init(mono_time->time_update_lock, nullptr) < 0) {
+        free(mono_time->time_update_lock);
+        free(mono_time);
+        return nullptr;
+    }
+
     mono_time->current_time_callback = current_time_monotonic_default;
     mono_time->user_data = nullptr;
 
 #ifdef OS_WIN32
     mono_time->last_clock_mono = 0;
-    mono_time->add_clock_mono = 0;
 #endif
 
     mono_time->time = 0;
     mono_time->base_time = (uint64_t)time(nullptr) - (current_time_monotonic(mono_time) / 1000ULL);
+
 
     mono_time_update(mono_time);
 
@@ -101,17 +127,26 @@ Mono_Time *mono_time_new(void)
 
 void mono_time_free(Mono_Time *mono_time)
 {
+    pthread_rwlock_destroy(mono_time->time_update_lock);
+    free(mono_time->time_update_lock);
     free(mono_time);
 }
 
 void mono_time_update(Mono_Time *mono_time)
 {
-    mono_time->time = (current_time_monotonic(mono_time) / 1000ULL) + mono_time->base_time;
+    uint64_t time = (current_time_monotonic(mono_time) / 1000ULL) + mono_time->base_time;
+    pthread_rwlock_wrlock(mono_time->time_update_lock);
+    mono_time->time = time;
+    pthread_rwlock_unlock(mono_time->time_update_lock);
 }
 
 uint64_t mono_time_get(const Mono_Time *mono_time)
 {
-    return mono_time->time;
+    uint64_t time = 0;
+    pthread_rwlock_rdlock(mono_time->time_update_lock);
+    time = mono_time->time;
+    pthread_rwlock_unlock(mono_time->time_update_lock);
+    return time;
 }
 
 bool mono_time_is_timeout(const Mono_Time *mono_time, uint64_t timestamp, uint64_t timeout)
