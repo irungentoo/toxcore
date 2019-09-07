@@ -18,6 +18,7 @@
 // We use libsodium by default.
 #include <sodium.h>
 #else
+#include <crypto_auth.h>
 #include <crypto_box.h>
 #include <crypto_hash_sha256.h>
 #include <crypto_hash_sha512.h>
@@ -57,6 +58,10 @@ static_assert(CRYPTO_MAC_SIZE == crypto_box_MACBYTES,
               "CRYPTO_MAC_SIZE should be equal to crypto_box_MACBYTES");
 static_assert(CRYPTO_NONCE_SIZE == crypto_box_NONCEBYTES,
               "CRYPTO_NONCE_SIZE should be equal to crypto_box_NONCEBYTES");
+static_assert(CRYPTO_HMAC_SIZE == crypto_auth_BYTES,
+              "CRYPTO_HMAC_SIZE should be equal to crypto_auth_BYTES");
+static_assert(CRYPTO_HMAC_KEY_SIZE == crypto_auth_KEYBYTES,
+              "CRYPTO_HMAC_KEY_SIZE should be equal to crypto_auth_KEYBYTES");
 static_assert(CRYPTO_SHA256_SIZE == crypto_hash_sha256_BYTES,
               "CRYPTO_SHA256_SIZE should be equal to crypto_hash_sha256_BYTES");
 static_assert(CRYPTO_SHA512_SIZE == crypto_hash_sha512_BYTES,
@@ -443,6 +448,23 @@ void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key)
 void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
 {
     crypto_hash_sha256(hash, data, length);
+}
+
+void new_hmac_key(const Random *rng, uint8_t *key)
+{
+    random_bytes(rng, key, CRYPTO_HMAC_KEY_SIZE);
+}
+
+void crypto_hmac(uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_KEY_SIZE], const uint8_t *data,
+                 size_t length)
+{
+    crypto_auth(auth, data, length, key);
+}
+
+bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_KEY_SIZE],
+                        const uint8_t *data, size_t length)
+{
+    return (crypto_auth_verify(auth, data, length, key) == 0);
 }
 
 void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)

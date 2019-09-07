@@ -45,6 +45,8 @@ libtoxcore_la_SOURCES = ../third_party/cmp/cmp.c \
                         ../toxcore/network.c \
                         ../toxcore/crypto_core.h \
                         ../toxcore/crypto_core.c \
+                        ../toxcore/timed_auth.h \
+                        ../toxcore/timed_auth.c \
                         ../toxcore/ping_array.h \
                         ../toxcore/ping_array.c \
                         ../toxcore/net_crypto.h \

@@ -272,6 +272,8 @@ set(toxcore_SOURCES
   toxcore/TCP_connection.h
   toxcore/TCP_server.c
   toxcore/TCP_server.h
+  toxcore/timed_auth.c
+  toxcore/timed_auth.h
   toxcore/tox_api.c
   toxcore/tox.c
   toxcore/tox_dispatch.c

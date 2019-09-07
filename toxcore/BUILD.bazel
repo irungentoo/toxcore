@@ -217,6 +217,17 @@ cc_test(
 )
 
 cc_library(
+    name = "timed_auth",
+    srcs = ["timed_auth.c"],
+    hdrs = ["timed_auth.h"],
+    deps = [
+        ":ccompat",
+        ":crypto_core",
+        ":mono_time",
+    ],
+)
+
+cc_library(
     name = "ping_array",
     srcs = ["ping_array.c"],
     hdrs = ["ping_array.h"],
@@ -427,6 +438,7 @@ cc_library(
         ":ccompat",
         ":mono_time",
         ":onion",
+        ":timed_auth",
         ":util",
     ],
 )
