@@ -30,10 +30,13 @@ struct Mono_Time {
     uint64_t time;
     uint64_t base_time;
 #ifdef OS_WIN32
+    /* protect `last_clock_update` and `last_clock_mono` from concurrent access */
+    pthread_mutex_t last_clock_lock;
     uint32_t last_clock_mono;
+    bool last_clock_update;
 #endif
 
-    /* protect `time` and `last_clock_mono` from concurrent access */
+    /* protect `time` from concurrent access */
     pthread_rwlock_t *time_update_lock;
 
     mono_time_current_time_cb *current_time_callback;
@@ -44,16 +47,15 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
 {
     uint64_t time = 0;
 #ifdef OS_WIN32
-    /* let only one thread at a time check for overflow */
-    pthread_rwlock_wrlock(mono_time->time_update_lock);
+    /* Must hold mono_time->last_clock_lock here */
 
     /* GetTickCount provides only a 32 bit counter, but we can't use
      * GetTickCount64 for backwards compatibility, so we handle wraparound
-     * ourselfes.
+     * ourselves.
      */
     uint32_t ticks = GetTickCount();
 
-    /* the higher 32 bits count the amount of overflows */
+    /* the higher 32 bits count the number of wrap arounds */
     uint64_t old_ovf = mono_time->time & ~((uint64_t)UINT32_MAX);
 
     /* Check if time has decreased because of 32 bit wrap from GetTickCount() */
@@ -62,12 +64,13 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
         old_ovf += UINT32_MAX + UINT64_C(1);
     }
 
-    mono_time->last_clock_mono = ticks;
+    if (mono_time->last_clock_update) {
+        mono_time->last_clock_mono = ticks;
+        mono_time->last_clock_update = false;
+    }
 
     /* splice the low and high bits back together */
     time = old_ovf + ticks;
-
-    pthread_rwlock_unlock(mono_time->time_update_lock);
 #else
     struct timespec clock_mono;
 #if defined(__APPLE__)
@@ -113,12 +116,20 @@ Mono_Time *mono_time_new(void)
     mono_time->user_data = nullptr;
 
 #ifdef OS_WIN32
+
     mono_time->last_clock_mono = 0;
+    mono_time->last_clock_update = false;
+
+    if (pthread_mutex_init(&mono_time->last_clock_lock, nullptr) < 0) {
+        free(mono_time->time_update_lock);
+        free(mono_time);
+        return nullptr;
+    }
+
 #endif
 
     mono_time->time = 0;
     mono_time->base_time = (uint64_t)time(nullptr) - (current_time_monotonic(mono_time) / 1000ULL);
-
 
     mono_time_update(mono_time);
 
@@ -127,6 +138,9 @@ Mono_Time *mono_time_new(void)
 
 void mono_time_free(Mono_Time *mono_time)
 {
+#ifdef OS_WIN32
+    pthread_mutex_destroy(&mono_time->last_clock_lock, nullptr);
+#endif
     pthread_rwlock_destroy(mono_time->time_update_lock);
     free(mono_time->time_update_lock);
     free(mono_time);
@@ -134,7 +148,18 @@ void mono_time_free(Mono_Time *mono_time)
 
 void mono_time_update(Mono_Time *mono_time)
 {
-    uint64_t time = (current_time_monotonic(mono_time) / 1000ULL) + mono_time->base_time;
+    uint64_t time = 0;
+#ifdef OS_WIN32
+    /* we actually want to update the overflow state of mono_time here */
+    pthread_mutex_lock(&mono_time->last_clock_lock);
+    mono_time->last_clock_update = true;
+#endif
+    time = mono_time->current_time_callback(mono_time, mono_time->user_data) / 1000ULL;
+    time += mono_time->base_time;
+#ifdef OS_WIN32
+    pthread_mutex_unlock(&mono_time->last_clock_lock);
+#endif
+
     pthread_rwlock_wrlock(mono_time->time_update_lock);
     mono_time->time = time;
     pthread_rwlock_unlock(mono_time->time_update_lock);
@@ -169,5 +194,15 @@ void mono_time_set_current_time_callback(Mono_Time *mono_time,
 /* return current monotonic time in milliseconds (ms). */
 uint64_t current_time_monotonic(Mono_Time *mono_time)
 {
-    return mono_time->current_time_callback(mono_time, mono_time->user_data);
+    /* For WIN32 we don't want to change overflow state of mono_time here */
+#ifdef OS_WIN32
+    /* We don't want to update the overflow state of mono_time here,
+     * but must protect against other threads */
+    pthread_mutex_lock(&mono_time->last_clock_lock);
+#endif
+    uint64_t time = mono_time->current_time_callback(mono_time, mono_time->user_data);
+#ifdef OS_WIN32
+    pthread_mutex_unlock(&mono_time->last_clock_lock);
+#endif
+    return time;
 }
