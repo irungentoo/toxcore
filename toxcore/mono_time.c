@@ -139,7 +139,7 @@ Mono_Time *mono_time_new(void)
 void mono_time_free(Mono_Time *mono_time)
 {
 #ifdef OS_WIN32
-    pthread_mutex_destroy(&mono_time->last_clock_lock, nullptr);
+    pthread_mutex_destroy(&mono_time->last_clock_lock);
 #endif
     pthread_rwlock_destroy(mono_time->time_update_lock);
     free(mono_time->time_update_lock);
