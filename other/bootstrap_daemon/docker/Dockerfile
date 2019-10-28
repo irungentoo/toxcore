@@ -1,4 +1,4 @@
-FROM debian:stretch-slim
+FROM debian:buster-slim
 
 WORKDIR /tmp/tox
 
@@ -11,7 +11,7 @@ RUN export BUILD_PACKAGES="\
       python3" && \
     export RUNTIME_PACKAGES="\
       libconfig9 \
-      libsodium18" && \
+      libsodium23" && \
 # get all deps
     apt-get update && apt-get install -y $BUILD_PACKAGES $RUNTIME_PACKAGES && \
 # install toxcore and daemon
