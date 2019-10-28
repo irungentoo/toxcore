@@ -45,9 +45,11 @@ Copy `tox-bootstrapd.service` to `/etc/systemd/system/`:
 sudo cp tox-bootstrapd.service /etc/systemd/system/
 ```
 
-You must uncomment the next line in tox-bootstrapd.service, if you want to use port number < 1024 
+You must uncomment the next line in tox-bootstrapd.service, if you want to use port number < 1024:
 
-    #CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+```
+#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+```
 
 and, possibly, install `libcap2-bin` or `libcap2` package, depending of your distribution.
 
@@ -78,14 +80,17 @@ Then update your toxcore git repository, rebuild the toxcore and the daemon and 
 
 Check if `tox-bootstrapd.service` in toxcore git repository was modified since the last time you copied it, as you might need to update it too.
 
+Reload `tox-bootstrapd.service` if you have updated modified it:
+
+```sh
+sudo systemctl daemon-reload
+```
+
 After all of this is done, simply start the daemon back again:
 
 ```sh
 sudo systemctl start tox-bootstrapd.service
 ```
-
-Note that `tox-bootstrapd.service` file might
-
 
 ### Troubleshooting
 
