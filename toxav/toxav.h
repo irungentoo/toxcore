@@ -49,8 +49,8 @@ extern "C" {
  */
 /** \subsection threading Threading implications
  *
- * Unlike the Core API, this API is fully thread-safe. The library will ensure
- * the proper synchronization of parallel calls.
+ * Only toxav_iterate is thread-safe, all other functions must run from the
+ * tox thread.
  *
  * A common way to run ToxAV (multiple or single instance) is to have a thread,
  * separate from tox instance thread, running a simple toxav_iterate loop,
