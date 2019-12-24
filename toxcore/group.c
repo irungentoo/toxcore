@@ -3209,6 +3209,11 @@ static uint32_t saved_conf_size(const Group_c *g)
     return len;
 }
 
+/* Save a future message number; the save will remain valid until we have sent
+ * this many more messages. */
+#define SAVE_OFFSET_MESSAGE_NUMBER (1 << 16)
+#define SAVE_OFFSET_LOSSY_MESSAGE_NUMBER (1 << 13)
+
 static uint8_t *save_conf(const Group_c *g, uint8_t *data)
 {
     *data = g->type;
@@ -3217,10 +3222,10 @@ static uint8_t *save_conf(const Group_c *g, uint8_t *data)
     memcpy(data, g->id, GROUP_ID_LENGTH);
     data += GROUP_ID_LENGTH;
 
-    host_to_lendian_bytes32(data, g->message_number);
+    host_to_lendian_bytes32(data, g->message_number + SAVE_OFFSET_MESSAGE_NUMBER);
     data += sizeof(uint32_t);
 
-    host_to_lendian_bytes16(data, g->lossy_message_number);
+    host_to_lendian_bytes16(data, g->lossy_message_number + SAVE_OFFSET_LOSSY_MESSAGE_NUMBER);
     data += sizeof(uint16_t);
 
     host_to_lendian_bytes16(data, g->peer_number);
