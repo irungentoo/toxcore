@@ -2930,20 +2930,17 @@ static unsigned int lossy_packet_not_received(const Group_c *g, int peer_index, 
 
     if (top_distance >= MAX_LOSSY_COUNT) {
         crypto_memzero(g->group[peer_index].recv_lossy, sizeof(g->group[peer_index].recv_lossy));
-        g->group[peer_index].top_lossy_number = message_number;
-        g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
-        g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
     } else {  // top_distance < MAX_LOSSY_COUNT
         for (unsigned int i = g->group[peer_index].bottom_lossy_number;
                 i != g->group[peer_index].bottom_lossy_number + top_distance;
                 ++i) {
             g->group[peer_index].recv_lossy[i % MAX_LOSSY_COUNT] = 0;
         }
-
-        g->group[peer_index].top_lossy_number = message_number;
-        g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
-        g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
     }
+
+    g->group[peer_index].top_lossy_number = message_number;
+    g->group[peer_index].bottom_lossy_number = (message_number - MAX_LOSSY_COUNT) + 1;
+    g->group[peer_index].recv_lossy[message_number % MAX_LOSSY_COUNT] = 1;
 
     return 0;
 
