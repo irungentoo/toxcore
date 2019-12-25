@@ -2618,7 +2618,7 @@ static Message_Info *find_message_slot_or_reject(uint32_t message_number, uint8_
     Message_Info *i;
 
     for (i = peer->last_message_infos; i < peer->last_message_infos + peer->num_last_message_infos; ++i) {
-        if (message_number > i->message_number) {
+        if (message_number - (i->message_number + 1) <= ((uint32_t)1 << 31)) {
             break;
         }
 
