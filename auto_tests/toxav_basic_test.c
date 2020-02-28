@@ -88,7 +88,7 @@ static void t_accept_friend_request_cb(Tox *m, const uint8_t *public_key, const 
                                        void *userdata)
 {
     if (length == 7 && memcmp("gentoo", data, 7) == 0) {
-        ck_assert(tox_friend_add_norequest(m, public_key, nullptr) != (uint32_t) ~0);
+        ck_assert(tox_friend_add_norequest(m, public_key, nullptr) != (uint32_t) -1);
     }
 }
 
@@ -191,7 +191,7 @@ static void test_av_flows(void)
     tox_bootstrap(Alice, "localhost", dht_port, dht_key, nullptr);
     tox_bootstrap(Bob, "localhost", dht_port, dht_key, nullptr);
 
-    ck_assert(tox_friend_add(Bob, address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) ~0);
+    ck_assert(tox_friend_add(Bob, address, (const uint8_t *)"gentoo", 7, nullptr) != (uint32_t) -1);
 
     uint8_t off = 1;
 

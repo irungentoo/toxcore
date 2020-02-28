@@ -247,7 +247,7 @@ static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
 void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
                     const uint8_t *secret_key, const uint8_t *public_key)
 {
-    uint32_t num = ~0;
+    uint32_t num = -1;
     uint32_t curr = 0;
 
     for (uint32_t i = 0; i < MAX_KEYS_PER_SLOT; ++i) {

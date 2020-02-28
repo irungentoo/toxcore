@@ -103,7 +103,7 @@ int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id);
 
 /* Set the number that will be used as an argument in the callbacks related to con_id.
  *
- * When not set by this function, the number is ~0.
+ * When not set by this function, the number is -1.
  *
  * return 0 on success.
  * return -1 on failure.

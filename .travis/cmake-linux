@@ -7,6 +7,7 @@ set -eu
 CACHEDIR="$HOME/cache"
 NPROC=`nproc`
 ASTYLE="$CACHEDIR/astyle/build/gcc/bin/astyle"
+ASTYLE_VERSION=3.1
 
 install_tool() {
   SLUG="$1"
@@ -35,9 +36,10 @@ travis_install() {
   }
 
   # Install astyle (version in ubuntu-precise too old).
-  [ -f "$ASTYLE" ] || {
-    wget -O ../astyle.tar.gz https://deb.debian.org/debian/pool/main/a/astyle/astyle_3.1.orig.tar.gz
+  ([ -f "$ASTYLE" ] && "$ASTYLE" --version | grep "$ASTYLE_VERSION" >/dev/null) || {
+    wget -O ../astyle.tar.gz "https://deb.debian.org/debian/pool/main/a/astyle/astyle_$ASTYLE_VERSION.orig.tar.gz"
     tar -xf ../astyle.tar.gz -C "$CACHEDIR"
+    make -C "$CACHEDIR/astyle/build/gcc" clean
     make -C "$CACHEDIR/astyle/build/gcc" "-j$NPROC"
   }
 
@@ -77,6 +79,7 @@ travis_script() {
   # Coverage flags.
   add_flag -fprofile-arcs -ftest-coverage
 
+  "$ASTYLE" --version
   other/astyle/format-source . "$ASTYLE"
 
   echo "Running TokTok style checker"

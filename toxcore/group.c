@@ -2457,7 +2457,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, uint32_t groupn
     }
 
     unsigned int to_send = 0;
-    uint64_t comp_val_old = ~0;
+    uint64_t comp_val_old = -1;
 
     for (i = 0; i < num_connected_closest; ++i) {
         uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE] = {0};
@@ -2477,7 +2477,7 @@ static unsigned int send_lossy_all_close(const Group_Chats *g_c, uint32_t groupn
     }
 
     unsigned int to_send_other = 0;
-    comp_val_old = ~0;
+    comp_val_old = -1;
 
     for (i = 0; i < num_connected_closest; ++i) {
         uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE] = {0};

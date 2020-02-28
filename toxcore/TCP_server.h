@@ -100,7 +100,7 @@ void kill_TCP_server(TCP_Server *tcp_server);
  *
  * return length on success
  * return 0 if nothing has been read from socket.
- * return ~0 on failure.
+ * return -1 on failure.
  */
 uint16_t read_TCP_length(Socket sock);
 

@@ -1004,7 +1004,7 @@ static int handle_request_packet(Mono_Time *mono_time, const Logger *log, Packet
     uint32_t requested = 0;
 
     const uint64_t temp_time = current_time_monotonic(mono_time);
-    uint64_t l_sent_time = ~0;
+    uint64_t l_sent_time = -1;
 
     for (uint32_t i = send_array->buffer_start; i != send_array->buffer_end; ++i) {
         if (length == 0) {
@@ -2513,7 +2513,7 @@ static void send_crypto_packets(Net_Crypto *c)
 {
     const uint64_t temp_time = current_time_monotonic(c->mono_time);
     double total_send_rate = 0;
-    uint32_t peak_request_packet_interval = ~0;
+    uint32_t peak_request_packet_interval = -1;
 
     for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
@@ -2722,7 +2722,7 @@ static void send_crypto_packets(Net_Crypto *c)
         }
     }
 
-    c->current_sleep_time = ~0;
+    c->current_sleep_time = -1;
     uint32_t sleep_time = peak_request_packet_interval;
 
     if (c->current_sleep_time > sleep_time) {

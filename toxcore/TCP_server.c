@@ -288,7 +288,7 @@ static int del_accepted(TCP_Server *tcp_server, int index)
  *
  * return length on success
  * return 0 if nothing has been read from socket.
- * return ~0 on failure.
+ * return -1 on failure.
  */
 uint16_t read_TCP_length(Socket sock)
 {
@@ -306,7 +306,7 @@ uint16_t read_TCP_length(Socket sock)
         length = net_ntohs(length);
 
         if (length > MAX_PACKET_SIZE) {
-            return ~0;
+            return -1;
         }
 
         return length;
@@ -348,7 +348,7 @@ int read_packet_TCP_secure_connection(Socket sock, uint16_t *next_packet_length,
     if (*next_packet_length == 0) {
         uint16_t len = read_TCP_length(sock);
 
-        if (len == (uint16_t)~0) {
+        if (len == (uint16_t) -1) {
             return -1;
         }
 
@@ -684,7 +684,7 @@ static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
 static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key)
 {
     uint32_t i;
-    uint32_t index = ~0;
+    uint32_t index = -1;
     TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
 
     /* If person tries to cennect to himself we deny the request*/
@@ -705,12 +705,12 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
 
                 return 0;
             }
-        } else if (index == (uint32_t)~0) {
+        } else if (index == (uint32_t) -1) {
             index = i;
         }
     }
 
-    if (index == (uint32_t)~0) {
+    if (index == (uint32_t) -1) {
         if (send_routing_response(con, 0, public_key) == -1) {
             return -1;
         }
@@ -733,7 +733,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
     int other_index = get_TCP_connection_index(tcp_server, public_key);
 
     if (other_index != -1) {
-        uint32_t other_id = ~0;
+        uint32_t other_id = -1;
         TCP_Secure_Connection *other_conn = &tcp_server->accepted_connection_array[other_index];
 
         for (i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
@@ -744,7 +744,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
             }
         }
 
-        if (other_id != (uint32_t)~0) {
+        if (other_id != (uint32_t) -1) {
             con->connections[index].status = 2;
             con->connections[index].index = other_index;
             con->connections[index].other_id = other_id;
