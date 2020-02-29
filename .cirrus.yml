@@ -1,24 +1,17 @@
 ---
 cirrus-ci_task:
   container:
-    image: cirrusci/bazel:0.22.0
+    image: l.gcr.io/google/bazel:2.1.0
     cpu: 8
     memory: 12G
   configure_script:
-    - sudo apt update
-    - sudo apt install -y
-        autopoint
-        libasound2-dev
-        libcv-dev
-        libhighgui-dev
-        libopenal-dev
-    - echo "build --jobs=50 --curses=no --verbose_failures" | sudo tee /etc/bazel.bazelrc
-    - echo "build --config=linux" | sudo tee -a /etc/bazel.bazelrc
-    - echo "build --config=gcc" | sudo tee -a /etc/bazel.bazelrc
-    - echo "build --config=remote" | sudo tee -a /etc/bazel.bazelrc
+    - echo "build --jobs=50 --curses=no --verbose_failures" | tee ~/.bazelrc
+    - echo "build --config=linux" | tee -a ~/.bazelrc
+    - echo "build --config=clang" | tee -a ~/.bazelrc
+#    - echo "build --config=remote" | tee -a ~/.bazelrc
     - cd .. && mv cirrus-ci-build c-toxcore
-    - git clone --depth=1 https://github.com/TokTok/toktok-stack cirrus-ci-build
+    - git clone --branch=upgrade-bazel --depth=1 https://github.com/iphydf/toktok-stack cirrus-ci-build
     - mv c-toxcore cirrus-ci-build
     - cd -
   test_all_script:
-    - bazel test --copt=-DUSE_IPV6=0 -c opt -k //c-toxcore/...
+    - bazel test --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST --copt=-DUSE_IPV6=0 -c opt -k //c-toxcore/...

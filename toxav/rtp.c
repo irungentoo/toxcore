@@ -733,7 +733,7 @@ int rtp_stop_receiving(RTPSession *session)
 }
 
 /**
- * @param input is raw vpx data.
+ * @param data is raw vpx data.
  * @param length is the length of the raw data.
  */
 int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,

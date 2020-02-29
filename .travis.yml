@@ -53,7 +53,7 @@ matrix:
         - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
         # Get toktok-stack, which contains the bazel workspace.
         - cd ..
-        - git clone https://github.com/TokTok/toktok-stack
+        - git clone --depth=1 --branch=upgrade-bazel https://github.com/iphydf/toktok-stack
         - rm -rf toktok-stack/c-toxcore
         - mv c-toxcore toktok-stack/
         - cd toktok-stack/c-toxcore
