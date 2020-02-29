@@ -36,7 +36,7 @@ travis_install() {
 
   # Install astyle (version in ubuntu-precise too old).
   [ -f "$ASTYLE" ] || {
-    wget -O ../astyle.tar.gz https://deb.debian.org/debian/pool/main/a/astyle/astyle_2.06.orig.tar.gz
+    wget -O ../astyle.tar.gz https://deb.debian.org/debian/pool/main/a/astyle/astyle_3.1.orig.tar.gz
     tar -xf ../astyle.tar.gz -C "$CACHEDIR"
     make -C "$CACHEDIR/astyle/build/gcc" "-j$NPROC"
   }
