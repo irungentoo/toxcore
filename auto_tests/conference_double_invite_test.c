@@ -28,6 +28,8 @@ static void handle_conference_invite(
             state->index, friend_number, type, (unsigned)length);
     fprintf(stderr, "tox%u joining conference\n", state->index);
 
+    ck_assert_msg(!state->joined, "invitation callback generated for already joined conference");
+
     if (friend_number != -1) {
         Tox_Err_Conference_Join err;
         state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
@@ -71,7 +73,7 @@ static void conference_double_invite_test(Tox **toxes, State *state)
 
     fprintf(stderr, "Invitations accepted\n");
 
-    // Invite one more time, resulting in friend -1 inviting tox1 (toxes[1]).
+    fprintf(stderr, "Sending second invitation; should be ignored\n");
     tox_conference_invite(toxes[0], 0, state[0].conference, nullptr);
 
     iterate_all_wait(2, toxes, state, ITERATION_INTERVAL);

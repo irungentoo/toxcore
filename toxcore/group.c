@@ -39,11 +39,13 @@ typedef enum Group_Message_Id {
 
 typedef enum Invite_Id {
     INVITE_ID             = 0,
-    INVITE_RESPONSE_ID    = 1,
+    INVITE_ACCEPT_ID      = 1,
+    INVITE_MEMBER_ID      = 2,
 } Invite_Id;
 
 #define INVITE_PACKET_SIZE (1 + sizeof(uint16_t) + 1 + GROUP_ID_LENGTH)
-#define INVITE_RESPONSE_PACKET_SIZE (1 + sizeof(uint16_t) * 2 + 1 + GROUP_ID_LENGTH)
+#define INVITE_ACCEPT_PACKET_SIZE (1 + sizeof(uint16_t) * 2 + 1 + GROUP_ID_LENGTH)
+#define INVITE_MEMBER_PACKET_SIZE (1 + sizeof(uint16_t) * 2 + 1 + GROUP_ID_LENGTH + sizeof(uint16_t))
 
 #define ONLINE_PACKET_DATA_SIZE (sizeof(uint16_t) + 1 + GROUP_ID_LENGTH)
 
@@ -1512,6 +1514,9 @@ static bool try_send_rejoin(Group_Chats *g_c, Group_c *g, const uint8_t *real_pk
 
 static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t group_num);
 
+static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t friendnumber, const uint8_t *data,
+                                 uint16_t length);
+
 /* Join a group (we need to have been invited first.)
  *
  * expected_type is the groupchat type we expect the chat we are joining to
@@ -1553,35 +1558,65 @@ int join_groupchat(Group_Chats *g_c, uint32_t friendnumber, uint8_t expected_typ
 
     Group_c *g = &g_c->chats[groupnumber];
 
-    const uint16_t group_num = net_htons(groupnumber);
     g->status = GROUPCHAT_STATUS_VALID;
     memcpy(g->real_pk, nc_get_self_public_key(g_c->m->net_crypto), CRYPTO_PUBLIC_KEY_SIZE);
 
-    uint8_t response[INVITE_RESPONSE_PACKET_SIZE];
-    response[0] = INVITE_RESPONSE_ID;
-    memcpy(response + 1, &group_num, sizeof(uint16_t));
-    memcpy(response + 1 + sizeof(uint16_t), data, sizeof(uint16_t) + 1 + GROUP_ID_LENGTH);
-
-    if (send_conference_invite_packet(g_c->m, friendnumber, response, sizeof(response))) {
-        uint16_t other_groupnum;
-        memcpy(&other_groupnum, data, sizeof(other_groupnum));
-        other_groupnum = net_ntohs(other_groupnum);
-        g->type = data[sizeof(uint16_t)];
-        memcpy(g->id, data + sizeof(uint16_t) + 1, GROUP_ID_LENGTH);
-        const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g,
-                                     GROUPCHAT_CONNECTION_REASON_INTRODUCER, 1);
-
-        if (connection_index != -1) {
-            g->connections[connection_index].group_number = other_groupnum;
-            g->connections[connection_index].type = GROUPCHAT_CONNECTION_ONLINE;
-        }
-
-        send_peer_query(g_c, friendcon_id, other_groupnum);
-        return groupnumber;
+    if (!send_invite_response(g_c, groupnumber, friendnumber, data, length)) {
+        g->status = GROUPCHAT_STATUS_NONE;
+        return -6;
     }
 
-    g->status = GROUPCHAT_STATUS_NONE;
-    return -6;
+    return groupnumber;
+}
+
+static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t friendnumber, const uint8_t *data,
+                                 uint16_t length)
+{
+    Group_c *g = get_group_c(g_c, groupnumber);
+
+    const bool member = (g->status == GROUPCHAT_STATUS_CONNECTED);
+
+    VLA(uint8_t, response, member ? INVITE_MEMBER_PACKET_SIZE : INVITE_ACCEPT_PACKET_SIZE);
+    response[0] = member ? INVITE_MEMBER_ID : INVITE_ACCEPT_ID;
+    net_pack_u16(response + 1, groupnumber);
+    memcpy(response + 1 + sizeof(uint16_t), data, length);
+
+    if (member) {
+        net_pack_u16(response + 1 + sizeof(uint16_t) + length, g->peer_number);
+    }
+
+    if (!send_conference_invite_packet(g_c->m, friendnumber, response, SIZEOF_VLA(response))) {
+        return false;
+    }
+
+    if (!member) {
+        g->type = data[sizeof(uint16_t)];
+        memcpy(g->id, data + sizeof(uint16_t) + 1, GROUP_ID_LENGTH);
+    }
+
+    uint16_t other_groupnum;
+    net_unpack_u16(data, &other_groupnum);
+
+    const int friendcon_id = getfriendcon_id(g_c->m, friendnumber);
+
+    if (friendcon_id == -1) {
+        return false;
+    }
+
+    const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, 1);
+
+    if (member) {
+        add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCING, 0);
+    }
+
+    if (connection_index != -1) {
+        g->connections[connection_index].group_number = other_groupnum;
+        g->connections[connection_index].type = GROUPCHAT_CONNECTION_ONLINE;
+    }
+
+    send_peer_query(g_c, friendcon_id, other_groupnum);
+
+    return true;
 }
 
 /* Set handlers for custom lossy packets. */
@@ -1911,19 +1946,28 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 }
 
                 return;
+            } else {
+                Group_c *g = get_group_c(g_c, groupnumber);
+
+                if (g && g->status == GROUPCHAT_STATUS_CONNECTED) {
+                    send_invite_response(g_c, groupnumber, friendnumber, invite_data, invite_length);
+                }
             }
 
             break;
         }
 
-        case INVITE_RESPONSE_ID: {
-            if (length != INVITE_RESPONSE_PACKET_SIZE) {
+        case INVITE_ACCEPT_ID:
+        case INVITE_MEMBER_ID: {
+            const bool member = (data[0] == INVITE_MEMBER_ID);
+
+            if (length != (member ? INVITE_MEMBER_PACKET_SIZE : INVITE_ACCEPT_PACKET_SIZE)) {
                 return;
             }
 
             uint16_t other_groupnum, groupnum;
-            memcpy(&groupnum, data + 1 + sizeof(uint16_t), sizeof(uint16_t));
-            groupnum = net_ntohs(groupnum);
+            net_unpack_u16(data + 1, &other_groupnum);
+            net_unpack_u16(data + 1 + sizeof(uint16_t), &groupnum);
 
             Group_c *g = get_group_c(g_c, groupnum);
 
@@ -1939,23 +1983,27 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 return;
             }
 
-            /* TODO(irungentoo): what if two people enter the group at the same time and
-               are given the same peer_number by different nodes? */
-            uint16_t peer_number = random_u16();
+            uint16_t peer_number;
 
-            unsigned int tries = 0;
-
-            while (get_peer_index(g, peer_number) != -1 || get_frozen_index(g, peer_number) != -1) {
+            if (member) {
+                net_unpack_u16(data + 1 + sizeof(uint16_t) * 2 + 1 + GROUP_ID_LENGTH, &peer_number);
+            } else {
+                /* TODO(irungentoo): what if two people enter the group at the
+                 * same time and are given the same peer_number by different
+                 * nodes? */
                 peer_number = random_u16();
-                ++tries;
 
-                if (tries > 32) {
-                    return;
+                unsigned int tries = 0;
+
+                while (get_peer_index(g, peer_number) != -1 || get_frozen_index(g, peer_number) != -1) {
+                    peer_number = random_u16();
+                    ++tries;
+
+                    if (tries > 32) {
+                        return;
+                    }
                 }
             }
-
-            memcpy(&other_groupnum, data + 1, sizeof(uint16_t));
-            other_groupnum = net_ntohs(other_groupnum);
 
             const int friendcon_id = getfriendcon_id(m, friendnumber);
 
@@ -1971,12 +2019,18 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g,
                                          GROUPCHAT_CONNECTION_REASON_INTRODUCING, 1);
 
+            if (member) {
+                add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, 0);
+                send_peer_query(g_c, friendcon_id, other_groupnum);
+            }
+
             if (connection_index != -1) {
                 g->connections[connection_index].group_number = other_groupnum;
                 g->connections[connection_index].type = GROUPCHAT_CONNECTION_ONLINE;
             }
 
             group_new_peer_send(g_c, groupnum, peer_number, real_pk, temp_pk);
+
             break;
         }
 
