@@ -492,24 +492,6 @@ endif()
 #
 ################################################################################
 
-option(BUILD_AV_TEST "Build toxav test" ON)
-if(NOT WIN32
-  AND BUILD_AV_TEST AND BUILD_TOXAV
-  AND SNDFILE_FOUND AND PORTAUDIO_FOUND AND OPENCV_FOUND)
-  add_executable(av_test ${CPUFEATURES}
-    testing/av_test.c)
-  target_link_modules(av_test
-    toxcore
-    ${OPENCV_LIBRARIES}
-    ${PORTAUDIO_LIBRARIES}
-    ${SNDFILE_LIBRARIES})
-  # Due to https://github.com/opencv/opencv/issues/6585, we need to compile
-  # av_test as C++ for newer OpenCV versions.
-  if(NOT OPENCV_VERSION VERSION_LESS 3)
-    set_source_files_properties(testing/av_test.c PROPERTIES LANGUAGE CXX)
-  endif()
-endif()
-
 option(BUILD_MISC_TESTS "Build additional tests" OFF)
 if (BUILD_MISC_TESTS)
   add_executable(DHT_test ${CPUFEATURES}

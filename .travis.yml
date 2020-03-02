@@ -16,14 +16,9 @@ matrix:
         apt:
           packages:
             - libconfig-dev          # For tox-bootstrapd.
-            - libcv-dev              # For av_test.
-            - libhighgui-dev         # For av_test.
-            - libopencv-contrib-dev  # For av_test.
             - libopus-dev            # For toxav.
-            - libsndfile1-dev        # For av_test.
             - libgtest-dev           # For unit tests.
             - libvpx-dev             # For toxav.
-            - portaudio19-dev        # For av_test.
             - pylint
       install:       .travis/$JOB install
       script:        .travis/$JOB script
@@ -42,12 +37,6 @@ matrix:
     - stage: "Stage 1"
       env: JOB=bazel-linux
       compiler: clang
-      addons:
-        apt:
-          packages:
-            - libcv-dev              # For av_test.
-            - libhighgui-dev         # For av_test.
-            - libopencv-contrib-dev  # For av_test.
       before_install:
         # Clear bazel installation.
         - rm -rf $HOME/.cache/bazel/_bazel_$USER/install

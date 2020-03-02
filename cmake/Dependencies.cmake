@@ -25,11 +25,6 @@ pkg_use_module(LIBCONFIG            libconfig    )
 # For tox-spectest.
 pkg_use_module(MSGPACK              msgpack      )
 
-# For av_test.
-pkg_use_module(OPENCV               opencv       )
-pkg_use_module(PORTAUDIO            portaudio-2.0)
-pkg_use_module(SNDFILE              sndfile      )
-
 ###############################################################################
 #
 # :: For MSVC Windows builds.
