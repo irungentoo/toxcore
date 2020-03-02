@@ -87,7 +87,7 @@ travis_script() {
 
   other/analysis/check_logger_levels
 
-  cmake -B_build -H. \
+  cmake -B_build -H. -GNinja \
     -DCMAKE_C_FLAGS="$C_FLAGS" \
     -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
     -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
@@ -100,8 +100,9 @@ travis_script() {
     -DUSE_IPV6=OFF \
     -DAUTOTEST=ON
 
+  cmake --build _build --parallel "$NPROC" --target install -- -k 0
+
   cd _build  # pushd
-  make "-j$NPROC" -k install
   ctest -j50 --output-on-failure || \
     ctest -j50 --output-on-failure --rerun-failed
   cd -  # popd

@@ -2,12 +2,13 @@
 # For Pull Requests, we build only the first three jobs: autotools on Linux,
 # cmake on Linux, and cmake on Windows 32 bit.
 #
-# For branch builds and cron builds (once a day), we build all the jobs. This
-# is achieved using the "if: type IN (push, api, cron)" fields in the matrix.
+# For branch builds and cron builds (once a day), we build all the jobs. This is
+# achieved using the "if: type IN (push, api, cron)" fields in the jobs list.
 
 language: c
+os: linux
 
-matrix:
+jobs:
   include:
     - stage: "Stage 1"
       env: JOB=cmake-linux
@@ -19,6 +20,7 @@ matrix:
             - libopus-dev            # For toxav.
             - libgtest-dev           # For unit tests.
             - libvpx-dev             # For toxav.
+            - ninja-build
             - pylint
       install:       .travis/$JOB install
       script:        .travis/$JOB script
