@@ -85,8 +85,9 @@ RingBuffer *rb_new(int size)
     }
 
     buf->size = size + 1; /* include empty elem */
+    buf->data = (void **)calloc(buf->size, sizeof(void *));
 
-    if (!(buf->data = (void **)calloc(buf->size, sizeof(void *)))) {
+    if (!buf->data) {
         free(buf);
         return nullptr;
     }
@@ -118,7 +119,7 @@ uint16_t rb_data(const RingBuffer *b, void **dest)
 {
     uint16_t i = 0;
 
-    for (; i < rb_size(b); i++) {
+    for (; i < rb_size(b); ++i) {
         dest[i] = b->data[(b->start + i) % b->size];
     }
 
