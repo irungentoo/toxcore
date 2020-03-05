@@ -186,7 +186,7 @@ static void fetch_broadcast_info(uint16_t port)
             continue;
         }
 
-        struct sockaddr_in *sock4 = (struct sockaddr_in *)&i_faces[i].ifr_broadaddr;
+        struct sockaddr_in *sock4 = (struct sockaddr_in *)(void *)&i_faces[i].ifr_broadaddr;
 
         if (count >= MAX_INTERFACES) {
             break;

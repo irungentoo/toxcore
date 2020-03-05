@@ -1207,12 +1207,12 @@ int addr_resolve(const char *address, IP *to, IP *extra)
         switch (walker->ai_family) {
             case AF_INET:
                 if (walker->ai_family == family) { /* AF_INET requested, done */
-                    struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                    struct sockaddr_in *addr = (struct sockaddr_in *)(void *)walker->ai_addr;
                     get_ip4(&to->ip.v4, &addr->sin_addr);
                     result = TOX_ADDR_RESOLVE_INET;
                     done = 1;
                 } else if (!(result & TOX_ADDR_RESOLVE_INET)) { /* AF_UNSPEC requested, store away */
-                    struct sockaddr_in *addr = (struct sockaddr_in *)walker->ai_addr;
+                    struct sockaddr_in *addr = (struct sockaddr_in *)(void *)walker->ai_addr;
                     get_ip4(&ip4.ip.v4, &addr->sin_addr);
                     result |= TOX_ADDR_RESOLVE_INET;
                 }
@@ -1222,14 +1222,14 @@ int addr_resolve(const char *address, IP *to, IP *extra)
             case AF_INET6:
                 if (walker->ai_family == family) { /* AF_INET6 requested, done */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
-                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)(void *)walker->ai_addr;
                         get_ip6(&to->ip.v6, &addr->sin6_addr);
                         result = TOX_ADDR_RESOLVE_INET6;
                         done = 1;
                     }
                 } else if (!(result & TOX_ADDR_RESOLVE_INET6)) { /* AF_UNSPEC requested, store away */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
-                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)walker->ai_addr;
+                        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)(void *)walker->ai_addr;
                         get_ip6(&ip6.ip.v6, &addr->sin6_addr);
                         result |= TOX_ADDR_RESOLVE_INET6;
                     }
@@ -1344,10 +1344,10 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
         }
 
         if (cur->ai_family == AF_INET) {
-            struct sockaddr_in *addr = (struct sockaddr_in *)cur->ai_addr;
+            struct sockaddr_in *addr = (struct sockaddr_in *)(void *)cur->ai_addr;
             memcpy(&ip_port->ip.ip.v4, &addr->sin_addr, sizeof(IP4));
         } else if (cur->ai_family == AF_INET6) {
-            struct sockaddr_in6 *addr = (struct sockaddr_in6 *)cur->ai_addr;
+            struct sockaddr_in6 *addr = (struct sockaddr_in6 *)(void *)cur->ai_addr;
             memcpy(&ip_port->ip.ip.v6, &addr->sin6_addr, sizeof(IP6));
         } else {
             continue;

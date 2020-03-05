@@ -146,12 +146,16 @@ void send_update(BWController *bwc)
                          (void *)bwc, bwc->cycle.recv, bwc->cycle.lost,
                          (((double) bwc->cycle.lost / (bwc->cycle.recv + bwc->cycle.lost)) * 100.0));
             uint8_t bwc_packet[sizeof(struct BWCMessage) + 1];
-            struct BWCMessage *msg = (struct BWCMessage *)(bwc_packet + 1);
-            bwc_packet[0] = BWC_PACKET_ID; // set packet ID
-            msg->lost = net_htonl(bwc->cycle.lost);
-            msg->recv = net_htonl(bwc->cycle.recv);
+            size_t offset = 0;
 
-            if (-1 == m_send_custom_lossy_packet(bwc->m, bwc->friend_number, bwc_packet, sizeof(bwc_packet))) {
+            bwc_packet[offset] = BWC_PACKET_ID; // set packet ID
+            ++offset;
+
+            offset += net_pack_u32(bwc_packet + offset, bwc->cycle.lost);
+            offset += net_pack_u32(bwc_packet + offset, bwc->cycle.recv);
+            assert(offset == sizeof(bwc_packet));
+
+            if (m_send_custom_lossy_packet(bwc->m, bwc->friend_number, bwc_packet, sizeof(bwc_packet)) == -1) {
                 const char *netstrerror = net_new_strerror(net_error());
                 LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %u)! std error: %s, net error %s",
                                (unsigned)sizeof(bwc_packet), strerror(errno), netstrerror);
@@ -177,8 +181,8 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
 
     bwc->cycle.last_recv_timestamp = current_time_monotonic(bwc->m->mono_time);
 
-    uint32_t recv = net_ntohl(msg->recv);
-    uint32_t lost = net_ntohl(msg->lost);
+    const uint32_t recv = msg->recv;
+    const uint32_t lost = msg->lost;
 
     if (lost && bwc->mcb) {
         LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u percentage: %f %%", recv, lost,
@@ -197,5 +201,11 @@ int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, ui
         return -1;
     }
 
-    return on_update((BWController *)object, (const struct BWCMessage *)(data + 1));
+    size_t offset = 1;  // Ignore packet id.
+    struct BWCMessage msg;
+    offset += net_unpack_u32(data + offset, &msg.lost);
+    offset += net_unpack_u32(data + offset, &msg.recv);
+    assert(offset == length);
+
+    return on_update((BWController *)object, &msg);
 }
