@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+
+set timeout -1
+
+# Note: doesn't work if -nographic is used instead of -curses
+spawn qemu-system-x86_64 -curses -m 2048 -smp $env(NPROC) -net user,hostfwd=tcp::$env(SSH_PORT)-:22 -net nic "$env(IMAGE_NAME)"
+
+# Skip the boot menu
+expect "to boot or any other key to stop"
+send -- "\r"
+
+expect "login: "
+send -- "root\r"
+
+# Setup DHCP networking and paswordless ssh
+expect "root@freebsd:~ # "
+send -- "echo \"ifconfig_em0=DHCP\"          >> /etc/rc.conf\r"
+expect "root@freebsd:~ # "
+send -- "echo \"Port 22\"                    >> /etc/ssh/sshd_config\r"
+expect "root@freebsd:~ # "
+send -- "echo \"PermitRootLogin yes\"        >> /etc/ssh/sshd_config\r"
+expect "root@freebsd:~ # "
+send -- "echo \"PasswordAuthentication yes\" >> /etc/ssh/sshd_config\r"
+expect "root@freebsd:~ # "
+send -- "echo \"PermitEmptyPasswords yes\"   >> /etc/ssh/sshd_config\r"
+expect "root@freebsd:~ # "
+send -- "echo \"sshd_enable=YES\"            >> /etc/rc.conf\r"
+expect "root@freebsd:~ # "
+
+# Set the empty password
+send -- "passwd\r"
+expect "New Password:"
+send -- "\r"
+expect "Retype New Password:"
+send -- "\r"
+expect "root@freebsd:~ # "
+
+# Done
+send -- "poweroff\r"
+wait
+exit 0
