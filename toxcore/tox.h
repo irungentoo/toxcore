@@ -690,6 +690,20 @@ struct Tox_Options {
      */
     void *log_user_data;
 
+
+    /**
+     * These options are experimental, so avoid writing code that depends on
+     * them. Options marked "experimental" may change their behaviour or go away
+     * entirely in the future, or may be renamed to something non-experimental
+     * if they become part of the supported API.
+     */
+    /**
+     * Make public API functions thread-safe using a per-instance lock.
+     *
+     * Default: false.
+     */
+    bool experimental_thread_safety;
+
 };
 
 
@@ -752,6 +766,10 @@ void tox_options_set_log_callback(struct Tox_Options *options, tox_log_cb *callb
 void *tox_options_get_log_user_data(const struct Tox_Options *options);
 
 void tox_options_set_log_user_data(struct Tox_Options *options, void *user_data);
+
+bool tox_options_get_experimental_thread_safety(const struct Tox_Options *options);
+
+void tox_options_set_experimental_thread_safety(struct Tox_Options *options, bool thread_safety);
 
 /**
  * Initialises a Tox_Options object with the default options.

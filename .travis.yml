@@ -6,6 +6,7 @@
 # achieved using the "if: type IN (push, api, cron)" fields in the jobs list.
 
 language: c
+dist: xenial
 os: linux
 
 jobs:

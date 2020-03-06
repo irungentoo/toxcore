@@ -58,6 +58,7 @@ ACCESSORS(size_t, savedata_, length)
 ACCESSORS(tox_log_cb *, log_, callback)
 ACCESSORS(void *, log_, user_data)
 ACCESSORS(bool,, local_discovery_enabled)
+ACCESSORS(bool,, experimental_thread_safety)
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
 {
@@ -80,6 +81,7 @@ void tox_options_default(struct Tox_Options *options)
         tox_options_set_proxy_type(options, TOX_PROXY_TYPE_NONE);
         tox_options_set_hole_punching_enabled(options, true);
         tox_options_set_local_discovery_enabled(options, true);
+        tox_options_set_experimental_thread_safety(options, false);
     }
 }
 
