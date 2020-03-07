@@ -1824,7 +1824,7 @@ static int m_handle_lossy_packet(void *object, int friend_num, const uint8_t *pa
     }
 
     if (m->lossy_packethandler) {
-        m->lossy_packethandler(m, friend_num, packet, length, userdata);
+        m->lossy_packethandler(m, friend_num, packet[0], packet, length, userdata);
     }
 
     return 1;
@@ -1900,7 +1900,7 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
     }
 
     if (m->lossless_packethandler) {
-        m->lossless_packethandler(m, friend_num, packet, length, userdata);
+        m->lossless_packethandler(m, friend_num, packet[0], packet, length, userdata);
     }
 
     return 1;

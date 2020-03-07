@@ -302,8 +302,8 @@ static void tox_conference_peer_list_changed_handler(Messenger *m, uint32_t conf
     }
 }
 
-static void tox_friend_lossy_packet_handler(Messenger *m, uint32_t friend_number, const uint8_t *data, size_t length,
-        void *user_data)
+static void tox_friend_lossy_packet_handler(Messenger *m, uint32_t friend_number, uint8_t packet_id,
+        const uint8_t *data, size_t length, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
@@ -312,8 +312,8 @@ static void tox_friend_lossy_packet_handler(Messenger *m, uint32_t friend_number
     }
 }
 
-static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_number, const uint8_t *data, size_t length,
-        void *user_data)
+static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_number, uint8_t packet_id,
+        const uint8_t *data, size_t length, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 

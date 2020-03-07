@@ -200,10 +200,10 @@ typedef void m_file_chunk_request_cb(Messenger *m, uint32_t friend_number, uint3
                                      size_t length, void *user_data);
 typedef void m_file_recv_chunk_cb(Messenger *m, uint32_t friend_number, uint32_t file_number, uint64_t position,
                                   const uint8_t *data, size_t length, void *user_data);
-typedef void m_friend_lossy_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, size_t length,
-                                      void *user_data);
-typedef void m_friend_lossless_packet_cb(Messenger *m, uint32_t friend_number, const uint8_t *data, size_t length,
-        void *user_data);
+typedef void m_friend_lossy_packet_cb(Messenger *m, uint32_t friend_number, uint8_t packet_id, const uint8_t *data,
+                                      size_t length, void *user_data);
+typedef void m_friend_lossless_packet_cb(Messenger *m, uint32_t friend_number, uint8_t packet_id, const uint8_t *data,
+        size_t length, void *user_data);
 typedef void m_friend_connectionstatuschange_internal_cb(Messenger *m, uint32_t friend_number,
         uint8_t connection_status, void *user_data);
 typedef void m_conference_invite_cb(Messenger *m, uint32_t friend_number, const uint8_t *cookie, uint16_t length,
