@@ -65,11 +65,11 @@ jobs:
       services: [docker]
       install:       .travis/$JOB install
       script:        .travis/$JOB script
-#    - stage: "Stage 1"
-#      if: type IN (push, api, cron)
-#      env: JOB=cmake-freebsd
-#      install:       .travis/$JOB-stage1 install
-#      script:        .travis/$JOB-stage1 script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-freebsd
+      install:       .travis/$JOB-stage1 install
+      script:        .travis/$JOB-stage1 script
     - stage: "Stage 1"
       if: type IN (push, api, cron)
       env: JOB=cmake-osx
@@ -81,11 +81,11 @@ jobs:
       env: JOB=tox-bootstrapd-docker
       services: [docker]
       script:        .travis/$JOB
-#    - stage: "Stage 2"
-#      if: type IN (push, api, cron)
-#      env: JOB=cmake-freebsd
-#      install:       .travis/$JOB-stage2 install
-#      script:        .travis/$JOB-stage2 script
+    - stage: "Stage 2"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-freebsd
+      install:       .travis/$JOB-stage2 install
+      script:        .travis/$JOB-stage2 script
   fast_finish: true
 
 cache:
