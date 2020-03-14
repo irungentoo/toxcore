@@ -663,27 +663,15 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
     return new_index;
 }
 
-static bool remove_connection(Group_Chats *g_c, Group_c *g, int friendcon_id)
+static void remove_connection(Group_Chats *g_c, Group_c *g, uint16_t i)
 {
-    for (uint32_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
-        if (g->connections[i].type == GROUPCHAT_CONNECTION_NONE) {
-            continue;
-        }
-
-        if (g->connections[i].number == (unsigned int)friendcon_id) {
-            if (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER) {
-                --g->num_introducer_connections;
-            }
-
-            g->connections[i].type = GROUPCHAT_CONNECTION_NONE;
-            kill_friend_connection(g_c->fr_c, friendcon_id);
-            return true;
-        }
+    if (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER) {
+        --g->num_introducer_connections;
     }
 
-    return false;
+    kill_friend_connection(g_c->fr_c, g->connections[i].number);
+    g->connections[i].type = GROUPCHAT_CONNECTION_NONE;
 }
-
 
 static void remove_from_closest(Group_c *g, int peer_index)
 {
@@ -715,7 +703,16 @@ static bool delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void
     const int friendcon_id = getfriend_conn_id_pk(g_c->fr_c, g->group[peer_index].real_pk);
 
     if (friendcon_id != -1) {
-        remove_connection(g_c, g, friendcon_id);
+        for (uint32_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
+            if (g->connections[i].type == GROUPCHAT_CONNECTION_NONE) {
+                continue;
+            }
+
+            if (g->connections[i].number == (unsigned int)friendcon_id) {
+                remove_connection(g_c, g, i);
+                break;
+            }
+        }
     }
 
     --g->numpeers;
@@ -3090,6 +3087,73 @@ static bool groupchat_freeze_timedout(Group_Chats *g_c, uint32_t groupnumber, vo
     return true;
 }
 
+/* Push non-empty slots to start. */
+static void squash_connections(Group_c *g)
+{
+    uint16_t i = 0;
+
+    for (uint16_t j = 0; j < MAX_GROUP_CONNECTIONS; ++j) {
+        if (g->connections[j].type != GROUPCHAT_CONNECTION_NONE) {
+            g->connections[i] = g->connections[j];
+            ++i;
+        }
+    }
+
+    for (; i < MAX_GROUP_CONNECTIONS; ++i) {
+        g->connections[i].type = GROUPCHAT_CONNECTION_NONE;
+    }
+}
+
+#define MIN_EMPTY_CONNECTIONS (1 + MAX_GROUP_CONNECTIONS / 10)
+
+/* Remove old connections as necessary to ensure we have space for new
+ * connections. This invalidates connections array indices (which is
+ * why we do this periodically rather than on adding a connection).
+ */
+static void clean_connections(Group_Chats *g_c, Group_c *g)
+{
+    uint16_t to_clear = MIN_EMPTY_CONNECTIONS;
+
+    for (uint16_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
+        if (g->connections[i].type == GROUPCHAT_CONNECTION_NONE) {
+            --to_clear;
+
+            if (to_clear == 0) {
+                break;
+            }
+        }
+    }
+
+    for (; to_clear > 0; --to_clear) {
+        // Remove a connection. Prefer non-closest connections, and given
+        // that prefer non-online connections, and given that prefer earlier
+        // slots.
+        uint16_t i = 0;
+
+        while (i < MAX_GROUP_CONNECTIONS
+                && (g->connections[i].type != GROUPCHAT_CONNECTION_CONNECTING
+                    || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST))) {
+            ++i;
+        }
+
+        if (i == MAX_GROUP_CONNECTIONS) {
+            i = 0;
+
+            while (i < MAX_GROUP_CONNECTIONS - to_clear
+                    && (g->connections[i].type != GROUPCHAT_CONNECTION_ONLINE
+                        || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST))) {
+                ++i;
+            }
+        }
+
+        if (g->connections[i].type != GROUPCHAT_CONNECTION_NONE) {
+            remove_connection(g_c, g, i);
+        }
+    }
+
+    squash_connections(g);
+}
+
 /* Send current name (set in messenger) to all online groups.
  */
 void send_name_all_groups(Group_Chats *g_c)
@@ -3408,6 +3472,7 @@ void do_groupchats(Group_Chats *g_c, void *userdata)
             connect_to_closest(g_c, i, userdata);
             ping_groupchat(g_c, i);
             groupchat_freeze_timedout(g_c, i, userdata);
+            clean_connections(g_c, g);
 
             if (g->need_send_name) {
                 group_name_send(g_c, i, g_c->m->name, g_c->m->name_length);
