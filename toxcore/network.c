@@ -83,24 +83,24 @@
 
 #define TOX_EWOULDBLOCK EWOULDBLOCK
 
-static const char *inet_ntop4(int family, const struct in_addr *addr, char *buf, size_t bufsize)
+static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
 {
-    return inet_ntop(family, addr, buf, bufsize);
+    return inet_ntop(AF_INET, addr, buf, bufsize);
 }
 
-static const char *inet_ntop6(int family, const struct in6_addr *addr, char *buf, size_t bufsize)
+static const char *inet_ntop6(const struct in6_addr *addr, char *buf, size_t bufsize)
 {
-    return inet_ntop(family, addr, buf, bufsize);
+    return inet_ntop(AF_INET6, addr, buf, bufsize);
 }
 
-static int inet_pton4(int family, const char *addrString, struct in_addr *addrbuf)
+static int inet_pton4(const char *addrString, struct in_addr *addrbuf)
 {
-    return inet_pton(family, addrString, addrbuf);
+    return inet_pton(AF_INET, addrString, addrbuf);
 }
 
-static int inet_pton6(int family, const char *addrString, struct in6_addr *addrbuf)
+static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
 {
-    return inet_pton(family, addrString, addrbuf);
+    return inet_pton(AF_INET6, addrString, addrbuf);
 }
 
 #else
@@ -110,86 +110,66 @@ static int inet_pton6(int family, const char *addrString, struct in6_addr *addrb
 
 #define TOX_EWOULDBLOCK WSAEWOULDBLOCK
 
-static const char *inet_ntop4(int family, const struct in_addr *addr, char *buf, size_t bufsize)
+static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
 {
-    if (family == AF_INET) {
-        struct sockaddr_in saddr;
-        memset(&saddr, 0, sizeof(saddr));
+    struct sockaddr_in saddr = {0};
 
-        saddr.sin_family = AF_INET;
-        saddr.sin_addr = *addr;
+    saddr.sin_family = AF_INET;
+    saddr.sin_addr = *addr;
 
-        DWORD len = bufsize;
+    DWORD len = bufsize;
 
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
-            return nullptr;
-        }
-
-        return buf;
+    if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
+        return nullptr;
     }
 
-    return nullptr;
+    return buf;
 }
 
-static const char *inet_ntop6(int family, const struct in6_addr *addr, char *buf, size_t bufsize)
+static const char *inet_ntop6(const struct in6_addr *addr, char *buf, size_t bufsize)
 {
-    if (family == AF_INET6) {
-        struct sockaddr_in6 saddr;
-        memset(&saddr, 0, sizeof(saddr));
+    struct sockaddr_in6 saddr = {0};
 
-        saddr.sin6_family = AF_INET6;
-        saddr.sin6_addr = *addr;
+    saddr.sin6_family = AF_INET6;
+    saddr.sin6_addr = *addr;
 
-        DWORD len = bufsize;
+    DWORD len = bufsize;
 
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
-            return nullptr;
-        }
-
-        return buf;
+    if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
+        return nullptr;
     }
 
-    return nullptr;
+    return buf;
 }
 
-static int inet_pton4(int family, const char *addrString, struct in_addr *addrbuf)
+static int inet_pton4(const char *addrString, struct in_addr *addrbuf)
 {
-    if (family == AF_INET) {
-        struct sockaddr_in saddr;
-        memset(&saddr, 0, sizeof(saddr));
+    struct sockaddr_in saddr = {0};
 
-        INT len = sizeof(saddr);
+    INT len = sizeof(saddr);
 
-        if (WSAStringToAddress((LPTSTR)addrString, AF_INET, nullptr, (LPSOCKADDR)&saddr, &len)) {
-            return 0;
-        }
-
-        *addrbuf = saddr.sin_addr;
-
-        return 1;
+    if (WSAStringToAddress((LPTSTR)addrString, AF_INET, nullptr, (LPSOCKADDR)&saddr, &len)) {
+        return 0;
     }
 
-    return 0;
+    *addrbuf = saddr.sin_addr;
+
+    return 1;
 }
 
-static int inet_pton6(int family, const char *addrString, struct in6_addr *addrbuf)
+static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
 {
-    if (family == AF_INET6) {
-        struct sockaddr_in6 saddr;
-        memset(&saddr, 0, sizeof(saddr));
+    struct sockaddr_in6 saddr = {0};
 
-        INT len = sizeof(saddr);
+    INT len = sizeof(saddr);
 
-        if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, nullptr, (LPSOCKADDR)&saddr, &len)) {
-            return 0;
-        }
-
-        *addrbuf = saddr.sin6_addr;
-
-        return 1;
+    if (WSAStringToAddress((LPTSTR)addrString, AF_INET6, nullptr, (LPSOCKADDR)&saddr, &len)) {
+        return 0;
     }
 
-    return 0;
+    *addrbuf = saddr.sin6_addr;
+
+    return 1;
 }
 
 #endif
@@ -222,8 +202,33 @@ static int inet_pton6(int family, const char *addrString, struct in6_addr *addrb
 #error "TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)"
 #endif
 
-static int make_proto(int proto);
-static int make_socktype(int type);
+static int make_proto(int proto)
+{
+    switch (proto) {
+        case TOX_PROTO_TCP:
+            return IPPROTO_TCP;
+
+        case TOX_PROTO_UDP:
+            return IPPROTO_UDP;
+
+        default:
+            return proto;
+    }
+}
+
+static int make_socktype(int type)
+{
+    switch (type) {
+        case TOX_SOCK_STREAM:
+            return SOCK_STREAM;
+
+        case TOX_SOCK_DGRAM:
+            return SOCK_DGRAM;
+
+        default:
+            return type;
+    }
+}
 
 static int make_family(Family tox_family)
 {
@@ -1086,7 +1091,7 @@ void ip_copy(IP *target, const IP *source)
         return;
     }
 
-    memcpy(target, source, sizeof(IP));
+    *target = *source;
 }
 
 /* copies an ip_port structure (careful about direction!) */
@@ -1096,7 +1101,7 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
         return;
     }
 
-    memcpy(target, source, sizeof(IP_Port));
+    *target = *source;
 }
 
 /* ip_ntoa
@@ -1116,23 +1121,23 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
     }
 
     if (ip) {
-        const int family = make_family(ip->family);
-
         if (net_family_is_ipv4(ip->family)) {
             /* returns standard quad-dotted notation */
             struct in_addr addr;
             fill_addr4(ip->ip.v4, &addr);
 
             ip_str[0] = 0;
-            inet_ntop4(family, &addr, ip_str, length);
+            assert(make_family(ip->family) == AF_INET);
+            inet_ntop4(&addr, ip_str, length);
         } else if (net_family_is_ipv6(ip->family)) {
             /* returns hex-groups enclosed into square brackets */
             struct in6_addr addr;
             fill_addr6(ip->ip.v6, &addr);
 
             ip_str[0] = '[';
-            inet_ntop6(family, &addr, &ip_str[1], length - 3);
-            size_t len = strlen(ip_str);
+            assert(make_family(ip->family) == AF_INET6);
+            inet_ntop6(&addr, &ip_str[1], length - 3);
+            const size_t len = strlen(ip_str);
             ip_str[len] = ']';
             ip_str[len + 1] = 0;
         } else {
@@ -1155,12 +1160,14 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
 
     if (net_family_is_ipv4(ip->family)) {
         const struct in_addr *addr = (const struct in_addr *)&ip->ip.v4;
-        return inet_ntop4(make_family(ip->family), addr, address, length) != nullptr;
+        assert(make_family(ip->family) == AF_INET);
+        return inet_ntop4(addr, address, length) != nullptr;
     }
 
     if (net_family_is_ipv6(ip->family)) {
         const struct in6_addr *addr = (const struct in6_addr *)&ip->ip.v6;
-        return inet_ntop6(make_family(ip->family), addr, address, length) != nullptr;
+        assert(make_family(ip->family) == AF_INET6);
+        return inet_ntop6(addr, address, length) != nullptr;
     }
 
     return false;
@@ -1174,7 +1181,7 @@ bool addr_parse_ip(const char *address, IP *to)
 
     struct in_addr addr4;
 
-    if (inet_pton4(AF_INET, address, &addr4) == 1) {
+    if (inet_pton4(address, &addr4) == 1) {
         to->family = net_family_ipv4;
         get_ip4(&to->ip.v4, &addr4);
         return true;
@@ -1182,7 +1189,7 @@ bool addr_parse_ip(const char *address, IP *to)
 
     struct in6_addr addr6;
 
-    if (inet_pton6(AF_INET6, address, &addr6) == 1) {
+    if (inet_pton6(address, &addr6) == 1) {
         to->family = net_family_ipv6;
         get_ip6(&to->ip.v6, &addr6);
         return true;
@@ -1422,34 +1429,6 @@ bool bind_to_port(Socket sock, Family family, uint16_t port)
     }
 
     return bind(sock.socket, (struct sockaddr *)&addr, addrsize) == 0;
-}
-
-static int make_socktype(int type)
-{
-    switch (type) {
-        case TOX_SOCK_STREAM:
-            return SOCK_STREAM;
-
-        case TOX_SOCK_DGRAM:
-            return SOCK_DGRAM;
-
-        default:
-            return type;
-    }
-}
-
-static int make_proto(int proto)
-{
-    switch (proto) {
-        case TOX_PROTO_TCP:
-            return IPPROTO_TCP;
-
-        case TOX_PROTO_UDP:
-            return IPPROTO_UDP;
-
-        default:
-            return proto;
-    }
 }
 
 Socket net_socket(Family domain, int type, int protocol)
