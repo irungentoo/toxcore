@@ -131,7 +131,9 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
 
     // TODO(iphydf): Don't rely on toxcore internals.
     Messenger *m;
+    //!TOKSTYLE-
     m = *(Messenger **)tox;
+    //!TOKSTYLE+
 
     if (m->msi_packet) {
         rc = TOXAV_ERR_NEW_MULTIPLE;

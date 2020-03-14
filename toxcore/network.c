@@ -83,6 +83,26 @@
 
 #define TOX_EWOULDBLOCK EWOULDBLOCK
 
+static const char *inet_ntop4(int family, const struct in_addr *addr, char *buf, size_t bufsize)
+{
+    return inet_ntop(family, addr, buf, bufsize);
+}
+
+static const char *inet_ntop6(int family, const struct in6_addr *addr, char *buf, size_t bufsize)
+{
+    return inet_ntop(family, addr, buf, bufsize);
+}
+
+static int inet_pton4(int family, const char *addrString, struct in_addr *addrbuf)
+{
+    return inet_pton(family, addrString, addrbuf);
+}
+
+static int inet_pton6(int family, const char *addrString, struct in6_addr *addrbuf)
+{
+    return inet_pton(family, addrString, addrbuf);
+}
+
 #else
 #ifndef IPV6_V6ONLY
 #define IPV6_V6ONLY 27
@@ -90,28 +110,14 @@
 
 #define TOX_EWOULDBLOCK WSAEWOULDBLOCK
 
-static const char *inet_ntop(int family, const void *addr, char *buf, size_t bufsize)
+static const char *inet_ntop4(int family, const struct in_addr *addr, char *buf, size_t bufsize)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
         memset(&saddr, 0, sizeof(saddr));
 
         saddr.sin_family = AF_INET;
-        saddr.sin_addr = *(const struct in_addr *)addr;
-
-        DWORD len = bufsize;
-
-        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
-            return nullptr;
-        }
-
-        return buf;
-    } else if (family == AF_INET6) {
-        struct sockaddr_in6 saddr;
-        memset(&saddr, 0, sizeof(saddr));
-
-        saddr.sin6_family = AF_INET6;
-        saddr.sin6_addr = *(const struct in6_addr *)addr;
+        saddr.sin_addr = *addr;
 
         DWORD len = bufsize;
 
@@ -125,7 +131,28 @@ static const char *inet_ntop(int family, const void *addr, char *buf, size_t buf
     return nullptr;
 }
 
-static int inet_pton(int family, const char *addrString, void *addrbuf)
+static const char *inet_ntop6(int family, const struct in6_addr *addr, char *buf, size_t bufsize)
+{
+    if (family == AF_INET6) {
+        struct sockaddr_in6 saddr;
+        memset(&saddr, 0, sizeof(saddr));
+
+        saddr.sin6_family = AF_INET6;
+        saddr.sin6_addr = *addr;
+
+        DWORD len = bufsize;
+
+        if (WSAAddressToString((LPSOCKADDR)&saddr, sizeof(saddr), nullptr, buf, &len)) {
+            return nullptr;
+        }
+
+        return buf;
+    }
+
+    return nullptr;
+}
+
+static int inet_pton4(int family, const char *addrString, struct in_addr *addrbuf)
 {
     if (family == AF_INET) {
         struct sockaddr_in saddr;
@@ -137,10 +164,17 @@ static int inet_pton(int family, const char *addrString, void *addrbuf)
             return 0;
         }
 
-        *(struct in_addr *)addrbuf = saddr.sin_addr;
+        *addrbuf = saddr.sin_addr;
 
         return 1;
-    } else if (family == AF_INET6) {
+    }
+
+    return 0;
+}
+
+static int inet_pton6(int family, const char *addrString, struct in6_addr *addrbuf)
+{
+    if (family == AF_INET6) {
         struct sockaddr_in6 saddr;
         memset(&saddr, 0, sizeof(saddr));
 
@@ -150,7 +184,7 @@ static int inet_pton(int family, const char *addrString, void *addrbuf)
             return 0;
         }
 
-        *(struct in6_addr *)addrbuf = saddr.sin6_addr;
+        *addrbuf = saddr.sin6_addr;
 
         return 1;
     }
@@ -1085,14 +1119,14 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
             fill_addr4(ip->ip.v4, &addr);
 
             ip_str[0] = 0;
-            inet_ntop(family, &addr, ip_str, length);
+            inet_ntop4(family, &addr, ip_str, length);
         } else if (net_family_is_ipv6(ip->family)) {
             /* returns hex-groups enclosed into square brackets */
             struct in6_addr addr;
             fill_addr6(ip->ip.v6, &addr);
 
             ip_str[0] = '[';
-            inet_ntop(family, &addr, &ip_str[1], length - 3);
+            inet_ntop6(family, &addr, &ip_str[1], length - 3);
             size_t len = strlen(ip_str);
             ip_str[len] = ']';
             ip_str[len + 1] = 0;
@@ -1116,12 +1150,12 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
 
     if (net_family_is_ipv4(ip->family)) {
         const struct in_addr *addr = (const struct in_addr *)&ip->ip.v4;
-        return inet_ntop(make_family(ip->family), addr, address, length) != nullptr;
+        return inet_ntop4(make_family(ip->family), addr, address, length) != nullptr;
     }
 
     if (net_family_is_ipv6(ip->family)) {
         const struct in6_addr *addr = (const struct in6_addr *)&ip->ip.v6;
-        return inet_ntop(make_family(ip->family), addr, address, length) != nullptr;
+        return inet_ntop6(make_family(ip->family), addr, address, length) != nullptr;
     }
 
     return false;
@@ -1135,7 +1169,7 @@ bool addr_parse_ip(const char *address, IP *to)
 
     struct in_addr addr4;
 
-    if (inet_pton(AF_INET, address, &addr4) == 1) {
+    if (inet_pton4(AF_INET, address, &addr4) == 1) {
         to->family = net_family_ipv4;
         get_ip4(&to->ip.v4, &addr4);
         return true;
@@ -1143,7 +1177,7 @@ bool addr_parse_ip(const char *address, IP *to)
 
     struct in6_addr addr6;
 
-    if (inet_pton(AF_INET6, address, &addr6) == 1) {
+    if (inet_pton6(AF_INET6, address, &addr6) == 1) {
         to->family = net_family_ipv6;
         get_ip6(&to->ip.v6, &addr6);
         return true;

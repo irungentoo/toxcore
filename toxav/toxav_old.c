@@ -24,7 +24,9 @@
 int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userdata)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
+    //!TOKSTYLE-
     Messenger *m = *(Messenger **)tox;
+    //!TOKSTYLE+
     return add_av_groupchat(m->log, tox, m->conferences_object, audio_callback, userdata);
 }
 
@@ -42,7 +44,9 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
                             audio_data_cb *audio_callback, void *userdata)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
+    //!TOKSTYLE-
     Messenger *m = *(Messenger **)tox;
+    //!TOKSTYLE+
     return join_av_groupchat(m->log, tox, m->conferences_object, friendnumber, data, length, audio_callback, userdata);
 }
 
@@ -63,7 +67,9 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
                            uint32_t sample_rate)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
+    //!TOKSTYLE-
     Messenger *m = *(Messenger **)tox;
+    //!TOKSTYLE+
     return group_send_audio(m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
 }
 
@@ -88,7 +94,9 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
 int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber, audio_data_cb *audio_callback, void *userdata)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
+    //!TOKSTYLE-
     Messenger *m = *(Messenger **)tox;
+    //!TOKSTYLE+
     return groupchat_enable_av(m->log, tox, m->conferences_object, groupnumber, audio_callback, userdata);
 }
 
@@ -100,7 +108,9 @@ int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber, audio_data_cb *aud
 int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
+    //!TOKSTYLE-
     Messenger *m = *(Messenger **)tox;
+    //!TOKSTYLE+
     return groupchat_disable_av(m->conferences_object, groupnumber);
 }
 
@@ -109,6 +119,8 @@ int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber)
 bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
+    //!TOKSTYLE-
     Messenger *m = *(Messenger **)tox;
+    //!TOKSTYLE+
     return groupchat_av_enabled(m->conferences_object, groupnumber);
 }
