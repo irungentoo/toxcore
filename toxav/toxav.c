@@ -274,7 +274,7 @@ void toxav_iterate(ToxAV *av)
     av->dmsst += current_time_monotonic(av->m->mono_time) - start;
 
     if (++av->dmssc == 3) {
-        av->dmssa = av->dmsst / 3 + 5 /* NOTE Magic Offset for precision */;
+        av->dmssa = av->dmsst / 3 + 5; /* NOTE Magic Offset 5 for precision */
         av->dmssc = 0;
         av->dmsst = 0;
     }

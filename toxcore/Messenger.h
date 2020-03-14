@@ -33,7 +33,7 @@
 
 typedef enum Message_Type {
     MESSAGE_NORMAL,
-    MESSAGE_ACTION
+    MESSAGE_ACTION,
 } Message_Type;
 
 typedef struct Messenger Messenger;
@@ -98,7 +98,7 @@ typedef enum Friend_Add_Error {
     FAERR_ALREADYSENT = -4,
     FAERR_BADCHECKSUM = -6,
     FAERR_SETNEWNOSPAM = -7,
-    FAERR_NOMEM = -8
+    FAERR_NOMEM = -8,
 } Friend_Add_Error;
 
 
@@ -109,7 +109,7 @@ typedef enum Connection_Status {
     CONNECTION_NONE,
     CONNECTION_TCP,
     CONNECTION_UDP,
-    CONNECTION_UNKNOWN
+    CONNECTION_UNKNOWN,
 } Connection_Status;
 
 /* USERSTATUS -
@@ -120,7 +120,7 @@ typedef enum Userstatus {
     USERSTATUS_NONE,
     USERSTATUS_AWAY,
     USERSTATUS_BUSY,
-    USERSTATUS_INVALID
+    USERSTATUS_INVALID,
 } Userstatus;
 
 #define FILE_ID_LENGTH 32
@@ -140,26 +140,26 @@ typedef enum Filestatus {
     FILESTATUS_NOT_ACCEPTED,
     FILESTATUS_TRANSFERRING,
     // FILESTATUS_BROKEN,
-    FILESTATUS_FINISHED
+    FILESTATUS_FINISHED,
 } Filestatus;
 
 typedef enum File_Pause {
     FILE_PAUSE_NOT,
     FILE_PAUSE_US,
     FILE_PAUSE_OTHER,
-    FILE_PAUSE_BOTH
+    FILE_PAUSE_BOTH,
 } File_Pause;
 
 typedef enum Filecontrol {
     FILECONTROL_ACCEPT,
     FILECONTROL_PAUSE,
     FILECONTROL_KILL,
-    FILECONTROL_SEEK
+    FILECONTROL_SEEK,
 } Filecontrol;
 
 typedef enum Filekind {
     FILEKIND_DATA,
-    FILEKIND_AVATAR
+    FILEKIND_AVATAR,
 } Filekind;
 
 
@@ -722,7 +722,7 @@ typedef enum Messenger_Error {
     MESSENGER_ERROR_NONE,
     MESSENGER_ERROR_PORT,
     MESSENGER_ERROR_TCP_SERVER,
-    MESSENGER_ERROR_OTHER
+    MESSENGER_ERROR_OTHER,
 } Messenger_Error;
 
 /* Run this at startup.

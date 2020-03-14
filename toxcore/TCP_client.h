@@ -17,7 +17,7 @@
 typedef enum TCP_Proxy_Type {
     TCP_PROXY_NONE,
     TCP_PROXY_HTTP,
-    TCP_PROXY_SOCKS5
+    TCP_PROXY_SOCKS5,
 } TCP_Proxy_Type;
 
 typedef struct TCP_Proxy_Info {

@@ -265,7 +265,7 @@ static uint64_t calculate_comp_value(const uint8_t *pk1, const uint8_t *pk2)
 typedef enum Groupchat_Closest {
     GROUPCHAT_CLOSEST_NONE,
     GROUPCHAT_CLOSEST_ADDED,
-    GROUPCHAT_CLOSEST_REMOVED
+    GROUPCHAT_CLOSEST_REMOVED,
 } Groupchat_Closest;
 
 static int add_to_closest(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_pk, const uint8_t *temp_pk)

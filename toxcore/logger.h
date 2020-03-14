@@ -23,7 +23,7 @@ typedef enum Logger_Level {
     LOGGER_LEVEL_DEBUG,
     LOGGER_LEVEL_INFO,
     LOGGER_LEVEL_WARNING,
-    LOGGER_LEVEL_ERROR
+    LOGGER_LEVEL_ERROR,
 } Logger_Level;
 
 typedef struct Logger Logger;

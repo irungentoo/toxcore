@@ -14,12 +14,12 @@
 typedef enum Groupchat_Status {
     GROUPCHAT_STATUS_NONE,
     GROUPCHAT_STATUS_VALID,
-    GROUPCHAT_STATUS_CONNECTED
+    GROUPCHAT_STATUS_CONNECTED,
 } Groupchat_Status;
 
 typedef enum Groupchat_Type {
     GROUPCHAT_TYPE_TEXT,
-    GROUPCHAT_TYPE_AV
+    GROUPCHAT_TYPE_AV,
 } Groupchat_Type;
 
 #define MAX_LOSSY_COUNT 256
@@ -63,7 +63,7 @@ typedef struct Group_Peer {
 typedef enum Groupchat_Close_Type {
     GROUPCHAT_CLOSE_NONE,
     GROUPCHAT_CLOSE_CONNECTION,
-    GROUPCHAT_CLOSE_ONLINE
+    GROUPCHAT_CLOSE_ONLINE,
 } Groupchat_Close_Type;
 
 /* Connection is to one of the closest DESIRED_CLOSE_CONNECTIONS peers */
