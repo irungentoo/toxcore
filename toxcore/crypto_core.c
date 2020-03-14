@@ -242,7 +242,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
 /* Increment the given nonce by 1. */
 void increment_nonce(uint8_t *nonce)
 {
-    /* TODO(irungentoo): use increment_nonce_number(nonce, 1) or
+    /* TODO(irungentoo): use `increment_nonce_number(nonce, 1)` or
      * sodium_increment (change to little endian).
      *
      * NOTE don't use breaks inside this loop.

@@ -21,7 +21,7 @@
 /**
  * Protocol:
  *
- * |id [1 byte]| |size [1 byte]| |data [$size bytes]| |...{repeat}| |0 {end byte}|
+ * `|id [1 byte]| |size [1 byte]| |data [$size bytes]| |...{repeat}| |0 {end byte}|`
  */
 
 typedef enum MSIHeaderID {

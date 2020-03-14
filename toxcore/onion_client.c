@@ -1686,7 +1686,7 @@ static void do_announce(Onion_Client *onion_c)
 
             uint32_t pathnum = list_nodes[i].path_used % NUMBER_ONION_PATHS;
 
-            /* A node/path is considered 'stable', and can be pinged less
+            /* A node/path is considered "stable", and can be pinged less
              * aggressively, if it has survived for at least TIME_TO_STABLE
              * and the latest packets sent to it are not timing out.
              */

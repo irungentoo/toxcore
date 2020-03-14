@@ -271,8 +271,6 @@ int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
  *
- * int dht_getfriendip(DHT *dht, uint8_t *public_key, IP_Port *ip_port);
- *
  *  return -1, -- if public_key does NOT refer to a friend
  *  return  0, -- if public_key refers to a friend and we failed to find the friend (yet)
  *  return  1, ip if public_key refers to a friend and we found him

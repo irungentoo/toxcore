@@ -610,7 +610,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
     return num;
 }
 
-/* Find index of ##type with public_key equal to pk.
+/* Find index in an array with public_key equal to pk.
  *
  *  return index or UINT32_MAX if not found.
  */
@@ -1112,7 +1112,7 @@ static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
 }
 
 /* Check if the node obtained with a get_nodes with public_key should be pinged.
- * NOTE: for best results call it after addto_lists;
+ * NOTE: for best results call it after addto_lists.
  *
  * return false if the node should not be pinged.
  * return true if it should.

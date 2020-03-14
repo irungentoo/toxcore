@@ -122,7 +122,7 @@ struct RTPMessage {
 struct RTPWorkBuffer {
     /**
      * Whether this slot contains a key frame. This is true iff
-     * buf->header.flags & RTP_KEY_FRAME.
+     * `buf->header.flags & RTP_KEY_FRAME`.
      */
     bool is_keyframe;
     /**

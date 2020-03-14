@@ -414,7 +414,7 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
 {
     char ip_str[IP_NTOA_LEN];
 
-    if (res < 0) { /* Windows doesn't necessarily know %zu */
+    if (res < 0) { /* Windows doesn't necessarily know `%zu` */
         int error = net_error();
         const char *strerror = net_new_strerror(error);
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
@@ -842,14 +842,14 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         net_kill_strerror(strerror);
     }
 
-    /* a hanging program or a different user might block the standard port;
-     * as long as it isn't a parameter coming from the commandline,
-     * try a few ports after it, to see if we can find a "free" one
+    /* A hanging program or a different user might block the standard port.
+     * As long as it isn't a parameter coming from the commandline,
+     * try a few ports after it, to see if we can find a "free" one.
      *
-     * if we go on without binding, the first sendto() automatically binds to
-     * a free port chosen by the system (i.e. anything from 1024 to 65535)
+     * If we go on without binding, the first sendto() automatically binds to
+     * a free port chosen by the system (i.e. anything from 1024 to 65535).
      *
-     * returning NULL after bind fails has both advantages and disadvantages:
+     * Returning NULL after bind fails has both advantages and disadvantages:
      * advantage:
      *   we can rely on getting the port in the range 33445..33450, which
      *   enables us to tell joe user to open their firewall to a small range

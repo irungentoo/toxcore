@@ -121,7 +121,7 @@ void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICall
  */
 int msi_invite(MSISession *session, MSICall **call, uint32_t friend_number, uint8_t capabilities);
 /**
- * Hangup call. NOTE: 'call' will be freed
+ * Hangup call. NOTE: `call` will be freed
  */
 int msi_hangup(MSICall *call);
 /**

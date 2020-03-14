@@ -378,7 +378,7 @@ OpusEncoder *create_audio_encoder(const Logger *log, int32_t bit_rate, int32_t s
      * controlling the rate by adjusting the output buffer size.
      *
      * Parameters:
-     *   [in]    x   opus_int32: bitrate in bits per second.
+     *   `[in]`    `x`   `opus_int32`: bitrate in bits per second.
      */
     status = opus_encoder_ctl(rc, OPUS_SET_BITRATE(bit_rate));
 
@@ -393,7 +393,7 @@ OpusEncoder *create_audio_encoder(const Logger *log, int32_t bit_rate, int32_t s
      * Note:
      *   This is only applicable to the LPC layer
      * Parameters:
-     *   [in]    x   int: FEC flag, 0 (disabled) is default
+     *   `[in]`    `x`   `int`: FEC flag, 0 (disabled) is default
      */
     /* Enable in-band forward error correction in codec */
     status = opus_encoder_ctl(rc, OPUS_SET_INBAND_FEC(1));
@@ -410,7 +410,7 @@ OpusEncoder *create_audio_encoder(const Logger *log, int32_t bit_rate, int32_t s
      * the encoder at the expense of quality at a given bitrate in the lossless case,
      * but greater quality under loss.
      * Parameters:
-     *     [in]    x   int: Loss percentage in the range 0-100, inclusive.
+     *     `[in]`    `x`   `int`: Loss percentage in the range 0-100, inclusive.
      */
     /* Make codec resistant to up to 10% packet loss
      * NOTE This could also be adjusted on the fly, rather than hard-coded,
@@ -431,7 +431,7 @@ OpusEncoder *create_audio_encoder(const Logger *log, int32_t bit_rate, int32_t s
      * The default value is 10.
      *
      * Parameters:
-     *   [in]    x   int: 0-10, inclusive
+     *   `[in]`    `x`   `int`: 0-10, inclusive
      */
     /* Set algorithm to the highest complexity, maximizing compression */
     status = opus_encoder_ctl(rc, OPUS_SET_COMPLEXITY(AUDIO_OPUS_COMPLEXITY));

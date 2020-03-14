@@ -140,8 +140,6 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
 int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port source, const uint8_t *nonce);
 
 /* Set the callback to be called when the dest ip_port doesn't have TOX_AF_INET6 or TOX_AF_INET as the family.
- *
- * Format: function(void *object, IP_Port dest, uint8_t *data, uint16_t length)
  */
 void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *object);
 

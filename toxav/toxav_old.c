@@ -17,9 +17,9 @@
  * return -1 on failure.
  *
  * Audio data callback format:
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ *   `audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)`
  *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ * Note that total size of pcm in bytes is equal to `(samples * channels * sizeof(int16_t))`.
  */
 int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userdata)
 {
@@ -33,10 +33,10 @@ int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userda
  * returns group number on success
  * returns -1 on failure.
  *
- * Audio data callback format (same as the one for toxav_add_av_groupchat()):
- *   audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)
+ * Audio data callback format (same as the one for `toxav_add_av_groupchat()`):
+ *   `audio_callback(Tox *tox, int groupnumber, int peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, unsigned int sample_rate, void *userdata)`
  *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ * Note that total size of pcm in bytes is equal to `(samples * channels * sizeof(int16_t))`.
  */
 int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                             audio_data_cb *audio_callback, void *userdata)
@@ -51,9 +51,9 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
  * return 0 on success.
  * return -1 on failure.
  *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ * Note that total size of pcm in bytes is equal to `(samples * channels * sizeof(int16_t))`.
  *
- * Valid number of samples are ((sample rate) * (audio length (Valid ones are: 2.5, 5, 10, 20, 40 or 60 ms)) / 1000)
+ * Valid number of samples are `((sample rate) * (audio length) / 1000)` (Valid values for audio length: 2.5, 5, 10, 20, 40 or 60 ms)
  * Valid number of channels are 1 or 2.
  * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
  *
@@ -81,9 +81,9 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
  * return -1 on failure.
  *
  * Audio data callback format (same as the one for toxav_add_av_groupchat()):
- *   audio_callback(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, uint32_t sample_rate, void *userdata)
+ *   `audio_callback(Tox *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm, unsigned int samples, uint8_t channels, uint32_t sample_rate, void *userdata)`
  *
- * Note that total size of pcm in bytes is equal to (samples * channels * sizeof(int16_t)).
+ * Note that total size of pcm in bytes is equal to `(samples * channels * sizeof(int16_t))`.
  */
 int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber, audio_data_cb *audio_callback, void *userdata)
 {

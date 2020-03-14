@@ -125,7 +125,7 @@ static uint16_t address_checksum(const uint8_t *address, uint32_t len)
     return check;
 }
 
-/* Format: [real_pk (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]
+/* Format: `[real_pk (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]`
  *
  *  return FRIEND_ADDRESS_SIZE byte address to give to others.
  */
@@ -971,12 +971,10 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
-/**********CONFERENCES************/
+/** CONFERENCES */
 
 
 /* Set the callback for conference invites.
- *
- *  Function(Messenger *m, uint32_t friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
 void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function)
 {
@@ -994,12 +992,10 @@ int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, cons
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, 0);
 }
 
-/****************FILE SENDING*****************/
+/** FILE SENDING */
 
 
 /* Set the callback for file send requests.
- *
- *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint32_t filetype, uint64_t filesize, uint8_t *filename, size_t filename_length, void *userdata)
  */
 void callback_file_sendrequest(Messenger *m, m_file_recv_cb *function)
 {
@@ -1007,9 +1003,6 @@ void callback_file_sendrequest(Messenger *m, m_file_recv_cb *function)
 }
 
 /* Set the callback for file control requests.
- *
- *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, unsigned int control_type, void *userdata)
- *
  */
 void callback_file_control(Messenger *m, m_file_recv_control_cb *function)
 {
@@ -1017,9 +1010,6 @@ void callback_file_control(Messenger *m, m_file_recv_control_cb *function)
 }
 
 /* Set the callback for file data.
- *
- *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, uint8_t *data, size_t length, void *userdata)
- *
  */
 void callback_file_data(Messenger *m, m_file_recv_chunk_cb *function)
 {
@@ -1027,9 +1017,6 @@ void callback_file_data(Messenger *m, m_file_recv_chunk_cb *function)
 }
 
 /* Set the callback for file request chunk.
- *
- *  Function(Tox *tox, uint32_t friendnumber, uint32_t filenumber, uint64_t position, size_t length, void *userdata)
- *
  */
 void callback_file_reqchunk(Messenger *m, m_file_chunk_request_cb *function)
 {
@@ -1766,11 +1753,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
     }
 }
 
-/**************************************/
-
 /* Set the callback for msi packets.
- *
- *  Function(Messenger *m, int friendnumber, uint8_t *data, uint16_t length, void *userdata)
  */
 void m_callback_msi_packet(Messenger *m, m_msi_packet_cb *function, void *userdata)
 {

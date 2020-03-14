@@ -135,7 +135,7 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
     return 0;
 }
 
-/* Dump nodes in onion path to nodes of length num_nodes;
+/* Dump nodes in onion path to nodes of length num_nodes.
  *
  * return -1 on failure.
  * return 0 on success.

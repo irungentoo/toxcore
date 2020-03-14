@@ -30,17 +30,17 @@ typedef struct Packet_Data {
 typedef struct Packets_Array {
     Packet_Data *buffer[CRYPTO_PACKET_BUFFER_SIZE];
     uint32_t  buffer_start;
-    uint32_t  buffer_end; /* packet numbers in array: {buffer_start, buffer_end) */
+    uint32_t  buffer_end; /* packet numbers in array: `{buffer_start, buffer_end)` */
 } Packets_Array;
 
 typedef enum Crypto_Conn_State {
-    CRYPTO_CONN_FREE = 0,            /* the connection slot is free; this value is 0 so it is valid after
-                                      * crypto_memzero(...) of the parent struct
+    CRYPTO_CONN_FREE = 0,            /* the connection slot is free. This value is 0 so it is valid after
+                                      * `crypto_memzero(...)` of the parent struct
                                       */
     CRYPTO_CONN_NO_CONNECTION,       /* the connection is allocated, but not yet used */
     CRYPTO_CONN_COOKIE_REQUESTING,   /* we are sending cookie request packets */
     CRYPTO_CONN_HANDSHAKE_SENT,      /* we are sending handshake packets */
-    CRYPTO_CONN_NOT_CONFIRMED,       /* we are sending handshake packets;
+    CRYPTO_CONN_NOT_CONFIRMED,       /* we are sending handshake packets.
                                       * we have received one from the other, but no data */
     CRYPTO_CONN_ESTABLISHED,         /* the connection is established */
 } Crypto_Conn_State;
@@ -725,7 +725,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     return -1;
 }
 
-/** START: Array Related functions **/
+/** START: Array Related functions */
 
 
 /* Return number of packets in array
@@ -1045,7 +1045,7 @@ static int handle_request_packet(Mono_Time *mono_time, const Logger *log, Packet
     return requested;
 }
 
-/** END: Array Related functions **/
+/** END: Array Related functions */
 
 #define MAX_DATA_DATA_PACKET_SIZE (MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + CRYPTO_MAC_SIZE))
 
