@@ -8,7 +8,7 @@ cirrus-ci_task:
     - echo "build --jobs=50 --curses=no --verbose_failures" | tee ~/.bazelrc
     - echo "build --config=linux" | tee -a ~/.bazelrc
     - echo "build --config=clang" | tee -a ~/.bazelrc
-#    - echo "build --config=remote" | tee -a ~/.bazelrc
+    - echo "build --config=remote" | tee -a ~/.bazelrc
     - cd .. && mv cirrus-ci-build c-toxcore
     - git clone --branch=upgrade-bazel --depth=1 https://github.com/iphydf/toktok-stack cirrus-ci-build
     - mv c-toxcore cirrus-ci-build

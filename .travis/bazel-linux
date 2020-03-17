@@ -12,6 +12,7 @@ travis_install() {
   echo 'build --jobs=4 --curses=no --verbose_failures' >> $HOME/.bazelrc
   echo 'build --config=linux' >> $HOME/.bazelrc
   echo "build --config=$CC" >> $HOME/.bazelrc
+  echo "build --config=remote" >> $HOME/.bazelrc
   pip install --user yamllint
 }
 
