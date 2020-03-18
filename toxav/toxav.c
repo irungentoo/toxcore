@@ -956,7 +956,7 @@ void toxav_callback_video_receive_frame(ToxAV *av, toxav_video_receive_frame_cb 
  * :: Internal
  *
  ******************************************************************************/
-void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data)
+static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data)
 {
     /* Callback which is called when the internal measure mechanism reported packet loss.
      * We report suggested lowered bitrate to an app. If app is sending both audio and video,
@@ -1001,7 +1001,7 @@ void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *u
 
     pthread_mutex_unlock(call->av->mutex);
 }
-int callback_invite(void *toxav_inst, MSICall *call)
+static int callback_invite(void *toxav_inst, MSICall *call)
 {
     ToxAV *toxav = (ToxAV *)toxav_inst;
     pthread_mutex_lock(toxav->mutex);
@@ -1029,7 +1029,7 @@ int callback_invite(void *toxav_inst, MSICall *call)
     pthread_mutex_unlock(toxav->mutex);
     return 0;
 }
-int callback_start(void *toxav_inst, MSICall *call)
+static int callback_start(void *toxav_inst, MSICall *call)
 {
     ToxAV *toxav = (ToxAV *)toxav_inst;
     pthread_mutex_lock(toxav->mutex);
@@ -1057,7 +1057,7 @@ int callback_start(void *toxav_inst, MSICall *call)
     pthread_mutex_unlock(toxav->mutex);
     return 0;
 }
-int callback_end(void *toxav_inst, MSICall *call)
+static int callback_end(void *toxav_inst, MSICall *call)
 {
     ToxAV *toxav = (ToxAV *)toxav_inst;
     pthread_mutex_lock(toxav->mutex);
@@ -1072,7 +1072,7 @@ int callback_end(void *toxav_inst, MSICall *call)
     pthread_mutex_unlock(toxav->mutex);
     return 0;
 }
-int callback_error(void *toxav_inst, MSICall *call)
+static int callback_error(void *toxav_inst, MSICall *call)
 {
     ToxAV *toxav = (ToxAV *)toxav_inst;
     pthread_mutex_lock(toxav->mutex);
@@ -1087,7 +1087,7 @@ int callback_error(void *toxav_inst, MSICall *call)
     pthread_mutex_unlock(toxav->mutex);
     return 0;
 }
-int callback_capabilites(void *toxav_inst, MSICall *call)
+static int callback_capabilites(void *toxav_inst, MSICall *call)
 {
     ToxAV *toxav = (ToxAV *)toxav_inst;
     pthread_mutex_lock(toxav->mutex);
@@ -1109,14 +1109,14 @@ int callback_capabilites(void *toxav_inst, MSICall *call)
     pthread_mutex_unlock(toxav->mutex);
     return 0;
 }
-bool audio_bit_rate_invalid(uint32_t bit_rate)
+static bool audio_bit_rate_invalid(uint32_t bit_rate)
 {
     /* Opus RFC 6716 section-2.1.1 dictates the following:
      * Opus supports all bit rates from 6 kbit/s to 510 kbit/s.
      */
     return bit_rate < 6 || bit_rate > 510;
 }
-bool video_bit_rate_invalid(uint32_t bit_rate)
+static bool video_bit_rate_invalid(uint32_t bit_rate)
 {
     /* https://www.webmproject.org/docs/webm-sdk/structvpx__codec__enc__cfg.html shows the following:
      * unsigned int rc_target_bitrate
@@ -1127,7 +1127,7 @@ bool video_bit_rate_invalid(uint32_t bit_rate)
      */
     return bit_rate > UINT_MAX;
 }
-bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t state)
+static bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t state)
 {
     if (av->scb) {
         av->scb(av, friend_number, state, av->scb_user_data);
@@ -1138,7 +1138,7 @@ bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t stat
     return true;
 }
 
-ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *error)
+static ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *error)
 {
     /* Assumes mutex locked */
     Toxav_Err_Call rc = TOXAV_ERR_CALL_OK;
@@ -1228,7 +1228,7 @@ RETURN:
     return call;
 }
 
-ToxAVCall *call_get(ToxAV *av, uint32_t friend_number)
+static ToxAVCall *call_get(ToxAV *av, uint32_t friend_number)
 {
     /* Assumes mutex locked */
     if (av->calls == nullptr || av->calls_tail < friend_number) {
@@ -1238,7 +1238,7 @@ ToxAVCall *call_get(ToxAV *av, uint32_t friend_number)
     return av->calls[friend_number];
 }
 
-ToxAVCall *call_remove(ToxAVCall *call)
+static ToxAVCall *call_remove(ToxAVCall *call)
 {
     if (call == nullptr) {
         return nullptr;
@@ -1288,7 +1288,7 @@ CLEAR:
     return nullptr;
 }
 
-bool call_prepare_transmission(ToxAVCall *call)
+static bool call_prepare_transmission(ToxAVCall *call)
 {
     /* Assumes mutex locked */
 
@@ -1371,7 +1371,7 @@ FAILURE_2:
     return false;
 }
 
-void call_kill_transmission(ToxAVCall *call)
+static void call_kill_transmission(ToxAVCall *call)
 {
     if (call == nullptr || call->active == 0) {
         return;

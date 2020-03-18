@@ -120,7 +120,7 @@ void bwc_add_recv(BWController *bwc, uint32_t recv_bytes)
     send_update(bwc);
 }
 
-void send_update(BWController *bwc)
+static void send_update(BWController *bwc)
 {
     if (bwc->packet_loss_counted_cycles > BWC_AVG_LOSS_OVER_CYCLES_COUNT &&
             current_time_monotonic(bwc->m->mono_time) - bwc->cycle.last_sent_timestamp > BWC_SEND_INTERVAL_MS) {
@@ -180,7 +180,7 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
     return 0;
 }
 
-int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
+static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
 {
     if (length - 1 != sizeof(struct BWCMessage)) {
         return -1;

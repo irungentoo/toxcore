@@ -355,7 +355,8 @@ static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
     *success = 0;
     return nullptr;
 }
-OpusEncoder *create_audio_encoder(const Logger *log, int32_t bit_rate, int32_t sampling_rate, int32_t channel_count)
+static OpusEncoder *create_audio_encoder(const Logger *log, int32_t bit_rate, int32_t sampling_rate,
+        int32_t channel_count)
 {
     int status = OPUS_OK;
     /*
@@ -448,8 +449,8 @@ FAILURE:
     return nullptr;
 }
 
-bool reconfigure_audio_encoder(const Logger *log, OpusEncoder **e, int32_t new_br, int32_t new_sr, uint8_t new_ch,
-                               int32_t *old_br, int32_t *old_sr, int32_t *old_ch)
+static bool reconfigure_audio_encoder(const Logger *log, OpusEncoder **e, int32_t new_br, int32_t new_sr,
+                                      uint8_t new_ch, int32_t *old_br, int32_t *old_sr, int32_t *old_ch)
 {
     /* Values are checked in toxav.c */
     if (*old_sr != new_sr || *old_ch != new_ch) {
@@ -480,7 +481,7 @@ bool reconfigure_audio_encoder(const Logger *log, OpusEncoder **e, int32_t new_b
     return true;
 }
 
-bool reconfigure_audio_decoder(ACSession *ac, int32_t sampling_rate, int8_t channels)
+static bool reconfigure_audio_decoder(ACSession *ac, int32_t sampling_rate, int8_t channels)
 {
     if (sampling_rate != ac->ld_sample_rate || channels != ac->ld_channel_count) {
         if (current_time_monotonic(ac->mono_time) - ac->ldrts < 500) {
