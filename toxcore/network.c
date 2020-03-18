@@ -871,8 +871,13 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
 
         int neterror = net_error();
         const char *strerror = net_new_strerror(neterror);
-        LOGGER_DEBUG(log, res < 0 ? "Failed to activate local multicast membership. (%d, %s)" :
-                     "Local multicast group FF02::1 joined successfully. (%d, %s)", neterror, strerror);
+
+        if (res < 0) {
+            LOGGER_DEBUG(log, "Failed to activate local multicast membership. (%d, %s)", neterror, strerror);
+        } else {
+            LOGGER_DEBUG(log, "Local multicast group FF02::1 joined successfully. (%d, %s)", neterror, strerror);
+        }
+
         net_kill_strerror(strerror);
     }
 
