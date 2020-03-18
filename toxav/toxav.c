@@ -102,22 +102,22 @@ struct ToxAV {
     uint32_t interval; /** Calculated interval */
 };
 
-void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data);
+static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data);
 
-int callback_invite(void *toxav_inst, MSICall *call);
-int callback_start(void *toxav_inst, MSICall *call);
-int callback_end(void *toxav_inst, MSICall *call);
-int callback_error(void *toxav_inst, MSICall *call);
-int callback_capabilites(void *toxav_inst, MSICall *call);
+static int callback_invite(void *toxav_inst, MSICall *call);
+static int callback_start(void *toxav_inst, MSICall *call);
+static int callback_end(void *toxav_inst, MSICall *call);
+static int callback_error(void *toxav_inst, MSICall *call);
+static int callback_capabilites(void *toxav_inst, MSICall *call);
 
-bool audio_bit_rate_invalid(uint32_t bit_rate);
-bool video_bit_rate_invalid(uint32_t bit_rate);
-bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t state);
-ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *error);
-ToxAVCall *call_get(ToxAV *av, uint32_t friend_number);
-ToxAVCall *call_remove(ToxAVCall *call);
-bool call_prepare_transmission(ToxAVCall *call);
-void call_kill_transmission(ToxAVCall *call);
+static bool audio_bit_rate_invalid(uint32_t bit_rate);
+static bool video_bit_rate_invalid(uint32_t bit_rate);
+static bool invoke_call_state_callback(ToxAV *av, uint32_t friend_number, uint32_t state);
+static ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *error);
+static ToxAVCall *call_get(ToxAV *av, uint32_t friend_number);
+static ToxAVCall *call_remove(ToxAVCall *call);
+static bool call_prepare_transmission(ToxAVCall *call);
+static void call_kill_transmission(ToxAVCall *call);
 
 ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
 {

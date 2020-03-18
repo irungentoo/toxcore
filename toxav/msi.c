@@ -61,20 +61,21 @@ typedef struct MSIMessage {
 } MSIMessage;
 
 
-void msg_init(MSIMessage *dest, MSIRequest request);
-int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
-uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len, uint16_t *length);
+static void msg_init(MSIMessage *dest, MSIRequest request);
+static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length);
+static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *value, uint8_t value_len,
+                                     uint16_t *length);
 static int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *msg);
-int send_error(Messenger *m, uint32_t friend_number, MSIError error);
+static int send_error(Messenger *m, uint32_t friend_number, MSIError error);
 static int invoke_callback(MSICall *call, MSICallbackID cb);
 static MSICall *get_call(MSISession *session, uint32_t friend_number);
-MSICall *new_call(MSISession *session, uint32_t friend_number);
-void kill_call(MSICall *call);
-void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data);
-void handle_init(MSICall *call, const MSIMessage *msg);
-void handle_push(MSICall *call, const MSIMessage *msg);
-void handle_pop(MSICall *call, const MSIMessage *msg);
-void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
+static MSICall *new_call(MSISession *session, uint32_t friend_number);
+static void kill_call(MSICall *call);
+static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data);
+static void handle_init(MSICall *call, const MSIMessage *msg);
+static void handle_push(MSICall *call, const MSIMessage *msg);
+static void handle_pop(MSICall *call, const MSIMessage *msg);
+static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
 
 
 /**
