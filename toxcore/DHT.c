@@ -173,6 +173,11 @@ const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num)
     return dht->friends_list[friend_num].public_key;
 }
 
+static bool assoc_timeout(const Mono_Time *mono_time, const IPPTsPng *assoc)
+{
+    return mono_time_is_timeout(mono_time, assoc->timestamp, BAD_NODE_TIMEOUT);
+}
+
 /* Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
@@ -778,6 +783,7 @@ static uint8_t hardening_correct(const Hardening *h)
 {
     return h->routes_requests_ok + (h->send_nodes_ok << 1) + (h->testing_requests << 2);
 }
+
 /*
  * helper for get_close_nodes(). argument list is a monster :D
  */
@@ -799,7 +805,7 @@ static void get_close_nodes_inner(const Mono_Time *mono_time, const uint8_t *pub
             continue;
         }
 
-        const IPPTsPng *ipptp = nullptr;
+        const IPPTsPng *ipptp;
 
         if (net_family_is_ipv4(sa_family)) {
             ipptp = &client->assoc4;
@@ -812,7 +818,7 @@ static void get_close_nodes_inner(const Mono_Time *mono_time, const uint8_t *pub
         }
 
         /* node not in a good condition? */
-        if (mono_time_is_timeout(mono_time, ipptp->timestamp, BAD_NODE_TIMEOUT)) {
+        if (assoc_timeout(mono_time, ipptp)) {
             continue;
         }
 
@@ -886,11 +892,6 @@ typedef struct DHT_Cmp_data {
     Client_data entry;
 } DHT_Cmp_data;
 
-static bool assoc_timeout(const Mono_Time *mono_time, const IPPTsPng *assoc)
-{
-    return mono_time_is_timeout(mono_time, assoc->timestamp, BAD_NODE_TIMEOUT);
-}
-
 static bool incorrect_hardening(const IPPTsPng *assoc)
 {
     return hardening_correct(&assoc->hardening) != HARDENING_ALL_OK;
@@ -952,8 +953,8 @@ static int cmp_dht_entry(const void *a, const void *b)
 static unsigned int store_node_ok(const Client_data *client, const Mono_Time *mono_time, const uint8_t *public_key,
                                   const uint8_t *comp_public_key)
 {
-    return (mono_time_is_timeout(mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT)
-            && mono_time_is_timeout(mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT))
+    return (assoc_timeout(mono_time, &client->assoc4)
+            && assoc_timeout(mono_time, &client->assoc6))
            || id_closest(comp_public_key, client->public_key, public_key) == 2;
 }
 
@@ -1059,8 +1060,8 @@ static int add_to_close(DHT *dht, const uint8_t *public_key, IP_Port ip_port, bo
          * index is left as >= LCLIENT_LENGTH */
         Client_data *const client = &dht->close_clientlist[(index * LCLIENT_NODES) + i];
 
-        if (!mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
-                !mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!assoc_timeout(dht->mono_time, &client->assoc4) ||
+                !assoc_timeout(dht->mono_time, &client->assoc6)) {
             continue;
         }
 
@@ -1096,7 +1097,7 @@ static bool is_pk_in_client_list(const Client_data *list, unsigned int client_li
                             ? &list[index].assoc4
                             : &list[index].assoc6;
 
-    return !mono_time_is_timeout(mono_time, assoc->timestamp, BAD_NODE_TIMEOUT);
+    return !assoc_timeout(mono_time, assoc);
 }
 
 static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
@@ -1675,7 +1676,7 @@ int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
     for (const IPPTsPng * const *it = assocs; *it; ++it) {
         const IPPTsPng *const assoc = *it;
 
-        if (!mono_time_is_timeout(dht->mono_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
+        if (!assoc_timeout(dht->mono_time, assoc)) {
             *ip_port = assoc->ip_port;
             return 1;
         }
@@ -1716,7 +1717,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
                 }
 
                 /* If node is good. */
-                if (!mono_time_is_timeout(dht->mono_time, assoc->timestamp, BAD_NODE_TIMEOUT)) {
+                if (!assoc_timeout(dht->mono_time, assoc)) {
                     client_list[num_nodes] = client;
                     assoc_list[num_nodes] = assoc;
                     ++num_nodes;
@@ -1917,8 +1918,8 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
         }
 
         if (id_equal(client->public_key, dht_friend->public_key)) {
-            if (!mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)
-                    || !mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT)) {
+            if (!assoc_timeout(dht->mono_time, &client->assoc6)
+                    || !assoc_timeout(dht->mono_time, &client->assoc4)) {
                 return 0; /* direct connectivity */
             }
         }
@@ -2388,7 +2389,7 @@ static uint32_t have_nodes_closelist(DHT *dht, Node_format *nodes, uint16_t num)
         const IPPTsPng *const temp = get_closelist_IPPTsPng(dht, nodes[i].public_key, nodes[i].ip_port.ip.family);
 
         if (temp) {
-            if (!mono_time_is_timeout(dht->mono_time, temp->timestamp, BAD_NODE_TIMEOUT)) {
+            if (!assoc_timeout(dht->mono_time, temp)) {
                 ++counter;
             }
         }
@@ -2519,11 +2520,11 @@ static uint16_t list_nodes(Client_data *list, size_t length, const Mono_Time *mo
     for (size_t i = length; i != 0; --i) {
         const IPPTsPng *assoc = nullptr;
 
-        if (!mono_time_is_timeout(mono_time, list[i - 1].assoc4.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!assoc_timeout(mono_time, &list[i - 1].assoc4)) {
             assoc = &list[i - 1].assoc4;
         }
 
-        if (!mono_time_is_timeout(mono_time, list[i - 1].assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!assoc_timeout(mono_time, &list[i - 1].assoc6)) {
             if (assoc == nullptr) {
                 assoc = &list[i - 1].assoc6;
             } else if (random_u08() % 2) {
@@ -2595,7 +2596,7 @@ static void do_hardening(DHT *dht)
             sa_family = net_family_ipv6;
         }
 
-        if (mono_time_is_timeout(dht->mono_time, cur_iptspng->timestamp, BAD_NODE_TIMEOUT)) {
+        if (assoc_timeout(dht->mono_time, cur_iptspng)) {
             continue;
         }
 
@@ -2961,8 +2962,8 @@ bool dht_isconnected(const DHT *dht)
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *const client = &dht->close_clientlist[i];
 
-        if (!mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT) ||
-                !mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)) {
+        if (!assoc_timeout(dht->mono_time, &client->assoc4) ||
+                !assoc_timeout(dht->mono_time, &client->assoc6)) {
             return true;
         }
     }
@@ -2978,12 +2979,12 @@ bool dht_non_lan_connected(const DHT *dht)
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
         const Client_data *const client = &dht->close_clientlist[i];
 
-        if (!mono_time_is_timeout(dht->mono_time, client->assoc4.timestamp, BAD_NODE_TIMEOUT)
+        if (!assoc_timeout(dht->mono_time, &client->assoc4)
                 && !ip_is_lan(client->assoc4.ip_port.ip)) {
             return true;
         }
 
-        if (!mono_time_is_timeout(dht->mono_time, client->assoc6.timestamp, BAD_NODE_TIMEOUT)
+        if (!assoc_timeout(dht->mono_time, &client->assoc6)
                 && !ip_is_lan(client->assoc6.ip_port.ip)) {
             return true;
         }
