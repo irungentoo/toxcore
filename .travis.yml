@@ -38,23 +38,6 @@ jobs:
       install:       .travis/$JOB install
       script:        .travis/$JOB script
     - stage: "Stage 1"
-      env: JOB=bazel-linux
-      compiler: clang
-      before_install:
-        # Clear bazel installation.
-        - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
-        # Get toktok-stack, which contains the bazel workspace.
-        - cd ..
-        - git clone --depth=1 --branch=upgrade-bazel https://github.com/iphydf/toktok-stack
-        - rm -rf toktok-stack/c-toxcore
-        - mv c-toxcore toktok-stack/
-        - cd toktok-stack/c-toxcore
-      install:       .travis/$JOB install
-      script:        .travis/$JOB script
-      before_cache:
-        # Clear bazel installation.
-        - rm -rf $HOME/.cache/bazel/_bazel_$USER/install
-    - stage: "Stage 1"
       if: type IN (push, api, cron)
       env: JOB=cmake-win32
       services: [docker]
