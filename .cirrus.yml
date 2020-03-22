@@ -5,14 +5,11 @@ cirrus-ci_task:
     cpu: 8
     memory: 12G
   configure_script:
-    - echo "build --jobs=50 --curses=no --verbose_failures" | tee ~/.bazelrc
-    - echo "build --config=linux" | tee -a ~/.bazelrc
-    - echo "build --config=clang" | tee -a ~/.bazelrc
-#    - echo "build --config=remote" | tee -a ~/.bazelrc
     - cd .. && mv cirrus-ci-build c-toxcore
-    - git clone --branch=upgrade-bazel --depth=1 https://github.com/iphydf/toktok-stack cirrus-ci-build
+    - git clone --depth=1 https://github.com/TokTok/toktok-stack cirrus-ci-build
     - mv c-toxcore cirrus-ci-build
-    - cd -
+    - cd cirrus-ci-build
+    - tools/setup-ci
     - bazel version
   test_all_script:
     - RUN_TEST="bazel test --copt=-DUSE_IPV6=0 -c opt -k //c-toxcore/..."
