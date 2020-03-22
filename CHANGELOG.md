@@ -1,8 +1,68 @@
 
+## v0.2.11
+
+### Merged PRs:
+
+- [#1403](https://github.com/TokTok/c-toxcore/pull/1403) Install libsodium from apt instead of from source.
+- [#1402](https://github.com/TokTok/c-toxcore/pull/1402) Remove bazel build from Travis.
+- [#1400](https://github.com/TokTok/c-toxcore/pull/1400) Disable bazel remote cache on CI.
+- [#1399](https://github.com/TokTok/c-toxcore/pull/1399) Periodically try to send direct packets when connected by TCP.
+- [#1398](https://github.com/TokTok/c-toxcore/pull/1398) Minor cleanup: use `assoc_timeout` function where possible.
+- [#1397](https://github.com/TokTok/c-toxcore/pull/1397) Check that LOGGER macros are only called with string literals.
+- [#1396](https://github.com/TokTok/c-toxcore/pull/1396) Make function defns match their decls regarding storage class.
+- [#1395](https://github.com/TokTok/c-toxcore/pull/1395) Mark file-local function definitions as `static`.
+- [#1394](https://github.com/TokTok/c-toxcore/pull/1394) Enable remote cache for bazel builds.
+- [#1393](https://github.com/TokTok/c-toxcore/pull/1393) Add another bootstrap node to the bootstrap test.
+- [#1392](https://github.com/TokTok/c-toxcore/pull/1392) Clear out old conference connections.
+- [#1391](https://github.com/TokTok/c-toxcore/pull/1391) Minor cleanups in network code.
+- [#1390](https://github.com/TokTok/c-toxcore/pull/1390) Avoid casting back and forth between void-ptr.
+- [#1389](https://github.com/TokTok/c-toxcore/pull/1389) Standardise on having a comma at the end of enums.
+- [#1388](https://github.com/TokTok/c-toxcore/pull/1388) Fix up comments a bit to start being more uniform.
+- [#1387](https://github.com/TokTok/c-toxcore/pull/1387) Use rules_cc instead of native cc_library rules.
+- [#1386](https://github.com/TokTok/c-toxcore/pull/1386) Use spdx license identifier instead of GPL blurb.
+- [#1383](https://github.com/TokTok/c-toxcore/pull/1383) Pass packet ID to custom packet handlers.
+- [#1382](https://github.com/TokTok/c-toxcore/pull/1382) Add a mutex lock/unlock inside every public API function.
+- [#1381](https://github.com/TokTok/c-toxcore/pull/1381) Use `net_pack` instead of casting bytes to ints.
+- [#1380](https://github.com/TokTok/c-toxcore/pull/1380) Disable FreeBSD travis build until it is fixed.
+- [#1379](https://github.com/TokTok/c-toxcore/pull/1379) Update and fix FreeBSD setup on Travis-CI
+- [#1378](https://github.com/TokTok/c-toxcore/pull/1378) Use ninja build system for the cmake-linux build.
+- [#1376](https://github.com/TokTok/c-toxcore/pull/1376) Remove testing/av_test.c.
+- [#1375](https://github.com/TokTok/c-toxcore/pull/1375) Add "cimple_test" to the bazel build.
+- [#1374](https://github.com/TokTok/c-toxcore/pull/1374) Handle invite to existing conference
+- [#1372](https://github.com/TokTok/c-toxcore/pull/1372) Upgrade bazel to 2.1.1.
+- [#1371](https://github.com/TokTok/c-toxcore/pull/1371) Bump to astyle-3.1 in travis build.
+- [#1370](https://github.com/TokTok/c-toxcore/pull/1370) use -1 rather than ~0 in unsigned integer types
+- [#1362](https://github.com/TokTok/c-toxcore/pull/1362) Workaround for message number saving
+- [#1358](https://github.com/TokTok/c-toxcore/pull/1358) Allow Bazel to rerun tests marked as flaky
+- [#1352](https://github.com/TokTok/c-toxcore/pull/1352) Update tests to use a working bootstrap node
+- [#1349](https://github.com/TokTok/c-toxcore/pull/1349) Fix tox-bootstrapd's README and update Dockerfile
+- [#1347](https://github.com/TokTok/c-toxcore/pull/1347) Fix pthread_mutex_destroy getting too many arguments
+- [#1346](https://github.com/TokTok/c-toxcore/pull/1346) Fix most TSAN failures
+- [#1345](https://github.com/TokTok/c-toxcore/pull/1345) fix concurrency issues in mono_time
+- [#1343](https://github.com/TokTok/c-toxcore/pull/1343) Fix TSAN failures in tests
+- [#1334](https://github.com/TokTok/c-toxcore/pull/1334) fix missing group title length check
+- [#1330](https://github.com/TokTok/c-toxcore/pull/1330) Force IPv4 for cirrus-ci tests
+- [#1329](https://github.com/TokTok/c-toxcore/pull/1329) bump libsodium version in appveyor.yml
+- [#1322](https://github.com/TokTok/c-toxcore/pull/1322) Clean-up of group.c code
+- [#1321](https://github.com/TokTok/c-toxcore/pull/1321) Some small fixes to groups.
+- [#1299](https://github.com/TokTok/c-toxcore/pull/1299) Add VScode folder to .gitignore
+- [#1297](https://github.com/TokTok/c-toxcore/pull/1297) Use net_pack/unpack instead of host_to_net.
+
+### Closed issues:
+
+- [#1373](https://github.com/TokTok/c-toxcore/issues/1373) handle crashes after group invites
+- [#1368](https://github.com/TokTok/c-toxcore/issues/1368) Are tox clients also open source
+- [#1366](https://github.com/TokTok/c-toxcore/issues/1366) Generate a link for websites (Friendship and proxy)
+- [#1354](https://github.com/TokTok/c-toxcore/issues/1354) Unstable Tests
+- [#1316](https://github.com/TokTok/c-toxcore/issues/1316) Documentation claims toxav_iteration_interval is threadsafe but it's not
+- [#1274](https://github.com/TokTok/c-toxcore/issues/1274) build error
+- [#850](https://github.com/TokTok/c-toxcore/issues/850) GPG App Usage
+
 ## v0.2.10
 
 ### Merged PRs:
 
+- [#1324](https://github.com/TokTok/c-toxcore/pull/1324) Release 0.2.10
 - [#1320](https://github.com/TokTok/c-toxcore/pull/1320) add undef guard in tox_many_tcp_test
 - [#1314](https://github.com/TokTok/c-toxcore/pull/1314) Fix bazel build version at 0.22.0 for CI.
 - [#1311](https://github.com/TokTok/c-toxcore/pull/1311) Disable failing TCP server test
@@ -13,6 +73,7 @@
 
 ### Closed issues:
 
+- [#1325](https://github.com/TokTok/c-toxcore/issues/1325) Question: ETA of v0.2.10?
 - [#1313](https://github.com/TokTok/c-toxcore/issues/1313) CirrusCI is failing and blocking PRs
 - [#1312](https://github.com/TokTok/c-toxcore/issues/1312) Onion client review
 - [#1306](https://github.com/TokTok/c-toxcore/issues/1306) Persistent conference's offline peer list always grows and never decreases
@@ -139,6 +200,7 @@
 
 - [#1214](https://github.com/TokTok/c-toxcore/issues/1214) Massive red shutdown of nodes
 - [#1201](https://github.com/TokTok/c-toxcore/issues/1201) Windows cross-compilation is broken
+- [#961](https://github.com/TokTok/c-toxcore/issues/961) Can't send messages in persistent group chat
 - [#960](https://github.com/TokTok/c-toxcore/issues/960) Persistent groups don't work properly when using toxync bot
 - [#838](https://github.com/TokTok/c-toxcore/issues/838) How to get groupchat identifier?
 
