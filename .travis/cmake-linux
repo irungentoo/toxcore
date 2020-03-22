@@ -42,16 +42,6 @@ travis_install() {
     make -C "$CACHEDIR/astyle/build/gcc" clean
     make -C "$CACHEDIR/astyle/build/gcc" "-j$NPROC"
   }
-
-  # Install libsodium (not in ubuntu-precise).
-  [ -f "$CACHEDIR/lib/libsodium.a" ] || {
-    git clone --depth=1 --branch=stable https://github.com/jedisct1/libsodium ../libsodium
-    cd ../libsodium  # pushd
-    ./autogen.sh
-    ./configure --prefix="$CACHEDIR"
-    make install "-j$NPROC"
-    cd -  # popd
-  }
 }
 
 run_static_analysis() {
