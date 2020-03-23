@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -ex
 
@@ -30,8 +30,28 @@ if ! which "$APIDSL"; then
   fi
 fi
 
+TO_JSON='s/\\/\\\\/g;s/\n/\\n/g;s/"/\\"/g;s/^(.*)$/"$1"/'
+FROM_JSON='s/\\"/"/g;s/^"(.*)"$/$1/;s/\\\\/\\/g;s/\\n/\n/g'
+
+apidsl_request() {
+  TMPFILE=$(mktemp /tmp/apidsl.XXXXXX)
+  curl -o "$TMPFILE" -X POST --data @<(
+    echo '["Request",';
+    cat $2;
+    echo ']') https://apidsl2.herokuapp.com/$1
+  if grep '\[1,"' "$TMPFILE" > /dev/null; then
+    echo "Error: $(grep -o '".*"' /tmp/apidsl-$$ | perl -0777 -pe "$FROM_JSON")" >&2
+    rm "$TMPFILE"
+    exit 1
+  fi
+  perl -0777 -pe 's/^\[0,(.*)\]$/$1/' "$TMPFILE"
+  rm "$TMPFILE"
+}
+
 apidsl_curl() {
-  curl -X POST --data-binary @"$1" https://apidsl.herokuapp.com/apidsl
+  apidsl_request "c" <(
+    apidsl_request "parse" <(
+      perl -0777 -pe "$TO_JSON" $1)) | perl -0777 -pe "$FROM_JSON"
 }
 
 # Check if apidsl generated sources are up to date.

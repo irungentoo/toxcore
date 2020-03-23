@@ -2279,9 +2279,9 @@ namespace conference {
   namespace peer {
 
     /**
-     * Return the number of online peers in the conference. The unsigned 
-     * integers less than this number are the valid values of peer_number for 
-     * the functions querying these peers. Return value is unspecified on 
+     * Return the number of online peers in the conference. The unsigned
+     * integers less than this number are the valid values of peer_number for
+     * the functions querying these peers. Return value is unspecified on
      * failure.
      */
     const uint32_t count(uint32_t conference_number)
@@ -2330,8 +2330,8 @@ namespace conference {
   namespace offline_peer {
 
     /**
-     * Return the number of offline peers in the conference. The unsigned 
-     * integers less than this number are the valid values of offline_peer_number for 
+     * Return the number of offline peers in the conference. The unsigned
+     * integers less than this number are the valid values of offline_peer_number for
      * the functions querying these peers. Return value is unspecified on failure.
      */
     const uint32_t count(uint32_t conference_number)
