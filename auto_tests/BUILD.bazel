@@ -12,10 +12,6 @@ cc_library(
     hdrs = ["run_auto_test.h"],
 )
 
-test_sizes = {
-    "conference_peer_nick_test": "medium",
-}
-
 flaky_tests = {
     "crypto_core_test": True,
     "lan_discovery_test": True,
@@ -24,10 +20,7 @@ flaky_tests = {
 
 [cc_test(
     name = src[:-2],
-    size = test_sizes.get(
-        src[:-2],
-        "small",
-    ),
+    size = "small",
     srcs = [src],
     args = ["$(location %s)" % src],
     copts = ["-Wno-sign-compare"],
