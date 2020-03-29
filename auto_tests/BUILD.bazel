@@ -23,7 +23,6 @@ flaky_tests = {
     size = "small",
     srcs = [src],
     args = ["$(location %s)" % src],
-    copts = ["-Wno-sign-compare"],
     data = glob(["data/*"]),
     flaky = flaky_tests.get(
         src[:-2],
