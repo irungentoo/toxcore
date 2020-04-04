@@ -1,5 +1,5 @@
-#include <malloc.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "../toxcore/tox.h"
 
@@ -41,6 +41,7 @@ int main(int argc, char **argv)
 
     Tox_Err_New error_new;
     Tox *tox = tox_new(tox_options, &error_new);
+    tox_options_free(tox_options);
 
     if (!tox || error_new != TOX_ERR_NEW_OK) {
         free(buffer);
