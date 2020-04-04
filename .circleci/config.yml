@@ -26,6 +26,7 @@ jobs:
             libopus-dev
             libsodium-dev
             libvpx-dev
+            llvm-dev
             ninja-build
             pkg-config
       - run: CC=clang .circleci/cmake-asan

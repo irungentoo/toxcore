@@ -7,6 +7,7 @@ CACHEDIR="$HOME/cache"
 . ".travis/flags-$CC.sh"
 add_flag -Werror
 add_flag -fdiagnostics-color=always
+add_flag -fno-omit-frame-pointer
 add_flag -fsanitize=address,undefined
 cmake -B_build -H. -GNinja			\
   -DCMAKE_C_FLAGS="$C_FLAGS"			\
@@ -29,5 +30,6 @@ export ASAN_OPTIONS="detect_invalid_pointer_pairs=1"
 export ASAN_OPTIONS="$ASAN_OPTIONS,detect_stack_use_after_return=1"
 export ASAN_OPTIONS="$ASAN_OPTIONS,strict_init_order=1"
 export ASAN_OPTIONS="$ASAN_OPTIONS,strict_string_checks=1"
+export ASAN_OPTIONS="$ASAN_OPTIONS,symbolize=1"
 ctest -j50 --output-on-failure ||
 ctest -j50 --output-on-failure --rerun-failed
