@@ -1317,7 +1317,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
     }
 
     /* Prepare bwc */
-    call->bwc = bwc_new(av->m, call->friend_number, callback_bwc, call);
+    call->bwc = bwc_new(av->m, call->friend_number, callback_bwc, call, av->m->mono_time);
 
     { /* Prepare audio */
         call->audio = ac_new(av->m->mono_time, av->m->log, av, call->friend_number, av->acb, av->acb_user_data);
