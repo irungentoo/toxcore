@@ -351,6 +351,10 @@ int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
      * this function gets called from handle_rtp_packet() and handle_rtp_packet_v3()
      */
     if (!vcp || !msg) {
+        if (msg) {
+            free(msg);
+        }
+
         return -1;
     }
 
