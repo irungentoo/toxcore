@@ -43,6 +43,7 @@ struct BWController_s {
     void *mcb_user_data;
 
     Messenger *m;
+    Tox *tox;
     uint32_t friend_number;
 
     BWCCycle cycle;
@@ -59,9 +60,10 @@ struct BWCMessage {
 };
 
 static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object);
+static int bwc_send_custom_lossy_packet(Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length);
 static void send_update(BWController *bwc);
 
-BWController *bwc_new(Messenger *m, uint32_t friendnumber, m_cb *mcb, void *mcb_user_data,
+BWController *bwc_new(Messenger *m, Tox *tox, uint32_t friendnumber, m_cb *mcb, void *mcb_user_data,
                       Mono_Time *bwc_mono_time)
 {
     BWController *retu = (BWController *)calloc(sizeof(struct BWController_s), 1);
@@ -74,6 +76,7 @@ BWController *bwc_new(Messenger *m, uint32_t friendnumber, m_cb *mcb, void *mcb_
     uint64_t now = current_time_monotonic(bwc_mono_time);
     retu->cycle.last_sent_timestamp = now;
     retu->cycle.last_refresh_timestamp = now;
+    retu->tox = tox;
     retu->rcvpkt.rb = rb_new(BWC_AVG_PKT_COUNT);
     retu->cycle.lost = 0;
     retu->cycle.recv = 0;
@@ -143,7 +146,7 @@ static void send_update(BWController *bwc)
             offset += net_pack_u32(bwc_packet + offset, bwc->cycle.recv);
             assert(offset == sizeof(bwc_packet));
 
-            if (m_send_custom_lossy_packet(bwc->m, bwc->friend_number, bwc_packet, sizeof(bwc_packet)) == -1) {
+            if (bwc_send_custom_lossy_packet(bwc->tox, bwc->friend_number, bwc_packet, sizeof(bwc_packet)) == -1) {
                 const char *netstrerror = net_new_strerror(net_error());
                 LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %u)! std error: %s, net error %s",
                                (unsigned)sizeof(bwc_packet), strerror(errno), netstrerror);
@@ -181,6 +184,22 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
     }
 
     return 0;
+}
+
+/*
+ * return -1 on failure, 0 on success
+ *
+ */
+static int bwc_send_custom_lossy_packet(Tox *tox, int32_t friendnumber, const uint8_t *data, uint32_t length)
+{
+    Tox_Err_Friend_Custom_Packet error;
+    tox_friend_send_lossy_packet(tox, friendnumber, data, (size_t)length, &error);
+
+    if (error == TOX_ERR_FRIEND_CUSTOM_PACKET_OK) {
+        return 0;
+    }
+
+    return -1;
 }
 
 static int bwc_handle_data(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)

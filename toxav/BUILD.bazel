@@ -46,6 +46,7 @@ cc_library(
     deps = [
         ":ring_buffer",
         "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:toxcore",
     ],
 )
 
