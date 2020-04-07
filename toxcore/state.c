@@ -11,7 +11,7 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
                const uint8_t *data, uint32_t length, uint16_t cookie_inner)
 {
     if (state_load_callback == nullptr || data == nullptr) {
-        LOGGER_ERROR(log, "state_load() called with invalid args.\n");
+        LOGGER_ERROR(log, "state_load() called with invalid args.");
         return -1;
     }
 
@@ -30,13 +30,13 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
 
         if (length < length_sub) {
             /* file truncated */
-            LOGGER_ERROR(log, "state file too short: %u < %u\n", length, length_sub);
+            LOGGER_ERROR(log, "state file too short: %u < %u", length, length_sub);
             return -1;
         }
 
         if (lendian_to_host16((cookie_type >> 16)) != cookie_inner) {
             /* something is not matching up in a bad way, give up */
-            LOGGER_ERROR(log, "state file garbled: %04x != %04x\n", cookie_type >> 16, cookie_inner);
+            LOGGER_ERROR(log, "state file garbled: %04x != %04x", cookie_type >> 16, cookie_inner);
             return -1;
         }
 
@@ -58,7 +58,7 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
     }
 
     if (length != 0) {
-        LOGGER_ERROR(log, "unparsed data in state file of length %u\n", length);
+        LOGGER_ERROR(log, "unparsed data in state file of length %u", length);
         return -1;
     }
 

@@ -759,7 +759,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
 
     /* maybe check for invalid IPs like 224+.x.y.z? if there is any IP set ever */
     if (!net_family_is_ipv4(ip.family) && !net_family_is_ipv6(ip.family)) {
-        LOGGER_ERROR(log, "invalid address family: %u\n", ip.family.value);
+        LOGGER_ERROR(log, "invalid address family: %u", ip.family.value);
         return nullptr;
     }
 

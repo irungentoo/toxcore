@@ -256,7 +256,7 @@ static bool fill_data_into_slot(const Logger *log, struct RTPWorkBufferList *wkb
         struct RTPMessage *msg = (struct RTPMessage *)calloc(1, sizeof(struct RTPMessage) + header->data_length_full);
 
         if (msg == nullptr) {
-            LOGGER_ERROR(log, "Out of memory while trying to allocate for frame of size %u\n",
+            LOGGER_ERROR(log, "Out of memory while trying to allocate for frame of size %u",
                          (unsigned)header->data_length_full);
             // Out of memory: throw away the incoming data.
             return false;

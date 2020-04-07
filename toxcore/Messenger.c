@@ -2651,7 +2651,7 @@ void do_messenger(Messenger *m, void *userdata)
         }
 
         if (m->numfriends != dht_get_num_friends(m->dht)) {
-            LOGGER_TRACE(m->log, "Friend num in DHT %u != friend num in msger %u\n", dht_get_num_friends(m->dht), m->numfriends);
+            LOGGER_TRACE(m->log, "Friend num in DHT %u != friend num in msger %u", dht_get_num_friends(m->dht), m->numfriends);
         }
 
         Friend *msgfptr;

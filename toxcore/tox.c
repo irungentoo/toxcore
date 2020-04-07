@@ -350,7 +350,7 @@ static State_Load_Status state_load_callback(void *outer, const uint8_t *data, u
         return STATE_LOAD_STATUS_END;
     }
 
-    LOGGER_ERROR(tox->m->log, "Load state: contains unrecognized part (len %u, type %u)\n",
+    LOGGER_ERROR(tox->m->log, "Load state: contains unrecognized part (len %u, type %u)",
                  length, type);
 
     return STATE_LOAD_STATUS_CONTINUE;
