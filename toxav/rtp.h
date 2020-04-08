@@ -16,6 +16,11 @@
 extern "C" {
 #endif
 
+#ifndef TOX_DEFINED
+#define TOX_DEFINED
+typedef struct Tox Tox;
+#endif /* TOX_DEFINED */
+
 /**
  * RTPHeader serialised size in bytes.
  */
@@ -159,6 +164,7 @@ typedef struct RTPSession {
     struct RTPWorkBufferList *work_buffer_list;
     uint8_t  first_packets_counter; /* dismiss first few lost video packets */
     Messenger *m;
+    Tox *tox;
     uint32_t friend_number;
     BWController *bwc;
     void *cs;
@@ -184,7 +190,7 @@ size_t rtp_header_pack(uint8_t *rdata, const struct RTPHeader *header);
  */
 size_t rtp_header_unpack(const uint8_t *data, struct RTPHeader *header);
 
-RTPSession *rtp_new(int payload_type, Messenger *m, uint32_t friendnumber,
+RTPSession *rtp_new(int payload_type, Messenger *m, Tox *tox, uint32_t friendnumber,
                     BWController *bwc, void *cs, rtp_m_cb *mcb);
 void rtp_kill(RTPSession *session);
 int rtp_allow_receiving(RTPSession *session);

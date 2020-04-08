@@ -1331,7 +1331,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
             goto FAILURE;
         }
 
-        call->audio_rtp = rtp_new(RTP_TYPE_AUDIO, av->m, call->friend_number, call->bwc,
+        call->audio_rtp = rtp_new(RTP_TYPE_AUDIO, av->m, av->tox, call->friend_number, call->bwc,
                                   call->audio, ac_queue_message);
 
         if (!call->audio_rtp) {
@@ -1347,7 +1347,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
             goto FAILURE;
         }
 
-        call->video_rtp = rtp_new(RTP_TYPE_VIDEO, av->m, call->friend_number, call->bwc,
+        call->video_rtp = rtp_new(RTP_TYPE_VIDEO, av->m, av->tox, call->friend_number, call->bwc,
                                   call->video, vc_queue_message);
 
         if (!call->video_rtp) {
