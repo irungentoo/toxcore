@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ACTION="$1"
 
@@ -8,22 +8,11 @@ CACHEDIR="$HOME/cache"
 NPROC=`nproc`
 ASTYLE="$CACHEDIR/astyle/build/gcc/bin/astyle"
 ASTYLE_VERSION=3.1
-
-install_tool() {
-  SLUG="$1"
-  TOOL="$2"
-  TARGET="$3"
-
-  VERSION=$(curl -L -s -H 'Accept: application/json' \
-    "https://github.com/$SLUG/releases/latest" \
-    | egrep -o '"v[0-9][^"]+"' \
-    | egrep -o '[^"]+')
-  URL="https://github.com/$SLUG/releases/download/$VERSION/$TOOL-x86_64-linux-$VERSION.tar.gz"
-  curl -L -s "$URL" | tar xzv -C "$TARGET"
-}
+TRAVIS_TOOL="https://raw.githubusercontent.com/TokTok/ci-tools/master/bin/travis-haskell"
 
 travis_install() {
-  install_tool TokTok/hs-tokstyle tokstyle "$HOME/.local"
+  bash <(curl -s "$TRAVIS_TOOL") download
+  travis-haskell download TokTok/hs-tokstyle tokstyle "$HOME/.local"
 
   which coveralls || {
     # Install cpp-coveralls to upload test coverage results.
@@ -48,7 +37,7 @@ run_static_analysis() {
   pylint -E other/analysis/check_recursion
 
   export CPPFLAGS="-isystem $CACHEDIR/include"
-  export LDFLAGS="-L $CACHEDIR/lib"
+  export LDFLAGS="-L$CACHEDIR/lib"
   cat toxav/*.c toxcore/*.c toxencryptsave/*.c \
     | clang `pkg-config --cflags libsodium opus vpx` \
         -Itoxav -Itoxcore -Itoxencryptsave -S -emit-llvm -xc - -o- \

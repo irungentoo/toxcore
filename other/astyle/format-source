@@ -35,10 +35,10 @@ FROM_JSON='s/\\"/"/g;s/^"(.*)"$/$1/;s/\\\\/\\/g;s/\\n/\n/g'
 
 apidsl_request() {
   TMPFILE=$(mktemp /tmp/apidsl.XXXXXX)
-  curl -o "$TMPFILE" -X POST --data @<(
+  curl -s -o "$TMPFILE" -X POST --data @<(
     echo '["Request",';
     cat $2;
-    echo ']') https://apidsl2.herokuapp.com/$1
+    echo ']') https://apidsl.herokuapp.com/$1
   if grep '\[1,"' "$TMPFILE" > /dev/null; then
     echo "Error: $(grep -o '".*"' /tmp/apidsl-$$ | perl -0777 -pe "$FROM_JSON")" >&2
     rm "$TMPFILE"
@@ -49,12 +49,14 @@ apidsl_request() {
 }
 
 apidsl_curl() {
+  echo "apidsl_curl $@" >&2
   apidsl_request "c" <(
     apidsl_request "parse" <(
       perl -0777 -pe "$TO_JSON" $1)) | perl -0777 -pe "$FROM_JSON"
 }
 
 # Check if apidsl generated sources are up to date.
+set +x
 $APIDSL toxcore/LAN_discovery.api.h > toxcore/LAN_discovery.h &
 $APIDSL toxcore/crypto_core.api.h > toxcore/crypto_core.h &
 $APIDSL toxcore/ping.api.h > toxcore/ping.h &
@@ -62,6 +64,7 @@ $APIDSL toxcore/ping_array.api.h > toxcore/ping_array.h &
 $APIDSL toxcore/tox.api.h > toxcore/tox.h &
 $APIDSL toxav/toxav.api.h > toxav/toxav.h &
 $APIDSL toxencryptsave/toxencryptsave.api.h > toxencryptsave/toxencryptsave.h &
+set -x
 
 wait; wait; wait; wait; wait; wait; wait
 
