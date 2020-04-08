@@ -3,7 +3,7 @@ version: 2
 
 workflows:
   version: 2
-  build_linux:
+  clang-sanitizers:
     jobs:
       - asan
       - tsan
