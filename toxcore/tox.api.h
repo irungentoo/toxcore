@@ -854,7 +854,7 @@ enum class CONNECTION {
 }
 
 
-inline namespace self {
+namespace self {
 
   CONNECTION connection_status {
     /**
@@ -908,7 +908,7 @@ void iterate(any user_data);
  ******************************************************************************/
 
 
-inline namespace self {
+namespace self {
 
   uint8_t[ADDRESS_SIZE] address {
     /**
@@ -986,7 +986,7 @@ error for set_info {
 }
 
 
-inline namespace self {
+namespace self {
 
   uint8_t[length <= MAX_NAME_LENGTH] name {
     /**
@@ -1226,7 +1226,7 @@ namespace friend {
 
 }
 
-inline namespace self {
+namespace self {
 
   uint32_t[size] friend_list {
     /**
@@ -1514,8 +1514,14 @@ namespace friend {
  *
  ******************************************************************************/
 
+error for set_typing {
+  /**
+   * The friend number did not designate a valid friend.
+   */
+  FRIEND_NOT_FOUND,
+}
 
-inline namespace self {
+namespace self {
 
   bool typing {
     /**
@@ -1528,12 +1534,7 @@ inline namespace self {
      *
      * @return true on success.
      */
-    set(uint32_t friend_number) {
-      /**
-       * The friend number did not designate a valid friend.
-       */
-      FRIEND_NOT_FOUND,
-    }
+    set(uint32_t friend_number) with error for set_typing;
   }
 
 }
@@ -2655,36 +2656,36 @@ namespace conference {
 
 namespace friend {
 
-  inline namespace send {
+  error for custom_packet {
+    NULL,
+    /**
+     * The friend number did not designate a valid friend.
+     */
+    FRIEND_NOT_FOUND,
+    /**
+     * This client is currently not connected to the friend.
+     */
+    FRIEND_NOT_CONNECTED,
+    /**
+     * The first byte of data was not in the specified range for the packet type.
+     * This range is 200-254 for lossy, and 160-191 for lossless packets.
+     */
+    INVALID,
+    /**
+     * Attempted to send an empty packet.
+     */
+    EMPTY,
+    /**
+     * Packet data length exceeded $MAX_CUSTOM_PACKET_SIZE.
+     */
+    TOO_LONG,
+    /**
+     * Packet queue is full.
+     */
+    SENDQ,
+  }
 
-    error for custom_packet {
-      NULL,
-      /**
-       * The friend number did not designate a valid friend.
-       */
-      FRIEND_NOT_FOUND,
-      /**
-       * This client is currently not connected to the friend.
-       */
-      FRIEND_NOT_CONNECTED,
-      /**
-       * The first byte of data was not in the specified range for the packet type.
-       * This range is 200-254 for lossy, and 160-191 for lossless packets.
-       */
-      INVALID,
-      /**
-       * Attempted to send an empty packet.
-       */
-      EMPTY,
-      /**
-       * Packet data length exceeded $MAX_CUSTOM_PACKET_SIZE.
-       */
-      TOO_LONG,
-      /**
-       * Packet queue is full.
-       */
-      SENDQ,
-    }
+  namespace send {
 
     /**
      * Send a custom lossy packet to a friend.
@@ -2762,7 +2763,14 @@ namespace friend {
  ******************************************************************************/
 
 
-inline namespace self {
+error for get_port {
+  /**
+   * The instance was not bound to any port.
+   */
+  NOT_BOUND,
+}
+
+namespace self {
 
   uint8_t[PUBLIC_KEY_SIZE] dht_id {
     /**
@@ -2780,13 +2788,6 @@ inline namespace self {
     get();
   }
 
-
-  error for get_port {
-    /**
-     * The instance was not bound to any port.
-     */
-    NOT_BOUND,
-  }
 
 
   uint16_t udp_port {

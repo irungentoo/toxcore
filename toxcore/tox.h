@@ -3168,20 +3168,6 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
 
 
 
-/**
- * Writes the temporary DHT public key of this instance to a byte array.
- *
- * This can be used in combination with an externally accessible IP address and
- * the bound port (from tox_self_get_udp_port) to run a temporary bootstrap node.
- *
- * Be aware that every time a new instance is created, the DHT public key
- * changes, meaning this cannot be used to run a permanent bootstrap node.
- *
- * @param dht_id A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If this
- *   parameter is NULL, this function has no effect.
- */
-void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id);
-
 typedef enum TOX_ERR_GET_PORT {
 
     /**
@@ -3196,6 +3182,20 @@ typedef enum TOX_ERR_GET_PORT {
 
 } TOX_ERR_GET_PORT;
 
+
+/**
+ * Writes the temporary DHT public key of this instance to a byte array.
+ *
+ * This can be used in combination with an externally accessible IP address and
+ * the bound port (from tox_self_get_udp_port) to run a temporary bootstrap node.
+ *
+ * Be aware that every time a new instance is created, the DHT public key
+ * changes, meaning this cannot be used to run a permanent bootstrap node.
+ *
+ * @param dht_id A memory region of at least TOX_PUBLIC_KEY_SIZE bytes. If this
+ *   parameter is NULL, this function has no effect.
+ */
+void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id);
 
 /**
  * Return the UDP port this Tox instance is bound to.
