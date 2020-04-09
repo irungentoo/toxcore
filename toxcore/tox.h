@@ -3067,7 +3067,7 @@ typedef enum TOX_ERR_FRIEND_CUSTOM_PACKET {
 
     /**
      * The first byte of data was not in the specified range for the packet type.
-     * This range is 200-254 for lossy, and 160-191 for lossless packets.
+     * This range is 192-254 for lossy, and 69, 160-191 for lossless packets.
      */
     TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID,
 
@@ -3092,7 +3092,7 @@ typedef enum TOX_ERR_FRIEND_CUSTOM_PACKET {
 /**
  * Send a custom lossy packet to a friend.
  *
- * The first byte of data must be in the range 200-254. Maximum length of a
+ * The first byte of data must be in the range 192-254. Maximum length of a
  * custom packet is TOX_MAX_CUSTOM_PACKET_SIZE.
  *
  * Lossy packets behave like UDP packets, meaning they might never reach the
@@ -3115,7 +3115,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
 /**
  * Send a custom lossless packet to a friend.
  *
- * The first byte of data must be in the range 160-191. Maximum length of a
+ * The first byte of data must be in the range 69, 160-191. Maximum length of a
  * custom packet is TOX_MAX_CUSTOM_PACKET_SIZE.
  *
  * Lossless packet behaviour is comparable to TCP (reliability, arrive in order)

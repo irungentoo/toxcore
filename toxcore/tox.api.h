@@ -2670,7 +2670,7 @@ namespace friend {
     FRIEND_NOT_CONNECTED,
     /**
      * The first byte of data was not in the specified range for the packet type.
-     * This range is 200-254 for lossy, and 160-191 for lossless packets.
+     * This range is 192-254 for lossy, and 69, 160-191 for lossless packets.
      */
     INVALID,
     /**
@@ -2692,7 +2692,7 @@ namespace friend {
     /**
      * Send a custom lossy packet to a friend.
      *
-     * The first byte of data must be in the range 200-254. Maximum length of a
+     * The first byte of data must be in the range 192-254. Maximum length of a
      * custom packet is $MAX_CUSTOM_PACKET_SIZE.
      *
      * Lossy packets behave like UDP packets, meaning they might never reach the
@@ -2716,7 +2716,7 @@ namespace friend {
     /**
      * Send a custom lossless packet to a friend.
      *
-     * The first byte of data must be in the range 160-191. Maximum length of a
+     * The first byte of data must be in the range 69, 160-191. Maximum length of a
      * custom packet is $MAX_CUSTOM_PACKET_SIZE.
      *
      * Lossless packet behaviour is comparable to TCP (reliability, arrive in order)

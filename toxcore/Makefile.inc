@@ -32,6 +32,7 @@ libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
                         ../toxcore/state.h \
                         ../toxcore/state.c \
                         ../toxcore/tox.h \
+                        ../toxcore/tox_private.h \
                         ../toxcore/tox.c \
                         ../toxcore/tox_api.c \
                         ../toxcore/util.h \

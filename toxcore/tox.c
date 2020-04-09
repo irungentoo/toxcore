@@ -17,6 +17,7 @@
 #endif
 
 #include "tox.h"
+#include "tox_private.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -89,8 +90,10 @@ struct Tox {
     tox_conference_title_cb *conference_title_callback;
     tox_conference_peer_name_cb *conference_peer_name_callback;
     tox_conference_peer_list_changed_cb *conference_peer_list_changed_callback;
-    tox_friend_lossy_packet_cb *friend_lossy_packet_callback;
-    tox_friend_lossless_packet_cb *friend_lossless_packet_callback;
+    tox_friend_lossy_packet_cb *friend_lossy_packet_callback_per_pktid[UINT8_MAX + 1];
+    tox_friend_lossless_packet_cb *friend_lossless_packet_callback_per_pktid[UINT8_MAX + 1];
+
+    void *toxav_object; // workaround to store a ToxAV object (setter and getter functions are available)
 };
 
 static void lock(const Tox *tox)
@@ -309,20 +312,28 @@ static void tox_conference_peer_list_changed_handler(Messenger *m, uint32_t conf
 static void tox_friend_lossy_packet_handler(Messenger *m, uint32_t friend_number, uint8_t packet_id,
         const uint8_t *data, size_t length, void *user_data)
 {
+    assert(data != nullptr);
+    assert(length > 0);
+
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
-    if (tox_data->tox->friend_lossy_packet_callback != nullptr) {
-        tox_data->tox->friend_lossy_packet_callback(tox_data->tox, friend_number, data, length, tox_data->user_data);
+    if (tox_data->tox->friend_lossy_packet_callback_per_pktid[packet_id] != nullptr) {
+        tox_data->tox->friend_lossy_packet_callback_per_pktid[packet_id](tox_data->tox, friend_number, data, length,
+                tox_data->user_data);
     }
 }
 
 static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_number, uint8_t packet_id,
         const uint8_t *data, size_t length, void *user_data)
 {
+    assert(data != nullptr);
+    assert(length > 0);
+
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
-    if (tox_data->tox->friend_lossless_packet_callback != nullptr) {
-        tox_data->tox->friend_lossless_packet_callback(tox_data->tox, friend_number, data, length, tox_data->user_data);
+    if (tox_data->tox->friend_lossless_packet_callback_per_pktid[packet_id] != nullptr) {
+        tox_data->tox->friend_lossless_packet_callback_per_pktid[packet_id](tox_data->tox, friend_number, data, length,
+                tox_data->user_data);
     }
 }
 
@@ -2171,9 +2182,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
         return 0;
     }
 
-    // TODO(oxij): this feels ugly, this is needed only because m_send_custom_lossy_packet in Messenger.c
-    // sends both AV and custom packets despite its name and this API hides those AV packets
-    if (data[0] <= PACKET_ID_RANGE_LOSSY_AV_END) {
+    if (data[0] < PACKET_ID_RANGE_LOSSY_START || data[0] > PACKET_ID_RANGE_LOSSY_END) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID);
         return 0;
     }
@@ -2193,7 +2202,17 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
 
 void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *callback)
 {
-    tox->friend_lossy_packet_callback = callback;
+    /* start at PACKET_ID_RANGE_LOSSY_CUSTOM_START so ToxAV Packets are excluded */
+    for (uint8_t i = PACKET_ID_RANGE_LOSSY_CUSTOM_START; i <= PACKET_ID_RANGE_LOSSY_END; ++i) {
+        tox->friend_lossy_packet_callback_per_pktid[i] = callback;
+    }
+}
+
+void tox_callback_friend_lossy_packet_per_pktid(Tox *tox, tox_friend_lossy_packet_cb *callback, uint8_t pktid)
+{
+    if (pktid >= PACKET_ID_RANGE_LOSSY_START && pktid <= PACKET_ID_RANGE_LOSSY_END) {
+        tox->friend_lossy_packet_callback_per_pktid[pktid] = callback;
+    }
 }
 
 bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
@@ -2224,7 +2243,17 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
 
 void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *callback)
 {
-    tox->friend_lossless_packet_callback = callback;
+    for (uint8_t i = PACKET_ID_RANGE_LOSSLESS_CUSTOM_START; i <= PACKET_ID_RANGE_LOSSLESS_CUSTOM_END; ++i) {
+        tox->friend_lossless_packet_callback_per_pktid[i] = callback;
+    }
+}
+
+void tox_callback_friend_lossless_packet_per_pktid(Tox *tox, tox_friend_lossless_packet_cb *callback, uint8_t pktid)
+{
+    if ((pktid >= PACKET_ID_RANGE_LOSSLESS_CUSTOM_START && pktid <= PACKET_ID_RANGE_LOSSLESS_CUSTOM_END)
+            || pktid == PACKET_ID_MSI) {
+        tox->friend_lossless_packet_callback_per_pktid[pktid] = callback;
+    }
 }
 
 void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
@@ -2234,6 +2263,21 @@ void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
         memcpy(dht_id, dht_get_self_public_key(tox->m->dht), CRYPTO_PUBLIC_KEY_SIZE);
         unlock(tox);
     }
+}
+
+void tox_set_av_object(Tox *tox, void *object)
+{
+    lock(tox);
+    tox->toxav_object = object;
+    unlock(tox);
+}
+
+void *tox_get_av_object(const Tox *tox)
+{
+    lock(tox);
+    void *object = tox->toxav_object;
+    unlock(tox);
+    return object;
 }
 
 uint16_t tox_self_get_udp_port(const Tox *tox, Tox_Err_Get_Port *error)
