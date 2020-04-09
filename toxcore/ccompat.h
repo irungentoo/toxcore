@@ -4,6 +4,8 @@
 #ifndef C_TOXCORE_TOXCORE_CCOMPAT_H
 #define C_TOXCORE_TOXCORE_CCOMPAT_H
 
+//!TOKSTYLE-
+
 // Variable length arrays.
 // VLA(type, name, size) allocates a variable length array with automatic
 // storage duration. VLA_SIZE(name) evaluates to the runtime size of that array
@@ -47,5 +49,7 @@
 #else
 #define GNU_PRINTF(f, a)
 #endif
+
+//!TOKSTYLE+
 
 #endif // C_TOXCORE_TOXCORE_CCOMPAT_H

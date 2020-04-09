@@ -7,6 +7,7 @@
 
 #define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
 
+//!TOKSTYLE-
 
 #define CONST_FUNCTION(lowercase, uppercase) \
 uint32_t tox_##lowercase(void) \
@@ -59,6 +60,8 @@ ACCESSORS(tox_log_cb *, log_, callback)
 ACCESSORS(void *, log_, user_data)
 ACCESSORS(bool,, local_discovery_enabled)
 ACCESSORS(bool,, experimental_thread_safety)
+
+//!TOKSTYLE+
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options)
 {

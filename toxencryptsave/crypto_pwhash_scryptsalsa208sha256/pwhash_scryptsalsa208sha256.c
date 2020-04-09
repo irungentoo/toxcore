@@ -201,7 +201,7 @@ crypto_pwhash_scryptsalsa208sha256_str_verify(const char str[crypto_pwhash_scryp
         return -1;
     }
     escrypt_free_local(&escrypt_local);
-    ret = crypto_memcmp(wanted, str, sizeof wanted);
+    ret = crypto_memcmp((const uint8_t *) wanted, (const uint8_t *) str, sizeof wanted);
     crypto_memzero(wanted, sizeof wanted);
 
     return ret;

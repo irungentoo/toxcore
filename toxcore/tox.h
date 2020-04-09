@@ -13,6 +13,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+//!TOKSTYLE-
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3250,5 +3252,7 @@ typedef TOX_LOG_LEVEL Tox_Log_Level;
 typedef TOX_CONNECTION Tox_Connection;
 typedef TOX_FILE_CONTROL Tox_File_Control;
 typedef TOX_CONFERENCE_TYPE Tox_Conference_Type;
+
+//!TOKSTYLE+
 
 #endif // C_TOXCORE_TOXCORE_TOX_H

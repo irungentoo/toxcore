@@ -69,7 +69,7 @@ const CRYPTO_SHA512_SIZE = 64;
  * "aaaa" and "baaa" also takes 4 time. With a regular `memcmp`, the latter may
  * take 1 time, because it immediately knows that the two strings are not equal.
  */
-static int32_t crypto_memcmp(const void *p1, const void *p2, size_t length);
+static int32_t crypto_memcmp(const uint8_t *p1, const uint8_t *p2, size_t length);
 
 /**
  * A `bzero`-like function which won't be optimised away by the compiler. Some

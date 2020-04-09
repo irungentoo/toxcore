@@ -39,14 +39,14 @@ struct Ping_Array *ping_array_new(uint32_t size, uint32_t timeout);
 /**
  * Free all the allocated memory in a Ping_Array.
  */
-void ping_array_kill(struct Ping_Array *_array);
+void ping_array_kill(struct Ping_Array *array);
 
 /**
  * Add a data with length to the Ping_Array list and return a ping_id.
  *
  * @return ping_id on success, 0 on failure.
  */
-uint64_t ping_array_add(struct Ping_Array *_array, const struct Mono_Time *mono_time, const uint8_t *data,
+uint64_t ping_array_add(struct Ping_Array *array, const struct Mono_Time *mono_time, const uint8_t *data,
                         uint32_t length);
 
 /**
@@ -56,7 +56,7 @@ uint64_t ping_array_add(struct Ping_Array *_array, const struct Mono_Time *mono_
  *
  * @return length of data copied on success, -1 on failure.
  */
-int32_t ping_array_check(struct Ping_Array *_array, const struct Mono_Time *mono_time, uint8_t *data, size_t length,
+int32_t ping_array_check(struct Ping_Array *array, const struct Mono_Time *mono_time, uint8_t *data, size_t length,
                          uint64_t ping_id);
 
 #ifdef __cplusplus

@@ -286,14 +286,7 @@ CIMPLE_SRCS = glob(
         "*.c",
         "*.h",
     ],
-    exclude = [
-        "*.api.h",
-        "ccompat.h",
-        "crypto_core_mem.c",
-        "ping_array.h",
-        "tox.h",
-        "tox_api.c",
-    ],
+    exclude = ["*.api.h"],
 )
 
 sh_test(

@@ -20,7 +20,7 @@ extern "C" {
 
 class mono_Time { struct this; }
 
-class ping_Array {
+class ping { class array {
 
 struct this;
 
@@ -55,7 +55,7 @@ uint64_t add(const mono_Time::this *mono_time, const uint8_t *data, uint32_t len
  */
 int32_t check(const mono_Time::this *mono_time, uint8_t[length] data, uint64_t ping_id);
 
-}
+} }
 
 %{
 #ifdef __cplusplus

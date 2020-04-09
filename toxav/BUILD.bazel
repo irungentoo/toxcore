@@ -45,8 +45,8 @@ cc_library(
     hdrs = ["bwcontroller.h"],
     deps = [
         ":ring_buffer",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:Messenger",
-        "//c-toxcore/toxcore:toxcore",
     ],
 )
 
@@ -130,10 +130,7 @@ CIMPLE_SRCS = glob(
         "*.c",
         "*.h",
     ],
-    exclude = [
-        "*.api.h",
-        "toxav.h",
-    ],
+    exclude = ["*.api.h"],
 )
 
 sh_test(

@@ -10,6 +10,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+//!TOKSTYLE-
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -685,6 +687,8 @@ typedef TOXAV_ERR_CALL_CONTROL Toxav_Err_Call_Control;
 typedef TOXAV_ERR_BIT_RATE_SET Toxav_Err_Bit_Rate_Set;
 typedef TOXAV_ERR_SEND_FRAME Toxav_Err_Send_Frame;
 typedef TOXAV_CALL_CONTROL Toxav_Call_Control;
+
+//!TOKSTYLE+
 
 #endif // C_TOXCORE_TOXAV_TOXAV_H
 %}
