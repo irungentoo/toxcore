@@ -24,7 +24,12 @@ int main(void)
     tox_options_free(opts);
 
     tox_bootstrap(tox_tcp, "tox.initramfs.io", 33445, key, nullptr);
-    tox_add_tcp_relay(tox_tcp, "tox.initramfs.io", 33445, key, nullptr);
+
+    Tox_Err_Bootstrap tcp_err;
+    tox_add_tcp_relay(tox_tcp, "tox.initramfs.io", 33445, key, &tcp_err);
+    ck_assert_msg(tcp_err == TOX_ERR_BOOTSTRAP_OK,
+                  "attempting to add tcp relay returned with an error: %d",
+                  tcp_err);
 
     printf("Waiting for connection");
 

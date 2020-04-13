@@ -956,6 +956,10 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
 
 Networking_Core *new_networking_no_udp(const Logger *log)
 {
+    if (networking_at_startup() != 0) {
+        return nullptr;
+    }
+
     /* this is the easiest way to completely disable UDP without changing too much code. */
     Networking_Core *net = (Networking_Core *)calloc(1, sizeof(Networking_Core));
 
