@@ -360,7 +360,6 @@ static void tox_friend_lossless_packet_handler(Messenger *m, uint32_t friend_num
 static void tox_group_peer_name_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id, const uint8_t *name,
                                         size_t length, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_peer_name_callback != nullptr) {
@@ -371,7 +370,6 @@ static void tox_group_peer_name_handler(Messenger *m, uint32_t groupnumber, uint
 static void tox_group_peer_status_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id, unsigned int status,
         void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_peer_status_callback != nullptr) {
@@ -382,7 +380,6 @@ static void tox_group_peer_status_handler(Messenger *m, uint32_t groupnumber, ui
 static void tox_group_topic_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id, const uint8_t *topic,
                                     size_t length, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_topic_callback != nullptr) {
@@ -393,7 +390,6 @@ static void tox_group_topic_handler(Messenger *m, uint32_t groupnumber, uint32_t
 static void tox_group_privacy_state_handler(Messenger *m, uint32_t groupnumber, unsigned int privacy_state,
         void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_privacy_state_callback != nullptr) {
@@ -403,7 +399,6 @@ static void tox_group_privacy_state_handler(Messenger *m, uint32_t groupnumber, 
 
 static void tox_group_peer_limit_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_limit, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_peer_limit_callback != nullptr) {
@@ -414,7 +409,6 @@ static void tox_group_peer_limit_handler(Messenger *m, uint32_t groupnumber, uin
 static void tox_group_password_handler(Messenger *m, uint32_t groupnumber, const uint8_t *password, size_t length,
                                        void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_password_callback != nullptr) {
@@ -425,7 +419,6 @@ static void tox_group_password_handler(Messenger *m, uint32_t groupnumber, const
 static void tox_group_message_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id, unsigned int type,
                                       const uint8_t *message, size_t length, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_message_callback != nullptr) {
@@ -437,7 +430,6 @@ static void tox_group_message_handler(Messenger *m, uint32_t groupnumber, uint32
 static void tox_group_private_message_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id,
         const uint8_t *message, size_t length, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_private_message_callback != nullptr) {
@@ -448,7 +440,6 @@ static void tox_group_private_message_handler(Messenger *m, uint32_t groupnumber
 static void tox_group_custom_packet_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id, const uint8_t *data,
         size_t length, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_custom_packet_callback != nullptr) {
@@ -459,7 +450,6 @@ static void tox_group_custom_packet_handler(Messenger *m, uint32_t groupnumber, 
 static void tox_group_invite_handler(Messenger *m, uint32_t friend_number, const uint8_t *invite_data, size_t length,
                                      void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_invite_callback != nullptr) {
@@ -469,7 +459,6 @@ static void tox_group_invite_handler(Messenger *m, uint32_t friend_number, const
 
 static void tox_group_peer_join_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_peer_join_callback != nullptr) {
@@ -480,7 +469,6 @@ static void tox_group_peer_join_handler(Messenger *m, uint32_t groupnumber, uint
 static void tox_group_peer_exit_handler(Messenger *m, uint32_t groupnumber, uint32_t peer_id,
                                         const uint8_t *part_message, size_t length, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_peer_exit_callback != nullptr) {
@@ -490,7 +478,6 @@ static void tox_group_peer_exit_handler(Messenger *m, uint32_t groupnumber, uint
 
 static void tox_group_self_join_handler(Messenger *m, uint32_t groupnumber, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_self_join_callback != nullptr) {
@@ -500,7 +487,6 @@ static void tox_group_self_join_handler(Messenger *m, uint32_t groupnumber, void
 
 static void tox_group_join_fail_handler(Messenger *m, uint32_t groupnumber, unsigned int fail_type, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_join_fail_callback != nullptr) {
@@ -511,7 +497,6 @@ static void tox_group_join_fail_handler(Messenger *m, uint32_t groupnumber, unsi
 static void tox_group_moderation_handler(Messenger *m, uint32_t groupnumber, uint32_t source_peer_number,
         uint32_t target_peer_number, unsigned int mod_type, void *user_data)
 {
-    puts(__func__);
     Tox *tox = (Tox *)user_data;
 
     if (tox->group_moderation_callback != nullptr) {
