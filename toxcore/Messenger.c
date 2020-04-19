@@ -3140,12 +3140,13 @@ static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
     Node_format relays[NUM_SAVED_TCP_RELAYS];
     uint8_t *temp_data = data;
     data = state_write_section_header(temp_data, STATE_COOKIE_TYPE, 0, STATE_TYPE_TCP_RELAY);
-    uint32_t num = copy_connected_tcp_relays(m->net_crypto, relays, NUM_SAVED_TCP_RELAYS);
 
     if (m->num_loaded_relays > 0) {
         memcpy(relays, m->loaded_relays, sizeof(Node_format) * m->num_loaded_relays);
-        num = min_u32(num + m->num_loaded_relays, NUM_SAVED_TCP_RELAYS);
     }
+
+    uint32_t num = m->num_loaded_relays;
+    num += copy_connected_tcp_relays(m->net_crypto, relays + num, NUM_SAVED_TCP_RELAYS - num);
 
     int l = pack_nodes(data, NUM_SAVED_TCP_RELAYS * packed_node_size(net_family_tcp_ipv6), relays, num);
 
