@@ -34,15 +34,13 @@ TESTS = \
 	set_status_message_test \
 	skeleton_test \
 	TCP_test \
+	tcp_relay_test \
 	tox_many_tcp_test \
 	tox_many_test \
 	tox_one_test \
 	tox_strncasecmp_test \
 	typing_test \
 	version_test
-
-# TODO(iphydf): Fix this test and re-enable it.
-#	tcp_relay_test
 
 AUTOTEST_CFLAGS = \
 	$(LIBSODIUM_CFLAGS) \

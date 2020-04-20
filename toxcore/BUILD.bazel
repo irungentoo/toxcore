@@ -272,8 +272,8 @@ cc_library(
     srcs = [
         "tox.c",
         "tox.h",
-        "tox_private.h",
         "tox_api.c",
+        "tox_private.h",
     ],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
