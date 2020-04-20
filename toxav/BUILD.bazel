@@ -139,5 +139,5 @@ sh_test(
     srcs = ["//hs-tokstyle/tools:check-cimple"],
     args = ["$(location %s)" % f for f in CIMPLE_SRCS],
     data = CIMPLE_SRCS,
-    tags = ["manual"],
+    tags = ["haskell"],
 )

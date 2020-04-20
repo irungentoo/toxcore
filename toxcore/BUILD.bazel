@@ -33,6 +33,7 @@ cc_test(
     name = "crypto_core_test",
     size = "small",
     srcs = ["crypto_core_test.cc"],
+    flaky = True,
     deps = [
         ":crypto_core",
         "@com_google_googletest//:gtest_main",
@@ -296,5 +297,5 @@ sh_test(
     srcs = ["//hs-tokstyle/tools:check-cimple"],
     args = ["$(location %s)" % f for f in CIMPLE_SRCS],
     data = CIMPLE_SRCS,
-    tags = ["manual"],
+    tags = ["haskell"],
 )
