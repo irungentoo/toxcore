@@ -8,6 +8,7 @@ cc_binary(
         "@libsodium",
     ],
 )
+
 cc_binary(
     name = "minimal-save-generator",
     srcs = ["minimal-save-generator.c"],
@@ -15,7 +16,6 @@ cc_binary(
         "@libsodium",
     ],
 )
-
 
 cc_binary(
     name = "sign",

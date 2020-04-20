@@ -30,20 +30,9 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                                 uint32_t length, uint8_t congestion_control);
 static void m_register_default_plugins(Messenger *m);
 
-/* determines if the friendnumber passed is valid in the Messenger object.
- *
- * Returns 1 if friendnumber does not designate a valid friend.
- * Returns 0 otherwise.
- */
-uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber)
+bool friend_is_valid(const Messenger *m, int32_t friendnumber)
 {
-    if ((unsigned int)friendnumber < m->numfriends) {
-        if (m->friendlist[friendnumber].status != 0) {
-            return 0;
-        }
-    }
-
-    return 1;
+    return (unsigned int)friendnumber < m->numfriends && m->friendlist[friendnumber].status != 0;
 }
 
 /* Set the size of the friend list to numfriends.
@@ -94,7 +83,7 @@ int32_t getfriend_id(const Messenger *m, const uint8_t *real_pk)
  */
 int get_real_pk(const Messenger *m, int32_t friendnumber, uint8_t *real_pk)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -107,7 +96,7 @@ int get_real_pk(const Messenger *m, int32_t friendnumber, uint8_t *real_pk)
  */
 int getfriendcon_id(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -146,7 +135,7 @@ void getaddress(const Messenger *m, uint8_t *address)
 
 static int send_online_packet(Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return 0;
     }
 
@@ -307,7 +296,7 @@ int32_t m_addfriend_norequest(Messenger *m, const uint8_t *real_pk)
 
 static int clear_receipts(Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -326,7 +315,7 @@ static int clear_receipts(Messenger *m, int32_t friendnumber)
 
 static int add_receipt(Messenger *m, int32_t friendnumber, uint32_t packet_num, uint32_t msg_id)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -355,7 +344,7 @@ static int add_receipt(Messenger *m, int32_t friendnumber, uint32_t packet_num, 
  */
 static int friend_received_packet(const Messenger *m, int32_t friendnumber, uint32_t number)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -365,7 +354,7 @@ static int friend_received_packet(const Messenger *m, int32_t friendnumber, uint
 
 static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -403,7 +392,7 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
  */
 int m_delfriend(Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -441,7 +430,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
 
 int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -469,7 +458,7 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
 
 int m_friend_exists(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return 0;
     }
 
@@ -493,7 +482,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
         return -5;
     }
 
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         LOGGER_ERROR(m->log, "Friend number %d is invalid", friendnumber);
         return -1;
     }
@@ -554,7 +543,7 @@ static int m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *n
  */
 int setfriendname(Messenger *m, int32_t friendnumber, const uint8_t *name, uint16_t length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -623,7 +612,7 @@ uint16_t getself_name(const Messenger *m, uint8_t *name)
  */
 int getname(const Messenger *m, int32_t friendnumber, uint8_t *name)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -633,7 +622,7 @@ int getname(const Messenger *m, int32_t friendnumber, uint8_t *name)
 
 int m_get_name_size(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -695,7 +684,7 @@ int m_set_userstatus(Messenger *m, uint8_t status)
  */
 int m_get_statusmessage_size(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -707,7 +696,7 @@ int m_get_statusmessage_size(const Messenger *m, int32_t friendnumber)
  */
 int m_copy_statusmessage(const Messenger *m, int32_t friendnumber, uint8_t *buf, uint32_t maxlen)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -736,7 +725,7 @@ int m_copy_self_statusmessage(const Messenger *m, uint8_t *buf)
 
 uint8_t m_get_userstatus(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return USERSTATUS_INVALID;
     }
 
@@ -756,7 +745,7 @@ uint8_t m_get_self_userstatus(const Messenger *m)
 
 uint64_t m_get_last_online(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return UINT64_MAX;
     }
 
@@ -769,7 +758,7 @@ int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing)
         return -1;
     }
 
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -785,7 +774,7 @@ int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing)
 
 int m_get_istyping(const Messenger *m, int32_t friendnumber)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -810,7 +799,7 @@ static int send_user_istyping(const Messenger *m, int32_t friendnumber, uint8_t 
 
 static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, const uint8_t *status, uint16_t length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -958,7 +947,7 @@ static void set_friend_status(Messenger *m, int32_t friendnumber, uint8_t status
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return 0;
     }
 
@@ -1062,7 +1051,7 @@ void callback_file_reqchunk(Messenger *m, m_file_chunk_request_cb *function)
  */
 int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint8_t *file_id)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1111,7 +1100,7 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
 static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint32_t file_type,
                             uint64_t filesize, const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return 0;
     }
 
@@ -1145,7 +1134,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
 long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_type, uint64_t filesize,
                         const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1224,7 +1213,7 @@ static int send_file_control_packet(const Messenger *m, int32_t friendnumber, ui
  */
 int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, unsigned int control)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1325,7 +1314,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
  */
 int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1381,7 +1370,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
 static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, uint8_t filenumber, const uint8_t *data,
                                      uint16_t length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1413,7 +1402,7 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
 int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
               uint16_t length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1484,7 +1473,7 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
  */
 uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint8_t send_receive)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return 0;
     }
 
@@ -1805,7 +1794,7 @@ static int m_handle_lossy_packet(void *object, int friend_num, const uint8_t *pa
 {
     Messenger *m = (Messenger *)object;
 
-    if (friend_not_valid(m, friend_num)) {
+    if (!friend_is_valid(m, friend_num)) {
         return 1;
     }
 
@@ -1835,7 +1824,7 @@ void custom_lossy_packet_registerhandler(Messenger *m, m_friend_lossy_packet_cb 
 int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, m_lossy_rtp_packet_cb *function,
                           void *object)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1858,7 +1847,7 @@ int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, m_lo
  */
 int m_send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 
@@ -1888,7 +1877,7 @@ static int handle_custom_lossless_packet(void *object, int friend_num, const uin
 {
     Messenger *m = (Messenger *)object;
 
-    if (friend_not_valid(m, friend_num)) {
+    if (!friend_is_valid(m, friend_num)) {
         return -1;
     }
 
@@ -1910,7 +1899,7 @@ void custom_lossless_packet_registerhandler(Messenger *m, m_friend_lossless_pack
 
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
 {
-    if (friend_not_valid(m, friendnumber)) {
+    if (!friend_is_valid(m, friendnumber)) {
         return -1;
     }
 

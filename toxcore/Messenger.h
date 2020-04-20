@@ -312,12 +312,12 @@ struct Messenger {
     Messenger_Options options;
 };
 
-/* determines if the friendnumber passed is valid in the Messenger object.
+/**
+ * Determines if the friendnumber passed is valid in the Messenger object.
  *
- * Returns 1 if friendnumber does not designate a valid friend.
- * Returns 0 otherwise.
+ * @param friendnumber The index in the friend list.
  */
-uint8_t friend_not_valid(const Messenger *m, int32_t friendnumber);
+bool friend_is_valid(const Messenger *m, int32_t friendnumber);
 
 /* Format: `[real_pk (32 bytes)][nospam number (4 bytes)][checksum (2 bytes)]`
  *

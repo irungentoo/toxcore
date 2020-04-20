@@ -106,44 +106,44 @@ static int realloc_TCP_con(TCP_con **array, size_t num)
 }
 
 
-/* return 1 if the connections_number is not valid.
- * return 0 if the connections_number is valid.
+/**
+ * Return true if the connections_number is valid.
  */
-static bool connections_number_not_valid(const TCP_Connections *tcp_c, int connections_number)
+static bool connections_number_is_valid(const TCP_Connections *tcp_c, int connections_number)
 {
     if ((unsigned int)connections_number >= tcp_c->connections_length) {
-        return 1;
+        return false;
     }
 
     if (tcp_c->connections == nullptr) {
-        return 1;
+        return false;
     }
 
     if (tcp_c->connections[connections_number].status == TCP_CONN_NONE) {
-        return 1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
-/* return 1 if the tcp_connections_number is not valid.
- * return 0 if the tcp_connections_number is valid.
+/**
+ * Return true if the tcp_connections_number is valid.
  */
-static bool tcp_connections_number_not_valid(const TCP_Connections *tcp_c, int tcp_connections_number)
+static bool tcp_connections_number_is_valid(const TCP_Connections *tcp_c, int tcp_connections_number)
 {
     if ((unsigned int)tcp_connections_number >= tcp_c->tcp_connections_length) {
-        return 1;
+        return false;
     }
 
     if (tcp_c->tcp_connections == nullptr) {
-        return 1;
+        return false;
     }
 
     if (tcp_c->tcp_connections[tcp_connections_number].status == TCP_CONN_NONE) {
-        return 1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
 /* Create a new empty connection.
@@ -205,7 +205,7 @@ static int create_tcp_connection(TCP_Connections *tcp_c)
  */
 static int wipe_connection(TCP_Connections *tcp_c, int connections_number)
 {
-    if (connections_number_not_valid(tcp_c, connections_number)) {
+    if (!connections_number_is_valid(tcp_c, connections_number)) {
         return -1;
     }
 
@@ -233,7 +233,7 @@ static int wipe_connection(TCP_Connections *tcp_c, int connections_number)
  */
 static int wipe_tcp_connection(TCP_Connections *tcp_c, int tcp_connections_number)
 {
-    if (tcp_connections_number_not_valid(tcp_c, tcp_connections_number)) {
+    if (!tcp_connections_number_is_valid(tcp_c, tcp_connections_number)) {
         return -1;
     }
 
@@ -256,7 +256,7 @@ static int wipe_tcp_connection(TCP_Connections *tcp_c, int tcp_connections_numbe
 
 static TCP_Connection_to *get_connection(const TCP_Connections *tcp_c, int connections_number)
 {
-    if (connections_number_not_valid(tcp_c, connections_number)) {
+    if (!connections_number_is_valid(tcp_c, connections_number)) {
         return nullptr;
     }
 
@@ -265,7 +265,7 @@ static TCP_Connection_to *get_connection(const TCP_Connections *tcp_c, int conne
 
 static TCP_con *get_tcp_connection(const TCP_Connections *tcp_c, int tcp_connections_number)
 {
-    if (tcp_connections_number_not_valid(tcp_c, tcp_connections_number)) {
+    if (!tcp_connections_number_is_valid(tcp_c, tcp_connections_number)) {
         return nullptr;
     }
 

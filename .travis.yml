@@ -75,7 +75,6 @@ jobs:
 
 cache:
   directories:
-    - $HOME/.cache/bazel
     - $HOME/cache
     - /opt/freebsd/cache
 

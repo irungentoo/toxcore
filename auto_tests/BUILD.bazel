@@ -15,7 +15,6 @@ cc_library(
 flaky_tests = {
     "crypto_core_test": True,
     "lan_discovery_test": True,
-    "tcp_relay_test": True,
 }
 
 [cc_test(
@@ -37,8 +36,4 @@ flaky_tests = {
         "//c-toxcore/toxcore:DHT_srcs",
         "//c-toxcore/toxencryptsave",
     ],
-) for src in glob(
-    ["*_test.c"],
-    # TODO(iphydf): Fix this test and re-enable it.
-    exclude = ["tcp_relay_test.c"],
-)]
+) for src in glob(["*_test.c"])]

@@ -174,23 +174,23 @@ DHT *nc_get_dht(const Net_Crypto *c)
     return c->dht;
 }
 
-static uint8_t crypt_connection_id_not_valid(const Net_Crypto *c, int crypt_connection_id)
+static bool crypt_connection_id_is_valid(const Net_Crypto *c, int crypt_connection_id)
 {
     if ((uint32_t)crypt_connection_id >= c->crypto_connections_length) {
-        return 1;
+        return false;
     }
 
     if (c->crypto_connections == nullptr) {
-        return 1;
+        return false;
     }
 
     const Crypto_Conn_State status = c->crypto_connections[crypt_connection_id].status;
 
     if (status == CRYPTO_CONN_NO_CONNECTION || status == CRYPTO_CONN_FREE) {
-        return 1;
+        return false;
     }
 
-    return 0;
+    return true;
 }
 
 /* cookie timeout in seconds */
@@ -555,7 +555,7 @@ static int handle_crypto_handshake(const Net_Crypto *c, uint8_t *nonce, uint8_t 
 
 static Crypto_Connection *get_crypto_connection(const Net_Crypto *c, int crypt_connection_id)
 {
-    if (crypt_connection_id_not_valid(c, crypt_connection_id)) {
+    if (!crypt_connection_id_is_valid(c, crypt_connection_id)) {
         return nullptr;
     }
 
@@ -1858,7 +1858,7 @@ static int wipe_crypto_connection(Net_Crypto *c, int crypt_connection_id)
 static int getcryptconnection_id(const Net_Crypto *c, const uint8_t *public_key)
 {
     for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
-        if (crypt_connection_id_not_valid(c, i)) {
+        if (!crypt_connection_id_is_valid(c, i)) {
             continue;
         }
 

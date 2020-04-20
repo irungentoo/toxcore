@@ -5613,7 +5613,7 @@ void gc_rejoin_group(GC_Session *c, GC_Chat *chat)
 int gc_invite_friend(GC_Session *c, GC_Chat *chat, int32_t friendnumber,
                      gc_send_group_invite_packet_cb *send_group_invite_packet)
 {
-    if (friend_not_valid(c->messenger, friendnumber)) {
+    if (!friend_is_valid(c->messenger, friendnumber)) {
         return -1;
     }
 
