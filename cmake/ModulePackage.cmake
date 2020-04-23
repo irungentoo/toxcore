@@ -9,6 +9,16 @@ if(NOT ENABLE_SHARED AND NOT ENABLE_STATIC)
   set(ENABLE_SHARED ON)
 endif()
 
+option(FULLY_STATIC "Build fully static executables" OFF)
+if(FULLY_STATIC)
+  set(CMAKE_EXE_LINKER_FLAGS "-static -no-pie")
+  # remove -Wl,-Bdynamic
+  set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)
+  set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+  set(ENABLE_SHARED OFF)
+  set(ENABLE_STATIC ON)
+endif()
+
 find_package(PkgConfig)
 
 function(pkg_use_module mod pkg)

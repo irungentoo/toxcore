@@ -24,26 +24,32 @@ THE SOFTWARE.
 # Gets a list of nodes from https://nodes.tox.chat/json and prints them out
 # in the format of tox-bootstrapd config file.
 
-import urllib.request
 import json
+import sys
+import urllib.request
 
 response = urllib.request.urlopen('https://nodes.tox.chat/json')
 raw_json = response.read().decode('ascii', 'ignore')
 nodes = json.loads(raw_json)['nodes']
 
-output = 'bootstrap_nodes = (\n'
-
-for node in nodes:
+def node_to_string(node):
     node_output  = '  { // ' + node['maintainer'] + '\n'
     node_output += '    public_key = "' + node['public_key'] + '"\n'
     node_output += '    port = ' + str(node['port']) + '\n'
     node_output += '    address = "'
     if len(node['ipv4']) > 4:
-        output += node_output + node['ipv4'] + '"\n  },\n'
+        return node_output + node['ipv4'] + '"\n  }'
     if len(node['ipv6']) > 4:
-        output += node_output + node['ipv6'] + '"\n  },\n'
+        return node_output + node['ipv6'] + '"\n  }'
+    raise Exception('no IP address found for node ' + json.dumps(node))
 
-# remove last comma
-output = output[:-2] + '\n)\n'
+output = ('bootstrap_nodes = (\n' +
+          ',\n'.join(map(node_to_string, nodes)) +
+          '\n)')
 
-print(output)
+if len(sys.argv) > 1:
+    with open(sys.argv[1], 'a') as fh:
+        fh.write(output + '\n')
+    print("Wrote %d nodes to %s" % (len(nodes), sys.argv[1]))
+else:
+    print(output)

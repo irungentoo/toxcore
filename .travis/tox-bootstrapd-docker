@@ -2,28 +2,23 @@
 
 set -exu
 
-# Copy source code to other/bootstrap_daemon/docker/c-toxcore
-OLD_PWD=$PWD
-cd /tmp
-cp -a $OLD_PWD c-toxcore
-mv c-toxcore $OLD_PWD/other/bootstrap_daemon/docker
-cd $OLD_PWD
-ls -lbh other/bootstrap_daemon/docker
-ls -lbh other/bootstrap_daemon/docker/c-toxcore
-
-cd other/bootstrap_daemon
-
-# Make Docker container use our current source code instead of master branch
-sed -i "s|WORKDIR /tmp/tox|WORKDIR /tmp/tox\nADD /c-toxcore ./c-toxcore/|g" docker/Dockerfile
-sed -i 's|git clone|echo \\\#git clone|g' docker/Dockerfile
-sed -i 's|git checkout|echo \\\#git checkout|g' docker/Dockerfile
-
-cat docker/Dockerfile
-
-sudo docker build -t tox-bootstrapd docker/
-sudo useradd --home-dir /var/lib/tox-bootstrapd --create-home --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
+tar c $(git ls-files) | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+sudo useradd \
+  --home-dir /var/lib/tox-bootstrapd \
+  --create-home \
+  --system \
+  --shell /sbin/nologin \
+  --comment "Account to run Tox's DHT bootstrap daemon" \
+  --user-group tox-bootstrapd
 sudo chmod 700 /var/lib/tox-bootstrapd
-sudo docker run -d --name tox-bootstrapd -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ --ulimit nofile=32768:32768 -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
+docker run -d --name tox-bootstrapd \
+  -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ \
+  --ulimit nofile=32768:32768 \
+  -p 443:443 \
+  -p 3389:3389 \
+  -p 33445:33445 \
+  -p 33445:33445/udp \
+  toxchat/bootstrap-node
 
 sudo ls -lbh /var/lib/tox-bootstrapd
 
@@ -35,14 +30,14 @@ fi
 COUNTER=0
 COUNTER_END=120
 while [ $COUNTER -lt $COUNTER_END ]; do
-  if sudo docker logs tox-bootstrapd | grep -q "Connected to another bootstrap node successfully" ; then
+  if docker logs tox-bootstrapd | grep -q "Connected to another bootstrap node successfully" ; then
     break
   fi
   sleep 1
   COUNTER=$(($COUNTER+1))
 done
 
-sudo docker logs tox-bootstrapd
+docker logs tox-bootstrapd
 
 if [ "$COUNTER" = "$COUNTER_END" ]; then
   echo "Error: Didn't connect to any nodes"
@@ -52,9 +47,9 @@ fi
 # Wait a bit befrore testing if the container is still running
 sleep 30
 
-sudo docker ps -a
+docker ps -a
 
-if [ "`sudo docker inspect -f {{.State.Running}} tox-bootstrapd`" != "true" ]; then
+if [ "`docker inspect -f {{.State.Running}} tox-bootstrapd`" != "true" ]; then
   echo "Error: Container is not running"
   exit 1
 fi
@@ -65,7 +60,7 @@ if ! cat /proc/$(pidof tox-bootstrapd)/limits | grep -P '^Max open files(\s+)327
   exit 1
 fi
 
-if ! python3 ../fun/bootstrap_node_info.py ipv4 localhost 33445 ; then
+if ! other/fun/bootstrap_node_info.py ipv4 localhost 33445 ; then
   echo "Error: Unable to get bootstrap node info"
   exit 1
 fi

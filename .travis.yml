@@ -39,6 +39,10 @@ jobs:
       install:       .travis/$JOB install
       script:        .travis/$JOB script
     - stage: "Stage 1"
+      env: JOB=tox-bootstrapd-docker
+      services: [docker]
+      script:        .travis/$JOB
+    - stage: "Stage 1"
       if: type IN (push, api, cron)
       env: JOB=cmake-win32
       services: [docker]
@@ -61,11 +65,6 @@ jobs:
       os: osx
       install:       .travis/$JOB install
       script:        .travis/$JOB script
-    - stage: "Stage 1"
-      if: type IN (push, api, cron)
-      env: JOB=tox-bootstrapd-docker
-      services: [docker]
-      script:        .travis/$JOB
     - stage: "Stage 2"
       if: type IN (push, api, cron)
       env: JOB=cmake-freebsd

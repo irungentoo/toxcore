@@ -1,64 +1,81 @@
+###########################################################
+# Builder image: we compile the code here (static build)
+FROM alpine:3.11.5 AS build
+
+RUN ["apk", "--no-cache", "add",\
+ "build-base",\
+ "cmake",\
+ "linux-headers",\
+ "libconfig-dev",\
+ "libconfig-static",\
+ "libsodium-dev",\
+ "libsodium-static",\
+ "ninja",\
+ "python3"\
+]
+
+WORKDIR /src/c-toxcore
+
+# Very selectively add files to the image, because we may have random stuff
+# lying around. In particular, we don't need to rebuild the docker image when
+# toxav changes or the Dockerfile changes down from the build.
+COPY cmake cmake
+COPY other/bootstrap_daemon/src other/bootstrap_daemon/src
+COPY other/bootstrap_node_packets.[ch] other/
+COPY other/DHT_bootstrap.c other/
+COPY other/pkgconfig other/pkgconfig
+COPY other/rpm other/rpm
+COPY testing/misc_tools.[ch] testing/
+COPY toxcore toxcore
+COPY toxencryptsave toxencryptsave
+COPY CMakeLists.txt so.version ./
+
+RUN ["cmake", "-B_build", "-H.",\
+ "-GNinja",\
+ "-DCMAKE_BUILD_TYPE=Release",\
+ "-DFULLY_STATIC=ON",\
+ "-DBUILD_TOXAV=OFF",\
+ "-DBOOTSTRAP_DAEMON=ON"\
+]
+RUN ["cmake", "--build", "_build", "--target", "install"]
+
+# Verify checksum from dev-built binary, so we can be sure Docker Hub doesn't
+# mess with your binaries.
+COPY other/bootstrap_daemon/docker/tox-bootstrapd.sha256 other/bootstrap_daemon/docker/
+RUN ["sha256sum", "/usr/local/bin/tox-bootstrapd"]
+RUN ["sha256sum", "-c", "other/bootstrap_daemon/docker/tox-bootstrapd.sha256"]
+
+# Remove all the example bootstrap nodes from the config file.
+COPY other/bootstrap_daemon/tox-bootstrapd.conf other/bootstrap_daemon/
+# hadolint ignore=SC2086,SC2154
+RUN ["sed", "-i", "/^bootstrap_nodes = /,$d", "other/bootstrap_daemon/tox-bootstrapd.conf"]
+
+# Add bootstrap nodes from https://nodes.tox.chat/.
+COPY other/bootstrap_daemon/docker/get-nodes.py other/bootstrap_daemon/docker/
+RUN ["other/bootstrap_daemon/docker/get-nodes.py", "other/bootstrap_daemon/tox-bootstrapd.conf"]
+
+###########################################################
+# Final image build: this is what runs the bootstrap node
 FROM debian:buster-slim
 
-WORKDIR /tmp/tox
-
-RUN export BUILD_PACKAGES="\
-      build-essential \
-      cmake \
-      git \
-      libconfig-dev \
-      libsodium-dev \
-      python3" && \
-    export RUNTIME_PACKAGES="\
-      libconfig9 \
-      libsodium23" && \
-# get all deps
-    apt-get update && apt-get install -y $BUILD_PACKAGES $RUNTIME_PACKAGES && \
-# install toxcore and daemon
-    git clone https://github.com/TokTok/c-toxcore && \
-    cd c-toxcore && \
-    # checkout latest release version
-    git checkout $(git tag --list | grep -P '^v(\d+).(\d+).(\d+)$' | \
-      sed "s/v/v /g" | sed "s/\./ /g" | \
-      sort -snk4,4 | sort -snk3,3 | sort -snk2,2 | tail -n 1 | \
-      sed 's/v /v/g' | sed 's/ /\./g') && \
-    mkdir _build && \
-    cd _build && \
-    cmake .. \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DENABLE_SHARED=ON \
-      -DENABLE_STATIC=OFF \
-      -DBUILD_TOXAV=OFF \
-      -DBOOTSTRAP_DAEMON=ON && \
-    make -j`nproc` && \
-    make install -j`nproc` && \
-    cd .. && \
-# add new user
-    useradd --home-dir /var/lib/tox-bootstrapd --create-home \
-      --system --shell /sbin/nologin \
-      --comment "Account to run Tox's DHT bootstrap daemon" \
-      --user-group tox-bootstrapd && \
-    chmod 700 /var/lib/tox-bootstrapd && \
-    cp other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf && \
-# remove all the example bootstrap nodes from the config file
-    sed -i '/^bootstrap_nodes = /,$d' /etc/tox-bootstrapd.conf && \
-# add bootstrap nodes from https://nodes.tox.chat/
-    python3 other/bootstrap_daemon/docker/get-nodes.py >> /etc/tox-bootstrapd.conf && \
-# perform cleanup
-    apt-get remove --purge -y $BUILD_PACKAGES && \
-    apt-get clean && \
-    apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/* && \
-    cd / && \
-    rm -rf /tmp/*
+COPY --from=build /usr/local/bin/tox-bootstrapd /usr/local/bin/
+COPY --from=build /src/c-toxcore/other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf
+RUN ["useradd", "--home-dir", "/var/lib/tox-bootstrapd", "--create-home",\
+ "--system", "--shell", "/sbin/nologin",\
+ "--comment", "Account to run the Tox DHT bootstrap daemon",\
+ "--user-group", "tox-bootstrapd"\
+]
+RUN ["chmod", "644", "/etc/tox-bootstrapd.conf"]
+RUN ["chmod", "700", "/var/lib/tox-bootstrapd"]
 
 WORKDIR /var/lib/tox-bootstrapd
 
 USER tox-bootstrapd
 
-ENTRYPOINT /usr/local/bin/tox-bootstrapd \
-             --config /etc/tox-bootstrapd.conf \
-             --log-backend stdout \
-             --foreground
+ENTRYPOINT ["/usr/local/bin/tox-bootstrapd",\
+ "--config", "/etc/tox-bootstrapd.conf",\
+ "--log-backend", "stdout",\
+ "--foreground"\
+]
 
 EXPOSE 443/tcp 3389/tcp 33445/tcp 33445/udp
