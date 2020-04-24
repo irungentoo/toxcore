@@ -17,8 +17,9 @@ jobs:
     steps:
       - checkout
       - run: &apt_install
-          apt update &&
-          apt install -y --no-install-recommends
+          apt-get update &&
+          DEBIAN_FRONTEND=noninteractive
+          apt-get install -y --no-install-recommends
             clang
             cmake
             libconfig-dev
