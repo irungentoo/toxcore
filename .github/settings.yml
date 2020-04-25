@@ -1,5 +1,5 @@
 ---
-_extends: template
+_extends: .github
 
 repository:
   name: c-toxcore
@@ -16,10 +16,12 @@ branches:
           - Codacy/PR Quality Review
           - CodeFactor
           - Travis CI - Pull Request
-          - WIP
           - "ci/circleci: asan"
           - "ci/circleci: tsan"
+          - cirrus-ci
           - code-review/reviewable
+          - codecov/patch
+          - codecov/project
           - continuous-integration/appveyor/pr
 
 # Labels specific to c-toxcore.
