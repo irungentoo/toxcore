@@ -124,6 +124,9 @@ static void test_save_compatibility(const char *save_path)
     ck_assert_msg(strncmp(tox_id_str, EXPECTED_TOX_ID, TOX_ADDRESS_SIZE * 2) == 0,
                   "tox ids do not match, expected %s got %s", EXPECTED_TOX_ID, tox_id_str);
 
+    /* Giving the tox a chance to error on iterate due to corrupted loaded structures */
+    tox_iterate(tox, nullptr);
+
     tox_kill(tox);
 }
 

@@ -3160,7 +3160,14 @@ static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
 static State_Load_Status load_tcp_relays(Messenger *m, const uint8_t *data, uint32_t length)
 {
     if (length != 0) {
-        m->num_loaded_relays = unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
+        const int num = unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
+
+        if (num == -1) {
+            m->num_loaded_relays = 0;
+            return STATE_LOAD_STATUS_CONTINUE;
+        }
+
+        m->num_loaded_relays = num;
         m->has_added_relays = false;
     }
 
@@ -3197,6 +3204,10 @@ static State_Load_Status load_path_nodes(Messenger *m, const uint8_t *data, uint
 
     if (length != 0) {
         const int num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, nullptr, data, length, 0);
+
+        if (num == -1) {
+            return STATE_LOAD_STATUS_CONTINUE;
+        }
 
         for (int i = 0; i < num; ++i) {
             onion_add_bs_path_node(m->onion_c, nodes[i].ip_port, nodes[i].public_key);
