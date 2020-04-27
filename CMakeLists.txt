@@ -82,6 +82,11 @@ else()
   message(STATUS "Supported C++ compiler features = ${CMAKE_CXX_COMPILE_FEATURES}")
 endif()
 
+option(EXECUTION_TRACE "Print a function trace during execution (for debugging)" OFF)
+if(EXECUTION_TRACE)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -finstrument-functions")
+endif()
+
 set(MIN_LOGGER_LEVEL "" CACHE STRING "Logging level to use (TRACE, DEBUG, INFO, WARNING, ERROR)")
 if(MIN_LOGGER_LEVEL)
   if(("${MIN_LOGGER_LEVEL}" STREQUAL "TRACE") OR
@@ -360,9 +365,14 @@ unit_test(toxcore util)
 #
 ################################################################################
 
-add_library(misc_tools
+set(misc_tools_SOURCES
   testing/misc_tools.c
   testing/misc_tools.h)
+if(EXECUTION_TRACE)
+  set(misc_tools_SOURCES ${misc_tools_SOURCES}
+    testing/trace.cc)
+endif()
+add_library(misc_tools ${misc_tools_SOURCES})
 target_link_modules(misc_tools toxcore)
 
 set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")

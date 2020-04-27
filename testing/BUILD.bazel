@@ -1,5 +1,4 @@
-load("@rules_cc//cc:defs.bzl", "cc_binary")
-load("//tools:no_undefined.bzl", "cc_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 cc_library(
     name = "misc_tools",
@@ -7,6 +6,13 @@ cc_library(
     hdrs = ["misc_tools.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = ["//c-toxcore/toxcore"],
+)
+
+cc_library(
+    name = "trace",
+    srcs = ["trace.cc"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    alwayslink = True,
 )
 
 cc_binary(
