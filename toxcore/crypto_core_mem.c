@@ -29,6 +29,8 @@
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <windows.h>
 #include <wincrypt.h>
+#elif defined(HAVE_EXPLICIT_BZERO)
+#include <string.h>
 #endif
 #endif
 
