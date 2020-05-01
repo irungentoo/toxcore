@@ -1,8 +1,55 @@
 
+## v0.2.12
+
+### Merged PRs:
+
+- [#1457](https://github.com/TokTok/c-toxcore/pull/1457) Disable non-hermetic tests by default.
+- [#1456](https://github.com/TokTok/c-toxcore/pull/1456) Limit the number of friends you can have to ~4 billion.
+- [#1452](https://github.com/TokTok/c-toxcore/pull/1452) Add execution trace option for debugging.
+- [#1447](https://github.com/TokTok/c-toxcore/pull/1447) Udp dht group chats
+- [#1444](https://github.com/TokTok/c-toxcore/pull/1444) Set up release-drafter to automatically draft the next release.
+- [#1443](https://github.com/TokTok/c-toxcore/pull/1443) Allow test coverage to fluctuate 2% up and down, but not below 80%.
+- [#1442](https://github.com/TokTok/c-toxcore/pull/1442) Add CODEOWNERS and settings.yml files.
+- [#1441](https://github.com/TokTok/c-toxcore/pull/1441) [ImgBot] Optimize images
+- [#1439](https://github.com/TokTok/c-toxcore/pull/1439) Fix continuous integration builds.
+- [#1437](https://github.com/TokTok/c-toxcore/pull/1437) Rework the toxchat/bootstrap-node Docker image.
+- [#1435](https://github.com/TokTok/c-toxcore/pull/1435) Enable TCP relay test in Bazel and autotools build.
+- [#1434](https://github.com/TokTok/c-toxcore/pull/1434) Skip invalid TCP relays and DHT nodes when loading save data.
+- [#1433](https://github.com/TokTok/c-toxcore/pull/1433) Fix saving of combination of loaded and connected TCP relays
+- [#1430](https://github.com/TokTok/c-toxcore/pull/1430) Invert `not_valid` functions and name them `is_valid`.
+- [#1429](https://github.com/TokTok/c-toxcore/pull/1429) Fix things not being initialized if creating a TCP-only network
+- [#1426](https://github.com/TokTok/c-toxcore/pull/1426) Remove tokstyle exemptions from build files.
+- [#1425](https://github.com/TokTok/c-toxcore/pull/1425) Stop using the "inline namespace" feature of apidsl.
+- [#1424](https://github.com/TokTok/c-toxcore/pull/1424) Add new semi-private API functions to set per-packet-id custom handlers.
+- [#1423](https://github.com/TokTok/c-toxcore/pull/1423) Give CI workflow a better name: clang-sanitizers
+- [#1422](https://github.com/TokTok/c-toxcore/pull/1422) Use public API for sending in RTP
+- [#1421](https://github.com/TokTok/c-toxcore/pull/1421) Install ci-tools and get tokstyle via the script it provides.
+- [#1420](https://github.com/TokTok/c-toxcore/pull/1420) Use tox public API for sending packets in toxav BWController
+- [#1419](https://github.com/TokTok/c-toxcore/pull/1419) Remove newlines from the end of LOGGER format strings.
+- [#1418](https://github.com/TokTok/c-toxcore/pull/1418) Change ToxAVCall struct mutex to a more distinct name
+- [#1417](https://github.com/TokTok/c-toxcore/pull/1417) Create own instance of Mono_Time for ToxAV
+- [#1416](https://github.com/TokTok/c-toxcore/pull/1416) Stop using Messenger's mono_time in bandwidth controller.
+- [#1415](https://github.com/TokTok/c-toxcore/pull/1415) Fix 2 memory leaks in ToxAV.
+- [#1414](https://github.com/TokTok/c-toxcore/pull/1414) Show function names in asan/tsan stack traces on CircleCI.
+- [#1413](https://github.com/TokTok/c-toxcore/pull/1413) Make afl_toxsave.c a bit more portable; fix memory leak.
+- [#1411](https://github.com/TokTok/c-toxcore/pull/1411) Fixes towards building on MSVC.
+- [#1409](https://github.com/TokTok/c-toxcore/pull/1409) Mark conference test as small.
+- [#1407](https://github.com/TokTok/c-toxcore/pull/1407) Add minimal save generator
+- [#1406](https://github.com/TokTok/c-toxcore/pull/1406) Migrate format-source script to new apidsl web app.
+- [#1404](https://github.com/TokTok/c-toxcore/pull/1404) Smarter setup of bazel remote cache on Cirrus CI.
+- [#1331](https://github.com/TokTok/c-toxcore/pull/1331) Add basic test adapter for AFL
+
+### Closed issues:
+
+- [#1365](https://github.com/TokTok/c-toxcore/issues/1365) Add the option to use LAN discovery even when using a proxy for remote connections
+- [#1353](https://github.com/TokTok/c-toxcore/issues/1353) libtoxdns.a and libtoxav.a
+- [#86](https://github.com/TokTok/c-toxcore/issues/86) Freenet as Offline Messaging Backend
+
 ## v0.2.11
 
 ### Merged PRs:
 
+- [#1405](https://github.com/TokTok/c-toxcore/pull/1405) Release 0.2.11
 - [#1403](https://github.com/TokTok/c-toxcore/pull/1403) Install libsodium from apt instead of from source.
 - [#1402](https://github.com/TokTok/c-toxcore/pull/1402) Remove bazel build from Travis.
 - [#1400](https://github.com/TokTok/c-toxcore/pull/1400) Disable bazel remote cache on CI.
@@ -109,7 +156,7 @@
 - [#1242](https://github.com/TokTok/c-toxcore/pull/1242) Fix critical stack overflow arising from VLA usage
 - [#1239](https://github.com/TokTok/c-toxcore/pull/1239) Add some hopefully helpful documentation to the functions in mono_time.h
 - [#1235](https://github.com/TokTok/c-toxcore/pull/1235) Change method of PK production for FAKE friend in DHT
-- [#1234](https://github.com/TokTok/c-toxcore/pull/1234)  Increase NOFILE limit for tox-bootstrapd
+- [#1234](https://github.com/TokTok/c-toxcore/pull/1234) Increase NOFILE limit for tox-bootstrapd
 - [#1231](https://github.com/TokTok/c-toxcore/pull/1231) Use `bool` for IPv6 flag in test programs and `DHT_bootstrap`.
 - [#1230](https://github.com/TokTok/c-toxcore/pull/1230) Add `LOGGER_ASSERT` for checking fatal error conditions.
 - [#1229](https://github.com/TokTok/c-toxcore/pull/1229) Include `CTest` in CMakeLists.txt to get valgrind support.
@@ -357,7 +404,7 @@
 - [#975](https://github.com/TokTok/c-toxcore/pull/975) Factor out the actual test code from conference_test.
 - [#972](https://github.com/TokTok/c-toxcore/pull/972) Add a test that reproduces the NULL peer nick bug.
 - [#968](https://github.com/TokTok/c-toxcore/pull/968) Make tox.c unambiguously parseable.
-- [#967](https://github.com/TokTok/c-toxcore/pull/967)  lan_discovery_test and version_test cleanup
+- [#967](https://github.com/TokTok/c-toxcore/pull/967) lan_discovery_test and version_test cleanup
 - [#966](https://github.com/TokTok/c-toxcore/pull/966) Use run_auto_test.h test fixture for some auto-tests.
 - [#965](https://github.com/TokTok/c-toxcore/pull/965) Add `#include <cstdio>` for `std::printf`.
 - [#964](https://github.com/TokTok/c-toxcore/pull/964) Add some tests for our ring_buffer implementation.
