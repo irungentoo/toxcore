@@ -355,19 +355,6 @@ int group_number_peers(const Group_Chats *g_c, uint32_t groupnumber, bool frozen
  */
 int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber);
 
-/* List all the (frozen, if frozen is true) peers in the group chat.
- *
- * Copies the names of the peers to the `name[length][MAX_NAME_LENGTH]` array.
- *
- * Copies the lengths of the names to `lengths[length]`
- *
- * returns the number of peers on success.
- *
- * return -1 on failure.
- */
-int group_names(const Group_Chats *g_c, uint32_t groupnumber, uint8_t names[][MAX_NAME_LENGTH], uint16_t lengths[],
-                uint16_t length, bool frozen);
-
 /* Set handlers for custom lossy packets. */
 void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, lossy_packet_cb *function);
 

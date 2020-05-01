@@ -57,12 +57,4 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id);
  */
 int bs_list_remove(BS_List *list, const uint8_t *data, int id);
 
-/* Removes the memory overhead
- *
- * return value:
- *  1 : success
- *  0 : failure
- */
-int bs_list_trim(BS_List *list);
-
 #endif

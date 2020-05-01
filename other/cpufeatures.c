@@ -3,4 +3,4 @@
 #include ANDROID_CPU_FEATURES
 #endif
 
-extern int unused_declaration;
+typedef int unused_declaration;

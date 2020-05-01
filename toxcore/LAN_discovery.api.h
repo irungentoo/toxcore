@@ -21,7 +21,7 @@ namespace lan_discovery {
 /**
  * Interval in seconds between LAN discovery packet sending.
  */
-const INTERVAL = 10;
+#define LAN_DISCOVERY_INTERVAL         10
 
 /**
  * Send a LAN discovery pcaket to the broadcast address with port port.

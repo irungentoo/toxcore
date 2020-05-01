@@ -26,8 +26,6 @@ typedef struct IP IP;
  */
 #define LAN_DISCOVERY_INTERVAL         10
 
-uint32_t lan_discovery_interval(void);
-
 /**
  * Send a LAN discovery pcaket to the broadcast address with port port.
  */

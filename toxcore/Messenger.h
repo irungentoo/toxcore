@@ -651,15 +651,6 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
 int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
               uint16_t length);
 
-/* Give the number of bytes left to be sent/received.
- *
- *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
- *
- *  return number of bytes remaining to be sent/received on success
- *  return 0 on failure
- */
-uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint8_t send_receive);
-
 /** A/V related */
 
 /* Set the callback for msi packets.

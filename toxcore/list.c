@@ -248,13 +248,3 @@ int bs_list_remove(BS_List *list, const uint8_t *data, int id)
 
     return 1;
 }
-
-int bs_list_trim(BS_List *list)
-{
-    if (!resize(list, list->n)) {
-        return 0;
-    }
-
-    list->capacity = list->n;
-    return 1;
-}

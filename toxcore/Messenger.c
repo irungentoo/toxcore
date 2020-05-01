@@ -1450,38 +1450,6 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     return -6;
 }
 
-/* Give the number of bytes left to be sent/received.
- *
- *  send_receive is 0 if we want the sending files, 1 if we want the receiving.
- *
- *  return number of bytes remaining to be sent/received on success
- *  return 0 on failure
- */
-uint64_t file_dataremaining(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint8_t send_receive)
-{
-    if (!friend_is_valid(m, friendnumber)) {
-        return 0;
-    }
-
-    const struct File_Transfers *const sending = &m->friendlist[friendnumber].file_sending[filenumber];
-
-    if (send_receive == 0) {
-        if (sending->status == FILESTATUS_NONE) {
-            return 0;
-        }
-
-        return sending->size - sending->transferred;
-    }
-
-    const struct File_Transfers *const receiving = &m->friendlist[friendnumber].file_receiving[filenumber];
-
-    if (receiving->status == FILESTATUS_NONE) {
-        return 0;
-    }
-
-    return receiving->size - receiving->transferred;
-}
-
 /**
  * Iterate over all file transfers and request chunks (from the client) for each
  * of them.

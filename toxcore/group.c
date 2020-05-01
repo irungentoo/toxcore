@@ -1301,36 +1301,6 @@ int group_set_max_frozen(const Group_Chats *g_c, uint32_t groupnumber, uint32_t 
     return 0;
 }
 
-/* List all the (frozen, if frozen is true) peers in the group chat.
- *
- * Copies the names of the peers to the `name[length][MAX_NAME_LENGTH]` array.
- *
- * Copies the lengths of the names to `lengths[length]`
- *
- * returns the number of peers on success.
- *
- * return -1 on failure.
- */
-int group_names(const Group_Chats *g_c, uint32_t groupnumber, uint8_t names[][MAX_NAME_LENGTH], uint16_t lengths[],
-                uint16_t length, bool frozen)
-{
-    const Group_c *g = get_group_c(g_c, groupnumber);
-
-    if (!g) {
-        return -1;
-    }
-
-    const uint32_t num = frozen ? g->numfrozen : g->numpeers;
-
-    unsigned int i;
-
-    for (i = 0; i < num && i < length; ++i) {
-        lengths[i] = group_peername(g_c, groupnumber, i, names[i], frozen);
-    }
-
-    return i;
-}
-
 /* Return the number of (frozen, if frozen is true) peers in the group chat on
  * success.
  * return -1 if groupnumber is invalid.
