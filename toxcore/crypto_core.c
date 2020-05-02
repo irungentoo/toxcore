@@ -12,11 +12,11 @@
 #include "config.h"
 #endif
 
-#include "ccompat.h"
-#include "crypto_core.h"
-
 #include <stdlib.h>
 #include <string.h>
+
+#include "ccompat.h"
+#include "crypto_core.h"
 
 #ifndef VANILLA_NACL
 /* We use libsodium by default. */

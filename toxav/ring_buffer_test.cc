@@ -1,10 +1,10 @@
 #include "ring_buffer.h"
 
+#include <gtest/gtest.h>
+
 #include <algorithm>
 #include <cassert>
 #include <vector>
-
-#include <gtest/gtest.h>
 
 namespace {
 

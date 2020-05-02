@@ -1,8 +1,8 @@
 #include "rtp.h"
 
-#include "../toxcore/crypto_core.h"
-
 #include <gtest/gtest.h>
+
+#include "../toxcore/crypto_core.h"
 
 namespace {
 

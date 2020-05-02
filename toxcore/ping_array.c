@@ -75,6 +75,10 @@ static void clear_entry(Ping_Array *array, uint32_t index)
 
 void ping_array_kill(Ping_Array *array)
 {
+    if (array == nullptr) {
+        return;
+    }
+
     while (array->last_deleted != array->last_added) {
         const uint32_t index = array->last_deleted % array->total_size;
         clear_entry(array, index);

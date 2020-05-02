@@ -39,7 +39,7 @@ static void iterate_all_wait(uint32_t tox_count, Tox **toxes, State *state, uint
     }
 
     /* Also actually sleep a little, to allow for local network processing */
-    c_sleep(20);
+    c_sleep(5);
 }
 
 static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
@@ -63,6 +63,9 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
     Tox **toxes = (Tox **)calloc(tox_count, sizeof(Tox *));
     State *state = (State *)calloc(tox_count, sizeof(State));
 
+    ck_assert(toxes != nullptr);
+    ck_assert(state != nullptr);
+
     for (uint32_t i = 0; i < tox_count; i++) {
         state[i].index = i;
         toxes[i] = tox_new_log(nullptr, nullptr, &state[i].index);
@@ -82,7 +85,9 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
 
                 uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
                 tox_self_get_public_key(toxes[j], public_key);
-                tox_friend_add_norequest(toxes[i], public_key, nullptr);
+                Tox_Err_Friend_Add err;
+                tox_friend_add_norequest(toxes[i], public_key, &err);
+                ck_assert(err == TOX_ERR_FRIEND_ADD_OK);
             }
         }
     } else {
@@ -93,7 +98,9 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
                 if (i != j) {
                     uint8_t public_key[TOX_PUBLIC_KEY_SIZE];
                     tox_self_get_public_key(toxes[j], public_key);
-                    tox_friend_add_norequest(toxes[i], public_key, nullptr);
+                    Tox_Err_Friend_Add err;
+                    tox_friend_add_norequest(toxes[i], public_key, &err);
+                    ck_assert(err == TOX_ERR_FRIEND_ADD_OK);
                 }
             }
         }
@@ -105,7 +112,9 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
     const uint16_t dht_port = tox_self_get_udp_port(toxes[0], nullptr);
 
     for (uint32_t i = 1; i < tox_count; i++) {
-        tox_bootstrap(toxes[i], "localhost", dht_port, dht_key, nullptr);
+        Tox_Err_Bootstrap err;
+        tox_bootstrap(toxes[i], "localhost", dht_port, dht_key, &err);
+        ck_assert(err == TOX_ERR_BOOTSTRAP_OK);
     }
 
     do {

@@ -1,8 +1,8 @@
 #include "util.h"
 
-#include "crypto_core.h"
-
 #include <gtest/gtest.h>
+
+#include "crypto_core.h"
 
 namespace {
 

@@ -38,8 +38,10 @@ static void test_one(void)
 
     uint32_t index[] = { 1, 2 };
     Tox *tox1 = tox_new_log(nullptr, nullptr, &index[0]);
+    ck_assert(tox1 != nullptr);
     set_random_name_and_status_message(tox1, name, status_message);
     Tox *tox2 = tox_new_log(nullptr, nullptr, &index[1]);
+    ck_assert(tox2 != nullptr);
     set_random_name_and_status_message(tox2, name2, status_message2);
 
     uint8_t address[TOX_ADDRESS_SIZE];
@@ -49,7 +51,7 @@ static void test_one(void)
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_OWN_KEY, "Adding own address worked.");
 
     tox_self_get_address(tox2, address);
-    uint8_t message[TOX_MAX_FRIEND_REQUEST_LENGTH + 1];
+    uint8_t message[TOX_MAX_FRIEND_REQUEST_LENGTH + 1] = {0};
     ret = tox_friend_add(tox1, address, nullptr, 0, &error);
     ck_assert_msg(ret == UINT32_MAX && error == TOX_ERR_FRIEND_ADD_NULL, "Sending request with no message worked.");
     ret = tox_friend_add(tox1, address, message, 0, &error);
@@ -85,6 +87,7 @@ static void test_one(void)
     Tox_Err_New err_n;
 
     struct Tox_Options *options = tox_options_new(nullptr);
+    ck_assert(options != nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, data, save_size);
     tox2 = tox_new_log(options, &err_n, &index[1]);

@@ -364,6 +364,10 @@ Ping *ping_new(const Mono_Time *mono_time, DHT *dht)
 
 void ping_kill(Ping *ping)
 {
+    if (ping == nullptr) {
+        return;
+    }
+
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_REQUEST, nullptr, nullptr);
     networking_registerhandler(dht_get_net(ping->dht), NET_PACKET_PING_RESPONSE, nullptr, nullptr);
     ping_array_kill(ping->ping_array);
