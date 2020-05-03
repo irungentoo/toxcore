@@ -171,7 +171,7 @@ void oniondata_registerhandler(Onion_Client *onion_c, uint8_t byte, oniondata_ha
 
 void do_onion_client(Onion_Client *onion_c);
 
-Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c);
+Onion_Client *new_onion_client(const Logger *logger, Mono_Time *mono_time, Net_Crypto *c);
 
 void kill_onion_client(Onion_Client *onion_c);
 

@@ -54,7 +54,8 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
 
 /* Run the TCP connection
  */
-void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connection, void *userdata);
+void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Connection *tcp_connection,
+                       void *userdata);
 
 /* Kill the TCP connection
  */

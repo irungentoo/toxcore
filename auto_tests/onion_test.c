@@ -390,7 +390,7 @@ static Onions *new_onions(uint16_t port, uint32_t *index)
     }
 
     TCP_Proxy_Info inf = {{{{0}}}};
-    on->onion_c = new_onion_client(on->mono_time, new_net_crypto(on->log, on->mono_time, dht, &inf));
+    on->onion_c = new_onion_client(on->log, on->mono_time, new_net_crypto(on->log, on->mono_time, dht, &inf));
 
     if (!on->onion_c) {
         kill_onion_announce(on->onion_a);

@@ -17,11 +17,11 @@
 
 #include "util.h"
 
-#include "crypto_core.h" /* for CRYPTO_PUBLIC_KEY_SIZE */
-
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "crypto_core.h" /* for CRYPTO_PUBLIC_KEY_SIZE */
 
 
 /* id functions */

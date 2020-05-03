@@ -12,7 +12,6 @@
 
 #include "friend_connection.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -60,6 +59,7 @@ typedef struct Friend_Conn {
 
 struct Friend_Connections {
     const Mono_Time *mono_time;
+    const Logger *logger;
     Net_Crypto *net_crypto;
     DHT *dht;
     Onion_Client *onion_c;
@@ -348,7 +348,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 
     if (friend_con->dht_lock) {
         if (dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock) != 0) {
-            printf("a. Could not delete dht peer. Please report this.\n");
+            LOGGER_ERROR(fr_c->logger, "a. Could not delete dht peer. Please report this.");
             return;
         }
 
@@ -848,7 +848,7 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 }
 
 /* Create new friend_connections instance. */
-Friend_Connections *new_friend_connections(const Mono_Time *mono_time, Onion_Client *onion_c,
+Friend_Connections *new_friend_connections(const Logger *logger, const Mono_Time *mono_time, Onion_Client *onion_c,
         bool local_discovery_enabled)
 {
     if (onion_c == nullptr) {
@@ -862,6 +862,7 @@ Friend_Connections *new_friend_connections(const Mono_Time *mono_time, Onion_Cli
     }
 
     temp->mono_time = mono_time;
+    temp->logger = logger;
     temp->dht = onion_get_dht(onion_c);
     temp->net_crypto = onion_get_net_crypto(onion_c);
     temp->onion_c = onion_c;

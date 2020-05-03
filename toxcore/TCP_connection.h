@@ -206,7 +206,8 @@ uint32_t tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_rela
  */
 TCP_Connections *new_tcp_connections(Mono_Time *mono_time, const uint8_t *secret_key, TCP_Proxy_Info *proxy_info);
 
-void do_tcp_connections(TCP_Connections *tcp_c, void *userdata);
+void do_tcp_connections(const Logger *logger, TCP_Connections *tcp_c, void *userdata);
+
 void kill_tcp_connections(TCP_Connections *tcp_c);
 
 #endif

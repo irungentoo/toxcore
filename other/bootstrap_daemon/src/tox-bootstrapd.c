@@ -406,7 +406,8 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        tcp_server = new_TCP_server(enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht_get_self_secret_key(dht), onion);
+        tcp_server = new_TCP_server(logger, enable_ipv6, tcp_relay_port_count, tcp_relay_ports, dht_get_self_secret_key(dht),
+                                    onion);
 
         free(tcp_relay_ports);
 

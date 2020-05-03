@@ -151,12 +151,12 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_con
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int proxy_http_read_connection_response(TCP_Client_Connection *tcp_conn)
+static int proxy_http_read_connection_response(const Logger *logger, TCP_Client_Connection *tcp_conn)
 {
     char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
 
-    int ret = read_TCP_packet(tcp_conn->sock, data, sizeof(data) - 1);
+    int ret = read_TCP_packet(logger, tcp_conn->sock, data, sizeof(data) - 1);
 
     if (ret == -1) {
         return 0;
@@ -170,7 +170,7 @@ static int proxy_http_read_connection_response(TCP_Client_Connection *tcp_conn)
 
         if (data_left) {
             VLA(uint8_t, temp_data, data_left);
-            read_TCP_packet(tcp_conn->sock, temp_data, data_left);
+            read_TCP_packet(logger, tcp_conn->sock, temp_data, data_left);
         }
 
         return 1;
@@ -193,10 +193,10 @@ static void proxy_socks5_generate_handshake(TCP_Client_Connection *tcp_conn)
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int socks5_read_handshake_response(TCP_Client_Connection *tcp_conn)
+static int socks5_read_handshake_response(const Logger *logger, TCP_Client_Connection *tcp_conn)
 {
     uint8_t data[2];
-    int ret = read_TCP_packet(tcp_conn->sock, data, sizeof(data));
+    int ret = read_TCP_packet(logger, tcp_conn->sock, data, sizeof(data));
 
     if (ret == -1) {
         return 0;
@@ -239,11 +239,11 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *tcp_
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int proxy_socks5_read_connection_response(TCP_Client_Connection *tcp_conn)
+static int proxy_socks5_read_connection_response(const Logger *logger, TCP_Client_Connection *tcp_conn)
 {
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(tcp_conn->sock, data, sizeof(data));
+        int ret = read_TCP_packet(logger, tcp_conn->sock, data, sizeof(data));
 
         if (ret == -1) {
             return 0;
@@ -254,7 +254,7 @@ static int proxy_socks5_read_connection_response(TCP_Client_Connection *tcp_conn
         }
     } else {
         uint8_t data[4 + sizeof(IP6) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(tcp_conn->sock, data, sizeof(data));
+        int ret = read_TCP_packet(logger, tcp_conn->sock, data, sizeof(data));
 
         if (ret == -1) {
             return 0;
@@ -900,10 +900,10 @@ static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *
     return 0;
 }
 
-static bool tcp_process_packet(TCP_Client_Connection *conn, void *userdata)
+static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn, void *userdata)
 {
     uint8_t packet[MAX_PACKET_SIZE];
-    const int len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key,
+    const int len = read_packet_TCP_secure_connection(logger, conn->sock, &conn->next_packet_length, conn->shared_key,
                     conn->recv_nonce, packet, sizeof(packet));
 
     if (len == 0) {
@@ -923,7 +923,8 @@ static bool tcp_process_packet(TCP_Client_Connection *conn, void *userdata)
     return true;
 }
 
-static int do_confirmed_TCP(TCP_Client_Connection *conn, const Mono_Time *mono_time, void *userdata)
+static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, const Mono_Time *mono_time,
+                            void *userdata)
 {
     client_send_pending_data(conn);
     tcp_send_ping_response(conn);
@@ -947,7 +948,7 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn, const Mono_Time *mono_t
         return 0;
     }
 
-    while (tcp_process_packet(conn, userdata)) {
+    while (tcp_process_packet(logger, conn, userdata)) {
         // Keep reading until error or out of data.
         continue;
     }
@@ -957,7 +958,8 @@ static int do_confirmed_TCP(TCP_Client_Connection *conn, const Mono_Time *mono_t
 
 /* Run the TCP connection
  */
-void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connection, void *userdata)
+void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Connection *tcp_connection,
+                       void *userdata)
 {
     if (tcp_connection->status == TCP_CLIENT_DISCONNECTED) {
         return;
@@ -965,7 +967,7 @@ void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connecti
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_HTTP_CONNECTING) {
         if (client_send_pending_data(tcp_connection) == 0) {
-            int ret = proxy_http_read_connection_response(tcp_connection);
+            int ret = proxy_http_read_connection_response(logger, tcp_connection);
 
             if (ret == -1) {
                 tcp_connection->kill_at = 0;
@@ -981,7 +983,7 @@ void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connecti
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_SOCKS5_CONNECTING) {
         if (client_send_pending_data(tcp_connection) == 0) {
-            int ret = socks5_read_handshake_response(tcp_connection);
+            int ret = socks5_read_handshake_response(logger, tcp_connection);
 
             if (ret == -1) {
                 tcp_connection->kill_at = 0;
@@ -997,7 +999,7 @@ void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connecti
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED) {
         if (client_send_pending_data(tcp_connection) == 0) {
-            int ret = proxy_socks5_read_connection_response(tcp_connection);
+            int ret = proxy_socks5_read_connection_response(logger, tcp_connection);
 
             if (ret == -1) {
                 tcp_connection->kill_at = 0;
@@ -1019,7 +1021,7 @@ void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connecti
 
     if (tcp_connection->status == TCP_CLIENT_UNCONFIRMED) {
         uint8_t data[TCP_SERVER_HANDSHAKE_SIZE];
-        int len = read_TCP_packet(tcp_connection->sock, data, sizeof(data));
+        int len = read_TCP_packet(logger, tcp_connection->sock, data, sizeof(data));
 
         if (sizeof(data) == len) {
             if (handle_handshake(tcp_connection, data) == 0) {
@@ -1033,7 +1035,7 @@ void do_TCP_connection(Mono_Time *mono_time, TCP_Client_Connection *tcp_connecti
     }
 
     if (tcp_connection->status == TCP_CLIENT_CONFIRMED) {
-        do_confirmed_TCP(tcp_connection, mono_time, userdata);
+        do_confirmed_TCP(logger, tcp_connection, mono_time, userdata);
     }
 
     if (tcp_connection->kill_at <= mono_time_get(mono_time)) {

@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 #ifdef TCP_RELAY_ENABLED
 #define NUM_PORTS 3
     uint16_t ports[NUM_PORTS] = {443, 3389, PORT};
-    TCP_Server *tcp_s = new_TCP_server(ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
+    TCP_Server *tcp_s = new_TCP_server(logger, ipv6enabled, NUM_PORTS, ports, dht_get_self_secret_key(dht), onion);
 
     if (tcp_s == nullptr) {
         printf("TCP server failed to initialize.\n");

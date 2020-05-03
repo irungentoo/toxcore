@@ -97,6 +97,7 @@ typedef struct Onion_Data_Handler {
 
 struct Onion_Client {
     Mono_Time *mono_time;
+    const Logger *logger;
 
     DHT     *dht;
     Net_Crypto *c;
@@ -1849,7 +1850,7 @@ void do_onion_client(Onion_Client *onion_c)
     onion_c->last_run = mono_time_get(onion_c->mono_time);
 }
 
-Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c)
+Onion_Client *new_onion_client(const Logger *logger, Mono_Time *mono_time, Net_Crypto *c)
 {
     if (c == nullptr) {
         return nullptr;
@@ -1869,6 +1870,7 @@ Onion_Client *new_onion_client(Mono_Time *mono_time, Net_Crypto *c)
     }
 
     onion_c->mono_time = mono_time;
+    onion_c->logger = logger;
     onion_c->dht = nc_get_dht(c);
     onion_c->net = dht_get_net(onion_c->dht);
     onion_c->c = c;

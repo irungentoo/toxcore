@@ -1398,7 +1398,7 @@ TCP_Connections *new_tcp_connections(Mono_Time *mono_time, const uint8_t *secret
     return temp;
 }
 
-static void do_tcp_conns(TCP_Connections *tcp_c, void *userdata)
+static void do_tcp_conns(const Logger *logger, TCP_Connections *tcp_c, void *userdata)
 {
     unsigned int i;
 
@@ -1407,7 +1407,7 @@ static void do_tcp_conns(TCP_Connections *tcp_c, void *userdata)
 
         if (tcp_con) {
             if (tcp_con->status != TCP_CONN_SLEEPING) {
-                do_TCP_connection(tcp_c->mono_time, tcp_con->connection, userdata);
+                do_TCP_connection(logger, tcp_c->mono_time, tcp_con->connection, userdata);
 
                 /* callbacks can change TCP connection address. */
                 tcp_con = get_tcp_connection(tcp_c, i);
@@ -1485,9 +1485,9 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
     }
 }
 
-void do_tcp_connections(TCP_Connections *tcp_c, void *userdata)
+void do_tcp_connections(const Logger *logger, TCP_Connections *tcp_c, void *userdata)
 {
-    do_tcp_conns(tcp_c, userdata);
+    do_tcp_conns(logger, tcp_c, userdata);
     kill_nonused_tcp(tcp_c);
 }
 

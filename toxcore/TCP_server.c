@@ -12,7 +12,6 @@
 
 #include "TCP_server.h"
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #if !defined(_WIN32) && !defined(__WIN32__) && !defined (WIN32)
@@ -66,6 +65,7 @@ typedef struct TCP_Secure_Connection {
 
 
 struct TCP_Server {
+    const Logger *logger;
     Onion *onion;
 
 #ifdef TCP_SERVER_USE_EPOLL
@@ -220,7 +220,7 @@ static int add_accepted(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_
     }
 
     if (index == -1) {
-        fprintf(stderr, "FAIL index is -1\n");
+        LOGGER_ERROR(tcp_server->logger, "FAIL index is -1");
         return -1;
     }
 
@@ -275,7 +275,7 @@ static int del_accepted(TCP_Server *tcp_server, int index)
  * return 0 if nothing has been read from socket.
  * return -1 on failure.
  */
-uint16_t read_TCP_length(Socket sock)
+uint16_t read_TCP_length(const Logger *logger, Socket sock)
 {
     const unsigned int count = net_socket_data_recv_buffer(sock);
 
@@ -284,7 +284,7 @@ uint16_t read_TCP_length(Socket sock)
         const int len = net_recv(sock, &length, sizeof(uint16_t));
 
         if (len != sizeof(uint16_t)) {
-            fprintf(stderr, "FAIL recv packet\n");
+            LOGGER_ERROR(logger, "FAIL recv packet");
             return 0;
         }
 
@@ -305,7 +305,7 @@ uint16_t read_TCP_length(Socket sock)
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(Socket sock, uint8_t *data, uint16_t length)
+int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length)
 {
     unsigned int count = net_socket_data_recv_buffer(sock);
 
@@ -313,7 +313,7 @@ int read_TCP_packet(Socket sock, uint8_t *data, uint16_t length)
         const int len = net_recv(sock, data, length);
 
         if (len != length) {
-            fprintf(stderr, "FAIL recv packet\n");
+            LOGGER_ERROR(logger, "FAIL recv packet");
             return -1;
         }
 
@@ -327,11 +327,11 @@ int read_TCP_packet(Socket sock, uint8_t *data, uint16_t length)
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
-int read_packet_TCP_secure_connection(Socket sock, uint16_t *next_packet_length, const uint8_t *shared_key,
-                                      uint8_t *recv_nonce, uint8_t *data, uint16_t max_len)
+int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
+                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len)
 {
     if (*next_packet_length == 0) {
-        uint16_t len = read_TCP_length(sock);
+        uint16_t len = read_TCP_length(logger, sock);
 
         if (len == (uint16_t) -1) {
             return -1;
@@ -349,7 +349,7 @@ int read_packet_TCP_secure_connection(Socket sock, uint16_t *next_packet_length,
     }
 
     VLA(uint8_t, data_encrypted, *next_packet_length);
-    int len_packet = read_TCP_packet(sock, data_encrypted, *next_packet_length);
+    int len_packet = read_TCP_packet(logger, sock, data_encrypted, *next_packet_length);
 
     if (len_packet != *next_packet_length) {
         return 0;
@@ -617,10 +617,10 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data,
  * return 0 if we didn't get it yet.
  * return -1 if the connection must be killed.
  */
-static int read_connection_handshake(TCP_Secure_Connection *con, const uint8_t *self_secret_key)
+static int read_connection_handshake(const Logger *logger, TCP_Secure_Connection *con, const uint8_t *self_secret_key)
 {
     uint8_t data[TCP_CLIENT_HANDSHAKE_SIZE];
-    const int len = read_TCP_packet(con->sock, data, TCP_CLIENT_HANDSHAKE_SIZE);
+    const int len = read_TCP_packet(logger, con->sock, data, TCP_CLIENT_HANDSHAKE_SIZE);
 
     if (len != -1) {
         return handle_TCP_handshake(con, data, len, self_secret_key);
@@ -1055,8 +1055,8 @@ static Socket new_listening_TCP_socket(Family family, uint16_t port)
     return sock;
 }
 
-TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports, const uint8_t *secret_key,
-                           Onion *onion)
+TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
+                           const uint8_t *secret_key, Onion *onion)
 {
     if (num_sockets == 0 || ports == nullptr) {
         return nullptr;
@@ -1071,6 +1071,8 @@ TCP_Server *new_TCP_server(uint8_t ipv6_enabled, uint16_t num_sockets, const uin
     if (temp == nullptr) {
         return nullptr;
     }
+
+    temp->logger = logger;
 
     temp->socks_listening = (Socket *)calloc(num_sockets, sizeof(Socket));
 
@@ -1156,7 +1158,8 @@ static int do_incoming(TCP_Server *tcp_server, uint32_t i)
         return -1;
     }
 
-    int ret = read_connection_handshake(&tcp_server->incoming_connection_queue[i], tcp_server->secret_key);
+    int ret = read_connection_handshake(tcp_server->logger, &tcp_server->incoming_connection_queue[i],
+                                        tcp_server->secret_key);
 
     if (ret == -1) {
         kill_TCP_secure_connection(&tcp_server->incoming_connection_queue[i]);
@@ -1187,8 +1190,8 @@ static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, ui
     }
 
     uint8_t packet[MAX_PACKET_SIZE];
-    int len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key, conn->recv_nonce,
-              packet, sizeof(packet));
+    int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->sock, &conn->next_packet_length, conn->shared_key,
+              conn->recv_nonce, packet, sizeof(packet));
 
     if (len == 0) {
         return -1;
@@ -1207,7 +1210,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
     TCP_Secure_Connection *const conn = &tcp_server->accepted_connection_array[i];
 
     uint8_t packet[MAX_PACKET_SIZE];
-    int len = read_packet_TCP_secure_connection(conn->sock, &conn->next_packet_length, conn->shared_key,
+    int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->sock, &conn->next_packet_length, conn->shared_key,
               conn->recv_nonce, packet, sizeof(packet));
 
     if (len == 0) {
