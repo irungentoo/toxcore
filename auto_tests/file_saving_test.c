@@ -64,6 +64,7 @@ static void save_data_encrypted(void)
 static void load_data_decrypted(void)
 {
     FILE *f = fopen(savefile, "r");
+    ck_assert(f != nullptr);
     fseek(f, 0, SEEK_END);
     int64_t size = ftell(f);
     fseek(f, 0, SEEK_SET);
@@ -71,7 +72,9 @@ static void load_data_decrypted(void)
     ck_assert_msg(0 <= size && size <= UINT_MAX, "file size out of range");
 
     uint8_t *cipher = (uint8_t *)malloc(size);
+    ck_assert(cipher != nullptr);
     uint8_t *clear = (uint8_t *)malloc(size - TOX_PASS_ENCRYPTION_EXTRA_LENGTH);
+    ck_assert(clear != nullptr);
     size_t read_value = fread(cipher, sizeof(*cipher), size, f);
     printf("Read read_value = %u of %u\n", (unsigned)read_value, (unsigned)size);
 
@@ -81,6 +84,7 @@ static void load_data_decrypted(void)
                   "Could not decrypt, error code %d.", derr);
 
     struct Tox_Options *options = tox_options_new(nullptr);
+    ck_assert(options != nullptr);
 
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
@@ -101,10 +105,10 @@ static void load_data_decrypted(void)
     ck_assert_msg(strcmp((const char *)readname, name) == 0,
                   "name returned by tox_self_get_name does not match expected result");
 
-    free(cipher);
-    free(clear);
-    fclose(f);
     tox_kill(t);
+    free(clear);
+    free(cipher);
+    fclose(f);
 }
 
 int main(void)

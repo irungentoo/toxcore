@@ -91,9 +91,11 @@ static void reload(Tox **toxes, State *state, uint32_t n)
     ck_assert(state[n].save_state != nullptr);
 
     struct Tox_Options *const options = tox_options_new(nullptr);
+    ck_assert(options != nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, state[n].save_state, state[n].save_size);
     toxes[n] = tox_new_log(options, nullptr, &state[n].index);
+    ck_assert(toxes[n] != nullptr);
     tox_options_free(options);
 
     set_mono_time_callback(toxes[n], &state[n]);

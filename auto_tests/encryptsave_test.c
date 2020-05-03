@@ -76,6 +76,7 @@ static void test_save_friend(void)
     ck_assert_msg(tox_is_data_encrypted(enc_data), "magic number missing");
 
     struct Tox_Options *options = tox_options_new(nullptr);
+    ck_assert(options != nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, enc_data, size2);
 

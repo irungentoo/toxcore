@@ -185,6 +185,7 @@ struct sec_TCP_con {
 static struct sec_TCP_con *new_TCP_con(TCP_Server *tcp_s, Mono_Time *mono_time)
 {
     struct sec_TCP_con *sec_c = (struct sec_TCP_con *)malloc(sizeof(struct sec_TCP_con));
+    ck_assert(sec_c != nullptr);
     Socket sock = net_socket(net_family_ipv6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     IP_Port ip_port_loopback;

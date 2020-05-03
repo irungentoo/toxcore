@@ -68,6 +68,7 @@ static void rebuild_peer_list(Tox *tox)
                           "failed to get conference peer %u's name size (conference = %u): err = %d", peer_number, conference_number, err);
 
             uint8_t *const name = (uint8_t *)malloc(size);
+            ck_assert(name != nullptr);
             tox_conference_peer_get_name(tox, conference_number, peer_number, name, &err);
             ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
                           "failed to get conference peer %u's name (conference = %u): err = %d", peer_number, conference_number, err);

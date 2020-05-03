@@ -2917,6 +2917,12 @@ static State_Load_Status dht_load_state_callback(void *outer, const uint8_t *dat
             // Copy to loaded_clients_list
             dht->loaded_nodes_list = (Node_format *)calloc(MAX_SAVED_DHT_NODES, sizeof(Node_format));
 
+            if (dht->loaded_nodes_list == nullptr) {
+                LOGGER_ERROR(dht->log, "could not allocate %u nodes", MAX_SAVED_DHT_NODES);
+                dht->loaded_num_nodes = 0;
+                break;
+            }
+
             const int num = unpack_nodes(dht->loaded_nodes_list, MAX_SAVED_DHT_NODES, nullptr, data, length, 0);
 
             if (num > 0) {

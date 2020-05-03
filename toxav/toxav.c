@@ -755,7 +755,7 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
         goto RETURN;
     }
 
-    { /* Encode and send */
+    {   /* Encode and send */
         if (ac_reconfigure_encoder(call->audio, call->audio_bit_rate * 1000, sampling_rate, channels) != 0) {
             pthread_mutex_unlock(call->mutex_audio);
             rc = TOXAV_ERR_SEND_FRAME_INVALID;
@@ -896,7 +896,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
 
     // we start with I-frames (full frames) and then switch to normal mode later
 
-    { /* Encode */
+    {   /* Encode */
         vpx_image_t img;
         img.w = 0;
         img.h = 0;
@@ -1323,7 +1323,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
     /* Prepare bwc */
     call->bwc = bwc_new(av->m, av->tox, call->friend_number, callback_bwc, call, av->toxav_mono_time);
 
-    { /* Prepare audio */
+    {   /* Prepare audio */
         call->audio = ac_new(av->toxav_mono_time, av->m->log, av, call->friend_number, av->acb, av->acb_user_data);
 
         if (!call->audio) {
@@ -1339,7 +1339,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
             goto FAILURE;
         }
     }
-    { /* Prepare video */
+    {   /* Prepare video */
         call->video = vc_new(av->toxav_mono_time, av->m->log, av, call->friend_number, av->vcb, av->vcb_user_data);
 
         if (!call->video) {

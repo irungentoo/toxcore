@@ -1,0 +1,5 @@
+---
+restylers:
+  - astyle:
+      arguments: ["--options=other/astyle/astylerc"]
+  - prettier-yaml
