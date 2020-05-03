@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -eu
+
+readarray -t FILES <<<"$(git ls-files | sed -e 's,^,c-toxcore/,')"
+
+if [ -f .git ]; then
+  cd ..
+  tar -c "${FILES[@]}" "c-toxcore/.git" ".git/modules/c-toxcore" |
+    docker build -f c-toxcore/other/docker/Dockerfile.ci -
+else
+  cd ..
+  tar -c "${FILES[@]}" "c-toxcore/.git" |
+    docker build -f c-toxcore/other/docker/Dockerfile.ci -
+fi

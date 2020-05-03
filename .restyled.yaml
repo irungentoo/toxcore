@@ -2,4 +2,10 @@
 restylers:
   - astyle:
       arguments: ["--options=other/astyle/astylerc"]
+  - autopep8
+  - black
   - prettier-yaml
+  - reorder-python-imports
+  - shellharden
+  - shfmt
+  - yapf

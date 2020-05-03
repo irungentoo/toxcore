@@ -36,10 +36,11 @@ FROM_JSON='s/\\"/"/g;s/^"(.*)"$/$1/;s/\\\\/\\/g;s/\\n/\n/g'
 apidsl_request() {
   TMPFILE=$(mktemp /tmp/apidsl.XXXXXX)
   curl -s -o "$TMPFILE" -X POST --data @<(
-    echo '["Request",';
-    cat $2;
-    echo ']') https://apidsl.herokuapp.com/$1
-  if grep '\[1,"' "$TMPFILE" > /dev/null; then
+    echo '["Request",'
+    cat "$2"
+    echo ']'
+  ) "https://apidsl.herokuapp.com/$1"
+  if grep '\[1,"' "$TMPFILE" >/dev/null; then
     echo "Error: $(grep -o '".*"' /tmp/apidsl-$$ | perl -0777 -pe "$FROM_JSON")" >&2
     rm "$TMPFILE"
     exit 1
@@ -52,34 +53,42 @@ apidsl_curl() {
   echo "apidsl_curl $*" >&2
   apidsl_request "c" <(
     apidsl_request "parse" <(
-      perl -0777 -pe "$TO_JSON" $1)) | perl -0777 -pe "$FROM_JSON"
+      perl -0777 -pe "$TO_JSON" "$1"
+    )
+  ) | perl -0777 -pe "$FROM_JSON"
 }
 
 # Check if apidsl generated sources are up to date.
 set +x
-$APIDSL toxcore/LAN_discovery.api.h > toxcore/LAN_discovery.h &
-$APIDSL toxcore/crypto_core.api.h > toxcore/crypto_core.h &
-$APIDSL toxcore/ping.api.h > toxcore/ping.h &
-$APIDSL toxcore/ping_array.api.h > toxcore/ping_array.h &
-$APIDSL toxcore/tox.api.h > toxcore/tox.h &
-$APIDSL toxav/toxav.api.h > toxav/toxav.h &
-$APIDSL toxencryptsave/toxencryptsave.api.h > toxencryptsave/toxencryptsave.h &
+"$APIDSL" toxcore/LAN_discovery.api.h >toxcore/LAN_discovery.h &
+"$APIDSL" toxcore/crypto_core.api.h >toxcore/crypto_core.h &
+"$APIDSL" toxcore/ping.api.h >toxcore/ping.h &
+"$APIDSL" toxcore/ping_array.api.h >toxcore/ping_array.h &
+"$APIDSL" toxcore/tox.api.h >toxcore/tox.h &
+"$APIDSL" toxav/toxav.api.h >toxav/toxav.h &
+"$APIDSL" toxencryptsave/toxencryptsave.api.h >toxencryptsave/toxencryptsave.h &
 set -x
 
-wait; wait; wait; wait; wait; wait; wait
+wait
+wait
+wait
+wait
+wait
+wait
+wait
 
 if grep '<unresolved>' ./*/*.h; then
   echo "error: some apidsl references were unresolved"
   exit 1
 fi
 
-CC_SOURCES=$(find . '(' -name '*.cc' ')')
-CC_SOURCES="$CC_SOURCES toxcore/crypto_core.c"
-CC_SOURCES="$CC_SOURCES toxcore/ping_array.c"
+readarray -t CC_SOURCES <<<"$(find . '(' -name '*.cc' ')')"
+CC_SOURCES+=(toxcore/crypto_core.c)
+CC_SOURCES+=(toxcore/ping_array.c)
 
 for bin in clang-format-6.0 clang-format-5.0 clang-format; do
   if which "$bin"; then
-    "$bin" -i -style='{BasedOnStyle: Google, ColumnLimit: 100}' $CC_SOURCES
+    "$bin" -i -style='{BasedOnStyle: Google, ColumnLimit: 100}' "${CC_SOURCES[@]}"
     break
   fi
 done
@@ -91,8 +100,8 @@ FIND="$FIND -and -not -wholename './super_donators/*'"
 FIND="$FIND -and -not -wholename './third_party/*'"
 FIND="$FIND -and -not -wholename './toxencryptsave/crypto_pwhash*'"
 
-C_SOURCES=$(eval "$FIND")
+readarray -t C_SOURCES <<<"$(eval "$FIND")"
 
-$ASTYLE -n --options=other/astyle/astylerc $C_SOURCES
+"$ASTYLE" -n --options=other/astyle/astylerc "${C_SOURCES[@]}"
 
-git diff --exit-code
+git diff --color=always --exit-code
