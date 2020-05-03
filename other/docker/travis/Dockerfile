@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN curl https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
  && apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main" \
  && apt-get update && apt-get install --no-install-recommends -y \
@@ -62,14 +63,3 @@ USER travis
 ENV CC=gcc CXX=g++ \
 PATH=/home/travis/.local/bin:$PATH \
 TRAVIS_REPO_SLUG=TokTok/c-toxcore
-
-# Copy minimal files to run "cmake-linux install", so we can avoid rebuilding
-# astyle and other things when only source files change.
-RUN mkdir -p /home/travis/build/c-toxcore /home/travis/cache
-WORKDIR /home/travis/build/c-toxcore
-COPY --chown=travis:travis c-toxcore/.travis/ /home/travis/build/c-toxcore/.travis/
-RUN .travis/cmake-linux install
-
-# Now copy the rest of the sources and run the build.
-COPY --chown=travis:travis . /home/travis/build/
-RUN .travis/cmake-linux script
