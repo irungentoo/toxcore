@@ -123,7 +123,8 @@ START_TEST(test_basic)
     memcpy(f_nonce_r, response_plain + CRYPTO_SHARED_KEY_SIZE, CRYPTO_NONCE_SIZE);
 
     // Building a request
-    uint8_t r_req_p[1 + CRYPTO_PUBLIC_KEY_SIZE] = {0};
+    uint8_t r_req_p[1 + CRYPTO_PUBLIC_KEY_SIZE];
+    r_req_p[0] = TCP_PACKET_ROUTING_REQUEST;
     memcpy(r_req_p + 1, f_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     uint8_t r_req[2 + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE];
     uint16_t size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE;
@@ -163,7 +164,8 @@ START_TEST(test_basic)
     ck_assert_msg(ret != -1, "Failed to decrypt the TCP server's response.");
     increment_nonce(f_nonce_r);
 
-    ck_assert_msg(packet_resp_plain[0] == 1, "Server sent the wrong packet id: %u", packet_resp_plain[0]);
+    ck_assert_msg(packet_resp_plain[0] == TCP_PACKET_ROUTING_RESPONSE, "Server sent the wrong packet id: %u",
+                  packet_resp_plain[0]);
     ck_assert_msg(packet_resp_plain[1] == 0, "Server did not refuse the connection.");
     ck_assert_msg(public_key_cmp(packet_resp_plain + 2, f_public_key) == 0, "Server sent the wrong public key.");
 
@@ -288,7 +290,7 @@ START_TEST(test_some)
     struct sec_TCP_con *con3 = new_TCP_con(tcp_s, mono_time);
 
     uint8_t requ_p[1 + CRYPTO_PUBLIC_KEY_SIZE];
-    requ_p[0] = 0;
+    requ_p[0] = TCP_PACKET_ROUTING_REQUEST;
 
     // Sending wrong public keys to test server response.
     memcpy(requ_p + 1, con3->public_key, CRYPTO_PUBLIC_KEY_SIZE);
@@ -302,14 +304,14 @@ START_TEST(test_some)
     uint8_t data[2048];
     int len = read_packet_sec_TCP(con1, data, 2 + 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE, "Wrong response packet length of %d.", len);
-    ck_assert_msg(data[0] == 1, "Wrong response packet id of %d.", data[0]);
+    ck_assert_msg(data[0] == TCP_PACKET_ROUTING_RESPONSE, "Wrong response packet id of %d.", data[0]);
     ck_assert_msg(data[1] == 16, "Server didn't refuse connection using wrong public key.");
     ck_assert_msg(public_key_cmp(data + 2, con3->public_key) == 0, "Key in response packet wrong.");
 
     // Connection 3
     len = read_packet_sec_TCP(con3, data, 2 + 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE, "Wrong response packet length of %d.", len);
-    ck_assert_msg(data[0] == 1, "Wrong response packet id of %d.", data[0]);
+    ck_assert_msg(data[0] == TCP_PACKET_ROUTING_RESPONSE, "Wrong response packet id of %d.", data[0]);
     ck_assert_msg(data[1] == 16, "Server didn't refuse connection using wrong public key.");
     ck_assert_msg(public_key_cmp(data + 2, con1->public_key) == 0, "Key in response packet wrong.");
 
@@ -323,11 +325,11 @@ START_TEST(test_some)
 
     len = read_packet_sec_TCP(con1, data, 2 + 2 + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == 2, "wrong len %d", len);
-    ck_assert_msg(data[0] == 2, "wrong packet id %u", data[0]);
+    ck_assert_msg(data[0] == TCP_PACKET_CONNECTION_NOTIFICATION, "wrong packet id %u", data[0]);
     ck_assert_msg(data[1] == 16, "wrong peer id %u", data[1]);
     len = read_packet_sec_TCP(con3, data, 2 + 2 + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == 2, "wrong len %d", len);
-    ck_assert_msg(data[0] == 2, "wrong packet id %u", data[0]);
+    ck_assert_msg(data[0] == TCP_PACKET_CONNECTION_NOTIFICATION, "wrong packet id %u", data[0]);
     ck_assert_msg(data[1] == 16, "wrong peer id %u", data[1]);
     len = read_packet_sec_TCP(con1, data, 2 + sizeof(test_packet) + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == sizeof(test_packet), "wrong len %d", len);
@@ -358,14 +360,14 @@ START_TEST(test_some)
     ck_assert_msg(memcmp(data, test_packet, sizeof(test_packet)) == 0, "packet is wrong %u %u %u %u", data[0], data[1],
                   data[sizeof(test_packet) - 2], data[sizeof(test_packet) - 1]);
 
-    uint8_t ping_packet[1 + sizeof(uint64_t)] = {4, 8, 6, 9, 67};
+    uint8_t ping_packet[1 + sizeof(uint64_t)] = {TCP_PACKET_PING, 8, 6, 9, 67};
     write_packet_TCP_secure_connection(con1, ping_packet, sizeof(ping_packet));
 
     do_TCP_server_delay(tcp_s, mono_time, 50);
 
     len = read_packet_sec_TCP(con1, data, 2 + sizeof(ping_packet) + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == sizeof(ping_packet), "wrong len %d", len);
-    ck_assert_msg(data[0] == 5, "wrong packet id %u", data[0]);
+    ck_assert_msg(data[0] == TCP_PACKET_PONG, "wrong packet id %u", data[0]);
     ck_assert_msg(memcmp(ping_packet + 1, data + 1, sizeof(uint64_t)) == 0, "wrong packet data");
 
     // Kill off the connections
