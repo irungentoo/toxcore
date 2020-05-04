@@ -1,25 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 
 . other/analysis/gen-file.sh
 
 echo "Running Clang compiler"
-clang++ -o /dev/null amalgamation.cc		\
-	$CPPFLAGS				\
-	$LDFLAGS				\
-	-std=c++11				\
-	-Werror					\
-	-Weverything				\
-	-Wno-c++98-compat-pedantic		\
-	-Wno-c99-extensions			\
-	-Wno-cast-align				\
-	-Wno-conversion				\
-	-Wno-covered-switch-default		\
-	-Wno-disabled-macro-expansion		\
-	-Wno-documentation-deprecated-sync	\
-	-Wno-missing-field-initializers		\
-	-Wno-old-style-cast			\
-	-Wno-padded				\
-	-Wno-sign-compare			\
-	-Wno-unreachable-code-return		\
-	-Wno-unused-parameter			\
-	-Wno-used-but-marked-unused		\
+clang++ -o /dev/null amalgamation.cc \
+  "${CPPFLAGS[@]}" \
+  "${LDFLAGS[@]}" \
+  -std=c++11 \
+  -Werror \
+  -Weverything \
+  -Wno-c++98-compat-pedantic \
+  -Wno-c99-extensions \
+  -Wno-cast-align \
+  -Wno-conversion \
+  -Wno-covered-switch-default \
+  -Wno-disabled-macro-expansion \
+  -Wno-documentation-deprecated-sync \
+  -Wno-missing-field-initializers \
+  -Wno-old-style-cast \
+  -Wno-padded \
+  -Wno-sign-compare \
+  -Wno-unreachable-code-return \
+  -Wno-unused-parameter \
+  -Wno-used-but-marked-unused

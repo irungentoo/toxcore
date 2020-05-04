@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 # Infer ignores everything that's not in the "current file".
 SKIP_LINES=1
 
 . other/analysis/gen-file.sh
 
-infer -- clang++ -fsyntax-only amalgamation.cc $CPPFLAGS
+infer -- clang++ -fsyntax-only amalgamation.cc "${CPPFLAGS[@]}"
