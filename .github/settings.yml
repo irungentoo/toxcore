@@ -6,7 +6,6 @@ repository:
   description: The future of online communications.
   homepage: https://tox.chat/
   topics: toxcore, network, p2p, security, encryption, cryptography
-  has_issues: true
 
 branches:
   - name: "master"
