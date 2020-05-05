@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 i686=true
 x86_64=false

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Toxcore building
 
@@ -35,7 +35,7 @@ travis_install() {
   cd "$OLD_PWD"
 
   # Copy over toxcore code from Travis to qemu
-  scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P $SSH_PORT -r ./* root@localhost:~
+  scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P "$SSH_PORT" -r ./* root@localhost:~
 
   RUN ls -lh
 }

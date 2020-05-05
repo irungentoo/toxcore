@@ -1,8 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 set -exu
 
-tar c $(git ls-files) | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+readarray -t FILES <<<"$(git ls-files)"
+
+tar c "${FILES[@]}" | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
 sudo useradd \
   --home-dir /var/lib/tox-bootstrapd \
   --create-home \
@@ -29,12 +31,12 @@ fi
 
 COUNTER=0
 COUNTER_END=120
-while [ $COUNTER -lt $COUNTER_END ]; do
-  if docker logs tox-bootstrapd | grep -q "Connected to another bootstrap node successfully" ; then
+while [ "$COUNTER" -lt "$COUNTER_END" ]; do
+  if docker logs tox-bootstrapd | grep -q "Connected to another bootstrap node successfully"; then
     break
   fi
   sleep 1
-  COUNTER=$(($COUNTER+1))
+  COUNTER=$(($COUNTER + 1))
 done
 
 docker logs tox-bootstrapd
@@ -49,18 +51,18 @@ sleep 30
 
 docker ps -a
 
-if [ "`docker inspect -f {{.State.Running}} tox-bootstrapd`" != "true" ]; then
+if [ "$(docker inspect -f {{.State.Running}} tox-bootstrapd)" != "true" ]; then
   echo "Error: Container is not running"
   exit 1
 fi
 
-cat /proc/$(pidof tox-bootstrapd)/limits
-if ! cat /proc/$(pidof tox-bootstrapd)/limits | grep -P '^Max open files(\s+)32768(\s+)32768(\s+)files'; then
+cat /proc/"$(pidof tox-bootstrapd)"/limits
+if ! grep -P '^Max open files(\s+)32768(\s+)32768(\s+)files' /proc/"$(pidof tox-bootstrapd)"/limits; then
   echo "Error: ulimit is not set to the expected value"
   exit 1
 fi
 
-if ! other/fun/bootstrap_node_info.py ipv4 localhost 33445 ; then
+if ! other/fun/bootstrap_node_info.py ipv4 localhost 33445; then
   echo "Error: Unable to get bootstrap node info"
   exit 1
 fi

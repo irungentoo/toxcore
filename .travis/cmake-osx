@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 ACTION="$1"
 
 set -eu
 
 CACHEDIR="$HOME/cache"
-NPROC=`sysctl -n hw.physicalcpu`
+NPROC=$(sysctl -n hw.physicalcpu)
 
 travis_install() {
   # Workaround for bug in Homebrew where it only finds an old Ruby version.
@@ -35,11 +35,11 @@ travis_script() {
     -DUSE_IPV6=OFF \
     -DAUTOTEST=ON
 
-  cd _build  # pushd
+  cd _build # pushd
   make "-j$NPROC" -k install
-  make "-j$NPROC" test ARGS="-j50" || \
+  make "-j$NPROC" test ARGS="-j50" ||
     make "-j$NPROC" test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
-  cd -  # popd
+  cd - # popd
 }
 
 if [ "-z" "$ACTION" ]; then
