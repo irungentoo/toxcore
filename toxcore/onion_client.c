@@ -611,7 +611,8 @@ typedef struct Onion_Client_Cmp_data {
 
 static int onion_client_cmp_entry(const void *a, const void *b)
 {
-    Onion_Client_Cmp_data cmp1, cmp2;
+    Onion_Client_Cmp_data cmp1;
+    Onion_Client_Cmp_data cmp2;
     memcpy(&cmp1, a, sizeof(Onion_Client_Cmp_data));
     memcpy(&cmp2, b, sizeof(Onion_Client_Cmp_data));
     Onion_Node entry1 = cmp1.entry;

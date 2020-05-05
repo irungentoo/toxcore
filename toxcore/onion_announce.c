@@ -259,7 +259,8 @@ typedef struct Cmp_data {
 
 static int cmp_entry(const void *a, const void *b)
 {
-    Cmp_data cmp1, cmp2;
+    Cmp_data cmp1;
+    Cmp_data cmp2;
     memcpy(&cmp1, a, sizeof(Cmp_data));
     memcpy(&cmp2, b, sizeof(Cmp_data));
     Onion_Announce_Entry entry1 = cmp1.entry;

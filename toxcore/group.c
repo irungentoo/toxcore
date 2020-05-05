@@ -1933,7 +1933,8 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 return;
             }
 
-            uint16_t other_groupnum, groupnum;
+            uint16_t other_groupnum;
+            uint16_t groupnum;
             net_unpack_u16(data + 1, &other_groupnum);
             net_unpack_u16(data + 1 + sizeof(uint16_t), &groupnum);
 
@@ -2883,7 +2884,9 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
         return -1;
     }
 
-    uint16_t groupnumber, peer_number, message_number;
+    uint16_t groupnumber;
+    uint16_t peer_number;
+    uint16_t message_number;
     memcpy(&groupnumber, data + 1, sizeof(uint16_t));
     memcpy(&peer_number, data + 1 + sizeof(uint16_t), sizeof(uint16_t));
     memcpy(&message_number, data + 1 + sizeof(uint16_t) * 2, sizeof(uint16_t));

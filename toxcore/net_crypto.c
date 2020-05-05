@@ -1512,7 +1512,8 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
         return -1;
     }
 
-    uint32_t buffer_start, num;
+    uint32_t buffer_start;
+    uint32_t num;
     memcpy(&buffer_start, data, sizeof(uint32_t));
     memcpy(&num, data + sizeof(uint32_t), sizeof(uint32_t));
     buffer_start = net_ntohl(buffer_start);

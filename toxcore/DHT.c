@@ -900,7 +900,8 @@ static bool incorrect_hardening(const IPPTsPng *assoc)
 
 static int cmp_dht_entry(const void *a, const void *b)
 {
-    DHT_Cmp_data cmp1, cmp2;
+    DHT_Cmp_data cmp1;
+    DHT_Cmp_data cmp2;
     memcpy(&cmp1, a, sizeof(DHT_Cmp_data));
     memcpy(&cmp2, b, sizeof(DHT_Cmp_data));
     const Client_data entry1 = cmp1.entry;
@@ -2418,7 +2419,8 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
                 return 1;
             }
 
-            Node_format node, tocheck_node;
+            Node_format node;
+            Node_format tocheck_node;
             node.ip_port = source;
             memcpy(node.public_key, source_pubkey, CRYPTO_PUBLIC_KEY_SIZE);
             memcpy(&tocheck_node, packet + 1, sizeof(Node_format));
