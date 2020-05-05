@@ -583,7 +583,8 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
 int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, const uint8_t *data,
                  uint16_t length, bool tcp_enabled)
 {
-    uint32_t num = 0, len_processed = 0;
+    uint32_t num = 0;
+    uint32_t len_processed = 0;
 
     while (num < max_num_nodes && len_processed < length) {
         const int ipp_size = unpack_ip_port(&nodes[num].ip_port, data + len_processed, length - len_processed, tcp_enabled);

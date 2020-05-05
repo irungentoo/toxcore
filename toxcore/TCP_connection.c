@@ -692,9 +692,9 @@ static int rm_tcp_connection_from_conn(TCP_Connection_to *con_to, unsigned int t
  */
 static unsigned int online_tcp_connection_from_conn(TCP_Connection_to *con_to)
 {
-    unsigned int i, count = 0;
+    unsigned int count = 0;
 
-    for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
+    for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         if (con_to->connections[i].tcp_connection) {
             if (con_to->connections[i].status == TCP_CONNECTIONS_STATUS_ONLINE) {
                 ++count;
@@ -1086,9 +1086,9 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
         return -1;
     }
 
-    unsigned int i, sent = 0;
+    unsigned int sent = 0;
 
-    for (i = 0; i < tcp_c->connections_length; ++i) {
+    for (unsigned int i = 0; i < tcp_c->connections_length; ++i) {
         TCP_Connection_to *con_to = get_connection(tcp_c, i);
 
         if (con_to) {

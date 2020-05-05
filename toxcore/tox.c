@@ -400,7 +400,8 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     Messenger_Options m_options = {0};
 
-    bool load_savedata_sk = false, load_savedata_tox = false;
+    bool load_savedata_sk = false;
+    bool load_savedata_tox = false;
 
     struct Tox_Options *default_options = nullptr;
 

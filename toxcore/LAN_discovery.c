@@ -70,14 +70,16 @@ static void fetch_broadcast_info(uint16_t port)
         IP_ADAPTER_INFO *pAdapter = pAdapterInfo;
 
         while (pAdapter) {
-            IP gateway = {0}, subnet_mask = {0};
+            IP gateway = {0};
+            IP subnet_mask = {0};
 
             if (addr_parse_ip(pAdapter->IpAddressList.IpMask.String, &subnet_mask)
                     && addr_parse_ip(pAdapter->GatewayList.IpAddress.String, &gateway)) {
                 if (net_family_is_ipv4(gateway.family) && net_family_is_ipv4(subnet_mask.family)) {
                     IP_Port *ip_port = &ip_ports[count];
                     ip_port->ip.family = net_family_ipv4;
-                    uint32_t gateway_ip = net_ntohl(gateway.ip.v4.uint32), subnet_ip = net_ntohl(subnet_mask.ip.v4.uint32);
+                    uint32_t gateway_ip = net_ntohl(gateway.ip.v4.uint32);
+                    uint32_t subnet_ip = net_ntohl(subnet_mask.ip.v4.uint32);
                     uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
                     ip_port->ip.ip.v4.uint32 = net_htonl(broadcast_ip);
                     ip_port->port = port;
