@@ -8,24 +8,26 @@ ARG VERSION_VPX=v1.6.1
 ARG SUPPORT_TEST=false
 ARG SUPPORT_ARCH_i686=true
 ARG SUPPORT_ARCH_x86_64=true
+ARG CROSS_COMPILE=true
 
 # Make those available when running the container
 ENV SUPPORT_TEST=${SUPPORT_TEST}
 ENV SUPPORT_ARCH_i686=${SUPPORT_ARCH_i686}
 ENV SUPPORT_ARCH_x86_64=${SUPPORT_ARCH_x86_64}
+ENV CROSS_COMPILE=${CROSS_COMPILE}
 
-ADD get_packages.sh .
+COPY get_packages.sh .
 RUN sh ./get_packages.sh
 
-ADD build_dependencies.sh .
+COPY build_dependencies.sh .
 RUN sh ./build_dependencies.sh
 
-ADD build_toxcore.sh .
+COPY build_toxcore.sh .
 
 ENV ENABLE_TEST=false
 ENV ALLOW_TEST_FAILURE=false
 ENV ENABLE_ARCH_i686=true
 ENV ENABLE_ARCH_x86_64=true
-ENV EXTRA_CMAKE_FLAGS="-DWARNINGS=OFF -DBOOTSTRAP_DAEMON=OFF -DTEST_TIMEOUT_SECONDS=300"
+ENV EXTRA_CMAKE_FLAGS="-DTEST_TIMEOUT_SECONDS=90"
 
-CMD sh ./build_toxcore.sh
+ENTRYPOINT ["sh", "./build_toxcore.sh"]

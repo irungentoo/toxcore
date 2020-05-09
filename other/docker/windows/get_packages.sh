@@ -12,6 +12,7 @@ apt-get install -y \
     automake \
     ca-certificates \
     cmake \
+    curl \
     git \
     libtool \
     libc-dev \
@@ -21,20 +22,20 @@ apt-get install -y \
     yasm
 
 # Arch-dependent packages required for building toxcore's dependencies and toxcore itself
-if [ "${SUPPORT_ARCH_i686}" = "true" ]; then
+if [ "$SUPPORT_ARCH_i686" = "true" ]; then
     apt-get install -y \
         g++-mingw-w64-i686 \
         gcc-mingw-w64-i686
 fi
 
-if [ "${SUPPORT_ARCH_x86_64}" = "true" ]; then
+if [ "$SUPPORT_ARCH_x86_64" = "true" ]; then
     apt-get install -y \
         g++-mingw-w64-x86-64 \
         gcc-mingw-w64-x86-64
 fi
 
 # Packages needed for running toxcore tests
-if [ "${SUPPORT_TEST}" = "true" ]; then
+if [ "$SUPPORT_TEST" = "true" ]; then
     apt-get install -y \
         apt-transport-https \
         curl \
