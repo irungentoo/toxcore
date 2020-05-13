@@ -1,35 +1,23 @@
 ---
 cache:
-  - '%APPDATA%\downloads'
+  - '%USERPROFILE%\.conan'
 
 install:
-  # TODO(iphydf): Remove this when appveyor gets curl back, which it should
-  # have according to https://www.appveyor.com/docs/how-to/download-file/.
-  - choco install curl
-  - refreshenv
-  - if not exist %APPDATA%\downloads mkdir %APPDATA%\downloads
-  - cd third_party
-  # libsodium
-  - mkdir libsodium && cd libsodium
-  - if not exist %APPDATA%\downloads\libsodium.zip curl -L https://download.libsodium.org/libsodium/releases/libsodium-1.0.18-msvc.zip -o %APPDATA%\downloads\libsodium.zip
-  - unzip %APPDATA%\downloads\libsodium.zip
-  - cd ..
-  # pthreads-win32
-  - mkdir pthreads-win32 && cd pthreads-win32
-  - if not exist %APPDATA%\downloads\pthreads.zip curl -L ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.zip -o %APPDATA%\downloads\pthreads.zip
-  - unzip %APPDATA%\downloads\pthreads.zip
-  - cd ../..
+  - set PATH=C:\Python38-x64\Scripts;%PATH%
+  - py -3 -m pip install conan
+  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
 
 before_build:
-  - cmake -B_build -H. -DBOOTSTRAP_DAEMON=OFF -DENABLE_SHARED=OFF -DBUILD_TOXAV=OFF -DTEST_TIMEOUT_SECONDS=120 -DAUTOTEST=ON
+  - ps: |
+      mkdir _build
+      cd _build
+      conan install ..
 
-build:
-  project: _build/INSTALL.vcxproj
+build_script:
+  - conan build .. --configure --build
 
 test_script:
-  - copy third_party\pthreads-win32\Pre-built.2\dll\x86\*.dll _build
-  - copy third_party\libsodium\Win32\Debug\v140\dynamic\libsodium.dll _build
-  - cd _build
   # TODO(iphydf): Tests are unstable and slow on windows at the moment.
-  - ctest -j50 --output-on-failure -C Debug &
+  - set CONAN_CPU_COUNT=50
+  - conan build .. --test &
     exit 0

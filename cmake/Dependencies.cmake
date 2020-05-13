@@ -16,8 +16,8 @@ find_library(SOCKET_LIBRARIES       socket       )
 pkg_use_module(LIBSODIUM            libsodium    )
 
 # For toxav.
-pkg_use_module(OPUS                 opus         )
-pkg_use_module(VPX                  vpx          )
+pkg_use_module(OPUS                 "opus;Opus"    )
+pkg_use_module(VPX                  "vpx;libvpx"   )
 
 # For tox-bootstrapd.
 pkg_use_module(LIBCONFIG            libconfig    )
@@ -38,18 +38,20 @@ pkg_use_module(MSGPACK              msgpack      )
 if(MSVC)
   # libsodium
   # ---------
-  find_library(LIBSODIUM_LIBRARIES
-    NAMES sodium libsodium
-    PATHS
-      "third_party/libsodium/Win32/Release/v140/dynamic"
-      "third_party/libsodium/x64/Release/v140/dynamic"
-  )
-  if(LIBSODIUM_LIBRARIES)
-    include_directories("third_party/libsodium/include")
-    set(LIBSODIUM_FOUND TRUE)
-    message("libsodium: ${LIBSODIUM_LIBRARIES}")
-  else()
-    message(FATAL_ERROR "libsodium libraries not found")
+  if(NOT LIBSODIUM_FOUND)
+    find_library(LIBSODIUM_LIBRARIES
+      NAMES sodium libsodium
+      PATHS
+        "third_party/libsodium/Win32/Release/v140/dynamic"
+        "third_party/libsodium/x64/Release/v140/dynamic"
+    )
+    if(LIBSODIUM_LIBRARIES)
+      include_directories("third_party/libsodium/include")
+      set(LIBSODIUM_FOUND TRUE)
+      message("libsodium: ${LIBSODIUM_LIBRARIES}")
+    else()
+      message(FATAL_ERROR "libsodium libraries not found")
+    endif()
   endif()
 
   # pthreads
@@ -66,7 +68,12 @@ if(MSVC)
       add_definitions(-DHAVE_STRUCT_TIMESPEC)
       message("libpthreads: ${CMAKE_THREAD_LIBS_INIT}")
     else()
-      message(FATAL_ERROR "libpthreads libraries not found")
+      find_package(pthreads4w)
+      if(NOT pthreads4w_FOUND)
+        message(FATAL_ERROR "libpthreads libraries not found")
+      endif()
+      include_directories(${pthreads4w_INCLUDE_DIR})
+      link_libraries(${pthreads4w_LIBRARIES})
     endif()
   endif()
 endif()
