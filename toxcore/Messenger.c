@@ -2510,7 +2510,7 @@ static char *id_to_string(const uint8_t *pk, char *id_str, size_t length)
 }
 
 /* Minimum messenger run interval in ms
-   TODO(mannol): A/V */
+ * TODO(mannol): A/V */
 #define MIN_RUN_INTERVAL 50
 
 /* Return the time in milliseconds before do_messenger() should be called again

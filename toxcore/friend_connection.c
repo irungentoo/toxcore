@@ -273,7 +273,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 
     for (int i = 0; i < n; ++i) {
         /* Associated the relays being sent with this connection.
-           On receiving the peer will do the same which will establish the connection. */
+         * On receiving the peer will do the same which will establish the connection. */
         friend_add_tcp_relay(fr_c, friendcon_id, nodes[i].ip_port, nodes[i].public_key);
     }
 

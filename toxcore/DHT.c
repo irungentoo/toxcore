@@ -1294,7 +1294,7 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_ke
 }
 
 /* Send a getnodes request.
-   sendback_node is the node that it will send back the response to (set to NULL to disable this) */
+ * sendback_node is the node that it will send back the response to (set to NULL to disable this) */
 static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id,
                     const Node_format *sendback_node)
 {
@@ -1427,7 +1427,7 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
 }
 
 /* return false if no
-   return true if yes */
+ * return true if yes */
 static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port node_ip_port, uint64_t ping_id,
                                  Node_format *sendback_node)
 {
@@ -2447,7 +2447,7 @@ static int handle_hardening(void *object, IP_Port source, const uint8_t *source_
                                                length_nodes, 0);
 
             /* TODO(irungentoo): MAX_SENT_NODES nodes should be returned at all times
-             (right now we have a small network size so it could cause problems for testing and etc..) */
+             * (right now we have a small network size so it could cause problems for testing and etc..) */
             if (num_nodes <= 0) {
                 return 1;
             }

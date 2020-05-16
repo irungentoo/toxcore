@@ -30,7 +30,7 @@
 #define TCP_CONNECTION_ANNOUNCE_TIMEOUT (TCP_CONNECTION_TIMEOUT)
 
 /* The amount of recommended connections for each friend
-   NOTE: Must be at most (MAX_FRIEND_TCP_CONNECTIONS / 2) */
+ * NOTE: Must be at most (MAX_FRIEND_TCP_CONNECTIONS / 2) */
 #define RECOMMENDED_FRIEND_TCP_CONNECTIONS (MAX_FRIEND_TCP_CONNECTIONS / 2)
 
 /* Number of TCP connections used for onion purposes. */

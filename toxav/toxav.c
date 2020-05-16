@@ -30,10 +30,10 @@
 #define VIDEO_SEND_X_KEYFRAMES_FIRST 7 // force the first n frames to be keyframes!
 
 /*
-VPX_DL_REALTIME       (1)       deadline parameter analogous to VPx REALTIME mode.
-VPX_DL_GOOD_QUALITY   (1000000) deadline parameter analogous to VPx GOOD QUALITY mode.
-VPX_DL_BEST_QUALITY   (0)       deadline parameter analogous to VPx BEST QUALITY mode.
-*/
+ * VPX_DL_REALTIME       (1)       deadline parameter analogous to VPx REALTIME mode.
+ * VPX_DL_GOOD_QUALITY   (1000000) deadline parameter analogous to VPx GOOD QUALITY mode.
+ * VPX_DL_BEST_QUALITY   (0)       deadline parameter analogous to VPx BEST QUALITY mode.
+ */
 
 typedef struct ToxAVCall_s {
     ToxAV *av;

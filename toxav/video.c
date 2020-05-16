@@ -237,10 +237,10 @@ VCSession *vc_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t f
     }
 
     /*
-    VPX_CTRL_USE_TYPE(VP8E_SET_NOISE_SENSITIVITY,  unsigned int)
-    control function to set noise sensitivity
-      0: off, 1: OnYOnly, 2: OnYUV, 3: OnYUVAggressive, 4: Adaptive
-    */
+     * VPX_CTRL_USE_TYPE(VP8E_SET_NOISE_SENSITIVITY,  unsigned int)
+     * control function to set noise sensitivity
+     *   0: off, 1: OnYOnly, 2: OnYUV, 3: OnYUVAggressive, 4: Adaptive
+     */
 #if 0
     rc = vpx_codec_control(vc->encoder, VP8E_SET_NOISE_SENSITIVITY, 2);
 

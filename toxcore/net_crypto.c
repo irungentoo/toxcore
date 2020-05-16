@@ -1119,7 +1119,7 @@ static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)
     }
 
     /* If last packet send failed, try to send packet again.
-       If sending it fails we won't be able to send the new packet. */
+     * If sending it fails we won't be able to send the new packet. */
     if (conn->maximum_speed_reached) {
         Packet_Data *dt = nullptr;
         const uint32_t packet_num = conn->send_array.buffer_end - 1;
@@ -1157,7 +1157,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     }
 
     /* If last packet send failed, try to send packet again.
-       If sending it fails we won't be able to send the new packet. */
+     * If sending it fails we won't be able to send the new packet. */
     reset_max_speed_reached(c, crypt_connection_id);
 
     if (conn->maximum_speed_reached && congestion_control) {
@@ -2480,7 +2480,7 @@ static int udp_handle_packet(void *object, IP_Port source, const uint8_t *packet
 }
 
 /* The dT for the average packet receiving rate calculations.
-   Also used as the */
+ * Also used as the */
 #define PACKET_COUNTER_AVERAGE_INTERVAL 50
 
 /* Ratio of recv queue size / recv packet rate (in seconds) times
@@ -2566,7 +2566,7 @@ static void send_crypto_packets(Net_Crypto *c)
                 conn->packets_resent = 0;
 
                 /* conjestion control
-                    calculate a new value of conn->packet_send_rate based on some data
+                 *  calculate a new value of conn->packet_send_rate based on some data
                  */
 
                 unsigned int pos = conn->last_sendqueue_counter % CONGESTION_QUEUE_ARRAY_SIZE;

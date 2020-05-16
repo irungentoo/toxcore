@@ -87,7 +87,7 @@
 #define CRYPTO_SEND_PACKET_INTERVAL 1000
 
 /* The maximum number of times we try to send the cookie request and handshake
-   before giving up. */
+ * before giving up. */
 #define MAX_NUM_SENDPACKET_TRIES 8
 
 /* The timeout of no received UDP packets before the direct UDP connection is considered dead. */
@@ -100,7 +100,7 @@
 #define CRYPTO_MAX_PADDING 8
 
 /* Base current transfer speed on last CONGESTION_QUEUE_ARRAY_SIZE number of points taken
-   at the dT defined in net_crypto.c */
+ * at the dT defined in net_crypto.c */
 #define CONGESTION_QUEUE_ARRAY_SIZE 12
 #define CONGESTION_LAST_SENT_ARRAY_SIZE (CONGESTION_QUEUE_ARRAY_SIZE * 2)
 

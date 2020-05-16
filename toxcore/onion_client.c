@@ -21,7 +21,7 @@
 #include "util.h"
 
 /* defines for the array size and
-   timeout for onion announce packets. */
+ * timeout for onion announce packets. */
 #define ANNOUNCE_ARRAY_SIZE 256
 #define ANNOUNCE_TIMEOUT 10
 
@@ -1782,7 +1782,7 @@ static int onion_isconnected(const Onion_Client *onion_c)
     }
 
     /* Consider ourselves online if we are announced to half or more nodes
-       we are connected to */
+     * we are connected to */
     if (num && announced) {
         if ((num / 2) <= announced && (pnodes / 2) <= num) {
             return 1;
