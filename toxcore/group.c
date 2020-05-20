@@ -2663,6 +2663,10 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
         return;
     }
 
+    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+    get_friendcon_public_keys(real_pk, nullptr, g_c->fr_c, g->connections[connection_index].number);
+    const bool direct_from_sender = id_equal(g->group[index].real_pk, real_pk);
+
     switch (message_id) {
         case GROUP_MESSAGE_PING_ID:
             break;
@@ -2759,11 +2763,7 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
      * back. When the sender only has one group connection (e.g. because there
      * are only two peers in the group), this is the only way for them to
      * receive their own message. */
-    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    get_friendcon_public_keys(real_pk, nullptr, g_c->fr_c, g->connections[connection_index].number);
-    bool relay_back = id_equal(g->group[index].real_pk, real_pk);
-
-    send_message_all_connections(g_c, g, data, length, relay_back ? -1 : connection_index);
+    send_message_all_connections(g_c, g, data, length, direct_from_sender ? -1 : connection_index);
 }
 
 static int g_handle_packet(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
