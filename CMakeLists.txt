@@ -529,6 +529,15 @@ if (BUILD_MISC_TESTS)
   add_executable(save-generator
     other/fun/save-generator.c)
   target_link_modules(save-generator toxcore misc_tools)
+
+  add_executable(cracker
+    other/fun/cracker.c)
+  target_link_modules(cracker ${LIBSODIUM_LIBRARIES})
+  find_package(OpenMP)
+  if(OpenMP_C_FOUND)
+      target_link_libraries(cracker OpenMP::OpenMP_C)
+  endif()
+
   add_executable(afl_toxsave
     testing/afl_toxsave.c)
   target_link_modules(afl_toxsave toxcore)
