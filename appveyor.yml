@@ -5,7 +5,7 @@ cache:
 install:
   - set PATH=C:\Python38-x64\Scripts;%PATH%
   - py -3 -m pip install conan
-  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan --force
 
 before_build:
   - ps: |
