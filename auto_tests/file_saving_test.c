@@ -35,7 +35,7 @@ static void save_data_encrypted(void)
 
     tox_self_set_name(t, (const uint8_t *)name, strlen(name), nullptr);
 
-    FILE *f = fopen(savefile, "w");
+    FILE *f = fopen(savefile, "wb");
 
     size_t size = tox_get_savedata_size(t);
     uint8_t *clear = (uint8_t *)malloc(size);
@@ -63,7 +63,7 @@ static void save_data_encrypted(void)
 
 static void load_data_decrypted(void)
 {
-    FILE *f = fopen(savefile, "r");
+    FILE *f = fopen(savefile, "rb");
     ck_assert(f != nullptr);
     fseek(f, 0, SEEK_END);
     int64_t size = ftell(f);

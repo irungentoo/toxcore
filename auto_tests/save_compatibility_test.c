@@ -21,7 +21,7 @@
 
 static size_t get_file_size(const char *save_path)
 {
-    FILE *const fp = fopen(save_path, "r");
+    FILE *const fp = fopen(save_path, "rb");
 
     if (fp == nullptr) {
         return 0;
@@ -42,7 +42,7 @@ static uint8_t *read_save(const char *save_path, size_t *length)
         return nullptr;
     }
 
-    FILE *const fp = fopen(save_path, "r");
+    FILE *const fp = fopen(save_path, "rb");
 
     if (!fp) {
         return nullptr;
