@@ -2830,7 +2830,12 @@ void dht_save(const DHT *dht, uint8_t *data)
     /* get right offset. we write the actual header later. */
     data = state_write_section_header(data, DHT_STATE_COOKIE_TYPE, 0, 0);
 
-    Node_format clients[MAX_SAVED_DHT_NODES];
+    Node_format *clients = (Node_format *)malloc(MAX_SAVED_DHT_NODES * sizeof(Node_format));
+
+    if (clients == nullptr) {
+        LOGGER_ERROR(dht->log, "could not allocate %u nodes", MAX_SAVED_DHT_NODES);
+        return;
+    }
 
     uint32_t num = 0;
 
@@ -2873,6 +2878,8 @@ void dht_save(const DHT *dht, uint8_t *data)
 
     state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(data, sizeof(Node_format) * num, clients, num),
                                DHT_STATE_TYPE_NODES);
+
+    free(clients);
 }
 
 /* Bootstrap from this number of nodes every time dht_connect_after_load() is called */

@@ -123,10 +123,15 @@ void ac_iterate(ACSession *ac)
         return;
     }
 
-    /* TODO(mannol): fix this and jitter buffering */
+    /* TODO: fix this and jitter buffering */
 
     /* Enough space for the maximum frame size (120 ms 48 KHz stereo audio) */
-    int16_t temp_audio_buffer[AUDIO_MAX_BUFFER_SIZE_PCM16 * AUDIO_MAX_CHANNEL_COUNT];
+    int16_t *temp_audio_buffer = (int16_t *)malloc(AUDIO_MAX_BUFFER_SIZE_PCM16 * AUDIO_MAX_CHANNEL_COUNT * sizeof(int16_t));
+
+    if (temp_audio_buffer == nullptr) {
+        LOGGER_ERROR(ac->log, "Failed to allocate memory for audio buffer");
+        return;
+    }
 
     pthread_mutex_lock(ac->queue_mutex);
     struct JitterBuffer *const j_buf = (struct JitterBuffer *)ac->j_buf;
@@ -195,10 +200,14 @@ void ac_iterate(ACSession *ac)
                     ac->lp_sampling_rate, ac->acb_user_data);
         }
 
+        free(temp_audio_buffer);
+
         return;
     }
 
     pthread_mutex_unlock(ac->queue_mutex);
+
+    free(temp_audio_buffer);
 }
 
 int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
