@@ -259,6 +259,7 @@ struct Messenger {
     uint32_t numfriends;
 
     time_t lastdump;
+    uint8_t is_receiving_file;
 
     bool has_added_relays; // If the first connection has occurred in do_messenger
 
@@ -817,5 +818,8 @@ uint32_t count_friendlist(const Messenger *m);
  * of out_list will be truncated to list_size. */
 non_null()
 uint32_t copy_friendlist(const Messenger *m, uint32_t *out_list, uint32_t list_size);
+
+non_null()
+bool is_receiving_file(Messenger *m);
 
 #endif

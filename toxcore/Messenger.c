@@ -1596,7 +1596,7 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
     // that the file transfer has finished and may end up in an infinite loop.
     //
     // Request up to that number of chunks per file from the client
-    const uint32_t max_ft_loops = 16;
+    const uint32_t max_ft_loops = 4096;
 
     for (uint32_t i = 0; i < max_ft_loops; ++i) {
         if (!do_all_filetransfers(m, friendnumber, userdata, &free_slots)) {
@@ -3296,6 +3296,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
     set_filter_function(m->fr, &friend_already_added, m);
 
     m->lastdump = 0;
+    m->is_receiving_file = 0;
 
     m_register_default_plugins(m);
 
@@ -3337,4 +3338,28 @@ void kill_messenger(Messenger *m)
 
     free(m->options.state_plugins);
     free(m);
+}
+
+bool is_receiving_file(Messenger *m)
+{
+    // Only run the expensive loop below once every 64 tox_iterate calls.
+    const uint8_t skip_count = 64;
+
+    if (m->is_receiving_file != 0) {
+        --m->is_receiving_file;
+        return true;
+    }
+
+    // TODO(iphydf): This is a very expensive loop. Consider keeping track of
+    // the number of live file transfers.
+    for (size_t friend_number = 0; friend_number < m->numfriends; ++friend_number) {
+        for (size_t i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+            if (m->friendlist[friend_number].file_receiving[i].status == FILESTATUS_TRANSFERRING) {
+                m->is_receiving_file = skip_count;
+                return true;
+            }
+        }
+    }
+
+    return false;
 }

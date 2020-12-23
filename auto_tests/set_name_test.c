@@ -16,7 +16,9 @@
 
 static void nickchange_callback(Tox *tox, uint32_t friendnumber, const uint8_t *string, size_t length, void *userdata)
 {
-    ck_assert_msg(length == sizeof(NICKNAME) && memcmp(string, NICKNAME, sizeof(NICKNAME)) == 0, "Name not correct");
+    ck_assert_msg(length == sizeof(NICKNAME), "Name length not correct: %d != %d", (uint16_t)length,
+                  (uint16_t)sizeof(NICKNAME));
+    ck_assert_msg(memcmp(string, NICKNAME, sizeof(NICKNAME)) == 0, "Name not correct: %s", (const char *)string);
     bool *nickname_updated = (bool *)userdata;
     *nickname_updated = true;
 }
