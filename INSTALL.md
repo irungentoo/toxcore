@@ -117,6 +117,13 @@ cmake \
   ..
 ```
 
+### Building tests
+In addition to the integration tests ("autotests") and miscellaneous tests
+enabled by cmake variables described above, there are unit tests which will be
+built if the source distribution of gtest (the Google Unit Test framework) is
+found by cmake in `c-toxcore/third_party`. This can be achieved by running
+'git clone https://github.com/google/googletest` from that directory.
+
 ### Build process
 
 #### Unix-like
