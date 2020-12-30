@@ -44,24 +44,6 @@ static void print_client_id(const uint8_t *public_key)
     }
 }
 
-static void print_hardening(const Hardening *h)
-{
-    printf("Hardening:\n");
-    printf("routes_requests_ok: %u\n", h->routes_requests_ok);
-    printf("routes_requests_timestamp: %llu\n", (long long unsigned int)h->routes_requests_timestamp);
-    printf("routes_requests_pingedid: ");
-    print_client_id(h->routes_requests_pingedid);
-    printf("\nsend_nodes_ok: %u\n", h->send_nodes_ok);
-    printf("send_nodes_timestamp: %llu\n", (long long unsigned int)h->send_nodes_timestamp);
-    printf("send_nodes_pingedid: ");
-    print_client_id(h->send_nodes_pingedid);
-    printf("\ntesting_requests: %u\n", h->testing_requests);
-    printf("testing_timestamp: %llu\n", (long long unsigned int)h->testing_timestamp);
-    printf("testing_pingedid: ");
-    print_client_id(h->testing_pingedid);
-    printf("\n\n");
-}
-
 static void print_assoc(const IPPTsPng *assoc, uint8_t ours)
 {
     const IP_Port *ipp = &assoc->ip_port;
@@ -79,7 +61,6 @@ static void print_assoc(const IPPTsPng *assoc, uint8_t ours)
     }
 
     printf("Timestamp: %llu\n", (long long unsigned int) assoc->ret_timestamp);
-    print_hardening(&assoc->hardening);
 }
 
 static void print_clientlist(DHT *dht)

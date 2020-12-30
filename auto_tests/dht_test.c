@@ -31,25 +31,11 @@ static inline IP get_loopback(void)
 static void mark_bad(const Mono_Time *mono_time, IPPTsPng *ipptp)
 {
     ipptp->timestamp = mono_time_get(mono_time) - 2 * BAD_NODE_TIMEOUT;
-    ipptp->hardening.routes_requests_ok = 0;
-    ipptp->hardening.send_nodes_ok = 0;
-    ipptp->hardening.testing_requests = 0;
-}
-
-static void mark_possible_bad(const Mono_Time *mono_time, IPPTsPng *ipptp)
-{
-    ipptp->timestamp = mono_time_get(mono_time);
-    ipptp->hardening.routes_requests_ok = 0;
-    ipptp->hardening.send_nodes_ok = 0;
-    ipptp->hardening.testing_requests = 0;
 }
 
 static void mark_good(const Mono_Time *mono_time, IPPTsPng *ipptp)
 {
     ipptp->timestamp = mono_time_get(mono_time);
-    ipptp->hardening.routes_requests_ok = (HARDENING_ALL_OK >> 0) & 1;
-    ipptp->hardening.send_nodes_ok = (HARDENING_ALL_OK >> 1) & 1;
-    ipptp->hardening.testing_requests = (HARDENING_ALL_OK >> 2) & 1;
 }
 
 static void mark_all_good(const Mono_Time *mono_time, Client_data *list, uint32_t length, uint8_t ipv6)
@@ -210,71 +196,6 @@ static void test_addto_lists_bad(DHT            *dht,
     ck_assert_msg(client_in_list(list, length, test_id3) >= 0, "Wrong bad client removed");
 }
 
-static void test_addto_lists_possible_bad(DHT            *dht,
-        Client_data    *list,
-        uint32_t        length,
-        IP_Port        *ip_port,
-        const uint8_t  *comp_client_id)
-{
-    // check "possibly bad" clients replacement
-    uint32_t used, test1, test2, test3;
-    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE], test_id1[CRYPTO_PUBLIC_KEY_SIZE], test_id2[CRYPTO_PUBLIC_KEY_SIZE],
-            test_id3[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t ipv6 = net_family_is_ipv6(ip_port->ip.family) ? 1 : 0;
-
-    random_bytes(public_key, sizeof(public_key));
-    mark_all_good(dht->mono_time, list, length, ipv6);
-
-    test1 = random_u32() % (length / 3);
-    test2 = random_u32() % (length / 3) + length / 3;
-    test3 = random_u32() % (length / 3) + 2 * length / 3;
-    ck_assert_msg(!(test1 == test2 || test1 == test3 || test2 == test3), "Wrong test indices are chosen");
-
-    id_copy((uint8_t *)&test_id1, list[test1].public_key);
-    id_copy((uint8_t *)&test_id2, list[test2].public_key);
-    id_copy((uint8_t *)&test_id3, list[test3].public_key);
-
-    // mark nodes as "possibly bad"
-    if (ipv6) {
-        mark_possible_bad(dht->mono_time, &list[test1].assoc6);
-        mark_possible_bad(dht->mono_time, &list[test2].assoc6);
-        mark_possible_bad(dht->mono_time, &list[test3].assoc6);
-    } else {
-        mark_possible_bad(dht->mono_time, &list[test1].assoc4);
-        mark_possible_bad(dht->mono_time, &list[test2].assoc4);
-        mark_possible_bad(dht->mono_time, &list[test3].assoc4);
-    }
-
-    ip_port->port += 1;
-    used = addto_lists(dht, *ip_port, public_key);
-    ck_assert_msg(used >= 1, "Wrong number of added clients");
-
-    ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Client id is not in the list");
-
-    bool inlist_id1 = client_in_list(list, length, test_id1) >= 0;
-    bool inlist_id2 = client_in_list(list, length, test_id2) >= 0;
-    bool inlist_id3 = client_in_list(list, length, test_id3) >= 0;
-
-    ck_assert_msg(inlist_id1 + inlist_id2 + inlist_id3 == 2, "Wrong client removed");
-
-    if (!inlist_id1) {
-        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id1) == 1,
-                      "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id1) == 1,
-                      "Id has been removed but is closer to than another one");
-    } else if (!inlist_id2) {
-        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id2) == 1,
-                      "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id3, test_id2) == 1,
-                      "Id has been removed but is closer to than another one");
-    } else if (!inlist_id3) {
-        ck_assert_msg(id_closest(comp_client_id, test_id1, test_id3) == 1,
-                      "Id has been removed but is closer to than another one");
-        ck_assert_msg(id_closest(comp_client_id, test_id2, test_id3) == 1,
-                      "Id has been removed but is closer to than another one");
-    }
-}
-
 static void test_addto_lists_good(DHT            *dht,
                                   Client_data    *list,
                                   uint32_t        length,
@@ -363,16 +284,6 @@ static void test_addto_lists(IP ip)
 
     for (i = 0; i < dht->num_friends; ++i) {
         test_addto_lists_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port);
-    }
-
-    // check "possibly bad" entries
-    if (enable_broken_tests) {
-        test_addto_lists_possible_bad(dht, dht->close_clientlist, LCLIENT_LIST, &ip_port, dht->self_public_key);
-
-        for (i = 0; i < dht->num_friends; ++i) {
-            test_addto_lists_possible_bad(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, &ip_port,
-                                          dht->friends_list[i].public_key);
-        }
     }
 
     // check "good" entries
@@ -543,7 +454,7 @@ static void test_list_main(void)
                 ck_assert_msg(count == 1, "Nodes in search don't know ip of friend. %u %u %u", i, j, count);
 
                 Node_format ln[MAX_SENT_NODES];
-                uint16_t n = get_close_nodes(dhts[(l + j) % NUM_DHT], dhts[l]->self_public_key, ln, net_family_unspec, 1, 0);
+                uint16_t n = get_close_nodes(dhts[(l + j) % NUM_DHT], dhts[l]->self_public_key, ln, net_family_unspec, 1);
                 ck_assert_msg(n == MAX_SENT_NODES, "bad num close %u | %u %u", n, i, j);
 
                 count = 0;

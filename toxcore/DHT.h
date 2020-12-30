@@ -55,7 +55,6 @@ extern "C" {
 #define MAX_CRYPTO_REQUEST_SIZE 1024
 
 #define CRYPTO_PACKET_FRIEND_REQ    32  // Friend request crypto packet ID.
-#define CRYPTO_PACKET_HARDENING     48  // Hardening crypto packet ID.
 #define CRYPTO_PACKET_DHTPK         156
 #define CRYPTO_PACKET_NAT_PING      254 // NAT ping crypto packet ID.
 
@@ -86,30 +85,11 @@ typedef struct IPPTs {
     uint64_t    timestamp;
 } IPPTs;
 
-typedef struct Hardening {
-    /* Node routes request correctly (true (1) or false/didn't check (0)) */
-    uint8_t     routes_requests_ok;
-    /* Time which we last checked this.*/
-    uint64_t    routes_requests_timestamp;
-    uint8_t     routes_requests_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
-    /* Node sends correct send_node (true (1) or false/didn't check (0)) */
-    uint8_t     send_nodes_ok;
-    /* Time which we last checked this.*/
-    uint64_t    send_nodes_timestamp;
-    uint8_t     send_nodes_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
-    /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
-    uint8_t     testing_requests;
-    /* Time which we last checked this.*/
-    uint64_t    testing_timestamp;
-    uint8_t     testing_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
-} Hardening;
-
 typedef struct IPPTsPng {
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
 
-    Hardening hardening;
     /* Returned by this node */
     IP_Port     ret_ip_port;
     uint64_t    ret_timestamp;
@@ -319,7 +299,7 @@ bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_
  *
  */
 int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
-                    bool is_LAN, uint8_t want_good);
+                    bool is_LAN);
 
 
 /** Put up to max_num nodes in nodes from the random friends.
