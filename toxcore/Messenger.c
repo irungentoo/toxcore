@@ -1468,31 +1468,29 @@ int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
 static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userdata, uint32_t *free_slots)
 {
     Friend *const friendcon = &m->friendlist[friendnumber];
-    uint32_t num = friendcon->num_sending_files;
 
-    bool any_active_fts = false;
-
-    // Iterate over all file transfers, including inactive ones. I.e. we always
-    // iterate exactly MAX_CONCURRENT_FILE_PIPES times.
+    // Iterate over file transfers as long as we're sending files
     for (uint32_t i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
+        if (friendcon->num_sending_files == 0) {
+            // no active file transfers
+            return false;
+        }
+
         struct File_Transfers *const ft = &friendcon->file_sending[i];
+
+        // If the file transfer is complete, we request a chunk of size 0.
+        if (ft->status == FILESTATUS_FINISHED && friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
+            if (m->file_reqchunk) {
+                m->file_reqchunk(m, friendnumber, i, ft->transferred, 0, userdata);
+            }
+
+            // Now it's inactive, we're no longer sending this.
+            ft->status = FILESTATUS_NONE;
+            --friendcon->num_sending_files;
+        }
 
         // Any status other than NONE means the file transfer is active.
         if (ft->status != FILESTATUS_NONE) {
-            any_active_fts = true;
-            --num;
-
-            // If the file transfer is complete, we request a chunk of size 0.
-            if (ft->status == FILESTATUS_FINISHED && friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
-                if (m->file_reqchunk) {
-                    m->file_reqchunk(m, friendnumber, i, ft->transferred, 0, userdata);
-                }
-
-                // Now it's inactive, we're no longer sending this.
-                ft->status = FILESTATUS_NONE;
-                --friendcon->num_sending_files;
-            }
-
             // Decrease free slots by the number of slots this FT uses.
             *free_slots = max_s32(0, (int32_t) * free_slots - ft->slots_allocated);
         }
@@ -1532,13 +1530,9 @@ static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userd
             // The allocated slot is no longer free.
             --*free_slots;
         }
-
-        if (num == 0) {
-            continue;
-        }
     }
 
-    return any_active_fts;
+    return friendcon->num_sending_files > 0;
 }
 
 static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdata)
