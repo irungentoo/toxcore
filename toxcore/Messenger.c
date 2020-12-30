@@ -1554,19 +1554,20 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
     // transfers might block other traffic for a long time.
     free_slots = max_s32(0, (int32_t)free_slots - MIN_SLOTS_FREE);
 
-    bool any_active_fts = true;
-    uint32_t loop_counter = 0;
     // Maximum number of outer loops below. If the client doesn't send file
     // chunks from within the chunk request callback handler, we never realise
     // that the file transfer has finished and may end up in an infinite loop.
     //
-    // TODO(zoff99): Fix this to exit the loop properly when we're done
-    // requesting all chunks for all file transfers.
+    // Request up to that number of chunks per file from the client
     const uint32_t max_ft_loops = 16;
 
-    while (((free_slots > 0) || loop_counter == 0) && any_active_fts && (loop_counter < max_ft_loops)) {
-        any_active_fts = do_all_filetransfers(m, friendnumber, userdata, &free_slots);
-        ++loop_counter;
+    for(uint32_t i = 0; i < max_ft_loops; ++i) {
+        do_all_filetransfers(m, friendnumber, userdata, &free_slots);
+
+        if(free_slots == 0) {
+            // stop when the buffer is full enough
+            break;
+        }
     }
 }
 
