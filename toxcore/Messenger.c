@@ -1476,6 +1476,7 @@ static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userd
 
         if (max_speed_reached(m->net_crypto, friend_connection_crypt_connection_id(
                                   m->fr_c, friendcon->friendcon_id))) {
+            LOGGER_TRACE(m->log, "Maximum connection speed reached");
             // connection doesn't support any more data
             return false;
         }
