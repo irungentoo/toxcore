@@ -333,6 +333,47 @@ cc_library(
 )
 
 cc_library(
+    name = "forwarding",
+    srcs = ["forwarding.c"],
+    hdrs = ["forwarding.h"],
+    visibility = ["//c-toxcore/auto_tests:__pkg__"],
+    deps = [
+        ":DHT",
+        ":ccompat",
+        ":network",
+        ":timed_auth",
+    ],
+)
+
+cc_fuzz_test(
+    name = "forwarding_fuzz_test",
+    srcs = ["forwarding_fuzz_test.cc"],
+    #corpus = ["//tools/toktok-fuzzer/corpus:forwarding_fuzz_test"],
+    deps = [
+        ":forwarding",
+        "//c-toxcore/testing/fuzzing:fuzz_support",
+        "//c-toxcore/testing/fuzzing:fuzz_tox",
+    ],
+)
+
+cc_library(
+    name = "announce",
+    srcs = ["announce.c"],
+    hdrs = ["announce.h"],
+    visibility = [
+        "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+    ],
+    deps = [
+        ":LAN_discovery",
+        ":ccompat",
+        ":forwarding",
+        ":timed_auth",
+        ":util",
+    ],
+)
+
+cc_library(
     name = "TCP_common",
     srcs = ["TCP_common.c"],
     hdrs = ["TCP_common.h"],
@@ -360,6 +401,7 @@ cc_library(
         ":TCP_common",
         ":ccompat",
         ":crypto_core",
+        ":forwarding",
         ":list",
         ":mono_time",
         ":onion",
@@ -375,6 +417,7 @@ cc_library(
     deps = [
         ":TCP_common",
         ":ccompat",
+        ":forwarding",
         ":mono_time",
         ":util",
     ],
@@ -552,7 +595,9 @@ cc_library(
     ],
     deps = [
         ":TCP_server",
+        ":announce",
         ":ccompat",
+        ":forwarding",
         ":friend_requests",
         ":logger",
         ":mono_time",

@@ -20,6 +20,7 @@ run() {
     -Wno-covered-switch-default \
     -Wno-disabled-macro-expansion \
     -Wno-documentation-deprecated-sync \
+    -Wno-documentation-unknown-command \
     -Wno-global-constructors \
     -Wno-missing-braces \
     -Wno-missing-field-initializers \

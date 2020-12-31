@@ -306,6 +306,14 @@ int add_tcp_relay(Net_Crypto *c, const IP_Port *ip_port, const uint8_t *public_k
 non_null()
 int get_random_tcp_con_number(Net_Crypto *c);
 
+/** @brief Put IP_Port of a random onion TCP connection in ip_port.
+ *
+ * return true on success.
+ * return false on failure.
+ */
+non_null()
+bool get_random_tcp_conn_ip_port(Net_Crypto *c, IP_Port *ip_port);
+
 /** @brief Send an onion packet via the TCP relay corresponding to tcp_connections_number.
  *
  * return 0 on success.
@@ -314,6 +322,19 @@ int get_random_tcp_con_number(Net_Crypto *c);
 non_null()
 int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number,
                            const uint8_t *data, uint16_t length);
+
+/**
+ * Send a forward request to the TCP relay with IP_Port tcp_forwarder,
+ * requesting to forward data via a chain of dht nodes starting with dht_node.
+ * A chain_length of 0 means that dht_node is the final destination of data.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+non_null()
+int send_tcp_forward_request(const Logger *logger, Net_Crypto *c, const IP_Port *tcp_forwarder, const IP_Port *dht_node,
+                             const uint8_t *chain_keys, uint16_t chain_length,
+                             const uint8_t *data, uint16_t data_length);
 
 /** @brief Copy a maximum of num random TCP relays we are connected to to tcp_relays.
  *

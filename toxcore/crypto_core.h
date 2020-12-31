@@ -194,6 +194,15 @@ non_null()
 bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2);
 
 /**
+ * @brief Compare 2 SHA256 checksums of length CRYPTO_SHA256_SIZE, not vulnerable to
+ * timing attacks.
+ *
+ * @return true if both mem locations of length are equal, false if they are not.
+ */
+non_null()
+bool crypto_sha256_eq(const uint8_t *cksum1, const uint8_t *cksum2);
+
+/**
  * @brief Return a random 8 bit integer.
  */
 non_null()

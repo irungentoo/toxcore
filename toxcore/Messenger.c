@@ -3237,16 +3237,27 @@ Messenger *new_messenger(Mono_Time *mono_time, const Random *rng, const Network 
         return nullptr;
     }
 
+    if (options->dht_announcements_enabled) {
+        m->forwarding = new_forwarding(m->log, m->rng, m->mono_time, m->dht);
+        m->announce = new_announcements(m->log, m->rng, m->mono_time, m->forwarding);
+    } else {
+        m->forwarding = nullptr;
+        m->announce = nullptr;
+    }
+
     m->onion = new_onion(m->log, m->mono_time, m->rng, m->dht);
     m->onion_a = new_onion_announce(m->log, m->rng, m->mono_time, m->dht);
     m->onion_c = new_onion_client(m->log, m->rng, m->mono_time, m->net_crypto);
     m->fr_c = new_friend_connections(m->log, m->mono_time, m->ns, m->onion_c, options->local_discovery_enabled);
 
-    if (m->onion == nullptr || m->onion_a == nullptr || m->onion_c == nullptr || m->fr_c == nullptr) {
+    if ((options->dht_announcements_enabled && (m->forwarding == nullptr || m->announce == nullptr)) ||
+            m->onion == nullptr || m->onion_a == nullptr || m->onion_c == nullptr || m->fr_c == nullptr) {
         kill_friend_connections(m->fr_c);
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
         kill_onion_client(m->onion_c);
+        kill_announcements(m->announce);
+        kill_forwarding(m->forwarding);
         kill_net_crypto(m->net_crypto);
         kill_dht(m->dht);
         kill_networking(m->net);
@@ -3258,13 +3269,15 @@ Messenger *new_messenger(Mono_Time *mono_time, const Random *rng, const Network 
 
     if (options->tcp_server_port != 0) {
         m->tcp_server = new_TCP_server(m->log, m->rng, m->ns, options->ipv6enabled, 1, &options->tcp_server_port,
-                                       dht_get_self_secret_key(m->dht), m->onion);
+                                       dht_get_self_secret_key(m->dht), m->onion, m->forwarding);
 
         if (m->tcp_server == nullptr) {
             kill_friend_connections(m->fr_c);
             kill_onion(m->onion);
             kill_onion_announce(m->onion_a);
             kill_onion_client(m->onion_c);
+            kill_announcements(m->announce);
+            kill_forwarding(m->forwarding);
             kill_net_crypto(m->net_crypto);
             kill_dht(m->dht);
             kill_networking(m->net);
@@ -3316,6 +3329,8 @@ void kill_messenger(Messenger *m)
     kill_onion(m->onion);
     kill_onion_announce(m->onion_a);
     kill_onion_client(m->onion_c);
+    kill_announcements(m->announce);
+    kill_forwarding(m->forwarding);
     kill_net_crypto(m->net_crypto);
     kill_dht(m->dht);
     kill_networking(m->net);

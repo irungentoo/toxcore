@@ -87,6 +87,10 @@ libtoxcore_la_SOURCES = ../third_party/cmp/cmp.c \
                         ../toxcore/onion_announce.c \
                         ../toxcore/onion_client.h \
                         ../toxcore/onion_client.c \
+                        ../toxcore/announce.h \
+                        ../toxcore/announce.c \
+                        ../toxcore/forwarding.h \
+                        ../toxcore/forwarding.c \
                         ../toxcore/TCP_client.h \
                         ../toxcore/TCP_client.c \
                         ../toxcore/TCP_common.h \

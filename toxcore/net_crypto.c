@@ -2331,6 +2331,20 @@ int get_random_tcp_con_number(Net_Crypto *c)
     return ret;
 }
 
+/** @brief Put IP_Port of a random onion TCP connection in ip_port.
+ *
+ * return true on success.
+ * return false on failure.
+ */
+bool get_random_tcp_conn_ip_port(Net_Crypto *c, IP_Port *ip_port)
+{
+    pthread_mutex_lock(&c->tcp_mutex);
+    const bool ret = tcp_get_random_conn_ip_port(c->tcp_c, ip_port);
+    pthread_mutex_unlock(&c->tcp_mutex);
+
+    return ret;
+}
+
 /** @brief Send an onion packet via the TCP relay corresponding to tcp_connections_number.
  *
  * return 0 on success.
@@ -2340,6 +2354,26 @@ int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number, c
 {
     pthread_mutex_lock(&c->tcp_mutex);
     const int ret = tcp_send_onion_request(c->tcp_c, tcp_connections_number, data, length);
+    pthread_mutex_unlock(&c->tcp_mutex);
+
+    return ret;
+}
+
+/**
+ * Send a forward request to the TCP relay with IP_Port tcp_forwarder,
+ * requesting to forward data via a chain of dht nodes starting with dht_node.
+ * A chain_length of 0 means that dht_node is the final destination of data.
+ *
+ * return 0 on success.
+ * return -1 on failure.
+ */
+int send_tcp_forward_request(const Logger *logger, Net_Crypto *c, const IP_Port *tcp_forwarder, const IP_Port *dht_node,
+                             const uint8_t *chain_keys, uint16_t chain_length,
+                             const uint8_t *data, uint16_t data_length)
+{
+    pthread_mutex_lock(&c->tcp_mutex);
+    const int ret = tcp_send_forward_request(logger, c->tcp_c, tcp_forwarder, dht_node,
+                                             chain_keys, chain_length, data, data_length);
     pthread_mutex_unlock(&c->tcp_mutex);
 
     return ret;

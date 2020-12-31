@@ -5,6 +5,7 @@ libauto_test_support_la_SOURCES = ../auto_tests/auto_test_support.c ../auto_test
 libauto_test_support_la_LIBADD = libmisc_tools.la libtoxcore.la
 
 TESTS = \
+        announce_test \
 	conference_double_invite_test \
 	conference_invite_merge_test \
 	conference_peer_nick_test \
@@ -13,6 +14,7 @@ TESTS = \
 	conference_two_test \
 	crypto_test \
 	file_transfer_test \
+	forwarding_test \
 	friend_connection_test \
 	friend_request_test \
 	invalid_tcp_proxy_test \
@@ -68,6 +70,10 @@ endif
 
 check_PROGRAMS = $(TESTS)
 
+announce_test_SOURCES = ../auto_tests/announce_test.c
+announce_test_CFLAGS = $(AUTOTEST_CFLAGS)
+announce_test_LDADD = $(AUTOTEST_LDADD)
+
 conference_double_invite_test_SOURCES = ../auto_tests/conference_double_invite_test.c
 conference_double_invite_test_CFLAGS = $(AUTOTEST_CFLAGS)
 conference_double_invite_test_LDADD = $(AUTOTEST_LDADD)
@@ -107,6 +113,10 @@ file_saving_test_LDADD = $(AUTOTEST_LDADD)
 file_transfer_test_SOURCES = ../auto_tests/file_transfer_test.c
 file_transfer_test_CFLAGS = $(AUTOTEST_CFLAGS)
 file_transfer_test_LDADD = $(AUTOTEST_LDADD)
+
+forwarding_test_SOURCES = ../auto_tests/forwarding_test.c
+forwarding_test_CFLAGS = $(AUTOTEST_CFLAGS)
+forwarding_test_LDADD = $(AUTOTEST_LDADD)
 
 friend_connection_test_SOURCES = ../auto_tests/friend_connection_test.c
 friend_connection_test_CFLAGS = $(AUTOTEST_CFLAGS)

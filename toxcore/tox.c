@@ -486,6 +486,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     m_options.tcp_server_port = tox_options_get_tcp_port(opts);
     m_options.hole_punching_enabled = tox_options_get_hole_punching_enabled(opts);
     m_options.local_discovery_enabled = tox_options_get_local_discovery_enabled(opts);
+    m_options.dht_announcements_enabled = tox_options_get_dht_announcements_enabled(opts);
 
     if (m_options.udp_disabled) {
         m_options.local_discovery_enabled = false;

@@ -197,6 +197,8 @@ set(toxcore_PKGCONFIG_REQUIRES)
 set(toxcore_SOURCES
   third_party/cmp/cmp.c
   third_party/cmp/cmp.h
+  toxcore/announce.c
+  toxcore/announce.h
   toxcore/bin_pack.c
   toxcore/bin_pack.h
   toxcore/bin_unpack.c
@@ -230,6 +232,8 @@ set(toxcore_SOURCES
   toxcore/events/friend_status_message.c
   toxcore/events/friend_typing.c
   toxcore/events/self_connection_status.c
+  toxcore/forwarding.c
+  toxcore/forwarding.h
   toxcore/friend_connection.c
   toxcore/friend_connection.h
   toxcore/friend_requests.c

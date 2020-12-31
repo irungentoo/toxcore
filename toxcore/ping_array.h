@@ -27,7 +27,7 @@ typedef struct Ping_Array Ping_Array;
  * @param size represents the total size of the array and should be a power of 2.
  * @param timeout represents the maximum timeout in seconds for the entry.
  *
- * @return 0 on success, -1 on failure.
+ * @return pointer to allocated Ping_Array on success, nullptr on failure.
  */
 struct Ping_Array *ping_array_new(uint32_t size, uint32_t timeout);
 

@@ -57,6 +57,9 @@ struct TCP_Client_Connection {
     tcp_onion_response_cb *onion_callback;
     void *onion_callback_object;
 
+    forwarded_response_cb *forwarded_response_callback;
+    void *forwarded_response_callback_object;
+
     /* Can be used by user. */
     void *custom_object;
     uint32_t custom_uint;
@@ -527,6 +530,34 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
     con->onion_callback_object = object;
 }
 
+/** @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
+ */
+int send_forward_request_tcp(const Logger *logger, TCP_Client_Connection *con, const IP_Port *dest, const uint8_t *data, uint16_t length)
+{
+    if (length > MAX_FORWARD_DATA_SIZE) {
+        return -1;
+    }
+
+    VLA(uint8_t, packet, 1 + MAX_PACKED_IPPORT_SIZE + length);
+    packet[0] = TCP_PACKET_FORWARD_REQUEST;
+    const int ipport_length = pack_ip_port(logger, packet + 1, MAX_PACKED_IPPORT_SIZE, dest);
+
+    if (ipport_length == -1) {
+        return 0;
+    }
+
+    memcpy(packet + 1 + ipport_length, data, length);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, 1 + ipport_length + length, false);
+}
+
+void forwarding_handler(TCP_Client_Connection *con, forwarded_response_cb *forwarded_response_callback, void *object)
+{
+    con->forwarded_response_callback = forwarded_response_callback;
+    con->forwarded_response_callback_object = object;
+}
+
 /** Create new TCP connection to ip_port/public_key */
 TCP_Client_Connection *new_TCP_connection(
         const Logger *logger, const Mono_Time *mono_time, const Random *rng, const Network *ns, const IP_Port *ip_port,
@@ -782,6 +813,11 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
 
         case TCP_PACKET_ONION_RESPONSE: {
             conn->onion_callback(conn->onion_callback_object, data + 1, length - 1, userdata);
+            return 0;
+        }
+
+        case TCP_PACKET_FORWARDING: {
+            conn->forwarded_response_callback(conn->forwarded_response_callback_object, data + 1, length - 1, userdata);
             return 0;
         }
 

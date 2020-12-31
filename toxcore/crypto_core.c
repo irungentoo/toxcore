@@ -178,6 +178,11 @@ bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 #endif
 }
 
+bool crypto_sha256_eq(const uint8_t *cksum1, const uint8_t *cksum2)
+{
+    return crypto_verify_32(cksum1, cksum2) == 0;
+}
+
 uint8_t random_u08(const Random *rng)
 {
     uint8_t randnum;
@@ -464,7 +469,7 @@ void crypto_hmac(uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_K
 bool crypto_hmac_verify(const uint8_t auth[CRYPTO_HMAC_SIZE], const uint8_t key[CRYPTO_HMAC_KEY_SIZE],
                         const uint8_t *data, size_t length)
 {
-    return (crypto_auth_verify(auth, data, length, key) == 0);
+    return crypto_auth_verify(auth, data, length, key) == 0;
 }
 
 void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)

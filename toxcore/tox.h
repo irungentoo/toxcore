@@ -550,6 +550,13 @@ struct Tox_Options {
 
 
     /**
+     * Enable storing DHT announcements and forwarding corresponding requests.
+     *
+     * Disabling this will cause Tox to ignore the relevant packets.
+     */
+    bool dht_announcements_enabled;
+
+    /**
      * Pass communications through a proxy.
      */
     Tox_Proxy_Type proxy_type;
@@ -680,6 +687,10 @@ void tox_options_set_udp_enabled(struct Tox_Options *options, bool udp_enabled);
 bool tox_options_get_local_discovery_enabled(const struct Tox_Options *options);
 
 void tox_options_set_local_discovery_enabled(struct Tox_Options *options, bool local_discovery_enabled);
+
+bool tox_options_get_dht_announcements_enabled(const struct Tox_Options *options);
+
+void tox_options_set_dht_announcements_enabled(struct Tox_Options *options, bool dht_announcements_enabled);
 
 Tox_Proxy_Type tox_options_get_proxy_type(const struct Tox_Options *options);
 

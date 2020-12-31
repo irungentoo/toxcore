@@ -13,6 +13,7 @@ cc_binary(
         "//c-toxcore/toxcore:DHT",
         "//c-toxcore/toxcore:LAN_discovery",
         "//c-toxcore/toxcore:TCP_server",
+        "//c-toxcore/toxcore:announce",
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
