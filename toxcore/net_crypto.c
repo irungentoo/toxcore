@@ -2287,9 +2287,7 @@ static void do_tcp(Net_Crypto *c, void *userdata)
     do_tcp_connections(c->log, c->tcp_c, userdata);
     pthread_mutex_unlock(&c->tcp_mutex);
 
-    uint32_t i;
-
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+    for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
         Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == nullptr) {
@@ -2300,21 +2298,15 @@ static void do_tcp(Net_Crypto *c, void *userdata)
             continue;
         }
 
-        bool direct_connected = 0;
+        bool direct_connected = false;
 
         if (!crypto_connection_status(c, i, &direct_connected, nullptr)) {
             continue;
         }
 
-        if (direct_connected) {
-            pthread_mutex_lock(&c->tcp_mutex);
-            set_tcp_connection_to_status(c->tcp_c, conn->connection_number_tcp, 0);
-            pthread_mutex_unlock(&c->tcp_mutex);
-        } else {
-            pthread_mutex_lock(&c->tcp_mutex);
-            set_tcp_connection_to_status(c->tcp_c, conn->connection_number_tcp, 1);
-            pthread_mutex_unlock(&c->tcp_mutex);
-        }
+        pthread_mutex_lock(&c->tcp_mutex);
+        set_tcp_connection_to_status(c->tcp_c, conn->connection_number_tcp, !direct_connected);
+        pthread_mutex_unlock(&c->tcp_mutex);
     }
 }
 
