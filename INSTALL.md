@@ -23,7 +23,6 @@ These instructions will guide you through the process of building and installing
       - [Cross-compiling from Linux](#cross-compiling-from-linux)
 - [Pre-built binaries](#pre-built-binaries)
   - [Linux](#linux)
-  - [Windows](#windows-1)
 
 ## Overview
 
@@ -259,12 +258,3 @@ After the build succeeds, you should see the built toxcore libraries in `/path/t
 Toxcore is packaged by at least by the following distributions: ALT Linux, [Arch Linux](https://www.archlinux.org/packages/?q=toxcore), [Fedora](https://apps.fedoraproject.org/packages/toxcore), Mageia, openSUSE, PCLinuxOS, ROSA and Slackware, [according to the information from pkgs.org](https://pkgs.org/download/toxcore). Note that this list might be incomplete and some other distributions might package it too.
 
 Debian and Ubuntu packages are available in [tox.chat's package repository](https://tox.chat/download.html#gnulinux).
-
-### Windows
-
-There are nightly cross-compiled binaries available on Jenkins.
-
-|        | Shared                                                                                                                                                                              | Static                                                                                                                                                                              |
-|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 32-bit | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86_shared_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86_shared_release.zip)       | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86_static_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86_static_release.zip)       |
-| 64-bit | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86-64_shared_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86-64_shared_release.zip) | [Download](https://build.tox.chat/job/libtoxcore-toktok_build_windows_x86-64_static_release/lastSuccessfulBuild/artifact/libtoxcore-toktok_build_windows_x86-64_static_release.zip) |
