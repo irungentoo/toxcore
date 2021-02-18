@@ -256,5 +256,3 @@ After the build succeeds, you should see the built toxcore libraries in `/path/t
 ### Linux
 
 Toxcore is packaged by at least by the following distributions: ALT Linux, [Arch Linux](https://www.archlinux.org/packages/?q=toxcore), [Fedora](https://apps.fedoraproject.org/packages/toxcore), Mageia, openSUSE, PCLinuxOS, ROSA and Slackware, [according to the information from pkgs.org](https://pkgs.org/download/toxcore). Note that this list might be incomplete and some other distributions might package it too.
-
-Debian and Ubuntu packages are available in [tox.chat's package repository](https://tox.chat/download.html#gnulinux).
