@@ -23,14 +23,16 @@ build() {
   export MAKEFLAGS=j"$(nproc)"
   export CFLAGS=-O3
 
+  CURL_OPTIONS="-L --connect-timeout 10"
+
   cd /tmp
   rm -rf /tmp/*
 
   echo
   echo "=== Building Sodium $VERSION_SODIUM $ARCH ==="
-  git clone --depth=1 --branch="$VERSION_SODIUM" https://github.com/jedisct1/libsodium
-  cd libsodium
-  ./autogen.sh
+  curl $CURL_OPTIONS -O "https://download.libsodium.org/libsodium/releases/libsodium-$VERSION_SODIUM.tar.gz"
+  tar -xf "libsodium-$VERSION_SODIUM.tar.gz"
+  cd "libsodium-$VERSION_SODIUM"
   ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-shared --enable-static
   make
   make install
@@ -38,17 +40,9 @@ build() {
 
   echo
   echo "=== Building Opus $VERSION_OPUS $ARCH ==="
-  if [ "$CROSS_COMPILE" = "true" ]; then
-    git clone --depth=1 --branch="$VERSION_OPUS" https://github.com/xiph/opus
-    cd opus
-    ./autogen.sh
-  else
-    # autogen.sh failed on Cygwin due to ltmain.sh symlink
-    VERSION_OPUS="${VERSION_OPUS#?}" # remove first 'v'
-    curl "https://archive.mozilla.org/pub/opus/opus-$VERSION_OPUS.tar.gz" -o opus.tar.gz
-    tar xzf opus.tar.gz
-    cd "opus-$VERSION_OPUS"
-  fi
+  curl $CURL_OPTIONS -O "https://archive.mozilla.org/pub/opus/opus-$VERSION_OPUS.tar.gz"
+  tar -xf "opus-$VERSION_OPUS.tar.gz"
+  cd "opus-$VERSION_OPUS"
   ./configure --host="$WINDOWS_TOOLCHAIN" --prefix="$PREFIX_DIR" --disable-extra-programs --disable-doc --disable-shared --enable-static
   make
   make install
@@ -59,12 +53,18 @@ build() {
   LIB_VPX_TARGET=""
   if [ "$ARCH" = "i686" ]; then
     LIB_VPX_TARGET=x86-win32-gcc
+    LIB_VPX_CFLAGS=""
   else
     LIB_VPX_TARGET=x86_64-win64-gcc
+    # There is a bug in gcc that breaks avx512 on 64-bit Windows https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54412
+    # VPX fails to build due to it.
+    # This is a workaround as suggested in https://stackoverflow.com/questions/43152633
+    LIB_VPX_CFLAGS="-fno-asynchronous-unwind-tables"
   fi
-  git clone --depth=1 --branch="$VERSION_VPX" https://github.com/webmproject/libvpx
-  cd libvpx
-  CROSS="$WINDOWS_TOOLCHAIN"- ./configure --target="$LIB_VPX_TARGET" --prefix="$PREFIX_DIR" --disable-examples --disable-unit-tests --disable-shared --enable-static
+  curl $CURL_OPTIONS "https://github.com/webmproject/libvpx/archive/v$VERSION_VPX.tar.gz" -o "libvpx-$VERSION_VPX.tar.gz"
+  tar -xf "libvpx-$VERSION_VPX.tar.gz"
+  cd "libvpx-$VERSION_VPX"
+  CFLAGS="$LIB_VPX_CFLAGS" CROSS="$WINDOWS_TOOLCHAIN"- ./configure --target="$LIB_VPX_TARGET" --prefix="$PREFIX_DIR" --disable-examples --disable-unit-tests --disable-shared --enable-static
   make
   make install
   cd ..

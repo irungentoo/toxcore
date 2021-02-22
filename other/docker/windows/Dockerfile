@@ -1,9 +1,9 @@
-FROM debian:stretch-slim
+FROM debian:buster-slim
 
 # Build-time environment variables
 ARG VERSION_SODIUM=1.0.18
-ARG VERSION_OPUS=v1.2.1
-ARG VERSION_VPX=v1.6.1
+ARG VERSION_OPUS=1.3.1
+ARG VERSION_VPX=1.9.0
 
 ARG SUPPORT_TEST=false
 ARG SUPPORT_ARCH_i686=true

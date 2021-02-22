@@ -55,10 +55,10 @@ build() {
         SET(CMAKE_RC_COMPILER  $WINDOWS_TOOLCHAIN-windres)
 
         SET(CMAKE_FIND_ROOT_PATH /usr/$WINDOWS_TOOLCHAIN $DEP_PREFIX_DIR)
-    " > windows_toolchain.cmake
+    " >windows_toolchain.cmake
 
   if [ "$ENABLE_TEST" = "true" ]; then
-    echo "SET(CROSSCOMPILING_EMULATOR /usr/bin/wine)" >> windows_toolchain.cmake
+    echo "SET(CROSSCOMPILING_EMULATOR /usr/bin/wine)" >>windows_toolchain.cmake
   fi
 
   cmake -DCMAKE_TOOLCHAIN_FILE=windows_toolchain.cmake \

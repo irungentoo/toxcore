@@ -1,8 +1,8 @@
 #!/bin/sh
 
 export VERSION_SODIUM="1.0.18"
-export VERSION_OPUS="v1.2.1"
-export VERSION_VPX="v1.6.1"
+export VERSION_OPUS="1.3.1"
+export VERSION_VPX="1.9.0"
 
 export SUPPORT_TEST=false
 export SUPPORT_ARCH_i686=true
