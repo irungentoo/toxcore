@@ -7,8 +7,7 @@ install:
   - py -3 -m pip install conan
 
 before_build:
-  - ps: |
-      conan install -if _build .
+  - conan install -if _build .
 
 build_script:
   - conan build -bf _build -if _build .
