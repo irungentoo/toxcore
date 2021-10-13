@@ -1,3 +1,6 @@
+#ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_CRYPTO_SCRYPT_H
+#define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_CRYPTO_SCRYPT_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -89,5 +92,7 @@ extern uint8_t * escrypt_gensalt_r(
     uint8_t * __buf, size_t __buflen);
 
 #endif /* !_CRYPTO_SCRYPT_H_ */
+
+#endif
 
 #endif

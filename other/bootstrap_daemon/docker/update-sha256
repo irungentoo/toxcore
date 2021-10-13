@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -eux
+
+docker_build() {
+  readarray -t FILES <<<"$(git ls-files)"
+  tar c "${FILES[@]}" | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+}
+
+# Run Docker build once. If it succeeds, we're good.
+if docker_build; then
+  exit 0
+fi
+
+# We're not good. Run it again, but now capture the output.
+OUTPUT=$(docker_build || true 2>&1)
+
+if echo "$OUTPUT" | grep '/usr/local/bin/tox-bootstrapd: FAILED'; then
+  # This is a checksum warning, so we need to update it.
+  IMAGE=$(echo "$OUTPUT" | grep '^ ---> [0-9a-f]*$' | grep -o '[0-9a-f]*$' | tail -n1)
+  docker run --rm "$IMAGE" sha256sum /usr/local/bin/tox-bootstrapd >other/bootstrap_daemon/docker/tox-bootstrapd.sha256
+fi
+
+# Run once last time to complete the build.
+docker_build

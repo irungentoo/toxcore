@@ -1,0 +1,301 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+load("//tools:no_undefined.bzl", "cc_library")
+
+filegroup(
+    name = "public_headers",
+    srcs = ["tox.h"],
+    visibility = ["//c-toxcore:__pkg__"],
+)
+
+cc_library(
+    name = "ccompat",
+    hdrs = ["ccompat.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+)
+
+cc_library(
+    name = "crypto_core",
+    srcs = [
+        "crypto_core.c",
+        "crypto_core_mem.c",
+    ],
+    hdrs = [
+        "crypto_core.h",
+    ],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":ccompat",
+        "@libsodium",
+    ],
+)
+
+cc_test(
+    name = "crypto_core_test",
+    size = "small",
+    srcs = ["crypto_core_test.cc"],
+    flaky = True,
+    deps = [
+        ":crypto_core",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "list",
+    srcs = ["list.c"],
+    hdrs = ["list.h"],
+    deps = [":ccompat"],
+)
+
+cc_library(
+    name = "logger",
+    srcs = ["logger.c"],
+    hdrs = ["logger.h"],
+    deps = [":ccompat"],
+)
+
+cc_library(
+    name = "state",
+    srcs = ["state.c"],
+    hdrs = ["state.h"],
+    deps = [":logger"],
+)
+
+cc_library(
+    name = "mono_time",
+    srcs = ["mono_time.c"],
+    hdrs = ["mono_time.h"],
+    deps = [
+        ":ccompat",
+        "@pthread",
+    ],
+)
+
+cc_test(
+    name = "mono_time_test",
+    size = "small",
+    srcs = ["mono_time_test.cc"],
+    deps = [
+        ":mono_time",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "network",
+    srcs = [
+        "network.c",
+        "util.c",
+    ],
+    hdrs = [
+        "network.h",
+        "util.h",
+    ],
+    visibility = [
+        "//c-toxcore/other:__pkg__",
+        "//c-toxcore/toxav:__pkg__",
+    ],
+    deps = [
+        ":ccompat",
+        ":crypto_core",
+        ":logger",
+        ":mono_time",
+        "@psocket",
+        "@pthread",
+    ],
+)
+
+cc_test(
+    name = "util_test",
+    size = "small",
+    srcs = ["util_test.cc"],
+    deps = [
+        ":network",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "ping_array",
+    srcs = ["ping_array.c"],
+    hdrs = ["ping_array.h"],
+    deps = [":network"],
+)
+
+cc_test(
+    name = "ping_array_test",
+    size = "small",
+    srcs = ["ping_array_test.cc"],
+    deps = [
+        ":ping_array",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "DHT",
+    srcs = [
+        "DHT.c",
+        "LAN_discovery.c",
+        "ping.c",
+    ],
+    hdrs = [
+        "DHT.h",
+        "LAN_discovery.h",
+        "ping.h",
+    ],
+    visibility = ["//c-toxcore/other/bootstrap_daemon:__pkg__"],
+    deps = [
+        ":crypto_core",
+        ":logger",
+        ":ping_array",
+        ":state",
+    ],
+)
+
+cc_library(
+    name = "DHT_srcs",
+    hdrs = [
+        "DHT.c",
+        "DHT.h",
+        "LAN_discovery.c",
+        "LAN_discovery.h",
+        "ping.c",
+        "ping.h",
+    ],
+    visibility = [
+        "//c-toxcore/auto_tests:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+    ],
+    deps = [
+        ":logger",
+        ":ping_array",
+        ":state",
+    ],
+)
+
+cc_library(
+    name = "onion",
+    srcs = ["onion.c"],
+    hdrs = ["onion.h"],
+    deps = [":DHT"],
+)
+
+cc_library(
+    name = "TCP_connection",
+    srcs = [
+        "TCP_client.c",
+        "TCP_connection.c",
+        "TCP_server.c",
+    ],
+    hdrs = [
+        "TCP_client.h",
+        "TCP_connection.h",
+        "TCP_server.h",
+    ],
+    copts = select({
+        "//tools/config:linux": ["-DTCP_SERVER_USE_EPOLL=1"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":crypto_core",
+        ":list",
+        ":onion",
+    ],
+)
+
+cc_library(
+    name = "net_crypto",
+    srcs = ["net_crypto.c"],
+    hdrs = ["net_crypto.h"],
+    deps = [
+        ":DHT",
+        ":TCP_connection",
+    ],
+)
+
+cc_library(
+    name = "onion_announce",
+    srcs = ["onion_announce.c"],
+    hdrs = ["onion_announce.h"],
+    deps = [":onion"],
+)
+
+cc_library(
+    name = "onion_client",
+    srcs = ["onion_client.c"],
+    hdrs = ["onion_client.h"],
+    deps = [
+        ":net_crypto",
+        ":onion_announce",
+    ],
+)
+
+cc_library(
+    name = "friend_connection",
+    srcs = ["friend_connection.c"],
+    hdrs = ["friend_connection.h"],
+    deps = [
+        ":DHT",
+        ":net_crypto",
+        ":onion_client",
+    ],
+)
+
+cc_library(
+    name = "friend_requests",
+    srcs = ["friend_requests.c"],
+    hdrs = ["friend_requests.h"],
+    deps = [":friend_connection"],
+)
+
+cc_library(
+    name = "Messenger",
+    srcs = ["Messenger.c"],
+    hdrs = ["Messenger.h"],
+    visibility = ["//c-toxcore/toxav:__pkg__"],
+    deps = [
+        ":friend_requests",
+        ":state",
+    ],
+)
+
+cc_library(
+    name = "group",
+    srcs = ["group.c"],
+    hdrs = ["group.h"],
+    visibility = ["//c-toxcore/toxav:__pkg__"],
+    deps = [":Messenger"],
+)
+
+cc_library(
+    name = "toxcore",
+    srcs = [
+        "tox.c",
+        "tox.h",
+        "tox_api.c",
+        "tox_private.h",
+    ],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":group",
+        "//c-toxcore/toxencryptsave:defines",
+    ],
+)
+
+CIMPLE_SRCS = glob(
+    [
+        "*.c",
+        "*.h",
+    ],
+    exclude = ["*.api.h"],
+)
+
+sh_test(
+    name = "cimple_test",
+    size = "small",
+    srcs = ["//hs-tokstyle/tools:check-cimple"],
+    args = ["$(location %s)" % f for f in CIMPLE_SRCS],
+    data = CIMPLE_SRCS,
+    tags = ["haskell"],
+)

@@ -1,3 +1,6 @@
+#ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_RUNTIME_H
+#define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_RUNTIME_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -26,6 +29,8 @@ int sodium_runtime_has_sse3(void);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif

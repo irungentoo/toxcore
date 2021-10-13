@@ -1,0 +1,98 @@
+#!/bin/bash
+
+ACTION="$1"
+
+set -eu
+
+CACHEDIR="$HOME/cache"
+NPROC=$(nproc)
+ASTYLE="$CACHEDIR/astyle/build/gcc/bin/astyle"
+ASTYLE_VERSION=3.1
+TRAVIS_TOOL="https://raw.githubusercontent.com/TokTok/ci-tools/master/bin/travis-haskell"
+
+travis_install() {
+  bash <(curl -s "$TRAVIS_TOOL") download
+  travis-haskell download TokTok/hs-tokstyle tokstyle "$HOME/.local"
+
+  which coveralls || {
+    # Install cpp-coveralls to upload test coverage results.
+    pip install --user ndg-httpsclient urllib3[secure] cpp-coveralls
+
+    # Work around https://github.com/eddyxu/cpp-coveralls/issues/108 by manually
+    # installing the pyOpenSSL module and injecting it into urllib3 as per
+    # https://urllib3.readthedocs.io/en/latest/user-guide.html#ssl-py2
+    sed -i -e '/^import sys$/a import urllib3.contrib.pyopenssl\nurllib3.contrib.pyopenssl.inject_into_urllib3()' "$(which coveralls)"
+  }
+
+  # Install astyle (version in ubuntu-precise too old).
+  ([ -f "$ASTYLE" ] && "$ASTYLE" --version | grep "$ASTYLE_VERSION" >/dev/null) || {
+    wget -O ../astyle.tar.gz "https://deb.debian.org/debian/pool/main/a/astyle/astyle_$ASTYLE_VERSION.orig.tar.gz"
+    tar -xf ../astyle.tar.gz -C "$CACHEDIR"
+    make -C "$CACHEDIR/astyle/build/gcc" clean
+    make -C "$CACHEDIR/astyle/build/gcc" "-j$NPROC"
+  }
+}
+
+run_static_analysis() {
+  pylint3 -E other/analysis/check_recursion
+
+  export CPPFLAGS="-isystem $CACHEDIR/include"
+  export LDFLAGS="-L$CACHEDIR/lib"
+  cat toxav/*.c toxcore/*.c toxencryptsave/*.c |
+    clang "$(pkg-config --cflags libsodium opus vpx)" \
+      -Itoxav -Itoxcore -Itoxencryptsave -S -emit-llvm -xc - -o- |
+    opt -analyze -print-callgraph 2>&1 |
+    other/analysis/check_recursion
+  other/analysis/run-clang
+  other/analysis/run-clang-analyze
+}
+
+travis_script() {
+  . ".travis/flags-$CC.sh"
+
+  add_ld_flag -Wl,-z,defs
+
+  # Make compilation error on a warning
+  add_flag -Werror
+
+  # Coverage flags.
+  add_flag -fprofile-arcs -ftest-coverage
+
+  "$ASTYLE" --version
+  other/astyle/format-source . "$ASTYLE"
+
+  echo "Running TokTok style checker"
+  "$HOME/.local/bin/check-cimple"
+
+  # Use () to run in a separate process so the exports are local.
+  (run_static_analysis)
+
+  other/analysis/check_logger_levels
+
+  cmake -B_build -H. -GNinja \
+    -DCMAKE_C_FLAGS="$C_FLAGS" \
+    -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+    -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+    -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+    -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
+    -DMIN_LOGGER_LEVEL=TRACE \
+    -DMUST_BUILD_TOXAV=ON \
+    -DNON_HERMETIC_TESTS=ON \
+    -DSTRICT_ABI=ON \
+    -DTEST_TIMEOUT_SECONDS=120 \
+    -DUSE_IPV6=OFF \
+    -DAUTOTEST=ON
+
+  cmake --build _build --parallel "$NPROC" --target install -- -k 0
+
+  cd _build # pushd
+  ctest -j50 --output-on-failure ||
+    ctest -j50 --output-on-failure --rerun-failed
+  cd - # popd
+}
+
+if [ "-z" "$ACTION" ]; then
+  "travis_script"
+else
+  "travis_$ACTION"
+fi

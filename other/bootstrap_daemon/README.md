@@ -1,29 +1,25 @@
-#Instructions
+# Instructions
 
-- [For `systemd` users](#systemd)
-  - [Setting up](#systemd-setting-up)
-  - [Updating](#systemd-updating)
-  - [Troubleshooting](#systemd-troubleshooting)
-<br>
-- [For `SysVinit` users](#sysvinit)
-  - [Setting up](#sysvinit-setting-up)
-  - [Updating](#sysvinit-updating)
-  - [Troubleshooting](#sysvinit-troubleshooting)
-<br>
-- [For `Docker` users](#docker)
-  - [Setting up](#docker-setting-up)
-  - [Updating](#docker-updating)
-  - [Troubleshooting](#docker-troubleshooting)
+- [For `systemd` users](#for-systemd-users)
+  - [Setting up](#setting-up)
+  - [Updating](#updating)
+  - [Troubleshooting](#troubleshooting)
+- [For `SysVinit` users](#for-sysvinit-users)
+  - [Setting up](#setting-up-1)
+  - [Updating](#updating-1)
+  - [Troubleshooting](#troubleshooting-1)
+- [For `Docker` users](#for-docker-users)
+  - [Setting up](#setting-up-2)
+  - [Updating](#updating-2)
+  - [Troubleshooting](#troubleshooting-2)
 
 
 These instructions are primarily tested on Debian Linux, Wheezy for SysVinit and Jessie for systemd, but they should work on other POSIX-compliant systems too.
 
 
-<a name="systemd" />
-##For `systemd` users
+## For `systemd` users
 
-<a name="systemd-setting-up" />
-###Setting up
+### Setting up
 
 For security reasons we run the daemon under its own user.
 
@@ -49,9 +45,11 @@ Copy `tox-bootstrapd.service` to `/etc/systemd/system/`:
 sudo cp tox-bootstrapd.service /etc/systemd/system/
 ```
 
-You must uncomment the next line in tox-bootstrapd.service, if you want to use port number < 1024 
+You must uncomment the next line in tox-bootstrapd.service, if you want to use port number < 1024:
 
-    #CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+```
+#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+```
 
 and, possibly, install `libcap2-bin` or `libcap2` package, depending of your distribution.
 
@@ -68,8 +66,7 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-<a name="systemd-updating" />
-###Updating
+### Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
 
@@ -83,16 +80,19 @@ Then update your toxcore git repository, rebuild the toxcore and the daemon and 
 
 Check if `tox-bootstrapd.service` in toxcore git repository was modified since the last time you copied it, as you might need to update it too.
 
+Reload `tox-bootstrapd.service` if you have updated modified it:
+
+```sh
+sudo systemctl daemon-reload
+```
+
 After all of this is done, simply start the daemon back again:
 
 ```sh
 sudo systemctl start tox-bootstrapd.service
 ```
 
-Note that `tox-bootstrapd.service` file might
-
-<a name="systemd-troubleshooting" />
-###Troubleshooting
+### Troubleshooting
 
 - Check daemon's status:
 ```sh
@@ -115,11 +115,11 @@ sudo journalctl -f _SYSTEMD_UNIT=tox-bootstrapd.service
 - Make sure tox-bootstrapd location matches its path in tox-bootstrapd.service file.
 
 
-<a name="sysvinit" />
-##For `SysVinit` users
 
-<a name="sysvinit-setting-up" />
-###Setting up
+## For `SysVinit` users
+
+
+### Setting up
 
 For security reasons we run the daemon under its own user.
 
@@ -170,8 +170,8 @@ Get your public key and check that the daemon initialized correctly:
 sudo grep "tox-bootstrapd" /var/log/syslog
 ```
 
-<a name="sysvinit-updating" />
-###Updating
+
+### Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
 
@@ -191,8 +191,7 @@ After all of this is done, simply start the daemon back again:
 sudo service tox-bootstrapd start
 ```
 
-<a name="sysvinit-troubleshooting" />
-###Troubleshooting
+### Troubleshooting
 
 - Check daemon's status:
 ```sh
@@ -213,61 +212,94 @@ sudo grep "tox-bootstrapd" /var/log/syslog
 - Make sure tox-bootstrapd location matches its path in the `/etc/init.d/tox-bootstrapd` init script.
 
 
-<a name="docker" />
-##For `Docker` users:
+## For `Docker` users:
 
-<a name="docker-setting-up" />
-###Setting up
+### Setting up
 
-If you are familiar with Docker and would rather run the daemon in a Docker container, run the following from this directory:
+If you are familiar with Docker and would rather run the daemon in a Docker container, you may download the latest official docker image. Check the GitHub [releases](https://github.com/TokTok/c-toxcore/releases) page for the latest version (e.g. v0.2.11), and run:
 
 ```sh
-sudo docker build -t tox-bootstrapd docker/
+docker pull toxchat/bootstrap-node:0.2.11
+docker run --rm -it --entrypoint=sha256sum toxchat/bootstrap-node:latest /usr/local/bin/tox-bootstrapd
+```
 
-sudo useradd --home-dir /var/lib/tox-bootstrapd --create-home --system --shell /sbin/nologin --comment "Account to run Tox's DHT bootstrap daemon" --user-group tox-bootstrapd
+This will print the SHA256 checksum of the latest binary, which should agree with the SHA256 checksum in the Dockerfile.
+
+If you want to build the bootstrap node from source, check out the latest release:
+
+```sh
+git checkout $(git tag --list | grep -P '^v(\d+).(\d+).(\d+)$' | \
+  sed 's/v/v /g' | sed 's/\./ /g' | \
+  sort -snk4,4 | sort -snk3,3 | sort -snk2,2 | tail -n 1 | \
+  sed 's/v /v/g' | sed 's/ /\./g')
+```
+
+and run the following from the top level c-toxcore directory:
+
+```sh
+tar c $(git ls-files) | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+
+sudo useradd \
+  --home-dir /var/lib/tox-bootstrapd \
+  --create-home \
+  --system \
+  --shell /sbin/nologin \
+  --comment "Account to run Tox's DHT bootstrap daemon" \
+  --user-group tox-bootstrapd
 sudo chmod 700 /var/lib/tox-bootstrapd
 
-sudo docker run -d --name tox-bootstrapd --restart always -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
+docker run -d --name tox-bootstrapd --restart always \
+  -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ \
+  --ulimit nofile=32768:32768 \
+  -p 443:443 \
+  -p 3389:3389 \
+  -p 33445:33445 \
+  -p 33445:33445/udp \
+  toxchat/bootstrap-node
 ```
 
 We create a new user and protect its home directory in order to mount it in the Docker image, so that the kyepair the daemon uses would be stored on the host system, which makes it less likely that you would loose the keypair while playing with or updating the Docker container.
 
 You can check logs for your public key or any errors:
 ```sh
-sudo docker logs tox-bootstrapd
+docker logs tox-bootstrapd
 ```
 
 Note that the Docker container runs a script which pulls a list of bootstrap nodes off https://nodes.tox.chat/ and adds them in the config file.
 
-<a name="docker-updating" />
-###Updating
+### Updating
 
 You want to make sure that the daemon uses the newest toxcore, as there might have been some changes done to the DHT, so it's advised to update the daemon at least once every month.
 
 To update the daemon, all you need is to erase current container with its image:
 
 ```sh
-sudo docker stop tox-bootstrapd
-sudo docker rm tox-bootstrapd
-sudo docker rmi tox-bootstrapd
+docker stop tox-bootstrapd
+docker rm tox-bootstrapd
+docker rmi toxchat/bootstrap-node
 ```
 
 Then rebuild and run the image again:
 
 ```sh
-sudo docker build -t tox-bootstrapd docker/
-sudo docker run -d --name tox-bootstrapd --restart always -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ -p 443:443 -p 3389:3389 -p 33445:33445 -p 33445:33445/udp tox-bootstrapd
+tar c $(git ls-files) | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+docker run -d --name tox-bootstrapd --restart always \
+  -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ \
+  -p 443:443 \
+  -p 3389:3389 \
+  -p 33445:33445 \
+  -p 33445:33445/udp \
+  toxchat/bootstrap-node
 ```
 
-<a name="docker-troubleshooting" />
-###Troubleshooting
+### Troubleshooting
 
 - Check if the container is running:
 ```sh
-sudo docker ps -a
+docker ps -a
 ```
 
 - Check the log for errors:
 ```sh
-sudo docker logs tox-bootstrapd
+docker logs tox-bootstrapd
 ```

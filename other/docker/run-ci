@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eux
+
+STAGE="${1-cmake}"
+
+readarray -t FILES <<<"$(git ls-files | sed -e 's,^,c-toxcore/,')"
+
+FILES+=(c-toxcore/.git)
+
+if [ -f .git ]; then
+  FILES+=(.git/modules/c-toxcore)
+fi
+
+cd ..
+tar -c "${FILES[@]}" |
+  docker build -f "c-toxcore/other/docker/travis/Dockerfile" \
+    -t localbuild/travis:1.0.0 -
+tar -c "${FILES[@]}" |
+  docker build -f "c-toxcore/other/docker/$STAGE/Dockerfile" \
+    -t "localbuild/$STAGE:1.0.0" -

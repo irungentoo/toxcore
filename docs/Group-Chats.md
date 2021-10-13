@@ -10,7 +10,7 @@ the invite or responds with a response packet if he wants to join the chat. The 
 of groupchat (text only, A/V) the friend is being invited to.
 
 
-TODO: write more of this.
+TODO(irungentoo): write more of this.
 
 ## Protocol
 

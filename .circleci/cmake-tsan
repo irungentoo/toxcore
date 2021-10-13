@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eu
+
+CACHEDIR="$HOME/cache"
+
+. ".travis/flags-$CC.sh"
+add_flag -Werror
+add_flag -fdiagnostics-color=always
+add_flag -fno-omit-frame-pointer
+add_flag -fsanitize=thread
+cmake -B_build -H. -GNinja \
+  -DCMAKE_C_FLAGS="$C_FLAGS" \
+  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
+  -DMIN_LOGGER_LEVEL=TRACE \
+  -DMUST_BUILD_TOXAV=ON \
+  -DNON_HERMETIC_TESTS=ON \
+  -DSTRICT_ABI=ON \
+  -DTEST_TIMEOUT_SECONDS=120 \
+  -DUSE_IPV6=OFF \
+  -DAUTOTEST=ON
+
+cd _build
+
+ninja install -j"$(nproc)"
+
+export TSAN_OPTIONS="halt_on_error=1"
+export TSAN_OPTIONS="$TSAN_OPTIONS,second_deadlock_stack=1"
+export TSAN_OPTIONS="$TSAN_OPTIONS,symbolize=1"
+ctest -j50 --output-on-failure ||
+  ctest -j50 --output-on-failure --rerun-failed

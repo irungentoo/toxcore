@@ -1,0 +1,51 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+
+cc_library(
+    name = "misc_tools",
+    srcs = ["misc_tools.c"],
+    hdrs = ["misc_tools.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = ["//c-toxcore/toxcore"],
+)
+
+cc_library(
+    name = "trace",
+    srcs = ["trace.cc"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    alwayslink = True,
+)
+
+cc_binary(
+    name = "DHT_test",
+    srcs = ["DHT_test.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "Messenger_test",
+    srcs = ["Messenger_test.c"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "random_testing",
+    srcs = ["random_testing.cc"],
+    deps = [
+        ":misc_tools",
+        "//c-toxcore/toxcore",
+    ],
+)
+
+cc_binary(
+    name = "afl_toxsave",
+    srcs = ["afl_toxsave.c"],
+    deps = [
+        "//c-toxcore/toxcore",
+    ],
+)

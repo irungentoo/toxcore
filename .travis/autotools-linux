@@ -1,0 +1,54 @@
+#!/bin/bash
+
+ACTION="$1"
+
+set -eu
+
+CACHEDIR="$HOME/cache"
+NPROC=$(nproc)
+
+travis_install() {
+  # Install vanilla NaCl only.
+  [ -f "$CACHEDIR/lib/amd64/libnacl.a" ] || {
+    curl https://hyperelliptic.org/nacl/nacl-20110221.tar.bz2 | tar jx
+    cd nacl-20110221 # pushd
+    "./do"
+    # "make install"
+    mkdir -p "$CACHEDIR/include"
+    mv build/*/include/* "$CACHEDIR/include"
+    mkdir -p "$CACHEDIR/lib"
+    mv build/*/lib/* "$CACHEDIR/lib"
+    cd - # popd
+  }
+}
+
+travis_script() {
+  . ".travis/flags-$CC.sh"
+
+  add_ld_flag -Wl,-z,defs
+
+  # Make compilation error on a warning
+  add_flag -Werror
+
+  add_config_flag --with-nacl-libs="$CACHEDIR/lib/amd64"
+  add_config_flag --with-nacl-headers="$CACHEDIR/include/amd64"
+  add_config_flag --disable-ipv6
+  add_config_flag --enable-nacl
+  add_config_flag --enable-daemon
+  add_config_flag --enable-logging
+  add_config_flag --with-log-level=TRACE
+
+  autoreconf -fi
+  mkdir -p _build
+  cd _build # pushd
+  ../configure "${CONFIG_FLAGS[@]}" || (cat config.log && false)
+  make "-j$NPROC" -k CFLAGS="$C_FLAGS" LDFLAGS="$LD_FLAGS"
+  make -j50 -k distcheck DISTCHECK_CONFIGURE_FLAGS="${CONFIG_FLAGS[*]}" || (cat tox-*/_build/build/test-suite.log && false)
+  cd - # popd
+}
+
+if [ "-z" "$ACTION" ]; then
+  "travis_script"
+else
+  "travis_$ACTION"
+fi

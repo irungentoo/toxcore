@@ -1,72 +1,54 @@
-/*
- * util.h -- Utilities.
- *
- * This file is donated to the Tox Project.
- * Copyright 2013  plutooo
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2013 Tox project.
+ * Copyright © 2013 plutooo
  */
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+/*
+ * Utilities.
+ */
+#ifndef C_TOXCORE_TOXCORE_UTIL_H
+#define C_TOXCORE_TOXCORE_UTIL_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <pthread.h>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define PAIR(TYPE1__, TYPE2__) struct { TYPE1__ first; TYPE2__ second; }
+#include "logger.h"
 
-void unix_time_update();
-uint64_t unix_time();
-int is_timeout(uint64_t timestamp, uint64_t timeout);
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* id functions */
 bool id_equal(const uint8_t *dest, const uint8_t *src);
 uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
 
-void host_to_net(uint8_t *num, uint16_t numbytes);
-#define net_to_host(x, y) host_to_net(x, y)
-
-uint16_t lendian_to_host16(uint16_t lendian);
-#define host_tolendian16(x) lendian_to_host16(x)
-
-void host_to_lendian32(uint8_t *dest,  uint32_t num);
-void lendian_to_host32(uint32_t *dest, const uint8_t *lendian);
-
-/* state load/save */
-typedef int (*load_state_callback_func)(void *outer, const uint8_t *data, uint32_t len, uint16_t type);
-int load_state(load_state_callback_func load_state_callback, void *outer,
-               const uint8_t *data, uint32_t length, uint16_t cookie_inner);
-
 /* Returns -1 if failed or 0 if success */
 int create_recursive_mutex(pthread_mutex_t *mutex);
 
-/* Ring buffer */
-typedef struct RingBuffer RingBuffer;
-bool rb_full(const RingBuffer *b);
-bool rb_empty(const RingBuffer *b);
-void *rb_write(RingBuffer *b, void *p);
-bool rb_read(RingBuffer *b, void **p);
-RingBuffer *rb_new(int size);
-void rb_kill(RingBuffer *b);
-uint16_t rb_size(const RingBuffer *b);
-uint16_t rb_data(const RingBuffer *b, void **dest);
+// Safe min/max functions with specific types. This forces the conversion to the
+// desired type before the comparison expression, giving the choice of
+// conversion to the caller. Use these instead of inline comparisons or MIN/MAX
+// macros (effectively inline comparisons).
+int16_t max_s16(int16_t a, int16_t b);
+int32_t max_s32(int32_t a, int32_t b);
+int64_t max_s64(int64_t a, int64_t b);
 
-#endif /* __UTIL_H__ */
+int16_t min_s16(int16_t a, int16_t b);
+int32_t min_s32(int32_t a, int32_t b);
+int64_t min_s64(int64_t a, int64_t b);
+
+uint16_t max_u16(uint16_t a, uint16_t b);
+uint32_t max_u32(uint32_t a, uint32_t b);
+uint64_t max_u64(uint64_t a, uint64_t b);
+
+uint16_t min_u16(uint16_t a, uint16_t b);
+uint32_t min_u32(uint32_t a, uint32_t b);
+uint64_t min_u64(uint64_t a, uint64_t b);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
+
+#endif // C_TOXCORE_TOXCORE_UTIL_H

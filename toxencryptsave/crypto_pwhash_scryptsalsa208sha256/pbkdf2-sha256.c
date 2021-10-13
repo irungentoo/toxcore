@@ -40,7 +40,7 @@
 
 #include "pbkdf2-sha256.h"
 #include "sysendian.h"
-#include "utils.h"
+#include "../../toxcore/crypto_core.h"
 
 /**
  * PBKDF2_SHA256(passwd, passwdlen, salt, saltlen, c, buf, dkLen):
@@ -61,8 +61,8 @@ PBKDF2_SHA256(const uint8_t * passwd, size_t passwdlen, const uint8_t * salt,
         size_t          clen;
 
     if (passwdlen > 32) {
-        /* For some reason libsodium allows 64byte keys meaning keys 
-         * between 32byte and 64bytes are not compatible with libsodium. 
+        /* For some reason libsodium allows 64byte keys meaning keys
+         * between 32byte and 64bytes are not compatible with libsodium.
            toxencryptsave should only give 32byte passwds so this isn't an issue here.*/
         crypto_hash_sha256(key, passwd, passwdlen);
     } else {
@@ -91,7 +91,7 @@ PBKDF2_SHA256(const uint8_t * passwd, size_t passwdlen, const uint8_t * salt,
         }
                 memcpy(&buf[i * 32], T, clen);
         }
-    sodium_memzero((void *) key, sizeof(key));
+    crypto_memzero((void *) key, sizeof(key));
 }
 
 #endif

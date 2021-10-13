@@ -1,0 +1,50 @@
+---
+_extends: .github
+
+repository:
+  name: c-toxcore
+  description: The future of online communications.
+  homepage: https://tox.chat/
+  topics: toxcore, network, p2p, security, encryption, cryptography
+
+branches:
+  - name: "master"
+    protection:
+      required_status_checks:
+        contexts:
+          - Codacy/PR Quality Review
+          - CodeFactor
+          - Travis CI - Pull Request
+          - "ci/circleci: asan"
+          - "ci/circleci: tsan"
+          - cirrus-ci
+          - code-review/reviewable
+          - codecov/patch
+          - codecov/project
+          - continuous-integration/appveyor/pr
+
+# Labels specific to c-toxcore.
+labels:
+  - name: "bootstrap"
+    color: "#01707f"
+    description: "Bootstrap"
+
+  - name: "crypto"
+    color: "#1d76db"
+    description: "Crypto"
+
+  - name: "file transfers"
+    color: "#e02abf"
+    description: "File Transfers"
+
+  - name: "messenger"
+    color: "#d93f0b"
+    description: "Messenger"
+
+  - name: "network"
+    color: "#d4c5f9"
+    description: "Network"
+
+  - name: "toxav"
+    color: "#0052cc"
+    description: "Audio/video"

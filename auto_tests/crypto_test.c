@@ -2,48 +2,47 @@
 #include "config.h"
 #endif
 
-#include "../toxcore/net_crypto.h"
-#include <sys/types.h>
 #include <stdint.h>
-#include <string.h>
-#include <check.h>
 #include <stdlib.h>
-#include <time.h>
+#include <string.h>
 
-#include "helpers.h"
+#include "../testing/misc_tools.h"
+#include "../toxcore/crypto_core.h"
+#include "../toxcore/net_crypto.h"
+#include "check_compat.h"
 
-void rand_bytes(uint8_t *b, size_t blen)
+static void rand_bytes(uint8_t *b, size_t blen)
 {
     size_t i;
 
     for (i = 0; i < blen; i++) {
-        b[i] = rand();
+        b[i] = random_u08();
     }
 }
 
 // These test vectors are from libsodium's test suite
 
-unsigned char alicesk[32] = {
+static const unsigned char alicesk[32] = {
     0x77, 0x07, 0x6d, 0x0a, 0x73, 0x18, 0xa5, 0x7d,
     0x3c, 0x16, 0xc1, 0x72, 0x51, 0xb2, 0x66, 0x45,
     0xdf, 0x4c, 0x2f, 0x87, 0xeb, 0xc0, 0x99, 0x2a,
     0xb1, 0x77, 0xfb, 0xa5, 0x1d, 0xb9, 0x2c, 0x2a
 };
 
-unsigned char bobpk[32] = {
+static const unsigned char bobpk[32] = {
     0xde, 0x9e, 0xdb, 0x7d, 0x7b, 0x7d, 0xc1, 0xb4,
     0xd3, 0x5b, 0x61, 0xc2, 0xec, 0xe4, 0x35, 0x37,
     0x3f, 0x83, 0x43, 0xc8, 0x5b, 0x78, 0x67, 0x4d,
     0xad, 0xfc, 0x7e, 0x14, 0x6f, 0x88, 0x2b, 0x4f
 };
 
-unsigned char nonce[24] = {
+static const unsigned char test_nonce[24] = {
     0x69, 0x69, 0x6e, 0xe9, 0x55, 0xb6, 0x2b, 0x73,
     0xcd, 0x62, 0xbd, 0xa8, 0x75, 0xfc, 0x73, 0xd6,
     0x82, 0x19, 0xe0, 0x03, 0x6b, 0x7a, 0x0b, 0x37
 };
 
-unsigned char test_m[131] = {
+static const unsigned char test_m[131] = {
     0xbe, 0x07, 0x5f, 0xc5, 0x3c, 0x81, 0xf2, 0xd5,
     0xcf, 0x14, 0x13, 0x16, 0xeb, 0xeb, 0x0c, 0x7b,
     0x52, 0x28, 0xc5, 0x2a, 0x4c, 0x62, 0xcb, 0xd4,
@@ -63,7 +62,7 @@ unsigned char test_m[131] = {
     0x5e, 0x07, 0x05
 };
 
-unsigned char test_c[147] = {
+static const unsigned char test_c[147] = {
     0xf3, 0xff, 0xc7, 0x70, 0x3f, 0x94, 0x00, 0xe5,
     0x2a, 0x7d, 0xfb, 0x4b, 0x3d, 0x33, 0x05, 0xd9,
     0x8e, 0x99, 0x3b, 0x9f, 0x48, 0x68, 0x12, 0x73,
@@ -89,19 +88,19 @@ START_TEST(test_known)
 {
     unsigned char c[147];
     unsigned char m[131];
-    int clen, mlen;
+    uint16_t clen, mlen;
 
-    ck_assert_msg(sizeof(c) == sizeof(m) + crypto_box_MACBYTES * sizeof(unsigned char),
-                  "cyphertext should be crypto_box_MACBYTES bytes longer than plaintext");
+    ck_assert_msg(sizeof(c) == sizeof(m) + CRYPTO_MAC_SIZE * sizeof(unsigned char),
+                  "cyphertext should be CRYPTO_MAC_SIZE bytes longer than plaintext");
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
-    clen = encrypt_data(bobpk, alicesk, nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
+    clen = encrypt_data(bobpk, alicesk, test_nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
 
     ck_assert_msg(memcmp(test_c, c, sizeof(c)) == 0, "cyphertext doesn't match test vector");
     ck_assert_msg(clen == sizeof(c) / sizeof(unsigned char), "wrong ciphertext length");
 
-    mlen = decrypt_data(bobpk, alicesk, nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
+    mlen = decrypt_data(bobpk, alicesk, test_nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
 
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
@@ -110,74 +109,73 @@ END_TEST
 
 START_TEST(test_fast_known)
 {
-    unsigned char k[crypto_box_BEFORENMBYTES];
+    unsigned char k[CRYPTO_SHARED_KEY_SIZE];
     unsigned char c[147];
     unsigned char m[131];
-    int clen, mlen;
+    uint16_t clen, mlen;
 
     encrypt_precompute(bobpk, alicesk, k);
 
-    ck_assert_msg(sizeof(c) == sizeof(m) + crypto_box_MACBYTES * sizeof(unsigned char),
-                  "cyphertext should be crypto_box_MACBYTES bytes longer than plaintext");
+    ck_assert_msg(sizeof(c) == sizeof(m) + CRYPTO_MAC_SIZE * sizeof(unsigned char),
+                  "cyphertext should be CRYPTO_MAC_SIZE bytes longer than plaintext");
     ck_assert_msg(sizeof(test_c) == sizeof(c), "sanity check failed");
     ck_assert_msg(sizeof(test_m) == sizeof(m), "sanity check failed");
 
-    clen = encrypt_data_symmetric(k, nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
+    clen = encrypt_data_symmetric(k, test_nonce, test_m, sizeof(test_m) / sizeof(unsigned char), c);
 
     ck_assert_msg(memcmp(test_c, c, sizeof(c)) == 0, "cyphertext doesn't match test vector");
     ck_assert_msg(clen == sizeof(c) / sizeof(unsigned char), "wrong ciphertext length");
 
-    mlen = decrypt_data_symmetric(k, nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
+    mlen = decrypt_data_symmetric(k, test_nonce, test_c, sizeof(test_c) / sizeof(unsigned char), m);
 
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
-
 }
 END_TEST
 
 START_TEST(test_endtoend)
 {
-    unsigned char pk1[crypto_box_PUBLICKEYBYTES];
-    unsigned char sk1[crypto_box_SECRETKEYBYTES];
-    unsigned char pk2[crypto_box_PUBLICKEYBYTES];
-    unsigned char sk2[crypto_box_SECRETKEYBYTES];
-    unsigned char k1[crypto_box_BEFORENMBYTES];
-    unsigned char k2[crypto_box_BEFORENMBYTES];
+    unsigned char pk1[CRYPTO_PUBLIC_KEY_SIZE];
+    unsigned char sk1[CRYPTO_SECRET_KEY_SIZE];
+    unsigned char pk2[CRYPTO_PUBLIC_KEY_SIZE];
+    unsigned char sk2[CRYPTO_SECRET_KEY_SIZE];
+    unsigned char k1[CRYPTO_SHARED_KEY_SIZE];
+    unsigned char k2[CRYPTO_SHARED_KEY_SIZE];
 
-    unsigned char n[crypto_box_NONCEBYTES];
+    unsigned char n[CRYPTO_NONCE_SIZE];
 
     unsigned char m[500];
-    unsigned char c1[sizeof(m) + crypto_box_MACBYTES];
-    unsigned char c2[sizeof(m) + crypto_box_MACBYTES];
-    unsigned char c3[sizeof(m) + crypto_box_MACBYTES];
-    unsigned char c4[sizeof(m) + crypto_box_MACBYTES];
+    unsigned char c1[sizeof(m) + CRYPTO_MAC_SIZE];
+    unsigned char c2[sizeof(m) + CRYPTO_MAC_SIZE];
+    unsigned char c3[sizeof(m) + CRYPTO_MAC_SIZE];
+    unsigned char c4[sizeof(m) + CRYPTO_MAC_SIZE];
     unsigned char m1[sizeof(m)];
     unsigned char m2[sizeof(m)];
     unsigned char m3[sizeof(m)];
     unsigned char m4[sizeof(m)];
 
-    int mlen;
-    int c1len, c2len, c3len, c4len;
-    int m1len, m2len, m3len, m4len;
+    uint16_t mlen;
+    uint16_t c1len, c2len, c3len, c4len;
+    uint16_t m1len, m2len, m3len, m4len;
 
-    int testno;
+    uint8_t testno;
 
     // Test 100 random messages and keypairs
     for (testno = 0; testno < 100; testno++) {
         //Generate random message (random length from 100 to 500)
-        mlen = (rand() % 400) + 100;
+        mlen = (random_u32() % 400) + 100;
         rand_bytes(m, mlen);
-        rand_bytes(n, crypto_box_NONCEBYTES);
+        rand_bytes(n, CRYPTO_NONCE_SIZE);
 
         //Generate keypairs
-        crypto_box_keypair(pk1, sk1);
-        crypto_box_keypair(pk2, sk2);
+        crypto_new_keypair(pk1, sk1);
+        crypto_new_keypair(pk2, sk2);
 
         //Precompute shared keys
         encrypt_precompute(pk2, sk1, k1);
         encrypt_precompute(pk1, sk2, k2);
 
-        ck_assert_msg(memcmp(k1, k2, crypto_box_BEFORENMBYTES) == 0, "encrypt_precompute: bad");
+        ck_assert_msg(memcmp(k1, k2, CRYPTO_SHARED_KEY_SIZE) == 0, "encrypt_precompute: bad");
 
         //Encrypt all four ways
         c1len = encrypt_data(pk2, sk1, n, m, mlen, c1);
@@ -186,7 +184,7 @@ START_TEST(test_endtoend)
         c4len = encrypt_data_symmetric(k2, n, m, mlen, c4);
 
         ck_assert_msg(c1len == c2len && c1len == c3len && c1len == c4len, "cyphertext lengths differ");
-        ck_assert_msg(c1len == mlen + (int)crypto_box_MACBYTES, "wrong cyphertext length");
+        ck_assert_msg(c1len == mlen + (uint16_t)CRYPTO_MAC_SIZE, "wrong cyphertext length");
         ck_assert_msg(memcmp(c1, c2, c1len) == 0 && memcmp(c1, c3, c1len) == 0
                       && memcmp(c1, c4, c1len) == 0, "crypertexts differ");
 
@@ -207,33 +205,33 @@ END_TEST
 
 START_TEST(test_large_data)
 {
-    unsigned char k[crypto_box_BEFORENMBYTES];
+    unsigned char k[CRYPTO_SHARED_KEY_SIZE];
 
-    unsigned char n[crypto_box_NONCEBYTES];
+    unsigned char n[CRYPTO_NONCE_SIZE];
 
-    unsigned char m1[MAX_CRYPTO_PACKET_SIZE - crypto_box_MACBYTES];
-    unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
+    unsigned char m1[MAX_CRYPTO_PACKET_SIZE - CRYPTO_MAC_SIZE];
+    unsigned char c1[sizeof(m1) + CRYPTO_MAC_SIZE];
     unsigned char m1prime[sizeof(m1)];
 
     unsigned char m2[MAX_CRYPTO_PACKET_SIZE];
-    unsigned char c2[sizeof(m2) + crypto_box_MACBYTES];
+    unsigned char c2[sizeof(m2) + CRYPTO_MAC_SIZE];
 
-    int c1len, c2len;
-    int m1plen;
+    uint16_t c1len, c2len;
+    uint16_t m1plen;
 
     //Generate random messages
     rand_bytes(m1, sizeof(m1));
     rand_bytes(m2, sizeof(m2));
-    rand_bytes(n, crypto_box_NONCEBYTES);
+    rand_bytes(n, CRYPTO_NONCE_SIZE);
 
     //Generate key
-    rand_bytes(k, crypto_box_BEFORENMBYTES);
+    rand_bytes(k, CRYPTO_SHARED_KEY_SIZE);
 
     c1len = encrypt_data_symmetric(k, n, m1, sizeof(m1), c1);
     c2len = encrypt_data_symmetric(k, n, m2, sizeof(m2), c2);
 
-    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt");
-    ck_assert_msg(c2len == sizeof(m2) + crypto_box_MACBYTES, "could not encrypt");
+    ck_assert_msg(c1len == sizeof(m1) + CRYPTO_MAC_SIZE, "could not encrypt");
+    ck_assert_msg(c2len == sizeof(m2) + CRYPTO_MAC_SIZE, "could not encrypt");
 
     m1plen = decrypt_data_symmetric(k, n, c1, c1len, m1prime);
 
@@ -244,26 +242,26 @@ END_TEST
 
 START_TEST(test_large_data_symmetric)
 {
-    unsigned char k[crypto_box_KEYBYTES];
+    unsigned char k[CRYPTO_SYMMETRIC_KEY_SIZE];
 
-    unsigned char n[crypto_box_NONCEBYTES];
+    unsigned char n[CRYPTO_NONCE_SIZE];
 
     unsigned char m1[16 * 16 * 16];
-    unsigned char c1[sizeof(m1) + crypto_box_MACBYTES];
+    unsigned char c1[sizeof(m1) + CRYPTO_MAC_SIZE];
     unsigned char m1prime[sizeof(m1)];
 
-    int c1len;
-    int m1plen;
+    uint16_t c1len;
+    uint16_t m1plen;
 
     //Generate random messages
     rand_bytes(m1, sizeof(m1));
-    rand_bytes(n, crypto_box_NONCEBYTES);
+    rand_bytes(n, CRYPTO_NONCE_SIZE);
 
     //Generate key
     new_symmetric_key(k);
 
     c1len = encrypt_data_symmetric(k, n, m1, sizeof(m1), c1);
-    ck_assert_msg(c1len == sizeof(m1) + crypto_box_MACBYTES, "could not encrypt data");
+    ck_assert_msg(c1len == sizeof(m1) + CRYPTO_MAC_SIZE, "could not encrypt data");
 
     m1plen = decrypt_data_symmetric(k, n, c1, c1len, m1prime);
 
@@ -272,57 +270,71 @@ START_TEST(test_large_data_symmetric)
 }
 END_TEST
 
-void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
+static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
 {
     uint32_t num1, num2;
-    memcpy(&num1, nonce + (crypto_box_NONCEBYTES - sizeof(num1)), sizeof(num1));
-    num1 = ntohl(num1);
+    memcpy(&num1, nonce + (CRYPTO_NONCE_SIZE - sizeof(num1)), sizeof(num1));
+    num1 = net_ntohl(num1);
     num2 = num + num1;
 
     if (num2 < num1) {
-        uint32_t i;
-
-        for (i = crypto_box_NONCEBYTES - sizeof(num1); i != 0; --i) {
+        for (uint16_t i = CRYPTO_NONCE_SIZE - sizeof(num1); i != 0; --i) {
             ++nonce[i - 1];
 
-            if (nonce[i - 1] != 0)
+            if (nonce[i - 1] != 0) {
                 break;
+            }
         }
     }
 
-    num2 = htonl(num2);
-    memcpy(nonce + (crypto_box_NONCEBYTES - sizeof(num2)), &num2, sizeof(num2));
+    num2 = net_htonl(num2);
+    memcpy(nonce + (CRYPTO_NONCE_SIZE - sizeof(num2)), &num2, sizeof(num2));
 }
 
 START_TEST(test_increment_nonce)
 {
-    long long unsigned int i;
+    uint32_t i;
 
-    uint8_t n[crypto_box_NONCEBYTES];
+    uint8_t n[CRYPTO_NONCE_SIZE];
 
-    for (i = 0; i < crypto_box_NONCEBYTES; ++i)
-        n[i] = rand();
+    for (i = 0; i < CRYPTO_NONCE_SIZE; ++i) {
+        n[i] = random_u08();
+    }
 
-    uint8_t n1[crypto_box_NONCEBYTES];
+    uint8_t n1[CRYPTO_NONCE_SIZE];
 
-    memcpy(n1, n, crypto_box_NONCEBYTES);
+    memcpy(n1, n, CRYPTO_NONCE_SIZE);
 
     for (i = 0; i < (1 << 18); ++i) {
         increment_nonce_number_cmp(n, 1);
         increment_nonce(n1);
-        ck_assert_msg(memcmp(n, n1, crypto_box_NONCEBYTES) == 0, "Bad increment_nonce function");
+        ck_assert_msg(memcmp(n, n1, CRYPTO_NONCE_SIZE) == 0, "Bad increment_nonce function");
     }
 
     for (i = 0; i < (1 << 18); ++i) {
-        uint32_t r = rand();
+        const uint32_t r = random_u32();
         increment_nonce_number_cmp(n, r);
         increment_nonce_number(n1, r);
-        ck_assert_msg(memcmp(n, n1, crypto_box_NONCEBYTES) == 0, "Bad increment_nonce_number function");
+        ck_assert_msg(memcmp(n, n1, CRYPTO_NONCE_SIZE) == 0, "Bad increment_nonce_number function");
     }
 }
 END_TEST
 
-Suite *crypto_suite(void)
+START_TEST(test_memzero)
+{
+    uint8_t src[sizeof(test_c)];
+    memcpy(src, test_c, sizeof(test_c));
+
+    crypto_memzero(src, sizeof(src));
+    size_t i;
+
+    for (i = 0; i < sizeof(src); i++) {
+        ck_assert_msg(src[i] == 0, "Memory is not zeroed");
+    }
+}
+END_TEST
+
+static Suite *crypto_suite(void)
 {
     Suite *s = suite_create("Crypto");
 
@@ -332,17 +344,18 @@ Suite *crypto_suite(void)
     DEFTESTCASE(large_data);
     DEFTESTCASE(large_data_symmetric);
     DEFTESTCASE_SLOW(increment_nonce, 20);
+    DEFTESTCASE(memzero);
 
     return s;
 }
 
-int main(int argc, char *argv[])
+int main(void)
 {
-    srand((unsigned int) time(NULL));
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
     Suite *crypto = crypto_suite();
     SRunner *test_runner = srunner_create(crypto);
-    int number_failed = 0;
+    uint8_t number_failed = 0;
 
     srunner_run_all(test_runner, CK_NORMAL);
     number_failed = srunner_ntests_failed(test_runner);

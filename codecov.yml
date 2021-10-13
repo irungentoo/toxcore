@@ -1,0 +1,13 @@
+---
+coverage:
+  precision: 2
+  round: down
+  range: "80...100"
+
+  status:
+    project:
+      default:
+        # Allow coverage to fluctuate 2% up and down. We can never go below 80%
+        # because of the above range, but toxcore coverage fluctuates a lot due
+        # to low coverage of error paths that sometimes happen.
+        threshold: 2%

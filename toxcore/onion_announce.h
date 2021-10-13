@@ -1,67 +1,41 @@
-/*
-* onion_announce.h -- Implementation of the announce part of docs/Prevent_Tracking.txt
-*
-*  Copyright (C) 2013 Tox project All Rights Reserved.
-*
-*  This file is part of Tox.
-*
-*  Tox is free software: you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation, either version 3 of the License, or
-*  (at your option) any later version.
-*
-*  Tox is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  You should have received a copy of the GNU General Public License
-*  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
-*
-*/
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2013 Tox project.
+ */
 
-#ifndef ONION_ANNOUNCE_H
-#define ONION_ANNOUNCE_H
+/*
+ * Implementation of the announce part of docs/Prevent_Tracking.txt
+ */
+#ifndef C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
+#define C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
 
 #include "onion.h"
 
 #define ONION_ANNOUNCE_MAX_ENTRIES 160
 #define ONION_ANNOUNCE_TIMEOUT 300
-#define ONION_PING_ID_SIZE crypto_hash_sha256_BYTES
+#define ONION_PING_ID_SIZE CRYPTO_SHA256_SIZE
 
 #define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (sizeof(uint64_t))
 
-#define ONION_ANNOUNCE_REQUEST_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + ONION_PING_ID_SIZE + crypto_box_PUBLICKEYBYTES + crypto_box_PUBLICKEYBYTES + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_MACBYTES)
+#define ONION_ANNOUNCE_REQUEST_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_MAC_SIZE)
 
-#define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + crypto_box_NONCEBYTES + 1 + ONION_PING_ID_SIZE + crypto_box_MACBYTES)
+#define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE + 1 + ONION_PING_ID_SIZE + CRYPTO_MAC_SIZE)
 #define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
 
-#define ONION_DATA_RESPONSE_MIN_SIZE (1 + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define ONION_DATA_RESPONSE_MIN_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 
-#if ONION_PING_ID_SIZE != crypto_box_PUBLICKEYBYTES
-#error announce response packets assume that ONION_PING_ID_SIZE is equal to crypto_box_PUBLICKEYBYTES
+#if ONION_PING_ID_SIZE != CRYPTO_PUBLIC_KEY_SIZE
+#error "announce response packets assume that ONION_PING_ID_SIZE is equal to CRYPTO_PUBLIC_KEY_SIZE"
 #endif
 
-#define ONION_DATA_REQUEST_MIN_SIZE (1 + crypto_box_PUBLICKEYBYTES + crypto_box_NONCEBYTES + crypto_box_PUBLICKEYBYTES + crypto_box_MACBYTES)
+#define ONION_DATA_REQUEST_MIN_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 #define MAX_DATA_REQUEST_SIZE (ONION_MAX_DATA_SIZE - ONION_DATA_REQUEST_MIN_SIZE)
 
-typedef struct {
-    uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-    IP_Port ret_ip_port;
-    uint8_t ret[ONION_RETURN_3];
-    uint8_t data_public_key[crypto_box_PUBLICKEYBYTES];
-    uint64_t time;
-} Onion_Announce_Entry;
+typedef struct Onion_Announce Onion_Announce;
 
-typedef struct {
-    DHT     *dht;
-    Networking_Core *net;
-    Onion_Announce_Entry entries[ONION_ANNOUNCE_MAX_ENTRIES];
-    /* This is crypto_box_KEYBYTES long just so we can use new_symmetric_key() to fill it */
-    uint8_t secret_bytes[crypto_box_KEYBYTES];
-
-    Shared_Keys shared_keys_recv;
-} Onion_Announce;
+/* These two are not public; they are for tests only! */
+uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry);
+void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t time);
 
 /* Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
  *
@@ -131,7 +105,7 @@ int send_data_request(Networking_Core *net, const Onion_Path *path, IP_Port dest
                       const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length);
 
 
-Onion_Announce *new_onion_announce(DHT *dht);
+Onion_Announce *new_onion_announce(Mono_Time *mono_time, DHT *dht);
 
 void kill_onion_announce(Onion_Announce *onion_a);
 

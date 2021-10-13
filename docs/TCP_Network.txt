@@ -23,7 +23,7 @@ public key.
 
 4. Bob receives an onion packet from Alice telling him which nodes she is 
 connected to. Bob connects to these nodes and establishes a routed connection 
-with alice using that temporary public key.
+with Alice using that temporary public key.
 
 5. That connection is used by both to transmit encrypted Messenger and A/V 
 packets.

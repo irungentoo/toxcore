@@ -1,3 +1,6 @@
+#ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_H
+#define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -86,6 +89,8 @@ int crypto_pwhash_scryptsalsa208sha256_ll(const uint8_t * passwd, size_t passwdl
 #define crypto_pwhash_scryptxsalsa208sha256 crypto_pwhash_scryptsalsa208sha256
 #define crypto_pwhash_scryptxsalsa208sha256_str crypto_pwhash_scryptsalsa208sha256_str
 #define crypto_pwhash_scryptxsalsa208sha256_str_verify crypto_pwhash_scryptsalsa208sha256_str_verify
+
+#endif
 
 #endif
 

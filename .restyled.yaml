@@ -1,0 +1,19 @@
+---
+exclude:
+  - "**/*.api.h"
+  - "toxencryptsave/crypto_pwhash_scryptsalsa208sha256/**/*"
+
+restylers:
+  - astyle:
+      arguments: ["--options=other/astyle/astylerc"]
+  - autopep8
+  - black
+  - clang-format:
+      arguments: ["-style={BasedOnStyle: Google, ColumnLimit: 100}"]
+      include:
+        - "**/*.cc"
+  - prettier-yaml
+  - reorder-python-imports
+  - shellharden
+  - shfmt
+  - yapf

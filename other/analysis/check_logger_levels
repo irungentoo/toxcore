@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Make sure that logger levels in toxcore/logger.h, CMakeLists.txt and
+# configure.ac stay in sync.
+
+set -ex
+
+TMP_DIR="$(mktemp -d)"
+
+# ^\s+LOGGER_LEVEL_(\w+),?$
+sed -n 's/^\s\+LOGGER_LEVEL_\(\w\+\),\?$/\1/p' toxcore/logger.h > "${TMP_DIR}/logger.h"
+# ^.*\$\{MIN_LOGGER_LEVEL\}" STREQUAL "(\w+)".*$
+sed -n 's/^.*\${MIN_LOGGER_LEVEL}\" STREQUAL \"\(\w\+\)\".*$/\1/p' CMakeLists.txt > "${TMP_DIR}/CMakeLists.txt"
+# ^.*LOGGER_LEVEL_(\w+).*$
+sed -n 's/^.*LOGGER_LEVEL_\(\w\+\).*$/\1/p' configure.ac > "${TMP_DIR}/configure.ac"
+
+diff -u "${TMP_DIR}/CMakeLists.txt" "${TMP_DIR}/logger.h"
+diff -u "${TMP_DIR}/configure.ac" "${TMP_DIR}/logger.h"

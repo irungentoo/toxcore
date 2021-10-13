@@ -1,3 +1,6 @@
+#ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_EXPORT_H
+#define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_EXPORT_H
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -31,6 +34,8 @@
 #   define SODIUM_EXPORT __attribute__ ((visibility ("default")))
 #  endif
 # endif
+#endif
+
 #endif
 
 #endif

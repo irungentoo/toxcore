@@ -1,0 +1,39 @@
+load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+
+cc_library(
+    name = "check_compat",
+    testonly = True,
+    hdrs = ["check_compat.h"],
+)
+
+cc_library(
+    name = "run_auto_test",
+    testonly = True,
+    hdrs = ["run_auto_test.h"],
+)
+
+flaky_tests = {
+    "crypto_core_test": True,
+    "lan_discovery_test": True,
+}
+
+[cc_test(
+    name = src[:-2],
+    size = "small",
+    srcs = [src],
+    args = ["$(location %s)" % src],
+    data = glob(["data/*"]),
+    flaky = flaky_tests.get(
+        src[:-2],
+        False,
+    ),
+    deps = [
+        ":check_compat",
+        ":run_auto_test",
+        "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxav",
+        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:DHT_srcs",
+        "//c-toxcore/toxencryptsave",
+    ],
+) for src in glob(["*_test.c"])]

@@ -1,58 +1,90 @@
-sudo: required
-dist: trusty
+---
+# For Pull Requests, we build only the first three jobs: autotools on Linux,
+# cmake on Linux, and cmake on Windows 32 bit.
+#
+# For branch builds and cron builds (once a day), we build all the jobs. This is
+# achieved using the "if: type IN (push, api, cron)" fields in the jobs list.
+
 language: c
-compiler:
-  - gcc
-  - clang
+dist: xenial
+os: linux
 
-before_script:
-  - sudo add-apt-repository ppa:avsm/ocaml42+opam12 -y
-  - sudo apt-get update -qq
-  - sudo apt-get install ocaml opam astyle -qq
-  - sudo apt-get install libconfig-dev libvpx-dev libopus-dev check -qq
-  # build apidsl
-  - git clone https://github.com/iphydf/apidsl
-  - cd apidsl
-  - export OPAMYES=1
-  - opam init
-  - opam install ocamlfind ppx_deriving menhir
-  - eval `opam config env`
-  - make -j3
-  - cd ..
-  # install sodium, as it's not in Ubuntu Trusty
-  - git clone git://github.com/jedisct1/libsodium.git
-  - cd libsodium
-  - git checkout tags/1.0.8
-  - ./autogen.sh
-  - ./configure
-  - make -j3
-  - sudo make install
-  - cd ..
-  - sudo ldconfig
+jobs:
+  include:
+    - stage: "Stage 1"
+      env: JOB=cmake-linux
+      compiler: gcc
+      addons:
+        apt:
+          packages:
+            - libconfig-dev          # For tox-bootstrapd.
+            - libopus-dev            # For toxav.
+            - libsodium-dev          # For toxcore.
+            - libgtest-dev           # For unit tests.
+            - libvpx-dev             # For toxav.
+            - ninja-build
+            - pylint3
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+      after_script:  .travis/upload-coverage
+    - stage: "Stage 1"
+      env: JOB=autotools-linux
+      compiler: clang
+      addons:
+        apt:
+          packages:
+            - libconfig-dev         # For tox-bootstrapd.
+            - libopus-dev           # For toxav.
+            - libvpx-dev            # For toxav.
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 1"
+      env: JOB=tox-bootstrapd-docker
+      services: [docker]
+      script:        .travis/$JOB
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-win32
+      services: [docker]
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-win64
+      services: [docker]
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-freebsd
+      install:       .travis/$JOB-stage1 install
+      script:        .travis/$JOB-stage1 script
+    - stage: "Stage 1"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-osx
+      os: osx
+      install:       .travis/$JOB install
+      script:        .travis/$JOB script
+    - stage: "Stage 2"
+      if: type IN (push, api, cron)
+      env: JOB=cmake-freebsd
+      install:       .travis/$JOB-stage2 install
+      script:        .travis/$JOB-stage2 script
+  fast_finish: true
 
-script:
-  # check if toxcore.h and toxav.h match apidsl tox.in.h and toxav.in.h
-  # tox.h
-  - ./apidsl/_build/apigen.native ./other/apidsl/tox.in.h > tox.h
-  - astyle --options=./other/astyle/astylerc tox.h
-  - diff -u tox.h ./toxcore/tox.h
-  # toxav.h
-  - ./apidsl/_build/apigen.native ./other/apidsl/toxav.in.h > toxav.h
-  - astyle --options=./other/astyle/astylerc toxav.h
-  - diff -u toxav.h ./toxav/toxav.h
-  # build toxcore and run tests
-  - ./autogen.sh
-  - CFLAGS="-Ofast -Wall -Wextra" ./configure --enable-daemon --enable-ntox
-  - make
-  - make check
-  - cat build/test-suite.log
-  - make dist
+cache:
+  directories:
+    - $HOME/cache
+    - /opt/freebsd/cache
 
 notifications:
-  email: false
-
   irc:
     channels:
-      - "chat.freenode.net#tox-dev"
-    on_success: always
-    on_failure: always
+      - "chat.freenode.net#toktok-status"
+    template:
+      - "%{result} %{repository_name} %{build_url}"
+      - "#%{build_number} changes: %{compare_url}"
+
+# Only build pull requests and releases, don't build master on pushes,
+# except through api or cron.
+if: type IN (pull_request, api, cron) OR tag IS present

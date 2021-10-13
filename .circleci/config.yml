@@ -1,0 +1,43 @@
+---
+version: 2
+
+workflows:
+  version: 2
+  clang-sanitizers:
+    jobs:
+      - asan
+      - tsan
+
+jobs:
+  asan:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - checkout
+      - run: &apt_install
+          apt-get update &&
+          DEBIAN_FRONTEND=noninteractive
+          apt-get install -y --no-install-recommends
+            clang
+            cmake
+            libconfig-dev
+            libgtest-dev
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+            llvm-dev
+            ninja-build
+            pkg-config
+      - run: CC=clang .circleci/cmake-asan
+
+  tsan:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - checkout
+      - run: *apt_install
+      - run: CC=clang .circleci/cmake-tsan

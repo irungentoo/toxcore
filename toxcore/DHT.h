@@ -1,32 +1,21 @@
-/* DHT.h
- *
- * An implementation of the DHT as seen in docs/updates/DHT.md
- *
- *  Copyright (C) 2013 Tox project All Rights Reserved.
- *
- *  This file is part of Tox.
- *
- *  Tox is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  Tox is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Tox.  If not, see <http://www.gnu.org/licenses/>.
- *
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2018 The TokTok team.
+ * Copyright © 2013 Tox project.
  */
 
-#ifndef DHT_H
-#define DHT_H
+/*
+ * An implementation of the DHT as seen in docs/updates/DHT.md
+ */
+#ifndef C_TOXCORE_TOXCORE_DHT_H
+#define C_TOXCORE_TOXCORE_DHT_H
 
 #include "crypto_core.h"
+#include "logger.h"
+#include "mono_time.h"
 #include "network.h"
 #include "ping_array.h"
+
+#include <stdbool.h>
 
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
@@ -56,45 +45,60 @@
 #define PING_ROUNDTRIP 2
 #define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP))
 
-/* Redefinitions of variables for safe transfer over wire. */
-#define TOX_AF_INET 2
-#define TOX_AF_INET6 10
-#define TOX_TCP_INET 130
-#define TOX_TCP_INET6 138
-
 /* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 2
 
-/* Functions to transfer ips safely across wire. */
-void to_net_family(IP *ip);
+#define MAX_CRYPTO_REQUEST_SIZE 1024
 
-/* return 0 on success, -1 on failure. */
-int to_host_family(IP *ip);
+#define CRYPTO_PACKET_FRIEND_REQ    32  // Friend request crypto packet ID.
+#define CRYPTO_PACKET_HARDENING     48  // Hardening crypto packet ID.
+#define CRYPTO_PACKET_DHTPK         156
+#define CRYPTO_PACKET_NAT_PING      254 // NAT ping crypto packet ID.
 
-typedef struct {
+/* Create a request to peer.
+ * send_public_key and send_secret_key are the pub/secret keys of the sender.
+ * recv_public_key is public key of receiver.
+ * packet must be an array of MAX_CRYPTO_REQUEST_SIZE big.
+ * Data represents the data we send with the request with length being the length of the data.
+ * request_id is the id of the request (32 = friend request, 254 = ping request).
+ *
+ * return -1 on failure.
+ * return the length of the created packet on success.
+ */
+int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id);
+
+/* puts the senders public key in the request in public_key, the data from the request
+ * in data if a friend or ping request was sent to us and returns the length of the data.
+ * packet is the request packet and length is its length
+ * return -1 if not valid request. */
+int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
+                   uint8_t *request_id, const uint8_t *packet, uint16_t length);
+
+typedef struct IPPTs {
     IP_Port     ip_port;
     uint64_t    timestamp;
 } IPPTs;
 
-typedef struct {
+typedef struct Hardening {
     /* Node routes request correctly (true (1) or false/didn't check (0)) */
     uint8_t     routes_requests_ok;
     /* Time which we last checked this.*/
     uint64_t    routes_requests_timestamp;
-    uint8_t     routes_requests_pingedid[crypto_box_PUBLICKEYBYTES];
+    uint8_t     routes_requests_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
     /* Node sends correct send_node (true (1) or false/didn't check (0)) */
     uint8_t     send_nodes_ok;
     /* Time which we last checked this.*/
     uint64_t    send_nodes_timestamp;
-    uint8_t     send_nodes_pingedid[crypto_box_PUBLICKEYBYTES];
+    uint8_t     send_nodes_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
     /* Node can be used to test other nodes (true (1) or false/didn't check (0)) */
     uint8_t     testing_requests;
     /* Time which we last checked this.*/
     uint64_t    testing_timestamp;
-    uint8_t     testing_pingedid[crypto_box_PUBLICKEYBYTES];
+    uint8_t     testing_pingedid[CRYPTO_PUBLIC_KEY_SIZE];
 } Hardening;
 
-typedef struct {
+typedef struct IPPTsPng {
     IP_Port     ip_port;
     uint64_t    timestamp;
     uint64_t    last_pinged;
@@ -105,15 +109,15 @@ typedef struct {
     uint64_t    ret_timestamp;
 } IPPTsPng;
 
-typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+typedef struct Client_data {
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IPPTsPng    assoc4;
     IPPTsPng    assoc6;
 } Client_data;
 
 /*----------------------------------------------------------------------------------*/
 
-typedef struct {
+typedef struct NAT {
     /* 1 if currently hole punching, otherwise 0 */
     uint8_t     hole_punching;
     uint32_t    punching_index;
@@ -121,46 +125,41 @@ typedef struct {
     uint32_t    punching_index2;
 
     uint64_t    punching_timestamp;
-    uint64_t    recvNATping_timestamp;
-    uint64_t    NATping_id;
-    uint64_t    NATping_timestamp;
+    uint64_t    recv_nat_ping_timestamp;
+    uint64_t    nat_ping_id;
+    uint64_t    nat_ping_timestamp;
 } NAT;
 
 #define DHT_FRIEND_MAX_LOCKS 32
 
-typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
+typedef struct Node_format {
+    uint8_t     public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port     ip_port;
-}
-Node_format;
+} Node_format;
 
-typedef struct {
-    uint8_t     public_key[crypto_box_PUBLICKEYBYTES];
-    Client_data client_list[MAX_FRIEND_CLIENTS];
+typedef struct DHT_Friend DHT_Friend;
 
-    /* Time at which the last get_nodes request was sent. */
-    uint64_t    lastgetnode;
-    /* number of times get_node packets were sent. */
-    uint32_t    bootstrap_times;
-
-    /* Symetric NAT hole punching stuff. */
-    NAT         nat;
-
-    uint16_t lock_count;
-    struct {
-        void (*ip_callback)(void *, int32_t, IP_Port);
-        void *data;
-        int32_t number;
-    } callbacks[DHT_FRIEND_MAX_LOCKS];
-
-    Node_format to_bootstrap[MAX_SENT_NODES];
-    unsigned int num_to_bootstrap;
-} DHT_Friend;
+const uint8_t *dht_friend_public_key(const DHT_Friend *dht_friend);
+const Client_data *dht_friend_client(const DHT_Friend *dht_friend, size_t index);
 
 /* Return packet size of packed node with ip_family on success.
  * Return -1 on failure.
  */
-int packed_node_size(uint8_t ip_family);
+int packed_node_size(Family ip_family);
+
+/* Packs an IP_Port structure into data of max size length.
+ *
+ * Returns size of packed IP_Port data on success
+ * Return -1 on failure.
+ */
+int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port);
+
+/* Unpack IP_Port structure from data of max size length into ip_port.
+ *
+ * Return size of unpacked ip_port on success.
+ * Return -1 on failure.
+ */
+int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool tcp_enabled);
 
 /* Pack number of nodes into data of maxlength length.
  *
@@ -177,127 +176,106 @@ int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_
  * return -1 on failure.
  */
 int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed_data_len, const uint8_t *data,
-                 uint16_t length, uint8_t tcp_enabled);
+                 uint16_t length, bool tcp_enabled);
 
 
 /*----------------------------------------------------------------------------------*/
 /* struct to store some shared keys so we don't have to regenerate them for each request. */
 #define MAX_KEYS_PER_SLOT 4
 #define KEYS_TIMEOUT 600
-typedef struct {
-    struct {
-        uint8_t public_key[crypto_box_PUBLICKEYBYTES];
-        uint8_t shared_key[crypto_box_BEFORENMBYTES];
-        uint32_t times_requested;
-        uint8_t  stored; /* 0 if not, 1 if is */
-        uint64_t time_last_requested;
-    } keys[256 * MAX_KEYS_PER_SLOT];
+
+typedef struct Shared_Key {
+    uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
+    uint32_t times_requested;
+    bool stored;
+    uint64_t time_last_requested;
+} Shared_Key;
+
+typedef struct Shared_Keys {
+    Shared_Key keys[256 * MAX_KEYS_PER_SLOT];
 } Shared_Keys;
 
 /*----------------------------------------------------------------------------------*/
 
-typedef int (*cryptopacket_handler_callback)(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
-        const uint8_t *data, uint16_t len);
+typedef int cryptopacket_handler_cb(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
+                                    const uint8_t *data, uint16_t len, void *userdata);
 
-typedef struct {
-    cryptopacket_handler_callback function;
-    void *object;
-} Cryptopacket_Handles;
+#define DHT_DEFINED
+typedef struct DHT DHT;
 
-typedef struct {
-    Networking_Core *net;
+const uint8_t *dht_get_self_public_key(const DHT *dht);
+const uint8_t *dht_get_self_secret_key(const DHT *dht);
+void dht_set_self_public_key(DHT *dht, const uint8_t *key);
+void dht_set_self_secret_key(DHT *dht, const uint8_t *key);
 
-    Client_data    close_clientlist[LCLIENT_LIST];
-    uint64_t       close_lastgetnodes;
-    uint32_t       close_bootstrap_times;
+Networking_Core *dht_get_net(const DHT *dht);
+struct Ping *dht_get_ping(const DHT *dht);
+const Client_data *dht_get_close_clientlist(const DHT *dht);
+const Client_data *dht_get_close_client(const DHT *dht, uint32_t client_num);
+uint16_t dht_get_num_friends(const DHT *dht);
 
-    /* Note: this key should not be/is not used to transmit any sensitive materials */
-    uint8_t      secret_symmetric_key[crypto_box_KEYBYTES];
-    /* DHT keypair */
-    uint8_t self_public_key[crypto_box_PUBLICKEYBYTES];
-    uint8_t self_secret_key[crypto_box_SECRETKEYBYTES];
+DHT_Friend *dht_get_friend(DHT *dht, uint32_t friend_num);
+const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num);
 
-    DHT_Friend    *friends_list;
-    uint16_t       num_friends;
-
-    Node_format   *loaded_nodes_list;
-    uint32_t       loaded_num_nodes;
-    unsigned int   loaded_nodes_index;
-
-    Shared_Keys shared_keys_recv;
-    Shared_Keys shared_keys_sent;
-
-    struct PING   *ping;
-    Ping_Array    dht_ping_array;
-    Ping_Array    dht_harden_ping_array;
-#ifdef ENABLE_ASSOC_DHT
-    struct Assoc  *assoc;
-#endif
-    uint64_t       last_run;
-
-    Cryptopacket_Handles cryptopackethandlers[256];
-
-    Node_format to_bootstrap[MAX_CLOSE_TO_BOOTSTRAP_NODES];
-    unsigned int num_to_bootstrap;
-} DHT;
 /*----------------------------------------------------------------------------------*/
 
-/* Shared key generations are costly, it is therefor smart to store commonly used
+/* Shared key generations are costly, it is therefore smart to store commonly used
  * ones so that they can re used later without being computed again.
  *
  * If shared key is already in shared_keys, copy it to shared_key.
  * else generate it into shared_key and copy it to shared_keys
  */
-void get_shared_key(Shared_Keys *shared_keys, uint8_t *shared_key, const uint8_t *secret_key,
-                    const uint8_t *public_key);
+void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
+                    const uint8_t *secret_key, const uint8_t *public_key);
 
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we receive.
  */
-void DHT_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
+void dht_get_shared_key_recv(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
 /* Copy shared_key to encrypt/decrypt DHT packet from public_key into shared_key
  * for packets that we send.
  */
-void DHT_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
+void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *public_key);
 
-void DHT_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
+void dht_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id);
+
+typedef void dht_ip_cb(void *object, int32_t number, IP_Port ip_port);
 
 /* Add a new friend to the friends list.
- * public_key must be crypto_box_PUBLICKEYBYTES bytes long.
+ * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *
  * ip_callback is the callback of a function that will be called when the ip address
  * is found along with arguments data and number.
  *
- * lock_count will be set to a non zero number that must be passed to DHT_delfriend()
+ * lock_count will be set to a non zero number that must be passed to dht_delfriend()
  * to properly remove the callback.
  *
  *  return 0 if success.
  *  return -1 if failure (friends list is full).
  */
-int DHT_addfriend(DHT *dht, const uint8_t *public_key, void (*ip_callback)(void *data, int32_t number, IP_Port),
+int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
                   void *data, int32_t number, uint16_t *lock_count);
 
 /* Delete a friend from the friends list.
- * public_key must be crypto_box_PUBLICKEYBYTES bytes long.
+ * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *
  *  return 0 if success.
  *  return -1 if failure (public_key not in friends list).
  */
-int DHT_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
+int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count);
 
 /* Get ip of friend.
- *  public_key must be crypto_box_PUBLICKEYBYTES bytes long.
+ *  public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
  *  ip must be 4 bytes long.
  *  port must be 2 bytes long.
- *
- * int DHT_getfriendip(DHT *dht, uint8_t *public_key, IP_Port *ip_port);
  *
  *  return -1, -- if public_key does NOT refer to a friend
  *  return  0, -- if public_key refers to a friend and we failed to find the friend (yet)
  *  return  1, ip if public_key refers to a friend and we found him
  */
-int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port);
+int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port);
 
 /* Compares pk1 and pk2 with pk.
  *
@@ -307,27 +285,30 @@ int DHT_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
  */
 int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 
-/* Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
+/**
+ * Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
+ *
+ * @return true iff the node was added to the list.
  */
-_Bool add_to_list(Node_format *nodes_list, unsigned int length, const uint8_t *pk, IP_Port ip_port,
-                  const uint8_t *cmp_pk);
+bool add_to_list(Node_format *nodes_list, uint32_t length, const uint8_t *pk, IP_Port ip_port,
+                 const uint8_t *cmp_pk);
 
 /* Return 1 if node can be added to close list, 0 if it can't.
  */
-_Bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port);
+bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port);
 
 /* Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
  *
  * sa_family = family (IPv4 or IPv6) (0 if we don't care)?
  * is_LAN = return some LAN ips (true or false)
- * want_good = do we want tested nodes or not? (TODO)
+ * want_good = do we want tested nodes or not? (TODO(irungentoo))
  *
  * return the number of nodes returned.
  *
  */
-int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, sa_family_t sa_family,
-                    uint8_t is_LAN, uint8_t want_good);
+int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *nodes_list, Family sa_family,
+                    bool is_LAN, uint8_t want_good);
 
 
 /* Put up to max_num nodes in nodes from the random friends.
@@ -343,7 +324,7 @@ uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num);
 
 /* Run this function at least a couple times per second (It's the main loop). */
-void do_DHT(DHT *dht);
+void do_dht(DHT *dht);
 
 /*
  *  Use these two functions to bootstrap the client.
@@ -351,7 +332,7 @@ void do_DHT(DHT *dht);
 /* Sends a "get nodes" request to the given node with ip, port and public_key
  *   to setup connections
  */
-void DHT_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+void dht_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 /* Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *
@@ -363,7 +344,7 @@ void DHT_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
  *  returns 1 if the address could be converted into an IP address
  *  returns 0 otherwise
  */
-int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, const uint8_t *public_key);
 
 /* Start sending packets after DHT loaded_friends_list and loaded_clients_list are set.
@@ -371,7 +352,7 @@ int DHT_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
  * returns 0 if successful
  * returns -1 otherwise
  */
-int DHT_connect_after_load(DHT *dht);
+int dht_connect_after_load(DHT *dht);
 
 /* ROUTING FUNCTIONS */
 
@@ -389,40 +370,39 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
 
 /* Function to handle crypto packets.
  */
-void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_callback cb, void *object);
+void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_cb *cb, void *object);
 
 /* SAVE/LOAD functions */
 
 /* Get the size of the DHT (for saving). */
-uint32_t DHT_size(const DHT *dht);
+uint32_t dht_size(const DHT *dht);
 
-/* Save the DHT in data where data is an array of size DHT_size(). */
-void DHT_save(DHT *dht, uint8_t *data);
+/* Save the DHT in data where data is an array of size dht_size(). */
+void dht_save(const DHT *dht, uint8_t *data);
 
 /* Load the DHT from data of size size.
  *
  *  return -1 if failure.
  *  return 0 if success.
  */
-int DHT_load(DHT *dht, const uint8_t *data, uint32_t length);
+int dht_load(DHT *dht, const uint8_t *data, uint32_t length);
 
 /* Initialize DHT. */
-DHT *new_DHT(Networking_Core *net);
+DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool holepunching_enabled);
 
-void kill_DHT(DHT *dht);
+void kill_dht(DHT *dht);
 
-/*  return 0 if we are not connected to the DHT.
- *  return 1 if we are.
+/*  return false if we are not connected to the DHT.
+ *  return true if we are.
  */
-int DHT_isconnected(const DHT *dht);
+bool dht_isconnected(const DHT *dht);
 
-/*  return 0 if we are not connected or only connected to lan peers with the DHT.
- *  return 1 if we are.
+/*  return false if we are not connected or only connected to lan peers with the DHT.
+ *  return true if we are.
  */
-int DHT_non_lan_connected(const DHT *dht);
+bool dht_non_lan_connected(const DHT *dht);
 
 
-int addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
 
 #endif
-

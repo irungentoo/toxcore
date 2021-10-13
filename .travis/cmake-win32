@@ -1,0 +1,7 @@
+#!/bin/bash
+
+i686=true
+x86_64=false
+WINDOWS_ARCH=win32
+
+. .travis/cmake-windows.sh
