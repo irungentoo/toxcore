@@ -2921,9 +2921,7 @@ bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool
 
         if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev4) > current_time) {
             *direct_connected = 1;
-        }
-
-        if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev6) > current_time) {
+        } else if ((UDP_DIRECT_TIMEOUT + conn->direct_lastrecv_timev6) > current_time) {
             *direct_connected = 1;
         }
     }

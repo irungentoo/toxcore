@@ -444,26 +444,31 @@ int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber)
         return -1;
     }
 
-    if (m->friendlist[friendnumber].status == FRIEND_ONLINE) {
-        bool direct_connected = 0;
-        unsigned int num_online_relays = 0;
-        int crypt_conn_id = friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id);
-
-        // FIXME(sudden6): handle return value
-        crypto_connection_status(m->net_crypto, crypt_conn_id, &direct_connected, &num_online_relays);
-
-        if (direct_connected) {
-            return CONNECTION_UDP;
-        }
-
-        if (num_online_relays) {
-            return CONNECTION_TCP;
-        }
-
-        return CONNECTION_UNKNOWN;
+    if (m->friendlist[friendnumber].status != FRIEND_ONLINE) {
+        return CONNECTION_NONE;
     }
 
-    return CONNECTION_NONE;
+    bool direct_connected = 0;
+    unsigned int num_online_relays = 0;
+    int crypt_conn_id = friend_connection_crypt_connection_id(m->fr_c, m->friendlist[friendnumber].friendcon_id);
+
+    if (!crypto_connection_status(m->net_crypto, crypt_conn_id, &direct_connected, &num_online_relays)) {
+        return CONNECTION_NONE;
+    }
+
+    if (direct_connected) {
+        return CONNECTION_UDP;
+    }
+
+    if (num_online_relays) {
+        return CONNECTION_TCP;
+    }
+
+    /* if we have a valid friend connection but do not have an established connection
+     * we leave the connection status unchanged until the friend connection is either
+     * established or dropped.
+     */
+    return m->friendlist[friendnumber].last_connection_udp_tcp;
 }
 
 int m_friend_exists(const Messenger *m, int32_t friendnumber)
@@ -897,14 +902,6 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber, void *userd
 
     if (ret == -1) {
         return;
-    }
-
-    if (ret == CONNECTION_UNKNOWN) {
-        if (last_connection_udp_tcp == CONNECTION_UDP) {
-            return;
-        }
-
-        ret = CONNECTION_TCP;
     }
 
     if (last_connection_udp_tcp != ret) {
