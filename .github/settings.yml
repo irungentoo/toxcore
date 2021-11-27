@@ -17,6 +17,7 @@ branches:
           - "ci/circleci: asan"
           # TODO(iphydf): Find out why dht_test times out under tsan.
           #- "ci/circleci: tsan"
+          - cimple
           - cirrus-ci
           - code-review/reviewable
           - continuous-integration/appveyor/pr
