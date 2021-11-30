@@ -17,6 +17,10 @@
 
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
@@ -404,5 +408,9 @@ bool dht_non_lan_connected(const DHT *dht);
 
 
 uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif

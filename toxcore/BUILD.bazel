@@ -153,6 +153,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "DHT_test",
+    size = "small",
+    srcs = ["DHT_test.cc"],
+    deps = [
+        ":DHT",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "DHT_srcs",
     hdrs = [
