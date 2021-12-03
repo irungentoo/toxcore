@@ -1,16 +1,13 @@
 ---
 cirrus-ci_task:
   container:
-    image: toxchat/toktok-stack:0.0.18
+    image: toxchat/toktok-stack:0.0.23-third_party
     cpu: 2
     memory: 2G
   configure_script:
     - /src/workspace/tools/inject-repo c-toxcore
-    # Work around "FATAL: corrupt installation: file '/home/builder/.cache/bazel/_bazel_builder/install/f439a981a1e06f45be981c123f9858d5/A-server.jar' is missing or modified"
-    # Clearing the cache through the Cirrus web UI doesn't fix, but this does.
-    - rm -rf /home/builder/.cache/bazel/
   test_all_script:
-    - bazel test -k
+    - cd /src/workspace && bazel test -k
         --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
@@ -22,15 +19,16 @@ cirrus-ci_task:
 
 cimple_task:
   container:
-    image: toxchat/toktok-stack:0.0.18
+    image: toxchat/toktok-stack:0.0.23-third_party
     cpu: 2
     memory: 4G
   configure_script:
     - /src/workspace/tools/inject-repo c-toxcore
   test_all_script:
-    - bazel test -k
+    - cd /src/workspace && bazel test -k
         --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
         --build_tag_filters=haskell
         --test_tag_filters=haskell
+        --config=release
         --
         //c-toxcore/...

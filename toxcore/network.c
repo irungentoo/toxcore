@@ -310,7 +310,7 @@ IP6 get_ip6_loopback(void)
 }
 
 #ifndef OS_WIN32
-#define INVALID_SOCKET -1
+#define INVALID_SOCKET (-1)
 #endif
 
 const Socket net_invalid_socket = { (int)INVALID_SOCKET };

@@ -34,7 +34,7 @@
 #define FRIEND_MAX_STORED_TCP_RELAYS (MAX_FRIEND_TCP_CONNECTIONS * 4)
 
 /* Max number of tcp relays sent to friends */
-#define MAX_SHARED_RELAYS (RECOMMENDED_FRIEND_TCP_CONNECTIONS)
+#define MAX_SHARED_RELAYS RECOMMENDED_FRIEND_TCP_CONNECTIONS
 
 /* Interval between the sending of tcp relay information */
 #define SHARE_RELAYS_INTERVAL (5 * 60)

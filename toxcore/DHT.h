@@ -24,7 +24,7 @@ extern "C" {
 /* Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
-#define LCLIENT_NODES (MAX_FRIEND_CLIENTS)
+#define LCLIENT_NODES MAX_FRIEND_CLIENTS
 #define LCLIENT_LENGTH 128
 
 /* A list of the clients mathematically closest to ours. */
