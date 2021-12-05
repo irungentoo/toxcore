@@ -36,7 +36,7 @@
 // than some binary format that needs to be parsed before being shown to users
 // so we decided to keep this display format compatibility and adopted this
 // weird scheme with a leading 1.
-#define DAEMON_VERSION_NUMBER 1000000000UL + DAEMON_VERSION_MAJOR*1000000UL + DAEMON_VERSION_MINOR*1000UL + DAEMON_VERSION_PATCH*1UL
+#define DAEMON_VERSION_NUMBER (1000000000UL + DAEMON_VERSION_MAJOR*1000000UL + DAEMON_VERSION_MINOR*1000UL + DAEMON_VERSION_PATCH*1UL)
 
 #define MIN_ALLOWED_PORT 1
 #define MAX_ALLOWED_PORT 65535
