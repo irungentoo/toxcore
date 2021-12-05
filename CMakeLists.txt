@@ -535,8 +535,23 @@ if (BUILD_MISC_TESTS)
         target_link_libraries(cracker OpenMP::OpenMP_C)
     endif()
   endif()
-
-  add_executable(afl_toxsave
-    testing/afl_toxsave.c)
-  target_link_modules(afl_toxsave toxcore)
 endif()
+
+# Enabling this breaks all other tests and no network connections will be possible
+option(BUILD_FUZZ_TESTS "Build fuzzing harnesses" OFF)
+if (BUILD_FUZZ_TESTS)
+    # For coverage tests
+    target_compile_definitions(toxcore_static PUBLIC "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION")
+
+    # Override network functions
+    add_library(network_adapter testing/fuzzing/network_adapter.c)
+
+    # Fuzzes the toxsave API
+    add_executable(toxsave_fuzzer testing/fuzzing/toxsave_harness.cc)
+    target_link_libraries(toxsave_fuzzer toxcore_static network_adapter -fsanitize=fuzzer)
+
+    # Fuzzes the bootstrap process
+    add_executable(bootstrap_fuzzer testing/fuzzing/bootstrap_harness.cc)
+    target_link_libraries(bootstrap_fuzzer toxcore_static network_adapter -fsanitize=fuzzer)
+endif()
+
