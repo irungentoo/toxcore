@@ -295,7 +295,7 @@ void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
     get_shared_key(dht->mono_time, &dht->shared_keys_sent, shared_key, dht->self_secret_key, public_key);
 }
 
-#define CRYPTO_SIZE 1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE
+#define CRYPTO_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE)
 
 /* Create a request to peer.
  * send_public_key and send_secret_key are the pub/secret keys of the sender.
