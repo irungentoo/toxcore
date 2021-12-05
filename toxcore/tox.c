@@ -372,7 +372,6 @@ static int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
                       length - cookie_len, STATE_COOKIE_TYPE);
 }
 
-
 Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 {
     Tox *tox = (Tox *)calloc(1, sizeof(Tox));

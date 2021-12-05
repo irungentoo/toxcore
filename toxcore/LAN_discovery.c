@@ -120,7 +120,7 @@ static void fetch_broadcast_info(uint16_t port)
     }
 }
 
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__)
+#elif !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) && (defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__))
 
 static void fetch_broadcast_info(uint16_t port)
 {

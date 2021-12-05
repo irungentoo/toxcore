@@ -543,15 +543,15 @@ if (BUILD_FUZZ_TESTS)
     # For coverage tests
     target_compile_definitions(toxcore_static PUBLIC "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION")
 
-    # Override network functions
-    add_library(network_adapter testing/fuzzing/network_adapter.c)
+    # Override network and random functions
+    add_library(fuzz_adapter testing/fuzzing/fuzz_adapter.c)
 
     # Fuzzes the toxsave API
     add_executable(toxsave_fuzzer testing/fuzzing/toxsave_harness.cc)
-    target_link_libraries(toxsave_fuzzer toxcore_static network_adapter -fsanitize=fuzzer)
+    target_link_libraries(toxsave_fuzzer toxcore_static fuzz_adapter -fsanitize=fuzzer)
 
     # Fuzzes the bootstrap process
     add_executable(bootstrap_fuzzer testing/fuzzing/bootstrap_harness.cc)
-    target_link_libraries(bootstrap_fuzzer toxcore_static network_adapter -fsanitize=fuzzer)
+    target_link_libraries(bootstrap_fuzzer toxcore_static fuzz_adapter -fsanitize=fuzzer)
 endif()
 

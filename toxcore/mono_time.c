@@ -32,6 +32,12 @@
 
 #include "ccompat.h"
 
+//!TOKSTYLE-
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#include "../testing/fuzzing/fuzz_adapter.h"
+#endif
+//!TOKSTYLE+
+
 /* don't call into system billions of times for no reason */
 struct Mono_Time {
     uint64_t time;
@@ -98,6 +104,14 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
     return time;
 }
 
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+static uint64_t current_time_monotonic_dummy(Mono_Time *mono_time, void *user_data)
+{
+    return fuzz_get_count();
+}
+#endif
+
 Mono_Time *mono_time_new(void)
 {
     Mono_Time *mono_time = (Mono_Time *)calloc(1, sizeof(Mono_Time));
@@ -119,7 +133,11 @@ Mono_Time *mono_time_new(void)
         return nullptr;
     }
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    mono_time->current_time_callback = current_time_monotonic_dummy;
+#else
     mono_time->current_time_callback = current_time_monotonic_default;
+#endif
     mono_time->user_data = nullptr;
 
 #ifdef OS_WIN32
@@ -136,7 +154,11 @@ Mono_Time *mono_time_new(void)
 #endif
 
     mono_time->time = 0;
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    mono_time->base_time = 0; // Maximum reproducibility
+#else
     mono_time->base_time = (uint64_t)time(nullptr) - (current_time_monotonic(mono_time) / 1000ULL);
+#endif
 
     mono_time_update(mono_time);
 
@@ -174,11 +196,16 @@ void mono_time_update(Mono_Time *mono_time)
 
 uint64_t mono_time_get(const Mono_Time *mono_time)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    // Fuzzing is only single thread for now, no locking needed */
+    return mono_time->time;
+#else
     uint64_t time = 0;
     pthread_rwlock_rdlock(mono_time->time_update_lock);
     time = mono_time->time;
     pthread_rwlock_unlock(mono_time->time_update_lock);
     return time;
+#endif
 }
 
 bool mono_time_is_timeout(const Mono_Time *mono_time, uint64_t timestamp, uint64_t timeout)

@@ -95,6 +95,12 @@
 #include "mono_time.h"
 #include "util.h"
 
+//!TOKSTYLE-
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#include "../testing/fuzzing/fuzz_adapter.h"
+#endif
+//!TOKSTYLE+
+
 // Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
 #if !defined(MSG_NOSIGNAL)
 #define MSG_NOSIGNAL 0
@@ -214,6 +220,7 @@ static_assert(TOX_INET6_ADDRSTRLEN >= INET6_ADDRSTRLEN,
 static_assert(TOX_INET_ADDRSTRLEN >= INET_ADDRSTRLEN,
               "TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)");
 
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 static int make_proto(int proto)
 {
     switch (proto) {
@@ -241,6 +248,7 @@ static int make_socktype(int type)
             return type;
     }
 }
+#endif // FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 static int make_family(Family tox_family)
 {
@@ -391,21 +399,29 @@ bool sock_valid(Socket sock)
  */
 void kill_sock(Socket sock)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return;
+#else
 #ifdef OS_WIN32
     closesocket(sock.socket);
 #else
     close(sock.socket);
-#endif
+#endif /* OS_WIN32 */
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool set_socket_nonblock(Socket sock)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return true;
+#else
 #ifdef OS_WIN32
     u_long mode = 1;
     return ioctlsocket(sock.socket, FIONBIO, &mode) == 0;
 #else
     return fcntl(sock.socket, F_SETFL, O_NONBLOCK, 1) == 0;
-#endif
+#endif /* OS_WIN32 */
+#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */
 }
 
 bool set_socket_nosigpipe(Socket sock)
@@ -420,12 +436,19 @@ bool set_socket_nosigpipe(Socket sock)
 
 bool set_socket_reuseaddr(Socket sock)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return false;
+#else
     int set = 1;
     return setsockopt(sock.socket, SOL_SOCKET, SO_REUSEADDR, (const char *)&set, sizeof(set)) == 0;
+#endif
 }
 
 bool set_socket_dualstack(Socket sock)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return false;
+#else
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
     int res = getsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
@@ -436,6 +459,7 @@ bool set_socket_dualstack(Socket sock)
 
     ipv6only = 0;
     return setsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)&ipv6only, sizeof(ipv6only)) == 0;
+#endif
 }
 
 
@@ -578,7 +602,11 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
         return -1;
     }
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    const int res = fuzz_sendto(net->sock.socket, (const char *)data, length, 0, (struct sockaddr *)&addr, addrsize);
+#else
     const int res = sendto(net->sock.socket, (const char *)data, length, 0, (struct sockaddr *)&addr, addrsize);
+#endif
 
     loglogdata(net->log, "O=>", data, length, ip_port, res);
 
@@ -600,7 +628,12 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
     socklen_t addrlen = sizeof(addr);
 #endif
     *length = 0;
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    int fail_or_len = fuzz_recvfrom(sock.socket, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+#else
     int fail_or_len = recvfrom(sock.socket, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+#endif
 
     if (fail_or_len < 0) {
         int error = net_error();
@@ -815,6 +848,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         return nullptr;
     }
 
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     /* Functions to increase the size of the send and receive UDP buffers.
      */
     int n = 1024 * 1024 * 2;
@@ -827,12 +861,17 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         LOGGER_WARNING(log, "Failed to set socket option %d", SO_SNDBUF);
     }
 
+#endif
+
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     /* Enable broadcast on socket */
     int broadcast = 1;
 
     if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast)) != 0) {
         LOGGER_WARNING(log, "Failed to set socket option %d", SO_BROADCAST);
     }
+
+#endif
 
     /* iOS UDP sockets are weird and apparently can SIGPIPE */
     if (!set_socket_nosigpipe(temp->sock)) {
@@ -889,6 +928,8 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         return nullptr;
     }
 
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+
     if (net_family_is_ipv6(ip.family)) {
         const int is_dualstack = set_socket_dualstack(temp->sock);
         LOGGER_DEBUG(log, "Dual-stack socket: %s",
@@ -900,6 +941,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         mreq.ipv6mr_multiaddr.s6_addr[ 1] = 0x02;
         mreq.ipv6mr_multiaddr.s6_addr[15] = 0x01;
         mreq.ipv6mr_interface = 0;
+
         const int res = setsockopt(temp->sock.socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
 
         int neterror = net_error();
@@ -913,6 +955,8 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
 
         net_kill_strerror(strerror);
     }
+
+#endif
 
     /* A hanging program or a different user might block the standard port.
      * As long as it isn't a parameter coming from the commandline,
@@ -935,7 +979,11 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
     int tries;
 
     for (tries = port_from; tries <= port_to; ++tries) {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+        int res = 0;
+#else
         int res = bind(temp->sock.socket, (struct sockaddr *)&addr, addrsize);
+#endif
 
         if (!res) {
             temp->port = *portptr;
@@ -1242,6 +1290,10 @@ bool addr_parse_ip(const char *address, IP *to)
 
 int addr_resolve(const char *address, IP *to, IP *extra)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return false;
+#else
+
     if (!address || !to) {
         return 0;
     }
@@ -1330,6 +1382,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 
     freeaddrinfo(server);
     return result;
+#endif
 }
 
 bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
@@ -1366,11 +1419,24 @@ int net_connect(Socket sock, IP_Port ip_port)
         return 0;
     }
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return 0;
+#else
     return connect(sock.socket, (struct sockaddr *)&addr, addrsize);
+#endif
 }
 
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    *res = (IP_Port *)calloc(1, sizeof(IP_Port));
+    assert(*res != nullptr);
+    IP_Port *ip_port = *res;
+    ip_port->ip.ip.v4.uint32 = 0x7F000003; // 127.0.0.3
+    ip_port->ip.family = *make_tox_family(AF_INET);
+
+    return 1;
+#else
     struct addrinfo *infos;
     int ret = getaddrinfo(node, nullptr, nullptr, &infos);
     *res = nullptr;
@@ -1444,6 +1510,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     freeaddrinfo(infos);
 
     return count;
+#endif
 }
 
 void net_freeipport(IP_Port *ip_ports)
@@ -1472,41 +1539,71 @@ bool bind_to_port(Socket sock, Family family, uint16_t port)
         return false;
     }
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return true;
+#else
     return bind(sock.socket, (struct sockaddr *)&addr, addrsize) == 0;
+#endif
 }
 
 Socket net_socket(Family domain, int type, int protocol)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    const Socket sock = {1};
+    return sock;
+#else
     const int platform_domain = make_family(domain);
     const int platform_type = make_socktype(type);
     const int platform_prot = make_proto(protocol);
     const Socket sock = {(int)socket(platform_domain, platform_type, platform_prot)};
     return sock;
+#endif
 }
 
 int net_send(Socket sock, const void *buf, size_t len)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return fuzz_send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
+#else
     return send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
+#endif
 }
 
 int net_recv(Socket sock, void *buf, size_t len)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return fuzz_recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
+#else
     return recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
+#endif
 }
 
 int net_listen(Socket sock, int backlog)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return 0;
+#else
     return listen(sock.socket, backlog);
+#endif
 }
 
 Socket net_accept(Socket sock)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    const Socket newsock = {2};
+    return newsock;
+#else
     const Socket newsock = {accept(sock.socket, nullptr, nullptr)};
     return newsock;
+#endif
 }
 
 size_t net_socket_data_recv_buffer(Socket sock)
 {
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    return 0;
+#else
+
 #ifdef OS_WIN32
     unsigned long count = 0;
     ioctlsocket(sock.socket, FIONREAD, &count);
@@ -1516,6 +1613,7 @@ size_t net_socket_data_recv_buffer(Socket sock)
 #endif
 
     return count;
+#endif
 }
 
 uint32_t net_htonl(uint32_t hostlong)

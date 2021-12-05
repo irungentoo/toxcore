@@ -1,9 +1,8 @@
-#include "../../toxcore/tox.h"
-#include "network_adapter.h"
-
-#include <cstring>
 #include <cassert>
+#include <cstring>
 
+#include "../../toxcore/tox.h"
+#include "fuzz_adapter.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   network_adapter_init(data, size);
