@@ -32,6 +32,10 @@ bool rb_empty(const RingBuffer *b)
  */
 void *rb_write(RingBuffer *b, void *p)
 {
+    if (b == nullptr) {
+        return p;
+    }
+
     void *rc = nullptr;
 
     if ((b->end + 1) % b->size == b->start) { /* full */

@@ -1542,6 +1542,10 @@ static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t fri
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
+    if (g == nullptr) {
+        return false;
+    }
+
     const bool member = (g->status == GROUPCHAT_STATUS_CONNECTED);
 
     VLA(uint8_t, response, member ? INVITE_MEMBER_PACKET_SIZE : INVITE_ACCEPT_PACKET_SIZE);

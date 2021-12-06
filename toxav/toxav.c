@@ -1302,7 +1302,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
 
     ToxAV *av = call->av;
 
-    if (!av->acb && !av->vcb) {
+    if (av->acb == nullptr && av->vcb == nullptr) {
         /* It makes no sense to have CSession without callbacks */
         return false;
     }
@@ -1323,10 +1323,15 @@ static bool call_prepare_transmission(ToxAVCall *call)
     /* Prepare bwc */
     call->bwc = bwc_new(av->m, av->tox, call->friend_number, callback_bwc, call, av->toxav_mono_time);
 
+    if (call->bwc == nullptr) {
+        LOGGER_ERROR(av->m->log, "Failed to create new bwc");
+        goto FAILURE;
+    }
+
     {   /* Prepare audio */
         call->audio = ac_new(av->toxav_mono_time, av->m->log, av, call->friend_number, av->acb, av->acb_user_data);
 
-        if (!call->audio) {
+        if (call->audio == nullptr) {
             LOGGER_ERROR(av->m->log, "Failed to create audio codec session");
             goto FAILURE;
         }
@@ -1334,15 +1339,16 @@ static bool call_prepare_transmission(ToxAVCall *call)
         call->audio_rtp = rtp_new(RTP_TYPE_AUDIO, av->m, av->tox, call->friend_number, call->bwc,
                                   call->audio, ac_queue_message);
 
-        if (!call->audio_rtp) {
+        if (call->audio_rtp == nullptr) {
             LOGGER_ERROR(av->m->log, "Failed to create audio rtp session");
             goto FAILURE;
         }
     }
+
     {   /* Prepare video */
         call->video = vc_new(av->toxav_mono_time, av->m->log, av, call->friend_number, av->vcb, av->vcb_user_data);
 
-        if (!call->video) {
+        if (call->video == nullptr) {
             LOGGER_ERROR(av->m->log, "Failed to create video codec session");
             goto FAILURE;
         }
@@ -1350,7 +1356,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
         call->video_rtp = rtp_new(RTP_TYPE_VIDEO, av->m, av->tox, call->friend_number, call->bwc,
                                   call->video, vc_queue_message);
 
-        if (!call->video_rtp) {
+        if (call->video_rtp == nullptr) {
             LOGGER_ERROR(av->m->log, "Failed to create video rtp session");
             goto FAILURE;
         }

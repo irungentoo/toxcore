@@ -67,6 +67,11 @@ BWController *bwc_new(Messenger *m, Tox *tox, uint32_t friendnumber, m_cb *mcb, 
                       Mono_Time *bwc_mono_time)
 {
     BWController *retu = (BWController *)calloc(sizeof(struct BWController_s), 1);
+
+    if (retu == nullptr) {
+        return nullptr;
+    }
+
     LOGGER_DEBUG(m->log, "Creating bandwidth controller");
     retu->mcb = mcb;
     retu->mcb_user_data = mcb_user_data;
