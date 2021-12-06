@@ -28,17 +28,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if TOX_PASS_SALT_LENGTH != crypto_pwhash_scryptsalsa208sha256_SALTBYTES
-#error TOX_PASS_SALT_LENGTH is assumed to be equal to crypto_pwhash_scryptsalsa208sha256_SALTBYTES
-#endif
-
-#if TOX_PASS_KEY_LENGTH != CRYPTO_SHARED_KEY_SIZE
-#error TOX_PASS_KEY_LENGTH is assumed to be equal to CRYPTO_SHARED_KEY_SIZE
-#endif
-
-#if TOX_PASS_ENCRYPTION_EXTRA_LENGTH != (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)
-#error TOX_PASS_ENCRYPTION_EXTRA_LENGTH is assumed to be equal to (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)
-#endif
+//!TOKSTYLE-
+static_assert(TOX_PASS_SALT_LENGTH == crypto_pwhash_scryptsalsa208sha256_SALTBYTES,
+              "TOX_PASS_SALT_LENGTH is assumed to be equal to crypto_pwhash_scryptsalsa208sha256_SALTBYTES");
+static_assert(TOX_PASS_KEY_LENGTH == CRYPTO_SHARED_KEY_SIZE,
+              "TOX_PASS_KEY_LENGTH is assumed to be equal to CRYPTO_SHARED_KEY_SIZE");
+static_assert(TOX_PASS_ENCRYPTION_EXTRA_LENGTH == (crypto_box_MACBYTES + crypto_box_NONCEBYTES +
+              crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH),
+              "TOX_PASS_ENCRYPTION_EXTRA_LENGTH is assumed to be equal to (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)");
+//!TOKSTYLE+
 
 uint32_t tox_pass_salt_length(void)
 {
@@ -109,7 +107,7 @@ Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
                                   Tox_Err_Key_Derivation *error)
 {
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
-    random_bytes(salt, sizeof salt);
+    random_bytes(salt, sizeof(salt));
     return tox_pass_key_derive_with_salt(passphrase, pplength, salt, error);
 }
 
@@ -129,10 +127,10 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 
     uint8_t key[CRYPTO_SHARED_KEY_SIZE];
 
-    /* Derive a key from the password */
-    /* http://doc.libsodium.org/key_derivation/README.html */
-    /* note that, according to the documentation, a generic pwhash interface will be created
-     * once the pwhash competition (https://password-hashing.net/) is over */
+    // Derive a key from the password
+    // http://doc.libsodium.org/key_derivation/README.html
+    // note that, according to the documentation, a generic pwhash interface will be created
+    // once the pwhash competition (https://password-hashing.net/) is over */
     if (crypto_pwhash_scryptsalsa208sha256(
                 key, sizeof(key), (char *)passkey, sizeof(passkey), salt,
                 crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE * 2, /* slightly stronger */
@@ -157,7 +155,8 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
     return out_key;
 }
 
-/* Encrypt arbitrary with a key produced by tox_derive_key_*. The output
+/**
+ * Encrypt arbitrary with a key produced by `tox_derive_key_*`. The output
  * array must be at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
  * key must be TOX_PASS_KEY_LENGTH bytes.
  * If you already have a symmetric key from somewhere besides this module, simply
@@ -173,13 +172,12 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t d
         return 0;
     }
 
-    /* the output data consists of, in order:
-     * salt, nonce, mac, enc_data
-     * where the mac is automatically prepended by the encrypt()
-     * the salt+nonce is called the prefix
-     * I'm not sure what else I'm supposed to do with the salt and nonce, since we
-     * need them to decrypt the data
-     */
+    // the output data consists of, in order:
+    // salt, nonce, mac, enc_data
+    // where the mac is automatically prepended by the encrypt()
+    // the salt+nonce is called the prefix
+    // I'm not sure what else I'm supposed to do with the salt and nonce, since we
+    // need them to decrypt the data
 
     /* first add the magic number */
     memcpy(out, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH);
@@ -214,13 +212,13 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t d
 bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passphrase, size_t pplength, uint8_t *out,
                       Tox_Err_Encryption *error)
 {
-    Tox_Err_Key_Derivation _error;
-    Tox_Pass_Key *key = tox_pass_key_derive(passphrase, pplength, &_error);
+    Tox_Err_Key_Derivation err;
+    Tox_Pass_Key *key = tox_pass_key_derive(passphrase, pplength, &err);
 
     if (!key) {
-        if (_error == TOX_ERR_KEY_DERIVATION_NULL) {
+        if (err == TOX_ERR_KEY_DERIVATION_NULL) {
             SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
-        } else if (_error == TOX_ERR_KEY_DERIVATION_FAILED) {
+        } else if (err == TOX_ERR_KEY_DERIVATION_FAILED) {
             SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_KEY_DERIVATION_FAILED);
         }
 

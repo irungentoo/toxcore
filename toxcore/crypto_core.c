@@ -33,41 +33,26 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
-#if CRYPTO_PUBLIC_KEY_SIZE != crypto_box_PUBLICKEYBYTES
-#error "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES"
-#endif
-
-#if CRYPTO_SECRET_KEY_SIZE != crypto_box_SECRETKEYBYTES
-#error "CRYPTO_SECRET_KEY_SIZE should be equal to crypto_box_SECRETKEYBYTES"
-#endif
-
-#if CRYPTO_SHARED_KEY_SIZE != crypto_box_BEFORENMBYTES
-#error "CRYPTO_SHARED_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES"
-#endif
-
-#if CRYPTO_SYMMETRIC_KEY_SIZE != crypto_box_BEFORENMBYTES
-#error "CRYPTO_SYMMETRIC_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES"
-#endif
-
-#if CRYPTO_MAC_SIZE != crypto_box_MACBYTES
-#error "CRYPTO_MAC_SIZE should be equal to crypto_box_MACBYTES"
-#endif
-
-#if CRYPTO_NONCE_SIZE != crypto_box_NONCEBYTES
-#error "CRYPTO_NONCE_SIZE should be equal to crypto_box_NONCEBYTES"
-#endif
-
-#if CRYPTO_SHA256_SIZE != crypto_hash_sha256_BYTES
-#error "CRYPTO_SHA256_SIZE should be equal to crypto_hash_sha256_BYTES"
-#endif
-
-#if CRYPTO_SHA512_SIZE != crypto_hash_sha512_BYTES
-#error "CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES"
-#endif
-
-#if CRYPTO_PUBLIC_KEY_SIZE != 32
-#error "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work,"
-#endif
+//!TOKSTYLE-
+static_assert(CRYPTO_PUBLIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES,
+              "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES");
+static_assert(CRYPTO_SECRET_KEY_SIZE == crypto_box_SECRETKEYBYTES,
+              "CRYPTO_SECRET_KEY_SIZE should be equal to crypto_box_SECRETKEYBYTES");
+static_assert(CRYPTO_SHARED_KEY_SIZE == crypto_box_BEFORENMBYTES,
+              "CRYPTO_SHARED_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES");
+static_assert(CRYPTO_SYMMETRIC_KEY_SIZE == crypto_box_BEFORENMBYTES,
+              "CRYPTO_SYMMETRIC_KEY_SIZE should be equal to crypto_box_BEFORENMBYTES");
+static_assert(CRYPTO_MAC_SIZE == crypto_box_MACBYTES,
+              "CRYPTO_MAC_SIZE should be equal to crypto_box_MACBYTES");
+static_assert(CRYPTO_NONCE_SIZE == crypto_box_NONCEBYTES,
+              "CRYPTO_NONCE_SIZE should be equal to crypto_box_NONCEBYTES");
+static_assert(CRYPTO_SHA256_SIZE == crypto_hash_sha256_BYTES,
+              "CRYPTO_SHA256_SIZE should be equal to crypto_hash_sha256_BYTES");
+static_assert(CRYPTO_SHA512_SIZE == crypto_hash_sha512_BYTES,
+              "CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES");
+static_assert(CRYPTO_PUBLIC_KEY_SIZE == 32,
+              "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work");
+//!TOKSTYLE+
 
 static uint8_t *crypto_malloc(size_t bytes)
 {

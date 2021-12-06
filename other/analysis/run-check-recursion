@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cat toxav/*.c toxcore/*.c toxencryptsave/*.c |
+  clang "$(pkg-config --cflags libsodium opus vpx)" \
+    -Itoxav -Itoxcore -Itoxencryptsave -S -emit-llvm -xc - -o- |
+  opt -analyze -print-callgraph 2>&1 |
+  other/analysis/check_recursion

@@ -910,7 +910,7 @@ static void check_friend_tcp_udp(Messenger *m, int32_t friendnumber, void *userd
         }
     }
 
-    m->friendlist[friendnumber].last_connection_udp_tcp = ret;
+    m->friendlist[friendnumber].last_connection_udp_tcp = (Connection_Status)ret;
 }
 
 static void break_files(const Messenger *m, int32_t friendnumber);

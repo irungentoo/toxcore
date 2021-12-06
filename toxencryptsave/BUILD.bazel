@@ -33,3 +33,20 @@ cc_library(
     visibility = ["//c-toxcore/other:__pkg__"],
     deps = ["//c-toxcore/toxcore:crypto_core"],
 )
+
+CIMPLE_SRCS = glob(
+    [
+        "*.c",
+        "*.h",
+    ],
+    exclude = ["*.api.h"],
+)
+
+sh_test(
+    name = "cimple_test",
+    size = "small",
+    srcs = ["//hs-tokstyle/tools:check-cimple"],
+    args = ["$(location %s)" % f for f in CIMPLE_SRCS],
+    data = CIMPLE_SRCS,
+    tags = ["haskell"],
+)

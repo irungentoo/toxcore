@@ -9,6 +9,7 @@ clang++ -o /dev/null amalgamation.cc \
   -std=c++11 \
   -Werror \
   -Weverything \
+  -Wno-alloca \
   -Wno-c++98-compat-pedantic \
   -Wno-c99-extensions \
   -Wno-cast-align \

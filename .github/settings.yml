@@ -15,8 +15,9 @@ branches:
           - Codacy Static Code Analysis
           - CodeFactor
           - "ci/circleci: asan"
-          # TODO(iphydf): Find out why dht_test times out under tsan.
-          #- "ci/circleci: tsan"
+          - "ci/circleci: infer"
+          - "ci/circleci: static-analysis"
+          - "ci/circleci: tsan"
           - cimple
           - cirrus-ci
           - code-review/reviewable

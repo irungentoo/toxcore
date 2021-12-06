@@ -5,4 +5,4 @@ SKIP_LINES=1
 
 . other/analysis/gen-file.sh
 
-infer -- clang++ -fsyntax-only amalgamation.cc "${CPPFLAGS[@]}"
+infer --no-progress-bar -- clang++ -fsyntax-only amalgamation.cc "${CPPFLAGS[@]}"

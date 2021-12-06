@@ -10,6 +10,8 @@
 #ifndef C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 #define C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 
+//!TOKSTYLE-
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -302,6 +304,8 @@ typedef TOX_ERR_KEY_DERIVATION Tox_Err_Key_Derivation;
 typedef TOX_ERR_ENCRYPTION Tox_Err_Encryption;
 typedef TOX_ERR_DECRYPTION Tox_Err_Decryption;
 typedef TOX_ERR_GET_SALT Tox_Err_Get_Salt;
+
+//!TOKSTYLE+
 
 #endif // C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 %}

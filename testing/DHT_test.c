@@ -33,7 +33,7 @@
 
 #define PORT 33445
 
-static uint8_t zeroes_cid[CRYPTO_PUBLIC_KEY_SIZE];
+static const uint8_t zeroes_cid[CRYPTO_PUBLIC_KEY_SIZE] = {0};
 
 static void print_client_id(const uint8_t *public_key)
 {
@@ -177,7 +177,8 @@ int main(int argc, char *argv[])
     ip_init(&ip, ipv6enabled);
 
     Mono_Time *const mono_time = mono_time_new();
-    DHT *dht = new_dht(nullptr, mono_time, new_networking(nullptr, ip, PORT), true);
+    Logger *const logger = logger_new();
+    DHT *dht = new_dht(logger, mono_time, new_networking(logger, ip, PORT), true);
     printf("OUR ID: ");
 
     for (uint32_t i = 0; i < 32; i++) {

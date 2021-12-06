@@ -42,20 +42,11 @@ callmain() {
 
 : >amalgamation.cc
 
-echo "#include <algorithm>" >>amalgamation.cc
-echo "#include <cstdio>" >>amalgamation.cc
-echo "#include <memory>" >>amalgamation.cc
-echo "#include <random>" >>amalgamation.cc
-
 put auto_tests/check_compat.h
 
-FIND_QUERY="find . '-(' -name '*.cc' -or -name '*.c' '-)'"
+FIND_QUERY="find . '-(' -name '*.c' '-)'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './_build/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './super_donators/*'"
-FIND_QUERY="$FIND_QUERY -and -not -wholename './toxav/*.cc'"
-FIND_QUERY="$FIND_QUERY -and -not -wholename './toxcore/*.cc'"
-FIND_QUERY="$FIND_QUERY -and -not -wholename './toxencryptsave/*.cc'"
-FIND_QUERY="$FIND_QUERY -and -not -name amalgamation.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name av_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name dht_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
@@ -64,7 +55,7 @@ readarray -t FILES <<<"$(eval "$FIND_QUERY")"
 
 (for i in "${FILES[@]}"; do
   grep -o '#include <[^>]*>' "$i" |
-    grep -E -v '<win|<ws|<iphlp|<libc|<mach/|<crypto_|<randombytes|<u.h>|<sys/filio|<linux'
+    grep -E -v '<win|<ws|<iphlp|<libc|<mach/|<crypto_|<randombytes|<u.h>|<sys/filio|<stropts.h>|<linux'
 done) | sort -u >>amalgamation.cc
 
 echo 'namespace {' >>amalgamation.cc

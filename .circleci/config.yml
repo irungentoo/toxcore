@@ -3,10 +3,14 @@ version: 2
 
 workflows:
   version: 2
-  clang-sanitizers:
+  program-analysis:
     jobs:
+      # Dynamic analysis
       - asan
       - tsan
+      # Static analysis
+      - static-analysis
+      - infer
 
 jobs:
   asan:
@@ -41,3 +45,47 @@ jobs:
       - checkout
       - run: *apt_install
       - run: CC=clang .circleci/cmake-tsan
+
+  infer:
+    working_directory: ~/work
+    docker:
+      - image: toxchat/infer
+
+    steps:
+      - run:
+          apt-get update &&
+          DEBIAN_FRONTEND=noninteractive
+          apt-get install -y --no-install-recommends
+            git
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+            pkg-config
+      - checkout
+      - run: infer --no-progress-bar -- cc toxav/*.c toxcore/*.c $(pkg-config --cflags opus vpx)
+
+  static-analysis:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - checkout
+      - run:
+          apt-get update &&
+          DEBIAN_FRONTEND=noninteractive
+          apt-get install -y --no-install-recommends
+            clang
+            cppcheck
+            g++
+            libconfig-dev
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+            llvm
+      - run: other/analysis/check_logger_levels
+      - run: other/analysis/run-check-recursion
+      - run: other/analysis/run-clang
+      - run: other/analysis/run-clang-analyze
+      - run: other/analysis/run-cppcheck
+      - run: other/analysis/run-gcc

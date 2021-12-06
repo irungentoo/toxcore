@@ -42,6 +42,9 @@
 
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #define nullptr NULL
+#ifndef static_assert
+#define static_assert(cond, msg) extern int unused_for_static_assert
+#endif
 #endif
 
 #ifdef __GNUC__
