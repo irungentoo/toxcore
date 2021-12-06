@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
     if (argc == 5 && argv[1][0] == 's') {
         unsigned char *secret_key = hex_string_to_bin(argv[2]);
-        unsigned char *data;
+        unsigned char *data = nullptr;
         int size = load_file(argv[3], &data);
 
         if (size < 0) {
@@ -82,25 +82,31 @@ int main(int argc, char *argv[])
         unsigned long long smlen;
         unsigned char *sm = (unsigned char *)malloc(size + crypto_sign_ed25519_BYTES * 2);
         crypto_sign_ed25519(sm, &smlen, data, size, secret_key);
+        free(data);
         free(secret_key);
 
         if (smlen - size != crypto_sign_ed25519_BYTES) {
+            free(sm);
             goto fail;
         }
 
         FILE *f = fopen(argv[4], "wb");
 
         if (f == nullptr) {
+            free(sm);
             goto fail;
         }
 
         memcpy(sm + smlen, sm, crypto_sign_ed25519_BYTES); // Move signature from beginning to end of file.
 
         if (fwrite(sm + (smlen - size), 1, smlen, f) != smlen) {
+            fclose(f);
+            free(sm);
             goto fail;
         }
 
         fclose(f);
+        free(sm);
         printf("Signed successfully.\n");
     }
 
@@ -117,14 +123,20 @@ int main(int argc, char *argv[])
         memcpy(signe, data + size - crypto_sign_ed25519_BYTES,
                crypto_sign_ed25519_BYTES); // Move signature from end to beginning of file.
         memcpy(signe + crypto_sign_ed25519_BYTES, data, size - crypto_sign_ed25519_BYTES);
+        free(data);
+
         unsigned char *m = (unsigned char *)malloc(size);
         unsigned long long mlen;
 
         if (crypto_sign_ed25519_open(m, &mlen, signe, size, public_key) == -1) {
             printf("Failed checking sig.\n");
+            free(m);
+            free(signe);
             goto fail;
         }
 
+        free(m);
+        free(signe);
         printf("Checked successfully.\n");
     }
 

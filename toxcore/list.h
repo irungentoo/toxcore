@@ -13,6 +13,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct BS_List {
     uint32_t n; // number of elements
     uint32_t capacity; // number of elements memory is allocated for
@@ -56,5 +60,9 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id);
  *  0 : failure (element not found or id does not match)
  */
 int bs_list_remove(BS_List *list, const uint8_t *data, int id);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif
