@@ -114,17 +114,21 @@ static void test_few_clients(void)
 
     struct Tox_Options *opts1 = tox_options_new(nullptr);
     tox_options_set_tcp_port(opts1, TCP_RELAY_PORT);
-    Tox *tox1 = tox_new_log(opts1, nullptr, &index[0]);
+    Tox_Err_New t_n_error;
+    Tox *tox1 = tox_new_log(opts1, &t_n_error, &index[0]);
+    ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
     tox_options_free(opts1);
 
     struct Tox_Options *opts2 = tox_options_new(nullptr);
     tox_options_set_udp_enabled(opts2, false);
     tox_options_set_local_discovery_enabled(opts2, false);
-    Tox *tox2 = tox_new_log(opts2, nullptr, &index[1]);
+    Tox *tox2 = tox_new_log(opts2, &t_n_error, &index[1]);
+    ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
 
     struct Tox_Options *opts3 = tox_options_new(nullptr);
     tox_options_set_local_discovery_enabled(opts3, false);
-    Tox *tox3 = tox_new_log(opts3, nullptr, &index[2]);
+    Tox *tox3 = tox_new_log(opts3, &t_n_error, &index[2]);
+    ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
 
     ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
 
