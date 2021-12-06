@@ -1,12 +1,72 @@
 
+## v0.2.13
+
+### Merged PRs:
+
+- [#1725](https://github.com/TokTok/c-toxcore/pull/1725) cleanup: add some missing null checks
+- [#1723](https://github.com/TokTok/c-toxcore/pull/1723) chore: Run infer static analyser on circle ci builds.
+- [#1718](https://github.com/TokTok/c-toxcore/pull/1718) fix: Sec/fix crypto size compute
+- [#1716](https://github.com/TokTok/c-toxcore/pull/1716) chore: Use toktok-stack docker image with built third_party.
+- [#1713](https://github.com/TokTok/c-toxcore/pull/1713) test: Add some unit tests for important internal DHT functions.
+- [#1708](https://github.com/TokTok/c-toxcore/pull/1708) perf: reduce calling into Mono_Time in DHT
+- [#1706](https://github.com/TokTok/c-toxcore/pull/1706) chore: Enable cimple tests on cirrus build.
+- [#1705](https://github.com/TokTok/c-toxcore/pull/1705) fix: issue with save_load autotest
+- [#1703](https://github.com/TokTok/c-toxcore/pull/1703) chore: Upgrade to toktok-stack:0.0.11.
+- [#1699](https://github.com/TokTok/c-toxcore/pull/1699) fix: some friend connection issues
+- [#1698](https://github.com/TokTok/c-toxcore/pull/1698) fix: bug causing API to report wrong self connection status
+- [#1693](https://github.com/TokTok/c-toxcore/pull/1693) chore: Update IRC info
+- [#1691](https://github.com/TokTok/c-toxcore/pull/1691) chore: Fix Appveyor and add workarounds for Cirrus CI
+- [#1686](https://github.com/TokTok/c-toxcore/pull/1686) chore: Enable c-toxcore conan packaging
+- [#1684](https://github.com/TokTok/c-toxcore/pull/1684) cleanup: Update INSTALL.md instructions
+- [#1679](https://github.com/TokTok/c-toxcore/pull/1679) cleanup: Trivial cleanup
+- [#1674](https://github.com/TokTok/c-toxcore/pull/1674) cleanup: filetransfer code
+- [#1672](https://github.com/TokTok/c-toxcore/pull/1672) docs: Add instructions for building unit tests to INSTALL.md
+- [#1667](https://github.com/TokTok/c-toxcore/pull/1667) chore: Update tox-bootstrapd checksum due to newer packages in Alpine
+- [#1664](https://github.com/TokTok/c-toxcore/pull/1664) cleanup: use heap memory instead of stack for large variables
+- [#1663](https://github.com/TokTok/c-toxcore/pull/1663) fix: Fix file tests on windows
+- [#1633](https://github.com/TokTok/c-toxcore/pull/1633) fix: AppVeyor failing due to conan remote being added twice
+- [#1602](https://github.com/TokTok/c-toxcore/pull/1602) fix: Fix buffer over-read when a peer leaves a conference
+- [#1586](https://github.com/TokTok/c-toxcore/pull/1586) test: Fix tcp_relay_test by adding a second bootstrap node.
+- [#1580](https://github.com/TokTok/c-toxcore/pull/1580) style: Format comments according to tokstyle's requirements.
+- [#1557](https://github.com/TokTok/c-toxcore/pull/1557) chore: Add conan support
+- [#1537](https://github.com/TokTok/c-toxcore/pull/1537) chore: Cygwin build
+- [#1516](https://github.com/TokTok/c-toxcore/pull/1516) cleanup: Make pylint and mypy happy with bootstrap_node_info.py.
+- [#1515](https://github.com/TokTok/c-toxcore/pull/1515) style: Run restyled on Travis and Circle CI scripts.
+- [#1514](https://github.com/TokTok/c-toxcore/pull/1514) refactor: Remove multi-declarators entirely.
+- [#1513](https://github.com/TokTok/c-toxcore/pull/1513) refactor: Disallow multiple initialised declarators per decl.
+- [#1510](https://github.com/TokTok/c-toxcore/pull/1510) chore: Don't build pushes to branches, only to tags.
+- [#1504](https://github.com/TokTok/c-toxcore/pull/1504) chore: Remove release-drafter configuration in favour of global one.
+- [#1498](https://github.com/TokTok/c-toxcore/pull/1498) refactor: Limit scope of loop iterators.
+- [#1497](https://github.com/TokTok/c-toxcore/pull/1497) refactor: Use bash arrays instead of strings for static analysis scripts.
+- [#1496](https://github.com/TokTok/c-toxcore/pull/1496) cleanup: Stop hard-coding packet IDs in tests.
+- [#1495](https://github.com/TokTok/c-toxcore/pull/1495) chore: Exclude imported libsodium sources from restyled.
+- [#1493](https://github.com/TokTok/c-toxcore/pull/1493) feat: Add logging to TCP and onion client.
+- [#1489](https://github.com/TokTok/c-toxcore/pull/1489) cleanup: `NAC_LIBS` -> `NACL_LIBS`.
+- [#1487](https://github.com/TokTok/c-toxcore/pull/1487) chore: Add autotools build to localbuild docker images.
+- [#1473](https://github.com/TokTok/c-toxcore/pull/1473) chore: Add a script to run Travis CI locally.
+- [#1467](https://github.com/TokTok/c-toxcore/pull/1467) fix: Fix a bug in savedata loading when malloc fails.
+- [#1464](https://github.com/TokTok/c-toxcore/pull/1464) fix: Fix errors on error paths found by oomer.
+- [#1463](https://github.com/TokTok/c-toxcore/pull/1463) cleanup: Add a check that we don't have any unused functions.
+- [#1462](https://github.com/TokTok/c-toxcore/pull/1462) cleanup: Include `<string.h>` for `explicit_bzero`.
+- [#1436](https://github.com/TokTok/c-toxcore/pull/1436) chore: Enable cimple tests by default but allow disabling them.
+
+### Closed issues:
+
+- [#1598](https://github.com/TokTok/c-toxcore/issues/1598) ERROR:  heap-buffer-overflow in group.c found with AddressSanitizer
+- [#1326](https://github.com/TokTok/c-toxcore/issues/1326) the cause is great, but this thing is completely unusable
+- [#1319](https://github.com/TokTok/c-toxcore/issues/1319) Is this new application is safe & trusted ??
+- [#1236](https://github.com/TokTok/c-toxcore/issues/1236) Ruby Extension?
+- [#1149](https://github.com/TokTok/c-toxcore/issues/1149) uTox aborts on toxcore restart
+- [#886](https://github.com/TokTok/c-toxcore/issues/886) Maybe need to set the stacksize for musl-libc
+
 ## v0.2.12
 
 ### Merged PRs:
 
+- [#1458](https://github.com/TokTok/c-toxcore/pull/1458) Release 0.2.12
 - [#1457](https://github.com/TokTok/c-toxcore/pull/1457) Disable non-hermetic tests by default.
 - [#1456](https://github.com/TokTok/c-toxcore/pull/1456) Limit the number of friends you can have to ~4 billion.
 - [#1452](https://github.com/TokTok/c-toxcore/pull/1452) Add execution trace option for debugging.
-- [#1447](https://github.com/TokTok/c-toxcore/pull/1447) Udp dht group chats
 - [#1444](https://github.com/TokTok/c-toxcore/pull/1444) Set up release-drafter to automatically draft the next release.
 - [#1443](https://github.com/TokTok/c-toxcore/pull/1443) Allow test coverage to fluctuate 2% up and down, but not below 80%.
 - [#1442](https://github.com/TokTok/c-toxcore/pull/1442) Add CODEOWNERS and settings.yml files.
