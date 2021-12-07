@@ -12,7 +12,6 @@ clang++ -o /dev/null amalgamation.cc \
   -Wno-alloca \
   -Wno-c++98-compat-pedantic \
   -Wno-c99-extensions \
-  -Wno-cast-align \
   -Wno-conversion \
   -Wno-covered-switch-default \
   -Wno-disabled-macro-expansion \

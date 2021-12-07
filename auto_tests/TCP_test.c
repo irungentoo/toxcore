@@ -386,7 +386,7 @@ static uint8_t response_callback_connection_id;
 static uint8_t response_callback_public_key[CRYPTO_PUBLIC_KEY_SIZE];
 static int response_callback(void *object, uint8_t connection_id, const uint8_t *public_key)
 {
-    if (set_tcp_connection_number((TCP_Client_Connection *)((char *)object - 2), connection_id, 7) != 0) {
+    if (set_tcp_connection_number((TCP_Client_Connection *)(void *)((char *)object - 2), connection_id, 7) != 0) {
         return 1;
     }
 
