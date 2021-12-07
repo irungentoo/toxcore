@@ -213,7 +213,7 @@ static void handle_signal(int signum)
 int main(int argc, char *argv[])
 {
     umask(077);
-    char *cfg_file_path;
+    char *cfg_file_path = nullptr;
     LOG_BACKEND log_backend;
     bool run_in_foreground;
 
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Onion *onion = new_onion(mono_time, dht);
+    Onion *onion = new_onion(logger, mono_time, dht);
 
     if (!onion) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion. Exiting.\n");
@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Onion_Announce *onion_a = new_onion_announce(mono_time, dht);
+    Onion_Announce *onion_a = new_onion_announce(logger, mono_time, dht);
 
     if (!onion_a) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox Onion Announce. Exiting.\n");

@@ -10,11 +10,13 @@
 #define C_TOXCORE_TOXCORE_ONION_H
 
 #include "DHT.h"
+#include "logger.h"
 #include "mono_time.h"
 
 typedef int onion_recv_1_cb(void *object, IP_Port dest, const uint8_t *data, uint16_t length);
 
 typedef struct Onion {
+    const Logger *log;
     Mono_Time *mono_time;
     DHT *dht;
     Networking_Core *net;
@@ -143,7 +145,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
  */
 void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *object);
 
-Onion *new_onion(Mono_Time *mono_time, DHT *dht);
+Onion *new_onion(const Logger *log, Mono_Time *mono_time, DHT *dht);
 
 void kill_onion(Onion *onion);
 

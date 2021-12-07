@@ -650,7 +650,7 @@ void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *o
     onion->callback_object = object;
 }
 
-Onion *new_onion(Mono_Time *mono_time, DHT *dht)
+Onion *new_onion(const Logger *log, Mono_Time *mono_time, DHT *dht)
 {
     if (dht == nullptr) {
         return nullptr;
@@ -662,6 +662,7 @@ Onion *new_onion(Mono_Time *mono_time, DHT *dht)
         return nullptr;
     }
 
+    onion->log = log;
     onion->dht = dht;
     onion->net = dht_get_net(dht);
     onion->mono_time = mono_time;

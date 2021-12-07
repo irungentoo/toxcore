@@ -1959,8 +1959,8 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
         return nullptr;
     }
 
-    m->onion = new_onion(m->mono_time, m->dht);
-    m->onion_a = new_onion_announce(m->mono_time, m->dht);
+    m->onion = new_onion(m->log, m->mono_time, m->dht);
+    m->onion_a = new_onion_announce(m->log, m->mono_time, m->dht);
     m->onion_c =  new_onion_client(m->log, m->mono_time, m->net_crypto);
     m->fr_c = new_friend_connections(m->log, m->mono_time, m->onion_c, options->local_discovery_enabled);
 
