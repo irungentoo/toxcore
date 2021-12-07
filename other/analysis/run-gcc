@@ -8,12 +8,13 @@ g++ -O3 -o /dev/null amalgamation.cc \
   "${CPPFLAGS[@]}" \
   "${LDFLAGS[@]}" \
   -std=c++11 \
-  -pedantic \
   -fdiagnostics-color=always \
   -Wall \
   -Wextra \
-  -Wno-aggregate-return \
+  -Werror \
   -Wno-aggressive-loop-optimizations \
+  -Wno-error=null-dereference \
+  -Wno-error=type-limits \
   -Wno-float-conversion \
   -Wno-format-signedness \
   -Wno-missing-field-initializers \

@@ -1655,6 +1655,7 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
     }
 
     /* can't happen */
+    SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_OK);
     return 0;
 }
 
