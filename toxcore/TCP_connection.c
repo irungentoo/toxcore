@@ -1438,27 +1438,21 @@ static void do_tcp_conns(const Logger *logger, TCP_Connections *tcp_c, void *use
 
 static void kill_nonused_tcp(TCP_Connections *tcp_c)
 {
-    if (tcp_c->tcp_connections_length == 0) {
+    if (tcp_c->tcp_connections_length <= RECOMMENDED_FRIEND_TCP_CONNECTIONS) {
         return;
     }
 
     uint32_t num_online = 0;
-    uint32_t num_kill = 0;
-    VLA(unsigned int, to_kill, tcp_c->tcp_connections_length);
 
     for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
         TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
 
-        if (tcp_con) {
-            if (tcp_con->status == TCP_CONN_CONNECTED) {
-                if (!tcp_con->onion && !tcp_con->lock_count
-                        && mono_time_is_timeout(tcp_c->mono_time, tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
-                    to_kill[num_kill] = i;
-                    ++num_kill;
-                }
+        if (tcp_con == nullptr) {
+            continue;
+        }
 
-                ++num_online;
-            }
+        if (tcp_con->status == TCP_CONN_CONNECTED) {
+            ++num_online;
         }
     }
 
@@ -1466,14 +1460,26 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
         return;
     }
 
-    uint32_t n = num_online - RECOMMENDED_FRIEND_TCP_CONNECTIONS;
+    const uint32_t max_kill_count = num_online - RECOMMENDED_FRIEND_TCP_CONNECTIONS;
+    uint32_t kill_count = 0;
 
-    if (n < num_kill) {
-        num_kill = n;
-    }
+    for (uint32_t i = 0; i < tcp_c->tcp_connections_length && kill_count < max_kill_count; ++i) {
+        TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
 
-    for (uint32_t i = 0; i < num_kill; ++i) {
-        kill_tcp_relay_connection(tcp_c, to_kill[i]);
+        if (tcp_con == nullptr) {
+            continue;
+        }
+
+        if (tcp_con->status == TCP_CONN_CONNECTED) {
+            if (tcp_con->onion || tcp_con->lock_count) {  // connection is in use so we skip it
+                continue;
+            }
+
+            if (mono_time_is_timeout(tcp_c->mono_time, tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
+                kill_tcp_relay_connection(tcp_c, i);
+                ++kill_count;
+            }
+        }
     }
 }
 
