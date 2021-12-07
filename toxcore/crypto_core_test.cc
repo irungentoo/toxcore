@@ -65,14 +65,14 @@ std::pair<clock_t, clock_t> memcmp_median(uint8_t const *src, uint8_t const *sam
  */
 TEST(CryptoCore, MemcmpTimingIsDataIndependent) {
   // A random piece of memory.
-  std::vector<uint8_t> src(CRYPTO_TEST_MEMCMP_SIZE);
+  std::array<uint8_t, CRYPTO_TEST_MEMCMP_SIZE> src;
   random_bytes(src.data(), CRYPTO_TEST_MEMCMP_SIZE);
 
   // A separate piece of memory containing the same data.
-  std::vector<uint8_t> same = src;
+  std::array<uint8_t, CRYPTO_TEST_MEMCMP_SIZE> same = src;
 
   // Another piece of memory containing different data.
-  std::vector<uint8_t> not_same(CRYPTO_TEST_MEMCMP_SIZE);
+  std::array<uint8_t, CRYPTO_TEST_MEMCMP_SIZE> not_same;
   random_bytes(not_same.data(), CRYPTO_TEST_MEMCMP_SIZE);
 
   // Once we have C++17:
@@ -87,6 +87,41 @@ TEST(CryptoCore, MemcmpTimingIsDataIndependent) {
       << "Delta time is too long (" << delta << " >= " << CRYPTO_TEST_MEMCMP_EPS << ")\n"
       << "Time of the same data comparison: " << result.first << " clocks\n"
       << "Time of the different data comparison: " << result.second << " clocks";
+}
+
+TEST(CryptoCore, IncrementNonce) {
+  using Nonce = std::array<uint8_t, CRYPTO_NONCE_SIZE>;
+  Nonce nonce{};
+  increment_nonce(nonce.data());
+  EXPECT_EQ(nonce,
+            (Nonce{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}));
+
+  for (int i = 0; i < 0x1F4; ++i) {
+    increment_nonce(nonce.data());
+  }
+
+  EXPECT_EQ(
+      nonce,
+      (Nonce{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01, 0xF5}}));
+}
+
+TEST(CryptoCore, IncrementNonceNumber) {
+  using Nonce = std::array<uint8_t, CRYPTO_NONCE_SIZE>;
+  Nonce nonce{};
+
+  increment_nonce_number(nonce.data(), 0x1F5);
+  EXPECT_EQ(
+      nonce,
+      (Nonce{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01, 0xF5}}));
+
+  increment_nonce_number(nonce.data(), 0x1F5);
+  EXPECT_EQ(
+      nonce,
+      (Nonce{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x03, 0xEA}}));
+
+  increment_nonce_number(nonce.data(), 0x12345678);
+  EXPECT_EQ(nonce, (Nonce{{0, 0, 0, 0, 0, 0, 0, 0, 0,    0,    0,    0,
+                           0, 0, 0, 0, 0, 0, 0, 0, 0x12, 0x34, 0x5A, 0x62}}));
 }
 
 }  // namespace

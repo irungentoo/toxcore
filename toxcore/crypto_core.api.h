@@ -237,7 +237,7 @@ static void increment_nonce(uint8_t[CRYPTO_NONCE_SIZE] nonce);
  * Increment the given nonce by a given number. The number should be in host
  * byte order.
  */
-static void increment_nonce_number(uint8_t[CRYPTO_NONCE_SIZE] nonce, uint32_t host_order_num);
+static void increment_nonce_number(uint8_t[CRYPTO_NONCE_SIZE] nonce, uint32_t increment);
 
 /**
  * Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes.
