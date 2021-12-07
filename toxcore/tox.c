@@ -32,37 +32,24 @@
 
 #define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
 
-#if TOX_HASH_LENGTH != CRYPTO_SHA256_SIZE
-#error "TOX_HASH_LENGTH is assumed to be equal to CRYPTO_SHA256_SIZE"
-#endif
-
-#if FILE_ID_LENGTH != CRYPTO_SYMMETRIC_KEY_SIZE
-#error "FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE"
-#endif
-
-#if TOX_FILE_ID_LENGTH != CRYPTO_SYMMETRIC_KEY_SIZE
-#error "TOX_FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE"
-#endif
-
-#if TOX_FILE_ID_LENGTH != TOX_HASH_LENGTH
-#error "TOX_FILE_ID_LENGTH is assumed to be equal to TOX_HASH_LENGTH"
-#endif
-
-#if TOX_PUBLIC_KEY_SIZE != CRYPTO_PUBLIC_KEY_SIZE
-#error "TOX_PUBLIC_KEY_SIZE is assumed to be equal to CRYPTO_PUBLIC_KEY_SIZE"
-#endif
-
-#if TOX_SECRET_KEY_SIZE != CRYPTO_SECRET_KEY_SIZE
-#error "TOX_SECRET_KEY_SIZE is assumed to be equal to CRYPTO_SECRET_KEY_SIZE"
-#endif
-
-#if TOX_MAX_NAME_LENGTH != MAX_NAME_LENGTH
-#error "TOX_MAX_NAME_LENGTH is assumed to be equal to MAX_NAME_LENGTH"
-#endif
-
-#if TOX_MAX_STATUS_MESSAGE_LENGTH != MAX_STATUSMESSAGE_LENGTH
-#error "TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH"
-#endif
+//!TOKSTYLE-
+static_assert(TOX_HASH_LENGTH == CRYPTO_SHA256_SIZE,
+              "TOX_HASH_LENGTH is assumed to be equal to CRYPTO_SHA256_SIZE");
+static_assert(FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
+              "FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE");
+static_assert(TOX_FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
+              "TOX_FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE");
+static_assert(TOX_FILE_ID_LENGTH == TOX_HASH_LENGTH,
+              "TOX_FILE_ID_LENGTH is assumed to be equal to TOX_HASH_LENGTH");
+static_assert(TOX_PUBLIC_KEY_SIZE == CRYPTO_PUBLIC_KEY_SIZE,
+              "TOX_PUBLIC_KEY_SIZE is assumed to be equal to CRYPTO_PUBLIC_KEY_SIZE");
+static_assert(TOX_SECRET_KEY_SIZE == CRYPTO_SECRET_KEY_SIZE,
+              "TOX_SECRET_KEY_SIZE is assumed to be equal to CRYPTO_SECRET_KEY_SIZE");
+static_assert(TOX_MAX_NAME_LENGTH == MAX_NAME_LENGTH,
+              "TOX_MAX_NAME_LENGTH is assumed to be equal to MAX_NAME_LENGTH");
+static_assert(TOX_MAX_STATUS_MESSAGE_LENGTH == MAX_STATUSMESSAGE_LENGTH,
+              "TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH");
+//!TOKSTYLE+
 
 struct Tox {
     // XXX: Messenger *must* be the first member, because toxav casts its

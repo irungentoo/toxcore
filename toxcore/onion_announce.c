@@ -26,6 +26,11 @@
 #define DATA_REQUEST_MIN_SIZE ONION_DATA_REQUEST_MIN_SIZE
 #define DATA_REQUEST_MIN_SIZE_RECV (DATA_REQUEST_MIN_SIZE + ONION_RETURN_3)
 
+//!TOKSTYLE-
+static_assert(ONION_PING_ID_SIZE == CRYPTO_PUBLIC_KEY_SIZE,
+              "announce response packets assume that ONION_PING_ID_SIZE is equal to CRYPTO_PUBLIC_KEY_SIZE");
+//!TOKSTYLE+
+
 typedef struct Onion_Announce_Entry {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
     IP_Port ret_ip_port;

@@ -24,10 +24,6 @@
 /* This cannot be bigger than 256 */
 #define MAX_CONCURRENT_FILE_PIPES 256
 
-#if !defined(__SPLINT__) && MAX_CONCURRENT_FILE_PIPES > UINT8_MAX + 1
-#error "uint8_t cannot represent all file transfer numbers"
-#endif
-
 
 #define FRIEND_ADDRESS_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint32_t) + sizeof(uint16_t))
 

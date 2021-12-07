@@ -24,6 +24,11 @@
 #include "state.h"
 #include "util.h"
 
+//!TOKSTYLE-
+static_assert(MAX_CONCURRENT_FILE_PIPES <= UINT8_MAX + 1,
+              "uint8_t cannot represent all file transfer numbers");
+//!TOKSTYLE+
+
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
                                 uint32_t length, uint8_t congestion_control);
 static void m_register_default_plugins(Messenger *m);

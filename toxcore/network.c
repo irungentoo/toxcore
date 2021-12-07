@@ -194,13 +194,12 @@ static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
 #endif
 #endif
 
-#if TOX_INET6_ADDRSTRLEN < INET6_ADDRSTRLEN
-#error "TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)"
-#endif
-
-#if TOX_INET_ADDRSTRLEN < INET_ADDRSTRLEN
-#error "TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)"
-#endif
+//!TOKSTYLE-
+static_assert(TOX_INET6_ADDRSTRLEN >= INET6_ADDRSTRLEN,
+              "TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)");
+static_assert(TOX_INET_ADDRSTRLEN >= INET_ADDRSTRLEN,
+              "TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)");
+//!TOKSTYLE+
 
 static int make_proto(int proto)
 {
