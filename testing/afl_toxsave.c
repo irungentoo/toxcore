@@ -20,6 +20,7 @@ int main(int argc, char **argv)
     size_t bytes_read = fread(buffer, filelen, 1, fileptr);
 
     if (bytes_read != filelen) {
+        fclose(fileptr);
         free(buffer);
         return -1;
     }

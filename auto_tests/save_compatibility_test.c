@@ -132,7 +132,7 @@ static void test_save_compatibility(const char *save_path)
 
 int main(int argc, char *argv[])
 {
-    char base_path[4096];
+    char base_path[4096] = {0};
 
     if (argc <= 1) {
         const char *srcdir = getenv("srcdir");
@@ -141,10 +141,10 @@ int main(int argc, char *argv[])
             srcdir = ".";
         }
 
-        strcpy(base_path, srcdir);
+        snprintf(base_path, sizeof(base_path), "%s", srcdir);
     } else {
-        strcpy(base_path, argv[1]);
-        base_path[strrchr(base_path, '/') - base_path] = 0;
+        snprintf(base_path, sizeof(base_path), "%s", argv[1]);
+        base_path[strrchr(base_path, '/') - base_path] = '\0';
     }
 
     char save_path[4096 + sizeof(LOADED_SAVE_FILE)];
