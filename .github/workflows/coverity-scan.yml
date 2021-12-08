@@ -1,0 +1,49 @@
+name: coverity-scan
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  latest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install libraries
+        run:
+          apt-get update &&
+          apt-get install -y --no-install-recommends
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+
+      - name: Download Coverity Build Tool
+        run: |
+          wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=$TOKEN&project=TokTok/c-toxcore" -O cov-analysis-linux64.tar.gz
+          mkdir cov-analysis-linux64
+          tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
+        env:
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+
+      - name: Run autoreconf
+        run: autoreconf
+
+      - name: Configure
+        run: ./configure
+
+      - name: Build with cov-build
+        run: cov-analysis-linux64/bin/cov-build --dir cov-int make
+
+      - name: Submit the result to Coverity Scan
+        run:
+          tar czvf c-toxcore.tgz cov-int &&
+          curl
+            --form project=TokTok/c-toxcore
+            --form token=$TOKEN
+            --form email=iphydf@gmail.com
+            --form file=@c-toxcore.tgz
+            --form version=master
+            --form description="$(git rev-parse HEAD)"
+            https://scan.coverity.com/builds
+        env:
+          TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
