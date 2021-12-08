@@ -12,9 +12,9 @@
 #include "config_defaults.h"
 #include "log.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #include <libconfig.h>
 
@@ -242,7 +242,6 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
         size_t motd_length = tmp_motd_length > MAX_MOTD_LENGTH ? MAX_MOTD_LENGTH : tmp_motd_length;
         *motd = (char *)malloc(motd_length);
         snprintf(*motd, motd_length, "%s", tmp_motd);
-        (*motd)[motd_length - 1] = '\0';
     }
 
     config_destroy(&cfg);
