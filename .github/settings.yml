@@ -15,6 +15,7 @@ branches:
           - Codacy Static Code Analysis
           - CodeFactor
           - "ci/circleci: asan"
+          - "ci/circleci: clang-tidy"
           - "ci/circleci: infer"
           - "ci/circleci: static-analysis"
           - "ci/circleci: tsan"

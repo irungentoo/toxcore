@@ -1,0 +1,62 @@
+#!/bin/sh
+
+CHECKS="*"
+CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
+CHECKS="$CHECKS,-bugprone-reserved-identifier"
+CHECKS="$CHECKS,-bugprone-sizeof-expression"
+CHECKS="$CHECKS,-cert-dcl37-c"
+CHECKS="$CHECKS,-cert-dcl51-cpp"
+CHECKS="$CHECKS,-clang-analyzer-optin.performance.Padding"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-magic-numbers"
+CHECKS="$CHECKS,-cppcoreguidelines-init-variables"
+CHECKS="$CHECKS,-hicpp-multiway-paths-covered"
+CHECKS="$CHECKS,-hicpp-signed-bitwise"
+CHECKS="$CHECKS,-llvm-else-after-return"
+CHECKS="$CHECKS,-llvmlibc-restrict-system-libc-headers"
+CHECKS="$CHECKS,-misc-redundant-expression"
+CHECKS="$CHECKS,-misc-unused-parameters"
+CHECKS="$CHECKS,-readability-else-after-return"
+CHECKS="$CHECKS,-readability-inconsistent-declaration-parameter-name"
+CHECKS="$CHECKS,-readability-magic-numbers"
+
+ERRORS="*"
+ERRORS="$ERRORS,-bugprone-branch-clone"
+ERRORS="$ERRORS,-bugprone-integer-division"
+ERRORS="$ERRORS,-bugprone-narrowing-conversions"
+ERRORS="$ERRORS,-clang-analyzer-core.NonNullParamChecker"
+ERRORS="$ERRORS,-clang-analyzer-core.NullDereference"
+ERRORS="$ERRORS,-clang-analyzer-optin.portability.UnixAPI"
+ERRORS="$ERRORS,-clang-analyzer-valist.Uninitialized"
+ERRORS="$ERRORS,-cppcoreguidelines-avoid-non-const-global-variables"
+ERRORS="$ERRORS,-cppcoreguidelines-narrowing-conversions"
+ERRORS="$ERRORS,-google-readability-casting"
+ERRORS="$ERRORS,-misc-no-recursion"
+ERRORS="$ERRORS,-readability-redundant-control-flow"
+
+# TODO(iphydf): Fix these.
+ERRORS="$ERRORS,-android-cloexec-accept"
+ERRORS="$ERRORS,-android-cloexec-fopen"
+ERRORS="$ERRORS,-bugprone-macro-parentheses"
+ERRORS="$ERRORS,-bugprone-posix-return"
+ERRORS="$ERRORS,-bugprone-signed-char-misuse"
+ERRORS="$ERRORS,-cert-err34-c"
+ERRORS="$ERRORS,-cert-str34-c"
+ERRORS="$ERRORS,-clang-analyzer-security.insecureAPI.strcpy"
+ERRORS="$ERRORS,-hicpp-uppercase-literal-suffix"
+ERRORS="$ERRORS,-readability-non-const-parameter"
+ERRORS="$ERRORS,-readability-uppercase-literal-suffix"
+
+set -eux
+
+clang-tidy-11 \
+  -p=_build \
+  --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
+  --checks="$CHECKS" \
+  --warnings-as-errors="$ERRORS" \
+  --use-color \
+  other/bootstrap_daemon/src/*.c \
+  other/*.c \
+  toxav/*.c \
+  toxcore/*.c \
+  toxencryptsave/*.c \
+  "$@"

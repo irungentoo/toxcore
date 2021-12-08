@@ -1129,7 +1129,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
             struct in_addr addr;
             fill_addr4(ip->ip.v4, &addr);
 
-            ip_str[0] = 0;
+            ip_str[0] = '\0';
             assert(make_family(ip->family) == AF_INET);
             inet_ntop4(&addr, ip_str, length);
         } else if (net_family_is_ipv6(ip->family)) {
@@ -1142,7 +1142,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
             inet_ntop6(&addr, &ip_str[1], length - 3);
             const size_t len = strlen(ip_str);
             ip_str[len] = ']';
-            ip_str[len + 1] = 0;
+            ip_str[len + 1] = '\0';
         } else {
             snprintf(ip_str, length, "(IP invalid, family %u)", ip->family.value);
         }
@@ -1151,7 +1151,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
     }
 
     /* brute force protection against lacking termination */
-    ip_str[length - 1] = 0;
+    ip_str[length - 1] = '\0';
     return ip_str;
 }
 

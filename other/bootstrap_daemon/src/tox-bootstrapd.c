@@ -12,9 +12,9 @@
 #endif
 
 // system provided
+#include <signal.h> // system header, rather than C, because we need it for POSIX sigaction(2)
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <signal.h> // system header, rather than C, because we need it for POSIX sigaction(2)
 #include <unistd.h>
 
 // C
