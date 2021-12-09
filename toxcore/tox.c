@@ -1001,7 +1001,7 @@ static void set_friend_error(const Logger *log, int32_t ret, Tox_Err_Friend_Add 
 
         default:
             /* can't happen */
-            LOGGER_FATAL(log, "impossible: unknown friend-add error");
+            LOGGER_FATAL(log, "impossible return value: %d", ret);
             break;
     }
 }
@@ -1364,7 +1364,7 @@ static void set_message_error(const Logger *log, int ret, Tox_Err_Friend_Send_Me
 
         default:
             /* can't happen */
-            LOGGER_FATAL(log, "impossible: unknown send-message error: %d", ret);
+            LOGGER_FATAL(log, "impossible return value: %d", ret);
             break;
     }
 }
@@ -1447,7 +1447,8 @@ bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, To
             return 0;
 
         case -4:
-            /* can't happen */
+            /* can't happen (this code is returned if `control` is invalid type) */
+            LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
             return 0;
 
         case -5:
@@ -1468,6 +1469,8 @@ bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, To
     }
 
     /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
     return 0;
 }
 
@@ -1512,6 +1515,8 @@ bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint6
     }
 
     /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
     return 0;
 }
 
@@ -1595,6 +1600,8 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
     }
 
     /* can't happen */
+    LOGGER_FATAL(tox->m->log, "impossible return value: %ld", file_num);
+
     return UINT32_MAX;
 }
 
@@ -1642,7 +1649,8 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
     }
 
     /* can't happen */
-    SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_OK);
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
+
     return 0;
 }
 
