@@ -236,10 +236,9 @@ void increment_nonce(uint8_t *nonce)
      * that loop bounds and their potential underflow or overflow
      * are independent of user-controlled input (you may have heard of the Heartbleed bug).
      */
-    uint32_t i = crypto_box_NONCEBYTES;
     uint_fast16_t carry = 1U;
 
-    for (; i != 0; --i) {
+    for (uint32_t i = crypto_box_NONCEBYTES; i != 0; --i) {
         carry += (uint_fast16_t)nonce[i - 1];
         nonce[i - 1] = (uint8_t)carry;
         carry >>= 8;
@@ -260,10 +259,9 @@ void increment_nonce_number(uint8_t *nonce, uint32_t increment)
     num_as_nonce[crypto_box_NONCEBYTES - 2] = increment >> 8;
     num_as_nonce[crypto_box_NONCEBYTES - 1] = increment;
 
-    uint32_t i = crypto_box_NONCEBYTES;
     uint_fast16_t carry = 0U;
 
-    for (; i != 0; --i) {
+    for (uint32_t i = crypto_box_NONCEBYTES; i != 0; --i) {
         carry += (uint_fast16_t)nonce[i - 1] + (uint_fast16_t)num_as_nonce[i - 1];
         nonce[i - 1] = (uint8_t)carry;
         carry >>= 8;

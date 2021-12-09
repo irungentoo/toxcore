@@ -137,9 +137,8 @@ void ac_iterate(ACSession *ac)
     struct JitterBuffer *const j_buf = (struct JitterBuffer *)ac->j_buf;
 
     int rc = 0;
-    struct RTPMessage *msg = jbuf_read(j_buf, &rc);
 
-    for (; msg != nullptr || rc == 2; msg = jbuf_read(j_buf, &rc)) {
+    for (struct RTPMessage *msg = jbuf_read(j_buf, &rc); msg != nullptr || rc == 2; msg = jbuf_read(j_buf, &rc)) {
         pthread_mutex_unlock(ac->queue_mutex);
 
         if (rc == 2) {
@@ -297,11 +296,13 @@ static struct JitterBuffer *jbuf_new(uint32_t capacity)
 }
 static void jbuf_clear(struct JitterBuffer *q)
 {
-    for (; q->bottom != q->top; ++q->bottom) {
+    while (q->bottom != q->top) {
         if (q->queue[q->bottom % q->size]) {
             free(q->queue[q->bottom % q->size]);
             q->queue[q->bottom % q->size] = nullptr;
         }
+
+        ++q->bottom;
     }
 }
 static void jbuf_free(struct JitterBuffer *q)

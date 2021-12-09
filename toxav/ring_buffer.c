@@ -105,9 +105,9 @@ uint16_t rb_size(const RingBuffer *b)
 
 uint16_t rb_data(const RingBuffer *b, void **dest)
 {
-    uint16_t i = 0;
+    uint16_t i;
 
-    for (; i < rb_size(b); ++i) {
+    for (i = 0; i < rb_size(b); ++i) {
         dest[i] = b->data[(b->start + i) % b->size];
     }
 

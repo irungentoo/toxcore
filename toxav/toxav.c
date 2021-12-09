@@ -242,9 +242,7 @@ void toxav_iterate(ToxAV *av)
     uint64_t start = current_time_monotonic(av->toxav_mono_time);
     int32_t rc = 500;
 
-    ToxAVCall *i = av->calls[av->calls_head];
-
-    for (; i; i = i->next) {
+    for (ToxAVCall *i = av->calls[av->calls_head]; i; i = i->next) {
         if (i->active) {
             pthread_mutex_lock(i->toxav_call_mutex);
             pthread_mutex_unlock(av->mutex);

@@ -545,9 +545,7 @@ static MSICall *new_call(MSISession *session, uint32_t friend_number)
         session->calls = tmp;
 
         /* Set fields in between to null */
-        uint32_t i = session->calls_tail + 1;
-
-        for (; i < friend_number; ++i) {
+        for (uint32_t i = session->calls_tail + 1; i < friend_number; ++i) {
             session->calls[i] = nullptr;
         }
 

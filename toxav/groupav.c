@@ -61,11 +61,13 @@ static Group_JitterBuffer *create_queue(unsigned int capacity)
 
 static void clear_queue(Group_JitterBuffer *q)
 {
-    for (; q->bottom != q->top; ++q->bottom) {
+    while (q->bottom != q->top) {
         if (q->queue[q->bottom % q->size]) {
             free(q->queue[q->bottom % q->size]);
             q->queue[q->bottom % q->size] = nullptr;
         }
+
+        ++q->bottom;
     }
 }
 
