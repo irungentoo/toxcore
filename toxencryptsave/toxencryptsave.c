@@ -14,7 +14,6 @@
 #include "../toxcore/crypto_core.h"
 #include "defines.h"
 #include "toxencryptsave.h"
-#define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
 
 #ifdef VANILLA_NACL
 #include <crypto_box.h>
@@ -37,6 +36,13 @@ static_assert(TOX_PASS_ENCRYPTION_EXTRA_LENGTH == (crypto_box_MACBYTES + crypto_
               crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH),
               "TOX_PASS_ENCRYPTION_EXTRA_LENGTH is assumed to be equal to (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)");
 //!TOKSTYLE+
+
+#define SET_ERROR_PARAMETER(param, x) \
+    do {                              \
+        if (param) {                  \
+            *param = x;               \
+        }                             \
+    } while (0)
 
 uint32_t tox_pass_salt_length(void)
 {

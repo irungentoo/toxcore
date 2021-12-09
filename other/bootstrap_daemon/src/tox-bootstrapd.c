@@ -42,7 +42,13 @@
 #include "log.h"
 
 
-#define SLEEP_MILLISECONDS(MS) usleep(1000*MS)
+static void sleep_milliseconds(uint32_t ms)
+{
+    struct timespec req;
+    req.tv_sec = ms / 1000;
+    req.tv_nsec = (long)ms % 1000 * 1000 * 1000;
+    nanosleep(&req, nullptr);
+}
 
 // Uses the already existing key or creates one if it didn't exist
 //
@@ -514,7 +520,7 @@ int main(int argc, char *argv[])
             waiting_for_dht_connection = 0;
         }
 
-        SLEEP_MILLISECONDS(30);
+        sleep_milliseconds(30);
     }
 
     switch (caught_signal) {

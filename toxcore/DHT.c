@@ -620,30 +620,37 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
  *
  *  return index or UINT32_MAX if not found.
  */
-#define INDEX_OF_PK(array, size, pk)               \
-  do {                                             \
-      for (uint32_t i = 0; i < size; ++i) {        \
-          if (id_equal(array[i].public_key, pk)) { \
-              return i;                            \
-          }                                        \
-      }                                            \
-                                                   \
-      return UINT32_MAX;                           \
-  } while (0)
-
 static uint32_t index_of_client_pk(const Client_data *array, uint32_t size, const uint8_t *pk)
 {
-    INDEX_OF_PK(array, size, pk);
+    for (uint32_t i = 0; i < size; ++i) {
+        if (id_equal(array[i].public_key, pk)) {
+            return i;
+        }
+    }
+
+    return UINT32_MAX;
 }
 
 static uint32_t index_of_friend_pk(const DHT_Friend *array, uint32_t size, const uint8_t *pk)
 {
-    INDEX_OF_PK(array, size, pk);
+    for (uint32_t i = 0; i < size; ++i) {
+        if (id_equal(array[i].public_key, pk)) {
+            return i;
+        }
+    }
+
+    return UINT32_MAX;
 }
 
 static uint32_t index_of_node_pk(const Node_format *array, uint32_t size, const uint8_t *pk)
 {
-    INDEX_OF_PK(array, size, pk);
+    for (uint32_t i = 0; i < size; ++i) {
+        if (id_equal(array[i].public_key, pk)) {
+            return i;
+        }
+    }
+
+    return UINT32_MAX;
 }
 
 /* Find index of Client_data with ip_port equal to param ip_port.
@@ -2181,7 +2188,7 @@ static uint16_t nat_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t 
     return num;
 }
 
-static void punch_holes(DHT *dht, IP ip, uint16_t *port_list, uint16_t numports, uint16_t friend_num)
+static void punch_holes(DHT *dht, IP ip, const uint16_t *port_list, uint16_t numports, uint16_t friend_num)
 {
     if (!dht->hole_punching_enabled) {
         return;

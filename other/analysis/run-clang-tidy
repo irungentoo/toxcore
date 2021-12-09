@@ -1,6 +1,8 @@
 #!/bin/sh
 
 CHECKS="*"
+CHECKS="$CHECKS,-android-cloexec-accept"
+CHECKS="$CHECKS,-android-cloexec-fopen"
 CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
 CHECKS="$CHECKS,-bugprone-reserved-identifier"
 CHECKS="$CHECKS,-bugprone-sizeof-expression"
@@ -18,24 +20,24 @@ CHECKS="$CHECKS,-misc-unused-parameters"
 CHECKS="$CHECKS,-readability-else-after-return"
 CHECKS="$CHECKS,-readability-inconsistent-declaration-parameter-name"
 CHECKS="$CHECKS,-readability-magic-numbers"
+CHECKS="$CHECKS,-readability-redundant-control-flow"
 
 ERRORS="*"
+# TODO(iphydf): Maybe fix these? Otherwise don't show them, if they are useless.
 ERRORS="$ERRORS,-bugprone-branch-clone"
 ERRORS="$ERRORS,-bugprone-integer-division"
 ERRORS="$ERRORS,-bugprone-narrowing-conversions"
 ERRORS="$ERRORS,-clang-analyzer-core.NonNullParamChecker"
 ERRORS="$ERRORS,-clang-analyzer-core.NullDereference"
 ERRORS="$ERRORS,-clang-analyzer-optin.portability.UnixAPI"
+ERRORS="$ERRORS,-clang-analyzer-unix.Malloc"
 ERRORS="$ERRORS,-clang-analyzer-valist.Uninitialized"
 ERRORS="$ERRORS,-cppcoreguidelines-avoid-non-const-global-variables"
 ERRORS="$ERRORS,-cppcoreguidelines-narrowing-conversions"
 ERRORS="$ERRORS,-google-readability-casting"
 ERRORS="$ERRORS,-misc-no-recursion"
-ERRORS="$ERRORS,-readability-redundant-control-flow"
 
 # TODO(iphydf): Fix these.
-ERRORS="$ERRORS,-android-cloexec-accept"
-ERRORS="$ERRORS,-android-cloexec-fopen"
 ERRORS="$ERRORS,-bugprone-macro-parentheses"
 ERRORS="$ERRORS,-bugprone-posix-return"
 ERRORS="$ERRORS,-bugprone-signed-char-misuse"
@@ -43,7 +45,6 @@ ERRORS="$ERRORS,-cert-err34-c"
 ERRORS="$ERRORS,-cert-str34-c"
 ERRORS="$ERRORS,-clang-analyzer-security.insecureAPI.strcpy"
 ERRORS="$ERRORS,-hicpp-uppercase-literal-suffix"
-ERRORS="$ERRORS,-readability-non-const-parameter"
 ERRORS="$ERRORS,-readability-uppercase-literal-suffix"
 
 set -eux

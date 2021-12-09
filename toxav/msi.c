@@ -315,31 +315,39 @@ static void msg_init(MSIMessage *dest, MSIRequest request)
     dest->request.exists = true;
     dest->request.value = request;
 }
+
+static bool check_size(const Logger *log, const uint8_t *bytes, int *constraint, uint8_t size)
+{
+    *constraint -= 2 + size;
+
+    if (*constraint < 1) {
+        LOGGER_ERROR(log, "Read over length!");
+        return false;
+    }
+
+    if (bytes[1] != size) {
+        LOGGER_ERROR(log, "Invalid data size!");
+        return false;
+    }
+
+    return true;
+}
+
+/* Assumes size == 1 */
+static bool check_enum_high(const Logger *log, const uint8_t *bytes, uint8_t enum_high)
+{
+    if (bytes[2] > enum_high) {
+        LOGGER_ERROR(log, "Failed enum high limit!");
+        return false;
+    }
+
+    return true;
+}
+
+
 static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data, uint16_t length)
 {
     /* Parse raw data received from socket into MSIMessage struct */
-
-#define CHECK_SIZE(bytes, constraint, size)          \
-    do {                                             \
-        constraint -= 2 + size;                      \
-        if (constraint < 1) {                        \
-            LOGGER_ERROR(log, "Read over length!");  \
-            return -1;                               \
-        }                                            \
-        if (bytes[1] != size) {                      \
-            LOGGER_ERROR(log, "Invalid data size!"); \
-            return -1;                               \
-        }                                            \
-    } while (0)
-
-    /* Assumes size == 1 */
-#define CHECK_ENUM_HIGH(bytes, enum_high)                 \
-    do {                                                  \
-        if (bytes[2] > enum_high) {                       \
-            LOGGER_ERROR(log, "Failed enum high limit!"); \
-            return -1;                                    \
-        }                                                 \
-    } while (0)
 
     assert(dest);
 
@@ -356,8 +364,11 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
     while (*it) {/* until end byte is hit */
         switch (*it) {
             case ID_REQUEST: {
-                CHECK_SIZE(it, size_constraint, 1);
-                CHECK_ENUM_HIGH(it, REQU_POP);
+                if (!check_size(log, it, &size_constraint, 1) ||
+                        !check_enum_high(log, it, REQU_POP)) {
+                    return -1;
+                }
+
                 dest->request.value = (MSIRequest)it[2];
                 dest->request.exists = true;
                 it += 3;
@@ -365,8 +376,11 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
             }
 
             case ID_ERROR: {
-                CHECK_SIZE(it, size_constraint, 1);
-                CHECK_ENUM_HIGH(it, MSI_E_UNDISCLOSED);
+                if (!check_size(log, it, &size_constraint, 1) ||
+                        !check_enum_high(log, it, MSI_E_UNDISCLOSED)) {
+                    return -1;
+                }
+
                 dest->error.value = (MSIError)it[2];
                 dest->error.exists = true;
                 it += 3;
@@ -374,7 +388,10 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
             }
 
             case ID_CAPABILITIES: {
-                CHECK_SIZE(it, size_constraint, 1);
+                if (!check_size(log, it, &size_constraint, 1)) {
+                    return -1;
+                }
+
                 dest->capabilities.value = it[2];
                 dest->capabilities.exists = true;
                 it += 3;
@@ -392,9 +409,6 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
         LOGGER_ERROR(log, "Invalid request field!");
         return -1;
     }
-
-#undef CHECK_ENUM_HIGH
-#undef CHECK_SIZE
 
     return 0;
 }

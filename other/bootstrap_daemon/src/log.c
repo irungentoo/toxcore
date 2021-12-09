@@ -11,7 +11,7 @@
 #include "log_backend_stdout.h"
 #include "log_backend_syslog.h"
 
-#define INVALID_BACKEND (LOG_BACKEND)-1u
+#define INVALID_BACKEND ((LOG_BACKEND)-1u)
 static LOG_BACKEND current_backend = INVALID_BACKEND;
 
 bool log_open(LOG_BACKEND backend)

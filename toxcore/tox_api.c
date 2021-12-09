@@ -5,7 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
+#define SET_ERROR_PARAMETER(param, x) \
+    do {                              \
+        if (param) {                  \
+            *param = x;               \
+        }                             \
+    } while (0)
 
 //!TOKSTYLE-
 

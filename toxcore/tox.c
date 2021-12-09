@@ -30,7 +30,12 @@
 
 #include "../toxencryptsave/defines.h"
 
-#define SET_ERROR_PARAMETER(param, x) do { if (param) { *param = x; } } while (0)
+#define SET_ERROR_PARAMETER(param, x) \
+    do {                              \
+        if (param) {                  \
+            *param = x;               \
+        }                             \
+    } while (0)
 
 //!TOKSTYLE-
 static_assert(TOX_HASH_LENGTH == CRYPTO_SHA256_SIZE,
