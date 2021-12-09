@@ -1,0 +1,28 @@
+name: clang-tidy-review
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install compiledb
+        run: pip install compiledb
+      - name: Install dependencies
+        run:
+          sudo apt-get install -y --no-install-recommends
+            cmake
+            libconfig-dev
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+            pkg-config
+      - name: Generate compile_commands.json
+        run:
+          cmake . && compiledb make -j4
+
+      - uses: ZedThree/clang-tidy-review@v0.7.0
+        id: review
