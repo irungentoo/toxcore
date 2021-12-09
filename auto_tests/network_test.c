@@ -59,7 +59,7 @@ START_TEST(test_addr_resolv_localhost)
     ck_assert_msg(res > 0, "Resolver failed: %d, %s", error, strerror);
     net_kill_strerror(strerror);
 
-    ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6,
+    ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%d), got %u.", TOX_AF_INET6,
                   ip.family.value);
     IP6 ip6_loopback = get_ip6_loopback();
     ck_assert_msg(!memcmp(&ip.ip.v6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
@@ -83,7 +83,7 @@ START_TEST(test_addr_resolv_localhost)
     net_kill_strerror(strerror);
 
 #if USE_IPV6
-    ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%u), got %u.", TOX_AF_INET6,
+    ck_assert_msg(net_family_is_ipv6(ip.family), "Expected family TOX_AF_INET6 (%d), got %u.", TOX_AF_INET6,
                   ip.family.value);
     ck_assert_msg(!memcmp(&ip.ip.v6, &ip6_loopback, sizeof(IP6)), "Expected ::1, got %s.",
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));

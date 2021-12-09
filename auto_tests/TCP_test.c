@@ -154,7 +154,7 @@ START_TEST(test_basic)
     uint8_t packet_resp[4096];
     int recv_data_len = net_recv(sock, packet_resp, 2 + 2 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE);
     ck_assert_msg(recv_data_len == 2 + 2 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE,
-                  "Failed to receive server response to request. %u", recv_data_len);
+                  "Failed to receive server response to request. %d", recv_data_len);
     memcpy(&size, packet_resp, 2);
     ck_assert_msg(net_ntohs(size) == 2 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE,
                   "Wrong packet size for request response.");

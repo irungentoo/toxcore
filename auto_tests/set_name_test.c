@@ -71,7 +71,7 @@ static void test_set_name(void)
     tox_callback_friend_name(tox2, nickchange_callback);
     Tox_Err_Set_Info err_n;
     bool ret = tox_self_set_name(tox1, (const uint8_t *)NICKNAME, sizeof(NICKNAME), &err_n);
-    ck_assert_msg(ret && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_name failed because %u\n", err_n);
+    ck_assert_msg(ret && err_n == TOX_ERR_SET_INFO_OK, "tox_self_set_name failed because %d\n", err_n);
 
     bool nickname_updated = false;
 

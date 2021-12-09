@@ -47,7 +47,7 @@ static void t_toxav_call_cb(ToxAV *av, uint32_t friend_number, bool audio_enable
 
 static void t_toxav_call_state_cb(ToxAV *av, uint32_t friend_number, uint32_t state, void *user_data)
 {
-    printf("Handling CALL STATE callback: %d %p\n", state, (void *)av);
+    printf("Handling CALL STATE callback: %u %p\n", state, (void *)av);
     ((CallControl *)user_data)[friend_number].state = state;
 }
 

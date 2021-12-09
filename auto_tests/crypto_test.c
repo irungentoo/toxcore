@@ -135,35 +135,29 @@ END_TEST
 
 START_TEST(test_endtoend)
 {
-    unsigned char pk1[CRYPTO_PUBLIC_KEY_SIZE];
-    unsigned char sk1[CRYPTO_SECRET_KEY_SIZE];
-    unsigned char pk2[CRYPTO_PUBLIC_KEY_SIZE];
-    unsigned char sk2[CRYPTO_SECRET_KEY_SIZE];
-    unsigned char k1[CRYPTO_SHARED_KEY_SIZE];
-    unsigned char k2[CRYPTO_SHARED_KEY_SIZE];
-
-    unsigned char n[CRYPTO_NONCE_SIZE];
-
-    unsigned char m[500];
-    unsigned char c1[sizeof(m) + CRYPTO_MAC_SIZE];
-    unsigned char c2[sizeof(m) + CRYPTO_MAC_SIZE];
-    unsigned char c3[sizeof(m) + CRYPTO_MAC_SIZE];
-    unsigned char c4[sizeof(m) + CRYPTO_MAC_SIZE];
-    unsigned char m1[sizeof(m)];
-    unsigned char m2[sizeof(m)];
-    unsigned char m3[sizeof(m)];
-    unsigned char m4[sizeof(m)];
-
-    uint16_t mlen;
-    uint16_t c1len, c2len, c3len, c4len;
-    uint16_t m1len, m2len, m3len, m4len;
-
-    uint8_t testno;
-
     // Test 100 random messages and keypairs
-    for (testno = 0; testno < 100; testno++) {
+    for (uint8_t testno = 0; testno < 100; testno++) {
+        unsigned char pk1[CRYPTO_PUBLIC_KEY_SIZE];
+        unsigned char sk1[CRYPTO_SECRET_KEY_SIZE];
+        unsigned char pk2[CRYPTO_PUBLIC_KEY_SIZE];
+        unsigned char sk2[CRYPTO_SECRET_KEY_SIZE];
+        unsigned char k1[CRYPTO_SHARED_KEY_SIZE];
+        unsigned char k2[CRYPTO_SHARED_KEY_SIZE];
+
+        unsigned char n[CRYPTO_NONCE_SIZE];
+
+        unsigned char m[500];
+        unsigned char c1[sizeof(m) + CRYPTO_MAC_SIZE];
+        unsigned char c2[sizeof(m) + CRYPTO_MAC_SIZE];
+        unsigned char c3[sizeof(m) + CRYPTO_MAC_SIZE];
+        unsigned char c4[sizeof(m) + CRYPTO_MAC_SIZE];
+        unsigned char m1[sizeof(m)];
+        unsigned char m2[sizeof(m)];
+        unsigned char m3[sizeof(m)];
+        unsigned char m4[sizeof(m)];
+
         //Generate random message (random length from 100 to 500)
-        mlen = (random_u32() % 400) + 100;
+        const uint16_t mlen = (random_u32() % 400) + 100;
         rand_bytes(m, mlen);
         rand_bytes(n, CRYPTO_NONCE_SIZE);
 
@@ -178,10 +172,10 @@ START_TEST(test_endtoend)
         ck_assert_msg(memcmp(k1, k2, CRYPTO_SHARED_KEY_SIZE) == 0, "encrypt_precompute: bad");
 
         //Encrypt all four ways
-        c1len = encrypt_data(pk2, sk1, n, m, mlen, c1);
-        c2len = encrypt_data(pk1, sk2, n, m, mlen, c2);
-        c3len = encrypt_data_symmetric(k1, n, m, mlen, c3);
-        c4len = encrypt_data_symmetric(k2, n, m, mlen, c4);
+        const uint16_t c1len = encrypt_data(pk2, sk1, n, m, mlen, c1);
+        const uint16_t c2len = encrypt_data(pk1, sk2, n, m, mlen, c2);
+        const uint16_t c3len = encrypt_data_symmetric(k1, n, m, mlen, c3);
+        const uint16_t c4len = encrypt_data_symmetric(k2, n, m, mlen, c4);
 
         ck_assert_msg(c1len == c2len && c1len == c3len && c1len == c4len, "cyphertext lengths differ");
         ck_assert_msg(c1len == mlen + (uint16_t)CRYPTO_MAC_SIZE, "wrong cyphertext length");
@@ -189,10 +183,10 @@ START_TEST(test_endtoend)
                       && memcmp(c1, c4, c1len) == 0, "crypertexts differ");
 
         //Decrypt all four ways
-        m1len = decrypt_data(pk2, sk1, n, c1, c1len, m1);
-        m2len = decrypt_data(pk1, sk2, n, c1, c1len, m2);
-        m3len = decrypt_data_symmetric(k1, n, c1, c1len, m3);
-        m4len = decrypt_data_symmetric(k2, n, c1, c1len, m4);
+        const uint16_t m1len = decrypt_data(pk2, sk1, n, c1, c1len, m1);
+        const uint16_t m2len = decrypt_data(pk1, sk2, n, c1, c1len, m2);
+        const uint16_t m3len = decrypt_data_symmetric(k1, n, c1, c1len, m3);
+        const uint16_t m4len = decrypt_data_symmetric(k2, n, c1, c1len, m4);
 
         ck_assert_msg(m1len == m2len && m1len == m3len && m1len == m4len, "decrypted text lengths differ");
         ck_assert_msg(m1len == mlen, "wrong decrypted text length");

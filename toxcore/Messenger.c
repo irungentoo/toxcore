@@ -2614,17 +2614,9 @@ void do_messenger(Messenger *m, void *userdata)
             LOGGER_TRACE(m->log, "Friend num in DHT %u != friend num in msger %u", dht_get_num_friends(m->dht), m->numfriends);
         }
 
-        Friend *msgfptr;
-        DHT_Friend *dhtfptr;
-
         for (uint32_t friend_idx = 0; friend_idx < num_dhtfriends; ++friend_idx) {
-            if (dht2m[friend_idx] >= 0) {
-                msgfptr = &m->friendlist[dht2m[friend_idx]];
-            } else {
-                msgfptr = nullptr;
-            }
-
-            dhtfptr = dht_get_friend(m->dht, friend_idx);
+            const Friend *const msgfptr = dht2m[friend_idx] >= 0 ?  &m->friendlist[dht2m[friend_idx]] : nullptr;
+            const DHT_Friend *const dhtfptr = dht_get_friend(m->dht, friend_idx);
 
             if (msgfptr) {
                 char id_str[IDSTRING_LEN];
