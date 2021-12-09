@@ -43,17 +43,20 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
         const uint16_t type = lendian_to_host16(cookie_type & 0xFFFF);
 
         switch (state_load_callback(outer, data, length_sub, type)) {
-            case STATE_LOAD_STATUS_CONTINUE:
+            case STATE_LOAD_STATUS_CONTINUE: {
                 data += length_sub;
                 length -= length_sub;
                 break;
+            }
 
-            case STATE_LOAD_STATUS_ERROR:
+            case STATE_LOAD_STATUS_ERROR: {
                 LOGGER_ERROR(log, "Error occcured in state file (type: %u).", type);
                 return -1;
+            }
 
-            case STATE_LOAD_STATUS_END:
+            case STATE_LOAD_STATUS_END: {
                 return 0;
+            }
         }
     }
 

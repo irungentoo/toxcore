@@ -717,17 +717,19 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
     temp->proxy_info = *proxy_info;
 
     switch (proxy_info->proxy_type) {
-        case TCP_PROXY_HTTP:
+        case TCP_PROXY_HTTP: {
             temp->status = TCP_CLIENT_PROXY_HTTP_CONNECTING;
             proxy_http_generate_connection_request(temp);
             break;
+        }
 
-        case TCP_PROXY_SOCKS5:
+        case TCP_PROXY_SOCKS5: {
             temp->status = TCP_CLIENT_PROXY_SOCKS5_CONNECTING;
             proxy_socks5_generate_handshake(temp);
             break;
+        }
 
-        case TCP_PROXY_NONE:
+        case TCP_PROXY_NONE: {
             temp->status = TCP_CLIENT_CONNECTING;
 
             if (generate_handshake(temp) == -1) {
@@ -737,6 +739,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
             }
 
             break;
+        }
     }
 
     temp->kill_at = mono_time_get(mono_time) + TCP_CONNECTION_TIMEOUT;

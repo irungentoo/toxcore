@@ -1239,7 +1239,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 
     for (walker = server; (walker != nullptr) && !done; walker = walker->ai_next) {
         switch (walker->ai_family) {
-            case AF_INET:
+            case AF_INET: {
                 if (walker->ai_family == family) { /* AF_INET requested, done */
                     struct sockaddr_in *addr = (struct sockaddr_in *)(void *)walker->ai_addr;
                     get_ip4(&to->ip.v4, &addr->sin_addr);
@@ -1252,8 +1252,9 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                 }
 
                 break; /* switch */
+            }
 
-            case AF_INET6:
+            case AF_INET6: {
                 if (walker->ai_family == family) { /* AF_INET6 requested, done */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)(void *)walker->ai_addr;
@@ -1270,6 +1271,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                 }
 
                 break; /* switch */
+            }
         }
     }
 

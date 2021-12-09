@@ -355,32 +355,36 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
 
     while (*it) {/* until end byte is hit */
         switch (*it) {
-            case ID_REQUEST:
+            case ID_REQUEST: {
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, REQU_POP);
                 dest->request.value = (MSIRequest)it[2];
                 dest->request.exists = true;
                 it += 3;
                 break;
+            }
 
-            case ID_ERROR:
+            case ID_ERROR: {
                 CHECK_SIZE(it, size_constraint, 1);
                 CHECK_ENUM_HIGH(it, MSI_E_UNDISCLOSED);
                 dest->error.value = (MSIError)it[2];
                 dest->error.exists = true;
                 it += 3;
                 break;
+            }
 
-            case ID_CAPABILITIES:
+            case ID_CAPABILITIES: {
                 CHECK_SIZE(it, size_constraint, 1);
                 dest->capabilities.value = it[2];
                 dest->capabilities.exists = true;
                 it += 3;
                 break;
+            }
 
-            default:
+            default: {
                 LOGGER_ERROR(log, "Invalid id byte");
                 return -1;
+            }
         }
     }
 
@@ -605,29 +609,25 @@ CLEAR_CONTAINER:
 }
 static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status, void *data)
 {
-    MSISession *session = (MSISession *)data;
-
-    switch (status) {
-        case 0: { /* Friend is now offline */
-            LOGGER_DEBUG(m->log, "Friend %d is now offline", friend_number);
-
-            pthread_mutex_lock(session->mutex);
-            MSICall *call = get_call(session, friend_number);
-
-            if (call == nullptr) {
-                pthread_mutex_unlock(session->mutex);
-                return;
-            }
-
-            invoke_callback(call, MSI_ON_PEERTIMEOUT); /* Failure is ignored */
-            kill_call(call);
-            pthread_mutex_unlock(session->mutex);
-        }
-        break;
-
-        default:
-            break;
+    if (status != 0) {
+        // Friend is online.
+        return;
     }
+
+    MSISession *session = (MSISession *)data;
+    LOGGER_DEBUG(m->log, "Friend %d is now offline", friend_number);
+
+    pthread_mutex_lock(session->mutex);
+    MSICall *call = get_call(session, friend_number);
+
+    if (call == nullptr) {
+        pthread_mutex_unlock(session->mutex);
+        return;
+    }
+
+    invoke_callback(call, MSI_ON_PEERTIMEOUT); /* Failure is ignored */
+    kill_call(call);
+    pthread_mutex_unlock(session->mutex);
 }
 static void handle_init(MSICall *call, const MSIMessage *msg)
 {
@@ -825,17 +825,20 @@ static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_
     }
 
     switch (msg.request.value) {
-        case REQU_INIT:
+        case REQU_INIT: {
             handle_init(call, &msg);
             break;
+        }
 
-        case REQU_PUSH:
+        case REQU_PUSH: {
             handle_push(call, &msg);
             break;
+        }
 
-        case REQU_POP:
+        case REQU_POP: {
             handle_pop(call, &msg); /* always kills the call */
             break;
+        }
     }
 
     pthread_mutex_unlock(session->mutex);

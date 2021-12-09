@@ -2948,10 +2948,11 @@ static State_Load_Status dht_load_state_callback(void *outer, const uint8_t *dat
             break;
         }
 
-        default:
+        default: {
             LOGGER_ERROR(dht->log, "Load state (DHT): contains unrecognized part (len %u, type %u)",
                          length, type);
             break;
+        }
     }
 
     return STATE_LOAD_STATUS_CONTINUE;

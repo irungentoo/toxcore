@@ -2008,8 +2008,9 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             break;
         }
 
-        default:
+        default: {
             return;
+        }
     }
 }
 
@@ -2672,8 +2673,9 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
     const bool direct_from_sender = id_equal(g->group[index].real_pk, real_pk);
 
     switch (message_id) {
-        case GROUP_MESSAGE_PING_ID:
+        case GROUP_MESSAGE_PING_ID: {
             break;
+        }
 
         case GROUP_MESSAGE_NEW_PEER_ID: {
             if (msg_data_len != GROUP_MESSAGE_NEW_PEER_LENGTH) {
@@ -2685,8 +2687,8 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
             new_peer_number = net_ntohs(new_peer_number);
             addpeer(g_c, groupnumber, msg_data + sizeof(uint16_t), msg_data + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE,
                     new_peer_number, userdata, true, true);
+            break;
         }
-        break;
 
         case GROUP_MESSAGE_KILL_PEER_ID:
         case GROUP_MESSAGE_FREEZE_PEER_ID: {
@@ -2759,8 +2761,9 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
             break;
         }
 
-        default:
+        default: {
             return;
+        }
     }
 
     /* If the packet was received from the peer who sent the message, relay it
