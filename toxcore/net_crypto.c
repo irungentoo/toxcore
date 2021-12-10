@@ -2585,7 +2585,7 @@ static void send_crypto_packets(Net_Crypto *c)
                     long signed int total_resent = 0;
 
                     // TODO(irungentoo): use real delay
-                    unsigned int delay = (unsigned int)((conn->rtt_time / PACKET_COUNTER_AVERAGE_INTERVAL) + 0.5);
+                    unsigned int delay = (unsigned int)(((double)conn->rtt_time / PACKET_COUNTER_AVERAGE_INTERVAL) + 0.5);
                     unsigned int packets_set_rem_array = (CONGESTION_LAST_SENT_ARRAY_SIZE - CONGESTION_QUEUE_ARRAY_SIZE);
 
                     if (delay > packets_set_rem_array) {
