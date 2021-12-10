@@ -752,8 +752,8 @@ static int cmp_u64(uint64_t a, uint64_t b)
 /* Order peers with friends first and with more recently active earlier */
 static int cmp_frozen(const void *a, const void *b)
 {
-    const Group_Peer *pa = (const Group_Peer *) a;
-    const Group_Peer *pb = (const Group_Peer *) b;
+    const Group_Peer *pa = (const Group_Peer *)a;
+    const Group_Peer *pb = (const Group_Peer *)b;
 
     if (pa->is_friend ^ pb->is_friend) {
         return pa->is_friend ? -1 : 1;

@@ -505,14 +505,18 @@ uint16_t net_port(const Networking_Core *net)
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
 {
     if (net_family_is_unspec(net->family)) { /* Socket not initialized */
-        LOGGER_ERROR(net->log, "attempted to send message of length %u on uninitialised socket", (unsigned)length);
+        // TODO(iphydf): Make this an error. Currently, the onion client calls
+        // this via DHT getnodes.
+        LOGGER_WARNING(net->log, "attempted to send message of length %u on uninitialised socket", (unsigned)length);
         return -1;
     }
 
     /* socket TOX_AF_INET, but target IP NOT: can't send */
     if (net_family_is_ipv4(net->family) && !net_family_is_ipv4(ip_port.ip.family)) {
-        LOGGER_ERROR(net->log, "attempted to send message with network family %d (probably IPv6) on IPv4 socket",
-                     ip_port.ip.family.value);
+        // TODO(iphydf): Make this an error. Occasionally we try to send to an
+        // all-zero ip_port.
+        LOGGER_WARNING(net->log, "attempted to send message with network family %d (probably IPv6) on IPv4 socket",
+                       ip_port.ip.family.value);
         return -1;
     }
 
@@ -553,6 +557,8 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
     } else {
+        // TODO(iphydf): Make this an error. Currently this fails sometimes when
+        // called from DHT.c:do_ping_and_sendnode_requests.
         LOGGER_WARNING(net->log, "unknown address type: %d", ip_port.ip.family.value);
         return -1;
     }
@@ -656,12 +662,15 @@ void networking_poll(Networking_Core *net, void *userdata)
             continue;
         }
 
-        if (!(net->packethandlers[data[0]].function)) {
+        packet_handler_cb *const cb = net->packethandlers[data[0]].function;
+        void *const object = net->packethandlers[data[0]].object;
+
+        if (cb == nullptr) {
             LOGGER_WARNING(net->log, "[%02u] -- Packet has no handler", data[0]);
             continue;
         }
 
-        net->packethandlers[data[0]].function(net->packethandlers[data[0]].object, ip_port, data, length, userdata);
+        cb(object, ip_port, data, length, userdata);
     }
 }
 

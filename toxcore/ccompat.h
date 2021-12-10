@@ -4,6 +4,8 @@
 #ifndef C_TOXCORE_TOXCORE_CCOMPAT_H
 #define C_TOXCORE_TOXCORE_CCOMPAT_H
 
+#include <assert.h>
+
 //!TOKSTYLE-
 
 // Variable length arrays.

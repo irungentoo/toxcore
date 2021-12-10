@@ -98,7 +98,7 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
     // The full path may contain PII of the person compiling toxcore (their
     // username and directory layout).
     const char *filename = strrchr(file, '/');
-    file = filename ? filename + 1 : file;
+    file = filename != nullptr ? filename + 1 : file;
 #if defined(_WIN32) || defined(__CYGWIN__)
     // On Windows, the path separator *may* be a backslash, so we look for that
     // one too.

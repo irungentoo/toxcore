@@ -13,8 +13,8 @@ build_script:
   - conan build -bf _build -if _build .
 
 test_script:
-  # TODO(iphydf): Tests are unstable and slow on windows at the moment.
   - set CONAN_CPU_COUNT=50
+  - set CTEST_OUTPUT_ON_FAILURE=1
   - conan install -if _build -o with_tests=True .
   - conan build -bf _build -if _build . &
     exit 0
