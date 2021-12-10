@@ -1495,6 +1495,8 @@ void kill_tcp_connections(TCP_Connections *tcp_c)
         kill_TCP_connection(tcp_c->tcp_connections[i].connection);
     }
 
+    crypto_memzero(tcp_c->self_secret_key, sizeof(tcp_c->self_secret_key));
+
     free(tcp_c->tcp_connections);
     free(tcp_c->connections);
     free(tcp_c);

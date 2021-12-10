@@ -66,6 +66,7 @@ int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
     ping_id = ping_array_add(ping->ping_array, ping->mono_time, data, sizeof(data));
 
     if (ping_id == 0) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return 1;
     }
 
@@ -82,6 +83,8 @@ int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
                                 pk + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                 ping_plain, sizeof(ping_plain),
                                 pk + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
+
+    crypto_memzero(shared_key, sizeof(shared_key));
 
     if (rc != PING_PLAIN_SIZE + CRYPTO_MAC_SIZE) {
         return 1;
@@ -148,10 +151,12 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
                                 ping_plain);
 
     if (rc != sizeof(ping_plain)) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return 1;
     }
 
     if (ping_plain[0] != NET_PACKET_PING_REQUEST) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return 1;
     }
 
@@ -160,6 +165,8 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
     // Send response
     ping_send_response(ping, source, packet + 1, ping_id, shared_key);
     ping_add(ping, packet + 1, source);
+
+    crypto_memzero(shared_key, sizeof(shared_key));
 
     return 0;
 }
@@ -191,6 +198,8 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
                                 packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
                                 PING_PLAIN_SIZE + CRYPTO_MAC_SIZE,
                                 ping_plain);
+
+    crypto_memzero(shared_key, sizeof(shared_key));
 
     if (rc != sizeof(ping_plain)) {
         return 1;

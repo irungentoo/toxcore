@@ -124,6 +124,8 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
     encrypt_precompute(nodes[2].public_key, random_secret_key, new_path->shared_key3);
     memcpy(new_path->public_key3, random_public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
+    crypto_memzero(random_secret_key, sizeof(random_secret_key));
+
     new_path->ip_port1 = nodes[0].ip_port;
     new_path->ip_port2 = nodes[1].ip_port;
     new_path->ip_port3 = nodes[2].ip_port;
@@ -693,6 +695,8 @@ void kill_onion(Onion *onion)
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_3, nullptr, nullptr);
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_2, nullptr, nullptr);
     networking_registerhandler(onion->net, NET_PACKET_ONION_RECV_1, nullptr, nullptr);
+
+    crypto_memzero(onion->secret_symmetric_key, sizeof(onion->secret_symmetric_key));
 
     free(onion);
 }

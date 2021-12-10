@@ -583,6 +583,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data,
                                      data + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, TCP_HANDSHAKE_PLAIN_SIZE + CRYPTO_MAC_SIZE, plain);
 
     if (len != TCP_HANDSHAKE_PLAIN_SIZE) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return -1;
     }
 
@@ -601,15 +602,20 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data,
                                  response + CRYPTO_NONCE_SIZE);
 
     if (len != TCP_HANDSHAKE_PLAIN_SIZE + CRYPTO_MAC_SIZE) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return -1;
     }
 
     if (TCP_SERVER_HANDSHAKE_SIZE != net_send(con->sock, response, TCP_SERVER_HANDSHAKE_SIZE)) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return -1;
     }
 
     encrypt_precompute(plain, temp_secret_key, con->shared_key);
     con->status = TCP_STATUS_UNCONFIRMED;
+
+    crypto_memzero(shared_key, sizeof(shared_key));
+
     return 1;
 }
 
@@ -1474,6 +1480,8 @@ void kill_TCP_server(TCP_Server *tcp_server)
     }
 
     free_accepted_connection_array(tcp_server);
+
+    crypto_memzero(tcp_server->secret_key, sizeof(tcp_server->secret_key));
 
     free(tcp_server->socks_listening);
     free(tcp_server);

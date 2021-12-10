@@ -229,10 +229,10 @@ static unsigned int bit_by_bit_cmp(const uint8_t *pk1, const uint8_t *pk2)
 }
 
 /* Shared key generations are costly, it is therefore smart to store commonly used
- * ones so that they can re used later without being computed again.
+ * ones so that they can be re-used later without being computed again.
  *
- * If shared key is already in shared_keys, copy it to shared_key.
- * else generate it into shared_key and copy it to shared_keys
+ * If a shared key is already in shared_keys, copy it to shared_key.
+ * Otherwise generate it into shared_key and copy it to shared_keys
  */
 void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
                     const uint8_t *secret_key, const uint8_t *public_key)
@@ -1342,6 +1342,8 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     const int len = dht_create_packet(dht->self_public_key, shared_key, NET_PACKET_GET_NODES,
                                       plain, sizeof(plain), data);
 
+    crypto_memzero(shared_key, sizeof(shared_key));
+
     if (len != sizeof(data)) {
         return -1;
     }
@@ -1423,12 +1425,15 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
                         plain);
 
     if (len != CRYPTO_NODE_SIZE) {
+        crypto_memzero(shared_key, sizeof(shared_key));
         return true;
     }
 
     sendnodes_ipv6(dht, source, packet + 1, plain, plain + CRYPTO_PUBLIC_KEY_SIZE, sizeof(uint64_t), shared_key);
 
     ping_add(dht->ping, packet + 1, source);
+
+    crypto_memzero(shared_key, sizeof(shared_key));
 
     return false;
 }
@@ -1491,6 +1496,8 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
                         packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
                         1 + data_size + sizeof(uint64_t) + CRYPTO_MAC_SIZE,
                         plain);
+
+    crypto_memzero(shared_key, sizeof(shared_key));
 
     if ((unsigned int)len != SIZEOF_VLA(plain)) {
         return 1;
@@ -2787,6 +2794,9 @@ void kill_dht(DHT *dht)
     ping_kill(dht->ping);
     free(dht->friends_list);
     free(dht->loaded_nodes_list);
+    crypto_memzero(&dht->shared_keys_recv, sizeof(dht->shared_keys_recv));
+    crypto_memzero(&dht->shared_keys_sent, sizeof(dht->shared_keys_sent));
+    crypto_memzero(dht->self_secret_key, sizeof(dht->self_secret_key));
     free(dht);
 }
 

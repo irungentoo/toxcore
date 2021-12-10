@@ -225,10 +225,10 @@ const uint8_t *dht_get_friend_public_key(const DHT *dht, uint32_t friend_num);
 /*----------------------------------------------------------------------------------*/
 
 /* Shared key generations are costly, it is therefore smart to store commonly used
- * ones so that they can re used later without being computed again.
+ * ones so that they can be re-used later without being computed again.
  *
- * If shared key is already in shared_keys, copy it to shared_key.
- * else generate it into shared_key and copy it to shared_keys
+ * If a shared key is already in shared_keys, copy it to shared_key.
+ * Otherwise generate it into shared_key and copy it to shared_keys
  */
 void get_shared_key(const Mono_Time *mono_time, Shared_Keys *shared_keys, uint8_t *shared_key,
                     const uint8_t *secret_key, const uint8_t *public_key);
