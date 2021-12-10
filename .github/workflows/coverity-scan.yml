@@ -26,7 +26,7 @@ jobs:
           TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
 
       - name: Run autoreconf
-        run: autoreconf
+        run: autoreconf -fi
 
       - name: Configure
         run: ./configure
