@@ -42,8 +42,8 @@ jobs:
             --form token=$TOKEN
             --form email=iphydf@gmail.com
             --form file=@c-toxcore.tgz
-            --form version=master
-            --form description="$(git rev-parse HEAD)"
+            --form version="$(git rev-list --count HEAD)"
+            --form description="CI build of $(git rev-parse --abbrev-ref HEAD) branch"
             https://scan.coverity.com/builds
         env:
           TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
