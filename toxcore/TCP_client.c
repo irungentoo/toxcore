@@ -107,7 +107,7 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
 /* return 1 on success
  * return 0 on failure
  */
-static int connect_sock_to(Socket sock, IP_Port ip_port, TCP_Proxy_Info *proxy_info)
+static int connect_sock_to(Socket sock, IP_Port ip_port, const TCP_Proxy_Info *proxy_info)
 {
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
         ip_port = proxy_info->ip_port;
@@ -663,7 +663,7 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
 /* Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip_port, const uint8_t *public_key,
-        const uint8_t *self_public_key, const uint8_t *self_secret_key, TCP_Proxy_Info *proxy_info)
+        const uint8_t *self_public_key, const uint8_t *self_secret_key, const TCP_Proxy_Info *proxy_info)
 {
     if (networking_at_startup() != 0) {
         return nullptr;
@@ -673,10 +673,9 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
         return nullptr;
     }
 
-    TCP_Proxy_Info default_proxyinfo;
+    const TCP_Proxy_Info default_proxyinfo = {{{{0}}}, TCP_PROXY_NONE};
 
     if (proxy_info == nullptr) {
-        default_proxyinfo.proxy_type = TCP_PROXY_NONE;
         proxy_info = &default_proxyinfo;
     }
 
