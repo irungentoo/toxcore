@@ -45,14 +45,14 @@ struct Ping {
 #define DHT_PING_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + PING_PLAIN_SIZE + CRYPTO_MAC_SIZE)
 #define PING_DATA_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(IP_Port))
 
-int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
+void ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
 {
     uint8_t   pk[DHT_PING_SIZE];
     int       rc;
     uint64_t  ping_id;
 
     if (id_equal(public_key, dht_get_self_public_key(ping->dht))) {
-        return 1;
+        return;
     }
 
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
@@ -67,7 +67,7 @@ int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
 
     if (ping_id == 0) {
         crypto_memzero(shared_key, sizeof(shared_key));
-        return 1;
+        return;
     }
 
     uint8_t ping_plain[PING_PLAIN_SIZE];
@@ -87,10 +87,11 @@ int32_t ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
     crypto_memzero(shared_key, sizeof(shared_key));
 
     if (rc != PING_PLAIN_SIZE + CRYPTO_MAC_SIZE) {
-        return 1;
+        return;
     }
 
-    return sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
+    // We never check this return value and failures in sendpacket are already logged
+    sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
 }
 
 static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,

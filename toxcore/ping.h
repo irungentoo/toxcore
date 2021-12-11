@@ -53,6 +53,6 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, struct IP_Port ip_port);
 
 void ping_iterate(Ping *ping);
 
-int32_t ping_send_request(Ping *ping, struct IP_Port ipp, const uint8_t *public_key);
+void ping_send_request(Ping *ping, struct IP_Port ipp, const uint8_t *public_key);
 
 #endif // C_TOXCORE_TOXCORE_PING_H

@@ -798,12 +798,21 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
     /* Functions to increase the size of the send and receive UDP buffers.
      */
     int n = 1024 * 1024 * 2;
-    setsockopt(temp->sock.socket, SOL_SOCKET, SO_RCVBUF, (const char *)&n, sizeof(n));
-    setsockopt(temp->sock.socket, SOL_SOCKET, SO_SNDBUF, (const char *)&n, sizeof(n));
+
+    if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_RCVBUF, (const char *)&n, sizeof(n)) != 0) {
+        LOGGER_WARNING(log, "Failed to set socket option %d", SO_RCVBUF);
+    }
+
+    if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_SNDBUF, (const char *)&n, sizeof(n)) != 0) {
+        LOGGER_WARNING(log, "Failed to set socket option %d", SO_SNDBUF);
+    }
 
     /* Enable broadcast on socket */
     int broadcast = 1;
-    setsockopt(temp->sock.socket, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast));
+
+    if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast)) != 0) {
+        LOGGER_WARNING(log, "Failed to set socket option %d", SO_BROADCAST);
+    }
 
     /* iOS UDP sockets are weird and apparently can SIGPIPE */
     if (!set_socket_nosigpipe(temp->sock)) {

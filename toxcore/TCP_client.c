@@ -115,6 +115,7 @@ static int connect_sock_to(Socket sock, IP_Port ip_port, const TCP_Proxy_Info *p
 
     /* nonblocking socket, connect will never return success */
     net_connect(sock, ip_port);
+
     return 1;
 }
 
