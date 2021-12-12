@@ -8,10 +8,6 @@
  *
  * NOTE: This code has to be perfect. We don't mess around with encryption.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "crypto_core.h"
 
 #include <stdlib.h>

@@ -6,10 +6,6 @@
 /*
  * Connection to friends.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "friend_connection.h"
 
 #include <stdlib.h>

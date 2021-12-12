@@ -6,10 +6,6 @@
 /*
  * Functions for the core networking.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef __APPLE__
 #define _DARWIN_C_SOURCE
 #endif

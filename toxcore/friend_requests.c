@@ -6,10 +6,6 @@
 /*
  * Handle friend requests.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "friend_requests.h"
 
 #include <stdlib.h>

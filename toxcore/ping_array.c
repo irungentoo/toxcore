@@ -6,10 +6,6 @@
 /*
  * Implementation of an efficient array to store that we pinged something.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "ping_array.h"
 
 #include <stdlib.h>

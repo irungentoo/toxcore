@@ -6,10 +6,6 @@
 /*
  * Implementation of the onion part of docs/Prevent_Tracking.txt
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "onion.h"
 
 #include <stdlib.h>

@@ -6,10 +6,6 @@
 /*
  * Implementation of the TCP relay server part of Tox.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "TCP_server.h"
 
 #include <stdlib.h>

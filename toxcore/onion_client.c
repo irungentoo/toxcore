@@ -7,10 +7,6 @@
  * Implementation of the client part of docs/Prevent_Tracking.txt (The part that
  * uses the onion stuff to connect to the friend)
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "onion_client.h"
 
 #include <stdlib.h>

@@ -6,10 +6,6 @@
 /*
  * An implementation of a simple text chat only messenger on the tox network core.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "Messenger.h"
 
 #include <assert.h>

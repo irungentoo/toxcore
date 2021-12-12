@@ -6,10 +6,6 @@
 /*
  * The Tox public API.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifndef __cplusplus
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600

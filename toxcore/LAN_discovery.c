@@ -6,10 +6,6 @@
 /*
  * LAN discovery implementation.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "LAN_discovery.h"
 
 #include <string.h>

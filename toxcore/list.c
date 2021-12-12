@@ -8,10 +8,6 @@
  * -Allows for finding ids associated with data such as IPs or public keys in a short time
  * -Should only be used if there are relatively few add/remove calls to the list
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "list.h"
 
 #include <stdbool.h>

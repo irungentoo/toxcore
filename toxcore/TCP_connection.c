@@ -6,10 +6,6 @@
 /*
  * Handles TCP relay connections between two Tox clients.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "TCP_connection.h"
 
 #include <assert.h>

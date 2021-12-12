@@ -6,10 +6,6 @@
 /*
  * An implementation of the DHT as seen in docs/updates/DHT.md
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "DHT.h"
 
 #include "LAN_discovery.h"
