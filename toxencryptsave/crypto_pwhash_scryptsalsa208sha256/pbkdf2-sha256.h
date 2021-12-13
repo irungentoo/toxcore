@@ -1,6 +1,7 @@
 #ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_PBKDF2_SHA256_H
 #define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_PBKDF2_SHA256_H
 
+//!TOKSTYLE-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -53,5 +54,6 @@ void PBKDF2_SHA256(const uint8_t *, size_t, const uint8_t *, size_t,
 #endif /* !_SHA256_H_ */
 
 #endif
+//!TOKSTYLE+
 
 #endif

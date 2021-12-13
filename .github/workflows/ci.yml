@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build-nacl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run:
+          sudo apt-get update &&
+          sudo apt-get install -y --no-install-recommends
+            libconfig-dev
+            libopus-dev
+            libvpx-dev
+            pkg-config
+
+      - name: Build NaCl
+        run: .travis/autotools-linux install
+
+      - name: Build toxcore
+        run: CC=gcc .travis/autotools-linux script

@@ -1,10 +1,11 @@
 #ifndef C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_H
 #define C_TOXCORE_TOXENCRYPTSAVE_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_CRYPTO_PWHASH_SCRYPTSALSA208SHA256_H
 
+//!TOKSTYLE-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#ifdef  VANILLA_NACL /* toxcore only uses this when libsodium is unavailable */
+#ifdef VANILLA_NACL /* toxcore only uses this when libsodium is unavailable */
 
 #ifndef crypto_pwhash_scryptsalsa208sha256_H
 #define crypto_pwhash_scryptsalsa208sha256_H
@@ -93,5 +94,6 @@ int crypto_pwhash_scryptsalsa208sha256_ll(const uint8_t * passwd, size_t passwdl
 #endif
 
 #endif
+//!TOKSTYLE+
 
 #endif

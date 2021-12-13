@@ -1,7 +1,6 @@
 if BUILD_TESTS
 
 TESTS = \
-	bootstrap_test \
 	conference_double_invite_test \
 	conference_invite_merge_test \
 	conference_peer_nick_test \
@@ -34,7 +33,6 @@ TESTS = \
 	set_status_message_test \
 	skeleton_test \
 	TCP_test \
-	tcp_relay_test \
 	tox_many_tcp_test \
 	tox_many_test \
 	tox_one_test \

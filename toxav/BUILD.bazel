@@ -133,11 +133,8 @@ CIMPLE_SRCS = glob(
     exclude = ["*.api.h"],
 )
 
-sh_test(
-    name = "cimple_test",
-    size = "small",
-    srcs = ["//hs-tokstyle/tools:check-cimple"],
-    args = ["$(location %s)" % f for f in CIMPLE_SRCS],
-    data = CIMPLE_SRCS,
-    tags = ["haskell"],
+sh_library(
+    name = "cimple_files",
+    srcs = CIMPLE_SRCS,
+    visibility = ["//c-toxcore/testing:__pkg__"],
 )

@@ -16,8 +16,15 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+//!TOKSTYLE-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+//!TOKSTYLE+
+
+// For explicit_bzero.
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
 #endif
 
 #include "crypto_core.h"
@@ -30,6 +37,7 @@
 #include <windows.h>
 #include <wincrypt.h>
 #endif
+#include <string.h>
 #endif
 
 

@@ -35,7 +35,6 @@ travis_script() {
   add_config_flag --disable-ipv6
   add_config_flag --enable-nacl
   add_config_flag --enable-daemon
-  add_config_flag --enable-logging
   add_config_flag --with-log-level=TRACE
 
   autoreconf -fi
