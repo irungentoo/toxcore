@@ -266,6 +266,8 @@ bool ipport_equal(const IP_Port *a, const IP_Port *b);
 
 /* nulls out ip */
 void ip_reset(IP *ip);
+/* nulls out ip_port */
+void ipport_reset(IP_Port *ipport);
 /* nulls out ip, sets family according to flag */
 void ip_init(IP *ip, bool ipv6enabled);
 /* checks if ip is valid */
