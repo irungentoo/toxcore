@@ -249,6 +249,7 @@ sudo useradd \
 sudo chmod 700 /var/lib/tox-bootstrapd
 
 docker run -d --name tox-bootstrapd --restart always \
+  --user "$(id -u tox-bootstrapd):$(id -g tox-bootstrapd)" \
   -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ \
   --ulimit nofile=32768:32768 \
   -p 443:443 \
@@ -284,7 +285,9 @@ Then rebuild and run the image again:
 ```sh
 tar c $(git ls-files) | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
 docker run -d --name tox-bootstrapd --restart always \
+  --user "$(id -u tox-bootstrapd):$(id -g tox-bootstrapd)" \
   -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ \
+  --ulimit nofile=32768:32768 \
   -p 443:443 \
   -p 3389:3389 \
   -p 33445:33445 \

@@ -14,6 +14,7 @@ sudo useradd \
   --user-group tox-bootstrapd
 sudo chmod 700 /var/lib/tox-bootstrapd
 docker run -d --name tox-bootstrapd \
+  --user "$(id -u tox-bootstrapd):$(id -g tox-bootstrapd)" \
   -v /var/lib/tox-bootstrapd/:/var/lib/tox-bootstrapd/ \
   --ulimit nofile=32768:32768 \
   -p 443:443 \
