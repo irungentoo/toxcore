@@ -30,20 +30,19 @@ COPY toxcore toxcore
 COPY toxencryptsave toxencryptsave
 COPY CMakeLists.txt so.version ./
 
-RUN ["cmake", "-B_build", "-H.",\
- "-GNinja",\
- "-DCMAKE_BUILD_TYPE=Release",\
- "-DFULLY_STATIC=ON",\
- "-DBUILD_TOXAV=OFF",\
- "-DBOOTSTRAP_DAEMON=ON"\
-]
-RUN ["cmake", "--build", "_build", "--target", "install"]
+RUN cmake -B_build -H. \
+      -GNinja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DFULLY_STATIC=ON \
+      -DBUILD_TOXAV=OFF \
+      -DBOOTSTRAP_DAEMON=ON && \
+    cmake --build _build --target install
 
 # Verify checksum from dev-built binary, so we can be sure Docker Hub doesn't
 # mess with your binaries.
 COPY other/bootstrap_daemon/docker/tox-bootstrapd.sha256 other/bootstrap_daemon/docker/
-RUN ["sha256sum", "/usr/local/bin/tox-bootstrapd"]
-RUN ["sha256sum", "-c", "other/bootstrap_daemon/docker/tox-bootstrapd.sha256"]
+RUN sha256sum /usr/local/bin/tox-bootstrapd && \
+    sha256sum -c other/bootstrap_daemon/docker/tox-bootstrapd.sha256
 
 # Remove all the example bootstrap nodes from the config file.
 COPY other/bootstrap_daemon/tox-bootstrapd.conf other/bootstrap_daemon/
@@ -60,13 +59,12 @@ FROM debian:bullseye-slim
 
 COPY --from=build /usr/local/bin/tox-bootstrapd /usr/local/bin/
 COPY --from=build /src/c-toxcore/other/bootstrap_daemon/tox-bootstrapd.conf /etc/tox-bootstrapd.conf
-RUN ["useradd", "--home-dir", "/var/lib/tox-bootstrapd", "--create-home",\
- "--system", "--shell", "/sbin/nologin",\
- "--comment", "Account to run the Tox DHT bootstrap daemon",\
- "--user-group", "tox-bootstrapd"\
-]
-RUN ["chmod", "644", "/etc/tox-bootstrapd.conf"]
-RUN ["chmod", "700", "/var/lib/tox-bootstrapd"]
+RUN useradd --home-dir /var/lib/tox-bootstrapd --create-home \
+      --system --shell /sbin/nologin \
+      --comment "Account to run the Tox DHT bootstrap daemon" \
+      --user-group tox-bootstrapd && \
+    chmod 644 /etc/tox-bootstrapd.conf && \
+    chmod 700 /var/lib/tox-bootstrapd
 
 WORKDIR /var/lib/tox-bootstrapd
 
