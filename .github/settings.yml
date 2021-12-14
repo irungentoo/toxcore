@@ -12,6 +12,7 @@ branches:
     protection:
       required_status_checks:
         contexts:
+          - build-nacl
           - Codacy Static Code Analysis
           - CodeFactor
           - "ci/circleci: asan"

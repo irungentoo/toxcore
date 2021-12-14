@@ -62,10 +62,6 @@ endif
 
 check_PROGRAMS = $(TESTS)
 
-bootstrap_test_SOURCES = ../auto_tests/bootstrap_test.c
-bootstrap_test_CFLAGS = $(AUTOTEST_CFLAGS)
-bootstrap_test_LDADD = $(AUTOTEST_LDADD)
-
 conference_double_invite_test_SOURCES = ../auto_tests/conference_double_invite_test.c
 conference_double_invite_test_CFLAGS = $(AUTOTEST_CFLAGS)
 conference_double_invite_test_LDADD = $(AUTOTEST_LDADD)
@@ -189,10 +185,6 @@ set_status_message_test_LDADD = $(AUTOTEST_LDADD)
 skeleton_test_SOURCES = ../auto_tests/skeleton_test.c
 skeleton_test_CFLAGS = $(AUTOTEST_CFLAGS)
 skeleton_test_LDADD = $(AUTOTEST_LDADD)
-
-tcp_relay_test_SOURCES = ../auto_tests/tcp_relay_test.c
-tcp_relay_test_CFLAGS = $(AUTOTEST_CFLAGS)
-tcp_relay_test_LDADD = $(AUTOTEST_LDADD)
 
 TCP_test_SOURCES = ../auto_tests/TCP_test.c
 TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)

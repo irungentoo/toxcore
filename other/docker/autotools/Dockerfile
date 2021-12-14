@@ -1,23 +1,32 @@
 ################################################
 # autotools-linux
-FROM localbuild/travis:1.0.0
+FROM ubuntu:20.04
 
-USER root
 RUN apt-get update && apt-get install --no-install-recommends -y \
  autoconf \
  automake \
+ ca-certificates \
+ curl \
+ libconfig-dev \
+ libopus-dev \
  libtool \
+ libvpx-dev \
+ make \
+ pkg-config \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
-USER travis
+
+RUN groupadd -r -g 1000 builder \
+ && useradd -m --no-log-init -r -g builder -u 1000 builder
+USER builder
 
 # Copy minimal files to run "autotools-linux install", so we can avoid
 # rebuilding nacl and other things when only source files change.
-RUN mkdir -p /home/travis/build/c-toxcore /home/travis/cache
-WORKDIR /home/travis/build/c-toxcore
-COPY --chown=travis:travis c-toxcore/.travis/ /home/travis/build/c-toxcore/.travis/
+RUN mkdir -p /home/builder/build/c-toxcore /home/builder/cache
+WORKDIR /home/builder/build/c-toxcore
+COPY --chown=builder:builder .travis/ /home/builder/build/c-toxcore/.travis/
 RUN .travis/autotools-linux install
 
 # Now copy the rest of the sources and run the build.
-COPY --chown=travis:travis . /home/travis/build/
-RUN .travis/autotools-linux script
+COPY --chown=builder:builder . /home/builder/build/c-toxcore/
+RUN CC=gcc .travis/autotools-linux script
