@@ -44,9 +44,10 @@ callmain() {
 
 put auto_tests/check_compat.h
 
-FIND_QUERY="find . '-(' -name '*.c' '-)'"
+FIND_QUERY="find . '-(' -name '*.c' -or -name "*.cc" '-)'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './_build/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './super_donators/*'"
+FIND_QUERY="$FIND_QUERY -and -not -name amalgamation.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name av_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name dht_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
