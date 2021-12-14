@@ -65,14 +65,14 @@ std::pair<clock_t, clock_t> memcmp_median(uint8_t const *src, uint8_t const *sam
  */
 TEST(CryptoCore, MemcmpTimingIsDataIndependent) {
   // A random piece of memory.
-  std::array<uint8_t, CRYPTO_TEST_MEMCMP_SIZE> src;
+  std::vector<uint8_t> src(CRYPTO_TEST_MEMCMP_SIZE);
   random_bytes(src.data(), CRYPTO_TEST_MEMCMP_SIZE);
 
   // A separate piece of memory containing the same data.
-  std::array<uint8_t, CRYPTO_TEST_MEMCMP_SIZE> same = src;
+  std::vector<uint8_t> same = src;
 
   // Another piece of memory containing different data.
-  std::array<uint8_t, CRYPTO_TEST_MEMCMP_SIZE> not_same;
+  std::vector<uint8_t> not_same(CRYPTO_TEST_MEMCMP_SIZE);
   random_bytes(not_same.data(), CRYPTO_TEST_MEMCMP_SIZE);
 
   // Once we have C++17:

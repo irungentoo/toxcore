@@ -12,7 +12,7 @@ CPPFLAGS+=("-Itoxcore")
 CPPFLAGS+=("-Itoxav")
 CPPFLAGS+=("-Itoxencryptsave")
 
-LDFLAGS=("-lopus" "-lsodium" "-lvpx" "-lpthread" "-lconfig")
+LDFLAGS=("-lopus" "-lsodium" "-lvpx" "-lpthread" "-lconfig" "-lgtest")
 LDFLAGS+=("-fuse-ld=gold")
 LDFLAGS+=("-Wl,--detect-odr-violations")
 LDFLAGS+=("-Wl,--warn-common")
@@ -44,12 +44,13 @@ callmain() {
 
 put auto_tests/check_compat.h
 
-FIND_QUERY="find . '-(' -name '*.c' -or -name "*.cc" '-)'"
+FIND_QUERY="find . '-(' -name '*.c' -or -name '*.cc' '-)'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './_build/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './super_donators/*'"
 FIND_QUERY="$FIND_QUERY -and -not -name amalgamation.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name av_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name dht_test.c"
+FIND_QUERY="$FIND_QUERY -and -not -name trace.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
 
 readarray -t FILES <<<"$(eval "$FIND_QUERY")"

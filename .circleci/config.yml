@@ -80,6 +80,7 @@ jobs:
             cppcheck
             g++
             libconfig-dev
+            libgtest-dev
             libopus-dev
             libsodium-dev
             libvpx-dev
@@ -110,4 +111,7 @@ jobs:
             libsodium-dev
             libvpx-dev
       - run: cmake . -B_build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-      - run: other/analysis/run-clang-tidy
+      - run:
+          other/analysis/run-clang-tidy ||
+          other/analysis/run-clang-tidy ||
+          other/analysis/run-clang-tidy
