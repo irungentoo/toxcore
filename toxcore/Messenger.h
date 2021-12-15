@@ -550,7 +550,7 @@ void m_callback_connectionstatus_internal_av(Messenger *m, m_friend_connectionst
  */
 void m_callback_core_connection(Messenger *m, m_self_connection_status_cb *function);
 
-/** CONFERENCES */
+/*** CONFERENCES */
 
 /* Set the callback for conference invites.
  */
@@ -563,7 +563,7 @@ void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function
  */
 int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
-/** FILE SENDING */
+/*** FILE SENDING */
 
 
 /* Set the callback for file send requests.
@@ -645,7 +645,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
 int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
               uint16_t length);
 
-/** A/V related */
+/*** A/V related */
 
 /* Set the callback for msi packets.
  */
@@ -666,7 +666,7 @@ int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, 
 int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte,
                           m_lossy_rtp_packet_cb *function, void *object);
 
-/** CUSTOM PACKETS */
+/*** CUSTOM PACKETS */
 
 /* Set handlers for custom lossy packets.
  *
@@ -701,7 +701,7 @@ void custom_lossless_packet_registerhandler(Messenger *m, m_friend_lossless_pack
  */
 int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length);
 
-/** Messenger constructor/destructor/operations. */
+/*** Messenger constructor/destructor/operations. */
 
 typedef enum Messenger_Error {
     MESSENGER_ERROR_NONE,

@@ -974,7 +974,7 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
 }
 
-/** CONFERENCES */
+/*** CONFERENCES */
 
 
 /* Set the callback for conference invites.
@@ -995,7 +995,7 @@ int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, cons
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, 0);
 }
 
-/** FILE SENDING */
+/*** FILE SENDING */
 
 
 /* Set the callback for file send requests.

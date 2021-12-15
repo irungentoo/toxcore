@@ -70,7 +70,8 @@ uint64_t current_time_monotonic(Mono_Time *mono_time);
 
 typedef uint64_t mono_time_current_time_cb(Mono_Time *mono_time, void *user_data);
 
-/* Override implementation of current_time_monotonic() (for tests).
+/**
+ * Override implementation of current_time_monotonic() (for tests).
  *
  * The caller is obligated to ensure that current_time_monotonic() continues
  * to increase monotonically.

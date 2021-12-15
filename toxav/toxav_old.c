@@ -3,7 +3,7 @@
  * Copyright © 2013-2015 Tox project.
  */
 
-/**
+/*
  * This file contains the group chats code for the backwards compatibility.
  */
 

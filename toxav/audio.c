@@ -164,9 +164,9 @@ void ac_iterate(ACSession *ac)
 
             ac->lp_channel_count = opus_packet_get_nb_channels(msg->data + 4);
 
-            /** NOTE: even though OPUS supports decoding mono frames with stereo decoder and vice versa,
-              * it didn't work quite well.
-              */
+            /* NOTE: even though OPUS supports decoding mono frames with stereo decoder and vice versa,
+             * it didn't work quite well.
+             */
             if (!reconfigure_audio_decoder(ac, ac->lp_sampling_rate, ac->lp_channel_count)) {
                 LOGGER_WARNING(ac->log, "Failed to reconfigure decoder!");
                 free(msg);

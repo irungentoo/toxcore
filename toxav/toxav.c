@@ -66,11 +66,15 @@ typedef struct ToxAVCall_s {
 
 /** Decode time statistics */
 typedef struct DecodeTimeStats_s {
-    int32_t count; /** Measure count */
-    int32_t total; /** Last cycle total */
-    int32_t average; /** Average decoding time in ms */
+    /** Measure count */
+    int32_t count;
+    /** Last cycle total */
+    int32_t total;
+    /** Average decoding time in ms */
+    int32_t average;
 
-    uint32_t interval; /** Calculated iteration interval */
+    /** Calculated iteration interval */
+    uint32_t interval;
 } DecodeTimeStats;
 
 struct ToxAV {
@@ -106,7 +110,8 @@ struct ToxAV {
     /* keep track of decode times for audio and video */
     DecodeTimeStats audio_stats;
     DecodeTimeStats video_stats;
-    Mono_Time *toxav_mono_time; /** ToxAV's own mono_time instance */
+    /** ToxAV's own mono_time instance */
+    Mono_Time *toxav_mono_time;
 };
 
 static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, void *user_data);

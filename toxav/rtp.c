@@ -800,7 +800,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
     rdata[0] = session->payload_type;  // packet id == payload_type
 
     if (MAX_CRYPTO_DATA_SIZE > (length + RTP_HEADER_SIZE + 1)) {
-        /**
+        /*
          * The length is lesser than the maximum allowed length (including header)
          * Send the packet in single piece.
          */
@@ -814,7 +814,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
             net_kill_strerror(netstrerror);
         }
     } else {
-        /**
+        /*
          * The length is greater than the maximum allowed length (including header)
          * Send the packet in multiple pieces.
          */

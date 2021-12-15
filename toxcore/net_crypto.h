@@ -16,9 +16,9 @@
 
 #include <pthread.h>
 
-/** Crypto payloads. */
+/*** Crypto payloads. */
 
-/** Ranges. */
+/*** Ranges. */
 
 /* Packets in this range are reserved for net_crypto internal use. */
 #define PACKET_ID_RANGE_RESERVED_START 0
@@ -41,7 +41,7 @@
 #define PACKET_ID_RANGE_LOSSY_CUSTOM_END 254
 #define PACKET_ID_RANGE_LOSSY_END 254
 
-/** Messages. */
+/*** Messages. */
 
 #define PACKET_ID_PADDING 0 // Denotes padding
 #define PACKET_ID_REQUEST 1 // Used to request unreceived packets

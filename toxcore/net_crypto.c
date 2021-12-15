@@ -722,7 +722,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
     return -1;
 }
 
-/** START: Array Related functions */
+/*** START: Array Related functions */
 
 
 /* Return number of packets in array
