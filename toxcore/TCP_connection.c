@@ -148,9 +148,7 @@ static bool tcp_connections_number_is_valid(const TCP_Connections *tcp_c, int tc
  */
 static int create_connection(TCP_Connections *tcp_c)
 {
-    uint32_t i;
-
-    for (i = 0; i < tcp_c->connections_length; ++i) {
+    for (uint32_t i = 0; i < tcp_c->connections_length; ++i) {
         if (tcp_c->connections[i].status == TCP_CONN_NONE) {
             return i;
         }
@@ -747,12 +745,11 @@ static unsigned int online_tcp_connection_from_conn(TCP_Connection_to *con_to)
 /* return index on success.
  * return -1 on failure.
  */
-static int set_tcp_connection_status(TCP_Connections *tcp_c, TCP_Connection_to *con_to,
-                                     unsigned int tcp_connections_number, unsigned int status, uint8_t connection_id)
+static int set_tcp_connection_status(TCP_Connection_to *con_to, unsigned int tcp_connections_number,
+                                     unsigned int status,
+                                     uint8_t connection_id)
 {
-    unsigned int i;
-
-    for (i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
+    for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         if (con_to->connections[i].tcp_connection == (tcp_connections_number + 1)) {
 
             if (con_to->connections[i].status == status) {
@@ -830,7 +827,7 @@ static int reconnect_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connec
         TCP_Connection_to *con_to = get_connection(tcp_c, i);
 
         if (con_to) {
-            set_tcp_connection_status(tcp_c, con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_NONE, 0);
+            set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_NONE, 0);
         }
     }
 
@@ -876,7 +873,7 @@ static int sleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connection
         TCP_Connection_to *con_to = get_connection(tcp_c, i);
 
         if (con_to) {
-            set_tcp_connection_status(tcp_c, con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_NONE, 0);
+            set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_NONE, 0);
         }
     }
 
@@ -970,8 +967,7 @@ static int tcp_response_callback(void *object, uint8_t connection_id, const uint
         return -1;
     }
 
-    if (set_tcp_connection_status(tcp_c, con_to, tcp_connections_number,
-                                  TCP_CONNECTIONS_STATUS_REGISTERED, connection_id) == -1) {
+    if (set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_REGISTERED, connection_id) == -1) {
         return -1;
     }
 
@@ -994,8 +990,7 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
     }
 
     if (status == 1) {
-        if (set_tcp_connection_status(tcp_c, con_to, tcp_connections_number,
-                                      TCP_CONNECTIONS_STATUS_REGISTERED, connection_id) == -1) {
+        if (set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_REGISTERED, connection_id) == -1) {
             return -1;
         }
 
@@ -1005,8 +1000,7 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
             --tcp_con->sleep_count;
         }
     } else if (status == 2) {
-        if (set_tcp_connection_status(tcp_c, con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_ONLINE,
-                                      connection_id) == -1) {
+        if (set_tcp_connection_status(con_to, tcp_connections_number, TCP_CONNECTIONS_STATUS_ONLINE, connection_id) == -1) {
             return -1;
         }
 
