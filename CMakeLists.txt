@@ -161,7 +161,6 @@ set(toxcore_PKGCONFIG_REQUIRES)
 
 # LAYER 1: Crypto core
 # --------------------
-apidsl(toxcore/crypto_core.api.h)
 set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/ccompat.h
   toxcore/crypto_core.c
@@ -189,9 +188,6 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
 
 # LAYER 3: Distributed Hash Table
 # -------------------------------
-apidsl(toxcore/LAN_discovery.api.h)
-apidsl(toxcore/ping.api.h)
-apidsl(toxcore/ping_array.api.h)
 set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/DHT.c
   toxcore/DHT.h

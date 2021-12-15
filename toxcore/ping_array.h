@@ -9,6 +9,8 @@
 #ifndef C_TOXCORE_TOXCORE_PING_ARRAY_H
 #define C_TOXCORE_TOXCORE_PING_ARRAY_H
 
+#include "mono_time.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -16,15 +18,7 @@
 extern "C" {
 #endif
 
-#ifndef MONO_TIME_DEFINED
-#define MONO_TIME_DEFINED
-typedef struct Mono_Time Mono_Time;
-#endif /* MONO_TIME_DEFINED */
-
-#ifndef PING_ARRAY_DEFINED
-#define PING_ARRAY_DEFINED
 typedef struct Ping_Array Ping_Array;
-#endif /* PING_ARRAY_DEFINED */
 
 /**
  * Initialize a Ping_Array.

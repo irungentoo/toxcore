@@ -15,6 +15,8 @@ cc_library(
 flaky_tests = {
     "crypto_core_test": True,
     "lan_discovery_test": True,
+    "save_load_test": True,
+    "tox_many_tcp_test": True,
 }
 
 [cc_test(

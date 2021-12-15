@@ -11,16 +11,6 @@
 
 #include "DHT.h"
 
-#ifndef DHT_DEFINED
-#define DHT_DEFINED
-typedef struct DHT DHT;
-#endif /* DHT_DEFINED */
-
-#ifndef IP_DEFINED
-#define IP_DEFINED
-typedef struct IP IP;
-#endif /* IP_DEFINED */
-
 /**
  * Interval in seconds between LAN discovery packet sending.
  */

@@ -211,7 +211,6 @@ typedef struct Shared_Keys {
 typedef int cryptopacket_handler_cb(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
                                     const uint8_t *data, uint16_t len, void *userdata);
 
-#define DHT_DEFINED
 typedef struct DHT DHT;
 
 const uint8_t *dht_get_self_public_key(const DHT *dht);

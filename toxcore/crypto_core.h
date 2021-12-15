@@ -22,28 +22,20 @@ extern "C" {
  */
 #define CRYPTO_PUBLIC_KEY_SIZE         32
 
-uint32_t crypto_public_key_size(void);
-
 /**
  * The number of bytes in a Tox secret key.
  */
 #define CRYPTO_SECRET_KEY_SIZE         32
-
-uint32_t crypto_secret_key_size(void);
 
 /**
  * The number of bytes in a shared key computed from public and secret keys.
  */
 #define CRYPTO_SHARED_KEY_SIZE         32
 
-uint32_t crypto_shared_key_size(void);
-
 /**
  * The number of bytes in a symmetric key.
  */
 #define CRYPTO_SYMMETRIC_KEY_SIZE      CRYPTO_SHARED_KEY_SIZE
-
-uint32_t crypto_symmetric_key_size(void);
 
 /**
  * The number of bytes needed for the MAC (message authentication code) in an
@@ -51,28 +43,20 @@ uint32_t crypto_symmetric_key_size(void);
  */
 #define CRYPTO_MAC_SIZE                16
 
-uint32_t crypto_mac_size(void);
-
 /**
  * The number of bytes in a nonce used for encryption/decryption.
  */
 #define CRYPTO_NONCE_SIZE              24
-
-uint32_t crypto_nonce_size(void);
 
 /**
  * The number of bytes in a SHA256 hash.
  */
 #define CRYPTO_SHA256_SIZE             32
 
-uint32_t crypto_sha256_size(void);
-
 /**
  * The number of bytes in a SHA512 hash.
  */
 #define CRYPTO_SHA512_SIZE             64
-
-uint32_t crypto_sha512_size(void);
 
 /**
  * A `memcmp`-like function whose running time does not depend on the input

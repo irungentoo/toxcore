@@ -12,8 +12,6 @@
 extern "C" {
 #endif
 
-#ifndef MONO_TIME_DEFINED
-#define MONO_TIME_DEFINED
 /**
  * The timer portion of the toxcore event loop.
  *
@@ -44,7 +42,6 @@ extern "C" {
  * implementation should at least theoretically match the specification.
  */
 typedef struct Mono_Time Mono_Time;
-#endif /* MONO_TIME_DEFINED */
 
 Mono_Time *mono_time_new(void);
 void mono_time_free(Mono_Time *mono_time);

@@ -162,13 +162,11 @@ typedef union IP_Union {
     IP6 v6;
 } IP_Union;
 
-#define IP_DEFINED
 typedef struct IP {
     Family family;
     IP_Union ip;
 } IP;
 
-#define IP_PORT_DEFINED
 typedef struct IP_Port {
     IP ip;
     uint16_t port;

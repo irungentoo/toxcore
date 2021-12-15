@@ -15,25 +15,7 @@
 
 #include <stdint.h>
 
-#ifndef IP_PORT_DEFINED
-#define IP_PORT_DEFINED
-typedef struct IP_Port IP_Port;
-#endif /* IP_PORT_DEFINED */
-
-#ifndef DHT_DEFINED
-#define DHT_DEFINED
-typedef struct DHT DHT;
-#endif /* DHT_DEFINED */
-
-#ifndef MONO_TIME_DEFINED
-#define MONO_TIME_DEFINED
-typedef struct Mono_Time Mono_Time;
-#endif /* MONO_TIME_DEFINED */
-
-#ifndef PING_DEFINED
-#define PING_DEFINED
 typedef struct Ping Ping;
-#endif /* PING_DEFINED */
 
 Ping *ping_new(const struct Mono_Time *mono_time, DHT *dht);
 
