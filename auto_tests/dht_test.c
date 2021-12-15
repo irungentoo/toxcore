@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "check_compat.h"
 #include "../testing/misc_tools.h"
 #include "../toxcore/crypto_core.h"

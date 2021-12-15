@@ -1,10 +1,6 @@
 /* Try to overflow the net_crypto packet buffer.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdint.h>
 
 typedef struct State {

@@ -6,12 +6,6 @@
 /*
  * Batch encryption functions.
  */
-//!TOKSTYLE-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-//!TOKSTYLE+
-
 #include "../toxcore/ccompat.h"
 #include "../toxcore/crypto_core.h"
 #include "defines.h"

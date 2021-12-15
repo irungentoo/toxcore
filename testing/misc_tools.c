@@ -6,10 +6,6 @@
 /*
  * Miscellaneous functions and data structures for doing random things.
  */
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifndef _POSIX_C_SOURCE
 // For nanosleep().
 #define _POSIX_C_SOURCE 200112L

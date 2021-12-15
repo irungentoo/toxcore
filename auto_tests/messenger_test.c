@@ -10,10 +10,6 @@
  *      checking that status changes are received, messages can be sent, etc.
  *      All of that is done in a separate test, with two local clients running. */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <string.h>
 
 #ifdef VANILLA_NACL

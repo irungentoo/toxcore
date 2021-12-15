@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "../toxcore/tox.h"
 #include "check_compat.h"
 

@@ -3,12 +3,6 @@
  * Copyright © 2013 Tox project.
  */
 
-//!TOKSTYLE-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-//!TOKSTYLE+
-
 /*
  * Functions for the core crypto.
  *
