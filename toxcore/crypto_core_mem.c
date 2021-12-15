@@ -1,3 +1,8 @@
+/* SPDX-License-Identifier: ISC
+ * Copyright © 2016-2021 The TokTok team.
+ * Copyright © 2013-2016 Frank Denis <j at pureftpd dot org>
+ */
+
 /*
  * ISC License
  *

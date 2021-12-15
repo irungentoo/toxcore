@@ -9,8 +9,6 @@ TESTS = \
 	conference_two_test \
 	crypto_test \
 	dht_test \
-	encryptsave_test \
-	file_saving_test \
 	file_transfer_test \
 	friend_connection_test \
 	friend_request_test \
@@ -39,6 +37,12 @@ TESTS = \
 	tox_strncasecmp_test \
 	typing_test \
 	version_test
+
+if !WITH_NACL
+TESTS += \
+	encryptsave_test \
+	file_saving_test
+endif
 
 AUTOTEST_CFLAGS = \
 	$(LIBSODIUM_CFLAGS) \

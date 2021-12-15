@@ -1,7 +1,6 @@
 ---
 exclude:
   - "**/*.api.h"
-  - "toxencryptsave/crypto_pwhash_scryptsalsa208sha256/**/*"
 
 restylers:
   - astyle:

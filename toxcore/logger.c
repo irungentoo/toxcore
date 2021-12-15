@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright © 2016-2018 The TokTok team.
- * Copyright © 2013,2015 Tox project.
+ * Copyright © 2013-2015 Tox project.
  */
 
 /*

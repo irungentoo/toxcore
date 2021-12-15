@@ -1,3 +1,7 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2016-2021 The TokTok team.
+ */
+
 /*
  * C language compatibility macros for varying compiler support.
  */

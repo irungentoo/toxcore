@@ -5,26 +5,10 @@ libtoxencryptsave_la_include_HEADERS = \
 
 libtoxencryptsave_la_includedir = $(includedir)/tox
 
+if !WITH_NACL
 libtoxencryptsave_la_SOURCES = ../toxencryptsave/toxencryptsave.h \
                         ../toxencryptsave/toxencryptsave.c \
                         ../toxencryptsave/defines.h
-
-
-if WITH_NACL
-libtoxencryptsave_la_SOURCES += ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_scrypt.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/pbkdf2-sha256.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/pwhash_scryptsalsa208sha256.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/runtime.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_scrypt-common.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/export.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/pbkdf2-sha256.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/runtime.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/scrypt_platform.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/sysendian.h \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.c \
-                        ../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/sse/pwhash_scryptsalsa208sha256_sse.c
-endif
 
 libtoxencryptsave_la_CFLAGS =   -I$(top_srcdir) \
                         -I$(top_srcdir)/toxcore \
@@ -50,4 +34,5 @@ if SET_SO_VERSION
 
 EXTRA_libtoxencryptsave_la_DEPENDENCIES = ../so.version
 
+endif
 endif

@@ -38,7 +38,6 @@ CIMPLE_SRCS = glob(
     [
         "*.c",
         "*.h",
-        "*/*.h",
     ],
     exclude = ["*.api.h"],
 )
