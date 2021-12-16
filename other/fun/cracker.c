@@ -20,6 +20,9 @@
 #include <sodium/crypto_scalarmult_curve25519.h>
 #include <sodium/randombytes.h>
 
+/* NULL compatibility macro */
+#include "../../toxcore/ccompat.h"
+
 #define KEY_LEN 32
 // Maximum number of bytes this program can crack in one run
 #define MAX_CRACK_BYTES 8
@@ -151,7 +154,7 @@ static void cracker_core(uint64_t range_start, uint64_t range_end, uint64_t rang
     }
 }
 
-void print_stats(double seconds_passed, double keys_tried)
+static void print_stats(double seconds_passed, double keys_tried)
 {
     printf("Runtime: %10lus, Keys tried %e/%e, Calculating %e keys/s\n",
            (unsigned long) seconds_passed, keys_tried, (double) UINT64_MAX, keys_tried / seconds_passed);
@@ -186,7 +189,7 @@ int main(int argc, char *argv[])
 
     printf("Searching for key with prefix: %s\n", argv[1]);
 
-    time_t start_time = time(NULL);
+    time_t start_time = time(nullptr);
 
     // Declare private key bytes as uint64_t[4] so we can lower the alignment without problems
     uint64_t priv_key_shadow[KEY_LEN / 8];
@@ -206,7 +209,7 @@ int main(int argc, char *argv[])
 
     cracker_core(rem_start, UINT64_MAX, 1, priv_key_shadow, &longest_match, hex_prefix, prefix_chars_len);
 
-    double seconds_passed = difftime(time(NULL), start_time);
+    double seconds_passed = difftime(time(nullptr), start_time);
     double old_seconds_passed = seconds_passed;
 
     // Reduce time to first stats output
@@ -221,7 +224,7 @@ int main(int argc, char *argv[])
     for (uint64_t tries = 0; tries < rem_start; tries += batch_size) {
         cracker_core(tries, tries + batch_size, 0, priv_key_shadow, &longest_match, hex_prefix, prefix_chars_len);
 
-        seconds_passed = difftime(time(NULL), start_time);
+        seconds_passed = difftime(time(nullptr), start_time);
         // Use double type to avoid overflow in addition, we don't need precision here anyway
         double keys_tried = ((double) tries) + rem_batch_size + 1;
 

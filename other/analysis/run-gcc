@@ -61,4 +61,5 @@ g++ -O3 -o /dev/null amalgamation.cc \
   -Wunused-local-typedefs \
   -Wunused-value \
   -Wunused-but-set-parameter \
-  -Wunused-but-set-variable
+  -Wunused-but-set-variable \
+  -fopenmp

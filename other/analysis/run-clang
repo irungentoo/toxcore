@@ -23,4 +23,5 @@ clang++ -o /dev/null amalgamation.cc \
   -Wno-sign-compare \
   -Wno-unreachable-code-return \
   -Wno-unused-parameter \
-  -Wno-used-but-marked-unused
+  -Wno-used-but-marked-unused \
+  -Wno-source-uses-openmp
