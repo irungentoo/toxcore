@@ -21,12 +21,6 @@ void crypto_memzero(void *data, size_t length)
 #endif
 }
 
-/**
- * Locks `length` bytes of memory pointed to by `data`. This will attempt to prevent
- * the specified memory region from being swapped to disk.
- *
- * Returns true on success.
- */
 bool crypto_memlock(void *data, size_t length)
 {
 #ifndef VANILLA_NACL
@@ -41,17 +35,6 @@ bool crypto_memlock(void *data, size_t length)
 #endif
 }
 
-/**
- * Unlocks `length` bytes of memory pointed to by `data`. This allows the specified
- * memory region to be swapped to disk.
- *
- * This function call has the side effect of zeroing the specified memory region
- * whether or not it succeeds. Therefore it should only be used once the memory
- * is no longer in use.
- *
- * Return 0 on success.
- * Return -1 on failure.
- */
 bool crypto_memunlock(void *data, size_t length)
 {
 #ifndef VANILLA_NACL
