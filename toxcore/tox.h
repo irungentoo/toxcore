@@ -13,17 +13,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-//!TOKSTYLE-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
 /*******************************************************************************
- * `tox.h` SHOULD *NOT* BE EDITED MANUALLY – any changes should be made to   *
- * `tox.api.h`, located in `toxcore/`. For instructions on how to            *
- * generate `tox.h` from `tox.api.h` please refer to `docs/apidsl.md`        *
+ * `tox.h` SHOULD NOT BE EDITED MANUALLY – any changes should be made to
+ * `tox.api.h`, located in `toxcore/`. For instructions on how to
+ * generate `tox.h` from `tox.api.h` please refer to `docs/apidsl.md`
  ******************************************************************************/
 
 
@@ -174,6 +172,7 @@ uint32_t tox_version_minor(void);
 
 uint32_t tox_version_patch(void);
 
+//!TOKSTYLE-
 /**
  * A macro to check at preprocessing time whether the client code is compatible
  * with the installed version of Tox. Leading zeros in the version number are
@@ -194,6 +193,7 @@ uint32_t tox_version_patch(void);
       TOX_VERSION_PATCH == PATCH                                        \
     ))                                                                  \
   ))
+//!TOKSTYLE+
 
 /**
  * Return whether the compiled library version is compatible with the passed
@@ -260,7 +260,7 @@ uint32_t tox_nospam_size(void);
 
 /**
  * The size of a Tox address in bytes. Tox addresses are in the format
- * [Public Key (TOX_PUBLIC_KEY_SIZE bytes)][nospam (4 bytes)][checksum (2 bytes)].
+ * `[Public Key (TOX_PUBLIC_KEY_SIZE bytes)][nospam (4 bytes)][checksum (2 bytes)]`.
  *
  * The checksum is computed over the Public Key and the nospam value. The first
  * byte is an XOR of all the even bytes (0, 2, 4, ...), the second byte is an
@@ -365,7 +365,7 @@ uint32_t tox_max_hostname_length(void);
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_USER_STATUS {
+typedef enum Tox_User_Status {
 
     /**
      * User is online and available.
@@ -384,7 +384,7 @@ typedef enum TOX_USER_STATUS {
      */
     TOX_USER_STATUS_BUSY,
 
-} TOX_USER_STATUS;
+} Tox_User_Status;
 
 
 /**
@@ -394,7 +394,7 @@ typedef enum TOX_USER_STATUS {
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_MESSAGE_TYPE {
+typedef enum Tox_Message_Type {
 
     /**
      * Normal text message. Similar to PRIVMSG on IRC.
@@ -407,7 +407,7 @@ typedef enum TOX_MESSAGE_TYPE {
      */
     TOX_MESSAGE_TYPE_ACTION,
 
-} TOX_MESSAGE_TYPE;
+} Tox_Message_Type;
 
 
 
@@ -425,7 +425,7 @@ typedef enum TOX_MESSAGE_TYPE {
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_PROXY_TYPE {
+typedef enum Tox_Proxy_Type {
 
     /**
      * Don't use a proxy.
@@ -442,7 +442,7 @@ typedef enum TOX_PROXY_TYPE {
      */
     TOX_PROXY_TYPE_SOCKS5,
 
-} TOX_PROXY_TYPE;
+} Tox_Proxy_Type;
 
 
 /**
@@ -451,7 +451,7 @@ typedef enum TOX_PROXY_TYPE {
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_SAVEDATA_TYPE {
+typedef enum Tox_Savedata_Type {
 
     /**
      * No savedata.
@@ -468,7 +468,7 @@ typedef enum TOX_SAVEDATA_TYPE {
      */
     TOX_SAVEDATA_TYPE_SECRET_KEY,
 
-} TOX_SAVEDATA_TYPE;
+} Tox_Savedata_Type;
 
 
 /**
@@ -477,7 +477,7 @@ typedef enum TOX_SAVEDATA_TYPE {
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_LOG_LEVEL {
+typedef enum Tox_Log_Level {
 
     /**
      * Very detailed traces including all network activity.
@@ -504,7 +504,7 @@ typedef enum TOX_LOG_LEVEL {
      */
     TOX_LOG_LEVEL_ERROR,
 
-} TOX_LOG_LEVEL;
+} Tox_Log_Level;
 
 
 /**
@@ -524,7 +524,7 @@ typedef enum TOX_LOG_LEVEL {
  * @param message The log message.
  * @param user_data The user data pointer passed to tox_new in options.
  */
-typedef void tox_log_cb(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func,
+typedef void tox_log_cb(Tox *tox, Tox_Log_Level level, const char *file, uint32_t line, const char *func,
                         const char *message, void *user_data);
 
 
@@ -577,7 +577,7 @@ struct Tox_Options {
     /**
      * Pass communications through a proxy.
      */
-    TOX_PROXY_TYPE proxy_type;
+    Tox_Proxy_Type proxy_type;
 
 
     /**
@@ -608,7 +608,7 @@ struct Tox_Options {
      * The start port of the inclusive port range to attempt to use.
      *
      * If both start_port and end_port are 0, the default port range will be
-     * used: [33445, 33545].
+     * used: `[33445, 33545]`.
      *
      * If either start_port or end_port is 0 while the other is non-zero, the
      * non-zero port will be the only port in the range.
@@ -648,7 +648,7 @@ struct Tox_Options {
     /**
      * The type of savedata to load from.
      */
-    TOX_SAVEDATA_TYPE savedata_type;
+    Tox_Savedata_Type savedata_type;
 
 
     /**
@@ -706,9 +706,9 @@ bool tox_options_get_local_discovery_enabled(const struct Tox_Options *options);
 
 void tox_options_set_local_discovery_enabled(struct Tox_Options *options, bool local_discovery_enabled);
 
-TOX_PROXY_TYPE tox_options_get_proxy_type(const struct Tox_Options *options);
+Tox_Proxy_Type tox_options_get_proxy_type(const struct Tox_Options *options);
 
-void tox_options_set_proxy_type(struct Tox_Options *options, TOX_PROXY_TYPE type);
+void tox_options_set_proxy_type(struct Tox_Options *options, Tox_Proxy_Type type);
 
 const char *tox_options_get_proxy_host(const struct Tox_Options *options);
 
@@ -734,9 +734,9 @@ bool tox_options_get_hole_punching_enabled(const struct Tox_Options *options);
 
 void tox_options_set_hole_punching_enabled(struct Tox_Options *options, bool hole_punching_enabled);
 
-TOX_SAVEDATA_TYPE tox_options_get_savedata_type(const struct Tox_Options *options);
+Tox_Savedata_Type tox_options_get_savedata_type(const struct Tox_Options *options);
 
-void tox_options_set_savedata_type(struct Tox_Options *options, TOX_SAVEDATA_TYPE type);
+void tox_options_set_savedata_type(struct Tox_Options *options, Tox_Savedata_Type type);
 
 const uint8_t *tox_options_get_savedata_data(const struct Tox_Options *options);
 
@@ -771,7 +771,7 @@ void tox_options_set_experimental_thread_safety(struct Tox_Options *options, boo
  */
 void tox_options_default(struct Tox_Options *options);
 
-typedef enum TOX_ERR_OPTIONS_NEW {
+typedef enum Tox_Err_Options_New {
 
     /**
      * The function returned successfully.
@@ -783,7 +783,7 @@ typedef enum TOX_ERR_OPTIONS_NEW {
      */
     TOX_ERR_OPTIONS_NEW_MALLOC,
 
-} TOX_ERR_OPTIONS_NEW;
+} Tox_Err_Options_New;
 
 
 /**
@@ -796,7 +796,7 @@ typedef enum TOX_ERR_OPTIONS_NEW {
  *
  * @return A new Tox_Options object with default options or NULL on failure.
  */
-struct Tox_Options *tox_options_new(TOX_ERR_OPTIONS_NEW *error);
+struct Tox_Options *tox_options_new(Tox_Err_Options_New *error);
 
 /**
  * Releases all resources associated with an options objects.
@@ -815,7 +815,7 @@ void tox_options_free(struct Tox_Options *options);
 
 
 
-typedef enum TOX_ERR_NEW {
+typedef enum Tox_Err_New {
 
     /**
      * The function returned successfully.
@@ -875,7 +875,7 @@ typedef enum TOX_ERR_NEW {
      */
     TOX_ERR_NEW_LOAD_BAD_FORMAT,
 
-} TOX_ERR_NEW;
+} Tox_Err_New;
 
 
 /**
@@ -894,7 +894,7 @@ typedef enum TOX_ERR_NEW {
  *
  * @return A new Tox instance pointer on success or NULL on failure.
  */
-Tox *tox_new(const struct Tox_Options *options, TOX_ERR_NEW *error);
+Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error);
 
 /**
  * Releases all resources associated with the Tox instance and disconnects from
@@ -931,7 +931,7 @@ void tox_get_savedata(const Tox *tox, uint8_t *savedata);
 
 
 
-typedef enum TOX_ERR_BOOTSTRAP {
+typedef enum Tox_Err_Bootstrap {
 
     /**
      * The function returned successfully.
@@ -954,7 +954,7 @@ typedef enum TOX_ERR_BOOTSTRAP {
      */
     TOX_ERR_BOOTSTRAP_BAD_PORT,
 
-} TOX_ERR_BOOTSTRAP;
+} Tox_Err_Bootstrap;
 
 
 /**
@@ -972,7 +972,7 @@ typedef enum TOX_ERR_BOOTSTRAP {
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
+bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, Tox_Err_Bootstrap *error);
 
 /**
  * Adds additional host:port pair as TCP relay.
@@ -988,7 +988,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
  *   (TOX_PUBLIC_KEY_SIZE bytes).
  * @return true on success.
  */
-bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, TOX_ERR_BOOTSTRAP *error);
+bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, Tox_Err_Bootstrap *error);
 
 /**
  * Protocols that can be used to connect to the network or friends.
@@ -996,7 +996,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_CONNECTION {
+typedef enum Tox_Connection {
 
     /**
      * There is no connection. This instance, or the friend the state change is
@@ -1019,7 +1019,7 @@ typedef enum TOX_CONNECTION {
      */
     TOX_CONNECTION_UDP,
 
-} TOX_CONNECTION;
+} Tox_Connection;
 
 
 /**
@@ -1029,12 +1029,12 @@ typedef enum TOX_CONNECTION {
  * @deprecated This getter is deprecated. Use the event and store the status
  * in the client state.
  */
-TOX_CONNECTION tox_self_get_connection_status(const Tox *tox);
+Tox_Connection tox_self_get_connection_status(const Tox *tox);
 
 /**
  * @param connection_status Whether we are connected to the DHT.
  */
-typedef void tox_self_connection_status_cb(Tox *tox, TOX_CONNECTION connection_status, void *user_data);
+typedef void tox_self_connection_status_cb(Tox *tox, Tox_Connection connection_status, void *user_data);
 
 
 /**
@@ -1084,7 +1084,7 @@ void tox_self_get_address(const Tox *tox, uint8_t *address);
 
 /**
  * Set the 4-byte nospam part of the address. This value is expected in host
- * byte order. I.e. 0x12345678 will form the bytes [12, 34, 56, 78] in the
+ * byte order. I.e. 0x12345678 will form the bytes `[12, 34, 56, 78]` in the
  * nospam part of the Tox friend address.
  *
  * @param nospam Any 32 bit unsigned integer.
@@ -1126,7 +1126,7 @@ void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key);
  * Common error codes for all functions that set a piece of user-visible
  * client information.
  */
-typedef enum TOX_ERR_SET_INFO {
+typedef enum Tox_Err_Set_Info {
 
     /**
      * The function returned successfully.
@@ -1143,7 +1143,7 @@ typedef enum TOX_ERR_SET_INFO {
      */
     TOX_ERR_SET_INFO_TOO_LONG,
 
-} TOX_ERR_SET_INFO;
+} Tox_Err_Set_Info;
 
 
 /**
@@ -1157,7 +1157,7 @@ typedef enum TOX_ERR_SET_INFO {
  *
  * @return true on success.
  */
-bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, TOX_ERR_SET_INFO *error);
+bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, Tox_Err_Set_Info *error);
 
 /**
  * Return the length of the current nickname as passed to tox_self_set_name.
@@ -1190,7 +1190,7 @@ void tox_self_get_name(const Tox *tox, uint8_t *name);
  * length is 0, the status parameter is ignored (it can be NULL), and the
  * user status is set back to empty.
  */
-bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t length, TOX_ERR_SET_INFO *error);
+bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t length, Tox_Err_Set_Info *error);
 
 /**
  * Return the length of the current status message as passed to tox_self_set_status_message.
@@ -1221,12 +1221,12 @@ void tox_self_get_status_message(const Tox *tox, uint8_t *status_message);
  *
  * @param status One of the user statuses listed in the enumeration above.
  */
-void tox_self_set_status(Tox *tox, TOX_USER_STATUS status);
+void tox_self_set_status(Tox *tox, Tox_User_Status status);
 
 /**
  * Returns the client's user status.
  */
-TOX_USER_STATUS tox_self_get_status(const Tox *tox);
+Tox_User_Status tox_self_get_status(const Tox *tox);
 
 
 /*******************************************************************************
@@ -1237,7 +1237,7 @@ TOX_USER_STATUS tox_self_get_status(const Tox *tox);
 
 
 
-typedef enum TOX_ERR_FRIEND_ADD {
+typedef enum Tox_Err_Friend_Add {
 
     /**
      * The function returned successfully.
@@ -1287,7 +1287,7 @@ typedef enum TOX_ERR_FRIEND_ADD {
      */
     TOX_ERR_FRIEND_ADD_MALLOC,
 
-} TOX_ERR_FRIEND_ADD;
+} Tox_Err_Friend_Add;
 
 
 /**
@@ -1314,7 +1314,7 @@ typedef enum TOX_ERR_FRIEND_ADD {
  * @return the friend number on success, an unspecified value on failure.
  */
 uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message, size_t length,
-                        TOX_ERR_FRIEND_ADD *error);
+                        Tox_Err_Friend_Add *error);
 
 /**
  * Add a friend without sending a friend request.
@@ -1334,9 +1334,9 @@ uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message
  * @return the friend number on success, an unspecified value on failure.
  * @see tox_friend_add for a more detailed description of friend numbers.
  */
-uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_ADD *error);
+uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, Tox_Err_Friend_Add *error);
 
-typedef enum TOX_ERR_FRIEND_DELETE {
+typedef enum Tox_Err_Friend_Delete {
 
     /**
      * The function returned successfully.
@@ -1348,7 +1348,7 @@ typedef enum TOX_ERR_FRIEND_DELETE {
      */
     TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND,
 
-} TOX_ERR_FRIEND_DELETE;
+} Tox_Err_Friend_Delete;
 
 
 /**
@@ -1362,7 +1362,7 @@ typedef enum TOX_ERR_FRIEND_DELETE {
  *
  * @return true on success.
  */
-bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *error);
+bool tox_friend_delete(Tox *tox, uint32_t friend_number, Tox_Err_Friend_Delete *error);
 
 
 /*******************************************************************************
@@ -1373,7 +1373,7 @@ bool tox_friend_delete(Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_DELETE *
 
 
 
-typedef enum TOX_ERR_FRIEND_BY_PUBLIC_KEY {
+typedef enum Tox_Err_Friend_By_Public_Key {
 
     /**
      * The function returned successfully.
@@ -1390,7 +1390,7 @@ typedef enum TOX_ERR_FRIEND_BY_PUBLIC_KEY {
      */
     TOX_ERR_FRIEND_BY_PUBLIC_KEY_NOT_FOUND,
 
-} TOX_ERR_FRIEND_BY_PUBLIC_KEY;
+} Tox_Err_Friend_By_Public_Key;
 
 
 /**
@@ -1399,7 +1399,7 @@ typedef enum TOX_ERR_FRIEND_BY_PUBLIC_KEY {
  * @return the friend number on success, an unspecified value on failure.
  * @param public_key A byte array containing the Public Key.
  */
-uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, TOX_ERR_FRIEND_BY_PUBLIC_KEY *error);
+uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, Tox_Err_Friend_By_Public_Key *error);
 
 /**
  * Checks if a friend with the given friend number exists and returns true if
@@ -1425,7 +1425,7 @@ size_t tox_self_get_friend_list_size(const Tox *tox);
  */
 void tox_self_get_friend_list(const Tox *tox, uint32_t *friend_list);
 
-typedef enum TOX_ERR_FRIEND_GET_PUBLIC_KEY {
+typedef enum Tox_Err_Friend_Get_Public_Key {
 
     /**
      * The function returned successfully.
@@ -1437,7 +1437,7 @@ typedef enum TOX_ERR_FRIEND_GET_PUBLIC_KEY {
      */
     TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND,
 
-} TOX_ERR_FRIEND_GET_PUBLIC_KEY;
+} Tox_Err_Friend_Get_Public_Key;
 
 
 /**
@@ -1450,9 +1450,9 @@ typedef enum TOX_ERR_FRIEND_GET_PUBLIC_KEY {
  * @return true on success.
  */
 bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *public_key,
-                               TOX_ERR_FRIEND_GET_PUBLIC_KEY *error);
+                               Tox_Err_Friend_Get_Public_Key *error);
 
-typedef enum TOX_ERR_FRIEND_GET_LAST_ONLINE {
+typedef enum Tox_Err_Friend_Get_Last_Online {
 
     /**
      * The function returned successfully.
@@ -1464,7 +1464,7 @@ typedef enum TOX_ERR_FRIEND_GET_LAST_ONLINE {
      */
     TOX_ERR_FRIEND_GET_LAST_ONLINE_FRIEND_NOT_FOUND,
 
-} TOX_ERR_FRIEND_GET_LAST_ONLINE;
+} Tox_Err_Friend_Get_Last_Online;
 
 
 /**
@@ -1473,7 +1473,7 @@ typedef enum TOX_ERR_FRIEND_GET_LAST_ONLINE {
  *
  * @param friend_number The friend number you want to query.
  */
-uint64_t tox_friend_get_last_online(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_GET_LAST_ONLINE *error);
+uint64_t tox_friend_get_last_online(const Tox *tox, uint32_t friend_number, Tox_Err_Friend_Get_Last_Online *error);
 
 
 /*******************************************************************************
@@ -1487,7 +1487,7 @@ uint64_t tox_friend_get_last_online(const Tox *tox, uint32_t friend_number, TOX_
 /**
  * Common error codes for friend state query functions.
  */
-typedef enum TOX_ERR_FRIEND_QUERY {
+typedef enum Tox_Err_Friend_Query {
 
     /**
      * The function returned successfully.
@@ -1506,7 +1506,7 @@ typedef enum TOX_ERR_FRIEND_QUERY {
      */
     TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND,
 
-} TOX_ERR_FRIEND_QUERY;
+} Tox_Err_Friend_Query;
 
 
 /**
@@ -1516,7 +1516,7 @@ typedef enum TOX_ERR_FRIEND_QUERY {
  * The return value is equal to the `length` argument received by the last
  * `friend_name` callback.
  */
-size_t tox_friend_get_name_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+size_t tox_friend_get_name_size(const Tox *tox, uint32_t friend_number, Tox_Err_Friend_Query *error);
 
 /**
  * Write the name of the friend designated by the given friend number to a byte
@@ -1532,7 +1532,7 @@ size_t tox_friend_get_name_size(const Tox *tox, uint32_t friend_number, TOX_ERR_
  *
  * @return true on success.
  */
-bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, TOX_ERR_FRIEND_QUERY *error);
+bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, Tox_Err_Friend_Query *error);
 
 /**
  * @param friend_number The friend number of the friend whose name changed.
@@ -1555,7 +1555,7 @@ void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback);
  * Return the length of the friend's status message. If the friend number is
  * invalid, the return value is SIZE_MAX.
  */
-size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number, Tox_Err_Friend_Query *error);
 
 /**
  * Write the status message of the friend designated by the given friend number to a byte
@@ -1570,7 +1570,7 @@ size_t tox_friend_get_status_message_size(const Tox *tox, uint32_t friend_number
  * @param status_message A valid memory region large enough to store the friend's status message.
  */
 bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8_t *status_message,
-                                   TOX_ERR_FRIEND_QUERY *error);
+                                   Tox_Err_Friend_Query *error);
 
 /**
  * @param friend_number The friend number of the friend whose status message
@@ -1601,14 +1601,14 @@ void tox_callback_friend_status_message(Tox *tox, tox_friend_status_message_cb *
  * @deprecated This getter is deprecated. Use the event and store the status
  *   in the client state.
  */
-TOX_USER_STATUS tox_friend_get_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+Tox_User_Status tox_friend_get_status(const Tox *tox, uint32_t friend_number, Tox_Err_Friend_Query *error);
 
 /**
  * @param friend_number The friend number of the friend whose user status
  *   changed.
  * @param status The new user status.
  */
-typedef void tox_friend_status_cb(Tox *tox, uint32_t friend_number, TOX_USER_STATUS status, void *user_data);
+typedef void tox_friend_status_cb(Tox *tox, uint32_t friend_number, Tox_User_Status status, void *user_data);
 
 
 /**
@@ -1633,7 +1633,7 @@ void tox_callback_friend_status(Tox *tox, tox_friend_status_cb *callback);
  * @deprecated This getter is deprecated. Use the event and store the status
  *   in the client state.
  */
-TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+Tox_Connection tox_friend_get_connection_status(const Tox *tox, uint32_t friend_number, Tox_Err_Friend_Query *error);
 
 /**
  * @param friend_number The friend number of the friend whose connection status
@@ -1641,7 +1641,7 @@ TOX_CONNECTION tox_friend_get_connection_status(const Tox *tox, uint32_t friend_
  * @param connection_status The result of calling
  *   tox_friend_get_connection_status on the passed friend_number.
  */
-typedef void tox_friend_connection_status_cb(Tox *tox, uint32_t friend_number, TOX_CONNECTION connection_status,
+typedef void tox_friend_connection_status_cb(Tox *tox, uint32_t friend_number, Tox_Connection connection_status,
         void *user_data);
 
 
@@ -1668,7 +1668,7 @@ void tox_callback_friend_connection_status(Tox *tox, tox_friend_connection_statu
  * @deprecated This getter is deprecated. Use the event and store the status
  *   in the client state.
  */
-bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, TOX_ERR_FRIEND_QUERY *error);
+bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, Tox_Err_Friend_Query *error);
 
 /**
  * @param friend_number The friend number of the friend who started or stopped
@@ -1695,7 +1695,7 @@ void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *callback);
 
 
 
-typedef enum TOX_ERR_SET_TYPING {
+typedef enum Tox_Err_Set_Typing {
 
     /**
      * The function returned successfully.
@@ -1707,7 +1707,7 @@ typedef enum TOX_ERR_SET_TYPING {
      */
     TOX_ERR_SET_TYPING_FRIEND_NOT_FOUND,
 
-} TOX_ERR_SET_TYPING;
+} Tox_Err_Set_Typing;
 
 
 /**
@@ -1720,9 +1720,9 @@ typedef enum TOX_ERR_SET_TYPING {
  *
  * @return true on success.
  */
-bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool typing, TOX_ERR_SET_TYPING *error);
+bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool typing, Tox_Err_Set_Typing *error);
 
-typedef enum TOX_ERR_FRIEND_SEND_MESSAGE {
+typedef enum Tox_Err_Friend_Send_Message {
 
     /**
      * The function returned successfully.
@@ -1759,7 +1759,7 @@ typedef enum TOX_ERR_FRIEND_SEND_MESSAGE {
      */
     TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY,
 
-} TOX_ERR_FRIEND_SEND_MESSAGE;
+} Tox_Err_Friend_Send_Message;
 
 
 /**
@@ -1785,8 +1785,8 @@ typedef enum TOX_ERR_FRIEND_SEND_MESSAGE {
  *   containing the message text.
  * @param length Length of the message to be sent.
  */
-uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
-                                 size_t length, TOX_ERR_FRIEND_SEND_MESSAGE *error);
+uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, Tox_Message_Type type, const uint8_t *message,
+                                 size_t length, Tox_Err_Friend_Send_Message *error);
 
 /**
  * @param friend_number The friend number of the friend who received the message.
@@ -1834,7 +1834,7 @@ void tox_callback_friend_request(Tox *tox, tox_friend_request_cb *callback);
  * @param message The message data they sent.
  * @param length The size of the message byte array.
  */
-typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
+typedef void tox_friend_message_cb(Tox *tox, uint32_t friend_number, Tox_Message_Type type, const uint8_t *message,
                                    size_t length, void *user_data);
 
 
@@ -1879,11 +1879,11 @@ bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length);
  * A list of pre-defined file kinds. Toxcore itself does not behave
  * differently for different file kinds. These are a hint to the client
  * telling it what use the sender intended for the file. The `kind` parameter
- * in the send function and recv callback are `uint32_t`, not TOX_FILE_KIND, because
+ * in the send function and recv callback are `uint32_t`, not Tox_File_Kind, because
  * clients can invent their own file kind. Unknown file kinds should be
  * treated as TOX_FILE_KIND_DATA.
  */
-enum TOX_FILE_KIND {
+enum Tox_File_Kind {
 
     /**
      * Arbitrary file data. Clients can choose to handle it based on the file name
@@ -1916,7 +1916,7 @@ enum TOX_FILE_KIND {
 };
 
 
-typedef enum TOX_FILE_CONTROL {
+typedef enum Tox_File_Control {
 
     /**
      * Sent by the receiving side to accept a file send request. Also sent after a
@@ -1938,10 +1938,10 @@ typedef enum TOX_FILE_CONTROL {
      */
     TOX_FILE_CONTROL_CANCEL,
 
-} TOX_FILE_CONTROL;
+} Tox_File_Control;
 
 
-typedef enum TOX_ERR_FILE_CONTROL {
+typedef enum Tox_Err_File_Control {
 
     /**
      * The function returned successfully.
@@ -1984,7 +1984,7 @@ typedef enum TOX_ERR_FILE_CONTROL {
      */
     TOX_ERR_FILE_CONTROL_SENDQ,
 
-} TOX_ERR_FILE_CONTROL;
+} Tox_Err_File_Control;
 
 
 /**
@@ -1997,8 +1997,8 @@ typedef enum TOX_ERR_FILE_CONTROL {
  *
  * @return true on success.
  */
-bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
-                      TOX_ERR_FILE_CONTROL *error);
+bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, Tox_File_Control control,
+                      Tox_Err_File_Control *error);
 
 /**
  * When receiving TOX_FILE_CONTROL_CANCEL, the client should release the
@@ -2009,7 +2009,7 @@ bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, TO
  *   associated with.
  * @param control The file control command received.
  */
-typedef void tox_file_recv_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, TOX_FILE_CONTROL control,
+typedef void tox_file_recv_control_cb(Tox *tox, uint32_t friend_number, uint32_t file_number, Tox_File_Control control,
                                       void *user_data);
 
 
@@ -2021,7 +2021,7 @@ typedef void tox_file_recv_control_cb(Tox *tox, uint32_t friend_number, uint32_t
  */
 void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *callback);
 
-typedef enum TOX_ERR_FILE_SEEK {
+typedef enum Tox_Err_File_Seek {
 
     /**
      * The function returned successfully.
@@ -2058,7 +2058,7 @@ typedef enum TOX_ERR_FILE_SEEK {
      */
     TOX_ERR_FILE_SEEK_SENDQ,
 
-} TOX_ERR_FILE_SEEK;
+} Tox_Err_File_Seek;
 
 
 /**
@@ -2072,9 +2072,9 @@ typedef enum TOX_ERR_FILE_SEEK {
  * @param file_number The friend-specific identifier for the file transfer.
  * @param position The position that the file should be seeked to.
  */
-bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, TOX_ERR_FILE_SEEK *error);
+bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, Tox_Err_File_Seek *error);
 
-typedef enum TOX_ERR_FILE_GET {
+typedef enum Tox_Err_File_Get {
 
     /**
      * The function returned successfully.
@@ -2096,7 +2096,7 @@ typedef enum TOX_ERR_FILE_GET {
      */
     TOX_ERR_FILE_GET_NOT_FOUND,
 
-} TOX_ERR_FILE_GET;
+} Tox_Err_File_Get;
 
 
 /**
@@ -2111,7 +2111,7 @@ typedef enum TOX_ERR_FILE_GET {
  * @return true on success.
  */
 bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_number, uint8_t *file_id,
-                          TOX_ERR_FILE_GET *error);
+                          Tox_Err_File_Get *error);
 
 
 /*******************************************************************************
@@ -2122,7 +2122,7 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
 
 
 
-typedef enum TOX_ERR_FILE_SEND {
+typedef enum Tox_Err_File_Send {
 
     /**
      * The function returned successfully.
@@ -2155,7 +2155,7 @@ typedef enum TOX_ERR_FILE_SEND {
      */
     TOX_ERR_FILE_SEND_TOO_MANY,
 
-} TOX_ERR_FILE_SEND;
+} Tox_Err_File_Send;
 
 
 /**
@@ -2218,9 +2218,9 @@ typedef enum TOX_ERR_FILE_SEND {
  *   should not be relied on.
  */
 uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *file_id,
-                       const uint8_t *filename, size_t filename_length, TOX_ERR_FILE_SEND *error);
+                       const uint8_t *filename, size_t filename_length, Tox_Err_File_Send *error);
 
-typedef enum TOX_ERR_FILE_SEND_CHUNK {
+typedef enum Tox_Err_File_Send_Chunk {
 
     /**
      * The function returned successfully.
@@ -2270,7 +2270,7 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
      */
     TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION,
 
-} TOX_ERR_FILE_SEND_CHUNK;
+} Tox_Err_File_Send_Chunk;
 
 
 /**
@@ -2290,7 +2290,7 @@ typedef enum TOX_ERR_FILE_SEND_CHUNK {
  * @return true on success.
  */
 bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position, const uint8_t *data,
-                         size_t length, TOX_ERR_FILE_SEND_CHUNK *error);
+                         size_t length, Tox_Err_File_Send_Chunk *error);
 
 /**
  * If the length parameter is 0, the file transfer is finished, and the client's
@@ -2406,7 +2406,7 @@ void tox_callback_file_recv_chunk(Tox *tox, tox_file_recv_chunk_cb *callback);
  * @deprecated All UPPER_CASE enum type names are deprecated. Use the
  *   Camel_Snake_Case versions, instead.
  */
-typedef enum TOX_CONFERENCE_TYPE {
+typedef enum Tox_Conference_Type {
 
     /**
      * Text-only conferences that must be accepted with the tox_conference_join function.
@@ -2418,7 +2418,7 @@ typedef enum TOX_CONFERENCE_TYPE {
      */
     TOX_CONFERENCE_TYPE_AV,
 
-} TOX_CONFERENCE_TYPE;
+} Tox_Conference_Type;
 
 
 /**
@@ -2431,7 +2431,7 @@ typedef enum TOX_CONFERENCE_TYPE {
  *   conference.
  * @param length The length of the cookie.
  */
-typedef void tox_conference_invite_cb(Tox *tox, uint32_t friend_number, TOX_CONFERENCE_TYPE type, const uint8_t *cookie,
+typedef void tox_conference_invite_cb(Tox *tox, uint32_t friend_number, Tox_Conference_Type type, const uint8_t *cookie,
                                       size_t length, void *user_data);
 
 
@@ -2464,7 +2464,7 @@ void tox_callback_conference_connected(Tox *tox, tox_conference_connected_cb *ca
  * @param length The length of the message.
  */
 typedef void tox_conference_message_cb(Tox *tox, uint32_t conference_number, uint32_t peer_number,
-                                       TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data);
+                                       Tox_Message_Type type, const uint8_t *message, size_t length, void *user_data);
 
 
 /**
@@ -2525,7 +2525,7 @@ typedef void tox_conference_peer_list_changed_cb(Tox *tox, uint32_t conference_n
  */
 void tox_callback_conference_peer_list_changed(Tox *tox, tox_conference_peer_list_changed_cb *callback);
 
-typedef enum TOX_ERR_CONFERENCE_NEW {
+typedef enum Tox_Err_Conference_New {
 
     /**
      * The function returned successfully.
@@ -2537,7 +2537,7 @@ typedef enum TOX_ERR_CONFERENCE_NEW {
      */
     TOX_ERR_CONFERENCE_NEW_INIT,
 
-} TOX_ERR_CONFERENCE_NEW;
+} Tox_Err_Conference_New;
 
 
 /**
@@ -2547,9 +2547,9 @@ typedef enum TOX_ERR_CONFERENCE_NEW {
  *
  * @return conference number on success, or an unspecified value on failure.
  */
-uint32_t tox_conference_new(Tox *tox, TOX_ERR_CONFERENCE_NEW *error);
+uint32_t tox_conference_new(Tox *tox, Tox_Err_Conference_New *error);
 
-typedef enum TOX_ERR_CONFERENCE_DELETE {
+typedef enum Tox_Err_Conference_Delete {
 
     /**
      * The function returned successfully.
@@ -2561,7 +2561,7 @@ typedef enum TOX_ERR_CONFERENCE_DELETE {
      */
     TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND,
 
-} TOX_ERR_CONFERENCE_DELETE;
+} Tox_Err_Conference_Delete;
 
 
 /**
@@ -2571,12 +2571,12 @@ typedef enum TOX_ERR_CONFERENCE_DELETE {
  *
  * @return true on success.
  */
-bool tox_conference_delete(Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_DELETE *error);
+bool tox_conference_delete(Tox *tox, uint32_t conference_number, Tox_Err_Conference_Delete *error);
 
 /**
  * Error codes for peer info queries.
  */
-typedef enum TOX_ERR_CONFERENCE_PEER_QUERY {
+typedef enum Tox_Err_Conference_Peer_Query {
 
     /**
      * The function returned successfully.
@@ -2598,7 +2598,7 @@ typedef enum TOX_ERR_CONFERENCE_PEER_QUERY {
      */
     TOX_ERR_CONFERENCE_PEER_QUERY_NO_CONNECTION,
 
-} TOX_ERR_CONFERENCE_PEER_QUERY;
+} Tox_Err_Conference_Peer_Query;
 
 
 /**
@@ -2607,13 +2607,13 @@ typedef enum TOX_ERR_CONFERENCE_PEER_QUERY {
  * the functions querying these peers. Return value is unspecified on
  * failure.
  */
-uint32_t tox_conference_peer_count(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+uint32_t tox_conference_peer_count(const Tox *tox, uint32_t conference_number, Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Return the length of the peer's name. Return value is unspecified on failure.
  */
 size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
-        TOX_ERR_CONFERENCE_PEER_QUERY *error);
+        Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Copy the name of peer_number who is in conference_number to name.
@@ -2625,7 +2625,7 @@ size_t tox_conference_peer_get_name_size(const Tox *tox, uint32_t conference_num
  * @return true on success.
  */
 bool tox_conference_peer_get_name(const Tox *tox, uint32_t conference_number, uint32_t peer_number, uint8_t *name,
-                                  TOX_ERR_CONFERENCE_PEER_QUERY *error);
+                                  Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Copy the public key of peer_number who is in conference_number to public_key.
@@ -2634,13 +2634,13 @@ bool tox_conference_peer_get_name(const Tox *tox, uint32_t conference_number, ui
  * @return true on success.
  */
 bool tox_conference_peer_get_public_key(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
-                                        uint8_t *public_key, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+                                        uint8_t *public_key, Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Return true if passed peer_number corresponds to our own.
  */
 bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_number, uint32_t peer_number,
-                                        TOX_ERR_CONFERENCE_PEER_QUERY *error);
+                                        Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Return the number of offline peers in the conference. The unsigned
@@ -2648,13 +2648,13 @@ bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_numb
  * the functions querying these peers. Return value is unspecified on failure.
  */
 uint32_t tox_conference_offline_peer_count(const Tox *tox, uint32_t conference_number,
-        TOX_ERR_CONFERENCE_PEER_QUERY *error);
+        Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Return the length of the offline peer's name. Return value is unspecified on failure.
  */
 size_t tox_conference_offline_peer_get_name_size(const Tox *tox, uint32_t conference_number,
-        uint32_t offline_peer_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+        uint32_t offline_peer_number, Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Copy the name of offline_peer_number who is in conference_number to name.
@@ -2666,7 +2666,7 @@ size_t tox_conference_offline_peer_get_name_size(const Tox *tox, uint32_t confer
  * @return true on success.
  */
 bool tox_conference_offline_peer_get_name(const Tox *tox, uint32_t conference_number, uint32_t offline_peer_number,
-        uint8_t *name, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+        uint8_t *name, Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Copy the public key of offline_peer_number who is in conference_number to public_key.
@@ -2675,15 +2675,15 @@ bool tox_conference_offline_peer_get_name(const Tox *tox, uint32_t conference_nu
  * @return true on success.
  */
 bool tox_conference_offline_peer_get_public_key(const Tox *tox, uint32_t conference_number,
-        uint32_t offline_peer_number, uint8_t *public_key, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+        uint32_t offline_peer_number, uint8_t *public_key, Tox_Err_Conference_Peer_Query *error);
 
 /**
  * Return a unix-time timestamp of the last time offline_peer_number was seen to be active.
  */
 uint64_t tox_conference_offline_peer_get_last_active(const Tox *tox, uint32_t conference_number,
-        uint32_t offline_peer_number, TOX_ERR_CONFERENCE_PEER_QUERY *error);
+        uint32_t offline_peer_number, Tox_Err_Conference_Peer_Query *error);
 
-typedef enum TOX_ERR_CONFERENCE_SET_MAX_OFFLINE {
+typedef enum Tox_Err_Conference_Set_Max_Offline {
 
     /**
      * The function returned successfully.
@@ -2695,16 +2695,16 @@ typedef enum TOX_ERR_CONFERENCE_SET_MAX_OFFLINE {
      */
     TOX_ERR_CONFERENCE_SET_MAX_OFFLINE_CONFERENCE_NOT_FOUND,
 
-} TOX_ERR_CONFERENCE_SET_MAX_OFFLINE;
+} Tox_Err_Conference_Set_Max_Offline;
 
 
 /**
  * Set maximum number of offline peers to store, overriding the default.
  */
 bool tox_conference_set_max_offline(Tox *tox, uint32_t conference_number, uint32_t max_offline_peers,
-                                    TOX_ERR_CONFERENCE_SET_MAX_OFFLINE *error);
+                                    Tox_Err_Conference_Set_Max_Offline *error);
 
-typedef enum TOX_ERR_CONFERENCE_INVITE {
+typedef enum Tox_Err_Conference_Invite {
 
     /**
      * The function returned successfully.
@@ -2726,7 +2726,7 @@ typedef enum TOX_ERR_CONFERENCE_INVITE {
      */
     TOX_ERR_CONFERENCE_INVITE_NO_CONNECTION,
 
-} TOX_ERR_CONFERENCE_INVITE;
+} Tox_Err_Conference_Invite;
 
 
 /**
@@ -2738,9 +2738,9 @@ typedef enum TOX_ERR_CONFERENCE_INVITE {
  * @return true on success.
  */
 bool tox_conference_invite(Tox *tox, uint32_t friend_number, uint32_t conference_number,
-                           TOX_ERR_CONFERENCE_INVITE *error);
+                           Tox_Err_Conference_Invite *error);
 
-typedef enum TOX_ERR_CONFERENCE_JOIN {
+typedef enum Tox_Err_Conference_Join {
 
     /**
      * The function returned successfully.
@@ -2777,7 +2777,7 @@ typedef enum TOX_ERR_CONFERENCE_JOIN {
      */
     TOX_ERR_CONFERENCE_JOIN_FAIL_SEND,
 
-} TOX_ERR_CONFERENCE_JOIN;
+} Tox_Err_Conference_Join;
 
 
 /**
@@ -2798,9 +2798,9 @@ typedef enum TOX_ERR_CONFERENCE_JOIN {
  * @return conference number on success, an unspecified value on failure.
  */
 uint32_t tox_conference_join(Tox *tox, uint32_t friend_number, const uint8_t *cookie, size_t length,
-                             TOX_ERR_CONFERENCE_JOIN *error);
+                             Tox_Err_Conference_Join *error);
 
-typedef enum TOX_ERR_CONFERENCE_SEND_MESSAGE {
+typedef enum Tox_Err_Conference_Send_Message {
 
     /**
      * The function returned successfully.
@@ -2827,7 +2827,7 @@ typedef enum TOX_ERR_CONFERENCE_SEND_MESSAGE {
      */
     TOX_ERR_CONFERENCE_SEND_MESSAGE_FAIL_SEND,
 
-} TOX_ERR_CONFERENCE_SEND_MESSAGE;
+} Tox_Err_Conference_Send_Message;
 
 
 /**
@@ -2848,10 +2848,10 @@ typedef enum TOX_ERR_CONFERENCE_SEND_MESSAGE {
  *
  * @return true on success.
  */
-bool tox_conference_send_message(Tox *tox, uint32_t conference_number, TOX_MESSAGE_TYPE type, const uint8_t *message,
-                                 size_t length, TOX_ERR_CONFERENCE_SEND_MESSAGE *error);
+bool tox_conference_send_message(Tox *tox, uint32_t conference_number, Tox_Message_Type type, const uint8_t *message,
+                                 size_t length, Tox_Err_Conference_Send_Message *error);
 
-typedef enum TOX_ERR_CONFERENCE_TITLE {
+typedef enum Tox_Err_Conference_Title {
 
     /**
      * The function returned successfully.
@@ -2873,7 +2873,7 @@ typedef enum TOX_ERR_CONFERENCE_TITLE {
      */
     TOX_ERR_CONFERENCE_TITLE_FAIL_SEND,
 
-} TOX_ERR_CONFERENCE_TITLE;
+} Tox_Err_Conference_Title;
 
 
 /**
@@ -2882,7 +2882,7 @@ typedef enum TOX_ERR_CONFERENCE_TITLE {
  * The return value is equal to the `length` argument received by the last
  * `conference_title` callback.
  */
-size_t tox_conference_get_title_size(const Tox *tox, uint32_t conference_number, TOX_ERR_CONFERENCE_TITLE *error);
+size_t tox_conference_get_title_size(const Tox *tox, uint32_t conference_number, Tox_Err_Conference_Title *error);
 
 /**
  * Write the title designated by the given conference number to a byte array.
@@ -2898,7 +2898,7 @@ size_t tox_conference_get_title_size(const Tox *tox, uint32_t conference_number,
  * @return true on success.
  */
 bool tox_conference_get_title(const Tox *tox, uint32_t conference_number, uint8_t *title,
-                              TOX_ERR_CONFERENCE_TITLE *error);
+                              Tox_Err_Conference_Title *error);
 
 /**
  * Set the conference title and broadcast it to the rest of the conference.
@@ -2908,7 +2908,7 @@ bool tox_conference_get_title(const Tox *tox, uint32_t conference_number, uint8_
  * @return true on success.
  */
 bool tox_conference_set_title(Tox *tox, uint32_t conference_number, const uint8_t *title, size_t length,
-                              TOX_ERR_CONFERENCE_TITLE *error);
+                              Tox_Err_Conference_Title *error);
 
 /**
  * Return the number of conferences in the Tox instance.
@@ -2931,10 +2931,10 @@ size_t tox_conference_get_chatlist_size(const Tox *tox);
 void tox_conference_get_chatlist(const Tox *tox, uint32_t *chatlist);
 
 /**
- * Returns the type of conference (TOX_CONFERENCE_TYPE) that conference_number is. Return value is
+ * Returns the type of conference (Tox_Conference_Type) that conference_number is. Return value is
  * unspecified on failure.
  */
-typedef enum TOX_ERR_CONFERENCE_GET_TYPE {
+typedef enum Tox_Err_Conference_Get_Type {
 
     /**
      * The function returned successfully.
@@ -2946,11 +2946,11 @@ typedef enum TOX_ERR_CONFERENCE_GET_TYPE {
      */
     TOX_ERR_CONFERENCE_GET_TYPE_CONFERENCE_NOT_FOUND,
 
-} TOX_ERR_CONFERENCE_GET_TYPE;
+} Tox_Err_Conference_Get_Type;
 
 
-TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_number,
-        TOX_ERR_CONFERENCE_GET_TYPE *error);
+Tox_Conference_Type tox_conference_get_type(const Tox *tox, uint32_t conference_number,
+        Tox_Err_Conference_Get_Type *error);
 
 /**
  * Get the conference unique ID.
@@ -2963,7 +2963,7 @@ TOX_CONFERENCE_TYPE tox_conference_get_type(const Tox *tox, uint32_t conference_
  */
 bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *id);
 
-typedef enum TOX_ERR_CONFERENCE_BY_ID {
+typedef enum Tox_Err_Conference_By_Id {
 
     /**
      * The function returned successfully.
@@ -2980,7 +2980,7 @@ typedef enum TOX_ERR_CONFERENCE_BY_ID {
      */
     TOX_ERR_CONFERENCE_BY_ID_NOT_FOUND,
 
-} TOX_ERR_CONFERENCE_BY_ID;
+} Tox_Err_Conference_By_Id;
 
 
 /**
@@ -2990,7 +2990,7 @@ typedef enum TOX_ERR_CONFERENCE_BY_ID {
  *
  * @return the conference number on success, an unspecified value on failure.
  */
-uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, TOX_ERR_CONFERENCE_BY_ID *error);
+uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, Tox_Err_Conference_By_Id *error);
 
 /**
  * Get the conference unique ID.
@@ -3004,7 +3004,7 @@ uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, TOX_ERR_CONFERE
  */
 bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid);
 
-typedef enum TOX_ERR_CONFERENCE_BY_UID {
+typedef enum Tox_Err_Conference_By_Uid {
 
     /**
      * The function returned successfully.
@@ -3021,7 +3021,7 @@ typedef enum TOX_ERR_CONFERENCE_BY_UID {
      */
     TOX_ERR_CONFERENCE_BY_UID_NOT_FOUND,
 
-} TOX_ERR_CONFERENCE_BY_UID;
+} Tox_Err_Conference_By_Uid;
 
 
 /**
@@ -3032,7 +3032,7 @@ typedef enum TOX_ERR_CONFERENCE_BY_UID {
  * @return the conference number on success, an unspecified value on failure.
  * @deprecated use tox_conference_by_id instead (exactly the same function, just renamed).
  */
-uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, TOX_ERR_CONFERENCE_BY_UID *error);
+uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, Tox_Err_Conference_By_Uid *error);
 
 
 /*******************************************************************************
@@ -3043,7 +3043,7 @@ uint32_t tox_conference_by_uid(const Tox *tox, const uint8_t *uid, TOX_ERR_CONFE
 
 
 
-typedef enum TOX_ERR_FRIEND_CUSTOM_PACKET {
+typedef enum Tox_Err_Friend_Custom_Packet {
 
     /**
      * The function returned successfully.
@@ -3086,7 +3086,7 @@ typedef enum TOX_ERR_FRIEND_CUSTOM_PACKET {
      */
     TOX_ERR_FRIEND_CUSTOM_PACKET_SENDQ,
 
-} TOX_ERR_FRIEND_CUSTOM_PACKET;
+} Tox_Err_Friend_Custom_Packet;
 
 
 /**
@@ -3110,7 +3110,7 @@ typedef enum TOX_ERR_FRIEND_CUSTOM_PACKET {
  * @return true on success.
  */
 bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-                                  TOX_ERR_FRIEND_CUSTOM_PACKET *error);
+                                  Tox_Err_Friend_Custom_Packet *error);
 
 /**
  * Send a custom lossless packet to a friend.
@@ -3129,7 +3129,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
  * @return true on success.
  */
 bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uint8_t *data, size_t length,
-                                     TOX_ERR_FRIEND_CUSTOM_PACKET *error);
+                                     Tox_Err_Friend_Custom_Packet *error);
 
 /**
  * @param friend_number The friend number of the friend who sent a lossy packet.
@@ -3170,7 +3170,7 @@ void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb
 
 
 
-typedef enum TOX_ERR_GET_PORT {
+typedef enum Tox_Err_Get_Port {
 
     /**
      * The function returned successfully.
@@ -3182,7 +3182,7 @@ typedef enum TOX_ERR_GET_PORT {
      */
     TOX_ERR_GET_PORT_NOT_BOUND,
 
-} TOX_ERR_GET_PORT;
+} Tox_Err_Get_Port;
 
 
 /**
@@ -3202,56 +3202,60 @@ void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id);
 /**
  * Return the UDP port this Tox instance is bound to.
  */
-uint16_t tox_self_get_udp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
+uint16_t tox_self_get_udp_port(const Tox *tox, Tox_Err_Get_Port *error);
 
 /**
  * Return the TCP port this Tox instance is bound to. This is only relevant if
  * the instance is acting as a TCP relay.
  */
-uint16_t tox_self_get_tcp_port(const Tox *tox, TOX_ERR_GET_PORT *error);
+uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-typedef TOX_ERR_OPTIONS_NEW Tox_Err_Options_New;
-typedef TOX_ERR_NEW Tox_Err_New;
-typedef TOX_ERR_BOOTSTRAP Tox_Err_Bootstrap;
-typedef TOX_ERR_SET_INFO Tox_Err_Set_Info;
-typedef TOX_ERR_FRIEND_ADD Tox_Err_Friend_Add;
-typedef TOX_ERR_FRIEND_DELETE Tox_Err_Friend_Delete;
-typedef TOX_ERR_FRIEND_BY_PUBLIC_KEY Tox_Err_Friend_By_Public_Key;
-typedef TOX_ERR_FRIEND_GET_PUBLIC_KEY Tox_Err_Friend_Get_Public_Key;
-typedef TOX_ERR_FRIEND_GET_LAST_ONLINE Tox_Err_Friend_Get_Last_Online;
-typedef TOX_ERR_FRIEND_QUERY Tox_Err_Friend_Query;
-typedef TOX_ERR_SET_TYPING Tox_Err_Set_Typing;
-typedef TOX_ERR_FRIEND_SEND_MESSAGE Tox_Err_Friend_Send_Message;
-typedef TOX_ERR_FILE_CONTROL Tox_Err_File_Control;
-typedef TOX_ERR_FILE_SEEK Tox_Err_File_Seek;
-typedef TOX_ERR_FILE_GET Tox_Err_File_Get;
-typedef TOX_ERR_FILE_SEND Tox_Err_File_Send;
-typedef TOX_ERR_FILE_SEND_CHUNK Tox_Err_File_Send_Chunk;
-typedef TOX_ERR_CONFERENCE_NEW Tox_Err_Conference_New;
-typedef TOX_ERR_CONFERENCE_DELETE Tox_Err_Conference_Delete;
-typedef TOX_ERR_CONFERENCE_PEER_QUERY Tox_Err_Conference_Peer_Query;
-typedef TOX_ERR_CONFERENCE_SET_MAX_OFFLINE Tox_Err_Conference_Set_Max_Offline;
-typedef TOX_ERR_CONFERENCE_BY_ID Tox_Err_Conference_By_Id;
-typedef TOX_ERR_CONFERENCE_BY_UID Tox_Err_Conference_By_Uid;
-typedef TOX_ERR_CONFERENCE_INVITE Tox_Err_Conference_Invite;
-typedef TOX_ERR_CONFERENCE_JOIN Tox_Err_Conference_Join;
-typedef TOX_ERR_CONFERENCE_SEND_MESSAGE Tox_Err_Conference_Send_Message;
-typedef TOX_ERR_CONFERENCE_TITLE Tox_Err_Conference_Title;
-typedef TOX_ERR_CONFERENCE_GET_TYPE Tox_Err_Conference_Get_Type;
-typedef TOX_ERR_FRIEND_CUSTOM_PACKET Tox_Err_Friend_Custom_Packet;
-typedef TOX_ERR_GET_PORT Tox_Err_Get_Port;
-typedef TOX_USER_STATUS Tox_User_Status;
-typedef TOX_MESSAGE_TYPE Tox_Message_Type;
-typedef TOX_PROXY_TYPE Tox_Proxy_Type;
-typedef TOX_SAVEDATA_TYPE Tox_Savedata_Type;
-typedef TOX_LOG_LEVEL Tox_Log_Level;
-typedef TOX_CONNECTION Tox_Connection;
-typedef TOX_FILE_CONTROL Tox_File_Control;
-typedef TOX_CONFERENCE_TYPE Tox_Conference_Type;
+//!TOKSTYLE-
+
+typedef Tox_Err_Options_New TOX_ERR_OPTIONS_NEW;
+typedef Tox_Err_New TOX_ERR_NEW;
+typedef Tox_Err_Bootstrap TOX_ERR_BOOTSTRAP;
+typedef Tox_Err_Set_Info TOX_ERR_SET_INFO;
+typedef Tox_Err_Friend_Add TOX_ERR_FRIEND_ADD;
+typedef Tox_Err_Friend_Delete TOX_ERR_FRIEND_DELETE;
+typedef Tox_Err_Friend_By_Public_Key TOX_ERR_FRIEND_BY_PUBLIC_KEY;
+typedef Tox_Err_Friend_Get_Public_Key TOX_ERR_FRIEND_GET_PUBLIC_KEY;
+typedef Tox_Err_Friend_Get_Last_Online TOX_ERR_FRIEND_GET_LAST_ONLINE;
+typedef Tox_Err_Friend_Query TOX_ERR_FRIEND_QUERY;
+typedef Tox_Err_Set_Typing TOX_ERR_SET_TYPING;
+typedef Tox_Err_Friend_Send_Message TOX_ERR_FRIEND_SEND_MESSAGE;
+typedef Tox_Err_File_Control TOX_ERR_FILE_CONTROL;
+typedef Tox_Err_File_Seek TOX_ERR_FILE_SEEK;
+typedef Tox_Err_File_Get TOX_ERR_FILE_GET;
+typedef Tox_Err_File_Send TOX_ERR_FILE_SEND;
+typedef Tox_Err_File_Send_Chunk TOX_ERR_FILE_SEND_CHUNK;
+typedef Tox_Err_Conference_New TOX_ERR_CONFERENCE_NEW;
+typedef Tox_Err_Conference_Delete TOX_ERR_CONFERENCE_DELETE;
+typedef Tox_Err_Conference_Peer_Query TOX_ERR_CONFERENCE_PEER_QUERY;
+typedef Tox_Err_Conference_Set_Max_Offline TOX_ERR_CONFERENCE_SET_MAX_OFFLINE;
+typedef Tox_Err_Conference_By_Id TOX_ERR_CONFERENCE_BY_ID;
+typedef Tox_Err_Conference_By_Uid TOX_ERR_CONFERENCE_BY_UID;
+typedef Tox_Err_Conference_Invite TOX_ERR_CONFERENCE_INVITE;
+typedef Tox_Err_Conference_Join TOX_ERR_CONFERENCE_JOIN;
+typedef Tox_Err_Conference_Send_Message TOX_ERR_CONFERENCE_SEND_MESSAGE;
+typedef Tox_Err_Conference_Title TOX_ERR_CONFERENCE_TITLE;
+typedef Tox_Err_Conference_Get_Type TOX_ERR_CONFERENCE_GET_TYPE;
+typedef Tox_Err_Friend_Custom_Packet TOX_ERR_FRIEND_CUSTOM_PACKET;
+typedef Tox_Err_Get_Port TOX_ERR_GET_PORT;
+typedef Tox_User_Status TOX_USER_STATUS;
+typedef Tox_Message_Type TOX_MESSAGE_TYPE;
+typedef Tox_Proxy_Type TOX_PROXY_TYPE;
+typedef Tox_Savedata_Type TOX_SAVEDATA_TYPE;
+typedef Tox_Log_Level TOX_LOG_LEVEL;
+typedef Tox_Connection TOX_CONNECTION;
+typedef Tox_File_Control TOX_FILE_CONTROL;
+typedef Tox_Conference_Type TOX_CONFERENCE_TYPE;
+typedef enum Tox_File_Kind TOX_FILE_KIND;
 
 //!TOKSTYLE+
 

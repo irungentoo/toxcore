@@ -115,7 +115,6 @@ cc_library(
         "toxav_old.c",
     ],
     hdrs = [
-        "toxav.api.h",
         "toxav.h",
     ],
     visibility = ["//c-toxcore:__subpackages__"],
@@ -125,16 +124,11 @@ cc_library(
     ],
 )
 
-CIMPLE_SRCS = glob(
-    [
-        "*.c",
-        "*.h",
-    ],
-    exclude = ["*.api.h"],
-)
-
 sh_library(
     name = "cimple_files",
-    srcs = CIMPLE_SRCS,
+    srcs = glob([
+        "*.c",
+        "*.h",
+    ]),
     visibility = ["//c-toxcore/testing:__pkg__"],
 )

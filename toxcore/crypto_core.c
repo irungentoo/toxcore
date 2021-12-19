@@ -16,7 +16,7 @@
 #include "ccompat.h"
 
 #ifndef VANILLA_NACL
-/* We use libsodium by default. */
+// We use libsodium by default.
 #include <sodium.h>
 #else
 #include <crypto_box.h>
@@ -29,7 +29,6 @@
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 
-//!TOKSTYLE-
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == crypto_box_PUBLICKEYBYTES,
               "CRYPTO_PUBLIC_KEY_SIZE should be equal to crypto_box_PUBLICKEYBYTES");
 static_assert(CRYPTO_SECRET_KEY_SIZE == crypto_box_SECRETKEYBYTES,
@@ -48,7 +47,6 @@ static_assert(CRYPTO_SHA512_SIZE == crypto_hash_sha512_BYTES,
               "CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES");
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == 32,
               "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work");
-//!TOKSTYLE+
 
 static uint8_t *crypto_malloc(size_t bytes)
 {
@@ -67,6 +65,15 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
     return crypto_verify_32(pk1, pk2);
+}
+
+int32_t crypto_sha512_cmp(const uint8_t *cksum1, const uint8_t *cksum2)
+{
+#ifndef VANILLA_NACL
+    return crypto_verify_64(cksum1, cksum2);
+#else
+    return crypto_verify_32(cksum1, cksum2) && crypto_verify_32(cksum1 + 8, cksum2 + 8);
+#endif
 }
 
 uint8_t random_u08(void)

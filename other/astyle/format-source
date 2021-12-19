@@ -4,7 +4,6 @@ set -ex
 
 SOURCE_DIR="$1"
 ASTYLE="$2"
-APIDSL="$3"
 
 # Go to the source root.
 if [ -z "$SOURCE_DIR" ]; then
@@ -19,62 +18,6 @@ fi
 if ! which "$ASTYLE"; then
   # If we couldn't find or install an astyle binary, don't do anything.
   echo "Could not find an astyle binary; please install astyle."
-  exit 1
-fi
-
-if ! which "$APIDSL"; then
-  if [ -f ../apidsl/apigen.native ]; then
-    APIDSL=../apidsl/apigen.native
-  else
-    APIDSL=apidsl_curl
-  fi
-fi
-
-TO_JSON='s/\\/\\\\/g;s/\n/\\n/g;s/"/\\"/g;s/^(.*)$/"$1"/'
-FROM_JSON='s/\\"/"/g;s/^"(.*)"$/$1/;s/\\\\/\\/g;s/\\n/\n/g'
-
-apidsl_request() {
-  TMPFILE=$(mktemp /tmp/apidsl.XXXXXX)
-  curl -s -o "$TMPFILE" -X POST --data @<(
-    echo '["Request",'
-    cat "$2"
-    echo ']'
-  ) "https://apidsl.herokuapp.com/$1"
-  if grep '\[1,"' "$TMPFILE" >/dev/null; then
-    echo "Error: $(grep -o '".*"' /tmp/apidsl-$$ | perl -0777 -pe "$FROM_JSON")" >&2
-    rm "$TMPFILE"
-    exit 1
-  fi
-  perl -0777 -pe 's/^\[0,(.*)\]$/$1/' "$TMPFILE"
-  rm "$TMPFILE"
-}
-
-apidsl_curl() {
-  echo "apidsl_curl $*" >&2
-  apidsl_request "c" <(
-    apidsl_request "parse" <(
-      perl -0777 -pe "$TO_JSON" "$1"
-    )
-  ) | perl -0777 -pe "$FROM_JSON"
-}
-
-# Check if apidsl generated sources are up to date.
-set +x
-"$APIDSL" toxcore/tox.api.h >toxcore/tox.h &
-"$APIDSL" toxav/toxav.api.h >toxav/toxav.h &
-"$APIDSL" toxencryptsave/toxencryptsave.api.h >toxencryptsave/toxencryptsave.h &
-set -x
-
-wait
-wait
-wait
-wait
-wait
-wait
-wait
-
-if grep '<unresolved>' ./*/*.h; then
-  echo "error: some apidsl references were unresolved"
   exit 1
 fi
 

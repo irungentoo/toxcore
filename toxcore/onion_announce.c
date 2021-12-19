@@ -22,10 +22,8 @@
 #define DATA_REQUEST_MIN_SIZE ONION_DATA_REQUEST_MIN_SIZE
 #define DATA_REQUEST_MIN_SIZE_RECV (DATA_REQUEST_MIN_SIZE + ONION_RETURN_3)
 
-//!TOKSTYLE-
 static_assert(ONION_PING_ID_SIZE == CRYPTO_PUBLIC_KEY_SIZE,
               "announce response packets assume that ONION_PING_ID_SIZE is equal to CRYPTO_PUBLIC_KEY_SIZE");
-//!TOKSTYLE+
 
 typedef struct Onion_Announce_Entry {
     uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -46,6 +44,11 @@ struct Onion_Announce {
 
     Shared_Keys shared_keys_recv;
 };
+
+static bool onion_ping_id_eq(const uint8_t *a, const uint8_t *b)
+{
+    return public_key_cmp(a, b) == 0;
+}
 
 uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry)
 {
@@ -390,8 +393,8 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE;
 
-    if (crypto_memcmp(ping_id1, plain, ONION_PING_ID_SIZE) == 0
-            || crypto_memcmp(ping_id2, plain, ONION_PING_ID_SIZE) == 0) {
+    if (onion_ping_id_eq(ping_id1, plain)
+            || onion_ping_id_eq(ping_id2, plain)) {
         index = add_to_entries(onion_a, source, packet_public_key, data_public_key,
                                packet + (ANNOUNCE_REQUEST_SIZE_RECV - ONION_RETURN_3));
     } else {

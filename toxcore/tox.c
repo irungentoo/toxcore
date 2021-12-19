@@ -6,10 +6,8 @@
 /*
  * The Tox public API.
  */
-#ifndef __cplusplus
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 600
-#endif
 #endif
 
 #include "tox.h"
@@ -33,7 +31,6 @@
         }                             \
     } while (0)
 
-//!TOKSTYLE-
 static_assert(TOX_HASH_LENGTH == CRYPTO_SHA256_SIZE,
               "TOX_HASH_LENGTH is assumed to be equal to CRYPTO_SHA256_SIZE");
 static_assert(FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
@@ -50,7 +47,6 @@ static_assert(TOX_MAX_NAME_LENGTH == MAX_NAME_LENGTH,
               "TOX_MAX_NAME_LENGTH is assumed to be equal to MAX_NAME_LENGTH");
 static_assert(TOX_MAX_STATUS_MESSAGE_LENGTH == MAX_STATUSMESSAGE_LENGTH,
               "TOX_MAX_STATUS_MESSAGE_LENGTH is assumed to be equal to MAX_STATUSMESSAGE_LENGTH");
-//!TOKSTYLE+
 
 struct Tox {
     // XXX: Messenger *must* be the first member, because toxav casts its
@@ -439,7 +435,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             return nullptr;
         }
 
-        if (crypto_memcmp(tox_options_get_savedata_data(opts), TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
+        if (memcmp(tox_options_get_savedata_data(opts), TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_LOAD_ENCRYPTED);
             tox_options_free(default_options);
             free(tox);

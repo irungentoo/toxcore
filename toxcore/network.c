@@ -6,6 +6,7 @@
 /*
  * Functions for the core networking.
  */
+
 #ifdef __APPLE__
 #define _DARWIN_C_SOURCE
 #endif
@@ -29,12 +30,12 @@
 #define OS_WIN32
 #endif
 
-#ifdef OS_WIN32
-#ifndef WINVER
+#if defined(OS_WIN32) && !defined(WINVER)
 // Windows XP
 #define WINVER 0x0501
 #endif
-#endif
+
+#include "network.h"
 
 #ifdef PLAN9
 #include <u.h> // Plan 9 requires this is imported first
@@ -42,7 +43,7 @@
 #include <libc.h>
 #endif
 
-#ifdef OS_WIN32 /* Put win32 includes here */
+#ifdef OS_WIN32 // Put win32 includes here
 // The mingw32/64 Windows library warns about including winsock2.h after
 // windows.h even though with the above it's a valid thing to do. So, to make
 // mingw32 headers happy, we include winsock2.h first.
@@ -52,15 +53,12 @@
 #include <ws2tcpip.h>
 #endif
 
-#include "network.h"
-
 #ifdef __APPLE__
 #include <mach/clock.h>
 #include <mach/mach.h>
 #endif
 
 #if !defined(OS_WIN32)
-
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -77,6 +75,33 @@
 #include <sys/filio.h>
 #endif
 
+#else
+#ifndef IPV6_V6ONLY
+#define IPV6_V6ONLY 27
+#endif
+#endif
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "logger.h"
+#include "mono_time.h"
+#include "util.h"
+
+// Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
+#if !defined(MSG_NOSIGNAL)
+#define MSG_NOSIGNAL 0
+#endif
+
+#ifndef IPV6_ADD_MEMBERSHIP
+#ifdef IPV6_JOIN_GROUP
+#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
+#endif
+#endif
+
+#if !defined(OS_WIN32)
 #define TOX_EWOULDBLOCK EWOULDBLOCK
 
 static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
@@ -170,32 +195,10 @@ static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
 
 #endif
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "logger.h"
-#include "mono_time.h"
-#include "util.h"
-
-// Disable MSG_NOSIGNAL on systems not supporting it, e.g. Windows, FreeBSD
-#if !defined(MSG_NOSIGNAL)
-#define MSG_NOSIGNAL 0
-#endif
-
-#ifndef IPV6_ADD_MEMBERSHIP
-#ifdef IPV6_JOIN_GROUP
-#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#endif
-#endif
-
-//!TOKSTYLE-
 static_assert(TOX_INET6_ADDRSTRLEN >= INET6_ADDRSTRLEN,
               "TOX_INET6_ADDRSTRLEN should be greater or equal to INET6_ADDRSTRLEN (#INET6_ADDRSTRLEN)");
 static_assert(TOX_INET_ADDRSTRLEN >= INET_ADDRSTRLEN,
               "TOX_INET_ADDRSTRLEN should be greater or equal to INET_ADDRSTRLEN (#INET_ADDRSTRLEN)");
-//!TOKSTYLE+
 
 static int make_proto(int proto)
 {

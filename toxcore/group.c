@@ -54,6 +54,14 @@ typedef enum Peer_Id {
 
 #define MIN_MESSAGE_PACKET_LEN (sizeof(uint16_t) * 2 + sizeof(uint32_t) + 1)
 
+static_assert(GROUP_ID_LENGTH == CRYPTO_PUBLIC_KEY_SIZE,
+              "GROUP_ID_LENGTH should be equal to CRYPTO_PUBLIC_KEY_SIZE");
+
+static bool group_id_eq(const uint8_t *a, const uint8_t *b)
+{
+    return public_key_cmp(a, b) == 0;
+}
+
 /* return false if the groupnumber is not valid.
  * return true if the groupnumber is valid.
  */
@@ -197,7 +205,7 @@ static int frozen_in_group(const Group_c *g, const uint8_t *real_pk)
 static int32_t get_group_num(const Group_Chats *g_c, const uint8_t type, const uint8_t *id)
 {
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
-        if (g_c->chats[i].type == type && crypto_memcmp(g_c->chats[i].id, id, GROUP_ID_LENGTH) == 0) {
+        if (g_c->chats[i].type == type && group_id_eq(g_c->chats[i].id, id)) {
             return i;
         }
     }
@@ -208,7 +216,7 @@ static int32_t get_group_num(const Group_Chats *g_c, const uint8_t type, const u
 int32_t conference_by_id(const Group_Chats *g_c, const uint8_t *id)
 {
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
-        if (crypto_memcmp(g_c->chats[i].id, id, GROUP_ID_LENGTH) == 0) {
+        if (group_id_eq(g_c->chats[i].id, id)) {
             return i;
         }
     }
@@ -1948,7 +1956,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
                 return;
             }
 
-            if (crypto_memcmp(data + 1 + sizeof(uint16_t) * 2 + 1, g->id, GROUP_ID_LENGTH) != 0) {
+            if (!group_id_eq(data + 1 + sizeof(uint16_t) * 2 + 1, g->id)) {
                 return;
             }
 
