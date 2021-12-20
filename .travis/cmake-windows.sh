@@ -19,7 +19,7 @@ travis_install() {
 }
 
 travis_script() {
-  . ".travis/flags-$CC.sh"
+  . ".travis/flags-gcc.sh"
 
   # Allows wine to display source code file names and line numbers on crash in
   # its backtrace.
