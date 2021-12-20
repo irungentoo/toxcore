@@ -38,3 +38,13 @@ jobs:
         run: .travis/cmake-win64 install
       - name: Cross compilation
         run: .travis/cmake-win64 script
+
+  freebsd:
+    runs-on: ubuntu-latest
+    container: toxchat/freebsd
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build on FreeBSD
+        run:
+          cd .. && mv c-toxcore / && mkdir c-toxcore &&
+          cd /work && ./cmake-freebsd-stage2
