@@ -157,4 +157,10 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata);
 /* Free everything related with friend_connections. */
 void kill_friend_connections(Friend_Connections *fr_c);
 
+typedef struct Friend_Conn Friend_Conn;
+
+Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id);
+int friend_conn_get_onion_friendnum(const Friend_Conn *fc);
+const IP_Port *friend_conn_get_dht_ip_port(const Friend_Conn *fc);
+
 #endif

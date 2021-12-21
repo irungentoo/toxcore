@@ -282,6 +282,16 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "friend_connection_test",
+    size = "small",
+    srcs = ["friend_connection.cc"],
+    deps = [
+        ":friend_connection",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "friend_requests",
     srcs = ["friend_requests.c"],

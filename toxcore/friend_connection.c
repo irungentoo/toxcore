@@ -25,7 +25,7 @@ typedef struct Friend_Conn_Callbacks {
     int callback_id;
 } Friend_Conn_Callbacks;
 
-typedef struct Friend_Conn {
+struct Friend_Conn {
     uint8_t status;
 
     uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -50,7 +50,7 @@ typedef struct Friend_Conn {
     uint16_t tcp_relay_counter;
 
     bool hosting_tcp_relay;
-} Friend_Conn;
+};
 
 
 struct Friend_Connections {
@@ -75,9 +75,19 @@ struct Friend_Connections {
     bool local_discovery_enabled;
 };
 
+int friend_conn_get_onion_friendnum(const Friend_Conn *fc)
+{
+    return fc->onion_friendnum;
+}
+
 Net_Crypto *friendconn_net_crypto(const Friend_Connections *fr_c)
 {
     return fr_c->net_crypto;
+}
+
+const IP_Port *friend_conn_get_dht_ip_port(const Friend_Conn *fc)
+{
+    return &fc->dht_ip_port;
 }
 
 
@@ -168,7 +178,7 @@ static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
     return 0;
 }
 
-static Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
+Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
 {
     if (!friendconn_id_valid(fr_c, friendcon_id)) {
         return nullptr;
@@ -262,7 +272,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
         return 0;
     }
 
-    Node_format nodes[MAX_SHARED_RELAYS];
+    Node_format nodes[MAX_SHARED_RELAYS] = {{{0}}};
     uint8_t data[1024];
 
     const int n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
