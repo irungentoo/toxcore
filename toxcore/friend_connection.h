@@ -143,7 +143,7 @@ typedef int fr_request_cb(void *object, const uint8_t *source_pubkey, const uint
 
 /** Set friend request callback.
  *
- * This function will be called every time a friend request is received.
+ * This function will be called every time a friend request packet is received.
  */
 void set_friend_request_callback(Friend_Connections *fr_c, fr_request_cb *fr_request_callback, void *object);
 

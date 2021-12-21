@@ -1023,7 +1023,8 @@ static int handle_tcp_onion(void *object, const uint8_t *data, uint16_t length, 
 }
 
 /** Send data of length length to friendnum.
- * This data will be received by the friend using the onion_data_handlers callbacks.
+ * Maximum length of data is ONION_CLIENT_MAX_DATA_SIZE.
+ * This data will be received by the friend using the Onion_Data_Handlers callbacks.
  *
  * Even if this function succeeds, the friend might not receive any data.
  *

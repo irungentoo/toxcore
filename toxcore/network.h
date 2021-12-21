@@ -272,9 +272,9 @@ void ip_init(IP *ip, bool ipv6enabled);
 bool ip_isset(const IP *ip);
 /** checks if ip is valid */
 bool ipport_isset(const IP_Port *ipport);
-/** copies an ip structure */
+/** copies an ip structure (careful about direction!) */
 void ip_copy(IP *target, const IP *source);
-/** copies an ip_port structure */
+/** copies an ip_port structure (careful about direction!) */
 void ipport_copy(IP_Port *target, const IP_Port *source);
 
 /**
@@ -364,7 +364,9 @@ bool set_socket_dualstack(Socket sock);
 
 /* Basic network functions: */
 
-/** Function to send packet(data) of length length to ip_port. */
+/**
+ * Function to send packet(data) of length length to ip_port.
+ */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
 
 /** Function to call when packet beginning with byte is received. */
@@ -431,16 +433,19 @@ const char *net_new_strerror(int error);
 void net_kill_strerror(const char *strerror);
 
 /** Initialize networking.
- * bind to ip and port.
+ * Added for reverse compatibility with old new_networking calls.
+ */
+Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port);
+/** Initialize networking.
+ * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
  *
- * return Networking_Core object if no problems
- * return NULL if there are problems.
+ *  return Networking_Core object if no problems
+ *  return NULL if there are problems.
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port);
 Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
 Networking_Core *new_networking_no_udp(const Logger *log);
 

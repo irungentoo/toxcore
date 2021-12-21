@@ -72,10 +72,12 @@ extern "C" {
 int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
                    const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id);
 
-/** puts the senders public key in the request in public_key, the data from the request
+/** Puts the senders public key in the request in public_key, the data from the request
  * in data if a friend or ping request was sent to us and returns the length of the data.
- * packet is the request packet and length is its length
- * return -1 if not valid request. */
+ * packet is the request packet and length is its length.
+ *
+ *  return -1 if not valid request.
+ */
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length);
 
@@ -294,7 +296,7 @@ int dht_getfriendip(const DHT *dht, const uint8_t *public_key, IP_Port *ip_port)
  */
 int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
 
-/**
+/***
  * Add node to the node list making sure only the nodes closest to cmp_pk are in the list.
  *
  * @return true iff the node was added to the list.
@@ -373,7 +375,8 @@ int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packe
 
 /** Send the following packet to everyone who tells us they are connected to friend_id.
  *
- *  return number of nodes it sent the packet to.
+ *  return ip for friend.
+ *  return number of nodes the packet was sent to. (Only works if more than (MAX_FRIEND_CLIENTS / 4).
  */
 int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *packet, uint16_t length);
 

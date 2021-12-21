@@ -100,7 +100,7 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
     con->custom_uint = value;
 }
 
-/* return 1 on success
+/** return 1 on success
  * return 0 on failure
  */
 static int connect_sock_to(Socket sock, IP_Port ip_port, const TCP_Proxy_Info *proxy_info)
@@ -115,7 +115,7 @@ static int connect_sock_to(Socket sock, IP_Port ip_port, const TCP_Proxy_Info *p
     return 1;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 on failure.
  */
 static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_conn)
@@ -144,7 +144,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_con
     return 1;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
@@ -186,7 +186,7 @@ static void proxy_socks5_generate_handshake(TCP_Client_Connection *tcp_conn)
     tcp_conn->last_packet_sent = 0;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
@@ -232,7 +232,7 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *tcp_
     tcp_conn->last_packet_sent = 0;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
@@ -265,7 +265,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, TCP_Clien
     return -1;
 }
 
-/* return 0 on success.
+/** return 0 on success.
  * return -1 on failure.
  */
 static int generate_handshake(TCP_Client_Connection *tcp_conn)
@@ -288,7 +288,7 @@ static int generate_handshake(TCP_Client_Connection *tcp_conn)
     return 0;
 }
 
-/* data must be of length TCP_SERVER_HANDSHAKE_SIZE
+/** data must be of length TCP_SERVER_HANDSHAKE_SIZE
  *
  * return 0 on success.
  * return -1 on failure.
@@ -309,7 +309,7 @@ static int handle_handshake(TCP_Client_Connection *tcp_conn, const uint8_t *data
     return 0;
 }
 
-/* return 0 if pending data was sent completely
+/** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
 static int client_send_pending_data_nonpriority(TCP_Client_Connection *con)
@@ -335,7 +335,7 @@ static int client_send_pending_data_nonpriority(TCP_Client_Connection *con)
     return -1;
 }
 
-/* return 0 if pending data was sent completely
+/** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
 static int client_send_pending_data(TCP_Client_Connection *con)
@@ -374,7 +374,7 @@ static int client_send_pending_data(TCP_Client_Connection *con)
     return -1;
 }
 
-/* return 0 on failure (only if malloc fails)
+/** return 0 on failure (only if malloc fails)
  * return 1 on success
  */
 static bool client_add_priority(TCP_Client_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
@@ -401,7 +401,7 @@ static bool client_add_priority(TCP_Client_Connection *con, const uint8_t *packe
     return 1;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -466,7 +466,7 @@ static int write_packet_TCP_client_secure_connection(TCP_Client_Connection *con,
     return 1;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -493,7 +493,7 @@ void routing_status_handler(TCP_Client_Connection *con, tcp_routing_status_cb *s
 static int tcp_send_ping_response(TCP_Client_Connection *con);
 static int tcp_send_ping_request(TCP_Client_Connection *con);
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
@@ -517,7 +517,7 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, u
     return write_packet_TCP_client_secure_connection(con, packet, SIZEOF_VLA(packet), 0);
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
@@ -535,7 +535,7 @@ int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const
 }
 
 
-/* Set the number that will be used as an argument in the callbacks related to con_id.
+/** Set the number that will be used as an argument in the callbacks related to con_id.
  *
  * When not set by this function, the number is -1.
  *
@@ -568,7 +568,7 @@ void oob_data_handler(TCP_Client_Connection *con, tcp_oob_data_cb *oob_data_call
     con->oob_data_callback_object = object;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -580,7 +580,7 @@ static int client_send_disconnect_notification(TCP_Client_Connection *con, uint8
     return write_packet_TCP_client_secure_connection(con, packet, sizeof(packet), 1);
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -602,7 +602,7 @@ static int tcp_send_ping_request(TCP_Client_Connection *con)
     return ret;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -624,7 +624,7 @@ static int tcp_send_ping_response(TCP_Client_Connection *con)
     return ret;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -639,7 +639,7 @@ int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
     return client_send_disconnect_notification(con, con_id + NUM_RESERVED_PORTS);
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -657,7 +657,7 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
     con->onion_callback_object = object;
 }
 
-/* Create new TCP connection to ip_port/public_key
+/** Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip_port, const uint8_t *public_key,
         const uint8_t *self_public_key, const uint8_t *self_secret_key, const TCP_Proxy_Info *proxy_info)
@@ -743,7 +743,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
     return temp;
 }
 
-/* return 0 on success
+/** return 0 on success
  * return -1 on failure
  */
 static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length, void *userdata)
@@ -955,7 +955,7 @@ static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, c
     return 0;
 }
 
-/* Run the TCP connection
+/** Run the TCP connection
  */
 void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Connection *tcp_connection,
                        void *userdata)
@@ -1042,7 +1042,7 @@ void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Co
     }
 }
 
-/* Kill the TCP connection
+/** Kill the TCP connection
  */
 void kill_TCP_connection(TCP_Client_Connection *tcp_connection)
 {

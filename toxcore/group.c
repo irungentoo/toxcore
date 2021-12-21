@@ -1263,12 +1263,12 @@ int group_peername(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernu
     return peer->nick_len;
 }
 
-/** Copy last active timestamp of frozennumber who is in groupnumber to
+/** Copy last active timestamp of frozen peernumber who is in groupnumber to
  * last_active.
  *
  * return 0 on success.
  * return -1 if groupnumber is invalid.
- * return -2 if frozennumber is invalid.
+ * return -2 if peernumber is invalid.
  */
 int group_frozen_last_active(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber,
                              uint64_t *last_active)

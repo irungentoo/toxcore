@@ -197,6 +197,8 @@ int send_announce_request(Networking_Core *net, const Onion_Path *path, Node_for
  *
  * nonce is the nonce to encrypt this packet with
  *
+ * The maximum length of data is MAX_DATA_REQUEST_SIZE.
+ *
  * return -1 on failure.
  * return 0 on success.
  */

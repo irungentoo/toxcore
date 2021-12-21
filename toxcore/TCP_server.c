@@ -97,7 +97,7 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server)
     return tcp_server->num_listening_socks;
 }
 
-/* This is needed to compile on Android below API 21
+/** This is needed to compile on Android below API 21
  */
 #ifdef TCP_SERVER_USE_EPOLL
 #ifndef EPOLLRDHUP
@@ -105,7 +105,7 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server)
 #endif
 #endif
 
-/* Increase the size of the connection list
+/** Increase the size of the connection list
  *
  *  return -1 on failure
  *  return 0 on success.
@@ -173,7 +173,7 @@ static void free_accepted_connection_array(TCP_Server *tcp_server)
     tcp_server->size_accepted_connections = 0;
 }
 
-/* return index corresponding to connection with peer on success
+/** return index corresponding to connection with peer on success
  * return -1 on failure.
  */
 static int get_TCP_connection_index(const TCP_Server *tcp_server, const uint8_t *public_key)
@@ -184,7 +184,7 @@ static int get_TCP_connection_index(const TCP_Server *tcp_server, const uint8_t 
 
 static int kill_accepted(TCP_Server *tcp_server, int index);
 
-/* Add accepted TCP connection to the list.
+/** Add accepted TCP connection to the list.
  *
  * return index on success
  * return -1 on failure
@@ -235,7 +235,7 @@ static int add_accepted(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_
     return index;
 }
 
-/* Delete accepted connection from list.
+/** Delete accepted connection from list.
  *
  * return 0 on success
  * return -1 on failure
@@ -264,7 +264,7 @@ static int del_accepted(TCP_Server *tcp_server, int index)
     return 0;
 }
 
-/* Read the next two bytes in TCP stream then convert them to
+/** Read the next two bytes in TCP stream then convert them to
  * length (host byte order).
  *
  * return length on success
@@ -296,7 +296,7 @@ uint16_t read_TCP_length(const Logger *logger, Socket sock)
     return 0;
 }
 
-/* Read length bytes from socket.
+/** Read length bytes from socket.
  *
  * return length on success
  * return -1 on failure/no data in buffer.
@@ -319,7 +319,7 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
     return -1;
 }
 
-/* return length of received packet on success.
+/** return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
@@ -364,7 +364,7 @@ int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_
     return len;
 }
 
-/* return 0 if pending data was sent completely
+/** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
 static int send_pending_data_nonpriority(TCP_Secure_Connection *con)
@@ -390,7 +390,7 @@ static int send_pending_data_nonpriority(TCP_Secure_Connection *con)
     return -1;
 }
 
-/* return 0 if pending data was sent completely
+/** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
 static int send_pending_data(TCP_Secure_Connection *con)
@@ -429,7 +429,7 @@ static int send_pending_data(TCP_Secure_Connection *con)
     return -1;
 }
 
-/* return 0 on failure (only if malloc fails)
+/** return 0 on failure (only if malloc fails)
  * return 1 on success
  */
 static bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
@@ -456,7 +456,7 @@ static bool add_priority(TCP_Secure_Connection *con, const uint8_t *packet, uint
     return 1;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -521,7 +521,7 @@ static int write_packet_TCP_secure_connection(TCP_Secure_Connection *con, const 
     return 1;
 }
 
-/* Kill a TCP_Secure_Connection
+/** Kill a TCP_Secure_Connection
  */
 static void kill_TCP_secure_connection(TCP_Secure_Connection *con)
 {
@@ -531,7 +531,7 @@ static void kill_TCP_secure_connection(TCP_Secure_Connection *con)
 
 static int rm_connection_index(TCP_Server *tcp_server, TCP_Secure_Connection *con, uint8_t con_number);
 
-/* Kill an accepted TCP_Secure_Connection
+/** Kill an accepted TCP_Secure_Connection
  *
  * return -1 on failure.
  * return 0 on success.
@@ -558,7 +558,7 @@ static int kill_accepted(TCP_Server *tcp_server, int index)
     return 0;
 }
 
-/* return 1 if everything went well.
+/** return 1 if everything went well.
  * return -1 if the connection must be killed.
  */
 static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data, uint16_t length,
@@ -615,7 +615,7 @@ static int handle_TCP_handshake(TCP_Secure_Connection *con, const uint8_t *data,
     return 1;
 }
 
-/* return 1 if connection handshake was handled correctly.
+/** return 1 if connection handshake was handled correctly.
  * return 0 if we didn't get it yet.
  * return -1 if the connection must be killed.
  */
@@ -631,7 +631,7 @@ static int read_connection_handshake(const Logger *logger, TCP_Secure_Connection
     return 0;
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -645,7 +645,7 @@ static int send_routing_response(TCP_Secure_Connection *con, uint8_t rpid, const
     return write_packet_TCP_secure_connection(con, data, sizeof(data), 1);
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -655,7 +655,7 @@ static int send_connect_notification(TCP_Secure_Connection *con, uint8_t id)
     return write_packet_TCP_secure_connection(con, data, sizeof(data), 1);
 }
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -665,7 +665,7 @@ static int send_disconnect_notification(TCP_Secure_Connection *con, uint8_t id)
     return write_packet_TCP_secure_connection(con, data, sizeof(data), 1);
 }
 
-/* return 0 on success.
+/** return 0 on success.
  * return -1 on failure (connection must be killed).
  */
 static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key)
@@ -747,7 +747,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
     return 0;
 }
 
-/* return 0 on success.
+/** return 0 on success.
  * return -1 on failure (connection must be killed).
  */
 static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *public_key, const uint8_t *data,
@@ -773,7 +773,7 @@ static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const ui
     return 0;
 }
 
-/* Remove connection with con_number from the connections array of con.
+/** Remove connection with con_number from the connections array of con.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -836,7 +836,7 @@ static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, 
     return 0;
 }
 
-/* return 0 on success
+/** return 0 on success
  * return -1 on failure
  */
 static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint8_t *data, uint16_t length)
@@ -994,7 +994,7 @@ static int confirm_TCP_connection(TCP_Server *tcp_server, const Mono_Time *mono_
     return index;
 }
 
-/* return index on success
+/** return index on success
  * return -1 on failure
  */
 static int accept_connection(TCP_Server *tcp_server, Socket sock)

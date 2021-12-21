@@ -47,7 +47,8 @@ uint32_t get_nospam(const Friend_Requests *fr)
 }
 
 
-/** Set the function that will be executed when a friend request is received. */
+/** Set the function that will be executed when a friend request for us is received.
+ */
 void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object)
 {
     fr->handle_friendrequest = function;
@@ -55,7 +56,9 @@ void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function,
     fr->handle_friendrequest_object = object;
 }
 
-/** Set the function used to check if a friend request should be displayed to the user or not. */
+/** Set the function used to check if a friend request should be displayed to the user or not.
+ * It must return 0 if the request is ok (anything else if it is bad.)
+ */
 void set_filter_function(Friend_Requests *fr, filter_function_cb *function, void *userdata)
 {
     fr->filter_function = function;
@@ -89,7 +92,7 @@ static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
     return false;
 }
 
-/** Remove real pk from received.requests list.
+/** Remove real_pk from received_requests list.
  *
  *  return 0 if it removed it successfully.
  *  return -1 if it didn't find it.

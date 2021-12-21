@@ -22,7 +22,7 @@ Ping *ping_new(const struct Mono_Time *mono_time, DHT *dht);
 void ping_kill(Ping *ping);
 
 /** Add nodes to the to_ping list.
- * All nodes in this list are pinged every TIME_TOPING seconds
+ * All nodes in this list are pinged every TIME_TO_PING seconds
  * and are then removed from the list.
  * If the list is full the nodes farthest from our public_key are replaced.
  * The purpose of this list is to enable quick integration of new nodes into the

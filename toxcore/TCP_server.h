@@ -67,20 +67,20 @@ typedef struct TCP_Server TCP_Server;
 const uint8_t *tcp_server_public_key(const TCP_Server *tcp_server);
 size_t tcp_server_listen_count(const TCP_Server *tcp_server);
 
-/* Create new TCP server instance.
+/** Create new TCP server instance.
  */
 TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
                            const uint8_t *secret_key, Onion *onion);
 
-/* Run the TCP_server
+/** Run the TCP_server
  */
 void do_TCP_server(TCP_Server *tcp_server, Mono_Time *mono_time);
 
-/* Kill the TCP server
+/** Kill the TCP server
  */
 void kill_TCP_server(TCP_Server *tcp_server);
 
-/* Read the next two bytes in TCP stream then convert them to
+/** Read the next two bytes in TCP stream then convert them to
  * length (host byte order).
  *
  * return length on success
@@ -89,14 +89,14 @@ void kill_TCP_server(TCP_Server *tcp_server);
  */
 uint16_t read_TCP_length(const Logger *logger, Socket sock);
 
-/* Read length bytes from socket.
+/** Read length bytes from socket.
  *
  * return length on success
  * return -1 on failure/no data in buffer.
  */
 int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length);
 
-/* return length of received packet on success.
+/** return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */

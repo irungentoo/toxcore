@@ -396,6 +396,8 @@ int packed_node_size(Family ip_family)
 
 /** Packs an IP_Port structure into data of max size length.
  *
+ * Packed_length is the offset of data currently packed.
+ *
  * Returns size of packed IP_Port data on success
  * Return -1 on failure.
  */
@@ -473,6 +475,8 @@ static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
 }
 
 /** Unpack IP_Port structure from data of max size length into ip_port.
+ *
+ * len_processed is the offset of data currently unpacked.
  *
  * Return size of unpacked ip_port on success.
  * Return -1 on failure.
@@ -1464,7 +1468,7 @@ static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port no
     return true;
 }
 
-/** Function is needed in following functions. */
+/* Function is needed in following functions. */
 static int send_hardening_getnode_res(const DHT *dht, const Node_format *sendto, const uint8_t *queried_client_id,
                                       const uint8_t *nodes_data, uint16_t nodes_data_length);
 
@@ -1873,7 +1877,7 @@ int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
     return 0;
 }
 
-/** Send the given packet to node with public_key
+/** Send the given packet to node with public_key.
  *
  *  return -1 if failure.
  */
@@ -2904,10 +2908,14 @@ void dht_save(const DHT *dht, uint8_t *data)
     free(clients);
 }
 
-/* Bootstrap from this number of nodes every time dht_connect_after_load() is called */
+/** Bootstrap from this number of nodes every time dht_connect_after_load() is called */
 #define SAVE_BOOTSTAP_FREQUENCY 8
 
-/** Start sending packets after DHT loaded_friends_list and loaded_clients_list are set */
+/** Start sending packets after DHT loaded_friends_list and loaded_clients_list are set.
+ *
+ * returns 0 if successful
+ * returns -1 otherwise
+ */
 int dht_connect_after_load(DHT *dht)
 {
     if (dht == nullptr) {

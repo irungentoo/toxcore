@@ -47,23 +47,23 @@ uint32_t tcp_con_custom_uint(const TCP_Client_Connection *con);
 void tcp_con_set_custom_object(TCP_Client_Connection *con, void *object);
 void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value);
 
-/* Create new TCP connection to ip_port/public_key
+/** Create new TCP connection to ip_port/public_key
  */
 TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip_port, const uint8_t *public_key,
         const uint8_t *self_public_key, const uint8_t *self_secret_key, const TCP_Proxy_Info *proxy_info);
 
-/* Run the TCP connection
+/** Run the TCP connection
  */
 void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Connection *tcp_connection,
                        void *userdata);
 
-/* Kill the TCP connection
+/** Kill the TCP connection
  */
 void kill_TCP_connection(TCP_Client_Connection *tcp_connection);
 
 typedef int tcp_onion_response_cb(void *object, const uint8_t *data, uint16_t length, void *userdata);
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -73,7 +73,7 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
 typedef int tcp_routing_response_cb(void *object, uint8_t connection_id, const uint8_t *public_key);
 typedef int tcp_routing_status_cb(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
@@ -81,13 +81,13 @@ int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key);
 void routing_response_handler(TCP_Client_Connection *con, tcp_routing_response_cb *response_callback, void *object);
 void routing_status_handler(TCP_Client_Connection *con, tcp_routing_status_cb *status_callback, void *object);
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
 int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id);
 
-/* Set the number that will be used as an argument in the callbacks related to con_id.
+/** Set the number that will be used as an argument in the callbacks related to con_id.
  *
  * When not set by this function, the number is -1.
  *
@@ -99,7 +99,7 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
 typedef int tcp_routing_data_cb(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data,
                                 uint16_t length, void *userdata);
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
@@ -109,7 +109,7 @@ void routing_data_handler(TCP_Client_Connection *con, tcp_routing_data_cb *data_
 typedef int tcp_oob_data_cb(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
                             void *userdata);
 
-/* return 1 on success.
+/** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */

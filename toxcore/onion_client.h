@@ -68,17 +68,17 @@ int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t
  */
 uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num);
 
-/** Add a friend who we want to connect to.
+/** Get the friend_num of a friend.
  *
  * return -1 on failure.
- * return the friend number on success or if the friend was already added.
+ * return friend number on success.
  */
 int onion_friend_num(const Onion_Client *onion_c, const uint8_t *public_key);
 
 /** Add a friend who we want to connect to.
  *
  * return -1 on failure.
- * return the friend number on success.
+ * return the friend number on success or if the friend was already added.
  */
 int onion_addfriend(Onion_Client *onion_c, const uint8_t *public_key);
 
@@ -135,7 +135,7 @@ typedef void onion_dht_pk_cb(void *data, int32_t number, const uint8_t *dht_publ
 int onion_dht_pk_callback(Onion_Client *onion_c, int friend_num, onion_dht_pk_cb *function, void *object,
                           uint32_t number);
 
-/** Set a friends DHT public key.
+/** Set a friend's DHT public key.
  *
  * return -1 on failure.
  * return 0 on success.

@@ -502,7 +502,10 @@ uint16_t net_port(const Networking_Core *net)
     return net->port;
 }
 
-/** Basic network functions:
+/* Basic network functions:
+ */
+
+/**
  * Function to send packet(data) of length length to ip_port.
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
@@ -988,7 +991,7 @@ Networking_Core *new_networking_no_udp(const Logger *log)
     return net;
 }
 
-/** Function to cleanup networking stuff. */
+/** Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net)
 {
     if (!net) {

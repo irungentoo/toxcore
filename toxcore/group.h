@@ -237,8 +237,7 @@ int add_groupchat(Group_Chats *g_c, uint8_t type);
 int del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently);
 
 /** Copy the public key of (frozen, if frozen is true) peernumber who is in
- * groupnumber to pk.
- * pk must be CRYPTO_PUBLIC_KEY_SIZE long.
+ * groupnumber to pk. pk must be CRYPTO_PUBLIC_KEY_SIZE long.
  *
  * return 0 on success
  * return -1 if groupnumber is invalid.
@@ -255,8 +254,7 @@ int group_peer_pubkey(const Group_Chats *g_c, uint32_t groupnumber, uint32_t pee
 int group_peername_size(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, bool frozen);
 
 /** Copy the name of (frozen, if frozen is true) peernumber who is in
- * groupnumber to name.
- * name must be at least MAX_NAME_LENGTH long.
+ * groupnumber to name. name must be at least MAX_NAME_LENGTH long.
  *
  * return length of name if success
  * return -1 if groupnumber is invalid.
@@ -281,15 +279,16 @@ int group_frozen_last_active(const Group_Chats *g_c, uint32_t groupnumber, uint3
  */
 int group_set_max_frozen(const Group_Chats *g_c, uint32_t groupnumber, uint32_t maxfrozen);
 
-/** invite friendnumber to groupnumber
+/** invite friendnumber to groupnumber.
  *
  * return 0 on success.
  * return -1 if groupnumber is invalid.
  * return -2 if invite packet failed to send.
+ * return -3 if we are not connected to the group chat.
  */
 int invite_friend(Group_Chats *g_c, uint32_t friendnumber, uint32_t groupnumber);
 
-/** Join a group (you need to have been invited first.)
+/** Join a group (we need to have been invited first.)
  *
  * expected_type is the groupchat type we expect the chat we are joining to
  * have.
@@ -385,7 +384,7 @@ uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list
  */
 int group_get_type(const Group_Chats *g_c, uint32_t groupnumber);
 
-/** Copies the unique id of `group_chat[groupnumber]` into id.
+/** Copies the unique id of `group_chat[groupnumber]` into `id`.
  *
  * return false on failure.
  * return true on success.
