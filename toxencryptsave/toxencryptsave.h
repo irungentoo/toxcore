@@ -10,14 +10,14 @@
 #ifndef C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 #define C_TOXCORE_TOXENCRYPTSAVE_TOXENCRYPTSAVE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*******************************************************************************
  *

@@ -9,17 +9,13 @@
 
 #include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
+#include "../toxcore/tox.h"
 
 #include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifndef TOX_DEFINED
-#define TOX_DEFINED
-typedef struct Tox Tox;
-#endif /* TOX_DEFINED */
 
 /**
  * RTPHeader serialised size in bytes.

@@ -3,29 +3,6 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
- * The Tox public API.
- */
-#ifndef C_TOXCORE_TOXCORE_TOX_H
-#define C_TOXCORE_TOXCORE_TOX_H
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-/*******************************************************************************
- * `tox.h` SHOULD NOT BE EDITED MANUALLY – any changes should be made to
- * `tox.api.h`, located in `toxcore/`. For instructions on how to
- * generate `tox.h` from `tox.api.h` please refer to `docs/apidsl.md`
- ******************************************************************************/
-
-
-
 /**
  * @page core Public core API for Tox clients.
  *
@@ -64,8 +41,7 @@ extern "C" {
  *
  * Integer constants and the memory layout of publicly exposed structs are not
  * part of the ABI.
- */
-/**
+ *
  * @subsection events Events and callbacks
  *
  * Events are handled by callbacks. One callback can be registered per event.
@@ -87,8 +63,7 @@ extern "C" {
  * Old style callbacks that are registered together with a user data pointer
  * receive that pointer as argument when they are called. They can each have
  * their own user data pointer of their own type.
- */
-/**
+ *
  * @subsection threading Threading implications
  *
  * It is possible to run multiple concurrent threads with a Tox instance for
@@ -122,6 +97,26 @@ extern "C" {
  * memory, the length may have become invalid, and the call to
  * tox_self_get_name may cause undefined behaviour.
  */
+#ifndef C_TOXCORE_TOXCORE_TOX_H
+#define C_TOXCORE_TOXCORE_TOX_H
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/*******************************************************************************
+ * `tox.h` SHOULD NOT BE EDITED MANUALLY – any changes should be made to
+ * `tox.api.h`, located in `toxcore/`. For instructions on how to
+ * generate `tox.h` from `tox.api.h` please refer to `docs/apidsl.md`
+ ******************************************************************************/
+
+
+
 /**
  * The Tox instance type. All the state associated with a connection is held
  * within the instance. Multiple instances can exist and operate concurrently.

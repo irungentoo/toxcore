@@ -151,18 +151,21 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 }
 
 /**
- * Encrypt arbitrary with a key produced by `tox_derive_key_*`. The output
- * array must be at least data_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH bytes long.
- * key must be TOX_PASS_KEY_LENGTH bytes.
- * If you already have a symmetric key from somewhere besides this module, simply
- * call encrypt_data_symmetric in toxcore/crypto_core directly.
+ * Encrypt a plain text with a key produced by tox_pass_key_derive or tox_pass_key_derive_with_salt.
  *
- * returns true on success
+ * The output array must be at least `plaintext_len + TOX_PASS_ENCRYPTION_EXTRA_LENGTH`
+ * bytes long.
+ *
+ * @param plaintext A byte array of length `plaintext_len`.
+ * @param plaintext_len The length of the plain text array. Bigger than 0.
+ * @param ciphertext The cipher text array to write the encrypted data to.
+ *
+ * @return true on success.
  */
-bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t data_len, uint8_t *out,
-                          Tox_Err_Encryption *error)
+bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, size_t plaintext_len,
+                          uint8_t *ciphertext, Tox_Err_Encryption *error)
 {
-    if (data_len == 0 || !data || !key || !out) {
+    if (plaintext_len == 0 || !plaintext || !key || !ciphertext) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
         return 0;
     }
@@ -175,21 +178,21 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t d
     // need them to decrypt the data
 
     /* first add the magic number */
-    memcpy(out, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH);
-    out += TOX_ENC_SAVE_MAGIC_LENGTH;
+    memcpy(ciphertext, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH);
+    ciphertext += TOX_ENC_SAVE_MAGIC_LENGTH;
 
     /* then add the rest prefix */
-    memcpy(out, key->salt, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
-    out += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
+    memcpy(ciphertext, key->salt, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
+    ciphertext += crypto_pwhash_scryptsalsa208sha256_SALTBYTES;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
     random_nonce(nonce);
-    memcpy(out, nonce, crypto_box_NONCEBYTES);
-    out += crypto_box_NONCEBYTES;
+    memcpy(ciphertext, nonce, crypto_box_NONCEBYTES);
+    ciphertext += crypto_box_NONCEBYTES;
 
     /* now encrypt */
-    if (encrypt_data_symmetric(key->key, nonce, data, data_len, out)
-            != data_len + crypto_box_MACBYTES) {
+    if (encrypt_data_symmetric(key->key, nonce, plaintext, plaintext_len, ciphertext)
+            != plaintext_len + crypto_box_MACBYTES) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_FAILED);
         return 0;
     }

@@ -8,11 +8,6 @@
 #include "../toxcore/Messenger.h"
 #include "../toxcore/tox.h"
 
-#ifndef TOX_DEFINED
-#define TOX_DEFINED
-typedef struct Tox Tox;
-#endif /* TOX_DEFINED */
-
 typedef struct BWController_s BWController;
 
 typedef void m_cb(BWController *bwc, uint32_t friend_number, float todo, void *user_data);

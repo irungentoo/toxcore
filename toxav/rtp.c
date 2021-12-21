@@ -740,8 +740,13 @@ int rtp_stop_receiving(RTPSession *session)
 }
 
 /**
- * @param data is raw vpx data.
- * @param length is the length of the raw data.
+ * Send a frame of audio or video data, chunked in \ref RTPMessage instances.
+ *
+ * @param session The A/V session to send the data for.
+ * @param data A byte array of length \p length.
+ * @param length The number of bytes to send from @p data.
+ * @param is_keyframe Whether this video frame is a key frame. If it is an
+ *   audio frame, this parameter is ignored.
  */
 int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
                   bool is_keyframe, const Logger *log)

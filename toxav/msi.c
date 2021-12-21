@@ -74,9 +74,10 @@ static void handle_pop(MSICall *call, const MSIMessage *msg);
 static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
 
 
-/**
+/*
  * Public functions
  */
+
 void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICallbackID id)
 {
     if (!session) {

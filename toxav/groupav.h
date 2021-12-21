@@ -8,7 +8,7 @@
 #include "../toxcore/group.h"
 #include "../toxcore/tox.h"
 
-/* Audio encoding/decoding */
+// Audio encoding/decoding
 #include <opus.h>
 
 #define GROUP_AUDIO_PACKET_ID 192

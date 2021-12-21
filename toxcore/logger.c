@@ -58,9 +58,10 @@ static const Logger logger_stderr = {
 };
 #endif
 
-/**
+/*
  * Public Functions
  */
+
 Logger *logger_new(void)
 {
     return (Logger *)calloc(1, sizeof(Logger));
