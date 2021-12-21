@@ -9,8 +9,6 @@ add_flag -Weverything
 
 # Disable specific warning flags for both C and C++.
 
-# TODO(iphydf): Clean these up. Probably all of these are actual bugs.
-add_flag -Wno-cast-align
 # Very verbose, not very useful. This warns about things like int -> uint
 # conversions that change sign without a cast and narrowing conversions.
 add_flag -Wno-conversion
@@ -24,7 +22,9 @@ add_flag -Wno-disabled-macro-expansion
 add_flag -Wno-documentation-deprecated-sync
 # Bootstrap daemon does this.
 add_flag -Wno-format-nonliteral
-# struct Foo foo = {0}; is a common idiom.
+# struct Foo foo = {0}; is a common idiom. Missing braces means we'd need to
+# write {{{0}}} in some cases, which is ugly and a maintenance burden.
+add_flag -Wno-missing-braces
 add_flag -Wno-missing-field-initializers
 # Useful sometimes, but we accept padding in structs for clarity.
 # Reordering fields to avoid padding will reduce readability.

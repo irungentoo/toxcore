@@ -749,7 +749,9 @@ static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_ti
     LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv%d)", index, ip_version);
 
     /* kill the other address, if it was set */
-    memset(assoc, 0, sizeof(IPPTsPng));
+    *assoc = (IPPTsPng) {
+        0
+    };
     return 1;
 }
 

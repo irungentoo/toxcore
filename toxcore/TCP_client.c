@@ -670,7 +670,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
         return nullptr;
     }
 
-    const TCP_Proxy_Info default_proxyinfo = {{{{0}}}, TCP_PROXY_NONE};
+    const TCP_Proxy_Info default_proxyinfo = {0};
 
     if (proxy_info == nullptr) {
         proxy_info = &default_proxyinfo;

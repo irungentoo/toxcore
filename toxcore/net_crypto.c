@@ -603,7 +603,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
  */
 static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
 {
-    const IP_Port empty = {{{0}}};
+    const IP_Port empty = {0};
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
