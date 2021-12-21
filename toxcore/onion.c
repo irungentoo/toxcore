@@ -23,8 +23,8 @@
 #define SEND_2 ONION_SEND_2
 #define SEND_1 ONION_SEND_1
 
-/* Change symmetric keys every 2 hours to make paths expire eventually. */
 #define KEY_REFRESH_INTERVAL (2 * 60 * 60)
+/** Change symmetric keys every 2 hours to make paths expire eventually. */
 static void change_symmetric_key(Onion *onion)
 {
     if (mono_time_is_timeout(onion->mono_time, onion->timestamp, KEY_REFRESH_INTERVAL)) {
@@ -33,7 +33,7 @@ static void change_symmetric_key(Onion *onion)
     }
 }
 
-/* packing and unpacking functions */
+/** packing and unpacking functions */
 static void ip_pack(uint8_t *data, IP source)
 {
     data[0] = source.family.value;
@@ -46,7 +46,7 @@ static void ip_pack(uint8_t *data, IP source)
     }
 }
 
-/* return 0 on success, -1 on failure. */
+/** return 0 on success, -1 on failure. */
 static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (1 + SIZE_IP6)) {
@@ -75,7 +75,7 @@ static void ipport_pack(uint8_t *data, const IP_Port *source)
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
-/* return 0 on success, -1 on failure. */
+/** return 0 on success, -1 on failure. */
 static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (SIZE_IP + SIZE_PORT)) {
@@ -91,7 +91,7 @@ static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data
 }
 
 
-/* Create a new onion path.
+/** Create a new onion path.
  *
  * Create a new onion path out of nodes (nodes is a list of ONION_PATH_LENGTH nodes)
  *
@@ -133,7 +133,7 @@ int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *n
     return 0;
 }
 
-/* Dump nodes in onion path to nodes of length num_nodes.
+/** Dump nodes in onion path to nodes of length num_nodes.
  *
  * return -1 on failure.
  * return 0 on success.
@@ -154,7 +154,7 @@ int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_
     return 0;
 }
 
-/* Create a onion packet.
+/** Create a onion packet.
  *
  * Use Onion_Path path to create packet for data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
@@ -213,7 +213,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
     return 1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + len;
 }
 
-/* Create a onion packet to be sent over tcp.
+/** Create a onion packet to be sent over tcp.
  *
  * Use Onion_Path path to create packet for data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
@@ -262,7 +262,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
     return CRYPTO_NONCE_SIZE + SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE + len;
 }
 
-/* Create and send a onion packet.
+/** Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
@@ -286,7 +286,7 @@ int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest
     return 0;
 }
 
-/* Create and send a onion response sent initially to dest with.
+/** Create and send a onion response sent initially to dest with.
  * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
  *
  * return -1 on failure.

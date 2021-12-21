@@ -33,7 +33,7 @@ list_index(uint32_t i)
     return ~i;
 }
 
-/* Find data in list
+/** Find data in list
  *
  * return value:
  *  >= 0 : index of data in array

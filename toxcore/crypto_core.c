@@ -113,7 +113,7 @@ bool public_key_valid(const uint8_t *public_key)
     return 1;
 }
 
-/* Precomputes the shared key from their public_key and our secret_key.
+/** Precomputes the shared key from their public_key and our secret_key.
  * This way we can avoid an expensive elliptic curve scalar multiply for each
  * encrypt/decrypt operation.
  * shared_key has to be crypto_box_BEFORENMBYTES bytes long.
@@ -228,7 +228,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     return ret;
 }
 
-/* Increment the given nonce by 1. */
+/** Increment the given nonce by 1. */
 void increment_nonce(uint8_t *nonce)
 {
     /* TODO(irungentoo): use `increment_nonce_number(nonce, 1)` or
@@ -248,7 +248,7 @@ void increment_nonce(uint8_t *nonce)
     }
 }
 
-/* increment the given nonce by num */
+/** increment the given nonce by num */
 void increment_nonce_number(uint8_t *nonce, uint32_t increment)
 {
     /* NOTE don't use breaks inside this loop
@@ -271,13 +271,13 @@ void increment_nonce_number(uint8_t *nonce, uint32_t increment)
     }
 }
 
-/* Fill the given nonce with random bytes. */
+/** Fill the given nonce with random bytes. */
 void random_nonce(uint8_t *nonce)
 {
     random_bytes(nonce, crypto_box_NONCEBYTES);
 }
 
-/* Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes */
+/** Fill a key CRYPTO_SYMMETRIC_KEY_SIZE big with random bytes */
 void new_symmetric_key(uint8_t *key)
 {
     random_bytes(key, CRYPTO_SYMMETRIC_KEY_SIZE);

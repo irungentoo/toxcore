@@ -34,7 +34,7 @@ typedef struct Onion_Announce Onion_Announce;
 uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry);
 void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t time);
 
-/* Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
+/** Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
  *
  * dest_client_id is the public key of the node the packet will be sent to.
  * public_key and secret_key is the kepair which will be used to encrypt the request.
@@ -51,7 +51,7 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const u
                             const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *ping_id, const uint8_t *client_id,
                             const uint8_t *data_public_key, uint64_t sendback_data);
 
-/* Create an onion data request packet in packet of max_packet_length (recommended size ONION_MAX_PACKET_SIZE).
+/** Create an onion data request packet in packet of max_packet_length (recommended size ONION_MAX_PACKET_SIZE).
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
  * encrypt_public_key is the public key used to encrypt the data packet.
@@ -64,7 +64,7 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const u
 int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8_t *public_key,
                         const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length);
 
-/* Create and send an onion announce request packet.
+/** Create and send an onion announce request packet.
  *
  * path is the path the request will take before it is sent to dest.
  *
@@ -82,7 +82,7 @@ int send_announce_request(Networking_Core *net, const Onion_Path *path, Node_for
                           const uint8_t *secret_key, const uint8_t *ping_id, const uint8_t *client_id, const uint8_t *data_public_key,
                           uint64_t sendback_data);
 
-/* Create and send an onion data request packet.
+/** Create and send an onion data request packet.
  *
  * path is the path the request will take before it is sent to dest.
  * (if dest knows the person with the public_key they should

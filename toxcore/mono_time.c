@@ -198,7 +198,7 @@ void mono_time_set_current_time_callback(Mono_Time *mono_time,
     }
 }
 
-/* return current monotonic time in milliseconds (ms). */
+/** return current monotonic time in milliseconds (ms). */
 uint64_t current_time_monotonic(Mono_Time *mono_time)
 {
     /* For WIN32 we don't want to change overflow state of mono_time here */

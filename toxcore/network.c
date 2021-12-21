@@ -378,7 +378,7 @@ bool sock_valid(Socket sock)
     return sock.socket != net_invalid_socket.socket;
 }
 
-/* Close the socket.
+/** Close the socket.
  */
 void kill_sock(Socket sock)
 {
@@ -502,7 +502,7 @@ uint16_t net_port(const Networking_Core *net)
     return net->port;
 }
 
-/* Basic network functions:
+/** Basic network functions:
  * Function to send packet(data) of length length to ip_port.
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
@@ -573,7 +573,7 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
     return res;
 }
 
-/* Function to receive data
+/** Function to receive data
  *  ip and port of sender is put into ip_port.
  *  Packet data is put into data.
  *  Packet length is put into length.
@@ -723,7 +723,7 @@ static void at_shutdown(void)
 }
 #endif
 
-/* Initialize networking.
+/** Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
 Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port)
@@ -731,7 +731,7 @@ Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port)
     return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
 }
 
-/* Initialize networking.
+/** Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
@@ -988,7 +988,7 @@ Networking_Core *new_networking_no_udp(const Logger *log)
     return net;
 }
 
-/* Function to cleanup networking stuff. */
+/** Function to cleanup networking stuff. */
 void kill_networking(Networking_Core *net)
 {
     if (!net) {
@@ -1059,7 +1059,7 @@ bool ipport_equal(const IP_Port *a, const IP_Port *b)
     return ip_equal(&a->ip, &b->ip);
 }
 
-/* nulls out ip */
+/** nulls out ip */
 void ip_reset(IP *ip)
 {
     if (!ip) {
@@ -1069,7 +1069,7 @@ void ip_reset(IP *ip)
     memset(ip, 0, sizeof(IP));
 }
 
-/* nulls out ip_port */
+/** nulls out ip_port */
 void ipport_reset(IP_Port *ipport)
 {
     if (!ipport) {
@@ -1079,7 +1079,7 @@ void ipport_reset(IP_Port *ipport)
     memset(ipport, 0, sizeof(IP_Port));
 }
 
-/* nulls out ip, sets family according to flag */
+/** nulls out ip, sets family according to flag */
 void ip_init(IP *ip, bool ipv6enabled)
 {
     if (!ip) {
@@ -1090,7 +1090,7 @@ void ip_init(IP *ip, bool ipv6enabled)
     ip->family = ipv6enabled ? net_family_ipv6 : net_family_ipv4;
 }
 
-/* checks if ip is valid */
+/** checks if ip is valid */
 bool ip_isset(const IP *ip)
 {
     if (!ip) {
@@ -1100,7 +1100,7 @@ bool ip_isset(const IP *ip)
     return !net_family_is_unspec(ip->family);
 }
 
-/* checks if ip is valid */
+/** checks if ip is valid */
 bool ipport_isset(const IP_Port *ipport)
 {
     if (!ipport) {
@@ -1114,7 +1114,7 @@ bool ipport_isset(const IP_Port *ipport)
     return ip_isset(&ipport->ip);
 }
 
-/* copies an ip structure (careful about direction!) */
+/** copies an ip structure (careful about direction!) */
 void ip_copy(IP *target, const IP *source)
 {
     if (!source || !target) {
@@ -1124,7 +1124,7 @@ void ip_copy(IP *target, const IP *source)
     *target = *source;
 }
 
-/* copies an ip_port structure (careful about direction!) */
+/** copies an ip_port structure (careful about direction!) */
 void ipport_copy(IP_Port *target, const IP_Port *source)
 {
     if (!source || !target) {
@@ -1134,7 +1134,7 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     *target = *source;
 }
 
-/* ip_ntoa
+/** ip_ntoa
  *   converts ip into a string
  *   ip_str must be of length at least IP_NTOA_LEN
  *

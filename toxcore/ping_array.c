@@ -85,7 +85,7 @@ void ping_array_kill(Ping_Array *array)
     free(array);
 }
 
-/* Clear timed out entries.
+/** Clear timed out entries.
  */
 static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_time)
 {

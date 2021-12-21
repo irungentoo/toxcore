@@ -68,7 +68,7 @@ typedef struct Onion_Path {
     uint32_t path_num;
 } Onion_Path;
 
-/* Create a new onion path.
+/** Create a new onion path.
  *
  * Create a new onion path out of nodes (nodes is a list of ONION_PATH_LENGTH nodes)
  *
@@ -79,14 +79,14 @@ typedef struct Onion_Path {
  */
 int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *nodes);
 
-/* Dump nodes in onion path to nodes of length num_nodes;
+/** Dump nodes in onion path to nodes of length num_nodes;
  *
  * return -1 on failure.
  * return 0 on success.
  */
 int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_Path *path);
 
-/* Create a onion packet.
+/** Create a onion packet.
  *
  * Use Onion_Path path to create packet for data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
@@ -99,7 +99,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
                         const uint8_t *data, uint16_t length);
 
 
-/* Create a onion packet to be sent over tcp.
+/** Create a onion packet to be sent over tcp.
  *
  * Use Onion_Path path to create packet for data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
@@ -111,7 +111,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
 int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
                             const uint8_t *data, uint16_t length);
 
-/* Create and send a onion packet.
+/** Create and send a onion packet.
  *
  * Use Onion_Path path to send data of length to dest.
  * Maximum length of data is ONION_MAX_DATA_SIZE.
@@ -121,7 +121,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
  */
 int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint16_t length);
 
-/* Create and send a onion response sent initially to dest with.
+/** Create and send a onion response sent initially to dest with.
  * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
  *
  * return -1 on failure.
@@ -129,7 +129,7 @@ int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest
  */
 int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint16_t length, const uint8_t *ret);
 
-/* Function to handle/send received decrypted versions of the packet sent with send_onion_packet.
+/** Function to handle/send received decrypted versions of the packet sent with send_onion_packet.
  *
  * return 0 on success.
  * return 1 on failure.
@@ -141,7 +141,7 @@ int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data,
  */
 int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port source, const uint8_t *nonce);
 
-/* Set the callback to be called when the dest ip_port doesn't have TOX_AF_INET6 or TOX_AF_INET as the family.
+/** Set the callback to be called when the dest ip_port doesn't have TOX_AF_INET6 or TOX_AF_INET as the family.
  */
 void set_callback_handle_recv_1(Onion *onion, onion_recv_1_cb *function, void *object);
 

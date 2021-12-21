@@ -229,7 +229,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
     return 0;
 }
 
-/* Check if public_key with ip_port is in the list.
+/** Check if public_key with ip_port is in the list.
  *
  * return 1 if it is.
  * return 0 if it isn't.
@@ -258,7 +258,7 @@ static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mo
     return 0;
 }
 
-/* Add nodes to the to_ping list.
+/** Add nodes to the to_ping list.
  * All nodes in this list are pinged every TIME_TO_PING seconds
  * and are then removed from the list.
  * If the list is full the nodes farthest from our public_key are replaced.
@@ -311,7 +311,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
 }
 
 
-/* Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
+/** Ping all the valid nodes in the to_ping list every TIME_TO_PING seconds.
  * This function must be run at least once every TIME_TO_PING seconds.
  */
 void ping_iterate(Ping *ping)

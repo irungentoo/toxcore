@@ -172,7 +172,7 @@ typedef struct IP_Port {
     uint16_t port;
 } IP_Port;
 
-/* Convert values between host and network byte order.
+/** Convert values between host and network byte order.
  */
 uint32_t net_htonl(uint32_t hostlong);
 uint16_t net_htons(uint16_t hostshort);
@@ -187,7 +187,7 @@ size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v);
 size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v);
 size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 
-/* Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
+/** Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
 bool ipv6_ipv4_in_v6(IP6 a);
 
 #define SIZE_IP4 4
@@ -205,7 +205,9 @@ bool ipv6_ipv4_in_v6(IP6 a);
 #define TOX_INET6_ADDRSTRLEN 66
 #define TOX_INET_ADDRSTRLEN 22
 
-/* ip_ntoa
+/* this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
+#define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
+/** ip_ntoa
  *   converts ip into a string
  *   ip_str must be of length at least IP_NTOA_LEN
  *
@@ -214,8 +216,6 @@ bool ipv6_ipv4_in_v6(IP6 a);
  *
  *   returns ip_str
  */
-/* this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
-#define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
 const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
 
 /**
@@ -262,19 +262,19 @@ bool ip_equal(const IP *a, const IP *b);
  */
 bool ipport_equal(const IP_Port *a, const IP_Port *b);
 
-/* nulls out ip */
+/** nulls out ip */
 void ip_reset(IP *ip);
-/* nulls out ip_port */
+/** nulls out ip_port */
 void ipport_reset(IP_Port *ipport);
-/* nulls out ip, sets family according to flag */
+/** nulls out ip, sets family according to flag */
 void ip_init(IP *ip, bool ipv6enabled);
-/* checks if ip is valid */
+/** checks if ip is valid */
 bool ip_isset(const IP *ip);
-/* checks if ip is valid */
+/** checks if ip is valid */
 bool ipport_isset(const IP_Port *ipport);
-/* copies an ip structure */
+/** copies an ip structure */
 void ip_copy(IP *target, const IP *source);
-/* copies an ip_port structure */
+/** copies an ip_port structure */
 void ipport_copy(IP_Port *target, const IP_Port *source);
 
 /**
@@ -312,7 +312,7 @@ int addr_resolve(const char *address, IP *to, IP *extra);
  */
 bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 
-/* Function to receive data, ip and port of sender is put into ip_port.
+/** Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
  * Packet length is put into length.
  */
@@ -323,14 +323,14 @@ typedef struct Networking_Core Networking_Core;
 Family net_family(const Networking_Core *net);
 uint16_t net_port(const Networking_Core *net);
 
-/* Run this before creating sockets.
+/** Run this before creating sockets.
  *
  * return 0 on success
  * return -1 on failure
  */
 int networking_at_startup(void);
 
-/* Close the socket.
+/** Close the socket.
  */
 void kill_sock(Socket sock);
 
@@ -364,23 +364,23 @@ bool set_socket_dualstack(Socket sock);
 
 /* Basic network functions: */
 
-/* Function to send packet(data) of length length to ip_port. */
+/** Function to send packet(data) of length length to ip_port. */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
 
-/* Function to call when packet beginning with byte is received. */
+/** Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_cb *cb, void *object);
 
-/* Call this several times a second. */
+/** Call this several times a second. */
 void networking_poll(Networking_Core *net, void *userdata);
 
-/* Connect a socket to the address specified by the ip_port.
+/** Connect a socket to the address specified by the ip_port.
  *
  * Return 0 on success.
  * Return -1 on failure.
  */
 int net_connect(Socket sock, IP_Port ip_port);
 
-/* High-level getaddrinfo implementation.
+/** High-level getaddrinfo implementation.
  * Given node, which identifies an Internet host, net_getipport() fills an array
  * with one or more IP_Port structures, each of which contains an Internet
  * address that can be specified by calling net_connect(), the port is ignored.
@@ -393,7 +393,7 @@ int net_connect(Socket sock, IP_Port ip_port);
  */
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type);
 
-/* Deallocates memory allocated by net_getipport
+/** Deallocates memory allocated by net_getipport
  */
 void net_freeipport(IP_Port *ip_ports);
 
@@ -402,7 +402,7 @@ void net_freeipport(IP_Port *ip_ports);
  */
 bool bind_to_port(Socket sock, Family family, uint16_t port);
 
-/* Get the last networking error code.
+/** Get the last networking error code.
  *
  * Similar to Unix's errno, but cross-platform, as not all platforms use errno
  * to indicate networking errors.
@@ -416,7 +416,7 @@ bool bind_to_port(Socket sock, Family family, uint16_t port);
  */
 int net_error(void);
 
-/* Get a text explanation for the error code from net_error().
+/** Get a text explanation for the error code from net_error().
  *
  * return NULL on failure.
  * return pointer to a NULL-terminated string describing the error code on
@@ -424,13 +424,13 @@ int net_error(void);
  */
 const char *net_new_strerror(int error);
 
-/* Frees the string returned by net_new_strerror().
+/** Frees the string returned by net_new_strerror().
  * It's valid to pass NULL as the argument, the function does nothing in this
  * case.
  */
 void net_kill_strerror(const char *strerror);
 
-/* Initialize networking.
+/** Initialize networking.
  * bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
@@ -444,7 +444,7 @@ Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port);
 Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
 Networking_Core *new_networking_no_udp(const Logger *log);
 
-/* Function to cleanup networking stuff (doesn't do much right now). */
+/** Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net);
 
 #ifdef __cplusplus

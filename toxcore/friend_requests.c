@@ -35,7 +35,7 @@ struct Friend_Requests {
     struct Received_Requests received;
 };
 
-/* Set and get the nospam variable used to prevent one type of friend request spam. */
+/** Set and get the nospam variable used to prevent one type of friend request spam. */
 void set_nospam(Friend_Requests *fr, uint32_t num)
 {
     fr->nospam = num;
@@ -47,7 +47,7 @@ uint32_t get_nospam(const Friend_Requests *fr)
 }
 
 
-/* Set the function that will be executed when a friend request is received. */
+/** Set the function that will be executed when a friend request is received. */
 void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object)
 {
     fr->handle_friendrequest = function;
@@ -55,14 +55,14 @@ void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function,
     fr->handle_friendrequest_object = object;
 }
 
-/* Set the function used to check if a friend request should be displayed to the user or not. */
+/** Set the function used to check if a friend request should be displayed to the user or not. */
 void set_filter_function(Friend_Requests *fr, filter_function_cb *function, void *userdata)
 {
     fr->filter_function = function;
     fr->filter_function_userdata = userdata;
 }
 
-/* Add to list of received friend requests. */
+/** Add to list of received friend requests. */
 static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 {
     if (fr->received.requests_index >= MAX_RECEIVED_STORED) {
@@ -73,7 +73,7 @@ static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
     ++fr->received.requests_index;
 }
 
-/* Check if a friend request was already received.
+/** Check if a friend request was already received.
  *
  *  return false if it did not.
  *  return true if it did.
@@ -89,7 +89,7 @@ static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
     return false;
 }
 
-/* Remove real pk from received.requests list.
+/** Remove real pk from received.requests list.
  *
  *  return 0 if it removed it successfully.
  *  return -1 if it didn't find it.
