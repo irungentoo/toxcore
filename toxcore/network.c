@@ -86,6 +86,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef VANILLA_NACL
+// Used for sodium_init()
+#include <sodium.h>
+#endif
+
 #include "logger.h"
 #include "mono_time.h"
 #include "util.h"
@@ -671,11 +676,6 @@ void networking_poll(Networking_Core *net, void *userdata)
         cb(object, ip_port, data, length, userdata);
     }
 }
-
-#ifndef VANILLA_NACL
-/* Used for sodium_init() */
-#include <sodium.h>
-#endif
 
 //!TOKSTYLE-
 // Global mutable state is not allowed in Tokstyle.
