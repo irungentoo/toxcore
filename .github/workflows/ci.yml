@@ -45,6 +45,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build on FreeBSD
-        run:
-          cd .. && mv c-toxcore / && mkdir c-toxcore &&
-          cd /work && ./cmake-freebsd-stage2
+        run: .travis/cmake-freebsd-stage2

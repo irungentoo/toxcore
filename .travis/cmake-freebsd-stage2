@@ -1,0 +1,54 @@
+#!/bin/bash
+# Copyright (C) 2018-2021 nurupo
+
+# Toxcore building
+
+set -eux
+
+cd ..
+mv c-toxcore /
+mkdir c-toxcore
+
+pushd /work
+. cmake-freebsd-env.sh
+popd
+
+# === Get VM ready to build the code ===
+
+start_vm
+
+# Copy over toxcore code from Travis to qemu
+scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P "$SSH_PORT" -r /c-toxcore root@localhost:~
+
+RUN ls -lh
+
+cd /c-toxcore
+CACHEDIR=/opt/cache
+mkdir "$CACHEDIR"
+. ".travis/flags-clang.sh"
+
+add_ld_flag -Wl,-z,defs
+
+# Make compilation error on a warning
+add_flag -Werror
+
+RUN 'cmake -B_build -Hc-toxcore \
+  -DCMAKE_C_FLAGS="$C_FLAGS" \
+  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_INSTALL_PREFIX:PATH="_install" \
+  -DMIN_LOGGER_LEVEL=TRACE \
+  -DMUST_BUILD_TOXAV=ON \
+  -DNON_HERMETIC_TESTS=ON \
+  -DSTRICT_ABI=ON \
+  -DTEST_TIMEOUT_SECONDS=300 \
+  -DUSE_IPV6=OFF \
+  -DAUTOTEST=ON'
+
+# We created the VM with the same number of cores as the host, so the host-ran `nproc` here is fine
+RUN 'gmake "-j$NPROC" -k install -C_build'
+RUN 'gmake "-j$NPROC" test ARGS="-j50" -C_build || \
+  gmake -j50 -C_build test ARGS="-j50 --rerun-failed" || \
+  gmake -j1 -C_build test ARGS="-j1 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || \
+  true'
