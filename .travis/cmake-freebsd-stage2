@@ -5,15 +5,18 @@
 
 set -eux
 
-cd ..
-mv c-toxcore /
-mkdir c-toxcore
+if [ "$PWD" != "/work" ]; then
+  cd ..
+  mv c-toxcore /
+  mkdir c-toxcore
+  cd /work
+fi
 
-pushd /work
-. cmake-freebsd-env.sh
-popd
+. cmake-freebsd-run.sh
 
 # === Get VM ready to build the code ===
+
+gunzip "$IMAGE_NAME.gz"
 
 start_vm
 
@@ -42,7 +45,7 @@ RUN 'cmake -B_build -Hc-toxcore \
   -DMUST_BUILD_TOXAV=ON \
   -DNON_HERMETIC_TESTS=ON \
   -DSTRICT_ABI=ON \
-  -DTEST_TIMEOUT_SECONDS=300 \
+  -DTEST_TIMEOUT_SECONDS=90 \
   -DUSE_IPV6=OFF \
   -DAUTOTEST=ON'
 
