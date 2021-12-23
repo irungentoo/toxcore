@@ -109,14 +109,6 @@ extern "C" {
 #endif
 
 
-/*******************************************************************************
- * `tox.h` SHOULD NOT BE EDITED MANUALLY – any changes should be made to
- * `tox.api.h`, located in `toxcore/`. For instructions on how to
- * generate `tox.h` from `tox.api.h` please refer to `docs/apidsl.md`
- ******************************************************************************/
-
-
-
 /**
  * The Tox instance type. All the state associated with a connection is held
  * within the instance. Multiple instances can exist and operate concurrently.
