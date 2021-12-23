@@ -67,3 +67,5 @@ if ! other/fun/bootstrap_node_info.py ipv4 localhost 33445; then
   echo "Error: Unable to get bootstrap node info"
   exit 1
 fi
+
+docker tag toxchat/bootstrap-node:latest toxchat/bootstrap-node:"$(other/print-version)"

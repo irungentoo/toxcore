@@ -1,0 +1,4 @@
+#!/bin/sh
+
+VERSION="$(grep '^AC_INIT' configure.ac | grep -E -o '[0-9]+\.[0-9]+\.[0-9]+')"
+echo "$VERSION"
