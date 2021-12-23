@@ -12,7 +12,10 @@ branches:
     protection:
       required_status_checks:
         contexts:
+          - build-bootstrapd-docker
           - build-nacl
+          - build-win32
+          - build-win64
           - Codacy Static Code Analysis
           - CodeFactor
           - "ci/circleci: asan"
