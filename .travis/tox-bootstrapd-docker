@@ -2,9 +2,13 @@
 
 set -exu
 
+LOCAL="${1:-}"
+
 readarray -t FILES <<<"$(git ls-files)"
 
 tar c "${FILES[@]}" | docker build -f other/bootstrap_daemon/docker/Dockerfile -t toxchat/bootstrap-node -
+docker tag toxchat/bootstrap-node:latest toxchat/bootstrap-node:"$(other/print-version)"
+
 sudo useradd \
   --home-dir /var/lib/tox-bootstrapd \
   --create-home \
@@ -30,24 +34,28 @@ if sudo [ ! -f /var/lib/tox-bootstrapd/keys ]; then
   exit 1
 fi
 
-COUNTER=0
-COUNTER_END=120
-while [ "$COUNTER" -lt "$COUNTER_END" ]; do
-  if docker logs tox-bootstrapd | grep -q "Connected to another bootstrap node successfully"; then
-    break
+if [ "$LOCAL" != "local" ]; then
+  COUNTER=0
+  COUNTER_END=120
+  while [ "$COUNTER" -lt "$COUNTER_END" ]; do
+    if docker logs tox-bootstrapd | grep -q "Connected to another bootstrap node successfully"; then
+      break
+    fi
+    sleep 1
+    COUNTER=$(($COUNTER + 1))
+  done
+
+  docker logs tox-bootstrapd
+
+  if [ "$COUNTER" = "$COUNTER_END" ]; then
+    echo "Error: Didn't connect to any nodes"
+    exit 1
   fi
-  sleep 1
-  COUNTER=$(($COUNTER + 1))
-done
-
-docker logs tox-bootstrapd
-
-if [ "$COUNTER" = "$COUNTER_END" ]; then
-  echo "Error: Didn't connect to any nodes"
-  exit 1
+else
+  docker logs tox-bootstrapd
 fi
 
-# Wait a bit befrore testing if the container is still running
+# Wait a bit before testing if the container is still running
 sleep 30
 
 docker ps -a
@@ -67,5 +75,3 @@ if ! other/fun/bootstrap_node_info.py ipv4 localhost 33445; then
   echo "Error: Unable to get bootstrap node info"
   exit 1
 fi
-
-docker tag toxchat/bootstrap-node:latest toxchat/bootstrap-node:"$(other/print-version)"

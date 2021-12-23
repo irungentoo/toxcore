@@ -44,17 +44,3 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build on FreeBSD
         run: .travis/cmake-freebsd-stage2
-
-  build-bootstrap-docker:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - uses: actions/checkout@v2
-      - name: Docker Build
-        run: .travis/tox-bootstrapd-docker
-      - name: Push images to DockerHub
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          docker push toxchat/bootstrap-node:latest
-          docker push toxchat/bootstrap-node:"$(other/print-version)"
