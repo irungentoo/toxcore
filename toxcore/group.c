@@ -2312,9 +2312,8 @@ static void handle_direct_packet(Group_Chats *g_c, uint32_t groupnumber, const u
     switch (data[0]) {
         case PEER_INTRODUCED_ID: {
             remove_connection_reason(g_c, g, connection_index, GROUPCHAT_CONNECTION_REASON_INTRODUCING);
+            break;
         }
-
-        break;
 
         case PEER_QUERY_ID: {
             if (g->connections[connection_index].type != GROUPCHAT_CONNECTION_ONLINE) {
@@ -2322,23 +2321,23 @@ static void handle_direct_packet(Group_Chats *g_c, uint32_t groupnumber, const u
             }
 
             send_peers(g_c, g, g->connections[connection_index].number, g->connections[connection_index].group_number);
+            break;
         }
 
-        break;
 
         case PEER_RESPONSE_ID: {
             handle_send_peers(g_c, groupnumber, data + 1, length - 1, userdata);
+            break;
         }
 
-        break;
 
         case PEER_TITLE_ID: {
             if (!g->title_fresh) {
                 settitle(g_c, groupnumber, -1, data + 1, length - 1, userdata);
             }
-        }
 
-        break;
+            break;
+        }
     }
 }
 
@@ -2713,22 +2712,25 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
                 return;
                 // TODO(irungentoo):
             }
+
+            break;
         }
-        break;
 
         case GROUP_MESSAGE_NAME_ID: {
             if (!setnick(g_c, groupnumber, index, msg_data, msg_data_len, userdata, true)) {
                 return;
             }
+
+            break;
         }
-        break;
 
         case GROUP_MESSAGE_TITLE_ID: {
             if (!settitle(g_c, groupnumber, index, msg_data, msg_data_len, userdata)) {
                 return;
             }
+
+            break;
         }
-        break;
 
         case PACKET_ID_MESSAGE: {
             if (msg_data_len == 0) {

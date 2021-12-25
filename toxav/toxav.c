@@ -509,8 +509,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto RETURN;
             }
+
+            break;
         }
-        break;
 
         case TOXAV_CALL_CONTROL_PAUSE: {
             /* Only act if not already paused */
@@ -528,8 +529,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto RETURN;
             }
+
+            break;
         }
-        break;
 
         case TOXAV_CALL_CONTROL_CANCEL: {
             /* Hang up */
@@ -547,8 +549,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
             /* No mather the case, terminate the call */
             call_kill_transmission(call);
             call_remove(call);
+
+            break;
         }
-        break;
 
         case TOXAV_CALL_CONTROL_MUTE_AUDIO: {
             if (call->msi_call->self_capabilities & MSI_CAP_R_AUDIO) {
@@ -563,8 +566,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto RETURN;
             }
+
+            break;
         }
-        break;
 
         case TOXAV_CALL_CONTROL_UNMUTE_AUDIO: {
             if (call->msi_call->self_capabilities ^ MSI_CAP_R_AUDIO) {
@@ -579,8 +583,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto RETURN;
             }
+
+            break;
         }
-        break;
 
         case TOXAV_CALL_CONTROL_HIDE_VIDEO: {
             if (call->msi_call->self_capabilities & MSI_CAP_R_VIDEO) {
@@ -595,8 +600,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto RETURN;
             }
+
+            break;
         }
-        break;
 
         case TOXAV_CALL_CONTROL_SHOW_VIDEO: {
             if (call->msi_call->self_capabilities ^ MSI_CAP_R_VIDEO) {
@@ -611,8 +617,9 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
                 rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
                 goto RETURN;
             }
+
+            break;
         }
-        break;
     }
 
 RETURN:

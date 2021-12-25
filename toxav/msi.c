@@ -661,8 +661,9 @@ static void handle_init(MSICall *call, const MSIMessage *msg)
             if (invoke_callback(call, MSI_ON_INVITE) == -1) {
                 goto FAILURE;
             }
+
+            break;
         }
-        break;
 
         case MSI_CALL_ACTIVE: {
             /* If peer sent init while the call is already
@@ -685,8 +686,8 @@ static void handle_init(MSICall *call, const MSIMessage *msg)
             /* If peer changed capabilities during re-call they will
              * be handled accordingly during the next step
              */
+            break;
         }
-        break;
 
         case MSI_CALL_REQUESTED: // fall-through
         case MSI_CALL_REQUESTING: {
@@ -716,8 +717,8 @@ static void handle_push(MSICall *call, const MSIMessage *msg)
 
     switch (call->state) {
         case MSI_CALL_ACTIVE: {
-            /* Only act if capabilities changed */
             if (call->peer_capabilities != msg->capabilities.value) {
+                /* Only act if capabilities changed */
                 LOGGER_INFO(call->session->messenger->log, "Friend is changing capabilities to: %u", msg->capabilities.value);
 
                 call->peer_capabilities = msg->capabilities.value;
@@ -726,8 +727,9 @@ static void handle_push(MSICall *call, const MSIMessage *msg)
                     goto FAILURE;
                 }
             }
+
+            break;
         }
-        break;
 
         case MSI_CALL_REQUESTING: {
             LOGGER_INFO(call->session->messenger->log, "Friend answered our call");
@@ -739,15 +741,16 @@ static void handle_push(MSICall *call, const MSIMessage *msg)
             if (invoke_callback(call, MSI_ON_START) == -1) {
                 goto FAILURE;
             }
-        }
-        break;
 
-        /* Pushes during initialization state are ignored */
+            break;
+        }
+
         case MSI_CALL_INACTIVE: // fall-through
         case MSI_CALL_REQUESTED: {
+            /* Pushes during initialization state are ignored */
             LOGGER_WARNING(call->session->messenger->log, "Ignoring invalid push");
+            break;
         }
-        break;
     }
 
     return;
@@ -780,22 +783,22 @@ static void handle_pop(MSICall *call, const MSIMessage *msg)
                 /* Hangup */
                 LOGGER_INFO(call->session->messenger->log, "Friend hung up on us");
                 invoke_callback(call, MSI_ON_END);
+                break;
             }
-            break;
 
             case MSI_CALL_REQUESTING: {
                 /* Reject */
                 LOGGER_INFO(call->session->messenger->log, "Friend rejected our call");
                 invoke_callback(call, MSI_ON_END);
+                break;
             }
-            break;
 
             case MSI_CALL_REQUESTED: {
                 /* Cancel */
                 LOGGER_INFO(call->session->messenger->log, "Friend canceled call invite");
                 invoke_callback(call, MSI_ON_END);
+                break;
             }
-            break;
         }
     }
 
