@@ -13,6 +13,7 @@ branches:
       required_status_checks:
         contexts:
           - build-bootstrapd-docker
+          - build-macos
           - build-nacl
           - build-win32
           - build-win64

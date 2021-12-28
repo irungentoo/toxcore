@@ -1,49 +1,37 @@
 #!/bin/bash
 
-ACTION="$1"
-
 set -eu
 
 CACHEDIR="$HOME/cache"
 NPROC=$(sysctl -n hw.physicalcpu)
 
-travis_install() {
-  # Workaround for bug in Homebrew where it only finds an old Ruby version.
-  brew update
+# Workaround for bug in Homebrew where it only finds an old Ruby version.
+brew update
 
-  brew install libsodium libvpx opus libconfig
-}
+brew install libconfig libsodium libvpx opus
 
-travis_script() {
-  . ".travis/flags-$CC.sh"
+. ".travis/flags-clang.sh"
 
-  add_ld_flag -undefined error
+add_ld_flag -undefined error
 
-  # Make compilation error on a warning
-  add_flag -Werror
+# Make compilation error on a warning
+add_flag -Werror
 
-  cmake -B_build -H. \
-    -DCMAKE_C_FLAGS="$C_FLAGS" \
-    -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
-    -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
-    -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
-    -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
-    -DMIN_LOGGER_LEVEL=TRACE \
-    -DMUST_BUILD_TOXAV=ON \
-    -DNON_HERMETIC_TESTS=ON \
-    -DTEST_TIMEOUT_SECONDS=120 \
-    -DUSE_IPV6=OFF \
-    -DAUTOTEST=ON
+cmake -B_build -H. \
+  -DCMAKE_C_FLAGS="$C_FLAGS" \
+  -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+  -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_SHARED_LINKER_FLAGS="$LD_FLAGS" \
+  -DCMAKE_INSTALL_PREFIX:PATH="$PWD/_install" \
+  -DMIN_LOGGER_LEVEL=TRACE \
+  -DMUST_BUILD_TOXAV=ON \
+  -DNON_HERMETIC_TESTS=ON \
+  -DTEST_TIMEOUT_SECONDS=120 \
+  -DUSE_IPV6=OFF \
+  -DAUTOTEST=ON
 
-  cd _build # pushd
-  make "-j$NPROC" -k install
-  make "-j$NPROC" test ARGS="-j50" ||
-    make "-j$NPROC" test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
-  cd - # popd
-}
-
-if [ "-z" "$ACTION" ]; then
-  "travis_script"
-else
-  "travis_$ACTION"
-fi
+cd _build # pushd
+make "-j$NPROC" -k install
+make "-j$NPROC" test ARGS="-j50" ||
+  make "-j$NPROC" test ARGS="-j50 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1
+cd - # popd
