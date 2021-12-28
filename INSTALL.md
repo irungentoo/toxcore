@@ -44,15 +44,34 @@ This repository, although called `toxcore`, in fact contains several libraries b
 
 There are some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
 
-| Name                     | Type       | Dependencies         | Platform       | Description                                                                                                                                                            |
-|--------------------------|------------|----------------------|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `bootstrap_node_info`    | Script     | python3              | Cross-platform | Prints version and Message Of The Day (MOTD) information of a specified DHT bootstrap node.                                                                            |
-| `cracker`                | Executable | libnacl or libsodium | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which starts with a specified byte sequence.                                              |
-| `make-funny-savefile`    | Script     | python               | Cross-platform | Generates a Tox profile file (savedata file) with the provided key pair. Useful for generating Tox profiles from the output of cracker or strkey programs.             |
-| `minimal-save-generator` | Executable | libsodium            | Cross-platform | Generates a minimal Tox profile file (savedata file) with a random key pair.                                                                                           |
-| `save-generator`         | Executable | libtoxcore           | Cross-platform | Generates a Tox profile file (savedata file) with a random key pair using libtoxcore. Allows setting a name and adding friends.                                        |
-| `sign`                   | Executable | libsodium            | Cross-platform | Signs a file with a ed25519 key.                                                                                                                                       |
-| `strkey`                 | Executable | libsodium            | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which contains a specified byte pattern at a specified position or at any position.       |
+##### Vanity key generators
+
+Can be used to generate vanity Tox Ids or DHT bootstrap node public keys.
+
+| Name                      | Type       | Dependencies          | Platform       | Description                                                                                                                                                                     |
+|---------------------------|------------|-----------------------|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cracker`                 | Executable | libsodium, OpenMP     | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which starts with a specified byte sequence. Multi-threaded.                                       |
+| `cracker_simple`          | Executable | libsodium             | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which starts with a specified byte sequence. Single-threaded.                                      |
+| `strkey`                  | Executable | libsodium             | Cross-platform | Tries to find a curve25519 key pair, hex representation of the public key of which contains a specified byte sequence at a specified or any position at all. Single-threaded.   |
+
+##### Key file generators
+
+Useful for generating Tox profiles from the output of the vanity key generators, as well as generating random Tox profiles.
+
+| Name                      | Type       | Dependencies          | Platform       | Description                                                                                                                                                                     |
+|---------------------------|------------|-----------------------|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `make-funny-savefile`     | Script     | python                | Cross-platform | Generates a Tox profile file (savedata file) with the provided key pair.                                                                                                        |
+| `create_bootstrap_keys`   | Executable | libsodium             | Cross-platform | Generates a keys file for tox-bootstrapd with either the provided or a random key pair.                                                                                         |
+| `create_minimal_savedata` | Executable | libsodium             | Cross-platform | Generates a minimal Tox profile file (savedata file) with either the provided or a random key pair, printing the generated Tox Id and secret & public key information.          |
+| `create_savedata`         | Executable | libsodium, libtoxcore | Cross-platform | Generates a Tox profile file (savedata file) with either the provided or a random key pair using libtoxcore, printing the generated Tox Id and secret & public key information. |
+| `save-generator`          | Executable | libtoxcore            | Cross-platform | Generates a Tox profile file (savedata file) with a random key pair using libtoxcore, setting the specified user name, going online and adding specified Tox Ids as friends.    |
+
+##### Other
+
+| Name                      | Type       | Dependencies          | Platform       | Description                                                                                                                                                                     |
+|---------------------------|------------|-----------------------|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bootstrap_node_info`     | Script     | python3               | Cross-platform | Prints version and Message Of The Day (MOTD) information of the specified DHT bootstrap node, given the node doesn't have those disabled.                                       |
+| `sign`                    | Executable | libsodium             | Cross-platform | Signs a file with a ed25519 key.                                                                                                                                                |
 
 ## Building
 

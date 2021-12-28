@@ -86,6 +86,7 @@ done
 
 echo "static void call(int m(), int argc, char **argv) { m(); }" >>amalgamation.cc
 echo "static void call(int m(int, char **), int argc, char **argv) { m(argc, argv); }" >>amalgamation.cc
+echo "static void call(int m(int, const char *const *), int argc, char **argv) { m(argc, argv); }" >>amalgamation.cc
 echo '}  // namespace' >>amalgamation.cc
 
 echo "int main(int argc, char **argv) {" >>amalgamation.cc
