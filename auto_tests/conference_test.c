@@ -431,6 +431,6 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(NUM_GROUP_TOX, test_many_group, true);
+    run_auto_test(nullptr, NUM_GROUP_TOX, test_many_group, true);
     return 0;
 }

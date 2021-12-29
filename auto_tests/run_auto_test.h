@@ -5,6 +5,28 @@
 #include "../toxcore/Messenger.h"
 #include "../toxcore/mono_time.h"
 
+// TCP relay keys, copied from tcp_relay_test.c
+static uint8_t const mainnet_tcp_key1[] = {
+    0x02, 0x80, 0x7C, 0xF4, 0xF8, 0xBB, 0x8F, 0xB3,
+    0x90, 0xCC, 0x37, 0x94, 0xBD, 0xF1, 0xE8, 0x44,
+    0x9E, 0x9A, 0x83, 0x92, 0xC5, 0xD3, 0xF2, 0x20,
+    0x00, 0x19, 0xDA, 0x9F, 0x1E, 0x81, 0x2E, 0x46,
+};
+
+static uint8_t const mainnet_tcp_key2[] = {
+    0x3F, 0x0A, 0x45, 0xA2, 0x68, 0x36, 0x7C, 0x1B,
+    0xEA, 0x65, 0x2F, 0x25, 0x8C, 0x85, 0xF4, 0xA6,
+    0x6D, 0xA7, 0x6B, 0xCA, 0xA6, 0x67, 0xA4, 0x9E,
+    0x77, 0x0B, 0xCC, 0x49, 0x17, 0xAB, 0x6A, 0x25,
+};
+
+static uint8_t const testnet_tcp_key[] = {
+    0x79, 0xCA, 0xDA, 0x49, 0x74, 0xB0, 0x92, 0x6F,
+    0x28, 0x6F, 0x02, 0x5C, 0xD5, 0xFF, 0xDF, 0x3E,
+    0x65, 0x4A, 0x37, 0x58, 0xC5, 0x3E, 0x02, 0x73,
+    0xEC, 0xFC, 0x4D, 0x12, 0xC2, 0x1D, 0xCA, 0x48,
+};
+
 static bool all_connected(uint32_t tox_count, Tox **toxes)
 {
     for (uint32_t i = 0; i < tox_count; i++) {
@@ -108,7 +130,8 @@ static void wait_friend_connections(uint32_t tox_count, Tox **toxes, State *stat
     printf("tox clients connected\n");
 }
 
-static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *state), bool chain)
+static void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(Tox **toxes, State *state),
+                          bool chain)
 {
     printf("initialising %u toxes\n", tox_count);
     Tox **toxes = (Tox **)calloc(tox_count, sizeof(Tox *));
@@ -119,7 +142,7 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
 
     for (uint32_t i = 0; i < tox_count; i++) {
         state[i].index = i;
-        toxes[i] = tox_new_log(nullptr, nullptr, &state[i].index);
+        toxes[i] = tox_new_log(options, nullptr, &state[i].index);
         ck_assert_msg(toxes[i], "failed to create %u tox instances", i + 1);
 
         set_mono_time_callback(toxes[i], &state[i]);
@@ -127,15 +150,33 @@ static void run_auto_test(uint32_t tox_count, void test(Tox **toxes, State *stat
 
     build_friend_graph(tox_count, chain, toxes);
 
-    printf("bootstrapping all toxes off toxes[0]\n");
-    uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
-    tox_self_get_dht_id(toxes[0], dht_key);
-    const uint16_t dht_port = tox_self_get_udp_port(toxes[0], nullptr);
+    const bool udp_enabled = options != nullptr ? tox_options_get_udp_enabled(options) : true;
+    Tox_Err_Bootstrap err;
 
-    for (uint32_t i = 1; i < tox_count; i++) {
-        Tox_Err_Bootstrap err;
-        tox_bootstrap(toxes[i], "localhost", dht_port, dht_key, &err);
-        ck_assert(err == TOX_ERR_BOOTSTRAP_OK);
+    if (udp_enabled) {
+        printf("bootstrapping all toxes off toxes[0]\n");
+
+        uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
+        tox_self_get_dht_id(toxes[0], dht_key);
+        const uint16_t dht_port = tox_self_get_udp_port(toxes[0], nullptr);
+
+        for (uint32_t i = 1; i < tox_count; i++) {
+            tox_bootstrap(toxes[i], "localhost", dht_port, dht_key, &err);
+            ck_assert(err == TOX_ERR_BOOTSTRAP_OK);
+        }
+    } else {
+        printf("bootstrapping all toxes to tcp relays\n");
+
+        for (uint32_t i = 0; i < tox_count; ++i) {
+            // tox_bootstrap(toxes[i], "78.46.73.141", 33445, mainnet_key1, nullptr);
+            // tox_bootstrap(toxes[i], "tox.initramfs.io", 33445, mainnet_key2, nullptr);
+            tox_bootstrap(toxes[i], "172.93.52.70", 33445, testnet_tcp_key, nullptr);
+
+            // tox_add_tcp_relay(toxes[i], "78.46.73.141", 33445, mainnet_key1, &err);
+            // tox_add_tcp_relay(toxes[i], "tox.initramfs.io", 33445, mainnet_key2, &err);
+            tox_add_tcp_relay(toxes[i], "172.93.52.70", 33445, testnet_tcp_key, &err);
+            ck_assert_msg(err == TOX_ERR_BOOTSTRAP_OK, "%d", err);
+        }
     }
 
     wait_friend_connections(tox_count, toxes, state);

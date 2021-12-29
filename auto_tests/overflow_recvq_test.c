@@ -58,6 +58,6 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(3, net_crypto_overflow_test, false);
+    run_auto_test(nullptr, 3, net_crypto_overflow_test, false);
     return 0;
 }
