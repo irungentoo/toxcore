@@ -13,11 +13,12 @@ branches:
       required_status_checks:
         contexts:
           - build-bootstrapd-docker
+          - build-compcert
           - build-macos
           - build-nacl
+          - build-tcc
           - build-win32
           - build-win64
-          - Codacy Static Code Analysis
           - CodeFactor
           - "ci/circleci: asan"
           - "ci/circleci: clang-tidy"

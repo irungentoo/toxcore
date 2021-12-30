@@ -33,6 +33,11 @@ bool unused_for_tokstyle(void);
 // Emulation using alloca.
 #ifdef _WIN32
 #include <malloc.h>
+#elif defined(__COMPCERT__)
+// TODO(iphydf): This leaks memory like crazy, so compcert is useless for now.
+// Once we're rid of VLAs, we can remove this and compcert becomes useful.
+#define alloca malloc
+#include <stdlib.h>
 #elif defined(__linux__)
 #include <alloca.h>
 #else

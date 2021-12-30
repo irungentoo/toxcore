@@ -51,3 +51,54 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build and test
         run: .travis/cmake-osx
+
+  build-tcc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run:
+          sudo apt-get install -y --no-install-recommends
+            tcc
+            libconfig-dev
+            libopus-dev
+            libsodium-dev
+            libvpx-dev
+      - name: Build with TCC
+        run:
+          tcc
+            -o send_message_test
+            -Wall -Werror
+            -bench -g
+            auto_tests/send_message_test.c
+            testing/misc_tools.c
+            toxav/*.c
+            toxcore/*.c
+            toxencryptsave/*.c
+            $(pkg-config --cflags --libs libsodium opus vpx)
+      - name: Run the test
+        run: "./send_message_test | grep 'tox clients connected'"
+
+  build-compcert:
+    runs-on: ubuntu-latest
+    container: toxchat/compcert
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build with CompCert
+        run:
+          ccomp
+            -o send_message_test
+            -Wall -Werror
+            -Wno-c11-extensions
+            -Wno-unknown-pragmas
+            -Wno-unused-variable
+            -fstruct-passing -fno-unprototyped -g
+            auto_tests/send_message_test.c
+            testing/misc_tools.c
+            toxav/*.c
+            toxcore/*.c
+            toxencryptsave/*.c
+            -D__COMPCERT__ -DDISABLE_VLA
+            -lpthread $(pkg-config --cflags --libs libsodium opus vpx)
+      - name: Run the test
+        run: "./send_message_test | grep 'tox clients connected'"
