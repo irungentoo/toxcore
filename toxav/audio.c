@@ -151,7 +151,8 @@ void ac_iterate(ACSession *ac)
                 cs->last_packet_sampling_rate = rc;
             } else {
                 LOGGER_WARNING(ac->log, "Failed to load packet values!");
-                rtp_free_msg(msg);
+                free(msg);
+                pthread_mutex_lock(ac->queue_mutex);
                 continue;
             }
 
