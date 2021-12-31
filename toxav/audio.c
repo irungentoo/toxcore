@@ -170,6 +170,7 @@ void ac_iterate(ACSession *ac)
             if (!reconfigure_audio_decoder(ac, ac->lp_sampling_rate, ac->lp_channel_count)) {
                 LOGGER_WARNING(ac->log, "Failed to reconfigure decoder!");
                 free(msg);
+                pthread_mutex_lock(ac->queue_mutex);
                 continue;
             }
 
