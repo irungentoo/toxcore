@@ -443,7 +443,12 @@ int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t 
         return -1;
     }
 
-    int numpeers = group_number_peers(g_c, groupnumber, false);
+    const int numpeers = group_number_peers(g_c, groupnumber, false);
+
+    if (numpeers < 0) {
+        kill_group_av(group_av);
+        return -1;
+    }
 
     for (uint32_t i = 0; i < numpeers; ++i) {
         group_av_peer_new(group_av, groupnumber, i);
@@ -470,7 +475,12 @@ int groupchat_disable_av(Group_Chats *g_c, uint32_t groupnumber)
         return -1;
     }
 
-    int numpeers = group_number_peers(g_c, groupnumber, false);
+    const int numpeers = group_number_peers(g_c, groupnumber, false);
+
+    if (numpeers < 0) {
+        kill_group_av(group_av);
+        return -1;
+    }
 
     for (uint32_t i = 0; i < numpeers; ++i) {
         group_av_peer_delete(group_av, groupnumber, group_peer_get_object(g_c, groupnumber, i));
