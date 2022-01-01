@@ -237,9 +237,7 @@ static int handle_ping_response(void *object, IP_Port source, const uint8_t *pac
 static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mono_time, const uint8_t *public_key,
                    IP_Port ip_port)
 {
-    unsigned int i;
-
-    for (i = 0; i < length; ++i) {
+    for (unsigned int i = 0; i < length; ++i) {
         if (id_equal(list[i].public_key, public_key)) {
             const IPPTsPng *ipptp;
 
@@ -289,9 +287,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, IP_Port ip_port)
         return -1;
     }
 
-    unsigned int i;
-
-    for (i = 0; i < MAX_TO_PING; ++i) {
+    for (unsigned int i = 0; i < MAX_TO_PING; ++i) {
         if (!ip_isset(&ping->to_ping[i].ip_port.ip)) {
             memcpy(ping->to_ping[i].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
             ipport_copy(&ping->to_ping[i].ip_port, &ip_port);

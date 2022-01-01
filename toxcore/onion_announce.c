@@ -246,9 +246,7 @@ static void generate_ping_id(const Onion_Announce *onion_a, uint64_t time, const
  */
 static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 {
-    unsigned int i;
-
-    for (i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
+    for (unsigned int i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
         if (!mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
                 && public_key_cmp(onion_a->entries[i].public_key, public_key) == 0) {
             return i;

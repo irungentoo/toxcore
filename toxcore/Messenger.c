@@ -66,9 +66,7 @@ static int realloc_friendlist(Messenger *m, uint32_t num)
  */
 int32_t getfriend_id(const Messenger *m, const uint8_t *real_pk)
 {
-    uint32_t i;
-
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status > 0) {
             if (id_equal(real_pk, m->friendlist[i].real_pk)) {
                 return i;
@@ -114,9 +112,8 @@ static uint16_t address_checksum(const uint8_t *address, uint32_t len)
 {
     uint8_t checksum[2] = {0};
     uint16_t check;
-    uint32_t i;
 
-    for (i = 0; i < len; ++i) {
+    for (uint32_t i = 0; i < len; ++i) {
         checksum[i % 2] ^= address[i];
     }
 
@@ -181,9 +178,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
         return FAERR_NOMEM;
     }
 
-    uint32_t i;
-
-    for (i = 0; i <= m->numfriends; ++i) {
+    for (uint32_t i = 0; i <= m->numfriends; ++i) {
         if (m->friendlist[i].status == NOFRIEND) {
             m->friendlist[i].status = status;
             m->friendlist[i].friendcon_id = friendcon_id;
@@ -422,6 +417,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
 
     kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
     memset(&m->friendlist[friendnumber], 0, sizeof(Friend));
+
     uint32_t i;
 
     for (i = m->numfriends; i != 0; --i) {
@@ -595,9 +591,8 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
     }
 
     m->name_length = length;
-    uint32_t i;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].name_sent = 0;
     }
 
@@ -666,9 +661,7 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
 
     m->statusmessage_length = length;
 
-    uint32_t i;
-
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].statusmessage_sent = 0;
     }
 
@@ -686,9 +679,8 @@ int m_set_userstatus(Messenger *m, uint8_t status)
     }
 
     m->userstatus = (Userstatus)status;
-    uint32_t i;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         m->friendlist[i].userstatus_sent = 0;
     }
 
@@ -2026,8 +2018,6 @@ void kill_messenger(Messenger *m)
         return;
     }
 
-    uint32_t i;
-
     if (m->tcp_server) {
         kill_TCP_server(m->tcp_server);
     }
@@ -2040,7 +2030,7 @@ void kill_messenger(Messenger *m)
     kill_dht(m->dht);
     kill_networking(m->net);
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         clear_receipts(m, i);
     }
 
@@ -2399,10 +2389,9 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
 static void do_friends(Messenger *m, void *userdata)
 {
-    uint32_t i;
     uint64_t temp_time = mono_time_get(m->mono_time);
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status == FRIEND_ADDED) {
             int fr = send_friend_request_packet(m->fr_c, m->friendlist[i].friendcon_id, m->friendlist[i].friendrequest_nospam,
                                                 m->friendlist[i].info,
@@ -2969,10 +2958,9 @@ static State_Load_Status friends_list_load(Messenger *m, const uint8_t *data, ui
     }
 
     uint32_t num = length / l_friend_size;
-    uint32_t i;
     const uint8_t *cur_data = data;
 
-    for (i = 0; i < num; ++i) {
+    for (uint32_t i = 0; i < num; ++i) {
         struct Saved_Friend temp = { 0 };
         const uint8_t *next_data = friend_load(&temp, cur_data);
         assert(next_data - cur_data == l_friend_size);
@@ -3200,9 +3188,8 @@ bool messenger_load_state_section(Messenger *m, const uint8_t *data, uint32_t le
 uint32_t count_friendlist(const Messenger *m)
 {
     uint32_t ret = 0;
-    uint32_t i;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (m->friendlist[i].status > 0) {
             ++ret;
         }
@@ -3226,10 +3213,9 @@ uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_s
         return 0;
     }
 
-    uint32_t i;
     uint32_t ret = 0;
 
-    for (i = 0; i < m->numfriends; ++i) {
+    for (uint32_t i = 0; i < m->numfriends; ++i) {
         if (ret >= list_size) {
             break; /* Abandon ship */
         }

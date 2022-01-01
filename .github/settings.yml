@@ -12,23 +12,23 @@ branches:
     protection:
       required_status_checks:
         contexts:
-          - build-bootstrapd-docker
-          - build-compcert
-          - build-macos
-          - build-nacl
-          - build-tcc
-          - build-win32
-          - build-win64
-          - CodeFactor
+          - "bazel-release"
+          - "build-bootstrapd-docker"
+          - "build-compcert"
+          - "build-macos"
+          - "build-nacl"
+          - "build-tcc"
+          - "build-win32"
+          - "build-win64"
+          - "CodeFactor"
           - "ci/circleci: asan"
           - "ci/circleci: clang-tidy"
           - "ci/circleci: infer"
           - "ci/circleci: static-analysis"
           - "ci/circleci: tsan"
-          - cimple
-          - cirrus-ci
-          - code-review/reviewable
-          - continuous-integration/appveyor/pr
+          - "cimple"
+          - "code-review/reviewable"
+          - "continuous-integration/appveyor/pr"
 
 # Labels specific to c-toxcore.
 labels:

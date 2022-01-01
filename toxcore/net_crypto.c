@@ -3051,9 +3051,7 @@ void do_net_crypto(Net_Crypto *c, void *userdata)
 
 void kill_net_crypto(Net_Crypto *c)
 {
-    uint32_t i;
-
-    for (i = 0; i < c->crypto_connections_length; ++i) {
+    for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
         crypto_kill(c, i);
     }
 
