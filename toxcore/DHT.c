@@ -895,14 +895,6 @@ static int cmp_dht_entry(const void *a, const void *b)
         return 1;
     }
 
-    if (t1 && !t2) {
-        return -1;
-    }
-
-    if (!t1 && t2) {
-        return 1;
-    }
-
     const int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
 
     if (close == 1) {

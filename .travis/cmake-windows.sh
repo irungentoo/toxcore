@@ -25,6 +25,9 @@ travis_script() {
   # its backtrace.
   add_flag -gdwarf-2
 
+  # Fix invalid register for .seh_savexmm error
+  add_flag -fno-asynchronous-unwind-tables
+
   docker run \
     -e ALLOW_TEST_FAILURE=true \
     -e ENABLE_ARCH_i686="$i686" \
