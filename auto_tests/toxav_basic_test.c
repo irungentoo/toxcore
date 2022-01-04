@@ -100,6 +100,12 @@ static void iterate_tox(Tox *bootstrap, Tox *Alice, Tox *Bob)
     tox_iterate(Bob, nullptr);
 }
 
+static bool toxav_audio_send_frame_helper(ToxAV *av, uint32_t friend_number, Toxav_Err_Send_Frame *error)
+{
+    static const int16_t PCM[960] = {0};
+    return toxav_audio_send_frame(av, 0, PCM, sizeof(PCM), 1, 48000, nullptr);
+}
+
 static void regular_call_flow(
     Tox *Alice, Tox *Bob, Tox *bootstrap,
     ToxAV *AliceAV, ToxAV *BobAV,
@@ -516,17 +522,15 @@ static void test_av_flows(void)
             }
         }
 
-        int16_t PCM[5670];
-
         iterate_tox(bootstrap, Alice, Bob);
         ck_assert_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_PAUSE);
         iterate_tox(bootstrap, Alice, Bob);
-        ck_assert(!toxav_audio_send_frame(AliceAV, 0, PCM, 960, 1, 48000, nullptr));
-        ck_assert(!toxav_audio_send_frame(BobAV, 0, PCM, 960, 1, 48000, nullptr));
+        ck_assert(!toxav_audio_send_frame_helper(AliceAV, 0, nullptr));
+        ck_assert(!toxav_audio_send_frame_helper(BobAV, 0, nullptr));
         ck_assert_call_control(AliceAV, 0, TOXAV_CALL_CONTROL_RESUME);
         iterate_tox(bootstrap, Alice, Bob);
-        ck_assert(toxav_audio_send_frame(AliceAV, 0, PCM, 960, 1, 48000, nullptr));
-        ck_assert(toxav_audio_send_frame(BobAV, 0, PCM, 960, 1, 48000, nullptr));
+        ck_assert(toxav_audio_send_frame_helper(AliceAV, 0, nullptr));
+        ck_assert(toxav_audio_send_frame_helper(BobAV, 0, nullptr));
         iterate_tox(bootstrap, Alice, Bob);
 
         {
