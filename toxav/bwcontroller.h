@@ -8,7 +8,7 @@
 #include "../toxcore/Messenger.h"
 #include "../toxcore/tox.h"
 
-typedef struct BWController_s BWController;
+typedef struct BWController BWController;
 
 typedef void m_cb(BWController *bwc, uint32_t friend_number, float todo, void *user_data);
 

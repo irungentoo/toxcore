@@ -22,7 +22,7 @@
 
 #include <pthread.h>
 
-typedef struct VCSession_s {
+typedef struct VCSession {
     /* encoding */
     vpx_codec_ctx_t encoder[1];
     uint32_t frame_counter;

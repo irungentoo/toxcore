@@ -34,7 +34,7 @@
 // iteration interval that is used when no call is active
 #define IDLE_ITERATION_INTERVAL_MS 200
 
-typedef struct ToxAVCall_s {
+typedef struct ToxAVCall {
     ToxAV *av;
 
     pthread_mutex_t mutex_audio[1];
@@ -59,13 +59,13 @@ typedef struct ToxAVCall_s {
 
     pthread_mutex_t toxav_call_mutex[1];
 
-    struct ToxAVCall_s *prev;
-    struct ToxAVCall_s *next;
+    struct ToxAVCall *prev;
+    struct ToxAVCall *next;
 } ToxAVCall;
 
 
 /** Decode time statistics */
-typedef struct DecodeTimeStats_s {
+typedef struct DecodeTimeStats {
     /** Measure count */
     int32_t count;
     /** Last cycle total */

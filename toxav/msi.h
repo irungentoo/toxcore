@@ -64,8 +64,8 @@ typedef enum MSICallbackID {
 /**
  * The call struct. Please do not modify outside msi.c
  */
-typedef struct MSICall_s {
-    struct MSISession_s *session;           /* Session pointer */
+typedef struct MSICall {
+    struct MSISession *session;           /* Session pointer */
 
     MSICallState         state;
     uint8_t              peer_capabilities; /* Peer capabilities */
@@ -74,10 +74,10 @@ typedef struct MSICall_s {
     uint32_t             friend_number;     /* Index of this call in MSISession */
     MSIError             error;             /* Last error */
 
-    struct ToxAVCall_s  *av_call;           /* Pointer to av call handler */
+    struct ToxAVCall     *av_call;           /* Pointer to av call handler */
 
-    struct MSICall_s    *next;
-    struct MSICall_s    *prev;
+    struct MSICall       *next;
+    struct MSICall       *prev;
 } MSICall;
 
 
@@ -91,7 +91,7 @@ typedef int msi_action_cb(void *av, MSICall *call);
 /**
  * Control session struct. Please do not modify outside msi.c
  */
-typedef struct MSISession_s {
+typedef struct MSISession {
     /* Call handlers */
     MSICall       **calls;
     uint32_t        calls_tail;
