@@ -52,6 +52,18 @@ jobs:
       - name: Build and test
         run: .travis/cmake-osx
 
+  coverage-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and test
+        run: .travis/cmake-linux
+        env:
+          CC: gcc
+          CXX: g++
+      - name: Upload coverage
+        run: .travis/upload-coverage
+
   build-tcc:
     runs-on: ubuntu-latest
     steps:
