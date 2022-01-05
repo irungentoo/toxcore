@@ -473,156 +473,163 @@ void toxav_callback_call_state(ToxAV *av, toxav_call_state_cb *callback, void *u
     av->scb_user_data = user_data;
     pthread_mutex_unlock(av->mutex);
 }
+static Toxav_Err_Call_Control call_control_handle_resume(const ToxAVCall *call)
+{
+    /* Only act if paused and had media transfer active before */
+    if (call->msi_call->self_capabilities != 0 || call->previous_self_capabilities == 0) {
+        return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+    }
+
+    if (msi_change_capabilities(call->msi_call, call->previous_self_capabilities) == -1) {
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+    }
+
+    rtp_allow_receiving(call->audio_rtp);
+    rtp_allow_receiving(call->video_rtp);
+
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle_pause(ToxAVCall *call)
+{
+    /* Only act if not already paused */
+    if (!call->msi_call->self_capabilities) {
+        return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+    }
+
+    call->previous_self_capabilities = call->msi_call->self_capabilities;
+
+    if (msi_change_capabilities(call->msi_call, 0) == -1) {
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+    }
+
+    rtp_stop_receiving(call->audio_rtp);
+    rtp_stop_receiving(call->video_rtp);
+
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle_cancel(ToxAVCall *call)
+{
+    /* Hang up */
+    pthread_mutex_lock(call->toxav_call_mutex);
+
+    if (msi_hangup(call->msi_call) != 0) {
+        pthread_mutex_unlock(call->toxav_call_mutex);
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+    }
+
+    call->msi_call = nullptr;
+    pthread_mutex_unlock(call->toxav_call_mutex);
+
+    /* No matter the case, terminate the call */
+    call_kill_transmission(call);
+    call_remove(call);
+
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle_mute_audio(const ToxAVCall *call)
+{
+    if (!(call->msi_call->self_capabilities & MSI_CAP_R_AUDIO)) {
+        return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+    }
+
+    if (msi_change_capabilities(call->msi_call, call->
+                                msi_call->self_capabilities ^ MSI_CAP_R_AUDIO) == -1) {
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+
+    }
+
+    rtp_stop_receiving(call->audio_rtp);
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle_unmute_audio(const ToxAVCall *call)
+{
+    if (!(call->msi_call->self_capabilities ^ MSI_CAP_R_AUDIO)) {
+        return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+    }
+
+    if (msi_change_capabilities(call->msi_call, call->
+                                msi_call->self_capabilities | MSI_CAP_R_AUDIO) == -1) {
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+    }
+
+    rtp_allow_receiving(call->audio_rtp);
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle_hide_video(const ToxAVCall *call)
+{
+    if (!(call->msi_call->self_capabilities & MSI_CAP_R_VIDEO)) {
+        return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+    }
+
+    if (msi_change_capabilities(call->msi_call, call->
+                                msi_call->self_capabilities ^ MSI_CAP_R_VIDEO) == -1) {
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+    }
+
+    rtp_stop_receiving(call->video_rtp);
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle_show_video(const ToxAVCall *call)
+{
+    if (!(call->msi_call->self_capabilities ^ MSI_CAP_R_VIDEO)) {
+        return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+    }
+
+    if (msi_change_capabilities(call->msi_call, call->
+                                msi_call->self_capabilities | MSI_CAP_R_VIDEO) == -1) {
+        return TOXAV_ERR_CALL_CONTROL_SYNC;
+    }
+
+    rtp_allow_receiving(call->video_rtp);
+    return TOXAV_ERR_CALL_CONTROL_OK;
+}
+static Toxav_Err_Call_Control call_control_handle(ToxAVCall *call, Toxav_Call_Control control)
+{
+    switch (control) {
+        case TOXAV_CALL_CONTROL_RESUME:
+            return call_control_handle_resume(call);
+
+        case TOXAV_CALL_CONTROL_PAUSE:
+            return call_control_handle_pause(call);
+
+        case TOXAV_CALL_CONTROL_CANCEL:
+            return call_control_handle_cancel(call);
+
+        case TOXAV_CALL_CONTROL_MUTE_AUDIO:
+            return call_control_handle_mute_audio(call);
+
+        case TOXAV_CALL_CONTROL_UNMUTE_AUDIO:
+            return call_control_handle_unmute_audio(call);
+
+        case TOXAV_CALL_CONTROL_HIDE_VIDEO:
+            return call_control_handle_hide_video(call);
+
+        case TOXAV_CALL_CONTROL_SHOW_VIDEO:
+            return call_control_handle_show_video(call);
+    }
+
+    return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
+}
+static Toxav_Err_Call_Control call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control control)
+{
+    if (m_friend_exists(av->m, friend_number) == 0) {
+        return TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_FOUND;
+    }
+
+    ToxAVCall *call = call_get(av, friend_number);
+
+    if (call == nullptr || (!call->active && control != TOXAV_CALL_CONTROL_CANCEL)) {
+        return TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
+    }
+
+    return call_control_handle(call, control);
+}
 bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control control, Toxav_Err_Call_Control *error)
 {
     pthread_mutex_lock(av->mutex);
-    Toxav_Err_Call_Control rc = TOXAV_ERR_CALL_CONTROL_OK;
-    ToxAVCall *call;
 
-    if (m_friend_exists(av->m, friend_number) == 0) {
-        rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_FOUND;
-        goto RETURN;
-    }
+    Toxav_Err_Call_Control rc = call_control(av, friend_number, control);
 
-    call = call_get(av, friend_number);
-
-    if (call == nullptr || (!call->active && control != TOXAV_CALL_CONTROL_CANCEL)) {
-        rc = TOXAV_ERR_CALL_CONTROL_FRIEND_NOT_IN_CALL;
-        goto RETURN;
-    }
-
-    switch (control) {
-        case TOXAV_CALL_CONTROL_RESUME: {
-            /* Only act if paused and had media transfer active before */
-            if (call->msi_call->self_capabilities == 0 &&
-                    call->previous_self_capabilities) {
-
-                if (msi_change_capabilities(call->msi_call,
-                                            call->previous_self_capabilities) == -1) {
-                    rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                    goto RETURN;
-                }
-
-                rtp_allow_receiving(call->audio_rtp);
-                rtp_allow_receiving(call->video_rtp);
-            } else {
-                rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
-                goto RETURN;
-            }
-
-            break;
-        }
-
-        case TOXAV_CALL_CONTROL_PAUSE: {
-            /* Only act if not already paused */
-            if (call->msi_call->self_capabilities) {
-                call->previous_self_capabilities = call->msi_call->self_capabilities;
-
-                if (msi_change_capabilities(call->msi_call, 0) == -1) {
-                    rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                    goto RETURN;
-                }
-
-                rtp_stop_receiving(call->audio_rtp);
-                rtp_stop_receiving(call->video_rtp);
-            } else {
-                rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
-                goto RETURN;
-            }
-
-            break;
-        }
-
-        case TOXAV_CALL_CONTROL_CANCEL: {
-            /* Hang up */
-            pthread_mutex_lock(call->toxav_call_mutex);
-
-            if (msi_hangup(call->msi_call) != 0) {
-                rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                pthread_mutex_unlock(call->toxav_call_mutex);
-                goto RETURN;
-            }
-
-            call->msi_call = nullptr;
-            pthread_mutex_unlock(call->toxav_call_mutex);
-
-            /* No mather the case, terminate the call */
-            call_kill_transmission(call);
-            call_remove(call);
-
-            break;
-        }
-
-        case TOXAV_CALL_CONTROL_MUTE_AUDIO: {
-            if (call->msi_call->self_capabilities & MSI_CAP_R_AUDIO) {
-                if (msi_change_capabilities(call->msi_call, call->
-                                            msi_call->self_capabilities ^ MSI_CAP_R_AUDIO) == -1) {
-                    rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                    goto RETURN;
-                }
-
-                rtp_stop_receiving(call->audio_rtp);
-            } else {
-                rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
-                goto RETURN;
-            }
-
-            break;
-        }
-
-        case TOXAV_CALL_CONTROL_UNMUTE_AUDIO: {
-            if (call->msi_call->self_capabilities ^ MSI_CAP_R_AUDIO) {
-                if (msi_change_capabilities(call->msi_call, call->
-                                            msi_call->self_capabilities | MSI_CAP_R_AUDIO) == -1) {
-                    rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                    goto RETURN;
-                }
-
-                rtp_allow_receiving(call->audio_rtp);
-            } else {
-                rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
-                goto RETURN;
-            }
-
-            break;
-        }
-
-        case TOXAV_CALL_CONTROL_HIDE_VIDEO: {
-            if (call->msi_call->self_capabilities & MSI_CAP_R_VIDEO) {
-                if (msi_change_capabilities(call->msi_call, call->
-                                            msi_call->self_capabilities ^ MSI_CAP_R_VIDEO) == -1) {
-                    rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                    goto RETURN;
-                }
-
-                rtp_stop_receiving(call->video_rtp);
-            } else {
-                rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
-                goto RETURN;
-            }
-
-            break;
-        }
-
-        case TOXAV_CALL_CONTROL_SHOW_VIDEO: {
-            if (call->msi_call->self_capabilities ^ MSI_CAP_R_VIDEO) {
-                if (msi_change_capabilities(call->msi_call, call->
-                                            msi_call->self_capabilities | MSI_CAP_R_VIDEO) == -1) {
-                    rc = TOXAV_ERR_CALL_CONTROL_SYNC;
-                    goto RETURN;
-                }
-
-                rtp_allow_receiving(call->video_rtp);
-            } else {
-                rc = TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
-                goto RETURN;
-            }
-
-            break;
-        }
-    }
-
-RETURN:
     pthread_mutex_unlock(av->mutex);
 
     if (error) {
