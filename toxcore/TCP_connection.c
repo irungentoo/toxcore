@@ -377,7 +377,7 @@ int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c)
     const uint32_t r = random_u32();
 
     for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
-        uint32_t index = ((i + r) % tcp_c->tcp_connections_length);
+        uint32_t index = (i + r) % tcp_c->tcp_connections_length;
 
         if (tcp_c->tcp_connections[index].onion && tcp_c->tcp_connections[index].status == TCP_CONN_CONNECTED) {
             return index;

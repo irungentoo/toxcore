@@ -480,7 +480,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 
     uint8_t data[ONION_MAX_PACKET_SIZE];
     memcpy(data, plain + SIZE_IPPORT, len - SIZE_IPPORT);
-    uint16_t data_len = (len - SIZE_IPPORT);
+    uint16_t data_len = len - SIZE_IPPORT;
     uint8_t *ret_part = data + (len - SIZE_IPPORT);
     random_nonce(ret_part);
     uint8_t ret_data[RETURN_2 + SIZE_IPPORT];

@@ -74,7 +74,7 @@ static int find(const BS_List *list, const uint8_t *data)
                 return list_index(i);
             }
 
-            delta = (delta) / 2;
+            delta = delta / 2;
 
             if (delta == 0) {
                 delta = 1;
@@ -90,7 +90,7 @@ static int find(const BS_List *list, const uint8_t *data)
             // move up
             i -= delta;
 
-            delta = (delta) / 2;
+            delta = delta / 2;
 
             if (delta == 0) {
                 delta = 1;

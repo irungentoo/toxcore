@@ -298,7 +298,7 @@ static bool add_to_closest(Group_c *g, const uint8_t *real_pk, const uint8_t *te
 
         comp_val = calculate_comp_value(real_pk, g->real_pk);
 
-        for (unsigned int i = (DESIRED_CLOSEST / 2); i < DESIRED_CLOSEST; ++i) {
+        for (unsigned int i = DESIRED_CLOSEST / 2; i < DESIRED_CLOSEST; ++i) {
             uint64_t comp = calculate_comp_value(g->closest_peers[i].real_pk, g->real_pk);
 
             if (comp > comp_val && comp > comp_d) {
@@ -486,7 +486,7 @@ static bool delete_frozen(Group_c *g, uint32_t frozen_index)
             g->frozen[frozen_index] = g->frozen[g->numfrozen];
         }
 
-        Group_Peer *const frozen_temp = (Group_Peer *)realloc(g->frozen, sizeof(Group_Peer) * (g->numfrozen));
+        Group_Peer *const frozen_temp = (Group_Peer *)realloc(g->frozen, sizeof(Group_Peer) * g->numfrozen);
 
         if (frozen_temp == nullptr) {
             return false;
@@ -731,7 +731,7 @@ static bool delpeer(Group_Chats *g_c, uint32_t groupnumber, int peer_index, void
             g->group[peer_index] = g->group[g->numpeers];
         }
 
-        Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * (g->numpeers));
+        Group_Peer *temp = (Group_Peer *)realloc(g->group, sizeof(Group_Peer) * g->numpeers);
 
         if (temp == nullptr) {
             return false;
@@ -1549,7 +1549,7 @@ static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t fri
         return false;
     }
 
-    const bool member = (g->status == GROUPCHAT_STATUS_CONNECTED);
+    const bool member = g->status == GROUPCHAT_STATUS_CONNECTED;
 
     VLA(uint8_t, response, member ? INVITE_MEMBER_PACKET_SIZE : INVITE_ACCEPT_PACKET_SIZE);
     response[0] = member ? INVITE_MEMBER_ID : INVITE_ACCEPT_ID;
@@ -1934,7 +1934,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
         case INVITE_ACCEPT_ID:
         case INVITE_MEMBER_ID: {
-            const bool member = (data[0] == INVITE_MEMBER_ID);
+            const bool member = data[0] == INVITE_MEMBER_ID;
 
             if (length != (member ? INVITE_MEMBER_PACKET_SIZE : INVITE_ACCEPT_PACKET_SIZE)) {
                 return;
@@ -2551,7 +2551,7 @@ int send_group_lossy_packet(const Group_Chats *g_c, uint32_t groupnumber, const 
 
 static Message_Info *find_message_slot_or_reject(uint32_t message_number, uint8_t message_id, Group_Peer *peer)
 {
-    const bool ignore_older = (message_id == GROUP_MESSAGE_NAME_ID || message_id == GROUP_MESSAGE_TITLE_ID);
+    const bool ignore_older = message_id == GROUP_MESSAGE_NAME_ID || message_id == GROUP_MESSAGE_TITLE_ID;
 
     Message_Info *i;
 
