@@ -107,7 +107,11 @@
 #endif
 
 #if !defined(OS_WIN32)
-#define TOX_EWOULDBLOCK EWOULDBLOCK
+
+static bool should_ignore_recv_error(int err)
+{
+    return err == EWOULDBLOCK;
+}
 
 static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
 {
@@ -134,7 +138,12 @@ static int inet_pton6(const char *addrString, struct in6_addr *addrbuf)
 #define IPV6_V6ONLY 27
 #endif
 
-#define TOX_EWOULDBLOCK WSAEWOULDBLOCK
+static bool should_ignore_recv_error(int err)
+{
+    // We ignore WSAECONNRESET as Windows helpfully* sends that error if a
+    // previously sent UDP packet wasn't delivered.
+    return err == WSAEWOULDBLOCK || err == WSAECONNRESET;
+}
 
 static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
 {
@@ -596,7 +605,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
     if (fail_or_len < 0) {
         int error = net_error();
 
-        if (fail_or_len < 0 && error != TOX_EWOULDBLOCK) {
+        if (fail_or_len < 0 && !should_ignore_recv_error(error)) {
             const char *strerror = net_new_strerror(error);
             LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s", error, strerror);
             net_kill_strerror(strerror);
