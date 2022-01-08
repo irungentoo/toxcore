@@ -605,7 +605,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
     if (fail_or_len < 0) {
         int error = net_error();
 
-        if (fail_or_len < 0 && !should_ignore_recv_error(error)) {
+        if (!should_ignore_recv_error(error)) {
             const char *strerror = net_new_strerror(error);
             LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s", error, strerror);
             net_kill_strerror(strerror);
