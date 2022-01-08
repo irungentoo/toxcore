@@ -60,7 +60,7 @@ class ToxConan(ConanFile):
         cmake.build()
 
         if self.options.with_tests:
-            cmake.test()
+            cmake.test(output_on_failure=True)
 
     def package(self):
         cmake = self._create_cmake()
