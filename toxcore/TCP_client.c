@@ -698,7 +698,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
         return nullptr;
     }
 
-    TCP_Client_Connection *temp = (TCP_Client_Connection *)calloc(sizeof(TCP_Client_Connection), 1);
+    TCP_Client_Connection *temp = (TCP_Client_Connection *)calloc(1, sizeof(TCP_Client_Connection));
 
     if (temp == nullptr) {
         kill_sock(sock);

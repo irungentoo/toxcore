@@ -37,13 +37,13 @@ static Group_JitterBuffer *create_queue(unsigned int capacity)
         size *= 2;
     }
 
-    Group_JitterBuffer *q = (Group_JitterBuffer *)calloc(sizeof(Group_JitterBuffer), 1);
+    Group_JitterBuffer *q = (Group_JitterBuffer *)calloc(1, sizeof(Group_JitterBuffer));
 
     if (!q) {
         return nullptr;
     }
 
-    q->queue = (Group_Audio_Packet **)calloc(sizeof(Group_Audio_Packet *), size);
+    q->queue = (Group_Audio_Packet **)calloc(size, sizeof(Group_Audio_Packet *));
 
     if (!q->queue) {
         free(q);

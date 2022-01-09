@@ -165,7 +165,7 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
         goto RETURN;
     }
 
-    av = (ToxAV *)calloc(sizeof(ToxAV), 1);
+    av = (ToxAV *)calloc(1, sizeof(ToxAV));
 
     if (av == nullptr) {
         LOGGER_WARNING(m->log, "Allocation failed!");
@@ -1244,7 +1244,7 @@ static ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *er
         goto RETURN;
     }
 
-    call = (ToxAVCall *)calloc(sizeof(ToxAVCall), 1);
+    call = (ToxAVCall *)calloc(1, sizeof(ToxAVCall));
 
     if (call == nullptr) {
         rc = TOXAV_ERR_CALL_MALLOC;
@@ -1262,7 +1262,7 @@ static ToxAVCall *call_new(ToxAV *av, uint32_t friend_number, Toxav_Err_Call *er
     }
 
     if (av->calls == nullptr) { /* Creating */
-        av->calls = (ToxAVCall **)calloc(sizeof(ToxAVCall *), friend_number + 1);
+        av->calls = (ToxAVCall **)calloc(friend_number + 1, sizeof(ToxAVCall *));
 
         if (av->calls == nullptr) {
             pthread_mutex_destroy(call->toxav_call_mutex);

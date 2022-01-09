@@ -94,7 +94,7 @@ MSISession *msi_new(Messenger *m)
         return nullptr;
     }
 
-    MSISession *retu = (MSISession *)calloc(sizeof(MSISession), 1);
+    MSISession *retu = (MSISession *)calloc(1, sizeof(MSISession));
 
     if (retu == nullptr) {
         LOGGER_ERROR(m->log, "Allocation failed! Program might misbehave!");
@@ -530,7 +530,7 @@ static MSICall *new_call(MSISession *session, uint32_t friend_number)
 {
     assert(session);
 
-    MSICall *rc = (MSICall *)calloc(sizeof(MSICall), 1);
+    MSICall *rc = (MSICall *)calloc(1, sizeof(MSICall));
 
     if (rc == nullptr) {
         return nullptr;
@@ -540,7 +540,7 @@ static MSICall *new_call(MSISession *session, uint32_t friend_number)
     rc->friend_number = friend_number;
 
     if (session->calls == nullptr) { /* Creating */
-        session->calls = (MSICall **)calloc(sizeof(MSICall *), friend_number + 1);
+        session->calls = (MSICall **)calloc(friend_number + 1, sizeof(MSICall *));
 
         if (session->calls == nullptr) {
             free(rc);

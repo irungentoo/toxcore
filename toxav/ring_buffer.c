@@ -66,7 +66,7 @@ bool rb_read(RingBuffer *b, void **p)
 
 RingBuffer *rb_new(int size)
 {
-    RingBuffer *buf = (RingBuffer *)calloc(sizeof(RingBuffer), 1);
+    RingBuffer *buf = (RingBuffer *)calloc(1, sizeof(RingBuffer));
 
     if (!buf) {
         return nullptr;

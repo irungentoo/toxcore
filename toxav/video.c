@@ -143,7 +143,7 @@ static void vc_init_encoder_cfg(const Logger *log, vpx_codec_enc_cfg_t *cfg, int
 VCSession *vc_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t friend_number,
                   toxav_video_receive_frame_cb *cb, void *cb_data)
 {
-    VCSession *vc = (VCSession *)calloc(sizeof(VCSession), 1);
+    VCSession *vc = (VCSession *)calloc(1, sizeof(VCSession));
     vpx_codec_err_t rc;
 
     if (!vc) {
