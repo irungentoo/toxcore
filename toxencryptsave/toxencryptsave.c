@@ -137,7 +137,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 
     crypto_memzero(passkey, crypto_hash_sha256_BYTES); /* wipe plaintext pw */
 
-    Tox_Pass_Key *out_key = (Tox_Pass_Key *)malloc(sizeof(Tox_Pass_Key));
+    Tox_Pass_Key *out_key = (Tox_Pass_Key *)calloc(1, sizeof(Tox_Pass_Key));
 
     if (!out_key) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);

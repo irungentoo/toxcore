@@ -100,13 +100,13 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
 
 Mono_Time *mono_time_new(void)
 {
-    Mono_Time *mono_time = (Mono_Time *)malloc(sizeof(Mono_Time));
+    Mono_Time *mono_time = (Mono_Time *)calloc(1, sizeof(Mono_Time));
 
     if (mono_time == nullptr) {
         return nullptr;
     }
 
-    mono_time->time_update_lock = (pthread_rwlock_t *)malloc(sizeof(pthread_rwlock_t));
+    mono_time->time_update_lock = (pthread_rwlock_t *)calloc(1, sizeof(pthread_rwlock_t));
 
     if (mono_time->time_update_lock == nullptr) {
         free(mono_time);

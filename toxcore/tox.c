@@ -516,7 +516,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     }
 
     if (tox_options_get_experimental_thread_safety(opts)) {
-        tox->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+        tox->mutex = (pthread_mutex_t *)calloc(1, sizeof(pthread_mutex_t));
 
         if (tox->mutex == nullptr) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_MALLOC);

@@ -749,7 +749,7 @@ static int add_data_to_buffer(const Logger *log, Packets_Array *array, uint32_t 
         return -1;
     }
 
-    Packet_Data *new_d = (Packet_Data *)malloc(sizeof(Packet_Data));
+    Packet_Data *new_d = (Packet_Data *)calloc(1, sizeof(Packet_Data));
 
     if (new_d == nullptr) {
         return -1;
@@ -802,7 +802,7 @@ static int64_t add_data_end_of_buffer(const Logger *log, Packets_Array *array, c
         return -1;
     }
 
-    Packet_Data *new_d = (Packet_Data *)malloc(sizeof(Packet_Data));
+    Packet_Data *new_d = (Packet_Data *)calloc(1, sizeof(Packet_Data));
 
     if (new_d == nullptr) {
         return -1;
@@ -1786,7 +1786,7 @@ static int create_crypto_connection(Net_Crypto *c)
         c->crypto_connections[id].last_packets_left_rem = 0;
         c->crypto_connections[id].packet_send_rate_requested = 0;
         c->crypto_connections[id].last_packets_left_requested_rem = 0;
-        c->crypto_connections[id].mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+        c->crypto_connections[id].mutex = (pthread_mutex_t *)calloc(1, sizeof(pthread_mutex_t));
 
         if (c->crypto_connections[id].mutex == nullptr) {
             pthread_mutex_unlock(&c->connections_mutex);

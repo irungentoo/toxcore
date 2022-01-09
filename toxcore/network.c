@@ -1370,7 +1370,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
         return -1;
     }
 
-    // Used to avoid malloc parameter overflow
+    // Used to avoid calloc parameter overflow
     const size_t max_count = min_u64(SIZE_MAX, INT32_MAX) / sizeof(IP_Port);
     int type = make_socktype(tox_type);
     struct addrinfo *cur;
@@ -1395,7 +1395,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
         return 0;
     }
 
-    *res = (IP_Port *)malloc(sizeof(IP_Port) * count);
+    *res = (IP_Port *)calloc(count, sizeof(IP_Port));
 
     if (*res == nullptr) {
         freeaddrinfo(infos);

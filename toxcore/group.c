@@ -3339,7 +3339,7 @@ static State_Load_Status load_conferences(Group_Chats *g_c, const uint8_t *data,
         data += sizeof(uint32_t);
 
         if (g->numfrozen > 0) {
-            g->frozen = (Group_Peer *)malloc(sizeof(Group_Peer) * g->numfrozen);
+            g->frozen = (Group_Peer *)calloc(g->numfrozen, sizeof(Group_Peer));
 
             if (g->frozen == nullptr) {
                 return STATE_LOAD_STATUS_ERROR;
