@@ -29,21 +29,21 @@ put() {
 }
 
 putmain() {
-  echo "namespace ${1//[^a-zA-Z0-9_]/_} {" >>amalgamation.cc
+  NS=$(echo "${1//[^a-zA-Z0-9_]/_}" | sed -e 's/^__*//')
+  echo "namespace $NS {" >>amalgamation.cc
   if [ "$SKIP_LINES" = "" ]; then
     echo "#line 1 \"$1\"" >>amalgamation.cc
   fi
   sed -e 's/^int main(/static &/' "$1" >>amalgamation.cc
-  echo "} //  namespace ${1//[^a-zA-Z0-9_]/_}" >>amalgamation.cc
+  echo "} //  namespace $NS" >>amalgamation.cc
 }
 
 callmain() {
-  echo "  call(${1//[^a-zA-Z0-9_]/_}::main, argc, argv);" >>amalgamation.cc
+  NS=$(echo "${1//[^a-zA-Z0-9_]/_}" | sed -e 's/^__*//')
+  echo "  call($NS::main, argc, argv);" >>amalgamation.cc
 }
 
 : >amalgamation.cc
-
-put auto_tests/check_compat.h
 
 # Include all C and C++ code
 FIND_QUERY="find . '-(' -name '*.c' -or -name '*.cc' '-)'"
@@ -52,6 +52,7 @@ FIND_QUERY="$FIND_QUERY -and -not -wholename './_build/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './super_donators/*'"
 FIND_QUERY="$FIND_QUERY -and -not -name amalgamation.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name av_test.c"
+FIND_QUERY="$FIND_QUERY -and -not -name cracker.c"
 FIND_QUERY="$FIND_QUERY -and -not -name dht_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name trace.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
@@ -63,6 +64,8 @@ readarray -t FILES <<<"$(eval "$FIND_QUERY")"
   grep -o '#include <[^>]*>' "$i" |
     grep -E -v '<win|<ws|<iphlp|<libc|<mach/|<crypto_|<randombytes|<u.h>|<sys/filio|<stropts.h>|<linux'
 done) | sort -u >>amalgamation.cc
+
+put auto_tests/check_compat.h
 
 echo 'namespace {' >>amalgamation.cc
 for i in "${FILES[@]}"; do

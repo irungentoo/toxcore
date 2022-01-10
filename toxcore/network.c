@@ -499,12 +499,12 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
         net_kill_strerror(strerror);
     } else if ((res > 0) && ((size_t)res <= buflen)) {
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
-                     buffer[0], message, min_u16(res, 999), ((size_t)res < buflen ? '<' : '='),
+                     buffer[0], message, min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
     } else { /* empty or overwrite */
         LOGGER_TRACE(log, "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x",
-                     buffer[0], message, res, (!res ? '!' : '>'), buflen,
+                     buffer[0], message, res, !res ? '!' : '>', buflen,
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
     }

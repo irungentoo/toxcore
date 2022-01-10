@@ -932,7 +932,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                 if (friend_con->dht_lock) {
                     if (friend_new_connection(fr_c, i) == 0) {
                         set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, friend_con->dht_ip_port, 0);
-                        connect_to_saved_tcp_relays(fr_c, i, (MAX_FRIEND_TCP_CONNECTIONS / 2)); /* Only fill it half up. */
+                        connect_to_saved_tcp_relays(fr_c, i, MAX_FRIEND_TCP_CONNECTIONS / 2); /* Only fill it half up. */
                     }
                 }
             } else if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {

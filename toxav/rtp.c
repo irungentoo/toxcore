@@ -320,7 +320,7 @@ static void update_bwc_values(const Logger *log, RTPSession *session, const stru
 
         if (received_length_full < data_length_full) {
             LOGGER_DEBUG(log, "BWC: full length=%u received length=%d", data_length_full, received_length_full);
-            bwc_add_lost(session->bwc, (data_length_full - received_length_full));
+            bwc_add_lost(session->bwc, data_length_full - received_length_full);
         }
     }
 }
@@ -479,7 +479,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
         return -1;
     }
 
-    LOGGER_DEBUG(m->log, "header.pt %d, video %d", (uint8_t)header.pt, (RTP_TYPE_VIDEO % 128));
+    LOGGER_DEBUG(m->log, "header.pt %d, video %d", (uint8_t)header.pt, RTP_TYPE_VIDEO % 128);
 
     // The sender uses the new large-frame capable protocol and is sending a
     // video packet.

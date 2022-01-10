@@ -2202,7 +2202,7 @@ static unsigned int send_peers(Group_Chats *g_c, const Group_c *g, int friendcon
                 || (p - response_packet) + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE * 2 + 1 + g->group[i].nick_len >
                 sizeof(response_packet)) {
             if (send_packet_group_peer(g_c->fr_c, friendcon_id, PACKET_ID_DIRECT_CONFERENCE, group_num, response_packet,
-                                       (p - response_packet))) {
+                                       p - response_packet)) {
                 sent = i;
             } else {
                 return sent;

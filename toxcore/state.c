@@ -34,7 +34,7 @@ int state_load(const Logger *log, state_load_cb *state_load_callback, void *oute
             return -1;
         }
 
-        if (lendian_to_host16((cookie_type >> 16)) != cookie_inner) {
+        if (lendian_to_host16(cookie_type >> 16) != cookie_inner) {
             /* something is not matching up in a bad way, give up */
             LOGGER_ERROR(log, "state file garbled: %04x != %04x", cookie_type >> 16, cookie_inner);
             return -1;

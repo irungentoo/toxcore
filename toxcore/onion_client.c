@@ -1182,7 +1182,7 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
     net_pack_u64(data + 1, no_replay);
     memcpy(data + 1 + sizeof(uint64_t), dht_get_self_public_key(onion_c->dht), CRYPTO_PUBLIC_KEY_SIZE);
     Node_format nodes[MAX_SENT_NODES];
-    uint16_t num_relays = copy_connected_tcp_relays(onion_c->c, nodes, (MAX_SENT_NODES / 2));
+    uint16_t num_relays = copy_connected_tcp_relays(onion_c->c, nodes, MAX_SENT_NODES / 2);
     uint16_t num_nodes = closelist_nodes(onion_c->dht, &nodes[num_relays], MAX_SENT_NODES - num_relays);
     num_nodes += num_relays;
     int nodes_len = 0;
