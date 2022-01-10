@@ -24,9 +24,9 @@ USER builder
 # rebuilding nacl and other things when only source files change.
 RUN mkdir -p /home/builder/build/c-toxcore /home/builder/cache
 WORKDIR /home/builder/build/c-toxcore
-COPY --chown=builder:builder .travis/ /home/builder/build/c-toxcore/.travis/
-RUN .travis/autotools-linux install
+COPY --chown=builder:builder .github/scripts/ /home/builder/build/c-toxcore/.github/scripts/
+RUN .github/scripts/autotools-linux install
 
 # Now copy the rest of the sources and run the build.
 COPY --chown=builder:builder . /home/builder/build/c-toxcore/
-RUN CC=gcc .travis/autotools-linux script
+RUN CC=gcc .github/scripts/autotools-linux script

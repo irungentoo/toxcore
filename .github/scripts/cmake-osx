@@ -10,7 +10,7 @@ brew update
 
 brew install libconfig libsodium libvpx opus
 
-. ".travis/flags-clang.sh"
+. ".github/scripts/flags-clang.sh"
 
 add_ld_flag -undefined error
 

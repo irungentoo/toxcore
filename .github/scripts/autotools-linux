@@ -7,7 +7,7 @@ set -eu
 CACHEDIR="$HOME/cache"
 NPROC=$(nproc)
 
-travis_install() {
+ci_install() {
   # Install vanilla NaCl only.
   [ -f "$CACHEDIR/lib/amd64/libnacl.a" ] || {
     curl https://hyperelliptic.org/nacl/nacl-20110221.tar.bz2 | tar jx
@@ -22,8 +22,8 @@ travis_install() {
   }
 }
 
-travis_script() {
-  . ".travis/flags-$CC.sh"
+ci_script() {
+  . ".github/scripts/flags-$CC.sh"
 
   add_ld_flag -Wl,-z,defs
 
@@ -47,7 +47,7 @@ travis_script() {
 }
 
 if [ "-z" "$ACTION" ]; then
-  "travis_script"
+  "ci_script"
 else
-  "travis_$ACTION"
+  "ci_$ACTION"
 fi

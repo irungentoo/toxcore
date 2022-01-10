@@ -20,7 +20,7 @@ gunzip "$IMAGE_NAME.gz"
 
 start_vm
 
-# Copy over toxcore code from Travis to qemu
+# Copy over toxcore code from host to qemu
 scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P "$SSH_PORT" -r /c-toxcore root@localhost:~
 
 RUN ls -lh
@@ -28,7 +28,7 @@ RUN ls -lh
 cd /c-toxcore
 CACHEDIR=/opt/cache
 mkdir "$CACHEDIR"
-. ".travis/flags-clang.sh"
+. ".github/scripts/flags-clang.sh"
 
 add_ld_flag -Wl,-z,defs
 

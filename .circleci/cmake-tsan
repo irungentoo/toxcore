@@ -4,7 +4,7 @@ set -eu
 
 CACHEDIR="$HOME/cache"
 
-. ".travis/flags-$CC.sh"
+. ".github/scripts/flags-$CC.sh"
 add_flag -Werror
 add_flag -fdiagnostics-color=always
 add_flag -fno-omit-frame-pointer

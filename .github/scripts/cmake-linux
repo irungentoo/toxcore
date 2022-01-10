@@ -7,7 +7,7 @@ NPROC=$(nproc)
 
 sudo apt-get install -y --no-install-recommends libopus-dev libsodium-dev libvpx-dev ninja-build
 
-. ".travis/flags-$CC.sh"
+. ".github/scripts/flags-$CC.sh"
 
 add_ld_flag -Wl,-z,defs
 

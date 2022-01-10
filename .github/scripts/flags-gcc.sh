@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. .travis/flags.sh
+. .github/scripts/flags.sh
 
 # Add all warning flags we can.
 add_flag -Wall

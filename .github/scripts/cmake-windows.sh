@@ -7,7 +7,7 @@ set -eu
 CACHEDIR="$HOME/cache"
 NPROC=$(nproc)
 
-travis_install() {
+ci_install() {
   cd other/docker/windows
 
   docker build \
@@ -18,8 +18,8 @@ travis_install() {
     .
 }
 
-travis_script() {
-  . ".travis/flags-gcc.sh"
+ci_script() {
+  . ".github/scripts/flags-gcc.sh"
 
   # Allows wine to display source code file names and line numbers on crash in
   # its backtrace.
@@ -45,7 +45,7 @@ travis_script() {
 }
 
 if [ "-z" "$ACTION" ]; then
-  "travis_script"
+  "ci_script"
 else
-  "travis_$ACTION"
+  "ci_$ACTION"
 fi

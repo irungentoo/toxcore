@@ -22,9 +22,9 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - uses: actions/checkout@v2
       - name: Docker Build
-        run: .travis/cmake-win32 install
+        run: .github/scripts/cmake-win32 install
       - name: Cross compilation
-        run: .travis/cmake-win32 script
+        run: .github/scripts/cmake-win32 script
 
   build-win64:
     runs-on: ubuntu-latest
@@ -33,9 +33,9 @@ jobs:
         uses: docker/setup-buildx-action@v1
       - uses: actions/checkout@v2
       - name: Docker Build
-        run: .travis/cmake-win64 install
+        run: .github/scripts/cmake-win64 install
       - name: Cross compilation
-        run: .travis/cmake-win64 script
+        run: .github/scripts/cmake-win64 script
 
   build-freebsd:
     runs-on: ubuntu-latest
@@ -43,26 +43,26 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build on FreeBSD
-        run: .travis/cmake-freebsd-stage2
+        run: .github/scripts/cmake-freebsd-stage2
 
   build-macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build and test
-        run: .travis/cmake-osx
+        run: .github/scripts/cmake-osx
 
   coverage-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Build and test
-        run: .travis/cmake-linux
+        run: .github/scripts/cmake-linux
         env:
           CC: gcc
           CXX: g++
       - name: Upload coverage
-        run: .travis/upload-coverage
+        run: .github/scripts/upload-coverage
 
   build-tcc:
     runs-on: ubuntu-latest
