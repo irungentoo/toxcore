@@ -755,7 +755,7 @@ static int add_data_to_buffer(const Logger *log, Packets_Array *array, uint32_t 
         return -1;
     }
 
-    memcpy(new_d, data, sizeof(Packet_Data));
+    *new_d = *data;
     array->buffer[num] = new_d;
 
     if (number - array->buffer_start >= num_packets_array(array)) {
@@ -808,7 +808,7 @@ static int64_t add_data_end_of_buffer(const Logger *log, Packets_Array *array, c
         return -1;
     }
 
-    memcpy(new_d, data, sizeof(Packet_Data));
+    *new_d = *data;
     uint32_t id = array->buffer_end;
     array->buffer[id % CRYPTO_PACKET_BUFFER_SIZE] = new_d;
     ++array->buffer_end;
@@ -832,7 +832,7 @@ static int64_t read_data_beg_buffer(const Logger *log, Packets_Array *array, Pac
         return -1;
     }
 
-    memcpy(data, array->buffer[num], sizeof(Packet_Data));
+    *data = *array->buffer[num];
     uint32_t id = array->buffer_start;
     ++array->buffer_start;
     free(array->buffer[num]);

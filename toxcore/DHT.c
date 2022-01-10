@@ -1580,9 +1580,7 @@ int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
     --dht->num_friends;
 
     if (dht->num_friends != friend_num) {
-        memcpy(&dht->friends_list[friend_num],
-               &dht->friends_list[dht->num_friends],
-               sizeof(DHT_Friend));
+        dht->friends_list[friend_num] = dht->friends_list[dht->num_friends];
     }
 
     if (dht->num_friends == 0) {

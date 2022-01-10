@@ -154,7 +154,7 @@ static void wipe_secure_connection(TCP_Secure_Connection *con)
 
 static void move_secure_connection(TCP_Secure_Connection *con_new, TCP_Secure_Connection *con_old)
 {
-    memcpy(con_new, con_old, sizeof(TCP_Secure_Connection));
+    *con_new = *con_old;
     crypto_memzero(con_old, sizeof(TCP_Secure_Connection));
 }
 

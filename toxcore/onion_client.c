@@ -391,7 +391,7 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
     }
 
     ++onion_paths->last_path_used_times[pathnum];
-    memcpy(path, &onion_paths->paths[pathnum], sizeof(Onion_Path));
+    *path = onion_paths->paths[pathnum];
     return 0;
 }
 
