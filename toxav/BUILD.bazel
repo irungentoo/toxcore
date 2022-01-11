@@ -1,6 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
 load("//tools:no_undefined.bzl", "cc_library")
 
+package(features = ["layering_check"])
+
 filegroup(
     name = "public_headers",
     srcs = ["toxav.h"],
@@ -25,6 +27,7 @@ cc_test(
     srcs = ["ring_buffer_test.cc"],
     deps = [
         ":ring_buffer",
+        "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -47,6 +50,9 @@ cc_library(
         ":ring_buffer",
         "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
     ],
 )
 
@@ -54,7 +60,13 @@ cc_library(
     name = "rtp",
     srcs = ["rtp.c"],
     hdrs = ["rtp.h"],
-    deps = [":bwcontroller"],
+    deps = [
+        ":bwcontroller",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
+    ],
 )
 
 cc_test(
@@ -64,6 +76,7 @@ cc_test(
     deps = [
         ":rtp",
         "//c-toxcore/toxcore:crypto_core",
+        "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -75,6 +88,8 @@ cc_library(
     deps = [
         ":public",
         ":rtp",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:network",
         "@opus",
     ],
@@ -93,6 +108,10 @@ cc_library(
     deps = [
         ":audio",
         ":public",
+        ":ring_buffer",
+        ":rtp",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:network",
         "@libvpx",
     ],
@@ -104,6 +123,9 @@ cc_library(
     hdrs = ["groupav.h"],
     deps = [
         "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
         "@opus",
     ],
 )
@@ -120,7 +142,12 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":groupav",
+        ":rtp",
         ":video",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
     ],
 )
 

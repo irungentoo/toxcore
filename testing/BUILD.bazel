@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
+package(features = ["layering_check"])
+
 CIMPLE_FILES = [
     "//c-toxcore/toxav:cimple_files",
     "//c-toxcore/toxcore:cimple_files",
@@ -20,7 +22,11 @@ cc_library(
     srcs = ["misc_tools.c"],
     hdrs = ["misc_tools.h"],
     visibility = ["//c-toxcore:__subpackages__"],
-    deps = ["//c-toxcore/toxcore"],
+    deps = [
+        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:ccompat",
+        "@libsodium",
+    ],
 )
 
 cc_library(
@@ -35,7 +41,10 @@ cc_binary(
     srcs = ["DHT_test.c"],
     deps = [
         ":misc_tools",
-        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:DHT",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:friend_requests",
+        "//c-toxcore/toxcore:mono_time",
     ],
 )
 
@@ -44,7 +53,8 @@ cc_binary(
     srcs = ["Messenger_test.c"],
     deps = [
         ":misc_tools",
-        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:mono_time",
     ],
 )
 
