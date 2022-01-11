@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+package(features = ["layering_check"])
+
 #cc_binary(
 #    name = "cracker",
 #    srcs = ["cracker.c"],
@@ -16,6 +18,7 @@ cc_binary(
     srcs = ["cracker_simple.c"],
     deps = [
         "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:ccompat",
         "@libsodium",
     ],
 )
@@ -24,6 +27,7 @@ cc_binary(
     name = "minimal-save-generator",
     srcs = ["minimal-save-generator.c"],
     deps = [
+        "//c-toxcore/toxcore:ccompat",
         "@libsodium",
     ],
 )
@@ -34,6 +38,7 @@ cc_binary(
     copts = ["-w"],
     deps = [
         "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore:ccompat",
         "@libsodium",
     ],
 )
@@ -53,5 +58,6 @@ cc_binary(
     deps = [
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:ccompat",
     ],
 )

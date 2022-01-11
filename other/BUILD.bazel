@@ -1,6 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 load("//tools:no_undefined.bzl", "cc_library")
 
+package(features = ["layering_check"])
+
 cc_library(
     name = "bootstrap_node_packets",
     srcs = ["bootstrap_node_packets.c"],
@@ -15,5 +17,11 @@ cc_binary(
     deps = [
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:DHT",
+        "//c-toxcore/toxcore:TCP_connection",
+        "//c-toxcore/toxcore:friend_requests",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:network",
     ],
 )

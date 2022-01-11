@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
 
+package(features = ["layering_check"])
+
 cc_library(
     name = "check_compat",
     testonly = True,
@@ -36,6 +38,20 @@ flaky_tests = {
         "//c-toxcore/toxav",
         "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:DHT_srcs",
+        "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:TCP_connection",
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:crypto_core",
+        "//c-toxcore/toxcore:friend_connection",
+        "//c-toxcore/toxcore:logger",
+        "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:net_crypto",
+        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:onion",
+        "//c-toxcore/toxcore:onion_announce",
+        "//c-toxcore/toxcore:onion_client",
         "//c-toxcore/toxencryptsave",
+        "@libsodium",
+        "@libvpx",
     ],
 ) for src in glob(["*_test.c"])]

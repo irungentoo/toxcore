@@ -1,5 +1,7 @@
 load("//tools:no_undefined.bzl", "cc_library")
 
+package(features = ["layering_check"])
+
 filegroup(
     name = "public_headers",
     srcs = ["toxencryptsave.h"],
@@ -21,6 +23,7 @@ cc_library(
         ":defines",
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:crypto_core",
+        "@libsodium",
     ],
 )
 
@@ -31,7 +34,11 @@ cc_library(
         "*.h",
     ]),
     visibility = ["//c-toxcore/other:__pkg__"],
-    deps = ["//c-toxcore/toxcore:crypto_core"],
+    deps = [
+        "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:crypto_core",
+        "@libsodium",
+    ],
 )
 
 CIMPLE_SRCS = glob(

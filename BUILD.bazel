@@ -1,6 +1,8 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//tools/project:build_defs.bzl", "project")
 
+package(features = ["layering_check"])
+
 project()
 
 genrule(

@@ -1,5 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+package(features = ["layering_check"])
+
 cc_binary(
     name = "grencez_tok5",
     srcs = ["grencez_tok5.c"],
