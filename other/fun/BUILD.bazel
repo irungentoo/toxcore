@@ -1,15 +1,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-cc_binary(
-    name = "cracker",
-    srcs = ["cracker.c"],
-    copts = ["-fopenmp"],
-    linkopts = ["-fopenmp"],
-    deps = [
-        "//c-toxcore/toxcore:ccompat",
-        "@libsodium",
-    ],
-)
+#cc_binary(
+#    name = "cracker",
+#    srcs = ["cracker.c"],
+#    copts = ["-fopenmp"],
+#    linkopts = ["-fopenmp"],
+#    deps = [
+#        "//c-toxcore/toxcore:ccompat",
+#        "@libsodium",
+#    ],
+#)
 
 cc_binary(
     name = "cracker_simple",

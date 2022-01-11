@@ -12,7 +12,6 @@ bazel-release_task:
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
         --remote_download_minimal
-        --config=release
         --
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
@@ -30,7 +29,6 @@ bazel-debug_task:
         --build_tag_filters=-haskell
         --test_tag_filters=-haskell
         --remote_download_minimal
-        --config=debug
         --
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
@@ -47,6 +45,5 @@ cimple_task:
         --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
         --build_tag_filters=haskell
         --test_tag_filters=haskell
-        --config=release
         --
         //c-toxcore/...
