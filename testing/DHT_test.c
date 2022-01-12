@@ -18,6 +18,7 @@
 #endif
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -189,7 +190,14 @@ int main(int argc, char *argv[])
 
     perror("Initialization");
 
-    uint16_t port = net_htons(atoi(argv[argvoffset + 2]));
+    const long int port_conv = strtol(argv[argvoffset + 2], nullptr, 10);
+
+    if (port_conv <= 0 || port_conv > UINT16_MAX) {
+        printf("Failed to convert \"%s\" into a valid port. Exiting...\n", argv[argvoffset + 2]);
+        return 1;
+    }
+
+    const uint16_t port = net_htons((uint16_t)port_conv);
     unsigned char *binary_string = hex_string_to_bin(argv[argvoffset + 3]);
     int res = dht_bootstrap_from_address(dht, argv[argvoffset + 1], ipv6enabled, port, binary_string);
     free(binary_string);

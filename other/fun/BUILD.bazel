@@ -48,6 +48,8 @@ cc_binary(
     srcs = ["strkey.c"],
     copts = ["-w"],
     deps = [
+        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:ccompat",
         "@libsodium",
     ],
 )

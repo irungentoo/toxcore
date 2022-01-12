@@ -41,6 +41,8 @@
 
 #include <sodium.h>
 
+#include "../../toxcore/ccompat.h"
+
 #define PRINT_TRIES_COUNT
 
 static void print_key(unsigned char *key)
@@ -60,12 +62,18 @@ int main(int argc, char *argv[])
 {
     unsigned char public_key[crypto_box_PUBLICKEYBYTES]; // null terminator
     unsigned char secret_key[crypto_box_SECRETKEYBYTES];
-    int offset = 0;
+    long int offset = 0;
     size_t len;
     unsigned char desired_bin[crypto_box_PUBLICKEYBYTES]; // null terminator
 
     if (argc == 3) {
-        offset = atoi(argv[1]);
+        offset = strtol(argv[1], nullptr, 10);
+
+        if (offset <= 0) {
+            fprintf(stderr, "strtol() failed to convert \"%s\" into an integer\n", argv[1]);
+            exit(1);
+        }
+
         char *desired_hex = argv[2];
         len = strlen(desired_hex);
 
