@@ -12,7 +12,10 @@ sh_test(
     name = "cimple_test",
     size = "small",
     srcs = ["//hs-tokstyle/tools:check-cimple"],
-    args = ["$(locations %s)" % f for f in CIMPLE_FILES] + ["+RTS", "-N3"],
+    args = ["$(locations %s)" % f for f in CIMPLE_FILES] + [
+        "+RTS",
+        "-N3",
+    ],
     data = CIMPLE_FILES,
     tags = ["haskell"],
 )
