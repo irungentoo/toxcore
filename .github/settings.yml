@@ -12,8 +12,11 @@ branches:
     protection:
       required_status_checks:
         contexts:
+          # TODO(iphydf): Make asan required once errors are fixed.
+          #- "bazel-asan"
           - "bazel-debug"
           - "bazel-release"
+          - "bazel-tsan"
           - "build-bootstrapd-docker"
           - "build-compcert"
           - "build-macos"
@@ -22,6 +25,8 @@ branches:
           - "build-win32"
           - "build-win64"
           - "CodeFactor"
+          - "codecov/project"
+          - "coverage-linux"
           - "ci/circleci: asan"
           - "ci/circleci: clang-tidy"
           - "ci/circleci: infer"
