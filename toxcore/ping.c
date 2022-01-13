@@ -93,8 +93,7 @@ void ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
 static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
                               uint8_t *shared_encryption_key)
 {
-    uint8_t   pk[DHT_PING_SIZE];
-    int       rc;
+    uint8_t pk[DHT_PING_SIZE];
 
     if (id_equal(public_key, dht_get_self_public_key(ping->dht))) {
         return 1;
@@ -109,10 +108,10 @@ static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key
     random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
-    rc = encrypt_data_symmetric(shared_encryption_key,
-                                pk + 1 + CRYPTO_PUBLIC_KEY_SIZE,
-                                ping_plain, sizeof(ping_plain),
-                                pk + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
+    const int rc = encrypt_data_symmetric(shared_encryption_key,
+                                          pk + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                                          ping_plain, sizeof(ping_plain),
+                                          pk + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
     if (rc != PING_PLAIN_SIZE + CRYPTO_MAC_SIZE) {
         return 1;
@@ -123,8 +122,7 @@ static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key
 
 static int handle_ping_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    DHT       *dht = (DHT *)object;
-    int        rc;
+    DHT *dht = (DHT *)object;
 
     if (length != DHT_PING_SIZE) {
         return 1;
@@ -137,15 +135,15 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
     }
 
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
-
     uint8_t ping_plain[PING_PLAIN_SIZE];
+
     // Decrypt ping_id
     dht_get_shared_key_recv(dht, shared_key, packet + 1);
-    rc = decrypt_data_symmetric(shared_key,
-                                packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
-                                packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
-                                PING_PLAIN_SIZE + CRYPTO_MAC_SIZE,
-                                ping_plain);
+    const int rc = decrypt_data_symmetric(shared_key,
+                                          packet + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                                          packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE,
+                                          PING_PLAIN_SIZE + CRYPTO_MAC_SIZE,
+                                          ping_plain);
 
     if (rc != sizeof(ping_plain)) {
         crypto_memzero(shared_key, sizeof(shared_key));
@@ -157,7 +155,7 @@ static int handle_ping_request(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    uint64_t   ping_id;
+    uint64_t ping_id;
     memcpy(&ping_id, ping_plain + 1, sizeof(ping_id));
     // Send response
     ping_send_response(ping, source, packet + 1, ping_id, shared_key);

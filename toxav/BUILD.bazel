@@ -3,15 +3,16 @@ load("//tools:no_undefined.bzl", "cc_library")
 
 package(features = ["layering_check"])
 
-filegroup(
-    name = "public_headers",
+exports_files(
     srcs = ["toxav.h"],
     visibility = ["//c-toxcore:__pkg__"],
 )
 
+# Private library with the public API header in it because in toxav, lots of
+# things depend on the public API header.
 cc_library(
-    name = "public",
-    hdrs = [":public_headers"],
+    name = "public_api",
+    hdrs = ["toxav.h"],
 )
 
 cc_library(
@@ -86,7 +87,7 @@ cc_library(
     srcs = ["audio.c"],
     hdrs = ["audio.h"],
     deps = [
-        ":public",
+        ":public_api",
         ":rtp",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
@@ -107,7 +108,7 @@ cc_library(
     ],
     deps = [
         ":audio",
-        ":public",
+        ":public_api",
         ":ring_buffer",
         ":rtp",
         "//c-toxcore/toxcore:logger",

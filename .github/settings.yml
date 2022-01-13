@@ -25,7 +25,6 @@ branches:
           - "build-win32"
           - "build-win64"
           - "CodeFactor"
-          - "codecov/project"
           - "coverage-linux"
           - "ci/circleci: asan"
           - "ci/circleci: clang-tidy"

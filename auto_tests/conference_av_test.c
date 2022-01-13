@@ -107,7 +107,7 @@ static bool toxes_are_disconnected_from_group(uint32_t tox_count, Tox **toxes,
         num_disconnected += disconnected[i];
     }
 
-    for (uint32_t i = 0; i < tox_count; i++) {
+    for (uint32_t i = 0; i < tox_count; ++i) {
         if (disconnected[i]) {
             continue;
         }
@@ -152,7 +152,7 @@ static void disconnect_toxes(uint32_t tox_count, Tox **toxes, State *state,
 
 static bool all_connected_to_group(uint32_t tox_count, Tox **toxes)
 {
-    for (uint32_t i = 0; i < tox_count; i++) {
+    for (uint32_t i = 0; i < tox_count; ++i) {
         if (tox_conference_peer_count(toxes[i], 0, nullptr) < tox_count) {
             return false;
         }
@@ -215,11 +215,11 @@ static bool test_audio(Tox **toxes, State *state, const bool *disabled, bool qui
         printf("testing sending and receiving audio\n");
     }
 
-    int16_t PCM[GROUP_AV_TEST_SAMPLES];
+    const int16_t PCM[GROUP_AV_TEST_SAMPLES] = {0};
 
     reset_received_audio(toxes, state);
 
-    for (uint32_t n = 0; n < GROUP_AV_AUDIO_ITERATIONS; n++) {
+    for (uint32_t n = 0; n < GROUP_AV_AUDIO_ITERATIONS; ++n) {
         for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
             if (disabled[i]) {
                 continue;
@@ -266,7 +266,7 @@ static void test_eventual_audio(Tox **toxes, State *state, const bool *disabled,
 
 static void do_audio(Tox **toxes, State *state, uint32_t iterations)
 {
-    int16_t PCM[GROUP_AV_TEST_SAMPLES];
+    const int16_t PCM[GROUP_AV_TEST_SAMPLES] = {0};
     printf("running audio for %u iterations\n", iterations);
 
     for (uint32_t f = 0; f < iterations; ++f) {

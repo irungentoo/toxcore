@@ -3070,7 +3070,7 @@ static uint32_t tcp_relay_size(const Messenger *m)
 
 static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
 {
-    Node_format relays[NUM_SAVED_TCP_RELAYS];
+    Node_format relays[NUM_SAVED_TCP_RELAYS] = {0};
     uint8_t *temp_data = data;
     data = state_write_section_header(temp_data, STATE_COOKIE_TYPE, 0, STATE_TYPE_TCP_RELAY);
 

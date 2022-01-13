@@ -8,9 +8,9 @@ project()
 genrule(
     name = "copy_headers",
     srcs = [
-        "//c-toxcore/toxav:public_headers",
-        "//c-toxcore/toxcore:public_headers",
-        "//c-toxcore/toxencryptsave:public_headers",
+        "//c-toxcore/toxav:toxav.h",
+        "//c-toxcore/toxcore:tox.h",
+        "//c-toxcore/toxencryptsave:toxencryptsave.h",
     ],
     outs = [
         "tox/toxav.h",
@@ -18,19 +18,15 @@ genrule(
         "tox/toxencryptsave.h",
     ],
     cmd = """
-        cp $(location //c-toxcore/toxav:public_headers) $(GENDIR)/c-toxcore/tox/toxav.h
-        cp $(location //c-toxcore/toxcore:public_headers) $(GENDIR)/c-toxcore/tox/tox.h
-        cp $(location //c-toxcore/toxencryptsave:public_headers) $(GENDIR)/c-toxcore/tox/toxencryptsave.h
+        cp $(location //c-toxcore/toxav:toxav.h) $(GENDIR)/c-toxcore/tox/toxav.h
+        cp $(location //c-toxcore/toxcore:tox.h) $(GENDIR)/c-toxcore/tox/tox.h
+        cp $(location //c-toxcore/toxencryptsave:toxencryptsave.h) $(GENDIR)/c-toxcore/tox/toxencryptsave.h
     """,
 )
 
 cc_library(
     name = "c-toxcore",
-    hdrs = [
-        "tox/tox.h",
-        "tox/toxav.h",
-        "tox/toxencryptsave.h",
-    ],
+    hdrs = [":copy_headers"],
     includes = ["."],
     visibility = ["//visibility:public"],
     deps = [

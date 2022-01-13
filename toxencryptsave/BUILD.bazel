@@ -2,8 +2,7 @@ load("//tools:no_undefined.bzl", "cc_library")
 
 package(features = ["layering_check"])
 
-filegroup(
-    name = "public_headers",
+exports_files(
     srcs = ["toxencryptsave.h"],
     visibility = ["//c-toxcore:__pkg__"],
 )

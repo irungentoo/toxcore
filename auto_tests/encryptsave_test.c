@@ -153,12 +153,16 @@ static void test_keys(void)
     int ciphertext_length2a = size_large + TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
     int plaintext_length2a = size_large;
     uint8_t *encrypted2a = (uint8_t *)malloc(ciphertext_length2a);
+    ck_assert(encrypted2a != nullptr);
     uint8_t *in_plaintext2a = (uint8_t *)malloc(plaintext_length2a);
+    ck_assert(in_plaintext2a != nullptr);
+    random_bytes(in_plaintext2a, plaintext_length2a);
     ret = tox_pass_encrypt(in_plaintext2a, plaintext_length2a, key_char, 12, encrypted2a, &encerr);
     ck_assert_msg(ret, "tox_pass_encrypt failure 2a: %d", encerr);
 
     // Decryption of same message.
-    uint8_t *out_plaintext2a = (uint8_t *) malloc(plaintext_length2a);
+    uint8_t *out_plaintext2a = (uint8_t *)malloc(plaintext_length2a);
+    ck_assert(out_plaintext2a != nullptr);
     ret = tox_pass_decrypt(encrypted2a, ciphertext_length2a, key_char, 12, out_plaintext2a, &decerr);
     ck_assert_msg(ret, "tox_pass_decrypt failure 2a: %d", decerr);
     ck_assert_msg(memcmp(in_plaintext2a, out_plaintext2a, plaintext_length2a) == 0, "Large message decryption failed");

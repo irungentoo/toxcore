@@ -357,7 +357,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
     uint8_t ip_port[SIZE_IPPORT];
     ipport_pack(ip_port, &source);
 
-    uint8_t data[ONION_MAX_PACKET_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE] = {0};
     data[0] = NET_PACKET_ONION_SEND_1;
     memcpy(data + 1, nonce, CRYPTO_NONCE_SIZE);
     memcpy(data + 1 + CRYPTO_NONCE_SIZE, plain + SIZE_IPPORT, len - SIZE_IPPORT);
@@ -411,7 +411,7 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
     }
 
-    uint8_t data[ONION_MAX_PACKET_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE] = {0};
     data[0] = NET_PACKET_ONION_SEND_2;
     memcpy(data + 1, packet + 1, CRYPTO_NONCE_SIZE);
     memcpy(data + 1 + CRYPTO_NONCE_SIZE, plain + SIZE_IPPORT, len - SIZE_IPPORT);
@@ -478,7 +478,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
     }
 
-    uint8_t data[ONION_MAX_PACKET_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE] = {0};
     memcpy(data, plain + SIZE_IPPORT, len - SIZE_IPPORT);
     uint16_t data_len = len - SIZE_IPPORT;
     uint8_t *ret_part = data + (len - SIZE_IPPORT);
@@ -537,7 +537,7 @@ static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
     }
 
-    uint8_t data[ONION_MAX_PACKET_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE] = {0};
     data[0] = NET_PACKET_ONION_RECV_2;
     memcpy(data + 1, plain + SIZE_IPPORT, RETURN_2);
     memcpy(data + 1 + RETURN_2, packet + 1 + RETURN_3, length - (1 + RETURN_3));
@@ -584,7 +584,7 @@ static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, ui
         return 1;
     }
 
-    uint8_t data[ONION_MAX_PACKET_SIZE];
+    uint8_t data[ONION_MAX_PACKET_SIZE] = {0};
     data[0] = NET_PACKET_ONION_RECV_1;
     memcpy(data + 1, plain + SIZE_IPPORT, RETURN_1);
     memcpy(data + 1 + RETURN_1, packet + 1 + RETURN_2, length - (1 + RETURN_2));

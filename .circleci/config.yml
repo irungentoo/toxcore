@@ -8,6 +8,7 @@ workflows:
       # Dynamic analysis
       - asan
       - tsan
+      - msan
       # Static analysis
       - clang-tidy
       - infer
@@ -46,6 +47,17 @@ jobs:
       - checkout
       - run: *apt_install
       - run: CC=clang .circleci/cmake-tsan
+
+  msan:
+    working_directory: ~/work
+    docker:
+      - image: toxchat/toktok-stack:0.0.31-msan
+
+    steps:
+      - checkout
+      - run: rm -rf /src/workspace/c-toxcore/* && mv * /src/workspace/c-toxcore/
+      # TODO(iphydf): Remove "|| true" once this works.
+      - run: cd /src/workspace && bazel test //c-toxcore/auto_tests:lossless_packet_test || true
 
   infer:
     working_directory: ~/work

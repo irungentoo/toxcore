@@ -25,7 +25,7 @@ readarray -t CC_SOURCES <<<"$(find . '(' -name '*.cc' ')')"
 CC_SOURCES+=(toxcore/crypto_core.c)
 CC_SOURCES+=(toxcore/ping_array.c)
 
-for bin in clang-format-6.0 clang-format-5.0 clang-format; do
+for bin in clang-format-11 clang-format-7 clang-format-6.0 clang-format-5.0 clang-format; do
   if which "$bin"; then
     "$bin" -i -style='{BasedOnStyle: Google, ColumnLimit: 100}' "${CC_SOURCES[@]}"
     break

@@ -5,6 +5,17 @@ on:
     branches: [master]
 
 jobs:
+  build-msan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pull toxchat/toktok-stack:0.0.31-msan
+        run: docker pull toxchat/toktok-stack:0.0.31-msan
+      - name: Run tests under MemorySanitizer
+        # TODO(iphydf): Remove "|| true" once this works correctly.
+        run: docker run --rm -v $PWD:/src/workspace/c-toxcore toxchat/toktok-stack:0.0.31-msan
+          bazel test //c-toxcore/auto_tests:lossless_packet_test || true
+
   build-nacl:
     runs-on: ubuntu-latest
     steps:
@@ -18,8 +29,6 @@ jobs:
   build-win32:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
       - uses: actions/checkout@v2
       - name: Docker Build
         run: .github/scripts/cmake-win32 install
@@ -29,8 +38,6 @@ jobs:
   build-win64:
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
       - uses: actions/checkout@v2
       - name: Docker Build
         run: .github/scripts/cmake-win64 install
