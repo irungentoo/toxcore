@@ -12,8 +12,7 @@ branches:
     protection:
       required_status_checks:
         contexts:
-          # TODO(iphydf): Make asan required once errors are fixed.
-          #- "bazel-asan"
+          - "bazel-asan"
           - "bazel-debug"
           - "bazel-release"
           - "bazel-tsan"

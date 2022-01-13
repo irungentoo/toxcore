@@ -103,7 +103,7 @@ static void iterate_tox(Tox *bootstrap, Tox *Alice, Tox *Bob)
 static bool toxav_audio_send_frame_helper(ToxAV *av, uint32_t friend_number, Toxav_Err_Send_Frame *error)
 {
     static const int16_t PCM[960] = {0};
-    return toxav_audio_send_frame(av, 0, PCM, sizeof(PCM), 1, 48000, nullptr);
+    return toxav_audio_send_frame(av, 0, PCM, 960, 1, 48000, nullptr);
 }
 
 static void regular_call_flow(
