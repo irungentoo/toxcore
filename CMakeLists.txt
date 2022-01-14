@@ -163,11 +163,7 @@ set(toxcore_PKGCONFIG_REQUIRES)
 set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/ccompat.h
   toxcore/crypto_core.c
-  toxcore/crypto_core.h
-  toxcore/crypto_core_mem.c)
-include(CheckFunctionExists)
-check_function_exists(explicit_bzero HAVE_EXPLICIT_BZERO)
-check_function_exists(memset_s HAVE_MEMSET_S)
+  toxcore/crypto_core.h)
 set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${LIBSODIUM_LIBRARIES})
 set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} libsodium)
 

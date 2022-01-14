@@ -16,13 +16,8 @@ cc_library(
 
 cc_library(
     name = "crypto_core",
-    srcs = [
-        "crypto_core.c",
-        "crypto_core_mem.c",
-    ],
-    hdrs = [
-        "crypto_core.h",
-    ],
+    srcs = ["crypto_core.c"],
+    hdrs = ["crypto_core.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":ccompat",

@@ -80,6 +80,43 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 }
 #endif  // !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
 
+void crypto_memzero(void *data, size_t length)
+{
+#ifndef VANILLA_NACL
+    sodium_memzero(data, length);
+#else
+    memset(data, 0, length);
+#endif
+}
+
+bool crypto_memlock(void *data, size_t length)
+{
+#ifndef VANILLA_NACL
+
+    if (sodium_mlock(data, length) != 0) {
+        return false;
+    }
+
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool crypto_memunlock(void *data, size_t length)
+{
+#ifndef VANILLA_NACL
+
+    if (sodium_munlock(data, length) != 0) {
+        return false;
+    }
+
+    return true;
+#else
+    return false;
+#endif
+}
+
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
