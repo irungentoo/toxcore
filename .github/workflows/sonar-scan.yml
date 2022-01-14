@@ -8,7 +8,6 @@ on:
 
 jobs:
   sonar-scan:
-    name: Build
     runs-on: ubuntu-latest
     env:
       SONAR_SCANNER_VERSION: 4.4.0.2170

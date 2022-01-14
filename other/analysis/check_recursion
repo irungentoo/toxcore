@@ -20,7 +20,7 @@ from typing import List
 from typing import Set
 
 
-def load_callgraph() -> Dict:
+def load_callgraph() -> Dict[str, List[str]]:
     """
     Parses the output from opt -print-callgraph from stdin or argv.
 
@@ -42,10 +42,10 @@ def load_callgraph() -> Dict:
 
 
 def walk(
-        visited: Set,
-        callgraph: Dict,
-        cycles: Set,
-        stack: List,
+        visited: Set[str],
+        callgraph: Dict[str, List[str]],
+        cycles: Set[str],
+        stack: List[str],
         cur: str,
 ) -> None:
     """
@@ -70,7 +70,7 @@ def get_time() -> int:
     return int(round(time.time() * 1000))
 
 
-def find_recursion(expected: Set) -> None:
+def find_recursion(expected: Set[str]) -> None:
     """
     Main function: detects cycles and prints them.
 
@@ -85,8 +85,8 @@ def find_recursion(expected: Set) -> None:
     print("[+%04d=%04d] Finding recursion" % (now - prev, now - start))
     prev = now
 
-    cycles = set()
-    visited = set()
+    cycles: Set[str] = set()
+    visited: Set[str] = set()
     for func in sorted(callgraph.keys()):
         walk(visited, callgraph, cycles, [], func)
 

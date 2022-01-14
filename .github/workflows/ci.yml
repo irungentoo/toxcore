@@ -5,6 +5,23 @@ on:
     branches: [master]
 
 jobs:
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+      - name: Install mypy
+        run: pip install mypy
+      - name: Run mypy
+        run: |
+          mypy --strict \
+            $(echo $(find . -name "*.py" -and -not -name "conanfile.py") \
+                   $(grep -lR '^#!.*python3' .) \
+              | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
   build-msan:
     runs-on: ubuntu-latest
     steps:

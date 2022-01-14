@@ -28,14 +28,14 @@ if sys.version_info[0] == 2:
     sys.exit(1)
 
 
-def print_help() -> None:
+def print_help(prog: str) -> None:
     """Print program usage to stdout."""
-    print("Usage: " + sys.argv[0] + " <ipv4|ipv6> <ip/hostname> <port>")
-    print("  Example: " + sys.argv[0] + " ipv4 192.210.149.121 33445")
-    print("  Example: " + sys.argv[0] + " ipv4 23.226.230.47 33445")
-    print("  Example: " + sys.argv[0] + " ipv4 node.tox.biribiri.org 33445")
-    print("  Example: " + sys.argv[0] + " ipv4 cerberus.zodiaclabs.org 33445")
-    print("  Example: " + sys.argv[0] + " ipv6 2604:180:1::3ded:b280 33445")
+    print(f"Usage: {prog} <ipv4|ipv6> <ip/hostname> <port>")
+    print(f"  Example: {prog} ipv4 192.210.149.121 33445")
+    print(f"  Example: {prog} ipv4 23.226.230.47 33445")
+    print(f"  Example: {prog} ipv4 node.tox.biribiri.org 33445")
+    print(f"  Example: {prog} ipv4 cerberus.zodiaclabs.org 33445")
+    print(f"  Example: {prog} ipv6 2604:180:1::3ded:b280 33445")
     print("")
     print("Return values:")
     print("  0 - received info reply from a node")
@@ -64,7 +64,7 @@ MAX_INFO_RESPONSE_PACKET_LENGTH = PACKET_ID_LENGTH + VERSION_LENGTH + MAX_MOTD_L
 SOCK_TIMEOUT_SECONDS = 1.0
 
 
-def main(protocol: str, host: str, port: int) -> None:
+def main(prog: str, protocol: str, host: str, port: int) -> None:
     """Call the bootstrap node info RPC and output the response."""
     if protocol == "ipv4":
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -72,7 +72,7 @@ def main(protocol: str, host: str, port: int) -> None:
         sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     else:
         print("Invalid first argument")
-        print_help()
+        print_help(prog)
         sys.exit(1)
 
     sock.sendto(INFO_REQUEST_PACKET, (host, port))
@@ -111,10 +111,11 @@ def main(protocol: str, host: str, port: int) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print_help()
+        print_help(sys.argv[0])
         sys.exit(1)
 
     main(
+        prog=sys.argv[0],
         protocol=sys.argv[1],
         host=sys.argv[2],
         port=int(sys.argv[3]),

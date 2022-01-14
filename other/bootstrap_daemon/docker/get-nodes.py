@@ -20,36 +20,36 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-
 # Gets a list of nodes from https://nodes.tox.chat/json and prints them out
 # in the format of tox-bootstrapd config file.
-
 import json
 import sys
 import urllib.request
+from typing import Dict
 
-response = urllib.request.urlopen('https://nodes.tox.chat/json')
-raw_json = response.read().decode('ascii', 'ignore')
-nodes = json.loads(raw_json)['nodes']
+response = urllib.request.urlopen("https://nodes.tox.chat/json")
+raw_json = response.read().decode("ascii", "ignore")
+nodes = json.loads(raw_json)["nodes"]
 
-def node_to_string(node):
-    node_output  = '  { // ' + node['maintainer'] + '\n'
-    node_output += '    public_key = "' + node['public_key'] + '"\n'
-    node_output += '    port = ' + str(node['port']) + '\n'
+
+def node_to_string(node: Dict[str, str]) -> str:
+    node_output = "  { // " + node["maintainer"] + "\n"
+    node_output += '    public_key = "' + node["public_key"] + '"\n'
+    node_output += "    port = " + str(node["port"]) + "\n"
     node_output += '    address = "'
-    if len(node['ipv4']) > 4:
-        return node_output + node['ipv4'] + '"\n  }'
-    if len(node['ipv6']) > 4:
-        return node_output + node['ipv6'] + '"\n  }'
-    raise Exception('no IP address found for node ' + json.dumps(node))
+    if len(node["ipv4"]) > 4:
+        return node_output + node["ipv4"] + '"\n  }'
+    if len(node["ipv6"]) > 4:
+        return node_output + node["ipv6"] + '"\n  }'
+    raise Exception("no IP address found for node " + json.dumps(node))
 
-output = ('bootstrap_nodes = (\n' +
-          ',\n'.join(map(node_to_string, nodes)) +
-          '\n)')
+
+output = "bootstrap_nodes = (\n" + ",\n".join(map(node_to_string,
+                                                  nodes)) + "\n)"
 
 if len(sys.argv) > 1:
-    with open(sys.argv[1], 'a') as fh:
-        fh.write(output + '\n')
+    with open(sys.argv[1], "a") as fh:
+        fh.write(output + "\n")
     print("Wrote %d nodes to %s" % (len(nodes), sys.argv[1]))
 else:
     print(output)
