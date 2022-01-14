@@ -2,19 +2,14 @@
 
 set -eu
 
-NPROC=$(nproc)
+sudo apt-get install -y --no-install-recommends libconfig-dev libopus-dev libsodium-dev libvpx-dev ninja-build
 
-sudo apt-get install -y --no-install-recommends libopus-dev libsodium-dev libvpx-dev ninja-build
-
-. ".github/scripts/flags-$CC.sh"
+. ".github/scripts/flags-gcc.sh"
 
 add_ld_flag -Wl,-z,defs
 
 # Make compilation error on a warning
 add_flag -Werror
-
-# Coverage flags.
-add_flag -fprofile-arcs -ftest-coverage
 
 cmake -B_build -H. -GNinja \
   -DCMAKE_C_FLAGS="$C_FLAGS" \
@@ -28,11 +23,5 @@ cmake -B_build -H. -GNinja \
   -DSTRICT_ABI=ON \
   -DTEST_TIMEOUT_SECONDS=120 \
   -DUSE_IPV6=OFF \
-  -DAUTOTEST=ON
-
-cmake --build _build --parallel "$NPROC" --target install -- -k 0
-
-cd _build # pushd
-ctest -j50 --output-on-failure ||
-  ctest -j50 --output-on-failure --rerun-failed
-cd - # popd
+  -DAUTOTEST=ON \
+  -DENABLE_SHARED=OFF

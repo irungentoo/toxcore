@@ -26,8 +26,6 @@ scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P "$SSH_PORT" -
 RUN ls -lh
 
 cd /c-toxcore
-CACHEDIR=/opt/cache
-mkdir "$CACHEDIR"
 . ".github/scripts/flags-clang.sh"
 
 add_ld_flag -Wl,-z,defs

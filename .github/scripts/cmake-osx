@@ -2,7 +2,6 @@
 
 set -eu
 
-CACHEDIR="$HOME/cache"
 NPROC=$(sysctl -n hw.physicalcpu)
 
 # Workaround for bug in Homebrew where it only finds an old Ruby version.

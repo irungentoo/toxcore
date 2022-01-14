@@ -4,7 +4,6 @@ ACTION="$1"
 
 set -eu
 
-CACHEDIR="$HOME/cache"
 NPROC=$(nproc)
 
 ci_install() {

@@ -9,9 +9,6 @@ add_flag() {
   add_cxx_flag "$@"
 }
 
-export LD_LIBRARY_PATH="$CACHEDIR/lib"
-export PKG_CONFIG_PATH="$CACHEDIR/lib/pkgconfig"
-
 # Our own flags which we can insert in the correct place. We don't use CFLAGS
 # and friends here (we unset them below), because they influence config tests
 # such as ./configure and cmake tests. Our warning flags break those tests, so
