@@ -2,64 +2,71 @@
 
 . other/analysis/gen-file.sh
 
-echo "Running GCC"
-# TODO(iphydf): Get rid of all VLAs, then enable -fstack-protector -Wstack-protector
-g++ -O3 -o /dev/null amalgamation.cc \
-  "${CPPFLAGS[@]}" \
-  "${LDFLAGS[@]}" \
-  -std=c++11 \
-  -fdiagnostics-color=always \
-  -Wall \
-  -Wextra \
-  -Werror \
-  -Wno-aggressive-loop-optimizations \
-  -Wno-error=null-dereference \
-  -Wno-error=type-limits \
-  -Wno-float-conversion \
-  -Wno-format-signedness \
-  -Wno-missing-field-initializers \
-  -Wno-padded \
-  -Wno-sign-compare \
-  -Wno-sign-conversion \
-  -Wno-switch-default \
-  -Wno-unused-parameter \
-  -Wstrict-aliasing=0 \
-  -Wstrict-overflow=1 \
-  \
-  -Wmissing-declarations \
-  -Wbool-compare \
-  -Wcast-align \
-  -Wcast-qual \
-  -Wchar-subscripts \
-  -Wdouble-promotion \
-  -Wduplicated-cond \
-  -Wempty-body \
-  -Wenum-compare \
-  -Wfloat-equal \
-  -Wformat=2 \
-  -Wframe-address \
-  -Wframe-larger-than=133168 \
-  -Wignored-qualifiers \
-  -Wignored-attributes \
-  -Winit-self \
-  -Winline \
-  -Wlarger-than=133120 \
-  -Wmaybe-uninitialized \
-  -Wmemset-transposed-args \
-  -Wmisleading-indentation \
-  -Wnonnull \
-  -Wnonnull-compare \
-  -Wnull-dereference \
-  -Wodr \
-  -Wredundant-decls \
-  -Wreturn-type \
-  -Wshadow \
-  -Wsuggest-attribute=format \
-  -Wundef \
-  -Wunsafe-loop-optimizations \
-  -Wunused-label \
-  -Wunused-local-typedefs \
-  -Wunused-value \
-  -Wunused-but-set-parameter \
-  -Wunused-but-set-variable \
-  -fopenmp
+set -e
+
+run() {
+  echo "Running GCC in variant '$*'"
+  # TODO(iphydf): Get rid of all VLAs, then enable -fstack-protector -Wstack-protector
+  g++ -O3 -o /dev/null amalgamation.cc \
+    "${CPPFLAGS[@]}" \
+    "${LDFLAGS[@]}" \
+    "$@" \
+    -std=c++11 \
+    -fdiagnostics-color=always \
+    -Wall \
+    -Wextra \
+    -Werror \
+    -Wno-error=null-dereference \
+    -Wno-error=type-limits \
+    -Wno-aggressive-loop-optimizations \
+    -Wno-float-conversion \
+    -Wno-format-signedness \
+    -Wno-missing-field-initializers \
+    -Wno-padded \
+    -Wno-sign-compare \
+    -Wno-sign-conversion \
+    -Wno-switch-default \
+    -Wno-unused-parameter \
+    -Wstrict-aliasing=0 \
+    -Wstrict-overflow=1 \
+    \
+    -Wmissing-declarations \
+    -Wbool-compare \
+    -Wcast-align \
+    -Wcast-qual \
+    -Wchar-subscripts \
+    -Wdouble-promotion \
+    -Wduplicated-cond \
+    -Wempty-body \
+    -Wenum-compare \
+    -Wfloat-equal \
+    -Wformat=2 \
+    -Wframe-address \
+    -Wframe-larger-than=133168 \
+    -Wignored-qualifiers \
+    -Wignored-attributes \
+    -Winit-self \
+    -Winline \
+    -Wlarger-than=133120 \
+    -Wmaybe-uninitialized \
+    -Wmemset-transposed-args \
+    -Wmisleading-indentation \
+    -Wnonnull \
+    -Wnonnull-compare \
+    -Wnull-dereference \
+    -Wodr \
+    -Wredundant-decls \
+    -Wreturn-type \
+    -Wshadow \
+    -Wsuggest-attribute=format \
+    -Wundef \
+    -Wunsafe-loop-optimizations \
+    -Wunused-label \
+    -Wunused-local-typedefs \
+    -Wunused-value \
+    -Wunused-but-set-parameter \
+    -Wunused-but-set-variable \
+    -fopenmp
+}
+
+. other/analysis/variants.sh

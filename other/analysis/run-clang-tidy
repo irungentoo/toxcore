@@ -1,6 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
+# TODO(iphydf): We might want some of these. For the ones we don't want, add a
+# comment explaining why not.
 CHECKS="*"
+CHECKS="$CHECKS,-altera-unroll-loops"
 CHECKS="$CHECKS,-android-cloexec-accept"
 CHECKS="$CHECKS,-android-cloexec-fopen"
 CHECKS="$CHECKS,-bugprone-not-null-terminated-result"
@@ -18,24 +21,31 @@ CHECKS="$CHECKS,-llvmlibc-restrict-system-libc-headers"
 CHECKS="$CHECKS,-misc-redundant-expression"
 CHECKS="$CHECKS,-misc-unused-parameters"
 CHECKS="$CHECKS,-readability-else-after-return"
+CHECKS="$CHECKS,-readability-function-cognitive-complexity"
 CHECKS="$CHECKS,-readability-inconsistent-declaration-parameter-name"
 CHECKS="$CHECKS,-readability-magic-numbers"
 CHECKS="$CHECKS,-readability-redundant-control-flow"
 
+# TODO(iphydf): Maybe fix these?
+CHECKS="$CHECKS,-altera-id-dependent-backward-branch"
+CHECKS="$CHECKS,-altera-struct-pack-align"
+CHECKS="$CHECKS,-bugprone-branch-clone"
+CHECKS="$CHECKS,-bugprone-easily-swappable-parameters"
+CHECKS="$CHECKS,-bugprone-implicit-widening-of-multiplication-result"
+CHECKS="$CHECKS,-bugprone-integer-division"
+CHECKS="$CHECKS,-bugprone-narrowing-conversions"
+CHECKS="$CHECKS,-clang-analyzer-core.NonNullParamChecker"
+CHECKS="$CHECKS,-clang-analyzer-core.NullDereference"
+CHECKS="$CHECKS,-clang-analyzer-optin.portability.UnixAPI"
+CHECKS="$CHECKS,-clang-analyzer-unix.Malloc"
+CHECKS="$CHECKS,-clang-analyzer-valist.Uninitialized"
+CHECKS="$CHECKS,-concurrency-mt-unsafe"
+CHECKS="$CHECKS,-cppcoreguidelines-avoid-non-const-global-variables"
+CHECKS="$CHECKS,-cppcoreguidelines-narrowing-conversions"
+CHECKS="$CHECKS,-google-readability-casting"
+CHECKS="$CHECKS,-misc-no-recursion"
+
 ERRORS="*"
-# TODO(iphydf): Maybe fix these? Otherwise don't show them, if they are useless.
-ERRORS="$ERRORS,-bugprone-branch-clone"
-ERRORS="$ERRORS,-bugprone-integer-division"
-ERRORS="$ERRORS,-bugprone-narrowing-conversions"
-ERRORS="$ERRORS,-clang-analyzer-core.NonNullParamChecker"
-ERRORS="$ERRORS,-clang-analyzer-core.NullDereference"
-ERRORS="$ERRORS,-clang-analyzer-optin.portability.UnixAPI"
-ERRORS="$ERRORS,-clang-analyzer-unix.Malloc"
-ERRORS="$ERRORS,-clang-analyzer-valist.Uninitialized"
-ERRORS="$ERRORS,-cppcoreguidelines-avoid-non-const-global-variables"
-ERRORS="$ERRORS,-cppcoreguidelines-narrowing-conversions"
-ERRORS="$ERRORS,-google-readability-casting"
-ERRORS="$ERRORS,-misc-no-recursion"
 
 # TODO(iphydf): Fix these.
 ERRORS="$ERRORS,-bugprone-macro-parentheses"
@@ -45,19 +55,29 @@ ERRORS="$ERRORS,-cert-err34-c"
 ERRORS="$ERRORS,-cert-str34-c"
 ERRORS="$ERRORS,-clang-analyzer-security.insecureAPI.strcpy"
 ERRORS="$ERRORS,-hicpp-uppercase-literal-suffix"
+ERRORS="$ERRORS,-readability-suspicious-call-argument"
 ERRORS="$ERRORS,-readability-uppercase-literal-suffix"
 
 set -eux
 
-clang-tidy-11 \
-  -p=_build \
-  --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
-  --checks="$CHECKS" \
-  --warnings-as-errors="$ERRORS" \
-  --use-color \
-  other/bootstrap_daemon/src/*.c \
-  other/*.c \
-  toxav/*.c \
-  toxcore/*.c \
-  toxencryptsave/*.c \
-  "$@"
+run() {
+  echo "Running clang-tidy in variant '$*'"
+  EXTRA_ARGS=("$@")
+  for i in "${!EXTRA_ARGS[@]}"; do
+    EXTRA_ARGS[$i]="--extra-arg=${EXTRA_ARGS[$i]}"
+  done
+  clang-tidy-12 \
+    -p=_build \
+    --extra-arg=-DMIN_LOGGER_LEVEL=LOGGER_LEVEL_TRACE \
+    "${EXTRA_ARGS[@]}" \
+    --checks="$CHECKS" \
+    --warnings-as-errors="$ERRORS" \
+    --use-color \
+    other/bootstrap_daemon/src/*.c \
+    other/*.c \
+    toxav/*.c \
+    toxcore/*.c \
+    toxencryptsave/*.c
+}
+
+. other/analysis/variants.sh

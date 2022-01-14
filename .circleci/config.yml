@@ -10,6 +10,7 @@ workflows:
       - tsan
       - msan
       # Static analysis
+      - clang-analyze
       - clang-tidy
       - infer
       - static-analysis
@@ -21,21 +22,21 @@ jobs:
       - image: ubuntu
 
     steps:
-      - checkout
       - run: &apt_install
           apt-get update &&
           DEBIAN_FRONTEND=noninteractive
           apt-get install -y --no-install-recommends
             clang
             cmake
+            git
             libconfig-dev
             libgtest-dev
             libopus-dev
             libsodium-dev
             libvpx-dev
-            llvm-dev
             ninja-build
             pkg-config
+      - checkout
       - run: CC=clang .circleci/cmake-asan
 
   tsan:
@@ -44,8 +45,8 @@ jobs:
       - image: ubuntu
 
     steps:
-      - checkout
       - run: *apt_install
+      - checkout
       - run: CC=clang .circleci/cmake-tsan
 
   msan:
@@ -65,17 +66,16 @@ jobs:
       - image: toxchat/infer
 
     steps:
-      - run:
-          apt-get update &&
-          DEBIAN_FRONTEND=noninteractive
-          apt-get install -y --no-install-recommends
-            git
-            libopus-dev
-            libsodium-dev
-            libvpx-dev
-            pkg-config
+      - run: *apt_install
       - checkout
-      - run: infer --no-progress-bar -- cc toxav/*.c toxcore/*.c $(pkg-config --cflags opus vpx)
+      - run: infer --no-progress-bar -- cc
+          auto_tests/lossless_packet_test.c
+          testing/misc_tools.c
+          toxav/*.c
+          toxcore/*.c
+          toxencryptsave/*.c
+          -lpthread
+          $(pkg-config --cflags --libs libsodium opus vpx)
 
   static-analysis:
     working_directory: ~/work
@@ -83,26 +83,24 @@ jobs:
       - image: ubuntu
 
     steps:
+      - run: *apt_install
+      - run: apt-get install -y --no-install-recommends cppcheck g++ llvm-dev
       - checkout
-      - run:
-          apt-get update &&
-          DEBIAN_FRONTEND=noninteractive
-          apt-get install -y --no-install-recommends
-            clang
-            cppcheck
-            g++
-            libconfig-dev
-            libgtest-dev
-            libopus-dev
-            libsodium-dev
-            libvpx-dev
-            llvm
       - run: other/analysis/check_logger_levels
       - run: other/analysis/run-check-recursion
       - run: other/analysis/run-clang
-      - run: other/analysis/run-clang-analyze
       - run: other/analysis/run-cppcheck
       - run: other/analysis/run-gcc
+
+  clang-analyze:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - run: *apt_install
+      - checkout
+      - run: other/analysis/run-clang-analyze
 
   clang-tidy:
     working_directory: ~/work
@@ -110,19 +108,10 @@ jobs:
       - image: ubuntu
 
     steps:
+      - run: *apt_install
+      - run: apt-get install -y --no-install-recommends clang-tidy-12
       - checkout
-      - run:
-          apt-get update &&
-          DEBIAN_FRONTEND=noninteractive
-          apt-get install -y --no-install-recommends
-            build-essential
-            clang-tidy-11
-            cmake
-            libconfig-dev
-            libopus-dev
-            libsodium-dev
-            libvpx-dev
-      - run: cmake . -B_build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - run: cmake . -B_build -GNinja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
       - run:
           other/analysis/run-clang-tidy ||
           other/analysis/run-clang-tidy ||

@@ -3,11 +3,8 @@
 #include <string.h>
 #include <sys/types.h>
 
-#ifdef VANILLA_NACL
-#include "../toxencryptsave/crypto_pwhash_scryptsalsa208sha256/crypto_pwhash_scryptsalsa208sha256.h"
-#else
+#ifndef VANILLA_NACL
 #include <sodium.h>
-#endif
 
 #include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
@@ -217,3 +214,9 @@ int main(void)
 
     return 0;
 }
+#else  // VANILLA_NACL
+int main(void)
+{
+    return 0;
+}
+#endif

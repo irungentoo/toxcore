@@ -58,6 +58,10 @@ FIND_QUERY="$FIND_QUERY -and -not -name trace.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './testing/fuzzing/*'"
 
+if [ "$SKIP_GTEST" == 1 ]; then
+  FIND_QUERY="$FIND_QUERY -and -not -name '*_test.cc'"
+fi
+
 readarray -t FILES <<<"$(eval "$FIND_QUERY")"
 
 (for i in "${FILES[@]}"; do

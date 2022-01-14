@@ -26,6 +26,9 @@
 #include <crypto_verify_16.h>
 #include <crypto_verify_32.h>
 #include <randombytes.h>
+#endif
+
+#ifndef crypto_box_MACBYTES
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
 #endif
 

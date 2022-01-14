@@ -50,6 +50,7 @@ bazel-asan_task:
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
 
+# TODO(iphydf): Remove "|| true" once this works properly.
 bazel-msan_task:
   container:
     image: toxchat/toktok-stack:0.0.31-msan

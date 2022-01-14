@@ -1,5 +1,14 @@
 #!/bin/bash
 
+SKIP_GTEST=1
+
 . other/analysis/gen-file.sh
 
-cppcheck amalgamation.cc "${CPPFLAGS[@]}"
+set -e
+
+run() {
+  echo "Running cppcheck in variant '$*'"
+  cppcheck amalgamation.cc "${CPPFLAGS[@]}" "$@"
+}
+
+. other/analysis/variants.sh

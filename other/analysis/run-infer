@@ -3,6 +3,8 @@
 # Infer ignores everything that's not in the "current file".
 SKIP_LINES=1
 
+set -e
+
 . other/analysis/gen-file.sh
 
 infer --no-progress-bar -- clang++ -fsyntax-only amalgamation.cc "${CPPFLAGS[@]}"
