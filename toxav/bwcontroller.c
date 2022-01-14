@@ -148,9 +148,11 @@ static void send_update(BWController *bwc)
             assert(offset == sizeof(bwc_packet));
 
             if (bwc_send_custom_lossy_packet(bwc->tox, bwc->friend_number, bwc_packet, sizeof(bwc_packet)) == -1) {
-                const char *netstrerror = net_new_strerror(net_error());
+                char *netstrerror = net_new_strerror(net_error());
+                char *stdstrerror = net_new_strerror(errno);
                 LOGGER_WARNING(bwc->m->log, "BWC send failed (len: %u)! std error: %s, net error %s",
-                               (unsigned)sizeof(bwc_packet), strerror(errno), netstrerror);
+                               (unsigned)sizeof(bwc_packet), stdstrerror, netstrerror);
+                net_kill_strerror(stdstrerror);
                 net_kill_strerror(netstrerror);
             }
         }

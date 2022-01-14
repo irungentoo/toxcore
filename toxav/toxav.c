@@ -911,7 +911,9 @@ static Toxav_Err_Send_Frame send_frames(const Logger *log, ToxAVCall *call)
         LOGGER_DEBUG(log, "+ _sending_FRAME_ b0=%d b1=%d", buf[0], buf[1]);
 
         if (res < 0) {
-            LOGGER_WARNING(log, "Could not send video frame: %s", strerror(errno));
+            char *netstrerror = net_new_strerror(net_error());
+            LOGGER_WARNING(log, "Could not send video frame: %s", netstrerror);
+            net_kill_strerror(netstrerror);
             return TOXAV_ERR_SEND_FRAME_RTP_FAILED;
         }
     }

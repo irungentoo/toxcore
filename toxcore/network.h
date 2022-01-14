@@ -430,13 +430,13 @@ int net_error(void);
  * return pointer to a NULL-terminated string describing the error code on
  * success. The returned string must be freed using net_kill_strerror().
  */
-const char *net_new_strerror(int error);
+char *net_new_strerror(int error);
 
 /** Frees the string returned by net_new_strerror().
  * It's valid to pass NULL as the argument, the function does nothing in this
  * case.
  */
-void net_kill_strerror(const char *strerror);
+void net_kill_strerror(char *strerror);
 
 /** Initialize networking.
  * Added for reverse compatibility with old new_networking calls.

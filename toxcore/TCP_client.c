@@ -161,7 +161,7 @@ static int proxy_http_read_connection_response(const Logger *logger, TCP_Client_
 
     data[sizeof(data) - 1] = 0;
 
-    if (strstr((char *)data, success)) {
+    if (strstr((const char *)data, success)) {
         // drain all data
         unsigned int data_left = net_socket_data_recv_buffer(tcp_conn->sock);
 

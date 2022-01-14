@@ -491,7 +491,7 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
 
     if (res < 0) { /* Windows doesn't necessarily know `%zu` */
         int error = net_error();
-        const char *strerror = net_new_strerror(error);
+        char *strerror = net_new_strerror(error);
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
                      buffer[0], message, min_u16(buflen, 999), 'E',
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), error,
@@ -639,7 +639,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
         int error = net_error();
 
         if (!should_ignore_recv_error(error)) {
-            const char *strerror = net_new_strerror(error);
+            char *strerror = net_new_strerror(error);
             LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s", error, strerror);
             net_kill_strerror(strerror);
         }
@@ -836,7 +836,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
     /* Check for socket error. */
     if (!sock_valid(temp->sock)) {
         int neterror = net_error();
-        const char *strerror = net_new_strerror(neterror);
+        char *strerror = net_new_strerror(neterror);
         LOGGER_ERROR(log, "Failed to get a socket?! %d, %s", neterror, strerror);
         net_kill_strerror(strerror);
         free(temp);
@@ -945,7 +945,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         const int res = setsockopt(temp->sock.socket, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (const char *)&mreq, sizeof(mreq));
 
         int neterror = net_error();
-        const char *strerror = net_new_strerror(neterror);
+        char *strerror = net_new_strerror(neterror);
 
         if (res < 0) {
             LOGGER_DEBUG(log, "Failed to activate local multicast membership. (%d, %s)", neterror, strerror);
@@ -1017,7 +1017,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
 
     char ip_str[IP_NTOA_LEN];
     int neterror = net_error();
-    const char *strerror = net_new_strerror(neterror);
+    char *strerror = net_new_strerror(neterror);
     LOGGER_ERROR(log, "Failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u", neterror, strerror,
                  ip_ntoa(&ip, ip_str, sizeof(ip_str)), port_from, port_to);
     net_kill_strerror(strerror);
@@ -1703,7 +1703,7 @@ int net_error(void)
 #endif
 }
 
-const char *net_new_strerror(int error)
+char *net_new_strerror(int error)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
     char *str = nullptr;
@@ -1718,13 +1718,27 @@ const char *net_new_strerror(int error)
                    error, 0, (char *)&str, 0, nullptr);
     return str;
 #else
-    return strerror(error);
+    char *str = (char *)malloc(256);
+#ifdef _GNU_SOURCE
+    str = strerror_r(error, str, 256);
+#else
+    const int fmt_error = strerror_r(error, str, 256);
+
+    if (fmt_error != 0) {
+        snprintf(str, 256, "error %d (strerror failed with error %d)", error, fmt_error);
+    }
+
+#endif
+
+    return str;
 #endif
 }
 
-void net_kill_strerror(const char *strerror)
+void net_kill_strerror(char *strerror)
 {
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
     LocalFree((char *)strerror);
+#else
+    free(strerror);
 #endif
 }
