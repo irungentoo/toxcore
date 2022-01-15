@@ -48,6 +48,8 @@ libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
                         ../toxcore/onion_client.c \
                         ../toxcore/TCP_client.h \
                         ../toxcore/TCP_client.c \
+                        ../toxcore/TCP_common.h \
+                        ../toxcore/TCP_common.c \
                         ../toxcore/TCP_server.h \
                         ../toxcore/TCP_server.c \
                         ../toxcore/TCP_connection.h \

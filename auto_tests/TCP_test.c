@@ -3,6 +3,7 @@
 
 #include "../testing/misc_tools.h"
 #include "../toxcore/TCP_client.h"
+#include "../toxcore/TCP_common.h"
 #include "../toxcore/TCP_server.h"
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/mono_time.h"
@@ -240,7 +241,7 @@ static void kill_TCP_con(struct sec_TCP_con *con)
     free(con);
 }
 
-static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, const uint8_t *data, uint16_t length)
+static int write_packet_TCP_test_connection(struct sec_TCP_con *con, const uint8_t *data, uint16_t length)
 {
     VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
@@ -289,9 +290,9 @@ static void test_some(void)
 
     // Sending wrong public keys to test server response.
     memcpy(requ_p + 1, con3->public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    write_packet_TCP_secure_connection(con1, requ_p, sizeof(requ_p));
+    write_packet_TCP_test_connection(con1, requ_p, sizeof(requ_p));
     memcpy(requ_p + 1, con1->public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    write_packet_TCP_secure_connection(con3, requ_p, sizeof(requ_p));
+    write_packet_TCP_test_connection(con3, requ_p, sizeof(requ_p));
 
     do_TCP_server_delay(tcp_s, mono_time, 50);
 
@@ -312,9 +313,9 @@ static void test_some(void)
 
     uint8_t test_packet[512] = {16, 17, 16, 86, 99, 127, 255, 189, 78}; // What is this packet????
 
-    write_packet_TCP_secure_connection(con3, test_packet, sizeof(test_packet));
-    write_packet_TCP_secure_connection(con3, test_packet, sizeof(test_packet));
-    write_packet_TCP_secure_connection(con3, test_packet, sizeof(test_packet));
+    write_packet_TCP_test_connection(con3, test_packet, sizeof(test_packet));
+    write_packet_TCP_test_connection(con3, test_packet, sizeof(test_packet));
+    write_packet_TCP_test_connection(con3, test_packet, sizeof(test_packet));
 
     do_TCP_server_delay(tcp_s, mono_time, 50);
 
@@ -338,9 +339,9 @@ static void test_some(void)
     ck_assert_msg(len == sizeof(test_packet), "wrong len %d", len);
     ck_assert_msg(memcmp(data, test_packet, sizeof(test_packet)) == 0, "packet is wrong %u %u %u %u", data[0], data[1],
                   data[sizeof(test_packet) - 2], data[sizeof(test_packet) - 1]);
-    write_packet_TCP_secure_connection(con1, test_packet, sizeof(test_packet));
-    write_packet_TCP_secure_connection(con1, test_packet, sizeof(test_packet));
-    write_packet_TCP_secure_connection(con1, test_packet, sizeof(test_packet));
+    write_packet_TCP_test_connection(con1, test_packet, sizeof(test_packet));
+    write_packet_TCP_test_connection(con1, test_packet, sizeof(test_packet));
+    write_packet_TCP_test_connection(con1, test_packet, sizeof(test_packet));
     do_TCP_server_delay(tcp_s, mono_time, 50);
     len = read_packet_sec_TCP(con3, data, 2 + sizeof(test_packet) + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == sizeof(test_packet), "wrong len %d", len);
@@ -356,7 +357,7 @@ static void test_some(void)
                   data[sizeof(test_packet) - 2], data[sizeof(test_packet) - 1]);
 
     uint8_t ping_packet[1 + sizeof(uint64_t)] = {TCP_PACKET_PING, 8, 6, 9, 67};
-    write_packet_TCP_secure_connection(con1, ping_packet, sizeof(ping_packet));
+    write_packet_TCP_test_connection(con1, ping_packet, sizeof(ping_packet));
 
     do_TCP_server_delay(tcp_s, mono_time, 50);
 

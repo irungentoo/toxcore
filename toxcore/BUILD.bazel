@@ -253,17 +253,17 @@ cc_library(
 )
 
 cc_library(
-    name = "TCP_connection",
-    srcs = [
-        "TCP_client.c",
-        "TCP_connection.c",
-        "TCP_server.c",
-    ],
-    hdrs = [
-        "TCP_client.h",
-        "TCP_connection.h",
-        "TCP_server.h",
-    ],
+    name = "TCP_common",
+    srcs = ["TCP_common.c"],
+    hdrs = ["TCP_common.h"],
+    visibility = ["//c-toxcore/auto_tests:__pkg__"],
+    deps = [":network"],
+)
+
+cc_library(
+    name = "TCP_server",
+    srcs = ["TCP_server.c"],
+    hdrs = ["TCP_server.h"],
     copts = select({
         "//tools/config:linux": ["-DTCP_SERVER_USE_EPOLL=1"],
         "//conditions:default": [],
@@ -274,6 +274,36 @@ cc_library(
         "//c-toxcore/other/bootstrap_daemon:__pkg__",
     ],
     deps = [
+        ":TCP_common",
+        ":crypto_core",
+        ":list",
+        ":mono_time",
+        ":network",
+        ":onion",
+    ],
+)
+
+cc_library(
+    name = "TCP_client",
+    srcs = ["TCP_client.c"],
+    hdrs = ["TCP_client.h"],
+    visibility = ["//c-toxcore/auto_tests:__pkg__"],
+    deps = [
+        ":TCP_common",
+        ":mono_time",
+        ":network",
+    ],
+)
+
+cc_library(
+    name = "TCP_connection",
+    srcs = ["TCP_connection.c"],
+    hdrs = ["TCP_connection.h"],
+    visibility = ["//c-toxcore/auto_tests:__pkg__"],
+    deps = [
+        ":DHT",
+        ":TCP_client",
+        ":TCP_common",
         ":crypto_core",
         ":list",
         ":mono_time",
@@ -301,6 +331,7 @@ cc_library(
     deps = [
         ":DHT",
         ":TCP_connection",
+        ":list",
         ":mono_time",
         ":network",
     ],
@@ -386,6 +417,7 @@ cc_library(
         "//c-toxcore/toxav:__pkg__",
     ],
     deps = [
+        ":TCP_server",
         ":friend_requests",
         ":logger",
         ":mono_time",

@@ -12,7 +12,7 @@ cc_binary(
         "//c-toxcore/other:bootstrap_node_packets",
         "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:DHT",
-        "//c-toxcore/toxcore:TCP_connection",
+        "//c-toxcore/toxcore:TCP_server",
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",

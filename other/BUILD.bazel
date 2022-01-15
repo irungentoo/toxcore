@@ -19,7 +19,7 @@ cc_binary(
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:DHT",
-        "//c-toxcore/toxcore:TCP_connection",
+        "//c-toxcore/toxcore:TCP_server",
         "//c-toxcore/toxcore:friend_requests",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",

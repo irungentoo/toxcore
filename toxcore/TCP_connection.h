@@ -9,8 +9,11 @@
 #ifndef C_TOXCORE_TOXCORE_TCP_CONNECTION_H
 #define C_TOXCORE_TOXCORE_TCP_CONNECTION_H
 
-#include <stdbool.h>
+#include "DHT.h"  // for Node_format
 #include "TCP_client.h"
+#include "TCP_common.h"
+
+#include <stdbool.h>
 
 #define TCP_CONN_NONE 0
 #define TCP_CONN_VALID 1
