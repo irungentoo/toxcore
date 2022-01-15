@@ -1127,15 +1127,17 @@ static int send_dht_dhtpk(const Onion_Client *onion_c, int friend_num, const uin
         return -1;
     }
 
-    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
-    len = create_request(dht_get_self_public_key(onion_c->dht), dht_get_self_secret_key(onion_c->dht), packet,
+    uint8_t packet_data[MAX_CRYPTO_REQUEST_SIZE];
+    len = create_request(dht_get_self_public_key(onion_c->dht), dht_get_self_secret_key(onion_c->dht), packet_data,
                          onion_c->friends_list[friend_num].dht_public_key, temp, SIZEOF_VLA(temp), CRYPTO_PACKET_DHTPK);
+    assert(len <= UINT16_MAX);
+    const Packet packet = {packet_data, (uint16_t)len};
 
     if (len == -1) {
         return -1;
     }
 
-    return route_tofriend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, packet, len);
+    return route_to_friend(onion_c->dht, onion_c->friends_list[friend_num].dht_public_key, &packet);
 }
 
 static int handle_dht_dhtpk(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,

@@ -371,7 +371,24 @@ bool set_socket_dualstack(Socket sock);
 /* Basic network functions: */
 
 /**
+ * An outgoing network packet.
+ *
+ * Use `send_packet` to send it to an IP/port endpoint.
+ */
+typedef struct Packet {
+    const uint8_t *data;
+    uint16_t length;
+} Packet;
+
+/**
+ * Function to send a network packet to a given IP/port.
+ */
+int send_packet(Networking_Core *net, IP_Port ip_port, Packet packet);
+
+/**
  * Function to send packet(data) of length length to ip_port.
+ *
+ * @deprecated Use send_packet instead.
  */
 int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
 

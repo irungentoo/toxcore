@@ -538,15 +538,12 @@ uint16_t net_port(const Networking_Core *net)
 /* Basic network functions:
  */
 
-/**
- * Function to send packet(data) of length length to ip_port.
- */
-int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
+int send_packet(Networking_Core *net, IP_Port ip_port, Packet packet)
 {
     if (net_family_is_unspec(net->family)) { /* Socket not initialized */
         // TODO(iphydf): Make this an error. Currently, the onion client calls
         // this via DHT getnodes.
-        LOGGER_WARNING(net->log, "attempted to send message of length %u on uninitialised socket", (unsigned)length);
+        LOGGER_WARNING(net->log, "attempted to send message of length %u on uninitialised socket", packet.length);
         return -1;
     }
 
@@ -603,14 +600,27 @@ int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint1
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    const int res = fuzz_sendto(net->sock.socket, (const char *)data, length, 0, (struct sockaddr *)&addr, addrsize);
+    const int res = fuzz_sendto(net->sock.socket, (const char *)packet.data, packet.length, 0,
+                                (struct sockaddr *)&addr, addrsize);
 #else
-    const int res = sendto(net->sock.socket, (const char *)data, length, 0, (struct sockaddr *)&addr, addrsize);
+    const int res = sendto(net->sock.socket, (const char *)packet.data, packet.length, 0,
+                           (struct sockaddr *)&addr, addrsize);
 #endif
 
-    loglogdata(net->log, "O=>", data, length, ip_port, res);
+    loglogdata(net->log, "O=>", packet.data, packet.length, ip_port, res);
 
     return res;
+}
+
+/**
+ * Function to send packet(data) of length length to ip_port.
+ *
+ * @deprecated Use send_packet instead.
+ */
+int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
+{
+    const Packet packet = {data, length};
+    return send_packet(net, ip_port, packet);
 }
 
 /** Function to receive data

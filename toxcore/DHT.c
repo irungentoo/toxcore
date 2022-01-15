@@ -1909,12 +1909,83 @@ static int friend_iplist(const DHT *dht, IP_Port *ip_portlist, uint16_t friend_n
 }
 
 
-/** Send the following packet to everyone who tells us they are connected to friend_id.
+/**
+ * Callback invoked for each IP/port of each client of a friend.
+ *
+ * For each client, the callback is invoked twice: once for IPv4 and once for
+ * IPv6. If the callback returns `false` after the IPv4 invocation, it will not
+ * be invoked for IPv6.
+ *
+ * @param dht The main DHT instance.
+ * @param ip_port The currently processed IP/port.
+ * @param n A pointer to the number that will be returned from `foreach_ip_port`.
+ * @param userdata The `userdata` pointer passed to `foreach_ip_port`.
+ */
+typedef bool foreach_ip_port_cb(const DHT *dht, IP_Port ip_port, uint32_t *n, void *userdata);
+
+/**
+ * Runs a callback on every active connection for a given DHT friend.
+ *
+ * This iterates over the client list of a DHT friend and invokes a callback for
+ * every non-zero IP/port (IPv4 and IPv6) that's not timed out.
+ *
+ * @param dht The main DHT instance, passed to the callback.
+ * @param dht_friend The friend over whose connections we should iterate.
+ * @param callback The callback to invoke for each IP/port.
+ * @param userdata Extra pointer passed to the callback.
+ */
+static uint32_t foreach_ip_port(const DHT *dht, const DHT_Friend *dht_friend,
+                                foreach_ip_port_cb *callback, void *userdata)
+{
+    uint32_t n = 0;
+
+    /* extra legwork, because having the outside allocating the space for us
+     * is *usually* good(tm) (bites us in the behind in this case though) */
+    for (uint32_t i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
+        const Client_data *const client = &dht_friend->client_list[i];
+        const IPPTsPng *const assocs[] = { &client->assoc4, &client->assoc6, nullptr };
+
+        for (const IPPTsPng * const *it = assocs; *it != nullptr; ++it) {
+            const IPPTsPng *const assoc = *it;
+
+            /* If ip is not zero and node is good. */
+            if (!ip_isset(&assoc->ret_ip_port.ip)
+                    && !mono_time_is_timeout(dht->mono_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
+                continue;
+            }
+
+            if (!callback(dht, assoc->ip_port, &n, userdata)) {
+                /* If the callback is happy with just one of the assocs, we
+                 * don't give it the second one. */
+                break;
+            }
+        }
+    }
+
+    return n;
+}
+
+static bool send_packet_to_friend(const DHT *dht, IP_Port ip_port, uint32_t *n, void *userdata)
+{
+    const Packet *packet = (const Packet *)userdata;
+    const int retval = send_packet(dht->net, ip_port, *packet);
+
+    if ((uint32_t)retval == packet->length) {
+        ++*n;
+        /* Send one packet per friend: stop the foreach on the first success. */
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Send the following packet to everyone who tells us they are connected to friend_id.
  *
  *  return ip for friend.
  *  return number of nodes the packet was sent to. (Only works if more than (MAX_FRIEND_CLIENTS / 4).
  */
-int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *packet, uint16_t length)
+uint32_t route_to_friend(const DHT *dht, const uint8_t *friend_id, const Packet *packet)
 {
     const uint32_t num = index_of_friend_pk(dht->friends_list, dht->num_friends, friend_id);
 
@@ -1922,47 +1993,33 @@ int route_tofriend(const DHT *dht, const uint8_t *friend_id, const uint8_t *pack
         return 0;
     }
 
-    uint32_t sent = 0;
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS];
     const int ip_num = friend_iplist(dht, ip_list, num);
 
-    if (ip_num < (MAX_FRIEND_CLIENTS / 4)) {
+    if (ip_num < MAX_FRIEND_CLIENTS / 4) {
         return 0; /* Reason for that? */
     }
 
     const DHT_Friend *const dht_friend = &dht->friends_list[num];
+    Packet packet_userdata = *packet;  // Copy because it needs to be non-const.
 
-    /* extra legwork, because having the outside allocating the space for us
-     * is *usually* good(tm) (bites us in the behind in this case though) */
+    return foreach_ip_port(dht, dht_friend, send_packet_to_friend, &packet_userdata);
+}
 
-    for (uint32_t i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        const Client_data *const client = &dht_friend->client_list[i];
-        const IPPTsPng *const assocs[] = { &client->assoc4, &client->assoc6, nullptr };
-
-        for (const IPPTsPng * const *it = assocs; *it; ++it) {
-            const IPPTsPng *const assoc = *it;
-
-            /* If ip is not zero and node is good. */
-            if (ip_isset(&assoc->ret_ip_port.ip) && !mono_time_is_timeout(dht->mono_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
-                const int retval = sendpacket(dht->net, assoc->ip_port, packet, length);
-
-                if ((unsigned int)retval == length) {
-                    ++sent;
-                    break; /* Send one packet per client.*/
-                }
-            }
-        }
-    }
-
-    return sent;
+static bool get_ip_port(const DHT *dht, IP_Port ip_port, uint32_t *n, void *userdata)
+{
+    IP_Port *ip_list = (IP_Port *)userdata;
+    ip_list[*n] = ip_port;
+    ++*n;
+    return true;
 }
 
 /** Send the following packet to one random person who tells us they are connected to friend_id.
  *
  *  return number of nodes the packet was sent to.
  */
-static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *packet, uint16_t length)
+static uint32_t routeone_to_friend(DHT *dht, const uint8_t *friend_id, const Packet *packet)
 {
     const uint32_t num = index_of_friend_pk(dht->friends_list, dht->num_friends, friend_id);
 
@@ -1973,33 +2030,16 @@ static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *
     const DHT_Friend *const dht_friend = &dht->friends_list[num];
 
     IP_Port ip_list[MAX_FRIEND_CLIENTS * 2];
-    int n = 0;
 
-    /* extra legwork, because having the outside allocating the space for us
-     * is *usually* good(tm) (bites us in the behind in this case though) */
-
-    for (uint32_t i = 0; i < MAX_FRIEND_CLIENTS; ++i) {
-        const Client_data *const client = &dht_friend->client_list[i];
-        const IPPTsPng *const assocs[] = { &client->assoc4, &client->assoc6, nullptr };
-
-        for (const IPPTsPng * const *it = assocs; *it; ++it) {
-            const IPPTsPng *const assoc = *it;
-
-            /* If ip is not zero and node is good. */
-            if (ip_isset(&assoc->ret_ip_port.ip) && !mono_time_is_timeout(dht->mono_time, assoc->ret_timestamp, BAD_NODE_TIMEOUT)) {
-                ip_list[n] = assoc->ip_port;
-                ++n;
-            }
-        }
-    }
+    const int n = foreach_ip_port(dht, dht_friend, get_ip_port, ip_list);
 
     if (n < 1) {
         return 0;
     }
 
-    const int retval = sendpacket(dht->net, ip_list[random_u32() % n], packet, length);
+    const int retval = send_packet(dht->net, ip_list[random_u32() % n], *packet);
 
-    if ((unsigned int)retval == length) {
+    if ((unsigned int)retval == packet->length) {
         return 1;
     }
 
@@ -2012,25 +2052,27 @@ static int routeone_tofriend(DHT *dht, const uint8_t *friend_id, const uint8_t *
 static int send_NATping(DHT *dht, const uint8_t *public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
-    uint8_t packet[MAX_CRYPTO_REQUEST_SIZE];
-
-    int num = 0;
+    uint8_t packet_data[MAX_CRYPTO_REQUEST_SIZE];
 
     data[0] = type;
     memcpy(data + 1, &ping_id, sizeof(uint64_t));
     /* 254 is NAT ping request packet id */
     const int len = create_request(
-                        dht->self_public_key, dht->self_secret_key, packet, public_key, data,
+                        dht->self_public_key, dht->self_secret_key, packet_data, public_key, data,
                         sizeof(uint64_t) + 1, CRYPTO_PACKET_NAT_PING);
 
     if (len == -1) {
         return -1;
     }
 
+    assert(len <= UINT16_MAX);
+    uint32_t num = 0;
+    const Packet packet = {packet_data, (uint16_t)len};
+
     if (type == 0) { /* If packet is request use many people to route it. */
-        num = route_tofriend(dht, public_key, packet, len);
+        num = route_to_friend(dht, public_key, &packet);
     } else if (type == 1) { /* If packet is response use only one person to route it */
-        num = routeone_tofriend(dht, public_key, packet, len);
+        num = routeone_to_friend(dht, public_key, &packet);
     }
 
     if (num == 0) {
