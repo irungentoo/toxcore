@@ -2475,7 +2475,7 @@ static char *id_to_string(const uint8_t *pk, char *id_str, size_t length)
     }
 
     for (uint32_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; ++i) {
-        sprintf(&id_str[i * 2], "%02X", pk[i]);
+        snprintf(&id_str[i * 2], length - i * 2, "%02X", pk[i]);
     }
 
     id_str[CRYPTO_PUBLIC_KEY_SIZE * 2] = 0;
