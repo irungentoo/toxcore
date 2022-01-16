@@ -22,6 +22,7 @@ sh_test(
 
 cc_library(
     name = "misc_tools",
+    testonly = 1,
     srcs = ["misc_tools.c"],
     hdrs = ["misc_tools.h"],
     visibility = ["//c-toxcore:__subpackages__"],
@@ -34,6 +35,7 @@ cc_library(
 
 cc_library(
     name = "trace",
+    testonly = 1,
     srcs = ["trace.cc"],
     visibility = ["//c-toxcore:__subpackages__"],
     alwayslink = True,
@@ -41,6 +43,7 @@ cc_library(
 
 cc_binary(
     name = "DHT_test",
+    testonly = 1,
     srcs = ["DHT_test.c"],
     deps = [
         ":misc_tools",
@@ -53,6 +56,7 @@ cc_binary(
 
 cc_binary(
     name = "Messenger_test",
+    testonly = 1,
     srcs = ["Messenger_test.c"],
     deps = [
         ":misc_tools",
@@ -63,6 +67,7 @@ cc_binary(
 
 cc_binary(
     name = "random_testing",
+    testonly = 1,
     srcs = ["random_testing.cc"],
     deps = [
         ":misc_tools",
