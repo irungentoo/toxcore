@@ -402,7 +402,7 @@ static int random_path(const Onion_Client *onion_c, Onion_Client_Paths *onion_pa
 }
 
 /** Does path with path_num exist. */
-static bool path_exists(const Mono_Time *mono_time, Onion_Client_Paths *onion_paths, uint32_t path_num)
+static bool path_exists(const Mono_Time *mono_time, const Onion_Client_Paths *onion_paths, uint32_t path_num)
 {
     if (path_timed_out(mono_time, onion_paths, path_num)) {
         return 0;

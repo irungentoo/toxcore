@@ -904,7 +904,8 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
  * return 0 on success.
  * return -1 on failure.
  */
-static int send_tcp_relay_routing_request(const TCP_Connections *tcp_c, int tcp_connections_number, uint8_t *public_key)
+static int send_tcp_relay_routing_request(const TCP_Connections *tcp_c, int tcp_connections_number,
+        const uint8_t *public_key)
 {
     TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -926,7 +927,7 @@ static int send_tcp_relay_routing_request(const TCP_Connections *tcp_c, int tcp_
 static int tcp_response_callback(void *object, uint8_t connection_id, const uint8_t *public_key)
 {
     TCP_Client_Connection *tcp_client_con = (TCP_Client_Connection *)object;
-    TCP_Connections *tcp_c = (TCP_Connections *)tcp_con_custom_object(tcp_client_con);
+    const TCP_Connections *tcp_c = (const TCP_Connections *)tcp_con_custom_object(tcp_client_con);
 
     unsigned int tcp_connections_number = tcp_con_custom_uint(tcp_client_con);
     TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
@@ -1044,7 +1045,7 @@ static int tcp_conn_oob_callback(void *object, const uint8_t *public_key, const 
     /* TODO(irungentoo): optimize */
     int connections_number = find_tcp_connection_to(tcp_c, public_key);
 
-    TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
+    const TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
     if (con_to && tcp_connection_in_conn(con_to, tcp_connections_number)) {
         return tcp_conn_data_callback(object, connections_number, 0, data, length, userdata);
@@ -1193,7 +1194,8 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t 
  * return 0 on success.
  * return -1 on failure.
  */
-int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_number, unsigned int tcp_connections_number)
+int add_tcp_number_relay_connection(const TCP_Connections *tcp_c, int connections_number,
+                                    unsigned int tcp_connections_number)
 {
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
@@ -1269,7 +1271,7 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
  */
 unsigned int tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, int connections_number)
 {
-    TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
+    const TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
     if (!con_to) {
         return 0;

@@ -270,7 +270,8 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data, uint16_t length)
+int send_onion_packet(const Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data,
+                      uint16_t length)
 {
     uint8_t packet[ONION_MAX_PACKET_SIZE];
     int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
@@ -292,7 +293,8 @@ int send_onion_packet(Networking_Core *net, const Onion_Path *path, IP_Port dest
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(Networking_Core *net, IP_Port dest, const uint8_t *data, uint16_t length, const uint8_t *ret)
+int send_onion_response(const Networking_Core *net, IP_Port dest, const uint8_t *data, uint16_t length,
+                        const uint8_t *ret)
 {
     if (length > ONION_RESPONSE_MAX_DATA_SIZE || length == 0) {
         return -1;

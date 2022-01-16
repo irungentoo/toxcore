@@ -129,7 +129,7 @@ typedef int connection_status_cb(void *object, int id, uint8_t status, void *use
 typedef int connection_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef int connection_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef void dht_pk_cb(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
-typedef int new_connection_cb(void *object, New_Connection *n_c);
+typedef int new_connection_cb(void *object, const New_Connection *n_c);
 
 /* Set function to be called when someone requests a new connection to us.
  *
@@ -321,7 +321,7 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 /* Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
-Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, TCP_Proxy_Info *proxy_info);
+Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, const TCP_Proxy_Info *proxy_info);
 
 /* return the optimal interval in ms for running do_net_crypto.
  */

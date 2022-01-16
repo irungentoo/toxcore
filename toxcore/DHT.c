@@ -2018,7 +2018,7 @@ static bool get_ip_port(const DHT *dht, IP_Port ip_port, uint32_t *n, void *user
  *
  *  return number of nodes the packet was sent to.
  */
-static uint32_t routeone_to_friend(DHT *dht, const uint8_t *friend_id, const Packet *packet)
+static uint32_t routeone_to_friend(const DHT *dht, const uint8_t *friend_id, const Packet *packet)
 {
     const uint32_t num = index_of_friend_pk(dht->friends_list, dht->num_friends, friend_id);
 
@@ -2048,7 +2048,7 @@ static uint32_t routeone_to_friend(DHT *dht, const uint8_t *friend_id, const Pac
 /*----------------------------------------------------------------------------------*/
 /*---------------------BEGINNING OF NAT PUNCHING FUNCTIONS--------------------------*/
 
-static int send_NATping(DHT *dht, const uint8_t *public_key, uint64_t ping_id, uint8_t type)
+static int send_NATping(const DHT *dht, const uint8_t *public_key, uint64_t ping_id, uint8_t type)
 {
     uint8_t data[sizeof(uint64_t) + 1];
     uint8_t packet_data[MAX_CRYPTO_REQUEST_SIZE];
@@ -2322,7 +2322,7 @@ static uint16_t list_nodes(const Client_data *list, size_t length, uint64_t cur_
  *
  * return the number of nodes.
  */
-uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
+uint16_t randfriends_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
 {
     if (max_num == 0) {
         return 0;
@@ -2347,7 +2347,7 @@ uint16_t randfriends_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
  *
  * return the number of nodes.
  */
-uint16_t closelist_nodes(DHT *dht, Node_format *nodes, uint16_t max_num)
+uint16_t closelist_nodes(const DHT *dht, Node_format *nodes, uint16_t max_num)
 {
     return list_nodes(dht->close_clientlist, LCLIENT_LIST, dht->cur_time, nodes, max_num);
 }

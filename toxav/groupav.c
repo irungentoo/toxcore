@@ -463,7 +463,7 @@ int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t 
  * return 0 on success.
  * return -1 on failure.
  */
-int groupchat_disable_av(Group_Chats *g_c, uint32_t groupnumber)
+int groupchat_disable_av(const Group_Chats *g_c, uint32_t groupnumber)
 {
     if (group_get_type(g_c, groupnumber) != GROUPCHAT_TYPE_AV) {
         return -1;
@@ -501,7 +501,7 @@ int groupchat_disable_av(Group_Chats *g_c, uint32_t groupnumber)
 
 /* Return whether A/V is enabled in the groupchat.
  */
-bool groupchat_av_enabled(Group_Chats *g_c, uint32_t groupnumber)
+bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t groupnumber)
 {
     return group_get_object(g_c, groupnumber) != nullptr;
 }

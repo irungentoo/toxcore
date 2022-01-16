@@ -180,7 +180,7 @@ unsigned int tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, i
  * return 0 on success.
  * return -1 on failure.
  */
-int add_tcp_number_relay_connection(TCP_Connections *tcp_c, int connections_number,
+int add_tcp_number_relay_connection(const TCP_Connections *tcp_c, int connections_number,
                                     unsigned int tcp_connections_number);
 
 /** Add a TCP relay tied to a connection.

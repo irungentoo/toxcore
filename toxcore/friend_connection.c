@@ -526,7 +526,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
     return 0;
 }
 
-static int handle_new_connections(void *object, New_Connection *n_c)
+static int handle_new_connections(void *object, const New_Connection *n_c)
 {
     Friend_Connections *const fr_c = (Friend_Connections *)object;
     const int friendcon_id = getfriend_conn_id_pk(fr_c, n_c->public_key);

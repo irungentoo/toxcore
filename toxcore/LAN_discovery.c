@@ -214,7 +214,7 @@ static void fetch_broadcast_info(uint16_t port)
  *  return 1 if sent to at least one broadcast target.
  *  return 0 on failure to find any valid broadcast target.
  */
-static uint32_t send_broadcasts(Networking_Core *net, uint16_t port, const uint8_t *data, uint16_t length)
+static uint32_t send_broadcasts(const Networking_Core *net, uint16_t port, const uint8_t *data, uint16_t length)
 {
     /* fetch only once? on every packet? every X seconds?
      * old: every packet, new: once */
