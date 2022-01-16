@@ -29,7 +29,6 @@ TESTS = \
 	send_message_test \
 	set_name_test \
 	set_status_message_test \
-	skeleton_test \
 	TCP_test \
 	tox_many_tcp_test \
 	tox_many_test \

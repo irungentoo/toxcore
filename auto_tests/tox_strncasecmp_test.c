@@ -22,7 +22,7 @@ static void verify(const char *s1, const char *s2, size_t n, Comparison expected
                   s1, s2, (unsigned)n, Comparison_Str[actual], Comparison_Str[expected]);
 }
 
-START_TEST(test_general)
+static void test_general(void)
 {
     // empty strings are equal
     verify("", "", 100, ZERO);
@@ -156,29 +156,10 @@ START_TEST(test_general)
     verify("aAaBA", "AAAAb", -1, POSITIVE);
     verify("AAAAb", "aAaBA", -1, NEGATIVE);
 }
-END_TEST
-
-static Suite *tox_strncasecmp_suite(void)
-{
-    Suite *s = suite_create("tox_strncasecmp");
-
-    DEFTESTCASE(general);
-
-    return s;
-}
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    Suite *s = tox_strncasecmp_suite();
-    SRunner *test_runner = srunner_create(s);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    test_general();
+    return 0;
 }

@@ -80,7 +80,7 @@ static const unsigned char test_c[147] = {
     0xe3, 0x55, 0xa5
 };
 
-START_TEST(test_known)
+static void test_known(void)
 {
     unsigned char c[147];
     unsigned char m[131];
@@ -101,9 +101,8 @@ START_TEST(test_known)
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
 }
-END_TEST
 
-START_TEST(test_fast_known)
+static void test_fast_known(void)
 {
     unsigned char k[CRYPTO_SHARED_KEY_SIZE];
     unsigned char c[147];
@@ -127,9 +126,8 @@ START_TEST(test_fast_known)
     ck_assert_msg(memcmp(test_m, m, sizeof(m)) == 0, "decrypted text doesn't match test vector");
     ck_assert_msg(mlen == sizeof(m) / sizeof(unsigned char), "wrong plaintext length");
 }
-END_TEST
 
-START_TEST(test_endtoend)
+static void test_endtoend(void)
 {
     // Test 100 random messages and keypairs
     for (uint8_t testno = 0; testno < 100; testno++) {
@@ -191,9 +189,8 @@ START_TEST(test_endtoend)
         ck_assert_msg(memcmp(m1, m, mlen) == 0, "wrong decrypted text");
     }
 }
-END_TEST
 
-START_TEST(test_large_data)
+static void test_large_data(void)
 {
     unsigned char k[CRYPTO_SHARED_KEY_SIZE];
 
@@ -228,9 +225,8 @@ START_TEST(test_large_data)
     ck_assert_msg(m1plen == sizeof(m1), "decrypted text lengths differ");
     ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
 }
-END_TEST
 
-START_TEST(test_large_data_symmetric)
+static void test_large_data_symmetric(void)
 {
     unsigned char k[CRYPTO_SYMMETRIC_KEY_SIZE];
 
@@ -258,7 +254,6 @@ START_TEST(test_large_data_symmetric)
     ck_assert_msg(m1plen == sizeof(m1), "decrypted text lengths differ");
     ck_assert_msg(memcmp(m1prime, m1, sizeof(m1)) == 0, "decrypted texts differ");
 }
-END_TEST
 
 static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
 {
@@ -281,7 +276,7 @@ static void increment_nonce_number_cmp(uint8_t *nonce, uint32_t num)
     memcpy(nonce + (CRYPTO_NONCE_SIZE - sizeof(num2)), &num2, sizeof(num2));
 }
 
-START_TEST(test_increment_nonce)
+static void test_increment_nonce(void)
 {
     uint32_t i;
 
@@ -308,9 +303,8 @@ START_TEST(test_increment_nonce)
         ck_assert_msg(memcmp(n, n1, CRYPTO_NONCE_SIZE) == 0, "Bad increment_nonce_number function");
     }
 }
-END_TEST
 
-START_TEST(test_memzero)
+static void test_memzero(void)
 {
     uint8_t src[sizeof(test_c)];
     memcpy(src, test_c, sizeof(test_c));
@@ -322,35 +316,18 @@ START_TEST(test_memzero)
         ck_assert_msg(src[i] == 0, "Memory is not zeroed");
     }
 }
-END_TEST
-
-static Suite *crypto_suite(void)
-{
-    Suite *s = suite_create("Crypto");
-
-    DEFTESTCASE(known);
-    DEFTESTCASE(fast_known);
-    DEFTESTCASE_SLOW(endtoend, 15); /* waiting up to 15 seconds */
-    DEFTESTCASE(large_data);
-    DEFTESTCASE(large_data_symmetric);
-    DEFTESTCASE_SLOW(increment_nonce, 20);
-    DEFTESTCASE(memzero);
-
-    return s;
-}
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *crypto = crypto_suite();
-    SRunner *test_runner = srunner_create(crypto);
-    uint8_t number_failed = 0;
+    test_known();
+    test_fast_known();
+    test_endtoend(); /* waiting up to 15 seconds */
+    test_large_data();
+    test_large_data_symmetric();
+    test_increment_nonce();
+    test_memzero();
 
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    return 0;
 }

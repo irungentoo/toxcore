@@ -38,7 +38,7 @@ static int friend_id_num = 0;
 
 static Messenger *m;
 
-START_TEST(test_m_sendmesage)
+static void test_m_sendmesage(void)
 {
     const char *message = "h-hi :3";
     int good_len = strlen(message);
@@ -54,9 +54,8 @@ START_TEST(test_m_sendmesage)
     ck_assert(m_send_message_generic(
                   m, friend_id_num, MESSAGE_NORMAL, (const uint8_t *)message, bad_len, nullptr) == -2);
 }
-END_TEST
 
-START_TEST(test_m_get_userstatus_size)
+static void test_m_get_userstatus_size(void)
 {
     int rc = 0;
     ck_assert_msg((m_get_statusmessage_size(m, -1) == -1),
@@ -72,9 +71,8 @@ START_TEST(test_m_get_userstatus_size)
                   "(this can be caused by the error of m_addfriend_norequest"
                   " in the beginning of the suite)\n", rc);
 }
-END_TEST
 
-START_TEST(test_m_set_userstatus)
+static void test_m_set_userstatus(void)
 {
     const char *status = "online!";
     uint16_t good_length = strlen(status);
@@ -88,9 +86,8 @@ START_TEST(test_m_set_userstatus)
                   "m_set_userstatus did NOT return 0 on the following length: %d\n"
                   "MAX_STATUSMESSAGE_LENGTH: %d\n", good_length, MAX_STATUSMESSAGE_LENGTH);
 }
-END_TEST
 
-START_TEST(test_m_get_friend_connectionstatus)
+static void test_m_get_friend_connectionstatus(void)
 {
     ck_assert_msg((m_get_friend_connectionstatus(m, -1) == -1),
                   "m_get_friend_connectionstatus did NOT catch an argument of -1.\n");
@@ -98,9 +95,8 @@ START_TEST(test_m_get_friend_connectionstatus)
                   "m_get_friend_connectionstatus did NOT catch an argument of %d.\n",
                   REALLY_BIG_NUMBER);
 }
-END_TEST
 
-START_TEST(test_m_friend_exists)
+static void test_m_friend_exists(void)
 {
     ck_assert_msg((m_friend_exists(m, -1) == 0),
                   "m_friend_exists did NOT catch an argument of -1.\n");
@@ -108,9 +104,8 @@ START_TEST(test_m_friend_exists)
                   "m_friend_exists did NOT catch an argument of %d.\n",
                   REALLY_BIG_NUMBER);
 }
-END_TEST
 
-START_TEST(test_m_delfriend)
+static void test_m_delfriend(void)
 {
     ck_assert_msg((m_delfriend(m, -1) == -1),
                   "m_delfriend did NOT catch an argument of -1\n");
@@ -118,9 +113,8 @@ START_TEST(test_m_delfriend)
                   "m_delfriend did NOT catch the following number: %d\n",
                   REALLY_BIG_NUMBER);
 }
-END_TEST
 
-START_TEST(test_m_addfriend)
+static void test_m_addfriend(void)
 {
     const char *good_data = "test";
     const char *bad_data = "";
@@ -154,9 +148,8 @@ START_TEST(test_m_addfriend)
                      "m_addfriend without an error:\n'%s'\n", bad_id_str);
     }
 }
-END_TEST
 
-START_TEST(test_setname)
+static void test_setname(void)
 {
     const char *good_name = "consensualCorn";
     int good_length = strlen(good_name);
@@ -168,9 +161,8 @@ START_TEST(test_setname)
     ck_assert_msg((setname(m, (const uint8_t *)good_name, good_length) == 0),
                   "setname() did NOT return 0 on good arguments!\n");
 }
-END_TEST
 
-START_TEST(test_getself_name)
+static void test_getself_name(void)
 {
     const char *nickname = "testGallop";
     size_t len = strlen(nickname);
@@ -184,7 +176,6 @@ START_TEST(test_getself_name)
                   "known name: %s\nreturned: %s\n", nickname, nick_check);
     free(nick_check);
 }
-END_TEST
 
 /* this test is excluded for now, due to lack of a way
  *  to set a friend's status for now.
@@ -192,7 +183,7 @@ END_TEST
  *      if we have access to the friends list, we could
  *      just add a status manually ourselves. */
 #if 0
-START_TEST(test_m_copy_userstatus)
+static void test_m_copy_userstatus(void)
 {
     assert(m_copy_userstatus(-1, buf, MAX_USERSTATUS_LENGTH) == -1);
     assert(m_copy_userstatus(REALLY_BIG_NUMBER, buf, MAX_USERSTATUS_LENGTH) == -1);
@@ -200,10 +191,9 @@ START_TEST(test_m_copy_userstatus)
 
     assert(strcmp(name_buf, friend_id_status) == 0);
 }
-END_TEST
 #endif
 
-START_TEST(test_getname)
+static void test_getname(void)
 {
     uint8_t name_buf[MAX_NAME_LENGTH];
     uint8_t test_name[] = {'f', 'o', 'o'};
@@ -217,9 +207,8 @@ START_TEST(test_getname)
 
     ck_assert(strcmp((char *)&name_buf[0], "foo") == 0);
 }
-END_TEST
 
-START_TEST(test_dht_state_saveloadsave)
+static void test_dht_state_saveloadsave(void)
 {
     /* validate that:
      * a) saving stays within the confined space
@@ -259,31 +248,26 @@ START_TEST(test_dht_state_saveloadsave)
 
     ck_assert_msg(!memcmp(buffer + extra, buffer2, size), "DHT state changed by store/load/store cycle");
 }
-END_TEST
 
-static Suite *messenger_suite(void)
+static void messenger_suite(void)
 {
-    Suite *s = suite_create("Messenger");
+    test_dht_state_saveloadsave();
 
-    DEFTESTCASE(dht_state_saveloadsave);
-
-    DEFTESTCASE(getself_name);
-    DEFTESTCASE(m_get_userstatus_size);
-    DEFTESTCASE(m_set_userstatus);
+    test_getself_name();
+    test_m_get_userstatus_size();
+    test_m_set_userstatus();
 
     if (enable_broken_tests) {
-        DEFTESTCASE(m_addfriend);
+        test_m_addfriend();
     }
 
-    DEFTESTCASE(m_friend_exists);
-    DEFTESTCASE(m_get_friend_connectionstatus);
-    DEFTESTCASE(m_delfriend);
+    test_m_friend_exists();
+    test_m_get_friend_connectionstatus();
+    test_m_delfriend();
 
-    DEFTESTCASE(setname);
-    DEFTESTCASE(getname);
-    DEFTESTCASE(m_sendmesage);
-
-    return s;
+    test_setname();
+    test_getname();
+    test_m_sendmesage();
 }
 
 int main(void)
@@ -317,14 +301,8 @@ int main(void)
               "the tests will continue now...\n\n", stderr);
     }
 
-    Suite *messenger = messenger_suite();
-    SRunner *test_runner = srunner_create(messenger);
-    int number_failed = 0;
+    messenger_suite();
 
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
     free(friend_id);
     free(good_id);
     free(bad_id);
@@ -332,5 +310,5 @@ int main(void)
     kill_messenger(m);
     mono_time_free(mono_time);
 
-    return number_failed;
+    return 0;
 }

@@ -41,7 +41,7 @@ static void do_TCP_server_delay(TCP_Server *tcp_s, Mono_Time *mono_time, int del
 }
 static uint16_t ports[NUM_PORTS] = {13215, 33445, 25643};
 
-START_TEST(test_basic)
+static void test_basic(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
@@ -172,7 +172,6 @@ START_TEST(test_basic)
     logger_kill(logger);
     mono_time_free(mono_time);
 }
-END_TEST
 
 struct sec_TCP_con {
     Socket sock;
@@ -241,7 +240,7 @@ static void kill_TCP_con(struct sec_TCP_con *con)
     free(con);
 }
 
-static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, uint8_t *data, uint16_t length)
+static int write_packet_TCP_secure_connection(struct sec_TCP_con *con, const uint8_t *data, uint16_t length)
 {
     VLA(uint8_t, packet, sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
 
@@ -269,7 +268,7 @@ static int read_packet_sec_TCP(struct sec_TCP_con *con, uint8_t *data, uint16_t 
     return rlen;
 }
 
-START_TEST(test_some)
+static void test_some(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
@@ -375,7 +374,6 @@ START_TEST(test_some)
     logger_kill(logger);
     mono_time_free(mono_time);
 }
-END_TEST
 
 static int response_callback_good;
 static uint8_t response_callback_connection_id;
@@ -458,7 +456,7 @@ static int oob_data_callback(void *object, const uint8_t *public_key, const uint
     return 1;
 }
 
-START_TEST(test_client)
+static void test_client(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
@@ -584,10 +582,9 @@ START_TEST(test_client)
     logger_kill(logger);
     mono_time_free(mono_time);
 }
-END_TEST
 
 // Test how the client handles servers that don't respond.
-START_TEST(test_client_invalid)
+static void test_client_invalid(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
@@ -632,7 +629,6 @@ START_TEST(test_client_invalid)
     logger_kill(logger);
     mono_time_free(mono_time);
 }
-END_TEST
 
 #include "../toxcore/TCP_connection.h"
 
@@ -660,7 +656,7 @@ static int tcp_data_callback(void *object, int id, const uint8_t *data, uint16_t
 }
 
 
-START_TEST(test_tcp_connection)
+static void test_tcp_connection(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
@@ -744,7 +740,6 @@ START_TEST(test_tcp_connection)
     logger_kill(logger);
     mono_time_free(mono_time);
 }
-END_TEST
 
 static bool tcp_oobdata_callback_called;
 static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigned int id, const uint8_t *data,
@@ -767,7 +762,7 @@ static int tcp_oobdata_callback(void *object, const uint8_t *public_key, unsigne
     return 0;
 }
 
-START_TEST(test_tcp_connection2)
+static void test_tcp_connection2(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
@@ -846,33 +841,20 @@ START_TEST(test_tcp_connection2)
     logger_kill(logger);
     mono_time_free(mono_time);
 }
-END_TEST
 
-static Suite *TCP_suite(void)
+static void TCP_suite(void)
 {
-    Suite *s = suite_create("TCP");
-
-    DEFTESTCASE_SLOW(basic, 5);
-    DEFTESTCASE_SLOW(some, 10);
-    DEFTESTCASE_SLOW(client, 10);
-    DEFTESTCASE_SLOW(client_invalid, 15);
-    DEFTESTCASE_SLOW(tcp_connection, 20);
-    DEFTESTCASE_SLOW(tcp_connection2, 20);
-    return s;
+    test_basic();
+    test_some();
+    test_client();
+    test_client_invalid();
+    test_tcp_connection();
+    test_tcp_connection2();
 }
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    Suite *TCP = TCP_suite();
-    SRunner *test_runner = srunner_create(TCP);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    TCP_suite();
+    return 0;
 }

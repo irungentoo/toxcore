@@ -41,7 +41,7 @@ static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8
 #endif
 #define TCP_RELAY_PORT 33448
 
-START_TEST(test_many_clients_tcp)
+static void test_many_clients_tcp(void)
 {
     long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
@@ -131,11 +131,10 @@ loop_top:
 
     printf("test_many_clients_tcp succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 }
-END_TEST
 
 #define NUM_TCP_RELAYS 3
 
-START_TEST(test_many_clients_tcp_b)
+static void test_many_clients_tcp_b(void)
 {
     long long unsigned int cur_time = time(nullptr);
     Tox *toxes[NUM_TOXES_TCP];
@@ -232,37 +231,23 @@ loop_top:
 
     printf("test_many_clients_tcp_b succeeded, took %llu seconds\n", time(nullptr) - cur_time);
 }
-END_TEST
 
 
-static Suite *tox_suite(void)
+static void tox_suite(void)
 {
-    Suite *s = suite_create("Tox many tcp");
-
     /* Each tox connects to a single tox TCP    */
-    DEFTESTCASE(many_clients_tcp);
+    test_many_clients_tcp();
 
     if (enable_broken_tests) {
         /* Try to make a connection to each "older sibling" tox instance via TCP */
         /* Currently this test intermittently fails for unknown reasons. */
-        DEFTESTCASE(many_clients_tcp_b);
+        test_many_clients_tcp_b();
     }
-
-    return s;
 }
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-
-    Suite *tox = tox_suite();
-    SRunner *test_runner = srunner_create(tox);
-
-    int number_failed = 0;
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    tox_suite();
+    return 0;
 }

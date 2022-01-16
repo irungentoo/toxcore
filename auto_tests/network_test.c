@@ -9,7 +9,7 @@
 #define USE_IPV6 1
 #endif
 
-START_TEST(test_addr_resolv_localhost)
+static void test_addr_resolv_localhost(void)
 {
 #ifdef __CYGWIN__
     /* force initialization of network stack
@@ -95,9 +95,8 @@ START_TEST(test_addr_resolv_localhost)
                   ip_ntoa(&ip, ip_str, sizeof(ip_str)));
 #endif
 }
-END_TEST
 
-START_TEST(test_ip_equal)
+static void test_ip_equal(void)
 {
     int res;
     IP ip1, ip2;
@@ -159,32 +158,20 @@ START_TEST(test_ip_equal)
     res = ip_equal(&ip1, &ip2);
     ck_assert_msg(res == 0, "ip_equal( {TOX_AF_INET6, ::1}, {TOX_AF_INET6, ::2} ): expected result 0, got %d.", res);
 }
-END_TEST
 
-static Suite *network_suite(void)
+static void network_suite(void)
 {
-    Suite *s = suite_create("Network");
-
     networking_at_startup();
 
-    DEFTESTCASE(addr_resolv_localhost);
-    DEFTESTCASE(ip_equal);
-
-    return s;
+    test_addr_resolv_localhost();
+    test_ip_equal();
 }
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    Suite *network = network_suite();
-    SRunner *test_runner = srunner_create(network);
-    int number_failed = 0;
+    network_suite();
 
-    srunner_run_all(test_runner, CK_NORMAL);
-    number_failed = srunner_ntests_failed(test_runner);
-
-    srunner_free(test_runner);
-
-    return number_failed;
+    return 0;
 }
