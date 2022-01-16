@@ -82,6 +82,7 @@
 #endif
 
 #include <assert.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -485,7 +486,7 @@ static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
 }
 
 static void loglogdata(const Logger *log, const char *message, const uint8_t *buffer,
-                       uint16_t buflen, IP_Port ip_port, int res)
+                       uint16_t buflen, IP_Port ip_port, long res)
 {
     char ip_str[IP_NTOA_LEN];
 
@@ -503,7 +504,7 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
     } else { /* empty or overwrite */
-        LOGGER_TRACE(log, "[%2u] %s %u%c%u %s:%u (%u: %s) | %04x%04x",
+        LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %04x%04x",
                      buffer[0], message, res, !res ? '!' : '>', buflen,
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer));
@@ -538,7 +539,7 @@ uint16_t net_port(const Networking_Core *net)
 /* Basic network functions:
  */
 
-int send_packet(Networking_Core *net, IP_Port ip_port, Packet packet)
+int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet)
 {
     if (net_family_is_unspec(net->family)) { /* Socket not initialized */
         // TODO(iphydf): Make this an error. Currently, the onion client calls
@@ -600,16 +601,17 @@ int send_packet(Networking_Core *net, IP_Port ip_port, Packet packet)
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    const int res = fuzz_sendto(net->sock.socket, (const char *)packet.data, packet.length, 0,
-                                (struct sockaddr *)&addr, addrsize);
+    const long res = fuzz_sendto(net->sock.socket, (const char *)packet.data, packet.length, 0,
+                                 (struct sockaddr *)&addr, addrsize);
 #else
-    const int res = sendto(net->sock.socket, (const char *)packet.data, packet.length, 0,
-                           (struct sockaddr *)&addr, addrsize);
+    const long res = sendto(net->sock.socket, (const char *)packet.data, packet.length, 0,
+                            (struct sockaddr *)&addr, addrsize);
 #endif
 
     loglogdata(net->log, "O=>", packet.data, packet.length, ip_port, res);
 
-    return res;
+    assert(res <= INT_MAX);
+    return (int)res;
 }
 
 /**
@@ -617,7 +619,7 @@ int send_packet(Networking_Core *net, IP_Port ip_port, Packet packet)
  *
  * @deprecated Use send_packet instead.
  */
-int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
+int sendpacket(const Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
 {
     const Packet packet = {data, length};
     return send_packet(net, ip_port, packet);
@@ -704,7 +706,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
     net->packethandlers[byte].object = object;
 }
 
-void networking_poll(Networking_Core *net, void *userdata)
+void networking_poll(const Networking_Core *net, void *userdata)
 {
     if (net_family_is_unspec(net->family)) {
         /* Socket not initialized */

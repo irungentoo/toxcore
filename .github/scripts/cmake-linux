@@ -33,6 +33,5 @@ cmake -B_build -H. -GNinja \
 cmake --build _build --parallel "$NPROC" --target install -- -k 0
 
 cd _build # pushd
-ctest -j50 --output-on-failure ||
-  ctest -j50 --output-on-failure --rerun-failed
+ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
 cd - # popd

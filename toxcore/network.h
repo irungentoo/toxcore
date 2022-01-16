@@ -383,20 +383,20 @@ typedef struct Packet {
 /**
  * Function to send a network packet to a given IP/port.
  */
-int send_packet(Networking_Core *net, IP_Port ip_port, Packet packet);
+int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet);
 
 /**
  * Function to send packet(data) of length length to ip_port.
  *
  * @deprecated Use send_packet instead.
  */
-int sendpacket(Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
+int sendpacket(const Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
 
 /** Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_cb *cb, void *object);
 
 /** Call this several times a second. */
-void networking_poll(Networking_Core *net, void *userdata);
+void networking_poll(const Networking_Core *net, void *userdata);
 
 /** Connect a socket to the address specified by the ip_port.
  *
