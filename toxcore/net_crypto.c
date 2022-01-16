@@ -1623,6 +1623,96 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
     return 0;
 }
 
+static int handle_packet_cookie_response(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == nullptr) {
+        return -1;
+    }
+
+    if (conn->status != CRYPTO_CONN_COOKIE_REQUESTING) {
+        return -1;
+    }
+
+    uint8_t cookie[COOKIE_LENGTH];
+    uint64_t number;
+
+    if (handle_cookie_response(cookie, &number, packet, length, conn->shared_key) != sizeof(cookie)) {
+        return -1;
+    }
+
+    if (number != conn->cookie_request_number) {
+        return -1;
+    }
+
+    if (create_send_handshake(c, crypt_connection_id, cookie, conn->dht_public_key) != 0) {
+        return -1;
+    }
+
+    conn->status = CRYPTO_CONN_HANDSHAKE_SENT;
+    return 0;
+}
+
+static int handle_packet_crypto_hs(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length,
+                                   void *userdata)
+{
+    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == nullptr) {
+        return -1;
+    }
+
+    if (conn->status != CRYPTO_CONN_COOKIE_REQUESTING
+            && conn->status != CRYPTO_CONN_HANDSHAKE_SENT
+            && conn->status != CRYPTO_CONN_NOT_CONFIRMED) {
+        return -1;
+    }
+
+    uint8_t peer_real_pk[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE];
+    uint8_t cookie[COOKIE_LENGTH];
+
+    if (handle_crypto_handshake(c, conn->recv_nonce, conn->peersessionpublic_key, peer_real_pk, dht_public_key, cookie,
+                                packet, length, conn->public_key) != 0) {
+        return -1;
+    }
+
+    if (public_key_cmp(dht_public_key, conn->dht_public_key) == 0) {
+        encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
+
+        if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
+            if (create_send_handshake(c, crypt_connection_id, cookie, dht_public_key) != 0) {
+                return -1;
+            }
+        }
+
+        conn->status = CRYPTO_CONN_NOT_CONFIRMED;
+    } else {
+        if (conn->dht_pk_callback) {
+            conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key, userdata);
+        }
+    }
+
+    return 0;
+}
+
+static int handle_packet_crypto_data(Net_Crypto *c, int crypt_connection_id, const uint8_t *packet, uint16_t length,
+                                     bool udp, void *userdata)
+{
+    const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+
+    if (conn == nullptr) {
+        return -1;
+    }
+
+    if (conn->status != CRYPTO_CONN_NOT_CONFIRMED && conn->status != CRYPTO_CONN_ESTABLISHED) {
+        return -1;
+    }
+
+    return handle_data_packet_core(c, crypt_connection_id, packet, length, udp, userdata);
+}
+
 /* Handle a packet that was received for the connection.
  *
  * return -1 on failure.
@@ -1635,83 +1725,18 @@ static int handle_packet_connection(Net_Crypto *c, int crypt_connection_id, cons
         return -1;
     }
 
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
-
-    if (conn == nullptr) {
-        return -1;
-    }
-
     switch (packet[0]) {
-        case NET_PACKET_COOKIE_RESPONSE: {
-            if (conn->status != CRYPTO_CONN_COOKIE_REQUESTING) {
-                return -1;
-            }
+        case NET_PACKET_COOKIE_RESPONSE:
+            return handle_packet_cookie_response(c, crypt_connection_id, packet, length);
 
-            uint8_t cookie[COOKIE_LENGTH];
-            uint64_t number;
+        case NET_PACKET_CRYPTO_HS:
+            return handle_packet_crypto_hs(c, crypt_connection_id, packet, length, userdata);
 
-            if (handle_cookie_response(cookie, &number, packet, length, conn->shared_key) != sizeof(cookie)) {
-                return -1;
-            }
+        case NET_PACKET_CRYPTO_DATA:
+            return handle_packet_crypto_data(c, crypt_connection_id, packet, length, udp, userdata);
 
-            if (number != conn->cookie_request_number) {
-                return -1;
-            }
-
-            if (create_send_handshake(c, crypt_connection_id, cookie, conn->dht_public_key) != 0) {
-                return -1;
-            }
-
-            conn->status = CRYPTO_CONN_HANDSHAKE_SENT;
-            return 0;
-        }
-
-        case NET_PACKET_CRYPTO_HS: {
-            if (conn->status != CRYPTO_CONN_COOKIE_REQUESTING
-                    && conn->status != CRYPTO_CONN_HANDSHAKE_SENT
-                    && conn->status != CRYPTO_CONN_NOT_CONFIRMED) {
-                return -1;
-            }
-
-            uint8_t peer_real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-            uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE];
-            uint8_t cookie[COOKIE_LENGTH];
-
-            if (handle_crypto_handshake(c, conn->recv_nonce, conn->peersessionpublic_key, peer_real_pk, dht_public_key, cookie,
-                                        packet, length, conn->public_key) != 0) {
-                return -1;
-            }
-
-            if (public_key_cmp(dht_public_key, conn->dht_public_key) == 0) {
-                encrypt_precompute(conn->peersessionpublic_key, conn->sessionsecret_key, conn->shared_key);
-
-                if (conn->status == CRYPTO_CONN_COOKIE_REQUESTING) {
-                    if (create_send_handshake(c, crypt_connection_id, cookie, dht_public_key) != 0) {
-                        return -1;
-                    }
-                }
-
-                conn->status = CRYPTO_CONN_NOT_CONFIRMED;
-            } else {
-                if (conn->dht_pk_callback) {
-                    conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key, userdata);
-                }
-            }
-
-            return 0;
-        }
-
-        case NET_PACKET_CRYPTO_DATA: {
-            if (conn->status != CRYPTO_CONN_NOT_CONFIRMED && conn->status != CRYPTO_CONN_ESTABLISHED) {
-                return -1;
-            }
-
-            return handle_data_packet_core(c, crypt_connection_id, packet, length, udp, userdata);
-        }
-
-        default: {
+        default:
             return -1;
-        }
     }
 }
 
