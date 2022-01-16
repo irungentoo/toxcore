@@ -289,7 +289,8 @@ uint32_t tcp_connected_relays_count(const TCP_Connections *tcp_c)
  * return -1 on failure.
  * return 0 on success.
  */
-int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, const uint8_t *packet, uint16_t length)
+int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_number, const uint8_t *packet,
+                               uint16_t length)
 {
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
@@ -372,7 +373,7 @@ int send_packet_tcp_connection(TCP_Connections *tcp_c, int connections_number, c
  * return TCP connection number on success.
  * return -1 on failure.
  */
-int get_random_tcp_onion_conn_number(TCP_Connections *tcp_c)
+int get_random_tcp_onion_conn_number(const TCP_Connections *tcp_c)
 {
     const uint32_t r = random_u32();
 
@@ -415,8 +416,8 @@ int tcp_send_onion_request(TCP_Connections *tcp_c, uint32_t tcp_connections_numb
  * return 0 on success.
  * return -1 on failure.
  */
-int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *public_key,
-                        const uint8_t *packet, uint16_t length)
+int tcp_send_oob_packet(const TCP_Connections *tcp_c, unsigned int tcp_connections_number,
+                        const uint8_t *public_key, const uint8_t *packet, uint16_t length)
 {
     TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -437,14 +438,14 @@ int tcp_send_oob_packet(TCP_Connections *tcp_c, unsigned int tcp_connections_num
     return -1;
 }
 
-static int find_tcp_connection_relay(TCP_Connections *tcp_c, const uint8_t *relay_pk);
+static int find_tcp_connection_relay(const TCP_Connections *tcp_c, const uint8_t *relay_pk);
 
 /** Send an oob packet via the TCP relay corresponding to relay_pk.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int tcp_send_oob_packet_using_relay(TCP_Connections *tcp_c, const uint8_t *relay_pk, const uint8_t *public_key,
+int tcp_send_oob_packet_using_relay(const TCP_Connections *tcp_c, const uint8_t *relay_pk, const uint8_t *public_key,
                                     const uint8_t *packet, uint16_t length)
 {
     int tcp_con_number = find_tcp_connection_relay(tcp_c, relay_pk);
@@ -485,7 +486,7 @@ void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_onion_
  * return connections_number on success.
  * return -1 on failure.
  */
-static int find_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_key)
+static int find_tcp_connection_to(const TCP_Connections *tcp_c, const uint8_t *public_key)
 {
     for (unsigned int i = 0; i < tcp_c->connections_length; ++i) {
         TCP_Connection_to *con_to = get_connection(tcp_c, i);
@@ -505,7 +506,7 @@ static int find_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_
  * return connections_number on success.
  * return -1 on failure.
  */
-static int find_tcp_connection_relay(TCP_Connections *tcp_c, const uint8_t *relay_pk)
+static int find_tcp_connection_relay(const TCP_Connections *tcp_c, const uint8_t *relay_pk)
 {
     for (uint32_t i = 0; i < tcp_c->tcp_connections_length; ++i) {
         TCP_con *tcp_con = get_tcp_connection(tcp_c, i);
@@ -603,7 +604,7 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number)
  * return 0 on success.
  * return -1 on failure.
  */
-int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number, bool status)
+int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_number, bool status)
 {
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
@@ -660,7 +661,7 @@ int set_tcp_connection_to_status(TCP_Connections *tcp_c, int connections_number,
     return 0;
 }
 
-static bool tcp_connection_in_conn(TCP_Connection_to *con_to, unsigned int tcp_connections_number)
+static bool tcp_connection_in_conn(const TCP_Connection_to *con_to, unsigned int tcp_connections_number)
 {
     for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         if (con_to->connections[i].tcp_connection == (tcp_connections_number + 1)) {
@@ -712,7 +713,7 @@ static int rm_tcp_connection_from_conn(TCP_Connection_to *con_to, unsigned int t
 /** return number of online connections on success.
  * return -1 on failure.
  */
-static unsigned int online_tcp_connection_from_conn(TCP_Connection_to *con_to)
+static unsigned int online_tcp_connection_from_conn(const TCP_Connection_to *con_to)
 {
     unsigned int count = 0;
 
@@ -903,7 +904,7 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
  * return 0 on success.
  * return -1 on failure.
  */
-static int send_tcp_relay_routing_request(TCP_Connections *tcp_c, int tcp_connections_number, uint8_t *public_key)
+static int send_tcp_relay_routing_request(const TCP_Connections *tcp_c, int tcp_connections_number, uint8_t *public_key)
 {
     TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -1266,7 +1267,7 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, IP_
 /** return number of online tcp relays tied to the connection on success.
  * return 0 on failure.
  */
-unsigned int tcp_connection_to_online_tcp_relays(TCP_Connections *tcp_c, int connections_number)
+unsigned int tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, int connections_number)
 {
     TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
@@ -1283,7 +1284,7 @@ unsigned int tcp_connection_to_online_tcp_relays(TCP_Connections *tcp_c, int con
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
-uint32_t tcp_copy_connected_relays(TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num)
+uint32_t tcp_copy_connected_relays(const TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num)
 {
     const uint32_t r = random_u32();
     uint32_t copied = 0;
@@ -1387,7 +1388,7 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status)
  *
  * Returns NULL on failure.
  */
-TCP_Connections *new_tcp_connections(Mono_Time *mono_time, const uint8_t *secret_key, TCP_Proxy_Info *proxy_info)
+TCP_Connections *new_tcp_connections(Mono_Time *mono_time, const uint8_t *secret_key, const TCP_Proxy_Info *proxy_info)
 {
     if (secret_key == nullptr) {
         return nullptr;

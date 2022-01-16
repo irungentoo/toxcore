@@ -452,7 +452,8 @@ int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
 }
 
 static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
-                             const uint8_t *shared_key, const uint8_t type, uint8_t *plain, size_t plain_length, uint8_t *packet)
+                             const uint8_t *shared_key, const uint8_t type,
+                             const uint8_t *plain, size_t plain_length, uint8_t *packet)
 {
     VLA(uint8_t, encrypted, plain_length + CRYPTO_MAC_SIZE);
     uint8_t nonce[CRYPTO_NONCE_SIZE];
@@ -1066,7 +1067,7 @@ static bool is_pk_in_client_list(const Client_data *list, unsigned int client_li
     return !assoc_timeout(cur_time, assoc);
 }
 
-static bool is_pk_in_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port)
+static bool is_pk_in_close_list(const DHT *dht, const uint8_t *public_key, IP_Port ip_port)
 {
     unsigned int index = bit_by_bit_cmp(public_key, dht->self_public_key);
 
@@ -2124,7 +2125,7 @@ static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pu
  *
  *  return ip of 0 if failure.
  */
-static IP nat_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
+static IP nat_commonip(const IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
 {
     IP zero;
     ip_reset(&zero);
@@ -2156,7 +2157,7 @@ static IP nat_commonip(IP_Port *ip_portlist, uint16_t len, uint16_t min_num)
  *
  *  return number of ports and puts the list of ports in portlist.
  */
-static uint16_t nat_getports(uint16_t *portlist, IP_Port *ip_portlist, uint16_t len, IP ip)
+static uint16_t nat_getports(uint16_t *portlist, const IP_Port *ip_portlist, uint16_t len, IP ip)
 {
     uint16_t num = 0;
 
@@ -2279,8 +2280,8 @@ static void do_NAT(DHT *dht)
  *
  * return the number of nodes.
  */
-static uint16_t list_nodes(Client_data *list, size_t length, uint64_t cur_time, Node_format *nodes,
-                           uint16_t max_num)
+static uint16_t list_nodes(const Client_data *list, size_t length, uint64_t cur_time,
+                           Node_format *nodes, uint16_t max_num)
 {
     if (max_num == 0) {
         return 0;

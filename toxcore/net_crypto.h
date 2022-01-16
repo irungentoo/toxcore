@@ -144,7 +144,7 @@ void new_connection_handler(Net_Crypto *c, new_connection_cb *new_connection_cal
  * return -1 on failure.
  * return connection id on success.
  */
-int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c);
+int accept_crypto_connection(Net_Crypto *c, const New_Connection *n_c);
 
 /* Create a crypto connection.
  * If one to that real public key already exists, return it.
@@ -196,7 +196,7 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
+int connection_lossy_data_handler(const Net_Crypto *c, int crypt_connection_id,
                                   connection_lossy_data_cb *connection_lossy_data_callback, void *object, int id);
 
 /* Set the function for this friend that will be callbacked with object and number if
@@ -209,7 +209,8 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, dht_pk_cb *function, void *object, uint32_t number);
+int nc_dht_pk_callback(const Net_Crypto *c, int crypt_connection_id, dht_pk_cb *function, void *object,
+                       uint32_t number);
 
 /* returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
@@ -240,7 +241,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  * return -1 on failure.
  * return 0 on success.
  */
-int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
+int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
 
 /* Sends a lossy cryptopacket.
  *

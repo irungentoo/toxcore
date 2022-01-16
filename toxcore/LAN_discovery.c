@@ -369,7 +369,7 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 }
 
 
-int lan_discovery_send(uint16_t port, DHT *dht)
+int lan_discovery_send(uint16_t port, const DHT *dht)
 {
     uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;

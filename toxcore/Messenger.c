@@ -1152,7 +1152,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
 }
 
 static int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
-                                    uint8_t control_type, uint8_t *data, uint16_t data_length)
+                                    uint8_t control_type, const uint8_t *data, uint16_t data_length)
 {
     if ((unsigned int)(1 + 3 + data_length) > MAX_CRYPTO_DATA_SIZE) {
         return -1;

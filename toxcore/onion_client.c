@@ -326,7 +326,7 @@ static int is_path_used(const Mono_Time *mono_time, const Onion_Client_Paths *on
 }
 
 /** is path timed out */
-static bool path_timed_out(const Mono_Time *mono_time, Onion_Client_Paths *onion_paths, uint32_t pathnum)
+static bool path_timed_out(const Mono_Time *mono_time, const Onion_Client_Paths *onion_paths, uint32_t pathnum)
 {
     pathnum = pathnum % NUMBER_ONION_PATHS;
 
@@ -737,7 +737,7 @@ static int client_add_to_list(Onion_Client *onion_c, uint32_t num, const uint8_t
     return 0;
 }
 
-static int good_to_ping(Mono_Time *mono_time, Last_Pinged *last_pinged, uint8_t *last_pinged_index,
+static int good_to_ping(const Mono_Time *mono_time, Last_Pinged *last_pinged, uint8_t *last_pinged_index,
                         const uint8_t *public_key)
 {
     for (unsigned int i = 0; i < MAX_STORED_PINGED_NODES; ++i) {

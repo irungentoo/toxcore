@@ -54,8 +54,8 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
 
 /** Run the TCP connection
  */
-void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Connection *tcp_connection,
-                       void *userdata);
+void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
+                       TCP_Client_Connection *tcp_connection, void *userdata);
 
 /** Kill the TCP connection
  */
@@ -77,7 +77,7 @@ typedef int tcp_routing_status_cb(void *object, uint32_t number, uint8_t connect
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key);
+int send_routing_request(TCP_Client_Connection *con, const uint8_t *public_key);
 void routing_response_handler(TCP_Client_Connection *con, tcp_routing_response_cb *response_callback, void *object);
 void routing_status_handler(TCP_Client_Connection *con, tcp_routing_status_cb *status_callback, void *object);
 

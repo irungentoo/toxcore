@@ -74,7 +74,7 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
 
 /** Run the TCP_server
  */
-void do_TCP_server(TCP_Server *tcp_server, Mono_Time *mono_time);
+void do_TCP_server(TCP_Server *tcp_server, const Mono_Time *mono_time);
 
 /** Kill the TCP server
  */

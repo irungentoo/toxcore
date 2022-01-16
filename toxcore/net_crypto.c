@@ -207,8 +207,8 @@ static bool crypt_connection_id_is_valid(const Net_Crypto *c, int crypt_connecti
  * return -1 on failure.
  * return COOKIE_REQUEST_LENGTH on success.
  */
-static int create_cookie_request(const Net_Crypto *c, uint8_t *packet, uint8_t *dht_public_key, uint64_t number,
-                                 uint8_t *shared_key)
+static int create_cookie_request(const Net_Crypto *c, uint8_t *packet, const uint8_t *dht_public_key,
+                                 uint64_t number, uint8_t *shared_key)
 {
     uint8_t plain[COOKIE_REQUEST_PLAIN_LENGTH];
     uint8_t padding[CRYPTO_PUBLIC_KEY_SIZE] = {0};
@@ -601,7 +601,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, IP_Por
  * return IP_Port with family 0 on failure.
  * return IP_Port on success.
  */
-static IP_Port return_ip_port_connection(Net_Crypto *c, int crypt_connection_id)
+static IP_Port return_ip_port_connection(const Net_Crypto *c, int crypt_connection_id)
 {
     const IP_Port empty = {0};
 
@@ -1988,7 +1988,7 @@ static int handle_new_connection_handshake(Net_Crypto *c, IP_Port source, const 
  * return -1 on failure.
  * return connection id on success.
  */
-int accept_crypto_connection(Net_Crypto *c, New_Connection *n_c)
+int accept_crypto_connection(Net_Crypto *c, const New_Connection *n_c)
 {
     if (getcryptconnection_id(c, n_c->public_key) != -1) {
         return -1;
@@ -2361,7 +2361,7 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
+int connection_lossy_data_handler(const Net_Crypto *c, int crypt_connection_id,
                                   connection_lossy_data_cb *connection_lossy_data_callback,
                                   void *object, int id)
 {
@@ -2388,7 +2388,7 @@ int connection_lossy_data_handler(Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int nc_dht_pk_callback(Net_Crypto *c, int crypt_connection_id, dht_pk_cb *function, void *object, uint32_t number)
+int nc_dht_pk_callback(const Net_Crypto *c, int crypt_connection_id, dht_pk_cb *function, void *object, uint32_t number)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -2811,7 +2811,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  * It CANNOT be simplified to `packet_number < buffer_start`, as it will fail
  * when `buffer_end < buffer_start`.
  */
-int cryptpacket_received(Net_Crypto *c, int crypt_connection_id, uint32_t packet_number)
+int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t packet_number)
 {
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 

@@ -90,8 +90,8 @@ void ping_send_request(Ping *ping, IP_Port ipp, const uint8_t *public_key)
     sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
 }
 
-static int ping_send_response(Ping *ping, IP_Port ipp, const uint8_t *public_key, uint64_t ping_id,
-                              uint8_t *shared_encryption_key)
+static int ping_send_response(const Ping *ping, IP_Port ipp, const uint8_t *public_key,
+                              uint64_t ping_id, const uint8_t *shared_encryption_key)
 {
     uint8_t pk[DHT_PING_SIZE];
 

@@ -190,7 +190,7 @@ Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
 /** return friendcon_id corresponding to the real public key on success.
  * return -1 on failure.
  */
-int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk)
+int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         Friend_Conn *friend_con = get_conn(fr_c, i);
@@ -622,7 +622,7 @@ static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
  * return 0 on success.
  * return -1 on failure.
  */
-int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id)
+int friend_connection_lock(const Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
@@ -638,7 +638,7 @@ int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id)
  * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
  * return FRIENDCONN_STATUS_NONE on failure.
  */
-unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id)
+unsigned int friend_con_connected(const Friend_Connections *fr_c, int friendcon_id)
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
@@ -654,7 +654,7 @@ unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id)
  * return 0 on success.
  * return -1 on failure.
  */
-int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Connections *fr_c, int friendcon_id)
+int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Friend_Connections *fr_c, int friendcon_id)
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
@@ -686,7 +686,7 @@ void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *
  * return 0 on success.
  * return -1 on failure
  */
-int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
+int friend_connection_callbacks(const Friend_Connections *fr_c, int friendcon_id, unsigned int index,
                                 fc_status_cb *status_callback,
                                 fc_data_cb *data_callback,
                                 fc_lossy_data_cb *lossy_data_callback,
@@ -724,7 +724,7 @@ void set_global_status_callback(Friend_Connections *fr_c, global_status_cb *glob
  * return crypt_connection_id on success.
  * return -1 on failure.
  */
-int friend_connection_crypt_connection_id(Friend_Connections *fr_c, int friendcon_id)
+int friend_connection_crypt_connection_id(const Friend_Connections *fr_c, int friendcon_id)
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 

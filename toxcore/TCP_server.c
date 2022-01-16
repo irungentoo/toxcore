@@ -1430,7 +1430,7 @@ static void do_TCP_epoll(TCP_Server *tcp_server, const Mono_Time *mono_time)
 }
 #endif
 
-void do_TCP_server(TCP_Server *tcp_server, Mono_Time *mono_time)
+void do_TCP_server(TCP_Server *tcp_server, const Mono_Time *mono_time)
 {
 #ifdef TCP_SERVER_USE_EPOLL
     do_TCP_epoll(tcp_server, mono_time);

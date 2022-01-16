@@ -286,7 +286,7 @@ int group_set_max_frozen(const Group_Chats *g_c, uint32_t groupnumber, uint32_t 
  * return -2 if invite packet failed to send.
  * return -3 if we are not connected to the group chat.
  */
-int invite_friend(Group_Chats *g_c, uint32_t friendnumber, uint32_t groupnumber);
+int invite_friend(const Group_Chats *g_c, uint32_t friendnumber, uint32_t groupnumber);
 
 /** Join a group (we need to have been invited first.)
  *
@@ -395,7 +395,7 @@ int32_t conference_by_id(const Group_Chats *g_c, const uint8_t *id);
 
 /** Send current name (set in messenger) to all online groups.
  */
-void send_name_all_groups(Group_Chats *g_c);
+void send_name_all_groups(const Group_Chats *g_c);
 
 /** Set the object that is tied to the group chat.
  *
@@ -437,14 +437,14 @@ int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, pe
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_peer_delete(Group_Chats *g_c, uint32_t groupnumber, peer_on_leave_cb *function);
+int callback_groupchat_peer_delete(const Group_Chats *g_c, uint32_t groupnumber, peer_on_leave_cb *function);
 
 /** Set a function to be called when the group chat is deleted.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int callback_groupchat_delete(Group_Chats *g_c, uint32_t groupnumber, group_on_delete_cb *function);
+int callback_groupchat_delete(const Group_Chats *g_c, uint32_t groupnumber, group_on_delete_cb *function);
 
 /** Return size of the conferences data (for saving). */
 uint32_t conferences_size(const Group_Chats *g_c);
@@ -465,7 +465,7 @@ bool conferences_load_state_section(Group_Chats *g_c, const uint8_t *data, uint3
                                     State_Load_Status *status);
 
 /** Create new groupchat instance. */
-Group_Chats *new_groupchats(Mono_Time *mono_time, Messenger *m);
+Group_Chats *new_groupchats(const Mono_Time *mono_time, Messenger *m);
 
 /** main groupchats loop. */
 void do_groupchats(Group_Chats *g_c, void *userdata);

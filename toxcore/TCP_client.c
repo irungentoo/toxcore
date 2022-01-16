@@ -148,7 +148,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_con
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int proxy_http_read_connection_response(const Logger *logger, TCP_Client_Connection *tcp_conn)
+static int proxy_http_read_connection_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
@@ -190,7 +190,7 @@ static void proxy_socks5_generate_handshake(TCP_Client_Connection *tcp_conn)
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int socks5_read_handshake_response(const Logger *logger, TCP_Client_Connection *tcp_conn)
+static int socks5_read_handshake_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     uint8_t data[2];
     int ret = read_TCP_packet(logger, tcp_conn->sock, data, sizeof(data));
@@ -236,7 +236,7 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *tcp_
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
-static int proxy_socks5_read_connection_response(const Logger *logger, TCP_Client_Connection *tcp_conn)
+static int proxy_socks5_read_connection_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
@@ -470,7 +470,7 @@ static int write_packet_TCP_client_secure_connection(TCP_Client_Connection *con,
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_routing_request(TCP_Client_Connection *con, uint8_t *public_key)
+int send_routing_request(TCP_Client_Connection *con, const uint8_t *public_key)
 {
     uint8_t packet[1 + CRYPTO_PUBLIC_KEY_SIZE];
     packet[0] = TCP_PACKET_ROUTING_REQUEST;
@@ -957,8 +957,8 @@ static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, c
 
 /** Run the TCP connection
  */
-void do_TCP_connection(const Logger *logger, Mono_Time *mono_time, TCP_Client_Connection *tcp_connection,
-                       void *userdata)
+void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
+                       TCP_Client_Connection *tcp_connection, void *userdata)
 {
     if (tcp_connection->status == TCP_CLIENT_DISCONNECTED) {
         return;

@@ -53,27 +53,27 @@ Net_Crypto *friendconn_net_crypto(const Friend_Connections *fr_c);
 /** return friendcon_id corresponding to the real public key on success.
  * return -1 on failure.
  */
-int getfriend_conn_id_pk(Friend_Connections *fr_c, const uint8_t *real_pk);
+int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk);
 
 /** Increases lock_count for the connection with friendcon_id by 1.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int friend_connection_lock(Friend_Connections *fr_c, int friendcon_id);
+int friend_connection_lock(const Friend_Connections *fr_c, int friendcon_id);
 
 /** return FRIENDCONN_STATUS_CONNECTED if the friend is connected.
  * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
  * return FRIENDCONN_STATUS_NONE on failure.
  */
-unsigned int friend_con_connected(Friend_Connections *fr_c, int friendcon_id);
+unsigned int friend_con_connected(const Friend_Connections *fr_c, int friendcon_id);
 
 /** Copy public keys associated to friendcon_id.
  *
  * return 0 on success.
  * return -1 on failure.
  */
-int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, Friend_Connections *fr_c, int friendcon_id);
+int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Friend_Connections *fr_c, int friendcon_id);
 
 /** Set temp dht key for connection.
  */
@@ -101,7 +101,7 @@ void set_global_status_callback(Friend_Connections *fr_c, global_status_cb *glob
  * return 0 on success.
  * return -1 on failure
  */
-int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsigned int index,
+int friend_connection_callbacks(const Friend_Connections *fr_c, int friendcon_id, unsigned int index,
                                 fc_status_cb *status_callback,
                                 fc_data_cb *data_callback,
                                 fc_lossy_data_cb *lossy_data_callback,
@@ -112,7 +112,7 @@ int friend_connection_callbacks(Friend_Connections *fr_c, int friendcon_id, unsi
  * return crypt_connection_id on success.
  * return -1 on failure.
  */
-int friend_connection_crypt_connection_id(Friend_Connections *fr_c, int friendcon_id);
+int friend_connection_crypt_connection_id(const Friend_Connections *fr_c, int friendcon_id);
 
 /** Create a new friend connection.
  * If one to that real public key already exists, increase lock count and return it.

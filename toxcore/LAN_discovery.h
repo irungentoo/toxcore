@@ -19,7 +19,7 @@
 /**
  * Send a LAN discovery pcaket to the broadcast address with port port.
  */
-int32_t lan_discovery_send(uint16_t port, DHT *dht);
+int32_t lan_discovery_send(uint16_t port, const DHT *dht);
 
 /**
  * Sets up packet handlers.
