@@ -256,24 +256,22 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
     return -1;
 }
 
-typedef struct Cmp_data {
+typedef struct Cmp_Data {
     const Mono_Time *mono_time;
     const uint8_t *base_public_key;
     Onion_Announce_Entry entry;
-} Cmp_data;
+} Cmp_Data;
 
 static int cmp_entry(const void *a, const void *b)
 {
-    Cmp_data cmp1;
-    Cmp_data cmp2;
-    memcpy(&cmp1, a, sizeof(Cmp_data));
-    memcpy(&cmp2, b, sizeof(Cmp_data));
-    Onion_Announce_Entry entry1 = cmp1.entry;
-    Onion_Announce_Entry entry2 = cmp2.entry;
-    const uint8_t *cmp_public_key = cmp1.base_public_key;
+    const Cmp_Data *cmp1 = (const Cmp_Data *)a;
+    const Cmp_Data *cmp2 = (const Cmp_Data *)b;
+    const Onion_Announce_Entry entry1 = cmp1->entry;
+    const Onion_Announce_Entry entry2 = cmp2->entry;
+    const uint8_t *cmp_public_key = cmp1->base_public_key;
 
-    int t1 = mono_time_is_timeout(cmp1.mono_time, entry1.time, ONION_ANNOUNCE_TIMEOUT);
-    int t2 = mono_time_is_timeout(cmp1.mono_time, entry2.time, ONION_ANNOUNCE_TIMEOUT);
+    const int t1 = mono_time_is_timeout(cmp1->mono_time, entry1.time, ONION_ANNOUNCE_TIMEOUT);
+    const int t2 = mono_time_is_timeout(cmp1->mono_time, entry2.time, ONION_ANNOUNCE_TIMEOUT);
 
     if (t1 && t2) {
         return 0;
@@ -287,7 +285,7 @@ static int cmp_entry(const void *a, const void *b)
         return 1;
     }
 
-    int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
+    const int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
 
     if (close == 1) {
         return 1;
@@ -305,7 +303,7 @@ static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int le
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    VLA(Cmp_data, cmp_list, length);
+    VLA(Cmp_Data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; ++i) {
         cmp_list[i].mono_time = mono_time;
@@ -313,7 +311,7 @@ static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int le
         cmp_list[i].entry = list[i];
     }
 
-    qsort(cmp_list, length, sizeof(Cmp_data), cmp_entry);
+    qsort(cmp_list, length, sizeof(Cmp_Data), cmp_entry);
 
     for (uint32_t i = 0; i < length; ++i) {
         list[i] = cmp_list[i].entry;

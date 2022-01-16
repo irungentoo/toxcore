@@ -868,24 +868,22 @@ int get_close_nodes(const DHT *dht, const uint8_t *public_key, Node_format *node
     return get_somewhat_close_nodes(dht, public_key, nodes_list, sa_family, is_LAN);
 }
 
-typedef struct DHT_Cmp_data {
+typedef struct DHT_Cmp_Data {
     uint64_t cur_time;
     const uint8_t *base_public_key;
     Client_data entry;
-} DHT_Cmp_data;
+} DHT_Cmp_Data;
 
-static int cmp_dht_entry(const void *a, const void *b)
+static int dht_cmp_entry(const void *a, const void *b)
 {
-    DHT_Cmp_data cmp1;
-    DHT_Cmp_data cmp2;
-    memcpy(&cmp1, a, sizeof(DHT_Cmp_data));
-    memcpy(&cmp2, b, sizeof(DHT_Cmp_data));
-    const Client_data entry1 = cmp1.entry;
-    const Client_data entry2 = cmp2.entry;
-    const uint8_t *cmp_public_key = cmp1.base_public_key;
+    const DHT_Cmp_Data *cmp1 = (const DHT_Cmp_Data *)a;
+    const DHT_Cmp_Data *cmp2 = (const DHT_Cmp_Data *)b;
+    const Client_data entry1 = cmp1->entry;
+    const Client_data entry2 = cmp2->entry;
+    const uint8_t *cmp_public_key = cmp1->base_public_key;
 
-    bool t1 = assoc_timeout(cmp1.cur_time, &entry1.assoc4) && assoc_timeout(cmp1.cur_time, &entry1.assoc6);
-    bool t2 = assoc_timeout(cmp2.cur_time, &entry2.assoc4) && assoc_timeout(cmp2.cur_time, &entry2.assoc6);
+    const bool t1 = assoc_timeout(cmp1->cur_time, &entry1.assoc4) && assoc_timeout(cmp1->cur_time, &entry1.assoc6);
+    const bool t2 = assoc_timeout(cmp2->cur_time, &entry2.assoc4) && assoc_timeout(cmp2->cur_time, &entry2.assoc6);
 
     if (t1 && t2) {
         return 0;
@@ -930,7 +928,7 @@ static void sort_client_list(Client_data *list, uint64_t cur_time, unsigned int 
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    VLA(DHT_Cmp_data, cmp_list, length);
+    VLA(DHT_Cmp_Data, cmp_list, length);
 
     for (uint32_t i = 0; i < length; ++i) {
         cmp_list[i].cur_time = cur_time;
@@ -938,7 +936,7 @@ static void sort_client_list(Client_data *list, uint64_t cur_time, unsigned int 
         cmp_list[i].entry = list[i];
     }
 
-    qsort(cmp_list, length, sizeof(DHT_Cmp_data), cmp_dht_entry);
+    qsort(cmp_list, length, sizeof(DHT_Cmp_Data), dht_cmp_entry);
 
     for (uint32_t i = 0; i < length; ++i) {
         list[i] = cmp_list[i].entry;
