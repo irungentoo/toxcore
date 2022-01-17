@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+#
+# This script can be used to create a single .c file with all of toxcore in it
+# as well as your code or test file. It does not depend on any header files
+# anymore, as those are emitted directly into the .c file.
+#
+# Example:
+#
+#   other/make_single_file testing/misc_tools.c auto_tests/send_message_test.c | \
+#     tcc -o send_message_test - $(pkg-config --cflags --libs libsodium opus vpx)
+
+use strict;
+use warnings;
+
+use Cwd 'abs_path';
+
+sub relative_to {
+   my ($rel, $fn) = @_;
+   my @path = split "/", $rel;
+   pop @path;
+   abs_path(join "/", @path, $fn)
+}
+
+my %seen;
+sub emit {
+   my ($fn) = @_;
+   return if $seen{$fn};
+   $seen{$fn} = 1;
+
+   open my $fh, "<", $fn or die "$fn: $!";
+   my $line = 1;
+   print "#line $line \"$fn\"\n";
+   while (<$fh>) {
+      if (/^#include "([^"]*)"/) {
+         emit(relative_to($fn, $1), $1);
+         ++$line;
+         print "#line $line \"$fn\"\n";
+      } else {
+         print;
+         ++$line;
+      }
+   }
+}
+
+if (@ARGV and $ARGV[0] eq "-core") {
+   shift @ARGV;
+   for my $fn (<toxcore/*.c>) {
+      emit(abs_path $fn);
+   }
+} else {
+   for my $fn (<toxav/*.c>, <toxcore/*.c>, <toxencryptsave/*.c>) {
+      emit(abs_path $fn);
+   }
+}
+
+emit(abs_path $_) for @ARGV;

@@ -114,6 +114,18 @@ jobs:
             $(pkg-config --cflags --libs libsodium opus vpx)
       - name: Run the test
         run: "./send_message_test | grep 'tox clients connected'"
+      - name: Build amalgamation file with TCC
+        run:
+          other/make_single_file
+            auto_tests/send_message_test.c
+            testing/misc_tools.c |
+          tcc -
+            -o send_message_test
+            -Wall -Werror
+            -bench -g
+            $(pkg-config --cflags --libs libsodium opus vpx)
+      - name: Run the test again
+        run: "./send_message_test | grep 'tox clients connected'"
 
   build-compcert:
     runs-on: ubuntu-latest
