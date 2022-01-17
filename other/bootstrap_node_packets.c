@@ -27,7 +27,7 @@ static int handle_info_request(void *object, IP_Port source, const uint8_t *pack
         return 1;
     }
 
-    Networking_Core *nc = (Networking_Core *)object;
+    const Networking_Core *nc = (const Networking_Core *)object;
 
     uint8_t data[1 + sizeof(bootstrap_version) + MAX_MOTD_LENGTH];
     data[0] = BOOTSTRAP_INFO_PACKET_ID;
@@ -42,7 +42,7 @@ static int handle_info_request(void *object, IP_Port source, const uint8_t *pack
     return 1;
 }
 
-int bootstrap_set_callbacks(Networking_Core *net, uint32_t version, uint8_t *motd, uint16_t motd_length)
+int bootstrap_set_callbacks(Networking_Core *net, uint32_t version, const uint8_t *motd, uint16_t motd_length)
 {
     if (motd_length > MAX_MOTD_LENGTH) {
         return -1;

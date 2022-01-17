@@ -168,8 +168,9 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
         tmp_pid_file = DEFAULT_PID_FILE_PATH;
     }
 
-    *pid_file_path = (char *)malloc(strlen(tmp_pid_file) + 1);
-    strcpy(*pid_file_path, tmp_pid_file);
+    const size_t pid_file_path_len = strlen(tmp_pid_file) + 1;
+    *pid_file_path = (char *)malloc(pid_file_path_len);
+    memcpy(*pid_file_path, tmp_pid_file, pid_file_path_len);
 
     // Get keys file location
     const char *tmp_keys_file;
@@ -180,8 +181,9 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
         tmp_keys_file = DEFAULT_KEYS_FILE_PATH;
     }
 
-    *keys_file_path = (char *)malloc(strlen(tmp_keys_file) + 1);
-    strcpy(*keys_file_path, tmp_keys_file);
+    const size_t keys_file_path_len = strlen(tmp_keys_file) + 1;
+    *keys_file_path = (char *)malloc(strlen(tmp_keys_file));
+    memcpy(*keys_file_path, tmp_keys_file, keys_file_path_len);
 
     // Get IPv6 option
     if (config_lookup_bool(&cfg, NAME_ENABLE_IPV6, enable_ipv6) == CONFIG_FALSE) {

@@ -105,10 +105,8 @@ static void print_public_key(const uint8_t *public_key)
     char buffer[2 * CRYPTO_PUBLIC_KEY_SIZE + 1];
     int index = 0;
 
-    size_t i;
-
-    for (i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
-        index += sprintf(buffer + index, "%02X", public_key[i]);
+    for (size_t i = 0; i < CRYPTO_PUBLIC_KEY_SIZE; i++) {
+        index += snprintf(buffer + index, sizeof(buffer) - index, "%02X", public_key[i]);
     }
 
     log_write(LOG_LEVEL_INFO, "Public Key: %s\n", buffer);
