@@ -6,7 +6,7 @@ package(features = ["layering_check"])
 project()
 
 genrule(
-    name = "copy_headers",
+    name = "public_headers",
     srcs = [
         "//c-toxcore/toxav:toxav.h",
         "//c-toxcore/toxcore:tox.h",
@@ -22,11 +22,12 @@ genrule(
         cp $(location //c-toxcore/toxcore:tox.h) $(GENDIR)/c-toxcore/tox/tox.h
         cp $(location //c-toxcore/toxencryptsave:toxencryptsave.h) $(GENDIR)/c-toxcore/tox/toxencryptsave.h
     """,
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "c-toxcore",
-    hdrs = [":copy_headers"],
+    hdrs = [":public_headers"],
     includes = ["."],
     visibility = ["//visibility:public"],
     deps = [
