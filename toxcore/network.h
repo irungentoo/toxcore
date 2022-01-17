@@ -9,11 +9,11 @@
 #ifndef C_TOXCORE_TOXCORE_NETWORK_H
 #define C_TOXCORE_TOXCORE_NETWORK_H
 
-#include "logger.h"
-
 #include <stdbool.h>    // bool
 #include <stddef.h>     // size_t
 #include <stdint.h>     // uint*_t
+
+#include "logger.h"
 
 #ifdef __cplusplus
 extern "C" {

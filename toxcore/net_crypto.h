@@ -9,12 +9,12 @@
 #ifndef C_TOXCORE_TOXCORE_NET_CRYPTO_H
 #define C_TOXCORE_TOXCORE_NET_CRYPTO_H
 
+#include <pthread.h>
+
 #include "DHT.h"
 #include "LAN_discovery.h"
 #include "TCP_connection.h"
 #include "logger.h"
-
-#include <pthread.h>
 
 /*** Crypto payloads. */
 

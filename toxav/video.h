@@ -5,13 +5,6 @@
 #ifndef C_TOXCORE_TOXAV_VIDEO_H
 #define C_TOXCORE_TOXAV_VIDEO_H
 
-#include "toxav.h"
-
-#include "../toxcore/logger.h"
-#include "../toxcore/util.h"
-#include "ring_buffer.h"
-#include "rtp.h"
-
 #include <vpx/vpx_decoder.h>
 #include <vpx/vpx_encoder.h>
 #include <vpx/vpx_image.h>
@@ -19,8 +12,14 @@
 #include <vpx/vp8cx.h>
 #include <vpx/vp8dx.h>
 
-
 #include <pthread.h>
+
+#include "toxav.h"
+
+#include "../toxcore/logger.h"
+#include "../toxcore/util.h"
+#include "ring_buffer.h"
+#include "rtp.h"
 
 typedef struct VCSession {
     /* encoding */

@@ -12,6 +12,7 @@ workflows:
       # Static analysis
       - clang-analyze
       - clang-tidy
+      - cpplint
       - infer
       - static-analysis
 
@@ -116,3 +117,15 @@ jobs:
           other/analysis/run-clang-tidy ||
           other/analysis/run-clang-tidy ||
           other/analysis/run-clang-tidy
+
+  cpplint:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - run: *apt_install
+      - run: apt-get install -y --no-install-recommends python3-pip
+      - checkout
+      - run: pip install cpplint
+      - run: other/analysis/run-cpplint

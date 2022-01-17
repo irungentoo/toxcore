@@ -5,11 +5,11 @@
 #ifndef C_TOXCORE_TOXAV_GROUPAV_H
 #define C_TOXCORE_TOXAV_GROUPAV_H
 
-#include "../toxcore/group.h"
-#include "../toxcore/tox.h"
-
 // Audio encoding/decoding
 #include <opus.h>
+
+#include "../toxcore/group.h"
+#include "../toxcore/tox.h"
 
 #define GROUP_AUDIO_PACKET_ID 192
 

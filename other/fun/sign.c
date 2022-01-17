@@ -55,15 +55,14 @@ int main(int argc, char *argv[])
     if (argc == 2 && argv[1][0] == 'g') {
         crypto_sign_ed25519_keypair(pk, sk);
         printf("Public key:\n");
-        int i;
 
-        for (i = 0; i < crypto_sign_ed25519_PUBLICKEYBYTES; i++) {
+        for (int i = 0; i < crypto_sign_ed25519_PUBLICKEYBYTES; ++i) {
             printf("%02X", pk[i]);
         }
 
         printf("\nSecret key:\n");
 
-        for (i = 0; i < crypto_sign_ed25519_SECRETKEYBYTES; i++) {
+        for (int i = 0; i < crypto_sign_ed25519_SECRETKEYBYTES; ++i) {
             printf("%02X", sk[i]);
         }
 

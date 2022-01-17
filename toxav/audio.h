@@ -5,14 +5,14 @@
 #ifndef C_TOXCORE_TOXAV_AUDIO_H
 #define C_TOXCORE_TOXAV_AUDIO_H
 
+#include <opus.h>
+#include <pthread.h>
+
 #include "toxav.h"
 
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 #include "rtp.h"
-
-#include <opus.h>
-#include <pthread.h>
 
 #define AUDIO_JITTERBUFFER_COUNT 3
 #define AUDIO_MAX_SAMPLE_RATE 48000

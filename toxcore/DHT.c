@@ -8,6 +8,10 @@
  */
 #include "DHT.h"
 
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "LAN_discovery.h"
 #include "logger.h"
 #include "mono_time.h"
@@ -15,10 +19,6 @@
 #include "ping.h"
 #include "state.h"
 #include "util.h"
-
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
 
 /* The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT (BAD_NODE_TIMEOUT + PING_INTERVAL)

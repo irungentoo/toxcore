@@ -9,13 +9,13 @@
 #ifndef C_TOXCORE_TOXCORE_DHT_H
 #define C_TOXCORE_TOXCORE_DHT_H
 
+#include <stdbool.h>
+
 #include "crypto_core.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "network.h"
 #include "ping_array.h"
-
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

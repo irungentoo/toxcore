@@ -3,10 +3,10 @@
  */
 #include "tox.h"
 
-#include "ccompat.h"
-
 #include <stdlib.h>
 #include <string.h>
+
+#include "ccompat.h"
 
 #define SET_ERROR_PARAMETER(param, x) \
     do {                              \

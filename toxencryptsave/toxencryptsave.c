@@ -6,9 +6,6 @@
 /*
  * Batch encryption functions.
  */
-#include "../toxcore/ccompat.h"
-#include "../toxcore/crypto_core.h"
-#include "defines.h"
 #include "toxencryptsave.h"
 
 #include <sodium.h>
@@ -16,7 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-//!TOKSTYLE-
+#include "../toxcore/ccompat.h"
+#include "../toxcore/crypto_core.h"
+#include "defines.h"
+
 static_assert(TOX_PASS_SALT_LENGTH == crypto_pwhash_scryptsalsa208sha256_SALTBYTES,
               "TOX_PASS_SALT_LENGTH is assumed to be equal to crypto_pwhash_scryptsalsa208sha256_SALTBYTES");
 static_assert(TOX_PASS_KEY_LENGTH == CRYPTO_SHARED_KEY_SIZE,
@@ -24,7 +24,6 @@ static_assert(TOX_PASS_KEY_LENGTH == CRYPTO_SHARED_KEY_SIZE,
 static_assert(TOX_PASS_ENCRYPTION_EXTRA_LENGTH == (crypto_box_MACBYTES + crypto_box_NONCEBYTES +
               crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH),
               "TOX_PASS_ENCRYPTION_EXTRA_LENGTH is assumed to be equal to (crypto_box_MACBYTES + crypto_box_NONCEBYTES + crypto_pwhash_scryptsalsa208sha256_SALTBYTES + TOX_ENC_SAVE_MAGIC_LENGTH)");
-//!TOKSTYLE+
 
 #define SET_ERROR_PARAMETER(param, x) \
     do {                              \

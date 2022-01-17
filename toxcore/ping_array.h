@@ -9,10 +9,10 @@
 #ifndef C_TOXCORE_TOXCORE_PING_ARRAY_H
 #define C_TOXCORE_TOXCORE_PING_ARRAY_H
 
-#include "mono_time.h"
-
 #include <stddef.h>
 #include <stdint.h>
+
+#include "mono_time.h"
 
 #ifdef __cplusplus
 extern "C" {

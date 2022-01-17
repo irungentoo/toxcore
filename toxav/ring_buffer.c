@@ -5,9 +5,9 @@
  */
 #include "ring_buffer.h"
 
-#include "../toxcore/ccompat.h"
-
 #include <stdlib.h>
+
+#include "../toxcore/ccompat.h"
 
 struct RingBuffer {
     uint16_t size; /* Max size */

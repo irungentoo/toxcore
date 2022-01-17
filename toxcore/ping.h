@@ -10,10 +10,10 @@
 #ifndef C_TOXCORE_TOXCORE_PING_H
 #define C_TOXCORE_TOXCORE_PING_H
 
+#include <stdint.h>
+
 #include "DHT.h"
 #include "network.h"
-
-#include <stdint.h>
 
 typedef struct Ping Ping;
 

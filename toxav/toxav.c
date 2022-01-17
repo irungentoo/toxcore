@@ -4,6 +4,12 @@
  */
 #include "toxav.h"
 
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "msi.h"
 #include "rtp.h"
 
@@ -11,12 +17,6 @@
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"
 #include "../toxcore/util.h"
-
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
 
 // TODO(zoff99): don't hardcode this, let the application choose it
 // VPX Info: Time to spend encoding, in microseconds (it's a *soft* deadline)

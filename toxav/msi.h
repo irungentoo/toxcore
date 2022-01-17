@@ -5,14 +5,14 @@
 #ifndef C_TOXCORE_TOXAV_MSI_H
 #define C_TOXCORE_TOXAV_MSI_H
 
+#include <inttypes.h>
+#include <pthread.h>
+
 #include "audio.h"
 #include "video.h"
 
 #include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
-
-#include <inttypes.h>
-#include <pthread.h>
 
 /**
  * Error codes.

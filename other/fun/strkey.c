@@ -47,9 +47,7 @@
 
 static void print_key(unsigned char *key)
 {
-    size_t i;
-
-    for (i = 0; i < crypto_box_PUBLICKEYBYTES; i++) {
+    for (size_t i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         if (key[i] < 16) {
             fprintf(stdout, "0");
         }
@@ -115,12 +113,11 @@ int main(int argc, char *argv[])
 
         do {
 #ifdef PRINT_TRIES_COUNT
-            tries ++;
+            ++tries;
 #endif
             crypto_box_keypair(public_key, secret_key);
-            int i;
 
-            for (i = 0; i <= crypto_box_PUBLICKEYBYTES - len; i ++) {
+            for (int i = 0; i <= crypto_box_PUBLICKEYBYTES - len; ++i) {
                 if (memcmp(public_key + i, desired_bin, len) == 0) {
                     found = 1;
                     break;
@@ -132,7 +129,7 @@ int main(int argc, char *argv[])
 
         do {
 #ifdef PRINT_TRIES_COUNT
-            tries ++;
+            ++tries;
 #endif
             crypto_box_keypair(public_key, secret_key);
         } while (memcmp(p, desired_bin, len) != 0);

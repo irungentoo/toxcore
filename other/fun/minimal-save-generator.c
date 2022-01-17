@@ -34,7 +34,7 @@ int main(void)
     sodium_bin2hex(public_key_str, sizeof(public_key_str), public_key, sizeof(public_key));
     sodium_bin2hex(secret_key_str, sizeof(secret_key_str), secret_key, sizeof(secret_key));
 
-    for (size_t i = 0; i < sizeof(public_key_str); i ++) {
+    for (size_t i = 0; i < sizeof(public_key_str); ++i) {
         public_key_str[i] = toupper(public_key_str[i]);
         secret_key_str[i] = toupper(secret_key_str[i]);
     }
@@ -45,14 +45,14 @@ int main(void)
     // calculate checksum for tox id printing
     unsigned char checksum[2] = {0};
 
-    for (size_t i = 0; i < crypto_box_PUBLICKEYBYTES; i ++) {
+    for (size_t i = 0; i < crypto_box_PUBLICKEYBYTES; ++i) {
         checksum[i % 2] ^= public_key[i];
     }
 
     char checksum_str[sizeof(checksum) * 2 + 1];
     sodium_bin2hex(checksum_str, sizeof(checksum_str), checksum, sizeof(checksum));
 
-    for (size_t i = 0; i < sizeof(checksum_str); i ++) {
+    for (size_t i = 0; i < sizeof(checksum_str); ++i) {
         checksum_str[i] = toupper(checksum_str[i]);
     }
 

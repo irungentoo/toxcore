@@ -4,13 +4,13 @@
  */
 #include "msi.h"
 
-#include "../toxcore/logger.h"
-#include "../toxcore/util.h"
-
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "../toxcore/logger.h"
+#include "../toxcore/util.h"
 
 #define MSI_MAXMSG_SIZE 256
 

@@ -5,13 +5,13 @@
 #ifndef C_TOXCORE_TOXAV_RTP_H
 #define C_TOXCORE_TOXAV_RTP_H
 
+#include <stdbool.h>
+
 #include "bwcontroller.h"
 
 #include "../toxcore/Messenger.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
-
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

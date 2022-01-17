@@ -1615,7 +1615,7 @@ size_t net_socket_data_recv_buffer(Socket sock)
 #else
 
 #ifdef OS_WIN32
-    unsigned long count = 0;
+    u_long count = 0;
     ioctlsocket(sock.socket, FIONREAD, &count);
 #else
     int count = 0;

@@ -38,7 +38,7 @@
 
 static void print_key(const uint8_t *client_id)
 {
-    for (uint32_t j = 0; j < 32; j++) {
+    for (uint32_t j = 0; j < 32; ++j) {
         printf("%02X", client_id[j]);
     }
 }
@@ -80,17 +80,17 @@ static size_t match_hex_prefix(const uint8_t *key, const uint8_t *prefix, size_t
     uint8_t diff = 0;
     size_t i;
 
-    for (i = 0; i < prefix_len / 2; i++) {
+    for (i = 0; i < prefix_len / 2; ++i) {
         diff = key[i] ^ prefix[i];
 
         // First check high nibble
         if ((diff & 0xF0) == 0) {
-            same++;
+            ++same;
         }
 
         // Then low nibble
         if (diff == 0) {
-            same++;
+            ++same;
         } else {
             break;
         }
@@ -102,7 +102,7 @@ static size_t match_hex_prefix(const uint8_t *key, const uint8_t *prefix, size_t
 
         // First check high nibble
         if ((diff & 0xF0) == 0) {
-            same++;
+            ++same;
         }
     }
 
@@ -114,7 +114,7 @@ static void cracker_core(uint64_t range_start, uint64_t range_end, uint64_t rang
 {
     #pragma omp parallel for firstprivate(priv_key_shadow) shared(longest_match, range_start, range_end, range_offs, hex_prefix, prefix_chars_len) schedule(static) default(none)
 
-    for (uint64_t batch = range_start; batch < range_end; batch++) {
+    for (uint64_t batch = range_start; batch < range_end; ++batch) {
         uint8_t *priv_key = (uint8_t *) priv_key_shadow;
         /*
          * We can't use the first and last bytes because they are masked in

@@ -30,6 +30,7 @@ branches:
           - "ci/circleci: asan"
           - "ci/circleci: clang-analyze"
           - "ci/circleci: clang-tidy"
+          - "ci/circleci: cpplint"
           - "ci/circleci: infer"
           - "ci/circleci: msan"
           - "ci/circleci: static-analysis"
