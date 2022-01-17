@@ -182,7 +182,7 @@ int get_general_config(const char *cfg_file_path, char **pid_file_path, char **k
     }
 
     const size_t keys_file_path_len = strlen(tmp_keys_file) + 1;
-    *keys_file_path = (char *)malloc(strlen(tmp_keys_file));
+    *keys_file_path = (char *)malloc(keys_file_path_len);
     memcpy(*keys_file_path, tmp_keys_file, keys_file_path_len);
 
     // Get IPv6 option
