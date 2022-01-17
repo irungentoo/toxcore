@@ -168,11 +168,20 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
     return -1;
 }
 
-static void proxy_socks5_generate_handshake(TCP_Client_Connection *tcp_conn)
+#define TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5 0x05
+#define TCP_SOCKS5_PROXY_HS_COMM_ESTABLISH_REQUEST 0x01
+#define TCP_SOCKS5_PROXY_HS_COMM_REQUEST_GRANTED 0x00
+#define TCP_SOCKS5_PROXY_HS_AUTH_METHODS_SUPPORTED 0x01
+#define TCP_SOCKS5_PROXY_HS_NO_AUTH 0x00
+#define TCP_SOCKS5_PROXY_HS_RESERVED 0x00
+#define TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV4 0x01
+#define TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV6 0x04
+
+static void proxy_socks5_generate_greetings(TCP_Client_Connection *tcp_conn)
 {
-    tcp_conn->con.last_packet[0] = 5; /* SOCKSv5 */
-    tcp_conn->con.last_packet[1] = 1; /* number of authentication methods supported */
-    tcp_conn->con.last_packet[2] = 0; /* No authentication */
+    tcp_conn->con.last_packet[0] = TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5;
+    tcp_conn->con.last_packet[1] = TCP_SOCKS5_PROXY_HS_AUTH_METHODS_SUPPORTED;
+    tcp_conn->con.last_packet[2] = TCP_SOCKS5_PROXY_HS_NO_AUTH;
 
     tcp_conn->con.last_packet_length = 3;
     tcp_conn->con.last_packet_sent = 0;
@@ -191,7 +200,7 @@ static int socks5_read_handshake_response(const Logger *logger, const TCP_Client
         return 0;
     }
 
-    if (data[0] == 5 && data[1] == 0) { // TODO(irungentoo): magic numbers
+    if (data[0] == TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5 && data[1] == TCP_SOCKS5_PROXY_HS_COMM_REQUEST_GRANTED) {
         return 1;
     }
 
@@ -200,18 +209,18 @@ static int socks5_read_handshake_response(const Logger *logger, const TCP_Client
 
 static void proxy_socks5_generate_connection_request(TCP_Client_Connection *tcp_conn)
 {
-    tcp_conn->con.last_packet[0] = 5; /* SOCKSv5 */
-    tcp_conn->con.last_packet[1] = 1; /* command code: establish a TCP/IP stream connection */
-    tcp_conn->con.last_packet[2] = 0; /* reserved, must be 0 */
+    tcp_conn->con.last_packet[0] = TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5;
+    tcp_conn->con.last_packet[1] = TCP_SOCKS5_PROXY_HS_COMM_ESTABLISH_REQUEST;
+    tcp_conn->con.last_packet[2] = TCP_SOCKS5_PROXY_HS_RESERVED;
     uint16_t length = 3;
 
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
-        tcp_conn->con.last_packet[3] = 1; /* IPv4 address */
+        tcp_conn->con.last_packet[3] = TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV4;
         ++length;
         memcpy(tcp_conn->con.last_packet + length, tcp_conn->ip_port.ip.ip.v4.uint8, sizeof(IP4));
         length += sizeof(IP4);
     } else {
-        tcp_conn->con.last_packet[3] = 4; /* IPv6 address */
+        tcp_conn->con.last_packet[3] = TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV6;
         ++length;
         memcpy(tcp_conn->con.last_packet + length, tcp_conn->ip_port.ip.ip.v6.uint8, sizeof(IP6));
         length += sizeof(IP6);
@@ -238,7 +247,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
             return 0;
         }
 
-        if (data[0] == 5 && data[1] == 0) {
+        if (data[0] == TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5 && data[1] == TCP_SOCKS5_PROXY_HS_COMM_REQUEST_GRANTED) {
             return 1;
         }
     } else {
@@ -249,7 +258,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
             return 0;
         }
 
-        if (data[0] == 5 && data[1] == 0) {
+        if (data[0] == TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5 && data[1] == TCP_SOCKS5_PROXY_HS_COMM_REQUEST_GRANTED) {
             return 1;
         }
     }
@@ -556,7 +565,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
 
         case TCP_PROXY_SOCKS5: {
             temp->status = TCP_CLIENT_PROXY_SOCKS5_CONNECTING;
-            proxy_socks5_generate_handshake(temp);
+            proxy_socks5_generate_greetings(temp);
             break;
         }
 
