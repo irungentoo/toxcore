@@ -191,9 +191,7 @@ static int add_accepted(TCP_Server *tcp_server, const Mono_Time *mono_time, TCP_
 
         index = tcp_server->num_accepted_connections;
     } else {
-        uint32_t i;
-
-        for (i = tcp_server->size_accepted_connections; i != 0; --i) {
+        for (uint32_t i = tcp_server->size_accepted_connections; i != 0; --i) {
             if (tcp_server->accepted_connection_array[i - 1].status == TCP_STATUS_NO_STATUS) {
                 index = i - 1;
                 break;

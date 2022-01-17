@@ -14,7 +14,7 @@ struct TCP_Priority_List {
     TCP_Priority_List *next;
     uint16_t size;
     uint16_t sent;
-    uint8_t data[];
+    uint8_t *data;
 };
 
 void wipe_priority_list(TCP_Priority_List *p);

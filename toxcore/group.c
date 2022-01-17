@@ -1069,7 +1069,7 @@ static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, Group_c *g,
     return ind;
 }
 
-static unsigned int send_peer_introduced(Group_Chats *g_c, int friendcon_id, uint16_t group_num);
+static unsigned int send_peer_introduced(const Group_Chats *g_c, int friendcon_id, uint16_t group_num);
 
 /** Removes reason for keeping connection.
  *
@@ -1483,7 +1483,7 @@ static bool try_send_rejoin(Group_Chats *g_c, Group_c *g, const uint8_t *real_pk
     return true;
 }
 
-static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t group_num);
+static unsigned int send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t group_num);
 
 static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t friendnumber, const uint8_t *data,
                                  uint16_t length);
@@ -2168,7 +2168,7 @@ static int handle_packet_rejoin(Group_Chats *g_c, int friendcon_id, const uint8_
 /** return 1 on success.
  * return 0 on failure
  */
-static unsigned int send_peer_introduced(Group_Chats *g_c, int friendcon_id, uint16_t group_num)
+static unsigned int send_peer_introduced(const Group_Chats *g_c, int friendcon_id, uint16_t group_num)
 {
     uint8_t packet[1];
     packet[0] = PEER_INTRODUCED_ID;
@@ -2179,7 +2179,7 @@ static unsigned int send_peer_introduced(Group_Chats *g_c, int friendcon_id, uin
 /** return 1 on success.
  * return 0 on failure
  */
-static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t group_num)
+static unsigned int send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t group_num)
 {
     uint8_t packet[1];
     packet[0] = PEER_QUERY_ID;
@@ -2189,7 +2189,7 @@ static unsigned int send_peer_query(Group_Chats *g_c, int friendcon_id, uint16_t
 /** return number of peers sent on success.
  * return 0 on failure.
  */
-static unsigned int send_peers(Group_Chats *g_c, const Group_c *g, int friendcon_id, uint16_t group_num)
+static unsigned int send_peers(const Group_Chats *g_c, const Group_c *g, int friendcon_id, uint16_t group_num)
 {
     uint8_t response_packet[MAX_CRYPTO_DATA_SIZE - (1 + sizeof(uint16_t))];
     response_packet[0] = PEER_RESPONSE_ID;

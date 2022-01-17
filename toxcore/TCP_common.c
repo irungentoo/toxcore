@@ -13,6 +13,7 @@ void wipe_priority_list(TCP_Priority_List *p)
     while (p) {
         TCP_Priority_List *pp = p;
         p = p->next;
+        free(pp->data);
         free(pp);
     }
 }
@@ -69,6 +70,7 @@ int send_pending_data(TCP_Connection *con)
 
         TCP_Priority_List *pp = p;
         p = p->next;
+        free(pp->data);
         free(pp);
     }
 
@@ -88,15 +90,22 @@ int send_pending_data(TCP_Connection *con)
 bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
     TCP_Priority_List *p = con->priority_queue_end;
-    TCP_Priority_List *new_list = (TCP_Priority_List *)calloc(1, sizeof(TCP_Priority_List) + size);
+    TCP_Priority_List *new_list = (TCP_Priority_List *)calloc(1, sizeof(TCP_Priority_List));
 
-    if (!new_list) {
-        return 0;
+    if (new_list == nullptr) {
+        return false;
     }
 
     new_list->next = nullptr;
     new_list->size = size;
     new_list->sent = sent;
+    new_list->data = (uint8_t *)malloc(size);
+
+    if (new_list->data == nullptr) {
+        free(new_list);
+        return false;
+    }
+
     memcpy(new_list->data, packet, size);
 
     if (p) {
@@ -106,7 +115,7 @@ bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uin
     }
 
     con->priority_queue_end = new_list;
-    return 1;
+    return true;
 }
 
 /** return 1 on success.
