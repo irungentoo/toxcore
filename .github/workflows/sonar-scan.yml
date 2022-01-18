@@ -3,7 +3,7 @@ name: sonar-scan
 on:
   push:
     branches: [master]
-  pull_request_target:
+  pull_request:
     branches: [master]
 
 jobs:
@@ -37,10 +37,13 @@ jobs:
           unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
           echo "$HOME/.sonar/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: Install dependencies and prepare build
-        run: .github/scripts/sonar-prepare
+        run: |
+          .github/scripts/sonar-prepare
       - name: Run build-wrapper
-        run: 'build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} .github/scripts/sonar-build'
+        run: |
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} .github/scripts/sonar-build
       - name: Run sonar-scanner
+        if: github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
