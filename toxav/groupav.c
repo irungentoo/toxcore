@@ -17,7 +17,7 @@
 typedef struct Group_Audio_Packet {
     uint16_t sequnum;
     uint16_t length;
-    uint8_t data[];
+    uint8_t *data;
 } Group_Audio_Packet;
 
 typedef struct Group_JitterBuffer {
@@ -279,6 +279,16 @@ static void group_av_groupchat_delete(void *object, uint32_t groupnumber)
     }
 }
 
+static void free_audio_packet(Group_Audio_Packet *pk)
+{
+    if (pk == nullptr) {
+        return;
+    }
+
+    free(pk->data);
+    free(pk);
+}
+
 static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint32_t groupnumber,
                                uint32_t friendgroupnumber)
 {
@@ -302,12 +312,12 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
         int channels = opus_packet_get_nb_channels(pk->data);
 
         if (channels == OPUS_INVALID_PACKET) {
-            free(pk);
+            free_audio_packet(pk);
             return -1;
         }
 
         if (channels != 1 && channels != 2) {
-            free(pk);
+            free_audio_packet(pk);
             return -1;
         }
 
@@ -322,7 +332,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
 
             if (rc != OPUS_OK) {
                 LOGGER_ERROR(group_av->log, "Error while starting audio decoder: %s", opus_strerror(rc));
-                free(pk);
+                free_audio_packet(pk);
                 return -1;
             }
 
@@ -334,12 +344,12 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
         out_audio = (int16_t *)malloc(num_samples * peer_av->decoder_channels * sizeof(int16_t));
 
         if (!out_audio) {
-            free(pk);
+            free_audio_packet(pk);
             return -1;
         }
 
         out_audio_samples = opus_decode(peer_av->audio_decoder, pk->data, pk->length, out_audio, num_samples, 0);
-        free(pk);
+        free_audio_packet(pk);
 
         if (out_audio_samples <= 0) {
             free(out_audio);
@@ -359,7 +369,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
         out_audio = (int16_t *)malloc(peer_av->last_packet_samples * peer_av->decoder_channels * sizeof(int16_t));
 
         if (!out_audio) {
-            free(pk);
+            free_audio_packet(pk);
             return -1;
         }
 
@@ -394,18 +404,26 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
 
     Group_Peer_AV *peer_av = (Group_Peer_AV *)peer_object;
 
-    Group_Audio_Packet *pk = (Group_Audio_Packet *)calloc(1, sizeof(Group_Audio_Packet) + (length - sizeof(uint16_t)));
+    Group_Audio_Packet *pk = (Group_Audio_Packet *)calloc(1, sizeof(Group_Audio_Packet));
 
-    if (!pk) {
+    if (pk == nullptr) {
         return -1;
     }
 
     net_unpack_u16(packet, &pk->sequnum);
     pk->length = length - sizeof(uint16_t);
+
+    pk->data = (uint8_t *)malloc(pk->length);
+
+    if (pk->data == nullptr) {
+        free_audio_packet(pk);
+        return -1;
+    }
+
     memcpy(pk->data, packet + sizeof(uint16_t), pk->length);
 
     if (queue(peer_av->buffer, peer_av->mono_time, pk) == -1) {
-        free(pk);
+        free_audio_packet(pk);
         return -1;
     }
 
