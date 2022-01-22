@@ -29,6 +29,16 @@ typedef struct Group_JitterBuffer {
     uint64_t last_queued_time;
 } Group_JitterBuffer;
 
+static void free_audio_packet(Group_Audio_Packet *pk)
+{
+    if (pk == nullptr) {
+        return;
+    }
+
+    free(pk->data);
+    free(pk);
+}
+
 static Group_JitterBuffer *create_queue(unsigned int capacity)
 {
     unsigned int size = 1;
@@ -58,11 +68,9 @@ static Group_JitterBuffer *create_queue(unsigned int capacity)
 static void clear_queue(Group_JitterBuffer *q)
 {
     while (q->bottom != q->top) {
-        if (q->queue[q->bottom % q->size]) {
-            free(q->queue[q->bottom % q->size]);
-            q->queue[q->bottom % q->size] = nullptr;
-        }
-
+        const size_t idx = q->bottom % q->size;
+        free_audio_packet(q->queue[idx]);
+        q->queue[idx] = nullptr;
         ++q->bottom;
     }
 }
@@ -277,16 +285,6 @@ static void group_av_groupchat_delete(void *object, uint32_t groupnumber)
     if (object) {
         kill_group_av((Group_AV *)object);
     }
-}
-
-static void free_audio_packet(Group_Audio_Packet *pk)
-{
-    if (pk == nullptr) {
-        return;
-    }
-
-    free(pk->data);
-    free(pk);
 }
 
 static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint32_t groupnumber,
