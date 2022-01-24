@@ -44,7 +44,7 @@ static void manage_keys(DHT *dht)
     enum { KEYS_SIZE = CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE };
     uint8_t keys[KEYS_SIZE];
 
-    FILE *keys_file = fopen("key", "r");
+    FILE *keys_file = fopen("key", "rb");
 
     if (keys_file != nullptr) {
         /* If file was opened successfully -- load keys,
@@ -62,7 +62,7 @@ static void manage_keys(DHT *dht)
     } else {
         memcpy(keys, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht_get_self_secret_key(dht), CRYPTO_SECRET_KEY_SIZE);
-        keys_file = fopen("key", "w");
+        keys_file = fopen("key", "wb");
 
         if (keys_file == nullptr) {
             printf("Error opening key file in write mode.\nKeys will not be saved.\n");

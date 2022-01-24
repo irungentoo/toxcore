@@ -62,7 +62,7 @@ static int manage_keys(DHT *dht, char *keys_file_path)
     FILE *keys_file;
 
     // Check if file exits, proceed to open and load keys
-    keys_file = fopen(keys_file_path, "r");
+    keys_file = fopen(keys_file_path, "rb");
 
     if (keys_file != nullptr) {
         const size_t read_size = fread(keys, sizeof(uint8_t), KEYS_SIZE, keys_file);
@@ -79,7 +79,7 @@ static int manage_keys(DHT *dht, char *keys_file_path)
         memcpy(keys, dht_get_self_public_key(dht), CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(keys + CRYPTO_PUBLIC_KEY_SIZE, dht_get_self_secret_key(dht), CRYPTO_SECRET_KEY_SIZE);
 
-        keys_file = fopen(keys_file_path, "w");
+        keys_file = fopen(keys_file_path, "wb");
 
         if (!keys_file) {
             return 0;

@@ -16,7 +16,7 @@
 
 static bool write_save(const uint8_t *data, size_t length)
 {
-    FILE *fp = fopen(GENERATED_SAVE_FILE, "w");
+    FILE *fp = fopen(GENERATED_SAVE_FILE, "wb");
 
     if (!fp) {
         return false;
