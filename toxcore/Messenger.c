@@ -2086,7 +2086,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
     Messenger *m = (Messenger *)object;
     uint8_t packet_id = temp[0];
     const uint8_t *data = temp + 1;
-    uint32_t data_length = len - 1;
+    uint16_t data_length = len - 1;
 
     if (m->friendlist[i].status != FRIEND_ONLINE) {
         if (packet_id == PACKET_ID_ONLINE && len == 1) {

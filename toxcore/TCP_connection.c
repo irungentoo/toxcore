@@ -732,7 +732,7 @@ static unsigned int online_tcp_connection_from_conn(const TCP_Connection_to *con
  * return -1 on failure.
  */
 static int set_tcp_connection_status(TCP_Connection_to *con_to, unsigned int tcp_connections_number,
-                                     unsigned int status,
+                                     uint8_t status,
                                      uint8_t connection_id)
 {
     for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {

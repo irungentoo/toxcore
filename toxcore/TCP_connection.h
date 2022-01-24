@@ -42,8 +42,8 @@
 
 typedef struct TCP_Conn_to {
     uint32_t tcp_connection;
-    unsigned int status;
-    unsigned int connection_id;
+    uint8_t status;
+    uint8_t connection_id;
 } TCP_Conn_to;
 
 typedef struct TCP_Connection_to {

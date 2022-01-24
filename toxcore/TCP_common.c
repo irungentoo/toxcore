@@ -189,7 +189,7 @@ int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data,
  */
 int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length)
 {
-    unsigned int count = net_socket_data_recv_buffer(sock);
+    const uint16_t count = net_socket_data_recv_buffer(sock);
 
     if (count >= length) {
         const int len = net_recv(sock, data, length);
@@ -214,7 +214,7 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
  */
 static uint16_t read_TCP_length(const Logger *logger, Socket sock)
 {
-    const unsigned int count = net_socket_data_recv_buffer(sock);
+    const uint16_t count = net_socket_data_recv_buffer(sock);
 
     if (count >= sizeof(uint16_t)) {
         uint16_t length;

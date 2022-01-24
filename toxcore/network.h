@@ -76,10 +76,10 @@ int net_listen(Socket sock, int backlog);
 Socket net_accept(Socket sock);
 
 /**
- * return the amount of data in the tcp recv buffer.
+ * return the size of data in the tcp recv buffer.
  * return 0 on failure.
  */
-size_t net_socket_data_recv_buffer(Socket sock);
+uint16_t net_socket_data_recv_buffer(Socket sock);
 
 #define MAX_UDP_PACKET_SIZE 2048
 

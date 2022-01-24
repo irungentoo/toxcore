@@ -1608,7 +1608,7 @@ Socket net_accept(Socket sock)
 #endif
 }
 
-size_t net_socket_data_recv_buffer(Socket sock)
+uint16_t net_socket_data_recv_buffer(Socket sock)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     return 0;
@@ -1622,7 +1622,7 @@ size_t net_socket_data_recv_buffer(Socket sock)
     ioctl(sock.socket, FIONREAD, &count);
 #endif
 
-    return count;
+    return (uint16_t)count;
 #endif
 }
 
