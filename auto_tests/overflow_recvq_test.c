@@ -4,26 +4,24 @@
 #include <stdint.h>
 
 typedef struct State {
-    uint32_t index;
-    uint64_t clock;
-
     uint32_t recv_count;
 } State;
 
-#include "run_auto_test.h"
+#include "auto_test_support.h"
 
 #define NUM_MSGS 40000
 
 static void handle_friend_message(Tox *tox, uint32_t friend_number, Tox_Message_Type type,
                                   const uint8_t *message, size_t length, void *user_data)
 {
-    State *state = (State *)user_data;
+    const AutoTox *autotox = (AutoTox *)user_data;
+    State *state = (State *)autotox->state;
     state->recv_count++;
 }
 
-static void net_crypto_overflow_test(Tox **toxes, State *state)
+static void net_crypto_overflow_test(AutoTox *autotoxes)
 {
-    tox_callback_friend_message(toxes[0], handle_friend_message);
+    tox_callback_friend_message(autotoxes[0].tox, handle_friend_message);
 
     printf("sending many messages to tox0\n");
 
@@ -33,7 +31,7 @@ static void net_crypto_overflow_test(Tox **toxes, State *state)
             snprintf((char *)message, sizeof(message), "%u-%u", tox_index, i);
 
             Tox_Err_Friend_Send_Message err;
-            tox_friend_send_message(toxes[tox_index], 0, TOX_MESSAGE_TYPE_NORMAL, message, sizeof message, &err);
+            tox_friend_send_message(autotoxes[tox_index].tox, 0, TOX_MESSAGE_TYPE_NORMAL, message, sizeof message, &err);
 
             if (err == TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ) {
                 printf("tox%u sent %u messages to friend 0\n", tox_index, i);
@@ -48,16 +46,19 @@ static void net_crypto_overflow_test(Tox **toxes, State *state)
     // TODO(iphydf): Wait until all messages have arrived. Currently, not all
     // messages arrive, so this test would always fail.
     for (uint32_t i = 0; i < 200; i++) {
-        iterate_all_wait(3, toxes, state, ITERATION_INTERVAL);
+        iterate_all_wait(3, autotoxes, ITERATION_INTERVAL);
     }
 
-    printf("tox%u received %u messages\n", state[0].index, state[0].recv_count);
+    printf("tox%u received %u messages\n", autotoxes[0].index, ((State *)autotoxes[0].state)->recv_count);
 }
 
 int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(nullptr, 3, net_crypto_overflow_test, false);
+    Run_Auto_Options options = default_run_auto_options;
+    options.graph = GRAPH_LINEAR;
+    run_auto_test(nullptr, 3, net_crypto_overflow_test, sizeof(State), &options);
+
     return 0;
 }

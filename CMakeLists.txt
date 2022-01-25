@@ -391,11 +391,18 @@ endif()
 
 option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
 
+if(AUTOTEST)
+  add_library(auto_test_support
+    auto_tests/auto_test_support.c
+    auto_tests/auto_test_support.h)
+  target_link_modules(auto_test_support toxcore misc_tools)
+endif()
+
 function(auto_test target)
   if(AUTOTEST AND NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
     add_executable(auto_${target}_test ${CPUFEATURES}
       auto_tests/${target}_test.c)
-    target_link_modules(auto_${target}_test toxcore misc_tools)
+    target_link_modules(auto_${target}_test toxcore misc_tools auto_test_support)
     if(NOT ARGV1 STREQUAL "DONT_RUN")
       add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
       set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")

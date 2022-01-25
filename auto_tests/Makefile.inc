@@ -1,5 +1,9 @@
 if BUILD_TESTS
 
+noinst_LTLIBRARIES += libauto_test_support.la
+libauto_test_support_la_SOURCES = ../auto_tests/auto_test_support.c ../auto_tests/auto_test_support.h
+libauto_test_support_la_LIBADD = libmisc_tools.la libtoxcore.la
+
 TESTS = \
 	conference_double_invite_test \
 	conference_invite_merge_test \
@@ -51,6 +55,7 @@ AUTOTEST_LDADD = \
 	$(LIBSODIUM_LDFLAGS) \
 	$(NACL_LDFLAGS) \
 	libmisc_tools.la \
+	libauto_test_support.la \
 	libtoxcore.la \
 	libtoxencryptsave.la \
 	$(LIBSODIUM_LIBS) \
@@ -239,4 +244,4 @@ endif
 EXTRA_DIST += \
 	$(top_srcdir)/auto_tests/data/save.tox \
 	$(top_srcdir)/auto_tests/check_compat.h \
-	$(top_srcdir)/auto_tests/run_auto_test.h
+	$(top_srcdir)/auto_tests/auto_test_support.h

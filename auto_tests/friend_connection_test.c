@@ -7,14 +7,9 @@
 
 #include <stdint.h>
 
-typedef struct State {
-    uint32_t index;
-    uint64_t clock;
-} State;
+#include "auto_test_support.h"
 
-#include "run_auto_test.h"
-
-static void friend_connection_test(Tox **toxes, State *state)
+static void friend_connection_test(AutoTox *toxes)
 {
     // Nothing to do here. When copying this test, add test-specific code here.
 }
@@ -23,6 +18,9 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(nullptr, 2, friend_connection_test, false);
+    Run_Auto_Options options = default_run_auto_options;
+    options.graph = GRAPH_LINEAR;
+    run_auto_test(nullptr, 2, friend_connection_test, 0, &options);
+
     return 0;
 }

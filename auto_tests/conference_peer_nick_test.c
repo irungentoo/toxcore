@@ -2,9 +2,6 @@
 #include <stdint.h>
 
 typedef struct State {
-    uint32_t index;
-    uint64_t clock;
-
     bool self_online;
     bool friend_online;
     bool friend_in_group;
@@ -13,38 +10,40 @@ typedef struct State {
     uint32_t conference;
 } State;
 
-#include "run_auto_test.h"
+#include "auto_test_support.h"
 
 static void handle_conference_invite(
     Tox *tox, uint32_t friend_number, Tox_Conference_Type type,
     const uint8_t *cookie, size_t length, void *user_data)
 {
-    State *state = (State *)user_data;
+    const AutoTox *autotox = (AutoTox *)user_data;
+    State *state = (State *)autotox->state;
 
     fprintf(stderr, "handle_conference_invite(#%u, %u, %d, uint8_t[%u], _)\n",
-            state->index, friend_number, type, (unsigned)length);
-    fprintf(stderr, "tox%u joining conference\n", state->index);
+            autotox->index, friend_number, type, (unsigned)length);
+    fprintf(stderr, "tox%u joining conference\n", autotox->index);
 
     Tox_Err_Conference_Join err;
     state->conference = tox_conference_join(tox, friend_number, cookie, length, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_JOIN_OK,
                   "attempting to join the conference returned with an error: %d", err);
-    fprintf(stderr, "tox%u joined conference %u\n", state->index, state->conference);
+    fprintf(stderr, "tox%u joined conference %u\n", autotox->index, state->conference);
     state->joined = true;
 }
 
 static void handle_peer_list_changed(Tox *tox, uint32_t conference_number, void *user_data)
 {
-    State *state = (State *)user_data;
+    const AutoTox *autotox = (AutoTox *)user_data;
+    State *state = (State *)autotox->state;
 
     fprintf(stderr, "handle_peer_list_changed(#%u, %u, _)\n",
-            state->index, conference_number);
+            autotox->index, conference_number);
 
     Tox_Err_Conference_Peer_Query err;
     uint32_t const count = tox_conference_peer_count(tox, conference_number, &err);
     ck_assert_msg(err == TOX_ERR_CONFERENCE_PEER_QUERY_OK,
                   "failed to get conference peer count: err = %d", err);
-    printf("tox%u has %u peers\n", state->index, count);
+    printf("tox%u has %u peers\n", autotox->index, count);
     state->friend_in_group = count == 2;
 }
 
@@ -73,32 +72,36 @@ static void rebuild_peer_list(Tox *tox)
     }
 }
 
-static void conference_peer_nick_test(Tox **toxes, State *state)
+static void conference_peer_nick_test(AutoTox *autotoxes)
 {
     // Conference callbacks.
-    tox_callback_conference_invite(toxes[0], handle_conference_invite);
-    tox_callback_conference_invite(toxes[1], handle_conference_invite);
-    tox_callback_conference_peer_list_changed(toxes[0], handle_peer_list_changed);
-    tox_callback_conference_peer_list_changed(toxes[1], handle_peer_list_changed);
+    tox_callback_conference_invite(autotoxes[0].tox, handle_conference_invite);
+    tox_callback_conference_invite(autotoxes[1].tox, handle_conference_invite);
+    tox_callback_conference_peer_list_changed(autotoxes[0].tox, handle_peer_list_changed);
+    tox_callback_conference_peer_list_changed(autotoxes[1].tox, handle_peer_list_changed);
 
     // Set the names of the toxes.
-    tox_self_set_name(toxes[0], (const uint8_t *)"test-tox-0", 10, nullptr);
-    tox_self_set_name(toxes[1], (const uint8_t *)"test-tox-1", 10, nullptr);
+    tox_self_set_name(autotoxes[0].tox, (const uint8_t *)"test-tox-0", 10, nullptr);
+    tox_self_set_name(autotoxes[1].tox, (const uint8_t *)"test-tox-1", 10, nullptr);
+
+    State *state[2];
+    state[0] = (State *)autotoxes[0].state;
+    state[1] = (State *)autotoxes[1].state;
 
     {
         // Create new conference, tox0 is the founder.
         Tox_Err_Conference_New err;
-        state[0].conference = tox_conference_new(toxes[0], &err);
-        state[0].joined = true;
+        state[0]->conference = tox_conference_new(autotoxes[0].tox, &err);
+        state[0]->joined = true;
         ck_assert_msg(err == TOX_ERR_CONFERENCE_NEW_OK,
                       "attempting to create a new conference returned with an error: %d", err);
-        fprintf(stderr, "Created conference: index=%u\n", state[0].conference);
+        fprintf(stderr, "Created conference: index=%u\n", state[0]->conference);
     }
 
     {
         // Invite friend.
         Tox_Err_Conference_Invite err;
-        tox_conference_invite(toxes[0], 0, state[0].conference, &err);
+        tox_conference_invite(autotoxes[0].tox, 0, state[0]->conference, &err);
         ck_assert_msg(err == TOX_ERR_CONFERENCE_INVITE_OK,
                       "attempting to invite a friend returned with an error: %d", err);
         fprintf(stderr, "tox0 invited tox1\n");
@@ -107,17 +110,17 @@ static void conference_peer_nick_test(Tox **toxes, State *state)
     fprintf(stderr, "Waiting for invitation to arrive and peers to be in the group\n");
 
     do {
-        iterate_all_wait(2, toxes, state, ITERATION_INTERVAL);
-    } while (!state[0].joined || !state[1].joined || !state[0].friend_in_group || !state[1].friend_in_group);
+        iterate_all_wait(2, autotoxes, ITERATION_INTERVAL);
+    } while (!state[0]->joined || !state[1]->joined || !state[0]->friend_in_group || !state[1]->friend_in_group);
 
     fprintf(stderr, "Running tox0, but not tox1, waiting for tox1 to drop out\n");
 
     do {
-        iterate_all_wait(1, toxes, state, 1000);
+        iterate_all_wait(1, autotoxes, 1000);
 
         // Rebuild peer list after every iteration.
-        rebuild_peer_list(toxes[0]);
-    } while (state[0].friend_in_group);
+        rebuild_peer_list(autotoxes[0].tox);
+    } while (state[0]->friend_in_group);
 
     fprintf(stderr, "Invitations accepted\n");
 }
@@ -126,6 +129,9 @@ int main(void)
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
 
-    run_auto_test(nullptr, 2, conference_peer_nick_test, false);
+    Run_Auto_Options options = default_run_auto_options;
+    options.graph = GRAPH_LINEAR;
+    run_auto_test(nullptr, 2, conference_peer_nick_test, sizeof(State), &options);
+
     return 0;
 }

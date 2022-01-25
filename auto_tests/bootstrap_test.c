@@ -3,12 +3,7 @@
 #include "../testing/misc_tools.h"
 #include "check_compat.h"
 
-typedef struct State {
-    uint32_t index;
-    uint64_t clock;
-} State;
-
-#include "run_auto_test.h"
+#include "auto_test_support.h"
 
 int main(void)
 {
@@ -16,7 +11,7 @@ int main(void)
 
     Tox *tox_udp = tox_new_log(nullptr, nullptr, nullptr);
 
-    bootstrap_toxes_live_network(&tox_udp, 1, false);
+    bootstrap_tox_live_network(tox_udp, false);
 
     printf("Waiting for connection");
 
@@ -34,8 +29,6 @@ int main(void)
     printf("Connection (UDP): %d\n", tox_self_get_connection_status(tox_udp));
 
     tox_kill(tox_udp);
-
-    (void)run_auto_test;
 
     return 0;
 }

@@ -71,6 +71,7 @@ jobs:
       - run: *apt_install
       - checkout
       - run: infer --no-progress-bar -- cc
+          auto_tests/auto_test_support.c
           auto_tests/lossless_packet_test.c
           testing/misc_tools.c
           toxav/*.c

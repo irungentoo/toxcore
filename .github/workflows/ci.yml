@@ -106,6 +106,7 @@ jobs:
             -o send_message_test
             -Wall -Werror
             -bench -g
+            auto_tests/auto_test_support.c
             auto_tests/send_message_test.c
             testing/misc_tools.c
             toxav/*.c
@@ -117,6 +118,7 @@ jobs:
       - name: Build amalgamation file with TCC
         run:
           other/make_single_file
+            auto_tests/auto_test_support.c
             auto_tests/send_message_test.c
             testing/misc_tools.c |
           tcc -
@@ -141,6 +143,7 @@ jobs:
             -Wno-unknown-pragmas
             -Wno-unused-variable
             -fstruct-passing -fno-unprototyped -g
+            auto_tests/auto_test_support.c
             auto_tests/send_message_test.c
             testing/misc_tools.c
             toxav/*.c

@@ -3,12 +3,7 @@
 #include "../testing/misc_tools.h"
 #include "check_compat.h"
 
-typedef struct State {
-    uint32_t index;
-    uint64_t clock;
-} State;
-
-#include "run_auto_test.h"
+#include "auto_test_support.h"
 
 int main(void)
 {
@@ -19,7 +14,7 @@ int main(void)
     Tox *tox_tcp = tox_new_log(opts, nullptr, nullptr);
     tox_options_free(opts);
 
-    bootstrap_toxes_live_network(&tox_tcp, 1, true);
+    bootstrap_tox_live_network(tox_tcp, true);
 
     printf("Waiting for connection");
 
@@ -37,8 +32,6 @@ int main(void)
     printf("Connection (TCP): %d\n", status);
 
     tox_kill(tox_tcp);
-
-    (void)run_auto_test;
 
     return 0;
 }
