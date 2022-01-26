@@ -21,11 +21,11 @@ typedef struct AutoTox {
     void *state;
 } AutoTox;
 
-bool all_connected(uint32_t tox_count, AutoTox *toxes);
+bool all_connected(AutoTox *toxes, uint32_t tox_count);
 
-bool all_friends_connected(uint32_t tox_count, AutoTox *toxes);
+bool all_friends_connected(AutoTox *toxes, uint32_t tox_count);
 
-void iterate_all_wait(uint32_t tox_count, AutoTox *toxes, uint32_t wait);
+void iterate_all_wait(AutoTox *toxes, uint32_t tox_count, uint32_t wait);
 
 void save_autotox(AutoTox *autotox);
 void kill_autotox(AutoTox *autotox);

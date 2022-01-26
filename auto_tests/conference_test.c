@@ -278,7 +278,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     printf("reconnecting toxes\n");
 
     do {
-        iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
     } while (!all_connected_to_group(NUM_GROUP_TOX, autotoxes));
 
     printf("running conference tests\n");
@@ -286,7 +286,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     for (uint32_t i = 0; i < NUM_GROUP_TOX; ++i) {
         tox_callback_conference_message(autotoxes[i].tox, &handle_conference_message);
 
-        iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
     }
 
     Tox_Err_Conference_Send_Message err;
@@ -299,7 +299,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     num_recv = 0;
 
     for (uint8_t j = 0; j < NUM_GROUP_TOX * 2; ++j) {
-        iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
     }
 
     ck_assert_msg(num_recv == NUM_GROUP_TOX, "failed to recv group messages");
@@ -320,7 +320,7 @@ static void run_conference_tests(AutoTox *autotoxes)
         tox_conference_delete(autotoxes[k - 1].tox, 0, nullptr);
 
         for (uint8_t j = 0; j < 10 || j < NUM_GROUP_TOX; ++j) {
-            iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+            iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
         }
 
         for (uint32_t i = 0; i < k - 1; ++i) {
@@ -360,7 +360,7 @@ static void test_many_group(AutoTox *autotoxes)
     uint32_t invited_count = 0;
 
     do {
-        iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
 
         invited_count = 0;
 
@@ -377,7 +377,7 @@ static void test_many_group(AutoTox *autotoxes)
         fully_connected_count = 0;
         printf("current peer counts: [");
 
-        iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
 
         for (uint32_t i = 0; i < NUM_GROUP_TOX; ++i) {
             Tox_Err_Conference_Peer_Query err;
@@ -417,7 +417,7 @@ static void test_many_group(AutoTox *autotoxes)
     printf("waiting for names to propagate\n");
 
     do {
-        iterate_all_wait(NUM_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_GROUP_TOX, ITERATION_INTERVAL);
     } while (!names_propagated(NUM_GROUP_TOX, autotoxes));
 
     printf("group connected, took %d seconds\n", (int)((autotoxes[0].clock - pregroup_clock) / 1000));

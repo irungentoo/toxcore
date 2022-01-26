@@ -43,7 +43,7 @@ static void test_lossy_packet(AutoTox *autotoxes)
     ck_assert_msg(ret == true, "tox_friend_send_lossy_packet fail %i", ret);
 
     do {
-        iterate_all_wait(2, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, 2, ITERATION_INTERVAL);
     } while (!((State *)autotoxes[1].state)->custom_packet_received);
 }
 

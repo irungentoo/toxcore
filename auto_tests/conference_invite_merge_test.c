@@ -40,7 +40,7 @@ static void handle_conference_connected(
 static void wait_connected(AutoTox *autotoxes, AutoTox *autotox, uint32_t friendnumber)
 {
     do {
-        iterate_all_wait(NUM_INVITE_MERGE_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_INVITE_MERGE_TOX, ITERATION_INTERVAL);
     } while (tox_friend_get_connection_status(autotox->tox, friendnumber, nullptr) == TOX_CONNECTION_NONE);
 }
 
@@ -55,7 +55,7 @@ static void do_invite(AutoTox *autotoxes, AutoTox *inviter, AutoTox *invitee, ui
                   friendnum, err);
 
     do {
-        iterate_all_wait(NUM_INVITE_MERGE_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_INVITE_MERGE_TOX, ITERATION_INTERVAL);
     } while (!((State *)invitee->state)->connected);
 }
 
@@ -85,7 +85,7 @@ static bool group_complete(AutoTox *autotoxes)
 static void wait_group_complete(AutoTox *autotoxes)
 {
     do {
-        iterate_all_wait(NUM_INVITE_MERGE_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_INVITE_MERGE_TOX, ITERATION_INTERVAL);
     } while (!group_complete(autotoxes));
 }
 
@@ -120,7 +120,7 @@ static void conference_invite_merge_test(AutoTox *autotoxes)
     kill_autotox(&autotoxes[1]);
 
     do {
-        iterate_all_wait(NUM_INVITE_MERGE_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_INVITE_MERGE_TOX, ITERATION_INTERVAL);
     } while (tox_conference_peer_count(autotoxes[2].tox, state2->conference, nullptr) != 1);
 
     do_invite(autotoxes, &autotoxes[2], &autotoxes[3], 1);

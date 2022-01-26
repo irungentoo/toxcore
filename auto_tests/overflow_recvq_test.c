@@ -46,7 +46,7 @@ static void net_crypto_overflow_test(AutoTox *autotoxes)
     // TODO(iphydf): Wait until all messages have arrived. Currently, not all
     // messages arrive, so this test would always fail.
     for (uint32_t i = 0; i < 200; i++) {
-        iterate_all_wait(3, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, 3, ITERATION_INTERVAL);
     }
 
     printf("tox%u received %u messages\n", autotoxes[0].index, ((State *)autotoxes[0].state)->recv_count);

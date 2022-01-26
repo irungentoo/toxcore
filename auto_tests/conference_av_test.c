@@ -236,7 +236,7 @@ static bool test_audio(AutoTox *autotoxes, const bool *disabled, bool quiet)
             }
         }
 
-        iterate_all_wait(NUM_AV_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_AV_GROUP_TOX, ITERATION_INTERVAL);
 
         if (all_got_audio(autotoxes, disabled)) {
             return true;
@@ -275,7 +275,7 @@ static void do_audio(AutoTox *autotoxes, uint32_t iterations)
         for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
             ck_assert_msg(toxav_group_send_audio(autotoxes[i].tox, 0, PCM, GROUP_AV_TEST_SAMPLES, 1, 48000) == 0,
                           "#%u failed to send audio", autotoxes[i].index);
-            iterate_all_wait(NUM_AV_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+            iterate_all_wait(autotoxes, NUM_AV_GROUP_TOX, ITERATION_INTERVAL);
         }
     }
 }
@@ -331,7 +331,7 @@ static void run_conference_tests(AutoTox *autotoxes)
     printf("reconnecting toxes\n");
 
     do {
-        iterate_all_wait(NUM_AV_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_AV_GROUP_TOX, ITERATION_INTERVAL);
     } while (!all_connected_to_group(NUM_AV_GROUP_TOX, autotoxes));
 
     for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
@@ -413,7 +413,7 @@ static void test_groupav(AutoTox *autotoxes)
     uint32_t invited_count = 0;
 
     do {
-        iterate_all_wait(NUM_AV_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_AV_GROUP_TOX, ITERATION_INTERVAL);
 
         invited_count = 0;
 
@@ -428,7 +428,7 @@ static void test_groupav(AutoTox *autotoxes)
 
     do {
         fully_connected_count = 0;
-        iterate_all_wait(NUM_AV_GROUP_TOX, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, NUM_AV_GROUP_TOX, ITERATION_INTERVAL);
 
         for (uint32_t i = 0; i < NUM_AV_GROUP_TOX; ++i) {
             Tox_Err_Conference_Peer_Query err;

@@ -66,7 +66,7 @@ static void conference_double_invite_test(AutoTox *autotoxes)
     fprintf(stderr, "Waiting for invitation to arrive\n");
 
     do {
-        iterate_all_wait(2, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, 2, ITERATION_INTERVAL);
     } while (!state[0]->joined || !state[1]->joined);
 
     fprintf(stderr, "Invitations accepted\n");
@@ -74,7 +74,7 @@ static void conference_double_invite_test(AutoTox *autotoxes)
     fprintf(stderr, "Sending second invitation; should be ignored\n");
     tox_conference_invite(autotoxes[0].tox, 0, state[0]->conference, nullptr);
 
-    iterate_all_wait(2, autotoxes, ITERATION_INTERVAL);
+    iterate_all_wait(autotoxes, 2, ITERATION_INTERVAL);
 }
 
 int main(void)

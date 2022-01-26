@@ -110,13 +110,13 @@ static void conference_peer_nick_test(AutoTox *autotoxes)
     fprintf(stderr, "Waiting for invitation to arrive and peers to be in the group\n");
 
     do {
-        iterate_all_wait(2, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, 2, ITERATION_INTERVAL);
     } while (!state[0]->joined || !state[1]->joined || !state[0]->friend_in_group || !state[1]->friend_in_group);
 
     fprintf(stderr, "Running tox0, but not tox1, waiting for tox1 to drop out\n");
 
     do {
-        iterate_all_wait(1, autotoxes, 1000);
+        iterate_all_wait(autotoxes, 1, 1000);
 
         // Rebuild peer list after every iteration.
         rebuild_peer_list(autotoxes[0].tox);

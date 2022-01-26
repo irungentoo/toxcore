@@ -58,6 +58,8 @@ static const struct BootstrapNodes {
 
 void bootstrap_tox_live_network(Tox *tox, bool enable_tcp)
 {
+    ck_assert(tox != nullptr);
+
     for (size_t j = 0; BootstrapNodes[j].ip != nullptr; ++j) {
         const char *ip = BootstrapNodes[j].ip;
         uint16_t port = BootstrapNodes[j].port;
@@ -80,8 +82,12 @@ void bootstrap_tox_live_network(Tox *tox, bool enable_tcp)
     }
 }
 
-bool all_connected(uint32_t tox_count, AutoTox *autotoxes)
+bool all_connected(AutoTox *autotoxes, uint32_t tox_count)
 {
+    if (tox_count) {
+        ck_assert(autotoxes != nullptr);
+    }
+
     for (uint32_t i = 0; i < tox_count; ++i) {
         if (tox_self_get_connection_status(autotoxes[i].tox) == TOX_CONNECTION_NONE) {
             return false;
@@ -91,8 +97,12 @@ bool all_connected(uint32_t tox_count, AutoTox *autotoxes)
     return true;
 }
 
-bool all_friends_connected(uint32_t tox_count, AutoTox *autotoxes)
+bool all_friends_connected(AutoTox *autotoxes, uint32_t tox_count)
 {
+    if (tox_count) {
+        ck_assert(autotoxes != nullptr);
+    }
+
     for (uint32_t i = 0; i < tox_count; ++i) {
         const size_t friend_count = tox_self_get_friend_list_size(autotoxes[i].tox);
 
@@ -106,8 +116,12 @@ bool all_friends_connected(uint32_t tox_count, AutoTox *autotoxes)
     return true;
 }
 
-void iterate_all_wait(uint32_t tox_count, AutoTox *autotoxes, uint32_t wait)
+void iterate_all_wait(AutoTox *autotoxes, uint32_t tox_count, uint32_t wait)
 {
+    if (tox_count) {
+        ck_assert(autotoxes != nullptr);
+    }
+
     for (uint32_t i = 0; i < tox_count; ++i) {
         if (autotoxes[i].alive) {
             tox_iterate(autotoxes[i].tox, &autotoxes[i]);
@@ -127,6 +141,8 @@ static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
 
 void set_mono_time_callback(AutoTox *autotox)
 {
+    ck_assert(autotox != nullptr);
+
     // TODO(iphydf): Don't rely on toxcore internals.
     Mono_Time *mono_time = ((Messenger *)autotox->tox)->mono_time;
 
@@ -286,14 +302,14 @@ void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(Au
     bootstrap_autotoxes(options, tox_count, autotest_opts, autotoxes);
 
     do {
-        iterate_all_wait(tox_count, autotoxes, ITERATION_INTERVAL);
-    } while (!all_connected(tox_count, autotoxes));
+        iterate_all_wait(autotoxes, tox_count, ITERATION_INTERVAL);
+    } while (!all_connected(autotoxes, tox_count));
 
     printf("toxes are online\n");
 
     do {
-        iterate_all_wait(tox_count, autotoxes, ITERATION_INTERVAL);
-    } while (!all_friends_connected(tox_count, autotoxes));
+        iterate_all_wait(autotoxes, tox_count, ITERATION_INTERVAL);
+    } while (!all_friends_connected(autotoxes, tox_count));
 
     printf("tox clients connected\n");
 

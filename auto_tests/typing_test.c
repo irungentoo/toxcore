@@ -32,7 +32,7 @@ static void test_typing(AutoTox *autotoxes)
     tox_self_set_typing(autotoxes[0].tox, 0, true, nullptr);
 
     do {
-        iterate_all_wait(2, autotoxes, 200);
+        iterate_all_wait(autotoxes, 2, 200);
     } while (!((State *)autotoxes[1].state)->friend_is_typing);
 
     ck_assert_msg(tox_friend_get_typing(autotoxes[1].tox, 0, nullptr) == 1,
@@ -40,7 +40,7 @@ static void test_typing(AutoTox *autotoxes)
     tox_self_set_typing(autotoxes[0].tox, 0, false, nullptr);
 
     do {
-        iterate_all_wait(2, autotoxes, 200);
+        iterate_all_wait(autotoxes, 2, 200);
     } while (((State *)autotoxes[1].state)->friend_is_typing);
 
     Tox_Err_Friend_Query err_t;

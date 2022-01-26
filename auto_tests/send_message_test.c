@@ -47,7 +47,7 @@ static void send_message_test(AutoTox *autotoxes)
     ck_assert_msg(errm == TOX_ERR_FRIEND_SEND_MESSAGE_OK, "TOX_MAX_MESSAGE_LENGTH is too big? error=%d", errm);
 
     do {
-        iterate_all_wait(2, autotoxes, ITERATION_INTERVAL);
+        iterate_all_wait(autotoxes, 2, ITERATION_INTERVAL);
     } while (!((State *)autotoxes[1].state)->message_received);
 }
 
