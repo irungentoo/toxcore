@@ -16,9 +16,9 @@ cc_library(
     deps = [
         ":check_compat",
         "//c-toxcore/testing:misc_tools",
+        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore",
     ],
 )
 
@@ -40,8 +40,8 @@ flaky_tests = {
         False,
     ),
     deps = [
-        ":check_compat",
         ":auto_test_support",
+        ":check_compat",
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxav",
         "//c-toxcore/toxcore",

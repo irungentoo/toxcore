@@ -153,3 +153,13 @@ jobs:
             -lpthread $(pkg-config --cflags --libs libsodium opus vpx)
       - name: Run the test
         run: "./send_message_test | grep 'tox clients connected'"
+
+  buildifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check
+        run: |
+          wget --no-verbose --output-document=buildifier https://github.com/bazelbuild/buildtools/releases/download/4.2.5/buildifier-linux-amd64
+          sudo chmod +x buildifier
+          ./buildifier --lint=warn --warnings=all -mode diff $(find . -type f -name BUILD.bazel)
