@@ -390,7 +390,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
     int index;
 
-    uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE;
+    const uint8_t *data_public_key = plain + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE;
 
     if (onion_ping_id_eq(ping_id1, plain)
             || onion_ping_id_eq(ping_id2, plain)) {
@@ -461,7 +461,7 @@ static int handle_announce_request(void *object, IP_Port source, const uint8_t *
 
 static int handle_data_request(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
 {
-    Onion_Announce *onion_a = (Onion_Announce *)object;
+    const Onion_Announce *onion_a = (const Onion_Announce *)object;
 
     if (length <= DATA_REQUEST_MIN_SIZE_RECV) {
         return 1;

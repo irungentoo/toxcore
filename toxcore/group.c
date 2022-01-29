@@ -914,7 +914,7 @@ static bool settitle(Group_Chats *g_c, uint32_t groupnumber, int peer_index, con
 /** Check if the group has no online connection, and freeze all peers if so */
 static void check_disconnected(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return;
@@ -1432,7 +1432,7 @@ static unsigned int send_lossy_group_peer(const Friend_Connections *fr_c, int fr
  */
 int invite_friend(const Group_Chats *g_c, uint32_t friendnumber, uint32_t groupnumber)
 {
-    Group_c *g = get_group_c(g_c, groupnumber);
+    const Group_c *g = get_group_c(g_c, groupnumber);
 
     if (!g) {
         return -1;
@@ -1922,7 +1922,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
                 return;
             } else {
-                Group_c *g = get_group_c(g_c, groupnumber);
+                const Group_c *g = get_group_c(g_c, groupnumber);
 
                 if (g && g->status == GROUPCHAT_STATUS_CONNECTED) {
                     send_invite_response(g_c, groupnumber, friendnumber, invite_data, invite_length);
@@ -2067,7 +2067,7 @@ static int send_packet_online(const Friend_Connections *fr_c, int friendcon_id, 
 
 static bool ping_groupchat(const Group_Chats *g_c, uint32_t groupnumber);
 
-static int handle_packet_online(Group_Chats *g_c, int friendcon_id, const uint8_t *data, uint16_t length)
+static int handle_packet_online(const Group_Chats *g_c, int friendcon_id, const uint8_t *data, uint16_t length)
 {
     if (length != ONLINE_PACKET_DATA_SIZE) {
         return -1;
@@ -2886,7 +2886,7 @@ static bool type_uses_lossy(uint8_t type)
 
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
 {
-    Group_Chats *g_c = (Group_Chats *)object;
+    const Group_Chats *g_c = (const Group_Chats *)object;
 
     if (data[0] != PACKET_ID_LOSSY_CONFERENCE) {
         return -1;

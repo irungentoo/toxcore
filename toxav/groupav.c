@@ -249,7 +249,7 @@ static Group_AV *new_group_av(const Logger *log, Tox *tox, Group_Chats *g_c, aud
 
 static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t friendgroupnumber)
 {
-    Group_AV *group_av = (Group_AV *)object;
+    const Group_AV *group_av = (const Group_AV *)object;
     Group_Peer_AV *peer_av = (Group_Peer_AV *)calloc(1, sizeof(Group_Peer_AV));
 
     if (!peer_av) {
@@ -570,7 +570,7 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
  * return 0 on success.
  * return -1 on failure.
  */
-static int send_audio_packet(Group_Chats *g_c, uint32_t groupnumber, uint8_t *packet, uint16_t length)
+static int send_audio_packet(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *packet, uint16_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE - 1 - sizeof(uint16_t)) {
         return -1;

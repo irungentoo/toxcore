@@ -481,7 +481,7 @@ static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const ui
         return -1;
     }
 
-    TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
+    const TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
 
     int other_index = get_TCP_connection_index(tcp_server, public_key);
 

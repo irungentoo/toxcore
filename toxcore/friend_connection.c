@@ -193,7 +193,7 @@ Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
 int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
-        Friend_Conn *friend_con = get_conn(fr_c, i);
+        const Friend_Conn *friend_con = get_conn(fr_c, i);
 
         if (friend_con) {
             if (public_key_cmp(friend_con->real_public_key, real_pk) == 0) {
@@ -502,7 +502,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
         return -1;
     }
 
-    Friend_Connections *const fr_c = (Friend_Connections *)object;
+    const Friend_Connections *const fr_c = (const Friend_Connections *)object;
     const Friend_Conn *friend_con = get_conn(fr_c, number);
 
     if (!friend_con) {

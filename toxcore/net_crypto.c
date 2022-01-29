@@ -2164,7 +2164,7 @@ static int tcp_data_callback(void *object, int crypt_connection_id, const uint8_
         return -1;
     }
 
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
         return -1;
@@ -2224,7 +2224,7 @@ static int tcp_oob_callback(void *object, const uint8_t *public_key, unsigned in
  */
 int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, const uint8_t *public_key)
 {
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
         return -1;
@@ -2306,7 +2306,7 @@ static void do_tcp(Net_Crypto *c, void *userdata)
     pthread_mutex_unlock(&c->tcp_mutex);
 
     for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
-        Crypto_Connection *conn = get_crypto_connection(c, i);
+        const Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == nullptr) {
             continue;
@@ -2756,7 +2756,7 @@ bool max_speed_reached(Net_Crypto *c, int crypt_connection_id)
  */
 uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connection_id)
 {
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
         return 0;
@@ -2836,7 +2836,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  */
 int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t packet_number)
 {
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
         return -1;
@@ -2926,7 +2926,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
                               unsigned int *online_tcp_relays)
 {
-    Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
+    const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
         return false;
@@ -3031,7 +3031,7 @@ Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, co
 static void kill_timedout(Net_Crypto *c, void *userdata)
 {
     for (uint32_t i = 0; i < c->crypto_connections_length; ++i) {
-        Crypto_Connection *conn = get_crypto_connection(c, i);
+        const Crypto_Connection *conn = get_crypto_connection(c, i);
 
         if (conn == nullptr) {
             continue;

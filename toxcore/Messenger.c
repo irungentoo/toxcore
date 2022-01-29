@@ -2257,7 +2257,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
             memcpy(ft->id, data + 1 + sizeof(uint32_t) + sizeof(uint64_t), FILE_ID_LENGTH);
 
             VLA(uint8_t, filename_terminated, filename_length + 1);
-            uint8_t *filename = nullptr;
+            const uint8_t *filename = nullptr;
 
             if (filename_length) {
                 /* Force NULL terminate file name. */

@@ -765,7 +765,7 @@ static int client_ping_nodes(Onion_Client *onion_c, uint32_t num, const Node_for
         return 0;
     }
 
-    Onion_Node *list_nodes = nullptr;
+    const Onion_Node *list_nodes = nullptr;
     const uint8_t *reference_id = nullptr;
     unsigned int list_length;
 
@@ -1037,7 +1037,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, 
     unsigned int good_nodes[MAX_ONION_CLIENTS];
     unsigned int num_good = 0;
     unsigned int num_nodes = 0;
-    Onion_Node *list_nodes = onion_c->friends_list[friend_num].clients_list;
+    const Onion_Node *list_nodes = onion_c->friends_list[friend_num].clients_list;
 
     for (unsigned int i = 0; i < MAX_ONION_CLIENTS; ++i) {
         if (onion_node_timed_out(&list_nodes[i], onion_c->mono_time)) {
@@ -1709,7 +1709,7 @@ static void do_announce(Onion_Client *onion_c)
 
     if (count != MAX_ONION_CLIENTS_ANNOUNCE) {
         uint16_t num_nodes;
-        Node_format *path_nodes;
+        const Node_format *path_nodes;
 
         if (random_u08() % 2 == 0 || onion_c->path_nodes_index == 0) {
             num_nodes = min_u16(onion_c->path_nodes_index_bs, MAX_PATH_NODES);
