@@ -1,5 +1,5 @@
 ---
-bazel-release_task:
+bazel-opt_task:
   container:
     image: toxchat/toktok-stack:0.0.31-release
     cpu: 2
@@ -16,7 +16,7 @@ bazel-release_task:
         //c-toxcore/...
         -//c-toxcore/auto_tests:tcp_relay_test # TODO(robinlinden): Why does this pass locally but not in Cirrus?
 
-bazel-debug_task:
+bazel-dbg_task:
   container:
     image: toxchat/toktok-stack:0.0.31-debug
     cpu: 2

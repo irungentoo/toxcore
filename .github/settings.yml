@@ -13,9 +13,9 @@ branches:
       required_status_checks:
         contexts:
           - "bazel-asan"
-          - "bazel-debug"
+          - "bazel-dbg"
           - "bazel-msan"
-          - "bazel-release"
+          - "bazel-opt"
           - "bazel-tsan"
           - "bazel-valgrind"
           - "build-bootstrapd-docker"
