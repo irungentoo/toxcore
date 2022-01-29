@@ -217,7 +217,6 @@ bool ipv6_ipv4_in_v6(IP6 a);
  *   converts ip into a string
  *   ip_str must be of length at least IP_NTOA_LEN
  *
- *   IPv6 addresses are enclosed into square brackets, i.e. "[IPv6]"
  *   writes error message into the buffer on error
  *
  *   returns ip_str

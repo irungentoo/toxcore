@@ -1209,7 +1209,6 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
  *   converts ip into a string
  *   ip_str must be of length at least IP_NTOA_LEN
  *
- *   IPv6 addresses are enclosed into square brackets, i.e. "[IPv6]"
  *   writes error message into the buffer on error
  *
  *   returns ip_str
@@ -1235,12 +1234,8 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
             struct in6_addr addr;
             fill_addr6(ip->ip.v6, &addr);
 
-            ip_str[0] = '[';
             assert(make_family(ip->family) == AF_INET6);
-            inet_ntop6(&addr, &ip_str[1], length - 3);
-            const size_t len = strlen(ip_str);
-            ip_str[len] = ']';
-            ip_str[len + 1] = '\0';
+            inet_ntop6(&addr, ip_str, length);
         } else {
             snprintf(ip_str, length, "(IP invalid, family %u)", ip->family.value);
         }

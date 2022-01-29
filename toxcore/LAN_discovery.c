@@ -353,9 +353,6 @@ static int handle_LANdiscovery(void *object, IP_Port source, const uint8_t *pack
 {
     DHT *dht = (DHT *)object;
 
-    char ip_str[IP_NTOA_LEN] = { 0 };
-    ip_ntoa(&source.ip, ip_str, sizeof(ip_str));
-
     if (!ip_is_lan(source.ip)) {
         return 1;
     }

@@ -13,7 +13,7 @@ TEST(IpNtoa, DoesntWriteOutOfBounds) {
 
   ip_ntoa(&ip, ip_str, sizeof(ip_str));
 
-  EXPECT_EQ(std::string(ip_str), "[ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff]");
+  EXPECT_EQ(std::string(ip_str), "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
   EXPECT_LT(std::string(ip_str).length(), IP_NTOA_LEN);
 }
 
