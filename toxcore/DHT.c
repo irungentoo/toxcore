@@ -1260,19 +1260,18 @@ static void returnedip_ports(DHT *dht, IP_Port ip_port, const uint8_t *public_ke
     }
 }
 
-/* Send a getnodes request. */
-static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id)
+bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *client_id)
 {
     /* Check if packet is going to be sent to ourself. */
     if (id_equal(public_key, dht->self_public_key)) {
-        return -1;
+        return false;
     }
 
     uint8_t plain_message[sizeof(Node_format) * 2] = {0};
 
     Node_format receiver;
     memcpy(receiver.public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    receiver.ip_port = ip_port;
+    receiver.ip_port = *ip_port;
     memcpy(plain_message, &receiver, sizeof(receiver));
 
     uint64_t ping_id = 0;
@@ -1280,7 +1279,7 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     ping_id = ping_array_add(dht->dht_ping_array, dht->mono_time, plain_message, sizeof(receiver));
 
     if (ping_id == 0) {
-        return -1;
+        return false;
     }
 
     uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + sizeof(ping_id)];
@@ -1298,10 +1297,14 @@ static int getnodes(DHT *dht, IP_Port ip_port, const uint8_t *public_key, const 
     crypto_memzero(shared_key, sizeof(shared_key));
 
     if (len != sizeof(data)) {
-        return -1;
+        return false;
     }
 
-    return sendpacket(dht->net, ip_port, data, len);
+    if (sendpacket(dht->net, *ip_port, data, len) > 0) {
+        return true;
+    }
+
+    return false;
 }
 
 /** Send a send nodes response: message for IPv6 nodes */
@@ -1663,7 +1666,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
                 ++not_kill;
 
                 if (mono_time_is_timeout(dht->mono_time, assoc->last_pinged, PING_INTERVAL)) {
-                    getnodes(dht, assoc->ip_port, client->public_key, public_key);
+                    dht_getnodes(dht, &assoc->ip_port, client->public_key, public_key);
                     assoc->last_pinged = temp_time;
                 }
 
@@ -1696,7 +1699,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
             rand_node += random_u32() % (num_nodes - (rand_node + 1));
         }
 
-        getnodes(dht, assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key);
+        dht_getnodes(dht, &assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key);
 
         *lastgetnode = temp_time;
         ++*bootstrap_times;
@@ -1714,7 +1717,7 @@ static void do_dht_friends(DHT *dht)
         DHT_Friend *const dht_friend = &dht->friends_list[i];
 
         for (size_t j = 0; j < dht_friend->num_to_bootstrap; ++j) {
-            getnodes(dht, dht_friend->to_bootstrap[j].ip_port, dht_friend->to_bootstrap[j].public_key, dht_friend->public_key);
+            dht_getnodes(dht, &dht_friend->to_bootstrap[j].ip_port, dht_friend->to_bootstrap[j].public_key, dht_friend->public_key);
         }
 
         dht_friend->num_to_bootstrap = 0;
@@ -1731,7 +1734,7 @@ static void do_dht_friends(DHT *dht)
 static void do_Close(DHT *dht)
 {
     for (size_t i = 0; i < dht->num_to_bootstrap; ++i) {
-        getnodes(dht, dht->to_bootstrap[i].ip_port, dht->to_bootstrap[i].public_key, dht->self_public_key);
+        dht_getnodes(dht, &dht->to_bootstrap[i].ip_port, dht->to_bootstrap[i].public_key, dht->self_public_key);
     }
 
     dht->num_to_bootstrap = 0;
@@ -1767,15 +1770,11 @@ static void do_Close(DHT *dht)
     }
 }
 
-void dht_getnodes(DHT *dht, const IP_Port *from_ipp, const uint8_t *from_id, const uint8_t *which_id)
-{
-    getnodes(dht, *from_ipp, from_id, which_id);
-}
-
 void dht_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 {
-    getnodes(dht, ip_port, public_key, dht->self_public_key);
+    dht_getnodes(dht, &ip_port, public_key, dht->self_public_key);
 }
+
 int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
                                uint16_t port, const uint8_t *public_key)
 {
