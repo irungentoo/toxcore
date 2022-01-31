@@ -54,7 +54,7 @@ jobs:
   msan:
     working_directory: ~/work
     docker:
-      - image: toxchat/toktok-stack:0.0.31-msan
+      - image: toxchat/toktok-stack:latest-msan
 
     steps:
       - checkout

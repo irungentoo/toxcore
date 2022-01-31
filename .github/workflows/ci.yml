@@ -26,11 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Pull toxchat/toktok-stack:0.0.31-msan
-        run: docker pull toxchat/toktok-stack:0.0.31-msan
+      - name: Pull toxchat/toktok-stack:latest-msan
+        run: docker pull toxchat/toktok-stack:latest-msan
       - name: Run tests under MemorySanitizer
         # TODO(iphydf): Remove "|| true" once this works correctly.
-        run: docker run --rm -v $PWD:/src/workspace/c-toxcore toxchat/toktok-stack:0.0.31-msan
+        run: docker run --rm -v $PWD:/src/workspace/c-toxcore toxchat/toktok-stack:latest-msan
           bazel test //c-toxcore/auto_tests:lossless_packet_test || true
 
   build-nacl:
