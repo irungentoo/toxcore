@@ -218,7 +218,7 @@ static struct RTPMessage *process_frame(const Logger *log, struct RTPWorkBufferL
     struct RTPMessage *const m_new = slot->buf;
     slot->buf = nullptr;
 
-    assert(wkbl->next_free_entry >= 1);
+    assert(wkbl->next_free_entry >= 1 && wkbl->next_free_entry <= USED_RTP_WORKBUFFER_COUNT);
 
     if (slot_id != wkbl->next_free_entry - 1) {
         // The slot is not the last slot, so we created a gap. We move all the

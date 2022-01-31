@@ -157,7 +157,7 @@ void ac_iterate(ACSession *ac)
             }
 
 #endif
-
+            assert(msg->len > 4);
 
             /* Pick up sampling rate from packet */
             memcpy(&ac->lp_sampling_rate, msg->data, 4);
@@ -210,10 +210,7 @@ void ac_iterate(ACSession *ac)
 int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
 {
     if (!acp || !msg) {
-        if (msg) {
-            free(msg);
-        }
-
+        free(msg);
         return -1;
     }
 
@@ -295,11 +292,8 @@ static struct JitterBuffer *jbuf_new(uint32_t capacity)
 static void jbuf_clear(struct JitterBuffer *q)
 {
     while (q->bottom != q->top) {
-        if (q->queue[q->bottom % q->size]) {
-            free(q->queue[q->bottom % q->size]);
-            q->queue[q->bottom % q->size] = nullptr;
-        }
-
+        free(q->queue[q->bottom % q->size]);
+        q->queue[q->bottom % q->size] = nullptr;
         ++q->bottom;
     }
 }
