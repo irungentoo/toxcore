@@ -21,6 +21,7 @@
 #include "group.h"
 #include "logger.h"
 #include "mono_time.h"
+#include "network.h"
 
 #include "../toxencryptsave/defines.h"
 
@@ -35,6 +36,10 @@ static_assert(TOX_HASH_LENGTH == CRYPTO_SHA256_SIZE,
               "TOX_HASH_LENGTH is assumed to be equal to CRYPTO_SHA256_SIZE");
 static_assert(FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
               "FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE");
+static_assert(TOX_DHT_NODE_IP_STRING_SIZE == IP_NTOA_LEN,
+              "TOX_DHT_NODE_IP_STRING_SIZE is assumed to be equal to IP_NTOA_LEN");
+static_assert(TOX_DHT_NODE_PUBLIC_KEY_SIZE == CRYPTO_PUBLIC_KEY_SIZE,
+              "TOX_DHT_NODE_PUBLIC_KEY_SIZE is assumed to be equal to CRYPTO_PUBLIC_KEY_SIZE");
 static_assert(TOX_FILE_ID_LENGTH == CRYPTO_SYMMETRIC_KEY_SIZE,
               "TOX_FILE_ID_LENGTH is assumed to be equal to CRYPTO_SYMMETRIC_KEY_SIZE");
 static_assert(TOX_FILE_ID_LENGTH == TOX_HASH_LENGTH,
@@ -74,6 +79,7 @@ struct Tox {
     tox_conference_title_cb *conference_title_callback;
     tox_conference_peer_name_cb *conference_peer_name_callback;
     tox_conference_peer_list_changed_cb *conference_peer_list_changed_callback;
+    tox_dht_get_nodes_response_cb *dht_get_nodes_response_callback;
     tox_friend_lossy_packet_cb *friend_lossy_packet_callback_per_pktid[UINT8_MAX + 1];
     tox_friend_lossless_packet_cb *friend_lossless_packet_callback_per_pktid[UINT8_MAX + 1];
 
@@ -312,6 +318,21 @@ static void tox_conference_peer_list_changed_handler(Messenger *m, uint32_t conf
     if (tox_data->tox->conference_peer_list_changed_callback != nullptr) {
         tox_data->tox->conference_peer_list_changed_callback(tox_data->tox, conference_number, tox_data->user_data);
     }
+}
+
+static void tox_dht_get_nodes_response_handler(const DHT *dht, const Node_format *node, void *user_data)
+{
+    struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
+
+    if (tox_data->tox->dht_get_nodes_response_callback == nullptr) {
+        return;
+    }
+
+    char ip[IP_NTOA_LEN];
+    ip_ntoa(&node->ip_port.ip, ip, sizeof(ip));
+
+    tox_data->tox->dht_get_nodes_response_callback(tox_data->tox, node->public_key, ip, net_ntohs(node->ip_port.port),
+            tox_data->user_data);
 }
 
 non_null(1, 4) nullable(6)
@@ -616,6 +637,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     callback_file_reqchunk(tox->m, tox_file_chunk_request_handler);
     callback_file_sendrequest(tox->m, tox_file_recv_handler);
     callback_file_data(tox->m, tox_file_recv_chunk_handler);
+    dht_callback_get_nodes_response(tox->m->dht, tox_dht_get_nodes_response_handler);
     g_callback_group_invite(tox->m->conferences_object, tox_conference_invite_handler);
     g_callback_group_connected(tox->m->conferences_object, tox_conference_connected_handler);
     g_callback_group_message(tox->m->conferences_object, tox_conference_message_handler);
@@ -2552,4 +2574,70 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
     SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
     unlock(tox);
     return 0;
+}
+
+void tox_callback_dht_get_nodes_response(Tox *tox, tox_dht_get_nodes_response_cb *callback)
+{
+    assert(tox != nullptr);
+    tox->dht_get_nodes_response_callback = callback;
+}
+
+bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip, uint16_t port,
+                       const uint8_t *target_public_key, Tox_Err_Dht_Get_Nodes *error)
+{
+    assert(tox != nullptr);
+
+    lock(tox);
+
+    if (tox->m->options.udp_disabled) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_UDP_DISABLED);
+        unlock(tox);
+        return false;
+    }
+
+    if (public_key == nullptr || ip == nullptr || target_public_key == nullptr) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_NULL);
+        unlock(tox);
+        return false;
+    }
+
+    if (port == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_BAD_PORT);
+        unlock(tox);
+        return false;
+    }
+
+    IP_Port *root;
+
+    const int32_t count = net_getipport(ip, &root, TOX_SOCK_DGRAM);
+
+    if (count < 1) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_BAD_IP);
+        net_freeipport(root);
+        unlock(tox);
+        return false;
+    }
+
+    bool success = 0;
+
+    for (int32_t i = 0; i < count; ++i) {
+        root[i].port = net_htons(port);
+
+        if (dht_getnodes(tox->m->dht, &root[i], public_key, target_public_key)) {
+            success = true;
+        }
+    }
+
+    unlock(tox);
+
+    net_freeipport(root);
+
+    if (!success) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_FAIL);
+        return false;
+    }
+
+    SET_ERROR_PARAMETER(error, TOX_ERR_DHT_GET_NODES_OK);
+
+    return true;
 }

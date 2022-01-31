@@ -2,6 +2,7 @@
  * Copyright © 2016-2021 The TokTok team.
  */
 #include "tox.h"
+#include "tox_private.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,6 +42,8 @@ CONST_FUNCTION(hash_length, HASH_LENGTH)
 CONST_FUNCTION(file_id_length, FILE_ID_LENGTH)
 CONST_FUNCTION(max_filename_length, MAX_FILENAME_LENGTH)
 CONST_FUNCTION(max_hostname_length, MAX_HOSTNAME_LENGTH)
+CONST_FUNCTION(dht_node_ip_string_size, DHT_NODE_IP_STRING_SIZE)
+CONST_FUNCTION(dht_node_public_key_size, DHT_NODE_PUBLIC_KEY_SIZE)
 
 
 #define ACCESSORS(type, ns, name) \
