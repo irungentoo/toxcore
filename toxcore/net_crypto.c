@@ -2994,7 +2994,7 @@ Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, co
     temp->log = log;
     temp->mono_time = mono_time;
 
-    temp->tcp_c = new_tcp_connections(mono_time, dht_get_self_secret_key(dht), proxy_info);
+    temp->tcp_c = new_tcp_connections(log, mono_time, dht_get_self_secret_key(dht), proxy_info);
 
     if (temp->tcp_c == nullptr) {
         free(temp);

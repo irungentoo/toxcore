@@ -95,14 +95,14 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
 /** return 1 on success
  * return 0 on failure
  */
-static int connect_sock_to(Socket sock, IP_Port ip_port, const TCP_Proxy_Info *proxy_info)
+static int connect_sock_to(const Logger *logger, Socket sock, IP_Port ip_port, const TCP_Proxy_Info *proxy_info)
 {
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
         ip_port = proxy_info->ip_port;
     }
 
     /* nonblocking socket, connect will never return success */
-    net_connect(sock, ip_port);
+    net_connect(logger, sock, ip_port);
 
     return 1;
 }
@@ -145,7 +145,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
     char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
 
-    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data) - 1);
+    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data) - 1, tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -159,7 +159,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
 
         if (data_left) {
             VLA(uint8_t, temp_data, data_left);
-            read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left);
+            read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left, tcp_conn->con.ip_port);
         }
 
         return 1;
@@ -194,7 +194,7 @@ static void proxy_socks5_generate_greetings(TCP_Client_Connection *tcp_conn)
 static int socks5_read_handshake_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     uint8_t data[2];
-    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data));
+    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -241,7 +241,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
 {
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data));
+        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), tcp_conn->con.ip_port);
 
         if (ret == -1) {
             return 0;
@@ -252,7 +252,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
         }
     } else {
         uint8_t data[4 + sizeof(IP6) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data));
+        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), tcp_conn->con.ip_port);
 
         if (ret == -1) {
             return 0;
@@ -314,12 +314,12 @@ static int handle_handshake(TCP_Client_Connection *tcp_conn, const uint8_t *data
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_routing_request(TCP_Client_Connection *con, const uint8_t *public_key)
+int send_routing_request(const Logger *logger, TCP_Client_Connection *con, const uint8_t *public_key)
 {
     uint8_t packet[1 + CRYPTO_PUBLIC_KEY_SIZE];
     packet[0] = TCP_PACKET_ROUTING_REQUEST;
     memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    return write_packet_TCP_secure_connection(&con->con, packet, sizeof(packet), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
 }
 
 void routing_response_handler(TCP_Client_Connection *con, tcp_routing_response_cb *response_callback, void *object)
@@ -334,14 +334,14 @@ void routing_status_handler(TCP_Client_Connection *con, tcp_routing_status_cb *s
     con->status_callback_object = object;
 }
 
-static int tcp_send_ping_response(TCP_Client_Connection *con);
-static int tcp_send_ping_request(TCP_Client_Connection *con);
+static int tcp_send_ping_response(const Logger *logger, TCP_Client_Connection *con);
+static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *con);
 
 /** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length)
+int send_data(const Logger *logger, TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length)
 {
     if (con_id >= NUM_CLIENT_CONNECTIONS) {
         return -1;
@@ -351,21 +351,22 @@ int send_data(TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, u
         return -1;
     }
 
-    if (tcp_send_ping_response(con) == 0 || tcp_send_ping_request(con) == 0) {
+    if (tcp_send_ping_response(logger, con) == 0 || tcp_send_ping_request(logger, con) == 0) {
         return 0;
     }
 
     VLA(uint8_t, packet, 1 + length);
     packet[0] = con_id + NUM_RESERVED_PORTS;
     memcpy(packet + 1, data, length);
-    return write_packet_TCP_secure_connection(&con->con, packet, SIZEOF_VLA(packet), 0);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), 0);
 }
 
 /** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure.
  */
-int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data, uint16_t length)
+int send_oob_packet(const Logger *logger, TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data,
+                    uint16_t length)
 {
     if (length == 0 || length > TCP_MAX_OOB_DATA_LENGTH) {
         return -1;
@@ -375,7 +376,7 @@ int send_oob_packet(TCP_Client_Connection *con, const uint8_t *public_key, const
     packet[0] = TCP_PACKET_OOB_SEND;
     memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
-    return write_packet_TCP_secure_connection(&con->con, packet, SIZEOF_VLA(packet), 0);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), 0);
 }
 
 
@@ -416,19 +417,19 @@ void oob_data_handler(TCP_Client_Connection *con, tcp_oob_data_cb *oob_data_call
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int client_send_disconnect_notification(TCP_Client_Connection *con, uint8_t id)
+static int client_send_disconnect_notification(const Logger *logger, TCP_Client_Connection *con, uint8_t id)
 {
     uint8_t packet[1 + 1];
     packet[0] = TCP_PACKET_DISCONNECT_NOTIFICATION;
     packet[1] = id;
-    return write_packet_TCP_secure_connection(&con->con, packet, sizeof(packet), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
 }
 
 /** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int tcp_send_ping_request(TCP_Client_Connection *con)
+static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *con)
 {
     if (!con->ping_request_id) {
         return 1;
@@ -437,7 +438,7 @@ static int tcp_send_ping_request(TCP_Client_Connection *con)
     uint8_t packet[1 + sizeof(uint64_t)];
     packet[0] = TCP_PACKET_PING;
     memcpy(packet + 1, &con->ping_request_id, sizeof(uint64_t));
-    const int ret = write_packet_TCP_secure_connection(&con->con, packet, sizeof(packet), 1);
+    const int ret = write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
 
     if (ret == 1) {
         con->ping_request_id = 0;
@@ -450,7 +451,7 @@ static int tcp_send_ping_request(TCP_Client_Connection *con)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-static int tcp_send_ping_response(TCP_Client_Connection *con)
+static int tcp_send_ping_response(const Logger *logger, TCP_Client_Connection *con)
 {
     if (!con->ping_response_id) {
         return 1;
@@ -459,7 +460,7 @@ static int tcp_send_ping_response(TCP_Client_Connection *con)
     uint8_t packet[1 + sizeof(uint64_t)];
     packet[0] = TCP_PACKET_PONG;
     memcpy(packet + 1, &con->ping_response_id, sizeof(uint64_t));
-    const int ret = write_packet_TCP_secure_connection(&con->con, packet, sizeof(packet), 1);
+    const int ret = write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
 
     if (ret == 1) {
         con->ping_response_id = 0;
@@ -472,7 +473,7 @@ static int tcp_send_ping_response(TCP_Client_Connection *con)
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
+int send_disconnect_request(const Logger *logger, TCP_Client_Connection *con, uint8_t con_id)
 {
     if (con_id >= NUM_CLIENT_CONNECTIONS) {
         return -1;
@@ -480,19 +481,19 @@ int send_disconnect_request(TCP_Client_Connection *con, uint8_t con_id)
 
     con->connections[con_id].status = 0;
     con->connections[con_id].number = 0;
-    return client_send_disconnect_notification(con, con_id + NUM_RESERVED_PORTS);
+    return client_send_disconnect_notification(logger, con, con_id + NUM_RESERVED_PORTS);
 }
 
 /** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int send_onion_request(TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
+int send_onion_request(const Logger *logger, TCP_Client_Connection *con, const uint8_t *data, uint16_t length)
 {
     VLA(uint8_t, packet, 1 + length);
     packet[0] = TCP_PACKET_ONION_REQUEST;
     memcpy(packet + 1, data, length);
-    return write_packet_TCP_secure_connection(&con->con, packet, SIZEOF_VLA(packet), 0);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), 0);
 }
 
 void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *onion_callback, void *object)
@@ -503,8 +504,9 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
 
 /** Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip_port, const uint8_t *public_key,
-        const uint8_t *self_public_key, const uint8_t *self_secret_key, const TCP_Proxy_Info *proxy_info)
+TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time *mono_time, IP_Port ip_port,
+        const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
+        const TCP_Proxy_Info *proxy_info)
 {
     if (networking_at_startup() != 0) {
         return nullptr;
@@ -537,7 +539,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
         return nullptr;
     }
 
-    if (!(set_socket_nonblock(sock) && connect_sock_to(sock, ip_port, proxy_info))) {
+    if (!(set_socket_nonblock(sock) && connect_sock_to(logger, sock, ip_port, proxy_info))) {
         kill_sock(sock);
         return nullptr;
     }
@@ -550,6 +552,7 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
     }
 
     temp->con.sock = sock;
+    temp->con.ip_port = ip_port;
     memcpy(temp->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(temp->self_public_key, self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     encrypt_precompute(temp->public_key, self_secret_key, temp->con.shared_key);
@@ -590,7 +593,8 @@ TCP_Client_Connection *new_TCP_connection(const Mono_Time *mono_time, IP_Port ip
 /** return 0 on success
  * return -1 on failure
  */
-static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length, void *userdata)
+static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection *conn, const uint8_t *data,
+                                    uint16_t length, void *userdata)
 {
     if (length <= 1) {
         return -1;
@@ -685,7 +689,7 @@ static int handle_TCP_client_packet(TCP_Client_Connection *conn, const uint8_t *
             uint64_t ping_id;
             memcpy(&ping_id, data + 1, sizeof(uint64_t));
             conn->ping_response_id = ping_id;
-            tcp_send_ping_response(conn);
+            tcp_send_ping_response(logger, conn);
             return 0;
         }
 
@@ -747,7 +751,7 @@ static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn
 {
     uint8_t packet[MAX_PACKET_SIZE];
     const int len = read_packet_TCP_secure_connection(logger, conn->con.sock, &conn->next_packet_length,
-                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet));
+                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), conn->ip_port);
 
     if (len == 0) {
         return false;
@@ -758,7 +762,7 @@ static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn
         return false;
     }
 
-    if (handle_TCP_client_packet(conn, packet, len, userdata) == -1) {
+    if (handle_TCP_client_packet(logger, conn, packet, len, userdata) == -1) {
         conn->status = TCP_CLIENT_DISCONNECTED;
         return false;
     }
@@ -769,9 +773,9 @@ static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn
 static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, const Mono_Time *mono_time,
                             void *userdata)
 {
-    send_pending_data(&conn->con);
-    tcp_send_ping_response(conn);
-    tcp_send_ping_request(conn);
+    send_pending_data(logger, &conn->con);
+    tcp_send_ping_response(logger, conn);
+    tcp_send_ping_request(logger, conn);
 
     if (mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_FREQUENCY)) {
         uint64_t ping_id = random_u64();
@@ -782,7 +786,7 @@ static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, c
 
         conn->ping_request_id = ping_id;
         conn->ping_id = ping_id;
-        tcp_send_ping_request(conn);
+        tcp_send_ping_request(logger, conn);
         conn->last_pinged = mono_time_get(mono_time);
     }
 
@@ -809,7 +813,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
     }
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_HTTP_CONNECTING) {
-        if (send_pending_data(&tcp_connection->con) == 0) {
+        if (send_pending_data(logger, &tcp_connection->con) == 0) {
             int ret = proxy_http_read_connection_response(logger, tcp_connection);
 
             if (ret == -1) {
@@ -825,7 +829,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
     }
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_SOCKS5_CONNECTING) {
-        if (send_pending_data(&tcp_connection->con) == 0) {
+        if (send_pending_data(logger, &tcp_connection->con) == 0) {
             int ret = socks5_read_handshake_response(logger, tcp_connection);
 
             if (ret == -1) {
@@ -841,7 +845,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
     }
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_SOCKS5_UNCONFIRMED) {
-        if (send_pending_data(&tcp_connection->con) == 0) {
+        if (send_pending_data(logger, &tcp_connection->con) == 0) {
             int ret = proxy_socks5_read_connection_response(logger, tcp_connection);
 
             if (ret == -1) {
@@ -857,14 +861,14 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
     }
 
     if (tcp_connection->status == TCP_CLIENT_CONNECTING) {
-        if (send_pending_data(&tcp_connection->con) == 0) {
+        if (send_pending_data(logger, &tcp_connection->con) == 0) {
             tcp_connection->status = TCP_CLIENT_UNCONFIRMED;
         }
     }
 
     if (tcp_connection->status == TCP_CLIENT_UNCONFIRMED) {
         uint8_t data[TCP_SERVER_HANDSHAKE_SIZE];
-        int len = read_TCP_packet(logger, tcp_connection->con.sock, data, sizeof(data));
+        int len = read_TCP_packet(logger, tcp_connection->con.sock, data, sizeof(data), tcp_connection->con.ip_port);
 
         if (sizeof(data) == len) {
             if (handle_handshake(tcp_connection, data) == 0) {

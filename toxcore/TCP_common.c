@@ -21,14 +21,14 @@ void wipe_priority_list(TCP_Priority_List *p)
 /** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
-int send_pending_data_nonpriority(TCP_Connection *con)
+int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con)
 {
     if (con->last_packet_length == 0) {
         return 0;
     }
 
     const uint16_t left = con->last_packet_length - con->last_packet_sent;
-    const int len = net_send(con->sock, con->last_packet + con->last_packet_sent, left);
+    const int len = net_send(logger, con->sock, con->last_packet + con->last_packet_sent, left, con->ip_port);
 
     if (len <= 0) {
         return -1;
@@ -47,10 +47,10 @@ int send_pending_data_nonpriority(TCP_Connection *con)
 /** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
-int send_pending_data(TCP_Connection *con)
+int send_pending_data(const Logger *logger, TCP_Connection *con)
 {
     /* finish sending current non-priority packet */
-    if (send_pending_data_nonpriority(con) == -1) {
+    if (send_pending_data_nonpriority(logger, con) == -1) {
         return -1;
     }
 
@@ -58,7 +58,7 @@ int send_pending_data(TCP_Connection *con)
 
     while (p) {
         const uint16_t left = p->size - p->sent;
-        const int len = net_send(con->sock, p->data + p->sent, left);
+        const int len = net_send(logger, con->sock, p->data + p->sent, left, con->ip_port);
 
         if (len != left) {
             if (len > 0) {
@@ -122,7 +122,8 @@ bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uin
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data, uint16_t length, bool priority)
+int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
+                                       bool priority)
 {
     if (length + CRYPTO_MAC_SIZE > MAX_PACKET_SIZE) {
         return -1;
@@ -130,7 +131,7 @@ int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data,
 
     bool sendpriority = 1;
 
-    if (send_pending_data(con) == -1) {
+    if (send_pending_data(logger, con) == -1) {
         if (priority) {
             sendpriority = 0;
         } else {
@@ -149,7 +150,7 @@ int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data,
     }
 
     if (priority) {
-        len = sendpriority ? net_send(con->sock, packet, SIZEOF_VLA(packet)) : 0;
+        len = sendpriority ? net_send(logger, con->sock, packet, SIZEOF_VLA(packet), con->ip_port) : 0;
 
         if (len <= 0) {
             len = 0;
@@ -164,7 +165,7 @@ int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data,
         return add_priority(con, packet, SIZEOF_VLA(packet), len);
     }
 
-    len = net_send(con->sock, packet, SIZEOF_VLA(packet));
+    len = net_send(logger, con->sock, packet, SIZEOF_VLA(packet), con->ip_port);
 
     if (len <= 0) {
         return 0;
@@ -187,22 +188,23 @@ int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data,
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length)
+int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, IP_Port ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(sock);
 
-    if (count >= length) {
-        const int len = net_recv(sock, data, length);
-
-        if (len != length) {
-            LOGGER_ERROR(logger, "FAIL recv packet");
-            return -1;
-        }
-
-        return len;
+    if (count < length) {
+        LOGGER_INFO(logger, "recv buffer has %d bytes, but requested %d bytes", count, length);
+        return -1;
     }
 
-    return -1;
+    const int len = net_recv(logger, sock, data, length, ip_port);
+
+    if (len != length) {
+        LOGGER_ERROR(logger, "FAIL recv packet");
+        return -1;
+    }
+
+    return len;
 }
 
 /** Read the next two bytes in TCP stream then convert them to
@@ -212,22 +214,24 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
  * return 0 if nothing has been read from socket.
  * return -1 on failure.
  */
-static uint16_t read_TCP_length(const Logger *logger, Socket sock)
+static uint16_t read_TCP_length(const Logger *logger, Socket sock, IP_Port ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(sock);
 
     if (count >= sizeof(uint16_t)) {
-        uint16_t length;
-        const int len = net_recv(sock, &length, sizeof(uint16_t));
+        uint8_t length_buf[sizeof(uint16_t)];
+        const int len = net_recv(logger, sock, length_buf, sizeof(length_buf), ip_port);
 
         if (len != sizeof(uint16_t)) {
             LOGGER_ERROR(logger, "FAIL recv packet");
             return 0;
         }
 
-        length = net_ntohs(length);
+        uint16_t length;
+        net_unpack_u16(length_buf, &length);
 
         if (length > MAX_PACKET_SIZE) {
+            LOGGER_WARNING(logger, "TCP packet too large: %d > %d", length, MAX_PACKET_SIZE);
             return -1;
         }
 
@@ -242,10 +246,10 @@ static uint16_t read_TCP_length(const Logger *logger, Socket sock)
  * return -1 on failure (connection must be killed).
  */
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
-                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len)
+                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len, IP_Port ip_port)
 {
     if (*next_packet_length == 0) {
-        uint16_t len = read_TCP_length(logger, sock);
+        const uint16_t len = read_TCP_length(logger, sock, ip_port);
 
         if (len == (uint16_t) -1) {
             return -1;
@@ -259,21 +263,24 @@ int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_
     }
 
     if (max_len + CRYPTO_MAC_SIZE < *next_packet_length) {
+        LOGGER_DEBUG(logger, "packet too large");
         return -1;
     }
 
     VLA(uint8_t, data_encrypted, *next_packet_length);
-    int len_packet = read_TCP_packet(logger, sock, data_encrypted, *next_packet_length);
+    const int len_packet = read_TCP_packet(logger, sock, data_encrypted, *next_packet_length, ip_port);
 
     if (len_packet != *next_packet_length) {
+        LOGGER_WARNING(logger, "invalid packet length: %d, expected %d", len_packet, *next_packet_length);
         return 0;
     }
 
     *next_packet_length = 0;
 
-    int len = decrypt_data_symmetric(shared_key, recv_nonce, data_encrypted, len_packet, data);
+    const int len = decrypt_data_symmetric(shared_key, recv_nonce, data_encrypted, len_packet, data);
 
     if (len + CRYPTO_MAC_SIZE != len_packet) {
+        LOGGER_WARNING(logger, "decrypted length %d does not match expected length %d", len + CRYPTO_MAC_SIZE, len_packet);
         return -1;
     }
 

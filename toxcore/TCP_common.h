@@ -46,6 +46,7 @@ void wipe_priority_list(TCP_Priority_List *p);
 
 typedef struct TCP_Connection {
     Socket sock;
+    IP_Port ip_port;  // for debugging.
     uint8_t sent_nonce[CRYPTO_NONCE_SIZE]; /* Nonce of sent packets. */
     uint8_t shared_key[CRYPTO_SHARED_KEY_SIZE];
     uint8_t last_packet[2 + MAX_PACKET_SIZE];
@@ -59,12 +60,12 @@ typedef struct TCP_Connection {
 /** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
-int send_pending_data_nonpriority(TCP_Connection *con);
+int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con);
 
 /** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
-int send_pending_data(TCP_Connection *con);
+int send_pending_data(const Logger *logger, TCP_Connection *con);
 
 /** return 0 on failure (only if calloc fails)
  * return 1 on success
@@ -75,20 +76,21 @@ bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uin
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
-int write_packet_TCP_secure_connection(TCP_Connection *con, const uint8_t *data, uint16_t length, bool priority);
+int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
+                                       bool priority);
 
 /** Read length bytes from socket.
  *
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length);
+int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, IP_Port ip_port);
 
 /** return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
-                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len);
+                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len, IP_Port ip_port);
 
 #endif

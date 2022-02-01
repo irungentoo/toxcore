@@ -32,6 +32,8 @@ COPY CMakeLists.txt so.version ./
 
 RUN cmake -B_build -H. \
       -GNinja \
+      -DCMAKE_C_FLAGS=-DTCP_SERVER_USE_EPOLL \
+      -DMIN_LOGGER_LEVEL=DEBUG \
       -DCMAKE_BUILD_TYPE=Release \
       -DFULLY_STATIC=ON \
       -DBUILD_TOXAV=OFF \

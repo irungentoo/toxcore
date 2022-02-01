@@ -493,21 +493,21 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
     if (res < 0) { /* Windows doesn't necessarily know `%zu` */
         int error = net_error();
         char *strerror = net_new_strerror(error);
-        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
+        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(buflen, 999), 'E',
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), error,
-                     strerror, data_0(buflen, buffer), data_1(buflen, buffer));
+                     strerror, data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
         net_kill_strerror(strerror);
     } else if ((res > 0) && ((size_t)res <= buflen)) {
-        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %04x%04x",
+        LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
-                     data_0(buflen, buffer), data_1(buflen, buffer));
+                     data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     } else { /* empty or overwrite */
-        LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %04x%04x",
+        LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, res, !res ? '!' : '>', buflen,
                      ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
-                     data_0(buflen, buffer), data_1(buflen, buffer));
+                     data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     }
 }
 
@@ -1401,7 +1401,7 @@ bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
     return true;
 }
 
-int net_connect(Socket sock, IP_Port ip_port)
+int net_connect(const Logger *log, Socket sock, IP_Port ip_port)
 {
     struct sockaddr_storage addr = {0};
     size_t addrsize;
@@ -1427,6 +1427,7 @@ int net_connect(Socket sock, IP_Port ip_port)
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     return 0;
 #else
+    LOGGER_DEBUG(log, "connecting socket %d", (int)sock.socket);
     return connect(sock.socket, (struct sockaddr *)&addr, addrsize);
 #endif
 }
@@ -1442,8 +1443,24 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 
     return 1;
 #else
+    // Try parsing as IP address first.
+    IP_Port parsed = {0};
+
+    if (addr_parse_ip(node, &parsed.ip)) {
+        IP_Port *tmp = (IP_Port *)calloc(1, sizeof(IP_Port));
+
+        if (tmp == nullptr) {
+            return -1;
+        }
+
+        tmp[0] = parsed;
+        *res = tmp;
+        return 1;
+    }
+
+    // It's not an IP address, so now we try doing a DNS lookup.
     struct addrinfo *infos;
-    int ret = getaddrinfo(node, nullptr, nullptr, &infos);
+    const int ret = getaddrinfo(node, nullptr, nullptr, &infos);
     *res = nullptr;
 
     if (ret != 0) {
@@ -1452,11 +1469,10 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 
     // Used to avoid calloc parameter overflow
     const size_t max_count = min_u64(SIZE_MAX, INT32_MAX) / sizeof(IP_Port);
-    int type = make_socktype(tox_type);
-    struct addrinfo *cur;
+    const int type = make_socktype(tox_type);
     size_t count = 0;
 
-    for (cur = infos; count < max_count && cur != nullptr; cur = cur->ai_next) {
+    for (struct addrinfo *cur = infos; count < max_count && cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1484,7 +1500,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
 
     IP_Port *ip_port = *res;
 
-    for (cur = infos; cur != nullptr; cur = cur->ai_next) {
+    for (struct addrinfo *cur = infos; cur != nullptr; cur = cur->ai_next) {
         if (cur->ai_socktype && type > 0 && cur->ai_socktype != type) {
             continue;
         }
@@ -1565,22 +1581,26 @@ Socket net_socket(Family domain, int type, int protocol)
 #endif
 }
 
-int net_send(Socket sock, const void *buf, size_t len)
+int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, IP_Port ip_port)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return fuzz_send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
+    int res = fuzz_send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
 #else
-    return send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
+    int res = send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
 #endif
+    loglogdata(log, "T=>", buf, len, ip_port, res);
+    return res;
 }
 
-int net_recv(Socket sock, void *buf, size_t len)
+int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, IP_Port ip_port)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return fuzz_recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
+    int res = fuzz_recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
 #else
-    return recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
+    int res = recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
 #endif
+    loglogdata(log, "=>T", buf, len, ip_port, res);
+    return res;
 }
 
 int net_listen(Socket sock, int backlog)
