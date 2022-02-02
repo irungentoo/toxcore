@@ -1746,17 +1746,35 @@ char *net_new_strerror(int error)
                    error, 0, (char *)&str, 0, nullptr);
     return str;
 #else
-    char *str = (char *)malloc(256);
-#ifdef _GNU_SOURCE
-    str = strerror_r(error, str, 256);
-#else
-    const int fmt_error = strerror_r(error, str, 256);
+    char tmp[256];
 
-    if (fmt_error != 0) {
-        snprintf(str, 256, "error %d (strerror failed with error %d)", error, fmt_error);
+    errno = 0;
+
+#ifdef _GNU_SOURCE
+    const char *retstr = strerror_r(error, tmp, sizeof(tmp));
+
+    if (errno != 0) {
+        snprintf(tmp, sizeof(tmp), "error %d (strerror_r failed with errno %d)", error, errno);
     }
 
+#else
+    const int fmt_error = strerror_r(error, tmp, sizeof(tmp));
+
+    if (fmt_error != 0) {
+        snprintf(tmp, sizeof(tmp), "error %d (strerror_r failed with error %d, errno %d)", error, fmt_error, errno);
+    }
+
+    const char *retstr = tmp;
 #endif
+
+    const size_t retstr_len = strlen(retstr);
+    char *str = (char *)malloc(retstr_len + 1);
+
+    if (str == nullptr) {
+        return nullptr;
+    }
+
+    memcpy(str, retstr, retstr_len + 1);
 
     return str;
 #endif
