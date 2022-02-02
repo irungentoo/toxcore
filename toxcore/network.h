@@ -164,11 +164,11 @@ extern const Socket net_invalid_socket;
 /**
  * Calls send(sockfd, buf, len, MSG_NOSIGNAL).
  */
-int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, IP_Port ip_port);
+int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, const IP_Port *ip_port);
 /**
  * Calls recv(sockfd, buf, len, MSG_NOSIGNAL).
  */
-int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, IP_Port ip_port);
+int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, const IP_Port *ip_port);
 /**
  * Calls listen(sockfd, backlog).
  */
@@ -321,7 +321,7 @@ bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
  * Packet data is put into data.
  * Packet length is put into length.
  */
-typedef int packet_handler_cb(void *object, IP_Port ip_port, const uint8_t *data, uint16_t len, void *userdata);
+typedef int packet_handler_cb(void *object, const IP_Port *ip_port, const uint8_t *data, uint16_t len, void *userdata);
 
 typedef struct Networking_Core Networking_Core;
 
@@ -389,7 +389,7 @@ int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet);
  *
  * @deprecated Use send_packet instead.
  */
-int sendpacket(const Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length);
+int sendpacket(const Networking_Core *net, const IP_Port *ip_port, const uint8_t *data, uint16_t length);
 
 /** Function to call when packet beginning with byte is received. */
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_cb *cb, void *object);
@@ -402,7 +402,7 @@ void networking_poll(const Networking_Core *net, void *userdata);
  * Return 0 on success.
  * Return -1 on failure.
  */
-int net_connect(const Logger *log, Socket sock, IP_Port ip_port);
+int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
 
 /** High-level getaddrinfo implementation.
  * Given node, which identifies an Internet host, net_getipport() fills an array

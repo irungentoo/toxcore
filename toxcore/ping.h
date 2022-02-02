@@ -31,10 +31,10 @@ void ping_kill(Ping *ping);
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
-int32_t ping_add(Ping *ping, const uint8_t *public_key, struct IP_Port ip_port);
+int32_t ping_add(Ping *ping, const uint8_t *public_key, const IP_Port *ip_port);
 
 void ping_iterate(Ping *ping);
 
-void ping_send_request(Ping *ping, struct IP_Port ipp, const uint8_t *public_key);
+void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key);
 
 #endif // C_TOXCORE_TOXCORE_PING_H

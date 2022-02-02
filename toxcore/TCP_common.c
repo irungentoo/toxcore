@@ -28,7 +28,7 @@ int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con)
     }
 
     const uint16_t left = con->last_packet_length - con->last_packet_sent;
-    const int len = net_send(logger, con->sock, con->last_packet + con->last_packet_sent, left, con->ip_port);
+    const int len = net_send(logger, con->sock, con->last_packet + con->last_packet_sent, left, &con->ip_port);
 
     if (len <= 0) {
         return -1;
@@ -58,7 +58,7 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
 
     while (p) {
         const uint16_t left = p->size - p->sent;
-        const int len = net_send(logger, con->sock, p->data + p->sent, left, con->ip_port);
+        const int len = net_send(logger, con->sock, p->data + p->sent, left, &con->ip_port);
 
         if (len != left) {
             if (len > 0) {
@@ -150,7 +150,7 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
     }
 
     if (priority) {
-        len = sendpriority ? net_send(logger, con->sock, packet, SIZEOF_VLA(packet), con->ip_port) : 0;
+        len = sendpriority ? net_send(logger, con->sock, packet, SIZEOF_VLA(packet), &con->ip_port) : 0;
 
         if (len <= 0) {
             len = 0;
@@ -165,7 +165,7 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
         return add_priority(con, packet, SIZEOF_VLA(packet), len);
     }
 
-    len = net_send(logger, con->sock, packet, SIZEOF_VLA(packet), con->ip_port);
+    len = net_send(logger, con->sock, packet, SIZEOF_VLA(packet), &con->ip_port);
 
     if (len <= 0) {
         return 0;
@@ -188,7 +188,7 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, IP_Port ip_port)
+int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(sock);
 
@@ -214,7 +214,7 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
  * return 0 if nothing has been read from socket.
  * return -1 on failure.
  */
-static uint16_t read_TCP_length(const Logger *logger, Socket sock, IP_Port ip_port)
+static uint16_t read_TCP_length(const Logger *logger, Socket sock, const IP_Port *ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(sock);
 
@@ -246,7 +246,8 @@ static uint16_t read_TCP_length(const Logger *logger, Socket sock, IP_Port ip_po
  * return -1 on failure (connection must be killed).
  */
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
-                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len, IP_Port ip_port)
+                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
+                                      uint16_t max_len, const IP_Port *ip_port)
 {
     if (*next_packet_length == 0) {
         const uint16_t len = read_TCP_length(logger, sock, ip_port);

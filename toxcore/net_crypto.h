@@ -161,7 +161,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
  * return -1 on failure.
  * return 0 on success.
  */
-int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, bool connected);
+int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, const IP_Port *ip_port, bool connected);
 
 /* Set function to be called when connection with crypt_connection_id goes connects/disconnects.
  *
@@ -257,14 +257,14 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, IP_Port ip_port, const uint8_t *public_key);
+int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, const IP_Port *ip_port, const uint8_t *public_key);
 
 /* Add a tcp relay to the array.
  *
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay(Net_Crypto *c, IP_Port ip_port, const uint8_t *public_key);
+int add_tcp_relay(Net_Crypto *c, const IP_Port *ip_port, const uint8_t *public_key);
 
 /* Return a random TCP connection number for use in send_tcp_onion_request.
  *

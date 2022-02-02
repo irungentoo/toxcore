@@ -102,7 +102,7 @@ static int connect_sock_to(const Logger *logger, Socket sock, IP_Port ip_port, c
     }
 
     /* nonblocking socket, connect will never return success */
-    net_connect(logger, sock, ip_port);
+    net_connect(logger, sock, &ip_port);
 
     return 1;
 }
@@ -145,7 +145,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
     char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
 
-    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data) - 1, tcp_conn->con.ip_port);
+    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data) - 1, &tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -159,7 +159,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
 
         if (data_left) {
             VLA(uint8_t, temp_data, data_left);
-            read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left, tcp_conn->con.ip_port);
+            read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left, &tcp_conn->con.ip_port);
         }
 
         return 1;
@@ -194,7 +194,7 @@ static void proxy_socks5_generate_greetings(TCP_Client_Connection *tcp_conn)
 static int socks5_read_handshake_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     uint8_t data[2];
-    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), tcp_conn->con.ip_port);
+    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -241,7 +241,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
 {
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), tcp_conn->con.ip_port);
+        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
 
         if (ret == -1) {
             return 0;
@@ -252,7 +252,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
         }
     } else {
         uint8_t data[4 + sizeof(IP6) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), tcp_conn->con.ip_port);
+        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
 
         if (ret == -1) {
             return 0;
@@ -504,7 +504,7 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
 
 /** Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time *mono_time, IP_Port ip_port,
+TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time *mono_time, const IP_Port *ip_port,
         const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
         const TCP_Proxy_Info *proxy_info)
 {
@@ -512,7 +512,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
         return nullptr;
     }
 
-    if (!net_family_is_ipv4(ip_port.ip.family) && !net_family_is_ipv6(ip_port.ip.family)) {
+    if (!net_family_is_ipv4(ip_port->ip.family) && !net_family_is_ipv6(ip_port->ip.family)) {
         return nullptr;
     }
 
@@ -522,7 +522,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
         proxy_info = &default_proxyinfo;
     }
 
-    Family family = ip_port.ip.family;
+    Family family = ip_port->ip.family;
 
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
         family = proxy_info->ip_port.ip.family;
@@ -539,7 +539,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
         return nullptr;
     }
 
-    if (!(set_socket_nonblock(sock) && connect_sock_to(logger, sock, ip_port, proxy_info))) {
+    if (!(set_socket_nonblock(sock) && connect_sock_to(logger, sock, *ip_port, proxy_info))) {
         kill_sock(sock);
         return nullptr;
     }
@@ -552,11 +552,11 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
     }
 
     temp->con.sock = sock;
-    temp->con.ip_port = ip_port;
+    temp->con.ip_port = *ip_port;
     memcpy(temp->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(temp->self_public_key, self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     encrypt_precompute(temp->public_key, self_secret_key, temp->con.shared_key);
-    temp->ip_port = ip_port;
+    temp->ip_port = *ip_port;
     temp->proxy_info = *proxy_info;
 
     switch (proxy_info->proxy_type) {
@@ -751,7 +751,7 @@ static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn
 {
     uint8_t packet[MAX_PACKET_SIZE];
     const int len = read_packet_TCP_secure_connection(logger, conn->con.sock, &conn->next_packet_length,
-                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), conn->ip_port);
+                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->ip_port);
 
     if (len == 0) {
         return false;
@@ -868,7 +868,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
 
     if (tcp_connection->status == TCP_CLIENT_UNCONFIRMED) {
         uint8_t data[TCP_SERVER_HANDSHAKE_SIZE];
-        int len = read_TCP_packet(logger, tcp_connection->con.sock, data, sizeof(data), tcp_connection->con.ip_port);
+        int len = read_TCP_packet(logger, tcp_connection->con.sock, data, sizeof(data), &tcp_connection->con.ip_port);
 
         if (sizeof(data) == len) {
             if (handle_handshake(tcp_connection, data) == 0) {

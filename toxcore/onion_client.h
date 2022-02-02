@@ -60,7 +60,7 @@ Net_Crypto *onion_get_net_crypto(const Onion_Client *onion_c);
  * return -1 on failure
  * return 0 on success
  */
-int onion_add_bs_path_node(Onion_Client *onion_c, IP_Port ip_port, const uint8_t *public_key);
+int onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** Put up to max_num nodes in nodes.
  *
@@ -109,7 +109,7 @@ int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_on
  */
 int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_port);
 
-typedef int recv_tcp_relay_cb(void *object, uint32_t number, IP_Port ip_port, const uint8_t *public_key);
+typedef int recv_tcp_relay_cb(void *object, uint32_t number, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** Set the function for this friend that will be callbacked with object and number
  * when that friends gives us one of the TCP relays he is connected to.

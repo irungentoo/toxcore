@@ -34,15 +34,15 @@ static void change_symmetric_key(Onion *onion)
 }
 
 /** packing and unpacking functions */
-static void ip_pack(uint8_t *data, IP source)
+static void ip_pack(uint8_t *data, const IP *source)
 {
-    data[0] = source.family.value;
+    data[0] = source->family.value;
 
-    if (net_family_is_ipv4(source.family) || net_family_is_tox_tcp_ipv4(source.family)) {
+    if (net_family_is_ipv4(source->family) || net_family_is_tox_tcp_ipv4(source->family)) {
         memset(data + 1, 0, SIZE_IP6);
-        memcpy(data + 1, source.ip.v4.uint8, SIZE_IP4);
+        memcpy(data + 1, source->ip.v4.uint8, SIZE_IP4);
     } else {
-        memcpy(data + 1, source.ip.v6.uint8, SIZE_IP6);
+        memcpy(data + 1, source->ip.v6.uint8, SIZE_IP6);
     }
 }
 
@@ -71,7 +71,7 @@ static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bo
 
 static void ipport_pack(uint8_t *data, const IP_Port *source)
 {
-    ip_pack(data, source->ip);
+    ip_pack(data, &source->ip);
     memcpy(data + SIZE_IP, &source->port, SIZE_PORT);
 }
 
@@ -163,7 +163,7 @@ int onion_path_to_nodes(Node_format *nodes, unsigned int num_nodes, const Onion_
  * return -1 on failure.
  * return length of created packet on success.
  */
-int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
+int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, const IP_Port *dest,
                         const uint8_t *data, uint16_t length)
 {
     if (1 + length + SEND_1 > max_packet_length || length == 0) {
@@ -172,7 +172,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
 
     VLA(uint8_t, step1, SIZE_IPPORT + length);
 
-    ipport_pack(step1, &dest);
+    ipport_pack(step1, dest);
     memcpy(step1 + SIZE_IPPORT, data, length);
 
     uint8_t nonce[CRYPTO_NONCE_SIZE];
@@ -222,7 +222,7 @@ int create_onion_packet(uint8_t *packet, uint16_t max_packet_length, const Onion
  * return -1 on failure.
  * return length of created packet on success.
  */
-int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, IP_Port dest,
+int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, const IP_Port *dest,
                             const uint8_t *data, uint16_t length)
 {
     if (CRYPTO_NONCE_SIZE + SIZE_IPPORT + SEND_BASE * 2 + length > max_packet_length || length == 0) {
@@ -231,7 +231,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
 
     VLA(uint8_t, step1, SIZE_IPPORT + length);
 
-    ipport_pack(step1, &dest);
+    ipport_pack(step1, dest);
     memcpy(step1 + SIZE_IPPORT, data, length);
 
     uint8_t nonce[CRYPTO_NONCE_SIZE];
@@ -270,7 +270,7 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_packet(const Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *data,
+int send_onion_packet(const Networking_Core *net, const Onion_Path *path, const IP_Port *dest, const uint8_t *data,
                       uint16_t length)
 {
     uint8_t packet[ONION_MAX_PACKET_SIZE];
@@ -280,7 +280,7 @@ int send_onion_packet(const Networking_Core *net, const Onion_Path *path, IP_Por
         return -1;
     }
 
-    if (sendpacket(net, path->ip_port1, packet, len) != len) {
+    if (sendpacket(net, &path->ip_port1, packet, len) != len) {
         return -1;
     }
 
@@ -293,7 +293,7 @@ int send_onion_packet(const Networking_Core *net, const Onion_Path *path, IP_Por
  * return -1 on failure.
  * return 0 on success.
  */
-int send_onion_response(const Networking_Core *net, IP_Port dest, const uint8_t *data, uint16_t length,
+int send_onion_response(const Networking_Core *net, const IP_Port *dest, const uint8_t *data, uint16_t length,
                         const uint8_t *ret)
 {
     if (length > ONION_RESPONSE_MAX_DATA_SIZE || length == 0) {
@@ -312,7 +312,8 @@ int send_onion_response(const Networking_Core *net, IP_Port dest, const uint8_t 
     return 0;
 }
 
-static int handle_send_initial(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_send_initial(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
+                               void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -340,7 +341,7 @@ static int handle_send_initial(void *object, IP_Port source, const uint8_t *pack
     return onion_send_1(onion, plain, len, source, packet + 1);
 }
 
-int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port source, const uint8_t *nonce)
+int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, const IP_Port *source, const uint8_t *nonce)
 {
     if (len > ONION_MAX_PACKET_SIZE + SIZE_IPPORT - (1 + CRYPTO_NONCE_SIZE + ONION_RETURN_1)) {
         return 1;
@@ -357,7 +358,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
     }
 
     uint8_t ip_port[SIZE_IPPORT];
-    ipport_pack(ip_port, &source);
+    ipport_pack(ip_port, source);
 
     uint8_t data[ONION_MAX_PACKET_SIZE] = {0};
     data[0] = NET_PACKET_ONION_SEND_1;
@@ -375,14 +376,14 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, IP_Port
 
     data_len += CRYPTO_NONCE_SIZE + len;
 
-    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len) {
+    if ((uint32_t)sendpacket(onion->net, &send_to, data, data_len) != data_len) {
         return 1;
     }
 
     return 0;
 }
 
-static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_send_1(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -421,7 +422,7 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
     uint8_t *ret_part = data + data_len;
     random_nonce(ret_part);
     uint8_t ret_data[RETURN_1 + SIZE_IPPORT];
-    ipport_pack(ret_data, &source);
+    ipport_pack(ret_data, source);
     memcpy(ret_data + SIZE_IPPORT, packet + (length - RETURN_1), RETURN_1);
     len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, ret_data, sizeof(ret_data),
                                  ret_part + CRYPTO_NONCE_SIZE);
@@ -432,14 +433,14 @@ static int handle_send_1(void *object, IP_Port source, const uint8_t *packet, ui
 
     data_len += CRYPTO_NONCE_SIZE + len;
 
-    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len) {
+    if ((uint32_t)sendpacket(onion->net, &send_to, data, data_len) != data_len) {
         return 1;
     }
 
     return 0;
 }
 
-static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_send_2(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -486,7 +487,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
     uint8_t *ret_part = data + (len - SIZE_IPPORT);
     random_nonce(ret_part);
     uint8_t ret_data[RETURN_2 + SIZE_IPPORT];
-    ipport_pack(ret_data, &source);
+    ipport_pack(ret_data, source);
     memcpy(ret_data + SIZE_IPPORT, packet + (length - RETURN_2), RETURN_2);
     len = encrypt_data_symmetric(onion->secret_symmetric_key, ret_part, ret_data, sizeof(ret_data),
                                  ret_part + CRYPTO_NONCE_SIZE);
@@ -497,7 +498,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 
     data_len += RETURN_3;
 
-    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len) {
+    if ((uint32_t)sendpacket(onion->net, &send_to, data, data_len) != data_len) {
         return 1;
     }
 
@@ -505,7 +506,7 @@ static int handle_send_2(void *object, IP_Port source, const uint8_t *packet, ui
 }
 
 
-static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -545,14 +546,14 @@ static int handle_recv_3(void *object, IP_Port source, const uint8_t *packet, ui
     memcpy(data + 1 + RETURN_2, packet + 1 + RETURN_3, length - (1 + RETURN_3));
     uint16_t data_len = 1 + RETURN_2 + (length - (1 + RETURN_3));
 
-    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len) {
+    if ((uint32_t)sendpacket(onion->net, &send_to, data, data_len) != data_len) {
         return 1;
     }
 
     return 0;
 }
 
-static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_recv_2(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -592,14 +593,14 @@ static int handle_recv_2(void *object, IP_Port source, const uint8_t *packet, ui
     memcpy(data + 1 + RETURN_1, packet + 1 + RETURN_2, length - (1 + RETURN_2));
     uint16_t data_len = 1 + RETURN_1 + (length - (1 + RETURN_2));
 
-    if ((uint32_t)sendpacket(onion->net, send_to, data, data_len) != data_len) {
+    if ((uint32_t)sendpacket(onion->net, &send_to, data, data_len) != data_len) {
         return 1;
     }
 
     return 0;
 }
 
-static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_recv_1(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -638,10 +639,10 @@ static int handle_recv_1(void *object, IP_Port source, const uint8_t *packet, ui
     if (onion->recv_1_function &&
             !net_family_is_ipv4(send_to.ip.family) &&
             !net_family_is_ipv6(send_to.ip.family)) {
-        return onion->recv_1_function(onion->callback_object, send_to, packet + (1 + RETURN_1), data_len);
+        return onion->recv_1_function(onion->callback_object, &send_to, packet + (1 + RETURN_1), data_len);
     }
 
-    if ((uint32_t)sendpacket(onion->net, send_to, packet + (1 + RETURN_1), data_len) != data_len) {
+    if ((uint32_t)sendpacket(onion->net, &send_to, packet + (1 + RETURN_1), data_len) != data_len) {
         return 1;
     }
 

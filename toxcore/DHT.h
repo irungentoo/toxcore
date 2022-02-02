@@ -190,7 +190,7 @@ typedef struct Shared_Keys {
 
 /*----------------------------------------------------------------------------------*/
 
-typedef int cryptopacket_handler_cb(void *object, IP_Port ip_port, const uint8_t *source_pubkey,
+typedef int cryptopacket_handler_cb(void *object, const IP_Port *ip_port, const uint8_t *source_pubkey,
                                     const uint8_t *data, uint16_t len, void *userdata);
 
 typedef struct DHT DHT;
@@ -238,7 +238,7 @@ void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
  */
 bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *client_id);
 
-typedef void dht_ip_cb(void *object, int32_t number, IP_Port ip_port);
+typedef void dht_ip_cb(void *object, int32_t number, const IP_Port *ip_port);
 
 /** Add a new friend to the friends list.
  * public_key must be CRYPTO_PUBLIC_KEY_SIZE bytes long.
@@ -329,7 +329,8 @@ void do_dht(DHT *dht);
 /** Sends a "get nodes" request to the given node with ip, port and public_key
  *   to setup connections
  */
-void dht_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+void dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key);
+
 /** Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections
  *

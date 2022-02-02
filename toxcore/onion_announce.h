@@ -99,7 +99,8 @@ int send_announce_request(const Networking_Core *net, const Onion_Path *path, No
  * return -1 on failure.
  * return 0 on success.
  */
-int send_data_request(const Networking_Core *net, const Onion_Path *path, IP_Port dest, const uint8_t *public_key,
+int send_data_request(const Networking_Core *net, const Onion_Path *path, const IP_Port *dest,
+                      const uint8_t *public_key,
                       const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length);
 
 

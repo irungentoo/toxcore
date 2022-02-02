@@ -330,9 +330,9 @@ static int handle_TCP_handshake(const Logger *logger, TCP_Secure_Connection *con
         return -1;
     }
 
-    if (TCP_SERVER_HANDSHAKE_SIZE != net_send(logger, con->con.sock, response, TCP_SERVER_HANDSHAKE_SIZE, (IP_Port) {
-    0
-})) {
+    IP_Port ipp = {0};
+
+    if (TCP_SERVER_HANDSHAKE_SIZE != net_send(logger, con->con.sock, response, TCP_SERVER_HANDSHAKE_SIZE, &ipp)) {
         crypto_memzero(shared_key, sizeof(shared_key));
         return -1;
     }
@@ -352,7 +352,7 @@ static int handle_TCP_handshake(const Logger *logger, TCP_Secure_Connection *con
 static int read_connection_handshake(const Logger *logger, TCP_Secure_Connection *con, const uint8_t *self_secret_key)
 {
     uint8_t data[TCP_CLIENT_HANDSHAKE_SIZE];
-    const int len = read_TCP_packet(logger, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, con->con.ip_port);
+    const int len = read_TCP_packet(logger, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, &con->con.ip_port);
 
     if (len == -1) {
         LOGGER_WARNING(logger, "connection handshake is not ready yet");
@@ -540,10 +540,10 @@ static int rm_connection_index(TCP_Server *tcp_server, TCP_Secure_Connection *co
     return -1;
 }
 
-static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, uint16_t length)
+static int handle_onion_recv_1(void *object, const IP_Port *dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *tcp_server = (TCP_Server *)object;
-    uint32_t index = dest.ip.ip.v6.uint32[0];
+    uint32_t index = dest->ip.ip.v6.uint32[0];
 
     if (index >= tcp_server->size_accepted_connections) {
         return 1;
@@ -551,7 +551,7 @@ static int handle_onion_recv_1(void *object, IP_Port dest, const uint8_t *data, 
 
     TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[index];
 
-    if (con->identifier != dest.ip.ip.v6.uint64[1]) {
+    if (con->identifier != dest->ip.ip.v6.uint64[1]) {
         return 1;
     }
 
@@ -665,7 +665,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 source.ip.ip.v6.uint32[0] = con_id;
                 source.ip.ip.v6.uint32[1] = 0;
                 source.ip.ip.v6.uint64[1] = con->identifier;
-                onion_send_1(tcp_server->onion, data + 1 + CRYPTO_NONCE_SIZE, length - (1 + CRYPTO_NONCE_SIZE), source,
+                onion_send_1(tcp_server->onion, data + 1 + CRYPTO_NONCE_SIZE, length - (1 + CRYPTO_NONCE_SIZE), &source,
                              data + 1);
             }
 
@@ -945,7 +945,7 @@ static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, ui
 
     uint8_t packet[MAX_PACKET_SIZE];
     const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.sock, &conn->next_packet_length,
-                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), conn->con.ip_port);
+                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
 
     if (len == 0) {
         return -1;
@@ -965,7 +965,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
 
     uint8_t packet[MAX_PACKET_SIZE];
     const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.sock, &conn->next_packet_length,
-                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), conn->con.ip_port);
+                    conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
     LOGGER_DEBUG(tcp_server->logger, "processing packet for %d: %d", i, len);
 
     if (len == 0) {

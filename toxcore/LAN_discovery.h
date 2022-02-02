@@ -34,13 +34,13 @@ void lan_discovery_kill(DHT *dht);
 /**
  * Is IP a local ip or not.
  */
-bool ip_is_local(IP ip);
+bool ip_is_local(const IP *ip);
 
 /**
  * Checks if a given IP isn't routable.
  *
  * @return true if ip is a LAN ip, false if it is not.
  */
-bool ip_is_lan(IP ip);
+bool ip_is_lan(const IP *ip);
 
 #endif // C_TOXCORE_TOXCORE_LAN_DISCOVERY_H

@@ -296,15 +296,15 @@ static void get_ip6(IP6 *result, const struct in6_addr *addr)
     memcpy(result->uint8, addr->s6_addr, sizeof(result->uint8));
 }
 
-static void fill_addr4(IP4 ip, struct in_addr *addr)
+static void fill_addr4(const IP4 *ip, struct in_addr *addr)
 {
-    addr->s_addr = ip.uint32;
+    addr->s_addr = ip->uint32;
 }
 
-static void fill_addr6(IP6 ip, struct in6_addr *addr)
+static void fill_addr6(const IP6 *ip, struct in6_addr *addr)
 {
-    assert(sizeof(ip.uint8) == sizeof(addr->s6_addr));
-    memcpy(addr->s6_addr, ip.uint8, sizeof(ip.uint8));
+    assert(sizeof(ip->uint8) == sizeof(addr->s6_addr));
+    memcpy(addr->s6_addr, ip->uint8, sizeof(ip->uint8));
 }
 
 #if !defined(INADDR_LOOPBACK)
@@ -486,7 +486,7 @@ static uint32_t data_1(uint16_t buflen, const uint8_t *buffer)
 }
 
 static void loglogdata(const Logger *log, const char *message, const uint8_t *buffer,
-                       uint16_t buflen, IP_Port ip_port, long res)
+                       uint16_t buflen, const IP_Port *ip_port, long res)
 {
     char ip_str[IP_NTOA_LEN];
 
@@ -495,18 +495,18 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
         char *strerror = net_new_strerror(error);
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(buflen, 999), 'E',
-                     ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), error,
+                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), error,
                      strerror, data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
         net_kill_strerror(strerror);
     } else if ((res > 0) && ((size_t)res <= buflen)) {
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
-                     ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
+                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     } else { /* empty or overwrite */
         LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, res, !res ? '!' : '>', buflen,
-                     ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port.port), 0, "OK",
+                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     }
 }
@@ -582,14 +582,14 @@ int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet)
         addrsize = sizeof(struct sockaddr_in);
         addr4->sin_family = AF_INET;
         addr4->sin_port = ip_port.port;
-        fill_addr4(ip_port.ip.ip.v4, &addr4->sin_addr);
+        fill_addr4(&ip_port.ip.ip.v4, &addr4->sin_addr);
     } else if (net_family_is_ipv6(ip_port.ip.family)) {
         struct sockaddr_in6 *const addr6 = (struct sockaddr_in6 *)&addr;
 
         addrsize = sizeof(struct sockaddr_in6);
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = ip_port.port;
-        fill_addr6(ip_port.ip.ip.v6, &addr6->sin6_addr);
+        fill_addr6(&ip_port.ip.ip.v6, &addr6->sin6_addr);
 
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
@@ -608,7 +608,7 @@ int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet)
                             (struct sockaddr *)&addr, addrsize);
 #endif
 
-    loglogdata(net->log, "O=>", packet.data, packet.length, ip_port, res);
+    loglogdata(net->log, "O=>", packet.data, packet.length, &ip_port, res);
 
     assert(res <= INT_MAX);
     return (int)res;
@@ -619,10 +619,10 @@ int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet)
  *
  * @deprecated Use send_packet instead.
  */
-int sendpacket(const Networking_Core *net, IP_Port ip_port, const uint8_t *data, uint16_t length)
+int sendpacket(const Networking_Core *net, const IP_Port *ip_port, const uint8_t *data, uint16_t length)
 {
     const Packet packet = {data, length};
-    return send_packet(net, ip_port, packet);
+    return send_packet(net, *ip_port, packet);
 }
 
 /** Function to receive data
@@ -695,7 +695,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
         return -1;
     }
 
-    loglogdata(log, "=>O", data, MAX_UDP_PACKET_SIZE, *ip_port, *length);
+    loglogdata(log, "=>O", data, MAX_UDP_PACKET_SIZE, ip_port, *length);
 
     return 0;
 }
@@ -730,7 +730,7 @@ void networking_poll(const Networking_Core *net, void *userdata)
             continue;
         }
 
-        cb(object, ip_port, data, length, userdata);
+        cb(object, &ip_port, data, length, userdata);
     }
 }
 
@@ -920,7 +920,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         addrsize = sizeof(struct sockaddr_in);
         addr4->sin_family = AF_INET;
         addr4->sin_port = 0;
-        fill_addr4(ip.ip.v4, &addr4->sin_addr);
+        fill_addr4(&ip.ip.v4, &addr4->sin_addr);
 
         portptr = &addr4->sin_port;
     } else if (net_family_is_ipv6(temp->family)) {
@@ -929,7 +929,7 @@ Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from,
         addrsize = sizeof(struct sockaddr_in6);
         addr6->sin6_family = AF_INET6;
         addr6->sin6_port = 0;
-        fill_addr6(ip.ip.v6, &addr6->sin6_addr);
+        fill_addr6(&ip.ip.v6, &addr6->sin6_addr);
 
         addr6->sin6_flowinfo = 0;
         addr6->sin6_scope_id = 0;
@@ -1086,8 +1086,8 @@ bool ip_equal(const IP *a, const IP *b)
         if (net_family_is_ipv4(a->family) || net_family_is_tcp_ipv4(a->family)) {
             struct in_addr addr_a;
             struct in_addr addr_b;
-            fill_addr4(a->ip.v4, &addr_a);
-            fill_addr4(b->ip.v4, &addr_b);
+            fill_addr4(&a->ip.v4, &addr_a);
+            fill_addr4(&b->ip.v4, &addr_b);
             return addr_a.s_addr == addr_b.s_addr;
         }
 
@@ -1103,13 +1103,13 @@ bool ip_equal(const IP *a, const IP *b)
     if (net_family_is_ipv4(a->family) && net_family_is_ipv6(b->family)) {
         if (ipv6_ipv4_in_v6(b->ip.v6)) {
             struct in_addr addr_a;
-            fill_addr4(a->ip.v4, &addr_a);
+            fill_addr4(&a->ip.v4, &addr_a);
             return addr_a.s_addr == b->ip.v6.uint32[3];
         }
     } else if (net_family_is_ipv6(a->family) && net_family_is_ipv4(b->family)) {
         if (ipv6_ipv4_in_v6(a->ip.v6)) {
             struct in_addr addr_b;
-            fill_addr4(b->ip.v4, &addr_b);
+            fill_addr4(&b->ip.v4, &addr_b);
             return a->ip.v6.uint32[3] == addr_b.s_addr;
         }
     }
@@ -1224,7 +1224,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
         if (net_family_is_ipv4(ip->family)) {
             /* returns standard quad-dotted notation */
             struct in_addr addr;
-            fill_addr4(ip->ip.v4, &addr);
+            fill_addr4(&ip->ip.v4, &addr);
 
             ip_str[0] = '\0';
             assert(make_family(ip->family) == AF_INET);
@@ -1232,7 +1232,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
         } else if (net_family_is_ipv6(ip->family)) {
             /* returns hex-groups enclosed into square brackets */
             struct in6_addr addr;
-            fill_addr6(ip->ip.v6, &addr);
+            fill_addr6(&ip->ip.v6, &addr);
 
             assert(make_family(ip->family) == AF_INET6);
             inet_ntop6(&addr, ip_str, length);
@@ -1401,25 +1401,25 @@ bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
     return true;
 }
 
-int net_connect(const Logger *log, Socket sock, IP_Port ip_port)
+int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 {
     struct sockaddr_storage addr = {0};
     size_t addrsize;
 
-    if (net_family_is_ipv4(ip_port.ip.family)) {
+    if (net_family_is_ipv4(ip_port->ip.family)) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
 
         addrsize = sizeof(struct sockaddr_in);
         addr4->sin_family = AF_INET;
-        fill_addr4(ip_port.ip.ip.v4, &addr4->sin_addr);
-        addr4->sin_port = ip_port.port;
-    } else if (net_family_is_ipv6(ip_port.ip.family)) {
+        fill_addr4(&ip_port->ip.ip.v4, &addr4->sin_addr);
+        addr4->sin_port = ip_port->port;
+    } else if (net_family_is_ipv6(ip_port->ip.family)) {
         struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)&addr;
 
         addrsize = sizeof(struct sockaddr_in6);
         addr6->sin6_family = AF_INET6;
-        fill_addr6(ip_port.ip.ip.v6, &addr6->sin6_addr);
-        addr6->sin6_port = ip_port.port;
+        fill_addr6(&ip_port->ip.ip.v6, &addr6->sin6_addr);
+        addr6->sin6_port = ip_port->port;
     } else {
         return 0;
     }
@@ -1581,7 +1581,7 @@ Socket net_socket(Family domain, int type, int protocol)
 #endif
 }
 
-int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, IP_Port ip_port)
+int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, const IP_Port *ip_port)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     int res = fuzz_send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
@@ -1592,7 +1592,7 @@ int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, IP_
     return res;
 }
 
-int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, IP_Port ip_port)
+int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, const IP_Port *ip_port)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     int res = fuzz_recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);

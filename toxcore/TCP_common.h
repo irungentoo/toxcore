@@ -84,13 +84,14 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
  * return length on success
  * return -1 on failure/no data in buffer.
  */
-int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, IP_Port ip_port);
+int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port);
 
 /** return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
-                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data, uint16_t max_len, IP_Port ip_port);
+                                      const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
+                                      uint16_t max_len, const IP_Port *ip_port);
 
 #endif

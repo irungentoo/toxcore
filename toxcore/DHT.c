@@ -676,36 +676,36 @@ static uint32_t index_of_client_ip_port(const Client_data *array, uint32_t size,
 /** Update ip_port of client if it's needed.
  */
 static void update_client(const Logger *log, const Mono_Time *mono_time, int index, Client_data *client,
-                          IP_Port ip_port)
+                          const IP_Port *ip_port)
 {
     IPPTsPng *assoc;
     int ip_version;
 
-    if (net_family_is_ipv4(ip_port.ip.family)) {
+    if (net_family_is_ipv4(ip_port->ip.family)) {
         assoc = &client->assoc4;
         ip_version = 4;
-    } else if (net_family_is_ipv6(ip_port.ip.family)) {
+    } else if (net_family_is_ipv6(ip_port->ip.family)) {
         assoc = &client->assoc6;
         ip_version = 6;
     } else {
         return;
     }
 
-    if (!ipport_equal(&assoc->ip_port, &ip_port)) {
+    if (!ipport_equal(&assoc->ip_port, ip_port)) {
         char ip_str[IP_NTOA_LEN];
         LOGGER_TRACE(log, "coipil[%u]: switching ipv%d from %s:%u to %s:%u",
                      index, ip_version,
                      ip_ntoa(&assoc->ip_port.ip, ip_str, sizeof(ip_str)),
                      net_ntohs(assoc->ip_port.port),
-                     ip_ntoa(&ip_port.ip, ip_str, sizeof(ip_str)),
-                     net_ntohs(ip_port.port));
+                     ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)),
+                     net_ntohs(ip_port->port));
     }
 
-    if (!ip_is_lan(assoc->ip_port.ip) && ip_is_lan(ip_port.ip)) {
+    if (!ip_is_lan(&assoc->ip_port.ip) && ip_is_lan(&ip_port->ip)) {
         return;
     }
 
-    assoc->ip_port = ip_port;
+    assoc->ip_port = *ip_port;
     assoc->timestamp = mono_time_get(mono_time);
 }
 
@@ -717,7 +717,7 @@ static void update_client(const Logger *log, const Mono_Time *mono_time, int ind
  *  return True(1) or False(0)
  */
 static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_time, Client_data *list, uint16_t length,
-                                     const uint8_t *public_key, IP_Port ip_port)
+                                     const uint8_t *public_key, const IP_Port *ip_port)
 {
     const uint64_t temp_time = mono_time_get(mono_time);
     uint32_t index = index_of_client_pk(list, length, public_key);
@@ -733,7 +733,7 @@ static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_ti
      * TODO(irungentoo): maybe we SHOULDN'T do that if that public_key is in a friend_list
      * and the one who is the actual friend's public_key/address set?
      * MAYBE: check the other address, if valid, don't nuke? */
-    index = index_of_client_ip_port(list, length, &ip_port);
+    index = index_of_client_ip_port(list, length, ip_port);
 
     if (index == UINT32_MAX) {
         return 0;
@@ -742,7 +742,7 @@ static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_ti
     IPPTsPng *assoc;
     int ip_version;
 
-    if (net_family_is_ipv4(ip_port.ip.family)) {
+    if (net_family_is_ipv4(ip_port->ip.family)) {
         assoc = &list[index].assoc4;
         ip_version = 4;
     } else {
@@ -824,7 +824,7 @@ static void get_close_nodes_inner(uint64_t cur_time, const uint8_t *public_key, 
         }
 
         /* don't send LAN ips to non LAN peers */
-        if (ip_is_lan(ipptp->ip_port.ip) && !is_LAN) {
+        if (ip_is_lan(&ipptp->ip_port.ip) && !is_LAN) {
             continue;
         }
 
@@ -1164,7 +1164,7 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
      * to replace the first ip by the second.
      */
     const bool in_close_list = client_or_ip_port_in_list(dht->log, dht->mono_time, dht->close_clientlist, LCLIENT_LIST,
-                               public_key, ip_port);
+                               public_key, &ip_port);
 
     /* add_to_close should be called only if !in_list (don't extract to variable) */
     if (in_close_list || add_to_close(dht, public_key, ip_port, 0)) {
@@ -1175,7 +1175,7 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
 
     for (uint32_t i = 0; i < dht->num_friends; ++i) {
         const bool in_list = client_or_ip_port_in_list(dht->log, dht->mono_time, dht->friends_list[i].client_list,
-                             MAX_FRIEND_CLIENTS, public_key, ip_port);
+                             MAX_FRIEND_CLIENTS, public_key, &ip_port);
 
         /* replace_all should be called only if !in_list (don't extract to variable) */
         if (in_list
@@ -1198,7 +1198,7 @@ uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
     for (uint32_t i = 0; i < friend_foundip->lock_count; ++i) {
         if (friend_foundip->callbacks[i].ip_callback) {
             friend_foundip->callbacks[i].ip_callback(friend_foundip->callbacks[i].data,
-                    friend_foundip->callbacks[i].number, ip_port);
+                    friend_foundip->callbacks[i].number, &ip_port);
         }
     }
 
@@ -1303,7 +1303,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
         return false;
     }
 
-    if (sendpacket(dht->net, *ip_port, data, len) > 0) {
+    if (sendpacket(dht->net, ip_port, data, len) > 0) {
         return true;
     }
 
@@ -1311,7 +1311,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
 }
 
 /** Send a send nodes response: message for IPv6 nodes */
-static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public_key, const uint8_t *client_id,
+static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *client_id,
                           const uint8_t *sendback_data, uint16_t length, const uint8_t *shared_encryption_key)
 {
     /* Check if packet is going to be sent to ourself. */
@@ -1327,7 +1327,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
 
     Node_format nodes_list[MAX_SENT_NODES];
     const uint32_t num_nodes =
-        get_close_nodes(dht, client_id, nodes_list, net_family_unspec, ip_is_lan(ip_port.ip));
+        get_close_nodes(dht, client_id, nodes_list, net_family_unspec, ip_is_lan(&ip_port->ip));
 
     VLA(uint8_t, plain, 1 + node_format_size * MAX_SENT_NODES + length);
 
@@ -1359,7 +1359,7 @@ static int sendnodes_ipv6(const DHT *dht, IP_Port ip_port, const uint8_t *public
 
 #define CRYPTO_NODE_SIZE (CRYPTO_PUBLIC_KEY_SIZE + sizeof(uint64_t))
 
-static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_getnodes(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     if (length != (CRYPTO_SIZE + CRYPTO_MAC_SIZE + sizeof(uint64_t))) {
         return true;
@@ -1398,7 +1398,7 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
 }
 
 /** Return true if we sent a getnode packet to the peer associated with the supplied info. */
-static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port node_ip_port, uint64_t ping_id)
+static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, const IP_Port *node_ip_port, uint64_t ping_id)
 {
     uint8_t data[sizeof(Node_format) * 2];
 
@@ -1412,14 +1412,14 @@ static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port no
         return false;
     }
 
-    if (!ipport_equal(&test.ip_port, &node_ip_port) || !id_equal(test.public_key, public_key)) {
+    if (!ipport_equal(&test.ip_port, node_ip_port) || !id_equal(test.public_key, public_key)) {
         return false;
     }
 
     return true;
 }
 
-static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *packet, uint16_t length,
+static int handle_sendnodes_core(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                                  Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
 {
     DHT *const dht = (DHT *)object;
@@ -1482,14 +1482,15 @@ static int handle_sendnodes_core(void *object, IP_Port source, const uint8_t *pa
     }
 
     /* store the address the *request* was sent to */
-    addto_lists(dht, source, packet + 1);
+    addto_lists(dht, *source, packet + 1);
 
     *num_nodes_out = num_nodes;
 
     return 0;
 }
 
-static int handle_sendnodes_ipv6(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_sendnodes_ipv6(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
+                                 void *userdata)
 {
     DHT *const dht = (DHT *)object;
     Node_format plain_nodes[MAX_SENT_NODES];
@@ -1775,9 +1776,9 @@ static void do_Close(DHT *dht)
     }
 }
 
-void dht_bootstrap(DHT *dht, IP_Port ip_port, const uint8_t *public_key)
+void dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
 {
-    dht_getnodes(dht, &ip_port, public_key, dht->self_public_key);
+    dht_getnodes(dht, ip_port, public_key, dht->self_public_key);
 }
 
 int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
@@ -1797,11 +1798,11 @@ int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enable
 
     if (addr_resolve_or_parse_ip(address, &ip_port_v64.ip, ip_extra)) {
         ip_port_v64.port = port;
-        dht_bootstrap(dht, ip_port_v64, public_key);
+        dht_bootstrap(dht, &ip_port_v64, public_key);
 
         if ((ip_extra != nullptr) && ip_isset(ip_extra)) {
             ip_port_v4.port = port;
-            dht_bootstrap(dht, ip_port_v4, public_key);
+            dht_bootstrap(dht, &ip_port_v4, public_key);
         }
 
         return 1;
@@ -1825,7 +1826,7 @@ int route_packet(const DHT *dht, const uint8_t *public_key, const uint8_t *packe
                 const IPPTsPng *const assoc = *it;
 
                 if (ip_isset(&assoc->ip_port.ip)) {
-                    return sendpacket(dht->net, assoc->ip_port, packet, length);
+                    return sendpacket(dht->net, &assoc->ip_port, packet, length);
                 }
             }
 
@@ -2086,7 +2087,7 @@ static int send_NATping(const DHT *dht, const uint8_t *public_key, uint64_t ping
 }
 
 /** Handle a received ping request for. */
-static int handle_NATping(void *object, IP_Port source, const uint8_t *source_pubkey, const uint8_t *packet,
+static int handle_NATping(void *object, const IP_Port *source, const uint8_t *source_pubkey, const uint8_t *packet,
                           uint16_t length, void *userdata)
 {
     if (length != sizeof(uint64_t) + 1) {
@@ -2198,7 +2199,7 @@ static void punch_holes(DHT *dht, IP ip, const uint16_t *port_list, uint16_t num
         IP_Port pinging;
         ip_copy(&pinging.ip, &ip);
         pinging.port = net_htons(first_port);
-        ping_send_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
+        ping_send_request(dht->ping, &pinging, dht->friends_list[friend_num].public_key);
     } else {
         for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
             /* TODO(irungentoo): Improve port guessing algorithm. */
@@ -2210,7 +2211,7 @@ static void punch_holes(DHT *dht, IP ip, const uint16_t *port_list, uint16_t num
             IP_Port pinging;
             ip_copy(&pinging.ip, &ip);
             pinging.port = net_htons(port);
-            ping_send_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
+            ping_send_request(dht->ping, &pinging, dht->friends_list[friend_num].public_key);
         }
 
         dht->friends_list[friend_num].nat.punching_index += i;
@@ -2224,7 +2225,7 @@ static void punch_holes(DHT *dht, IP ip, const uint16_t *port_list, uint16_t num
         for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
             uint32_t it = i + dht->friends_list[friend_num].nat.punching_index2;
             pinging.port = net_htons(port + it);
-            ping_send_request(dht->ping, pinging, dht->friends_list[friend_num].public_key);
+            ping_send_request(dht->ping, &pinging, dht->friends_list[friend_num].public_key);
         }
 
         dht->friends_list[friend_num].nat.punching_index2 += i - (MAX_PUNCHING_PORTS / 2);
@@ -2364,7 +2365,8 @@ void cryptopacket_registerhandler(DHT *dht, uint8_t byte, cryptopacket_handler_c
     dht->cryptopackethandlers[byte].object = object;
 }
 
-static int cryptopacket_handle(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int cryptopacket_handle(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
+                               void *userdata)
 {
     DHT *const dht = (DHT *)object;
 
@@ -2630,7 +2632,7 @@ int dht_connect_after_load(DHT *dht)
 
     for (uint32_t i = 0; i < dht->loaded_num_nodes && i < SAVE_BOOTSTAP_FREQUENCY; ++i) {
         const unsigned int index = dht->loaded_nodes_index % dht->loaded_num_nodes;
-        dht_bootstrap(dht, dht->loaded_nodes_list[index].ip_port, dht->loaded_nodes_list[index].public_key);
+        dht_bootstrap(dht, &dht->loaded_nodes_list[index].ip_port, dht->loaded_nodes_list[index].public_key);
         ++dht->loaded_nodes_index;
     }
 
@@ -2726,12 +2728,12 @@ bool dht_non_lan_connected(const DHT *dht)
         const Client_data *const client = &dht->close_clientlist[i];
 
         if (!assoc_timeout(dht->cur_time, &client->assoc4)
-                && !ip_is_lan(client->assoc4.ip_port.ip)) {
+                && !ip_is_lan(&client->assoc4.ip_port.ip)) {
             return true;
         }
 
         if (!assoc_timeout(dht->cur_time, &client->assoc6)
-                && !ip_is_lan(client->assoc6.ip_port.ip)) {
+                && !ip_is_lan(&client->assoc6.ip_port.ip)) {
             return true;
         }
     }
@@ -2759,7 +2761,7 @@ unsigned int ipport_self_copy(const DHT *dht, IP_Port *dest)
 
         if (client->assoc4.ret_ip_self && ipport_isset(ip_port4)) {
             ipport_copy(dest, ip_port4);
-            is_lan = ip_is_lan(dest->ip);
+            is_lan = ip_is_lan(&dest->ip);
 
             if (!is_lan) {
                 break;
@@ -2770,7 +2772,7 @@ unsigned int ipport_self_copy(const DHT *dht, IP_Port *dest)
 
         if (client->assoc6.ret_ip_self && ipport_isset(ip_port6)) {
             ipport_copy(dest, ip_port6);
-            is_lan = ip_is_lan(dest->ip);
+            is_lan = ip_is_lan(&dest->ip);
 
             if (!is_lan) {
                 break;

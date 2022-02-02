@@ -34,7 +34,7 @@ static void do_onion(Onion *onion)
 }
 
 static int handled_test_1;
-static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_test_1(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -62,7 +62,7 @@ static int handle_test_1(void *object, IP_Port source, const uint8_t *packet, ui
 }
 
 static int handled_test_2;
-static int handle_test_2(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_test_2(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     const char res_message[] = "install gentoo";
     uint8_t res_packet[1 + sizeof(res_message)];
@@ -96,7 +96,7 @@ static uint8_t sb_data[ONION_ANNOUNCE_SENDBACK_DATA_LENGTH];
 static int handled_test_3;
 static uint8_t test_3_pub_key[CRYPTO_PUBLIC_KEY_SIZE];
 static uint8_t test_3_ping_id[CRYPTO_SHA256_SIZE];
-static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_test_3(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -133,7 +133,7 @@ static int handle_test_3(void *object, IP_Port source, const uint8_t *packet, ui
 
 static uint8_t nonce[CRYPTO_NONCE_SIZE];
 static int handled_test_4;
-static int handle_test_4(void *object, IP_Port source, const uint8_t *packet, uint16_t length, void *userdata)
+static int handle_test_4(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
 
@@ -202,7 +202,7 @@ static void test_basic(void)
     nodes[3] = n2;
     Onion_Path path;
     create_onion_path(onion1->dht, &path, nodes);
-    int ret = send_onion_packet(onion1->net, &path, nodes[3].ip_port, req_packet, sizeof(req_packet));
+    int ret = send_onion_packet(onion1->net, &path, &nodes[3].ip_port, req_packet, sizeof(req_packet));
     ck_assert_msg(ret == 0, "Failed to create/send onion packet.");
 
     handled_test_1 = 0;
@@ -274,7 +274,7 @@ static void test_basic(void)
     ck_assert_msg((onion3 != nullptr), "Onion failed initializing.");
 
     random_nonce(nonce);
-    ret = send_data_request(onion3->net, &path, nodes[3].ip_port,
+    ret = send_data_request(onion3->net, &path, &nodes[3].ip_port,
                             dht_get_self_public_key(onion1->dht),
                             dht_get_self_public_key(onion1->dht),
                             nonce, (const uint8_t *)"Install gentoo", sizeof("Install gentoo"));
@@ -451,7 +451,7 @@ static void kill_onions(Onions *on)
 #define NUM_LAST 37
 
 static bool first_ip, last_ip;
-static void dht_ip_callback(void *object, int32_t number, IP_Port ip_port)
+static void dht_ip_callback(void *object, int32_t number, const IP_Port *ip_port)
 {
     if (NUM_FIRST == number) {
         first_ip = 1;
@@ -519,11 +519,11 @@ static void test_announce(void)
 
     for (i = 3; i < NUM_ONIONS; ++i) {
         IP_Port ip_port = {ip, net_port(onions[i - 1]->onion->net)};
-        dht_bootstrap(onions[i]->onion->dht, ip_port, dht_get_self_public_key(onions[i - 1]->onion->dht));
+        dht_bootstrap(onions[i]->onion->dht, &ip_port, dht_get_self_public_key(onions[i - 1]->onion->dht));
         IP_Port ip_port1 = {ip, net_port(onions[i - 2]->onion->net)};
-        dht_bootstrap(onions[i]->onion->dht, ip_port1, dht_get_self_public_key(onions[i - 2]->onion->dht));
+        dht_bootstrap(onions[i]->onion->dht, &ip_port1, dht_get_self_public_key(onions[i - 2]->onion->dht));
         IP_Port ip_port2 = {ip, net_port(onions[i - 3]->onion->net)};
-        dht_bootstrap(onions[i]->onion->dht, ip_port2, dht_get_self_public_key(onions[i - 3]->onion->dht));
+        dht_bootstrap(onions[i]->onion->dht, &ip_port2, dht_get_self_public_key(onions[i - 3]->onion->dht));
     }
 
     uint32_t connected = 0;

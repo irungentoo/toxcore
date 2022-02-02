@@ -49,7 +49,7 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value);
 
 /** Create new TCP connection to ip_port/public_key
  */
-TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time *mono_time, IP_Port ip_port,
+TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time *mono_time, const IP_Port *ip_port,
         const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
         const TCP_Proxy_Info *proxy_info);
 
