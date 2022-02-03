@@ -173,6 +173,22 @@ static bool assoc_timeout(uint64_t cur_time, const IPPTsPng *assoc)
     return (assoc->timestamp + BAD_NODE_TIMEOUT) <= cur_time;
 }
 
+/** Converts an IPv4-in-IPv6 to IPv4 and returns the new IP_Port.
+ *
+ * If the ip_port is already IPv4 this function returns a copy of the original ip_port.
+ */
+static IP_Port ip_port_normalize(const IP_Port *ip_port)
+{
+    IP_Port res = *ip_port;
+
+    if (net_family_is_ipv6(res.ip.family) && ipv6_ipv4_in_v6(&res.ip.ip.v6)) {
+        res.ip.family = net_family_ipv4;
+        res.ip.ip.v4.uint32 = res.ip.ip.v6.uint32[3];
+    }
+
+    return res;
+}
+
 /** Compares pk1 and pk2 with pk.
  *
  *  return 0 if both are same distance.
@@ -1152,15 +1168,9 @@ static bool ping_node_from_getnodes_ok(DHT *dht, const uint8_t *public_key, cons
  */
 uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
 {
-    IP_Port ipp_copy = *ip_port;
+    IP_Port ipp_copy = ip_port_normalize(ip_port);
 
     uint32_t used = 0;
-
-    /* convert IPv4-in-IPv6 to IPv4 */
-    if (net_family_is_ipv6(ipp_copy.ip.family) && ipv6_ipv4_in_v6(&ipp_copy.ip.ip.v6)) {
-        ipp_copy.ip.family = net_family_ipv4;
-        ipp_copy.ip.ip.v4.uint32 = ipp_copy.ip.ip.v6.uint32[3];
-    }
 
     /* NOTE: Current behavior if there are two clients with the same id is
      * to replace the first ip by the second.
@@ -1240,13 +1250,7 @@ static bool update_client_data(const Mono_Time *mono_time, Client_data *array, s
  */
 static void returnedip_ports(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, const uint8_t *nodepublic_key)
 {
-    IP_Port ipp_copy = *ip_port;
-
-    /* convert IPv4-in-IPv6 to IPv4 */
-    if (net_family_is_ipv6(ipp_copy.ip.family) && ipv6_ipv4_in_v6(&ipp_copy.ip.ip.v6)) {
-        ipp_copy.ip.family = net_family_ipv4;
-        ipp_copy.ip.ip.v4.uint32 = ipp_copy.ip.ip.v6.uint32[3];
-    }
+    IP_Port ipp_copy = ip_port_normalize(ip_port);
 
     if (id_equal(public_key, dht->self_public_key)) {
         update_client_data(dht->mono_time, dht->close_clientlist, LCLIENT_LIST, &ipp_copy, nodepublic_key, true);
