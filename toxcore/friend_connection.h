@@ -79,13 +79,6 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Frie
  */
 void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk, void *userdata);
 
-/** Add a TCP relay associated to the friend.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key);
-
 typedef int global_status_cb(void *object, int id, uint8_t status, void *userdata);
 
 typedef int fc_status_cb(void *object, int id, uint8_t status, void *userdata);

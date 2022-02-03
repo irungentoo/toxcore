@@ -274,7 +274,7 @@ bool ip_is_local(const IP *ip)
     }
 
     /* embedded IPv4-in-IPv6 */
-    if (ipv6_ipv4_in_v6(ip->ip.v6)) {
+    if (ipv6_ipv4_in_v6(&ip->ip.v6)) {
         IP4 ip4;
         ip4.uint32 = ip->ip.v6.uint32[3];
         return ip4_is_local(&ip4);
@@ -339,7 +339,7 @@ bool ip_is_lan(const IP *ip)
         }
 
         /* embedded IPv4-in-IPv6 */
-        if (ipv6_ipv4_in_v6(ip->ip.v6)) {
+        if (ipv6_ipv4_in_v6(&ip->ip.v6)) {
             IP4 ip4;
             ip4.uint32 = ip->ip.v6.uint32[3];
             return ip4_is_lan(&ip4);

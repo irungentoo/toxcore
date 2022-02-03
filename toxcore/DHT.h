@@ -287,12 +287,12 @@ int id_closest(const uint8_t *pk, const uint8_t *pk1, const uint8_t *pk2);
  *
  * @return true iff the node was added to the list.
  */
-bool add_to_list(Node_format *nodes_list, uint32_t length, const uint8_t *pk, IP_Port ip_port,
+bool add_to_list(Node_format *nodes_list, uint32_t length, const uint8_t *pk, const IP_Port *ip_port,
                  const uint8_t *cmp_pk);
 
 /** Return 1 if node can be added to close list, 0 if it can't.
  */
-bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, IP_Port ip_port);
+bool node_addable_to_close_list(DHT *dht, const uint8_t *public_key, const IP_Port *ip_port);
 
 /** Get the (maximum MAX_SENT_NODES) closest nodes to public_key we know
  * and put them in nodes_list (must be MAX_SENT_NODES big).
@@ -403,7 +403,7 @@ bool dht_isconnected(const DHT *dht);
 bool dht_non_lan_connected(const DHT *dht);
 
 
-uint32_t addto_lists(DHT *dht, IP_Port ip_port, const uint8_t *public_key);
+uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** Copies our own ip_port structure to `dest`. WAN addresses take priority over LAN addresses.
  *

@@ -88,10 +88,11 @@ TEST(AddToList, OverridesKeysWithCloserKeys) {
 
   std::array<Node_format, 4> nodes{};
 
-  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[0].data(), IP_Port(), self_pk.data()));
-  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[1].data(), IP_Port(), self_pk.data()));
-  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[2].data(), IP_Port(), self_pk.data()));
-  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[3].data(), IP_Port(), self_pk.data()));
+  IP_Port ip_port = {0};
+  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[0].data(), &ip_port, self_pk.data()));
+  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[1].data(), &ip_port, self_pk.data()));
+  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[2].data(), &ip_port, self_pk.data()));
+  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[3].data(), &ip_port, self_pk.data()));
 
   EXPECT_EQ(to_array(nodes[0].public_key), keys[0]);
   EXPECT_EQ(to_array(nodes[1].public_key), keys[1]);
@@ -99,9 +100,9 @@ TEST(AddToList, OverridesKeysWithCloserKeys) {
   EXPECT_EQ(to_array(nodes[3].public_key), keys[3]);
 
   // key 4 is less close than keys 0-3
-  EXPECT_FALSE(add_to_list(nodes.data(), nodes.size(), keys[4].data(), IP_Port(), self_pk.data()));
+  EXPECT_FALSE(add_to_list(nodes.data(), nodes.size(), keys[4].data(), &ip_port, self_pk.data()));
   // 5 is closer than all except key 0
-  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[5].data(), IP_Port(), self_pk.data()));
+  EXPECT_TRUE(add_to_list(nodes.data(), nodes.size(), keys[5].data(), &ip_port, self_pk.data()));
 
   EXPECT_EQ(to_array(nodes[0].public_key), keys[0]);
   EXPECT_EQ(to_array(nodes[1].public_key), keys[5]);

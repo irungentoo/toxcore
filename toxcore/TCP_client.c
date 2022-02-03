@@ -95,14 +95,16 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
 /** return 1 on success
  * return 0 on failure
  */
-static int connect_sock_to(const Logger *logger, Socket sock, IP_Port ip_port, const TCP_Proxy_Info *proxy_info)
+static int connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_port, const TCP_Proxy_Info *proxy_info)
 {
+    IP_Port ipp_copy = *ip_port;
+
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
-        ip_port = proxy_info->ip_port;
+        ipp_copy = proxy_info->ip_port;
     }
 
     /* nonblocking socket, connect will never return success */
-    net_connect(logger, sock, &ip_port);
+    net_connect(logger, sock, &ipp_copy);
 
     return 1;
 }
@@ -539,7 +541,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
         return nullptr;
     }
 
-    if (!(set_socket_nonblock(sock) && connect_sock_to(logger, sock, *ip_port, proxy_info))) {
+    if (!(set_socket_nonblock(sock) && connect_sock_to(logger, sock, ip_port, proxy_info))) {
         kill_sock(sock);
         return nullptr;
     }

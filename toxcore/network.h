@@ -200,7 +200,7 @@ size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v);
 size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 
 /** Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
-bool ipv6_ipv4_in_v6(IP6 a);
+bool ipv6_ipv4_in_v6(const IP6 *a);
 
 #define TOX_ENABLE_IPV6_DEFAULT true
 
@@ -382,7 +382,7 @@ typedef struct Packet {
 /**
  * Function to send a network packet to a given IP/port.
  */
-int send_packet(const Networking_Core *net, IP_Port ip_port, Packet packet);
+int send_packet(const Networking_Core *net, const IP_Port *ip_port, Packet packet);
 
 /**
  * Function to send packet(data) of length length to ip_port.
@@ -457,7 +457,7 @@ void net_kill_strerror(char *strerror);
 /** Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
-Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port);
+Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port);
 /** Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
@@ -468,7 +468,8 @@ Networking_Core *new_networking(const Logger *log, IP ip, uint16_t port);
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
-Networking_Core *new_networking_ex(const Logger *log, IP ip, uint16_t port_from, uint16_t port_to, unsigned int *error);
+Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t port_from, uint16_t port_to,
+                                   unsigned int *error);
 Networking_Core *new_networking_no_udp(const Logger *log);
 
 /** Function to cleanup networking stuff (doesn't do much right now). */

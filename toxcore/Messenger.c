@@ -1918,7 +1918,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
     } else {
         IP ip;
         ip_init(&ip, options->ipv6enabled);
-        m->net = new_networking_ex(m->log, ip, options->port_range[0], options->port_range[1], &net_err);
+        m->net = new_networking_ex(m->log, &ip, options->port_range[0], options->port_range[1], &net_err);
     }
 
     if (m->net == nullptr) {

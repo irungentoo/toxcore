@@ -94,7 +94,7 @@ static void test_addto_lists_update(DHT            *dht,
     ipport_copy(&test_ipp, ipv6 ? &list[test].assoc6.ip_port : &list[test].assoc4.ip_port);
 
     random_bytes(test_id, sizeof(test_id));
-    used = addto_lists(dht, test_ipp, test_id);
+    used = addto_lists(dht, &test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     // it is possible to have ip_port duplicates in the list, so ip_port @ found not always equal to ip_port @ test
     found = client_in_list(list, length, test_id);
@@ -107,7 +107,7 @@ static void test_addto_lists_update(DHT            *dht,
     test_ipp.port = random_u32() % TOX_PORT_DEFAULT;
     id_copy(test_id, list[test].public_key);
 
-    used = addto_lists(dht, test_ipp, test_id);
+    used = addto_lists(dht, &test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     // it is not possible to have id duplicates in the list, so id @ found must be equal id @ test
     ck_assert_msg(client_in_list(list, length, test_id) == test, "Client id is not in the list");
@@ -127,7 +127,7 @@ static void test_addto_lists_update(DHT            *dht,
         list[test2].assoc4.ip_port.port = -1;
     }
 
-    used = addto_lists(dht, test_ipp, test_id);
+    used = addto_lists(dht, &test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     ck_assert_msg(client_in_list(list, length, test_id) == test2, "Client id is not in the list");
     ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port),
@@ -146,7 +146,7 @@ static void test_addto_lists_update(DHT            *dht,
         list[test1].assoc4.ip_port.port = -1;
     }
 
-    used = addto_lists(dht, test_ipp, test_id);
+    used = addto_lists(dht, &test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
     ck_assert_msg(client_in_list(list, length, test_id) == test1, "Client id is not in the list");
     ck_assert_msg(ipport_equal(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port),
@@ -188,7 +188,7 @@ static void test_addto_lists_bad(DHT            *dht,
     }
 
     ip_port->port += 1;
-    used = addto_lists(dht, *ip_port, public_key);
+    used = addto_lists(dht, ip_port, public_key);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
 
     ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Client id is not in the list");
@@ -213,7 +213,7 @@ static void test_addto_lists_good(DHT            *dht,
     } while (is_furthest(comp_client_id, list, length, public_key));
 
     ip_port->port += 1;
-    addto_lists(dht, *ip_port, public_key);
+    addto_lists(dht, ip_port, public_key);
     ck_assert_msg(client_in_list(list, length, public_key) >= 0, "Good client id is not in the list");
 
     // check "good" client id skip
@@ -222,7 +222,7 @@ static void test_addto_lists_good(DHT            *dht,
     } while (!is_furthest(comp_client_id, list, length, public_key));
 
     ip_port->port += 1;
-    addto_lists(dht, *ip_port, public_key);
+    addto_lists(dht, ip_port, public_key);
     ck_assert_msg(client_in_list(list, length, public_key) == -1, "Good client id is in the list");
 }
 
@@ -239,7 +239,7 @@ static void test_addto_lists(IP ip)
     Mono_Time *mono_time = mono_time_new();
     ck_assert_msg(mono_time != nullptr, "Failed to create Mono_Time");
 
-    Networking_Core *net = new_networking(log, ip, TOX_PORT_DEFAULT);
+    Networking_Core *net = new_networking(log, &ip, TOX_PORT_DEFAULT);
     ck_assert_msg(net != nullptr, "Failed to create Networking_Core");
 
     DHT *dht = new_dht(log, mono_time, net, true);
@@ -254,20 +254,20 @@ static void test_addto_lists(IP ip)
     // check lists filling
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         random_bytes(public_key, sizeof(public_key));
-        used = addto_lists(dht, ip_port, public_key);
+        used = addto_lists(dht, &ip_port, public_key);
         ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing ip_port");
     }
 
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         ip_port.port += 1;
-        used = addto_lists(dht, ip_port, public_key);
+        used = addto_lists(dht, &ip_port, public_key);
         ck_assert_msg(used == dht->num_friends + 1, "Wrong number of added clients with existing public_key");
     }
 
     for (i = 0; i < MAX(LCLIENT_LIST, MAX_FRIEND_CLIENTS); ++i) {
         ip_port.port += 1;
         random_bytes(public_key, sizeof(public_key));
-        used = addto_lists(dht, ip_port, public_key);
+        used = addto_lists(dht, &ip_port, public_key);
         ck_assert_msg(used >= 1, "Wrong number of added clients");
     }
 
@@ -379,7 +379,7 @@ static void test_list_main(void)
 
         mono_times[i] = mono_time_new();
 
-        dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
+        dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], &ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i,
                       "Bound to wrong port: %d", net_port(dhts[i]->net));
@@ -402,7 +402,7 @@ static void test_list_main(void)
             ip_port.ip.ip.v4.uint32 = random_u32();
             ip_port.port = random_u32() % (UINT16_MAX - 1);
             ++ip_port.port;
-            addto_lists(dhts[i], ip_port, dhts[j]->self_public_key);
+            addto_lists(dhts[i], &ip_port, dhts[j]->self_public_key);
         }
     }
 
@@ -536,7 +536,7 @@ static void test_DHT_test(void)
         clock[i] = current_time_monotonic(mono_times[i]);
         mono_time_set_current_time_callback(mono_times[i], get_clock_callback, &clock[i]);
 
-        dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], ip, DHT_DEFAULT_PORT + i), true);
+        dhts[i] = new_dht(logs[i], mono_times[i], new_networking(logs[i], &ip, DHT_DEFAULT_PORT + i), true);
         ck_assert_msg(dhts[i] != nullptr, "Failed to create dht instances %u", i);
         ck_assert_msg(net_port(dhts[i]->net) != DHT_DEFAULT_PORT + i, "Bound to wrong port");
     }

@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 
     Mono_Time *const mono_time = mono_time_new();
     Logger *const logger = logger_new();
-    DHT *dht = new_dht(logger, mono_time, new_networking(logger, ip, PORT), true);
+    DHT *dht = new_dht(logger, mono_time, new_networking(logger, &ip, PORT), true);
     printf("OUR ID: ");
 
     for (uint32_t i = 0; i < 32; i++) {

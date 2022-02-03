@@ -277,14 +277,14 @@ int main(int argc, char *argv[])
         logger_callback_log(logger, toxcore_logger_callback, nullptr, nullptr);
     }
 
-    Networking_Core *net = new_networking(logger, ip, port);
+    Networking_Core *net = new_networking(logger, &ip, port);
 
     if (net == nullptr) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking(logger, ip, port);
+            net = new_networking(logger, &ip, port);
 
             if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");

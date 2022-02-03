@@ -1137,15 +1137,17 @@ static int tcp_relay_on_online(TCP_Connections *tcp_c, int tcp_connections_numbe
     return 0;
 }
 
-static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const uint8_t *relay_pk)
+static int add_tcp_relay_instance(TCP_Connections *tcp_c, const IP_Port *ip_port, const uint8_t *relay_pk)
 {
-    if (net_family_is_tcp_ipv4(ip_port.ip.family)) {
-        ip_port.ip.family = net_family_ipv4;
-    } else if (net_family_is_tcp_ipv6(ip_port.ip.family)) {
-        ip_port.ip.family = net_family_ipv6;
+    IP_Port ipp_copy = *ip_port;
+
+    if (net_family_is_tcp_ipv4(ipp_copy.ip.family)) {
+        ipp_copy.ip.family = net_family_ipv4;
+    } else if (net_family_is_tcp_ipv6(ipp_copy.ip.family)) {
+        ipp_copy.ip.family = net_family_ipv6;
     }
 
-    if (!net_family_is_ipv4(ip_port.ip.family) && !net_family_is_ipv6(ip_port.ip.family)) {
+    if (!net_family_is_ipv4(ipp_copy.ip.family) && !net_family_is_ipv6(ipp_copy.ip.family)) {
         return -1;
     }
 
@@ -1157,7 +1159,7 @@ static int add_tcp_relay_instance(TCP_Connections *tcp_c, IP_Port ip_port, const
 
     TCP_con *tcp_con = &tcp_c->tcp_connections[tcp_connections_number];
 
-    tcp_con->connection = new_TCP_connection(tcp_c->logger, tcp_c->mono_time, &ip_port, relay_pk, tcp_c->self_public_key,
+    tcp_con->connection = new_TCP_connection(tcp_c->logger, tcp_c->mono_time, &ipp_copy, relay_pk, tcp_c->self_public_key,
                           tcp_c->self_secret_key, &tcp_c->proxy_info);
 
     if (!tcp_con->connection) {
@@ -1182,7 +1184,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, const IP_Port *ip_port, const u
         return -1;
     }
 
-    if (add_tcp_relay_instance(tcp_c, *ip_port, relay_pk) == -1) {
+    if (add_tcp_relay_instance(tcp_c, ip_port, relay_pk) == -1) {
         return -1;
     }
 
@@ -1254,7 +1256,7 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, con
         return -1;
     }
 
-    tcp_connections_number = add_tcp_relay_instance(tcp_c, *ip_port, relay_pk);
+    tcp_connections_number = add_tcp_relay_instance(tcp_c, ip_port, relay_pk);
 
     const TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 

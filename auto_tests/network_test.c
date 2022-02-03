@@ -138,7 +138,7 @@ static void test_ip_equal(void)
     ip2.ip.v6.uint32[2] = net_htonl(0xFFFF);
     ip2.ip.v6.uint32[3] = net_htonl(0x7F000001);
 
-    ck_assert_msg(ipv6_ipv4_in_v6(ip2.ip.v6) != 0,
+    ck_assert_msg(ipv6_ipv4_in_v6(&ip2.ip.v6) != 0,
                   "ipv6_ipv4_in_v6(::ffff:127.0.0.1): expected != 0, got 0.");
 
     res = ip_equal(&ip1, &ip2);

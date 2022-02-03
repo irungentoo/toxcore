@@ -210,8 +210,11 @@ int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk)
  * return -1 on failure.
  * return 0 on success.
  */
-int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_port, const uint8_t *public_key)
+static int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, const IP_Port *ip_port,
+                                const uint8_t *public_key)
 {
+    IP_Port ipp_copy = *ip_port;
+
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
     if (!friend_con) {
@@ -219,9 +222,9 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
     }
 
     /* Local ip and same pk means that they are hosting a TCP relay. */
-    if (ip_is_local(&ip_port.ip) && public_key_cmp(friend_con->dht_temp_pk, public_key) == 0) {
+    if (ip_is_local(&ipp_copy.ip) && public_key_cmp(friend_con->dht_temp_pk, public_key) == 0) {
         if (!net_family_is_unspec(friend_con->dht_ip_port.ip.family)) {
-            ip_port.ip = friend_con->dht_ip_port.ip;
+            ipp_copy.ip = friend_con->dht_ip_port.ip;
         } else {
             friend_con->hosting_tcp_relay = 0;
         }
@@ -236,11 +239,11 @@ int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, IP_Port ip_
         }
     }
 
-    friend_con->tcp_relays[index].ip_port = ip_port;
+    friend_con->tcp_relays[index].ip_port = ipp_copy;
     memcpy(friend_con->tcp_relays[index].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     ++friend_con->tcp_relay_counter;
 
-    return add_tcp_relay_peer(fr_c->net_crypto, friend_con->crypt_connection_id, &ip_port, public_key);
+    return add_tcp_relay_peer(fr_c->net_crypto, friend_con->crypt_connection_id, &ipp_copy, public_key);
 }
 
 /** Connect to number saved relays for friend. */
@@ -280,7 +283,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
     for (int i = 0; i < n; ++i) {
         /* Associated the relays being sent with this connection.
          * On receiving the peer will do the same which will establish the connection. */
-        friend_add_tcp_relay(fr_c, friendcon_id, nodes[i].ip_port, nodes[i].public_key);
+        friend_add_tcp_relay(fr_c, friendcon_id, &nodes[i].ip_port, nodes[i].public_key);
     }
 
     int length = pack_nodes(data + 1, sizeof(data) - 1, nodes, n);
@@ -311,7 +314,7 @@ static int tcp_relay_node_callback(void *object, uint32_t number, const IP_Port 
     }
 
     if (friend_con->crypt_connection_id != -1) {
-        return friend_add_tcp_relay(fr_c, number, *ip_port, public_key);
+        return friend_add_tcp_relay(fr_c, number, ip_port, public_key);
     }
 
     return add_tcp_relay(fr_c->net_crypto, ip_port, public_key);
@@ -337,7 +340,7 @@ static void dht_ip_callback(void *object, int32_t number, const IP_Port *ip_port
     friend_con->dht_ip_port_lastrecv = mono_time_get(fr_c->mono_time);
 
     if (friend_con->hosting_tcp_relay) {
-        friend_add_tcp_relay(fr_c, number, *ip_port, friend_con->dht_temp_pk);
+        friend_add_tcp_relay(fr_c, number, ip_port, friend_con->dht_temp_pk);
         friend_con->hosting_tcp_relay = 0;
     }
 }
@@ -473,7 +476,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
         }
 
         for (int j = 0; j < n; ++j) {
-            friend_add_tcp_relay(fr_c, number, nodes[j].ip_port, nodes[j].public_key);
+            friend_add_tcp_relay(fr_c, number, &nodes[j].ip_port, nodes[j].public_key);
         }
 
         return 0;

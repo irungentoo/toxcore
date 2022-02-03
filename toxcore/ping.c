@@ -225,7 +225,7 @@ static int handle_ping_response(void *object, const IP_Port *source, const uint8
         return 1;
     }
 
-    addto_lists(dht, *source, packet + 1);
+    addto_lists(dht, source, packet + 1);
     return 0;
 }
 
@@ -273,7 +273,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, const IP_Port *ip_port)
         return -1;
     }
 
-    if (!node_addable_to_close_list(ping->dht, public_key, *ip_port)) {
+    if (!node_addable_to_close_list(ping->dht, public_key, ip_port)) {
         return -1;
     }
 
@@ -300,7 +300,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, const IP_Port *ip_port)
         }
     }
 
-    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, *ip_port, dht_get_self_public_key(ping->dht))) {
+    if (add_to_list(ping->to_ping, MAX_TO_PING, public_key, ip_port, dht_get_self_public_key(ping->dht))) {
         return 0;
     }
 
@@ -328,7 +328,7 @@ void ping_iterate(Ping *ping)
             break;
         }
 
-        if (!node_addable_to_close_list(ping->dht, ping->to_ping[i].public_key, ping->to_ping[i].ip_port)) {
+        if (!node_addable_to_close_list(ping->dht, ping->to_ping[i].public_key, &ping->to_ping[i].ip_port)) {
             continue;
         }
 
