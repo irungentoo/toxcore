@@ -18,8 +18,10 @@
 
 /**
  * Send a LAN discovery pcaket to the broadcast address with port port.
+ *
+ * @return true on success, false on failure.
  */
-int32_t lan_discovery_send(uint16_t port, const DHT *dht);
+bool lan_discovery_send(Networking_Core *net, const uint8_t *dht_pk, uint16_t port);
 
 /**
  * Sets up packet handlers.

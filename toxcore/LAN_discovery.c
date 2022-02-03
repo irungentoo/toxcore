@@ -367,35 +367,35 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 }
 
 
-int lan_discovery_send(uint16_t port, const DHT *dht)
+bool lan_discovery_send(Networking_Core *net, const uint8_t *dht_pk, uint16_t port)
 {
     uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
-    id_copy(data + 1, dht_get_self_public_key(dht));
+    id_copy(data + 1, dht_pk);
 
-    send_broadcasts(dht_get_net(dht), port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
+    send_broadcasts(net, port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
 
-    int res = -1;
+    bool res = false;
     IP_Port ip_port;
     ip_port.port = port;
 
     /* IPv6 multicast */
-    if (net_family_is_ipv6(net_family(dht_get_net(dht)))) {
+    if (net_family_is_ipv6(net_family(net))) {
         ip_port.ip = broadcast_ip(net_family_ipv6, net_family_ipv6);
 
         if (ip_isset(&ip_port.ip)) {
-            if (sendpacket(dht_get_net(dht), &ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE) > 0) {
-                res = 1;
+            if (sendpacket(net, &ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE) > 0) {
+                res = true;
             }
         }
     }
 
     /* IPv4 broadcast (has to be IPv4-in-IPv6 mapping if socket is IPv6 */
-    ip_port.ip = broadcast_ip(net_family(dht_get_net(dht)), net_family_ipv4);
+    ip_port.ip = broadcast_ip(net_family(net), net_family_ipv4);
 
     if (ip_isset(&ip_port.ip)) {
-        if (sendpacket(dht_get_net(dht), &ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {
-            res = 1;
+        if (sendpacket(net, &ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {
+            res = true;
         }
     }
 

@@ -897,11 +897,11 @@ static void lan_discovery(Friend_Connections *fr_c)
         last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
 
         // Always send to default port
-        lan_discovery_send(net_htons(TOX_PORT_DEFAULT), fr_c->dht);
+        lan_discovery_send(dht_get_net(fr_c->dht), dht_get_self_public_key(fr_c->dht), net_htons(TOX_PORT_DEFAULT));
 
         // And check some extra ports
         for (uint16_t port = first; port < last; ++port) {
-            lan_discovery_send(net_htons(port), fr_c->dht);
+            lan_discovery_send(dht_get_net(fr_c->dht), dht_get_self_public_key(fr_c->dht), net_htons(port));
         }
 
         // Don't include default port in port range

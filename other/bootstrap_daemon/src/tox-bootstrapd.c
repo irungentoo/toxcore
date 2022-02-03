@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
         do_dht(dht);
 
         if (enable_lan_discovery && mono_time_is_timeout(mono_time, last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
-            lan_discovery_send(net_htons_port, dht);
+            lan_discovery_send(dht_get_net(dht), dht_get_self_public_key(dht), net_htons_port);
             last_LANdiscovery = mono_time_get(mono_time);
         }
 

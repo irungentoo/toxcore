@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
         do_dht(dht);
 
         if (mono_time_is_timeout(mono_time, last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
-            lan_discovery_send(net_htons(PORT), dht);
+            lan_discovery_send(dht_get_net(dht), dht_get_self_public_key(dht), net_htons(PORT));
             last_LANdiscovery = mono_time_get(mono_time);
         }
 
