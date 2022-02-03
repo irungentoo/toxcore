@@ -2375,12 +2375,11 @@ static unsigned int send_message_all_connections(const Group_Chats *g_c, const G
  * return number of messages sent.
  */
 static unsigned int send_lossy_all_connections(const Group_Chats *g_c, const Group_c *g, const uint8_t *data,
-        uint16_t length,
-        int receiver)
+        uint16_t length, int receiver)
 {
     unsigned int sent = 0;
     unsigned int num_connected_closest = 0;
-    unsigned int connected_closest[DESIRED_CLOSEST];
+    unsigned int connected_closest[DESIRED_CLOSEST] = {0};
 
     for (unsigned int i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
         if (g->connections[i].type != GROUPCHAT_CONNECTION_ONLINE) {

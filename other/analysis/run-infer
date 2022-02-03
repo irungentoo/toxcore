@@ -1,10 +1,25 @@
-#!/bin/bash
+#!/bin/sh
 
-# Infer ignores everything that's not in the "current file".
-SKIP_LINES=1
+# --bufferoverrun \
+# --pulse \
 
-set -e
+read -r -d '' SCRIPT <<'EOF'
+infer \
+  --report-console-limit 100 \
+  --jobs 8 \
+  --biabduction \
+  --loop-hoisting \
+  --quandary \
+  --racerd \
+  --starvation \
+  --uninit \
+  -- clang++ -fsyntax-only \
+  $(pkg-config --cflags libconfig libsodium opus vpx) \
+  /work/other/bootstrap_daemon/src/*.c \
+  /work/other/bootstrap_node_packets.c \
+  /work/toxav/*.c \
+  /work/toxcore/*.c \
+  /work/toxencryptsave/*.c
+EOF
 
-. other/analysis/gen-file.sh
-
-infer --no-progress-bar -- clang++ -fsyntax-only amalgamation.cc "${CPPFLAGS[@]}"
+docker run --rm -it -v "$PWD:/work" toxchat/infer bash -c "$SCRIPT"
