@@ -1272,7 +1272,10 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
     Node_format receiver;
     memcpy(receiver.public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     receiver.ip_port = *ip_port;
-    memcpy(plain_message, &receiver, sizeof(receiver));
+
+    if (pack_nodes(plain_message, sizeof(plain_message), &receiver, 1) == -1) {
+        return false;
+    }
 
     uint64_t ping_id = 0;
 
@@ -1394,8 +1397,7 @@ static int handle_getnodes(void *object, IP_Port source, const uint8_t *packet, 
     return false;
 }
 
-/** return false if no
- * return true if yes */
+/** Return true if we sent a getnode packet to the peer associated with the supplied info. */
 static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port node_ip_port, uint64_t ping_id)
 {
     uint8_t data[sizeof(Node_format) * 2];
@@ -1405,7 +1407,10 @@ static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, IP_Port no
     }
 
     Node_format test;
-    memcpy(&test, data, sizeof(Node_format));
+
+    if (unpack_nodes(&test, 1, nullptr, data, sizeof(data), false) != 1) {
+        return false;
+    }
 
     if (!ipport_equal(&test.ip_port, &node_ip_port) || !id_equal(test.public_key, public_key)) {
         return false;
