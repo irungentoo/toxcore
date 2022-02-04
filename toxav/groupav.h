@@ -19,14 +19,14 @@
 typedef void audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm,
                            uint32_t samples, uint8_t channels, uint32_t sample_rate, void *userdata);
 
-/* Create and connect to a new toxav group.
+/** Create and connect to a new toxav group.
  *
  * return group number on success.
  * return -1 on failure.
  */
 int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata);
 
-/* Join a AV group (you need to have been invited first.)
+/** Join a AV group (you need to have been invited first.)
  *
  * returns group number on success
  * returns -1 on failure.
@@ -36,7 +36,7 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
                       audio_data_cb *audio_callback, void *userdata);
 
 
-/* Send audio to the group chat.
+/** Send audio to the group chat.
  *
  * return 0 on success.
  * return -1 on failure.
@@ -44,7 +44,7 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
 int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      uint32_t sample_rate);
 
-/* Enable A/V in a groupchat.
+/** Enable A/V in a groupchat.
  *
  * return 0 on success.
  * return -1 on failure.
@@ -52,14 +52,14 @@ int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm,
 int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t groupnumber,
                         audio_data_cb *audio_callback, void *userdata);
 
-/* Disable A/V in a groupchat.
+/** Disable A/V in a groupchat.
  *
  * return 0 on success.
  * return -1 on failure.
  */
 int groupchat_disable_av(const Group_Chats *g_c, uint32_t groupnumber);
 
-/* Return whether A/V is enabled in the groupchat.
+/** Return whether A/V is enabled in the groupchat.
  */
 bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t groupnumber);
 

@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Batch encryption functions.
  */
 #include "toxencryptsave.h"

@@ -26,7 +26,7 @@ bool rb_empty(const RingBuffer *b)
     return b->end == b->start;
 }
 
-/*
+/**
  * returns: NULL on success
  *          input value "p" on FAILURE -> caller can free on failed rb_write
  */

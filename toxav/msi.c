@@ -330,7 +330,7 @@ static bool check_size(const Logger *log, const uint8_t *bytes, int *constraint,
     return true;
 }
 
-/* Assumes size == 1 */
+/** Assumes size == 1 */
 static bool check_enum_high(const Logger *log, const uint8_t *bytes, uint8_t enum_high)
 {
     if (bytes[2] > enum_high) {

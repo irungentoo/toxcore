@@ -3,7 +3,7 @@
  * Copyright © 2013-2016 Tox Developers.
  */
 
-/*
+/**
  * Batch encryption functions.
  */
 

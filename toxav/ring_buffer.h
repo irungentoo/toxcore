@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-/* Ring buffer */
+/** Ring buffer */
 typedef struct RingBuffer RingBuffer;
 bool rb_full(const RingBuffer *b);
 bool rb_empty(const RingBuffer *b);
