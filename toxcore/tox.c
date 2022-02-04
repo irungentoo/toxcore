@@ -2262,7 +2262,6 @@ Tox_Conference_Type tox_conference_get_type(const Tox *tox, uint32_t conference_
     return (Tox_Conference_Type)ret;
 }
 
-/** id is TOX_CONFERENCE_ID_SIZE bytes */
 bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *id)
 {
     assert(tox != nullptr);
@@ -2273,7 +2272,6 @@ bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *
 }
 
 // TODO(iphydf): Delete in 0.3.0.
-/** uid is TOX_CONFERENCE_ID_SIZE bytes */
 bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid)
 {
     assert(tox != nullptr);

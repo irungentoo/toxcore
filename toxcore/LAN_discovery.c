@@ -266,7 +266,9 @@ static bool ip4_is_local(const IP4 *ip4)
     return ip4->uint8[0] == 127;
 }
 
-/** Is IP a local ip or not. */
+/**
+ * Is IP a local ip or not.
+ */
 bool ip_is_local(const IP *ip)
 {
     if (net_family_is_ipv4(ip->family)) {

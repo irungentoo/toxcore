@@ -2353,7 +2353,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
     return 0;
 }
 
-/** Set function to be called when connection with crypt_connection_id receives a data packet of length.
+/** Set function to be called when connection with crypt_connection_id receives a lossless data packet of length.
  *
  * The set function should return -1 on failure and 0 on success.
  * Object and id will be passed to this function untouched.
@@ -2777,7 +2777,7 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  * return -1 if data could not be put in packet queue.
  * return positive packet number if data was put into the queue.
  *
- * The first byte of data must in the PACKET_ID_RANGE_LOSSLESS.
+ * The first byte of data must be in the PACKET_ID_RANGE_LOSSLESS.
  *
  * congestion_control: should congestion control apply to this packet?
  */
@@ -2858,7 +2858,7 @@ int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t 
  * return -1 on failure.
  * return 0 on success.
  *
- * The first byte of data must in the PACKET_ID_RANGE_LOSSY.
+ * The first byte of data must be in the PACKET_ID_RANGE_LOSSY.
  */
 int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length)
 {
@@ -2958,7 +2958,7 @@ void new_keys(Net_Crypto *c)
 }
 
 /** Save the public and private keys to the keys array.
- * Length must be CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE.
+ *  Length must be CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE.
  *
  * TODO(irungentoo): Save only secret key.
  */
@@ -2977,8 +2977,8 @@ void load_secret_key(Net_Crypto *c, const uint8_t *sk)
     crypto_derive_public_key(c->self_public_key, c->self_secret_key);
 }
 
-/** Run this to (re)initialize net_crypto.
- * Sets all the global connection variables to their default values.
+/** Create new instance of Net_Crypto.
+ *  Sets all the global connection variables to their default values.
  */
 Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, const TCP_Proxy_Info *proxy_info)
 {

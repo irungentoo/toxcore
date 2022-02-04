@@ -240,6 +240,13 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  *
  * return -1 on failure.
  * return 0 on success.
+ *
+ * Note: The condition `buffer_end - buffer_start < packet_number - buffer_start` is
+ * a trick which handles situations `buffer_end >= buffer_start` and
+ * `buffer_end < buffer_start` (when buffer_end overflowed) both correctly.
+ *
+ * It CANNOT be simplified to `packet_number < buffer_start`, as it will fail
+ * when `buffer_end < buffer_start`.
  */
 int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
 
@@ -268,12 +275,15 @@ int add_tcp_relay(Net_Crypto *c, const IP_Port *ip_port, const uint8_t *public_k
 
 /** Return a random TCP connection number for use in send_tcp_onion_request.
  *
+ * TODO(irungentoo): This number is just the index of an array that the elements can
+ * change without warning.
+ *
  * return TCP connection number on success.
  * return -1 on failure.
  */
 int get_random_tcp_con_number(Net_Crypto *c);
 
-/** Send an onion packet via the TCP relay corresponding to TCP_conn_number.
+/** Send an onion packet via the TCP relay corresponding to tcp_connections_number.
  *
  * return 0 on success.
  * return -1 on failure.
@@ -310,6 +320,8 @@ void new_keys(Net_Crypto *c);
 
 /** Save the public and private keys to the keys array.
  *  Length must be CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_SECRET_KEY_SIZE.
+ *
+ * TODO(irungentoo): Save only secret key.
  */
 void save_keys(const Net_Crypto *c, uint8_t *keys);
 

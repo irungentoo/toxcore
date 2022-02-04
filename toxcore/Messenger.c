@@ -59,7 +59,7 @@ static int realloc_friendlist(Messenger *m, uint32_t num)
     return 0;
 }
 
-/**  return the friend id associated to that public key.
+/** return the friend number associated to that public key.
  *  return -1 if no such friend.
  */
 int32_t getfriend_id(const Messenger *m, const uint8_t *real_pk)
@@ -103,7 +103,7 @@ int getfriendcon_id(const Messenger *m, int32_t friendnumber)
     return m->friendlist[friendnumber].friendcon_id;
 }
 
-/*
+/**
  *  return a uint16_t that represents the checksum of address of length len.
  */
 static uint16_t address_checksum(const uint8_t *address, uint32_t len)
@@ -204,11 +204,16 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
     return FAERR_NOMEM;
 }
 
-/*
+/**
  * Add a friend.
+ *
  * Set the data that will be sent along with friend request.
- * Address is the address of the friend (returned by getaddress of the friend you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
- * data is the data and length is the length.
+ *
+ * @param address is the address of the friend (returned by getaddress of the friend
+ *   you wish to add) it must be FRIEND_ADDRESS_SIZE bytes.
+ *   TODO(irungentoo): add checksum.
+ * @param data is the data.
+ * @param length is the length.
  *
  *  return the friend number if success.
  *  return FA_TOOLONG if message length is too long.
@@ -342,7 +347,7 @@ static int add_receipt(Messenger *m, int32_t friendnumber, uint32_t packet_num, 
     new_receipts->next = nullptr;
     return 0;
 }
-/*
+/**
  * return -1 on failure.
  * return 0 if packet was received.
  */
@@ -475,7 +480,7 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
     return 1;
 }
 
-/** Send a message of type.
+/** Send a message of type to an online friend.
  *
  * return -1 if friend not valid.
  * return -2 if too large.
@@ -483,6 +488,8 @@ int m_friend_exists(const Messenger *m, int32_t friendnumber)
  * return -4 if send failed (because queue is full).
  * return -5 if bad type.
  * return 0 if success.
+ *
+ *  the value in message_id will be passed to your read_receipt callback when the other receives the message.
  */
 int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, const uint8_t *message, uint32_t length,
                            uint32_t *message_id)
@@ -547,6 +554,9 @@ static int m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *n
 }
 
 /** Set the name and name_length of a friend.
+ * name must be a string of maximum MAX_NAME_LENGTH length.
+ * length must be at least 1 byte.
+ * length is the length of name with the NULL terminator.
  *
  *  return 0 if success.
  *  return -1 if failure.
@@ -566,7 +576,7 @@ int setfriendname(Messenger *m, int32_t friendnumber, const uint8_t *name, uint1
     return 0;
 }
 
-/** Set our nickname
+/** Set our nickname.
  * name must be a string of maximum MAX_NAME_LENGTH length.
  * length must be at least 1 byte.
  * length is the length of name with the NULL terminator.
@@ -597,10 +607,13 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
     return 0;
 }
 
-/** Get our nickname and put it in name.
+/**
+ * Get your nickname.
+ * m - The messenger context to use.
  * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
  *
- *  return the length of the name.
+ *  return length of the name.
+ *  return 0 on error.
  */
 uint16_t getself_name(const Messenger *m, uint8_t *name)
 {
@@ -614,7 +627,7 @@ uint16_t getself_name(const Messenger *m, uint8_t *name)
 }
 
 /** Get name of friendnumber and put it in name.
- * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH bytes.
+ * name needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
  *  return length of name if success.
  *  return -1 if failure.
@@ -685,8 +698,11 @@ int m_set_userstatus(Messenger *m, uint8_t status)
     return 0;
 }
 
-/** return the size of friendnumber's user status.
+/**
  * Guaranteed to be at most MAX_STATUSMESSAGE_LENGTH.
+ *
+ * returns the length of friendnumber's status message, including null on success.
+ * returns -1 on failure.
  */
 int m_get_statusmessage_size(const Messenger *m, int32_t friendnumber)
 {
@@ -697,8 +713,12 @@ int m_get_statusmessage_size(const Messenger *m, int32_t friendnumber)
     return m->friendlist[friendnumber].statusmessage_length;
 }
 
-/**  Copy the user status of friendnumber into buf, truncating if needed to maxlen
- *  bytes, use m_get_statusmessage_size to find out how much you need to allocate.
+/** Copy friendnumber's status message into buf, truncating if size is over maxlen.
+ * Get the size you need to allocate from m_get_statusmessage_size.
+ * The self variant will copy our own status message.
+ *
+ * returns the length of the copied data on success
+ * returns -1 on failure.
  */
 int m_copy_statusmessage(const Messenger *m, int32_t friendnumber, uint8_t *buf, uint32_t maxlen)
 {
@@ -1771,12 +1791,21 @@ int m_callback_rtp_packet(Messenger *m, int32_t friendnumber, uint8_t byte, m_lo
 }
 
 
-/** TODO(oxij): this name is confusing, because this function sends both av and custom lossy packets.
+/** High level function to send custom lossy packets.
+ *
+ * TODO(oxij): this name is confusing, because this function sends both av and custom lossy packets.
  * Meanwhile, m_handle_lossy_packet routes custom packets to custom_lossy_packet_registerhandler
  * as you would expect from its name.
  *
  * I.e. custom_lossy_packet_registerhandler's "custom lossy packet" and this "custom lossy packet"
  * are not the same set of packets.
+ *
+ * return -1 if friend invalid.
+ * return -2 if length wrong.
+ * return -3 if first byte invalid.
+ * return -4 if friend offline.
+ * return -5 if packet failed to send because of other error.
+ * return 0 on success.
  */
 int m_send_custom_lossy_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint32_t length)
 {
@@ -1869,7 +1898,12 @@ static int friend_already_added(const uint8_t *real_pk, void *data)
     return -1;
 }
 
-/** Run this at startup. */
+/** Run this at startup.
+ *  return allocated instance of Messenger on success.
+ *  return 0 if there are problems.
+ *
+ *  if error is not NULL it will be set to one of the values in the enum above.
+ */
 Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsigned int *error)
 {
     if (!options) {
@@ -2013,7 +2047,9 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsig
     return m;
 }
 
-/** Run this before closing shop. */
+/** Run this before closing shop
+ * Free all datastructures.
+ */
 void kill_messenger(Messenger *m)
 {
     if (!m) {
@@ -2777,10 +2813,10 @@ static uint32_t m_state_plugins_size(const Messenger *m)
     return size;
 }
 
-/*
- * Registers a state plugin with the messenger
+/** Registers a state plugin for saving, loadding, and getting the size of a section of the save
+ *
  * returns true on success
- * returns false on failure
+ * returns false on error
  */
 bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb size_callback,
                              m_state_load_cb load_callback,
@@ -2820,13 +2856,13 @@ static uint32_t m_plugin_size(const Messenger *m, State_Type type)
     return UINT32_MAX;
 }
 
-/**  return size of the messenger data (for saving) */
+/** return size of the messenger data (for saving). */
 uint32_t messenger_size(const Messenger *m)
 {
     return m_state_plugins_size(m);
 }
 
-/** Save the messenger in data of size messenger_size(). */
+/** Save the messenger in data (must be allocated memory of size at least Messenger_size()) */
 uint8_t *messenger_save(const Messenger *m, uint8_t *data)
 {
     for (uint8_t i = 0; i < m->options.state_plugins_length; ++i) {
