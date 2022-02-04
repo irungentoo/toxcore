@@ -89,6 +89,7 @@ jobs:
       - run: *apt_install
       - run: apt-get install -y --no-install-recommends cppcheck g++ llvm-dev
       - checkout
+      - run: other/analysis/check_includes
       - run: other/analysis/check_logger_levels
       - run: other/analysis/run-check-recursion
       - run: other/analysis/run-clang

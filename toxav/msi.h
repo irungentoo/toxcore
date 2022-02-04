@@ -5,8 +5,8 @@
 #ifndef C_TOXCORE_TOXAV_MSI_H
 #define C_TOXCORE_TOXAV_MSI_H
 
-#include <inttypes.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #include "audio.h"
 #include "video.h"

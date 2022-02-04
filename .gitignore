@@ -2,6 +2,7 @@
 .DS_Store
 .DS_Store?
 ._*
+.mypy_cache
 .Spotlight-V100
 .Trash*
 Icon?

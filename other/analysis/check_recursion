@@ -27,7 +27,7 @@ def load_callgraph() -> Dict[str, List[str]]:
     Returns graph as dict[str, list[str]] containing nodes with their outgoing
     edges.
     """
-    graph = collections.defaultdict(set)
+    graph: Dict[str, Set[str]] = collections.defaultdict(set)
     cur = None
     for line in fileinput.input():
         found = re.search("Call graph node for function: '(.*)'", line)

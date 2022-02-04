@@ -17,10 +17,8 @@ jobs:
         run: pip install mypy
       - name: Run mypy
         run: |
-          mypy --strict \
-            $(echo $(find . -name "*.py" -and -not -name "conanfile.py") \
-                   $(grep -lR '^#!.*python3' .) \
-              | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          (find . -name "*.py" -and -not -name "conanfile.py"; grep -lR '^#!.*python') \
+              | xargs -n1 -P8 mypy --strict
 
   build-msan:
     runs-on: ubuntu-latest

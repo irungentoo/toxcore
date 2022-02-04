@@ -8,7 +8,6 @@
 #ifndef C_TOXCORE_TOXCORE_CCOMPAT_H
 #define C_TOXCORE_TOXCORE_CCOMPAT_H
 
-#include <assert.h>
 #include <stdbool.h>
 
 bool unused_for_tokstyle(void);
