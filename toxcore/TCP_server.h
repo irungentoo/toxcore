@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Implementation of the TCP relay server part of Tox.
  */
 #ifndef C_TOXCORE_TOXCORE_TCP_SERVER_H

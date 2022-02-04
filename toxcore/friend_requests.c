@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Handle friend requests.
  */
 #include "friend_requests.h"
@@ -13,7 +13,7 @@
 
 #include "util.h"
 
-/* NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
+/** NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
  * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
  */
 #define MAX_RECEIVED_STORED 32

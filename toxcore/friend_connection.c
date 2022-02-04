@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Connection to friends.
  */
 #include "friend_connection.h"

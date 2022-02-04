@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Slightly better groupchats implementation.
  */
 #ifndef C_TOXCORE_TOXCORE_GROUP_H
@@ -66,13 +66,13 @@ typedef enum Groupchat_Connection_Type {
     GROUPCHAT_CONNECTION_ONLINE,
 } Groupchat_Connection_Type;
 
-/* Connection is to one of the closest DESIRED_CLOSEST peers */
+/** Connection is to one of the closest DESIRED_CLOSEST peers */
 #define GROUPCHAT_CONNECTION_REASON_CLOSEST     (1 << 0)
 
-/* Connection is to a peer we are introducing to the conference */
+/** Connection is to a peer we are introducing to the conference */
 #define GROUPCHAT_CONNECTION_REASON_INTRODUCING (1 << 1)
 
-/* Connection is to a peer who is introducing us to the conference */
+/** Connection is to a peer who is introducing us to the conference */
 #define GROUPCHAT_CONNECTION_REASON_INTRODUCER  (1 << 2)
 
 typedef struct Groupchat_Connection {

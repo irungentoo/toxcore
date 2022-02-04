@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Simple struct with functions to create a list which associates ids with data
  * -Allows for finding ids associated with data such as IPs or public keys in a short time
  * -Should only be used if there are relatively few add/remove calls to the list
@@ -16,7 +16,7 @@
 
 #include "ccompat.h"
 
-/* Basically, the elements in the list are placed in order so that they can be searched for easily
+/** Basically, the elements in the list are placed in order so that they can be searched for easily
  * -each element is seen as a big-endian integer when ordering them
  * -the ids array is maintained so that each id always matches
  * -the search algorithm cuts down the time to find the id associated with a piece of data

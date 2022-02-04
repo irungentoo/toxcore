@@ -4,7 +4,7 @@
  * Copyright © 2013 plutooo
  */
 
-/*
+/**
  * Buffered pinging using cyclic arrays.
  */
 #include "ping.h"
@@ -20,10 +20,10 @@
 
 #define PING_NUM_MAX 512
 
-/* Maximum newly announced nodes to ping per TIME_TO_PING seconds. */
+/** Maximum newly announced nodes to ping per TIME_TO_PING seconds. */
 #define MAX_TO_PING 32
 
-/* Ping newly announced nodes to ping per TIME_TO_PING seconds*/
+/** Ping newly announced nodes to ping per TIME_TO_PING seconds*/
 #define TIME_TO_PING 2
 
 

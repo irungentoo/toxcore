@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Implementation of the onion part of docs/Prevent_Tracking.txt
  */
 #ifndef C_TOXCORE_TOXCORE_ONION_H

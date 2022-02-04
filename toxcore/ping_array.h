@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Implementation of an efficient array to store that we pinged something.
  */
 #ifndef C_TOXCORE_TOXCORE_PING_ARRAY_H

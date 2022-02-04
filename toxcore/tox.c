@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * The Tox public API.
  */
 #ifndef _XOPEN_SOURCE
@@ -351,7 +351,7 @@ static State_Load_Status state_load_callback(void *outer, const uint8_t *data, u
     return STATE_LOAD_STATUS_CONTINUE;
 }
 
-/* Load tox from data of size length. */
+/** Load tox from data of size length. */
 static int tox_load(Tox *tox, const uint8_t *data, uint32_t length)
 {
     uint32_t data32[2];
@@ -2262,7 +2262,7 @@ Tox_Conference_Type tox_conference_get_type(const Tox *tox, uint32_t conference_
     return (Tox_Conference_Type)ret;
 }
 
-/* id is TOX_CONFERENCE_ID_SIZE bytes */
+/** id is TOX_CONFERENCE_ID_SIZE bytes */
 bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *id)
 {
     assert(tox != nullptr);
@@ -2273,7 +2273,7 @@ bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *
 }
 
 // TODO(iphydf): Delete in 0.3.0.
-/* uid is TOX_CONFERENCE_ID_SIZE bytes */
+/** uid is TOX_CONFERENCE_ID_SIZE bytes */
 bool tox_conference_get_uid(const Tox *tox, uint32_t conference_number, uint8_t *uid)
 {
     assert(tox != nullptr);

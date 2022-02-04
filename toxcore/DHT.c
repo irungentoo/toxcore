@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * An implementation of the DHT as seen in docs/updates/DHT.md
  */
 #include "DHT.h"
@@ -20,18 +20,18 @@
 #include "state.h"
 #include "util.h"
 
-/* The timeout after which a node is discarded completely. */
+/** The timeout after which a node is discarded completely. */
 #define KILL_NODE_TIMEOUT (BAD_NODE_TIMEOUT + PING_INTERVAL)
 
-/* Ping interval in seconds for each random sending of a get nodes request. */
+/** Ping interval in seconds for each random sending of a get nodes request. */
 #define GET_NODE_INTERVAL 20
 
 #define MAX_PUNCHING_PORTS 48
 
-/* Interval in seconds between punching attempts*/
+/** Interval in seconds between punching attempts*/
 #define PUNCH_INTERVAL 3
 
-/* Time in seconds after which punching parameters will be reset */
+/** Time in seconds after which punching parameters will be reset */
 #define PUNCH_RESET_TIME 40
 
 #define MAX_NORMAL_PUNCHING_TRIES 5
@@ -39,7 +39,7 @@
 #define NAT_PING_REQUEST    0
 #define NAT_PING_RESPONSE   1
 
-/* Number of get node requests to send to quickly find close nodes. */
+/** Number of get node requests to send to quickly find close nodes. */
 #define MAX_BOOTSTRAP_TIMES 5
 
 typedef struct DHT_Friend_Callback {

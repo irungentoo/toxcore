@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Implementation of the announce part of docs/Prevent_Tracking.txt
  */
 #include "onion_announce.h"

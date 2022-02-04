@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * LAN discovery implementation.
  */
 #include "LAN_discovery.h"
@@ -209,7 +209,7 @@ static void fetch_broadcast_info(uint16_t port)
 
 #endif
 
-/* Send packet to all IPv4 broadcast addresses
+/** Send packet to all IPv4 broadcast addresses
  *
  *  return 1 if sent to at least one broadcast target.
  *  return 0 on failure to find any valid broadcast target.
@@ -233,7 +233,7 @@ static uint32_t send_broadcasts(const Networking_Core *net, uint16_t port, const
     return 1;
 }
 
-/* Return the broadcast ip. */
+/** Return the broadcast ip. */
 static IP broadcast_ip(Family family_socket, Family family_broadcast)
 {
     IP ip;
@@ -266,7 +266,7 @@ static bool ip4_is_local(const IP4 *ip4)
     return ip4->uint8[0] == 127;
 }
 
-/* Is IP a local ip or not. */
+/** Is IP a local ip or not. */
 bool ip_is_local(const IP *ip)
 {
     if (net_family_is_ipv4(ip->family)) {

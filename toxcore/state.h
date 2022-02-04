@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * The state module is responsible for parsing the Tox save data format and for
  * saving state in that format.
  *

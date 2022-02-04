@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * LAN discovery implementation.
  */
 #ifndef C_TOXCORE_TOXCORE_LAN_DISCOVERY_H

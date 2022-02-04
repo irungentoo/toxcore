@@ -38,7 +38,7 @@ void wipe_priority_list(TCP_Priority_List *p);
 #define TCP_CLIENT_HANDSHAKE_SIZE (CRYPTO_PUBLIC_KEY_SIZE + TCP_SERVER_HANDSHAKE_SIZE)
 #define TCP_MAX_OOB_DATA_LENGTH 1024
 
-/* frequency to ping connected nodes and timeout in seconds */
+/** frequency to ping connected nodes and timeout in seconds */
 #define TCP_PING_FREQUENCY 30
 #define TCP_PING_TIMEOUT 10
 

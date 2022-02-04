@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Implementation of the announce part of docs/Prevent_Tracking.txt
  */
 #ifndef C_TOXCORE_TOXCORE_ONION_ANNOUNCE_H
@@ -30,7 +30,7 @@
 
 typedef struct Onion_Announce Onion_Announce;
 
-/* These two are not public; they are for tests only! */
+/** These two are not public; they are for tests only! */
 uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry);
 void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t time);
 

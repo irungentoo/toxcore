@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Handle friend requests.
  */
 #ifndef C_TOXCORE_TOXCORE_FRIEND_REQUESTS_H

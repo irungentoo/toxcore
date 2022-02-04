@@ -3,7 +3,7 @@
  * Copyright © 2015 Tox project.
  */
 
-/*
+/**
  * Handles TCP relay connections between two Tox clients.
  */
 #include "TCP_connection.h"

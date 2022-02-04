@@ -3,7 +3,7 @@
  * Copyright © 2013-2015 Tox project.
  */
 
-/*
+/**
  * Text logging abstraction.
  */
 #include "logger.h"

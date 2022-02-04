@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Simple struct with functions to create a list which associates ids with data
  * -Allows for finding ids associated with data such as IPs or public keys in a short time
  * -Should only be used if there are relatively few add/remove calls to the list

@@ -4,7 +4,7 @@
  * Copyright © 2013 plutooo
  */
 
-/*
+/**
  * Buffered pinging using cyclic arrays.
  */
 #ifndef C_TOXCORE_TOXCORE_PING_H

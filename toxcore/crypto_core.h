@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Functions for the core crypto.
  */
 #ifndef C_TOXCORE_TOXCORE_CRYPTO_CORE_H

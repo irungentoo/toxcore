@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Connection to friends.
  */
 #ifndef C_TOXCORE_TOXCORE_FRIEND_CONNECTION_H
@@ -22,21 +22,21 @@
 #define PACKET_ID_SHARE_RELAYS 17
 #define PACKET_ID_FRIEND_REQUESTS 18
 
-/* Interval between the sending of ping packets. */
+/** Interval between the sending of ping packets. */
 #define FRIEND_PING_INTERVAL 8
 
-/* If no packets are received from friend in this time interval, kill the connection. */
+/** If no packets are received from friend in this time interval, kill the connection. */
 #define FRIEND_CONNECTION_TIMEOUT (FRIEND_PING_INTERVAL * 4)
 
-/* Time before friend is removed from the DHT after last hearing about him. */
+/** Time before friend is removed from the DHT after last hearing about him. */
 #define FRIEND_DHT_TIMEOUT BAD_NODE_TIMEOUT
 
 #define FRIEND_MAX_STORED_TCP_RELAYS (MAX_FRIEND_TCP_CONNECTIONS * 4)
 
-/* Max number of tcp relays sent to friends */
+/** Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS RECOMMENDED_FRIEND_TCP_CONNECTIONS
 
-/* Interval between the sending of tcp relay information */
+/** Interval between the sending of tcp relay information */
 #define SHARE_RELAYS_INTERVAL (5 * 60)
 
 

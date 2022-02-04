@@ -38,7 +38,7 @@
 #endif
 //!TOKSTYLE+
 
-/* don't call into system billions of times for no reason */
+/** don't call into system billions of times for no reason */
 struct Mono_Time {
     uint64_t time;
     uint64_t base_time;

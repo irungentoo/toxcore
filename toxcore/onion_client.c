@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Implementation of the client part of docs/Prevent_Tracking.txt (The part that
  * uses the onion stuff to connect to the friend)
  */
@@ -17,7 +17,7 @@
 #include "mono_time.h"
 #include "util.h"
 
-/* defines for the array size and
+/** defines for the array size and
  * timeout for onion announce packets. */
 #define ANNOUNCE_ARRAY_SIZE 256
 #define ANNOUNCE_TIMEOUT 10

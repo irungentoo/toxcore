@@ -3,7 +3,7 @@
  * Copyright © 2014 Tox project.
  */
 
-/*
+/**
  * Slightly better groupchats implementation.
  */
 #include "group.h"
@@ -3029,7 +3029,7 @@ void *group_peer_get_object(const Group_Chats *g_c, uint32_t groupnumber, uint32
     return g->group[peernumber].object;
 }
 
-/* Interval in seconds to send ping messages */
+/** Interval in seconds to send ping messages */
 #define GROUP_PING_INTERVAL 20
 
 static bool ping_groupchat(const Group_Chats *g_c, uint32_t groupnumber)
@@ -3049,7 +3049,7 @@ static bool ping_groupchat(const Group_Chats *g_c, uint32_t groupnumber)
     return true;
 }
 
-/* Seconds of inactivity after which to freeze a peer */
+/** Seconds of inactivity after which to freeze a peer */
 #define FREEZE_TIMEOUT (GROUP_PING_INTERVAL * 3)
 
 static bool groupchat_freeze_timedout(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
@@ -3217,7 +3217,7 @@ static uint32_t saved_conf_size(const Group_c *g)
     return len;
 }
 
-/* Save a future message number. The save will remain valid until we have sent
+/** Save a future message number. The save will remain valid until we have sent
  * this many more messages. */
 #define SAVE_OFFSET_MESSAGE_NUMBER (1 << 16)
 #define SAVE_OFFSET_LOSSY_MESSAGE_NUMBER (1 << 13)

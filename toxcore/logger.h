@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Logger abstraction backed by callbacks for writing.
  */
 #ifndef C_TOXCORE_TOXCORE_LOGGER_H

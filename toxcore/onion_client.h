@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Implementation of the client part of docs/Prevent_Tracking.txt (The part that
  * uses the onion stuff to connect to the friend)
  */
@@ -19,13 +19,13 @@
 #define ONION_NODE_PING_INTERVAL 15
 #define ONION_NODE_TIMEOUT ONION_NODE_PING_INTERVAL
 
-/* The interval in seconds at which to tell our friends where we are */
+/** The interval in seconds at which to tell our friends where we are */
 #define ONION_DHTPK_SEND_INTERVAL 30
 #define DHT_DHTPK_SEND_INTERVAL 20
 
 #define NUMBER_ONION_PATHS 6
 
-/* The timeout the first time the path is added and
+/** The timeout the first time the path is added and
  * then for all the next consecutive times */
 #define ONION_PATH_FIRST_TIMEOUT 4
 #define ONION_PATH_TIMEOUT 10
@@ -39,14 +39,14 @@
 
 #define MAX_PATH_NODES 32
 
-/* If no announce response packets are received within this interval tox will
+/** If no announce response packets are received within this interval tox will
  * be considered offline. We give time for a node to be pinged often enough
  * that it times out, which leads to the network being thoroughly tested as it
  * is replaced.
  */
 #define ONION_OFFLINE_TIMEOUT (ONION_NODE_PING_INTERVAL * (ONION_NODE_MAX_PINGS+2))
 
-/* Onion data packet ids. */
+/** Onion data packet ids. */
 #define ONION_DATA_FRIEND_REQ CRYPTO_PACKET_FRIEND_REQ
 #define ONION_DATA_DHTPK CRYPTO_PACKET_DHTPK
 

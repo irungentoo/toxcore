@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * An implementation of the DHT as seen in docs/updates/DHT.md
  */
 #ifndef C_TOXCORE_TOXCORE_DHT_H
@@ -21,35 +21,35 @@
 extern "C" {
 #endif
 
-/* Maximum number of clients stored per friend. */
+/** Maximum number of clients stored per friend. */
 #define MAX_FRIEND_CLIENTS 8
 
 #define LCLIENT_NODES MAX_FRIEND_CLIENTS
 #define LCLIENT_LENGTH 128
 
-/* A list of the clients mathematically closest to ours. */
+/** A list of the clients mathematically closest to ours. */
 #define LCLIENT_LIST (LCLIENT_LENGTH * LCLIENT_NODES)
 
 #define MAX_CLOSE_TO_BOOTSTRAP_NODES 8
 
-/* The max number of nodes to send with send nodes. */
+/** The max number of nodes to send with send nodes. */
 #define MAX_SENT_NODES 4
 
-/* Ping timeout in seconds */
+/** Ping timeout in seconds */
 #define PING_TIMEOUT 5
 
-/* size of DHT ping arrays. */
+/** size of DHT ping arrays. */
 #define DHT_PING_ARRAY_SIZE 512
 
-/* Ping interval in seconds for each node in our lists. */
+/** Ping interval in seconds for each node in our lists. */
 #define PING_INTERVAL 60
 
-/* The number of seconds for a non responsive node to become bad. */
+/** The number of seconds for a non responsive node to become bad. */
 #define PINGS_MISSED_NODE_GOES_BAD 1
 #define PING_ROUNDTRIP 2
 #define BAD_NODE_TIMEOUT (PING_INTERVAL + PINGS_MISSED_NODE_GOES_BAD * (PING_INTERVAL + PING_ROUNDTRIP))
 
-/* The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
+/** The number of "fake" friends to add (for optimization purposes and so our paths for the onion part are more random) */
 #define DHT_FAKE_FRIEND_NUMBER 2
 
 #define MAX_CRYPTO_REQUEST_SIZE 1024

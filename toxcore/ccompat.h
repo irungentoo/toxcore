@@ -2,7 +2,7 @@
  * Copyright © 2016-2021 The TokTok team.
  */
 
-/*
+/**
  * C language compatibility macros for varying compiler support.
  */
 #ifndef C_TOXCORE_TOXCORE_CCOMPAT_H

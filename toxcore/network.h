@@ -3,7 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/*
+/**
  * Datatypes, functions and includes for the core networking.
  */
 #ifndef C_TOXCORE_TOXCORE_NETWORK_H
@@ -81,7 +81,7 @@ typedef enum Net_Packet_Type {
 #define TOX_PORTRANGE_TO   33545
 #define TOX_PORT_DEFAULT   TOX_PORTRANGE_FROM
 
-/* Redefinitions of variables for safe transfer over wire. */
+/** Redefinitions of variables for safe transfer over wire. */
 #define TOX_AF_UNSPEC 0
 #define TOX_AF_INET 2
 #define TOX_AF_INET6 10
@@ -94,7 +94,7 @@ typedef enum Net_Packet_Type {
 #define TOX_PROTO_TCP 1
 #define TOX_PROTO_UDP 2
 
-/* TCP related */
+/** TCP related */
 #define TCP_ONION_FAMILY (TOX_AF_INET6 + 1)
 #define TCP_INET (TOX_AF_INET6 + 2)
 #define TCP_INET6 (TOX_AF_INET6 + 3)
@@ -204,14 +204,14 @@ bool ipv6_ipv4_in_v6(const IP6 *a);
 
 #define TOX_ENABLE_IPV6_DEFAULT true
 
-/* addr_resolve return values */
+/** addr_resolve return values */
 #define TOX_ADDR_RESOLVE_INET  1
 #define TOX_ADDR_RESOLVE_INET6 2
 
 #define TOX_INET6_ADDRSTRLEN 66
 #define TOX_INET_ADDRSTRLEN 22
 
-/* this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
+/** this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
 #define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
 /** ip_ntoa
  *   converts ip into a string
