@@ -113,6 +113,14 @@ uint32_t random_u32(void);
 uint64_t random_u64(void);
 
 /**
+ * Return a random 32 bit integer between 0 and upper_bound (excluded).
+ *
+ * On libsodium builds this function guarantees a uniform distribution of possible outputs.
+ * On vanilla NACL builds this function is equivalent to `random() % upper_bound`.
+ */
+uint32_t random_range_u32(uint32_t upper_bound);
+
+/**
  * Fill the given nonce with random bytes.
  */
 void random_nonce(uint8_t *nonce);

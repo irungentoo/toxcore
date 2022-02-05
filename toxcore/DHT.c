@@ -1707,10 +1707,10 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
 
     if ((num_nodes != 0) && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
                              || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
-        uint32_t rand_node = random_u32() % num_nodes;
+        uint32_t rand_node = random_range_u32(num_nodes);
 
         if ((num_nodes - 1) != rand_node) {
-            rand_node += random_u32() % (num_nodes - (rand_node + 1));
+            rand_node += random_range_u32(num_nodes - (rand_node + 1));
         }
 
         dht_getnodes(dht, &assoc_list[rand_node]->ip_port, client_list[rand_node]->public_key, public_key);
@@ -2049,7 +2049,8 @@ static uint32_t routeone_to_friend(const DHT *dht, const uint8_t *friend_id, con
         return 0;
     }
 
-    const int retval = send_packet(dht->net, &ip_list[random_u32() % n], *packet);
+    const uint32_t rand_idx = random_range_u32(n);
+    const int retval = send_packet(dht->net, &ip_list[rand_idx], *packet);
 
     if ((unsigned int)retval == packet->length) {
         return 1;

@@ -164,6 +164,15 @@ uint64_t random_u64(void)
     return randnum;
 }
 
+uint32_t random_range_u32(uint32_t upper_bound)
+{
+#ifdef VANILLA_NACL
+    return random_u32() % upper_bound;
+#else
+    return randombytes_uniform(upper_bound);
+#endif  // VANILLA_NACL
+}
+
 bool public_key_valid(const uint8_t *public_key)
 {
     if (public_key[31] >= 128) { /* Last bit of key is always zero. */
