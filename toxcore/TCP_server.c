@@ -583,7 +583,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 return -1;
             }
 
-            LOGGER_DEBUG(tcp_server->logger, "handling routing request for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling routing request for %d", con_id);
             return handle_TCP_routing_req(tcp_server, con_id, data + 1);
         }
 
@@ -592,7 +592,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 return -1;
             }
 
-            LOGGER_DEBUG(tcp_server->logger, "handling connection notification for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling connection notification for %d", con_id);
             break;
         }
 
@@ -601,7 +601,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 return -1;
             }
 
-            LOGGER_DEBUG(tcp_server->logger, "handling disconnect notification for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling disconnect notification for %d", con_id);
             return rm_connection_index(tcp_server, con, data[1] - NUM_RESERVED_PORTS);
         }
 
@@ -610,7 +610,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 return -1;
             }
 
-            LOGGER_DEBUG(tcp_server->logger, "handling ping for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling ping for %d", con_id);
 
             uint8_t response[1 + sizeof(uint64_t)];
             response[0] = TCP_PACKET_PONG;
@@ -624,7 +624,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 return -1;
             }
 
-            LOGGER_DEBUG(tcp_server->logger, "handling pong for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling pong for %d", con_id);
 
             uint64_t ping_id;
             memcpy(&ping_id, data + 1, sizeof(uint64_t));
@@ -645,14 +645,14 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
                 return -1;
             }
 
-            LOGGER_DEBUG(tcp_server->logger, "handling oob send for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling oob send for %d", con_id);
 
             return handle_TCP_oob_send(tcp_server, con_id, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                        length - (1 + CRYPTO_PUBLIC_KEY_SIZE));
         }
 
         case TCP_PACKET_ONION_REQUEST: {
-            LOGGER_DEBUG(tcp_server->logger, "handling onion request for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling onion request for %d", con_id);
 
             if (tcp_server->onion) {
                 if (length <= 1 + CRYPTO_NONCE_SIZE + ONION_SEND_BASE * 2) {
@@ -673,7 +673,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
         }
 
         case TCP_PACKET_ONION_RESPONSE: {
-            LOGGER_DEBUG(tcp_server->logger, "handling onion response for %d", con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling onion response for %d", con_id);
             return -1;
         }
 
@@ -683,7 +683,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             }
 
             const uint8_t c_id = data[0] - NUM_RESERVED_PORTS;
-            LOGGER_DEBUG(tcp_server->logger, "handling packet id %d for %d", c_id, con_id);
+            LOGGER_TRACE(tcp_server->logger, "handling packet id %d for %d", c_id, con_id);
 
             if (c_id >= NUM_CLIENT_CONNECTIONS) {
                 return -1;
@@ -966,7 +966,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
     uint8_t packet[MAX_PACKET_SIZE];
     const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.sock, &conn->next_packet_length,
                     conn->con.shared_key, conn->recv_nonce, packet, sizeof(packet), &conn->con.ip_port);
-    LOGGER_DEBUG(tcp_server->logger, "processing packet for %d: %d", i, len);
+    LOGGER_TRACE(tcp_server->logger, "processing packet for %d: %d", i, len);
 
     if (len == 0) {
         return false;
