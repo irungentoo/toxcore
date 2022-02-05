@@ -1,0 +1,6 @@
+#!/bin/sh
+
+set -eux
+
+docker build -t toxchat/toxcore:docs -f other/docker/doxygen/Dockerfile .
+docker run --rm -it -p "28192:80" toxchat/toxcore:docs

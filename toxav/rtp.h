@@ -70,7 +70,7 @@ struct RTPHeader {
     /* Non-standard Tox-specific fields */
 
     /**
-     * Bit mask of \ref RTPFlags setting features of the current frame.
+     * Bit mask of \c RTPFlags setting features of the current frame.
      */
     uint64_t flags;
 
@@ -106,7 +106,7 @@ struct RTPMessage {
      * This is used in the old code that doesn't deal with large frames, i.e.
      * the audio code or receiving code for old 16 bit messages. We use it to
      * record the number of bytes received so far in a multi-part message. The
-     * multi-part message in the old code is stored in \ref RTPSession::mp.
+     * multi-part message in the old code is stored in \c RTPSession::mp.
      */
     uint16_t len;
 

@@ -24,6 +24,15 @@ sh_test(
     tags = ["haskell"],
 )
 
+sh_test(
+    name = "cimplefmt_test",
+    size = "small",
+    srcs = ["//hs-cimple/tools:cimplefmt"],
+    args = ["$(locations %s)" % f for f in CIMPLE_FILES],
+    data = CIMPLE_FILES,
+    tags = ["haskell"],
+)
+
 cc_library(
     name = "misc_tools",
     testonly = 1,

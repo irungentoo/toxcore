@@ -1,0 +1,10 @@
+[build]
+command = """\
+  if cd doxygen-awesome-css; then \
+    git pull && cd ..; \
+  else \
+    git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css.git;
+  fi && \
+  doxygen .doxygen.conf \
+  """
+publish = "_docs/html"
