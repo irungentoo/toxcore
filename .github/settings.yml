@@ -42,6 +42,7 @@ branches:
           - "docker-bootstrap-node-websocket"
           - "docker-toxcore-js"
           - "mypy"
+          - "netlify/c-toxcore/deploy-preview"
           - "sonar-scan"
 
 # Labels specific to c-toxcore.

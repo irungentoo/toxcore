@@ -31,5 +31,6 @@ cmake -B_build -H. \
 
 cd _build # pushd
 make "-j$NPROC" -k install
-ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
+ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6 ||
+  ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
 cd - # popd

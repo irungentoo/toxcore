@@ -5,6 +5,6 @@ command = """\
   else \
     git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css.git;
   fi && \
-  doxygen .doxygen.conf \
+  doxygen docs/Doxyfile \
   """
 publish = "_docs/html"

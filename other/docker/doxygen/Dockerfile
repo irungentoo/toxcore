@@ -9,9 +9,9 @@ RUN apk add --no-cache doxygen git graphviz \
  && git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css.git /work/doxygen-awesome-css
 WORKDIR /work
 COPY . /work/
-RUN cat .doxygen.conf > doxygen.conf \
- && echo "WARN_AS_ERROR = YES" >> doxygen.conf \
- && doxygen doxygen.conf
+RUN cat docs/Doxyfile > Doxyfile \
+ && echo "WARN_AS_ERROR = YES" >> Doxyfile \
+ && doxygen Doxyfile
 
 FROM nginx:alpine
 COPY --from=build /work/_docs/html/ /usr/share/nginx/html/

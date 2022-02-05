@@ -3,8 +3,7 @@
  * Copyright © 2013 Tox project.
  */
 
-/**
- * @file tox.h
+/** @file
  * @brief Public core API for Tox clients.
  *
  * Every function that can fail takes a function-specific error code pointer
@@ -3231,7 +3230,7 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error);
 #endif
 
 //!TOKSTYLE-
-#ifdef DOXYGEN_IGNORE
+#ifndef DOXYGEN_IGNORE
 
 typedef Tox_Err_Options_New TOX_ERR_OPTIONS_NEW;
 typedef Tox_Err_New TOX_ERR_NEW;

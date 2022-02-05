@@ -3,7 +3,7 @@
  * Copyright © 2013-2015 Tox project.
  */
 
-/** @file toxav.h
+/** @file
  * @brief Public audio/video API for Tox clients.
  *
  * This API can handle multiple calls. Each call has its state, in very rare
@@ -832,7 +832,7 @@ bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber);
 #endif
 
 //!TOKSTYLE-
-#ifdef DOXYGEN_IGNORE
+#ifndef DOXYGEN_IGNORE
 
 typedef Toxav_Err_Call TOXAV_ERR_CALL;
 typedef Toxav_Err_New TOXAV_ERR_NEW;
