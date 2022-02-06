@@ -1,8 +1,16 @@
 
+## v0.2.15
+
+### Merged PRs:
+
+- [#1984](https://github.com/TokTok/c-toxcore/pull/1984) fix: Reduce logging verbosity even more.
+- [#1980](https://github.com/TokTok/c-toxcore/pull/1980) fix: Reduce logging verbosity in TCP server.
+
 ## v0.2.14
 
 ### Merged PRs:
 
+- [#1978](https://github.com/TokTok/c-toxcore/pull/1978) chore: Release 0.2.14
 - [#1976](https://github.com/TokTok/c-toxcore/pull/1976) docs: Make crypto_core.h appear on doxygen.
 - [#1975](https://github.com/TokTok/c-toxcore/pull/1975) refactor: use proper method for generating random numbers in a range
 - [#1974](https://github.com/TokTok/c-toxcore/pull/1974) docs: Add doxygen configuration and netlify publishing.
