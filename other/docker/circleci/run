@@ -1,0 +1,6 @@
+#!/bin/sh
+
+SANITIZER="${1:-asan}"
+
+docker build -t toxchat/c-toxcore:circleci other/docker/circleci
+docker run --rm -it -v "$PWD:/c-toxcore" toxchat/c-toxcore:circleci "$SANITIZER"

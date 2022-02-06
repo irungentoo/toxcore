@@ -57,6 +57,5 @@ add_cxx_flag -Wno-c99-extensions
 add_cxx_flag -Wno-old-style-cast
 
 # Downgrade to warning so we still see it.
-add_flag -Wno-error=documentation-unknown-command
 add_flag -Wno-error=unreachable-code
 add_flag -Wno-error=unused-variable

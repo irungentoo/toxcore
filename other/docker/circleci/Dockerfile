@@ -10,6 +10,7 @@ RUN apt-get update && \
  libopus-dev \
  libsodium-dev \
  libvpx-dev \
+ llvm-dev \
  ninja-build \
  pkg-config \
  && apt-get clean \
