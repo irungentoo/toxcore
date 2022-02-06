@@ -16,22 +16,24 @@
  */
 #define LAN_DISCOVERY_INTERVAL         10
 
+typedef struct Broadcast_Info Broadcast_Info;
+
 /**
  * Send a LAN discovery pcaket to the broadcast address with port port.
  *
  * @return true on success, false on failure.
  */
-bool lan_discovery_send(Networking_Core *net, const uint8_t *dht_pk, uint16_t port);
+bool lan_discovery_send(Networking_Core *net, Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port);
 
 /**
  * Sets up packet handlers.
  */
-void lan_discovery_init(DHT *dht);
+Broadcast_Info *lan_discovery_init(DHT *dht);
 
 /**
  * Clear packet handlers.
  */
-void lan_discovery_kill(DHT *dht);
+void lan_discovery_kill(DHT *dht, Broadcast_Info *info);
 
 /**
  * Is IP a local ip or not.

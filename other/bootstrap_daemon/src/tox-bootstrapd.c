@@ -474,8 +474,10 @@ int main(int argc, char *argv[])
 
     int waiting_for_dht_connection = 1;
 
+    Broadcast_Info *broadcast = nullptr;
+
     if (enable_lan_discovery) {
-        lan_discovery_init(dht);
+        broadcast = lan_discovery_init(dht);
         log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
 
@@ -503,7 +505,7 @@ int main(int argc, char *argv[])
         do_dht(dht);
 
         if (enable_lan_discovery && mono_time_is_timeout(mono_time, last_LANdiscovery, LAN_DISCOVERY_INTERVAL)) {
-            lan_discovery_send(dht_get_net(dht), dht_get_self_public_key(dht), net_htons_port);
+            lan_discovery_send(dht_get_net(dht), broadcast, dht_get_self_public_key(dht), net_htons_port);
             last_LANdiscovery = mono_time_get(mono_time);
         }
 
@@ -535,7 +537,7 @@ int main(int argc, char *argv[])
     }
 
     if (enable_lan_discovery) {
-        lan_discovery_kill(dht);
+        lan_discovery_kill(dht, broadcast);
     }
 
     kill_TCP_server(tcp_server);

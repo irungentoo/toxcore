@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
 
     uint64_t last_LANdiscovery = 0;
-    lan_discovery_init(dht);
+    Broadcast_Info *broadcast = lan_discovery_init(dht);
 
     while (1) {
         mono_time_update(mono_time);
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
         do_dht(dht);
 
         if (mono_time_is_timeout(mono_time, last_LANdiscovery, is_waiting_for_dht_connection ? 5 : LAN_DISCOVERY_INTERVAL)) {
-            lan_discovery_send(dht_get_net(dht), dht_get_self_public_key(dht), net_htons(PORT));
+            lan_discovery_send(dht_get_net(dht), broadcast, dht_get_self_public_key(dht), net_htons(PORT));
             last_LANdiscovery = mono_time_get(mono_time);
         }
 

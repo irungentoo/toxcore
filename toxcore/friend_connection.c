@@ -58,6 +58,7 @@ struct Friend_Connections {
     const Logger *logger;
     Net_Crypto *net_crypto;
     DHT *dht;
+    Broadcast_Info *broadcast;
     Onion_Client *onion_c;
 
     Friend_Conn *conns;
@@ -882,7 +883,11 @@ Friend_Connections *new_friend_connections(const Logger *logger, const Mono_Time
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
     if (temp->local_discovery_enabled) {
-        lan_discovery_init(temp->dht);
+        temp->broadcast = lan_discovery_init(temp->dht);
+
+        if (temp->broadcast == nullptr) {
+            LOGGER_ERROR(logger, "could not initialise LAN discovery");
+        }
     }
 
     return temp;
@@ -897,11 +902,12 @@ static void lan_discovery(Friend_Connections *fr_c)
         last = last > TOX_PORTRANGE_TO ? TOX_PORTRANGE_TO : last;
 
         // Always send to default port
-        lan_discovery_send(dht_get_net(fr_c->dht), dht_get_self_public_key(fr_c->dht), net_htons(TOX_PORT_DEFAULT));
+        lan_discovery_send(dht_get_net(fr_c->dht), fr_c->broadcast, dht_get_self_public_key(fr_c->dht),
+                           net_htons(TOX_PORT_DEFAULT));
 
         // And check some extra ports
         for (uint16_t port = first; port < last; ++port) {
-            lan_discovery_send(dht_get_net(fr_c->dht), dht_get_self_public_key(fr_c->dht), net_htons(port));
+            lan_discovery_send(dht_get_net(fr_c->dht), fr_c->broadcast, dht_get_self_public_key(fr_c->dht), net_htons(port));
         }
 
         // Don't include default port in port range
@@ -974,7 +980,7 @@ void kill_friend_connections(Friend_Connections *fr_c)
     }
 
     if (fr_c->local_discovery_enabled) {
-        lan_discovery_kill(fr_c->dht);
+        lan_discovery_kill(fr_c->dht, fr_c->broadcast);
     }
 
     free(fr_c);

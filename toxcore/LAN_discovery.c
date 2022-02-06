@@ -8,6 +8,7 @@
  */
 #include "LAN_discovery.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
@@ -43,23 +44,27 @@
 #define MAX_INTERFACES 16
 
 
-/* TODO: multiple threads might concurrently try to set these, and it isn't clear that this couldn't lead to undesirable
- * behaviour. Consider storing the data in per-instance variables instead. */
-//!TOKSTYLE-
-// No global mutable state in Tokstyle.
-static int     broadcast_count = -1;
-static IP_Port broadcast_ip_ports[MAX_INTERFACES];
-//!TOKSTYLE+
+struct Broadcast_Info {
+    uint32_t count;
+    IP_Port ip_ports[MAX_INTERFACES];
+};
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 
-static void fetch_broadcast_info(uint16_t port)
+static Broadcast_Info *fetch_broadcast_info(uint16_t port)
 {
+    Broadcast_Info *broadcast = (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
+
+    if (broadcast == nullptr) {
+        return nullptr;
+    }
+
     IP_ADAPTER_INFO *pAdapterInfo = (IP_ADAPTER_INFO *)malloc(sizeof(IP_ADAPTER_INFO));
     unsigned long ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 
     if (pAdapterInfo == nullptr) {
-        return;
+        free(broadcast);
+        return nullptr;
     }
 
     if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
@@ -67,16 +72,10 @@ static void fetch_broadcast_info(uint16_t port)
         pAdapterInfo = (IP_ADAPTER_INFO *)malloc(ulOutBufLen);
 
         if (pAdapterInfo == nullptr) {
-            return;
+            free(broadcast);
+            return nullptr;
         }
     }
-
-    /* We copy these to the static variables `broadcast_*` only at the end of `fetch_broadcast_info()`.
-     * The intention is to ensure that even if multiple threads enter `fetch_broadcast_info()` concurrently, only valid
-     * interfaces will be set to be broadcast to.
-     * */
-    int count = 0;
-    IP_Port ip_ports[MAX_INTERFACES];
 
     const int ret = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 
@@ -90,16 +89,16 @@ static void fetch_broadcast_info(uint16_t port)
             if (addr_parse_ip(pAdapter->IpAddressList.IpMask.String, &subnet_mask)
                     && addr_parse_ip(pAdapter->GatewayList.IpAddress.String, &gateway)) {
                 if (net_family_is_ipv4(gateway.family) && net_family_is_ipv4(subnet_mask.family)) {
-                    IP_Port *ip_port = &ip_ports[count];
+                    IP_Port *ip_port = &broadcast->ip_ports[broadcast->count];
                     ip_port->ip.family = net_family_ipv4;
                     uint32_t gateway_ip = net_ntohl(gateway.ip.v4.uint32);
                     uint32_t subnet_ip = net_ntohl(subnet_mask.ip.v4.uint32);
                     uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
                     ip_port->ip.ip.v4.uint32 = net_htonl(broadcast_ip);
                     ip_port->port = port;
-                    ++count;
+                    ++broadcast->count;
 
-                    if (count >= MAX_INTERFACES) {
+                    if (broadcast->count >= MAX_INTERFACES) {
                         break;
                     }
                 }
@@ -113,26 +112,28 @@ static void fetch_broadcast_info(uint16_t port)
         free(pAdapterInfo);
     }
 
-    broadcast_count = count;
-
-    for (uint32_t i = 0; i < count; ++i) {
-        broadcast_ip_ports[i] = ip_ports[i];
-    }
+    return broadcast;
 }
 
 #elif !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) && (defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__))
 
-static void fetch_broadcast_info(uint16_t port)
+static Broadcast_Info *fetch_broadcast_info(uint16_t port)
 {
+    Broadcast_Info *broadcast = (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
+
+    if (broadcast == nullptr) {
+        return nullptr;
+    }
+
     /* Not sure how many platforms this will run on,
      * so it's wrapped in `__linux__` for now.
      * Definitely won't work like this on Windows...
      */
-    broadcast_count = 0;
     const Socket sock = net_socket(net_family_ipv4, TOX_SOCK_STREAM, 0);
 
     if (!sock_valid(sock)) {
-        return;
+        free(broadcast);
+        return nullptr;
     }
 
     /* Configure ifconf for the ioctl call. */
@@ -145,15 +146,9 @@ static void fetch_broadcast_info(uint16_t port)
 
     if (ioctl(sock.socket, SIOCGIFCONF, &ifc) < 0) {
         kill_sock(sock);
-        return;
+        free(broadcast);
+        return nullptr;
     }
-
-    /* We copy these to the static variables `broadcast_*` only at the end of `fetch_broadcast_info()`.
-     * The intention is to ensure that even if multiple threads enter `fetch_broadcast_info()` concurrently, only valid
-     * interfaces will be set to be broadcast to.
-     * */
-    int count = 0;
-    IP_Port ip_ports[MAX_INTERFACES];
 
     /* `ifc.ifc_len` is set by the `ioctl()` to the actual length used.
      * On usage of the complete array the call should be repeated with
@@ -175,11 +170,11 @@ static void fetch_broadcast_info(uint16_t port)
 
         const struct sockaddr_in *sock4 = (const struct sockaddr_in *)(void *)&i_faces[i].ifr_broadaddr;
 
-        if (count >= MAX_INTERFACES) {
+        if (broadcast->count >= MAX_INTERFACES) {
             break;
         }
 
-        IP_Port *ip_port = &ip_ports[count];
+        IP_Port *ip_port = &broadcast->ip_ports[broadcast->count];
         ip_port->ip.family = net_family_ipv4;
         ip_port->ip.ip.v4.uint32 = sock4->sin_addr.s_addr;
 
@@ -188,49 +183,40 @@ static void fetch_broadcast_info(uint16_t port)
         }
 
         ip_port->port = port;
-        ++count;
+        ++broadcast->count;
     }
 
     kill_sock(sock);
 
-    broadcast_count = count;
-
-    for (uint32_t i = 0; i < count; ++i) {
-        broadcast_ip_ports[i] = ip_ports[i];
-    }
+    return broadcast;
 }
 
 #else // TODO(irungentoo): Other platforms?
 
-static void fetch_broadcast_info(uint16_t port)
+static Broadcast_Info *fetch_broadcast_info(uint16_t port)
 {
-    broadcast_count = 0;
+    return (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 }
 
 #endif
 
 /** Send packet to all IPv4 broadcast addresses
  *
- *  return 1 if sent to at least one broadcast target.
- *  return 0 on failure to find any valid broadcast target.
+ * @retval true if sent to at least one broadcast target.
+ * @retval false on failure to find any valid broadcast target.
  */
-static uint32_t send_broadcasts(const Networking_Core *net, uint16_t port, const uint8_t *data, uint16_t length)
+static bool send_broadcasts(const Networking_Core *net, const Broadcast_Info *broadcast, uint16_t port,
+                            const uint8_t *data, uint16_t length)
 {
-    /* fetch only once? on every packet? every X seconds?
-     * old: every packet, new: once */
-    if (broadcast_count < 0) {
-        fetch_broadcast_info(port);
+    if (broadcast->count == 0) {
+        return false;
     }
 
-    if (!broadcast_count) {
-        return 0;
+    for (uint32_t i = 0; i < broadcast->count; ++i) {
+        sendpacket(net, &broadcast->ip_ports[i], data, length);
     }
 
-    for (int i = 0; i < broadcast_count; ++i) {
-        sendpacket(net, &broadcast_ip_ports[i], data, length);
-    }
-
-    return 1;
+    return true;
 }
 
 /** Return the broadcast ip. */
@@ -369,13 +355,17 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 }
 
 
-bool lan_discovery_send(Networking_Core *net, const uint8_t *dht_pk, uint16_t port)
+bool lan_discovery_send(Networking_Core *net, Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port)
 {
+    if (broadcast == nullptr) {
+        return false;
+    }
+
     uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
     id_copy(data + 1, dht_pk);
 
-    send_broadcasts(net, port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
+    send_broadcasts(net, broadcast, port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
 
     bool res = false;
     IP_Port ip_port;
@@ -405,12 +395,15 @@ bool lan_discovery_send(Networking_Core *net, const uint8_t *dht_pk, uint16_t po
 }
 
 
-void lan_discovery_init(DHT *dht)
+Broadcast_Info *lan_discovery_init(DHT *dht)
 {
+    Broadcast_Info *broadcast = fetch_broadcast_info(net_htons(TOX_PORT_DEFAULT));
     networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
+    return broadcast;
 }
 
-void lan_discovery_kill(DHT *dht)
+void lan_discovery_kill(DHT *dht, Broadcast_Info *broadcast)
 {
     networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, nullptr, nullptr);
+    free(broadcast);
 }
