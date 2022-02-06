@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
  ca-certificates \
  curl \
  libconfig-dev \
+ libmsgpack-dev \
  libopus-dev \
  libtool \
  libvpx-dev \

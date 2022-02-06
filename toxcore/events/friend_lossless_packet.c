@@ -26,6 +26,15 @@ struct Tox_Event_Friend_Lossless_Packet {
     size_t data_length;
 };
 
+static void tox_event_friend_lossless_packet_pack(const Tox_Event_Friend_Lossless_Packet *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 2);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_bin(mp, event->data_length);
+    msgpack_pack_bin_body(mp, event->data, event->data_length);
+}
+
 static void tox_event_friend_lossless_packet_construct(Tox_Event_Friend_Lossless_Packet *friend_lossless_packet)
 {
     *friend_lossless_packet = (Tox_Event_Friend_Lossless_Packet) {
@@ -134,6 +143,10 @@ void tox_events_clear_friend_lossless_packet(Tox_Events *events)
 
 uint32_t tox_events_get_friend_lossless_packet_size(const Tox_Events *events)
 {
+    if (events == nullptr) {
+        return 0;
+    }
+
     return events->friend_lossless_packet_size;
 }
 
@@ -142,6 +155,17 @@ const Tox_Event_Friend_Lossless_Packet *tox_events_get_friend_lossless_packet(co
     assert(index < events->friend_lossless_packet_size);
     assert(events->friend_lossless_packet != nullptr);
     return &events->friend_lossless_packet[index];
+}
+
+void tox_events_pack_friend_lossless_packet(const Tox_Events *events, msgpack_packer *mp)
+{
+    const uint32_t size = tox_events_get_friend_lossless_packet_size(events);
+
+    msgpack_pack_array(mp, size);
+
+    for (uint32_t i = 0; i < size; ++i) {
+        tox_event_friend_lossless_packet_pack(tox_events_get_friend_lossless_packet(events, i), mp);
+    }
 }
 
 

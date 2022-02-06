@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -eux
+
+docker build -t toxchat/c-toxcore:tcc -f other/docker/tcc/Dockerfile .

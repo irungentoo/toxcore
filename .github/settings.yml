@@ -25,6 +25,7 @@ branches:
           - "build-tcc"
           - "build-win32"
           - "build-win64"
+          - "buildifier"
           - "CodeFactor"
           - "coverage-linux"
           - "ci/circleci: asan"

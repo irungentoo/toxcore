@@ -4,6 +4,8 @@
 
 #include "tox_events.h"
 
+#include <msgpack.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -54,4 +56,85 @@ Tox_Events *tox_events_iterate(Tox *tox, Tox_Err_Events_Iterate *error)
     }
 
     return state.events;
+}
+
+void tox_events_pack(const Tox_Events *events, msgpack_packer *mp)
+{
+    msgpack_pack_array(mp, 21);
+    tox_events_pack_conference_connected(events, mp);
+    tox_events_pack_conference_invite(events, mp);
+    tox_events_pack_conference_message(events, mp);
+    tox_events_pack_conference_peer_list_changed(events, mp);
+    tox_events_pack_conference_peer_name(events, mp);
+    tox_events_pack_conference_title(events, mp);
+    tox_events_pack_file_chunk_request(events, mp);
+    tox_events_pack_file_recv_chunk(events, mp);
+    tox_events_pack_file_recv_control(events, mp);
+    tox_events_pack_file_recv(events, mp);
+    tox_events_pack_friend_connection_status(events, mp);
+    tox_events_pack_friend_lossless_packet(events, mp);
+    tox_events_pack_friend_lossy_packet(events, mp);
+    tox_events_pack_friend_message(events, mp);
+    tox_events_pack_friend_name(events, mp);
+    tox_events_pack_friend_read_receipt(events, mp);
+    tox_events_pack_friend_request(events, mp);
+    tox_events_pack_friend_status_message(events, mp);
+    tox_events_pack_friend_status(events, mp);
+    tox_events_pack_friend_typing(events, mp);
+    tox_events_pack_self_connection_status(events, mp);
+}
+
+static int count_bytes(void *data, const char *buf, size_t len)
+{
+    uint32_t *count = (uint32_t *)data;
+    assert(count != nullptr);
+    *count += len;
+    return 0;
+}
+
+uint32_t tox_events_bytes_size(const Tox_Events *events)
+{
+    uint32_t count = 0;
+    msgpack_packer mp;
+    msgpack_packer_init(&mp, &count, count_bytes);
+    tox_events_pack(events, &mp);
+    return count;
+}
+
+static int write_bytes(void *data, const char *buf, size_t len)
+{
+    uint8_t **bytes = (uint8_t **)data;
+    assert(bytes != nullptr && *bytes != nullptr);
+    memcpy(*bytes, buf, len);
+    *bytes += len;
+    return 0;
+}
+
+void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
+{
+    msgpack_packer mp;
+    msgpack_packer_init(&mp, &bytes, write_bytes);
+    tox_events_pack(events, &mp);
+}
+
+void tox_events_print(const Tox_Events *events)
+{
+    msgpack_sbuffer sbuf;
+    msgpack_sbuffer_init(&sbuf);
+
+    msgpack_packer mp;
+    msgpack_packer_init(&mp, &sbuf, msgpack_sbuffer_write);
+
+    tox_events_pack(events, &mp);
+
+    msgpack_zone mempool;
+    msgpack_zone_init(&mempool, 2048);
+
+    msgpack_object deserialized;
+    msgpack_unpack(sbuf.data, sbuf.size, nullptr, &mempool, &deserialized);
+    msgpack_object_print(stdout, deserialized);
+    fputc('\n', stdout);
+
+    msgpack_zone_destroy(&mempool);
+    msgpack_sbuffer_destroy(&sbuf);
 }

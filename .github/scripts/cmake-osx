@@ -7,7 +7,12 @@ NPROC=$(sysctl -n hw.physicalcpu)
 # Workaround for bug in Homebrew where it only finds an old Ruby version.
 brew update
 
-brew install libconfig libsodium libvpx opus
+brew install \
+  libconfig \
+  libsodium \
+  libvpx \
+  msgpack \
+  opus
 
 . ".github/scripts/flags-clang.sh"
 

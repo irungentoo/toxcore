@@ -5,6 +5,8 @@
 #ifndef C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
 #define C_TOXCORE_TOXCORE_TOX_EVENTS_INTERNAL_H
 
+#include <msgpack.h>
+
 #include "../tox_events.h"
 
 #ifdef __cplusplus
@@ -145,6 +147,30 @@ void tox_events_clear_friend_status_message(Tox_Events *events);
 void tox_events_clear_friend_status(Tox_Events *events);
 void tox_events_clear_friend_typing(Tox_Events *events);
 void tox_events_clear_self_connection_status(Tox_Events *events);
+
+void tox_events_pack_conference_connected(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_conference_invite(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_conference_message(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_conference_peer_list_changed(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_conference_peer_name(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_conference_title(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_file_chunk_request(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_file_recv_chunk(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_file_recv_control(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_file_recv(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_connection_status(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_lossless_packet(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_lossy_packet(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_message(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_name(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_read_receipt(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_request(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_status_message(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_status(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_friend_typing(const Tox_Events *events, msgpack_packer *mp);
+void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_packer *mp);
+
+void tox_events_pack(const Tox_Events *events, msgpack_packer *mp);
 
 Tox_Events_State *tox_events_alloc(void *user_data);
 

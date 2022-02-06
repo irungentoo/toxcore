@@ -7,14 +7,12 @@ set -eu
 NPROC=$(nproc)
 
 ci_install() {
-  cd other/docker/windows
-
   docker build \
     --build-arg SUPPORT_ARCH_i686="$i686" \
     --build-arg SUPPORT_ARCH_x86_64="$x86_64" \
     --build-arg SUPPORT_TEST=true \
     -t toxcore-"$WINDOWS_ARCH" \
-    .
+    other/docker/windows
 }
 
 ci_script() {

@@ -34,6 +34,8 @@ TESTS = \
 	set_name_test \
 	set_status_message_test \
 	TCP_test \
+	tox_events_test \
+	tox_dispatch_test \
 	tox_many_tcp_test \
 	tox_many_test \
 	tox_one_test \
@@ -49,16 +51,19 @@ endif
 
 AUTOTEST_CFLAGS = \
 	$(LIBSODIUM_CFLAGS) \
+	$(MSGPACK_CFLAGS) \
 	$(NACL_CFLAGS)
 
 AUTOTEST_LDADD = \
 	$(LIBSODIUM_LDFLAGS) \
+	$(MSGPACK_LDFLAGS) \
 	$(NACL_LDFLAGS) \
 	libmisc_tools.la \
 	libauto_test_support.la \
 	libtoxcore.la \
 	libtoxencryptsave.la \
 	$(LIBSODIUM_LIBS) \
+	$(MSGPACK_LIBS) \
 	$(NACL_OBJECTS) \
 	$(NACL_LIBS)
 
@@ -197,6 +202,14 @@ skeleton_test_LDADD = $(AUTOTEST_LDADD)
 TCP_test_SOURCES = ../auto_tests/TCP_test.c
 TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)
 TCP_test_LDADD = $(AUTOTEST_LDADD)
+
+tox_events_test_SOURCES = ../auto_tests/tox_events_test.c
+tox_events_test_CFLAGS = $(AUTOTEST_CFLAGS)
+tox_events_test_LDADD = $(AUTOTEST_LDADD)
+
+tox_dispatch_test_SOURCES = ../auto_tests/tox_dispatch_test.c
+tox_dispatch_test_CFLAGS = $(AUTOTEST_CFLAGS)
+tox_dispatch_test_LDADD = $(AUTOTEST_LDADD)
 
 tox_many_tcp_test_SOURCES = ../auto_tests/tox_many_tcp_test.c
 tox_many_tcp_test_CFLAGS = $(AUTOTEST_CFLAGS)

@@ -12,6 +12,9 @@
 #include "../toxcore/tox_events.h"
 #include "check_compat.h"
 
+// Set to true to produce an msgpack file at /tmp/test.mp.
+static const bool want_dump_events = false;
+
 static void handle_events_friend_message(Tox *tox, const Tox_Event_Friend_Message *event, void *user_data)
 {
     bool *success = (bool *)user_data;
@@ -24,17 +27,43 @@ static void handle_events_friend_message(Tox *tox, const Tox_Event_Friend_Messag
     *success = true;
 }
 
+static void dump_events(const char *path, const Tox_Events *events)
+{
+    if (want_dump_events) {
+        FILE *fh = fopen(path, "w");
+        ck_assert(fh != nullptr);
+        const uint32_t len = tox_events_bytes_size(events);
+        uint8_t *buf = (uint8_t *)malloc(len);
+        ck_assert(buf != nullptr);
+        tox_events_get_bytes(events, buf);
+        fwrite(buf, 1, len, fh);
+        free(buf);
+        fclose(fh);
+    }
+}
+
+static void print_events(Tox_Events *events)
+{
+    if (tox_events_bytes_size(events) > 24) {
+        tox_events_print(events);
+    }
+
+    tox_events_free(events);
+}
+
 static bool await_message(Tox **toxes, const Tox_Dispatch *dispatch)
 {
     for (uint32_t i = 0; i < 100; ++i) {
         // Ignore events on tox 1.
-        tox_events_free(tox_events_iterate(toxes[0], nullptr));
+        print_events(tox_events_iterate(toxes[0], nullptr));
         // Check if tox 2 got the message from tox 1.
         Tox_Events *events = tox_events_iterate(toxes[1], nullptr);
 
+        dump_events("/tmp/test.mp", events);
+
         bool success = false;
         tox_dispatch_invoke(dispatch, events, toxes[1], &success);
-        tox_events_free(events);
+        print_events(events);
 
         if (success) {
             return true;
@@ -81,8 +110,8 @@ static void test_tox_events(void)
     while (tox_self_get_connection_status(toxes[0]) == TOX_CONNECTION_NONE ||
             tox_self_get_connection_status(toxes[1]) == TOX_CONNECTION_NONE) {
         // Ignore connection events for now.
-        tox_events_free(tox_events_iterate(toxes[0], nullptr));
-        tox_events_free(tox_events_iterate(toxes[1], nullptr));
+        print_events(tox_events_iterate(toxes[0], nullptr));
+        print_events(tox_events_iterate(toxes[1], nullptr));
 
         c_sleep(tox_iteration_interval(toxes[0]));
     }
@@ -92,8 +121,8 @@ static void test_tox_events(void)
     while (tox_friend_get_connection_status(toxes[0], 0, nullptr) == TOX_CONNECTION_NONE ||
             tox_friend_get_connection_status(toxes[1], 0, nullptr) == TOX_CONNECTION_NONE) {
         // Ignore connection events for now.
-        tox_events_free(tox_events_iterate(toxes[0], nullptr));
-        tox_events_free(tox_events_iterate(toxes[1], nullptr));
+        print_events(tox_events_iterate(toxes[0], nullptr));
+        print_events(tox_events_iterate(toxes[1], nullptr));
 
         c_sleep(tox_iteration_interval(toxes[0]));
     }

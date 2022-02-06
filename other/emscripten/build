@@ -1,0 +1,3 @@
+#!/bin/sh
+
+docker build -t toxchat/toxcore-js -f other/emscripten/Dockerfile .

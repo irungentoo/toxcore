@@ -302,6 +302,14 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium],
         LIBSODIUM_FOUND="no"
     ])
 
+PKG_CHECK_MODULES([MSGPACK], [msgpack],
+    [
+        MSGPACK_FOUND="yes"
+    ],
+    [
+        MSGPACK_FOUND="no"
+    ])
+
 if test "x$WANT_NACL" = "xyes"; then
     NACL_LIBS=
     NACL_LDFLAGS=

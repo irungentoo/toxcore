@@ -26,6 +26,15 @@ struct Tox_Event_File_Recv_Control {
     Tox_File_Control control;
 };
 
+static void tox_event_file_recv_control_pack(const Tox_Event_File_Recv_Control *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 3);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->file_number);
+    msgpack_pack_uint32(mp, event->control);
+}
+
 static void tox_event_file_recv_control_construct(Tox_Event_File_Recv_Control *file_recv_control)
 {
     *file_recv_control = (Tox_Event_File_Recv_Control) {
@@ -124,6 +133,10 @@ void tox_events_clear_file_recv_control(Tox_Events *events)
 
 uint32_t tox_events_get_file_recv_control_size(const Tox_Events *events)
 {
+    if (events == nullptr) {
+        return 0;
+    }
+
     return events->file_recv_control_size;
 }
 
@@ -132,6 +145,17 @@ const Tox_Event_File_Recv_Control *tox_events_get_file_recv_control(const Tox_Ev
     assert(index < events->file_recv_control_size);
     assert(events->file_recv_control != nullptr);
     return &events->file_recv_control[index];
+}
+
+void tox_events_pack_file_recv_control(const Tox_Events *events, msgpack_packer *mp)
+{
+    const uint32_t size = tox_events_get_file_recv_control_size(events);
+
+    msgpack_pack_array(mp, size);
+
+    for (uint32_t i = 0; i < size; ++i) {
+        tox_event_file_recv_control_pack(tox_events_get_file_recv_control(events, i), mp);
+    }
 }
 
 

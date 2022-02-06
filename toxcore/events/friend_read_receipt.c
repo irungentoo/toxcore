@@ -25,6 +25,14 @@ struct Tox_Event_Friend_Read_Receipt {
     uint32_t message_id;
 };
 
+static void tox_event_friend_read_receipt_pack(const Tox_Event_Friend_Read_Receipt *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 2);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->message_id);
+}
+
 static void tox_event_friend_read_receipt_construct(Tox_Event_Friend_Read_Receipt *friend_read_receipt)
 {
     *friend_read_receipt = (Tox_Event_Friend_Read_Receipt) {
@@ -112,6 +120,10 @@ void tox_events_clear_friend_read_receipt(Tox_Events *events)
 
 uint32_t tox_events_get_friend_read_receipt_size(const Tox_Events *events)
 {
+    if (events == nullptr) {
+        return 0;
+    }
+
     return events->friend_read_receipt_size;
 }
 
@@ -120,6 +132,17 @@ const Tox_Event_Friend_Read_Receipt *tox_events_get_friend_read_receipt(const To
     assert(index < events->friend_read_receipt_size);
     assert(events->friend_read_receipt != nullptr);
     return &events->friend_read_receipt[index];
+}
+
+void tox_events_pack_friend_read_receipt(const Tox_Events *events, msgpack_packer *mp)
+{
+    const uint32_t size = tox_events_get_friend_read_receipt_size(events);
+
+    msgpack_pack_array(mp, size);
+
+    for (uint32_t i = 0; i < size; ++i) {
+        tox_event_friend_read_receipt_pack(tox_events_get_friend_read_receipt(events, i), mp);
+    }
 }
 
 

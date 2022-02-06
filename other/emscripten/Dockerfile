@@ -36,6 +36,16 @@ RUN . "/work/emsdk/emsdk_env.sh" \
   --disable-ssp --disable-asm --disable-pie \
  && emmake make install -j8
 
+# Build msgpack.
+RUN . "/work/emsdk/emsdk_env.sh" \
+ && git clone --depth=1 --branch=c-4.0.0 https://github.com/msgpack/msgpack-c /work/msgpack-c \
+ && cd /work/msgpack-c \
+ && emcmake cmake -B_build -H. -GNinja \
+ -DCMAKE_INSTALL_PREFIX:PATH="/usr/local" \
+ -DCMAKE_C_FLAGS="-O3 -flto -fPIC" \
+ -DBUILD_SHARED_LIBS=OFF \
+ && emmake cmake --build _build --parallel 8 --target install
+
 # Build an unused libsodium binding first so emcc caches all the system
 # libraries. This makes rebuilds of toxcore below much faster.
 RUN . "/work/emsdk/emsdk_env.sh" \
@@ -58,11 +68,11 @@ COPY . /work/c-toxcore
 RUN . "/work/emsdk/emsdk_env.sh" \
  && cd /work/c-toxcore \
  && emcmake cmake -B_build -H. -GNinja \
+ -DCMAKE_INSTALL_PREFIX:PATH="/usr/local" \
  -DCMAKE_C_FLAGS="-O3 -flto -fPIC" \
  -DBUILD_TOXAV=OFF \
  -DENABLE_SHARED=OFF \
  -DBOOTSTRAP_DAEMON=OFF \
- -DCMAKE_INSTALL_PREFIX:PATH="/usr/local" \
  -DMIN_LOGGER_LEVEL=DEBUG \
  && emmake cmake --build _build --parallel 8 --target install
 
@@ -79,6 +89,7 @@ RUN . "/work/emsdk/emsdk_env.sh" \
  -s MODULARIZE=1 \
  -s STRICT=1 \
  -s WEBSOCKET_URL=wss:// \
+ /usr/local/lib/libmsgpackc.a \
  /usr/local/lib/libsodium.a \
  /usr/local/lib/libtoxcore.a \
  -o /work/wasm/libtoxcore.js

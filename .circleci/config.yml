@@ -32,6 +32,7 @@ jobs:
             git
             libconfig-dev
             libgtest-dev
+            libmsgpack-dev
             libopus-dev
             libsodium-dev
             libvpx-dev
@@ -79,7 +80,7 @@ jobs:
           toxcore/*/*.c
           toxencryptsave/*.c
           -lpthread
-          $(pkg-config --cflags --libs libsodium opus vpx)
+          $(pkg-config --cflags --libs libsodium msgpack opus vpx)
 
   static-analysis:
     working_directory: ~/work

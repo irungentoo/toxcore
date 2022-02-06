@@ -4,7 +4,12 @@ set -eu
 
 NPROC=$(nproc)
 
-sudo apt-get install -y --no-install-recommends libopus-dev libsodium-dev libvpx-dev ninja-build
+sudo apt-get install -y --no-install-recommends \
+  libmsgpack-dev \
+  libopus-dev \
+  libsodium-dev \
+  libvpx-dev \
+  ninja-build
 
 . ".github/scripts/flags-$CC.sh"
 

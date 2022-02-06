@@ -24,6 +24,13 @@ struct Tox_Event_Self_Connection_Status {
     Tox_Connection connection_status;
 };
 
+static void tox_event_self_connection_status_pack(const Tox_Event_Self_Connection_Status *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 1);
+    msgpack_pack_uint32(mp, event->connection_status);
+}
+
 static void tox_event_self_connection_status_construct(Tox_Event_Self_Connection_Status *self_connection_status)
 {
     *self_connection_status = (Tox_Event_Self_Connection_Status) {
@@ -100,6 +107,10 @@ void tox_events_clear_self_connection_status(Tox_Events *events)
 
 uint32_t tox_events_get_self_connection_status_size(const Tox_Events *events)
 {
+    if (events == nullptr) {
+        return 0;
+    }
+
     return events->self_connection_status_size;
 }
 
@@ -108,6 +119,17 @@ const Tox_Event_Self_Connection_Status *tox_events_get_self_connection_status(co
     assert(index < events->self_connection_status_size);
     assert(events->self_connection_status != nullptr);
     return &events->self_connection_status[index];
+}
+
+void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_packer *mp)
+{
+    const uint32_t size = tox_events_get_self_connection_status_size(events);
+
+    msgpack_pack_array(mp, size);
+
+    for (uint32_t i = 0; i < size; ++i) {
+        tox_event_self_connection_status_pack(tox_events_get_self_connection_status(events, i), mp);
+    }
 }
 
 

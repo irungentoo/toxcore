@@ -8,6 +8,7 @@ RUN ["apk", "--no-cache", "add",\
  "linux-headers",\
  "libconfig-dev",\
  "libconfig-static",\
+ "msgpack-c-dev",\
  "libsodium-dev",\
  "libsodium-static",\
  "ninja",\

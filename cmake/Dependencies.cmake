@@ -14,16 +14,15 @@ find_library(SOCKET_LIBRARIES       socket       )
 
 # For toxcore.
 pkg_use_module(LIBSODIUM            libsodium    )
+pkg_use_module(MSGPACK              msgpack      )
+#find_package(msgpack REQUIRED)
 
 # For toxav.
-pkg_use_module(OPUS                 "opus;Opus"    )
-pkg_use_module(VPX                  "vpx;libvpx"   )
+pkg_use_module(OPUS                 "opus;Opus"  )
+pkg_use_module(VPX                  "vpx;libvpx" )
 
 # For tox-bootstrapd.
 pkg_use_module(LIBCONFIG            libconfig    )
-
-# For tox-spectest.
-pkg_use_module(MSGPACK              msgpack      )
 
 ###############################################################################
 #

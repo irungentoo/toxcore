@@ -274,6 +274,8 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/tox_events.c
   toxcore/tox_events.h)
 set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox_events.h^tox)
+set(toxcore_LINK_MODULES ${toxcore_LINK_MODULES} ${MSGPACK_LIBRARIES})
+set(toxcore_PKGCONFIG_REQUIRES ${toxcore_PKGCONFIG_REQUIRES} msgpack)
 
 # LAYER 10: Dispatch recorded events to callbacks.
 # -------------------

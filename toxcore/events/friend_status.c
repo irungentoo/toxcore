@@ -25,6 +25,14 @@ struct Tox_Event_Friend_Status {
     Tox_User_Status connection_status;
 };
 
+static void tox_event_friend_status_pack(const Tox_Event_Friend_Status *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 2);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->connection_status);
+}
+
 static void tox_event_friend_status_construct(Tox_Event_Friend_Status *friend_status)
 {
     *friend_status = (Tox_Event_Friend_Status) {
@@ -111,6 +119,10 @@ void tox_events_clear_friend_status(Tox_Events *events)
 
 uint32_t tox_events_get_friend_status_size(const Tox_Events *events)
 {
+    if (events == nullptr) {
+        return 0;
+    }
+
     return events->friend_status_size;
 }
 
@@ -119,6 +131,17 @@ const Tox_Event_Friend_Status *tox_events_get_friend_status(const Tox_Events *ev
     assert(index < events->friend_status_size);
     assert(events->friend_status != nullptr);
     return &events->friend_status[index];
+}
+
+void tox_events_pack_friend_status(const Tox_Events *events, msgpack_packer *mp)
+{
+    const uint32_t size = tox_events_get_friend_status_size(events);
+
+    msgpack_pack_array(mp, size);
+
+    for (uint32_t i = 0; i < size; ++i) {
+        tox_event_friend_status_pack(tox_events_get_friend_status(events, i), mp);
+    }
 }
 
 

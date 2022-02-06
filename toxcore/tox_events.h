@@ -306,6 +306,11 @@ Tox_Events *tox_events_iterate(Tox *tox, Tox_Err_Events_Iterate *error);
  */
 void tox_events_free(Tox_Events *events);
 
+uint32_t tox_events_bytes_size(const Tox_Events *events);
+void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes);
+
+void tox_events_print(const Tox_Events *events);
+
 #ifdef __cplusplus
 }
 #endif

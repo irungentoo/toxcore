@@ -9,3 +9,5 @@ ignored:
   - DL3013
   - DL3018
   - DL3059
+  # $(pkg-config ...) needs this
+  - SC2046

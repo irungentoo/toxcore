@@ -27,6 +27,16 @@ struct Tox_Event_Friend_Message {
     size_t message_length;
 };
 
+static void tox_event_friend_message_pack(const Tox_Event_Friend_Message *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 3);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->type);
+    msgpack_pack_bin(mp, event->message_length);
+    msgpack_pack_bin_body(mp, event->message, event->message_length);
+}
+
 static void tox_event_friend_message_construct(Tox_Event_Friend_Message *friend_message)
 {
     *friend_message = (Tox_Event_Friend_Message) {
@@ -144,6 +154,10 @@ void tox_events_clear_friend_message(Tox_Events *events)
 
 uint32_t tox_events_get_friend_message_size(const Tox_Events *events)
 {
+    if (events == nullptr) {
+        return 0;
+    }
+
     return events->friend_message_size;
 }
 
@@ -152,6 +166,17 @@ const Tox_Event_Friend_Message *tox_events_get_friend_message(const Tox_Events *
     assert(index < events->friend_message_size);
     assert(events->friend_message != nullptr);
     return &events->friend_message[index];
+}
+
+void tox_events_pack_friend_message(const Tox_Events *events, msgpack_packer *mp)
+{
+    const uint32_t size = tox_events_get_friend_message_size(events);
+
+    msgpack_pack_array(mp, size);
+
+    for (uint32_t i = 0; i < size; ++i) {
+        tox_event_friend_message_pack(tox_events_get_friend_message(events, i), mp);
+    }
 }
 
 

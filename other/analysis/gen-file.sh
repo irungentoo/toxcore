@@ -14,7 +14,7 @@ CPPFLAGS+=("-Itoxcore/events")
 CPPFLAGS+=("-Itoxav")
 CPPFLAGS+=("-Itoxencryptsave")
 
-LDFLAGS=("-lopus" "-lsodium" "-lvpx" "-lpthread" "-lconfig" "-lgtest")
+LDFLAGS=("-lopus" "-lmsgpackc" "-lsodium" "-lvpx" "-lpthread" "-lconfig" "-lgtest")
 LDFLAGS+=("-fuse-ld=gold")
 LDFLAGS+=("-Wl,--detect-odr-violations")
 LDFLAGS+=("-Wl,--warn-common")
