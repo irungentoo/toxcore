@@ -72,6 +72,7 @@ static void handle_init(MSICall *call, const MSIMessage *msg);
 static void handle_push(MSICall *call, const MSIMessage *msg);
 static void handle_pop(MSICall *call, const MSIMessage *msg);
 static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
+static msi_action_cb *get_callback(MSISession *session, MSICallbackID id);
 
 
 /*
@@ -85,7 +86,39 @@ void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICall
     }
 
     pthread_mutex_lock(session->mutex);
-    session->callbacks[id] = callback;
+
+    switch (id) {
+        case MSI_ON_INVITE: {
+            session->invite_callback = callback;
+            break;
+        }
+
+        case MSI_ON_START: {
+            session->start_callback = callback;
+            break;
+        }
+
+        case MSI_ON_END: {
+            session->end_callback = callback;
+            break;
+        }
+
+        case MSI_ON_ERROR: {
+            session->error_callback = callback;
+            break;
+        }
+
+        case MSI_ON_PEERTIMEOUT: {
+            session->peertimeout_callback = callback;
+            break;
+        }
+
+        case MSI_ON_CAPABILITIES: {
+            session->capabilities_callback = callback;
+            break;
+        }
+    }
+
     pthread_mutex_unlock(session->mutex);
 }
 MSISession *msi_new(Messenger *m)
@@ -492,11 +525,12 @@ static int send_error(Messenger *m, uint32_t friend_number, MSIError error)
 static int invoke_callback(MSICall *call, MSICallbackID cb)
 {
     assert(call);
+    msi_action_cb *callback = get_callback(call->session, cb);
 
-    if (call->session->callbacks[cb]) {
+    if (callback != nullptr) {
         LOGGER_DEBUG(call->session->messenger->log, "Invoking callback function: %d", cb);
 
-        if (call->session->callbacks[cb](call->session->av, call) != 0) {
+        if (callback(call->session->av, call) != 0) {
             LOGGER_WARNING(call->session->messenger->log,
                            "Callback state handling failed, sending error");
             goto FAILURE;
@@ -856,4 +890,29 @@ static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_
     }
 
     pthread_mutex_unlock(session->mutex);
+}
+
+static msi_action_cb *get_callback(MSISession *session, MSICallbackID id)
+{
+    switch (id) {
+        case MSI_ON_INVITE:
+            return session->invite_callback;
+
+        case MSI_ON_START:
+            return session->start_callback;
+
+        case MSI_ON_END:
+            return session->end_callback;
+
+        case MSI_ON_ERROR:
+            return session->error_callback;
+
+        case MSI_ON_PEERTIMEOUT:
+            return session->peertimeout_callback;
+
+        case MSI_ON_CAPABILITIES:
+            return session->capabilities_callback;
+    }
+
+    return nullptr;
 }

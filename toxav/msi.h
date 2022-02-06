@@ -101,7 +101,13 @@ typedef struct MSISession {
     Messenger      *messenger;
 
     pthread_mutex_t mutex[1];
-    msi_action_cb *callbacks[7];
+
+    msi_action_cb *invite_callback;
+    msi_action_cb *start_callback;
+    msi_action_cb *end_callback;
+    msi_action_cb *error_callback;
+    msi_action_cb *peertimeout_callback;
+    msi_action_cb *capabilities_callback;
 } MSISession;
 
 /**
