@@ -161,6 +161,7 @@ set(toxcore_PKGCONFIG_REQUIRES)
 # LAYER 1: Crypto core
 # --------------------
 set(toxcore_SOURCES ${toxcore_SOURCES}
+  toxcore/ccompat.c
   toxcore/ccompat.h
   toxcore/crypto_core.c
   toxcore/crypto_core.h)
@@ -240,9 +241,46 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
 set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/tox_api.c
   toxcore/tox.c
-  toxcore/tox_private.h
-  toxcore/tox.h)
+  toxcore/tox.h
+  toxcore/tox_private.h)
 set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox.h^tox)
+
+# LAYER 9: New async events API
+# -------------------
+set(toxcore_SOURCES ${toxcore_SOURCES}
+  toxcore/events/conference_connected.c
+  toxcore/events/conference_invite.c
+  toxcore/events/conference_message.c
+  toxcore/events/conference_peer_list_changed.c
+  toxcore/events/conference_peer_name.c
+  toxcore/events/conference_title.c
+  toxcore/events/file_chunk_request.c
+  toxcore/events/file_recv.c
+  toxcore/events/file_recv_chunk.c
+  toxcore/events/file_recv_control.c
+  toxcore/events/friend_connection_status.c
+  toxcore/events/friend_lossless_packet.c
+  toxcore/events/friend_lossy_packet.c
+  toxcore/events/friend_message.c
+  toxcore/events/friend_name.c
+  toxcore/events/friend_read_receipt.c
+  toxcore/events/friend_request.c
+  toxcore/events/friend_status.c
+  toxcore/events/friend_status_message.c
+  toxcore/events/friend_typing.c
+  toxcore/events/events_alloc.c
+  toxcore/events/events_alloc.h
+  toxcore/events/self_connection_status.c
+  toxcore/tox_events.c
+  toxcore/tox_events.h)
+set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox_events.h^tox)
+
+# LAYER 10: Dispatch recorded events to callbacks.
+# -------------------
+set(toxcore_SOURCES ${toxcore_SOURCES}
+  toxcore/tox_dispatch.c
+  toxcore/tox_dispatch.h)
+set(toxcore_API_HEADERS ${toxcore_API_HEADERS} ${toxcore_SOURCE_DIR}/toxcore/tox_dispatch.h^tox)
 
 ################################################################################
 #
@@ -441,6 +479,8 @@ auto_test(save_load)
 auto_test(send_message)
 auto_test(set_name)
 auto_test(set_status_message)
+auto_test(tox_dispatch)
+auto_test(tox_events)
 auto_test(tox_many)
 auto_test(tox_many_tcp)
 auto_test(tox_one)
@@ -558,4 +598,3 @@ if (BUILD_FUZZ_TESTS)
   add_executable(bootstrap_fuzzer testing/fuzzing/bootstrap_harness.cc)
   target_link_libraries(bootstrap_fuzzer toxcore_static fuzz_adapter -fsanitize=fuzzer)
 endif()
-

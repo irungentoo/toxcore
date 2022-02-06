@@ -109,6 +109,7 @@ jobs:
             testing/misc_tools.c
             toxav/*.c
             toxcore/*.c
+            toxcore/*/*.c
             toxencryptsave/*.c
             $(pkg-config --cflags --libs libsodium opus vpx)
       - name: Run the test
@@ -146,6 +147,7 @@ jobs:
             testing/misc_tools.c
             toxav/*.c
             toxcore/*.c
+            toxcore/*/*.c
             toxencryptsave/*.c
             -D__COMPCERT__ -DDISABLE_VLA
             -lpthread $(pkg-config --cflags --libs libsodium opus vpx)

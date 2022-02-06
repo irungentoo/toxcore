@@ -20,7 +20,7 @@
 
 /*** Ranges. */
 
-/** Packets in this range are reserved for net_crypto internal use. */
+/** Packets in this range are reserved for net_crypto events_alloc use. */
 #define PACKET_ID_RANGE_RESERVED_START 0
 #define PACKET_ID_RANGE_RESERVED_END 15
 /** Packets in this range are reserved for Messenger use. */

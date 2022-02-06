@@ -76,6 +76,7 @@ jobs:
           testing/misc_tools.c
           toxav/*.c
           toxcore/*.c
+          toxcore/*/*.c
           toxencryptsave/*.c
           -lpthread
           $(pkg-config --cflags --libs libsodium opus vpx)

@@ -465,12 +465,12 @@ typedef enum Tox_Log_Level {
     TOX_LOG_LEVEL_INFO,
 
     /**
-     * Warnings about internal inconsistency or logic errors.
+     * Warnings about events_alloc inconsistency or logic errors.
      */
     TOX_LOG_LEVEL_WARNING,
 
     /**
-     * Severe unexpected errors caused by external or internal inconsistency.
+     * Severe unexpected errors caused by external or events_alloc inconsistency.
      */
     TOX_LOG_LEVEL_ERROR,
 
@@ -478,7 +478,7 @@ typedef enum Tox_Log_Level {
 
 
 /**
- * @brief This event is triggered when the toxcore library logs an internal message.
+ * @brief This event is triggered when the toxcore library logs an events_alloc message.
  *
  * This is mostly useful for debugging. This callback can be called from any
  * function, not just tox_iterate. This means the user data lifetime must at
@@ -800,7 +800,7 @@ typedef enum Tox_Err_New {
     TOX_ERR_NEW_NULL,
 
     /**
-     * The function was unable to allocate enough memory to store the internal
+     * The function was unable to allocate enough memory to store the events_alloc
      * structures for the Tox object.
      */
     TOX_ERR_NEW_MALLOC,
@@ -1845,7 +1845,7 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback);
  * If hash is NULL or data is NULL while length is not 0 the function returns false,
  * otherwise it returns true.
  *
- * This function is a wrapper to internal message-digest functions.
+ * This function is a wrapper to events_alloc message-digest functions.
  *
  * @param hash A valid memory location the hash data. It must be at least
  *   TOX_HASH_LENGTH bytes in size.

@@ -669,14 +669,14 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         return -1;
     }
 
-    int direct_send_attempt = 0;
+    bool direct_send_attempt = false;
 
     pthread_mutex_lock(conn->mutex);
     IP_Port ip_port = return_ip_port_connection(c, crypt_connection_id);
 
     // TODO(irungentoo): on bad networks, direct connections might not last indefinitely.
     if (!net_family_is_unspec(ip_port.ip.family)) {
-        bool direct_connected = 0;
+        bool direct_connected = false;
 
         // FIXME(sudden6): handle return value
         crypto_connection_status(c, crypt_connection_id, &direct_connected, nullptr);
@@ -688,6 +688,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
             }
 
             pthread_mutex_unlock(conn->mutex);
+            LOGGER_WARNING(c->log, "sending packet of length %d failed", length);
             return -1;
         }
 
@@ -697,7 +698,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
         if ((((UDP_DIRECT_TIMEOUT / 2) + conn->direct_send_attempt_time) < current_time && length < 96)
                 || data[0] == NET_PACKET_COOKIE_REQUEST || data[0] == NET_PACKET_CRYPTO_HS) {
             if ((uint32_t)sendpacket(dht_get_net(c->dht), &ip_port, data, length) == length) {
-                direct_send_attempt = 1;
+                direct_send_attempt = true;
                 conn->direct_send_attempt_time = mono_time_get(c->mono_time);
             }
         }
@@ -705,7 +706,7 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     pthread_mutex_unlock(conn->mutex);
     pthread_mutex_lock(&c->tcp_mutex);
-    int ret = send_packet_tcp_connection(c->tcp_c, conn->connection_number_tcp, data, length);
+    const int ret = send_packet_tcp_connection(c->tcp_c, conn->connection_number_tcp, data, length);
     pthread_mutex_unlock(&c->tcp_mutex);
 
     pthread_mutex_lock(conn->mutex);
@@ -716,11 +717,11 @@ static int send_packet_to(Net_Crypto *c, int crypt_connection_id, const uint8_t 
 
     pthread_mutex_unlock(conn->mutex);
 
-    if (ret == 0 || direct_send_attempt) {
+    if (direct_send_attempt) {
         return 0;
     }
 
-    return -1;
+    return ret;
 }
 
 /*** START: Array Related functions */
@@ -1052,22 +1053,26 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     const uint16_t max_length = MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + CRYPTO_MAC_SIZE);
 
     if (length == 0 || length > max_length) {
+        LOGGER_WARNING(c->log, "zero-length or too large data packet: %d (max: %d)", length, max_length);
         return -1;
     }
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
+        LOGGER_WARNING(c->log, "connection id %d not found", crypt_connection_id);
         return -1;
     }
 
     pthread_mutex_lock(conn->mutex);
-    VLA(uint8_t, packet, 1 + sizeof(uint16_t) + length + CRYPTO_MAC_SIZE);
+    const uint16_t packet_size = 1 + sizeof(uint16_t) + length + CRYPTO_MAC_SIZE;
+    VLA(uint8_t, packet, packet_size);
     packet[0] = NET_PACKET_CRYPTO_DATA;
     memcpy(packet + 1, conn->sent_nonce + (CRYPTO_NONCE_SIZE - sizeof(uint16_t)), sizeof(uint16_t));
     const int len = encrypt_data_symmetric(conn->shared_key, conn->sent_nonce, data, length, packet + 1 + sizeof(uint16_t));
 
-    if (len + 1 + sizeof(uint16_t) != SIZEOF_VLA(packet)) {
+    if (len + 1 + sizeof(uint16_t) != packet_size) {
+        LOGGER_WARNING(c->log, "encryption failed: %d", len);
         pthread_mutex_unlock(conn->mutex);
         return -1;
     }
@@ -1087,6 +1092,7 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
                                    const uint8_t *data, uint16_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE) {
+        LOGGER_WARNING(c->log, "zero-length or too large data packet: %d (max: %d)", length, MAX_CRYPTO_PACKET_SIZE);
         return -1;
     }
 
@@ -1161,7 +1167,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     dt.length = length;
     memcpy(dt.data, data, length);
     pthread_mutex_lock(conn->mutex);
-    int64_t packet_num = add_data_end_of_buffer(&conn->send_array, &dt);
+    const int64_t packet_num = add_data_end_of_buffer(&conn->send_array, &dt);
     pthread_mutex_unlock(conn->mutex);
 
     if (packet_num == -1) {
@@ -1180,7 +1186,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         }
     } else {
         conn->maximum_speed_reached = 1;
-        LOGGER_DEBUG(c->log, "send_data_packet failed");
+        LOGGER_DEBUG(c->log, "send_data_packet failed (packet_num = %ld)", (long)packet_num);
     }
 
     return packet_num;

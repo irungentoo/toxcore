@@ -48,7 +48,7 @@ if (@ARGV and $ARGV[0] eq "-core") {
       emit(abs_path $fn);
    }
 } else {
-   for my $fn (<toxav/*.c>, <toxcore/*.c>, <toxencryptsave/*.c>) {
+   for my $fn (<toxav/*.c>, <toxcore/*.c>, <toxcore/*/*.c>, <toxencryptsave/*.c>) {
       emit(abs_path $fn);
    }
 }

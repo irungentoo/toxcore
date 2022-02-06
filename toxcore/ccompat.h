@@ -9,6 +9,7 @@
 #define C_TOXCORE_TOXCORE_CCOMPAT_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 bool unused_for_tokstyle(void);
 
@@ -47,9 +48,9 @@ bool unused_for_tokstyle(void);
 #endif
 
 #define VLA(type, name, size)                           \
-  const size_t name##_size = (size) * sizeof(type);     \
-  type *const name = (type *)alloca(name##_size)
-#define SIZEOF_VLA(name) name##_size
+  const size_t name##_vla_size = (size) * sizeof(type); \
+  type *const name = (type *)alloca(name##_vla_size)
+#define SIZEOF_VLA(name) name##_vla_size
 
 #endif
 

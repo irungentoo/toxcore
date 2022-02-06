@@ -1,0 +1,145 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright © 2022 The TokTok team.
+ */
+
+#include "events_alloc.h"
+
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../ccompat.h"
+#include "../tox.h"
+#include "../tox_events.h"
+
+
+/*****************************************************
+ *
+ * :: struct and accessors
+ *
+ *****************************************************/
+
+
+struct Tox_Event_Friend_Typing {
+    uint32_t friend_number;
+    bool typing;
+};
+
+static void tox_event_friend_typing_construct(Tox_Event_Friend_Typing *friend_typing)
+{
+    *friend_typing = (Tox_Event_Friend_Typing) {
+        0
+    };
+}
+static void tox_event_friend_typing_destruct(Tox_Event_Friend_Typing *friend_typing)
+{
+    return;
+}
+
+static void tox_event_friend_typing_set_friend_number(Tox_Event_Friend_Typing *friend_typing,
+        uint32_t friend_number)
+{
+    assert(friend_typing != nullptr);
+    friend_typing->friend_number = friend_number;
+}
+uint32_t tox_event_friend_typing_get_friend_number(const Tox_Event_Friend_Typing *friend_typing)
+{
+    assert(friend_typing != nullptr);
+    return friend_typing->friend_number;
+}
+
+static void tox_event_friend_typing_set_typing(Tox_Event_Friend_Typing *friend_typing, bool typing)
+{
+    assert(friend_typing != nullptr);
+    friend_typing->typing = typing;
+}
+bool tox_event_friend_typing_get_typing(const Tox_Event_Friend_Typing *friend_typing)
+{
+    assert(friend_typing != nullptr);
+    return friend_typing->typing;
+}
+
+
+/*****************************************************
+ *
+ * :: add/clear/get
+ *
+ *****************************************************/
+
+
+static Tox_Event_Friend_Typing *tox_events_add_friend_typing(Tox_Events *events)
+{
+    if (events->friend_typing_size == UINT32_MAX) {
+        return nullptr;
+    }
+
+    if (events->friend_typing_size == events->friend_typing_capacity) {
+        const uint32_t new_friend_typing_capacity = events->friend_typing_capacity * 2 + 1;
+        Tox_Event_Friend_Typing *new_friend_typing = (Tox_Event_Friend_Typing *)realloc(
+                    events->friend_typing, new_friend_typing_capacity * sizeof(Tox_Event_Friend_Typing));
+
+        if (new_friend_typing == nullptr) {
+            return nullptr;
+        }
+
+        events->friend_typing = new_friend_typing;
+        events->friend_typing_capacity = new_friend_typing_capacity;
+    }
+
+    Tox_Event_Friend_Typing *const friend_typing = &events->friend_typing[events->friend_typing_size];
+    tox_event_friend_typing_construct(friend_typing);
+    ++events->friend_typing_size;
+    return friend_typing;
+}
+
+void tox_events_clear_friend_typing(Tox_Events *events)
+{
+    if (events == nullptr) {
+        return;
+    }
+
+    for (uint32_t i = 0; i < events->friend_typing_size; ++i) {
+        tox_event_friend_typing_destruct(&events->friend_typing[i]);
+    }
+
+    free(events->friend_typing);
+    events->friend_typing = nullptr;
+    events->friend_typing_size = 0;
+    events->friend_typing_capacity = 0;
+}
+
+uint32_t tox_events_get_friend_typing_size(const Tox_Events *events)
+{
+    return events->friend_typing_size;
+}
+
+const Tox_Event_Friend_Typing *tox_events_get_friend_typing(const Tox_Events *events, uint32_t index)
+{
+    assert(index < events->friend_typing_size);
+    assert(events->friend_typing != nullptr);
+    return &events->friend_typing[index];
+}
+
+
+/*****************************************************
+ *
+ * :: event handler
+ *
+ *****************************************************/
+
+
+void tox_events_handle_friend_typing(Tox *tox, uint32_t friend_number, bool typing, void *user_data)
+{
+    Tox_Events_State *state = tox_events_alloc(user_data);
+    assert(state != nullptr);
+
+    Tox_Event_Friend_Typing *friend_typing = tox_events_add_friend_typing(state->events);
+
+    if (friend_typing == nullptr) {
+        state->error = TOX_ERR_EVENTS_ITERATE_MALLOC;
+        return;
+    }
+
+    tox_event_friend_typing_set_friend_number(friend_typing, friend_number);
+    tox_event_friend_typing_set_typing(friend_typing, typing);
+}

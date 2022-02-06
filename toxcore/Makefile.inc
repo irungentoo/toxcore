@@ -6,6 +6,30 @@ libtoxcore_la_include_HEADERS = \
 libtoxcore_la_includedir = $(includedir)/tox
 
 libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
+                        ../toxcore/events/conference_connected.c \
+                        ../toxcore/events/conference_invite.c \
+                        ../toxcore/events/conference_message.c \
+                        ../toxcore/events/conference_peer_list_changed.c \
+                        ../toxcore/events/conference_peer_name.c \
+                        ../toxcore/events/conference_title.c \
+                        ../toxcore/events/file_chunk_request.c \
+                        ../toxcore/events/file_recv.c \
+                        ../toxcore/events/file_recv_chunk.c \
+                        ../toxcore/events/file_recv_control.c \
+                        ../toxcore/events/friend_connection_status.c \
+                        ../toxcore/events/friend_lossless_packet.c \
+                        ../toxcore/events/friend_lossy_packet.c \
+                        ../toxcore/events/friend_message.c \
+                        ../toxcore/events/friend_message.c \
+                        ../toxcore/events/friend_name.c \
+                        ../toxcore/events/friend_read_receipt.c \
+                        ../toxcore/events/friend_request.c \
+                        ../toxcore/events/friend_status.c \
+                        ../toxcore/events/friend_status_message.c \
+                        ../toxcore/events/friend_typing.c \
+                        ../toxcore/events/events_alloc.c \
+                        ../toxcore/events/events_alloc.h \
+                        ../toxcore/events/self_connection_status.c \
                         ../toxcore/DHT.h \
                         ../toxcore/DHT.c \
                         ../toxcore/mono_time.h \
@@ -31,8 +55,12 @@ libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
                         ../toxcore/state.h \
                         ../toxcore/state.c \
                         ../toxcore/tox.h \
-                        ../toxcore/tox_private.h \
                         ../toxcore/tox.c \
+                        ../toxcore/tox_dispatch.h \
+                        ../toxcore/tox_dispatch.c \
+                        ../toxcore/tox_events.h \
+                        ../toxcore/tox_events.c \
+                        ../toxcore/tox_private.h \
                         ../toxcore/tox_api.c \
                         ../toxcore/util.h \
                         ../toxcore/util.c \

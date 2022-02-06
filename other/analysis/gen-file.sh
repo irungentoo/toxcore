@@ -10,6 +10,7 @@ CPPFLAGS+=("-Itesting")
 CPPFLAGS+=("-Itesting/fuzzing")
 CPPFLAGS+=("-Itesting/groupchats")
 CPPFLAGS+=("-Itoxcore")
+CPPFLAGS+=("-Itoxcore/events")
 CPPFLAGS+=("-Itoxav")
 CPPFLAGS+=("-Itoxencryptsave")
 
