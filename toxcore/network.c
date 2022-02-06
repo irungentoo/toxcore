@@ -724,15 +724,14 @@ void networking_poll(const Networking_Core *net, void *userdata)
             continue;
         }
 
-        packet_handler_cb *const cb = net->packethandlers[data[0]].function;
-        void *const object = net->packethandlers[data[0]].object;
+        const Packet_Handler *const handler = &net->packethandlers[data[0]];
 
-        if (cb == nullptr) {
+        if (handler->function == nullptr) {
             LOGGER_WARNING(net->log, "[%02u] -- Packet has no handler", data[0]);
             continue;
         }
 
-        cb(object, &ip_port, data, length, userdata);
+        handler->function(handler->object, &ip_port, data, length, userdata);
     }
 }
 

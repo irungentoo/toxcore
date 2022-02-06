@@ -854,7 +854,10 @@ static void set_friend_typing(const Messenger *m, int32_t friendnumber, uint8_t 
 /** Set the function that will be executed when a friend request is received. */
 void m_callback_friendrequest(Messenger *m, m_friend_request_cb *function)
 {
+    /* TODO(iphydf): Don't cast function pointers. */
+    //!TOKSTYLE-
     callback_friendrequest(m->fr, (fr_friend_request_cb *)function, m);
+    //!TOKSTYLE+
 }
 
 /** Set the function that will be executed when a message from a friend is received. */
@@ -2818,9 +2821,9 @@ static uint32_t m_state_plugins_size(const Messenger *m)
  * returns true on success
  * returns false on error
  */
-bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb size_callback,
-                             m_state_load_cb load_callback,
-                             m_state_save_cb save_callback)
+bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb *size_callback,
+                             m_state_load_cb *load_callback,
+                             m_state_save_cb *save_callback)
 {
     Messenger_State_Plugin *temp = (Messenger_State_Plugin *)realloc(m->options.state_plugins,
                                    sizeof(Messenger_State_Plugin) * (m->options.state_plugins_length + 1));

@@ -744,8 +744,8 @@ uint32_t messenger_run_interval(const Messenger *m);
  * returns true on success
  * returns false on error
  */
-bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb size_callback,
-                             m_state_load_cb load_callback, m_state_save_cb save_callback);
+bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb *size_callback,
+                             m_state_load_cb *load_callback, m_state_save_cb *save_callback);
 
 /** return size of the messenger data (for saving). */
 uint32_t messenger_size(const Messenger *m);

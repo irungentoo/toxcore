@@ -452,7 +452,10 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
     m_options.hole_punching_enabled = tox_options_get_hole_punching_enabled(opts);
     m_options.local_discovery_enabled = tox_options_get_local_discovery_enabled(opts);
 
+    // TODO(iphydf): Don't cast function pointers.
+    //!TOKSTYLE-
     m_options.log_callback = (logger_cb *)tox_options_get_log_callback(opts);
+    //!TOKSTYLE+
     m_options.log_context = tox;
     m_options.log_user_data = tox_options_get_log_user_data(opts);
 
