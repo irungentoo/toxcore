@@ -193,7 +193,7 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
     const uint16_t count = net_socket_data_recv_buffer(sock);
 
     if (count < length) {
-        LOGGER_INFO(logger, "recv buffer has %d bytes, but requested %d bytes", count, length);
+        LOGGER_TRACE(logger, "recv buffer has %d bytes, but requested %d bytes", count, length);
         return -1;
     }
 

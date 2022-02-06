@@ -355,7 +355,7 @@ static int read_connection_handshake(const Logger *logger, TCP_Secure_Connection
     const int len = read_TCP_packet(logger, con->con.sock, data, TCP_CLIENT_HANDSHAKE_SIZE, &con->con.ip_port);
 
     if (len == -1) {
-        LOGGER_WARNING(logger, "connection handshake is not ready yet");
+        LOGGER_TRACE(logger, "connection handshake is not ready yet");
         return 0;
     }
 
@@ -904,12 +904,12 @@ static int do_incoming(TCP_Server *tcp_server, uint32_t i)
         return -1;
     }
 
-    LOGGER_DEBUG(tcp_server->logger, "handling incoming TCP connection %d", i);
+    LOGGER_TRACE(tcp_server->logger, "handling incoming TCP connection %d", i);
 
     const int ret = read_connection_handshake(tcp_server->logger, conn, tcp_server->secret_key);
 
     if (ret == -1) {
-        LOGGER_DEBUG(tcp_server->logger, "incoming connection %d dropped due to failed handshake", i);
+        LOGGER_TRACE(tcp_server->logger, "incoming connection %d dropped due to failed handshake", i);
         kill_TCP_secure_connection(conn);
         return -1;
     }
@@ -941,7 +941,7 @@ static int do_unconfirmed(TCP_Server *tcp_server, const Mono_Time *mono_time, ui
         return -1;
     }
 
-    LOGGER_DEBUG(tcp_server->logger, "handling unconfirmed TCP connection %d", i);
+    LOGGER_TRACE(tcp_server->logger, "handling unconfirmed TCP connection %d", i);
 
     uint8_t packet[MAX_PACKET_SIZE];
     const int len = read_packet_TCP_secure_connection(tcp_server->logger, conn->con.sock, &conn->next_packet_length,
@@ -978,7 +978,7 @@ static bool tcp_process_secure_packet(TCP_Server *tcp_server, uint32_t i)
     }
 
     if (handle_TCP_packet(tcp_server, i, packet, len) == -1) {
-        LOGGER_DEBUG(tcp_server->logger, "dropping connection %d: data packet (len=%d) not handled", i, len);
+        LOGGER_TRACE(tcp_server->logger, "dropping connection %d: data packet (len=%d) not handled", i, len);
         kill_accepted(tcp_server, i);
         return false;
     }
@@ -1088,19 +1088,19 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
                 }
 
                 case TCP_SOCKET_INCOMING: {
-                    LOGGER_DEBUG(tcp_server->logger, "incoming connection %d dropped", index);
+                    LOGGER_TRACE(tcp_server->logger, "incoming connection %d dropped", index);
                     kill_TCP_secure_connection(&tcp_server->incoming_connection_queue[index]);
                     break;
                 }
 
                 case TCP_SOCKET_UNCONFIRMED: {
-                    LOGGER_DEBUG(tcp_server->logger, "unconfirmed connection %d dropped", index);
+                    LOGGER_TRACE(tcp_server->logger, "unconfirmed connection %d dropped", index);
                     kill_TCP_secure_connection(&tcp_server->unconfirmed_connection_queue[index]);
                     break;
                 }
 
                 case TCP_SOCKET_CONFIRMED: {
-                    LOGGER_DEBUG(tcp_server->logger, "confirmed connection %d dropped", index);
+                    LOGGER_TRACE(tcp_server->logger, "confirmed connection %d dropped", index);
                     kill_accepted(tcp_server, index);
                     break;
                 }
@@ -1150,7 +1150,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
                 const int index_new = do_incoming(tcp_server, index);
 
                 if (index_new != -1) {
-                    LOGGER_DEBUG(tcp_server->logger, "incoming connection %d was accepted as %d", index, index_new);
+                    LOGGER_TRACE(tcp_server->logger, "incoming connection %d was accepted as %d", index, index_new);
                     events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
                     events[n].data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 40);
 
@@ -1168,7 +1168,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
                 const int index_new = do_unconfirmed(tcp_server, mono_time, index);
 
                 if (index_new != -1) {
-                    LOGGER_DEBUG(tcp_server->logger, "unconfirmed connection %d was confirmed as %d", index, index_new);
+                    LOGGER_TRACE(tcp_server->logger, "unconfirmed connection %d was confirmed as %d", index, index_new);
                     events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
                     events[n].data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 40);
 
