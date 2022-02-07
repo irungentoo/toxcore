@@ -461,6 +461,18 @@ cc_library(
 )
 
 cc_library(
+    name = "tox_unpack",
+    srcs = ["tox_unpack.c"],
+    hdrs = ["tox_unpack.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":ccompat",
+        ":toxcore",
+        "@msgpack-c",
+    ],
+)
+
+cc_library(
     name = "tox_events",
     srcs = ["tox_events.c"] + glob([
         "events/*.c",
@@ -470,6 +482,7 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":ccompat",
+        ":tox_unpack",
         ":toxcore",
         "@msgpack-c",
     ],

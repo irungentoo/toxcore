@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -25,15 +26,6 @@ struct Tox_Event_Friend_Name {
     uint8_t *name;
     size_t name_length;
 };
-
-static void tox_event_friend_name_pack(const Tox_Event_Friend_Name *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 2);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_bin(mp, event->name_length);
-    msgpack_pack_bin_body(mp, event->name, event->name_length);
-}
 
 static void tox_event_friend_name_construct(Tox_Event_Friend_Name *friend_name)
 {
@@ -88,6 +80,29 @@ const uint8_t *tox_event_friend_name_get_name(const Tox_Event_Friend_Name *frien
 {
     assert(friend_name != nullptr);
     return friend_name->name;
+}
+
+static void tox_event_friend_name_pack(
+    const Tox_Event_Friend_Name *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 2);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_bin(mp, event->name_length);
+    msgpack_pack_bin_body(mp, event->name, event->name_length);
+}
+
+static bool tox_event_friend_name_unpack(
+    Tox_Event_Friend_Name *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 2) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && tox_unpack_bin(&event->name, &event->name_length, &obj->via.array.ptr[1]);
 }
 
 
@@ -164,6 +179,27 @@ void tox_events_pack_friend_name(const Tox_Events *events, msgpack_packer *mp)
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_name_pack(tox_events_get_friend_name(events, i), mp);
     }
+}
+
+bool tox_events_unpack_friend_name(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Friend_Name *event = tox_events_add_friend_name(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_friend_name_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

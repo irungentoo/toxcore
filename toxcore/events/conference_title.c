@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -26,16 +27,6 @@ struct Tox_Event_Conference_Title {
     uint8_t *title;
     size_t title_length;
 };
-
-static void tox_event_conference_title_pack(const Tox_Event_Conference_Title *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 3);
-    msgpack_pack_uint32(mp, event->conference_number);
-    msgpack_pack_uint32(mp, event->peer_number);
-    msgpack_pack_bin(mp, event->title_length);
-    msgpack_pack_bin_body(mp, event->title, event->title_length);
-}
 
 static void tox_event_conference_title_construct(Tox_Event_Conference_Title *conference_title)
 {
@@ -102,6 +93,31 @@ const uint8_t *tox_event_conference_title_get_title(const Tox_Event_Conference_T
 {
     assert(conference_title != nullptr);
     return conference_title->title;
+}
+
+static void tox_event_conference_title_pack(
+    const Tox_Event_Conference_Title *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 3);
+    msgpack_pack_uint32(mp, event->conference_number);
+    msgpack_pack_uint32(mp, event->peer_number);
+    msgpack_pack_bin(mp, event->title_length);
+    msgpack_pack_bin_body(mp, event->title, event->title_length);
+}
+
+static bool tox_event_conference_title_unpack(
+    Tox_Event_Conference_Title *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 3) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->conference_number, &obj->via.array.ptr[0])
+           && tox_unpack_u32(&event->peer_number, &obj->via.array.ptr[1])
+           && tox_unpack_bin(&event->title, &event->title_length, &obj->via.array.ptr[2]);
 }
 
 
@@ -178,6 +194,27 @@ void tox_events_pack_conference_title(const Tox_Events *events, msgpack_packer *
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_conference_title_pack(tox_events_get_conference_title(events, i), mp);
     }
+}
+
+bool tox_events_unpack_conference_title(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Conference_Title *event = tox_events_add_conference_title(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_conference_title_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

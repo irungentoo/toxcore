@@ -62,7 +62,7 @@ uint32_t tox_event_conference_title_get_peer_number(
     const Tox_Event_Conference_Title *conference_title);
 
 typedef struct Tox_Event_File_Chunk_Request Tox_Event_File_Chunk_Request;
-size_t tox_event_file_chunk_request_get_length(
+uint16_t tox_event_file_chunk_request_get_length(
     const Tox_Event_File_Chunk_Request *file_chunk_request);
 uint32_t tox_event_file_chunk_request_get_file_number(
     const Tox_Event_File_Chunk_Request *file_chunk_request);
@@ -308,6 +308,10 @@ void tox_events_free(Tox_Events *events);
 
 uint32_t tox_events_bytes_size(const Tox_Events *events);
 void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes);
+
+Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size);
+
+bool tox_events_equal(const Tox_Events *a, const Tox_Events *b);
 
 void tox_events_print(const Tox_Events *events);
 

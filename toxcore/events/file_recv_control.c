@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -25,15 +26,6 @@ struct Tox_Event_File_Recv_Control {
     uint32_t file_number;
     Tox_File_Control control;
 };
-
-static void tox_event_file_recv_control_pack(const Tox_Event_File_Recv_Control *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 3);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_uint32(mp, event->file_number);
-    msgpack_pack_uint32(mp, event->control);
-}
 
 static void tox_event_file_recv_control_construct(Tox_Event_File_Recv_Control *file_recv_control)
 {
@@ -80,6 +72,30 @@ Tox_File_Control tox_event_file_recv_control_get_control(const Tox_Event_File_Re
 {
     assert(file_recv_control != nullptr);
     return file_recv_control->control;
+}
+
+static void tox_event_file_recv_control_pack(
+    const Tox_Event_File_Recv_Control *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 3);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->file_number);
+    msgpack_pack_uint32(mp, event->control);
+}
+
+static bool tox_event_file_recv_control_unpack(
+    Tox_Event_File_Recv_Control *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 3) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && tox_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
+           && tox_unpack_file_control(&event->control, &obj->via.array.ptr[2]);
 }
 
 
@@ -156,6 +172,27 @@ void tox_events_pack_file_recv_control(const Tox_Events *events, msgpack_packer 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_file_recv_control_pack(tox_events_get_file_recv_control(events, i), mp);
     }
+}
+
+bool tox_events_unpack_file_recv_control(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_File_Recv_Control *event = tox_events_add_file_recv_control(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_file_recv_control_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -24,19 +25,6 @@ struct Tox_Event_Friend_Typing {
     uint32_t friend_number;
     bool typing;
 };
-
-static void tox_event_friend_typing_pack(const Tox_Event_Friend_Typing *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 2);
-    msgpack_pack_uint32(mp, event->friend_number);
-
-    if (event->typing) {
-        msgpack_pack_true(mp);
-    } else {
-        msgpack_pack_false(mp);
-    }
-}
 
 static void tox_event_friend_typing_construct(Tox_Event_Friend_Typing *friend_typing)
 {
@@ -70,6 +58,33 @@ bool tox_event_friend_typing_get_typing(const Tox_Event_Friend_Typing *friend_ty
 {
     assert(friend_typing != nullptr);
     return friend_typing->typing;
+}
+
+static void tox_event_friend_typing_pack(
+    const Tox_Event_Friend_Typing *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 2);
+    msgpack_pack_uint32(mp, event->friend_number);
+
+    if (event->typing) {
+        msgpack_pack_true(mp);
+    } else {
+        msgpack_pack_false(mp);
+    }
+}
+
+static bool tox_event_friend_typing_unpack(
+    Tox_Event_Friend_Typing *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 2) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && tox_unpack_bool(&event->typing, &obj->via.array.ptr[1]);
 }
 
 
@@ -146,6 +161,27 @@ void tox_events_pack_friend_typing(const Tox_Events *events, msgpack_packer *mp)
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_typing_pack(tox_events_get_friend_typing(events, i), mp);
     }
+}
+
+bool tox_events_unpack_friend_typing(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Friend_Typing *event = tox_events_add_friend_typing(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_friend_typing_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

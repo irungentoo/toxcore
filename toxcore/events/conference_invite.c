@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -26,16 +27,6 @@ struct Tox_Event_Conference_Invite {
     uint8_t *cookie;
     size_t cookie_length;
 };
-
-static void tox_event_conference_invite_pack(const Tox_Event_Conference_Invite *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 3);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_uint32(mp, event->type);
-    msgpack_pack_bin(mp, event->cookie_length);
-    msgpack_pack_bin_body(mp, event->cookie, event->cookie_length);
-}
 
 static void tox_event_conference_invite_construct(Tox_Event_Conference_Invite *conference_invite)
 {
@@ -73,8 +64,7 @@ Tox_Conference_Type tox_event_conference_invite_get_type(const Tox_Event_Confere
 }
 
 static bool tox_event_conference_invite_set_cookie(Tox_Event_Conference_Invite *conference_invite,
-        const uint8_t *cookie,
-        size_t cookie_length)
+        const uint8_t *cookie, size_t cookie_length)
 {
     assert(conference_invite != nullptr);
 
@@ -103,6 +93,31 @@ const uint8_t *tox_event_conference_invite_get_cookie(const Tox_Event_Conference
 {
     assert(conference_invite != nullptr);
     return conference_invite->cookie;
+}
+
+static void tox_event_conference_invite_pack(
+    const Tox_Event_Conference_Invite *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 3);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->type);
+    msgpack_pack_bin(mp, event->cookie_length);
+    msgpack_pack_bin_body(mp, event->cookie, event->cookie_length);
+}
+
+static bool tox_event_conference_invite_unpack(
+    Tox_Event_Conference_Invite *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 3) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && tox_unpack_conference_type(&event->type, &obj->via.array.ptr[1])
+           && tox_unpack_bin(&event->cookie, &event->cookie_length, &obj->via.array.ptr[2]);
 }
 
 
@@ -179,6 +194,27 @@ void tox_events_pack_conference_invite(const Tox_Events *events, msgpack_packer 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_conference_invite_pack(tox_events_get_conference_invite(events, i), mp);
     }
+}
+
+bool tox_events_unpack_conference_invite(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Conference_Invite *event = tox_events_add_conference_invite(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_conference_invite_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

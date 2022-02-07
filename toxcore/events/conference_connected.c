@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -24,13 +25,6 @@ struct Tox_Event_Conference_Connected {
     uint32_t conference_number;
 };
 
-static void tox_event_conference_connected_pack(const Tox_Event_Conference_Connected *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 1);
-    msgpack_pack_uint32(mp, event->conference_number);
-}
-
 static void tox_event_conference_connected_construct(Tox_Event_Conference_Connected *conference_connected)
 {
     *conference_connected = (Tox_Event_Conference_Connected) {
@@ -42,17 +36,37 @@ static void tox_event_conference_connected_destruct(Tox_Event_Conference_Connect
     return;
 }
 
-static void tox_event_conference_connected_set_conference_number(Tox_Event_Conference_Connected *conference_connected,
-        uint32_t conference_number)
+static void tox_event_conference_connected_set_conference_number(
+    Tox_Event_Conference_Connected *conference_connected, uint32_t conference_number)
 {
     assert(conference_connected != nullptr);
     conference_connected->conference_number = conference_number;
 }
-uint32_t tox_event_conference_connected_get_conference_number(const Tox_Event_Conference_Connected
-        *conference_connected)
+uint32_t tox_event_conference_connected_get_conference_number(
+    const Tox_Event_Conference_Connected *conference_connected)
 {
     assert(conference_connected != nullptr);
     return conference_connected->conference_number;
+}
+
+static void tox_event_conference_connected_pack(
+    const Tox_Event_Conference_Connected *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 1);
+    msgpack_pack_uint32(mp, event->conference_number);
+}
+
+static bool tox_event_conference_connected_unpack(
+    Tox_Event_Conference_Connected *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 1) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->conference_number, &obj->via.array.ptr[0]);
 }
 
 
@@ -131,6 +145,28 @@ void tox_events_pack_conference_connected(const Tox_Events *events, msgpack_pack
         tox_event_conference_connected_pack(tox_events_get_conference_connected(events, i), mp);
     }
 }
+
+bool tox_events_unpack_conference_connected(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Conference_Connected *event = tox_events_add_conference_connected(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_conference_connected_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 
 
 /*****************************************************

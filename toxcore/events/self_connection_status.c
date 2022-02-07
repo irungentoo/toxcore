@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -23,13 +24,6 @@
 struct Tox_Event_Self_Connection_Status {
     Tox_Connection connection_status;
 };
-
-static void tox_event_self_connection_status_pack(const Tox_Event_Self_Connection_Status *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 1);
-    msgpack_pack_uint32(mp, event->connection_status);
-}
 
 static void tox_event_self_connection_status_construct(Tox_Event_Self_Connection_Status *self_connection_status)
 {
@@ -53,6 +47,26 @@ Tox_Connection tox_event_self_connection_status_get_connection_status(const Tox_
 {
     assert(self_connection_status != nullptr);
     return self_connection_status->connection_status;
+}
+
+static void tox_event_self_connection_status_pack(
+    const Tox_Event_Self_Connection_Status *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 1);
+    msgpack_pack_uint32(mp, event->connection_status);
+}
+
+static bool tox_event_self_connection_status_unpack(
+    Tox_Event_Self_Connection_Status *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 1) {
+        return false;
+    }
+
+    return tox_unpack_connection(&event->connection_status, &obj->via.array.ptr[0]);
 }
 
 
@@ -130,6 +144,27 @@ void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_pa
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_self_connection_status_pack(tox_events_get_self_connection_status(events, i), mp);
     }
+}
+
+bool tox_events_unpack_self_connection_status(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Self_Connection_Status *event = tox_events_add_self_connection_status(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_self_connection_status_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

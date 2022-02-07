@@ -44,10 +44,31 @@ static void dump_events(const char *path, const Tox_Events *events)
 
 static void print_events(Tox_Events *events)
 {
-    if (tox_events_bytes_size(events) > 24) {
+    const uint32_t size = tox_events_bytes_size(events);
+
+    if (size > 24) {
         tox_events_print(events);
     }
 
+    uint8_t *bytes = (uint8_t *)malloc(size);
+    ck_assert(bytes != nullptr);
+
+    tox_events_get_bytes(events, bytes);
+
+    Tox_Events *events_copy = tox_events_load(bytes, size);
+    ck_assert(events_copy != nullptr);
+    free(bytes);
+
+    if (!tox_events_equal(events, events_copy)) {
+        printf("serialised and deserialised events are not equal:\n");
+        printf("a = ");
+        tox_events_print(events);
+        printf("b = ");
+        tox_events_print(events_copy);
+        abort();
+    }
+
+    tox_events_free(events_copy);
     tox_events_free(events);
 }
 

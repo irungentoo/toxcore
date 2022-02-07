@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -24,18 +25,8 @@ struct Tox_Event_File_Chunk_Request {
     uint32_t friend_number;
     uint32_t file_number;
     uint64_t position;
-    size_t length;
+    uint16_t length;
 };
-
-static void tox_event_file_chunk_request_pack(const Tox_Event_File_Chunk_Request *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 4);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_uint32(mp, event->file_number);
-    msgpack_pack_uint64(mp, event->position);
-    msgpack_pack_uint16(mp, event->length);
-}
 
 static void tox_event_file_chunk_request_construct(Tox_Event_File_Chunk_Request *file_chunk_request)
 {
@@ -84,15 +75,41 @@ uint64_t tox_event_file_chunk_request_get_position(const Tox_Event_File_Chunk_Re
     return file_chunk_request->position;
 }
 
-static void tox_event_file_chunk_request_set_length(Tox_Event_File_Chunk_Request *file_chunk_request, size_t length)
+static void tox_event_file_chunk_request_set_length(Tox_Event_File_Chunk_Request *file_chunk_request, uint16_t length)
 {
     assert(file_chunk_request != nullptr);
     file_chunk_request->length = length;
 }
-size_t tox_event_file_chunk_request_get_length(const Tox_Event_File_Chunk_Request *file_chunk_request)
+uint16_t tox_event_file_chunk_request_get_length(const Tox_Event_File_Chunk_Request *file_chunk_request)
 {
     assert(file_chunk_request != nullptr);
     return file_chunk_request->length;
+}
+
+static void tox_event_file_chunk_request_pack(
+    const Tox_Event_File_Chunk_Request *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 4);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->file_number);
+    msgpack_pack_uint64(mp, event->position);
+    msgpack_pack_uint16(mp, event->length);
+}
+
+static bool tox_event_file_chunk_request_unpack(
+    Tox_Event_File_Chunk_Request *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 4) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && tox_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
+           && tox_unpack_u64(&event->position, &obj->via.array.ptr[2])
+           && tox_unpack_u16(&event->length, &obj->via.array.ptr[3]);
 }
 
 
@@ -169,6 +186,27 @@ void tox_events_pack_file_chunk_request(const Tox_Events *events, msgpack_packer
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_file_chunk_request_pack(tox_events_get_file_chunk_request(events, i), mp);
     }
+}
+
+bool tox_events_unpack_file_chunk_request(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_File_Chunk_Request *event = tox_events_add_file_chunk_request(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_file_chunk_request_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

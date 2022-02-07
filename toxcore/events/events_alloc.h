@@ -172,6 +172,30 @@ void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_pa
 
 void tox_events_pack(const Tox_Events *events, msgpack_packer *mp);
 
+bool tox_events_unpack_conference_connected(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_conference_invite(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_conference_message(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_conference_peer_list_changed(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_conference_peer_name(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_conference_title(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_file_chunk_request(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_file_recv_chunk(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_file_recv_control(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_file_recv(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_connection_status(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_lossless_packet(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_lossy_packet(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_message(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_name(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_read_receipt(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_request(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_status_message(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_status(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_friend_typing(Tox_Events *events, const msgpack_object *obj);
+bool tox_events_unpack_self_connection_status(Tox_Events *events, const msgpack_object *obj);
+
+bool tox_events_unpack(Tox_Events *events, const msgpack_object *obj);
+
 Tox_Events_State *tox_events_alloc(void *user_data);
 
 #ifdef __cplusplus

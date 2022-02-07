@@ -60,6 +60,8 @@ libtoxcore_la_SOURCES = ../toxcore/ccompat.h \
                         ../toxcore/tox_dispatch.c \
                         ../toxcore/tox_events.h \
                         ../toxcore/tox_events.c \
+                        ../toxcore/tox_unpack.h \
+                        ../toxcore/tox_unpack.c \
                         ../toxcore/tox_private.h \
                         ../toxcore/tox_api.c \
                         ../toxcore/util.h \

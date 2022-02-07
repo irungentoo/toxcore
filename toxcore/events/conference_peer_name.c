@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -26,16 +27,6 @@ struct Tox_Event_Conference_Peer_Name {
     uint8_t *name;
     size_t name_length;
 };
-
-static void tox_event_conference_peer_name_pack(const Tox_Event_Conference_Peer_Name *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 3);
-    msgpack_pack_uint32(mp, event->conference_number);
-    msgpack_pack_uint32(mp, event->peer_number);
-    msgpack_pack_bin(mp, event->name_length);
-    msgpack_pack_bin_body(mp, event->name, event->name_length);
-}
 
 static void tox_event_conference_peer_name_construct(Tox_Event_Conference_Peer_Name *conference_peer_name)
 {
@@ -103,6 +94,31 @@ const uint8_t *tox_event_conference_peer_name_get_name(const Tox_Event_Conferenc
 {
     assert(conference_peer_name != nullptr);
     return conference_peer_name->name;
+}
+
+static void tox_event_conference_peer_name_pack(
+    const Tox_Event_Conference_Peer_Name *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 3);
+    msgpack_pack_uint32(mp, event->conference_number);
+    msgpack_pack_uint32(mp, event->peer_number);
+    msgpack_pack_bin(mp, event->name_length);
+    msgpack_pack_bin_body(mp, event->name, event->name_length);
+}
+
+static bool tox_event_conference_peer_name_unpack(
+    Tox_Event_Conference_Peer_Name *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 3) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->conference_number, &obj->via.array.ptr[0])
+           && tox_unpack_u32(&event->peer_number, &obj->via.array.ptr[1])
+           && tox_unpack_bin(&event->name, &event->name_length, &obj->via.array.ptr[2]);
 }
 
 
@@ -180,6 +196,27 @@ void tox_events_pack_conference_peer_name(const Tox_Events *events, msgpack_pack
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_conference_peer_name_pack(tox_events_get_conference_peer_name(events, i), mp);
     }
+}
+
+bool tox_events_unpack_conference_peer_name(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Conference_Peer_Name *event = tox_events_add_conference_peer_name(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_conference_peer_name_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 

@@ -11,6 +11,7 @@
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
+#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -24,14 +25,6 @@ struct Tox_Event_Friend_Status {
     uint32_t friend_number;
     Tox_User_Status connection_status;
 };
-
-static void tox_event_friend_status_pack(const Tox_Event_Friend_Status *event, msgpack_packer *mp)
-{
-    assert(event != nullptr);
-    msgpack_pack_array(mp, 2);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_uint32(mp, event->connection_status);
-}
 
 static void tox_event_friend_status_construct(Tox_Event_Friend_Status *friend_status)
 {
@@ -66,6 +59,28 @@ Tox_User_Status tox_event_friend_status_get_connection_status(const Tox_Event_Fr
 {
     assert(friend_status != nullptr);
     return friend_status->connection_status;
+}
+
+static void tox_event_friend_status_pack(
+    const Tox_Event_Friend_Status *event, msgpack_packer *mp)
+{
+    assert(event != nullptr);
+    msgpack_pack_array(mp, 2);
+    msgpack_pack_uint32(mp, event->friend_number);
+    msgpack_pack_uint32(mp, event->connection_status);
+}
+
+static bool tox_event_friend_status_unpack(
+    Tox_Event_Friend_Status *event, const msgpack_object *obj)
+{
+    assert(event != nullptr);
+
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 2) {
+        return false;
+    }
+
+    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && tox_unpack_user_status(&event->connection_status, &obj->via.array.ptr[1]);
 }
 
 
@@ -142,6 +157,27 @@ void tox_events_pack_friend_status(const Tox_Events *events, msgpack_packer *mp)
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_status_pack(tox_events_get_friend_status(events, i), mp);
     }
+}
+
+bool tox_events_unpack_friend_status(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        Tox_Event_Friend_Status *event = tox_events_add_friend_status(events);
+
+        if (event == nullptr) {
+            return false;
+        }
+
+        if (!tox_event_friend_status_unpack(event, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 
