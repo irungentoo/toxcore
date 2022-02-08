@@ -80,6 +80,7 @@ static void crypto_free(uint8_t *ptr, size_t bytes)
 }
 #endif  // !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
 
+non_null(1)
 void crypto_memzero(void *data, size_t length)
 {
 #ifndef VANILLA_NACL
@@ -89,6 +90,7 @@ void crypto_memzero(void *data, size_t length)
 #endif
 }
 
+non_null(1)
 bool crypto_memlock(void *data, size_t length)
 {
 #ifndef VANILLA_NACL
@@ -103,6 +105,7 @@ bool crypto_memlock(void *data, size_t length)
 #endif
 }
 
+non_null(1)
 bool crypto_memunlock(void *data, size_t length)
 {
 #ifndef VANILLA_NACL
@@ -117,6 +120,7 @@ bool crypto_memunlock(void *data, size_t length)
 #endif
 }
 
+non_null(1, 2)
 int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
@@ -127,6 +131,7 @@ int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
 #endif
 }
 
+non_null(1, 2)
 int32_t crypto_sha512_cmp(const uint8_t *cksum1, const uint8_t *cksum2)
 {
 #ifndef VANILLA_NACL
@@ -173,6 +178,7 @@ uint32_t random_range_u32(uint32_t upper_bound)
 #endif  // VANILLA_NACL
 }
 
+non_null(1)
 bool public_key_valid(const uint8_t *public_key)
 {
     if (public_key[31] >= 128) { /* Last bit of key is always zero. */
@@ -182,12 +188,14 @@ bool public_key_valid(const uint8_t *public_key)
     return 1;
 }
 
+non_null(1, 2, 3)
 int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
                            uint8_t *shared_key)
 {
     return crypto_box_beforenm(shared_key, public_key, secret_key);
 }
 
+non_null(1, 2, 3, 5)
 int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
                                const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
@@ -239,6 +247,7 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
     return length + crypto_box_MACBYTES;
 }
 
+non_null(1, 2, 3, 5)
 int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
                                const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
@@ -287,6 +296,7 @@ int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
     return length - crypto_box_MACBYTES;
 }
 
+non_null(1, 2, 3, 4, 6)
 int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
                      const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
@@ -301,6 +311,7 @@ int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     return ret;
 }
 
+non_null(1, 2, 3, 4, 6)
 int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
                      const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
@@ -315,6 +326,7 @@ int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
     return ret;
 }
 
+non_null(1)
 void increment_nonce(uint8_t *nonce)
 {
     /* TODO(irungentoo): use `increment_nonce_number(nonce, 1)` or
@@ -334,6 +346,7 @@ void increment_nonce(uint8_t *nonce)
     }
 }
 
+non_null(1)
 void increment_nonce_number(uint8_t *nonce, uint32_t increment)
 {
     /* NOTE don't use breaks inside this loop
@@ -356,16 +369,19 @@ void increment_nonce_number(uint8_t *nonce, uint32_t increment)
     }
 }
 
+non_null(1)
 void random_nonce(uint8_t *nonce)
 {
     random_bytes(nonce, crypto_box_NONCEBYTES);
 }
 
+non_null(1)
 void new_symmetric_key(uint8_t *key)
 {
     random_bytes(key, CRYPTO_SYMMETRIC_KEY_SIZE);
 }
 
+non_null(1, 2)
 int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
@@ -378,21 +394,25 @@ int32_t crypto_new_keypair(uint8_t *public_key, uint8_t *secret_key)
 #endif
 }
 
+non_null(1, 2)
 void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key)
 {
     crypto_scalarmult_curve25519_base(public_key, secret_key);
 }
 
+non_null(1, 2)
 void crypto_sha256(uint8_t *hash, const uint8_t *data, size_t length)
 {
     crypto_hash_sha256(hash, data, length);
 }
 
+non_null(1, 2)
 void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length)
 {
     crypto_hash_sha512(hash, data, length);
 }
 
+non_null(1)
 void random_bytes(uint8_t *data, size_t length)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION

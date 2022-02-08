@@ -22,6 +22,7 @@ run() {
     -Wno-float-conversion \
     -Wno-format-signedness \
     -Wno-missing-field-initializers \
+    -Wno-nonnull-compare \
     -Wno-padded \
     -Wno-sign-compare \
     -Wno-sign-conversion \
@@ -52,7 +53,6 @@ run() {
     -Wmemset-transposed-args \
     -Wmisleading-indentation \
     -Wnonnull \
-    -Wnonnull-compare \
     -Wnull-dereference \
     -Wodr \
     -Wredundant-decls \

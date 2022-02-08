@@ -1,9 +1,9 @@
 [build]
 command = """\
   if cd doxygen-awesome-css; then \
-    git pull && cd ..; \
+    git pull --rebase && cd ..; \
   else \
-    git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css.git;
+    git clone --depth=1 https://github.com/jothepro/doxygen-awesome-css;
   fi && \
   doxygen docs/Doxyfile \
   """

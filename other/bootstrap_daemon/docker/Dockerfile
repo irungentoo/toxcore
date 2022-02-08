@@ -8,9 +8,9 @@ RUN ["apk", "--no-cache", "add",\
  "linux-headers",\
  "libconfig-dev",\
  "libconfig-static",\
- "msgpack-c-dev",\
  "libsodium-dev",\
  "libsodium-static",\
+ "msgpack-c-dev",\
  "ninja",\
  "python3"\
 ]
@@ -33,10 +33,11 @@ COPY CMakeLists.txt so.version ./
 
 RUN cmake -B_build -H. \
       -GNinja \
-      -DCMAKE_C_FLAGS=-DTCP_SERVER_USE_EPOLL \
-      -DMIN_LOGGER_LEVEL=DEBUG \
+      -DCMAKE_C_FLAGS="-DTCP_SERVER_USE_EPOLL -fstack-protector-all -fisolate-erroneous-paths-attribute" \
+      -DCMAKE_UNITY_BUILD=ON \
       -DCMAKE_BUILD_TYPE=Release \
       -DFULLY_STATIC=ON \
+      -DMIN_LOGGER_LEVEL=DEBUG \
       -DBUILD_TOXAV=OFF \
       -DBOOTSTRAP_DAEMON=ON && \
     cmake --build _build --target install
@@ -72,6 +73,10 @@ RUN useradd --home-dir /var/lib/tox-bootstrapd --create-home \
 WORKDIR /var/lib/tox-bootstrapd
 
 USER tox-bootstrapd
+
+# Smoke-test: make sure the binary actually starts up.
+# hadolint ignore=DL4006
+RUN script /usr/local/bin/tox-bootstrapd --help | grep "Usage"
 
 ENTRYPOINT ["/usr/local/bin/tox-bootstrapd",\
  "--config", "/etc/tox-bootstrapd.conf",\

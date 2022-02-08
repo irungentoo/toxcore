@@ -20,3 +20,5 @@ add_flag -Wno-unused-parameter
 # struct Foo foo = {0}; is a common idiom. Missing braces means we'd need to
 # write {{{0}}} in some cases, which is ugly and a maintenance burden.
 add_flag -Wno-missing-braces
+# __attribute__((nonnull)) causes this warning on defensive null checks.
+add_flag -Wno-nonnull-compare

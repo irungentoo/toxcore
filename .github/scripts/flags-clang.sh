@@ -35,6 +35,8 @@ add_flag -Wno-reserved-id-macro
 # TODO(iphydf): Clean these up. They are likely not bugs, but still
 # potential issues and probably confusing.
 add_flag -Wno-sign-compare
+# __attribute__((nonnull)) causes this warning on defensive null checks.
+add_flag -Wno-tautological-pointer-compare
 # Our use of mutexes results in a false positive, see 1bbe446.
 add_flag -Wno-thread-safety-analysis
 # File transfer code has this.

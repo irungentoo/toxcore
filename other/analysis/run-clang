@@ -26,6 +26,7 @@ run() {
     -Wno-old-style-cast \
     -Wno-padded \
     -Wno-sign-compare \
+    -Wno-tautological-pointer-compare \
     -Wno-unreachable-code-return \
     -Wno-unused-parameter \
     -Wno-used-but-marked-unused \
