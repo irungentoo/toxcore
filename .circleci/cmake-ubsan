@@ -8,7 +8,9 @@ CACHEDIR="$HOME/cache"
 add_flag -Werror
 add_flag -fdiagnostics-color=always
 add_flag -fno-omit-frame-pointer
-add_flag -fsanitize=address
+add_flag -fno-sanitize-recover=all
+add_flag -fsanitize=undefined,nullability,local-bounds,float-divide-by-zero,integer
+add_flag -fno-sanitize=implicit-conversion,unsigned-integer-overflow
 cmake -B_build -H. -GNinja \
   -DCMAKE_C_FLAGS="$C_FLAGS" \
   -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
@@ -28,10 +30,7 @@ cd _build
 
 ninja install -j"$(nproc)"
 
-export ASAN_OPTIONS="color=always"
-export ASAN_OPTIONS="$ASAN_OPTIONS,detect_invalid_pointer_pairs=1"
-export ASAN_OPTIONS="$ASAN_OPTIONS,detect_stack_use_after_return=1"
-export ASAN_OPTIONS="$ASAN_OPTIONS,strict_init_order=1"
-export ASAN_OPTIONS="$ASAN_OPTIONS,strict_string_checks=1"
-export ASAN_OPTIONS="$ASAN_OPTIONS,symbolize=1"
+export UBSAN_OPTIONS="color=always"
+export UBSAN_OPTIONS="$UBSAN_OPTIONS,print_stacktrace=1"
+export UBSAN_OPTIONS="$UBSAN_OPTIONS,symbolize=1"
 ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6

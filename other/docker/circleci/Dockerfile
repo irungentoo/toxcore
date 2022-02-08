@@ -7,6 +7,7 @@ RUN apt-get update && \
  clang \
  cmake \
  libconfig-dev \
+ libgtest-dev \
  libmsgpack-dev \
  libopus-dev \
  libsodium-dev \

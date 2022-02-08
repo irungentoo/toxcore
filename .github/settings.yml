@@ -36,6 +36,7 @@ branches:
           - "ci/circleci: msan"
           - "ci/circleci: static-analysis"
           - "ci/circleci: tsan"
+          - "ci/circleci: ubsan"
           - "cimple"
           - "code-review/reviewable"
           - "continuous-integration/appveyor/pr"

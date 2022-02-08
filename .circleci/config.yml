@@ -9,6 +9,7 @@ workflows:
       - asan
       - tsan
       - msan
+      - ubsan
       # Static analysis
       - clang-analyze
       - clang-tidy
@@ -51,6 +52,16 @@ jobs:
       - run: *apt_install
       - checkout
       - run: CC=clang .circleci/cmake-tsan
+
+  ubsan:
+    working_directory: ~/work
+    docker:
+      - image: ubuntu
+
+    steps:
+      - run: *apt_install
+      - checkout
+      - run: CC=clang .circleci/cmake-ubsan
 
   msan:
     working_directory: ~/work

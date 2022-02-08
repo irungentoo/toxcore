@@ -77,17 +77,19 @@ TEST(PingArray, ZeroLengthDataCanBeAdded) {
   Ping_Array_Ptr const arr(ping_array_new(2, 1));
   Mono_Time_Ptr const mono_time(mono_time_new());
 
-  uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), nullptr, 0);
+  uint8_t c = 0;
+  uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), &c, sizeof(c));
   EXPECT_NE(ping_id, 0);
 
-  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), nullptr, 0, ping_id), 0);
+  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), &c, sizeof(c), ping_id), 1);
 }
 
 TEST(PingArray, PingId0IsInvalid) {
   Ping_Array_Ptr const arr(ping_array_new(2, 1));
   Mono_Time_Ptr const mono_time(mono_time_new());
 
-  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), nullptr, 0, 0), -1);
+  uint8_t c = 0;
+  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), &c, sizeof(c), 0), -1);
 }
 
 // Protection against replay attacks.
@@ -95,26 +97,28 @@ TEST(PingArray, DataCanOnlyBeRetrievedOnce) {
   Ping_Array_Ptr const arr(ping_array_new(2, 1));
   Mono_Time_Ptr const mono_time(mono_time_new());
 
-  uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), nullptr, 0);
+  uint8_t c = 0;
+  uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), &c, sizeof(c));
   EXPECT_NE(ping_id, 0);
 
-  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), nullptr, 0, ping_id), 0);
-  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), nullptr, 0, ping_id), -1);
+  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), &c, sizeof(c), ping_id), 1);
+  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), &c, sizeof(c), ping_id), -1);
 }
 
 TEST(PingArray, PingIdMustMatchOnCheck) {
   Ping_Array_Ptr const arr(ping_array_new(1, 1));
   Mono_Time_Ptr const mono_time(mono_time_new());
 
-  uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), nullptr, 0);
+  uint8_t c = 0;
+  uint64_t const ping_id = ping_array_add(arr.get(), mono_time.get(), &c, sizeof(c));
   EXPECT_NE(ping_id, 0);
 
   uint64_t const bad_ping_id = ping_id == 1 ? 2 : 1;
 
   // bad_ping_id will also be pointing at the same element, but won't match the
   // actual ping_id.
-  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), nullptr, 0, bad_ping_id), -1);
-  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), nullptr, 0, ping_id), 0);
+  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), &c, sizeof(c), bad_ping_id), -1);
+  EXPECT_EQ(ping_array_check(arr.get(), mono_time.get(), &c, sizeof(c), ping_id), 1);
 }
 
 }  // namespace
