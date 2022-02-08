@@ -110,10 +110,10 @@
 
 typedef struct Net_Crypto Net_Crypto;
 
-const uint8_t *nc_get_self_public_key(const Net_Crypto *c);
-const uint8_t *nc_get_self_secret_key(const Net_Crypto *c);
-TCP_Connections *nc_get_tcp_c(const Net_Crypto *c);
-DHT *nc_get_dht(const Net_Crypto *c);
+non_null() const uint8_t *nc_get_self_public_key(const Net_Crypto *c);
+non_null() const uint8_t *nc_get_self_secret_key(const Net_Crypto *c);
+non_null() TCP_Connections *nc_get_tcp_c(const Net_Crypto *c);
+non_null() DHT *nc_get_dht(const Net_Crypto *c);
 
 typedef struct New_Connection {
     IP_Port source;
@@ -137,6 +137,7 @@ typedef int new_connection_cb(void *object, const New_Connection *n_c);
  *
  * n_c is only valid for the duration of the function call.
  */
+non_null()
 void new_connection_handler(Net_Crypto *c, new_connection_cb *new_connection_callback, void *object);
 
 /** Accept a crypto connection.
@@ -144,6 +145,7 @@ void new_connection_handler(Net_Crypto *c, new_connection_cb *new_connection_cal
  * return -1 on failure.
  * return connection id on success.
  */
+non_null()
 int accept_crypto_connection(Net_Crypto *c, const New_Connection *n_c);
 
 /** Create a crypto connection.
@@ -152,6 +154,7 @@ int accept_crypto_connection(Net_Crypto *c, const New_Connection *n_c);
  * return -1 on failure.
  * return connection id on success.
  */
+non_null()
 int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const uint8_t *dht_public_key);
 
 /** Set the direct ip of the crypto connection.
@@ -161,6 +164,7 @@ int new_crypto_connection(Net_Crypto *c, const uint8_t *real_public_key, const u
  * return -1 on failure.
  * return 0 on success.
  */
+non_null()
 int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, const IP_Port *ip_port, bool connected);
 
 /** Set function to be called when connection with crypt_connection_id goes connects/disconnects.
@@ -173,6 +177,7 @@ int set_direct_ip_port(Net_Crypto *c, int crypt_connection_id, const IP_Port *ip
  * return -1 on failure.
  * return 0 on success.
  */
+non_null()
 int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
                               connection_status_cb *connection_status_callback, void *object, int id);
 
@@ -184,6 +189,7 @@ int connection_status_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
+non_null()
 int connection_data_handler(const Net_Crypto *c, int crypt_connection_id,
                             connection_data_cb *connection_data_callback, void *object, int id);
 
@@ -196,6 +202,7 @@ int connection_data_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
+non_null()
 int connection_lossy_data_handler(const Net_Crypto *c, int crypt_connection_id,
                                   connection_lossy_data_cb *connection_lossy_data_callback, void *object, int id);
 
@@ -209,17 +216,20 @@ int connection_lossy_data_handler(const Net_Crypto *c, int crypt_connection_id,
  * return -1 on failure.
  * return 0 on success.
  */
-int nc_dht_pk_callback(const Net_Crypto *c, int crypt_connection_id, dht_pk_cb *function, void *object,
-                       uint32_t number);
+non_null()
+int nc_dht_pk_callback(const Net_Crypto *c, int crypt_connection_id,
+                       dht_pk_cb *function, void *object, uint32_t number);
 
 /** returns the number of packet slots left in the sendbuffer.
  * return 0 if failure.
  */
+non_null()
 uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connection_id);
 
 /** Return 1 if max speed was reached for this connection (no more data can be physically through the pipe).
  * Return 0 if it wasn't reached.
  */
+non_null()
 bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
 
 /** Sends a lossless cryptopacket.
@@ -231,8 +241,9 @@ bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
  *
  * congestion_control: should congestion control apply to this packet?
  */
-int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length,
-                          uint8_t congestion_control);
+non_null()
+int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id,
+                          const uint8_t *data, uint16_t length, uint8_t congestion_control);
 
 /** Check if packet_number was received by the other side.
  *
@@ -248,6 +259,7 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
  * It CANNOT be simplified to `packet_number < buffer_start`, as it will fail
  * when `buffer_end < buffer_start`.
  */
+non_null()
 int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t packet_number);
 
 /** Sends a lossy cryptopacket.
@@ -257,6 +269,7 @@ int cryptpacket_received(const Net_Crypto *c, int crypt_connection_id, uint32_t 
  *
  * The first byte of data must be in the PACKET_ID_RANGE_LOSSY.
  */
+non_null()
 int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length);
 
 /** Add a tcp relay, associating it to a crypt_connection_id.
@@ -264,13 +277,16 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
-int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, const IP_Port *ip_port, const uint8_t *public_key);
+non_null()
+int add_tcp_relay_peer(Net_Crypto *c, int crypt_connection_id, const IP_Port *ip_port,
+                       const uint8_t *public_key);
 
 /** Add a tcp relay to the array.
  *
  * return 0 if it was added.
  * return -1 if it wasn't.
  */
+non_null()
 int add_tcp_relay(Net_Crypto *c, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** Return a random TCP connection number for use in send_tcp_onion_request.
@@ -281,6 +297,7 @@ int add_tcp_relay(Net_Crypto *c, const IP_Port *ip_port, const uint8_t *public_k
  * return TCP connection number on success.
  * return -1 on failure.
  */
+non_null()
 int get_random_tcp_con_number(Net_Crypto *c);
 
 /** Send an onion packet via the TCP relay corresponding to tcp_connections_number.
@@ -288,7 +305,9 @@ int get_random_tcp_con_number(Net_Crypto *c);
  * return 0 on success.
  * return -1 on failure.
  */
-int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number, const uint8_t *data, uint16_t length);
+non_null()
+int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number,
+                           const uint8_t *data, uint16_t length);
 
 /** Copy a maximum of num TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
@@ -296,6 +315,7 @@ int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number, c
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
+non_null()
 unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
 
 /** Kill a crypto connection.
@@ -303,6 +323,7 @@ unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, u
  * return -1 on failure.
  * return 0 on success.
  */
+non_null()
 int crypto_kill(Net_Crypto *c, int crypt_connection_id);
 
 /** return true if connection is valid, false otherwise
@@ -310,12 +331,14 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
  * sets direct_connected to 1 if connection connects directly to other, 0 if it isn't.
  * sets online_tcp_relays to the number of connected tcp relays this connection has.
  */
-bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
-                              unsigned int *online_tcp_relays);
+non_null(1, 3) nullable(4)
+bool crypto_connection_status(
+    const Net_Crypto *c, int crypt_connection_id, bool *direct_connected, unsigned int *online_tcp_relays);
 
 /** Generate our public and private keys.
  *  Only call this function the first time the program starts.
  */
+non_null()
 void new_keys(Net_Crypto *c);
 
 /** Save the public and private keys to the keys array.
@@ -323,27 +346,30 @@ void new_keys(Net_Crypto *c);
  *
  * TODO(irungentoo): Save only secret key.
  */
+non_null()
 void save_keys(const Net_Crypto *c, uint8_t *keys);
 
 /** Load the secret key.
  * Length must be CRYPTO_SECRET_KEY_SIZE.
  */
+non_null()
 void load_secret_key(Net_Crypto *c, const uint8_t *sk);
 
 /** Create new instance of Net_Crypto.
  *  Sets all the global connection variables to their default values.
  */
+non_null()
 Net_Crypto *new_net_crypto(const Logger *log, Mono_Time *mono_time, DHT *dht, const TCP_Proxy_Info *proxy_info);
 
 /** return the optimal interval in ms for running do_net_crypto.
  */
+non_null()
 uint32_t crypto_run_interval(const Net_Crypto *c);
 
 /** Main loop. */
+non_null(1) nullable(2)
 void do_net_crypto(Net_Crypto *c, void *userdata);
 
-void kill_net_crypto(Net_Crypto *c);
-
-
+non_null() void kill_net_crypto(Net_Crypto *c);
 
 #endif

@@ -9,10 +9,17 @@ exports_files(
 )
 
 cc_library(
+    name = "attributes",
+    hdrs = ["attributes.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+)
+
+cc_library(
     name = "ccompat",
     srcs = ["ccompat.c"],
     hdrs = ["ccompat.h"],
     visibility = ["//c-toxcore:__subpackages__"],
+    deps = [":attributes"],
 )
 
 cc_library(

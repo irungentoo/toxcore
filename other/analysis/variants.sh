@@ -1,4 +1,4 @@
 #!/bin/bash
 
-run
-run -DVANILLA_NACL -I/usr/include/sodium
+run "$@"
+run -DVANILLA_NACL -I/usr/include/sodium "$@"

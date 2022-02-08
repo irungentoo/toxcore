@@ -28,17 +28,20 @@ struct Tox_Event_File_Chunk_Request {
     uint16_t length;
 };
 
+non_null()
 static void tox_event_file_chunk_request_construct(Tox_Event_File_Chunk_Request *file_chunk_request)
 {
     *file_chunk_request = (Tox_Event_File_Chunk_Request) {
         0
     };
 }
+non_null()
 static void tox_event_file_chunk_request_destruct(Tox_Event_File_Chunk_Request *file_chunk_request)
 {
     return;
 }
 
+non_null()
 static void tox_event_file_chunk_request_set_friend_number(Tox_Event_File_Chunk_Request *file_chunk_request,
         uint32_t friend_number)
 {
@@ -51,6 +54,7 @@ uint32_t tox_event_file_chunk_request_get_friend_number(const Tox_Event_File_Chu
     return file_chunk_request->friend_number;
 }
 
+non_null()
 static void tox_event_file_chunk_request_set_file_number(Tox_Event_File_Chunk_Request *file_chunk_request,
         uint32_t file_number)
 {
@@ -63,6 +67,7 @@ uint32_t tox_event_file_chunk_request_get_file_number(const Tox_Event_File_Chunk
     return file_chunk_request->file_number;
 }
 
+non_null()
 static void tox_event_file_chunk_request_set_position(Tox_Event_File_Chunk_Request *file_chunk_request,
         uint64_t position)
 {
@@ -75,6 +80,7 @@ uint64_t tox_event_file_chunk_request_get_position(const Tox_Event_File_Chunk_Re
     return file_chunk_request->position;
 }
 
+non_null()
 static void tox_event_file_chunk_request_set_length(Tox_Event_File_Chunk_Request *file_chunk_request, uint16_t length)
 {
     assert(file_chunk_request != nullptr);
@@ -86,6 +92,7 @@ uint16_t tox_event_file_chunk_request_get_length(const Tox_Event_File_Chunk_Requ
     return file_chunk_request->length;
 }
 
+non_null()
 static void tox_event_file_chunk_request_pack(
     const Tox_Event_File_Chunk_Request *event, msgpack_packer *mp)
 {
@@ -97,6 +104,7 @@ static void tox_event_file_chunk_request_pack(
     msgpack_pack_uint16(mp, event->length);
 }
 
+non_null()
 static bool tox_event_file_chunk_request_unpack(
     Tox_Event_File_Chunk_Request *event, const msgpack_object *obj)
 {
@@ -120,6 +128,7 @@ static bool tox_event_file_chunk_request_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_File_Chunk_Request *tox_events_add_file_chunk_request(Tox_Events *events)
 {
     if (events->file_chunk_request_size == UINT32_MAX) {

@@ -27,17 +27,20 @@ struct Tox_Event_Friend_Lossy_Packet {
     size_t data_length;
 };
 
+non_null()
 static void tox_event_friend_lossy_packet_construct(Tox_Event_Friend_Lossy_Packet *friend_lossy_packet)
 {
     *friend_lossy_packet = (Tox_Event_Friend_Lossy_Packet) {
         0
     };
 }
+non_null()
 static void tox_event_friend_lossy_packet_destruct(Tox_Event_Friend_Lossy_Packet *friend_lossy_packet)
 {
     free(friend_lossy_packet->data);
 }
 
+non_null()
 static void tox_event_friend_lossy_packet_set_friend_number(Tox_Event_Friend_Lossy_Packet *friend_lossy_packet,
         uint32_t friend_number)
 {
@@ -50,6 +53,7 @@ uint32_t tox_event_friend_lossy_packet_get_friend_number(const Tox_Event_Friend_
     return friend_lossy_packet->friend_number;
 }
 
+non_null()
 static bool tox_event_friend_lossy_packet_set_data(Tox_Event_Friend_Lossy_Packet *friend_lossy_packet,
         const uint8_t *data, size_t data_length)
 {
@@ -82,6 +86,7 @@ const uint8_t *tox_event_friend_lossy_packet_get_data(const Tox_Event_Friend_Los
     return friend_lossy_packet->data;
 }
 
+non_null()
 static void tox_event_friend_lossy_packet_pack(
     const Tox_Event_Friend_Lossy_Packet *event, msgpack_packer *mp)
 {
@@ -92,6 +97,7 @@ static void tox_event_friend_lossy_packet_pack(
     msgpack_pack_bin_body(mp, event->data, event->data_length);
 }
 
+non_null()
 static bool tox_event_friend_lossy_packet_unpack(
     Tox_Event_Friend_Lossy_Packet *event, const msgpack_object *obj)
 {
@@ -113,6 +119,7 @@ static bool tox_event_friend_lossy_packet_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Friend_Lossy_Packet *tox_events_add_friend_lossy_packet(Tox_Events *events)
 {
     if (events->friend_lossy_packet_size == UINT32_MAX) {

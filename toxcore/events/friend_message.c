@@ -28,17 +28,20 @@ struct Tox_Event_Friend_Message {
     size_t message_length;
 };
 
+non_null()
 static void tox_event_friend_message_construct(Tox_Event_Friend_Message *friend_message)
 {
     *friend_message = (Tox_Event_Friend_Message) {
         0
     };
 }
+non_null()
 static void tox_event_friend_message_destruct(Tox_Event_Friend_Message *friend_message)
 {
     free(friend_message->message);
 }
 
+non_null()
 static void tox_event_friend_message_set_friend_number(Tox_Event_Friend_Message *friend_message,
         uint32_t friend_number)
 {
@@ -51,6 +54,7 @@ uint32_t tox_event_friend_message_get_friend_number(const Tox_Event_Friend_Messa
     return friend_message->friend_number;
 }
 
+non_null()
 static void tox_event_friend_message_set_type(Tox_Event_Friend_Message *friend_message, Tox_Message_Type type)
 {
     assert(friend_message != nullptr);
@@ -62,6 +66,7 @@ Tox_Message_Type tox_event_friend_message_get_type(const Tox_Event_Friend_Messag
     return friend_message->type;
 }
 
+non_null()
 static bool tox_event_friend_message_set_message(Tox_Event_Friend_Message *friend_message, const uint8_t *message,
         size_t message_length)
 {
@@ -94,6 +99,7 @@ const uint8_t *tox_event_friend_message_get_message(const Tox_Event_Friend_Messa
     return friend_message->message;
 }
 
+non_null()
 static void tox_event_friend_message_pack(
     const Tox_Event_Friend_Message *event, msgpack_packer *mp)
 {
@@ -105,6 +111,7 @@ static void tox_event_friend_message_pack(
     msgpack_pack_bin_body(mp, event->message, event->message_length);
 }
 
+non_null()
 static bool tox_event_friend_message_unpack(
     Tox_Event_Friend_Message *event, const msgpack_object *obj)
 {
@@ -127,6 +134,7 @@ static bool tox_event_friend_message_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Friend_Message *tox_events_add_friend_message(Tox_Events *events)
 {
     if (events->friend_message_size == UINT32_MAX) {

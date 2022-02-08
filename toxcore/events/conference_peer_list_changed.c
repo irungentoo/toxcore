@@ -25,6 +25,7 @@ struct Tox_Event_Conference_Peer_List_Changed {
     uint32_t conference_number;
 };
 
+non_null()
 static void tox_event_conference_peer_list_changed_construct(Tox_Event_Conference_Peer_List_Changed
         *conference_peer_list_changed)
 {
@@ -32,12 +33,14 @@ static void tox_event_conference_peer_list_changed_construct(Tox_Event_Conferenc
         0
     };
 }
+non_null()
 static void tox_event_conference_peer_list_changed_destruct(Tox_Event_Conference_Peer_List_Changed
         *conference_peer_list_changed)
 {
     return;
 }
 
+non_null()
 static void tox_event_conference_peer_list_changed_set_conference_number(Tox_Event_Conference_Peer_List_Changed
         *conference_peer_list_changed, uint32_t conference_number)
 {
@@ -51,6 +54,7 @@ uint32_t tox_event_conference_peer_list_changed_get_conference_number(const Tox_
     return conference_peer_list_changed->conference_number;
 }
 
+non_null()
 static void tox_event_conference_peer_list_changed_pack(
     const Tox_Event_Conference_Peer_List_Changed *event, msgpack_packer *mp)
 {
@@ -59,6 +63,7 @@ static void tox_event_conference_peer_list_changed_pack(
     msgpack_pack_uint32(mp, event->conference_number);
 }
 
+non_null()
 static bool tox_event_conference_peer_list_changed_unpack(
     Tox_Event_Conference_Peer_List_Changed *event, const msgpack_object *obj)
 {
@@ -79,6 +84,7 @@ static bool tox_event_conference_peer_list_changed_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Conference_Peer_List_Changed *tox_events_add_conference_peer_list_changed(Tox_Events *events)
 {
     if (events->conference_peer_list_changed_size == UINT32_MAX) {

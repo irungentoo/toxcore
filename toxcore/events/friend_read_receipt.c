@@ -26,17 +26,20 @@ struct Tox_Event_Friend_Read_Receipt {
     uint32_t message_id;
 };
 
+non_null()
 static void tox_event_friend_read_receipt_construct(Tox_Event_Friend_Read_Receipt *friend_read_receipt)
 {
     *friend_read_receipt = (Tox_Event_Friend_Read_Receipt) {
         0
     };
 }
+non_null()
 static void tox_event_friend_read_receipt_destruct(Tox_Event_Friend_Read_Receipt *friend_read_receipt)
 {
     return;
 }
 
+non_null()
 static void tox_event_friend_read_receipt_set_friend_number(Tox_Event_Friend_Read_Receipt *friend_read_receipt,
         uint32_t friend_number)
 {
@@ -49,6 +52,7 @@ uint32_t tox_event_friend_read_receipt_get_friend_number(const Tox_Event_Friend_
     return friend_read_receipt->friend_number;
 }
 
+non_null()
 static void tox_event_friend_read_receipt_set_message_id(Tox_Event_Friend_Read_Receipt *friend_read_receipt,
         uint32_t message_id)
 {
@@ -61,6 +65,7 @@ uint32_t tox_event_friend_read_receipt_get_message_id(const Tox_Event_Friend_Rea
     return friend_read_receipt->message_id;
 }
 
+non_null()
 static void tox_event_friend_read_receipt_pack(
     const Tox_Event_Friend_Read_Receipt *event, msgpack_packer *mp)
 {
@@ -70,6 +75,7 @@ static void tox_event_friend_read_receipt_pack(
     msgpack_pack_uint32(mp, event->message_id);
 }
 
+non_null()
 static bool tox_event_friend_read_receipt_unpack(
     Tox_Event_Friend_Read_Receipt *event, const msgpack_object *obj)
 {
@@ -91,6 +97,7 @@ static bool tox_event_friend_read_receipt_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Friend_Read_Receipt *tox_events_add_friend_read_receipt(Tox_Events *events)
 {
     if (events->friend_read_receipt_size == UINT32_MAX) {

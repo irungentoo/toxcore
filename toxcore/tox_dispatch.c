@@ -161,6 +161,7 @@ void tox_events_callback_self_connection_status(
     dispatch->self_connection_status_callback = callback;
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_conference_connected(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -174,6 +175,7 @@ static void tox_dispatch_invoke_conference_connected(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_conference_invite(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -187,6 +189,7 @@ static void tox_dispatch_invoke_conference_invite(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_conference_message(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -200,6 +203,7 @@ static void tox_dispatch_invoke_conference_message(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_conference_peer_list_changed(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -213,6 +217,7 @@ static void tox_dispatch_invoke_conference_peer_list_changed(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_conference_peer_name(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -226,6 +231,7 @@ static void tox_dispatch_invoke_conference_peer_name(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_conference_title(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -239,6 +245,7 @@ static void tox_dispatch_invoke_conference_title(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_file_chunk_request(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -252,6 +259,7 @@ static void tox_dispatch_invoke_file_chunk_request(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_file_recv(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -265,6 +273,7 @@ static void tox_dispatch_invoke_file_recv(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_file_recv_chunk(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -278,6 +287,7 @@ static void tox_dispatch_invoke_file_recv_chunk(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_file_recv_control(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -291,6 +301,7 @@ static void tox_dispatch_invoke_file_recv_control(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_connection_status(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -304,6 +315,7 @@ static void tox_dispatch_invoke_friend_connection_status(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_lossless_packet(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -317,6 +329,7 @@ static void tox_dispatch_invoke_friend_lossless_packet(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_lossy_packet(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -330,6 +343,7 @@ static void tox_dispatch_invoke_friend_lossy_packet(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_message(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -343,6 +357,7 @@ static void tox_dispatch_invoke_friend_message(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_name(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -356,6 +371,7 @@ static void tox_dispatch_invoke_friend_name(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_read_receipt(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -369,6 +385,7 @@ static void tox_dispatch_invoke_friend_read_receipt(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_request(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -382,6 +399,7 @@ static void tox_dispatch_invoke_friend_request(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_status(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -395,6 +413,7 @@ static void tox_dispatch_invoke_friend_status(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_status_message(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -408,6 +427,7 @@ static void tox_dispatch_invoke_friend_status_message(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_friend_typing(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {
@@ -421,6 +441,7 @@ static void tox_dispatch_invoke_friend_typing(
     }
 }
 
+non_null(1, 3) nullable(2, 4)
 static void tox_dispatch_invoke_self_connection_status(
     const Tox_Dispatch *dispatch, const Tox_Events *events, Tox *tox, void *user_data)
 {

@@ -8,10 +8,11 @@
 #ifndef C_TOXCORE_TOXCORE_CCOMPAT_H
 #define C_TOXCORE_TOXCORE_CCOMPAT_H
 
-#include <stdbool.h>
 #include <stdint.h>
 
-bool unused_for_tokstyle(void);
+#include "attributes.h"
+
+/* No declarations here. */
 
 //!TOKSTYLE-
 
@@ -63,13 +64,9 @@ bool unused_for_tokstyle(void);
 
 #ifdef __GNUC__
 #define GNU_PRINTF(f, a) __attribute__((__format__(__printf__, f, a)))
-#define non_null(...) __attribute__((__nonnull__(__VA_ARGS__)))
 #else
 #define GNU_PRINTF(f, a)
-#define non_null(...)
 #endif
-
-#define nullable(...)
 
 //!TOKSTYLE+
 

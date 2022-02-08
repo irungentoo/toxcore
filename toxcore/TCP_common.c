@@ -10,7 +10,7 @@
 
 void wipe_priority_list(TCP_Priority_List *p)
 {
-    while (p) {
+    while (p != nullptr) {
         TCP_Priority_List *pp = p;
         p = p->next;
         free(pp->data);
@@ -214,6 +214,7 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
  * return 0 if nothing has been read from socket.
  * return -1 on failure.
  */
+non_null()
 static uint16_t read_TCP_length(const Logger *logger, Socket sock, const IP_Port *ip_port)
 {
     const uint16_t count = net_socket_data_recv_buffer(sock);

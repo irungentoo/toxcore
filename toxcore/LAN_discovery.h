@@ -23,21 +23,25 @@ typedef struct Broadcast_Info Broadcast_Info;
  *
  * @return true on success, false on failure.
  */
-bool lan_discovery_send(Networking_Core *net, Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port);
+non_null()
+bool lan_discovery_send(Networking_Core *net, const Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port);
 
 /**
  * Sets up packet handlers.
  */
+non_null()
 Broadcast_Info *lan_discovery_init(DHT *dht);
 
 /**
  * Clear packet handlers.
  */
+non_null()
 void lan_discovery_kill(DHT *dht, Broadcast_Info *info);
 
 /**
  * Is IP a local ip or not.
  */
+non_null()
 bool ip_is_local(const IP *ip);
 
 /**
@@ -45,6 +49,7 @@ bool ip_is_local(const IP *ip);
  *
  * @return true if ip is a LAN ip, false if it is not.
  */
+non_null()
 bool ip_is_lan(const IP *ip);
 
 #endif // C_TOXCORE_TOXCORE_LAN_DISCOVERY_H

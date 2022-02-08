@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "attributes.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,28 +46,32 @@ extern "C" {
 typedef struct Mono_Time Mono_Time;
 
 Mono_Time *mono_time_new(void);
-void mono_time_free(Mono_Time *mono_time);
+non_null() void mono_time_free(Mono_Time *mono_time);
 
 /**
  * Update mono_time; subsequent calls to mono_time_get or mono_time_is_timeout
  * will use the time at the call to mono_time_update.
  */
+non_null()
 void mono_time_update(Mono_Time *mono_time);
 
 /**
  * Return unix time since epoch in seconds.
  */
+non_null()
 uint64_t mono_time_get(const Mono_Time *mono_time);
 
 /**
  * Return true iff timestamp is at least timeout seconds in the past.
  */
+non_null()
 bool mono_time_is_timeout(const Mono_Time *mono_time, uint64_t timestamp, uint64_t timeout);
 
 /**
  * Return current monotonic time in milliseconds (ms). The starting point is
  * unspecified.
  */
+non_null()
 uint64_t current_time_monotonic(Mono_Time *mono_time);
 
 typedef uint64_t mono_time_current_time_cb(Mono_Time *mono_time, void *user_data);
@@ -76,6 +82,7 @@ typedef uint64_t mono_time_current_time_cb(Mono_Time *mono_time, void *user_data
  * The caller is obligated to ensure that current_time_monotonic() continues
  * to increase monotonically.
  */
+non_null(1) nullable(2, 3)
 void mono_time_set_current_time_callback(Mono_Time *mono_time,
         mono_time_current_time_cb *current_time_callback, void *user_data);
 

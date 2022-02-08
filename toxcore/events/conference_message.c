@@ -29,17 +29,20 @@ struct Tox_Event_Conference_Message {
     size_t message_length;
 };
 
+non_null()
 static void tox_event_conference_message_construct(Tox_Event_Conference_Message *conference_message)
 {
     *conference_message = (Tox_Event_Conference_Message) {
         0
     };
 }
+non_null()
 static void tox_event_conference_message_destruct(Tox_Event_Conference_Message *conference_message)
 {
     free(conference_message->message);
 }
 
+non_null()
 static void tox_event_conference_message_set_conference_number(Tox_Event_Conference_Message *conference_message,
         uint32_t conference_number)
 {
@@ -52,6 +55,7 @@ uint32_t tox_event_conference_message_get_conference_number(const Tox_Event_Conf
     return conference_message->conference_number;
 }
 
+non_null()
 static void tox_event_conference_message_set_peer_number(Tox_Event_Conference_Message *conference_message,
         uint32_t peer_number)
 {
@@ -64,6 +68,7 @@ uint32_t tox_event_conference_message_get_peer_number(const Tox_Event_Conference
     return conference_message->peer_number;
 }
 
+non_null()
 static void tox_event_conference_message_set_type(Tox_Event_Conference_Message *conference_message,
         Tox_Message_Type type)
 {
@@ -76,6 +81,7 @@ Tox_Message_Type tox_event_conference_message_get_type(const Tox_Event_Conferenc
     return conference_message->type;
 }
 
+non_null()
 static bool tox_event_conference_message_set_message(Tox_Event_Conference_Message *conference_message,
         const uint8_t *message, size_t message_length)
 {
@@ -108,6 +114,7 @@ const uint8_t *tox_event_conference_message_get_message(const Tox_Event_Conferen
     return conference_message->message;
 }
 
+non_null()
 static void tox_event_conference_message_pack(
     const Tox_Event_Conference_Message *event, msgpack_packer *mp)
 {
@@ -120,6 +127,7 @@ static void tox_event_conference_message_pack(
     msgpack_pack_bin_body(mp, event->message, event->message_length);
 }
 
+non_null()
 static bool tox_event_conference_message_unpack(
     Tox_Event_Conference_Message *event, const msgpack_object *obj)
 {
@@ -143,6 +151,7 @@ static bool tox_event_conference_message_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Conference_Message *tox_events_add_conference_message(Tox_Events *events)
 {
     if (events->conference_message_size == UINT32_MAX) {

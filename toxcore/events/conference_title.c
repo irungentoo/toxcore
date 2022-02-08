@@ -28,17 +28,20 @@ struct Tox_Event_Conference_Title {
     size_t title_length;
 };
 
+non_null()
 static void tox_event_conference_title_construct(Tox_Event_Conference_Title *conference_title)
 {
     *conference_title = (Tox_Event_Conference_Title) {
         0
     };
 }
+non_null()
 static void tox_event_conference_title_destruct(Tox_Event_Conference_Title *conference_title)
 {
     free(conference_title->title);
 }
 
+non_null()
 static void tox_event_conference_title_set_conference_number(Tox_Event_Conference_Title *conference_title,
         uint32_t conference_number)
 {
@@ -51,6 +54,7 @@ uint32_t tox_event_conference_title_get_conference_number(const Tox_Event_Confer
     return conference_title->conference_number;
 }
 
+non_null()
 static void tox_event_conference_title_set_peer_number(Tox_Event_Conference_Title *conference_title,
         uint32_t peer_number)
 {
@@ -63,6 +67,7 @@ uint32_t tox_event_conference_title_get_peer_number(const Tox_Event_Conference_T
     return conference_title->peer_number;
 }
 
+non_null()
 static bool tox_event_conference_title_set_title(Tox_Event_Conference_Title *conference_title, const uint8_t *title,
         size_t title_length)
 {
@@ -95,6 +100,7 @@ const uint8_t *tox_event_conference_title_get_title(const Tox_Event_Conference_T
     return conference_title->title;
 }
 
+non_null()
 static void tox_event_conference_title_pack(
     const Tox_Event_Conference_Title *event, msgpack_packer *mp)
 {
@@ -106,6 +112,7 @@ static void tox_event_conference_title_pack(
     msgpack_pack_bin_body(mp, event->title, event->title_length);
 }
 
+non_null()
 static bool tox_event_conference_title_unpack(
     Tox_Event_Conference_Title *event, const msgpack_object *obj)
 {
@@ -128,6 +135,7 @@ static bool tox_event_conference_title_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Conference_Title *tox_events_add_conference_title(Tox_Events *events)
 {
     if (events->conference_title_size == UINT32_MAX) {

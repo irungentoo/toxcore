@@ -286,7 +286,9 @@ int main(void)
     options.port_range[0] = 41234;
     options.port_range[1] = 44234;
     options.log_callback = (logger_cb *)print_debug_log;
-    m = new_messenger(mono_time, &options, nullptr);
+    unsigned int err;
+    m = new_messenger(mono_time, &options, &err);
+    ck_assert(err == MESSENGER_ERROR_NONE);
 
     /* setup a default friend and friendnum */
     if (m_addfriend_norequest(m, friend_id) < 0) {

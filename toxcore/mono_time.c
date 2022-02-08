@@ -56,6 +56,7 @@ struct Mono_Time {
     void *user_data;
 };
 
+non_null(1) nullable(2)
 static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_data)
 {
     uint64_t time = 0;
@@ -106,6 +107,7 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
 
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+non_null(1) nullable(2)
 static uint64_t current_time_monotonic_dummy(Mono_Time *mono_time, void *user_data)
 {
     return fuzz_get_count();

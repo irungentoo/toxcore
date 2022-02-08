@@ -40,6 +40,7 @@ list_index(uint32_t i)
  *  < 0  : no match, returns index (return value is list_index(index)) where
  *         the data should be inserted
  */
+non_null()
 static int find(const BS_List *list, const uint8_t *data)
 {
     // should work well, but could be improved
@@ -105,6 +106,7 @@ static int find(const BS_List *list, const uint8_t *data)
  *
  * @return true on success.
  */
+non_null()
 static bool resize(BS_List *list, uint32_t new_size)
 {
     if (new_size == 0) {

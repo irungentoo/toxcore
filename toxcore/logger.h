@@ -39,12 +39,14 @@ Logger *logger_new(void);
 /**
  * Frees all resources associated with the logger.
  */
+non_null()
 void logger_kill(Logger *log);
 
 /**
  * Sets the logger callback. Disables logging if set to NULL.
  * The context parameter is passed to the callback as first argument.
  */
+non_null(1) nullable(2, 3, 4)
 void logger_callback_log(Logger *log, logger_cb *function, void *context, void *userdata);
 
 /**
@@ -57,6 +59,7 @@ void logger_callback_log(Logger *log, logger_cb *function, void *context, void *
  * be built with -DUSE_STDERR_LOGGER for this to work. It will cause an
  * assertion failure otherwise.
  */
+non_null()
 void logger_write(
     const Logger *log, Logger_Level level, const char *file, int line, const char *func,
     const char *format, ...) GNU_PRINTF(6, 7);

@@ -11,6 +11,7 @@ WORKDIR /work
 COPY . /work/
 RUN cat docs/Doxyfile > Doxyfile \
  && echo "WARN_AS_ERROR = YES" >> Doxyfile \
+ && sed -i -e 's/^non_null([^)]*) *//;s/^nullable([^)]*) *//' $(find . -name "*.[ch]") \
  && doxygen Doxyfile
 
 FROM nginx:alpine

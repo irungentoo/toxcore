@@ -29,17 +29,20 @@ struct Tox_Event_File_Recv_Chunk {
     size_t data_length;
 };
 
+non_null()
 static void tox_event_file_recv_chunk_construct(Tox_Event_File_Recv_Chunk *file_recv_chunk)
 {
     *file_recv_chunk = (Tox_Event_File_Recv_Chunk) {
         0
     };
 }
+non_null()
 static void tox_event_file_recv_chunk_destruct(Tox_Event_File_Recv_Chunk *file_recv_chunk)
 {
     free(file_recv_chunk->data);
 }
 
+non_null()
 static void tox_event_file_recv_chunk_set_friend_number(Tox_Event_File_Recv_Chunk *file_recv_chunk,
         uint32_t friend_number)
 {
@@ -52,6 +55,7 @@ uint32_t tox_event_file_recv_chunk_get_friend_number(const Tox_Event_File_Recv_C
     return file_recv_chunk->friend_number;
 }
 
+non_null()
 static void tox_event_file_recv_chunk_set_file_number(Tox_Event_File_Recv_Chunk *file_recv_chunk,
         uint32_t file_number)
 {
@@ -64,6 +68,7 @@ uint32_t tox_event_file_recv_chunk_get_file_number(const Tox_Event_File_Recv_Chu
     return file_recv_chunk->file_number;
 }
 
+non_null()
 static void tox_event_file_recv_chunk_set_position(Tox_Event_File_Recv_Chunk *file_recv_chunk,
         uint32_t position)
 {
@@ -76,6 +81,7 @@ uint32_t tox_event_file_recv_chunk_get_position(const Tox_Event_File_Recv_Chunk 
     return file_recv_chunk->position;
 }
 
+non_null()
 static bool tox_event_file_recv_chunk_set_data(Tox_Event_File_Recv_Chunk *file_recv_chunk, const uint8_t *data,
         size_t data_length)
 {
@@ -108,6 +114,7 @@ const uint8_t *tox_event_file_recv_chunk_get_data(const Tox_Event_File_Recv_Chun
     return file_recv_chunk->data;
 }
 
+non_null()
 static void tox_event_file_recv_chunk_pack(
     const Tox_Event_File_Recv_Chunk *event, msgpack_packer *mp)
 {
@@ -120,6 +127,7 @@ static void tox_event_file_recv_chunk_pack(
     msgpack_pack_bin_body(mp, event->data, event->data_length);
 }
 
+non_null()
 static bool tox_event_file_recv_chunk_unpack(
     Tox_Event_File_Recv_Chunk *event, const msgpack_object *obj)
 {
@@ -143,6 +151,7 @@ static bool tox_event_file_recv_chunk_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_File_Recv_Chunk *tox_events_add_file_recv_chunk(Tox_Events *events)
 {
     if (events->file_recv_chunk_size == UINT32_MAX) {

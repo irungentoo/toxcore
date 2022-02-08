@@ -26,17 +26,20 @@ struct Tox_Event_Friend_Connection_Status {
     Tox_Connection connection_status;
 };
 
+non_null()
 static void tox_event_friend_connection_status_construct(Tox_Event_Friend_Connection_Status *friend_connection_status)
 {
     *friend_connection_status = (Tox_Event_Friend_Connection_Status) {
         0
     };
 }
+non_null()
 static void tox_event_friend_connection_status_destruct(Tox_Event_Friend_Connection_Status *friend_connection_status)
 {
     return;
 }
 
+non_null()
 static void tox_event_friend_connection_status_set_friend_number(Tox_Event_Friend_Connection_Status
         *friend_connection_status, uint32_t friend_number)
 {
@@ -50,6 +53,7 @@ uint32_t tox_event_friend_connection_status_get_friend_number(const Tox_Event_Fr
     return friend_connection_status->friend_number;
 }
 
+non_null()
 static void tox_event_friend_connection_status_set_connection_status(Tox_Event_Friend_Connection_Status
         *friend_connection_status, Tox_Connection connection_status)
 {
@@ -63,6 +67,7 @@ Tox_Connection tox_event_friend_connection_status_get_connection_status(const To
     return friend_connection_status->connection_status;
 }
 
+non_null()
 static void tox_event_friend_connection_status_pack(
     const Tox_Event_Friend_Connection_Status *event, msgpack_packer *mp)
 {
@@ -72,6 +77,7 @@ static void tox_event_friend_connection_status_pack(
     msgpack_pack_uint32(mp, event->connection_status);
 }
 
+non_null()
 static bool tox_event_friend_connection_status_unpack(
     Tox_Event_Friend_Connection_Status *event, const msgpack_object *obj)
 {
@@ -93,6 +99,7 @@ static bool tox_event_friend_connection_status_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Friend_Connection_Status *tox_events_add_friend_connection_status(Tox_Events *events)
 {
     if (events->friend_connection_status_size == UINT32_MAX) {

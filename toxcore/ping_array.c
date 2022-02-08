@@ -62,6 +62,7 @@ Ping_Array *ping_array_new(uint32_t size, uint32_t timeout)
     return empty_array;
 }
 
+non_null()
 static void clear_entry(Ping_Array *array, uint32_t index)
 {
     const Ping_Array_Entry empty = {nullptr};
@@ -87,6 +88,7 @@ void ping_array_kill(Ping_Array *array)
 
 /** Clear timed out entries.
  */
+non_null()
 static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_time)
 {
     while (array->last_deleted != array->last_added) {

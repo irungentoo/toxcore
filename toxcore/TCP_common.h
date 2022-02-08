@@ -17,6 +17,7 @@ struct TCP_Priority_List {
     uint8_t *data;
 };
 
+nullable(1)
 void wipe_priority_list(TCP_Priority_List *p);
 
 #define NUM_RESERVED_PORTS 16
@@ -60,22 +61,26 @@ typedef struct TCP_Connection {
 /** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
+non_null()
 int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con);
 
 /** return 0 if pending data was sent completely
  * return -1 if it wasn't
  */
+non_null()
 int send_pending_data(const Logger *logger, TCP_Connection *con);
 
 /** return 0 on failure (only if calloc fails)
  * return 1 on success
  */
+non_null()
 bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent);
 
 /** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
+non_null()
 int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
                                        bool priority);
 
@@ -84,12 +89,14 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
  * return length on success
  * return -1 on failure/no data in buffer.
  */
+non_null()
 int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port);
 
 /** return length of received packet on success.
  * return 0 if could not read any packet.
  * return -1 on failure (connection must be killed).
  */
+non_null()
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
                                       const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,
                                       uint16_t max_len, const IP_Port *ip_port);

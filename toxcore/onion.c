@@ -25,6 +25,7 @@
 
 #define KEY_REFRESH_INTERVAL (2 * 60 * 60)
 /** Change symmetric keys every 2 hours to make paths expire eventually. */
+non_null()
 static void change_symmetric_key(Onion *onion)
 {
     if (mono_time_is_timeout(onion->mono_time, onion->timestamp, KEY_REFRESH_INTERVAL)) {
@@ -34,6 +35,7 @@ static void change_symmetric_key(Onion *onion)
 }
 
 /** packing and unpacking functions */
+non_null()
 static void ip_pack(uint8_t *data, const IP *source)
 {
     data[0] = source->family.value;
@@ -47,6 +49,7 @@ static void ip_pack(uint8_t *data, const IP *source)
 }
 
 /** return 0 on success, -1 on failure. */
+non_null()
 static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (1 + SIZE_IP6)) {
@@ -69,6 +72,7 @@ static int ip_unpack(IP *target, const uint8_t *data, unsigned int data_size, bo
     return valid ? 0 : -1;
 }
 
+non_null()
 static void ipport_pack(uint8_t *data, const IP_Port *source)
 {
     ip_pack(data, &source->ip);
@@ -76,6 +80,7 @@ static void ipport_pack(uint8_t *data, const IP_Port *source)
 }
 
 /** return 0 on success, -1 on failure. */
+non_null()
 static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data_size, bool disable_family_check)
 {
     if (data_size < (SIZE_IP + SIZE_PORT)) {
@@ -312,6 +317,7 @@ int send_onion_response(const Networking_Core *net, const IP_Port *dest, const u
     return 0;
 }
 
+non_null()
 static int handle_send_initial(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                                void *userdata)
 {
@@ -383,6 +389,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, const I
     return 0;
 }
 
+non_null()
 static int handle_send_1(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
@@ -440,6 +447,7 @@ static int handle_send_1(void *object, const IP_Port *source, const uint8_t *pac
     return 0;
 }
 
+non_null()
 static int handle_send_2(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
@@ -506,6 +514,7 @@ static int handle_send_2(void *object, const IP_Port *source, const uint8_t *pac
 }
 
 
+non_null()
 static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
@@ -553,6 +562,7 @@ static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *pac
     return 0;
 }
 
+non_null()
 static int handle_recv_2(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;
@@ -600,6 +610,7 @@ static int handle_recv_2(void *object, const IP_Port *source, const uint8_t *pac
     return 0;
 }
 
+non_null()
 static int handle_recv_1(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     Onion *onion = (Onion *)object;

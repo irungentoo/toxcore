@@ -44,6 +44,7 @@ static const char *logger_level_name(Logger_Level level)
     return "<unknown>";
 }
 
+non_null(1, 3, 5, 6) nullable(7)
 static void logger_stderr_handler(void *context, Logger_Level level, const char *file, int line, const char *func,
                                   const char *message, void *userdata)
 {

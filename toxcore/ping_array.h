@@ -33,6 +33,7 @@ struct Ping_Array *ping_array_new(uint32_t size, uint32_t timeout);
 /**
  * @brief Free all the allocated memory in a @ref Ping_Array.
  */
+non_null()
 void ping_array_kill(struct Ping_Array *array);
 
 /**
@@ -40,6 +41,7 @@ void ping_array_kill(struct Ping_Array *array);
  *
  * @return ping_id on success, 0 on failure.
  */
+non_null()
 uint64_t ping_array_add(struct Ping_Array *array, const struct Mono_Time *mono_time, const uint8_t *data,
                         uint32_t length);
 
@@ -50,6 +52,7 @@ uint64_t ping_array_add(struct Ping_Array *array, const struct Mono_Time *mono_t
  *
  * @return length of data copied on success, -1 on failure.
  */
+non_null()
 int32_t ping_array_check(struct Ping_Array *array, const struct Mono_Time *mono_time, uint8_t *data, size_t length,
                          uint64_t ping_id);
 

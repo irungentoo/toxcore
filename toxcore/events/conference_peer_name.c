@@ -28,17 +28,20 @@ struct Tox_Event_Conference_Peer_Name {
     size_t name_length;
 };
 
+non_null()
 static void tox_event_conference_peer_name_construct(Tox_Event_Conference_Peer_Name *conference_peer_name)
 {
     *conference_peer_name = (Tox_Event_Conference_Peer_Name) {
         0
     };
 }
+non_null()
 static void tox_event_conference_peer_name_destruct(Tox_Event_Conference_Peer_Name *conference_peer_name)
 {
     free(conference_peer_name->name);
 }
 
+non_null()
 static void tox_event_conference_peer_name_set_conference_number(Tox_Event_Conference_Peer_Name *conference_peer_name,
         uint32_t conference_number)
 {
@@ -52,6 +55,7 @@ uint32_t tox_event_conference_peer_name_get_conference_number(const Tox_Event_Co
     return conference_peer_name->conference_number;
 }
 
+non_null()
 static void tox_event_conference_peer_name_set_peer_number(Tox_Event_Conference_Peer_Name *conference_peer_name,
         uint32_t peer_number)
 {
@@ -64,6 +68,7 @@ uint32_t tox_event_conference_peer_name_get_peer_number(const Tox_Event_Conferen
     return conference_peer_name->peer_number;
 }
 
+non_null()
 static bool tox_event_conference_peer_name_set_name(Tox_Event_Conference_Peer_Name *conference_peer_name,
         const uint8_t *name, size_t name_length)
 {
@@ -96,6 +101,7 @@ const uint8_t *tox_event_conference_peer_name_get_name(const Tox_Event_Conferenc
     return conference_peer_name->name;
 }
 
+non_null()
 static void tox_event_conference_peer_name_pack(
     const Tox_Event_Conference_Peer_Name *event, msgpack_packer *mp)
 {
@@ -107,6 +113,7 @@ static void tox_event_conference_peer_name_pack(
     msgpack_pack_bin_body(mp, event->name, event->name_length);
 }
 
+non_null()
 static bool tox_event_conference_peer_name_unpack(
     Tox_Event_Conference_Peer_Name *event, const msgpack_object *obj)
 {
@@ -129,6 +136,7 @@ static bool tox_event_conference_peer_name_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Conference_Peer_Name *tox_events_add_conference_peer_name(Tox_Events *events)
 {
     if (events->conference_peer_name_size == UINT32_MAX) {

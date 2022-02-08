@@ -25,17 +25,20 @@ struct Tox_Event_Conference_Connected {
     uint32_t conference_number;
 };
 
+non_null()
 static void tox_event_conference_connected_construct(Tox_Event_Conference_Connected *conference_connected)
 {
     *conference_connected = (Tox_Event_Conference_Connected) {
         0
     };
 }
+non_null()
 static void tox_event_conference_connected_destruct(Tox_Event_Conference_Connected *conference_connected)
 {
     return;
 }
 
+non_null()
 static void tox_event_conference_connected_set_conference_number(
     Tox_Event_Conference_Connected *conference_connected, uint32_t conference_number)
 {
@@ -49,6 +52,7 @@ uint32_t tox_event_conference_connected_get_conference_number(
     return conference_connected->conference_number;
 }
 
+non_null()
 static void tox_event_conference_connected_pack(
     const Tox_Event_Conference_Connected *event, msgpack_packer *mp)
 {
@@ -57,6 +61,7 @@ static void tox_event_conference_connected_pack(
     msgpack_pack_uint32(mp, event->conference_number);
 }
 
+non_null()
 static bool tox_event_conference_connected_unpack(
     Tox_Event_Conference_Connected *event, const msgpack_object *obj)
 {
@@ -77,6 +82,7 @@ static bool tox_event_conference_connected_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Conference_Connected *tox_events_add_conference_connected(Tox_Events *events)
 {
     if (events->conference_connected_size == UINT32_MAX) {

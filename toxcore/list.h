@@ -13,6 +13,8 @@
 
 #include <stdint.h>
 
+#include "attributes.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,9 +34,11 @@ typedef struct BS_List {
  *  1 : success
  *  0 : failure
  */
+non_null()
 int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity);
 
 /** Free a list initiated with list_init */
+non_null()
 void bs_list_free(BS_List *list);
 
 /** Retrieve the id of an element in the list
@@ -43,6 +47,7 @@ void bs_list_free(BS_List *list);
  *  >= 0 : id associated with data
  *  -1   : failure
  */
+non_null()
 int bs_list_find(const BS_List *list, const uint8_t *data);
 
 /** Add an element with associated id to the list
@@ -51,6 +56,7 @@ int bs_list_find(const BS_List *list, const uint8_t *data);
  *  1 : success
  *  0 : failure (data already in list)
  */
+non_null()
 int bs_list_add(BS_List *list, const uint8_t *data, int id);
 
 /** Remove element from the list
@@ -59,6 +65,7 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id);
  *  1 : success
  *  0 : failure (element not found or id does not match)
  */
+non_null()
 int bs_list_remove(BS_List *list, const uint8_t *data, int id);
 
 #ifdef __cplusplus

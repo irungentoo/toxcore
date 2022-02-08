@@ -90,6 +90,7 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
 }
 
+non_null()
 static int ping_send_response(const Ping *ping, const IP_Port *ipp, const uint8_t *public_key,
                               uint64_t ping_id, const uint8_t *shared_encryption_key)
 {
@@ -120,6 +121,7 @@ static int ping_send_response(const Ping *ping, const IP_Port *ipp, const uint8_
     return sendpacket(dht_get_net(ping->dht), ipp, pk, sizeof(pk));
 }
 
+non_null()
 static int handle_ping_request(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                                void *userdata)
 {
@@ -167,6 +169,7 @@ static int handle_ping_request(void *object, const IP_Port *source, const uint8_
     return 0;
 }
 
+non_null()
 static int handle_ping_response(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                                 void *userdata)
 {
@@ -234,6 +237,7 @@ static int handle_ping_response(void *object, const IP_Port *source, const uint8
  * return 1 if it is.
  * return 0 if it isn't.
  */
+non_null()
 static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mono_time, const uint8_t *public_key,
                    const IP_Port *ip_port)
 {

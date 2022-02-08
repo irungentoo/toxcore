@@ -17,8 +17,10 @@
 
 typedef struct Ping Ping;
 
+non_null()
 Ping *ping_new(const struct Mono_Time *mono_time, DHT *dht);
 
+non_null()
 void ping_kill(Ping *ping);
 
 /** Add nodes to the to_ping list.
@@ -31,10 +33,13 @@ void ping_kill(Ping *ping);
  *  return 0 if node was added.
  *  return -1 if node was not added.
  */
+non_null()
 int32_t ping_add(Ping *ping, const uint8_t *public_key, const IP_Port *ip_port);
 
+non_null()
 void ping_iterate(Ping *ping);
 
+non_null()
 void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key);
 
 #endif // C_TOXCORE_TOXCORE_PING_H

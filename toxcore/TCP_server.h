@@ -27,20 +27,25 @@ typedef enum TCP_Status {
 
 typedef struct TCP_Server TCP_Server;
 
+non_null()
 const uint8_t *tcp_server_public_key(const TCP_Server *tcp_server);
+non_null()
 size_t tcp_server_listen_count(const TCP_Server *tcp_server);
 
 /** Create new TCP server instance.
  */
+non_null(1, 4, 5) nullable(6)
 TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
                            const uint8_t *secret_key, Onion *onion);
 
 /** Run the TCP_server
  */
+non_null()
 void do_TCP_server(TCP_Server *tcp_server, const Mono_Time *mono_time);
 
 /** Kill the TCP server
  */
+non_null()
 void kill_TCP_server(TCP_Server *tcp_server);
 
 

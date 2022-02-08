@@ -205,6 +205,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
  * @retval true if sent to at least one broadcast target.
  * @retval false on failure to find any valid broadcast target.
  */
+non_null()
 static bool send_broadcasts(const Networking_Core *net, const Broadcast_Info *broadcast, uint16_t port,
                             const uint8_t *data, uint16_t length)
 {
@@ -246,6 +247,7 @@ static IP broadcast_ip(Family family_socket, Family family_broadcast)
     return ip;
 }
 
+non_null()
 static bool ip4_is_local(const IP4 *ip4)
 {
     /* Loopback. */
@@ -276,6 +278,7 @@ bool ip_is_local(const IP *ip)
     return false;
 }
 
+non_null()
 static bool ip4_is_lan(const IP4 *ip4)
 {
     /* 10.0.0.0 to 10.255.255.255 range. */
@@ -337,6 +340,7 @@ bool ip_is_lan(const IP *ip)
     return false;
 }
 
+non_null(1, 2, 3) nullable(5)
 static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
                                void *userdata)
 {
@@ -355,7 +359,7 @@ static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_
 }
 
 
-bool lan_discovery_send(Networking_Core *net, Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port)
+bool lan_discovery_send(Networking_Core *net, const Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port)
 {
     if (broadcast == nullptr) {
         return false;

@@ -66,6 +66,7 @@ void set_filter_function(Friend_Requests *fr, filter_function_cb *function, void
 }
 
 /** Add to list of received friend requests. */
+non_null()
 static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
 {
     if (fr->received.requests_index >= MAX_RECEIVED_STORED) {
@@ -81,6 +82,7 @@ static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
  *  return false if it did not.
  *  return true if it did.
  */
+non_null()
 static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
@@ -110,6 +112,7 @@ int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 }
 
 
+non_null()
 static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, const uint8_t *packet, uint16_t length,
                                   void *userdata)
 {

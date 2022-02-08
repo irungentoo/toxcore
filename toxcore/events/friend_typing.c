@@ -26,17 +26,20 @@ struct Tox_Event_Friend_Typing {
     bool typing;
 };
 
+non_null()
 static void tox_event_friend_typing_construct(Tox_Event_Friend_Typing *friend_typing)
 {
     *friend_typing = (Tox_Event_Friend_Typing) {
         0
     };
 }
+non_null()
 static void tox_event_friend_typing_destruct(Tox_Event_Friend_Typing *friend_typing)
 {
     return;
 }
 
+non_null()
 static void tox_event_friend_typing_set_friend_number(Tox_Event_Friend_Typing *friend_typing,
         uint32_t friend_number)
 {
@@ -49,6 +52,7 @@ uint32_t tox_event_friend_typing_get_friend_number(const Tox_Event_Friend_Typing
     return friend_typing->friend_number;
 }
 
+non_null()
 static void tox_event_friend_typing_set_typing(Tox_Event_Friend_Typing *friend_typing, bool typing)
 {
     assert(friend_typing != nullptr);
@@ -60,6 +64,7 @@ bool tox_event_friend_typing_get_typing(const Tox_Event_Friend_Typing *friend_ty
     return friend_typing->typing;
 }
 
+non_null()
 static void tox_event_friend_typing_pack(
     const Tox_Event_Friend_Typing *event, msgpack_packer *mp)
 {
@@ -74,6 +79,7 @@ static void tox_event_friend_typing_pack(
     }
 }
 
+non_null()
 static bool tox_event_friend_typing_unpack(
     Tox_Event_Friend_Typing *event, const msgpack_object *obj)
 {
@@ -95,6 +101,7 @@ static bool tox_event_friend_typing_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Friend_Typing *tox_events_add_friend_typing(Tox_Events *events)
 {
     if (events->friend_typing_size == UINT32_MAX) {

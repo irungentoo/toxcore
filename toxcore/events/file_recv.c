@@ -30,17 +30,20 @@ struct Tox_Event_File_Recv {
     size_t filename_length;
 };
 
+non_null()
 static void tox_event_file_recv_construct(Tox_Event_File_Recv *file_recv)
 {
     *file_recv = (Tox_Event_File_Recv) {
         0
     };
 }
+non_null()
 static void tox_event_file_recv_destruct(Tox_Event_File_Recv *file_recv)
 {
     free(file_recv->filename);
 }
 
+non_null()
 static void tox_event_file_recv_set_friend_number(Tox_Event_File_Recv *file_recv,
         uint32_t friend_number)
 {
@@ -53,6 +56,7 @@ uint32_t tox_event_file_recv_get_friend_number(const Tox_Event_File_Recv *file_r
     return file_recv->friend_number;
 }
 
+non_null()
 static void tox_event_file_recv_set_file_number(Tox_Event_File_Recv *file_recv,
         uint32_t file_number)
 {
@@ -65,6 +69,7 @@ uint32_t tox_event_file_recv_get_file_number(const Tox_Event_File_Recv *file_rec
     return file_recv->file_number;
 }
 
+non_null()
 static void tox_event_file_recv_set_kind(Tox_Event_File_Recv *file_recv,
         uint32_t kind)
 {
@@ -77,6 +82,7 @@ uint32_t tox_event_file_recv_get_kind(const Tox_Event_File_Recv *file_recv)
     return file_recv->kind;
 }
 
+non_null()
 static void tox_event_file_recv_set_file_size(Tox_Event_File_Recv *file_recv,
         uint32_t file_size)
 {
@@ -89,6 +95,7 @@ uint32_t tox_event_file_recv_get_file_size(const Tox_Event_File_Recv *file_recv)
     return file_recv->file_size;
 }
 
+non_null()
 static bool tox_event_file_recv_set_filename(Tox_Event_File_Recv *file_recv, const uint8_t *filename,
         size_t filename_length)
 {
@@ -121,6 +128,7 @@ const uint8_t *tox_event_file_recv_get_filename(const Tox_Event_File_Recv *file_
     return file_recv->filename;
 }
 
+non_null()
 static void tox_event_file_recv_pack(
     const Tox_Event_File_Recv *event, msgpack_packer *mp)
 {
@@ -134,6 +142,7 @@ static void tox_event_file_recv_pack(
     msgpack_pack_bin_body(mp, event->filename, event->filename_length);
 }
 
+non_null()
 static bool tox_event_file_recv_unpack(
     Tox_Event_File_Recv *event, const msgpack_object *obj)
 {
@@ -158,6 +167,7 @@ static bool tox_event_file_recv_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_File_Recv *tox_events_add_file_recv(Tox_Events *events)
 {
     if (events->file_recv_size == UINT32_MAX) {

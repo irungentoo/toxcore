@@ -95,6 +95,7 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
 /** return 1 on success
  * return 0 on failure
  */
+non_null()
 static int connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_port, const TCP_Proxy_Info *proxy_info)
 {
     IP_Port ipp_copy = *ip_port;
@@ -112,6 +113,7 @@ static int connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_
 /** return 1 on success.
  * return 0 on failure.
  */
+non_null()
 static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_conn)
 {
     char one[] = "CONNECT ";
@@ -142,6 +144,7 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_con
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
+non_null()
 static int proxy_http_read_connection_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     char success[] = "200";
@@ -179,6 +182,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
 #define TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV4 0x01
 #define TCP_SOCKS5_PROXY_HS_ADDR_TYPE_IPV6 0x04
 
+non_null()
 static void proxy_socks5_generate_greetings(TCP_Client_Connection *tcp_conn)
 {
     tcp_conn->con.last_packet[0] = TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5;
@@ -193,6 +197,7 @@ static void proxy_socks5_generate_greetings(TCP_Client_Connection *tcp_conn)
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
+non_null()
 static int socks5_read_handshake_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     uint8_t data[2];
@@ -209,6 +214,7 @@ static int socks5_read_handshake_response(const Logger *logger, const TCP_Client
     return -1;
 }
 
+non_null()
 static void proxy_socks5_generate_connection_request(TCP_Client_Connection *tcp_conn)
 {
     tcp_conn->con.last_packet[0] = TCP_SOCKS5_PROXY_HS_VERSION_SOCKS5;
@@ -239,6 +245,7 @@ static void proxy_socks5_generate_connection_request(TCP_Client_Connection *tcp_
  * return 0 if no data received.
  * return -1 on failure (connection refused).
  */
+non_null()
 static int proxy_socks5_read_connection_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
@@ -271,6 +278,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
 /** return 0 on success.
  * return -1 on failure.
  */
+non_null()
 static int generate_handshake(TCP_Client_Connection *tcp_conn)
 {
     uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
@@ -296,6 +304,7 @@ static int generate_handshake(TCP_Client_Connection *tcp_conn)
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 static int handle_handshake(TCP_Client_Connection *tcp_conn, const uint8_t *data)
 {
     uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
@@ -336,8 +345,8 @@ void routing_status_handler(TCP_Client_Connection *con, tcp_routing_status_cb *s
     con->status_callback_object = object;
 }
 
-static int tcp_send_ping_response(const Logger *logger, TCP_Client_Connection *con);
-static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *con);
+non_null() static int tcp_send_ping_response(const Logger *logger, TCP_Client_Connection *con);
+non_null() static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *con);
 
 /** return 1 on success.
  * return 0 if could not send packet.
@@ -419,6 +428,7 @@ void oob_data_handler(TCP_Client_Connection *con, tcp_oob_data_cb *oob_data_call
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).
  */
+non_null()
 static int client_send_disconnect_notification(const Logger *logger, TCP_Client_Connection *con, uint8_t id)
 {
     uint8_t packet[1 + 1];
@@ -595,6 +605,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
 /** return 0 on success
  * return -1 on failure
  */
+non_null(1, 2, 3) nullable(5)
 static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection *conn, const uint8_t *data,
                                     uint16_t length, void *userdata)
 {
@@ -749,6 +760,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
     return 0;
 }
 
+non_null(1, 2) nullable(3)
 static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn, void *userdata)
 {
     uint8_t packet[MAX_PACKET_SIZE];
@@ -772,6 +784,7 @@ static bool tcp_process_packet(const Logger *logger, TCP_Client_Connection *conn
     return true;
 }
 
+non_null(1, 2, 3) nullable(4)
 static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, const Mono_Time *mono_time,
                             void *userdata)
 {

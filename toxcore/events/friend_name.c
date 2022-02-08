@@ -27,17 +27,20 @@ struct Tox_Event_Friend_Name {
     size_t name_length;
 };
 
+non_null()
 static void tox_event_friend_name_construct(Tox_Event_Friend_Name *friend_name)
 {
     *friend_name = (Tox_Event_Friend_Name) {
         0
     };
 }
+non_null()
 static void tox_event_friend_name_destruct(Tox_Event_Friend_Name *friend_name)
 {
     free(friend_name->name);
 }
 
+non_null()
 static void tox_event_friend_name_set_friend_number(Tox_Event_Friend_Name *friend_name,
         uint32_t friend_number)
 {
@@ -50,6 +53,7 @@ uint32_t tox_event_friend_name_get_friend_number(const Tox_Event_Friend_Name *fr
     return friend_name->friend_number;
 }
 
+non_null()
 static bool tox_event_friend_name_set_name(Tox_Event_Friend_Name *friend_name, const uint8_t *name,
         size_t name_length)
 {
@@ -82,6 +86,7 @@ const uint8_t *tox_event_friend_name_get_name(const Tox_Event_Friend_Name *frien
     return friend_name->name;
 }
 
+non_null()
 static void tox_event_friend_name_pack(
     const Tox_Event_Friend_Name *event, msgpack_packer *mp)
 {
@@ -92,6 +97,7 @@ static void tox_event_friend_name_pack(
     msgpack_pack_bin_body(mp, event->name, event->name_length);
 }
 
+non_null()
 static bool tox_event_friend_name_unpack(
     Tox_Event_Friend_Name *event, const msgpack_object *obj)
 {
@@ -113,6 +119,7 @@ static bool tox_event_friend_name_unpack(
  *****************************************************/
 
 
+non_null()
 static Tox_Event_Friend_Name *tox_events_add_friend_name(Tox_Events *events)
 {
     if (events->friend_name_size == UINT32_MAX) {

@@ -113,6 +113,7 @@ bool tox_events_unpack(Tox_Events *events, const msgpack_object *obj)
            && tox_events_unpack_self_connection_status(events,       &obj->via.array.ptr[20]);
 }
 
+non_null()
 static int count_bytes(void *data, const char *buf, size_t len)
 {
     uint32_t *count = (uint32_t *)data;
@@ -130,6 +131,7 @@ uint32_t tox_events_bytes_size(const Tox_Events *events)
     return count;
 }
 
+non_null()
 static int write_bytes(void *data, const char *buf, size_t len)
 {
     uint8_t **bytes = (uint8_t **)data;
@@ -180,6 +182,7 @@ Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
     return events;
 }
 
+non_null(2, 3) nullable(1)
 static bool tox_events_to_object(const Tox_Events *events, msgpack_unpacked *msg, msgpack_sbuffer *sbuf)
 {
     msgpack_sbuffer_init(sbuf);

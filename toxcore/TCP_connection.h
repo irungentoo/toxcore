@@ -71,11 +71,14 @@ typedef struct TCP_con {
 
 typedef struct TCP_Connections TCP_Connections;
 
+non_null()
 const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c);
 
+non_null()
 uint32_t tcp_connections_count(const TCP_Connections *tcp_c);
 
 /** Returns the number of connected TCP relays */
+non_null()
 uint32_t tcp_connected_relays_count(const TCP_Connections *tcp_c);
 
 /** Send a packet to the TCP connection.
@@ -83,6 +86,7 @@ uint32_t tcp_connected_relays_count(const TCP_Connections *tcp_c);
  * return -1 on failure.
  * return 0 on success.
  */
+non_null()
 int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_number, const uint8_t *packet,
                                uint16_t length);
 
@@ -94,6 +98,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
  * return TCP connection number on success.
  * return -1 on failure.
  */
+non_null()
 int get_random_tcp_onion_conn_number(const TCP_Connections *tcp_c);
 
 /** Send an onion packet via the TCP relay corresponding to tcp_connections_number.
@@ -101,6 +106,7 @@ int get_random_tcp_onion_conn_number(const TCP_Connections *tcp_c);
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *data,
                            uint16_t length);
 
@@ -111,6 +117,7 @@ int tcp_send_onion_request(TCP_Connections *tcp_c, unsigned int tcp_connections_
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int set_tcp_onion_status(TCP_Connections *tcp_c, bool status);
 
 /** Send an oob packet via the TCP relay corresponding to tcp_connections_number.
@@ -118,22 +125,26 @@ int set_tcp_onion_status(TCP_Connections *tcp_c, bool status);
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int tcp_send_oob_packet(const TCP_Connections *tcp_c, unsigned int tcp_connections_number, const uint8_t *public_key,
                         const uint8_t *packet, uint16_t length);
 
 typedef int tcp_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 
+non_null()
 int tcp_send_oob_packet_using_relay(const TCP_Connections *tcp_c, const uint8_t *relay_pk, const uint8_t *public_key,
                                     const uint8_t *packet, uint16_t length);
 
 /** Set the callback for TCP data packets.
  */
+non_null()
 void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_data_cb *tcp_data_callback, void *object);
 
 typedef int tcp_onion_cb(void *object, const uint8_t *data, uint16_t length, void *userdata);
 
 /** Set the callback for TCP onion packets.
  */
+non_null(1) nullable(2, 3)
 void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_onion_cb *tcp_onion_callback, void *object);
 
 typedef int tcp_oob_cb(void *object, const uint8_t *public_key, unsigned int tcp_connections_number,
@@ -141,6 +152,7 @@ typedef int tcp_oob_cb(void *object, const uint8_t *public_key, unsigned int tcp
 
 /** Set the callback for TCP oob data packets.
  */
+non_null()
 void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_oob_cb *tcp_oob_callback, void *object);
 
 /** Create a new TCP connection to public_key.
@@ -152,11 +164,13 @@ void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_oob_cb *
  * return connections_number on success.
  * return -1 on failure.
  */
+non_null()
 int new_tcp_connection_to(TCP_Connections *tcp_c, const uint8_t *public_key, int id);
 
 /** return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
 
 /** Set connection status.
@@ -169,11 +183,13 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number);
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_number, bool status);
 
 /** return number of online tcp relays tied to the connection on success.
  * return 0 on failure.
  */
+non_null()
 unsigned int tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, int connections_number);
 
 /** Add a TCP relay tied to a connection.
@@ -183,6 +199,7 @@ unsigned int tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, i
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int add_tcp_number_relay_connection(const TCP_Connections *tcp_c, int connections_number,
                                     unsigned int tcp_connections_number);
 
@@ -193,6 +210,7 @@ int add_tcp_number_relay_connection(const TCP_Connections *tcp_c, int connection
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, const IP_Port *ip_port,
                              const uint8_t *relay_pk);
 
@@ -201,6 +219,7 @@ int add_tcp_relay_connection(TCP_Connections *tcp_c, int connections_number, con
  * return 0 on success.
  * return -1 on failure.
  */
+non_null()
 int add_tcp_relay_global(TCP_Connections *tcp_c, const IP_Port *ip_port, const uint8_t *relay_pk);
 
 /** Copy a maximum of max_num TCP relays we are connected to to tcp_relays.
@@ -209,6 +228,7 @@ int add_tcp_relay_global(TCP_Connections *tcp_c, const IP_Port *ip_port, const u
  * return number of relays copied to tcp_relays on success.
  * return 0 on failure.
  */
+non_null()
 uint32_t tcp_copy_connected_relays(const TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num);
 
 /** Returns a new TCP_Connections object associated with the secret_key.
@@ -218,12 +238,16 @@ uint32_t tcp_copy_connected_relays(const TCP_Connections *tcp_c, Node_format *tc
  *
  * Returns NULL on failure.
  */
+non_null()
 TCP_Connections *new_tcp_connections(const Logger *logger, Mono_Time *mono_time, const uint8_t *secret_key,
                                      const TCP_Proxy_Info *proxy_info);
 
+non_null()
 int kill_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connections_number);
 
+non_null(1, 2) nullable(3)
 void do_tcp_connections(const Logger *logger, TCP_Connections *tcp_c, void *userdata);
+non_null()
 void kill_tcp_connections(TCP_Connections *tcp_c);
 
 #endif

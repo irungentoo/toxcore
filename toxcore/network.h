@@ -164,10 +164,12 @@ extern const Socket net_invalid_socket;
 /**
  * Calls send(sockfd, buf, len, MSG_NOSIGNAL).
  */
+non_null()
 int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, const IP_Port *ip_port);
 /**
  * Calls recv(sockfd, buf, len, MSG_NOSIGNAL).
  */
+non_null()
 int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, const IP_Port *ip_port);
 /**
  * Calls listen(sockfd, backlog).
@@ -191,15 +193,22 @@ uint16_t net_htons(uint16_t hostshort);
 uint32_t net_ntohl(uint32_t hostlong);
 uint16_t net_ntohs(uint16_t hostshort);
 
+non_null()
 size_t net_pack_u16(uint8_t *bytes, uint16_t v);
+non_null()
 size_t net_pack_u32(uint8_t *bytes, uint32_t v);
+non_null()
 size_t net_pack_u64(uint8_t *bytes, uint64_t v);
 
+non_null()
 size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v);
+non_null()
 size_t net_unpack_u32(const uint8_t *bytes, uint32_t *v);
+non_null()
 size_t net_unpack_u64(const uint8_t *bytes, uint64_t *v);
 
 /** Does the IP6 struct a contain an IPv4 address in an IPv6 one? */
+non_null()
 bool ipv6_ipv4_in_v6(const IP6 *a);
 
 #define TOX_ENABLE_IPV6_DEFAULT true
@@ -221,6 +230,7 @@ bool ipv6_ipv4_in_v6(const IP6 *a);
  *
  *   returns ip_str
  */
+non_null()
 const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
 
 /**
@@ -235,6 +245,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
  *
  * @return true on success, false on failure.
  */
+non_null()
 bool ip_parse_addr(const IP *ip, char *address, size_t length);
 
 /**
@@ -247,6 +258,7 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length);
  *
  * @return true on success, false on failure.
  */
+non_null()
 bool addr_parse_ip(const char *address, IP *to);
 
 /**
@@ -256,6 +268,7 @@ bool addr_parse_ip(const char *address, IP *to);
  *
  * @return false when not equal or when uninitialized.
  */
+nullable(1, 2)
 bool ip_equal(const IP *a, const IP *b);
 
 /**
@@ -265,21 +278,29 @@ bool ip_equal(const IP *a, const IP *b);
  *
  * @return false when not equal or when uninitialized.
  */
+nullable(1, 2)
 bool ipport_equal(const IP_Port *a, const IP_Port *b);
 
 /** nulls out ip */
+non_null()
 void ip_reset(IP *ip);
 /** nulls out ip_port */
+non_null()
 void ipport_reset(IP_Port *ipport);
 /** nulls out ip, sets family according to flag */
+non_null()
 void ip_init(IP *ip, bool ipv6enabled);
 /** checks if ip is valid */
+non_null()
 bool ip_isset(const IP *ip);
 /** checks if ip is valid */
+non_null()
 bool ipport_isset(const IP_Port *ipport);
 /** copies an ip structure (careful about direction!) */
+non_null()
 void ip_copy(IP *target, const IP *source);
 /** copies an ip_port structure (careful about direction!) */
+non_null()
 void ipport_copy(IP_Port *target, const IP_Port *source);
 
 /**
@@ -299,6 +320,7 @@ void ipport_copy(IP_Port *target, const IP_Port *source);
  *
  * @return 0 on failure, `TOX_ADDR_RESOLVE_*` on success.
  */
+non_null(1, 2) nullable(3)
 int addr_resolve(const char *address, IP *to, IP *extra);
 
 /**
@@ -315,6 +337,7 @@ int addr_resolve(const char *address, IP *to, IP *extra);
  *
  * @return true on success, false on failure
  */
+non_null(1, 2) nullable(3)
 bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 
 /** Function to receive data, ip and port of sender is put into ip_port.
@@ -325,7 +348,9 @@ typedef int packet_handler_cb(void *object, const IP_Port *ip_port, const uint8_
 
 typedef struct Networking_Core Networking_Core;
 
+non_null()
 Family net_family(const Networking_Core *net);
+non_null()
 uint16_t net_port(const Networking_Core *net);
 
 /** Run this before creating sockets.
@@ -382,6 +407,7 @@ typedef struct Packet {
 /**
  * Function to send a network packet to a given IP/port.
  */
+non_null()
 int send_packet(const Networking_Core *net, const IP_Port *ip_port, Packet packet);
 
 /**
@@ -389,12 +415,15 @@ int send_packet(const Networking_Core *net, const IP_Port *ip_port, Packet packe
  *
  * @deprecated Use send_packet instead.
  */
+non_null()
 int sendpacket(const Networking_Core *net, const IP_Port *ip_port, const uint8_t *data, uint16_t length);
 
 /** Function to call when packet beginning with byte is received. */
+non_null(1) nullable(3, 4)
 void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handler_cb *cb, void *object);
 
 /** Call this several times a second. */
+non_null(1) nullable(2)
 void networking_poll(const Networking_Core *net, void *userdata);
 
 /** Connect a socket to the address specified by the ip_port.
@@ -402,6 +431,7 @@ void networking_poll(const Networking_Core *net, void *userdata);
  * Return 0 on success.
  * Return -1 on failure.
  */
+non_null()
 int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
 
 /** High-level getaddrinfo implementation.
@@ -415,10 +445,12 @@ int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
  * return number of elements in res array
  * and -1 on error.
  */
+non_null()
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type);
 
 /** Deallocates memory allocated by net_getipport
  */
+nullable(1)
 void net_freeipport(IP_Port *ip_ports);
 
 /**
@@ -452,11 +484,13 @@ char *net_new_strerror(int error);
  * It's valid to pass NULL as the argument, the function does nothing in this
  * case.
  */
+non_null()
 void net_kill_strerror(char *strerror);
 
 /** Initialize networking.
  * Added for reverse compatibility with old new_networking calls.
  */
+non_null()
 Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port);
 /** Initialize networking.
  * Bind to ip and port.
@@ -468,11 +502,14 @@ Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port);
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
+non_null(1, 2) nullable(5)
 Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t port_from, uint16_t port_to,
                                    unsigned int *error);
+non_null()
 Networking_Core *new_networking_no_udp(const Logger *log);
 
 /** Function to cleanup networking stuff (doesn't do much right now). */
+non_null()
 void kill_networking(Networking_Core *net);
 
 #ifdef __cplusplus
