@@ -1,13 +1,12 @@
 ---
 cache:
-  - '%USERPROFILE%\.conan'
+  - '%USERPROFILE%\.conan -> conanfile.py'
 
 install:
   - set PATH=C:\Python38-x64\Scripts;%PATH%
   - py -3 -m pip install conan
 
 before_build:
-  - conan remote add -i 0 conancenter https://center.conan.io
   - conan install -if _build .
 
 build_script:
