@@ -22,7 +22,6 @@ libtoxcore_la_SOURCES = ../toxcore/attributes.h \
                         ../toxcore/events/friend_lossless_packet.c \
                         ../toxcore/events/friend_lossy_packet.c \
                         ../toxcore/events/friend_message.c \
-                        ../toxcore/events/friend_message.c \
                         ../toxcore/events/friend_name.c \
                         ../toxcore/events/friend_read_receipt.c \
                         ../toxcore/events/friend_request.c \
