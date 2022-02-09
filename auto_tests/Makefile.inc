@@ -192,10 +192,6 @@ set_status_message_test_SOURCES = ../auto_tests/set_status_message_test.c
 set_status_message_test_CFLAGS = $(AUTOTEST_CFLAGS)
 set_status_message_test_LDADD = $(AUTOTEST_LDADD)
 
-skeleton_test_SOURCES = ../auto_tests/skeleton_test.c
-skeleton_test_CFLAGS = $(AUTOTEST_CFLAGS)
-skeleton_test_LDADD = $(AUTOTEST_LDADD)
-
 TCP_test_SOURCES = ../auto_tests/TCP_test.c
 TCP_test_CFLAGS = $(AUTOTEST_CFLAGS)
 TCP_test_LDADD = $(AUTOTEST_LDADD)
