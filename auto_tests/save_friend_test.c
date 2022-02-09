@@ -108,7 +108,7 @@ int main(void)
     }
 
     size_t save_size = tox_get_savedata_size(tox1);
-    VLA(uint8_t, savedata, save_size);
+    uint8_t *savedata = (uint8_t *)malloc(save_size);
     tox_get_savedata(tox1, savedata);
 
     struct Tox_Options *const options = tox_options_new(nullptr);
@@ -129,6 +129,7 @@ int main(void)
     tox_kill(tox1);
     tox_kill(tox2);
     tox_kill(tox_to_compare);
+    free(savedata);
 
     return 0;
 }

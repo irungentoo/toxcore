@@ -27,7 +27,7 @@
 // you may run out of stack space.
 #if !defined(DISABLE_VLA) && !defined(_MSC_VER) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 // C99 VLAs.
-#define VLA(type, name, size) type name[size]
+#define ALLOC_VLA(type, name, size) type name[size]
 #define SIZEOF_VLA sizeof
 #else
 
@@ -48,11 +48,20 @@
 #endif
 #endif
 
-#define VLA(type, name, size)                           \
+#define ALLOC_VLA(type, name, size)                     \
   const size_t name##_vla_size = (size) * sizeof(type); \
   type *const name = (type *)alloca(name##_vla_size)
 #define SIZEOF_VLA(name) name##_vla_size
 
+#endif
+
+#ifdef MAX_VLA_SIZE
+#include <assert.h>
+#define VLA(type, name, size) \
+  ALLOC_VLA(type, name, size); \
+  assert((size_t)(size) * sizeof(type) <= MAX_VLA_SIZE)
+#else
+#define VLA ALLOC_VLA
 #endif
 
 #if !defined(__cplusplus) || __cplusplus < 201103L

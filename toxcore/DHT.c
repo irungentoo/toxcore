@@ -477,14 +477,19 @@ static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
                              const uint8_t *shared_key, const uint8_t type,
                              const uint8_t *plain, size_t plain_length, uint8_t *packet)
 {
-    VLA(uint8_t, encrypted, plain_length + CRYPTO_MAC_SIZE);
+    uint8_t *encrypted = (uint8_t *)malloc(plain_length + CRYPTO_MAC_SIZE);
     uint8_t nonce[CRYPTO_NONCE_SIZE];
+
+    if (encrypted == nullptr) {
+        return -1;
+    }
 
     random_nonce(nonce);
 
     const int encrypted_length = encrypt_data_symmetric(shared_key, nonce, plain, plain_length, encrypted);
 
     if (encrypted_length == -1) {
+        free(encrypted);
         return -1;
     }
 
@@ -493,6 +498,7 @@ static int dht_create_packet(const uint8_t public_key[CRYPTO_PUBLIC_KEY_SIZE],
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, nonce, CRYPTO_NONCE_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE, encrypted, encrypted_length);
 
+    free(encrypted);
     return 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + encrypted_length;
 }
 
@@ -970,7 +976,11 @@ static void sort_client_list(Client_data *list, uint64_t cur_time, unsigned int 
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    VLA(DHT_Cmp_Data, cmp_list, length);
+    DHT_Cmp_Data *cmp_list = (DHT_Cmp_Data *)calloc(length, sizeof(DHT_Cmp_Data));
+
+    if (cmp_list == nullptr) {
+        return;
+    }
 
     for (uint32_t i = 0; i < length; ++i) {
         cmp_list[i].cur_time = cur_time;
@@ -983,6 +993,8 @@ static void sort_client_list(Client_data *list, uint64_t cur_time, unsigned int 
     for (uint32_t i = 0; i < length; ++i) {
         list[i] = cmp_list[i].entry;
     }
+
+    free(cmp_list);
 }
 
 non_null()
@@ -1705,10 +1717,16 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
     const uint64_t temp_time = mono_time_get(dht->mono_time);
 
     uint32_t num_nodes = 0;
-    VLA(Client_data *, client_list, list_count * 2);
-    VLA(IPPTsPng *, assoc_list, list_count * 2);
+    Client_data **client_list = (Client_data **)calloc(list_count * 2, sizeof(Client_data *));
+    IPPTsPng **assoc_list = (IPPTsPng **)calloc(list_count * 2, sizeof(IPPTsPng *));
     unsigned int sort = 0;
     bool sort_ok = false;
+
+    if (client_list == nullptr || assoc_list == nullptr) {
+        free(assoc_list);
+        free(client_list);
+        return 0;
+    }
 
     for (uint32_t i = 0; i < list_count; ++i) {
         /* If node is not dead. */
@@ -1763,6 +1781,8 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         ++*bootstrap_times;
     }
 
+    free(assoc_list);
+    free(client_list);
     return not_kill;
 }
 

@@ -42,7 +42,7 @@ for line in out.split("\n"):
     # ccompat.h can include some things we don't really want elsewhere.
     allowlist = ALLOWLIST
     if filename == "toxcore/ccompat.h":
-        allowlist += ("alloca.h", "malloc.h", "stdlib.h")
+        allowlist += ("assert.h", "alloca.h", "malloc.h", "stdlib.h")
     header = include[include.index("<") + 1:include.index(">")]
     if header not in allowlist:
         source = filename[:-2] + ".c"

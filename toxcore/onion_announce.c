@@ -310,7 +310,11 @@ static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int le
 {
     // Pass comp_public_key to qsort with each Client_data entry, so the
     // comparison function can use it as the base of comparison.
-    VLA(Cmp_Data, cmp_list, length);
+    Cmp_Data *cmp_list = (Cmp_Data *)calloc(length, sizeof(Cmp_Data));
+
+    if (cmp_list == nullptr) {
+        return;
+    }
 
     for (uint32_t i = 0; i < length; ++i) {
         cmp_list[i].mono_time = mono_time;
@@ -323,6 +327,8 @@ static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int le
     for (uint32_t i = 0; i < length; ++i) {
         list[i] = cmp_list[i].entry;
     }
+
+    free(cmp_list);
 }
 
 /** add entry to entries list

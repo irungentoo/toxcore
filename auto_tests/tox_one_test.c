@@ -76,7 +76,7 @@ static void test_one(void)
 
     tox_self_get_address(tox1, address);
     size_t save_size = tox_get_savedata_size(tox1);
-    VLA(uint8_t, data, save_size);
+    uint8_t *data = (uint8_t *)malloc(save_size);
     tox_get_savedata(tox1, data);
 
     tox_kill(tox2);
@@ -126,6 +126,7 @@ static void test_one(void)
     tox_options_free(options);
     tox_kill(tox1);
     tox_kill(tox2);
+    free(data);
 }
 
 
