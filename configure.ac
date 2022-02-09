@@ -5,7 +5,7 @@ AC_PREREQ([2.65])
 AC_INIT([tox], [0.2.15])
 AC_CONFIG_AUX_DIR(configure_aux)
 AC_CONFIG_SRCDIR([toxcore/net_crypto.c])
-AM_INIT_AUTOMAKE([foreign 1.10 -Wall subdir-objects tar-ustar])
+AM_INIT_AUTOMAKE([foreign 1.10 -Wall -Werror subdir-objects tar-ustar])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AC_CONFIG_MACRO_DIR([m4])
 
