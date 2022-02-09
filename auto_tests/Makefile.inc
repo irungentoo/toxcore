@@ -51,19 +51,16 @@ endif
 
 AUTOTEST_CFLAGS = \
 	$(LIBSODIUM_CFLAGS) \
-	$(MSGPACK_CFLAGS) \
 	$(NACL_CFLAGS)
 
 AUTOTEST_LDADD = \
 	$(LIBSODIUM_LDFLAGS) \
-	$(MSGPACK_LDFLAGS) \
 	$(NACL_LDFLAGS) \
 	libmisc_tools.la \
 	libauto_test_support.la \
 	libtoxcore.la \
 	libtoxencryptsave.la \
 	$(LIBSODIUM_LIBS) \
-	$(MSGPACK_LIBS) \
 	$(NACL_OBJECTS) \
 	$(NACL_LIBS)
 
