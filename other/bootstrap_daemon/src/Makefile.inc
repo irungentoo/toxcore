@@ -36,10 +36,12 @@ tox_bootstrapd_LDADD = \
                         $(NACL_OBJECTS) \
                         $(NACL_LIBS)
 
-endif
+bashcompdir = $(datarootdir)/bash-completion/completions
+dist_bashcomp_DATA = $(top_builddir)/other/bootstrap_daemon/bash-completion/completions/tox-bootstrapd
 
 EXTRA_DIST += \
     $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.conf \
     $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.service \
     $(top_srcdir)/other/bootstrap_daemon/tox-bootstrapd.sh
-    
+
+endif

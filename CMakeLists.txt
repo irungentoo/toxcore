@@ -555,6 +555,7 @@ if(BOOTSTRAP_DAEMON)
       other/bootstrap_node_packets.h)
     target_link_modules(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
     install(TARGETS tox-bootstrapd RUNTIME DESTINATION bin)
+    install(FILES other/bootstrap_daemon/bash-completion/completions/tox-bootstrapd DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/bash-completion/completions")
   endif()
 endif()
 

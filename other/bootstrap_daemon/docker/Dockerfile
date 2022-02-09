@@ -21,6 +21,7 @@ WORKDIR /src/c-toxcore
 # lying around. In particular, we don't need to rebuild the docker image when
 # toxav changes or the Dockerfile changes down from the build.
 COPY cmake cmake
+COPY other/bootstrap_daemon/bash-completion other/bootstrap_daemon/bash-completion
 COPY other/bootstrap_daemon/src other/bootstrap_daemon/src
 COPY other/bootstrap_node_packets.[ch] other/
 COPY other/DHT_bootstrap.c other/
