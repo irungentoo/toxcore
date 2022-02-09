@@ -30,6 +30,8 @@ class ToxConan(ConanFile):
         self._cmake = CMake(self)
         self._cmake.definitions["AUTOTEST"] = self.options.with_tests
         self._cmake.definitions["BUILD_MISC_TESTS"] = self.options.with_tests
+        self._cmake.definitions["ENABLE_SHARED"] = False
+        self._cmake.definitions["ENABLE_STATIC"] = True
         self._cmake.definitions["MUST_BUILD_TOXAV"] = True
         if self.settings.compiler == "Visual Studio":
             self._cmake.definitions["MSVC_STATIC_SODIUM"] = True
