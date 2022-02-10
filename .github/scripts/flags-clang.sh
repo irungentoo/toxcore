@@ -48,6 +48,8 @@ add_flag -Wno-unused-parameter
 add_flag -Wno-used-but-marked-unused
 # We use variable length arrays a lot.
 add_flag -Wno-vla
+# Disable warning about Doxygen retval tag
+add_flag -fcomment-block-commands=retval
 
 # Disable specific warning flags for C++.
 
