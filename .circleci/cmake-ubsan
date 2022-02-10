@@ -11,6 +11,10 @@ add_flag -fno-omit-frame-pointer
 add_flag -fno-sanitize-recover=all
 add_flag -fsanitize=undefined,nullability,local-bounds,float-divide-by-zero,integer
 add_flag -fno-sanitize=implicit-conversion,unsigned-integer-overflow
+# Enable extra checks. We only do this on ubsan because it shows useful error
+# messages for the kind of bugs this catches (mostly incorrect nullability
+# annotations). Other builds will segfault, ubsan will show a stack trace.
+add_flag -D_DEBUG
 cmake -B_build -H. -GNinja \
   -DCMAKE_C_FLAGS="$C_FLAGS" \
   -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
