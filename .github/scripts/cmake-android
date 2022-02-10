@@ -1,0 +1,81 @@
+#!/bin/bash
+
+set -eu
+
+# Set up environment
+NDK=$ANDROID_NDK_HOME
+
+ABI=${1:-"armeabi-v7a"}
+
+case $ABI in
+  armeabi-v7a)
+    TARGET=armv7a-linux-androideabi
+    NDK_API=16
+    ;;
+  arm64-v8a)
+    TARGET=aarch64-linux-android
+    NDK_API=21
+    ;;
+  x86)
+    TARGET=i686-linux-android
+    NDK_API=16
+    ;;
+  x86_64)
+    TARGET=x86_64-linux-android
+    NDK_API=21
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+
+rm -rf _android_prefix
+mkdir -p _android_prefix
+PREFIX=$PWD/_android_prefix
+
+TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+SYSROOT=$TOOLCHAIN/sysroot
+
+export CC="$TOOLCHAIN/bin/$TARGET$NDK_API"-clang
+export LDFLAGS=-static-libstdc++
+export PKG_CONFIG_PATH="$PREFIX"/lib/pkgconfig
+
+# Build libsodium
+if [ ! -d libsodium ]; then
+  git clone --branch=1.0.18 https://github.com/jedisct1/libsodium.git
+fi
+cd libsodium
+git clean -ffdx
+autoreconf -fi
+./configure --prefix="$PREFIX" --host="$TARGET" --with-sysroot="$SYSROOT" --disable-shared
+make -j"$(nproc)" install
+cd ..
+
+# Build msgpack
+if [ ! -d msgpack-c ]; then
+  git clone --branch=c-4.0.0 https://github.com/msgpack/msgpack-c.git
+fi
+rm -rf msgpack-c/build
+mkdir -p msgpack-c/build
+cd msgpack-c/build
+cmake .. \
+  -DMSGPACK_BUILD_EXAMPLES=OFF \
+  -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+  -DANDROID_ABI="$ABI" \
+  -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+  -DCMAKE_PREFIX_PATH="$PREFIX"
+cmake --build . --target install
+cd ../..
+
+# Build c-toxcore
+rm -rf _build
+mkdir -p _build
+cd _build
+cmake .. \
+  -DBUILD_TOXAV=OFF \
+  -DBOOTSTRAP_DAEMON=OFF \
+  -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+  -DANDROID_ABI="$ABI" \
+  -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+  -DCMAKE_PREFIX_PATH="$PREFIX"
+cmake --build .
