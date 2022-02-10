@@ -32,13 +32,13 @@ These instructions will guide you through the process of building and installing
 
 This repository, although called `toxcore`, in fact contains several libraries besides `toxcore` which complement it, as well as several executables. However, note that although these are separate libraries, at the moment, when building the libraries, they are all merged into a single `toxcore` library. Here is the full list of the main components that can be built using the CMake, their dependencies and descriptions.
 
-| Name             | Type       | Dependencies                                  | Platform       | Description                                                                |
-|------------------|------------|-----------------------------------------------|----------------|----------------------------------------------------------------------------|
-| `toxcore`        | Library    | libnacl or libsodium, libm, libpthread, librt | Cross-platform | The main Tox library that provides the messenger functionality.            |
-| `toxav`          | Library    | libtoxcore, libopus, libvpx                   | Cross-platform | Provides audio/video functionality.                                        |
-| `toxencryptsave` | Library    | libtoxcore, libnacl or libsodium              | Cross-platform | Provides encryption of Tox profiles (savedata), as well as arbitrary data. |
-| `DHT_bootstrap`  | Executable | libtoxcore                                    | Cross-platform | A simple DHT bootstrap node.                                               |
-| `tox-bootstrapd` | Executable | libtoxcore, libconfig                         | Unix-like      | Highly configurable DHT bootstrap node daemon (systemd, SysVinit, Docker). |
+| Name             | Type       | Dependencies                                              | Platform       | Description                                                                |
+|------------------|------------|-----------------------------------------------------------|----------------|----------------------------------------------------------------------------|
+| `toxcore`        | Library    | libnacl or libsodium, libm, libpthread, librt, libmsgpack | Cross-platform | The main Tox library that provides the messenger functionality.            |
+| `toxav`          | Library    | libtoxcore, libopus, libvpx                               | Cross-platform | Provides audio/video functionality.                                        |
+| `toxencryptsave` | Library    | libtoxcore, libnacl or libsodium                          | Cross-platform | Provides encryption of Tox profiles (savedata), as well as arbitrary data. |
+| `DHT_bootstrap`  | Executable | libtoxcore                                                | Cross-platform | A simple DHT bootstrap node.                                               |
+| `tox-bootstrapd` | Executable | libtoxcore, libconfig                                     | Unix-like      | Highly configurable DHT bootstrap node daemon (systemd, SysVinit, Docker). |
 
 #### Secondary
 
