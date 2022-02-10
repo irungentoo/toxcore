@@ -320,6 +320,7 @@ static void tox_conference_peer_list_changed_handler(Messenger *m, uint32_t conf
     }
 }
 
+non_null(1, 2) nullable(3)
 static void tox_dht_get_nodes_response_handler(const DHT *dht, const Node_format *node, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
@@ -2618,7 +2619,7 @@ bool tox_dht_get_nodes(const Tox *tox, const uint8_t *public_key, const char *ip
         return false;
     }
 
-    bool success = 0;
+    bool success = false;
 
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);

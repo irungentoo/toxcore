@@ -256,6 +256,7 @@ typedef void dht_ip_cb(void *object, int32_t number, const IP_Port *ip_port);
 typedef void dht_get_nodes_response_cb(const DHT *dht, const Node_format *node, void *userdata);
 
 /** Sets the callback to be triggered on a getnodes response. */
+non_null(1) nullable(2)
 void dht_callback_get_nodes_response(DHT *dht, dht_get_nodes_response_cb *function);
 
 /** Add a new friend to the friends list.

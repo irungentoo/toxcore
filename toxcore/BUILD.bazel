@@ -452,9 +452,11 @@ cc_library(
     srcs = [
         "tox.c",
         "tox_api.c",
+    ],
+    hdrs = [
+        "tox.h",
         "tox_private.h",
     ],
-    hdrs = ["tox.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":Messenger",

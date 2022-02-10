@@ -35,7 +35,7 @@ void set_mono_time_callback(AutoTox *tox);
 
 typedef enum Graph_Type {
     GRAPH_COMPLETE = 0,
-    GRAPH_LINEAR
+    GRAPH_LINEAR,
 } Graph_Type;
 
 typedef struct Run_Auto_Options {
