@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
-#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -123,9 +123,9 @@ static bool tox_event_conference_peer_name_unpack(
         return false;
     }
 
-    return tox_unpack_u32(&event->conference_number, &obj->via.array.ptr[0])
-           && tox_unpack_u32(&event->peer_number, &obj->via.array.ptr[1])
-           && tox_unpack_bin(&event->name, &event->name_length, &obj->via.array.ptr[2]);
+    return bin_unpack_u32(&event->conference_number, &obj->via.array.ptr[0])
+           && bin_unpack_u32(&event->peer_number, &obj->via.array.ptr[1])
+           && bin_unpack_bytes(&event->name, &event->name_length, &obj->via.array.ptr[2]);
 }
 
 

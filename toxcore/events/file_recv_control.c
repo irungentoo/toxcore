@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
@@ -100,8 +101,8 @@ static bool tox_event_file_recv_control_unpack(
         return false;
     }
 
-    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && tox_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
+    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && bin_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
            && tox_unpack_file_control(&event->control, &obj->via.array.ptr[2]);
 }
 

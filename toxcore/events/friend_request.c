@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
-#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -109,8 +109,8 @@ static bool tox_event_friend_request_unpack(
         return false;
     }
 
-    return tox_unpack_bin_fixed(event->public_key, TOX_PUBLIC_KEY_SIZE, &obj->via.array.ptr[0])
-           && tox_unpack_bin(&event->message, &event->message_length, &obj->via.array.ptr[1]);
+    return bin_unpack_bytes_fixed(event->public_key, TOX_PUBLIC_KEY_SIZE, &obj->via.array.ptr[0])
+           && bin_unpack_bytes(&event->message, &event->message_length, &obj->via.array.ptr[1]);
 }
 
 

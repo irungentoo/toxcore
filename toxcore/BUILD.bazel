@@ -15,6 +15,17 @@ cc_library(
 )
 
 cc_library(
+    name = "bin_unpack",
+    srcs = ["bin_unpack.c"],
+    hdrs = ["bin_unpack.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+    deps = [
+        ":ccompat",
+        "@msgpack-c",
+    ],
+)
+
+cc_library(
     name = "ccompat",
     srcs = ["ccompat.c"],
     hdrs = ["ccompat.h"],
@@ -475,6 +486,7 @@ cc_library(
     hdrs = ["tox_unpack.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":bin_unpack",
         ":ccompat",
         ":toxcore",
         "@msgpack-c",
@@ -490,6 +502,7 @@ cc_library(
     hdrs = ["tox_events.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
+        ":bin_unpack",
         ":ccompat",
         ":tox_unpack",
         ":toxcore",

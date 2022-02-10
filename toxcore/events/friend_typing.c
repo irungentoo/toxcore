@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
-#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -89,8 +89,8 @@ static bool tox_event_friend_typing_unpack(
         return false;
     }
 
-    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && tox_unpack_bool(&event->typing, &obj->via.array.ptr[1]);
+    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && bin_unpack_bool(&event->typing, &obj->via.array.ptr[1]);
 }
 
 

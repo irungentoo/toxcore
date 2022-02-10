@@ -6,6 +6,8 @@ libtoxcore_la_include_HEADERS = \
 libtoxcore_la_includedir = $(includedir)/tox
 
 libtoxcore_la_SOURCES = ../toxcore/attributes.h \
+                        ../toxcore/bin_unpack.c \
+                        ../toxcore/bin_unpack.h \
                         ../toxcore/ccompat.c \
                         ../toxcore/ccompat.h \
                         ../toxcore/events/conference_connected.c \

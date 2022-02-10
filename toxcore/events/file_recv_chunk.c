@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
-#include "../tox_unpack.h"
 
 
 /*****************************************************
@@ -137,10 +137,10 @@ static bool tox_event_file_recv_chunk_unpack(
         return false;
     }
 
-    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && tox_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
-           && tox_unpack_u64(&event->position, &obj->via.array.ptr[2])
-           && tox_unpack_bin(&event->data, &event->data_length, &obj->via.array.ptr[3]);
+    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+           && bin_unpack_u32(&event->file_number, &obj->via.array.ptr[1])
+           && bin_unpack_u64(&event->position, &obj->via.array.ptr[2])
+           && bin_unpack_bytes(&event->data, &event->data_length, &obj->via.array.ptr[3]);
 }
 
 

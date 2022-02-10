@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
 #include "../tox_events.h"
@@ -122,9 +123,9 @@ static bool tox_event_conference_invite_unpack(
         return false;
     }
 
-    return tox_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
+    return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
            && tox_unpack_conference_type(&event->type, &obj->via.array.ptr[1])
-           && tox_unpack_bin(&event->cookie, &event->cookie_length, &obj->via.array.ptr[2]);
+           && bin_unpack_bytes(&event->cookie, &event->cookie_length, &obj->via.array.ptr[2]);
 }
 
 

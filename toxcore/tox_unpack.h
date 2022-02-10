@@ -6,17 +6,9 @@
 #define C_TOXCORE_TOXCORE_TOX_UNPACK_H
 
 #include <msgpack.h>
-#include <stdint.h>
 
 #include "attributes.h"
 #include "tox.h"
-
-non_null() bool tox_unpack_bool(bool *val, const msgpack_object *obj);
-non_null() bool tox_unpack_u16(uint16_t *val, const msgpack_object *obj);
-non_null() bool tox_unpack_u32(uint32_t *val, const msgpack_object *obj);
-non_null() bool tox_unpack_u64(uint64_t *val, const msgpack_object *obj);
-non_null() bool tox_unpack_bin(uint8_t **data, size_t *data_length, const msgpack_object *obj);
-non_null() bool tox_unpack_bin_fixed(uint8_t *data, uint32_t data_length, const msgpack_object *obj);
 
 non_null() bool tox_unpack_conference_type(Tox_Conference_Type *val, const msgpack_object *obj);
 non_null() bool tox_unpack_connection(Tox_Connection *val, const msgpack_object *obj);
