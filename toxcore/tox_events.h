@@ -184,6 +184,36 @@ Tox_Connection tox_event_self_connection_status_get_connection_status(
     const Tox_Event_Self_Connection_Status *self_connection_status);
 
 
+typedef enum Tox_Event {
+    TOX_EVENT_SELF_CONNECTION_STATUS        = 0,
+
+    TOX_EVENT_FRIEND_REQUEST                = 1,
+    TOX_EVENT_FRIEND_CONNECTION_STATUS      = 2,
+    TOX_EVENT_FRIEND_LOSSY_PACKET           = 3,
+    TOX_EVENT_FRIEND_LOSSLESS_PACKET        = 4,
+
+    TOX_EVENT_FRIEND_NAME                   = 5,
+    TOX_EVENT_FRIEND_STATUS                 = 6,
+    TOX_EVENT_FRIEND_STATUS_MESSAGE         = 7,
+
+    TOX_EVENT_FRIEND_MESSAGE                = 8,
+    TOX_EVENT_FRIEND_READ_RECEIPT           = 9,
+    TOX_EVENT_FRIEND_TYPING                 = 10,
+
+    TOX_EVENT_FILE_CHUNK_REQUEST            = 11,
+    TOX_EVENT_FILE_RECV                     = 12,
+    TOX_EVENT_FILE_RECV_CHUNK               = 13,
+    TOX_EVENT_FILE_RECV_CONTROL             = 14,
+
+    TOX_EVENT_CONFERENCE_INVITE             = 15,
+    TOX_EVENT_CONFERENCE_CONNECTED          = 16,
+    TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED  = 17,
+    TOX_EVENT_CONFERENCE_PEER_NAME          = 18,
+    TOX_EVENT_CONFERENCE_TITLE              = 19,
+
+    TOX_EVENT_CONFERENCE_MESSAGE            = 20,
+} Tox_Event;
+
 /**
  * Container object for all Tox core events.
  *
@@ -289,14 +319,18 @@ typedef enum Tox_Err_Events_Iterate {
  * Otherwise it returns an object with the recorded events in it. If an
  * allocation fails while recording events, some events may be dropped.
  *
+ * If @p fail_hard is `true`, any failure will result in NULL, so all recorded
+ * events will be dropped.
+ *
  * The result must be freed using `tox_events_free`.
  *
  * @param tox The Tox instance to iterate on.
+ * @param fail_hard Drop all events when any allocation fails.
  * @param error An error code. Will be set to OK on success.
  *
  * @returns the recorded events structure.
  */
-Tox_Events *tox_events_iterate(Tox *tox, Tox_Err_Events_Iterate *error);
+Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate *error);
 
 /**
  * Frees all memory associated with the events structure.

@@ -94,6 +94,8 @@ static void tox_event_friend_lossless_packet_pack(
 {
     assert(event != nullptr);
     bin_pack_array(mp, 2);
+    bin_pack_u32(mp, TOX_EVENT_FRIEND_LOSSLESS_PACKET);
+    bin_pack_array(mp, 2);
     bin_pack_u32(mp, event->friend_number);
     bin_pack_bytes(mp, event->data, event->data_length);
 }
@@ -183,8 +185,6 @@ void tox_events_pack_friend_lossless_packet(const Tox_Events *events, msgpack_pa
 {
     const uint32_t size = tox_events_get_friend_lossless_packet_size(events);
 
-    bin_pack_array(mp, size);
-
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_lossless_packet_pack(tox_events_get_friend_lossless_packet(events, i), mp);
     }
@@ -192,23 +192,13 @@ void tox_events_pack_friend_lossless_packet(const Tox_Events *events, msgpack_pa
 
 bool tox_events_unpack_friend_lossless_packet(Tox_Events *events, const msgpack_object *obj)
 {
-    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+    Tox_Event_Friend_Lossless_Packet *event = tox_events_add_friend_lossless_packet(events);
+
+    if (event == nullptr) {
         return false;
     }
 
-    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
-        Tox_Event_Friend_Lossless_Packet *event = tox_events_add_friend_lossless_packet(events);
-
-        if (event == nullptr) {
-            return false;
-        }
-
-        if (!tox_event_friend_lossless_packet_unpack(event, &obj->via.array.ptr[i])) {
-            return false;
-        }
-    }
-
-    return true;
+    return tox_event_friend_lossless_packet_unpack(event, obj);
 }
 
 

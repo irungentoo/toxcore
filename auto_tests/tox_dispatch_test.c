@@ -46,7 +46,7 @@ static void print_events(Tox_Events *events)
 {
     const uint32_t size = tox_events_bytes_size(events);
 
-    if (size > 24) {
+    if (size > 1) {
         tox_events_print(events);
     }
 
@@ -76,9 +76,9 @@ static bool await_message(Tox **toxes, const Tox_Dispatch *dispatch)
 {
     for (uint32_t i = 0; i < 100; ++i) {
         // Ignore events on tox 1.
-        print_events(tox_events_iterate(toxes[0], nullptr));
+        print_events(tox_events_iterate(toxes[0], false, nullptr));
         // Check if tox 2 got the message from tox 1.
-        Tox_Events *events = tox_events_iterate(toxes[1], nullptr);
+        Tox_Events *events = tox_events_iterate(toxes[1], false, nullptr);
 
         dump_events("/tmp/test.mp", events);
 
@@ -131,8 +131,8 @@ static void test_tox_events(void)
     while (tox_self_get_connection_status(toxes[0]) == TOX_CONNECTION_NONE ||
             tox_self_get_connection_status(toxes[1]) == TOX_CONNECTION_NONE) {
         // Ignore connection events for now.
-        print_events(tox_events_iterate(toxes[0], nullptr));
-        print_events(tox_events_iterate(toxes[1], nullptr));
+        print_events(tox_events_iterate(toxes[0], false, nullptr));
+        print_events(tox_events_iterate(toxes[1], false, nullptr));
 
         c_sleep(tox_iteration_interval(toxes[0]));
     }
@@ -142,8 +142,8 @@ static void test_tox_events(void)
     while (tox_friend_get_connection_status(toxes[0], 0, nullptr) == TOX_CONNECTION_NONE ||
             tox_friend_get_connection_status(toxes[1], 0, nullptr) == TOX_CONNECTION_NONE) {
         // Ignore connection events for now.
-        print_events(tox_events_iterate(toxes[0], nullptr));
-        print_events(tox_events_iterate(toxes[1], nullptr));
+        print_events(tox_events_iterate(toxes[0], false, nullptr));
+        print_events(tox_events_iterate(toxes[1], false, nullptr));
 
         c_sleep(tox_iteration_interval(toxes[0]));
     }

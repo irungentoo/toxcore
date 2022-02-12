@@ -10,7 +10,6 @@ cc_binary(
     ]),
     deps = [
         "//c-toxcore/other:bootstrap_node_packets",
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:DHT",
         "//c-toxcore/toxcore:TCP_server",
         "//c-toxcore/toxcore:ccompat",
@@ -18,6 +17,7 @@ cc_binary(
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:network",
         "//c-toxcore/toxcore:onion_announce",
+        "//c-toxcore/toxcore:tox",
         "@libconfig",
     ],
 )

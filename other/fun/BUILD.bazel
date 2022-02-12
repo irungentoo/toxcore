@@ -46,8 +46,8 @@ cc_binary(
         "create_savedata.c",
     ],
     deps = [
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
         "@libsodium",
     ],
 )
@@ -83,8 +83,8 @@ cc_binary(
     srcs = ["strkey.c"],
     copts = ["-w"],
     deps = [
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
         "@libsodium",
     ],
 )
@@ -95,7 +95,7 @@ cc_binary(
     srcs = ["save-generator.c"],
     deps = [
         "//c-toxcore/testing:misc_tools",
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
     ],
 )

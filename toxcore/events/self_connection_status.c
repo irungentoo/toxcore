@@ -59,7 +59,8 @@ static void tox_event_self_connection_status_pack(
     const Tox_Event_Self_Connection_Status *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 1);
+    bin_pack_array(mp, 2);
+    bin_pack_u32(mp, TOX_EVENT_SELF_CONNECTION_STATUS);
     bin_pack_u32(mp, event->connection_status);
 }
 
@@ -68,12 +69,7 @@ static bool tox_event_self_connection_status_unpack(
     Tox_Event_Self_Connection_Status *event, const msgpack_object *obj)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 1) {
-        return false;
-    }
-
-    return tox_unpack_connection(&event->connection_status, &obj->via.array.ptr[0]);
+    return tox_unpack_connection(&event->connection_status, obj);
 }
 
 
@@ -147,8 +143,6 @@ void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_pa
 {
     const uint32_t size = tox_events_get_self_connection_status_size(events);
 
-    bin_pack_array(mp, size);
-
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_self_connection_status_pack(tox_events_get_self_connection_status(events, i), mp);
     }
@@ -156,23 +150,13 @@ void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_pa
 
 bool tox_events_unpack_self_connection_status(Tox_Events *events, const msgpack_object *obj)
 {
-    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+    Tox_Event_Self_Connection_Status *event = tox_events_add_self_connection_status(events);
+
+    if (event == nullptr) {
         return false;
     }
 
-    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
-        Tox_Event_Self_Connection_Status *event = tox_events_add_self_connection_status(events);
-
-        if (event == nullptr) {
-            return false;
-        }
-
-        if (!tox_event_self_connection_status_unpack(event, &obj->via.array.ptr[i])) {
-            return false;
-        }
-    }
-
-    return true;
+    return tox_event_self_connection_status_unpack(event, obj);
 }
 
 

@@ -16,9 +16,9 @@ cc_library(
     deps = [
         ":check_compat",
         "//c-toxcore/testing:misc_tools",
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:tox",
     ],
 )
 
@@ -44,7 +44,6 @@ flaky_tests = {
         ":check_compat",
         "//c-toxcore/testing:misc_tools",
         "//c-toxcore/toxav",
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:DHT_srcs",
         "//c-toxcore/toxcore:Messenger",
         "//c-toxcore/toxcore:TCP_client",
@@ -61,6 +60,7 @@ flaky_tests = {
         "//c-toxcore/toxcore:onion",
         "//c-toxcore/toxcore:onion_announce",
         "//c-toxcore/toxcore:onion_client",
+        "//c-toxcore/toxcore:tox",
         "//c-toxcore/toxcore:tox_dispatch",
         "//c-toxcore/toxcore:tox_events",
         "//c-toxcore/toxencryptsave",

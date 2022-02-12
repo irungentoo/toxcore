@@ -46,7 +46,7 @@ void tox_events_init(Tox *tox)
     tox_callback_self_connection_status(tox, tox_events_handle_self_connection_status);
 }
 
-Tox_Events *tox_events_iterate(Tox *tox, Tox_Err_Events_Iterate *error)
+Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate *error)
 {
     Tox_Events_State state = {TOX_ERR_EVENTS_ITERATE_OK};
     tox_iterate(tox, &state);
@@ -55,12 +55,40 @@ Tox_Events *tox_events_iterate(Tox *tox, Tox_Err_Events_Iterate *error)
         *error = state.error;
     }
 
+    if (fail_hard && state.error != TOX_ERR_EVENTS_ITERATE_OK) {
+        tox_events_free(state.events);
+        return nullptr;
+    }
+
     return state.events;
 }
 
 void tox_events_pack(const Tox_Events *events, msgpack_packer *mp)
 {
-    msgpack_pack_array(mp, 21);
+    const uint32_t count = tox_events_get_conference_connected_size(events)
+                           + tox_events_get_conference_invite_size(events)
+                           + tox_events_get_conference_message_size(events)
+                           + tox_events_get_conference_peer_list_changed_size(events)
+                           + tox_events_get_conference_peer_name_size(events)
+                           + tox_events_get_conference_title_size(events)
+                           + tox_events_get_file_chunk_request_size(events)
+                           + tox_events_get_file_recv_chunk_size(events)
+                           + tox_events_get_file_recv_control_size(events)
+                           + tox_events_get_file_recv_size(events)
+                           + tox_events_get_friend_connection_status_size(events)
+                           + tox_events_get_friend_lossless_packet_size(events)
+                           + tox_events_get_friend_lossy_packet_size(events)
+                           + tox_events_get_friend_message_size(events)
+                           + tox_events_get_friend_name_size(events)
+                           + tox_events_get_friend_read_receipt_size(events)
+                           + tox_events_get_friend_request_size(events)
+                           + tox_events_get_friend_status_message_size(events)
+                           + tox_events_get_friend_status_size(events)
+                           + tox_events_get_friend_typing_size(events)
+                           + tox_events_get_self_connection_status_size(events);
+
+    msgpack_pack_array(mp, count);
+
     tox_events_pack_conference_connected(events, mp);
     tox_events_pack_conference_invite(events, mp);
     tox_events_pack_conference_message(events, mp);
@@ -84,33 +112,100 @@ void tox_events_pack(const Tox_Events *events, msgpack_packer *mp)
     tox_events_pack_self_connection_status(events, mp);
 }
 
-bool tox_events_unpack(Tox_Events *events, const msgpack_object *obj)
+non_null()
+static bool tox_event_unpack(Tox_Events *events, const msgpack_object *obj)
 {
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 21) {
+    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size != 2 ||
+            obj->via.array.ptr[0].type != MSGPACK_OBJECT_POSITIVE_INTEGER) {
         return false;
     }
 
-    return tox_events_unpack_conference_connected(events,            &obj->via.array.ptr[0])
-           && tox_events_unpack_conference_invite(events,            &obj->via.array.ptr[1])
-           && tox_events_unpack_conference_message(events,           &obj->via.array.ptr[2])
-           && tox_events_unpack_conference_peer_list_changed(events, &obj->via.array.ptr[3])
-           && tox_events_unpack_conference_peer_name(events,         &obj->via.array.ptr[4])
-           && tox_events_unpack_conference_title(events,             &obj->via.array.ptr[5])
-           && tox_events_unpack_file_chunk_request(events,           &obj->via.array.ptr[6])
-           && tox_events_unpack_file_recv_chunk(events,              &obj->via.array.ptr[7])
-           && tox_events_unpack_file_recv_control(events,            &obj->via.array.ptr[8])
-           && tox_events_unpack_file_recv(events,                    &obj->via.array.ptr[9])
-           && tox_events_unpack_friend_connection_status(events,     &obj->via.array.ptr[10])
-           && tox_events_unpack_friend_lossless_packet(events,       &obj->via.array.ptr[11])
-           && tox_events_unpack_friend_lossy_packet(events,          &obj->via.array.ptr[12])
-           && tox_events_unpack_friend_message(events,               &obj->via.array.ptr[13])
-           && tox_events_unpack_friend_name(events,                  &obj->via.array.ptr[14])
-           && tox_events_unpack_friend_read_receipt(events,          &obj->via.array.ptr[15])
-           && tox_events_unpack_friend_request(events,               &obj->via.array.ptr[16])
-           && tox_events_unpack_friend_status_message(events,        &obj->via.array.ptr[17])
-           && tox_events_unpack_friend_status(events,                &obj->via.array.ptr[18])
-           && tox_events_unpack_friend_typing(events,                &obj->via.array.ptr[19])
-           && tox_events_unpack_self_connection_status(events,       &obj->via.array.ptr[20]);
+    const msgpack_object *inner = &obj->via.array.ptr[1];
+
+    switch (obj->via.array.ptr[0].via.u64) {
+        case TOX_EVENT_CONFERENCE_CONNECTED:
+            return tox_events_unpack_conference_connected(events, inner);
+
+        case TOX_EVENT_CONFERENCE_INVITE:
+            return tox_events_unpack_conference_invite(events, inner);
+
+        case TOX_EVENT_CONFERENCE_MESSAGE:
+            return tox_events_unpack_conference_message(events, inner);
+
+        case TOX_EVENT_CONFERENCE_PEER_LIST_CHANGED:
+            return tox_events_unpack_conference_peer_list_changed(events, inner);
+
+        case TOX_EVENT_CONFERENCE_PEER_NAME:
+            return tox_events_unpack_conference_peer_name(events, inner);
+
+        case TOX_EVENT_CONFERENCE_TITLE:
+            return tox_events_unpack_conference_title(events, inner);
+
+        case TOX_EVENT_FILE_CHUNK_REQUEST:
+            return tox_events_unpack_file_chunk_request(events, inner);
+
+        case TOX_EVENT_FILE_RECV_CHUNK:
+            return tox_events_unpack_file_recv_chunk(events, inner);
+
+        case TOX_EVENT_FILE_RECV_CONTROL:
+            return tox_events_unpack_file_recv_control(events, inner);
+
+        case TOX_EVENT_FILE_RECV:
+            return tox_events_unpack_file_recv(events, inner);
+
+        case TOX_EVENT_FRIEND_CONNECTION_STATUS:
+            return tox_events_unpack_friend_connection_status(events, inner);
+
+        case TOX_EVENT_FRIEND_LOSSLESS_PACKET:
+            return tox_events_unpack_friend_lossless_packet(events, inner);
+
+        case TOX_EVENT_FRIEND_LOSSY_PACKET:
+            return tox_events_unpack_friend_lossy_packet(events, inner);
+
+        case TOX_EVENT_FRIEND_MESSAGE:
+            return tox_events_unpack_friend_message(events, inner);
+
+        case TOX_EVENT_FRIEND_NAME:
+            return tox_events_unpack_friend_name(events, inner);
+
+        case TOX_EVENT_FRIEND_READ_RECEIPT:
+            return tox_events_unpack_friend_read_receipt(events, inner);
+
+        case TOX_EVENT_FRIEND_REQUEST:
+            return tox_events_unpack_friend_request(events, inner);
+
+        case TOX_EVENT_FRIEND_STATUS_MESSAGE:
+            return tox_events_unpack_friend_status_message(events, inner);
+
+        case TOX_EVENT_FRIEND_STATUS:
+            return tox_events_unpack_friend_status(events, inner);
+
+        case TOX_EVENT_FRIEND_TYPING:
+            return tox_events_unpack_friend_typing(events, inner);
+
+        case TOX_EVENT_SELF_CONNECTION_STATUS:
+            return tox_events_unpack_self_connection_status(events, inner);
+
+        default:
+            return false;
+    }
+
+    return true;
+}
+
+bool tox_events_unpack(Tox_Events *events, const msgpack_object *obj)
+{
+    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+        return false;
+    }
+
+    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
+        if (!tox_event_unpack(events, &obj->via.array.ptr[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 non_null()

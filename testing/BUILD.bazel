@@ -40,8 +40,8 @@ cc_library(
     hdrs = ["misc_tools.h"],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
-        "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:ccompat",
+        "//c-toxcore/toxcore:tox",
         "@libsodium",
     ],
 )
@@ -84,6 +84,6 @@ cc_binary(
     srcs = ["random_testing.cc"],
     deps = [
         ":misc_tools",
-        "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:tox",
     ],
 )

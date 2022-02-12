@@ -58,7 +58,8 @@ static void tox_event_conference_connected_pack(
     const Tox_Event_Conference_Connected *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    bin_pack_array(mp, 1);
+    bin_pack_array(mp, 2);
+    bin_pack_u32(mp, TOX_EVENT_CONFERENCE_CONNECTED);
     bin_pack_u32(mp, event->conference_number);
 }
 
@@ -67,12 +68,7 @@ static bool tox_event_conference_connected_unpack(
     Tox_Event_Conference_Connected *event, const msgpack_object *obj)
 {
     assert(event != nullptr);
-
-    if (obj->type != MSGPACK_OBJECT_ARRAY || obj->via.array.size < 1) {
-        return false;
-    }
-
-    return bin_unpack_u32(&event->conference_number, &obj->via.array.ptr[0]);
+    return bin_unpack_u32(&event->conference_number, obj);
 }
 
 
@@ -146,8 +142,6 @@ void tox_events_pack_conference_connected(const Tox_Events *events, msgpack_pack
 {
     const uint32_t size = tox_events_get_conference_connected_size(events);
 
-    bin_pack_array(mp, size);
-
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_conference_connected_pack(tox_events_get_conference_connected(events, i), mp);
     }
@@ -155,23 +149,13 @@ void tox_events_pack_conference_connected(const Tox_Events *events, msgpack_pack
 
 bool tox_events_unpack_conference_connected(Tox_Events *events, const msgpack_object *obj)
 {
-    if (obj->type != MSGPACK_OBJECT_ARRAY) {
+    Tox_Event_Conference_Connected *event = tox_events_add_conference_connected(events);
+
+    if (event == nullptr) {
         return false;
     }
 
-    for (uint32_t i = 0; i < obj->via.array.size; ++i) {
-        Tox_Event_Conference_Connected *event = tox_events_add_conference_connected(events);
-
-        if (event == nullptr) {
-            return false;
-        }
-
-        if (!tox_event_conference_connected_unpack(event, &obj->via.array.ptr[i])) {
-            return false;
-        }
-    }
-
-    return true;
+    return tox_event_conference_connected_unpack(event, obj);
 }
 
 
