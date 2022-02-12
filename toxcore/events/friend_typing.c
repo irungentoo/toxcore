@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
@@ -69,14 +70,9 @@ static void tox_event_friend_typing_pack(
     const Tox_Event_Friend_Typing *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    msgpack_pack_array(mp, 2);
-    msgpack_pack_uint32(mp, event->friend_number);
-
-    if (event->typing) {
-        msgpack_pack_true(mp);
-    } else {
-        msgpack_pack_false(mp);
-    }
+    bin_pack_array(mp, 2);
+    bin_pack_u32(mp, event->friend_number);
+    bin_pack_bool(mp, event->typing);
 }
 
 non_null()
@@ -163,7 +159,7 @@ void tox_events_pack_friend_typing(const Tox_Events *events, msgpack_packer *mp)
 {
     const uint32_t size = tox_events_get_friend_typing_size(events);
 
-    msgpack_pack_array(mp, size);
+    bin_pack_array(mp, size);
 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_typing_pack(tox_events_get_friend_typing(events, i), mp);

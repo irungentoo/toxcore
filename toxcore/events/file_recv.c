@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
@@ -133,13 +134,12 @@ static void tox_event_file_recv_pack(
     const Tox_Event_File_Recv *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    msgpack_pack_array(mp, 5);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_uint32(mp, event->file_number);
-    msgpack_pack_uint32(mp, event->kind);
-    msgpack_pack_uint64(mp, event->file_size);
-    msgpack_pack_bin(mp, event->filename_length);
-    msgpack_pack_bin_body(mp, event->filename, event->filename_length);
+    bin_pack_array(mp, 5);
+    bin_pack_u32(mp, event->friend_number);
+    bin_pack_u32(mp, event->file_number);
+    bin_pack_u32(mp, event->kind);
+    bin_pack_u64(mp, event->file_size);
+    bin_pack_bytes(mp, event->filename, event->filename_length);
 }
 
 non_null()
@@ -229,7 +229,7 @@ void tox_events_pack_file_recv(const Tox_Events *events, msgpack_packer *mp)
 {
     const uint32_t size = tox_events_get_file_recv_size(events);
 
-    msgpack_pack_array(mp, size);
+    bin_pack_array(mp, size);
 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_file_recv_pack(tox_events_get_file_recv(events, i), mp);

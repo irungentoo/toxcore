@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
@@ -58,8 +59,8 @@ static void tox_event_self_connection_status_pack(
     const Tox_Event_Self_Connection_Status *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    msgpack_pack_array(mp, 1);
-    msgpack_pack_uint32(mp, event->connection_status);
+    bin_pack_array(mp, 1);
+    bin_pack_u32(mp, event->connection_status);
 }
 
 non_null()
@@ -146,7 +147,7 @@ void tox_events_pack_self_connection_status(const Tox_Events *events, msgpack_pa
 {
     const uint32_t size = tox_events_get_self_connection_status_size(events);
 
-    msgpack_pack_array(mp, size);
+    bin_pack_array(mp, size);
 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_self_connection_status_pack(tox_events_get_self_connection_status(events, i), mp);

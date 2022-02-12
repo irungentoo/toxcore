@@ -279,6 +279,8 @@ set(toxcore_SOURCES ${toxcore_SOURCES}
   toxcore/events/events_alloc.c
   toxcore/events/events_alloc.h
   toxcore/events/self_connection_status.c
+  toxcore/bin_pack.c
+  toxcore/bin_pack.h
   toxcore/bin_unpack.c
   toxcore/bin_unpack.h
   toxcore/tox_events.c

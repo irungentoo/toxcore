@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
@@ -92,10 +93,9 @@ static void tox_event_friend_lossless_packet_pack(
     const Tox_Event_Friend_Lossless_Packet *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    msgpack_pack_array(mp, 2);
-    msgpack_pack_uint32(mp, event->friend_number);
-    msgpack_pack_bin(mp, event->data_length);
-    msgpack_pack_bin_body(mp, event->data, event->data_length);
+    bin_pack_array(mp, 2);
+    bin_pack_u32(mp, event->friend_number);
+    bin_pack_bytes(mp, event->data, event->data_length);
 }
 
 non_null()
@@ -183,7 +183,7 @@ void tox_events_pack_friend_lossless_packet(const Tox_Events *events, msgpack_pa
 {
     const uint32_t size = tox_events_get_friend_lossless_packet_size(events);
 
-    msgpack_pack_array(mp, size);
+    bin_pack_array(mp, size);
 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_lossless_packet_pack(tox_events_get_friend_lossless_packet(events, i), mp);

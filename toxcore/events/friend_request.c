@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../bin_pack.h"
 #include "../bin_unpack.h"
 #include "../ccompat.h"
 #include "../tox.h"
@@ -92,11 +93,9 @@ static void tox_event_friend_request_pack(
     const Tox_Event_Friend_Request *event, msgpack_packer *mp)
 {
     assert(event != nullptr);
-    msgpack_pack_array(mp, 2);
-    msgpack_pack_bin(mp, TOX_PUBLIC_KEY_SIZE);
-    msgpack_pack_bin_body(mp, event->public_key, TOX_PUBLIC_KEY_SIZE);
-    msgpack_pack_bin(mp, event->message_length);
-    msgpack_pack_bin_body(mp, event->message, event->message_length);
+    bin_pack_array(mp, 2);
+    bin_pack_bytes(mp, event->public_key, TOX_PUBLIC_KEY_SIZE);
+    bin_pack_bytes(mp, event->message, event->message_length);
 }
 
 non_null()
@@ -183,7 +182,7 @@ void tox_events_pack_friend_request(const Tox_Events *events, msgpack_packer *mp
 {
     const uint32_t size = tox_events_get_friend_request_size(events);
 
-    msgpack_pack_array(mp, size);
+    bin_pack_array(mp, size);
 
     for (uint32_t i = 0; i < size; ++i) {
         tox_event_friend_request_pack(tox_events_get_friend_request(events, i), mp);
