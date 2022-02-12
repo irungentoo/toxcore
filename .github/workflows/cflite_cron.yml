@@ -1,0 +1,48 @@
+# Derived from: https://google.github.io/clusterfuzzlite/running-clusterfuzzlite/github-actions/
+
+name: ClusterFuzzLite cron tasks
+on:
+  schedule:
+    - cron: '0 16 * * *'  # Once a day, after fuzzing run
+permissions: read-all
+jobs:
+  Pruning:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build Fuzzers
+      id: build
+      uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+    - name: Run Fuzzers
+      id: run
+      uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        fuzz-seconds: 600
+        mode: 'prune'
+        # Optional but recommended.
+        # See later section on "Git repo for storage".
+        storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/TokTok/toktok-fuzzer.git
+        storage-repo-branch: main   # Optional. Defaults to "main"
+        storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+  Coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build Fuzzers
+      id: build
+      uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+      with:
+        sanitizer: coverage
+    - name: Run Fuzzers
+      id: run
+      uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        fuzz-seconds: 600
+        mode: 'coverage'
+        sanitizer: 'coverage'
+        # Optional but recommended.
+        # See later section on "Git repo for storage".
+        storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/TokTok/toktok-fuzzer.git
+        storage-repo-branch: main   # Optional. Defaults to "main"
+        storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+

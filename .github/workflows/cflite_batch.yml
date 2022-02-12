@@ -1,0 +1,38 @@
+# Derived from: https://google.github.io/clusterfuzzlite/running-clusterfuzzlite/github-actions/
+
+name: ClusterFuzzLite batch fuzzing
+on:
+  schedule:
+    - cron: '0 14 * * *'  # Run daily, hour chosen by fair dice roll
+permissions: read-all
+jobs:
+  BatchFuzzing:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer:
+        - address
+        # Override this with the sanitizers you want.
+        # - undefined
+        # - memory
+    steps:
+    - name: Build Fuzzers (${{ matrix.sanitizer }})
+      id: build
+      uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+      with:
+        sanitizer: ${{ matrix.sanitizer }}
+    - name: Run Fuzzers (${{ matrix.sanitizer }})
+      id: run
+      uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        fuzz-seconds: 900 # 15min
+        mode: 'batch'
+        sanitizer: ${{ matrix.sanitizer }}
+        # Optional but recommended: For storing certain artifacts from fuzzing.
+        # See later section on "Git repo for storage".
+        storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/TokTok/toktok-fuzzer.git
+        storage-repo-branch: main   # Optional. Defaults to "main"
+        storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
+
