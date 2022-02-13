@@ -14,11 +14,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   tox_options_set_savedata_data(tox_options, data, size);
   tox_options_set_savedata_type(tox_options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
-  Tox_Err_New error_new;
-  Tox *tox = tox_new(tox_options, &error_new);
-
-  assert(tox != nullptr);
-  assert(error_new == TOX_ERR_NEW_OK);
+  Tox *tox = tox_new(tox_options, nullptr);
 
   tox_options_free(tox_options);
 
