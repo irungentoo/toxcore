@@ -4,6 +4,7 @@ name: ClusterFuzzLite batch fuzzing
 on:
   schedule:
     - cron: '0 14 * * *'  # Run daily, hour chosen by fair dice roll
+    - workflow_dispatch   # Manual trigger for testing
 permissions: read-all
 jobs:
   BatchFuzzing:
