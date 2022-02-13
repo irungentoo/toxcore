@@ -1,5 +1,7 @@
 #!/bin/bash -eu
 
+FUZZ_TARGETS="bootstrap_fuzzer toxsave_fuzzer"
+
 # out of tree build
 cd "$WORK"
 
@@ -14,8 +16,10 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER="$CC" \
   -DBUILD_TOXAV=OFF -DENABLE_SHARED=NO -DBUILD_FUZZ_TESTS=ON \
   -DDHT_BOOTSTRAP=OFF -DBOOTSTRAP_DAEMON=OFF "$SRC"/c-toxcore
 
-# build fuzzer target
-cmake --build ./ --target bootstrap_fuzzer
+for TARGET in $FUZZ_TARGETS; do
+  # build fuzzer target
+  cmake --build ./ --target "$TARGET"
 
-# copy to output files
-cp "$WORK"/bootstrap_fuzzer "$OUT"/
+  # copy to output files
+  cp "$WORK"/"$TARGET" "$OUT"/
+done
