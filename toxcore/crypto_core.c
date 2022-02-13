@@ -34,6 +34,7 @@
 
 //!TOKSTYLE-
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#include <assert.h>
 #include "../testing/fuzzing/fuzz_adapter.h"
 #endif
 //!TOKSTYLE+
