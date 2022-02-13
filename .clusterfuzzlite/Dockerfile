@@ -9,10 +9,18 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Static builds of dependencies
 
+# libsodium
 RUN git clone --depth 1 --branch 1.0.18 https://github.com/jedisct1/libsodium libsodium
 WORKDIR $SRC/libsodium
 RUN ./autogen.sh && ./configure --enable-shared=no && make install
+WORKDIR $SRC
+
+# msgpack-c
+RUN git clone --depth 1 --branch c_master https://github.com/msgpack/msgpack-c.git msgpack
+WORKDIR $SRC/msgpack
+RUN cmake -DBUILD_SHARED_LIBS=OFF . && make && make install
 
 # Copy your project's source code.
 COPY . $SRC/c-toxcore
