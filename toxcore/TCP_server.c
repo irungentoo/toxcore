@@ -797,11 +797,13 @@ static int accept_connection(TCP_Server *tcp_server, Socket sock)
     return index;
 }
 
-static Socket new_listening_TCP_socket(Family family, uint16_t port)
+non_null()
+static Socket new_listening_TCP_socket(const Logger *logger, Family family, uint16_t port)
 {
     Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
+        LOGGER_ERROR(logger, "TCP socket creation failed (family = %d)", family.value);
         return net_invalid_socket;
     }
 
@@ -818,6 +820,7 @@ static Socket new_listening_TCP_socket(Family family, uint16_t port)
     ok = ok && bind_to_port(sock, family, port) && (net_listen(sock, TCP_MAX_BACKLOG) == 0);
 
     if (!ok) {
+        LOGGER_ERROR(logger, "could not bind to TCP port %d (family = %d)", port, family.value);
         kill_sock(sock);
         return net_invalid_socket;
     }
@@ -829,16 +832,19 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
                            const uint8_t *secret_key, Onion *onion)
 {
     if (num_sockets == 0 || ports == nullptr) {
+        LOGGER_ERROR(logger, "no sockets");
         return nullptr;
     }
 
     if (networking_at_startup() != 0) {
+        LOGGER_ERROR(logger, "network initialisation failed");
         return nullptr;
     }
 
     TCP_Server *temp = (TCP_Server *)calloc(1, sizeof(TCP_Server));
 
     if (temp == nullptr) {
+        LOGGER_ERROR(logger, "TCP server allocation failed");
         return nullptr;
     }
 
@@ -847,6 +853,7 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
     temp->socks_listening = (Socket *)calloc(num_sockets, sizeof(Socket));
 
     if (temp->socks_listening == nullptr) {
+        LOGGER_ERROR(logger, "socket allocation failed");
         free(temp);
         return nullptr;
     }
@@ -855,6 +862,7 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
     temp->efd = epoll_create(8);
 
     if (temp->efd == -1) {
+        LOGGER_ERROR(logger, "epoll initialisation failed");
         free(temp->socks_listening);
         free(temp);
         return nullptr;
@@ -865,24 +873,26 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
     const Family family = ipv6_enabled ? net_family_ipv6 : net_family_ipv4;
 
     for (uint32_t i = 0; i < num_sockets; ++i) {
-        Socket sock = new_listening_TCP_socket(family, ports[i]);
+        Socket sock = new_listening_TCP_socket(logger, family, ports[i]);
 
-        if (sock_valid(sock)) {
+        if (!sock_valid(sock)) {
+            continue;
+        }
+
 #ifdef TCP_SERVER_USE_EPOLL
-            struct epoll_event ev;
+        struct epoll_event ev;
 
-            ev.events = EPOLLIN | EPOLLET;
-            ev.data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_LISTENING << 32);
+        ev.events = EPOLLIN | EPOLLET;
+        ev.data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_LISTENING << 32);
 
-            if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock.socket, &ev) == -1) {
-                continue;
-            }
+        if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock.socket, &ev) == -1) {
+            continue;
+        }
 
 #endif
 
-            temp->socks_listening[temp->num_listening_socks] = sock;
-            ++temp->num_listening_socks;
-        }
+        temp->socks_listening[temp->num_listening_socks] = sock;
+        ++temp->num_listening_socks;
     }
 
     if (temp->num_listening_socks == 0) {

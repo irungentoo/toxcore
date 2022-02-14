@@ -5,6 +5,9 @@ on:
     branches: [master]
 
 jobs:
+  common:
+    uses: TokTok/ci-tools/.github/workflows/common-ci.yml@master
+
   mypy:
     runs-on: ubuntu-latest
     steps:
@@ -164,13 +167,3 @@ jobs:
       - run: .github/scripts/cmake-android arm64-v8a
       - run: .github/scripts/cmake-android x86
       - run: .github/scripts/cmake-android x86_64
-
-  buildifier:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Check
-        run: |
-          wget --no-verbose --output-document=buildifier https://github.com/bazelbuild/buildtools/releases/download/4.2.5/buildifier-linux-amd64
-          sudo chmod +x buildifier
-          ./buildifier --lint=warn --warnings=all -mode diff $(find . -type f -name BUILD.bazel)
