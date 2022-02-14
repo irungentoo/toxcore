@@ -138,8 +138,9 @@ Example of calling cmake with options
 ```sh
 cmake \
   -D ENABLE_STATIC=OFF \
-  -D MIN_LOGGER_LEVEL=DEBUG \
-  -D CMAKE_INSTALL_PREFIX=/opt \
+  -D ENABLE_SHARED=ON \
+  -D CMAKE_INSTALL_PREFIX="${PWD}/prefix" \
+  -D CMAKE_BUILD_TYPE=Release \
   -D TEST_TIMEOUT_SECONDS=120 \
   ..
 ```
