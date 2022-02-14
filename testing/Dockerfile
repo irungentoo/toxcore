@@ -26,7 +26,6 @@ RUN apt-get update && \
     cmake \
     parallel \
     libsodium-dev \
-    ninja-build\
     && rm -rf /var/lib/apt/lists/*
 
 RUN echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main" >> /etc/apt/sources.list && \
