@@ -247,9 +247,10 @@ Build the container image based on the Dockerfile. The following options are ava
 | `SUPPORT_ARCH_x86_64` | Support building 64-bit toxcore.                               | "true" or "false" (case sensitive). | true          |
 | `SUPPORT_TEST`        | Support running toxcore automated tests.                       | "true" or "false" (case sensitive). | false         |
 | `CROSS_COMPILE`       | Cross-compiling. True for Docker, false for Cygwin.            | "true" or "false" (case sensitive). | true          |
+| `VERSION_MSGPACK`     | Version of libmsgpackc to build toxcore with.                  | Numeric version number.             | 4.0.0         |
 | `VERSION_OPUS`        | Version of libopus to build toxcore with.                      | Numeric version number.             | 1.3.1         |
 | `VERSION_SODIUM`      | Version of libsodium to build toxcore with.                    | Numeric version number.             | 1.0.18        |
-| `VERSION_VPX`         | Version of libvpx to build toxcore with.                       | Numeric version number.             | 1.9.0         |
+| `VERSION_VPX`         | Version of libvpx to build toxcore with.                       | Numeric version number.             | 1.11.0        |
 
 Example of building a container image with options
 

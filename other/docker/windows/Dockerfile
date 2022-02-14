@@ -1,10 +1,10 @@
-FROM debian:buster-slim
+FROM debian:bullseye-slim
 
 # Build-time environment variables
 ARG VERSION_MSGPACK=4.0.0 \
     VERSION_SODIUM=1.0.18 \
     VERSION_OPUS=1.3.1 \
-    VERSION_VPX=1.9.0 \
+    VERSION_VPX=1.11.0 \
  \
     SUPPORT_TEST=false \
     SUPPORT_ARCH_i686=true \
