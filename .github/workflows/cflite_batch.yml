@@ -3,8 +3,8 @@
 name: ClusterFuzzLite batch fuzzing
 on:
   schedule:
-    - cron: '0 14 * * *'  # Run daily, hour chosen by fair dice roll
-  workflow_dispatch:      # Manual trigger for testing
+    - cron: '0 6,8 * * *'  # Run twice a day at low activity times
+  workflow_dispatch:       # Manual trigger for testing
 permissions: read-all
 jobs:
   BatchFuzzing:
@@ -28,7 +28,7 @@ jobs:
       uses: google/clusterfuzzlite/actions/run_fuzzers@v1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        fuzz-seconds: 900 # 15min
+        fuzz-seconds: 3600 # 60min
         mode: 'batch'
         sanitizer: ${{ matrix.sanitizer }}
         # Optional but recommended: For storing certain artifacts from fuzzing.

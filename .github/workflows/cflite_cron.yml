@@ -3,7 +3,7 @@
 name: ClusterFuzzLite cron tasks
 on:
   schedule:
-    - cron: '0 16 * * *'  # Once a day, after fuzzing run
+    - cron: '0 10 * * *'  # Once a day, after fuzzing run
   workflow_dispatch:      # Manual trigger for testing
 
 permissions: read-all
