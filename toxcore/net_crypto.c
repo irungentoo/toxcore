@@ -817,17 +817,19 @@ static int get_data_pointer(const Packets_Array *array, Packet_Data **data, uint
  * return packet number on success.
  */
 non_null()
-static int64_t add_data_end_of_buffer(Packets_Array *array, const Packet_Data *data)
+static int64_t add_data_end_of_buffer(const Logger *logger, Packets_Array *array, const Packet_Data *data)
 {
     const uint32_t num_spots = num_packets_array(array);
 
     if (num_spots >= CRYPTO_PACKET_BUFFER_SIZE) {
+        LOGGER_WARNING(logger, "crypto packet buffer size exceeded; rejecting packet of length %d", data->length);
         return -1;
     }
 
     Packet_Data *new_d = (Packet_Data *)calloc(1, sizeof(Packet_Data));
 
     if (new_d == nullptr) {
+        LOGGER_ERROR(logger, "packet data allocation failed");
         return -1;
     }
 
@@ -1080,14 +1082,14 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     const uint16_t max_length = MAX_CRYPTO_PACKET_SIZE - (1 + sizeof(uint16_t) + CRYPTO_MAC_SIZE);
 
     if (length == 0 || length > max_length) {
-        LOGGER_WARNING(c->log, "zero-length or too large data packet: %d (max: %d)", length, max_length);
+        LOGGER_ERROR(c->log, "zero-length or too large data packet: %d (max: %d)", length, max_length);
         return -1;
     }
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
-        LOGGER_WARNING(c->log, "connection id %d not found", crypt_connection_id);
+        LOGGER_ERROR(c->log, "connection id %d not found", crypt_connection_id);
         return -1;
     }
 
@@ -1099,7 +1101,7 @@ static int send_data_packet(Net_Crypto *c, int crypt_connection_id, const uint8_
     const int len = encrypt_data_symmetric(conn->shared_key, conn->sent_nonce, data, length, packet + 1 + sizeof(uint16_t));
 
     if (len + 1 + sizeof(uint16_t) != packet_size) {
-        LOGGER_WARNING(c->log, "encryption failed: %d", len);
+        LOGGER_ERROR(c->log, "encryption failed: %d", len);
         pthread_mutex_unlock(conn->mutex);
         return -1;
     }
@@ -1120,7 +1122,7 @@ static int send_data_packet_helper(Net_Crypto *c, int crypt_connection_id, uint3
                                    const uint8_t *data, uint16_t length)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE) {
-        LOGGER_WARNING(c->log, "zero-length or too large data packet: %d (max: %d)", length, MAX_CRYPTO_PACKET_SIZE);
+        LOGGER_ERROR(c->log, "zero-length or too large data packet: %d (max: %d)", length, MAX_CRYPTO_PACKET_SIZE);
         return -1;
     }
 
@@ -1175,6 +1177,8 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
                                     uint8_t congestion_control)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE) {
+        LOGGER_ERROR(c->log, "rejecting too large (or empty) packet of size %d on crypt connection %d", length,
+                     crypt_connection_id);
         return -1;
     }
 
@@ -1189,6 +1193,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     reset_max_speed_reached(c, crypt_connection_id);
 
     if (conn->maximum_speed_reached && congestion_control) {
+        LOGGER_INFO(c->log, "congestion control: maximum speed reached on crypt connection %d", crypt_connection_id);
         return -1;
     }
 
@@ -1197,7 +1202,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
     dt.length = length;
     memcpy(dt.data, data, length);
     pthread_mutex_lock(conn->mutex);
-    const int64_t packet_num = add_data_end_of_buffer(&conn->send_array, &dt);
+    const int64_t packet_num = add_data_end_of_buffer(c->log, &conn->send_array, &dt);
     pthread_mutex_unlock(conn->mutex);
 
     if (packet_num == -1) {
@@ -2848,28 +2853,35 @@ int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t 
                           uint8_t congestion_control)
 {
     if (length == 0) {
+        // We need at least a packet id.
+        LOGGER_ERROR(c->log, "rejecting empty packet for crypto connection %d", crypt_connection_id);
         return -1;
     }
 
     if (data[0] < PACKET_ID_RANGE_LOSSLESS_START || data[0] > PACKET_ID_RANGE_LOSSLESS_END) {
+        LOGGER_ERROR(c->log, "rejecting lossless packet with out-of-range id %d", data[0]);
         return -1;
     }
 
     Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
     if (conn == nullptr) {
+        LOGGER_WARNING(c->log, "invalid crypt connection id %d", crypt_connection_id);
         return -1;
     }
 
     if (conn->status != CRYPTO_CONN_ESTABLISHED) {
+        LOGGER_WARNING(c->log, "attempted to send packet to non-established connection %d", crypt_connection_id);
         return -1;
     }
 
     if (congestion_control && conn->packets_left == 0) {
+        LOGGER_ERROR(c->log, "congestion control: rejecting packet of length %d on crypt connection %d", length,
+                     crypt_connection_id);
         return -1;
     }
 
-    int64_t ret = send_lossless_packet(c, crypt_connection_id, data, length, congestion_control);
+    const int64_t ret = send_lossless_packet(c, crypt_connection_id, data, length, congestion_control);
 
     if (ret == -1) {
         return -1;

@@ -670,7 +670,7 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
 
         if (!should_ignore_recv_error(error)) {
             char *strerror = net_new_strerror(error);
-            LOGGER_ERROR(log, "Unexpected error reading from socket: %u, %s", error, strerror);
+            LOGGER_ERROR(log, "unexpected error reading from socket: %u, %s", error, strerror);
             net_kill_strerror(strerror);
         }
 
@@ -867,7 +867,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     if (!sock_valid(temp->sock)) {
         int neterror = net_error();
         char *strerror = net_new_strerror(neterror);
-        LOGGER_ERROR(log, "Failed to get a socket?! %d, %s", neterror, strerror);
+        LOGGER_ERROR(log, "failed to get a socket?! %d, %s", neterror, strerror);
         net_kill_strerror(strerror);
         free(temp);
 
@@ -884,11 +884,11 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     int n = 1024 * 1024 * 2;
 
     if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_RCVBUF, (const char *)&n, sizeof(n)) != 0) {
-        LOGGER_WARNING(log, "Failed to set socket option %d", SO_RCVBUF);
+        LOGGER_ERROR(log, "failed to set socket option %d", SO_RCVBUF);
     }
 
     if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_SNDBUF, (const char *)&n, sizeof(n)) != 0) {
-        LOGGER_WARNING(log, "Failed to set socket option %d", SO_SNDBUF);
+        LOGGER_ERROR(log, "failed to set socket option %d", SO_SNDBUF);
     }
 
 #endif
@@ -898,7 +898,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     int broadcast = 1;
 
     if (setsockopt(temp->sock.socket, SOL_SOCKET, SO_BROADCAST, (const char *)&broadcast, sizeof(broadcast)) != 0) {
-        LOGGER_WARNING(log, "Failed to set socket option %d", SO_BROADCAST);
+        LOGGER_ERROR(log, "failed to set socket option %d", SO_BROADCAST);
     }
 
 #endif
@@ -1047,7 +1047,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     char ip_str[IP_NTOA_LEN];
     int neterror = net_error();
     char *strerror = net_new_strerror(neterror);
-    LOGGER_ERROR(log, "Failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u", neterror, strerror,
+    LOGGER_ERROR(log, "failed to bind socket: %d, %s IP: %s port_from: %u port_to: %u", neterror, strerror,
                  ip_ntoa(ip, ip_str, sizeof(ip_str)), port_from, port_to);
     net_kill_strerror(strerror);
     kill_networking(temp);
