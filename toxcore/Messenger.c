@@ -1526,6 +1526,13 @@ static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userd
             continue;
         }
 
+        if (max_speed_reached(m->net_crypto, friend_connection_crypt_connection_id(
+                                  m->fr_c, friendcon->friendcon_id))) {
+            LOGGER_DEBUG(m->log, "Maximum connection speed reached");
+            // connection doesn't support any more data
+            return false;
+        }
+
         // If the file transfer is complete, we request a chunk of size 0.
         if (ft->status == FILESTATUS_FINISHED && friend_received_packet(m, friendnumber, ft->last_packet_number) == 0) {
             if (m->file_reqchunk) {
@@ -1558,14 +1565,6 @@ static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userd
             // The allocated slot is no longer free.
             --*free_slots;
         }
-
-        // Must be last to allow finishing file transfers
-        if (max_speed_reached(m->net_crypto, friend_connection_crypt_connection_id(
-                                  m->fr_c, friendcon->friendcon_id))) {
-            LOGGER_TRACE(m->log, "Maximum connection speed reached");
-            // connection doesn't support any more data
-            return false;
-        }
     }
 
     return true;
@@ -1596,7 +1595,9 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
     // that the file transfer has finished and may end up in an infinite loop.
     //
     // Request up to that number of chunks per file from the client
-    const uint32_t max_ft_loops = 4096;
+    //
+    // TODO(Jfreegman): set this cap dynamically
+    const uint32_t max_ft_loops = 128;
 
     for (uint32_t i = 0; i < max_ft_loops; ++i) {
         if (!do_all_filetransfers(m, friendnumber, userdata, &free_slots)) {
