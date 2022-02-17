@@ -27,7 +27,7 @@
 
 #define SET_ERROR_PARAMETER(param, x) \
     do {                              \
-        if (param) {                  \
+        if (param != nullptr) {       \
             *param = x;               \
         }                             \
     } while (0)
@@ -108,7 +108,7 @@ struct Tox_Userdata {
 };
 
 non_null(1) nullable(3)
-static void tox_self_connection_status_handler(Messenger *m, unsigned int connection_status, void *user_data)
+static void tox_self_connection_status_handler(Messenger *m, Onion_Connection_Status connection_status, void *user_data)
 {
     struct Tox_Userdata *tox_data = (struct Tox_Userdata *)user_data;
 
@@ -751,6 +751,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
     }
 
     lock(tox);
+    assert(count >= 0);
 
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);
@@ -766,7 +767,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     net_freeipport(root);
 
-    if (count) {
+    if (count > 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
     }
@@ -802,6 +803,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
     }
 
     lock(tox);
+    assert(count >= 0);
 
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);
@@ -813,7 +815,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 
     net_freeipport(root);
 
-    if (count) {
+    if (count > 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return 1;
     }
@@ -879,7 +881,7 @@ void tox_self_get_address(const Tox *tox, uint8_t *address)
 {
     assert(tox != nullptr);
 
-    if (address) {
+    if (address != nullptr) {
         lock(tox);
         getaddress(tox->m, address);
         unlock(tox);
@@ -907,7 +909,7 @@ void tox_self_get_public_key(const Tox *tox, uint8_t *public_key)
 {
     assert(tox != nullptr);
 
-    if (public_key) {
+    if (public_key != nullptr) {
         lock(tox);
         memcpy(public_key, nc_get_self_public_key(tox->m->net_crypto), CRYPTO_PUBLIC_KEY_SIZE);
         unlock(tox);
@@ -918,7 +920,7 @@ void tox_self_get_secret_key(const Tox *tox, uint8_t *secret_key)
 {
     assert(tox != nullptr);
 
-    if (secret_key) {
+    if (secret_key != nullptr) {
         lock(tox);
         memcpy(secret_key, nc_get_self_secret_key(tox->m->net_crypto), CRYPTO_SECRET_KEY_SIZE);
         unlock(tox);
@@ -962,7 +964,7 @@ void tox_self_get_name(const Tox *tox, uint8_t *name)
 {
     assert(tox != nullptr);
 
-    if (name) {
+    if (name != nullptr) {
         lock(tox);
         getself_name(tox->m, name);
         unlock(tox);
@@ -1004,7 +1006,7 @@ void tox_self_get_status_message(const Tox *tox, uint8_t *status_message)
 {
     assert(tox != nullptr);
 
-    if (status_message) {
+    if (status_message != nullptr) {
         lock(tox);
         m_copy_self_statusmessage(tox->m, status_message);
         unlock(tox);
@@ -1221,7 +1223,7 @@ void tox_self_get_friend_list(const Tox *tox, uint32_t *friend_list)
 {
     assert(tox != nullptr);
 
-    if (friend_list) {
+    if (friend_list != nullptr) {
         lock(tox);
         // TODO(irungentoo): size parameter?
         copy_friendlist(tox->m, friend_list, count_friendlist(tox->m));
@@ -2525,7 +2527,7 @@ void tox_self_get_dht_id(const Tox *tox, uint8_t *dht_id)
 {
     assert(tox != nullptr);
 
-    if (dht_id) {
+    if (dht_id != nullptr) {
         lock(tox);
         memcpy(dht_id, dht_get_self_public_key(tox->m->dht), CRYPTO_PUBLIC_KEY_SIZE);
         unlock(tox);
@@ -2570,7 +2572,7 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
     assert(tox != nullptr);
     lock(tox);
 
-    if (tox->m->tcp_server) {
+    if (tox->m->tcp_server != nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
         uint16_t ret = tox->m->options.tcp_server_port;
         unlock(tox);

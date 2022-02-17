@@ -158,7 +158,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
 
     data[sizeof(data) - 1] = 0;
 
-    if (strstr((const char *)data, success)) {
+    if (strstr((const char *)data, success) != nullptr) {
         // drain all data
         const uint16_t data_left = net_socket_data_recv_buffer(tcp_conn->con.sock);
 
@@ -528,7 +528,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
         return nullptr;
     }
 
-    const TCP_Proxy_Info default_proxyinfo = {0};
+    const TCP_Proxy_Info default_proxyinfo = {{{{0}}}};
 
     if (proxy_info == nullptr) {
         proxy_info = &default_proxyinfo;
@@ -633,7 +633,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
             conn->connections[con_id].number = -1;
             memcpy(conn->connections[con_id].public_key, data + 2, CRYPTO_PUBLIC_KEY_SIZE);
 
-            if (conn->response_callback) {
+            if (conn->response_callback != nullptr) {
                 conn->response_callback(conn->response_callback_object, con_id, conn->connections[con_id].public_key);
             }
 
@@ -657,7 +657,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
 
             conn->connections[con_id].status = 2;
 
-            if (conn->status_callback) {
+            if (conn->status_callback != nullptr) {
                 conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
                                       conn->connections[con_id].status);
             }
@@ -686,7 +686,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
 
             conn->connections[con_id].status = 1;
 
-            if (conn->status_callback) {
+            if (conn->status_callback != nullptr) {
                 conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
                                       conn->connections[con_id].status);
             }
@@ -730,7 +730,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
                 return -1;
             }
 
-            if (conn->oob_data_callback) {
+            if (conn->oob_data_callback != nullptr) {
                 conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
                                         length - (1 + CRYPTO_PUBLIC_KEY_SIZE), userdata);
             }
@@ -750,7 +750,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
 
             uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
 
-            if (conn->data_callback) {
+            if (conn->data_callback != nullptr) {
                 conn->data_callback(conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1,
                                     userdata);
             }

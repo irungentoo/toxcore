@@ -8,7 +8,7 @@
 #ifndef C_TOXCORE_TOXCORE_CCOMPAT_H
 #define C_TOXCORE_TOXCORE_CCOMPAT_H
 
-#include <stdint.h>
+#include <stddef.h>  // NULL, size_t
 
 #include "attributes.h"
 

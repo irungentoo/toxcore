@@ -194,11 +194,16 @@ non_null()
 void kill_onion_client(Onion_Client *onion_c);
 
 
-/**  return 0 if we are not connected to the network.
- *  return 1 if we are connected with TCP only.
- *  return 2 if we are also connected with UDP.
- */
+typedef enum Onion_Connection_Status {
+    /** We are not connected to the network. */
+    ONION_CONNECTION_STATUS_NONE = 0,
+    /** We are connected with TCP only. */
+    ONION_CONNECTION_STATUS_TCP = 1,
+    /** We are also connected with UDP. */
+    ONION_CONNECTION_STATUS_UDP = 2,
+} Onion_Connection_Status;
+
 non_null()
-unsigned int onion_connection_status(const Onion_Client *onion_c);
+Onion_Connection_Status onion_connection_status(const Onion_Client *onion_c);
 
 #endif

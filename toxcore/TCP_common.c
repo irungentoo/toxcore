@@ -108,7 +108,7 @@ bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uin
 
     memcpy(new_list->data, packet, size);
 
-    if (p) {
+    if (p != nullptr) {
         p->next = new_list;
     } else {
         con->priority_queue_start = new_list;

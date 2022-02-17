@@ -137,7 +137,7 @@ static int friendreq_handlepacket(void *object, const uint8_t *source_pubkey, co
         return 1;
     }
 
-    if (fr->filter_function) {
+    if (fr->filter_function != nullptr) {
         if (fr->filter_function(source_pubkey, fr->filter_function_userdata) != 0) {
             return 1;
         }

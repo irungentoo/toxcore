@@ -200,7 +200,7 @@ int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk)
     for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         const Friend_Conn *friend_con = get_conn(fr_c, i);
 
-        if (friend_con) {
+        if (friend_con != nullptr) {
             if (public_key_cmp(friend_con->real_public_key, real_pk) == 0) {
                 return i;
             }
@@ -412,12 +412,12 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
     }
 
     if (status_changed) {
-        if (fr_c->global_status_callback) {
+        if (fr_c->global_status_callback != nullptr) {
             fr_c->global_status_callback(fr_c->global_status_callback_object, number, status, userdata);
         }
 
         for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-            if (friend_con->callbacks[i].status_callback) {
+            if (friend_con->callbacks[i].status_callback != nullptr) {
                 friend_con->callbacks[i].status_callback(
                     friend_con->callbacks[i].callback_object,
                     friend_con->callbacks[i].callback_id, status, userdata);
@@ -471,7 +471,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
     }
 
     if (data[0] == PACKET_ID_FRIEND_REQUESTS) {
-        if (fr_c->fr_request_callback) {
+        if (fr_c->fr_request_callback != nullptr) {
             fr_c->fr_request_callback(fr_c->fr_request_object, friend_con->real_public_key, data, length, userdata);
         }
 
@@ -499,7 +499,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
     }
 
     for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].data_callback) {
+        if (friend_con->callbacks[i].data_callback != nullptr) {
             friend_con->callbacks[i].data_callback(
                 friend_con->callbacks[i].callback_object,
                 friend_con->callbacks[i].callback_id, data, length, userdata);
@@ -530,7 +530,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
     }
 
     for (unsigned i = 0; i < MAX_FRIEND_CONNECTION_CALLBACKS; ++i) {
-        if (friend_con->callbacks[i].lossy_data_callback) {
+        if (friend_con->callbacks[i].lossy_data_callback != nullptr) {
             friend_con->callbacks[i].lossy_data_callback(
                 friend_con->callbacks[i].callback_object,
                 friend_con->callbacks[i].callback_id, data, length, userdata);
@@ -684,11 +684,11 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Frie
         return -1;
     }
 
-    if (real_pk) {
+    if (real_pk != nullptr) {
         memcpy(real_pk, friend_con->real_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     }
 
-    if (dht_temp_pk) {
+    if (dht_temp_pk != nullptr) {
         memcpy(dht_temp_pk, friend_con->dht_temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
     }
 
@@ -953,7 +953,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
     for (uint32_t i = 0; i < fr_c->num_cons; ++i) {
         Friend_Conn *const friend_con = get_conn(fr_c, i);
 
-        if (friend_con) {
+        if (friend_con != nullptr) {
             if (friend_con->status == FRIENDCONN_STATUS_CONNECTING) {
                 if (friend_con->dht_pk_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
                     if (friend_con->dht_lock) {

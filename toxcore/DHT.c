@@ -542,9 +542,8 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
         return -1;
     }
 
-    *ip_port = (IP_Port) {
-        0
-    };
+    const IP_Port empty_ip_port = {{{0}}};
+    *ip_port = empty_ip_port;
 
     if (is_ipv4) {
         const uint32_t size = 1 + SIZE_IP4 + sizeof(uint16_t);
@@ -641,7 +640,7 @@ int unpack_nodes(Node_format *nodes, uint16_t max_num_nodes, uint16_t *processed
         assert(increment == PACKED_NODE_SIZE_IP4 || increment == PACKED_NODE_SIZE_IP6);
     }
 
-    if (processed_data_len) {
+    if (processed_data_len != nullptr) {
         *processed_data_len = len_processed;
     }
 
@@ -799,9 +798,8 @@ static int client_or_ip_port_in_list(const Logger *log, const Mono_Time *mono_ti
     LOGGER_DEBUG(log, "coipil[%u]: switching public_key (ipv%d)", index, ip_version);
 
     /* kill the other address, if it was set */
-    *assoc = (IPPTsPng) {
-        0
-    };
+    const IPPTsPng empty_ipptspng = {{{{0}}}};
+    *assoc = empty_ipptspng;
     return 1;
 }
 
@@ -958,12 +956,12 @@ static int dht_cmp_entry(const void *a, const void *b)
 
 /** Is it ok to store node with public_key in client.
  *
- * return 0 if node can't be stored.
- * return 1 if it can.
+ * return false if node can't be stored.
+ * return true if it can.
  */
 non_null()
-static unsigned int store_node_ok(const Client_data *client, uint64_t cur_time, const uint8_t *public_key,
-                                  const uint8_t *comp_public_key)
+static bool store_node_ok(const Client_data *client, uint64_t cur_time, const uint8_t *public_key,
+                          const uint8_t *comp_public_key)
 {
     return (assoc_timeout(cur_time, &client->assoc4)
             && assoc_timeout(cur_time, &client->assoc6))
@@ -1251,7 +1249,7 @@ uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key
     }
 
     for (uint32_t i = 0; i < friend_foundip->lock_count; ++i) {
-        if (friend_foundip->callbacks[i].ip_callback) {
+        if (friend_foundip->callbacks[i].ip_callback != nullptr) {
             friend_foundip->callbacks[i].ip_callback(friend_foundip->callbacks[i].data,
                     friend_foundip->callbacks[i].number, &ipp_copy);
         }
@@ -1567,7 +1565,7 @@ static int handle_sendnodes_ipv6(void *object, const IP_Port *source, const uint
             ping_node_from_getnodes_ok(dht, plain_nodes[i].public_key, &plain_nodes[i].ip_port);
             returnedip_ports(dht, &plain_nodes[i].ip_port, plain_nodes[i].public_key, packet + 1);
 
-            if (dht->get_nodes_response) {
+            if (dht->get_nodes_response != nullptr) {
                 dht->get_nodes_response(dht, &plain_nodes[i], userdata);
             }
         }
@@ -1589,7 +1587,7 @@ static void dht_friend_lock(DHT_Friend *const dht_friend, dht_ip_cb *ip_callback
     dht_friend->callbacks[lock_num].data = data;
     dht_friend->callbacks[lock_num].number = number;
 
-    if (lock_count) {
+    if (lock_count != nullptr) {
         *lock_count = lock_num + 1;
     }
 }

@@ -10,6 +10,8 @@
 #ifndef C_TOXCORE_TOXCORE_MESSENGER_H
 #define C_TOXCORE_TOXCORE_MESSENGER_H
 
+#include <time.h>
+
 #include "TCP_server.h"
 #include "friend_connection.h"
 #include "friend_requests.h"
@@ -158,7 +160,7 @@ typedef enum Filekind {
 } Filekind;
 
 
-typedef void m_self_connection_status_cb(Messenger *m, unsigned int connection_status, void *user_data);
+typedef void m_self_connection_status_cb(Messenger *m, Onion_Connection_Status connection_status, void *user_data);
 typedef void m_friend_status_cb(Messenger *m, uint32_t friend_number, unsigned int status, void *user_data);
 typedef void m_friend_connection_status_cb(Messenger *m, uint32_t friend_number, unsigned int connection_status,
         void *user_data);
@@ -291,7 +293,7 @@ struct Messenger {
     m_friend_lossless_packet_cb *lossless_packethandler;
 
     m_self_connection_status_cb *core_connection_change;
-    unsigned int last_connection_status;
+    Onion_Connection_Status last_connection_status;
 
     Messenger_Options options;
 };

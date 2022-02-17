@@ -190,7 +190,7 @@ int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_n
  * return 0 on failure.
  */
 non_null()
-unsigned int tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, int connections_number);
+uint32_t tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, int connections_number);
 
 /** Add a TCP relay tied to a connection.
  *

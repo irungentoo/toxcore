@@ -333,7 +333,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id);
  */
 non_null(1, 3) nullable(4)
 bool crypto_connection_status(
-    const Net_Crypto *c, int crypt_connection_id, bool *direct_connected, unsigned int *online_tcp_relays);
+    const Net_Crypto *c, int crypt_connection_id, bool *direct_connected, uint32_t *online_tcp_relays);
 
 /** Generate our public and private keys.
  *  Only call this function the first time the program starts.

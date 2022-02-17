@@ -11,7 +11,7 @@
 
 #define SET_ERROR_PARAMETER(param, x) \
     do {                              \
-        if (param) {                  \
+        if (param != nullptr) {       \
             *param = x;               \
         }                             \
     } while (0)
@@ -87,7 +87,7 @@ void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *d
 
 void tox_options_default(struct Tox_Options *options)
 {
-    if (options) {
+    if (options != nullptr) {
         struct Tox_Options default_options = { 0 };
         *options = default_options;
         tox_options_set_ipv6_enabled(options, true);
@@ -103,7 +103,7 @@ struct Tox_Options *tox_options_new(Tox_Err_Options_New *error)
 {
     struct Tox_Options *options = (struct Tox_Options *)calloc(1, sizeof(struct Tox_Options));
 
-    if (options) {
+    if (options != nullptr) {
         tox_options_default(options);
         SET_ERROR_PARAMETER(error, TOX_ERR_OPTIONS_NEW_OK);
         return options;

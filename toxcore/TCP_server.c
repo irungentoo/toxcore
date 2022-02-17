@@ -341,7 +341,7 @@ static int handle_TCP_handshake(const Logger *logger, TCP_Secure_Connection *con
         return -1;
     }
 
-    IP_Port ipp = {0};
+    IP_Port ipp = {{{0}}};
 
     if (TCP_SERVER_HANDSHAKE_SIZE != net_send(logger, con->con.sock, response, TCP_SERVER_HANDSHAKE_SIZE, &ipp)) {
         crypto_memzero(shared_key, sizeof(shared_key));
@@ -673,7 +673,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
         case TCP_PACKET_ONION_REQUEST: {
             LOGGER_TRACE(tcp_server->logger, "handling onion request for %d", con_id);
 
-            if (tcp_server->onion) {
+            if (tcp_server->onion != nullptr) {
                 if (length <= 1 + CRYPTO_NONCE_SIZE + ONION_SEND_BASE * 2) {
                     return -1;
                 }
@@ -904,7 +904,7 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
         return nullptr;
     }
 
-    if (onion) {
+    if (onion != nullptr) {
         temp->onion = onion;
         set_callback_handle_recv_1(onion, &handle_onion_recv_1, temp);
     }
@@ -1266,7 +1266,7 @@ void kill_TCP_server(TCP_Server *tcp_server)
         kill_sock(tcp_server->socks_listening[i]);
     }
 
-    if (tcp_server->onion) {
+    if (tcp_server->onion != nullptr) {
         set_callback_handle_recv_1(tcp_server->onion, nullptr, nullptr);
     }
 

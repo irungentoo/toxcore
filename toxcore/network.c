@@ -835,7 +835,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
         port_to = temp;
     }
 
-    if (error) {
+    if (error != nullptr) {
         *error = 2;
     }
 
@@ -871,7 +871,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
         net_kill_strerror(strerror);
         free(temp);
 
-        if (error) {
+        if (error != nullptr) {
             *error = 1;
         }
 
@@ -907,7 +907,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     if (!set_socket_nosigpipe(temp->sock)) {
         kill_networking(temp);
 
-        if (error) {
+        if (error != nullptr) {
             *error = 1;
         }
 
@@ -918,7 +918,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     if (!set_socket_nonblock(temp->sock)) {
         kill_networking(temp);
 
-        if (error) {
+        if (error != nullptr) {
             *error = 1;
         }
 
@@ -1028,7 +1028,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
                 errno = 0;
             }
 
-            if (error) {
+            if (error != nullptr) {
                 *error = 0;
             }
 
@@ -1052,7 +1052,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     net_kill_strerror(strerror);
     kill_networking(temp);
 
-    if (error) {
+    if (error != nullptr) {
         *error = 1;
     }
 
@@ -1238,7 +1238,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
         return ip_str;
     }
 
-    if (ip) {
+    if (ip != nullptr) {
         if (net_family_is_ipv4(ip->family)) {
             /* returns standard quad-dotted notation */
             struct in_addr addr;
@@ -1462,7 +1462,7 @@ int32_t net_getipport(const char *node, IP_Port **res, int tox_type)
     return 1;
 #else
     // Try parsing as IP address first.
-    IP_Port parsed = {0};
+    IP_Port parsed = {{{0}}};
 
     if (addr_parse_ip(node, &parsed.ip)) {
         IP_Port *tmp = (IP_Port *)calloc(1, sizeof(IP_Port));

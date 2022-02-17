@@ -620,7 +620,7 @@ static int add_ip_port_connection(Net_Crypto *c, int crypt_connection_id, const 
 non_null()
 static IP_Port return_ip_port_connection(const Net_Crypto *c, int crypt_connection_id)
 {
-    const IP_Port empty = {0};
+    const IP_Port empty = {{{0}}};
 
     const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -766,7 +766,7 @@ static int add_data_to_buffer(Packets_Array *array, uint32_t number, const Packe
 
     uint32_t num = number % CRYPTO_PACKET_BUFFER_SIZE;
 
-    if (array->buffer[num]) {
+    if (array->buffer[num] != nullptr) {
         return -1;
     }
 
@@ -885,7 +885,7 @@ static int clear_buffer_until(Packets_Array *array, uint32_t number)
     for (i = array->buffer_start; i != number; ++i) {
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
-        if (array->buffer[num]) {
+        if (array->buffer[num] != nullptr) {
             free(array->buffer[num]);
             array->buffer[num] = nullptr;
         }
@@ -903,7 +903,7 @@ static int clear_buffer(Packets_Array *array)
     for (i = array->buffer_start; i != array->buffer_end; ++i) {
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
-        if (array->buffer[num]) {
+        if (array->buffer[num] != nullptr) {
             free(array->buffer[num]);
             array->buffer[num] = nullptr;
         }
@@ -1027,7 +1027,7 @@ static int handle_request_packet(Mono_Time *mono_time, Packets_Array *send_array
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
         if (n == data[0]) {
-            if (send_array->buffer[num]) {
+            if (send_array->buffer[num] != nullptr) {
                 uint64_t sent_time = send_array->buffer[num]->sent_time;
 
                 if ((sent_time + rtt_time) < temp_time) {
@@ -1040,7 +1040,7 @@ static int handle_request_packet(Mono_Time *mono_time, Packets_Array *send_array
             n = 0;
             ++requested;
         } else {
-            if (send_array->buffer[num]) {
+            if (send_array->buffer[num] != nullptr) {
                 l_sent_time = max_u64(l_sent_time, send_array->buffer[num]->sent_time);
 
                 free(send_array->buffer[num]);
@@ -1387,7 +1387,7 @@ static int new_temp_packet(const Net_Crypto *c, int crypt_connection_id, const u
         return -1;
     }
 
-    if (conn->temp_packet) {
+    if (conn->temp_packet != nullptr) {
         free(conn->temp_packet);
     }
 
@@ -1413,7 +1413,7 @@ static int clear_temp_packet(const Net_Crypto *c, int crypt_connection_id)
         return -1;
     }
 
-    if (conn->temp_packet) {
+    if (conn->temp_packet != nullptr) {
         free(conn->temp_packet);
     }
 
@@ -1511,7 +1511,7 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
         return;
     }
 
-    if (conn->connection_status_callback) {
+    if (conn->connection_status_callback != nullptr) {
         conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 0,
                                          userdata);
     }
@@ -1598,7 +1598,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
         clear_temp_packet(c, crypt_connection_id);
         conn->status = CRYPTO_CONN_ESTABLISHED;
 
-        if (conn->connection_status_callback) {
+        if (conn->connection_status_callback != nullptr) {
             conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1,
                                              userdata);
         }
@@ -1640,7 +1640,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
                 break;
             }
 
-            if (conn->connection_data_callback) {
+            if (conn->connection_data_callback != nullptr) {
                 conn->connection_data_callback(conn->connection_data_callback_object, conn->connection_data_callback_id, dt.data,
                                                dt.length, userdata);
             }
@@ -1659,7 +1659,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
 
         set_buffer_end(&conn->recv_array, num);
 
-        if (conn->connection_lossy_data_callback) {
+        if (conn->connection_lossy_data_callback != nullptr) {
             conn->connection_lossy_data_callback(conn->connection_lossy_data_callback_object,
                                                  conn->connection_lossy_data_callback_id, real_data, real_length, userdata);
         }
@@ -1746,7 +1746,7 @@ static int handle_packet_crypto_hs(Net_Crypto *c, int crypt_connection_id, const
 
         conn->status = CRYPTO_CONN_NOT_CONFIRMED;
     } else {
-        if (conn->dht_pk_callback) {
+        if (conn->dht_pk_callback != nullptr) {
             conn->dht_pk_callback(conn->dht_pk_callback_object, conn->dht_pk_callback_number, dht_public_key, userdata);
         }
     }
@@ -2953,7 +2953,7 @@ int send_lossy_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t
 
     int ret = -1;
 
-    if (conn) {
+    if (conn != nullptr) {
         pthread_mutex_lock(conn->mutex);
         uint32_t buffer_start = conn->recv_array.buffer_start;
         uint32_t buffer_end = conn->send_array.buffer_end;
@@ -2979,7 +2979,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 
     int ret = -1;
 
-    if (conn) {
+    if (conn != nullptr) {
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
             send_kill_packet(c, crypt_connection_id);
         }
@@ -3000,7 +3000,7 @@ int crypto_kill(Net_Crypto *c, int crypt_connection_id)
 }
 
 bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool *direct_connected,
-                              unsigned int *online_tcp_relays)
+                              uint32_t *online_tcp_relays)
 {
     const Crypto_Connection *conn = get_crypto_connection(c, crypt_connection_id);
 
@@ -3008,7 +3008,7 @@ bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool
         return false;
     }
 
-    if (direct_connected) {
+    if (direct_connected != nullptr) {
         *direct_connected = 0;
 
         const uint64_t current_time = mono_time_get(c->mono_time);
@@ -3020,7 +3020,7 @@ bool crypto_connection_status(const Net_Crypto *c, int crypt_connection_id, bool
         }
     }
 
-    if (online_tcp_relays) {
+    if (online_tcp_relays != nullptr) {
         *online_tcp_relays = tcp_connection_to_online_tcp_relays(c->tcp_c, conn->connection_number_tcp);
     }
 
