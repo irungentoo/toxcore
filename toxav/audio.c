@@ -191,7 +191,7 @@ void ac_iterate(ACSession *ac)
 
         if (rc < 0) {
             LOGGER_WARNING(ac->log, "Decoding error: %s", opus_strerror(rc));
-        } else if (ac->acb) {
+        } else if (ac->acb != nullptr) {
             ac->lp_frame_duration = (rc * 1000) / ac->lp_sampling_rate;
 
             ac->acb(ac->av, ac->friend_number, temp_audio_buffer, rc, ac->lp_channel_count,
@@ -324,7 +324,7 @@ static int jbuf_write(const Logger *log, struct JitterBuffer *q, struct RTPMessa
         return 0;
     }
 
-    if (q->queue[num]) {
+    if (q->queue[num] != nullptr) {
         return -1;
     }
 
@@ -345,7 +345,7 @@ static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
 
     unsigned int num = q->bottom % q->size;
 
-    if (q->queue[num]) {
+    if (q->queue[num] != nullptr) {
         struct RTPMessage *ret = q->queue[num];
         q->queue[num] = nullptr;
         ++q->bottom;

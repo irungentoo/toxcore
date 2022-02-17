@@ -110,7 +110,7 @@ static int queue(Group_JitterBuffer *q, const Mono_Time *mono_time, Group_Audio_
         return 0;
     }
 
-    if (q->queue[num]) {
+    if (q->queue[num] != nullptr) {
         return -1;
     }
 
@@ -134,7 +134,7 @@ static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
 
     unsigned int num = q->bottom % q->size;
 
-    if (q->queue[num]) {
+    if (q->queue[num] != nullptr) {
         Group_Audio_Packet *ret = q->queue[num];
         q->queue[num] = nullptr;
         ++q->bottom;
@@ -179,7 +179,7 @@ typedef struct Group_Peer_AV {
 
 static void kill_group_av(Group_AV *group_av)
 {
-    if (group_av->audio_encoder) {
+    if (group_av->audio_encoder != nullptr) {
         opus_encoder_destroy(group_av->audio_encoder);
     }
 
@@ -188,7 +188,7 @@ static void kill_group_av(Group_AV *group_av)
 
 static int recreate_encoder(Group_AV *group_av)
 {
-    if (group_av->audio_encoder) {
+    if (group_av->audio_encoder != nullptr) {
         opus_encoder_destroy(group_av->audio_encoder);
         group_av->audio_encoder = nullptr;
     }
@@ -272,7 +272,7 @@ static void group_av_peer_delete(void *object, uint32_t groupnumber, void *peer_
         return;
     }
 
-    if (peer_av->audio_decoder) {
+    if (peer_av->audio_decoder != nullptr) {
         opus_decoder_destroy(peer_av->audio_decoder);
     }
 
@@ -282,7 +282,7 @@ static void group_av_peer_delete(void *object, uint32_t groupnumber, void *peer_
 
 static void group_av_groupchat_delete(void *object, uint32_t groupnumber)
 {
-    if (object) {
+    if (object != nullptr) {
         kill_group_av((Group_AV *)object);
     }
 }
@@ -320,7 +320,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
         }
 
         if (channels != peer_av->decoder_channels) {
-            if (peer_av->audio_decoder) {
+            if (peer_av->audio_decoder != nullptr) {
                 opus_decoder_destroy(peer_av->audio_decoder);
                 peer_av->audio_decoder = nullptr;
             }
@@ -379,9 +379,9 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
         }
     }
 
-    if (out_audio) {
+    if (out_audio != nullptr) {
 
-        if (group_av->audio_data) {
+        if (group_av->audio_data != nullptr) {
             group_av->audio_data(group_av->tox, groupnumber, friendgroupnumber, out_audio, out_audio_samples,
                                  peer_av->decoder_channels, sample_rate, group_av->userdata);
         }

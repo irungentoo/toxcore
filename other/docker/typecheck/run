@@ -1,3 +1,0 @@
-#!/bin/sh
-
-docker build -f other/docker/typecheck/Dockerfile .

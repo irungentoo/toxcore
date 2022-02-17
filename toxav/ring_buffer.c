@@ -85,7 +85,7 @@ RingBuffer *rb_new(int size)
 
 void rb_kill(RingBuffer *b)
 {
-    if (b) {
+    if (b != nullptr) {
         free(b->data);
         free(b);
     }

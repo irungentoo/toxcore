@@ -423,7 +423,7 @@ static int handle_video_packet(RTPSession *session, const struct RTPHeader *head
 
     struct RTPMessage *m_new = process_frame(log, session->work_buffer_list, slot_id);
 
-    if (m_new) {
+    if (m_new != nullptr) {
         LOGGER_DEBUG(log, "-- handle_video_packet -- CALLBACK-003a b0=%d b1=%d", (int)m_new->data[0], (int)m_new->data[1]);
         update_bwc_values(log, session, m_new);
         session->mcb(session->m->mono_time, session->cs, m_new);
@@ -498,7 +498,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
         bwc_add_recv(session->bwc, length);
 
         /* Invoke processing of active multiparted message */
-        if (session->mp) {
+        if (session->mp != nullptr) {
             session->mcb(session->m->mono_time, session->cs, session->mp);
             session->mp = nullptr;
         }
@@ -512,7 +512,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
 
     /* The message is sent in multiple parts */
 
-    if (session->mp) {
+    if (session->mp != nullptr) {
         /* There are 2 possible situations in this case:
          *      1) being that we got the part of already processing message.
          *      2) being that we got the part of a new/old message.

@@ -164,7 +164,7 @@ int msi_kill(MSISession *session, const Logger *log)
         return -1;
     }
 
-    if (session->calls) {
+    if (session->calls != nullptr) {
         MSIMessage msg;
         msg_init(&msg, REQU_POP);
 
@@ -625,17 +625,17 @@ static void kill_call(MSICall *call)
     MSICall *prev = call->prev;
     MSICall *next = call->next;
 
-    if (prev) {
+    if (prev != nullptr) {
         prev->next = next;
-    } else if (next) {
+    } else if (next != nullptr) {
         session->calls_head = next->friend_number;
     } else {
         goto CLEAR_CONTAINER;
     }
 
-    if (next) {
+    if (next != nullptr) {
         next->prev = prev;
-    } else if (prev) {
+    } else if (prev != nullptr) {
         session->calls_tail = prev->friend_number;
     } else {
         goto CLEAR_CONTAINER;

@@ -330,7 +330,7 @@ void vc_iterate(VCSession *vc)
     for (vpx_image_t *dest = vpx_codec_get_frame(vc->decoder, &iter);
             dest != nullptr;
             dest = vpx_codec_get_frame(vc->decoder, &iter)) {
-        if (vc->vcb) {
+        if (vc->vcb != nullptr) {
             vc->vcb(vc->av, vc->friend_number, dest->d_w, dest->d_h,
                     (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
                     dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb_user_data);
@@ -347,7 +347,7 @@ int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
      * this function gets called from handle_rtp_packet() and handle_rtp_packet_v3()
      */
     if (!vcp || !msg) {
-        if (msg) {
+        if (msg != nullptr) {
             free(msg);
         }
 
