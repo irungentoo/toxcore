@@ -85,7 +85,7 @@ uint32_t tox_event_file_recv_get_kind(const Tox_Event_File_Recv *file_recv)
 
 non_null()
 static void tox_event_file_recv_set_file_size(Tox_Event_File_Recv *file_recv,
-        uint32_t file_size)
+        uint64_t file_size)
 {
     assert(file_recv != nullptr);
     file_recv->file_size = file_size;

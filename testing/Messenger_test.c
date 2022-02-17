@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
     Messenger_Options options = {0};
     options.ipv6enabled = ipv6enabled;
-    unsigned int err;
+    Messenger_Error err;
     m = new_messenger(mono_time, &options, &err);
 
     if (!m) {

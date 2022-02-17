@@ -325,7 +325,7 @@ static void iterate_common(ToxAV *av, bool audio)
             if (i->msi_call->self_capabilities & MSI_CAP_R_VIDEO &&
                     i->msi_call->peer_capabilities & MSI_CAP_S_VIDEO) {
                 pthread_mutex_lock(i->video->queue_mutex);
-                frame_time = min_u32(i->video->lcfd, frame_time);
+                frame_time = min_s32(i->video->lcfd, frame_time);
                 pthread_mutex_unlock(i->video->queue_mutex);
             }
         }

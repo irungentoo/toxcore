@@ -887,7 +887,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
 
         if (sizeof(data) == len) {
             if (handle_handshake(tcp_connection, data) == 0) {
-                tcp_connection->kill_at = -1;
+                tcp_connection->kill_at = UINT64_MAX;
                 tcp_connection->status = TCP_CLIENT_CONFIRMED;
             } else {
                 tcp_connection->kill_at = 0;

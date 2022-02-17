@@ -586,7 +586,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     lock(tox);
 
-    unsigned int m_error;
+    Messenger_Error m_error;
     tox->m = new_messenger(tox->mono_time, &m_options, &m_error);
 
     // TODO(iphydf): Clarify this code, check for NULL before new_groupchats, so

@@ -10,8 +10,6 @@
 #ifndef C_TOXCORE_TOXCORE_MESSENGER_H
 #define C_TOXCORE_TOXCORE_MESSENGER_H
 
-#include <time.h>
-
 #include "TCP_server.h"
 #include "friend_connection.h"
 #include "friend_requests.h"
@@ -260,7 +258,7 @@ struct Messenger {
     Friend *friendlist;
     uint32_t numfriends;
 
-    time_t lastdump;
+    uint64_t lastdump;
     uint8_t is_receiving_file;
 
     bool has_added_relays; // If the first connection has occurred in do_messenger
@@ -754,7 +752,7 @@ typedef enum Messenger_Error {
  *  if error is not NULL it will be set to one of the values in the enum above.
  */
 non_null()
-Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsigned int *error);
+Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messenger_Error *error);
 
 /** Run this before closing shop
  * Free all datastructures.

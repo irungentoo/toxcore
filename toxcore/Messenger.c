@@ -2483,7 +2483,8 @@ void do_messenger(Messenger *m, void *userdata)
 
             for (uint32_t dhtfriend = 0; dhtfriend < dht_get_num_friends(m->dht); ++dhtfriend) {
                 if (id_equal(m->friendlist[friend_idx].real_pk, dht_get_friend_public_key(m->dht, dhtfriend))) {
-                    m2dht[friend_idx] = dhtfriend;
+                    assert(dhtfriend < INT32_MAX);
+                    m2dht[friend_idx] = (int32_t)dhtfriend;
                     break;
                 }
             }
@@ -2491,7 +2492,8 @@ void do_messenger(Messenger *m, void *userdata)
 
         for (uint32_t friend_idx = 0; friend_idx < num_dhtfriends; ++friend_idx) {
             if (m2dht[friend_idx] >= 0) {
-                dht2m[m2dht[friend_idx]] = friend_idx;
+                assert(friend_idx < INT32_MAX);
+                dht2m[m2dht[friend_idx]] = (int32_t)friend_idx;
             }
         }
 
@@ -3164,7 +3166,7 @@ uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_s
  *
  *  if error is not NULL it will be set to one of the values in the enum above.
  */
-Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, unsigned int *error)
+Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messenger_Error *error)
 {
     if (!options) {
         return nullptr;

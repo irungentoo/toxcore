@@ -71,7 +71,7 @@ uint32_t tox_event_file_recv_chunk_get_file_number(const Tox_Event_File_Recv_Chu
 
 non_null()
 static void tox_event_file_recv_chunk_set_position(Tox_Event_File_Recv_Chunk *file_recv_chunk,
-        uint32_t position)
+        uint64_t position)
 {
     assert(file_recv_chunk != nullptr);
     file_recv_chunk->position = position;

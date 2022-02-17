@@ -40,17 +40,17 @@ typedef struct ACSession {
 
     /* encoding */
     OpusEncoder *encoder;
-    int32_t le_sample_rate; /* Last encoder sample rate */
-    int32_t le_channel_count; /* Last encoder channel count */
-    int32_t le_bit_rate; /* Last encoder bit rate */
+    uint32_t le_sample_rate; /* Last encoder sample rate */
+    uint8_t le_channel_count; /* Last encoder channel count */
+    uint32_t le_bit_rate; /* Last encoder bit rate */
 
     /* decoding */
     OpusDecoder *decoder;
-    int32_t lp_channel_count; /* Last packet channel count */
-    int32_t lp_sampling_rate; /* Last packet sample rate */
-    int32_t lp_frame_duration; /* Last packet frame duration */
-    int32_t ld_sample_rate; /* Last decoder sample rate */
-    int32_t ld_channel_count; /* Last decoder channel count */
+    uint8_t lp_channel_count; /* Last packet channel count */
+    uint32_t lp_sampling_rate; /* Last packet sample rate */
+    uint32_t lp_frame_duration; /* Last packet frame duration */
+    uint32_t ld_sample_rate; /* Last decoder sample rate */
+    uint8_t ld_channel_count; /* Last decoder channel count */
     uint64_t ldrts; /* Last decoder reconfiguration time stamp */
     void *j_buf;
 
@@ -68,6 +68,6 @@ ACSession *ac_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t f
 void ac_kill(ACSession *ac);
 void ac_iterate(ACSession *ac);
 int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg);
-int ac_reconfigure_encoder(ACSession *ac, int32_t bit_rate, int32_t sampling_rate, uint8_t channels);
+int ac_reconfigure_encoder(ACSession *ac, uint32_t bit_rate, uint32_t sampling_rate, uint8_t channels);
 
 #endif // C_TOXCORE_TOXAV_AUDIO_H

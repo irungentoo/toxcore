@@ -1549,7 +1549,7 @@ static void populate_path_nodes_tcp(Onion_Client *onion_c)
 #define RUN_COUNT_FRIEND_ANNOUNCE_BEGINNING 17
 
 #define ONION_FRIEND_BACKOFF_FACTOR 4
-#define ONION_FRIEND_MAX_PING_INTERVAL (5*60*MAX_ONION_CLIENTS)
+#define ONION_FRIEND_MAX_PING_INTERVAL (uint64_t)(5*60*MAX_ONION_CLIENTS)
 
 non_null()
 static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
