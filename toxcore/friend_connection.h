@@ -36,8 +36,8 @@
 /** Max number of tcp relays sent to friends */
 #define MAX_SHARED_RELAYS RECOMMENDED_FRIEND_TCP_CONNECTIONS
 
-/** Interval between the sending of tcp relay information */
-#define SHARE_RELAYS_INTERVAL (5 * 60)
+/** How often we share our TCP relays with each friend connection */
+#define SHARE_RELAYS_INTERVAL (60 * 2)
 
 
 typedef enum Friendconn_Status {

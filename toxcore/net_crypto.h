@@ -309,7 +309,7 @@ non_null()
 int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number,
                            const uint8_t *data, uint16_t length);
 
-/** Copy a maximum of num TCP relays we are connected to to tcp_relays.
+/** Copy a maximum of num random TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
  *
  * return number of relays copied to tcp_relays on success.
@@ -317,6 +317,14 @@ int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number,
  */
 non_null()
 unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, uint16_t num);
+
+/** Copy a maximum of `max_num` TCP relays we are connected to starting at the index in the TCP relay array
+ * for `tcp_c` designated by `idx`. If idx is greater than the array length a modulo operation is performed.
+ *
+ * Returns the number of relays successfully copied.
+ */
+non_null()
+uint32_t copy_connected_tcp_relays_index(Net_Crypto *c, Node_format *tcp_relays, uint16_t num, uint32_t idx);
 
 /** Kill a crypto connection.
  *

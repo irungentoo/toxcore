@@ -2344,7 +2344,7 @@ int send_tcp_onion_request(Net_Crypto *c, unsigned int tcp_connections_number, c
     return ret;
 }
 
-/** Copy a maximum of num TCP relays we are connected to to tcp_relays.
+/** Copy a maximum of num random TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
  *
  * return number of relays copied to tcp_relays on success.
@@ -2358,6 +2358,19 @@ unsigned int copy_connected_tcp_relays(Net_Crypto *c, Node_format *tcp_relays, u
 
     pthread_mutex_lock(&c->tcp_mutex);
     unsigned int ret = tcp_copy_connected_relays(c->tcp_c, tcp_relays, num);
+    pthread_mutex_unlock(&c->tcp_mutex);
+
+    return ret;
+}
+
+uint32_t copy_connected_tcp_relays_index(Net_Crypto *c, Node_format *tcp_relays, uint16_t num, uint32_t idx)
+{
+    if (num == 0) {
+        return 0;
+    }
+
+    pthread_mutex_lock(&c->tcp_mutex);
+    uint32_t ret = tcp_copy_connected_relays_index(c->tcp_c, tcp_relays, num, idx);
     pthread_mutex_unlock(&c->tcp_mutex);
 
     return ret;

@@ -48,6 +48,7 @@ struct Friend_Conn {
 
     Node_format tcp_relays[FRIEND_MAX_STORED_TCP_RELAYS];
     uint16_t tcp_relay_counter;
+    uint32_t tcp_relay_share_index;
 
     bool hosting_tcp_relay;
 };
@@ -286,9 +287,12 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
     Node_format nodes[MAX_SHARED_RELAYS] = {{{0}}};
     uint8_t data[1024];
 
-    const int n = copy_connected_tcp_relays(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS);
+    const uint32_t n = copy_connected_tcp_relays_index(fr_c->net_crypto, nodes, MAX_SHARED_RELAYS,
+                       friend_con->tcp_relay_share_index);
 
-    for (int i = 0; i < n; ++i) {
+    friend_con->tcp_relay_share_index += MAX_SHARED_RELAYS;
+
+    for (uint32_t i = 0; i < n; ++i) {
         /* Associated the relays being sent with this connection.
          * On receiving the peer will do the same which will establish the connection. */
         friend_add_tcp_relay(fr_c, friendcon_id, &nodes[i].ip_port, nodes[i].public_key);

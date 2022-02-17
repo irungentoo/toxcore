@@ -918,6 +918,7 @@ static int unsleep_tcp_relay_connection(TCP_Connections *tcp_c, int tcp_connecti
     tcp_con->connected_time = 0;
     tcp_con->status = TCP_CONN_VALID;
     tcp_con->unsleep = 0;
+
     return 0;
 }
 
@@ -1314,7 +1315,39 @@ uint32_t tcp_connection_to_online_tcp_relays(const TCP_Connections *tcp_c, int c
     return online_tcp_connection_from_conn(con_to);
 }
 
-/** Copy a maximum of max_num TCP relays we are connected to to tcp_relays.
+/** Copies the tcp relay from tcp connections designated by `idx` to `tcp_relay`.
+ *
+ * Returns true if the relay was successfully copied.
+ * Returns false if the connection index is invalid, or if the relay is not connected.
+ */
+non_null()
+static bool copy_tcp_relay_conn(const TCP_Connections *tcp_c, Node_format *tcp_relay, uint16_t idx)
+{
+    const TCP_con *tcp_con = get_tcp_connection(tcp_c, idx);
+
+    if (tcp_con == nullptr) {
+        return false;
+    }
+
+    if (tcp_con->status != TCP_CONN_CONNECTED) {
+        return false;
+    }
+
+    memcpy(tcp_relay->public_key, tcp_con_public_key(tcp_con->connection), CRYPTO_PUBLIC_KEY_SIZE);
+    tcp_relay->ip_port = tcp_con_ip_port(tcp_con->connection);
+
+    Family *const family = &tcp_relay->ip_port.ip.family;
+
+    if (net_family_is_ipv4(*family)) {
+        *family = net_family_tcp_ipv4;
+    } else if (net_family_is_ipv6(*family)) {
+        *family = net_family_tcp_ipv6;
+    }
+
+    return true;
+}
+
+/** Copy a maximum of max_num random TCP relays we are connected to to tcp_relays.
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
  *
  * return number of relays copied to tcp_relays on success.
@@ -1326,24 +1359,30 @@ uint32_t tcp_copy_connected_relays(const TCP_Connections *tcp_c, Node_format *tc
     uint32_t copied = 0;
 
     for (uint32_t i = 0; (i < tcp_c->tcp_connections_length) && (copied < max_num); ++i) {
-        const TCP_con *tcp_con = get_tcp_connection(tcp_c, (i + r) % tcp_c->tcp_connections_length);
+        const uint16_t idx = (i + r) % tcp_c->tcp_connections_length;
 
-        if (!tcp_con) {
-            continue;
+        if (copy_tcp_relay_conn(tcp_c, &tcp_relays[copied], idx)) {
+            ++copied;
         }
+    }
 
-        if (tcp_con->status == TCP_CONN_CONNECTED) {
-            memcpy(tcp_relays[copied].public_key, tcp_con_public_key(tcp_con->connection), CRYPTO_PUBLIC_KEY_SIZE);
-            tcp_relays[copied].ip_port = tcp_con_ip_port(tcp_con->connection);
+    return copied;
+}
 
-            Family *const family = &tcp_relays[copied].ip_port.ip.family;
+uint32_t tcp_copy_connected_relays_index(const TCP_Connections *tcp_c, Node_format *tcp_relays, uint16_t max_num,
+        uint32_t idx)
+{
+    if (tcp_c->tcp_connections_length == 0) {
+        return 0;
+    }
 
-            if (net_family_is_ipv4(*family)) {
-                *family = net_family_tcp_ipv4;
-            } else if (net_family_is_ipv6(*family)) {
-                *family = net_family_tcp_ipv6;
-            }
+    uint32_t copied = 0;
+    const uint16_t num_to_copy = min_u16(max_num, tcp_c->tcp_connections_length);
+    const uint16_t start = idx % tcp_c->tcp_connections_length;
+    const uint16_t end = (start + num_to_copy) % tcp_c->tcp_connections_length;
 
+    for (uint16_t i = start; i != end; i = (i + 1) % tcp_c->tcp_connections_length) {
+        if (copy_tcp_relay_conn(tcp_c, &tcp_relays[copied], i)) {
             ++copied;
         }
     }
