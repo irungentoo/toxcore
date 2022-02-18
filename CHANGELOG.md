@@ -1,9 +1,79 @@
 
+
+## v0.2.16
+
+### Merged PRs:
+
+- [#2069](https://github.com/TokTok/c-toxcore/pull/2069) chore: Simplify and speed up nacl build using toxchat/nacl.
+- [#2066](https://github.com/TokTok/c-toxcore/pull/2066) test: Add a profiling script and Dockerfile.
+- [#2058](https://github.com/TokTok/c-toxcore/pull/2058) fix: properly deallocate frozen peers
+- [#2056](https://github.com/TokTok/c-toxcore/pull/2056) cleanup: Avoid implicit boolean and floating point conversions in decls.
+- [#2055](https://github.com/TokTok/c-toxcore/pull/2055) cleanup: Avoid implicit bool conversions in logical operators.
+- [#2053](https://github.com/TokTok/c-toxcore/pull/2053) cleanup: Enable tokstyle's `-Wlarge-struct-params`.
+- [#2052](https://github.com/TokTok/c-toxcore/pull/2052) fix: Fix return type of functions returning uint64_t.
+- [#2049](https://github.com/TokTok/c-toxcore/pull/2049) cleanup: Apply stronger type checks and fix errors.
+- [#2047](https://github.com/TokTok/c-toxcore/pull/2047) feat: Improve how we share TCP relays with friends
+- [#2046](https://github.com/TokTok/c-toxcore/pull/2046) cleanup: Avoid implicit pointer-to-bool conversion in `if` in toxav.
+- [#2043](https://github.com/TokTok/c-toxcore/pull/2043) refactor: Compare pointers in if conditions to nullptr.
+- [#2041](https://github.com/TokTok/c-toxcore/pull/2041) fix: file transfer bug introduced in commit 2073d02
+- [#2039](https://github.com/TokTok/c-toxcore/pull/2039) refactor: Add a bit more logging; change WARNING to ERROR.
+- [#2036](https://github.com/TokTok/c-toxcore/pull/2036) chore: Add BUILD file for websockify.
+- [#2035](https://github.com/TokTok/c-toxcore/pull/2035) chore: fine tune fuzzing settings
+- [#2033](https://github.com/TokTok/c-toxcore/pull/2033) cleanup: Add some more error path logging to TCP server code.
+- [#2032](https://github.com/TokTok/c-toxcore/pull/2032) chore: update the list of CMake options & Windows Docker build deps
+- [#2031](https://github.com/TokTok/c-toxcore/pull/2031) fix: remove bogus asserts in fuzzer harness
+- [#2030](https://github.com/TokTok/c-toxcore/pull/2030) chore: expand fuzzing to toxsave
+- [#2028](https://github.com/TokTok/c-toxcore/pull/2028) fix: syntax error introduced in 8bf37994fd12acec9e3010437502f478399b99b4
+- [#2027](https://github.com/TokTok/c-toxcore/pull/2027) fix: add continous fuzzing
+- [#2026](https://github.com/TokTok/c-toxcore/pull/2026) chore: Fix implicit declaration warning in fuzz build
+- [#2025](https://github.com/TokTok/c-toxcore/pull/2025) chore: add continous fuzzing to our CI
+- [#2024](https://github.com/TokTok/c-toxcore/pull/2024) perf: Reduce minimal encoding size of packed events.
+- [#2023](https://github.com/TokTok/c-toxcore/pull/2023) cleanup: Add wrapper library for msgpack pack functions
+- [#2022](https://github.com/TokTok/c-toxcore/pull/2022) cleanup: Split tox_unpack into two smaller libs
+- [#2021](https://github.com/TokTok/c-toxcore/pull/2021) chore: Disable non-null attributes by default.
+- [#2019](https://github.com/TokTok/c-toxcore/pull/2019) chore: Silence clang compile warnings causing circle-ci/asan to fail
+- [#2018](https://github.com/TokTok/c-toxcore/pull/2018) fix: Coverty scan
+- [#2016](https://github.com/TokTok/c-toxcore/pull/2016) docs: Add libmsgpack dependency in INSTALL.md
+- [#2015](https://github.com/TokTok/c-toxcore/pull/2015) fix: shared toxcore autotools build failing
+- [#2013](https://github.com/TokTok/c-toxcore/pull/2013) cleanup: Don't use VLAs for huge allocations.
+- [#2011](https://github.com/TokTok/c-toxcore/pull/2011) fix: Conan build link failures
+- [#2010](https://github.com/TokTok/c-toxcore/pull/2010) chore: Remove duplicate source file in autotools build.
+- [#2008](https://github.com/TokTok/c-toxcore/pull/2008) chore: get skeletons out of the closet
+- [#2007](https://github.com/TokTok/c-toxcore/pull/2007) feat: add bash-completion for tox-bootstrapd
+- [#2006](https://github.com/TokTok/c-toxcore/pull/2006) cleanup: Add more nonnull and nullable annotations.
+- [#2002](https://github.com/TokTok/c-toxcore/pull/2002) cleanup: Add nonnull annotations to function definitions.
+- [#2001](https://github.com/TokTok/c-toxcore/pull/2001) chore: Add an undefined behaviour/integer sanitizer build.
+- [#1999](https://github.com/TokTok/c-toxcore/pull/1999) chore: Speed up cmake builds with `UNITY_BUILD`.
+- [#1996](https://github.com/TokTok/c-toxcore/pull/1996) feat: Add unpacker functions for events structures.
+- [#1993](https://github.com/TokTok/c-toxcore/pull/1993) feat: Add binary packing functions for tox events.
+- [#1992](https://github.com/TokTok/c-toxcore/pull/1992) chore: Set up an Android CI job
+- [#1988](https://github.com/TokTok/c-toxcore/pull/1988) cleanup: Make LAN discovery thread-safe without data races.
+- [#1987](https://github.com/TokTok/c-toxcore/pull/1987) cleanup: Comply with new cimple callback rules.
+- [#1985](https://github.com/TokTok/c-toxcore/pull/1985) cleanup: Split msi callback array into 1 member per callback
+- [#1982](https://github.com/TokTok/c-toxcore/pull/1982) chore: Add an easy way to run autotools and circleci builds locally.
+- [#1979](https://github.com/TokTok/c-toxcore/pull/1979) chore: Update readme header
+- [#1952](https://github.com/TokTok/c-toxcore/pull/1952) feat: Add async event handling (callbacks) code.
+- [#1935](https://github.com/TokTok/c-toxcore/pull/1935) feat: add DHT queries to private API
+- [#1668](https://github.com/TokTok/c-toxcore/pull/1668) perf: Take advantage of fast networks for file transfers
+
+### Closed issues:
+
+- [#2009](https://github.com/TokTok/c-toxcore/issues/2009) Autotools build fails
+- [#2004](https://github.com/TokTok/c-toxcore/issues/2004) Add `nullable` and `nonnull` annotations to all functions.
+- [#1998](https://github.com/TokTok/c-toxcore/issues/1998) Large stack allocations
+- [#1977](https://github.com/TokTok/c-toxcore/issues/1977) Turn array of callbacks in msi.h into separate callbacks.
+- [#1670](https://github.com/TokTok/c-toxcore/issues/1670) Broken link in readme
+- [#405](https://github.com/TokTok/c-toxcore/issues/405) Remove all¹ uses of global state in toxcore
+- [#340](https://github.com/TokTok/c-toxcore/issues/340) Set up a continuous integration build for Android
+- [#236](https://github.com/TokTok/c-toxcore/issues/236) Tox file transfers do not use available bandwidth
+- [#128](https://github.com/TokTok/c-toxcore/issues/128) Toxcore should provide an easy, local method for making sure Travis checks will pass
+
 ## v0.2.15
 
 ### Merged PRs:
 
 - [#1984](https://github.com/TokTok/c-toxcore/pull/1984) fix: Reduce logging verbosity even more.
+- [#1983](https://github.com/TokTok/c-toxcore/pull/1983) chore: Release 0.2.15
 - [#1980](https://github.com/TokTok/c-toxcore/pull/1980) fix: Reduce logging verbosity in TCP server.
 
 ## v0.2.14
