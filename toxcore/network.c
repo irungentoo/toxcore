@@ -961,7 +961,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
 #ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
     if (net_family_is_ipv6(ip->family)) {
-        const int is_dualstack = set_socket_dualstack(temp->sock);
+        const bool is_dualstack = set_socket_dualstack(temp->sock);
         LOGGER_DEBUG(log, "Dual-stack socket: %s",
                      is_dualstack ? "enabled" : "Failed to enable, won't be able to receive from/send to IPv4 addresses");
         /* multicast local nodes */

@@ -828,18 +828,21 @@ Tox_Connection tox_self_get_connection_status(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    const unsigned int ret = onion_connection_status(tox->m->onion_c);
+    const Onion_Connection_Status ret = onion_connection_status(tox->m->onion_c);
     unlock(tox);
 
-    if (ret == 2) {
-        return TOX_CONNECTION_UDP;
+    switch (ret) {
+        case ONION_CONNECTION_STATUS_NONE:
+            return TOX_CONNECTION_NONE;
+
+        case ONION_CONNECTION_STATUS_TCP:
+            return TOX_CONNECTION_TCP;
+
+        case ONION_CONNECTION_STATUS_UDP:
+            return TOX_CONNECTION_UDP;
     }
 
-    if (ret == 1) {
-        return TOX_CONNECTION_TCP;
-    }
-
-    return TOX_CONNECTION_NONE;
+    LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
 }
 
 

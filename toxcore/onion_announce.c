@@ -276,8 +276,8 @@ static int cmp_entry(const void *a, const void *b)
     const Onion_Announce_Entry entry2 = cmp2->entry;
     const uint8_t *cmp_public_key = cmp1->base_public_key;
 
-    const int t1 = mono_time_is_timeout(cmp1->mono_time, entry1.time, ONION_ANNOUNCE_TIMEOUT);
-    const int t2 = mono_time_is_timeout(cmp1->mono_time, entry2.time, ONION_ANNOUNCE_TIMEOUT);
+    const bool t1 = mono_time_is_timeout(cmp1->mono_time, entry1.time, ONION_ANNOUNCE_TIMEOUT);
+    const bool t2 = mono_time_is_timeout(cmp1->mono_time, entry2.time, ONION_ANNOUNCE_TIMEOUT);
 
     if (t1 && t2) {
         return 0;

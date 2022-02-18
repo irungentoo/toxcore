@@ -2645,7 +2645,7 @@ static void send_crypto_packets(Net_Crypto *c)
             }
 
             if ((PACKET_COUNTER_AVERAGE_INTERVAL + conn->packet_counter_set) < temp_time) {
-                const double dt = temp_time - conn->packet_counter_set;
+                const double dt = (double)(temp_time - conn->packet_counter_set);
 
                 conn->packet_recv_rate = (double)conn->packet_counter / (dt / 1000.0);
                 conn->packet_counter = 0;

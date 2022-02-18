@@ -807,7 +807,7 @@ static Socket new_listening_TCP_socket(const Logger *logger, Family family, uint
         return net_invalid_socket;
     }
 
-    int ok = set_socket_nonblock(sock);
+    bool ok = set_socket_nonblock(sock);
 
     if (ok && net_family_is_ipv6(family)) {
         ok = set_socket_dualstack(sock);

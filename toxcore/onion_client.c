@@ -626,8 +626,8 @@ static int onion_client_cmp_entry(const void *a, const void *b)
     const Onion_Node entry2 = cmp2->entry;
     const uint8_t *cmp_public_key = cmp1->base_public_key;
 
-    const int t1 = onion_node_timed_out(&entry1, cmp1->mono_time);
-    const int t2 = onion_node_timed_out(&entry2, cmp2->mono_time);
+    const bool t1 = onion_node_timed_out(&entry1, cmp1->mono_time);
+    const bool t2 = onion_node_timed_out(&entry2, cmp2->mono_time);
 
     if (t1 && t2) {
         return 0;
