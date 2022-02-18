@@ -131,6 +131,13 @@ static int32_t create_group_chat(Group_Chats *g_c)
     return -1;
 }
 
+non_null()
+static void wipe_group_c(Group_c *g)
+{
+    free(g->frozen);
+    free(g->group);
+    crypto_memzero(g, sizeof(Group_c));
+}
 
 /** Wipe a groupchat.
  *
@@ -139,12 +146,13 @@ static int32_t create_group_chat(Group_Chats *g_c)
 non_null()
 static bool wipe_group_chat(Group_Chats *g_c, uint32_t groupnumber)
 {
-    if (!is_groupnumber_valid(g_c, groupnumber)) {
+    if (groupnumber >= g_c->num_chats || g_c->chats == nullptr) {
         return false;
     }
 
+    wipe_group_c(&g_c->chats[groupnumber]);
+
     uint16_t i;
-    crypto_memzero(&g_c->chats[groupnumber], sizeof(Group_c));
 
     for (i = g_c->num_chats; i != 0; --i) {
         if (g_c->chats[i - 1].status != GROUPCHAT_STATUS_NONE) {
@@ -1207,9 +1215,6 @@ int del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently
             g->peer_on_leave(g->object, groupnumber, g->group[i].object);
         }
     }
-
-    free(g->group);
-    free(g->frozen);
 
     if (g->group_on_delete != nullptr) {
         g->group_on_delete(g->object, groupnumber);
