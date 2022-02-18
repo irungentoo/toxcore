@@ -49,7 +49,4 @@ RUN 'cmake -B_build -Hc-toxcore \
 
 # We created the VM with the same number of cores as the host, so the host-ran `nproc` here is fine
 RUN 'gmake "-j$NPROC" -k install -C_build'
-RUN 'gmake "-j$NPROC" test ARGS="-j50" -C_build || \
-  gmake -j50 -C_build test ARGS="-j50 --rerun-failed" || \
-  gmake -j1 -C_build test ARGS="-j1 --rerun-failed" CTEST_OUTPUT_ON_FAILURE=1 || \
-  true'
+RUN 'gmake "-j$NPROC" test ARGS="-j50" -C_build || true'
