@@ -337,14 +337,14 @@ static int add_receipt(Messenger *m, int32_t friendnumber, uint32_t packet_num, 
 
     struct Receipts *new_receipts = (struct Receipts *)calloc(1, sizeof(struct Receipts));
 
-    if (!new_receipts) {
+    if (new_receipts == nullptr) {
         return -1;
     }
 
     new_receipts->packet_num = packet_num;
     new_receipts->msg_id = msg_id;
 
-    if (!m->friendlist[friendnumber].receipts_start) {
+    if (m->friendlist[friendnumber].receipts_start == nullptr) {
         m->friendlist[friendnumber].receipts_start = new_receipts;
     } else {
         m->friendlist[friendnumber].receipts_end->next = new_receipts;
@@ -396,7 +396,7 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
         receipts = r_next;
     }
 
-    if (!m->friendlist[friendnumber].receipts_start) {
+    if (m->friendlist[friendnumber].receipts_start == nullptr) {
         m->friendlist[friendnumber].receipts_end = nullptr;
     }
 
@@ -1282,7 +1282,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
 
     if (control == FILECONTROL_ACCEPT) {
         if (ft->status == FILESTATUS_TRANSFERRING) {
-            if (!(ft->paused & FILE_PAUSE_US)) {
+            if ((ft->paused & FILE_PAUSE_US) == 0) {
                 if (ft->paused & FILE_PAUSE_OTHER) {
                     return -6;
                 }
@@ -2693,7 +2693,7 @@ bool m_register_state_plugin(Messenger *m, State_Type type, m_state_size_cb *siz
     Messenger_State_Plugin *temp = (Messenger_State_Plugin *)realloc(m->options.state_plugins,
                                    sizeof(Messenger_State_Plugin) * (m->options.state_plugins_length + 1));
 
-    if (!temp) {
+    if (temp == nullptr) {
         return false;
     }
 
@@ -3136,7 +3136,7 @@ uint32_t count_friendlist(const Messenger *m)
  * of out_list will be truncated to list_size. */
 uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_size)
 {
-    if (!out_list) {
+    if (out_list == nullptr) {
         return 0;
     }
 
@@ -3168,7 +3168,7 @@ uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_s
  */
 Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messenger_Error *error)
 {
-    if (!options) {
+    if (options == nullptr) {
         return nullptr;
     }
 
@@ -3178,7 +3178,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
 
     Messenger *m = (Messenger *)calloc(1, sizeof(Messenger));
 
-    if (!m) {
+    if (m == nullptr) {
         return nullptr;
     }
 
@@ -3186,7 +3186,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
 
     m->fr = friendreq_new();
 
-    if (!m->fr) {
+    if (m->fr == nullptr) {
         free(m);
         return nullptr;
     }
@@ -3252,10 +3252,10 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
 
     m->onion = new_onion(m->log, m->mono_time, m->dht);
     m->onion_a = new_onion_announce(m->log, m->mono_time, m->dht);
-    m->onion_c =  new_onion_client(m->log, m->mono_time, m->net_crypto);
+    m->onion_c = new_onion_client(m->log, m->mono_time, m->net_crypto);
     m->fr_c = new_friend_connections(m->log, m->mono_time, m->onion_c, options->local_discovery_enabled);
 
-    if (!(m->onion && m->onion_a && m->onion_c && m->fr_c)) {
+    if (m->onion == nullptr || m->onion_a == nullptr || m->onion_c == nullptr || m->fr_c == nullptr) {
         kill_friend_connections(m->fr_c);
         kill_onion(m->onion);
         kill_onion_announce(m->onion_a);
@@ -3315,7 +3315,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
  */
 void kill_messenger(Messenger *m)
 {
-    if (!m) {
+    if (m == nullptr) {
         return;
     }
 

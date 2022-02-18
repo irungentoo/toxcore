@@ -224,7 +224,7 @@ static int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, cons
 
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -259,7 +259,7 @@ static void connect_to_saved_tcp_relays(Friend_Connections *fr_c, int friendcon_
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return;
     }
 
@@ -280,7 +280,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return 0;
     }
 
@@ -322,7 +322,7 @@ static int tcp_relay_node_callback(void *object, uint32_t number, const IP_Port 
     Friend_Connections *fr_c = (Friend_Connections *)object;
     const Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -343,7 +343,7 @@ static void dht_ip_callback(void *object, int32_t number, const IP_Port *ip_port
     Friend_Connections *const fr_c = (Friend_Connections *)object;
     Friend_Conn *const friend_con = get_conn(fr_c, number);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return;
     }
 
@@ -366,7 +366,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return;
     }
 
@@ -391,7 +391,7 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
     Friend_Connections *const fr_c = (Friend_Connections *)object;
     Friend_Conn *const friend_con = get_conn(fr_c, number);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -439,7 +439,7 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     Friend_Connections *const fr_c = (Friend_Connections *)object;
     Friend_Conn *const friend_con = get_conn(fr_c, number);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return;
     }
 
@@ -470,7 +470,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
     Friend_Connections *const fr_c = (Friend_Connections *)object;
     Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -511,7 +511,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
 
         friend_con = get_conn(fr_c, number);
 
-        if (!friend_con) {
+        if (friend_con == nullptr) {
             return -1;
         }
     }
@@ -529,7 +529,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
     const Friend_Connections *const fr_c = (const Friend_Connections *)object;
     const Friend_Conn *friend_con = get_conn(fr_c, number);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -542,7 +542,7 @@ static int handle_lossy_packet(void *object, int number, const uint8_t *data, ui
 
         friend_con = get_conn(fr_c, number);
 
-        if (!friend_con) {
+        if (friend_con == nullptr) {
             return -1;
         }
     }
@@ -557,7 +557,7 @@ static int handle_new_connections(void *object, const New_Connection *n_c)
     const int friendcon_id = getfriend_conn_id_pk(fr_c, n_c->public_key);
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -595,7 +595,7 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -628,7 +628,7 @@ static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -652,7 +652,7 @@ int friend_connection_lock(const Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -668,7 +668,7 @@ unsigned int friend_con_connected(const Friend_Connections *fr_c, int friendcon_
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return 0;
     }
 
@@ -684,7 +684,7 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Frie
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -720,7 +720,7 @@ int friend_connection_callbacks(const Friend_Connections *fr_c, int friendcon_id
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -764,7 +764,7 @@ int friend_connection_crypt_connection_id(const Friend_Connections *fr_c, int fr
 {
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -820,7 +820,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
 {
     Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -866,7 +866,7 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 
     const Friend_Conn *const friend_con = get_conn(fr_c, friendcon_id);
 
-    if (!friend_con) {
+    if (friend_con == nullptr) {
         return -1;
     }
 
@@ -1004,7 +1004,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
 /** Free everything related with friend_connections. */
 void kill_friend_connections(Friend_Connections *fr_c)
 {
-    if (!fr_c) {
+    if (fr_c == nullptr) {
         return;
     }
 

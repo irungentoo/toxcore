@@ -94,7 +94,7 @@ BWController *bwc_new(Messenger *m, Tox *tox, uint32_t friendnumber, m_cb *mcb, 
 
 void bwc_kill(BWController *bwc)
 {
-    if (!bwc) {
+    if (bwc == nullptr) {
         return;
     }
 
@@ -105,7 +105,7 @@ void bwc_kill(BWController *bwc)
 
 void bwc_add_lost(BWController *bwc, uint32_t bytes_lost)
 {
-    if (!bwc) {
+    if (bwc == nullptr) {
         return;
     }
 

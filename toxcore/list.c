@@ -116,7 +116,7 @@ static bool resize(BS_List *list, uint32_t new_size)
 
     uint8_t *data = (uint8_t *)realloc(list->data, list->element_size * new_size);
 
-    if (!data) {
+    if (data == nullptr) {
         return false;
     }
 
@@ -124,7 +124,7 @@ static bool resize(BS_List *list, uint32_t new_size)
 
     int *ids = (int *)realloc(list->ids, sizeof(int) * new_size);
 
-    if (!ids) {
+    if (ids == nullptr) {
         return false;
     }
 

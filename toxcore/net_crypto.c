@@ -803,7 +803,7 @@ static int get_data_pointer(const Packets_Array *array, Packet_Data **data, uint
 
     uint32_t num = number % CRYPTO_PACKET_BUFFER_SIZE;
 
-    if (!array->buffer[num]) {
+    if (array->buffer[num] == nullptr) {
         return 0;
     }
 
@@ -854,7 +854,7 @@ static int64_t read_data_beg_buffer(Packets_Array *array, Packet_Data *data)
 
     const uint32_t num = array->buffer_start % CRYPTO_PACKET_BUFFER_SIZE;
 
-    if (!array->buffer[num]) {
+    if (array->buffer[num] == nullptr) {
         return -1;
     }
 
@@ -963,7 +963,7 @@ static int generate_request_packet(uint8_t *data, uint16_t length, const Packets
     for (uint32_t i = recv_array->buffer_start; i != recv_array->buffer_end; ++i) {
         uint32_t num = i % CRYPTO_PACKET_BUFFER_SIZE;
 
-        if (!recv_array->buffer[num]) {
+        if (recv_array->buffer[num] == nullptr) {
             data[cur_len] = n;
             n = 0;
             ++cur_len;
@@ -1439,7 +1439,7 @@ static int send_temp_packet(Net_Crypto *c, int crypt_connection_id)
         return -1;
     }
 
-    if (!conn->temp_packet) {
+    if (conn->temp_packet == nullptr) {
         return -1;
     }
 
@@ -1519,7 +1519,7 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
     while (1) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
 
-        if (!c->connection_use_counter) {
+        if (c->connection_use_counter == 0) {
             break;
         }
 
@@ -1836,7 +1836,7 @@ static int create_crypto_connection(Net_Crypto *c)
     while (1) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
 
-        if (!c->connection_use_counter) {
+        if (c->connection_use_counter == 0) {
             break;
         }
 

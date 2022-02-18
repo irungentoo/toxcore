@@ -68,14 +68,14 @@ RingBuffer *rb_new(int size)
 {
     RingBuffer *buf = (RingBuffer *)calloc(1, sizeof(RingBuffer));
 
-    if (!buf) {
+    if (buf == nullptr) {
         return nullptr;
     }
 
     buf->size = size + 1; /* include empty elem */
     buf->data = (void **)calloc(buf->size, sizeof(void *));
 
-    if (!buf->data) {
+    if (buf->data == nullptr) {
         free(buf);
         return nullptr;
     }

@@ -76,7 +76,7 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
 
     con->priority_queue_start = p;
 
-    if (!p) {
+    if (p == nullptr) {
         con->priority_queue_end = nullptr;
         return 0;
     }

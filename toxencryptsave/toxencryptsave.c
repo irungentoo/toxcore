@@ -138,7 +138,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 
     Tox_Pass_Key *out_key = (Tox_Pass_Key *)calloc(1, sizeof(Tox_Pass_Key));
 
-    if (!out_key) {
+    if (out_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_FAILED);
         return nullptr;
     }
@@ -212,7 +212,7 @@ bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passp
     Tox_Err_Key_Derivation err;
     Tox_Pass_Key *key = tox_pass_key_derive(passphrase, pplength, &err);
 
-    if (!key) {
+    if (key == nullptr) {
         if (err == TOX_ERR_KEY_DERIVATION_NULL) {
             SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
         } else if (err == TOX_ERR_KEY_DERIVATION_FAILED) {
@@ -304,7 +304,7 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphr
     /* derive the key */
     Tox_Pass_Key *key = tox_pass_key_derive_with_salt(passphrase, pplength, salt, nullptr);
 
-    if (!key) {
+    if (key == nullptr) {
         /* out of memory most likely */
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_KEY_DERIVATION_FAILED);
         return 0;

@@ -520,7 +520,7 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     } else { /* empty or overwrite */
         LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
-                     buffer[0], message, res, !res ? '!' : '>', buflen,
+                     buffer[0], message, res, res == 0 ? '!' : '>', buflen,
                      ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     }
@@ -1080,7 +1080,7 @@ Networking_Core *new_networking_no_udp(const Logger *log)
 /** Function to cleanup networking stuff (doesn't do much right now). */
 void kill_networking(Networking_Core *net)
 {
-    if (!net) {
+    if (net == nullptr) {
         return;
     }
 
@@ -1151,7 +1151,7 @@ bool ipport_equal(const IP_Port *a, const IP_Port *b)
 /** nulls out ip */
 void ip_reset(IP *ip)
 {
-    if (!ip) {
+    if (ip == nullptr) {
         return;
     }
 
@@ -1161,7 +1161,7 @@ void ip_reset(IP *ip)
 /** nulls out ip_port */
 void ipport_reset(IP_Port *ipport)
 {
-    if (!ipport) {
+    if (ipport == nullptr) {
         return;
     }
 
@@ -1171,7 +1171,7 @@ void ipport_reset(IP_Port *ipport)
 /** nulls out ip, sets family according to flag */
 void ip_init(IP *ip, bool ipv6enabled)
 {
-    if (!ip) {
+    if (ip == nullptr) {
         return;
     }
 
@@ -1182,7 +1182,7 @@ void ip_init(IP *ip, bool ipv6enabled)
 /** checks if ip is valid */
 bool ip_isset(const IP *ip)
 {
-    if (!ip) {
+    if (ip == nullptr) {
         return false;
     }
 
@@ -1192,7 +1192,7 @@ bool ip_isset(const IP *ip)
 /** checks if ip is valid */
 bool ipport_isset(const IP_Port *ipport)
 {
-    if (!ipport) {
+    if (ipport == nullptr) {
         return false;
     }
 

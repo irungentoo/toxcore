@@ -223,7 +223,7 @@ void toxav_kill(ToxAV *av)
     pthread_mutex_lock(av->mutex);
 
     /* To avoid possible deadlocks */
-    while (av->msi && msi_kill(av->msi, av->m->log) != 0) {
+    while (av->msi != nullptr && msi_kill(av->msi, av->m->log) != 0) {
         pthread_mutex_unlock(av->mutex);
         pthread_mutex_lock(av->mutex);
     }
@@ -253,12 +253,12 @@ Tox *toxav_get_tox(const ToxAV *av)
 
 uint32_t toxav_audio_iteration_interval(const ToxAV *av)
 {
-    return av->calls ? av->audio_stats.interval : IDLE_ITERATION_INTERVAL_MS;
+    return av->calls != nullptr ? av->audio_stats.interval : IDLE_ITERATION_INTERVAL_MS;
 }
 
 uint32_t toxav_video_iteration_interval(const ToxAV *av)
 {
-    return av->calls ? av->video_stats.interval : IDLE_ITERATION_INTERVAL_MS;
+    return av->calls != nullptr ? av->video_stats.interval : IDLE_ITERATION_INTERVAL_MS;
 }
 
 uint32_t toxav_iteration_interval(const ToxAV *av)
@@ -528,7 +528,7 @@ static Toxav_Err_Call_Control call_control_handle_cancel(ToxAVCall *call)
 }
 static Toxav_Err_Call_Control call_control_handle_mute_audio(const ToxAVCall *call)
 {
-    if (!(call->msi_call->self_capabilities & MSI_CAP_R_AUDIO)) {
+    if ((call->msi_call->self_capabilities & MSI_CAP_R_AUDIO) == 0) {
         return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
     }
 
@@ -543,7 +543,7 @@ static Toxav_Err_Call_Control call_control_handle_mute_audio(const ToxAVCall *ca
 }
 static Toxav_Err_Call_Control call_control_handle_unmute_audio(const ToxAVCall *call)
 {
-    if (!(call->msi_call->self_capabilities ^ MSI_CAP_R_AUDIO)) {
+    if ((call->msi_call->self_capabilities ^ MSI_CAP_R_AUDIO) == 0) {
         return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
     }
 
@@ -557,7 +557,7 @@ static Toxav_Err_Call_Control call_control_handle_unmute_audio(const ToxAVCall *
 }
 static Toxav_Err_Call_Control call_control_handle_hide_video(const ToxAVCall *call)
 {
-    if (!(call->msi_call->self_capabilities & MSI_CAP_R_VIDEO)) {
+    if ((call->msi_call->self_capabilities & MSI_CAP_R_VIDEO) == 0) {
         return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
     }
 
@@ -571,7 +571,7 @@ static Toxav_Err_Call_Control call_control_handle_hide_video(const ToxAVCall *ca
 }
 static Toxav_Err_Call_Control call_control_handle_show_video(const ToxAVCall *call)
 {
-    if (!(call->msi_call->self_capabilities ^ MSI_CAP_R_VIDEO)) {
+    if ((call->msi_call->self_capabilities ^ MSI_CAP_R_VIDEO) == 0) {
         return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
     }
 
@@ -1060,7 +1060,7 @@ static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, 
      */
 
     ToxAVCall *call = (ToxAVCall *)user_data;
-    assert(call);
+    assert(call != nullptr);
 
     LOGGER_DEBUG(call->av->m->log, "Reported loss of %f%%", (double)loss * 100);
 
@@ -1072,7 +1072,7 @@ static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, 
     pthread_mutex_lock(call->av->mutex);
 
     if (call->video_bit_rate) {
-        if (!call->av->vbcb) {
+        if (call->av->vbcb == nullptr) {
             pthread_mutex_unlock(call->av->mutex);
             LOGGER_WARNING(call->av->m->log, "No callback to report loss on");
             return;
@@ -1082,7 +1082,7 @@ static void callback_bwc(BWController *bwc, uint32_t friend_number, float loss, 
                        call->video_bit_rate - (call->video_bit_rate * loss),
                        call->av->vbcb_user_data);
     } else if (call->audio_bit_rate) {
-        if (!call->av->abcb) {
+        if (call->av->abcb == nullptr) {
             pthread_mutex_unlock(call->av->mutex);
             LOGGER_WARNING(call->av->m->log, "No callback to report loss on");
             return;

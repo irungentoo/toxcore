@@ -591,7 +591,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
 
     // TODO(iphydf): Clarify this code, check for NULL before new_groupchats, so
     // new_groupchats can assume m is non-NULL.
-    if (!new_groupchats(tox->mono_time, tox->m)) {
+    if (new_groupchats(tox->mono_time, tox->m) == nullptr) {
         kill_messenger(tox->m);
 
         if (m_error == MESSENGER_ERROR_PORT) {
@@ -1108,7 +1108,7 @@ uint32_t tox_friend_add_norequest(Tox *tox, const uint8_t *public_key, Tox_Err_F
 {
     assert(tox != nullptr);
 
-    if (!public_key) {
+    if (public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_NULL);
         return UINT32_MAX;
     }
@@ -1148,7 +1148,7 @@ uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, Tox
 {
     assert(tox != nullptr);
 
-    if (!public_key) {
+    if (public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_BY_PUBLIC_KEY_NULL);
         return UINT32_MAX;
     }
@@ -1171,7 +1171,7 @@ bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *
 {
     assert(tox != nullptr);
 
-    if (!public_key) {
+    if (public_key == nullptr) {
         return 0;
     }
 
@@ -1254,7 +1254,7 @@ bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, 
 {
     assert(tox != nullptr);
 
-    if (!name) {
+    if (name == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
         return 0;
     }
@@ -1299,7 +1299,7 @@ bool tox_friend_get_status_message(const Tox *tox, uint32_t friend_number, uint8
 {
     assert(tox != nullptr);
 
-    if (!status_message) {
+    if (status_message == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
         return false;
     }
@@ -1456,12 +1456,12 @@ uint32_t tox_friend_send_message(Tox *tox, uint32_t friend_number, Tox_Message_T
 {
     assert(tox != nullptr);
 
-    if (!message) {
+    if (message == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_NULL);
         return 0;
     }
 
-    if (!length) {
+    if (length == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_SEND_MESSAGE_EMPTY);
         return 0;
     }
@@ -1627,7 +1627,7 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
 {
     assert(tox != nullptr);
 
-    if (!file_id) {
+    if (file_id == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NULL);
         return 0;
     }
@@ -1662,7 +1662,7 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
 
     uint8_t f_id[FILE_ID_LENGTH];
 
-    if (!file_id) {
+    if (file_id == nullptr) {
         /* Tox keys are 32 bytes like FILE_ID_LENGTH. */
         new_symmetric_key(f_id);
         file_id = f_id;
@@ -2346,7 +2346,7 @@ uint32_t tox_conference_by_id(const Tox *tox, const uint8_t *id, Tox_Err_Confere
 {
     assert(tox != nullptr);
 
-    if (!id) {
+    if (id == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_BY_ID_NULL);
         return UINT32_MAX;
     }
@@ -2432,7 +2432,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
 {
     assert(tox != nullptr);
 
-    if (!data) {
+    if (data == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
         return 0;
     }
@@ -2484,7 +2484,7 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
 {
     assert(tox != nullptr);
 
-    if (!data) {
+    if (data == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
         return 0;
     }

@@ -49,13 +49,13 @@ static Group_JitterBuffer *create_queue(unsigned int capacity)
 
     Group_JitterBuffer *q = (Group_JitterBuffer *)calloc(1, sizeof(Group_JitterBuffer));
 
-    if (!q) {
+    if (q == nullptr) {
         return nullptr;
     }
 
     q->queue = (Group_Audio_Packet **)calloc(size, sizeof(Group_Audio_Packet *));
 
-    if (!q->queue) {
+    if (q->queue == nullptr) {
         free(q);
         return nullptr;
     }
@@ -77,7 +77,7 @@ static void clear_queue(Group_JitterBuffer *q)
 
 static void terminate_queue(Group_JitterBuffer *q)
 {
-    if (!q) {
+    if (q == nullptr) {
         return;
     }
 
@@ -227,13 +227,13 @@ static int recreate_encoder(Group_AV *group_av)
 static Group_AV *new_group_av(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback,
                               void *userdata)
 {
-    if (!g_c) {
+    if (g_c == nullptr) {
         return nullptr;
     }
 
     Group_AV *group_av = (Group_AV *)calloc(1, sizeof(Group_AV));
 
-    if (!group_av) {
+    if (group_av == nullptr) {
         return nullptr;
     }
 
@@ -252,7 +252,7 @@ static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t frien
     const Group_AV *group_av = (const Group_AV *)object;
     Group_Peer_AV *peer_av = (Group_Peer_AV *)calloc(1, sizeof(Group_Peer_AV));
 
-    if (!peer_av) {
+    if (peer_av == nullptr) {
         return;
     }
 
@@ -268,7 +268,7 @@ static void group_av_peer_delete(void *object, uint32_t groupnumber, void *peer_
 {
     Group_Peer_AV *peer_av = (Group_Peer_AV *)peer_object;
 
-    if (!peer_av) {
+    if (peer_av == nullptr) {
         return;
     }
 
@@ -341,7 +341,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
 
         out_audio = (int16_t *)malloc(num_samples * peer_av->decoder_channels * sizeof(int16_t));
 
-        if (!out_audio) {
+        if (out_audio == nullptr) {
             free_audio_packet(pk);
             return -1;
         }
@@ -356,17 +356,17 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
 
         peer_av->last_packet_samples = out_audio_samples;
     } else {
-        if (!peer_av->audio_decoder) {
+        if (peer_av->audio_decoder == nullptr) {
             return -1;
         }
 
-        if (!peer_av->last_packet_samples) {
+        if (peer_av->last_packet_samples == 0) {
             return -1;
         }
 
         out_audio = (int16_t *)malloc(peer_av->last_packet_samples * peer_av->decoder_channels * sizeof(int16_t));
 
-        if (!out_audio) {
+        if (out_audio == nullptr) {
             free_audio_packet(pk);
             return -1;
         }
@@ -580,7 +580,7 @@ static int send_audio_packet(const Group_Chats *g_c, uint32_t groupnumber, const
 
     Group_AV *const group_av = (Group_AV *)group_get_object(g_c, groupnumber);
 
-    if (!group_av) {
+    if (group_av == nullptr) {
         return -1;
     }
 
@@ -610,7 +610,7 @@ int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm,
 {
     Group_AV *group_av = (Group_AV *)group_get_object(g_c, groupnumber);
 
-    if (!group_av) {
+    if (group_av == nullptr) {
         return -1;
     }
 

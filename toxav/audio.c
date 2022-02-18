@@ -31,7 +31,7 @@ ACSession *ac_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t f
 {
     ACSession *ac = (ACSession *)calloc(1, sizeof(ACSession));
 
-    if (!ac) {
+    if (ac == nullptr) {
         LOGGER_WARNING(log, "Allocation failed! Application might misbehave!");
         return nullptr;
     }
@@ -100,7 +100,7 @@ BASE_CLEANUP:
 
 void ac_kill(ACSession *ac)
 {
-    if (!ac) {
+    if (ac == nullptr) {
         return;
     }
 
@@ -116,7 +116,7 @@ void ac_kill(ACSession *ac)
 
 void ac_iterate(ACSession *ac)
 {
-    if (!ac) {
+    if (ac == nullptr) {
         return;
     }
 
@@ -275,13 +275,13 @@ static struct JitterBuffer *jbuf_new(uint32_t capacity)
 
     struct JitterBuffer *q = (struct JitterBuffer *)calloc(1, sizeof(struct JitterBuffer));
 
-    if (!q) {
+    if (q == nullptr) {
         return nullptr;
     }
 
     q->queue = (struct RTPMessage **)calloc(size, sizeof(struct RTPMessage *));
 
-    if (!q->queue) {
+    if (q->queue == nullptr) {
         free(q);
         return nullptr;
     }
@@ -300,7 +300,7 @@ static void jbuf_clear(struct JitterBuffer *q)
 }
 static void jbuf_free(struct JitterBuffer *q)
 {
-    if (!q) {
+    if (q == nullptr) {
         return;
     }
 

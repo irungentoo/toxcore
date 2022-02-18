@@ -654,7 +654,7 @@ RTPSession *rtp_new(int payload_type, Messenger *m, Tox *tox, uint32_t friendnum
 
     RTPSession *session = (RTPSession *)calloc(1, sizeof(RTPSession));
 
-    if (!session) {
+    if (session == nullptr) {
         LOGGER_WARNING(m->log, "Alloc failed! Program might misbehave!");
         return nullptr;
     }
@@ -697,7 +697,7 @@ RTPSession *rtp_new(int payload_type, Messenger *m, Tox *tox, uint32_t friendnum
 
 void rtp_kill(RTPSession *session)
 {
-    if (!session) {
+    if (session == nullptr) {
         return;
     }
 
@@ -751,7 +751,7 @@ int rtp_stop_receiving(RTPSession *session)
 int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
                   bool is_keyframe, const Logger *log)
 {
-    if (!session) {
+    if (session == nullptr) {
         LOGGER_ERROR(log, "No session!");
         return -1;
     }

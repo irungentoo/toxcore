@@ -946,7 +946,7 @@ static int handle_data_response(void *object, const IP_Port *source, const uint8
         return 1;
     }
 
-    if (!onion_c->onion_data_handlers[plain[0]].function) {
+    if (onion_c->onion_data_handlers[plain[0]].function == nullptr) {
         return 1;
     }
 

@@ -83,7 +83,7 @@ void logger_callback_log(Logger *log, logger_cb *function, void *context, void *
 void logger_write(const Logger *log, Logger_Level level, const char *file, int line, const char *func,
                   const char *format, ...)
 {
-    if (!log) {
+    if (log == nullptr) {
 #ifdef USE_STDERR_LOGGER
         log = &logger_stderr;
 #else
@@ -92,7 +92,7 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
 #endif
     }
 
-    if (!log->callback) {
+    if (log->callback == nullptr) {
         return;
     }
 

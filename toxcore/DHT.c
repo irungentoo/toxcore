@@ -1244,7 +1244,7 @@ uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key
         }
     }
 
-    if (!friend_foundip) {
+    if (friend_foundip == nullptr) {
         return used;
     }
 
@@ -2287,7 +2287,7 @@ static void punch_holes(DHT *dht, const IP *ip, const uint16_t *port_list, uint1
         for (i = 0; i < MAX_PUNCHING_PORTS; ++i) {
             /* TODO(irungentoo): Improve port guessing algorithm. */
             const uint32_t it = i + dht->friends_list[friend_num].nat.punching_index;
-            const int8_t sign = (it % 2) ? -1 : 1;
+            const int8_t sign = (it % 2 != 0) ? -1 : 1;
             const uint32_t delta = sign * (it / (2 * numports));
             const uint32_t index = (it / 2) % numports;
             const uint16_t port = port_list[index] + delta;
@@ -2475,7 +2475,7 @@ static int cryptopacket_handle(void *object, const IP_Port *source, const uint8_
             return 1;
         }
 
-        if (!dht->cryptopackethandlers[number].function) {
+        if (dht->cryptopackethandlers[number].function == nullptr) {
             return 1;
         }
 
@@ -2709,7 +2709,7 @@ int dht_connect_after_load(DHT *dht)
         return -1;
     }
 
-    if (!dht->loaded_nodes_list) {
+    if (dht->loaded_nodes_list == nullptr) {
         return -1;
     }
 

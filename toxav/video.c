@@ -146,7 +146,7 @@ VCSession *vc_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t f
     VCSession *vc = (VCSession *)calloc(1, sizeof(VCSession));
     vpx_codec_err_t rc;
 
-    if (!vc) {
+    if (vc == nullptr) {
         LOGGER_WARNING(log, "Allocation failed! Application might misbehave!");
         return nullptr;
     }
@@ -161,7 +161,7 @@ VCSession *vc_new(Mono_Time *mono_time, const Logger *log, ToxAV *av, uint32_t f
 
     vc->vbuf_raw = rb_new(VIDEO_DECODE_BUFFER_SIZE);
 
-    if (!vc->vbuf_raw) {
+    if (vc->vbuf_raw == nullptr) {
         goto BASE_CLEANUP;
     }
 
@@ -266,7 +266,7 @@ BASE_CLEANUP:
 
 void vc_kill(VCSession *vc)
 {
-    if (!vc) {
+    if (vc == nullptr) {
         return;
     }
 
@@ -286,7 +286,7 @@ void vc_kill(VCSession *vc)
 
 void vc_iterate(VCSession *vc)
 {
-    if (!vc) {
+    if (vc == nullptr) {
         return;
     }
 
@@ -387,7 +387,7 @@ int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
 
 int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uint16_t height, int16_t kf_max_dist)
 {
-    if (!vc) {
+    if (vc == nullptr) {
         return -1;
     }
 
