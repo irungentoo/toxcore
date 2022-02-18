@@ -14,13 +14,11 @@ branches:
         contexts:
           - "bazel-asan"
           - "bazel-dbg"
-          - "bazel-msan"
           - "bazel-opt"
           - "bazel-tsan"
           - "bazel-valgrind"
           - "build-compcert"
           - "build-macos"
-          - "build-msan"
           - "build-nacl"
           - "build-tcc"
           - "build-win32"
@@ -44,7 +42,6 @@ branches:
           - "docker-bootstrap-node-websocket"
           - "docker-toxcore-js"
           - "mypy"
-          - "netlify/c-toxcore/deploy-preview"
           - "sonar-scan"
 
 # Labels specific to c-toxcore.
