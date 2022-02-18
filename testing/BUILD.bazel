@@ -15,7 +15,6 @@ sh_test(
     args = ["$(locations %s)" % f for f in CIMPLE_FILES] + [
         "-Wno-callback-names",
         "-Wno-enum-names",
-        "-Wno-large-struct-params",
         "-Wno-memcpy-structs",
         "+RTS",
         "-N3",

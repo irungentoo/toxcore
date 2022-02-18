@@ -161,21 +161,21 @@ int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8
  * return -1 on failure.
  * return 0 on success.
  */
-int send_announce_request(const Networking_Core *net, const Onion_Path *path, Node_format dest,
+int send_announce_request(const Networking_Core *net, const Onion_Path *path, const Node_format *dest,
                           const uint8_t *public_key, const uint8_t *secret_key,
                           const uint8_t *ping_id, const uint8_t *client_id,
                           const uint8_t *data_public_key, uint64_t sendback_data)
 {
     uint8_t request[ONION_ANNOUNCE_REQUEST_SIZE];
-    int len = create_announce_request(request, sizeof(request), dest.public_key, public_key, secret_key, ping_id, client_id,
-                                      data_public_key, sendback_data);
+    int len = create_announce_request(request, sizeof(request), dest->public_key, public_key, secret_key, ping_id,
+                                      client_id, data_public_key, sendback_data);
 
     if (len != sizeof(request)) {
         return -1;
     }
 
     uint8_t packet[ONION_MAX_PACKET_SIZE];
-    len = create_onion_packet(packet, sizeof(packet), path, &dest.ip_port, request, sizeof(request));
+    len = create_onion_packet(packet, sizeof(packet), path, &dest->ip_port, request, sizeof(request));
 
     if (len == -1) {
         return -1;

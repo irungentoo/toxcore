@@ -229,7 +229,7 @@ static void test_basic(void)
     uint64_t s;
     memcpy(&s, sb_data, sizeof(uint64_t));
     memcpy(test_3_pub_key, nodes[3].public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    ret = send_announce_request(onion1->net, &path, nodes[3],
+    ret = send_announce_request(onion1->net, &path, &nodes[3],
                                 dht_get_self_public_key(onion1->dht),
                                 dht_get_self_secret_key(onion1->dht),
                                 zeroes,
@@ -249,7 +249,7 @@ static void test_basic(void)
     memcpy(onion_announce_entry_public_key(onion2_a, 1), dht_get_self_public_key(onion2->dht), CRYPTO_PUBLIC_KEY_SIZE);
     onion_announce_entry_set_time(onion2_a, 1, mono_time_get(mono_time2));
     networking_registerhandler(onion1->net, NET_PACKET_ONION_DATA_RESPONSE, &handle_test_4, onion1);
-    send_announce_request(onion1->net, &path, nodes[3],
+    send_announce_request(onion1->net, &path, &nodes[3],
                           dht_get_self_public_key(onion1->dht),
                           dht_get_self_secret_key(onion1->dht),
                           test_3_ping_id,
