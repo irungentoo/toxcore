@@ -78,7 +78,7 @@ size_t tox_event_file_recv_get_filename_length(
     const Tox_Event_File_Recv *file_recv);
 uint32_t tox_event_file_recv_get_file_number(
     const Tox_Event_File_Recv *file_recv);
-uint32_t tox_event_file_recv_get_file_size(
+uint64_t tox_event_file_recv_get_file_size(
     const Tox_Event_File_Recv *file_recv);
 uint32_t tox_event_file_recv_get_friend_number(
     const Tox_Event_File_Recv *file_recv);
@@ -94,7 +94,7 @@ uint32_t tox_event_file_recv_chunk_get_file_number(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
 uint32_t tox_event_file_recv_chunk_get_friend_number(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
-uint32_t tox_event_file_recv_chunk_get_position(
+uint64_t tox_event_file_recv_chunk_get_position(
     const Tox_Event_File_Recv_Chunk *file_recv_chunk);
 
 typedef struct Tox_Event_File_Recv_Control Tox_Event_File_Recv_Control;

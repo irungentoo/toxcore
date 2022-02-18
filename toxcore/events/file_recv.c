@@ -90,7 +90,7 @@ static void tox_event_file_recv_set_file_size(Tox_Event_File_Recv *file_recv,
     assert(file_recv != nullptr);
     file_recv->file_size = file_size;
 }
-uint32_t tox_event_file_recv_get_file_size(const Tox_Event_File_Recv *file_recv)
+uint64_t tox_event_file_recv_get_file_size(const Tox_Event_File_Recv *file_recv)
 {
     assert(file_recv != nullptr);
     return file_recv->file_size;
