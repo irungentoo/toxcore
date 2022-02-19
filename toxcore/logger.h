@@ -59,38 +59,38 @@ void logger_callback_log(Logger *log, logger_cb *function, void *context, void *
  * be built with -DUSE_STDERR_LOGGER for this to work. It will cause an
  * assertion failure otherwise.
  */
-non_null()
+non_null() GNU_PRINTF(6, 7)
 void logger_write(
     const Logger *log, Logger_Level level, const char *file, int line, const char *func,
-    const char *format, ...) GNU_PRINTF(6, 7);
+    const char *format, ...);
 
 
-#define LOGGER_WRITE(log, level, ...) \
-    do { \
-        if (level >= MIN_LOGGER_LEVEL) { \
+#define LOGGER_WRITE(log, level, ...)                                            \
+    do {                                                                         \
+        if (level >= MIN_LOGGER_LEVEL) {                                         \
             logger_write(log, level, __FILE__, __LINE__, __func__, __VA_ARGS__); \
-        } \
+        }                                                                        \
     } while (0)
 
 /* To log with an logger */
-#define LOGGER_TRACE(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_TRACE  , __VA_ARGS__)
-#define LOGGER_DEBUG(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_DEBUG  , __VA_ARGS__)
-#define LOGGER_INFO(log, ...)    LOGGER_WRITE(log, LOGGER_LEVEL_INFO   , __VA_ARGS__)
+#define LOGGER_TRACE(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_TRACE, __VA_ARGS__)
+#define LOGGER_DEBUG(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_DEBUG, __VA_ARGS__)
+#define LOGGER_INFO(log, ...)    LOGGER_WRITE(log, LOGGER_LEVEL_INFO, __VA_ARGS__)
 #define LOGGER_WARNING(log, ...) LOGGER_WRITE(log, LOGGER_LEVEL_WARNING, __VA_ARGS__)
-#define LOGGER_ERROR(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_ERROR  , __VA_ARGS__)
+#define LOGGER_ERROR(log, ...)   LOGGER_WRITE(log, LOGGER_LEVEL_ERROR, __VA_ARGS__)
 
-#define LOGGER_FATAL(log, ...) \
-    do { \
+#define LOGGER_FATAL(log, ...)          \
+    do {                                \
         LOGGER_ERROR(log, __VA_ARGS__); \
-        abort(); \
-    } while(0)
+        abort();                        \
+    } while (0)
 
-#define LOGGER_ASSERT(log, cond, ...) \
-    do { \
-        if (!(cond)) { \
+#define LOGGER_ASSERT(log, cond, ...)              \
+    do {                                           \
+        if (!(cond)) {                             \
             LOGGER_ERROR(log, "Assertion failed"); \
-            LOGGER_FATAL(log, __VA_ARGS__); \
-        } \
-    } while(0)
+            LOGGER_FATAL(log, __VA_ARGS__);        \
+        }                                          \
+    } while (0)
 
 #endif // C_TOXCORE_TOXCORE_LOGGER_H

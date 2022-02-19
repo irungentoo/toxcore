@@ -2567,8 +2567,14 @@ static uint32_t friend_size(void)
     uint32_t data = 0;
     const struct Saved_Friend *const temp = nullptr;
 
-#define VALUE_MEMBER(name) do { data += sizeof(temp->name); } while (0)
-#define ARRAY_MEMBER(name) do { data += sizeof(temp->name); } while (0)
+#define VALUE_MEMBER(name)          \
+    do {                            \
+        data += sizeof(temp->name); \
+    } while (0)
+#define ARRAY_MEMBER(name)          \
+    do {                            \
+        data += sizeof(temp->name); \
+    } while (0)
 
     // Exactly the same in friend_load, friend_save, and friend_size
     VALUE_MEMBER(status);
@@ -2595,15 +2601,17 @@ static uint32_t friend_size(void)
 non_null()
 static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
 {
-#define VALUE_MEMBER(name) do {                     \
-    memcpy(data, &temp->name, sizeof(temp->name));  \
-    data += sizeof(temp->name);                     \
-} while (0)
+#define VALUE_MEMBER(name)                             \
+    do {                                               \
+        memcpy(data, &temp->name, sizeof(temp->name)); \
+        data += sizeof(temp->name);                    \
+    } while (0)
 
-#define ARRAY_MEMBER(name) do {                     \
-    memcpy(data, temp->name, sizeof(temp->name));   \
-    data += sizeof(temp->name);                     \
-} while (0)
+#define ARRAY_MEMBER(name)                            \
+    do {                                              \
+        memcpy(data, temp->name, sizeof(temp->name)); \
+        data += sizeof(temp->name);                   \
+    } while (0)
 
     // Exactly the same in friend_load, friend_save, and friend_size
     VALUE_MEMBER(status);
@@ -2631,15 +2639,17 @@ static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
 non_null()
 static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data)
 {
-#define VALUE_MEMBER(name) do {                     \
-    memcpy(&temp->name, data, sizeof(temp->name));  \
-    data += sizeof(temp->name);                     \
-} while (0)
+#define VALUE_MEMBER(name)                             \
+    do {                                               \
+        memcpy(&temp->name, data, sizeof(temp->name)); \
+        data += sizeof(temp->name);                    \
+    } while (0)
 
-#define ARRAY_MEMBER(name) do {                     \
-    memcpy(temp->name, data, sizeof(temp->name));   \
-    data += sizeof(temp->name);                     \
-} while (0)
+#define ARRAY_MEMBER(name)                            \
+    do {                                              \
+        memcpy(temp->name, data, sizeof(temp->name)); \
+        data += sizeof(temp->name);                   \
+    } while (0)
 
     // Exactly the same in friend_load, friend_save, and friend_size
     VALUE_MEMBER(status);

@@ -7,10 +7,12 @@ exclude:
 restylers:
   - astyle:
       arguments: ["--options=other/astyle/astylerc"]
+      include:
+        - "!**/*.cc"
   - autopep8
   - black
   - clang-format:
-      arguments: ["-style={BasedOnStyle: Google, ColumnLimit: 100}"]
+      image: restyled/restyler-clang-format:13.0.1
       include:
         - "**/*.cc"
   - prettier-yaml
