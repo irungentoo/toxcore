@@ -86,7 +86,10 @@ jobs:
           tags: toxchat/windows:win32
           cache-from: type=registry,ref=toxchat/windows:win32
           cache-to: type=inline
-          build-args: SUPPORT_ARCH_i686=true,SUPPORT_ARCH_x86_64=false,SUPPORT_TEST=true
+          build-args: |
+            SUPPORT_ARCH_i686=true
+            SUPPORT_ARCH_x86_64=false
+            SUPPORT_TEST=true
 
   docker-win64:
     runs-on: ubuntu-latest
@@ -107,4 +110,7 @@ jobs:
           tags: toxchat/windows:win64
           cache-from: type=registry,ref=toxchat/windows:win64
           cache-to: type=inline
-          build-args: SUPPORT_ARCH_i686=false,SUPPORT_ARCH_x86_64=true,SUPPORT_TEST=true
+          build-args: |
+            SUPPORT_ARCH_i686=false
+            SUPPORT_ARCH_x86_64=true
+            SUPPORT_TEST=true
