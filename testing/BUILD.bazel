@@ -45,14 +45,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "trace",
-    testonly = 1,
-    srcs = ["trace.cc"],
-    visibility = ["//c-toxcore:__subpackages__"],
-    alwayslink = True,
-)
-
 cc_binary(
     name = "DHT_test",
     testonly = 1,
