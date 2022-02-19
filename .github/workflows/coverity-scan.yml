@@ -1,8 +1,8 @@
 name: coverity-scan
 
 on:
-  push:
-    branches: [master]
+  schedule:
+    - cron: '0 10 * * *'  # Once a day
 
 jobs:
   latest:
