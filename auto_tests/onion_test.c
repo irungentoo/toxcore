@@ -7,6 +7,7 @@
 #include "../toxcore/onion_announce.h"
 #include "../toxcore/onion_client.h"
 #include "../toxcore/util.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 #ifndef USE_IPV6

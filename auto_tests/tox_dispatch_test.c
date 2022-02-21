@@ -10,6 +10,7 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/tox_dispatch.h"
 #include "../toxcore/tox_events.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 // Set to true to produce an msgpack file at /tmp/test.mp.

@@ -10,6 +10,7 @@
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)

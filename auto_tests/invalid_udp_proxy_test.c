@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "../testing/misc_tools.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 static uint8_t const key[] = {

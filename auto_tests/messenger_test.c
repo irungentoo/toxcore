@@ -18,6 +18,7 @@
 #include <sodium.h>
 #endif
 
+#include "auto_test_support.h"
 #include "check_compat.h"
 #include "../testing/misc_tools.h"
 #include "../toxcore/Messenger.h"

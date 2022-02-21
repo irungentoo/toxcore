@@ -11,6 +11,7 @@
 #include "../toxcore/logger.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 #define TEST_REGULAR_AV 1

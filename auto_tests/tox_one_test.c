@@ -9,6 +9,7 @@
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t *status_message)

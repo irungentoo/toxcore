@@ -10,6 +10,7 @@
 #include "../toxcore/tox.h"
 #include "../toxcore/util.h"
 #include "../testing/misc_tools.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 #define FR_MESSAGE "Gentoo"

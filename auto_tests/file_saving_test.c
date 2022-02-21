@@ -15,6 +15,7 @@
 
 #include "../testing/misc_tools.h"
 #include "../toxcore/ccompat.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 #include "../toxencryptsave/toxencryptsave.h"

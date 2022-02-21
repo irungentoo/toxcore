@@ -1,3 +1,4 @@
+#include "auto_test_support.h"
 #include "check_compat.h"
 #include "../testing/misc_tools.h"
 #include "../toxcore/crypto_core.h"

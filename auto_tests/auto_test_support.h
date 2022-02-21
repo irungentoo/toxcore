@@ -50,4 +50,10 @@ void run_auto_test(struct Tox_Options *options, uint32_t tox_count, void test(Au
 
 void bootstrap_tox_live_network(Tox *tox, bool enable_tcp);
 
+void print_debug_log(Tox *m, Tox_Log_Level level, const char *file, uint32_t line, const char *func,
+                     const char *message, void *user_data);
+
+Tox *tox_new_log(struct Tox_Options *options, Tox_Err_New *err, void *log_user_data);
+Tox *tox_new_log_lan(struct Tox_Options *options, Tox_Err_New *err, void *log_user_data, bool lan_discovery);
+
 #endif

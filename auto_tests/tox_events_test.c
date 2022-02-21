@@ -9,6 +9,7 @@
 #include "../testing/misc_tools.h"
 #include "../toxcore/tox.h"
 #include "../toxcore/tox_events.h"
+#include "auto_test_support.h"
 #include "check_compat.h"
 
 static bool await_message(Tox **toxes)
