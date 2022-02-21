@@ -1276,14 +1276,14 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
         return -4;
     }
 
-    if (control == FILECONTROL_PAUSE && ((ft->paused & FILE_PAUSE_US) || ft->status != FILESTATUS_TRANSFERRING)) {
+    if (control == FILECONTROL_PAUSE && ((ft->paused & FILE_PAUSE_US) != 0 || ft->status != FILESTATUS_TRANSFERRING)) {
         return -5;
     }
 
     if (control == FILECONTROL_ACCEPT) {
         if (ft->status == FILESTATUS_TRANSFERRING) {
             if ((ft->paused & FILE_PAUSE_US) == 0) {
-                if (ft->paused & FILE_PAUSE_OTHER) {
+                if ((ft->paused & FILE_PAUSE_OTHER) != 0) {
                     return -6;
                 }
 
@@ -1313,7 +1313,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
         } else if (control == FILECONTROL_ACCEPT) {
             ft->status = FILESTATUS_TRANSFERRING;
 
-            if (ft->paused & FILE_PAUSE_US) {
+            if ((ft->paused & FILE_PAUSE_US) != 0) {
                 ft->paused ^=  FILE_PAUSE_US;
             }
         }
@@ -1678,7 +1678,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
                 ft->status = FILESTATUS_TRANSFERRING;
                 ++m->friendlist[friendnumber].num_sending_files;
             } else {
-                if (ft->paused & FILE_PAUSE_OTHER) {
+                if ((ft->paused & FILE_PAUSE_OTHER) != 0) {
                     ft->paused ^= FILE_PAUSE_OTHER;
                 } else {
                     LOGGER_DEBUG(m->log, "file control (friend %d, file %d): friend told us to resume file transfer that wasn't paused",
@@ -1695,7 +1695,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receiv
         }
 
         case FILECONTROL_PAUSE: {
-            if ((ft->paused & FILE_PAUSE_OTHER) || ft->status != FILESTATUS_TRANSFERRING) {
+            if ((ft->paused & FILE_PAUSE_OTHER) != 0 || ft->status != FILESTATUS_TRANSFERRING) {
                 LOGGER_DEBUG(m->log, "file control (friend %d, file %d): friend told us to pause file transfer that is already paused",
                              friendnumber, filenumber);
                 return -1;
@@ -3222,7 +3222,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
         logger_kill(m->log);
         free(m);
 
-        if (error && net_err == 1) {
+        if (error != nullptr && net_err == 1) {
             *error = MESSENGER_ERROR_PORT;
         }
 

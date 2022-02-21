@@ -70,7 +70,7 @@ void tox_pass_key_free(Tox_Pass_Key *pass_key)
  */
 bool tox_get_salt(const uint8_t *data, uint8_t *salt, Tox_Err_Get_Salt *error)
 {
-    if (!data || !salt) {
+    if (data == nullptr || salt == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_NULL);
         return false;
     }
@@ -111,7 +111,7 @@ Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
 Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pplength,
         const uint8_t *salt, Tox_Err_Key_Derivation *error)
 {
-    if (!salt || (!passphrase && pplength != 0)) {
+    if (salt == nullptr || (passphrase == nullptr && pplength != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);
         return nullptr;
     }
@@ -164,7 +164,7 @@ Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pp
 bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, size_t plaintext_len,
                           uint8_t *ciphertext, Tox_Err_Encryption *error)
 {
-    if (plaintext_len == 0 || !plaintext || !key || !ciphertext) {
+    if (plaintext_len == 0 || plaintext == nullptr || key == nullptr || ciphertext == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
         return 0;
     }
@@ -242,7 +242,7 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t l
         return 0;
     }
 
-    if (!data || !key || !out) {
+    if (data == nullptr || key == nullptr || out == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_NULL);
         return 0;
     }
@@ -288,7 +288,7 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphr
         return 0;
     }
 
-    if (!data || !passphrase || !out) {
+    if (data == nullptr || passphrase == nullptr || out == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_NULL);
         return 0;
     }

@@ -306,7 +306,7 @@ void vc_iterate(VCSession *vc)
 
     uint32_t full_data_len;
 
-    if (header->flags & RTP_LARGE_FRAME) {
+    if ((header->flags & RTP_LARGE_FRAME) != 0) {
         full_data_len = header->data_length_full;
         LOGGER_DEBUG(vc->log, "vc_iterate:001:full_data_len=%d", (int)full_data_len);
     } else {
@@ -346,10 +346,8 @@ int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
      * they have already been assembled.
      * this function gets called from handle_rtp_packet() and handle_rtp_packet_v3()
      */
-    if (!vcp || !msg) {
-        if (msg != nullptr) {
-            free(msg);
-        }
+    if (vcp == nullptr || msg == nullptr) {
+        free(msg);
 
         return -1;
     }
@@ -371,7 +369,7 @@ int vc_queue_message(Mono_Time *mono_time, void *vcp, struct RTPMessage *msg)
 
     pthread_mutex_lock(vc->queue_mutex);
 
-    if ((header->flags & RTP_LARGE_FRAME) && header->pt == RTP_TYPE_VIDEO % 128) {
+    if ((header->flags & RTP_LARGE_FRAME) != 0 && header->pt == RTP_TYPE_VIDEO % 128) {
         LOGGER_DEBUG(vc->log, "rb_write msg->len=%d b0=%d b1=%d", (int)msg->len, (int)msg->data[0], (int)msg->data[1]);
     }
 

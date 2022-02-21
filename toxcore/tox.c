@@ -729,7 +729,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 {
     assert(tox != nullptr);
 
-    if (!host || !public_key) {
+    if (host == nullptr || public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
         return 0;
     }
@@ -782,7 +782,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 {
     assert(tox != nullptr);
 
-    if (!host || !public_key) {
+    if (host == nullptr || public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
         return 0;
     }
@@ -934,7 +934,7 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, Tox_Err_Set
 {
     assert(tox != nullptr);
 
-    if (!name && length != 0) {
+    if (name == nullptr && length != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
         return 0;
     }
@@ -978,7 +978,7 @@ bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t
 {
     assert(tox != nullptr);
 
-    if (!status_message && length != 0) {
+    if (status_message == nullptr && length != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
         return 0;
     }
@@ -1085,7 +1085,7 @@ uint32_t tox_friend_add(Tox *tox, const uint8_t *address, const uint8_t *message
 {
     assert(tox != nullptr);
 
-    if (!address || !message) {
+    if (address == nullptr || message == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_ADD_NULL);
         return UINT32_MAX;
     }
@@ -1494,7 +1494,7 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback)
 
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
 {
-    if (!hash || (length && !data)) {
+    if (hash == nullptr || (data == nullptr && length != 0)) {
         return 0;
     }
 
@@ -1655,7 +1655,7 @@ uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t
 {
     assert(tox != nullptr);
 
-    if (filename_length && !filename) {
+    if (filename == nullptr && filename_length != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_NULL);
         return UINT32_MAX;
     }

@@ -992,7 +992,7 @@ static int tcp_status_callback(void *object, uint32_t number, uint8_t connection
     TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
     TCP_Connection_to *con_to = get_connection(tcp_c, number);
 
-    if (!con_to || !tcp_con) {
+    if (con_to == nullptr || tcp_con == nullptr) {
         return -1;
     }
 
@@ -1075,7 +1075,7 @@ static int tcp_conn_oob_callback(void *object, const uint8_t *public_key, const 
 
     const TCP_Connection_to *con_to = get_connection(tcp_c, connections_number);
 
-    if (con_to && tcp_connection_in_conn(con_to, tcp_connections_number)) {
+    if (con_to != nullptr && tcp_connection_in_conn(con_to, tcp_connections_number)) {
         return tcp_conn_data_callback(object, connections_number, 0, data, length, userdata);
     }
 

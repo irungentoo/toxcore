@@ -326,7 +326,7 @@ void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
 int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
                    const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id)
 {
-    if (!send_public_key || !packet || !recv_public_key || !data) {
+    if (send_public_key == nullptr || packet == nullptr || recv_public_key == nullptr || data == nullptr) {
         return -1;
     }
 
@@ -364,7 +364,8 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
                    uint8_t *request_id, const uint8_t *packet, uint16_t length)
 {
-    if (!self_public_key || !public_key || !data || !request_id || !packet) {
+    if (self_public_key == nullptr || public_key == nullptr || data == nullptr || request_id == nullptr
+            || packet == nullptr) {
         return -1;
     }
 

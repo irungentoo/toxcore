@@ -441,7 +441,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
 {
     RTPSession *session = (RTPSession *)object;
 
-    if (!session || length < RTP_HEADER_SIZE + 1) {
+    if (session == nullptr || length < RTP_HEADER_SIZE + 1) {
         LOGGER_WARNING(m->log, "No session or invalid length of received buffer!");
         return -1;
     }
@@ -467,7 +467,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
         return -1;
     }
 
-    if (header.flags & RTP_LARGE_FRAME && header.offset_full >= header.data_length_full) {
+    if ((header.flags & RTP_LARGE_FRAME) != 0 && header.offset_full >= header.data_length_full) {
         LOGGER_ERROR(m->log, "Invalid video packet: frame offset (%u) >= full frame length (%u)",
                      (unsigned)header.offset_full, (unsigned)header.data_length_full);
         return -1;
@@ -483,7 +483,7 @@ static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t 
 
     // The sender uses the new large-frame capable protocol and is sending a
     // video packet.
-    if ((header.flags & RTP_LARGE_FRAME) && header.pt == (RTP_TYPE_VIDEO % 128)) {
+    if ((header.flags & RTP_LARGE_FRAME) != 0 && header.pt == (RTP_TYPE_VIDEO % 128)) {
         return handle_video_packet(session, &header, data + RTP_HEADER_SIZE, length - RTP_HEADER_SIZE, m->log);
     }
 

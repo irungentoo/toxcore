@@ -290,7 +290,7 @@ static void group_av_groupchat_delete(void *object, uint32_t groupnumber)
 static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint32_t groupnumber,
                                uint32_t friendgroupnumber)
 {
-    if (!group_av || !peer_av) {
+    if (group_av == nullptr || peer_av == nullptr) {
         return -1;
     }
 
@@ -396,7 +396,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
 static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_t friendgroupnumber, void *peer_object,
                                      const uint8_t *packet, uint16_t length)
 {
-    if (!peer_object || !object || length <= sizeof(uint16_t)) {
+    if (peer_object == nullptr || object == nullptr || length <= sizeof(uint16_t)) {
         return -1;
     }
 
@@ -623,7 +623,8 @@ int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm,
         return -1;
     }
 
-    if (!group_av->audio_encoder || group_av->audio_channels != channels || group_av->audio_sample_rate != sample_rate) {
+    if (group_av->audio_encoder == nullptr || group_av->audio_channels != channels
+            || group_av->audio_sample_rate != sample_rate) {
         group_av->audio_channels = channels;
         group_av->audio_sample_rate = sample_rate;
 

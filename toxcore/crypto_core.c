@@ -193,7 +193,7 @@ int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
 int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
                                const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
-    if (length == 0 || !secret_key || !nonce || !plain || !encrypted) {
+    if (length == 0 || secret_key == nullptr || nonce == nullptr || plain == nullptr || encrypted == nullptr) {
         return -1;
     }
 
@@ -244,7 +244,8 @@ int32_t encrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
 int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
                                const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
-    if (length <= crypto_box_BOXZEROBYTES || !secret_key || !nonce || !encrypted || !plain) {
+    if (length <= crypto_box_BOXZEROBYTES || secret_key == nullptr || nonce == nullptr || encrypted == nullptr
+            || plain == nullptr) {
         return -1;
     }
 
@@ -292,7 +293,7 @@ int32_t decrypt_data_symmetric(const uint8_t *secret_key, const uint8_t *nonce,
 int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
                      const uint8_t *plain, size_t length, uint8_t *encrypted)
 {
-    if (!public_key || !secret_key) {
+    if (public_key == nullptr || secret_key == nullptr) {
         return -1;
     }
 
@@ -306,7 +307,7 @@ int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
 int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
                      const uint8_t *encrypted, size_t length, uint8_t *plain)
 {
-    if (!public_key || !secret_key) {
+    if (public_key == nullptr || secret_key == nullptr) {
         return -1;
     }
 

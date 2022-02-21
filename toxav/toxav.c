@@ -304,7 +304,7 @@ static void iterate_common(ToxAV *av, bool audio)
     // time until the first audio or video frame is over
     int32_t frame_time = IDLE_ITERATION_INTERVAL_MS;
 
-    for (ToxAVCall *i = av->calls[av->calls_head]; i; i = i->next) {
+    for (ToxAVCall *i = av->calls[av->calls_head]; i != nullptr; i = i->next) {
         if (!i->active) {
             continue;
         }
@@ -315,15 +315,15 @@ static void iterate_common(ToxAV *av, bool audio)
         if (audio) {
             ac_iterate(i->audio);
 
-            if (i->msi_call->self_capabilities & MSI_CAP_R_AUDIO &&
-                    i->msi_call->peer_capabilities & MSI_CAP_S_AUDIO) {
+            if ((i->msi_call->self_capabilities & MSI_CAP_R_AUDIO) != 0 &&
+                    (i->msi_call->peer_capabilities & MSI_CAP_S_AUDIO) != 0) {
                 frame_time = min_s32(i->audio->lp_frame_duration, frame_time);
             }
         } else {
             vc_iterate(i->video);
 
-            if (i->msi_call->self_capabilities & MSI_CAP_R_VIDEO &&
-                    i->msi_call->peer_capabilities & MSI_CAP_S_VIDEO) {
+            if ((i->msi_call->self_capabilities & MSI_CAP_R_VIDEO) != 0 &&
+                    (i->msi_call->peer_capabilities & MSI_CAP_S_VIDEO) != 0) {
                 pthread_mutex_lock(i->video->queue_mutex);
                 frame_time = min_s32(i->video->lcfd, frame_time);
                 pthread_mutex_unlock(i->video->queue_mutex);
@@ -821,8 +821,8 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
     }
 
     if (call->audio_bit_rate == 0 ||
-            !(call->msi_call->self_capabilities & MSI_CAP_S_AUDIO) ||
-            !(call->msi_call->peer_capabilities & MSI_CAP_R_AUDIO)) {
+            (call->msi_call->self_capabilities & MSI_CAP_S_AUDIO) == 0 ||
+            (call->msi_call->peer_capabilities & MSI_CAP_R_AUDIO) == 0) {
         pthread_mutex_unlock(av->mutex);
         rc = TOXAV_ERR_SEND_FRAME_PAYLOAD_TYPE_DISABLED;
         goto RETURN;
@@ -948,8 +948,8 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
     }
 
     if (call->video_bit_rate == 0 ||
-            !(call->msi_call->self_capabilities & MSI_CAP_S_VIDEO) ||
-            !(call->msi_call->peer_capabilities & MSI_CAP_R_VIDEO)) {
+            (call->msi_call->self_capabilities & MSI_CAP_S_VIDEO) == 0 ||
+            (call->msi_call->peer_capabilities & MSI_CAP_R_VIDEO) == 0) {
         pthread_mutex_unlock(av->mutex);
         rc = TOXAV_ERR_SEND_FRAME_PAYLOAD_TYPE_DISABLED;
         goto RETURN;
@@ -1186,13 +1186,13 @@ static int callback_capabilites(void *toxav_inst, MSICall *call)
     ToxAV *toxav = (ToxAV *)toxav_inst;
     pthread_mutex_lock(toxav->mutex);
 
-    if (call->peer_capabilities & MSI_CAP_S_AUDIO) {
+    if ((call->peer_capabilities & MSI_CAP_S_AUDIO) != 0) {
         rtp_allow_receiving(call->av_call->audio_rtp);
     } else {
         rtp_stop_receiving(call->av_call->audio_rtp);
     }
 
-    if (call->peer_capabilities & MSI_CAP_S_VIDEO) {
+    if ((call->peer_capabilities & MSI_CAP_S_VIDEO) != 0) {
         rtp_allow_receiving(call->av_call->video_rtp);
     } else {
         rtp_stop_receiving(call->av_call->video_rtp);

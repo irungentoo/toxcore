@@ -1805,7 +1805,7 @@ static int onion_isconnected(const Onion_Client *onion_c)
 
     /* Consider ourselves online if we are announced to half or more nodes
      * we are connected to */
-    if (num && announced) {
+    if (num != 0 && announced != 0) {
         if ((num / 2) <= announced && (pnodes / 2) <= num) {
             return 1;
         }

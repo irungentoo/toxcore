@@ -210,7 +210,7 @@ void ac_iterate(ACSession *ac)
 
 int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
 {
-    if (!acp || !msg) {
+    if (acp == nullptr || msg == nullptr) {
         free(msg);
         return -1;
     }
@@ -244,11 +244,12 @@ int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
 
 int ac_reconfigure_encoder(ACSession *ac, uint32_t bit_rate, uint32_t sampling_rate, uint8_t channels)
 {
-    if (!ac || !reconfigure_audio_encoder(ac->log, &ac->encoder, bit_rate,
-                                          sampling_rate, channels,
-                                          &ac->le_bit_rate,
-                                          &ac->le_sample_rate,
-                                          &ac->le_channel_count)) {
+    if (ac == nullptr || !reconfigure_audio_encoder(
+                ac->log, &ac->encoder, bit_rate,
+                sampling_rate, channels,
+                &ac->le_bit_rate,
+                &ac->le_sample_rate,
+                &ac->le_channel_count)) {
         return -1;
     }
 

@@ -690,7 +690,7 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
 
     add_to_closest(g, real_pk, temp_pk);
 
-    if (do_gc_callback && g_c->peer_list_changed_callback) {
+    if (do_gc_callback && g_c->peer_list_changed_callback != nullptr) {
         g_c->peer_list_changed_callback(g_c->m, groupnumber, userdata);
     }
 
@@ -911,7 +911,7 @@ static bool setnick(Group_Chats *g_c, uint32_t groupnumber, int peer_index, cons
 
     g->group[peer_index].nick_len = nick_len;
 
-    if (do_gc_callback && g_c->peer_name_callback) {
+    if (do_gc_callback && g_c->peer_name_callback != nullptr) {
         g_c->peer_name_callback(g_c->m, groupnumber, peer_index, nick, nick_len, userdata);
     }
 
@@ -1986,7 +1986,7 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             } else {
                 const Group_c *g = get_group_c(g_c, groupnumber);
 
-                if (g && g->status == GROUPCHAT_STATUS_CONNECTED) {
+                if (g != nullptr && g->status == GROUPCHAT_STATUS_CONNECTED) {
                     send_invite_response(g_c, groupnumber, friendnumber, invite_data, invite_length);
                 }
             }
@@ -3359,7 +3359,7 @@ static uint32_t conferences_section_size(const Group_Chats *g_c)
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
         const Group_c *g = get_group_c(g_c, i);
 
-        if (!g || g->status != GROUPCHAT_STATUS_CONNECTED) {
+        if (g == nullptr || g->status != GROUPCHAT_STATUS_CONNECTED) {
             continue;
         }
 
@@ -3382,7 +3382,7 @@ uint8_t *conferences_save(const Group_Chats *g_c, uint8_t *data)
     for (uint16_t i = 0; i < g_c->num_chats; ++i) {
         const Group_c *g = get_group_c(g_c, i);
 
-        if (!g || g->status != GROUPCHAT_STATUS_CONNECTED) {
+        if (g == nullptr || g->status != GROUPCHAT_STATUS_CONNECTED) {
             continue;
         }
 

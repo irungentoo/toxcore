@@ -118,7 +118,7 @@ void bwc_add_lost(BWController *bwc, uint32_t bytes_lost)
 
 void bwc_add_recv(BWController *bwc, uint32_t recv_bytes)
 {
-    if (!bwc || !recv_bytes) {
+    if (bwc == nullptr || recv_bytes == 0) {
         return;
     }
 
@@ -178,7 +178,7 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
     const uint32_t recv = msg->recv;
     const uint32_t lost = msg->lost;
 
-    if (lost && bwc->mcb) {
+    if (lost && bwc->mcb != nullptr) {
         LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u percentage: %f %%", recv, lost,
                      ((double)lost / (recv + lost)) * 100.0);
         bwc->mcb(bwc, bwc->friend_number,

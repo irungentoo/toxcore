@@ -1095,7 +1095,7 @@ void kill_networking(Networking_Core *net)
 
 bool ip_equal(const IP *a, const IP *b)
 {
-    if (!a || !b) {
+    if (a == nullptr || b == nullptr) {
         return false;
     }
 
@@ -1137,11 +1137,11 @@ bool ip_equal(const IP *a, const IP *b)
 
 bool ipport_equal(const IP_Port *a, const IP_Port *b)
 {
-    if (!a || !b) {
+    if (a == nullptr || b == nullptr) {
         return false;
     }
 
-    if (!a->port || (a->port != b->port)) {
+    if (a->port == 0 || (a->port != b->port)) {
         return false;
     }
 
@@ -1206,7 +1206,7 @@ bool ipport_isset(const IP_Port *ipport)
 /** copies an ip structure (careful about direction!) */
 void ip_copy(IP *target, const IP *source)
 {
-    if (!source || !target) {
+    if (source == nullptr || target == nullptr) {
         return;
     }
 
@@ -1216,7 +1216,7 @@ void ip_copy(IP *target, const IP *source)
 /** copies an ip_port structure (careful about direction!) */
 void ipport_copy(IP_Port *target, const IP_Port *source)
 {
-    if (!source || !target) {
+    if (source == nullptr || target == nullptr) {
         return;
     }
 
@@ -1268,7 +1268,7 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
 
 bool ip_parse_addr(const IP *ip, char *address, size_t length)
 {
-    if (!address || !ip) {
+    if (address == nullptr || ip == nullptr) {
         return false;
     }
 
@@ -1289,7 +1289,7 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
 
 bool addr_parse_ip(const char *address, IP *to)
 {
-    if (!address || !to) {
+    if (address == nullptr || to == nullptr) {
         return false;
     }
 
@@ -1318,7 +1318,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     return false;
 #else
 
-    if (!address || !to) {
+    if (address == nullptr || to == nullptr) {
         return 0;
     }
 

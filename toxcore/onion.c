@@ -107,7 +107,7 @@ static int ipport_unpack(IP_Port *target, const uint8_t *data, unsigned int data
  */
 int create_onion_path(const DHT *dht, Onion_Path *new_path, const Node_format *nodes)
 {
-    if (!new_path || !nodes) {
+    if (new_path == nullptr || nodes == nullptr) {
         return -1;
     }
 
@@ -647,7 +647,7 @@ static int handle_recv_1(void *object, const IP_Port *source, const uint8_t *pac
 
     uint16_t data_len = length - (1 + RETURN_1);
 
-    if (onion->recv_1_function &&
+    if (onion->recv_1_function != nullptr &&
             !net_family_is_ipv4(send_to.ip.family) &&
             !net_family_is_ipv6(send_to.ip.family)) {
         return onion->recv_1_function(onion->callback_object, &send_to, packet + (1 + RETURN_1), data_len);
