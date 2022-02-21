@@ -5,6 +5,7 @@ set -eu
 NPROC=$(nproc)
 
 sudo apt-get install -y --no-install-recommends \
+  libgtest-dev \
   libmsgpack-dev \
   libopus-dev \
   libsodium-dev \

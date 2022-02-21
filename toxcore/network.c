@@ -1238,27 +1238,14 @@ const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
         return ip_str;
     }
 
-    if (ip != nullptr) {
-        if (net_family_is_ipv4(ip->family)) {
-            /* returns standard quad-dotted notation */
-            struct in_addr addr;
-            fill_addr4(&ip->ip.v4, &addr);
-
-            ip_str[0] = '\0';
-            assert(make_family(ip->family) == AF_INET);
-            inet_ntop4(&addr, ip_str, length);
-        } else if (net_family_is_ipv6(ip->family)) {
-            /* returns hex-groups enclosed into square brackets */
-            struct in6_addr addr;
-            fill_addr6(&ip->ip.v6, &addr);
-
-            assert(make_family(ip->family) == AF_INET6);
-            inet_ntop6(&addr, ip_str, length);
-        } else {
-            snprintf(ip_str, length, "(IP invalid, family %u)", ip->family.value);
-        }
-    } else {
+    if (ip == nullptr) {
         snprintf(ip_str, length, "(IP invalid: NULL)");
+        return ip_str;
+    }
+
+    if (!ip_parse_addr(ip, ip_str, length)) {
+        snprintf(ip_str, length, "(IP invalid, family %u)", ip->family.value);
+        return ip_str;
     }
 
     /* brute force protection against lacking termination */
@@ -1273,15 +1260,21 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
     }
 
     if (net_family_is_ipv4(ip->family)) {
-        const struct in_addr *addr = (const struct in_addr *)&ip->ip.v4;
+        struct in_addr addr;
+        static_assert(sizeof(addr) == sizeof(ip->ip.v4.uint32),
+                "assumption does not hold: in_addr should be 4 bytes");
         assert(make_family(ip->family) == AF_INET);
-        return inet_ntop4(addr, address, length) != nullptr;
+        fill_addr4(&ip->ip.v4, &addr);
+        return inet_ntop4(&addr, address, length) != nullptr;
     }
 
     if (net_family_is_ipv6(ip->family)) {
-        const struct in6_addr *addr = (const struct in6_addr *)&ip->ip.v6;
+        struct in6_addr addr;
+        static_assert(sizeof(addr) == sizeof(ip->ip.v6.uint8),
+                "assumption does not hold: in6_addr should be 16 bytes");
         assert(make_family(ip->family) == AF_INET6);
-        return inet_ntop6(addr, address, length) != nullptr;
+        fill_addr6(&ip->ip.v6, &addr);
+        return inet_ntop6(&addr, address, length) != nullptr;
     }
 
     return false;

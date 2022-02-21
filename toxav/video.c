@@ -332,7 +332,7 @@ void vc_iterate(VCSession *vc)
             dest = vpx_codec_get_frame(vc->decoder, &iter)) {
         if (vc->vcb != nullptr) {
             vc->vcb(vc->av, vc->friend_number, dest->d_w, dest->d_h,
-                    (const uint8_t *)dest->planes[0], (const uint8_t *)dest->planes[1], (const uint8_t *)dest->planes[2],
+                    dest->planes[0], dest->planes[1], dest->planes[2],
                     dest->stride[0], dest->stride[1], dest->stride[2], vc->vcb_user_data);
         }
 

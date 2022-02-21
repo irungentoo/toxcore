@@ -67,9 +67,13 @@
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #define nullptr NULL
 #ifndef static_assert
+#ifdef __GNUC__
+#define static_assert(cond, msg) extern __attribute__((__unused__)) const int unused_for_static_assert
+#else // !__GNUC__
 #define static_assert(cond, msg) extern const int unused_for_static_assert
-#endif
-#endif
+#endif // !__GNUC__
+#endif // !static_assert
+#endif // !__cplusplus
 
 #ifdef __GNUC__
 #define GNU_PRINTF(f, a) __attribute__((__format__(__printf__, f, a)))
