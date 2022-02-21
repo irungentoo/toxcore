@@ -266,6 +266,7 @@ struct Messenger {
     uint16_t num_loaded_relays;
     Node_format loaded_relays[NUM_SAVED_TCP_RELAYS]; // Relays loaded from config
 
+    m_friend_request_cb *friend_request;
     m_friend_message_cb *friend_message;
     m_friend_name_cb *friend_namechange;
     m_friend_status_message_cb *friend_statusmessagechange;

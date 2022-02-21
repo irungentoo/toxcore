@@ -893,10 +893,7 @@ static void set_friend_typing(const Messenger *m, int32_t friendnumber, uint8_t 
 /** Set the function that will be executed when a friend request is received. */
 void m_callback_friendrequest(Messenger *m, m_friend_request_cb *function)
 {
-    /* TODO(iphydf): Don't cast function pointers. */
-    //!TOKSTYLE-
-    callback_friendrequest(m->fr, (fr_friend_request_cb *)function, m);
-    //!TOKSTYLE+
+    m->friend_request = function;
 }
 
 /** Set the function that will be executed when a message from a friend is received. */
@@ -3167,6 +3164,16 @@ uint32_t copy_friendlist(Messenger const *m, uint32_t *out_list, uint32_t list_s
     return ret;
 }
 
+static fr_friend_request_cb m_handle_friend_request;
+non_null(1, 2, 3) nullable(5)
+static void m_handle_friend_request(
+    void *object, const uint8_t *public_key, const uint8_t *message, size_t length, void *user_data)
+{
+    Messenger *m = (Messenger *)object;
+    assert(m != nullptr);
+    m->friend_request(m, public_key, message, length, user_data);
+}
+
 /** Run this at startup.
  *  return allocated instance of Messenger on success.
  *  return 0 if there are problems.
@@ -3309,6 +3316,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
     m->is_receiving_file = 0;
 
     m_register_default_plugins(m);
+    callback_friendrequest(m->fr, m_handle_friend_request, m);
 
     if (error != nullptr) {
         *error = MESSENGER_ERROR_NONE;
