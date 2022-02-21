@@ -43,12 +43,12 @@ run() {
     -Wfloat-equal \
     -Wformat=2 \
     -Wframe-address \
-    -Wframe-larger-than=133168 \
-    -Wignored-qualifiers \
+    -Wframe-larger-than=12400 \
     -Wignored-attributes \
+    -Wignored-qualifiers \
     -Winit-self \
     -Winline \
-    -Wlarger-than=133120 \
+    -Wlarger-than=530000 \
     -Wmaybe-uninitialized \
     -Wmemset-transposed-args \
     -Wmisleading-indentation \

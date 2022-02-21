@@ -25,7 +25,7 @@
 
 struct Tox_Event_Friend_Status {
     uint32_t friend_number;
-    Tox_User_Status connection_status;
+    Tox_User_Status status;
 };
 
 non_null()
@@ -55,16 +55,16 @@ uint32_t tox_event_friend_status_get_friend_number(const Tox_Event_Friend_Status
 }
 
 non_null()
-static void tox_event_friend_status_set_connection_status(Tox_Event_Friend_Status *friend_status,
-        Tox_User_Status connection_status)
+static void tox_event_friend_status_set_status(Tox_Event_Friend_Status *friend_status,
+        Tox_User_Status status)
 {
     assert(friend_status != nullptr);
-    friend_status->connection_status = connection_status;
+    friend_status->status = status;
 }
-Tox_User_Status tox_event_friend_status_get_connection_status(const Tox_Event_Friend_Status *friend_status)
+Tox_User_Status tox_event_friend_status_get_status(const Tox_Event_Friend_Status *friend_status)
 {
     assert(friend_status != nullptr);
-    return friend_status->connection_status;
+    return friend_status->status;
 }
 
 non_null()
@@ -76,7 +76,7 @@ static void tox_event_friend_status_pack(
     bin_pack_u32(mp, TOX_EVENT_FRIEND_STATUS);
     bin_pack_array(mp, 2);
     bin_pack_u32(mp, event->friend_number);
-    bin_pack_u32(mp, event->connection_status);
+    bin_pack_u32(mp, event->status);
 }
 
 non_null()
@@ -90,7 +90,7 @@ static bool tox_event_friend_status_unpack(
     }
 
     return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && tox_unpack_user_status(&event->connection_status, &obj->via.array.ptr[1]);
+           && tox_unpack_user_status(&event->status, &obj->via.array.ptr[1]);
 }
 
 
@@ -187,7 +187,7 @@ bool tox_events_unpack_friend_status(Tox_Events *events, const msgpack_object *o
  *****************************************************/
 
 
-void tox_events_handle_friend_status(Tox *tox, uint32_t friend_number, Tox_User_Status connection_status,
+void tox_events_handle_friend_status(Tox *tox, uint32_t friend_number, Tox_User_Status status,
                                      void *user_data)
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
@@ -201,5 +201,5 @@ void tox_events_handle_friend_status(Tox *tox, uint32_t friend_number, Tox_User_
     }
 
     tox_event_friend_status_set_friend_number(friend_status, friend_number);
-    tox_event_friend_status_set_connection_status(friend_status, connection_status);
+    tox_event_friend_status_set_status(friend_status, status);
 }

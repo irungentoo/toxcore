@@ -160,15 +160,15 @@ size_t tox_event_friend_request_get_message_length(
     const Tox_Event_Friend_Request *friend_request);
 
 typedef struct Tox_Event_Friend_Status Tox_Event_Friend_Status;
-Tox_User_Status tox_event_friend_status_get_connection_status(
+Tox_User_Status tox_event_friend_status_get_status(
     const Tox_Event_Friend_Status *friend_status);
 uint32_t tox_event_friend_status_get_friend_number(
     const Tox_Event_Friend_Status *friend_status);
 
 typedef struct Tox_Event_Friend_Status_Message Tox_Event_Friend_Status_Message;
-const uint8_t *tox_event_friend_status_message_get_status_message(
+const uint8_t *tox_event_friend_status_message_get_message(
     const Tox_Event_Friend_Status_Message *friend_status_message);
-size_t tox_event_friend_status_message_get_status_message_length(
+size_t tox_event_friend_status_message_get_message_length(
     const Tox_Event_Friend_Status_Message *friend_status_message);
 uint32_t tox_event_friend_status_message_get_friend_number(
     const Tox_Event_Friend_Status_Message *friend_status_message);

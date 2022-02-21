@@ -6,9 +6,29 @@ SKIP_GTEST=1
 
 set -e
 
+CPPCHECK="--enable=all"
+CPPCHECK+=("--inconclusive")
+CPPCHECK+=("--error-exitcode=1")
+# Used for VLA.
+CPPCHECK+=("--suppress=allocaCalled")
+# We actually write C code.
+CPPCHECK+=("--suppress=cstyleCast")
+# Used to enable/disable parts using if with constant condition.
+CPPCHECK+=("--suppress=knownConditionTrueFalse")
+# Cppcheck does not need standard library headers to get proper results.
+CPPCHECK+=("--suppress=missingIncludeSystem")
+# Range-for is fine.
+CPPCHECK+=("--suppress=useStlAlgorithm")
+# TODO(iphydf): Maybe fix?
+CPPCHECK+=("--suppress=shadowArgument")
+CPPCHECK+=("--suppress=shadowFunction")
+CPPCHECK+=("--suppress=signConversion")
+# TODO(iphydf): Fixed in the toxav refactor PR.
+CPPCHECK+=("--suppress=redundantAssignment")
+
 run() {
   echo "Running cppcheck in variant '$*'"
-  cppcheck amalgamation.cc "${CPPFLAGS[@]}" "$@"
+  cppcheck "${CPPCHECK[@]}" amalgamation.cc "${CPPFLAGS[@]}" "$@"
 }
 
 . other/analysis/variants.sh

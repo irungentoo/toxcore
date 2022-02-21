@@ -24,8 +24,8 @@
 
 struct Tox_Event_Friend_Status_Message {
     uint32_t friend_number;
-    uint8_t *status_message;
-    size_t status_message_length;
+    uint8_t *message;
+    size_t message_length;
 };
 
 non_null()
@@ -38,7 +38,7 @@ static void tox_event_friend_status_message_construct(Tox_Event_Friend_Status_Me
 non_null()
 static void tox_event_friend_status_message_destruct(Tox_Event_Friend_Status_Message *friend_status_message)
 {
-    free(friend_status_message->status_message);
+    free(friend_status_message->message);
 }
 
 non_null()
@@ -55,38 +55,38 @@ uint32_t tox_event_friend_status_message_get_friend_number(const Tox_Event_Frien
 }
 
 non_null()
-static bool tox_event_friend_status_message_set_status_message(Tox_Event_Friend_Status_Message *friend_status_message,
-        const uint8_t *status_message, size_t status_message_length)
+static bool tox_event_friend_status_message_set_message(Tox_Event_Friend_Status_Message *friend_status_message,
+        const uint8_t *message, size_t message_length)
 {
     assert(friend_status_message != nullptr);
 
-    if (friend_status_message->status_message != nullptr) {
-        free(friend_status_message->status_message);
-        friend_status_message->status_message = nullptr;
-        friend_status_message->status_message_length = 0;
+    if (friend_status_message->message != nullptr) {
+        free(friend_status_message->message);
+        friend_status_message->message = nullptr;
+        friend_status_message->message_length = 0;
     }
 
-    friend_status_message->status_message = (uint8_t *)malloc(status_message_length);
+    friend_status_message->message = (uint8_t *)malloc(message_length);
 
-    if (friend_status_message->status_message == nullptr) {
+    if (friend_status_message->message == nullptr) {
         return false;
     }
 
-    memcpy(friend_status_message->status_message, status_message, status_message_length);
-    friend_status_message->status_message_length = status_message_length;
+    memcpy(friend_status_message->message, message, message_length);
+    friend_status_message->message_length = message_length;
     return true;
 }
-size_t tox_event_friend_status_message_get_status_message_length(const Tox_Event_Friend_Status_Message
+size_t tox_event_friend_status_message_get_message_length(const Tox_Event_Friend_Status_Message
         *friend_status_message)
 {
     assert(friend_status_message != nullptr);
-    return friend_status_message->status_message_length;
+    return friend_status_message->message_length;
 }
-const uint8_t *tox_event_friend_status_message_get_status_message(const Tox_Event_Friend_Status_Message
+const uint8_t *tox_event_friend_status_message_get_message(const Tox_Event_Friend_Status_Message
         *friend_status_message)
 {
     assert(friend_status_message != nullptr);
-    return friend_status_message->status_message;
+    return friend_status_message->message;
 }
 
 non_null()
@@ -98,7 +98,7 @@ static void tox_event_friend_status_message_pack(
     bin_pack_u32(mp, TOX_EVENT_FRIEND_STATUS_MESSAGE);
     bin_pack_array(mp, 2);
     bin_pack_u32(mp, event->friend_number);
-    bin_pack_bytes(mp, event->status_message, event->status_message_length);
+    bin_pack_bytes(mp, event->message, event->message_length);
 }
 
 non_null()
@@ -112,7 +112,7 @@ static bool tox_event_friend_status_message_unpack(
     }
 
     return bin_unpack_u32(&event->friend_number, &obj->via.array.ptr[0])
-           && bin_unpack_bytes(&event->status_message, &event->status_message_length, &obj->via.array.ptr[1]);
+           && bin_unpack_bytes(&event->message, &event->message_length, &obj->via.array.ptr[1]);
 }
 
 
@@ -210,7 +210,7 @@ bool tox_events_unpack_friend_status_message(Tox_Events *events, const msgpack_o
  *****************************************************/
 
 
-void tox_events_handle_friend_status_message(Tox *tox, uint32_t friend_number, const uint8_t *status_message,
+void tox_events_handle_friend_status_message(Tox *tox, uint32_t friend_number, const uint8_t *message,
         size_t length, void *user_data)
 {
     Tox_Events_State *state = tox_events_alloc(user_data);
@@ -224,5 +224,5 @@ void tox_events_handle_friend_status_message(Tox *tox, uint32_t friend_number, c
     }
 
     tox_event_friend_status_message_set_friend_number(friend_status_message, friend_number);
-    tox_event_friend_status_message_set_status_message(friend_status_message, status_message, length);
+    tox_event_friend_status_message_set_message(friend_status_message, message, length);
 }

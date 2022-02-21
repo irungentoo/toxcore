@@ -60,7 +60,7 @@ static void handle_args(const int argc, const char *const argv[], const char *co
 
         crypto_scalarmult_base(public_key, secret_key);
     } else if (argc == 2) {
-        printf("Error: Secret key must be a %d character hex string.\n", crypto_box_SECRETKEYBYTES * 2);
+        printf("Error: Secret key must be a %u character hex string.\n", crypto_box_SECRETKEYBYTES * 2);
         exit(1);
     } else {
         print_usage(argv[0], does_what);

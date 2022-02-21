@@ -728,7 +728,7 @@ void tox_options_set_log_user_data(struct Tox_Options *options, void *user_data)
 
 bool tox_options_get_experimental_thread_safety(const struct Tox_Options *options);
 
-void tox_options_set_experimental_thread_safety(struct Tox_Options *options, bool thread_safety);
+void tox_options_set_experimental_thread_safety(struct Tox_Options *options, bool experimental_thread_safety);
 
 /**
  * @brief Initialises a Tox_Options object with the default options.
@@ -1652,10 +1652,10 @@ bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, Tox_Err_Frien
 /**
  * @param friend_number The friend number of the friend who started or stopped
  *   typing.
- * @param is_typing The result of calling tox_friend_get_typing on the passed
+ * @param typing The result of calling tox_friend_get_typing on the passed
  *   friend_number.
  */
-typedef void tox_friend_typing_cb(Tox *tox, uint32_t friend_number, bool is_typing, void *user_data);
+typedef void tox_friend_typing_cb(Tox *tox, uint32_t friend_number, bool typing, void *user_data);
 
 
 /**

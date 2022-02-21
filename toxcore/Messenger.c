@@ -1617,15 +1617,12 @@ static void do_reqchunk_filecb(Messenger *m, int32_t friendnumber, void *userdat
  */
 static void break_files(const Messenger *m, int32_t friendnumber)
 {
+    Friend *const f = &m->friendlist[friendnumber];
+
     // TODO(irungentoo): Inform the client which file transfers get killed with a callback?
     for (uint32_t i = 0; i < MAX_CONCURRENT_FILE_PIPES; ++i) {
-        if (m->friendlist[friendnumber].file_sending[i].status != FILESTATUS_NONE) {
-            m->friendlist[friendnumber].file_sending[i].status = FILESTATUS_NONE;
-        }
-
-        if (m->friendlist[friendnumber].file_receiving[i].status != FILESTATUS_NONE) {
-            m->friendlist[friendnumber].file_receiving[i].status = FILESTATUS_NONE;
-        }
+        f->file_sending[i].status = FILESTATUS_NONE;
+        f->file_receiving[i].status = FILESTATUS_NONE;
     }
 }
 

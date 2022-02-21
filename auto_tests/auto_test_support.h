@@ -21,17 +21,17 @@ typedef struct AutoTox {
     void *state;
 } AutoTox;
 
-bool all_connected(AutoTox *toxes, uint32_t tox_count);
+bool all_connected(AutoTox *autotoxes, uint32_t tox_count);
 
-bool all_friends_connected(AutoTox *toxes, uint32_t tox_count);
+bool all_friends_connected(AutoTox *autotoxes, uint32_t tox_count);
 
-void iterate_all_wait(AutoTox *toxes, uint32_t tox_count, uint32_t wait);
+void iterate_all_wait(AutoTox *autotoxes, uint32_t tox_count, uint32_t wait);
 
 void save_autotox(AutoTox *autotox);
 void kill_autotox(AutoTox *autotox);
 void reload(AutoTox *autotox);
 
-void set_mono_time_callback(AutoTox *tox);
+void set_mono_time_callback(AutoTox *autotox);
 
 typedef enum Graph_Type {
     GRAPH_COMPLETE = 0,

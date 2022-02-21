@@ -50,9 +50,9 @@ struct Tox_Pass_Key {
     uint8_t key[TOX_PASS_KEY_LENGTH];
 };
 
-void tox_pass_key_free(Tox_Pass_Key *pass_key)
+void tox_pass_key_free(Tox_Pass_Key *key)
 {
-    free(pass_key);
+    free(key);
 }
 
 /* Clients should consider alerting their users that, unlike plain data, if even one bit
@@ -68,20 +68,20 @@ void tox_pass_key_free(Tox_Pass_Key *pass_key)
  * success does not say anything about the validity of the data, only that data of
  * the appropriate size was copied
  */
-bool tox_get_salt(const uint8_t *data, uint8_t *salt, Tox_Err_Get_Salt *error)
+bool tox_get_salt(const uint8_t *ciphertext, uint8_t *salt, Tox_Err_Get_Salt *error)
 {
-    if (data == nullptr || salt == nullptr) {
+    if (ciphertext == nullptr || salt == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_NULL);
         return false;
     }
 
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
+    if (memcmp(ciphertext, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_BAD_FORMAT);
         return false;
     }
 
-    data += TOX_ENC_SAVE_MAGIC_LENGTH;
-    memcpy(salt, data, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
+    ciphertext += TOX_ENC_SAVE_MAGIC_LENGTH;
+    memcpy(salt, ciphertext, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
     SET_ERROR_PARAMETER(error, TOX_ERR_GET_SALT_OK);
     return true;
 }
@@ -97,27 +97,27 @@ bool tox_get_salt(const uint8_t *data, uint8_t *salt, Tox_Err_Get_Salt *error)
  *
  * returns true on success
  */
-Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t pplength,
+Tox_Pass_Key *tox_pass_key_derive(const uint8_t *passphrase, size_t passphrase_len,
                                   Tox_Err_Key_Derivation *error)
 {
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
     random_bytes(salt, sizeof(salt));
-    return tox_pass_key_derive_with_salt(passphrase, pplength, salt, error);
+    return tox_pass_key_derive_with_salt(passphrase, passphrase_len, salt, error);
 }
 
 /* Same as above, except with use the given salt for deterministic key derivation.
  * The salt must be TOX_PASS_SALT_LENGTH bytes in length.
  */
-Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t pplength,
+Tox_Pass_Key *tox_pass_key_derive_with_salt(const uint8_t *passphrase, size_t passphrase_len,
         const uint8_t *salt, Tox_Err_Key_Derivation *error)
 {
-    if (salt == nullptr || (passphrase == nullptr && pplength != 0)) {
+    if (salt == nullptr || (passphrase == nullptr && passphrase_len != 0)) {
         SET_ERROR_PARAMETER(error, TOX_ERR_KEY_DERIVATION_NULL);
         return nullptr;
     }
 
     uint8_t passkey[crypto_hash_sha256_BYTES];
-    crypto_hash_sha256(passkey, passphrase, pplength);
+    crypto_hash_sha256(passkey, passphrase, passphrase_len);
 
     uint8_t key[CRYPTO_SHARED_KEY_SIZE];
 
@@ -206,11 +206,11 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, siz
  *
  * returns true on success
  */
-bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passphrase, size_t pplength, uint8_t *out,
-                      Tox_Err_Encryption *error)
+bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint8_t *passphrase, size_t passphrase_len,
+                      uint8_t *ciphertext, Tox_Err_Encryption *error)
 {
     Tox_Err_Key_Derivation err;
-    Tox_Pass_Key *key = tox_pass_key_derive(passphrase, pplength, &err);
+    Tox_Pass_Key *key = tox_pass_key_derive(passphrase, passphrase_len, &err);
 
     if (key == nullptr) {
         if (err == TOX_ERR_KEY_DERIVATION_NULL) {
@@ -222,7 +222,7 @@ bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passp
         return 0;
     }
 
-    bool result = tox_pass_key_encrypt(key, data, data_len, out, error);
+    bool result = tox_pass_key_encrypt(key, plaintext, plaintext_len, ciphertext, error);
     tox_pass_key_free(key);
     return result;
 }
@@ -234,7 +234,7 @@ bool tox_pass_encrypt(const uint8_t *data, size_t data_len, const uint8_t *passp
  *
  * returns true on success
  */
-bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t length, uint8_t *out,
+bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, size_t length, uint8_t *plaintext,
                           Tox_Err_Decryption *error)
 {
     if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
@@ -242,27 +242,27 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t l
         return 0;
     }
 
-    if (data == nullptr || key == nullptr || out == nullptr) {
+    if (ciphertext == nullptr || key == nullptr || plaintext == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_NULL);
         return 0;
     }
 
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
+    if (memcmp(ciphertext, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_BAD_FORMAT);
         return 0;
     }
 
-    data += TOX_ENC_SAVE_MAGIC_LENGTH;
-    data += crypto_pwhash_scryptsalsa208sha256_SALTBYTES; // salt only affects key derivation
+    ciphertext += TOX_ENC_SAVE_MAGIC_LENGTH;
+    ciphertext += crypto_pwhash_scryptsalsa208sha256_SALTBYTES; // salt only affects key derivation
 
     size_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
-    memcpy(nonce, data, crypto_box_NONCEBYTES);
-    data += crypto_box_NONCEBYTES;
+    memcpy(nonce, ciphertext, crypto_box_NONCEBYTES);
+    ciphertext += crypto_box_NONCEBYTES;
 
-    /* decrypt the data */
-    if (decrypt_data_symmetric(key->key, nonce, data, decrypt_length + crypto_box_MACBYTES, out)
+    /* decrypt the ciphertext */
+    if (decrypt_data_symmetric(key->key, nonce, ciphertext, decrypt_length + crypto_box_MACBYTES, plaintext)
             != decrypt_length) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_FAILED);
         return 0;
@@ -280,29 +280,29 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *data, size_t l
  *
  * returns true on success
  */
-bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphrase, size_t pplength, uint8_t *out,
-                      Tox_Err_Decryption *error)
+bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const uint8_t *passphrase,
+                      size_t passphrase_len, uint8_t *plaintext, Tox_Err_Decryption *error)
 {
-    if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
+    if (ciphertext_len <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
         return 0;
     }
 
-    if (data == nullptr || passphrase == nullptr || out == nullptr) {
+    if (ciphertext == nullptr || passphrase == nullptr || plaintext == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_NULL);
         return 0;
     }
 
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
+    if (memcmp(ciphertext, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_BAD_FORMAT);
         return 0;
     }
 
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
-    memcpy(salt, data + TOX_ENC_SAVE_MAGIC_LENGTH, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
+    memcpy(salt, ciphertext + TOX_ENC_SAVE_MAGIC_LENGTH, crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
 
     /* derive the key */
-    Tox_Pass_Key *key = tox_pass_key_derive_with_salt(passphrase, pplength, salt, nullptr);
+    Tox_Pass_Key *key = tox_pass_key_derive_with_salt(passphrase, passphrase_len, salt, nullptr);
 
     if (key == nullptr) {
         /* out of memory most likely */
@@ -310,7 +310,7 @@ bool tox_pass_decrypt(const uint8_t *data, size_t length, const uint8_t *passphr
         return 0;
     }
 
-    bool result = tox_pass_key_decrypt(key, data, length, out, error);
+    bool result = tox_pass_key_decrypt(key, ciphertext, ciphertext_len, plaintext, error);
     tox_pass_key_free(key);
     return result;
 }

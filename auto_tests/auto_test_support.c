@@ -235,7 +235,7 @@ static void autotox_add_friend(AutoTox *autotoxes, uint32_t adding, uint32_t add
 static void initialise_friend_graph(Graph_Type graph, uint32_t num_toxes, AutoTox *autotoxes)
 {
     if (graph == GRAPH_LINEAR) {
-        printf("toxes #%u-#%u each add adjacent toxes as friends\n", 0, num_toxes - 1);
+        printf("toxes #%d-#%u each add adjacent toxes as friends\n", 0, num_toxes - 1);
 
         for (uint32_t i = 0; i < num_toxes; ++i) {
             for (uint32_t j = i - 1; j != i + 3; j += 2) {
@@ -245,7 +245,7 @@ static void initialise_friend_graph(Graph_Type graph, uint32_t num_toxes, AutoTo
             }
         }
     } else if (graph == GRAPH_COMPLETE) {
-        printf("toxes #%u-#%u add each other as friends\n", 0, num_toxes - 1);
+        printf("toxes #%d-#%u add each other as friends\n", 0, num_toxes - 1);
 
         for (uint32_t i = 0; i < num_toxes; ++i) {
             for (uint32_t j = 0; j < num_toxes; ++j) {

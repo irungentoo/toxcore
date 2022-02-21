@@ -36,7 +36,7 @@ Broadcast_Info *lan_discovery_init(DHT *dht);
  * Clear packet handlers.
  */
 non_null()
-void lan_discovery_kill(DHT *dht, Broadcast_Info *info);
+void lan_discovery_kill(DHT *dht, Broadcast_Info *broadcast);
 
 /**
  * Is IP a local ip or not.
