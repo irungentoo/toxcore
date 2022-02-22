@@ -170,7 +170,7 @@ int msi_kill(MSISession *session, const Logger *log)
 
         MSICall *it = get_call(session, session->calls_head);
 
-        while (it) {
+        while (it != nullptr) {
             send_message(session->messenger, it->friend_number, &msg);
             MSICall *temp_it = it;
             it = it->next;

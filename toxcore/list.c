@@ -51,7 +51,7 @@ static int find(const BS_List *list, const uint8_t *data)
     uint32_t i = list->n / 2; // current position in the array
     uint32_t delta = i / 2;   // how much we move in the array
 
-    if (!delta) {
+    if (delta == 0) {
         delta = 1;
     }
 

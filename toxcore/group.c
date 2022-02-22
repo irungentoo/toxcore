@@ -2520,7 +2520,7 @@ static int send_message_group(const Group_Chats *g_c, uint32_t groupnumber, uint
 
     ++g->message_number;
 
-    if (!g->message_number) {
+    if (g->message_number == 0) {
         ++g->message_number;
     }
 

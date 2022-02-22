@@ -648,7 +648,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             uint64_t ping_id;
             memcpy(&ping_id, data + 1, sizeof(uint64_t));
 
-            if (ping_id) {
+            if (ping_id != 0) {
                 if (ping_id == con->ping_id) {
                     con->ping_id = 0;
                 }
@@ -1075,7 +1075,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
             ping[0] = TCP_PACKET_PING;
             uint64_t ping_id = random_u64();
 
-            if (!ping_id) {
+            if (ping_id == 0) {
                 ++ping_id;
             }
 
@@ -1093,7 +1093,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
             }
         }
 
-        if (conn->ping_id && mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_TIMEOUT)) {
+        if (conn->ping_id != 0 && mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_TIMEOUT)) {
             kill_accepted(tcp_server, i);
             continue;
         }

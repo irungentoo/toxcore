@@ -846,7 +846,7 @@ int rtp_send_data(RTPSession *session, const uint8_t *data, uint32_t length,
         /* Send remaining */
         piece = length - sent;
 
-        if (piece) {
+        if (piece != 0) {
             rtp_header_pack(rdata + 1, &header);
             memcpy(rdata + 1 + RTP_HEADER_SIZE, data + sent, piece);
 

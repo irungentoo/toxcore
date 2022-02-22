@@ -133,7 +133,7 @@ static void send_update(BWController *bwc)
             current_time_monotonic(bwc->bwc_mono_time) - bwc->cycle.last_sent_timestamp > BWC_SEND_INTERVAL_MS) {
         bwc->packet_loss_counted_cycles = 0;
 
-        if (bwc->cycle.lost) {
+        if (bwc->cycle.lost != 0) {
             LOGGER_DEBUG(bwc->m->log, "%p Sent update rcv: %u lost: %u percent: %f %%",
                          (void *)bwc, bwc->cycle.recv, bwc->cycle.lost,
                          ((double)bwc->cycle.lost / (bwc->cycle.recv + bwc->cycle.lost)) * 100.0);
@@ -178,7 +178,7 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
     const uint32_t recv = msg->recv;
     const uint32_t lost = msg->lost;
 
-    if (lost && bwc->mcb != nullptr) {
+    if (lost != 0 && bwc->mcb != nullptr) {
         LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u percentage: %f %%", recv, lost,
                      ((double)lost / (recv + lost)) * 100.0);
         bwc->mcb(bwc, bwc->friend_number,

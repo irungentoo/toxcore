@@ -1382,7 +1382,7 @@ static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t 
 
     int nodes_length = 0;
 
-    if (num_nodes) {
+    if (num_nodes > 0) {
         nodes_length = pack_nodes(plain + 1, node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
 
         if (nodes_length <= 0) {
@@ -1758,7 +1758,7 @@ static uint8_t do_ping_and_sendnode_requests(DHT *dht, uint64_t *lastgetnode, co
         sort_client_list(list, dht->cur_time, list_count, public_key);
     }
 
-    if ((num_nodes != 0) && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
+    if (num_nodes > 0 && (mono_time_is_timeout(dht->mono_time, *lastgetnode, GET_NODE_INTERVAL)
                              || *bootstrap_times < MAX_BOOTSTRAP_TIMES)) {
         uint32_t rand_node = random_range_u32(num_nodes);
 
@@ -1834,7 +1834,7 @@ static void do_Close(DHT *dht)
         for (IPPTsPng * const *it = assocs; *it; ++it) {
             IPPTsPng *const assoc = *it;
 
-            if (assoc->timestamp) {
+            if (assoc->timestamp != 0) {
                 assoc->timestamp = badonly;
             }
         }
@@ -2560,7 +2560,7 @@ void do_dht(DHT *dht)
     dht->cur_time = cur_time;
 
     // Load friends/clients if first call to do_dht
-    if (dht->loaded_num_nodes) {
+    if (dht->loaded_num_nodes > 0) {
         dht_connect_after_load(dht);
     }
 

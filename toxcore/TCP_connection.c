@@ -312,7 +312,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
         uint8_t status = con_to->connections[i].status;
         uint8_t connection_id = con_to->connections[i].connection_id;
 
-        if (tcp_con_num && status == TCP_CONNECTIONS_STATUS_ONLINE) {
+        if (tcp_con_num > 0 && status == TCP_CONNECTIONS_STATUS_ONLINE) {
             tcp_con_num -= 1;
             TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_con_num);
 
@@ -344,7 +344,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
             uint32_t tcp_con_num = con_to->connections[i].tcp_connection;
             uint8_t status = con_to->connections[i].status;
 
-            if (tcp_con_num && status == TCP_CONNECTIONS_STATUS_REGISTERED) {
+            if (tcp_con_num > 0 && status == TCP_CONNECTIONS_STATUS_REGISTERED) {
                 tcp_con_num -= 1;
                 TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_con_num);
 
@@ -575,7 +575,7 @@ int kill_tcp_connection_to(TCP_Connections *tcp_c, int connections_number)
     }
 
     for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
-        if (con_to->connections[i].tcp_connection) {
+        if (con_to->connections[i].tcp_connection > 0) {
             unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
             TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -625,7 +625,7 @@ int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_n
         }
 
         for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
-            if (con_to->connections[i].tcp_connection) {
+            if (con_to->connections[i].tcp_connection > 0) {
                 unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
                 TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -649,7 +649,7 @@ int set_tcp_connection_to_status(const TCP_Connections *tcp_c, int connections_n
     }
 
     for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
-        if (con_to->connections[i].tcp_connection) {
+        if (con_to->connections[i].tcp_connection > 0) {
             unsigned int tcp_connections_number = con_to->connections[i].tcp_connection - 1;
             TCP_con *tcp_con = get_tcp_connection(tcp_c, tcp_connections_number);
 
@@ -728,7 +728,7 @@ static uint32_t online_tcp_connection_from_conn(const TCP_Connection_to *con_to)
     uint32_t count = 0;
 
     for (uint32_t i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
-        if (con_to->connections[i].tcp_connection) {
+        if (con_to->connections[i].tcp_connection > 0) {
             if (con_to->connections[i].status == TCP_CONNECTIONS_STATUS_ONLINE) {
                 ++count;
             }
@@ -1512,7 +1512,7 @@ static void do_tcp_conns(const Logger *logger, TCP_Connections *tcp_c, void *use
             }
 
             if (tcp_con->status == TCP_CONN_CONNECTED
-                    && !tcp_con->onion && tcp_con->lock_count
+                    && !tcp_con->onion && tcp_con->lock_count > 0
                     && tcp_con->lock_count == tcp_con->sleep_count
                     && mono_time_is_timeout(tcp_c->mono_time, tcp_con->connected_time, TCP_CONNECTION_ANNOUNCE_TIMEOUT)) {
                 sleep_tcp_relay_connection(tcp_c, i);
@@ -1549,7 +1549,7 @@ static void kill_nonused_tcp(TCP_Connections *tcp_c)
         }
 
         if (tcp_con->status == TCP_CONN_CONNECTED) {
-            if (tcp_con->onion || tcp_con->lock_count) {  // connection is in use so we skip it
+            if (tcp_con->onion || tcp_con->lock_count > 0) {  // connection is in use so we skip it
                 continue;
             }
 

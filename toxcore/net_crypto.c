@@ -1342,7 +1342,7 @@ static int send_requested_packets(Net_Crypto *c, int crypt_connection_id, uint32
             continue;
         }
 
-        if (dt->sent_time) {
+        if (dt->sent_time != 0) {
             continue;
         }
 

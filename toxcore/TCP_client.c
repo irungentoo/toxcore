@@ -443,7 +443,7 @@ static int client_send_disconnect_notification(const Logger *logger, TCP_Client_
  */
 static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *con)
 {
-    if (!con->ping_request_id) {
+    if (con->ping_request_id == 0) {
         return 1;
     }
 
@@ -465,7 +465,7 @@ static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *co
  */
 static int tcp_send_ping_response(const Logger *logger, TCP_Client_Connection *con)
 {
-    if (!con->ping_response_id) {
+    if (con->ping_response_id == 0) {
         return 1;
     }
 
@@ -714,7 +714,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
             uint64_t ping_id;
             memcpy(&ping_id, data + 1, sizeof(uint64_t));
 
-            if (ping_id) {
+            if (ping_id != 0) {
                 if (ping_id == conn->ping_id) {
                     conn->ping_id = 0;
                 }
@@ -795,7 +795,7 @@ static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, c
     if (mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_FREQUENCY)) {
         uint64_t ping_id = random_u64();
 
-        if (!ping_id) {
+        if (ping_id == 0) {
             ++ping_id;
         }
 
@@ -805,7 +805,7 @@ static int do_confirmed_TCP(const Logger *logger, TCP_Client_Connection *conn, c
         conn->last_pinged = mono_time_get(mono_time);
     }
 
-    if (conn->ping_id && mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_TIMEOUT)) {
+    if (conn->ping_id != 0 && mono_time_is_timeout(mono_time, conn->last_pinged, TCP_PING_TIMEOUT)) {
         conn->status = TCP_CLIENT_DISCONNECTED;
         return 0;
     }

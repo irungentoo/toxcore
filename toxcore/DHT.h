@@ -253,7 +253,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
 
 typedef void dht_ip_cb(void *object, int32_t number, const IP_Port *ip_port);
 
-typedef void dht_get_nodes_response_cb(const DHT *dht, const Node_format *node, void *userdata);
+typedef void dht_get_nodes_response_cb(const DHT *dht, const Node_format *node, void *user_data);
 
 /** Sets the callback to be triggered on a getnodes response. */
 non_null(1) nullable(2)
