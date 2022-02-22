@@ -14,23 +14,7 @@ libmisc_tools_la_LIBADD =  $(LIBSODIUM_LDFLAGS)
 
 if BUILD_TESTING
 
-noinst_PROGRAMS +=      DHT_test \
-                        Messenger_test
-
-DHT_test_SOURCES =      ../testing/DHT_test.c
-
-DHT_test_CFLAGS =       $(LIBSODIUM_CFLAGS) \
-                        $(NACL_CFLAGS)
-
-DHT_test_LDADD =        $(LIBSODIUM_LDFLAGS) \
-                        $(NACL_LDFLAGS) \
-                        libmisc_tools.la \
-                        libtoxcore.la \
-                        $(LIBSODIUM_LIBS) \
-                        $(NACL_OBJECTS) \
-                        $(NACL_LIBS) \
-                        $(WINSOCK2_LIBS)
-
+noinst_PROGRAMS +=      Messenger_test
 
 Messenger_test_SOURCES = \
                         ../testing/Messenger_test.c

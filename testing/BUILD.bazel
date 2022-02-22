@@ -47,19 +47,6 @@ cc_library(
 )
 
 cc_binary(
-    name = "DHT_test",
-    testonly = 1,
-    srcs = ["DHT_test.c"],
-    deps = [
-        ":misc_tools",
-        "//c-toxcore/toxcore:DHT",
-        "//c-toxcore/toxcore:Messenger",
-        "//c-toxcore/toxcore:friend_requests",
-        "//c-toxcore/toxcore:mono_time",
-    ],
-)
-
-cc_binary(
     name = "Messenger_test",
     testonly = 1,
     srcs = ["Messenger_test.c"],

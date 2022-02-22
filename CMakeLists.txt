@@ -563,10 +563,6 @@ endif()
 
 option(BUILD_MISC_TESTS "Build additional tests" OFF)
 if (BUILD_MISC_TESTS)
-  add_executable(DHT_test ${CPUFEATURES}
-    testing/DHT_test.c)
-  target_link_modules(DHT_test toxcore misc_tools)
-
   add_executable(Messenger_test ${CPUFEATURES}
     testing/Messenger_test.c)
   target_link_modules(Messenger_test toxcore misc_tools)
