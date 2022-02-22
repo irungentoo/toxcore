@@ -115,7 +115,10 @@ static void tox_log_handler(void *context, Logger_Level level, const char *file,
 {
     Tox *tox = (Tox *)context;
     assert(tox != nullptr);
-    tox->log_callback(tox, (Tox_Log_Level)level, file, line, func, message, userdata);
+
+    if (tox->log_callback != nullptr) {
+        tox->log_callback(tox, (Tox_Log_Level)level, file, line, func, message, userdata);
+    }
 }
 
 static m_self_connection_status_cb tox_self_connection_status_handler;
