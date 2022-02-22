@@ -16,6 +16,7 @@ sh_test(
         "-Wno-callback-names",
         "-Wno-enum-names",
         "-Wno-memcpy-structs",
+        "-Wno-type-check",
         "+RTS",
         "-N3",
     ],

@@ -1441,7 +1441,7 @@ static bool send_packet_group_peer(const Friend_Connections *fr_c, int friendcon
                                    uint16_t group_num, const uint8_t *data, uint16_t length)
 {
     if (1 + sizeof(uint16_t) + length > MAX_CRYPTO_DATA_SIZE) {
-        return 0;
+        return false;
     }
 
     group_num = net_htons(group_num);
@@ -1463,7 +1463,7 @@ static bool send_lossy_group_peer(const Friend_Connections *fr_c, int friendcon_
                                   uint16_t group_num, const uint8_t *data, uint16_t length)
 {
     if (1 + sizeof(uint16_t) + length > MAX_CRYPTO_DATA_SIZE) {
-        return 0;
+        return false;
     }
 
     group_num = net_htons(group_num);
@@ -1757,11 +1757,7 @@ static int send_message_group(const Group_Chats *g_c, uint32_t groupnumber, uint
 non_null()
 static bool group_ping_send(const Group_Chats *g_c, uint32_t groupnumber)
 {
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, nullptr, 0) > 0) {
-        return true;
-    }
-
-    return false;
+    return send_message_group(g_c, groupnumber, GROUP_MESSAGE_PING_ID, nullptr, 0) > 0;
 }
 
 /** send a new_peer message
@@ -1778,11 +1774,7 @@ static bool group_new_peer_send(const Group_Chats *g_c, uint32_t groupnumber, ui
     memcpy(packet + sizeof(uint16_t), real_pk, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + sizeof(uint16_t) + CRYPTO_PUBLIC_KEY_SIZE, temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
 
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NEW_PEER_ID, packet, sizeof(packet)) > 0) {
-        return true;
-    }
-
-    return false;
+    return send_message_group(g_c, groupnumber, GROUP_MESSAGE_NEW_PEER_ID, packet, sizeof(packet)) > 0;
 }
 
 /** send a kill_peer message
@@ -1796,11 +1788,7 @@ static bool group_kill_peer_send(const Group_Chats *g_c, uint32_t groupnumber, u
     peer_num = net_htons(peer_num);
     memcpy(packet, &peer_num, sizeof(uint16_t));
 
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_KILL_PEER_ID, packet, sizeof(packet)) > 0) {
-        return true;
-    }
-
-    return false;
+    return send_message_group(g_c, groupnumber, GROUP_MESSAGE_KILL_PEER_ID, packet, sizeof(packet)) > 0;
 }
 
 /** send a freeze_peer message
@@ -1814,11 +1802,7 @@ static bool group_freeze_peer_send(const Group_Chats *g_c, uint32_t groupnumber,
     peer_num = net_htons(peer_num);
     memcpy(packet, &peer_num, sizeof(uint16_t));
 
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_FREEZE_PEER_ID, packet, sizeof(packet)) > 0) {
-        return true;
-    }
-
-    return false;
+    return send_message_group(g_c, groupnumber, GROUP_MESSAGE_FREEZE_PEER_ID, packet, sizeof(packet)) > 0;
 }
 
 /** send a name message
@@ -1831,11 +1815,7 @@ static bool group_name_send(const Group_Chats *g_c, uint32_t groupnumber, const 
         return false;
     }
 
-    if (send_message_group(g_c, groupnumber, GROUP_MESSAGE_NAME_ID, nick, nick_len) > 0) {
-        return true;
-    }
-
-    return false;
+    return send_message_group(g_c, groupnumber, GROUP_MESSAGE_NAME_ID, nick, nick_len) > 0;
 }
 
 /** send message to announce leaving group

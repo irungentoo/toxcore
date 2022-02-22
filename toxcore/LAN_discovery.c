@@ -271,11 +271,7 @@ bool ip_is_local(const IP *ip)
     }
 
     /* localhost in IPv6 (::1) */
-    if (ip->ip.v6.uint64[0] == 0 && ip->ip.v6.uint32[2] == 0 && ip->ip.v6.uint32[3] == net_htonl(1)) {
-        return true;
-    }
-
-    return false;
+    return ip->ip.v6.uint64[0] == 0 && ip->ip.v6.uint32[2] == 0 && ip->ip.v6.uint32[3] == net_htonl(1);
 }
 
 non_null()
@@ -304,11 +300,7 @@ static bool ip4_is_lan(const IP4 *ip4)
 
     /* RFC 6598: 100.64.0.0 to 100.127.255.255 (100.64.0.0/10)
      * (shared address space to stack another layer of NAT) */
-    if ((ip4->uint8[0] == 100) && ((ip4->uint8[1] & 0xC0) == 0x40)) {
-        return true;
-    }
-
-    return false;
+    return (ip4->uint8[0] == 100) && ((ip4->uint8[1] & 0xC0) == 0x40);
 }
 
 bool ip_is_lan(const IP *ip)

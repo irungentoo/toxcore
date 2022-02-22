@@ -416,7 +416,7 @@ non_null()
 static bool path_exists(const Mono_Time *mono_time, const Onion_Client_Paths *onion_paths, uint32_t path_num)
 {
     if (path_timed_out(mono_time, onion_paths, path_num)) {
-        return 0;
+        return false;
     }
 
     return onion_paths->paths[path_num % NUMBER_ONION_PATHS].path_num == path_num;

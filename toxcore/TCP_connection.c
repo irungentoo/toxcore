@@ -118,11 +118,7 @@ static bool connections_number_is_valid(const TCP_Connections *tcp_c, int connec
         return false;
     }
 
-    if (tcp_c->connections[connections_number].status == TCP_CONN_NONE) {
-        return false;
-    }
-
-    return true;
+    return tcp_c->connections[connections_number].status != TCP_CONN_NONE;
 }
 
 /**
@@ -139,11 +135,7 @@ static bool tcp_connections_number_is_valid(const TCP_Connections *tcp_c, int tc
         return false;
     }
 
-    if (tcp_c->tcp_connections[tcp_connections_number].status == TCP_CONN_NONE) {
-        return false;
-    }
-
-    return true;
+    return tcp_c->tcp_connections[tcp_connections_number].status != TCP_CONN_NONE;
 }
 
 /** Create a new empty connection.
@@ -680,11 +672,11 @@ static bool tcp_connection_in_conn(const TCP_Connection_to *con_to, unsigned int
 {
     for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         if (con_to->connections[i].tcp_connection == (tcp_connections_number + 1)) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 /** return index on success.

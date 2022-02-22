@@ -10,6 +10,7 @@
  */
 #include "crypto_core.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,7 +35,6 @@
 
 //!TOKSTYLE-
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-#include <assert.h>
 #include "../testing/fuzzing/fuzz_adapter.h"
 #endif
 //!TOKSTYLE+
@@ -178,10 +178,10 @@ uint32_t random_range_u32(uint32_t upper_bound)
 bool public_key_valid(const uint8_t *public_key)
 {
     if (public_key[31] >= 128) { /* Last bit of key is always zero. */
-        return 0;
+        return false;
     }
 
-    return 1;
+    return true;
 }
 
 int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
@@ -238,7 +238,8 @@ int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     crypto_free(temp_plain, size_temp_plain);
     crypto_free(temp_encrypted, size_temp_encrypted);
 #endif
-    return length + crypto_box_MACBYTES;
+    assert(length < INT32_MAX - crypto_box_MACBYTES);
+    return (int32_t)(length + crypto_box_MACBYTES);
 }
 
 int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
@@ -287,7 +288,9 @@ int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce,
     crypto_free(temp_plain, size_temp_plain);
     crypto_free(temp_encrypted, size_temp_encrypted);
 #endif
-    return length - crypto_box_MACBYTES;
+    assert(length > crypto_box_MACBYTES);
+    assert(length < INT32_MAX);
+    return (int32_t)(length - crypto_box_MACBYTES);
 }
 
 int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,

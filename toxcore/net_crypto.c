@@ -188,11 +188,7 @@ static bool crypt_connection_id_is_valid(const Net_Crypto *c, int crypt_connecti
 
     const Crypto_Conn_State status = c->crypto_connections[crypt_connection_id].status;
 
-    if (status == CRYPTO_CONN_NO_CONNECTION || status == CRYPTO_CONN_FREE) {
-        return false;
-    }
-
-    return true;
+    return status != CRYPTO_CONN_NO_CONNECTION && status != CRYPTO_CONN_FREE;
 }
 
 /** cookie timeout in seconds */

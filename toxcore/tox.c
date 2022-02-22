@@ -765,12 +765,12 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     if (host == nullptr || public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
-        return 0;
+        return false;
     }
 
     if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
-        return 0;
+        return false;
     }
 
     IP_Port *root;
@@ -781,7 +781,7 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
         LOGGER_DEBUG(tox->m->log, "could not resolve bootstrap node '%s'", host);
         net_freeipport(root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -803,12 +803,12 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     if (count > 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
-        return 1;
+        return true;
     }
 
     LOGGER_DEBUG(tox->m->log, "bootstrap node '%s' resolved to 0 IP_Ports", host);
     SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-    return 0;
+    return false;
 }
 
 bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key,
@@ -818,12 +818,12 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 
     if (host == nullptr || public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
-        return 0;
+        return false;
     }
 
     if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
-        return 0;
+        return false;
     }
 
     IP_Port *root;
@@ -833,7 +833,7 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
     if (count == -1) {
         net_freeipport(root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -851,11 +851,11 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 
     if (count > 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
-        return 1;
+        return true;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-    return 0;
+    return false;
 }
 
 Tox_Connection tox_self_get_connection_status(const Tox *tox)
@@ -970,7 +970,7 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, Tox_Err_Set
 
     if (name == nullptr && length != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -980,12 +980,12 @@ bool tox_self_set_name(Tox *tox, const uint8_t *name, size_t length, Tox_Err_Set
         send_name_all_groups(tox->m->conferences_object);
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         unlock(tox);
-        return 1;
+        return true;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
     unlock(tox);
-    return 0;
+    return false;
 }
 
 size_t tox_self_get_name_size(const Tox *tox)
@@ -1014,7 +1014,7 @@ bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t
 
     if (status_message == nullptr && length != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_NULL);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -1022,12 +1022,12 @@ bool tox_self_set_status_message(Tox *tox, const uint8_t *status_message, size_t
     if (m_set_statusmessage(tox->m, status_message, length) == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_OK);
         unlock(tox);
-        return 1;
+        return true;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_SET_INFO_TOO_LONG);
     unlock(tox);
-    return 0;
+    return false;
 }
 
 size_t tox_self_get_status_message_size(const Tox *tox)
@@ -1171,11 +1171,11 @@ bool tox_friend_delete(Tox *tox, uint32_t friend_number, Tox_Err_Friend_Delete *
     // TODO(irungentoo): handle if realloc fails?
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_FRIEND_NOT_FOUND);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_DELETE_OK);
-    return 1;
+    return true;
 }
 
 uint32_t tox_friend_by_public_key(const Tox *tox, const uint8_t *public_key, Tox_Err_Friend_By_Public_Key *error)
@@ -1206,7 +1206,7 @@ bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *
     assert(tox != nullptr);
 
     if (public_key == nullptr) {
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -1214,12 +1214,12 @@ bool tox_friend_get_public_key(const Tox *tox, uint32_t friend_number, uint8_t *
     if (get_real_pk(tox->m, friend_number, public_key) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND);
         unlock(tox);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_GET_PUBLIC_KEY_OK);
     unlock(tox);
-    return 1;
+    return true;
 }
 
 bool tox_friend_exists(const Tox *tox, uint32_t friend_number)
@@ -1290,7 +1290,7 @@ bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, 
 
     if (name == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_NULL);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -1299,11 +1299,11 @@ bool tox_friend_get_name(const Tox *tox, uint32_t friend_number, uint8_t *name, 
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
-    return 1;
+    return true;
 }
 
 void tox_callback_friend_name(Tox *tox, tox_friend_name_cb *callback)
@@ -1414,7 +1414,7 @@ bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, Tox_Err_Frien
 
     if (ret == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_FRIEND_NOT_FOUND);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
@@ -1435,12 +1435,12 @@ bool tox_self_set_typing(Tox *tox, uint32_t friend_number, bool typing, Tox_Err_
     if (m_set_usertyping(tox->m, friend_number, typing) == -1) {
         SET_ERROR_PARAMETER(error, TOX_ERR_SET_TYPING_FRIEND_NOT_FOUND);
         unlock(tox);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_SET_TYPING_OK);
     unlock(tox);
-    return 1;
+    return true;
 }
 
 non_null(1) nullable(3)
@@ -1529,11 +1529,11 @@ void tox_callback_friend_message(Tox *tox, tox_friend_message_cb *callback)
 bool tox_hash(uint8_t *hash, const uint8_t *data, size_t length)
 {
     if (hash == nullptr || (data == nullptr && length != 0)) {
-        return 0;
+        return false;
     }
 
     crypto_sha256(hash, data, length);
-    return 1;
+    return true;
 }
 
 bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, Tox_File_Control control,
@@ -1546,56 +1546,56 @@ bool tox_file_control(Tox *tox, uint32_t friend_number, uint32_t file_number, To
 
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_OK);
-        return 1;
+        return true;
     }
 
     switch (ret) {
         case -1: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_FRIEND_NOT_FOUND);
-            return 0;
+            return false;
         }
 
         case -2: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_FRIEND_NOT_CONNECTED);
-            return 0;
+            return false;
         }
 
         case -3: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_NOT_FOUND);
-            return 0;
+            return false;
         }
 
         case -4: {
             /* can't happen (this code is returned if `control` is invalid type) */
             LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
-            return 0;
+            return false;
         }
 
         case -5: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_ALREADY_PAUSED);
-            return 0;
+            return false;
         }
 
         case -6: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_DENIED);
-            return 0;
+            return false;
         }
 
         case -7: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_NOT_PAUSED);
-            return 0;
+            return false;
         }
 
         case -8: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_CONTROL_SENDQ);
-            return 0;
+            return false;
         }
     }
 
     /* can't happen */
     LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
 
-    return 0;
+    return false;
 }
 
 bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint64_t position,
@@ -1608,46 +1608,46 @@ bool tox_file_seek(Tox *tox, uint32_t friend_number, uint32_t file_number, uint6
 
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_OK);
-        return 1;
+        return true;
     }
 
     switch (ret) {
         case -1: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_FRIEND_NOT_FOUND);
-            return 0;
+            return false;
         }
 
         case -2: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_FRIEND_NOT_CONNECTED);
-            return 0;
+            return false;
         }
 
         case -3: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_NOT_FOUND);
-            return 0;
+            return false;
         }
 
         case -4: // fall-through
         case -5: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_DENIED);
-            return 0;
+            return false;
         }
 
         case -6: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_INVALID_POSITION);
-            return 0;
+            return false;
         }
 
         case -8: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEEK_SENDQ);
-            return 0;
+            return false;
         }
     }
 
     /* can't happen */
     LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
 
-    return 0;
+    return false;
 }
 
 void tox_callback_file_recv_control(Tox *tox, tox_file_recv_control_cb *callback)
@@ -1663,7 +1663,7 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
 
     if (file_id == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NULL);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -1672,7 +1672,7 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
 
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_OK);
-        return 1;
+        return true;
     }
 
     if (ret == -1) {
@@ -1681,7 +1681,7 @@ bool tox_file_get_file_id(const Tox *tox, uint32_t friend_number, uint32_t file_
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_GET_NOT_FOUND);
     }
 
-    return 0;
+    return false;
 }
 
 uint32_t tox_file_send(Tox *tox, uint32_t friend_number, uint32_t kind, uint64_t file_size, const uint8_t *file_id,
@@ -1749,50 +1749,50 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
 
     if (ret == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_OK);
-        return 1;
+        return true;
     }
 
     switch (ret) {
         case -1: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_FOUND);
-            return 0;
+            return false;
         }
 
         case -2: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_FRIEND_NOT_CONNECTED);
-            return 0;
+            return false;
         }
 
         case -3: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_NOT_FOUND);
-            return 0;
+            return false;
         }
 
         case -4: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_NOT_TRANSFERRING);
-            return 0;
+            return false;
         }
 
         case -5: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_INVALID_LENGTH);
-            return 0;
+            return false;
         }
 
         case -6: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_SENDQ);
-            return 0;
+            return false;
         }
 
         case -7: {
             SET_ERROR_PARAMETER(error, TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION);
-            return 0;
+            return false;
         }
     }
 
     /* can't happen */
     LOGGER_FATAL(tox->m->log, "impossible return value: %d", ret);
 
-    return 0;
+    return false;
 }
 
 void tox_callback_file_chunk_request(Tox *tox, tox_file_chunk_request_cb *callback)
@@ -1995,7 +1995,7 @@ bool tox_conference_peer_number_is_ours(const Tox *tox, uint32_t conference_numb
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_PEER_QUERY_OK);
-    return ret;
+    return ret != 0;
 }
 
 uint32_t tox_conference_offline_peer_count(const Tox *tox, uint32_t conference_number,
@@ -2468,17 +2468,17 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
 
     if (data == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
-        return 0;
+        return false;
     }
 
     if (length == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_EMPTY);
-        return 0;
+        return false;
     }
 
     if (data[0] < PACKET_ID_RANGE_LOSSY_START || data[0] > PACKET_ID_RANGE_LOSSY_END) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_INVALID);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -2487,11 +2487,7 @@ bool tox_friend_send_lossy_packet(Tox *tox, uint32_t friend_number, const uint8_
 
     set_custom_packet_error(ret, error);
 
-    if (ret == 0) {
-        return 1;
-    }
-
-    return 0;
+    return ret == 0;
 }
 
 void tox_callback_friend_lossy_packet(Tox *tox, tox_friend_lossy_packet_cb *callback)
@@ -2520,12 +2516,12 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
 
     if (data == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_NULL);
-        return 0;
+        return false;
     }
 
     if (length == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_CUSTOM_PACKET_EMPTY);
-        return 0;
+        return false;
     }
 
     lock(tox);
@@ -2534,11 +2530,7 @@ bool tox_friend_send_lossless_packet(Tox *tox, uint32_t friend_number, const uin
 
     set_custom_packet_error(ret, error);
 
-    if (ret == 0) {
-        return 1;
-    }
-
-    return 0;
+    return ret == 0;
 }
 
 void tox_callback_friend_lossless_packet(Tox *tox, tox_friend_lossless_packet_cb *callback)

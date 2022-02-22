@@ -166,7 +166,7 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, siz
 {
     if (plaintext_len == 0 || plaintext == nullptr || key == nullptr || ciphertext == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_NULL);
-        return 0;
+        return false;
     }
 
     // the output data consists of, in order:
@@ -193,11 +193,11 @@ bool tox_pass_key_encrypt(const Tox_Pass_Key *key, const uint8_t *plaintext, siz
     if (encrypt_data_symmetric(key->key, nonce, plaintext, plaintext_len, ciphertext)
             != plaintext_len + crypto_box_MACBYTES) {
         SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_FAILED);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_OK);
-    return 1;
+    return true;
 }
 
 /* Encrypts the given data with the given passphrase. The output array must be
@@ -219,7 +219,7 @@ bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint
             SET_ERROR_PARAMETER(error, TOX_ERR_ENCRYPTION_KEY_DERIVATION_FAILED);
         }
 
-        return 0;
+        return false;
     }
 
     bool result = tox_pass_key_encrypt(key, plaintext, plaintext_len, ciphertext, error);
@@ -239,17 +239,17 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, si
 {
     if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
-        return 0;
+        return false;
     }
 
     if (ciphertext == nullptr || key == nullptr || plaintext == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_NULL);
-        return 0;
+        return false;
     }
 
     if (memcmp(ciphertext, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_BAD_FORMAT);
-        return 0;
+        return false;
     }
 
     ciphertext += TOX_ENC_SAVE_MAGIC_LENGTH;
@@ -265,11 +265,11 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, si
     if (decrypt_data_symmetric(key->key, nonce, ciphertext, decrypt_length + crypto_box_MACBYTES, plaintext)
             != decrypt_length) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_FAILED);
-        return 0;
+        return false;
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_OK);
-    return 1;
+    return true;
 }
 
 /* Decrypts the given data with the given passphrase. The output array must be
@@ -285,17 +285,17 @@ bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const ui
 {
     if (ciphertext_len <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
-        return 0;
+        return false;
     }
 
     if (ciphertext == nullptr || passphrase == nullptr || plaintext == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_NULL);
-        return 0;
+        return false;
     }
 
     if (memcmp(ciphertext, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) != 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_BAD_FORMAT);
-        return 0;
+        return false;
     }
 
     uint8_t salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES];
@@ -307,7 +307,7 @@ bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const ui
     if (key == nullptr) {
         /* out of memory most likely */
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_KEY_DERIVATION_FAILED);
-        return 0;
+        return false;
     }
 
     bool result = tox_pass_key_decrypt(key, ciphertext, ciphertext_len, plaintext, error);
@@ -319,9 +319,5 @@ bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const ui
  */
 bool tox_is_data_encrypted(const uint8_t *data)
 {
-    if (memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0) {
-        return 1;
-    }
-
-    return 0;
+    return memcmp(data, TOX_ENC_SAVE_MAGIC_NUMBER, TOX_ENC_SAVE_MAGIC_LENGTH) == 0;
 }

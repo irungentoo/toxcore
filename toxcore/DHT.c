@@ -1113,7 +1113,7 @@ static bool is_pk_in_client_list(const Client_data *list, unsigned int client_li
     const uint32_t index = index_of_client_pk(list, client_list_length, public_key);
 
     if (index == UINT32_MAX) {
-        return 0;
+        return false;
     }
 
     const IPPTsPng *assoc = net_family_is_ipv4(ip_port->ip.family)
@@ -1355,11 +1355,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
         return false;
     }
 
-    if (sendpacket(dht->net, ip_port, data, len) > 0) {
-        return true;
-    }
-
-    return false;
+    return sendpacket(dht->net, ip_port, data, len) > 0;
 }
 
 /** Send a send nodes response: message for IPv6 nodes */
@@ -1467,11 +1463,7 @@ static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, const IP_P
         return false;
     }
 
-    if (!ipport_equal(&test.ip_port, node_ip_port) || !id_equal(test.public_key, public_key)) {
-        return false;
-    }
-
-    return true;
+    return ipport_equal(&test.ip_port, node_ip_port) && id_equal(test.public_key, public_key);
 }
 
 non_null()
