@@ -56,7 +56,7 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
 
     TCP_Priority_List *p = con->priority_queue_start;
 
-    while (p) {
+    while (p != nullptr) {
         const uint16_t left = p->size - p->sent;
         const int len = net_send(logger, con->sock, p->data + p->sent, left, &con->ip_port);
 

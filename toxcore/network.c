@@ -830,9 +830,9 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     } else if (port_from != 0 && port_to == 0) {
         port_to = port_from;
     } else if (port_from > port_to) {
-        uint16_t temp = port_from;
+        uint16_t temp_port = port_from;
         port_from = port_to;
-        port_to = temp;
+        port_to = temp_port;
     }
 
     if (error != nullptr) {
@@ -1262,7 +1262,7 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
     if (net_family_is_ipv4(ip->family)) {
         struct in_addr addr;
         static_assert(sizeof(addr) == sizeof(ip->ip.v4.uint32),
-                "assumption does not hold: in_addr should be 4 bytes");
+                      "assumption does not hold: in_addr should be 4 bytes");
         assert(make_family(ip->family) == AF_INET);
         fill_addr4(&ip->ip.v4, &addr);
         return inet_ntop4(&addr, address, length) != nullptr;
@@ -1271,7 +1271,7 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
     if (net_family_is_ipv6(ip->family)) {
         struct in6_addr addr;
         static_assert(sizeof(addr) == sizeof(ip->ip.v6.uint8),
-                "assumption does not hold: in6_addr should be 16 bytes");
+                      "assumption does not hold: in6_addr should be 16 bytes");
         assert(make_family(ip->family) == AF_INET6);
         fill_addr6(&ip->ip.v6, &addr);
         return inet_ntop6(&addr, address, length) != nullptr;
@@ -1739,9 +1739,9 @@ int net_error(void)
 #endif
 }
 
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 char *net_new_strerror(int error)
 {
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
     char *str = nullptr;
     // Windows API is weird. The 5th function arg is of char* type, but we
     // have to pass char** so that it could assign new memory block to our
@@ -1753,29 +1753,42 @@ char *net_new_strerror(int error)
     FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
                    error, 0, (char *)&str, 0, nullptr);
     return str;
+}
 #else
+#ifdef _GNU_SOURCE
+non_null()
+static const char *net_strerror_r(int error, char *tmp, size_t tmp_size)
+{
+    const char *retstr = strerror_r(error, tmp, tmp_size);
+
+    if (errno != 0) {
+        snprintf(tmp, tmp_size, "error %d (strerror_r failed with errno %d)", error, errno);
+    }
+
+    return retstr;
+}
+#else
+non_null()
+static const char *net_strerror_r(int error, char *tmp, size_t tmp_size)
+{
+    const int fmt_error = strerror_r(error, tmp, tmp_size);
+
+    if (fmt_error != 0) {
+        snprintf(tmp, tmp_size, "error %d (strerror_r failed with error %d, errno %d)", error, fmt_error, errno);
+    }
+
+    return tmp;
+}
+#endif
+char *net_new_strerror(int error)
+{
     char tmp[256];
 
     errno = 0;
 
-#ifdef _GNU_SOURCE
-    const char *retstr = strerror_r(error, tmp, sizeof(tmp));
-
-    if (errno != 0) {
-        snprintf(tmp, sizeof(tmp), "error %d (strerror_r failed with errno %d)", error, errno);
-    }
-
-#else
-    const int fmt_error = strerror_r(error, tmp, sizeof(tmp));
-
-    if (fmt_error != 0) {
-        snprintf(tmp, sizeof(tmp), "error %d (strerror_r failed with error %d, errno %d)", error, fmt_error, errno);
-    }
-
-    const char *retstr = tmp;
-#endif
-
+    const char *retstr = net_strerror_r(error, tmp, sizeof(tmp));
     const size_t retstr_len = strlen(retstr);
+
     char *str = (char *)malloc(retstr_len + 1);
 
     if (str == nullptr) {
@@ -1785,8 +1798,8 @@ char *net_new_strerror(int error)
     memcpy(str, retstr, retstr_len + 1);
 
     return str;
-#endif
 }
+#endif
 
 void net_kill_strerror(char *strerror)
 {

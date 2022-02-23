@@ -665,8 +665,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
  *  return -7 if wrong position.
  */
 non_null(1) nullable(5)
-int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
-              uint16_t length);
+int send_file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data, uint16_t length);
 
 /*** A/V related */
 

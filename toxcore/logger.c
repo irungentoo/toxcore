@@ -105,7 +105,7 @@ void logger_write(const Logger *log, Logger_Level level, const char *file, int l
     // On Windows, the path separator *may* be a backslash, so we look for that
     // one too.
     const char *windows_filename = strrchr(file, '\\');
-    file = windows_filename ? windows_filename + 1 : file;
+    file = windows_filename != nullptr ? windows_filename + 1 : file;
 #endif
 
     // Format message

@@ -1744,7 +1744,7 @@ bool tox_file_send_chunk(Tox *tox, uint32_t friend_number, uint32_t file_number,
 {
     assert(tox != nullptr);
     lock(tox);
-    const int ret = file_data(tox->m, friend_number, file_number, position, data, length);
+    const int ret = send_file_data(tox->m, friend_number, file_number, position, data, length);
     unlock(tox);
 
     if (ret == 0) {

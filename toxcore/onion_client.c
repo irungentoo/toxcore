@@ -641,13 +641,13 @@ static int onion_client_cmp_entry(const void *a, const void *b)
         return 1;
     }
 
-    const int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
+    const int closest = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
 
-    if (close == 1) {
+    if (closest == 1) {
         return 1;
     }
 
-    if (close == 2) {
+    if (closest == 2) {
         return -1;
     }
 

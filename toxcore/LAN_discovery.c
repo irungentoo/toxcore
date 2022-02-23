@@ -82,7 +82,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
     if (ret == NO_ERROR) {
         IP_ADAPTER_INFO *pAdapter = pAdapterInfo;
 
-        while (pAdapter) {
+        while (pAdapter != nullptr) {
             IP gateway = {0};
             IP subnet_mask = {0};
 
@@ -108,7 +108,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
         }
     }
 
-    if (pAdapterInfo) {
+    if (pAdapterInfo != nullptr) {
         free(pAdapterInfo);
     }
 

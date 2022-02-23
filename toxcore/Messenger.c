@@ -317,7 +317,7 @@ static int clear_receipts(Messenger *m, int32_t friendnumber)
 
     struct Receipts *receipts = m->friendlist[friendnumber].receipts_start;
 
-    while (receipts) {
+    while (receipts != nullptr) {
         struct Receipts *temp_r = receipts->next;
         free(receipts);
         receipts = temp_r;
@@ -378,7 +378,7 @@ static int do_receipts(Messenger *m, int32_t friendnumber, void *userdata)
 
     struct Receipts *receipts = m->friendlist[friendnumber].receipts_start;
 
-    while (receipts) {
+    while (receipts != nullptr) {
         if (friend_received_packet(m, friendnumber, receipts->packet_num) == -1) {
             break;
         }
@@ -1422,8 +1422,8 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
  *  return -6 if packet queue full.
  *  return -7 if wrong position.
  */
-int file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position, const uint8_t *data,
-              uint16_t length)
+int send_file_data(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uint64_t position,
+                   const uint8_t *data, uint16_t length)
 {
     assert(length == 0 || data != nullptr);
 
@@ -1542,7 +1542,7 @@ static bool do_all_filetransfers(Messenger *m, int32_t friendnumber, void *userd
         } else if (ft->status == FILESTATUS_TRANSFERRING && ft->paused == FILE_PAUSE_NOT) {
             if (ft->size == 0) {
                 /* Send 0 data to friend if file is 0 length. */
-                file_data(m, friendnumber, i, 0, nullptr, 0);
+                send_file_data(m, friendnumber, i, 0, nullptr, 0);
                 continue;
             }
 

@@ -340,7 +340,7 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     memcpy(temp + 1, data, length);
     temp[0] = request_id;
     const int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
-                                 CRYPTO_SIZE + packet);
+                                 packet + CRYPTO_SIZE);
 
     if (len == -1) {
         crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
@@ -942,13 +942,13 @@ static int dht_cmp_entry(const void *a, const void *b)
         return 1;
     }
 
-    const int close = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
+    const int closest = id_closest(cmp_public_key, entry1.public_key, entry2.public_key);
 
-    if (close == 1) {
+    if (closest == 1) {
         return 1;
     }
 
-    if (close == 2) {
+    if (closest == 2) {
         return -1;
     }
 
