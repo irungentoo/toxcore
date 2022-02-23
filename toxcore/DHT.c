@@ -422,7 +422,7 @@ int packed_node_size(Family ip_family)
  * Returns size of packed IP_Port data on success
  * Return -1 on failure.
  */
-int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
+int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_Port *ip_port)
 {
     if (data == nullptr) {
         return -1;
@@ -445,6 +445,10 @@ int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port)
         is_ipv4 = false;
         net_family = TOX_TCP_INET6;
     } else {
+        char ip_str[IP_NTOA_LEN];
+        // TODO(iphydf): Find out why we're trying to pack invalid IPs, stop
+        // doing that, and turn this into an error.
+        LOGGER_TRACE(logger, "cannot pack invalid IP: %s", ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)));
         return -1;
     }
 
@@ -576,12 +580,12 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
  * return length of packed nodes on success.
  * return -1 on failure.
  */
-int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_t number)
+int pack_nodes(const Logger *logger, uint8_t *data, uint16_t length, const Node_format *nodes, uint16_t number)
 {
     uint32_t packed_length = 0;
 
     for (uint32_t i = 0; i < number && packed_length < length; ++i) {
-        const int ipp_size = pack_ip_port(data + packed_length, length - packed_length, &nodes[i].ip_port);
+        const int ipp_size = pack_ip_port(logger, data + packed_length, length - packed_length, &nodes[i].ip_port);
 
         if (ipp_size == -1) {
             return -1;
@@ -1325,7 +1329,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
     memcpy(receiver.public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     receiver.ip_port = *ip_port;
 
-    if (pack_nodes(plain_message, sizeof(plain_message), &receiver, 1) == -1) {
+    if (pack_nodes(dht->log, plain_message, sizeof(plain_message), &receiver, 1) == -1) {
         return false;
     }
 
@@ -1334,6 +1338,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
     ping_id = ping_array_add(dht->dht_ping_array, dht->mono_time, plain_message, sizeof(receiver));
 
     if (ping_id == 0) {
+        LOGGER_ERROR(dht->log, "adding ping id failed");
         return false;
     }
 
@@ -1352,6 +1357,7 @@ bool dht_getnodes(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key, c
     crypto_memzero(shared_key, sizeof(shared_key));
 
     if (len != sizeof(data)) {
+        LOGGER_ERROR(dht->log, "getnodes packet encryption failed");
         return false;
     }
 
@@ -1383,7 +1389,7 @@ static int sendnodes_ipv6(const DHT *dht, const IP_Port *ip_port, const uint8_t 
     int nodes_length = 0;
 
     if (num_nodes > 0) {
-        nodes_length = pack_nodes(plain + 1, node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
+        nodes_length = pack_nodes(dht->log, plain + 1, node_format_size * MAX_SENT_NODES, nodes_list, num_nodes);
 
         if (nodes_length <= 0) {
             return -1;
@@ -1841,9 +1847,14 @@ static void do_Close(DHT *dht)
     }
 }
 
-void dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
+bool dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
 {
-    dht_getnodes(dht, ip_port, public_key, dht->self_public_key);
+    if (id_equal(public_key, dht->self_public_key)) {
+        // Bootstrapping off ourselves is ok (onion paths are still set up).
+        return true;
+    }
+
+    return dht_getnodes(dht, ip_port, public_key, dht->self_public_key);
 }
 
 int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
@@ -2682,8 +2693,7 @@ void dht_save(const DHT *dht, uint8_t *data)
         }
     }
 
-    state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(data, sizeof(Node_format) * num, clients, num),
-                               DHT_STATE_TYPE_NODES);
+    state_write_section_header(old_data, DHT_STATE_COOKIE_TYPE, pack_nodes(dht->log, data, sizeof(Node_format) * num, clients, num), DHT_STATE_TYPE_NODES);
 
     free(clients);
 }

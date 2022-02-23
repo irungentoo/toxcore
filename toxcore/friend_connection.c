@@ -298,7 +298,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
         friend_add_tcp_relay(fr_c, friendcon_id, &nodes[i].ip_port, nodes[i].public_key);
     }
 
-    int length = pack_nodes(data + 1, sizeof(data) - 1, nodes, n);
+    int length = pack_nodes(fr_c->logger, data + 1, sizeof(data) - 1, nodes, n);
 
     if (length <= 0) {
         return 0;

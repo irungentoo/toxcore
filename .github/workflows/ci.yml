@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [master]
 
+# Cancel old PR builds when pushing new commits.
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   common:
     uses: TokTok/ci-tools/.github/workflows/common-ci.yml@master

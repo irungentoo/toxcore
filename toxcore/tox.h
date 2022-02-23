@@ -916,8 +916,9 @@ typedef enum Tox_Err_Bootstrap {
     TOX_ERR_BOOTSTRAP_NULL,
 
     /**
-     * The hostname could not be resolved to an IP address, or the IP address
-     * passed was invalid.
+     * The hostname could not be resolved to an IP address, the IP address
+     * passed was invalid, or the function failed to send the initial request
+     * packet to the bootstrap node or TCP relay.
      */
     TOX_ERR_BOOTSTRAP_BAD_HOST,
 

@@ -148,7 +148,7 @@ int packed_node_size(Family ip_family);
  * Return -1 on failure.
  */
 non_null()
-int pack_ip_port(uint8_t *data, uint16_t length, const IP_Port *ip_port);
+int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_Port *ip_port);
 
 /** Unpack IP_Port structure from data of max size length into ip_port.
  *
@@ -166,7 +166,7 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
  * return -1 on failure.
  */
 non_null()
-int pack_nodes(uint8_t *data, uint16_t length, const Node_format *nodes, uint16_t number);
+int pack_nodes(const Logger *logger, uint8_t *data, uint16_t length, const Node_format *nodes, uint16_t number);
 
 /** Unpack data of length into nodes of size max_num_nodes.
  * Put the length of the data processed in processed_data_len.
@@ -359,7 +359,7 @@ void do_dht(DHT *dht);
  *   to setup connections
  */
 non_null()
-void dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key);
+bool dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** Resolves address into an IP address. If successful, sends a "get nodes"
  *   request to the given node with ip, port and public_key to setup connections

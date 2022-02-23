@@ -626,9 +626,9 @@ static void test_dht_create_packet(void)
 
 #define MAX_COUNT 3
 
-static void dht_pack_unpack(const Node_format *nodes, size_t size, uint8_t *data, size_t length)
+static void dht_pack_unpack(const Logger *logger, const Node_format *nodes, size_t size, uint8_t *data, size_t length)
 {
-    int16_t packed_size = pack_nodes(data, length, nodes, size);
+    int16_t packed_size = pack_nodes(logger, data, length, nodes, size);
     ck_assert_msg(packed_size != -1, "Wrong pack_nodes result");
 
     uint16_t processed = 0;
@@ -677,6 +677,10 @@ static void random_ip(IP_Port *ipp, int family)
 
 static void test_dht_node_packing(void)
 {
+    Logger *log = logger_new();
+    uint32_t index = 1;
+    logger_callback_log(log, (logger_cb *)print_debug_log, nullptr, &index);
+
     const uint16_t length = MAX_COUNT * PACKED_NODES_SIZE;
     uint8_t *data = (uint8_t *)malloc(length);
 
@@ -690,28 +694,29 @@ static void test_dht_node_packing(void)
     random_ip(&nodes[0].ip_port, TOX_AF_INET);
     random_ip(&nodes[1].ip_port, TOX_AF_INET);
     random_ip(&nodes[2].ip_port, TOX_AF_INET);
-    dht_pack_unpack(nodes, 3, data, length);
+    dht_pack_unpack(log, nodes, 3, data, length);
 
     random_ip(&nodes[0].ip_port, TOX_AF_INET);
     random_ip(&nodes[1].ip_port, TOX_AF_INET);
     random_ip(&nodes[2].ip_port, TCP_INET);
-    dht_pack_unpack(nodes, 3, data, length);
+    dht_pack_unpack(log, nodes, 3, data, length);
 
     random_ip(&nodes[0].ip_port, TOX_AF_INET);
     random_ip(&nodes[1].ip_port, TOX_AF_INET6);
     random_ip(&nodes[2].ip_port, TCP_INET6);
-    dht_pack_unpack(nodes, 3, data, length);
+    dht_pack_unpack(log, nodes, 3, data, length);
 
     random_ip(&nodes[0].ip_port, TCP_INET);
     random_ip(&nodes[1].ip_port, TCP_INET6);
     random_ip(&nodes[2].ip_port, TCP_INET);
-    dht_pack_unpack(nodes, 3, data, length);
+    dht_pack_unpack(log, nodes, 3, data, length);
 
     random_ip(&nodes[0].ip_port, TOX_AF_INET6);
     random_ip(&nodes[1].ip_port, TOX_AF_INET6);
     random_ip(&nodes[2].ip_port, TOX_AF_INET6);
-    dht_pack_unpack(nodes, 3, data, length);
+    dht_pack_unpack(log, nodes, 3, data, length);
 
+    logger_kill(log);
     free(data);
 }
 

@@ -61,11 +61,11 @@ Net_Crypto *onion_get_net_crypto(const Onion_Client *onion_c);
 
 /** Add a node to the path_nodes bootstrap array.
  *
- * return -1 on failure
- * return 0 on success
+ * return false on failure
+ * return true on success
  */
 non_null()
-int onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const uint8_t *public_key);
+bool onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const uint8_t *public_key);
 
 /** Put up to max_num nodes in nodes.
  *

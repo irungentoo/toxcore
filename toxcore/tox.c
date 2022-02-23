@@ -786,14 +786,23 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     lock(tox);
     assert(count >= 0);
+    bool success = false;
 
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);
 
-        onion_add_bs_path_node(tox->m->onion_c, &root[i], public_key);
+        if (onion_add_bs_path_node(tox->m->onion_c, &root[i], public_key)) {
+            // If UDP is enabled, the caller cares about whether any of the
+            // bootstrap calls below will succeed. In TCP-only mode, adding
+            // onion path nodes successfully is sufficient.
+            success = success || tox->m->options.udp_disabled;
+        }
 
         if (!tox->m->options.udp_disabled) {
-            dht_bootstrap(tox->m->dht, &root[i], public_key);
+            if (dht_bootstrap(tox->m->dht, &root[i], public_key)) {
+                // If any of the bootstrap calls worked, we call it success.
+                success = true;
+            }
         }
     }
 
@@ -801,12 +810,13 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     net_freeipport(root);
 
-    if (count > 0) {
+    if (count > 0 && success) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
         return true;
     }
 
-    LOGGER_DEBUG(tox->m->log, "bootstrap node '%s' resolved to 0 IP_Ports", host);
+    LOGGER_DEBUG(tox->m->log, "bootstrap node '%s' resolved to %d IP_Ports%s", host, count,
+            count > 0 ? ", but failed to bootstrap with any of them" : "");
     SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
     return false;
 }

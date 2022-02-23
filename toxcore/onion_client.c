@@ -146,18 +146,18 @@ Net_Crypto *onion_get_net_crypto(const Onion_Client *onion_c)
 
 /** Add a node to the path_nodes bootstrap array.
  *
- * return -1 on failure
- * return 0 on success
+ * return false on failure
+ * return true on success
  */
-int onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const uint8_t *public_key)
+bool onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const uint8_t *public_key)
 {
     if (!net_family_is_ipv4(ip_port->ip.family) && !net_family_is_ipv6(ip_port->ip.family)) {
-        return -1;
+        return false;
     }
 
     for (unsigned int i = 0; i < MAX_PATH_NODES; ++i) {
         if (public_key_cmp(public_key, onion_c->path_nodes_bs[i].public_key) == 0) {
-            return -1;
+            return false;
         }
     }
 
@@ -172,7 +172,7 @@ int onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const 
         onion_c->path_nodes_index_bs = MAX_PATH_NODES + 1;
     }
 
-    return 0;
+    return true;
 }
 
 /** Add a node to the path_nodes array.
@@ -1230,8 +1230,7 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
     int nodes_len = 0;
 
     if (num_nodes != 0) {
-        nodes_len = pack_nodes(data + DHTPK_DATA_MIN_LENGTH, DHTPK_DATA_MAX_LENGTH - DHTPK_DATA_MIN_LENGTH, nodes,
-                               num_nodes);
+        nodes_len = pack_nodes(onion_c->logger, data + DHTPK_DATA_MIN_LENGTH, DHTPK_DATA_MAX_LENGTH - DHTPK_DATA_MIN_LENGTH, nodes, num_nodes);
 
         if (nodes_len <= 0) {
             return -1;
