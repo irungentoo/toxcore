@@ -83,7 +83,7 @@ typedef struct Groupchat_Connection {
 } Groupchat_Connection;
 
 typedef struct Groupchat_Closest {
-    uint8_t entry;
+    bool entry;
     uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
 } Groupchat_Closest;

@@ -492,7 +492,7 @@ static Toxav_Err_Call_Control call_control_handle_resume(const ToxAVCall *call)
 static Toxav_Err_Call_Control call_control_handle_pause(ToxAVCall *call)
 {
     /* Only act if not already paused */
-    if (!call->msi_call->self_capabilities) {
+    if (call->msi_call->self_capabilities == 0) {
         return TOXAV_ERR_CALL_CONTROL_INVALID_TRANSITION;
     }
 

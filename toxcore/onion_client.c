@@ -56,9 +56,9 @@ typedef struct Last_Pinged {
 
 typedef struct Onion_Friend {
     uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
-    uint8_t is_online; /* Set by the onion_set_friend_status function. */
+    bool is_online;
 
-    uint8_t know_dht_public_key; /* 0 if we don't know the dht public key of the other, 1 if we do. */
+    bool know_dht_public_key;
     uint8_t dht_public_key[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t real_public_key[CRYPTO_PUBLIC_KEY_SIZE];
 
@@ -212,7 +212,7 @@ static int onion_add_path_node(Onion_Client *onion_c, const IP_Port *ip_port, co
  */
 uint16_t onion_backup_nodes(const Onion_Client *onion_c, Node_format *nodes, uint16_t max_num)
 {
-    if (!max_num) {
+    if (max_num == 0) {
         return 0;
     }
 
@@ -1078,7 +1078,7 @@ int send_onion_data(Onion_Client *onion_c, int friend_num, const uint8_t *data, 
 
         ++num_nodes;
 
-        if (list_nodes[i].is_stored) {
+        if (list_nodes[i].is_stored != 0) {
             good_nodes[num_good] = i;
             ++num_good;
         }
@@ -1441,7 +1441,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
     }
 
     onion_c->friends_list[friend_num].last_seen = mono_time_get(onion_c->mono_time);
-    onion_c->friends_list[friend_num].know_dht_public_key = 1;
+    onion_c->friends_list[friend_num].know_dht_public_key = true;
     memcpy(onion_c->friends_list[friend_num].dht_public_key, dht_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     return 0;
@@ -1492,19 +1492,16 @@ int onion_getfriendip(const Onion_Client *onion_c, int friend_num, IP_Port *ip_p
 /** Set if friend is online or not.
  * NOTE: This function is there and should be used so that we don't send useless packets to the friend if he is online.
  *
- * is_online 1 means friend is online.
- * is_online 0 means friend is offline
- *
  * return -1 on failure.
  * return 0 on success.
  */
-int onion_set_friend_online(Onion_Client *onion_c, int friend_num, uint8_t is_online)
+int onion_set_friend_online(Onion_Client *onion_c, int friend_num, bool is_online)
 {
     if ((uint32_t)friend_num >= onion_c->num_friends) {
         return -1;
     }
 
-    if (is_online == 0 && onion_c->friends_list[friend_num].is_online == 1) {
+    if (!is_online && onion_c->friends_list[friend_num].is_online) {
         onion_c->friends_list[friend_num].last_seen = mono_time_get(onion_c->mono_time);
     }
 
@@ -1791,7 +1788,7 @@ static int onion_isconnected(const Onion_Client *onion_c)
         if (!onion_node_timed_out(&onion_c->clients_announce_list[i], onion_c->mono_time)) {
             ++num;
 
-            if (onion_c->clients_announce_list[i].is_stored) {
+            if (onion_c->clients_announce_list[i].is_stored != 0) {
                 ++announced;
             }
         }

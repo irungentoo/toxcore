@@ -381,7 +381,7 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
 
     assert(dest != nullptr);
 
-    if (length == 0 || data[length - 1]) { /* End byte must have value 0 */
+    if (length == 0 || data[length - 1] != 0) { /* End byte must have value 0 */
         LOGGER_ERROR(log, "Invalid end byte");
         return -1;
     }

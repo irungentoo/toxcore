@@ -627,7 +627,7 @@ int setname(Messenger *m, const uint8_t *name, uint16_t length)
         return 0;
     }
 
-    if (length) {
+    if (length > 0) {
         memcpy(m->name, name, length);
     }
 
@@ -699,7 +699,7 @@ int m_set_statusmessage(Messenger *m, const uint8_t *status, uint16_t length)
         return 0;
     }
 
-    if (length) {
+    if (length > 0) {
         memcpy(m->statusmessage, status, length);
     }
 
@@ -870,7 +870,7 @@ static int set_friend_statusmessage(const Messenger *m, int32_t friendnumber, co
         return -1;
     }
 
-    if (length) {
+    if (length > 0) {
         memcpy(m->friendlist[friendnumber].statusmessage, status, length);
     }
 
@@ -974,8 +974,8 @@ static void check_friend_connectionstatus(Messenger *m, int32_t friendnumber, ui
         return;
     }
 
-    const uint8_t was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
-    const uint8_t is_online = status == FRIEND_ONLINE;
+    const bool was_online = m->friendlist[friendnumber].status == FRIEND_ONLINE;
+    const bool is_online = status == FRIEND_ONLINE;
 
     if (is_online != was_online) {
         if (was_online) {
@@ -1077,14 +1077,14 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
     }
 
     uint32_t temp_filenum;
-    uint8_t send_receive;
+    bool send_receive;
     uint8_t file_number;
 
     if (filenumber >= (1 << 16)) {
-        send_receive = 1;
+        send_receive = true;
         temp_filenum = (filenumber >> 16) - 1;
     } else {
-        send_receive = 0;
+        send_receive = false;
         temp_filenum = filenumber;
     }
 
@@ -1134,7 +1134,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
     net_pack_u64(packet + 1 + sizeof(file_type), filesize);
     memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize), file_id, FILE_ID_LENGTH);
 
-    if (filename_length) {
+    if (filename_length > 0) {
         memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH, filename, filename_length);
     }
 
@@ -1195,7 +1195,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
 }
 
 non_null(1) nullable(6)
-static int send_file_control_packet(const Messenger *m, int32_t friendnumber, uint8_t send_receive, uint8_t filenumber,
+static int send_file_control_packet(const Messenger *m, int32_t friendnumber, bool send_receive, uint8_t filenumber,
                                     uint8_t control_type, const uint8_t *data, uint16_t data_length)
 {
     assert(data_length == 0 || data != nullptr);
@@ -1206,11 +1206,11 @@ static int send_file_control_packet(const Messenger *m, int32_t friendnumber, ui
 
     VLA(uint8_t, packet, 3 + data_length);
 
-    packet[0] = send_receive;
+    packet[0] = send_receive ? 1 : 0;
     packet[1] = filenumber;
     packet[2] = control_type;
 
-    if (data_length) {
+    if (data_length > 0) {
         memcpy(packet + 3, data, data_length);
     }
 
@@ -1240,14 +1240,14 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
     }
 
     uint32_t temp_filenum;
-    uint8_t send_receive;
+    bool send_receive;
     uint8_t file_number;
 
     if (filenumber >= (1 << 16)) {
-        send_receive = 1;
+        send_receive = true;
         temp_filenum = (filenumber >> 16) - 1;
     } else {
-        send_receive = 0;
+        send_receive = false;
         temp_filenum = filenumber;
     }
 
