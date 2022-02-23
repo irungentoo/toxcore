@@ -22,7 +22,9 @@ cmake -B_build -H. -GNinja \
   -DSTRICT_ABI=ON \
   -DTEST_TIMEOUT_SECONDS=120 \
   -DUSE_IPV6=OFF \
-  -DAUTOTEST=ON
+  -DAUTOTEST=ON \
+  -DBUILD_MISC_TESTS=ON \
+  -DBUILD_FUN_UTILS=ON
 
 cd _build
 

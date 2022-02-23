@@ -21,7 +21,6 @@ project(toxcore)
 list(APPEND CMAKE_MODULE_PATH ${toxcore_SOURCE_DIR}/cmake)
 
 set_source_files_properties(
-  other/bootstrap_daemon/src/tox-bootstrapd.c
   toxcore/mono_time.c
   toxcore/network.c
   toxcore/tox.c
@@ -102,8 +101,6 @@ if(MIN_LOGGER_LEVEL)
   endif()
 endif()
 
-option(PROXY_TEST "Enable proxy test (needs HTTP/SOCKS5 proxy on port 8080/8081)" OFF)
-
 option(USE_IPV6 "Use IPv6 in tests" ON)
 if(NOT USE_IPV6)
   add_definitions(-DUSE_IPV6=0)
@@ -114,10 +111,40 @@ if(USE_STDERR_LOGGER)
   add_definitions(-DUSE_STDERR_LOGGER=1)
 endif()
 
-option(NON_HERMETIC_TESTS "Whether to build and run tests that depend on an internet connection" OFF)
+option(BUILD_MISC_TESTS "Build additional tests and utilities" OFF)
+option(BUILD_FUN_UTILS "Build additional just for fun utilities" OFF)
+
+option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
+if (AUTOTEST)
+  option(NON_HERMETIC_TESTS "Whether to build and run tests that depend on an internet connection" OFF)
+  option(PROXY_TEST "Enable proxy test (needs HTTP/SOCKS5 proxy on port 8080/8081)" OFF)
+endif()
 
 option(BUILD_TOXAV "Whether to build the tox AV library" ON)
 option(MUST_BUILD_TOXAV "Fail the build if toxav cannot be built" OFF)
+
+option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
+option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
+if(BOOTSTRAP_DAEMON AND WIN32)
+  message(WARNING "Building tox-bootstrapd for Windows is not supported, disabling")
+  set(BOOTSTRAP_DAEMON OFF)
+endif()
+
+# Enabling this breaks all other tests and no network connections will be possible
+option(BUILD_FUZZ_TESTS "Build fuzzing harnesses" OFF)
+if(BUILD_FUZZ_TESTS)
+    message(STATUS "Building in fuzz testing mode, no network connection will be possible")
+    # Disable everything we can
+    set(AUTOTEST OFF)
+    set(BUILD_MISC_TESTS OFF)
+    set(BUILD_FUN_UTILS OFF)
+    set(ENABLE_SHARED OFF)
+    set(MUST_BUILD_TOXAV OFF)
+    set(BUILD_TOXAV OFF)
+    set(BOOTSTRAP_DAEMON OFF)
+    set(DHT_BOOTSTRAP OFF)
+endif()
+
 
 if(MSVC)
   option(MSVC_STATIC_SODIUM "Whether to link libsodium statically for MSVC" OFF)
@@ -416,93 +443,16 @@ unit_test(toxcore ping_array)
 unit_test(toxcore tox)
 unit_test(toxcore util)
 
+add_subdirectory(testing)
+
 ################################################################################
 #
 # :: Automated regression tests: create a tox network and run integration tests
 #
 ################################################################################
 
-set(misc_tools_SOURCES
-  testing/misc_tools.c
-  testing/misc_tools.h)
-add_library(misc_tools ${misc_tools_SOURCES})
-target_link_modules(misc_tools toxcore)
-
-set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")
-
-option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
-
 if(AUTOTEST)
-  add_library(auto_test_support
-    auto_tests/auto_test_support.c
-    auto_tests/auto_test_support.h)
-  target_link_modules(auto_test_support toxcore misc_tools)
-endif()
-
-function(auto_test target)
-  if(AUTOTEST AND NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
-    add_executable(auto_${target}_test auto_tests/${target}_test.c)
-    target_link_modules(auto_${target}_test toxcore misc_tools auto_test_support)
-    if(NOT ARGV1 STREQUAL "DONT_RUN")
-      add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
-      set_tests_properties(${target} PROPERTIES TIMEOUT "${TEST_TIMEOUT_SECONDS}")
-      set_property(TEST ${target} PROPERTY ENVIRONMENT "LLVM_PROFILE_FILE=${target}.profraw")
-    endif()
-  endif()
-endfunction()
-
-auto_test(TCP)
-auto_test(conference)
-auto_test(conference_double_invite)
-auto_test(conference_invite_merge)
-auto_test(conference_peer_nick)
-auto_test(conference_simple)
-auto_test(conference_two)
-auto_test(crypto)
-auto_test(dht_getnodes_api)
-auto_test(encryptsave)
-auto_test(file_transfer)
-auto_test(file_saving)
-auto_test(friend_connection)
-auto_test(friend_request)
-auto_test(friend_request_spam)
-auto_test(invalid_tcp_proxy)
-auto_test(invalid_udp_proxy)
-auto_test(lan_discovery)
-auto_test(lossless_packet)
-auto_test(lossy_packet)
-auto_test(network)
-auto_test(onion)
-auto_test(overflow_recvq)
-auto_test(overflow_sendq)
-auto_test(reconnect)
-auto_test(save_friend)
-auto_test(save_load)
-auto_test(send_message)
-auto_test(set_name)
-auto_test(set_status_message)
-auto_test(tox_dispatch)
-auto_test(tox_events)
-auto_test(tox_many)
-auto_test(tox_many_tcp)
-auto_test(tox_strncasecmp)
-auto_test(typing)
-auto_test(version)
-auto_test(save_compatibility)
-
-if(PROXY_TEST)
-  auto_test(proxy)
-endif()
-
-if(NON_HERMETIC_TESTS)
-  auto_test(bootstrap)
-  auto_test(tcp_relay)
-endif()
-
-if(BUILD_TOXAV)
-  auto_test(conference_av MSVC_DONT_BUILD)
-  auto_test(toxav_basic)
-  auto_test(toxav_many)
+  add_subdirectory(auto_tests)
 endif()
 
 ################################################################################
@@ -511,7 +461,6 @@ endif()
 #
 ################################################################################
 
-option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
 if(DHT_BOOTSTRAP)
   add_executable(DHT_bootstrap
     other/DHT_bootstrap.c
@@ -520,79 +469,19 @@ if(DHT_BOOTSTRAP)
   install(TARGETS DHT_bootstrap RUNTIME DESTINATION bin)
 endif()
 
-option(BOOTSTRAP_DAEMON "Enable building of tox-bootstrapd" ON)
-if(BOOTSTRAP_DAEMON AND WIN32)
-  message(WARNING "Building tox-bootstrapd for Windows is not supported")
-  set(BOOTSTRAP_DAEMON OFF)
-endif()
 if(BOOTSTRAP_DAEMON)
-  if(NOT LIBCONFIG_FOUND)
+  if(LIBCONFIG_FOUND)
+    add_subdirectory(other/bootstrap_daemon)
+  else()
     message(WARNING "Option BOOTSTRAP_DAEMON is enabled but required library LIBCONFIG was not found.")
     set(BOOTSTRAP_DAEMON OFF)
-  else()
-    add_executable(tox-bootstrapd
-      other/bootstrap_daemon/src/command_line_arguments.c
-      other/bootstrap_daemon/src/command_line_arguments.h
-      other/bootstrap_daemon/src/config.c
-      other/bootstrap_daemon/src/config.h
-      other/bootstrap_daemon/src/config_defaults.h
-      other/bootstrap_daemon/src/global.h
-      other/bootstrap_daemon/src/log.c
-      other/bootstrap_daemon/src/log.h
-      other/bootstrap_daemon/src/log_backend_stdout.c
-      other/bootstrap_daemon/src/log_backend_stdout.h
-      other/bootstrap_daemon/src/log_backend_syslog.c
-      other/bootstrap_daemon/src/log_backend_syslog.h
-      other/bootstrap_daemon/src/tox-bootstrapd.c
-      other/bootstrap_node_packets.c
-      other/bootstrap_node_packets.h)
-    target_link_modules(tox-bootstrapd toxcore ${LIBCONFIG_LIBRARIES})
-    install(TARGETS tox-bootstrapd RUNTIME DESTINATION bin)
-    install(FILES other/bootstrap_daemon/bash-completion/completions/tox-bootstrapd DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/bash-completion/completions")
   endif()
 endif()
 
-################################################################################
-#
-# :: Test programs
-#
-################################################################################
-
-option(BUILD_MISC_TESTS "Build additional tests" OFF)
-if (BUILD_MISC_TESTS)
-  add_executable(Messenger_test testing/Messenger_test.c)
-  target_link_modules(Messenger_test toxcore misc_tools)
-
-  add_executable(random_testing testing/random_testing.cc)
-  target_link_modules(random_testing toxcore misc_tools)
-
-  add_executable(save-generator other/fun/save-generator.c)
-  target_link_modules(save-generator toxcore misc_tools)
-
-  if(NOT MSVC)
-    add_executable(cracker other/fun/cracker.c)
-    target_link_modules(cracker ${LIBSODIUM_LIBRARIES})
-    find_package(OpenMP)
-    if(OpenMP_C_FOUND)
-        target_link_libraries(cracker OpenMP::OpenMP_C)
-    endif()
-  endif()
+if(BUILD_FUN_UTILS)
+  add_subdirectory(other/fun)
 endif()
 
-# Enabling this breaks all other tests and no network connections will be possible
-option(BUILD_FUZZ_TESTS "Build fuzzing harnesses" OFF)
 if (BUILD_FUZZ_TESTS)
-  # For coverage tests
-  target_compile_definitions(toxcore_static PUBLIC "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION")
-
-  # Override network and random functions
-  add_library(fuzz_adapter testing/fuzzing/fuzz_adapter.c)
-
-  # Fuzzes the toxsave API
-  add_executable(toxsave_fuzzer testing/fuzzing/toxsave_harness.cc)
-  target_link_libraries(toxsave_fuzzer toxcore_static fuzz_adapter -fsanitize=fuzzer)
-
-  # Fuzzes the bootstrap process
-  add_executable(bootstrap_fuzzer testing/fuzzing/bootstrap_harness.cc)
-  target_link_libraries(bootstrap_fuzzer toxcore_static fuzz_adapter -fsanitize=fuzzer)
+  add_subdirectory(testing/fuzzing)
 endif()

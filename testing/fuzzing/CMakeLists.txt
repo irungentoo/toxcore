@@ -1,0 +1,20 @@
+# For coverage tests
+target_compile_definitions(toxcore_static PUBLIC "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION")
+
+# Override network and random functions
+add_library(fuzz_adapter fuzz_adapter.c)
+
+set(LIBFUZZER_LINKER_FLAGS)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  set(LIBFUZZER_LINKER_FLAGS "-fsanitize=fuzzer")
+else()
+  message(SEND_ERROR "Compiler must be Clang to build fuzz targets")
+endif()
+
+# Fuzzes the toxsave API
+add_executable(toxsave_fuzzer toxsave_harness.cc)
+target_link_libraries(toxsave_fuzzer toxcore_static fuzz_adapter ${LIBFUZZER_LINKER_FLAGS})
+
+# Fuzzes the bootstrap process
+add_executable(bootstrap_fuzzer bootstrap_harness.cc)
+target_link_libraries(bootstrap_fuzzer toxcore_static fuzz_adapter ${LIBFUZZER_LINKER_FLAGS})

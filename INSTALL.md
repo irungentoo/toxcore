@@ -42,7 +42,7 @@ This repository, although called `toxcore`, in fact contains several libraries b
 
 #### Secondary
 
-There are some programs that are not plugged into the CMake build system which you might find interesting. You would need to build those programs yourself. These programs reside in [`other/fun`](other/fun) directory.
+There are some programs that are not built by default which you might find interesting. You need to pass `-DBUILD_FUN_UTILS=ON` to cmake to build them.
 
 ##### Vanity key generators
 
@@ -107,6 +107,7 @@ There are some options that are available to configure the build.
 | `BOOTSTRAP_DAEMON`     | Enable building of tox-bootstrapd, the DHT bootstrap node daemon. For Unix-like systems only. | ON or OFF                                                                 | ON                                                |
 | `BUILD_FUZZ_TESTS`     | Build fuzzing harnesses.                                                                      | ON or OFF                                                                 | OFF                                               |
 | `BUILD_MISC_TESTS`     | Build additional tests.                                                                       | ON or OFF                                                                 | OFF                                               |
+| `BUILD_FUN_UTILS`      | Build additional funny utilities.                                                             | ON or OFF                                                                 | OFF                                               |
 | `BUILD_TOXAV`          | Whether to build the toxav library.                                                           | ON or OFF                                                                 | ON                                                |
 | `CMAKE_INSTALL_PREFIX` | Path to where everything should be installed.                                                 | Directory path.                                                           | Platform-dependent. Refer to CMake documentation. |
 | `CMAKE_BUILD_TYPE`     | Specifies the build type on single-configuration generators (e.g. make or ninja).             | Debug, Release, RelWithDebInfo, MinSizeRel                                | Empty string.                                     |
