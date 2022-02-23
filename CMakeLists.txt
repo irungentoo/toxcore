@@ -422,18 +422,6 @@ target_link_modules(misc_tools toxcore)
 
 set(TEST_TIMEOUT_SECONDS "" CACHE STRING "Limit runtime of each test to the number of seconds specified")
 
-if(ANDROID_CPU_FEATURES)
-  # We need to compile cpufeatures.c as many times as there are executables,
-  # because libvpx doesn't include it although it depends on it. We can't get
-  # the link ordering right in cmake, so we need to compile the cpufeatures
-  # library into every binary explicitly.
-  #
-  # The alternative is to #include the library in every main file, but I
-  # (@iphydf) felt that this solution was cleaner.
-  add_definitions(-DANDROID_CPU_FEATURES="${ANDROID_CPU_FEATURES}")
-  set(CPUFEATURES other/cpufeatures.c)
-endif()
-
 option(AUTOTEST "Enable autotests (mainly for CI)" OFF)
 
 if(AUTOTEST)
@@ -445,8 +433,7 @@ endif()
 
 function(auto_test target)
   if(AUTOTEST AND NOT (MSVC AND ARGV1 STREQUAL "MSVC_DONT_BUILD"))
-    add_executable(auto_${target}_test ${CPUFEATURES}
-      auto_tests/${target}_test.c)
+    add_executable(auto_${target}_test auto_tests/${target}_test.c)
     target_link_modules(auto_${target}_test toxcore misc_tools auto_test_support)
     if(NOT ARGV1 STREQUAL "DONT_RUN")
       add_test(NAME ${target} COMMAND ${CROSSCOMPILING_EMULATOR} auto_${target}_test)
@@ -516,7 +503,7 @@ endif()
 
 option(DHT_BOOTSTRAP "Enable building of DHT_bootstrap" ON)
 if(DHT_BOOTSTRAP)
-  add_executable(DHT_bootstrap ${CPUFEATURES}
+  add_executable(DHT_bootstrap
     other/DHT_bootstrap.c
     other/bootstrap_node_packets.c)
   target_link_modules(DHT_bootstrap toxcore misc_tools)
@@ -533,7 +520,7 @@ if(BOOTSTRAP_DAEMON)
     message(WARNING "Option BOOTSTRAP_DAEMON is enabled but required library LIBCONFIG was not found.")
     set(BOOTSTRAP_DAEMON OFF)
   else()
-    add_executable(tox-bootstrapd ${CPUFEATURES}
+    add_executable(tox-bootstrapd
       other/bootstrap_daemon/src/command_line_arguments.c
       other/bootstrap_daemon/src/command_line_arguments.h
       other/bootstrap_daemon/src/config.c
@@ -563,21 +550,17 @@ endif()
 
 option(BUILD_MISC_TESTS "Build additional tests" OFF)
 if (BUILD_MISC_TESTS)
-  add_executable(Messenger_test ${CPUFEATURES}
-    testing/Messenger_test.c)
+  add_executable(Messenger_test testing/Messenger_test.c)
   target_link_modules(Messenger_test toxcore misc_tools)
 
-  add_executable(random_testing ${CPUFEATURES}
-    testing/random_testing.cc)
+  add_executable(random_testing testing/random_testing.cc)
   target_link_modules(random_testing toxcore misc_tools)
 
-  add_executable(save-generator
-    other/fun/save-generator.c)
+  add_executable(save-generator other/fun/save-generator.c)
   target_link_modules(save-generator toxcore misc_tools)
 
   if(NOT MSVC)
-    add_executable(cracker
-      other/fun/cracker.c)
+    add_executable(cracker other/fun/cracker.c)
     target_link_modules(cracker ${LIBSODIUM_LIBRARIES})
     find_package(OpenMP)
     if(OpenMP_C_FOUND)
