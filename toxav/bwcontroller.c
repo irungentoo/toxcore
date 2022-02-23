@@ -74,7 +74,7 @@ BWController *bwc_new(Messenger *m, Tox *tox, uint32_t friendnumber, m_cb *mcb, 
     retu->m = m;
     retu->friend_number = friendnumber;
     retu->bwc_mono_time = bwc_mono_time;
-    uint64_t now = current_time_monotonic(bwc_mono_time);
+    const uint64_t now = current_time_monotonic(bwc_mono_time);
     retu->cycle.last_sent_timestamp = now;
     retu->cycle.last_refresh_timestamp = now;
     retu->tox = tox;

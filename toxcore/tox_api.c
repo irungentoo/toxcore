@@ -88,7 +88,7 @@ void tox_options_set_savedata_data(struct Tox_Options *options, const uint8_t *d
 void tox_options_default(struct Tox_Options *options)
 {
     if (options != nullptr) {
-        struct Tox_Options default_options = { 0 };
+        const struct Tox_Options default_options = {0};
         *options = default_options;
         tox_options_set_ipv6_enabled(options, true);
         tox_options_set_udp_enabled(options, true);

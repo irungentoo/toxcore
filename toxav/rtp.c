@@ -314,8 +314,8 @@ static void update_bwc_values(const Logger *log, RTPSession *session, const stru
     if (session->first_packets_counter < DISMISS_FIRST_LOST_VIDEO_PACKET_COUNT) {
         ++session->first_packets_counter;
     } else {
-        uint32_t data_length_full = msg->header.data_length_full; // without header
-        uint32_t received_length_full = msg->header.received_length_full; // without header
+        const uint32_t data_length_full = msg->header.data_length_full; // without header
+        const uint32_t received_length_full = msg->header.received_length_full; // without header
         bwc_add_recv(session->bwc, data_length_full);
 
         if (received_length_full < data_length_full) {

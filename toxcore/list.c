@@ -59,7 +59,7 @@ static int find(const BS_List *list, const uint8_t *data)
     // closest match is found if we move back to where we have already been
 
     while (1) {
-        int r = memcmp(data, list->data + list->element_size * i, list->element_size);
+        const int r = memcmp(data, list->data + list->element_size * i, list->element_size);
 
         if (r == 0) {
             return i;
@@ -166,7 +166,7 @@ void bs_list_free(BS_List *list)
 
 int bs_list_find(const BS_List *list, const uint8_t *data)
 {
-    int r = find(list, data);
+    const int r = find(list, data);
 
     // return only -1 and positive values
     if (r < 0) {
@@ -218,7 +218,7 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id)
 
 int bs_list_remove(BS_List *list, const uint8_t *data, int id)
 {
-    int i = find(list, data);
+    const int i = find(list, data);
 
     if (i < 0) {
         return 0;

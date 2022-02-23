@@ -150,7 +150,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
     char success[] = "200";
     uint8_t data[16]; // draining works the best if the length is a power of 2
 
-    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data) - 1, &tcp_conn->con.ip_port);
+    const int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data) - 1, &tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -201,7 +201,7 @@ non_null()
 static int socks5_read_handshake_response(const Logger *logger, const TCP_Client_Connection *tcp_conn)
 {
     uint8_t data[2];
-    int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
+    const int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
 
     if (ret == -1) {
         return 0;
@@ -250,7 +250,7 @@ static int proxy_socks5_read_connection_response(const Logger *logger, const TCP
 {
     if (net_family_is_ipv4(tcp_conn->ip_port.ip.family)) {
         uint8_t data[4 + sizeof(IP4) + sizeof(uint16_t)];
-        int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
+        const int ret = read_TCP_packet(logger, tcp_conn->con.sock, data, sizeof(data), &tcp_conn->con.ip_port);
 
         if (ret == -1) {
             return 0;
@@ -287,7 +287,7 @@ static int generate_handshake(TCP_Client_Connection *tcp_conn)
     memcpy(plain + CRYPTO_PUBLIC_KEY_SIZE, tcp_conn->con.sent_nonce, CRYPTO_NONCE_SIZE);
     memcpy(tcp_conn->con.last_packet, tcp_conn->self_public_key, CRYPTO_PUBLIC_KEY_SIZE);
     random_nonce(tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE);
-    int len = encrypt_data_symmetric(tcp_conn->con.shared_key, tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE, plain,
+    const int len = encrypt_data_symmetric(tcp_conn->con.shared_key, tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE, plain,
                                      sizeof(plain), tcp_conn->con.last_packet + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
 
     if (len != sizeof(plain) + CRYPTO_MAC_SIZE) {
@@ -308,7 +308,7 @@ non_null()
 static int handle_handshake(TCP_Client_Connection *tcp_conn, const uint8_t *data)
 {
     uint8_t plain[CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE];
-    int len = decrypt_data_symmetric(tcp_conn->con.shared_key, data, data + CRYPTO_NONCE_SIZE,
+    const int len = decrypt_data_symmetric(tcp_conn->con.shared_key, data, data + CRYPTO_NONCE_SIZE,
                                      TCP_SERVER_HANDSHAKE_SIZE - CRYPTO_NONCE_SIZE, plain);
 
     if (len != sizeof(plain)) {
@@ -540,7 +540,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
         family = proxy_info->ip_port.ip.family;
     }
 
-    Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+    const Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
         return nullptr;
@@ -623,7 +623,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
                 return 0;
             }
 
-            uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+            const uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
 
             if (conn->connections[con_id].status != 0) {
                 return 0;
@@ -829,7 +829,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
 
     if (tcp_connection->status == TCP_CLIENT_PROXY_HTTP_CONNECTING) {
         if (send_pending_data(logger, &tcp_connection->con) == 0) {
-            int ret = proxy_http_read_connection_response(logger, tcp_connection);
+            const int ret = proxy_http_read_connection_response(logger, tcp_connection);
 
             if (ret == -1) {
                 tcp_connection->kill_at = 0;
@@ -883,7 +883,7 @@ void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
 
     if (tcp_connection->status == TCP_CLIENT_UNCONFIRMED) {
         uint8_t data[TCP_SERVER_HANDSHAKE_SIZE];
-        int len = read_TCP_packet(logger, tcp_connection->con.sock, data, sizeof(data), &tcp_connection->con.ip_port);
+        const int len = read_TCP_packet(logger, tcp_connection->con.sock, data, sizeof(data), &tcp_connection->con.ip_port);
 
         if (sizeof(data) == len) {
             if (handle_handshake(tcp_connection, data) == 0) {

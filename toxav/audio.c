@@ -140,7 +140,7 @@ void ac_iterate(ACSession *ac)
 
         if (rc == 2) {
             LOGGER_DEBUG(ac->log, "OPUS correction");
-            int fs = (ac->lp_sampling_rate * ac->lp_frame_duration) / 1000;
+            const int fs = (ac->lp_sampling_rate * ac->lp_frame_duration) / 1000;
             rc = opus_decode(ac->decoder, nullptr, 0, temp_audio_buffer, fs, 1);
         } else {
             /* Get values from packet and decode. */
@@ -230,7 +230,7 @@ int ac_queue_message(Mono_Time *mono_time, void *acp, struct RTPMessage *msg)
     }
 
     pthread_mutex_lock(ac->queue_mutex);
-    int rc = jbuf_write(ac->log, (struct JitterBuffer *)ac->j_buf, msg);
+    const int rc = jbuf_write(ac->log, (struct JitterBuffer *)ac->j_buf, msg);
     pthread_mutex_unlock(ac->queue_mutex);
 
     if (rc == -1) {
@@ -311,9 +311,9 @@ static void jbuf_free(struct JitterBuffer *q)
 }
 static int jbuf_write(const Logger *log, struct JitterBuffer *q, struct RTPMessage *m)
 {
-    uint16_t sequnum = m->header.sequnum;
+    const uint16_t sequnum = m->header.sequnum;
 
-    unsigned int num = sequnum % q->size;
+    const unsigned int num = sequnum % q->size;
 
     if ((uint32_t)(sequnum - q->bottom) > q->size) {
         LOGGER_DEBUG(log, "Clearing filled jitter buffer: %p", (void *)q);
@@ -344,7 +344,7 @@ static struct RTPMessage *jbuf_read(struct JitterBuffer *q, int32_t *success)
         return nullptr;
     }
 
-    unsigned int num = q->bottom % q->size;
+    const unsigned int num = q->bottom % q->size;
 
     if (q->queue[num] != nullptr) {
         struct RTPMessage *ret = q->queue[num];
@@ -474,7 +474,7 @@ static bool reconfigure_audio_encoder(const Logger *log, OpusEncoder **e, uint32
         return true; /* Nothing changed */
     }
 
-    int status = opus_encoder_ctl(*e, OPUS_SET_BITRATE(new_br));
+    const int status = opus_encoder_ctl(*e, OPUS_SET_BITRATE(new_br));
 
     if (status != OPUS_OK) {
         LOGGER_ERROR(log, "Error while setting encoder ctl: %s", opus_strerror(status));

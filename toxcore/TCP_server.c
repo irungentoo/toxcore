@@ -283,7 +283,7 @@ static int kill_accepted(TCP_Server *tcp_server, int index)
         rm_connection_index(tcp_server, &tcp_server->accepted_connection_array[index], i);
     }
 
-    Socket sock = tcp_server->accepted_connection_array[index].con.sock;
+    const Socket sock = tcp_server->accepted_connection_array[index].con.sock;
 
     if (del_accepted(tcp_server, index) != 0) {
         return -1;
@@ -452,7 +452,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
         return 0;
     }
 
-    int ret = send_routing_response(tcp_server->logger, con, index + NUM_RESERVED_PORTS, public_key);
+    const int ret = send_routing_response(tcp_server->logger, con, index + NUM_RESERVED_PORTS, public_key);
 
     if (ret == 0) {
         return 0;
@@ -464,7 +464,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
 
     con->connections[index].status = 1;
     memcpy(con->connections[index].public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    int other_index = get_TCP_connection_index(tcp_server, public_key);
+    const int other_index = get_TCP_connection_index(tcp_server, public_key);
 
     if (other_index != -1) {
         uint32_t other_id = -1;
@@ -507,7 +507,7 @@ static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const ui
 
     const TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
 
-    int other_index = get_TCP_connection_index(tcp_server, public_key);
+    const int other_index = get_TCP_connection_index(tcp_server, public_key);
 
     if (other_index != -1) {
         VLA(uint8_t, resp_packet, 1 + CRYPTO_PUBLIC_KEY_SIZE + length);
@@ -561,7 +561,7 @@ non_null()
 static int handle_onion_recv_1(void *object, const IP_Port *dest, const uint8_t *data, uint16_t length)
 {
     TCP_Server *tcp_server = (TCP_Server *)object;
-    uint32_t index = dest->ip.ip.v6.uint32[0];
+    const uint32_t index = dest->ip.ip.v6.uint32[0];
 
     if (index >= tcp_server->size_accepted_connections) {
         return 1;
@@ -800,7 +800,7 @@ static int accept_connection(TCP_Server *tcp_server, Socket sock)
 non_null()
 static Socket new_listening_TCP_socket(const Logger *logger, Family family, uint16_t port)
 {
-    Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
+    const Socket sock = net_socket(family, TOX_SOCK_STREAM, TOX_PROTO_TCP);
 
     if (!sock_valid(sock)) {
         LOGGER_ERROR(logger, "TCP socket creation failed (family = %d)", family.value);
@@ -876,7 +876,7 @@ TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t 
     const Family family = ipv6_enabled ? net_family_ipv6 : net_family_ipv4;
 
     for (uint32_t i = 0; i < num_sockets; ++i) {
-        Socket sock = new_listening_TCP_socket(logger, family, ports[i]);
+        const Socket sock = new_listening_TCP_socket(logger, family, ports[i]);
 
         if (!sock_valid(sock)) {
             continue;
@@ -1080,7 +1080,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
             }
 
             memcpy(ping + 1, &ping_id, sizeof(uint64_t));
-            int ret = write_packet_TCP_secure_connection(tcp_server->logger, &conn->con, ping, sizeof(ping), 1);
+            const int ret = write_packet_TCP_secure_connection(tcp_server->logger, &conn->con, ping, sizeof(ping), 1);
 
             if (ret == 1) {
                 conn->last_pinged = mono_time_get(mono_time);
@@ -1161,7 +1161,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
             case TCP_SOCKET_LISTENING: {
                 // socket is from socks_listening, accept connection
                 while (1) {
-                    Socket sock_new = net_accept(sock);
+                    const Socket sock_new = net_accept(sock);
 
                     if (!sock_valid(sock_new)) {
                         break;

@@ -300,7 +300,7 @@ static void iterate_common(ToxAV *av, bool audio)
         return;
     }
 
-    uint64_t start = current_time_monotonic(av->toxav_mono_time);
+    const uint64_t start = current_time_monotonic(av->toxav_mono_time);
     // time until the first audio or video frame is over
     int32_t frame_time = IDLE_ITERATION_INTERVAL_MS;
 
@@ -330,7 +330,7 @@ static void iterate_common(ToxAV *av, bool audio)
             }
         }
 
-        uint32_t fid = i->friend_number;
+        const uint32_t fid = i->friend_number;
 
         pthread_mutex_unlock(i->toxav_call_mutex);
         pthread_mutex_lock(av->mutex);
@@ -628,7 +628,7 @@ bool toxav_call_control(ToxAV *av, uint32_t friend_number, Toxav_Call_Control co
 {
     pthread_mutex_lock(av->mutex);
 
-    Toxav_Err_Call_Control rc = call_control(av, friend_number, control);
+    const Toxav_Err_Call_Control rc = call_control(av, friend_number, control);
 
     pthread_mutex_unlock(av->mutex);
 
@@ -854,7 +854,7 @@ bool toxav_audio_send_frame(ToxAV *av, uint32_t friend_number, const int16_t *pc
 
         sampling_rate = net_htonl(sampling_rate);
         memcpy(dest, &sampling_rate, sizeof(sampling_rate));
-        int vrc = opus_encode(call->audio->encoder, pcm, sample_count,
+        const int vrc = opus_encode(call->audio->encoder, pcm, sample_count,
                               dest + sizeof(sampling_rate), SIZEOF_VLA(dest) - sizeof(sampling_rate));
 
         if (vrc < 0) {
@@ -1001,7 +1001,7 @@ bool toxav_video_send_frame(ToxAV *av, uint32_t friend_number, uint16_t width, u
         memcpy(img.planes[VPX_PLANE_U], u, (width / 2) * (height / 2));
         memcpy(img.planes[VPX_PLANE_V], v, (width / 2) * (height / 2));
 
-        vpx_codec_err_t vrc = vpx_codec_encode(call->video->encoder, &img,
+        const vpx_codec_err_t vrc = vpx_codec_encode(call->video->encoder, &img,
                                                call->video->frame_counter, 1, vpx_encode_flags, MAX_ENCODE_TIME_US);
 
         vpx_img_free(&img);
@@ -1338,7 +1338,7 @@ static ToxAVCall *call_remove(ToxAVCall *call)
         return nullptr;
     }
 
-    uint32_t friend_number = call->friend_number;
+    const uint32_t friend_number = call->friend_number;
     ToxAV *av = call->av;
 
     ToxAVCall *prev = call->prev;

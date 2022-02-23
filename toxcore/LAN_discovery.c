@@ -91,9 +91,9 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
                 if (net_family_is_ipv4(gateway.family) && net_family_is_ipv4(subnet_mask.family)) {
                     IP_Port *ip_port = &broadcast->ip_ports[broadcast->count];
                     ip_port->ip.family = net_family_ipv4;
-                    uint32_t gateway_ip = net_ntohl(gateway.ip.v4.uint32);
-                    uint32_t subnet_ip = net_ntohl(subnet_mask.ip.v4.uint32);
-                    uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
+                    const uint32_t gateway_ip = net_ntohl(gateway.ip.v4.uint32);
+                    const uint32_t subnet_ip = net_ntohl(subnet_mask.ip.v4.uint32);
+                    const uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
                     ip_port->ip.ip.v4.uint32 = net_htonl(broadcast_ip);
                     ip_port->port = port;
                     ++broadcast->count;
@@ -155,7 +155,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
      * a larger array, not done (640kB and 16 interfaces shall be
      * enough, for everybody!)
      */
-    int n = ifc.ifc_len / sizeof(struct ifreq);
+    const int n = ifc.ifc_len / sizeof(struct ifreq);
 
     for (int i = 0; i < n; ++i) {
         /* there are interfaces with are incapable of broadcast */

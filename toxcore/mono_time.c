@@ -66,7 +66,7 @@ static uint64_t current_time_monotonic_default(Mono_Time *mono_time, void *user_
      * GetTickCount64 for backwards compatibility, so we handle wraparound
      * ourselves.
      */
-    uint32_t ticks = GetTickCount();
+    const uint32_t ticks = GetTickCount();
 
     /* the higher 32 bits count the number of wrap arounds */
     uint64_t old_ovf = mono_time->cur_time & ~((uint64_t)UINT32_MAX);

@@ -724,7 +724,7 @@ size_t tox_get_savedata_size(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    size_t ret = 2 * sizeof(uint32_t)
+    const size_t ret = 2 * sizeof(uint32_t)
                  + messenger_size(tox->m)
                  + conferences_size(tox->m->conferences_object)
                  + end_size();
@@ -937,7 +937,7 @@ uint32_t tox_self_get_nospam(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    uint32_t ret = net_ntohl(get_nospam(tox->m->fr));
+    const uint32_t ret = net_ntohl(get_nospam(tox->m->fr));
     unlock(tox);
     return ret;
 }
@@ -992,7 +992,7 @@ size_t tox_self_get_name_size(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    size_t ret = m_get_self_name_size(tox->m);
+    const size_t ret = m_get_self_name_size(tox->m);
     unlock(tox);
     return ret;
 }
@@ -1034,7 +1034,7 @@ size_t tox_self_get_status_message_size(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    size_t ret = m_get_self_statusmessage_size(tox->m);
+    const size_t ret = m_get_self_statusmessage_size(tox->m);
     unlock(tox);
     return ret;
 }
@@ -1226,7 +1226,7 @@ bool tox_friend_exists(const Tox *tox, uint32_t friend_number)
 {
     assert(tox != nullptr);
     lock(tox);
-    bool ret = m_friend_exists(tox->m, friend_number);
+    const bool ret = m_friend_exists(tox->m, friend_number);
     unlock(tox);
     return ret;
 }
@@ -1251,7 +1251,7 @@ size_t tox_self_get_friend_list_size(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    size_t ret = count_friendlist(tox->m);
+    const size_t ret = count_friendlist(tox->m);
     unlock(tox);
     return ret;
 }
@@ -2329,7 +2329,7 @@ size_t tox_conference_get_chatlist_size(const Tox *tox)
 {
     assert(tox != nullptr);
     lock(tox);
-    size_t ret = count_chatlist(tox->m->conferences_object);
+    const size_t ret = count_chatlist(tox->m->conferences_object);
     unlock(tox);
     return ret;
 }
@@ -2364,7 +2364,7 @@ bool tox_conference_get_id(const Tox *tox, uint32_t conference_number, uint8_t *
 {
     assert(tox != nullptr);
     lock(tox);
-    bool ret = conference_get_id(tox->m->conferences_object, conference_number, id);
+    const bool ret = conference_get_id(tox->m->conferences_object, conference_number, id);
     unlock(tox);
     return ret;
 }
@@ -2603,7 +2603,7 @@ uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error)
 
     if (tox->m->tcp_server != nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
-        uint16_t ret = tox->m->options.tcp_server_port;
+        const uint16_t ret = tox->m->options.tcp_server_port;
         unlock(tox);
         return ret;
     }

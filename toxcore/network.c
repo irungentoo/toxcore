@@ -464,7 +464,7 @@ bool set_socket_dualstack(Socket sock)
 #else
     int ipv6only = 0;
     socklen_t optsize = sizeof(ipv6only);
-    int res = getsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
+    const int res = getsockopt(sock.socket, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&ipv6only, &optsize);
 
     if ((res == 0) && (ipv6only == 0)) {
         return true;
@@ -506,7 +506,7 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
     char ip_str[IP_NTOA_LEN];
 
     if (res < 0) { /* Windows doesn't necessarily know `%zu` */
-        int error = net_error();
+        const int error = net_error();
         char *strerror = net_new_strerror(error);
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(buflen, 999), 'E',
@@ -660,13 +660,13 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
     *length = 0;
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    int fail_or_len = fuzz_recvfrom(sock.socket, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    const int fail_or_len = fuzz_recvfrom(sock.socket, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 #else
     int fail_or_len = recvfrom(sock.socket, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 #endif
 
     if (fail_or_len < 0) {
-        int error = net_error();
+        const int error = net_error();
 
         if (!should_ignore_recv_error(error)) {
             char *strerror = net_new_strerror(error);
@@ -830,7 +830,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
     } else if (port_from != 0 && port_to == 0) {
         port_to = port_from;
     } else if (port_from > port_to) {
-        uint16_t temp_port = port_from;
+        const uint16_t temp_port = port_from;
         port_from = port_to;
         port_to = temp_port;
     }
@@ -865,7 +865,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
 
     /* Check for socket error. */
     if (!sock_valid(temp->sock)) {
-        int neterror = net_error();
+        const int neterror = net_error();
         char *strerror = net_new_strerror(neterror);
         LOGGER_ERROR(log, "failed to get a socket?! %d, %s", neterror, strerror);
         net_kill_strerror(strerror);
@@ -1315,8 +1315,8 @@ int addr_resolve(const char *address, IP *to, IP *extra)
         return 0;
     }
 
-    Family tox_family = to->family;
-    int family = make_family(tox_family);
+    const Family tox_family = to->family;
+    const int family = make_family(tox_family);
 
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
@@ -1595,7 +1595,7 @@ Socket net_socket(Family domain, int type, int protocol)
 int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, const IP_Port *ip_port)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    int res = fuzz_send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
+    const int res = fuzz_send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
 #else
     int res = send(sock.socket, (const char *)buf, len, MSG_NOSIGNAL);
 #endif
@@ -1606,7 +1606,7 @@ int net_send(const Logger *log, Socket sock, const uint8_t *buf, size_t len, con
 int net_recv(const Logger *log, Socket sock, uint8_t *buf, size_t len, const IP_Port *ip_port)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    int res = fuzz_recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
+    const int res = fuzz_recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
 #else
     int res = recv(sock.socket, (char *)buf, len, MSG_NOSIGNAL);
 #endif
@@ -1697,8 +1697,8 @@ size_t net_pack_u64(uint8_t *bytes, uint64_t v)
 
 size_t net_unpack_u16(const uint8_t *bytes, uint16_t *v)
 {
-    uint8_t hi = bytes[0];
-    uint8_t lo = bytes[1];
+    const uint8_t hi = bytes[0];
+    const uint8_t lo = bytes[1];
     *v = ((uint16_t)hi << 8) | lo;
     return sizeof(*v);
 }

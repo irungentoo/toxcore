@@ -122,7 +122,7 @@ static int32_t create_group_chat(Group_Chats *g_c)
     }
 
     if (realloc_conferences(g_c, g_c->num_chats + 1)) {
-        uint16_t id = g_c->num_chats;
+        const uint16_t id = g_c->num_chats;
         ++g_c->num_chats;
         setup_conference(&g_c->chats[id]);
         return id;
@@ -309,7 +309,7 @@ static bool add_to_closest(Group_c *g, const uint8_t *real_pk, const uint8_t *te
         uint64_t comp_d = 0;
 
         for (unsigned int i = 0; i < (DESIRED_CLOSEST / 2); ++i) {
-            uint64_t comp = calculate_comp_value(g->real_pk, g->closest_peers[i].real_pk);
+            const uint64_t comp = calculate_comp_value(g->real_pk, g->closest_peers[i].real_pk);
 
             if (comp > comp_val && comp > comp_d) {
                 index = i;
@@ -2533,7 +2533,7 @@ static int send_message_group(const Group_Chats *g_c, uint32_t groupnumber, uint
         memcpy(packet + sizeof(uint16_t) + sizeof(uint32_t) + 1, data, len);
     }
 
-    unsigned int ret = send_message_all_connections(g_c, g, packet, SIZEOF_VLA(packet), -1);
+    const unsigned int ret = send_message_all_connections(g_c, g, packet, SIZEOF_VLA(packet), -1);
 
     if (ret == 0) {
         return -4;

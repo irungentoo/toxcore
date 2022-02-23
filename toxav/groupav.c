@@ -90,9 +90,9 @@ static void terminate_queue(Group_JitterBuffer *q)
  */
 static int queue(Group_JitterBuffer *q, const Mono_Time *mono_time, Group_Audio_Packet *pk)
 {
-    uint16_t sequnum = pk->sequnum;
+    const uint16_t sequnum = pk->sequnum;
 
-    unsigned int num = sequnum % q->size;
+    const unsigned int num = sequnum % q->size;
 
     if (!mono_time_is_timeout(mono_time, q->last_queued_time, GROUP_JBUF_DEAD_SECONDS)) {
         if ((uint32_t)(sequnum - q->bottom) > (1 << 15)) {
@@ -132,7 +132,7 @@ static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
         return nullptr;
     }
 
-    unsigned int num = q->bottom % q->size;
+    const unsigned int num = q->bottom % q->size;
 
     if (q->queue[num] != nullptr) {
         Group_Audio_Packet *ret = q->queue[num];
@@ -304,10 +304,10 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
     int16_t *out_audio = nullptr;
     int out_audio_samples = 0;
 
-    unsigned int sample_rate = 48000;
+    const unsigned int sample_rate = 48000;
 
     if (success == 1) {
-        int channels = opus_packet_get_nb_channels(pk->data);
+        const int channels = opus_packet_get_nb_channels(pk->data);
 
         if (channels == OPUS_INVALID_PACKET) {
             free_audio_packet(pk);
@@ -337,7 +337,7 @@ static int decode_audio_packet(Group_AV *group_av, Group_Peer_AV *peer_av, uint3
             peer_av->decoder_channels = channels;
         }
 
-        int num_samples = opus_decoder_get_nb_samples(peer_av->audio_decoder, pk->data, pk->length);
+        const int num_samples = opus_decoder_get_nb_samples(peer_av->audio_decoder, pk->data, pk->length);
 
         out_audio = (int16_t *)malloc(num_samples * peer_av->decoder_channels * sizeof(int16_t));
 
@@ -529,7 +529,7 @@ bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t groupnumber)
  */
 int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
 {
-    int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
+    const int groupnumber = add_groupchat(g_c, GROUPCHAT_TYPE_AV);
 
     if (groupnumber == -1) {
         return -1;
@@ -551,7 +551,7 @@ int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_c
 int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data,
                       uint16_t length, audio_data_cb *audio_callback, void *userdata)
 {
-    int groupnumber = join_groupchat(g_c, friendnumber, GROUPCHAT_TYPE_AV, data, length);
+    const int groupnumber = join_groupchat(g_c, friendnumber, GROUPCHAT_TYPE_AV, data, length);
 
     if (groupnumber == -1) {
         return -1;
@@ -640,7 +640,7 @@ int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm,
     }
 
     uint8_t encoded[1024];
-    int32_t size = opus_encode(group_av->audio_encoder, pcm, samples, encoded, sizeof(encoded));
+    const int32_t size = opus_encode(group_av->audio_encoder, pcm, samples, encoded, sizeof(encoded));
 
     if (size <= 0) {
         return -1;

@@ -1810,7 +1810,7 @@ static void do_Close(DHT *dht)
 
     dht->num_to_bootstrap = 0;
 
-    uint8_t not_killed = do_ping_and_sendnode_requests(
+    const uint8_t not_killed = do_ping_and_sendnode_requests(
                              dht, &dht->close_lastgetnodes, dht->self_public_key, dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times,
                              0);
 
@@ -2171,7 +2171,7 @@ static int handle_NATping(void *object, const IP_Port *source, const uint8_t *so
     uint64_t ping_id;
     memcpy(&ping_id, packet + 1, sizeof(uint64_t));
 
-    uint32_t friendnumber = index_of_friend_pk(dht->friends_list, dht->num_friends, source_pubkey);
+    const uint32_t friendnumber = index_of_friend_pk(dht->friends_list, dht->num_friends, source_pubkey);
 
     if (friendnumber == UINT32_MAX) {
         return 1;
