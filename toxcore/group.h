@@ -83,7 +83,10 @@ typedef struct Groupchat_Connection {
 } Groupchat_Connection;
 
 typedef struct Groupchat_Closest {
-    bool entry;
+    /**
+     * Whether this peer is active in the closest_peers array.
+     */
+    bool active;
     uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
     uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
 } Groupchat_Closest;

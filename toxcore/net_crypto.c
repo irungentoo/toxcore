@@ -1207,7 +1207,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         return -1;
     }
 
-    if (congestion_control && conn->maximum_speed_reached) {
+    if (!congestion_control && conn->maximum_speed_reached) {
         return packet_num;
     }
 

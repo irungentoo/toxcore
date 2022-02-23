@@ -292,13 +292,13 @@ static bool add_to_closest(Group_c *g, const uint8_t *real_pk, const uint8_t *te
     unsigned int index = DESIRED_CLOSEST;
 
     for (unsigned int i = 0; i < DESIRED_CLOSEST; ++i) {
-        if (g->closest_peers[i].entry && public_key_cmp(real_pk, g->closest_peers[i].real_pk) == 0) {
+        if (g->closest_peers[i].active && public_key_cmp(real_pk, g->closest_peers[i].real_pk) == 0) {
             return true;
         }
     }
 
     for (unsigned int i = 0; i < DESIRED_CLOSEST; ++i) {
-        if (!g->closest_peers[i].entry) {
+        if (!g->closest_peers[i].active) {
             index = i;
             break;
         }
@@ -337,13 +337,13 @@ static bool add_to_closest(Group_c *g, const uint8_t *real_pk, const uint8_t *te
     uint8_t old_temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
     bool old = false;
 
-    if (g->closest_peers[index].entry) {
+    if (g->closest_peers[index].active) {
         memcpy(old_real_pk, g->closest_peers[index].real_pk, CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(old_temp_pk, g->closest_peers[index].temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
         old = true;
     }
 
-    g->closest_peers[index].entry = true;
+    g->closest_peers[index].active = true;
     memcpy(g->closest_peers[index].real_pk, real_pk, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(g->closest_peers[index].temp_pk, temp_pk, CRYPTO_PUBLIC_KEY_SIZE);
 
@@ -362,7 +362,7 @@ non_null()
 static bool pk_in_closest_peers(const Group_c *g, const uint8_t *real_pk)
 {
     for (unsigned int i = 0; i < DESIRED_CLOSEST; ++i) {
-        if (!g->closest_peers[i].entry) {
+        if (!g->closest_peers[i].active) {
             continue;
         }
 
@@ -410,7 +410,7 @@ static int send_packet_online(const Friend_Connections *fr_c, int friendcon_id, 
 
 non_null()
 static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, Group_c *g, uint8_t reason,
-                                 uint8_t lock);
+                                 bool lock);
 
 non_null(1) nullable(3)
 static void add_closest_connections(Group_Chats *g_c, uint32_t groupnumber, void *userdata)
@@ -422,7 +422,7 @@ static void add_closest_connections(Group_Chats *g_c, uint32_t groupnumber, void
     }
 
     for (uint32_t i = 0; i < DESIRED_CLOSEST; ++i) {
-        if (!g->closest_peers[i].entry) {
+        if (!g->closest_peers[i].active) {
             continue;
         }
 
@@ -716,9 +716,9 @@ non_null()
 static void remove_from_closest(Group_c *g, int peer_index)
 {
     for (uint32_t i = 0; i < DESIRED_CLOSEST; ++i) {
-        if (g->closest_peers[i].entry
+        if (g->closest_peers[i].active
                 && id_equal(g->closest_peers[i].real_pk, g->group[peer_index].real_pk)) {
-            g->closest_peers[i].entry = false;
+            g->closest_peers[i].active = false;
             g->changed = GROUPCHAT_CLOSEST_CHANGE_REMOVED;
             break;
         }
@@ -1040,7 +1040,7 @@ static int g_handle_any_status(void *object, int friendcon_id, bool status, void
 {
     Group_Chats *g_c = (Group_Chats *)object;
 
-    if (status != 0) {
+    if (status) {
         rejoin_frozen_friend(g_c, friendcon_id);
     }
 
@@ -1052,7 +1052,7 @@ static int g_handle_status(void *object, int friendcon_id, bool status, void *us
 {
     Group_Chats *g_c = (Group_Chats *)object;
 
-    if (status != 0) { /* Went online */
+    if (status) { /* Went online */
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CONNECTION_ONLINE, userdata);
     } else { /* Went offline */
         set_conns_status_groups(g_c, friendcon_id, GROUPCHAT_CONNECTION_CONNECTING, userdata);
@@ -1073,7 +1073,7 @@ static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uin
  * return -1 on failure.
  */
 static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, Group_c *g, uint8_t reason,
-                                 uint8_t lock)
+                                 bool lock)
 {
     uint16_t empty = MAX_GROUP_CONNECTIONS;
     uint16_t ind = MAX_GROUP_CONNECTIONS;
@@ -1095,7 +1095,7 @@ static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, Group_c *g,
             return -1;
         }
 
-        if (lock != 0) {
+        if (lock) {
             friend_connection_lock(g_c->fr_c, friendcon_id);
         }
 
@@ -1530,7 +1530,7 @@ static bool try_send_rejoin(Group_Chats *g_c, Group_c *g, const uint8_t *real_pk
         return false;
     }
 
-    add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, 1);
+    add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, true);
 
     return true;
 }
@@ -1632,10 +1632,10 @@ static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t fri
         return false;
     }
 
-    const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, 1);
+    const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, true);
 
     if (member) {
-        add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCING, 0);
+        add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCING, false);
     }
 
     if (connection_index != -1) {
@@ -2036,10 +2036,10 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
 
             addpeer(g_c, groupnum, real_pk, temp_pk, peer_number, userdata, true, true);
             const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g,
-                                         GROUPCHAT_CONNECTION_REASON_INTRODUCING, 1);
+                                         GROUPCHAT_CONNECTION_REASON_INTRODUCING, true);
 
             if (member) {
-                add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, 0);
+                add_conn_to_groupchat(g_c, friendcon_id, g, GROUPCHAT_CONNECTION_REASON_INTRODUCER, false);
                 send_peer_query(g_c, friendcon_id, other_groupnum);
             }
 
@@ -2200,7 +2200,7 @@ static int handle_packet_rejoin(Group_Chats *g_c, int friendcon_id, const uint8_
 
     addpeer(g_c, groupnum, real_pk, temp_pk, peer_number, userdata, true, true);
     const int connection_index = add_conn_to_groupchat(g_c, friendcon_id, g,
-                                 GROUPCHAT_CONNECTION_REASON_INTRODUCING, 1);
+                                 GROUPCHAT_CONNECTION_REASON_INTRODUCING, true);
 
     if (connection_index != -1) {
         send_packet_online(g_c->fr_c, friendcon_id, groupnum, g->type, g->id);

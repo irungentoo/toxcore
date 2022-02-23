@@ -578,7 +578,7 @@ Tox *tox_new(const struct Tox_Options *options, Tox_Err_New *error)
             m_options.proxy_info.ip_port.ip.family = net_family_unspec;
         }
 
-        if (addr_resolve_or_parse_ip(tox_options_get_proxy_host(opts), &m_options.proxy_info.ip_port.ip, nullptr) == 0) {
+        if (!addr_resolve_or_parse_ip(tox_options_get_proxy_host(opts), &m_options.proxy_info.ip_port.ip, nullptr)) {
             SET_ERROR_PARAMETER(error, TOX_ERR_NEW_PROXY_BAD_HOST);
             // TODO(irungentoo): TOX_ERR_NEW_PROXY_NOT_FOUND if domain.
             tox_options_free(default_options);

@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 COPY --from=tokstyle /bin/check-c /bin/
 RUN ["git", "clone", "--depth=1", "https://github.com/TokTok/hs-tokstyle", "/src/workspace/hs-tokstyle"]
 
-COPY toxav/ /src/workspace/c-toxcore/toxcore/
+COPY toxav/ /src/workspace/c-toxcore/toxav/
 COPY toxcore/ /src/workspace/c-toxcore/toxcore/
 COPY toxencryptsave/ /src/workspace/c-toxcore/toxencryptsave/
 RUN /bin/check-c $(find /src/workspace/c-toxcore -name "*.c")

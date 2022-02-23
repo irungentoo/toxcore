@@ -27,7 +27,7 @@ typedef struct Onion_Node {
     IP_Port     ip_port;
     uint8_t     ping_id[ONION_PING_ID_SIZE];
     uint8_t     data_public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t     is_stored;
+    uint8_t     is_stored;  // Tribool.
 
     uint64_t    added_time;
 

@@ -1452,7 +1452,7 @@ static bool call_prepare_transmission(ToxAVCall *call)
         }
     }
 
-    call->active = 1;
+    call->active = true;
     return true;
 
 FAILURE:
@@ -1473,11 +1473,11 @@ FAILURE_2:
 
 static void call_kill_transmission(ToxAVCall *call)
 {
-    if (call == nullptr || call->active == 0) {
+    if (call == nullptr || !call->active) {
         return;
     }
 
-    call->active = 0;
+    call->active = false;
 
     pthread_mutex_lock(call->mutex_audio);
     pthread_mutex_unlock(call->mutex_audio);

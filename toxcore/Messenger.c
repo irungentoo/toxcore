@@ -526,9 +526,8 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
     VLA(uint8_t, packet, length + 1);
     packet[0] = PACKET_ID_MESSAGE + type;
 
-    if (length != 0) {
-        memcpy(packet + 1, message, length);
-    }
+    assert(message != nullptr);
+    memcpy(packet + 1, message, length);
 
     const int64_t packet_num = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                                            m->friendlist[friendnumber].friendcon_id), packet, length + 1, false);
@@ -565,9 +564,8 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
     VLA(uint8_t, packet, length + 1);
     packet[0] = packet_id;
 
-    if (length != 0) {
-        memcpy(packet + 1, data, length);
-    }
+    assert(data != nullptr);
+    memcpy(packet + 1, data, length);
 
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
                              m->friendlist[friendnumber].friendcon_id), packet, length + 1, congestion_control) != -1;
@@ -1077,14 +1075,14 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
     }
 
     uint32_t temp_filenum;
-    bool send_receive;
+    bool inbound;
     uint8_t file_number;
 
     if (filenumber >= (1 << 16)) {
-        send_receive = true;
+        inbound = true;
         temp_filenum = (filenumber >> 16) - 1;
     } else {
-        send_receive = false;
+        inbound = false;
         temp_filenum = filenumber;
     }
 
@@ -1096,7 +1094,7 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
 
     struct File_Transfers *ft;
 
-    if (send_receive) {
+    if (inbound) {
         ft = &m->friendlist[friendnumber].file_receiving[file_number];
     } else {
         ft = &m->friendlist[friendnumber].file_sending[file_number];
@@ -1195,7 +1193,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
 }
 
 non_null(1) nullable(6)
-static int send_file_control_packet(const Messenger *m, int32_t friendnumber, bool send_receive, uint8_t filenumber,
+static int send_file_control_packet(const Messenger *m, int32_t friendnumber, bool inbound, uint8_t filenumber,
                                     uint8_t control_type, const uint8_t *data, uint16_t data_length)
 {
     assert(data_length == 0 || data != nullptr);
@@ -1206,7 +1204,7 @@ static int send_file_control_packet(const Messenger *m, int32_t friendnumber, bo
 
     VLA(uint8_t, packet, 3 + data_length);
 
-    packet[0] = send_receive ? 1 : 0;
+    packet[0] = inbound ? 1 : 0;
     packet[1] = filenumber;
     packet[2] = control_type;
 
@@ -1240,14 +1238,14 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
     }
 
     uint32_t temp_filenum;
-    bool send_receive;
+    bool inbound;
     uint8_t file_number;
 
     if (filenumber >= (1 << 16)) {
-        send_receive = true;
+        inbound = true;
         temp_filenum = (filenumber >> 16) - 1;
     } else {
-        send_receive = false;
+        inbound = false;
         temp_filenum = filenumber;
     }
 
@@ -1259,7 +1257,7 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
 
     struct File_Transfers *ft;
 
-    if (send_receive) {
+    if (inbound) {
         ft = &m->friendlist[friendnumber].file_receiving[file_number];
     } else {
         ft = &m->friendlist[friendnumber].file_sending[file_number];
@@ -1291,15 +1289,15 @@ int file_control(const Messenger *m, int32_t friendnumber, uint32_t filenumber, 
                 return -7;
             }
 
-            if (!send_receive) {
+            if (!inbound) {
                 return -6;
             }
         }
     }
 
-    if (send_file_control_packet(m, friendnumber, send_receive, file_number, control, nullptr, 0)) {
+    if (send_file_control_packet(m, friendnumber, inbound, file_number, control, nullptr, 0)) {
         if (control == FILECONTROL_KILL) {
-            if (send_receive == 0 && (ft->status == FILESTATUS_TRANSFERRING || ft->status == FILESTATUS_FINISHED)) {
+            if (!inbound && (ft->status == FILESTATUS_TRANSFERRING || ft->status == FILESTATUS_FINISHED)) {
                 // We are actively sending that file, remove from list
                 --m->friendlist[friendnumber].num_sending_files;
             }
@@ -1374,7 +1372,7 @@ int file_seek(const Messenger *m, int32_t friendnumber, uint32_t filenumber, uin
     uint8_t sending_pos[sizeof(uint64_t)];
     net_pack_u64(sending_pos, position);
 
-    if (send_file_control_packet(m, friendnumber, 1, file_number, FILECONTROL_SEEK, sending_pos,
+    if (send_file_control_packet(m, friendnumber, true, file_number, FILECONTROL_SEEK, sending_pos,
                                  sizeof(sending_pos))) {
         ft->transferred = position;
     } else {
@@ -1401,7 +1399,7 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
     packet[0] = PACKET_ID_FILE_DATA;
     packet[1] = filenumber;
 
-    if (length != 0) {
+    if (length > 0) {
         memcpy(packet + 2, data, length);
     }
 
@@ -1624,17 +1622,17 @@ static void break_files(const Messenger *m, int32_t friendnumber)
 }
 
 non_null()
-static struct File_Transfers *get_file_transfer(bool receive_send, uint8_t filenumber,
+static struct File_Transfers *get_file_transfer(bool outbound, uint8_t filenumber,
         uint32_t *real_filenumber, Friend *sender)
 {
     struct File_Transfers *ft;
 
-    if (!receive_send) {
-        *real_filenumber = (filenumber + 1) << 16;
-        ft = &sender->file_receiving[filenumber];
-    } else {
+    if (outbound) {
         *real_filenumber = filenumber;
         ft = &sender->file_sending[filenumber];
+    } else {
+        *real_filenumber = (filenumber + 1) << 16;
+        ft = &sender->file_receiving[filenumber];
     }
 
     if (ft->status == FILESTATUS_NONE) {
@@ -1647,22 +1645,22 @@ static struct File_Transfers *get_file_transfer(bool receive_send, uint8_t filen
 /** return -1 on failure, 0 on success.
  */
 non_null(1, 6) nullable(8)
-static int handle_filecontrol(Messenger *m, int32_t friendnumber, bool receive_send, uint8_t filenumber,
+static int handle_filecontrol(Messenger *m, int32_t friendnumber, bool outbound, uint8_t filenumber,
                               uint8_t control_type, const uint8_t *data, uint16_t length, void *userdata)
 {
     uint32_t real_filenumber;
-    struct File_Transfers *ft = get_file_transfer(receive_send, filenumber, &real_filenumber, &m->friendlist[friendnumber]);
+    struct File_Transfers *ft = get_file_transfer(outbound, filenumber, &real_filenumber, &m->friendlist[friendnumber]);
 
     if (ft == nullptr) {
         LOGGER_DEBUG(m->log, "file control (friend %d, file %d): file transfer does not exist; telling the other to kill it",
                      friendnumber, filenumber);
-        send_file_control_packet(m, friendnumber, !receive_send, filenumber, FILECONTROL_KILL, nullptr, 0);
+        send_file_control_packet(m, friendnumber, !outbound, filenumber, FILECONTROL_KILL, nullptr, 0);
         return -1;
     }
 
     switch (control_type) {
         case FILECONTROL_ACCEPT: {
-            if (receive_send && ft->status == FILESTATUS_NOT_ACCEPTED) {
+            if (outbound && ft->status == FILESTATUS_NOT_ACCEPTED) {
                 ft->status = FILESTATUS_TRANSFERRING;
                 ++m->friendlist[friendnumber].num_sending_files;
             } else {
@@ -1703,7 +1701,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, bool receive_s
                 m->file_filecontrol(m, friendnumber, real_filenumber, control_type, userdata);
             }
 
-            if (receive_send && (ft->status == FILESTATUS_TRANSFERRING || ft->status == FILESTATUS_FINISHED)) {
+            if (outbound && (ft->status == FILESTATUS_TRANSFERRING || ft->status == FILESTATUS_FINISHED)) {
                 --m->friendlist[friendnumber].num_sending_files;
             }
 
@@ -1722,7 +1720,7 @@ static int handle_filecontrol(Messenger *m, int32_t friendnumber, bool receive_s
             }
 
             /* seek can only be sent by the receiver to seek before resuming broken transfers. */
-            if (ft->status != FILESTATUS_NOT_ACCEPTED || !receive_send) {
+            if (ft->status != FILESTATUS_NOT_ACCEPTED || !outbound) {
                 LOGGER_DEBUG(m->log,
                              "file control (friend %d, file %d): seek was either sent by a sender or by the receiver after accepting",
                              friendnumber, filenumber);
@@ -1983,7 +1981,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
     switch (packet_id) {
         case PACKET_ID_OFFLINE: {
-            if (data_length != 0) {
+            if (data_length > 0) {
                 break;
             }
 
@@ -2143,7 +2141,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
             VLA(uint8_t, filename_terminated, filename_length + 1);
             const uint8_t *filename = nullptr;
 
-            if (filename_length != 0) {
+            if (filename_length > 0) {
                 /* Force NULL terminate file name. */
                 memcpy(filename_terminated, data + head_length, filename_length);
                 filename_terminated[filename_length] = 0;
@@ -2167,7 +2165,10 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
                 break;
             }
 
-            const bool send_receive = data[0] != 0;
+            // On the other side, "outbound" is "inbound", i.e. if they send 1,
+            // that means "inbound" on their side, but we call it "outbound"
+            // here.
+            const bool outbound = data[0] == 1;
             uint8_t filenumber = data[1];
             const uint8_t control_type = data[2];
 
@@ -2179,7 +2180,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
 #endif
 
-            if (handle_filecontrol(m, i, send_receive, filenumber, control_type, data + 3, data_length - 3, userdata) == -1) {
+            if (handle_filecontrol(m, i, outbound, filenumber, control_type, data + 3, data_length - 3, userdata) == -1) {
                 // TODO(iphydf): Do something different here? Right now, this
                 // check is pointless.
                 break;
@@ -3021,7 +3022,7 @@ static uint8_t *save_tcp_relays(const Messenger *m, uint8_t *data)
 non_null()
 static State_Load_Status load_tcp_relays(Messenger *m, const uint8_t *data, uint32_t length)
 {
-    if (length != 0) {
+    if (length > 0) {
         const int num = unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
 
         if (num == -1) {
@@ -3067,7 +3068,7 @@ static State_Load_Status load_path_nodes(Messenger *m, const uint8_t *data, uint
 {
     Node_format nodes[NUM_SAVED_PATH_NODES];
 
-    if (length != 0) {
+    if (length > 0) {
         const int num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, nullptr, data, length, 0);
 
         if (num == -1) {
