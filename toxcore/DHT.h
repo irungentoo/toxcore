@@ -365,15 +365,15 @@ void dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key);
  *   request to the given node with ip, port and public_key to setup connections
  *
  * address can be a hostname or an IP address (IPv4 or IPv6).
- * if ipv6enabled is 0 (zero), the resolving sticks STRICTLY to IPv4 addresses
- * if ipv6enabled is not 0 (zero), the resolving looks for IPv6 addresses first,
+ * if ipv6enabled is false, the resolving sticks STRICTLY to IPv4 addresses
+ * if ipv6enabled is true, the resolving looks for IPv6 addresses first,
  *   then IPv4 addresses.
  *
  *  returns 1 if the address could be converted into an IP address
  *  returns 0 otherwise
  */
 non_null()
-int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
                                uint16_t port, const uint8_t *public_key);
 
 /** Start sending packets after DHT loaded_friends_list and loaded_clients_list are set.

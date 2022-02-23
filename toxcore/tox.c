@@ -2587,12 +2587,12 @@ uint16_t tox_self_get_udp_port(const Tox *tox, Tox_Err_Get_Port *error)
     const uint16_t port = net_htons(net_port(tox->m->net));
     unlock(tox);
 
-    if (port) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
-    } else {
+    if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_NOT_BOUND);
+        return 0;
     }
 
+    SET_ERROR_PARAMETER(error, TOX_ERR_GET_PORT_OK);
     return port;
 }
 

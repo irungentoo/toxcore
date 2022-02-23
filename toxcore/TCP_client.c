@@ -162,7 +162,7 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
         // drain all data
         const uint16_t data_left = net_socket_data_recv_buffer(tcp_conn->con.sock);
 
-        if (data_left) {
+        if (data_left > 0) {
             VLA(uint8_t, temp_data, data_left);
             read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left, &tcp_conn->con.ip_port);
         }

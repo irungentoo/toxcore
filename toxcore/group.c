@@ -1036,7 +1036,7 @@ static void rejoin_frozen_friend(Group_Chats *g_c, int friendcon_id)
 }
 
 non_null(1) nullable(4)
-static int g_handle_any_status(void *object, int friendcon_id, uint8_t status, void *userdata)
+static int g_handle_any_status(void *object, int friendcon_id, bool status, void *userdata)
 {
     Group_Chats *g_c = (Group_Chats *)object;
 
@@ -1048,7 +1048,7 @@ static int g_handle_any_status(void *object, int friendcon_id, uint8_t status, v
 }
 
 non_null(1) nullable(4)
-static int g_handle_status(void *object, int friendcon_id, uint8_t status, void *userdata)
+static int g_handle_status(void *object, int friendcon_id, bool status, void *userdata)
 {
     Group_Chats *g_c = (Group_Chats *)object;
 
@@ -1450,7 +1450,7 @@ static bool send_packet_group_peer(const Friend_Connections *fr_c, int friendcon
     memcpy(packet + 1, &group_num, sizeof(uint16_t));
     memcpy(packet + 1 + sizeof(uint16_t), data, length);
     return write_cryptpacket(friendconn_net_crypto(fr_c), friend_connection_crypt_connection_id(fr_c, friendcon_id), packet,
-                             SIZEOF_VLA(packet), 0) != -1;
+                             SIZEOF_VLA(packet), false) != -1;
 }
 
 /** Send a group lossy packet to friendcon_id.
@@ -1526,7 +1526,7 @@ static bool try_send_rejoin(Group_Chats *g_c, Group_c *g, const uint8_t *real_pk
     memcpy(packet + 2, g->id, GROUP_ID_LENGTH);
 
     if (write_cryptpacket(friendconn_net_crypto(g_c->fr_c), friend_connection_crypt_connection_id(g_c->fr_c, friendcon_id),
-                          packet, sizeof(packet), 0) == -1) {
+                          packet, sizeof(packet), false) == -1) {
         return false;
     }
 
@@ -2106,7 +2106,7 @@ static int send_packet_online(const Friend_Connections *fr_c, int friendcon_id, 
     packet[1 + sizeof(uint16_t)] = type;
     memcpy(packet + 1 + sizeof(uint16_t) + 1, id, GROUP_ID_LENGTH);
     return write_cryptpacket(friendconn_net_crypto(fr_c), friend_connection_crypt_connection_id(fr_c, friendcon_id), packet,
-                             sizeof(packet), 0) != -1;
+                             sizeof(packet), false) != -1;
 }
 
 non_null()

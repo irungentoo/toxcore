@@ -140,7 +140,7 @@ static int send_online_packet(Messenger *m, int32_t friendnumber)
 
     uint8_t packet = PACKET_ID_ONLINE;
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                             m->friendlist[friendnumber].friendcon_id), &packet, sizeof(packet), 0) != -1;
+                             m->friendlist[friendnumber].friendcon_id), &packet, sizeof(packet), false) != -1;
 }
 
 non_null()
@@ -148,11 +148,11 @@ static int send_offline_packet(Messenger *m, int friendcon_id)
 {
     uint8_t packet = PACKET_ID_OFFLINE;
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
-                             sizeof(packet), 0) != -1;
+                             sizeof(packet), false) != -1;
 }
 
 non_null(1) nullable(4)
-static int m_handle_status(void *object, int i, uint8_t status, void *userdata);
+static int m_handle_status(void *object, int i, bool status, void *userdata);
 non_null(1, 3) nullable(5)
 static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t len, void *userdata);
 non_null(1, 3) nullable(5)
@@ -531,7 +531,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
     }
 
     const int64_t packet_num = write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                                           m->friendlist[friendnumber].friendcon_id), packet, length + 1, 0);
+                                           m->friendlist[friendnumber].friendcon_id), packet, length + 1, false);
 
     if (packet_num == -1) {
         LOGGER_WARNING(m->log, "failed to write crypto packet for message of length %d to friend %d",
@@ -552,7 +552,7 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
 
 non_null()
 static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
-                                uint32_t length, uint8_t congestion_control)
+                                uint32_t length, bool congestion_control)
 {
     if (!friend_is_valid(m, friendnumber)) {
         return 0;
@@ -583,7 +583,7 @@ static int m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *n
         return 0;
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_NICKNAME, name, length, 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_NICKNAME, name, length, false);
 }
 
 /** Set the name and name_length of a friend.
@@ -843,20 +843,20 @@ int m_get_istyping(const Messenger *m, int32_t friendnumber)
 non_null()
 static int send_statusmessage(const Messenger *m, int32_t friendnumber, const uint8_t *status, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length, 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length, false);
 }
 
 non_null()
 static int send_userstatus(const Messenger *m, int32_t friendnumber, uint8_t status)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &status, sizeof(status), 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &status, sizeof(status), false);
 }
 
 non_null()
 static int send_user_istyping(const Messenger *m, int32_t friendnumber, uint8_t is_typing)
 {
     uint8_t typing = is_typing;
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing), 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing), false);
 }
 
 non_null()
@@ -1024,7 +1024,7 @@ void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function
  */
 int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, false);
 }
 
 /*** FILE SENDING */
@@ -1138,7 +1138,7 @@ static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t fi
         memcpy(packet + 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH, filename, filename_length);
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, SIZEOF_VLA(packet), 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_SENDREQUEST, packet, SIZEOF_VLA(packet), false);
 }
 
 /** Send a file send request.
@@ -1214,7 +1214,7 @@ static int send_file_control_packet(const Messenger *m, int32_t friendnumber, ui
         memcpy(packet + 3, data, data_length);
     }
 
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, SIZEOF_VLA(packet), 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_FILE_CONTROL, packet, SIZEOF_VLA(packet), false);
 }
 
 /** Send a file control request.
@@ -1401,12 +1401,12 @@ static int64_t send_file_data_packet(const Messenger *m, int32_t friendnumber, u
     packet[0] = PACKET_ID_FILE_DATA;
     packet[1] = filenumber;
 
-    if (length) {
+    if (length != 0) {
         memcpy(packet + 2, data, length);
     }
 
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                             m->friendlist[friendnumber].friendcon_id), packet, SIZEOF_VLA(packet), 1);
+                             m->friendlist[friendnumber].friendcon_id), packet, SIZEOF_VLA(packet), true);
 }
 
 #define MAX_FILE_DATA_SIZE (MAX_CRYPTO_DATA_SIZE - 2)
@@ -1624,12 +1624,12 @@ static void break_files(const Messenger *m, int32_t friendnumber)
 }
 
 non_null()
-static struct File_Transfers *get_file_transfer(uint8_t receive_send, uint8_t filenumber,
+static struct File_Transfers *get_file_transfer(bool receive_send, uint8_t filenumber,
         uint32_t *real_filenumber, Friend *sender)
 {
     struct File_Transfers *ft;
 
-    if (receive_send == 0) {
+    if (!receive_send) {
         *real_filenumber = (filenumber + 1) << 16;
         ft = &sender->file_receiving[filenumber];
     } else {
@@ -1647,15 +1647,9 @@ static struct File_Transfers *get_file_transfer(uint8_t receive_send, uint8_t fi
 /** return -1 on failure, 0 on success.
  */
 non_null(1, 6) nullable(8)
-static int handle_filecontrol(Messenger *m, int32_t friendnumber, uint8_t receive_send, uint8_t filenumber,
+static int handle_filecontrol(Messenger *m, int32_t friendnumber, bool receive_send, uint8_t filenumber,
                               uint8_t control_type, const uint8_t *data, uint16_t length, void *userdata)
 {
-    if (receive_send > 1) {
-        LOGGER_DEBUG(m->log, "file control (friend %d, file %d): receive_send value is invalid (should be 0 or 1): %d",
-                     friendnumber, filenumber, receive_send);
-        return -1;
-    }
-
     uint32_t real_filenumber;
     struct File_Transfers *ft = get_file_transfer(receive_send, filenumber, &real_filenumber, &m->friendlist[friendnumber]);
 
@@ -1772,7 +1766,7 @@ void m_callback_msi_packet(Messenger *m, m_msi_packet_cb *function, void *userda
  */
 int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, 0);
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, false);
 }
 
 static int m_handle_lossy_packet(void *object, int friend_num, const uint8_t *packet, uint16_t length,
@@ -1913,7 +1907,7 @@ int send_custom_lossless_packet(const Messenger *m, int32_t friendnumber, const 
     }
 
     if (write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c,
-                          m->friendlist[friendnumber].friendcon_id), data, length, 1) == -1) {
+                          m->friendlist[friendnumber].friendcon_id), data, length, true) == -1) {
         return -5;
     }
 
@@ -1952,7 +1946,7 @@ static void check_friend_request_timed_out(Messenger *m, uint32_t i, uint64_t t,
     }
 }
 
-static int m_handle_status(void *object, int i, uint8_t status, void *userdata)
+static int m_handle_status(void *object, int i, bool status, void *userdata)
 {
     Messenger *m = (Messenger *)object;
 
@@ -2060,7 +2054,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
                 break;
             }
 
-            const bool typing = !!data[0];
+            const bool typing = data[0] != 0;
 
             set_friend_typing(m, i, typing);
 
@@ -2149,7 +2143,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
             VLA(uint8_t, filename_terminated, filename_length + 1);
             const uint8_t *filename = nullptr;
 
-            if (filename_length) {
+            if (filename_length != 0) {
                 /* Force NULL terminate file name. */
                 memcpy(filename_terminated, data + head_length, filename_length);
                 filename_terminated[filename_length] = 0;
@@ -2173,7 +2167,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
                 break;
             }
 
-            const uint8_t send_receive = data[0];
+            const bool send_receive = data[0] != 0;
             uint8_t filenumber = data[1];
             const uint8_t control_type = data[2];
 
@@ -2239,7 +2233,7 @@ static int m_handle_packet(void *object, int i, const uint8_t *temp, uint16_t le
 
             ft->transferred += file_data_length;
 
-            if (file_data_length && (ft->transferred >= ft->size || file_data_length != MAX_FILE_DATA_SIZE)) {
+            if (file_data_length > 0 && (ft->transferred >= ft->size || file_data_length != MAX_FILE_DATA_SIZE)) {
                 file_data_length = 0;
                 file_data = nullptr;
                 position = ft->transferred;
@@ -3283,7 +3277,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
         return nullptr;
     }
 
-    if (options->tcp_server_port) {
+    if (options->tcp_server_port != 0) {
         m->tcp_server = new_TCP_server(m->log, options->ipv6enabled, 1, &options->tcp_server_port,
                                        dht_get_self_secret_key(m->dht), m->onion);
 

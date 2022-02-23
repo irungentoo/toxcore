@@ -1635,7 +1635,7 @@ int dht_delfriend(DHT *dht, const uint8_t *public_key, uint16_t lock_count)
     DHT_Friend *const dht_friend = &dht->friends_list[friend_num];
     --dht_friend->lock_count;
 
-    if (dht_friend->lock_count && lock_count) { /* DHT friend is still in use.*/
+    if (dht_friend->lock_count > 0 && lock_count > 0) { /* DHT friend is still in use.*/
         --lock_count;
         dht_friend->callbacks[lock_count].ip_callback = nullptr;
         dht_friend->callbacks[lock_count].data = nullptr;
@@ -1846,7 +1846,7 @@ void dht_bootstrap(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key)
     dht_getnodes(dht, ip_port, public_key, dht->self_public_key);
 }
 
-int dht_bootstrap_from_address(DHT *dht, const char *address, uint8_t ipv6enabled,
+int dht_bootstrap_from_address(DHT *dht, const char *address, bool ipv6enabled,
                                uint16_t port, const uint8_t *public_key)
 {
     IP_Port ip_port_v64;

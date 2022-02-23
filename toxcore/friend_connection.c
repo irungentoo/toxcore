@@ -307,7 +307,7 @@ static unsigned int send_relays(Friend_Connections *fr_c, int friendcon_id)
     data[0] = PACKET_ID_SHARE_RELAYS;
     ++length;
 
-    if (write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, data, length, 0) != -1) {
+    if (write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, data, length, false) != -1) {
         friend_con->share_relays_lastsent = mono_time_get(fr_c->mono_time);
         return 1;
     }
@@ -372,7 +372,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 
     friend_con->dht_pk_lastrecv = mono_time_get(fr_c->mono_time);
 
-    if (friend_con->dht_lock) {
+    if (friend_con->dht_lock > 0) {
         if (dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock) != 0) {
             LOGGER_ERROR(fr_c->logger, "a. Could not delete dht peer. Please report this.");
             return;
@@ -386,7 +386,7 @@ static void change_dht_pk(Friend_Connections *fr_c, int friendcon_id, const uint
 }
 
 non_null()
-static int handle_status(void *object, int number, uint8_t status, void *userdata)
+static int handle_status(void *object, int number, bool status, void *userdata)
 {
     Friend_Connections *const fr_c = (Friend_Connections *)object;
     Friend_Conn *const friend_con = get_conn(fr_c, number);
@@ -395,17 +395,17 @@ static int handle_status(void *object, int number, uint8_t status, void *userdat
         return -1;
     }
 
-    bool status_changed = 0;
+    bool status_changed = false;
 
     if (status) {  /* Went online. */
-        status_changed = 1;
+        status_changed = true;
         friend_con->status = FRIENDCONN_STATUS_CONNECTED;
         friend_con->ping_lastrecv = mono_time_get(fr_c->mono_time);
         friend_con->share_relays_lastsent = 0;
         onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
     } else {  /* Went offline. */
         if (friend_con->status != FRIENDCONN_STATUS_CONNECTING) {
-            status_changed = 1;
+            status_changed = true;
             friend_con->dht_pk_lastrecv = mono_time_get(fr_c->mono_time);
             onion_set_friend_online(fr_c->onion_c, friend_con->onion_friendnum, status);
         }
@@ -453,7 +453,7 @@ static void dht_pk_callback(void *object, int32_t number, const uint8_t *dht_pub
     if (friend_con->crypt_connection_id != -1) {
         crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
         friend_con->crypt_connection_id = -1;
-        handle_status(object, number, 0, userdata); /* Going offline. */
+        handle_status(object, number, false, userdata); /* Going offline. */
     }
 
     friend_new_connection(fr_c, number);
@@ -604,7 +604,7 @@ static int friend_new_connection(Friend_Connections *fr_c, int friendcon_id)
     }
 
     /* If dht_temp_pk does not contains a pk. */
-    if (!friend_con->dht_lock) {
+    if (friend_con->dht_lock == 0) {
         return -1;
     }
 
@@ -633,7 +633,7 @@ static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
     }
 
     const uint8_t ping = PACKET_ID_ALIVE;
-    const int64_t ret = write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, &ping, sizeof(ping), 0);
+    const int64_t ret = write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, &ping, sizeof(ping), false);
 
     if (ret != -1) {
         friend_con->ping_lastsent = mono_time_get(fr_c->mono_time);
@@ -824,7 +824,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
         return -1;
     }
 
-    if (friend_con->lock_count) {
+    if (friend_con->lock_count > 0) {
         --friend_con->lock_count;
         return 0;
     }
@@ -832,7 +832,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
     onion_delfriend(fr_c->onion_c, friend_con->onion_friendnum);
     crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
 
-    if (friend_con->dht_lock) {
+    if (friend_con->dht_lock > 0) {
         dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
     }
 
@@ -876,7 +876,7 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 
     if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
         packet[0] = PACKET_ID_FRIEND_REQUESTS;
-        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet), 0) != -1;
+        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet), false) != -1;
     }
 
     packet[0] = CRYPTO_PACKET_FRIEND_REQ;
@@ -960,7 +960,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
         if (friend_con != nullptr) {
             if (friend_con->status == FRIENDCONN_STATUS_CONNECTING) {
                 if (friend_con->dht_pk_lastrecv + FRIEND_DHT_TIMEOUT < temp_time) {
-                    if (friend_con->dht_lock) {
+                    if (friend_con->dht_lock > 0) {
                         dht_delfriend(fr_c->dht, friend_con->dht_temp_pk, friend_con->dht_lock);
                         friend_con->dht_lock = 0;
                         memset(friend_con->dht_temp_pk, 0, CRYPTO_PUBLIC_KEY_SIZE);
@@ -971,7 +971,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                     friend_con->dht_ip_port.ip.family = net_family_unspec;
                 }
 
-                if (friend_con->dht_lock) {
+                if (friend_con->dht_lock > 0) {
                     if (friend_new_connection(fr_c, i) == 0) {
                         set_direct_ip_port(fr_c->net_crypto, friend_con->crypt_connection_id, &friend_con->dht_ip_port, 0);
                         connect_to_saved_tcp_relays(fr_c, i, MAX_FRIEND_TCP_CONNECTIONS / 2); /* Only fill it half up. */
@@ -990,7 +990,7 @@ void do_friend_connections(Friend_Connections *fr_c, void *userdata)
                     /* If we stopped receiving ping packets, kill it. */
                     crypto_kill(fr_c->net_crypto, friend_con->crypt_connection_id);
                     friend_con->crypt_connection_id = -1;
-                    handle_status(fr_c, i, 0, userdata); /* Going offline. */
+                    handle_status(fr_c, i, false, userdata); /* Going offline. */
                 }
             }
         }

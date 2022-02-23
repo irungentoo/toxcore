@@ -125,7 +125,7 @@ typedef struct New_Connection {
     uint8_t cookie_length;
 } New_Connection;
 
-typedef int connection_status_cb(void *object, int id, uint8_t status, void *userdata);
+typedef int connection_status_cb(void *object, int id, bool status, void *userdata);
 typedef int connection_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef int connection_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef void dht_pk_cb(void *data, int32_t number, const uint8_t *dht_public_key, void *userdata);
@@ -243,7 +243,7 @@ bool max_speed_reached(Net_Crypto *c, int crypt_connection_id);
  */
 non_null()
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id,
-                          const uint8_t *data, uint16_t length, uint8_t congestion_control);
+                          const uint8_t *data, uint16_t length, bool congestion_control);
 
 /** Check if packet_number was received by the other side.
  *

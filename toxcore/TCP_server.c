@@ -134,7 +134,7 @@ static int alloc_new_connections(TCP_Server *tcp_server, uint32_t num)
 non_null()
 static void wipe_secure_connection(TCP_Secure_Connection *con)
 {
-    if (con->status) {
+    if (con->status != 0) {
         wipe_priority_list(con->con.priority_queue_start);
         crypto_memzero(con, sizeof(TCP_Secure_Connection));
     }
@@ -532,7 +532,7 @@ static int rm_connection_index(TCP_Server *tcp_server, TCP_Secure_Connection *co
         return -1;
     }
 
-    if (con->connections[con_number].status) {
+    if (con->connections[con_number].status != 0) {
         if (con->connections[con_number].status == 2) {
             const uint32_t index = con->connections[con_number].index;
             const uint8_t other_id = con->connections[con_number].other_id;
@@ -831,7 +831,7 @@ static Socket new_listening_TCP_socket(const Logger *logger, Family family, uint
     return sock;
 }
 
-TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
+TCP_Server *new_TCP_server(const Logger *logger, bool ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
                            const uint8_t *secret_key, Onion *onion)
 {
     if (num_sockets == 0 || ports == nullptr) {

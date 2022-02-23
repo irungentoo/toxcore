@@ -35,7 +35,7 @@ size_t tcp_server_listen_count(const TCP_Server *tcp_server);
 /** Create new TCP server instance.
  */
 non_null(1, 4, 5) nullable(6)
-TCP_Server *new_TCP_server(const Logger *logger, uint8_t ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
+TCP_Server *new_TCP_server(const Logger *logger, bool ipv6_enabled, uint16_t num_sockets, const uint16_t *ports,
                            const uint8_t *secret_key, Onion *onion);
 
 /** Run the TCP_server

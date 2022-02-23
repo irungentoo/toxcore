@@ -1196,7 +1196,7 @@ bool ipport_isset(const IP_Port *ipport)
         return false;
     }
 
-    if (!ipport->port) {
+    if (ipport->port == 0) {
         return false;
     }
 
@@ -1337,9 +1337,9 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     }
 
     IP ip4;
-    ip_init(&ip4, 0); // ipv6enabled = 0
+    ip_init(&ip4, false); // ipv6enabled = false
     IP ip6;
-    ip_init(&ip6, 1); // ipv6enabled = 1
+    ip_init(&ip6, true); // ipv6enabled = true
 
     int result = 0;
     bool done = false;

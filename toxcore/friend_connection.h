@@ -84,9 +84,9 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Frie
 non_null()
 void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk, void *userdata);
 
-typedef int global_status_cb(void *object, int id, uint8_t status, void *userdata);
+typedef int global_status_cb(void *object, int id, bool status, void *userdata);
 
-typedef int fc_status_cb(void *object, int id, uint8_t status, void *userdata);
+typedef int fc_status_cb(void *object, int id, bool status, void *userdata);
 typedef int fc_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 typedef int fc_lossy_data_cb(void *object, int id, const uint8_t *data, uint16_t length, void *userdata);
 

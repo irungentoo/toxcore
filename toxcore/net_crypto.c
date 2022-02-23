@@ -112,7 +112,7 @@ typedef struct Crypto_Connection {
     /* TCP_connection connection_number */
     unsigned int connection_number_tcp;
 
-    uint8_t maximum_speed_reached;
+    bool maximum_speed_reached;
 
     /* Must be a pointer, because the struct is moved in memory */
     pthread_mutex_t *mutex;
@@ -1161,7 +1161,7 @@ static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)
             dt->sent_time = current_time_monotonic(c->mono_time);
         }
 
-        conn->maximum_speed_reached = 0;
+        conn->maximum_speed_reached = false;
     }
 
     return 0;
@@ -1172,7 +1172,7 @@ static int reset_max_speed_reached(Net_Crypto *c, int crypt_connection_id)
  */
 non_null()
 static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length,
-                                    uint8_t congestion_control)
+                                    bool congestion_control)
 {
     if (length == 0 || length > MAX_CRYPTO_DATA_SIZE) {
         LOGGER_ERROR(c->log, "rejecting too large (or empty) packet of size %d on crypt connection %d", length,
@@ -1207,7 +1207,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
         return -1;
     }
 
-    if (!congestion_control && conn->maximum_speed_reached) {
+    if (congestion_control && conn->maximum_speed_reached) {
         return packet_num;
     }
 
@@ -1218,7 +1218,7 @@ static int64_t send_lossless_packet(Net_Crypto *c, int crypt_connection_id, cons
             dt1->sent_time = current_time_monotonic(c->mono_time);
         }
     } else {
-        conn->maximum_speed_reached = 1;
+        conn->maximum_speed_reached = true;
         LOGGER_DEBUG(c->log, "send_data_packet failed (packet_num = %ld)", (long)packet_num);
     }
 
@@ -1510,8 +1510,8 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
     }
 
     if (conn->connection_status_callback != nullptr) {
-        conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 0,
-                                         userdata);
+        conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id,
+                false, userdata);
     }
 
     while (1) { /* TODO(irungentoo): is this really the best way to do this? */
@@ -1597,8 +1597,8 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
         conn->status = CRYPTO_CONN_ESTABLISHED;
 
         if (conn->connection_status_callback != nullptr) {
-            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id, 1,
-                                             userdata);
+            conn->connection_status_callback(conn->connection_status_callback_object, conn->connection_status_callback_id,
+                    true, userdata);
         }
     }
 
@@ -2861,7 +2861,7 @@ uint32_t crypto_num_free_sendqueue_slots(const Net_Crypto *c, int crypt_connecti
  * congestion_control: should congestion control apply to this packet?
  */
 int64_t write_cryptpacket(Net_Crypto *c, int crypt_connection_id, const uint8_t *data, uint16_t length,
-                          uint8_t congestion_control)
+                          bool congestion_control)
 {
     if (length == 0) {
         // We need at least a packet id.
