@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Run a test repeatedly with mallocfail.
+
+Usage: run_mallocfail <exe>
+
+This runs the program with mallocfail until there are no more additional stack
+hashes for mallocfail to try out.
+
+You need to build mallocfail (https://github.com/ralight/mallocfail) and install
+it to /usr/local/lib/mallocfail. Change _MALLOCFAIL_SO below if you want it
+elsewhere.
+"""
+import os
+import shutil
+import subprocess
+import sys
+from typing import List
+
+_MALLOCFAIL_SO = "/usr/local/lib/mallocfail.so"
+_HASHES = "mallocfail_hashes"
+_HASHES_PREV = "mallocfail_hashes.prev"
+_TIMEOUT = 3
+
+
+def run_mallocfail(exe: str, iteration: int) -> bool:
+    """Run a program with mallocfail."""
+    print(f"\x1b[1;33mmallocfail '{exe}' run #{iteration}\x1b[0m")
+    if os.path.exists(_HASHES):
+        shutil.copy(_HASHES, _HASHES_PREV)
+    try:
+        proc = subprocess.run([exe],
+                              timeout=_TIMEOUT,
+                              env={"LD_PRELOAD": _MALLOCFAIL_SO})
+    except subprocess.TimeoutExpired:
+        print(f"\x1b[1;34mProgram {exe} timed out\x1b[0m")
+        return True
+    finally:
+        assert os.path.exists(_HASHES)
+        if os.path.exists(_HASHES_PREV):
+            with open(_HASHES_PREV, "r") as prev:
+                with open(_HASHES, "r") as cur:
+                    if prev.read() == cur.read():
+                        # Done: no new stack hashes.
+                        return False
+
+    if proc.returncode >= 0:
+        # Process exited cleanly (success or failure).
+        pass
+    elif proc.returncode == -6:
+        # Assertion failed.
+        pass
+    elif proc.returncode == -14:
+        print(f"\x1b[0;34mProgram '{exe}' timed out\x1b[0m")
+    else:
+        print(
+            f"\x1b[1;34mProgram '{exe}' failed to handle OOM situation cleanly\x1b[0m"
+        )
+        sys.exit(1)
+
+    return True
+
+
+def main(args: List[str]) -> None:
+    """Run a program repeatedly under mallocfail."""
+    if len(args) == 1:
+        print(f"Usage: {args[0]} <exe>")
+        sys.exit(1)
+
+    for exe in args[1:]:
+        i = 1
+        while run_mallocfail(exe, i):
+            i += 1
+
+
+if __name__ == "__main__":
+    main(sys.argv)

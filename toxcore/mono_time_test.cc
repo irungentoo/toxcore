@@ -7,6 +7,7 @@ namespace {
 TEST(MonoTime, UnixTimeIncreasesOverTime)
 {
     Mono_Time *mono_time = mono_time_new();
+    ASSERT_NE(mono_time, nullptr);
 
     mono_time_update(mono_time);
     uint64_t const start = mono_time_get(mono_time);
@@ -24,6 +25,7 @@ TEST(MonoTime, UnixTimeIncreasesOverTime)
 TEST(MonoTime, IsTimeout)
 {
     Mono_Time *mono_time = mono_time_new();
+    ASSERT_NE(mono_time, nullptr);
 
     uint64_t const start = mono_time_get(mono_time);
     EXPECT_FALSE(mono_time_is_timeout(mono_time, start, 1));
@@ -45,6 +47,7 @@ uint64_t test_current_time_callback(Mono_Time *mono_time, void *user_data)
 TEST(MonoTime, CustomTime)
 {
     Mono_Time *mono_time = mono_time_new();
+    ASSERT_NE(mono_time, nullptr);
 
     uint64_t test_time = current_time_monotonic(mono_time) + 42137;
 

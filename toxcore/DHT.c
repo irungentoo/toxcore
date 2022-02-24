@@ -2200,7 +2200,7 @@ static int handle_NATping(void *object, const IP_Port *source, const uint8_t *so
     if (packet[0] == NAT_PING_RESPONSE) {
         if (dht_friend->nat.nat_ping_id == ping_id) {
             dht_friend->nat.nat_ping_id = random_u64();
-            dht_friend->nat.hole_punching = 1;
+            dht_friend->nat.hole_punching = true;
             return 0;
         }
     }
@@ -2340,7 +2340,7 @@ static void do_NAT(DHT *dht)
             dht->friends_list[i].nat.nat_ping_timestamp = temp_time;
         }
 
-        if (dht->friends_list[i].nat.hole_punching == 1 &&
+        if (dht->friends_list[i].nat.hole_punching &&
                 dht->friends_list[i].nat.punching_timestamp + PUNCH_INTERVAL < temp_time &&
                 dht->friends_list[i].nat.recv_nat_ping_timestamp + PUNCH_INTERVAL * 2 >= temp_time) {
 
@@ -2361,7 +2361,7 @@ static void do_NAT(DHT *dht)
             punch_holes(dht, &ip, port_list, numports, i);
 
             dht->friends_list[i].nat.punching_timestamp = temp_time;
-            dht->friends_list[i].nat.hole_punching = 0;
+            dht->friends_list[i].nat.hole_punching = false;
         }
     }
 }

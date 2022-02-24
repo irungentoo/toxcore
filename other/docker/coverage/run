@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -eux
+
+docker build -t toxchat/c-toxcore:sources -f other/docker/sources/Dockerfile .
+docker build -t toxchat/c-toxcore:coverage other/docker/coverage
+docker run --rm -it -p "28192:80" toxchat/c-toxcore:coverage

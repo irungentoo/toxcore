@@ -38,7 +38,6 @@ TESTS = \
 	tox_dispatch_test \
 	tox_many_tcp_test \
 	tox_many_test \
-	tox_one_test \
 	tox_strncasecmp_test \
 	typing_test \
 	version_test
@@ -211,10 +210,6 @@ tox_many_tcp_test_LDADD = $(AUTOTEST_LDADD)
 tox_many_test_SOURCES = ../auto_tests/tox_many_test.c
 tox_many_test_CFLAGS = $(AUTOTEST_CFLAGS)
 tox_many_test_LDADD = $(AUTOTEST_LDADD)
-
-tox_one_test_SOURCES = ../auto_tests/tox_one_test.c
-tox_one_test_CFLAGS = $(AUTOTEST_CFLAGS)
-tox_one_test_LDADD = $(AUTOTEST_LDADD)
 
 tox_strncasecmp_test_SOURCES = ../auto_tests/tox_strncasecmp_test.c
 tox_strncasecmp_test_CFLAGS = $(AUTOTEST_CFLAGS)

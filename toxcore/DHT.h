@@ -111,8 +111,8 @@ typedef struct Client_data {
 /*----------------------------------------------------------------------------------*/
 
 typedef struct NAT {
-    /* 1 if currently hole punching, otherwise 0 */
-    uint8_t     hole_punching;
+    /* true if currently hole punching */
+    bool        hole_punching;
     uint32_t    punching_index;
     uint32_t    tries;
     uint32_t    punching_index2;

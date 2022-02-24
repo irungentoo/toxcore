@@ -491,6 +491,18 @@ cc_library(
     ],
 )
 
+cc_test(
+    name = "tox_test",
+    size = "small",
+    srcs = ["tox_test.cc"],
+    deps = [
+        ":crypto_core",
+        ":tox",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "tox_unpack",
     srcs = ["tox_unpack.c"],
