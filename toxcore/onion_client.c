@@ -55,7 +55,7 @@ typedef struct Last_Pinged {
 } Last_Pinged;
 
 typedef struct Onion_Friend {
-    uint8_t status; /* 0 if friend is not valid, 1 if friend is valid.*/
+    bool is_valid;
     bool is_online;
 
     bool know_dht_public_key;
@@ -874,7 +874,7 @@ static int handle_announce_response(void *object, const IP_Port *source, const u
                            packet + 1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE,
                            length - (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE), plain);
     } else {
-        if (onion_c->friends_list[num - 1].status == 0) {
+        if (!onion_c->friends_list[num - 1].is_valid) {
             return 1;
         }
 
@@ -1267,7 +1267,7 @@ static int send_dhtpk_announce(Onion_Client *onion_c, uint16_t friend_num, uint8
 int onion_friend_num(const Onion_Client *onion_c, const uint8_t *public_key)
 {
     for (unsigned int i = 0; i < onion_c->num_friends; ++i) {
-        if (onion_c->friends_list[i].status == 0) {
+        if (!onion_c->friends_list[i].is_valid) {
             continue;
         }
 
@@ -1319,7 +1319,7 @@ int onion_addfriend(Onion_Client *onion_c, const uint8_t *public_key)
     unsigned int index = -1;
 
     for (unsigned int i = 0; i < onion_c->num_friends; ++i) {
-        if (onion_c->friends_list[i].status == 0) {
+        if (!onion_c->friends_list[i].is_valid) {
             index = i;
             break;
         }
@@ -1335,7 +1335,7 @@ int onion_addfriend(Onion_Client *onion_c, const uint8_t *public_key)
         ++onion_c->num_friends;
     }
 
-    onion_c->friends_list[index].status = 1;
+    onion_c->friends_list[index].is_valid = true;
     memcpy(onion_c->friends_list[index].real_public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     crypto_new_keypair(onion_c->friends_list[index].temp_public_key, onion_c->friends_list[index].temp_secret_key);
     return index;
@@ -1364,7 +1364,7 @@ int onion_delfriend(Onion_Client *onion_c, int friend_num)
     unsigned int i;
 
     for (i = onion_c->num_friends; i != 0; --i) {
-        if (onion_c->friends_list[i - 1].status != 0) {
+        if (onion_c->friends_list[i - 1].is_valid) {
             break;
         }
     }
@@ -1430,7 +1430,7 @@ int onion_set_friend_DHT_pubkey(Onion_Client *onion_c, int friend_num, const uin
         return -1;
     }
 
-    if (onion_c->friends_list[friend_num].status == 0) {
+    if (!onion_c->friends_list[friend_num].is_valid) {
         return -1;
     }
 
@@ -1458,7 +1458,7 @@ unsigned int onion_getfriend_DHT_pubkey(const Onion_Client *onion_c, int friend_
         return 0;
     }
 
-    if (onion_c->friends_list[friend_num].status == 0) {
+    if (!onion_c->friends_list[friend_num].is_valid) {
         return 0;
     }
 
@@ -1555,7 +1555,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
         return;
     }
 
-    if (onion_c->friends_list[friendnum].status == 0) {
+    if (!onion_c->friends_list[friendnum].is_valid) {
         return;
     }
 
