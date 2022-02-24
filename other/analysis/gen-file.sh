@@ -49,6 +49,7 @@ callmain() {
 FIND_QUERY="find . '-(' -name '*.c' -or -name '*.cc' '-)'"
 # Excludes
 FIND_QUERY="$FIND_QUERY -and -not -wholename './_build/*'"
+FIND_QUERY="$FIND_QUERY -and -not -wholename './other/docker/*'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './super_donators/*'"
 FIND_QUERY="$FIND_QUERY -and -not -name amalgamation.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name av_test.c"

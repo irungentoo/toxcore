@@ -8,6 +8,10 @@
 
 #include "auto_test_support.h"
 
+#ifndef ABORT_ON_LOG_ERROR
+#define ABORT_ON_LOG_ERROR true
+#endif
+
 const Run_Auto_Options default_run_auto_options = { GRAPH_COMPLETE, nullptr };
 
 // List of live bootstrap nodes. These nodes should have TCP server enabled.
@@ -148,6 +152,7 @@ void set_mono_time_callback(AutoTox *autotox)
     Mono_Time *mono_time = ((Messenger *)autotox->tox)->mono_time;
 
     autotox->clock = current_time_monotonic(mono_time);
+    mono_time_set_current_time_callback(mono_time, nullptr, &autotox->clock);  // set to default first
     mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &autotox->clock);
 }
 
@@ -357,7 +362,7 @@ void print_debug_log(Tox *m, Tox_Log_Level level, const char *file, uint32_t lin
     uint32_t index = user_data ? *(uint32_t *)user_data : 0;
     fprintf(stderr, "[#%u] %s %s:%u\t%s:\t%s\n", index, tox_log_level_name(level), file, line, func, message);
 
-    if (level == TOX_LOG_LEVEL_ERROR) {
+    if (level == TOX_LOG_LEVEL_ERROR && ABORT_ON_LOG_ERROR) {
         fputs("Aborting test program\n", stderr);
         abort();
     }

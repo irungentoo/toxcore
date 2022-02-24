@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+package(features = ["layering_check"])
+
+go_library(
+    name = "go_default_library",
+    srcs = ["proxy_server.go"],
+    importpath = "github.com/TokTok/c-toxcore/other/proxy",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_things_go_go_socks5//:go_default_library"],
+)
+
+go_binary(
+    name = "proxy",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

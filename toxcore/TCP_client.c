@@ -114,7 +114,7 @@ static int connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_
  * return 0 on failure.
  */
 non_null()
-static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_conn)
+static int proxy_http_generate_connection_request(const Logger *logger, TCP_Client_Connection *tcp_conn)
 {
     char one[] = "CONNECT ";
     char two[] = " HTTP/1.1\nHost: ";
@@ -136,7 +136,6 @@ static int proxy_http_generate_connection_request(TCP_Client_Connection *tcp_con
 
     tcp_conn->con.last_packet_length = written;
     tcp_conn->con.last_packet_sent = 0;
-
     return 1;
 }
 
@@ -574,7 +573,7 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
     switch (proxy_info->proxy_type) {
         case TCP_PROXY_HTTP: {
             temp->status = TCP_CLIENT_PROXY_HTTP_CONNECTING;
-            proxy_http_generate_connection_request(temp);
+            proxy_http_generate_connection_request(logger, temp);
             break;
         }
 

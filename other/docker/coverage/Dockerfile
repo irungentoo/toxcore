@@ -3,9 +3,11 @@ FROM ubuntu:20.04 AS build
 
 RUN apt-get update && \
  DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
- build-essential \
+ clang \
  cmake \
+ gcc \
  git \
+ golang \
  libconfig-dev \
  libgtest-dev \
  libmsgpack-dev \
@@ -13,6 +15,7 @@ RUN apt-get update && \
  libsodium-dev \
  libvpx-dev \
  llvm-dev \
+ make \
  ninja-build \
  pkg-config \
  python3-pip \
@@ -21,38 +24,52 @@ RUN apt-get update && \
  && rm -rf /var/lib/apt/lists/* \
  && pip3 install --no-cache-dir gcovr
 
-WORKDIR /work/mallocfail
-RUN ["git", "clone", "--depth=1", "https://github.com/ralight/mallocfail", "/work/mallocfail"]
-RUN ["make", "install"]
+ENV CC=clang \
+    CXX=clang++ \
+    PYTHONUNBUFFERED=1
+SHELL ["/bin/bash", "-c"]
 
 WORKDIR /work
 COPY --from=src /src/ /work/
-RUN ["cmake", "-B_build", "-H.", "-GNinja", \
- "-DCMAKE_C_FLAGS=-fsanitize=undefined -fno-sanitize-recover=all -fprofile-arcs -ftest-coverage -O2 -fno-omit-frame-pointer -fno-inline -g", \
- "-DENABLE_SHARED=OFF", \
- "-DMIN_LOGGER_LEVEL=TRACE", \
- "-DMUST_BUILD_TOXAV=ON", \
- "-DNON_HERMETIC_TESTS=ON", \
- "-DSTRICT_ABI=ON", \
- "-DAUTOTEST=ON"]
-RUN ["cmake", "--build", "_build", "--parallel", "8", "--target", "install"]
+RUN source .github/scripts/flags-coverage.sh \
+ && go get github.com/things-go/go-socks5 \
+ && go build other/proxy/proxy_server.go \
+ && cmake -B_build -H. -GNinja \
+ -DCMAKE_C_FLAGS="$C_FLAGS" \
+ -DCMAKE_CXX_FLAGS="$CXX_FLAGS" \
+ -DCMAKE_EXE_LINKER_FLAGS="$LD_FLAGS" \
+ -DCMAKE_UNITY_BUILD=ON \
+ -DENABLE_SHARED=OFF \
+ -DMIN_LOGGER_LEVEL=TRACE \
+ -DMUST_BUILD_TOXAV=ON \
+ -DNON_HERMETIC_TESTS=ON \
+ -DSTRICT_ABI=ON \
+ -DAUTOTEST=ON \
+ -DPROXY_TEST=ON \
+ && cmake --build _build --parallel 8 --target install
 
 WORKDIR /work/_build
-RUN ["ctest", "-j50", "--output-on-failure", "--rerun-failed", "--repeat", "until-pass:6"]
+RUN /work/proxy_server \
+ & ctest -j50 --output-on-failure --rerun-failed --repeat until-pass:6
+
+WORKDIR /work/mallocfail
+RUN ["git", "clone", "--depth=1", "https://github.com/ralight/mallocfail", "/work/mallocfail"]
 COPY run_mallocfail /usr/local/bin/
-ENV PYTHONUNBUFFERED=1 \
-    UBSAN_OPTIONS=color=always,print_stacktrace=1
-RUN run_mallocfail ./unit_*_test
-RUN run_mallocfail ./auto_send_message_test
+COPY syscall_funcs.c src/
+RUN gcc -fPIC -shared -O2 -g3 -Wall -Ideps/uthash -Ideps/sha3 deps/*/*.c src/*.c -o mallocfail.so -ldl -lbacktrace \
+ && install mallocfail.so /usr/local/lib/mallocfail.so
+
+WORKDIR /work/_build
+RUN ["run_mallocfail", "--ctest=2", "--jobs=8"]
 RUN ["gcovr", \
  "--sort-percentage", \
- "--gcov-executable=gcov", \
+ "--gcov-executable=llvm-cov gcov", \
  "--html-details=html/", \
- "--html-self-contained", \
  "--root=..", \
  "--exclude=CMakeFiles/", \
  "--exclude=_deps/", \
  "--exclude=(.+/)?auto_tests/", \
+ "--exclude=.+_test.cc?$", \
  "--exclude=(.+/)?other/", \
  "--exclude=(.+/)?testing/"]
 

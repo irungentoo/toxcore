@@ -828,6 +828,7 @@ static Socket new_listening_TCP_socket(const Logger *logger, Family family, uint
         return net_invalid_socket;
     }
 
+    LOGGER_DEBUG(logger, "successfully bound to TCP port %d", port);
     return sock;
 }
 

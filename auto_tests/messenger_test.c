@@ -168,6 +168,7 @@ static void test_getself_name(void)
     const char *nickname = "testGallop";
     size_t len = strlen(nickname);
     char *nick_check = (char *)calloc(len + 1, 1);
+    ck_assert(nick_check != nullptr);
 
     setname(m, (const uint8_t *)nickname, len);
     getself_name(m, (uint8_t *)nick_check);
@@ -278,6 +279,10 @@ int main(void)
     friend_id = hex_string_to_bin(friend_id_str);
     good_id   = hex_string_to_bin(good_id_str);
     bad_id    = hex_string_to_bin(bad_id_str);
+
+    ck_assert(friend_id != nullptr);
+    ck_assert(good_id != nullptr);
+    ck_assert(bad_id != nullptr);
 
     Mono_Time *mono_time = mono_time_new();
 

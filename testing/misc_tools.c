@@ -57,6 +57,10 @@ uint8_t *hex_string_to_bin(const char *hex_string)
     uint8_t *ret = (uint8_t *)malloc(len);
     const char *pos = hex_string;
 
+    if (ret == nullptr) {
+        return nullptr;
+    }
+
     for (i = 0; i < len; ++i, pos += 2) {
         unsigned int val;
         sscanf(pos, "%02x", &val);

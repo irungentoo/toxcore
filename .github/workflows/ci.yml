@@ -81,13 +81,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Build and test
-        run: .github/scripts/cmake-linux
-        env:
-          CC: gcc
-          CXX: g++
-      - name: Upload coverage
-        run: .github/scripts/upload-coverage
+      - name: Build, test, and upload coverage
+        run: .github/scripts/coverage-linux
 
   build-tcc:
     runs-on: ubuntu-latest

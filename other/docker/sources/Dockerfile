@@ -1,6 +1,8 @@
 FROM scratch
 
 # Roughly in order of change frequency.
+COPY .github/scripts/flags*.sh /src/.github/scripts/
+COPY other/proxy/ /src/other/proxy/
 COPY cmake/ /src/cmake/
 COPY other/bootstrap_daemon/ /src/other/bootstrap_daemon/
 COPY other/pkgconfig/ /src/other/pkgconfig/

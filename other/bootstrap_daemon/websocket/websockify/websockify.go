@@ -34,7 +34,7 @@ var upgrader = websocket.Upgrader{
 	// Should be enough to fit any Tox TCP packets.
 	ReadBufferSize:  2048,
 	WriteBufferSize: 2048,
-	Subprotocols: []string{"binary"},
+	Subprotocols:    []string{"binary"},
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
