@@ -11,7 +11,6 @@
 #endif
 
 #include "tox.h"
-#include "tox_private.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -22,6 +21,7 @@
 #include "logger.h"
 #include "mono_time.h"
 #include "network.h"
+#include "tox_private.h"
 
 #include "../toxencryptsave/defines.h"
 

@@ -2,12 +2,12 @@
  * Copyright © 2016-2021 The TokTok team.
  */
 #include "tox.h"
-#include "tox_private.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "ccompat.h"
+#include "tox_private.h"
 
 #define SET_ERROR_PARAMETER(param, x) \
     do {                              \

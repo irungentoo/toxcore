@@ -14,8 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ccompat.h"
-
 #ifndef VANILLA_NACL
 // We use libsodium by default.
 #include <sodium.h>
@@ -28,6 +26,8 @@
 #include <crypto_verify_32.h>
 #include <randombytes.h>
 #endif
+
+#include "ccompat.h"
 
 #ifndef crypto_box_MACBYTES
 #define crypto_box_MACBYTES (crypto_box_ZEROBYTES - crypto_box_BOXZEROBYTES)
