@@ -428,11 +428,11 @@ void networking_poll(const Networking_Core *net, void *userdata);
 
 /** Connect a socket to the address specified by the ip_port.
  *
- * Return 0 on success.
- * Return -1 on failure.
+ * Return true on success.
+ * Return false on failure.
  */
 non_null()
-int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
+bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
 
 /** High-level getaddrinfo implementation.
  * Given node, which identifies an Internet host, net_getipport() fills an array

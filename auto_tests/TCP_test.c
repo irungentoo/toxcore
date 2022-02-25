@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,7 +9,7 @@
 #include "../toxcore/crypto_core.h"
 #include "../toxcore/mono_time.h"
 #include "../toxcore/util.h"
-#include "check_compat.h"
+#include "auto_test_support.h"
 
 #define NUM_PORTS 3
 
@@ -46,6 +47,7 @@ static void test_basic(void)
 {
     Mono_Time *mono_time = mono_time_new();
     Logger *logger = logger_new();
+    logger_callback_log(logger, (logger_cb *)print_debug_log, nullptr, nullptr);
 
     // Attempt to create a new TCP_Server instance.
     uint8_t self_public_key[CRYPTO_PUBLIC_KEY_SIZE];
@@ -65,8 +67,8 @@ static void test_basic(void)
     for (uint8_t i = 0; i < NUM_PORTS; i++) {
         sock = net_socket(net_family_ipv6, TOX_SOCK_STREAM, TOX_PROTO_TCP);
         localhost.port = net_htons(ports[i]);
-        int ret = net_connect(logger, sock, &localhost);
-        ck_assert_msg(ret == 0, "Failed to connect to created TCP relay server on port %d.", ports[i]);
+        bool ret = net_connect(logger, sock, &localhost);
+        ck_assert_msg(ret, "Failed to connect to created TCP relay server on port %d (%d).", ports[i], errno);
 
         // Leave open one connection for the next test.
         if (i + 1 < NUM_PORTS) {
@@ -194,8 +196,8 @@ static struct sec_TCP_con *new_TCP_con(const Logger *logger, TCP_Server *tcp_s, 
     localhost.ip = get_loopback();
     localhost.port = net_htons(ports[random_u32() % NUM_PORTS]);
 
-    int ret = net_connect(logger, sock, &localhost);
-    ck_assert_msg(ret == 0, "Failed to connect to the test TCP relay server.");
+    bool ok = net_connect(logger, sock, &localhost);
+    ck_assert_msg(ok, "Failed to connect to the test TCP relay server.");
 
     uint8_t f_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(sec_c->public_key, f_secret_key);
@@ -209,8 +211,8 @@ static struct sec_TCP_con *new_TCP_con(const Logger *logger, TCP_Server *tcp_s, 
     memcpy(handshake, sec_c->public_key, CRYPTO_PUBLIC_KEY_SIZE);
     random_nonce(handshake + CRYPTO_PUBLIC_KEY_SIZE);
 
-    ret = encrypt_data(tcp_server_public_key(tcp_s), f_secret_key, handshake + CRYPTO_PUBLIC_KEY_SIZE, handshake_plain,
-                       TCP_HANDSHAKE_PLAIN_SIZE, handshake + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
+    int ret = encrypt_data(tcp_server_public_key(tcp_s), f_secret_key, handshake + CRYPTO_PUBLIC_KEY_SIZE, handshake_plain,
+                           TCP_HANDSHAKE_PLAIN_SIZE, handshake + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE);
     ck_assert_msg(ret == TCP_CLIENT_HANDSHAKE_SIZE - (CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE),
                   "Failed to encrypt the outgoing handshake.");
 

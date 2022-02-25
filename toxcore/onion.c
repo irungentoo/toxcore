@@ -8,6 +8,7 @@
  */
 #include "onion.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -473,9 +474,7 @@ static int handle_send_2(void *object, const IP_Port *source, const uint8_t *pac
         return 1;
     }
 
-    if (len <= SIZE_IPPORT) {
-        return 1;
-    }
+    assert(len > SIZE_IPPORT);
 
     const uint8_t packet_id = plain[SIZE_IPPORT];
 

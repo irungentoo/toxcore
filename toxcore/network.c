@@ -120,6 +120,11 @@ static bool should_ignore_recv_error(int err)
     return err == EWOULDBLOCK;
 }
 
+static bool should_ignore_connect_error(int err)
+{
+    return err == EWOULDBLOCK || err == EINPROGRESS || err == EAGAIN;
+}
+
 non_null()
 static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
 {
@@ -154,6 +159,11 @@ static bool should_ignore_recv_error(int err)
     // We ignore WSAECONNRESET as Windows helpfully* sends that error if a
     // previously sent UDP packet wasn't delivered.
     return err == WSAEWOULDBLOCK || err == WSAECONNRESET;
+}
+
+static bool should_ignore_connect_error(int err)
+{
+    return err == WSAEWOULDBLOCK || err == WSAEINPROGRESS;
 }
 
 non_null()
@@ -1421,7 +1431,7 @@ bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
     return true;
 }
 
-int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
+bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 {
     struct sockaddr_storage addr = {0};
     size_t addrsize;
@@ -1441,14 +1451,32 @@ int net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         fill_addr6(&ip_port->ip.ip.v6, &addr6->sin6_addr);
         addr6->sin6_port = ip_port->port;
     } else {
-        return 0;
+        char ip_str[IP_NTOA_LEN];
+        LOGGER_ERROR(log, "cannot connect to %s:%d which is neither IPv4 nor IPv6",
+                ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), ip_port->port);
+        return false;
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return 0;
+    return true;
 #else
     LOGGER_DEBUG(log, "connecting socket %d", (int)sock.socket);
-    return connect(sock.socket, (struct sockaddr *)&addr, addrsize);
+    errno = 0;
+    if (connect(sock.socket, (struct sockaddr *)&addr, addrsize) == -1) {
+        const int error = net_error();
+
+        // Non-blocking socket: "Operation in progress" means it's connecting.
+        if (!should_ignore_connect_error(error)) {
+            char *net_strerror = net_new_strerror(error);
+            char ip_str[IP_NTOA_LEN];
+            LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)",
+                    ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), ip_port->port,
+                    error, net_strerror);
+            net_kill_strerror(net_strerror);
+            return false;
+        }
+    }
+    return true;
 #endif
 }
 

@@ -98,16 +98,11 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
 non_null()
 static bool connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_port, const TCP_Proxy_Info *proxy_info)
 {
-    IP_Port ipp_copy = *ip_port;
-
     if (proxy_info->proxy_type != TCP_PROXY_NONE) {
-        ipp_copy = proxy_info->ip_port;
+        return net_connect(logger, sock, &proxy_info->ip_port);
+    } else {
+        return net_connect(logger, sock, ip_port);
     }
-
-    /* nonblocking socket, connect will never return success */
-    net_connect(logger, sock, &ipp_copy);
-
-    return true;
 }
 
 /** return 1 on success.
