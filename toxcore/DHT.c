@@ -2617,16 +2617,16 @@ uint32_t dht_size(const DHT *dht)
     }
 
     for (uint32_t i = 0; i < LCLIENT_LIST; ++i) {
-        numv4 += (dht->close_clientlist[i].assoc4.timestamp != 0);
-        numv6 += (dht->close_clientlist[i].assoc6.timestamp != 0);
+        numv4 += dht->close_clientlist[i].assoc4.timestamp != 0;
+        numv6 += dht->close_clientlist[i].assoc6.timestamp != 0;
     }
 
     for (uint32_t i = 0; i < DHT_FAKE_FRIEND_NUMBER && i < dht->num_friends; ++i) {
         const DHT_Friend *const fr = &dht->friends_list[i];
 
         for (uint32_t j = 0; j < MAX_FRIEND_CLIENTS; ++j) {
-            numv4 += (fr->client_list[j].assoc4.timestamp != 0);
-            numv6 += (fr->client_list[j].assoc6.timestamp != 0);
+            numv4 += fr->client_list[j].assoc4.timestamp != 0;
+            numv6 += fr->client_list[j].assoc6.timestamp != 0;
         }
     }
 

@@ -1630,7 +1630,7 @@ static void do_friend(Onion_Client *onion_c, uint16_t friendnum)
             uint16_t n = num_nodes;
 
             if (num_nodes > (MAX_ONION_CLIENTS / 2)) {
-                n = (MAX_ONION_CLIENTS / 2);
+                n = MAX_ONION_CLIENTS / 2;
             }
 
             if (count <= random_range_u32(MAX_ONION_CLIENTS)) {

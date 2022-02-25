@@ -2809,7 +2809,7 @@ static void send_crypto_packets(Net_Crypto *c)
     }
 
     if (total_send_rate > CRYPTO_PACKET_MIN_RATE) {
-        sleep_time = (1000.0 / total_send_rate);
+        sleep_time = 1000.0 / total_send_rate;
 
         if (c->current_sleep_time > sleep_time) {
             c->current_sleep_time = sleep_time + 1;

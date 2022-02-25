@@ -457,7 +457,7 @@ static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *
 
     memcpy(dest, value, value_len);
 
-    *length += (2 + value_len);
+    *length += 2 + value_len;
 
     return dest + value_len; /* Set to next position ready to be written */
 }

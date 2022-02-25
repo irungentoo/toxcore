@@ -685,7 +685,7 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
     g->group[new_index].temp_pk_updated = true;
     g->group[new_index].peer_number = peer_number;
     g->group[new_index].last_active = mono_time_get(g_c->mono_time);
-    g->group[new_index].is_friend = (getfriend_id(g_c->m, real_pk) != -1);
+    g->group[new_index].is_friend = getfriend_id(g_c->m, real_pk) != -1;
     ++g->numpeers;
 
     add_to_closest(g, real_pk, temp_pk);
@@ -3472,7 +3472,7 @@ static uint32_t load_group(Group_c *g, const Group_Chats *g_c, const uint8_t *da
         data += peer->nick_len;
 
         // NOTE: this relies on friends being loaded before conferences.
-        peer->is_friend = (getfriend_id(g_c->m, peer->real_pk) != -1);
+        peer->is_friend = getfriend_id(g_c->m, peer->real_pk) != -1;
     }
 
     if (g->numfrozen > g->maxfrozen) {
