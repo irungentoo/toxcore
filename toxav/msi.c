@@ -391,7 +391,7 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
     const uint8_t *it = data;
     int size_constraint = length;
 
-    while (*it) {/* until end byte is hit */
+    while (*it != 0) {/* until end byte is hit */
         switch (*it) {
             case ID_REQUEST: {
                 if (!check_size(log, it, &size_constraint, 1) ||
@@ -435,7 +435,7 @@ static int msg_parse_in(const Logger *log, MSIMessage *dest, const uint8_t *data
         }
     }
 
-    if (dest->request.exists == false) {
+    if (!dest->request.exists) {
         LOGGER_ERROR(log, "Invalid request field!");
         return -1;
     }

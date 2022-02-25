@@ -72,7 +72,7 @@ static int client_in_list(Client_data *list, uint32_t length, const uint8_t *pub
     uint32_t i;
 
     for (i = 0; i < length; ++i) {
-        if (id_equal(public_key, list[i].public_key)) {
+        if (pk_equal(public_key, list[i].public_key)) {
             return i;
         }
     }
@@ -106,7 +106,7 @@ static void test_addto_lists_update(DHT            *dht,
     // check ip_port update for existing id
     test = random_u32() % length;
     test_ipp.port = random_u32() % TOX_PORT_DEFAULT;
-    id_copy(test_id, list[test].public_key);
+    pk_copy(test_id, list[test].public_key);
 
     used = addto_lists(dht, &test_ipp, test_id);
     ck_assert_msg(used >= 1, "Wrong number of added clients");
@@ -120,7 +120,7 @@ static void test_addto_lists_update(DHT            *dht,
     test2 = random_u32() % (length / 2) + length / 2;
 
     ipport_copy(&test_ipp, ipv6 ? &list[test1].assoc6.ip_port : &list[test1].assoc4.ip_port);
-    id_copy(test_id, list[test2].public_key);
+    pk_copy(test_id, list[test2].public_key);
 
     if (ipv6) {
         list[test2].assoc6.ip_port.port = -1;
@@ -139,7 +139,7 @@ static void test_addto_lists_update(DHT            *dht,
     test2 = random_u32() % (length / 2) + length / 2;
 
     ipport_copy(&test_ipp, ipv6 ? &list[test2].assoc6.ip_port : &list[test2].assoc4.ip_port);
-    id_copy(test_id, list[test1].public_key);
+    pk_copy(test_id, list[test1].public_key);
 
     if (ipv6) {
         list[test1].assoc6.ip_port.port = -1;
@@ -173,9 +173,9 @@ static void test_addto_lists_bad(DHT            *dht,
     test3 = random_u32() % (length / 3) + 2 * length / 3;
     ck_assert_msg(!(test1 == test2 || test1 == test3 || test2 == test3), "Wrong test indices are chosen");
 
-    id_copy((uint8_t *)&test_id1, list[test1].public_key);
-    id_copy((uint8_t *)&test_id2, list[test2].public_key);
-    id_copy((uint8_t *)&test_id3, list[test3].public_key);
+    pk_copy((uint8_t *)&test_id1, list[test1].public_key);
+    pk_copy((uint8_t *)&test_id2, list[test2].public_key);
+    pk_copy((uint8_t *)&test_id3, list[test3].public_key);
 
     // mark nodes as "bad"
     if (ipv6) {

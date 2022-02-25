@@ -92,11 +92,11 @@ void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value)
     con->custom_uint = value;
 }
 
-/** return 1 on success
- * return 0 on failure
+/** return true on success
+ * return false on failure
  */
 non_null()
-static int connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_port, const TCP_Proxy_Info *proxy_info)
+static bool connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_port, const TCP_Proxy_Info *proxy_info)
 {
     IP_Port ipp_copy = *ip_port;
 
@@ -107,7 +107,7 @@ static int connect_sock_to(const Logger *logger, Socket sock, const IP_Port *ip_
     /* nonblocking socket, connect will never return success */
     net_connect(logger, sock, &ipp_copy);
 
-    return 1;
+    return true;
 }
 
 /** return 1 on success.
@@ -329,7 +329,7 @@ int send_routing_request(const Logger *logger, TCP_Client_Connection *con, const
     uint8_t packet[1 + CRYPTO_PUBLIC_KEY_SIZE];
     packet[0] = TCP_PACKET_ROUTING_REQUEST;
     memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    return write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), true);
 }
 
 void routing_response_handler(TCP_Client_Connection *con, tcp_routing_response_cb *response_callback, void *object)
@@ -368,7 +368,7 @@ int send_data(const Logger *logger, TCP_Client_Connection *con, uint8_t con_id, 
     VLA(uint8_t, packet, 1 + length);
     packet[0] = con_id + NUM_RESERVED_PORTS;
     memcpy(packet + 1, data, length);
-    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), 0);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), false);
 }
 
 /** return 1 on success.
@@ -386,7 +386,7 @@ int send_oob_packet(const Logger *logger, TCP_Client_Connection *con, const uint
     packet[0] = TCP_PACKET_OOB_SEND;
     memcpy(packet + 1, public_key, CRYPTO_PUBLIC_KEY_SIZE);
     memcpy(packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
-    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), 0);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), false);
 }
 
 
@@ -433,7 +433,7 @@ static int client_send_disconnect_notification(const Logger *logger, TCP_Client_
     uint8_t packet[1 + 1];
     packet[0] = TCP_PACKET_DISCONNECT_NOTIFICATION;
     packet[1] = id;
-    return write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), true);
 }
 
 /** return 1 on success.
@@ -449,7 +449,7 @@ static int tcp_send_ping_request(const Logger *logger, TCP_Client_Connection *co
     uint8_t packet[1 + sizeof(uint64_t)];
     packet[0] = TCP_PACKET_PING;
     memcpy(packet + 1, &con->ping_request_id, sizeof(uint64_t));
-    const int ret = write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
+    const int ret = write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), true);
 
     if (ret == 1) {
         con->ping_request_id = 0;
@@ -471,7 +471,7 @@ static int tcp_send_ping_response(const Logger *logger, TCP_Client_Connection *c
     uint8_t packet[1 + sizeof(uint64_t)];
     packet[0] = TCP_PACKET_PONG;
     memcpy(packet + 1, &con->ping_response_id, sizeof(uint64_t));
-    const int ret = write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), 1);
+    const int ret = write_packet_TCP_secure_connection(logger, &con->con, packet, sizeof(packet), true);
 
     if (ret == 1) {
         con->ping_response_id = 0;
@@ -504,7 +504,7 @@ int send_onion_request(const Logger *logger, TCP_Client_Connection *con, const u
     VLA(uint8_t, packet, 1 + length);
     packet[0] = TCP_PACKET_ONION_REQUEST;
     memcpy(packet + 1, data, length);
-    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), 0);
+    return write_packet_TCP_secure_connection(logger, &con->con, packet, SIZEOF_VLA(packet), false);
 }
 
 void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *onion_callback, void *object)

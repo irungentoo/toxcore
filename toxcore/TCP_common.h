@@ -70,12 +70,6 @@ int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con);
 non_null()
 int send_pending_data(const Logger *logger, TCP_Connection *con);
 
-/** return 0 on failure (only if calloc fails)
- * return 1 on success
- */
-non_null()
-bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent);
-
 /** return 1 on success.
  * return 0 if could not send packet.
  * return -1 on failure (connection must be killed).

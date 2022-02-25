@@ -20,12 +20,26 @@
 extern "C" {
 #endif
 
-/** id functions */
-non_null() bool id_equal(const uint8_t *dest, const uint8_t *src);
-non_null() uint32_t id_copy(uint8_t *dest, const uint8_t *src); /* return value is CLIENT_ID_SIZE */
+/** Equality function for public keys. */
+non_null() bool pk_equal(const uint8_t *dest, const uint8_t *src);
+/**
+ * @brief Copy a public key from `src` to `dest`.
+ * @retval CLIENT_ID_SIZE
+ */
+non_null() uint32_t pk_copy(uint8_t *dest, const uint8_t *src);
 
 /** Returns -1 if failed or 0 if success */
 non_null() int create_recursive_mutex(pthread_mutex_t *mutex);
+
+/**
+ * @brief Checks whether two buffers are the same length and contents.
+ *
+ * Calls `memcmp` after checking the sizes are equal.
+ *
+ * @retval true if sizes and contents are equal.
+ * @retval false otherwise.
+ */
+non_null() bool memeq(const uint8_t *a, size_t a_size, const uint8_t *b, size_t b_size);
 
 // Safe min/max functions with specific types. This forces the conversion to the
 // desired type before the comparison expression, giving the choice of

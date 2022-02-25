@@ -86,20 +86,20 @@ void crypto_sha512(uint8_t *hash, const uint8_t *data, size_t length);
  * @brief Compare 2 public keys of length @ref CRYPTO_PUBLIC_KEY_SIZE, not vulnerable to
  * timing attacks.
  *
- * @retval 0 if both mem locations of length are equal
- * @retval -1 if they are not
+ * @retval true if both mem locations of length are equal
+ * @retval false if they are not
  */
 non_null()
-int32_t public_key_cmp(const uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[CRYPTO_PUBLIC_KEY_SIZE]);
+bool public_key_eq(const uint8_t pk1[CRYPTO_PUBLIC_KEY_SIZE], const uint8_t pk2[CRYPTO_PUBLIC_KEY_SIZE]);
 
 /**
  * @brief Compare 2 SHA512 checksums of length CRYPTO_SHA512_SIZE, not vulnerable to
  * timing attacks.
  *
- * @return 0 if both mem locations of length are equal, -1 if they are not.
+ * @return true if both mem locations of length are equal, false if they are not.
  */
 non_null()
-int32_t crypto_sha512_cmp(const uint8_t *cksum1, const uint8_t *cksum2);
+bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2);
 
 /**
  * @brief Return a random 8 bit integer.

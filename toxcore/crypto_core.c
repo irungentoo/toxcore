@@ -56,7 +56,7 @@ static_assert(CRYPTO_SHA256_SIZE == crypto_hash_sha256_BYTES,
 static_assert(CRYPTO_SHA512_SIZE == crypto_hash_sha512_BYTES,
               "CRYPTO_SHA512_SIZE should be equal to crypto_hash_sha512_BYTES");
 static_assert(CRYPTO_PUBLIC_KEY_SIZE == 32,
-              "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_cmp to work");
+              "CRYPTO_PUBLIC_KEY_SIZE is required to be 32 bytes for public_key_eq to work");
 
 #if !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION)
 static uint8_t *crypto_malloc(size_t bytes)
@@ -119,22 +119,24 @@ bool crypto_memunlock(void *data, size_t length)
 #endif
 }
 
-int32_t public_key_cmp(const uint8_t *pk1, const uint8_t *pk2)
+bool public_key_eq(const uint8_t *pk1, const uint8_t *pk2)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     // Hope that this is better for the fuzzer
-    return memcmp(pk1, pk2, CRYPTO_PUBLIC_KEY_SIZE) == 0 ? 0 : -1;
+    return memcmp(pk1, pk2, CRYPTO_PUBLIC_KEY_SIZE) == 0;
 #else
-    return crypto_verify_32(pk1, pk2);
+    return crypto_verify_32(pk1, pk2) == 0;
 #endif
 }
 
-int32_t crypto_sha512_cmp(const uint8_t *cksum1, const uint8_t *cksum2)
+bool crypto_sha512_eq(const uint8_t *cksum1, const uint8_t *cksum2)
 {
 #ifndef VANILLA_NACL
-    return crypto_verify_64(cksum1, cksum2);
+    return crypto_verify_64(cksum1, cksum2) == 0;
 #else
-    return crypto_verify_32(cksum1, cksum2) && crypto_verify_32(cksum1 + 8, cksum2 + 8);
+    const int lo = crypto_verify_32(cksum1, cksum2) == 0 ? 1 : 0;
+    const int hi = crypto_verify_32(cksum1 + 8, cksum2 + 8) == 0 ? 1 : 0;
+    return (lo & hi) == 1;
 #endif
 }
 

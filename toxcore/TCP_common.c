@@ -84,10 +84,11 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
     return -1;
 }
 
-/** return 0 on failure (only if calloc fails)
- * return 1 on success
+/** return false on failure (only if calloc fails)
+ * return true on success
  */
-bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
+non_null()
+static bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
 {
     TCP_Priority_List *p = con->priority_queue_end;
     TCP_Priority_List *new_list = (TCP_Priority_List *)calloc(1, sizeof(TCP_Priority_List));
@@ -129,11 +130,11 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
         return -1;
     }
 
-    bool sendpriority = 1;
+    bool sendpriority = true;
 
     if (send_pending_data(logger, con) == -1) {
         if (priority) {
-            sendpriority = 0;
+            sendpriority = false;
         } else {
             return 0;
         }
@@ -162,7 +163,7 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
             return 1;
         }
 
-        return add_priority(con, packet, SIZEOF_VLA(packet), len);
+        return add_priority(con, packet, SIZEOF_VLA(packet), len) ? 1 : 0;
     }
 
     len = net_send(logger, con->sock, packet, SIZEOF_VLA(packet), &con->ip_port);

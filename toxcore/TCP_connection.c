@@ -305,7 +305,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
     // TODO(irungentoo): thread safety?
     int ret = -1;
 
-    bool limit_reached = 0;
+    bool limit_reached = false;
 
     for (unsigned int i = 0; i < MAX_FRIEND_TCP_CONNECTIONS; ++i) {
         uint32_t tcp_con_num = con_to->connections[i].tcp_connection;
@@ -323,7 +323,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
             ret = send_data(tcp_c->logger, tcp_con->connection, connection_id, packet, length);
 
             if (ret == 0) {
-                limit_reached = 1;
+                limit_reached = true;
             }
 
             if (ret == 1) {
@@ -498,7 +498,7 @@ static int find_tcp_connection_to(const TCP_Connections *tcp_c, const uint8_t *p
         const TCP_Connection_to *con_to = get_connection(tcp_c, i);
 
         if (con_to != nullptr) {
-            if (public_key_cmp(con_to->public_key, public_key) == 0) {
+            if (pk_equal(con_to->public_key, public_key)) {
                 return i;
             }
         }
@@ -519,11 +519,11 @@ static int find_tcp_connection_relay(const TCP_Connections *tcp_c, const uint8_t
 
         if (tcp_con != nullptr) {
             if (tcp_con->status == TCP_CONN_SLEEPING) {
-                if (public_key_cmp(tcp_con->relay_pk, relay_pk) == 0) {
+                if (pk_equal(tcp_con->relay_pk, relay_pk)) {
                     return i;
                 }
             } else {
-                if (public_key_cmp(tcp_con_public_key(tcp_con->connection), relay_pk) == 0) {
+                if (pk_equal(tcp_con_public_key(tcp_con->connection), relay_pk)) {
                     return i;
                 }
             }

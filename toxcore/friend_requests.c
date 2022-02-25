@@ -73,7 +73,7 @@ static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
         fr->received.requests_index = 0;
     }
 
-    id_copy(fr->received.requests[fr->received.requests_index], real_pk);
+    pk_copy(fr->received.requests[fr->received.requests_index], real_pk);
     ++fr->received.requests_index;
 }
 
@@ -86,7 +86,7 @@ non_null()
 static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
-        if (id_equal(fr->received.requests[i], real_pk)) {
+        if (pk_equal(fr->received.requests[i], real_pk)) {
             return true;
         }
     }
@@ -102,7 +102,7 @@ static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
 int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < MAX_RECEIVED_STORED; ++i) {
-        if (id_equal(fr->received.requests[i], real_pk)) {
+        if (pk_equal(fr->received.requests[i], real_pk)) {
             crypto_memzero(fr->received.requests[i], CRYPTO_PUBLIC_KEY_SIZE);
             return 0;
         }

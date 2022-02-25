@@ -47,7 +47,7 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     int       rc;
     uint64_t  ping_id;
 
-    if (id_equal(public_key, dht_get_self_public_key(ping->dht))) {
+    if (pk_equal(public_key, dht_get_self_public_key(ping->dht))) {
         return;
     }
 
@@ -57,7 +57,7 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     dht_get_shared_key_sent(ping->dht, shared_key, public_key);
     // Generate random ping_id.
     uint8_t data[PING_DATA_SIZE];
-    id_copy(data, public_key);
+    pk_copy(data, public_key);
     memcpy(data + CRYPTO_PUBLIC_KEY_SIZE, ipp, sizeof(IP_Port));
     ping_id = ping_array_add(ping->ping_array, ping->mono_time, data, sizeof(data));
 
@@ -71,7 +71,7 @@ void ping_send_request(Ping *ping, const IP_Port *ipp, const uint8_t *public_key
     memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
 
     pk[0] = NET_PACKET_PING_REQUEST;
-    id_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
+    pk_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
     random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
 
@@ -96,7 +96,7 @@ static int ping_send_response(const Ping *ping, const IP_Port *ipp, const uint8_
 {
     uint8_t pk[DHT_PING_SIZE];
 
-    if (id_equal(public_key, dht_get_self_public_key(ping->dht))) {
+    if (pk_equal(public_key, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -105,7 +105,7 @@ static int ping_send_response(const Ping *ping, const IP_Port *ipp, const uint8_
     memcpy(ping_plain + 1, &ping_id, sizeof(ping_id));
 
     pk[0] = NET_PACKET_PING_RESPONSE;
-    id_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
+    pk_copy(pk + 1, dht_get_self_public_key(ping->dht));     // Our pubkey
     random_nonce(pk + 1 + CRYPTO_PUBLIC_KEY_SIZE); // Generate new nonce
 
     // Encrypt ping_id using recipient privkey
@@ -133,7 +133,7 @@ static int handle_ping_request(void *object, const IP_Port *source, const uint8_
 
     Ping *ping = dht_get_ping(dht);
 
-    if (id_equal(packet + 1, dht_get_self_public_key(ping->dht))) {
+    if (pk_equal(packet + 1, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -182,7 +182,7 @@ static int handle_ping_response(void *object, const IP_Port *source, const uint8
 
     Ping *ping = dht_get_ping(dht);
 
-    if (id_equal(packet + 1, dht_get_self_public_key(ping->dht))) {
+    if (pk_equal(packet + 1, dht_get_self_public_key(ping->dht))) {
         return 1;
     }
 
@@ -217,7 +217,7 @@ static int handle_ping_response(void *object, const IP_Port *source, const uint8
         return 1;
     }
 
-    if (!id_equal(packet + 1, data)) {
+    if (!pk_equal(packet + 1, data)) {
         return 1;
     }
 
@@ -242,7 +242,7 @@ static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mo
                    const IP_Port *ip_port)
 {
     for (unsigned int i = 0; i < length; ++i) {
-        if (id_equal(list[i].public_key, public_key)) {
+        if (pk_equal(list[i].public_key, public_key)) {
             const IPPTsPng *ipptp;
 
             if (net_family_is_ipv4(ip_port->ip.family)) {
@@ -299,7 +299,7 @@ int32_t ping_add(Ping *ping, const uint8_t *public_key, const IP_Port *ip_port)
             return 0;
         }
 
-        if (public_key_cmp(ping->to_ping[i].public_key, public_key) == 0) {
+        if (pk_equal(ping->to_ping[i].public_key, public_key)) {
             return -1;
         }
     }

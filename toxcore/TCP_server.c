@@ -387,7 +387,7 @@ static int send_routing_response(const Logger *logger, TCP_Secure_Connection *co
     data[1] = rpid;
     memcpy(data + 2, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
-    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), true);
 }
 
 /** return 1 on success.
@@ -398,7 +398,7 @@ non_null()
 static int send_connect_notification(const Logger *logger, TCP_Secure_Connection *con, uint8_t id)
 {
     uint8_t data[2] = {TCP_PACKET_CONNECTION_NOTIFICATION, (uint8_t)(id + NUM_RESERVED_PORTS)};
-    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), true);
 }
 
 /** return 1 on success.
@@ -409,7 +409,7 @@ non_null()
 static int send_disconnect_notification(const Logger *logger, TCP_Secure_Connection *con, uint8_t id)
 {
     uint8_t data[2] = {TCP_PACKET_DISCONNECT_NOTIFICATION, (uint8_t)(id + NUM_RESERVED_PORTS)};
-    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), 1);
+    return write_packet_TCP_secure_connection(logger, &con->con, data, sizeof(data), true);
 }
 
 /** return 0 on success.
@@ -422,7 +422,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
     TCP_Secure_Connection *con = &tcp_server->accepted_connection_array[con_id];
 
     /* If person tries to cennect to himself we deny the request*/
-    if (public_key_cmp(con->public_key, public_key) == 0) {
+    if (pk_equal(con->public_key, public_key)) {
         if (send_routing_response(tcp_server->logger, con, 0, public_key) == -1) {
             return -1;
         }
@@ -432,7 +432,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
 
     for (uint32_t i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
         if (con->connections[i].status != 0) {
-            if (public_key_cmp(public_key, con->connections[i].public_key) == 0) {
+            if (pk_equal(public_key, con->connections[i].public_key)) {
                 if (send_routing_response(tcp_server->logger, con, i + NUM_RESERVED_PORTS, public_key) == -1) {
                     return -1;
                 }
@@ -472,7 +472,7 @@ static int handle_TCP_routing_req(TCP_Server *tcp_server, uint32_t con_id, const
 
         for (uint32_t i = 0; i < NUM_CLIENT_CONNECTIONS; ++i) {
             if (other_conn->connections[i].status == 1
-                    && public_key_cmp(other_conn->connections[i].public_key, con->public_key) == 0) {
+                    && pk_equal(other_conn->connections[i].public_key, con->public_key)) {
                 other_id = i;
                 break;
             }
@@ -515,7 +515,7 @@ static int handle_TCP_oob_send(TCP_Server *tcp_server, uint32_t con_id, const ui
         memcpy(resp_packet + 1, con->public_key, CRYPTO_PUBLIC_KEY_SIZE);
         memcpy(resp_packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, data, length);
         write_packet_TCP_secure_connection(tcp_server->logger, &tcp_server->accepted_connection_array[other_index].con,
-                                           resp_packet, SIZEOF_VLA(resp_packet), 0);
+                                           resp_packet, SIZEOF_VLA(resp_packet), false);
     }
 
     return 0;
@@ -577,7 +577,7 @@ static int handle_onion_recv_1(void *object, const IP_Port *dest, const uint8_t 
     memcpy(packet + 1, data, length);
     packet[0] = TCP_PACKET_ONION_RESPONSE;
 
-    if (write_packet_TCP_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), 0) != 1) {
+    if (write_packet_TCP_secure_connection(tcp_server->logger, &con->con, packet, SIZEOF_VLA(packet), false) != 1) {
         return 1;
     }
 
@@ -634,7 +634,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             uint8_t response[1 + sizeof(uint64_t)];
             response[0] = TCP_PACKET_PONG;
             memcpy(response + 1, data + 1, sizeof(uint64_t));
-            write_packet_TCP_secure_connection(tcp_server->logger, &con->con, response, sizeof(response), 1);
+            write_packet_TCP_secure_connection(tcp_server->logger, &con->con, response, sizeof(response), true);
             return 0;
         }
 
@@ -722,7 +722,7 @@ static int handle_TCP_packet(TCP_Server *tcp_server, uint32_t con_id, const uint
             memcpy(new_data, data, length);
             new_data[0] = other_c_id;
             const int ret = write_packet_TCP_secure_connection(tcp_server->logger,
-                            &tcp_server->accepted_connection_array[index].con, new_data, length, 0);
+                            &tcp_server->accepted_connection_array[index].con, new_data, length, false);
 
             if (ret == -1) {
                 return -1;
@@ -1081,7 +1081,7 @@ static void do_TCP_confirmed(TCP_Server *tcp_server, const Mono_Time *mono_time)
             }
 
             memcpy(ping + 1, &ping_id, sizeof(uint64_t));
-            const int ret = write_packet_TCP_secure_connection(tcp_server->logger, &conn->con, ping, sizeof(ping), 1);
+            const int ret = write_packet_TCP_secure_connection(tcp_server->logger, &conn->con, ping, sizeof(ping), true);
 
             if (ret == 1) {
                 conn->last_pinged = mono_time_get(mono_time);

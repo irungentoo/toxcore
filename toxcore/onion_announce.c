@@ -48,7 +48,7 @@ struct Onion_Announce {
 non_null()
 static bool onion_ping_id_eq(const uint8_t *a, const uint8_t *b)
 {
-    return public_key_cmp(a, b) == 0;
+    return pk_equal(a, b);
 }
 
 uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry)
@@ -253,7 +253,7 @@ static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 {
     for (unsigned int i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
         if (!mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
-                && public_key_cmp(onion_a->entries[i].public_key, public_key) == 0) {
+                && pk_equal(onion_a->entries[i].public_key, public_key)) {
             return i;
         }
     }
@@ -428,8 +428,8 @@ static int handle_announce_request(void *object, const IP_Port *source, const ui
         pl[0] = 0;
         memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
     } else {
-        if (public_key_cmp(onion_a->entries[index].public_key, packet_public_key) == 0) {
-            if (public_key_cmp(onion_a->entries[index].data_public_key, data_public_key) != 0) {
+        if (pk_equal(onion_a->entries[index].public_key, packet_public_key)) {
+            if (!pk_equal(onion_a->entries[index].data_public_key, data_public_key)) {
                 pl[0] = 0;
                 memcpy(pl + 1, ping_id2, ONION_PING_ID_SIZE);
             } else {

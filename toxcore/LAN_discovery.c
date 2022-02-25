@@ -359,7 +359,7 @@ bool lan_discovery_send(Networking_Core *net, const Broadcast_Info *broadcast, c
 
     uint8_t data[CRYPTO_PUBLIC_KEY_SIZE + 1];
     data[0] = NET_PACKET_LAN_DISCOVERY;
-    id_copy(data + 1, dht_pk);
+    pk_copy(data + 1, dht_pk);
 
     send_broadcasts(net, broadcast, port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE);
 

@@ -166,7 +166,7 @@ static void test_basic(void)
     ck_assert_msg(packet_resp_plain[0] == TCP_PACKET_ROUTING_RESPONSE, "Server sent the wrong packet id: %u",
                   packet_resp_plain[0]);
     ck_assert_msg(packet_resp_plain[1] == 0, "Server did not refuse the connection.");
-    ck_assert_msg(public_key_cmp(packet_resp_plain + 2, f_public_key) == 0, "Server sent the wrong public key.");
+    ck_assert_msg(pk_equal(packet_resp_plain + 2, f_public_key), "Server sent the wrong public key.");
 
     // Closing connections.
     kill_sock(sock);
@@ -315,14 +315,14 @@ static void test_some(void)
     ck_assert_msg(len == 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE, "Wrong response packet length of %d.", len);
     ck_assert_msg(data[0] == TCP_PACKET_ROUTING_RESPONSE, "Wrong response packet id of %d.", data[0]);
     ck_assert_msg(data[1] == 16, "Server didn't refuse connection using wrong public key.");
-    ck_assert_msg(public_key_cmp(data + 2, con3->public_key) == 0, "Key in response packet wrong.");
+    ck_assert_msg(pk_equal(data + 2, con3->public_key), "Key in response packet wrong.");
 
     // Connection 3
     len = read_packet_sec_TCP(logger, con3, data, 2 + 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE);
     ck_assert_msg(len == 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE, "Wrong response packet length of %d.", len);
     ck_assert_msg(data[0] == TCP_PACKET_ROUTING_RESPONSE, "Wrong response packet id of %d.", data[0]);
     ck_assert_msg(data[1] == 16, "Server didn't refuse connection using wrong public key.");
-    ck_assert_msg(public_key_cmp(data + 2, con1->public_key) == 0, "Key in response packet wrong.");
+    ck_assert_msg(pk_equal(data + 2, con1->public_key), "Key in response packet wrong.");
 
     uint8_t test_packet[512] = {16, 17, 16, 86, 99, 127, 255, 189, 78}; // What is this packet????
 
@@ -458,7 +458,7 @@ static int oob_data_callback(void *object, const uint8_t *public_key, const uint
         return 1;
     }
 
-    if (public_key_cmp(public_key, oob_pubkey) != 0) {
+    if (!pk_equal(public_key, oob_pubkey)) {
         return 1;
     }
 
@@ -563,7 +563,7 @@ static void test_client(void)
     // All callback methods save data should have run during the above network prodding.
     ck_assert_msg(oob_data_callback_good == 1, "OOB callback not called");
     ck_assert_msg(response_callback_good == 1, "Response callback not called.");
-    ck_assert_msg(public_key_cmp(response_callback_public_key, f2_public_key) == 0, "Wrong public key.");
+    ck_assert_msg(pk_equal(response_callback_public_key, f2_public_key), "Wrong public key.");
     ck_assert_msg(status_callback_good == 1, "Status callback not called.");
     ck_assert_msg(status_callback_status == 2, "Wrong status callback status.");
     ck_assert_msg(status_callback_connection_id == response_callback_connection_id,
@@ -680,17 +680,17 @@ static void test_tcp_connection(void)
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(logger, USE_IPV6, NUM_PORTS, ports, self_secret_key, nullptr);
-    ck_assert_msg(public_key_cmp(tcp_server_public_key(tcp_s), self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(pk_equal(tcp_server_public_key(tcp_s), self_public_key), "Wrong public key");
 
     TCP_Proxy_Info proxy_info;
     proxy_info.proxy_type = TCP_PROXY_NONE;
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_1 = new_tcp_connections(logger, mono_time, self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_1), self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(pk_equal(tcp_connections_public_key(tc_1), self_public_key), "Wrong public key");
 
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_2 = new_tcp_connections(logger, mono_time, self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_2), self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(pk_equal(tcp_connections_public_key(tc_2), self_public_key), "Wrong public key");
 
     IP_Port ip_port_tcp_s;
 
@@ -788,17 +788,17 @@ static void test_tcp_connection2(void)
     uint8_t self_secret_key[CRYPTO_SECRET_KEY_SIZE];
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Server *tcp_s = new_TCP_server(logger, USE_IPV6, NUM_PORTS, ports, self_secret_key, nullptr);
-    ck_assert_msg(public_key_cmp(tcp_server_public_key(tcp_s), self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(pk_equal(tcp_server_public_key(tcp_s), self_public_key), "Wrong public key");
 
     TCP_Proxy_Info proxy_info;
     proxy_info.proxy_type = TCP_PROXY_NONE;
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_1 = new_tcp_connections(logger, mono_time, self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_1), self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(pk_equal(tcp_connections_public_key(tc_1), self_public_key), "Wrong public key");
 
     crypto_new_keypair(self_public_key, self_secret_key);
     TCP_Connections *tc_2 = new_tcp_connections(logger, mono_time, self_secret_key, &proxy_info);
-    ck_assert_msg(public_key_cmp(tcp_connections_public_key(tc_2), self_public_key) == 0, "Wrong public key");
+    ck_assert_msg(pk_equal(tcp_connections_public_key(tc_2), self_public_key), "Wrong public key");
 
     IP_Port ip_port_tcp_s;
 

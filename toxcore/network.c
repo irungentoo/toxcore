@@ -1023,7 +1023,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
         int res = bind(temp->sock.socket, (struct sockaddr *)&addr, addrsize);
 #endif
 
-        if (!res) {
+        if (res == 0) {
             temp->port = *portptr;
 
             char ip_str[IP_NTOA_LEN];
@@ -1361,7 +1361,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                     get_ip4(&to->ip.v4, &addr->sin_addr);
                     result = TOX_ADDR_RESOLVE_INET;
                     done = true;
-                } else if (!(result & TOX_ADDR_RESOLVE_INET)) { /* AF_UNSPEC requested, store away */
+                } else if ((result & TOX_ADDR_RESOLVE_INET) == 0) { /* AF_UNSPEC requested, store away */
                     const struct sockaddr_in *addr = (const struct sockaddr_in *)(void *)walker->ai_addr;
                     get_ip4(&ip4.ip.v4, &addr->sin_addr);
                     result |= TOX_ADDR_RESOLVE_INET;
@@ -1378,7 +1378,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
                         result = TOX_ADDR_RESOLVE_INET6;
                         done = true;
                     }
-                } else if (!(result & TOX_ADDR_RESOLVE_INET6)) { /* AF_UNSPEC requested, store away */
+                } else if ((result & TOX_ADDR_RESOLVE_INET6) == 0) { /* AF_UNSPEC requested, store away */
                     if (walker->ai_addrlen == sizeof(struct sockaddr_in6)) {
                         const struct sockaddr_in6 *addr = (const struct sockaddr_in6 *)(void *)walker->ai_addr;
                         get_ip6(&ip6.ip.v6, &addr->sin6_addr);
@@ -1392,13 +1392,13 @@ int addr_resolve(const char *address, IP *to, IP *extra)
     }
 
     if (family == AF_UNSPEC) {
-        if (result & TOX_ADDR_RESOLVE_INET6) {
+        if ((result & TOX_ADDR_RESOLVE_INET6) != 0) {
             ip_copy(to, &ip6);
 
-            if ((result & TOX_ADDR_RESOLVE_INET) && (extra != nullptr)) {
+            if ((result & TOX_ADDR_RESOLVE_INET) != 0 && (extra != nullptr)) {
                 ip_copy(extra, &ip4);
             }
-        } else if (result & TOX_ADDR_RESOLVE_INET) {
+        } else if ((result & TOX_ADDR_RESOLVE_INET) != 0) {
             ip_copy(to, &ip4);
         } else {
             result = 0;
@@ -1412,7 +1412,7 @@ int addr_resolve(const char *address, IP *to, IP *extra)
 
 bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra)
 {
-    if (!addr_resolve(address, to, extra)) {
+    if (addr_resolve(address, to, extra) == 0) {
         if (!addr_parse_ip(address, to)) {
             return false;
         }

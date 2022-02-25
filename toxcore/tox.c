@@ -1428,7 +1428,7 @@ bool tox_friend_get_typing(const Tox *tox, uint32_t friend_number, Tox_Err_Frien
     }
 
     SET_ERROR_PARAMETER(error, TOX_ERR_FRIEND_QUERY_OK);
-    return !!ret;
+    return ret != 0;
 }
 
 void tox_callback_friend_typing(Tox *tox, tox_friend_typing_cb *callback)

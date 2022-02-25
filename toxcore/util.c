@@ -21,12 +21,12 @@
 
 
 /** id functions */
-bool id_equal(const uint8_t *dest, const uint8_t *src)
+bool pk_equal(const uint8_t *dest, const uint8_t *src)
 {
-    return public_key_cmp(dest, src) == 0;
+    return public_key_eq(dest, src);
 }
 
-uint32_t id_copy(uint8_t *dest, const uint8_t *src)
+uint32_t pk_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
     return CRYPTO_PUBLIC_KEY_SIZE;
@@ -54,6 +54,11 @@ int create_recursive_mutex(pthread_mutex_t *mutex)
     pthread_mutexattr_destroy(&attr);
 
     return 0;
+}
+
+bool memeq(const uint8_t *a, size_t a_size, const uint8_t *b, size_t b_size)
+{
+    return a_size == b_size && memcmp(a, b, a_size) == 0;
 }
 
 int16_t max_s16(int16_t a, int16_t b)

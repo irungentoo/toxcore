@@ -16,7 +16,7 @@ TEST(Util, TwoRandomIdsAreNotEqual)
     crypto_new_keypair(pk1, sk1);
     crypto_new_keypair(pk2, sk2);
 
-    EXPECT_FALSE(id_equal(pk1, pk2));
+    EXPECT_FALSE(pk_equal(pk1, pk2));
 }
 
 TEST(Util, IdCopyMakesKeysEqual)
@@ -26,9 +26,9 @@ TEST(Util, IdCopyMakesKeysEqual)
     uint8_t pk2[CRYPTO_PUBLIC_KEY_SIZE] = {0};
 
     crypto_new_keypair(pk1, sk1);
-    id_copy(pk2, pk1);
+    pk_copy(pk2, pk1);
 
-    EXPECT_TRUE(id_equal(pk1, pk2));
+    EXPECT_TRUE(pk_equal(pk1, pk2));
 }
 
 }  // namespace

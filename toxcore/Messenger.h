@@ -207,15 +207,15 @@ typedef struct Friend {
     uint8_t info[MAX_FRIEND_REQUEST_DATA_SIZE]; // the data that is sent during the friend requests we do.
     uint8_t name[MAX_NAME_LENGTH];
     uint16_t name_length;
-    uint8_t name_sent; // 0 if we didn't send our name to this friend 1 if we have.
+    bool name_sent; // false if we didn't send our name to this friend, true if we have.
     uint8_t statusmessage[MAX_STATUSMESSAGE_LENGTH];
     uint16_t statusmessage_length;
-    uint8_t statusmessage_sent;
+    bool statusmessage_sent;
     Userstatus userstatus;
-    uint8_t userstatus_sent;
-    uint8_t user_istyping;
-    uint8_t user_istyping_sent;
-    uint8_t is_typing;
+    bool userstatus_sent;
+    bool user_istyping;
+    bool user_istyping_sent;
+    bool is_typing;
     uint16_t info_size; // Length of the info.
     uint32_t message_id; // a semi-unique id used in read receipts.
     uint32_t friendrequest_nospam; // The nospam number used in the friend request.
@@ -378,13 +378,16 @@ int m_delfriend(Messenger *m, int32_t friendnumber);
 non_null()
 int m_get_friend_connectionstatus(const Messenger *m, int32_t friendnumber);
 
-/** Checks if there exists a friend with given friendnumber.
+/**
+ * Checks if there exists a friend with given friendnumber.
  *
- *  return 1 if friend exists.
- *  return 0 if friend doesn't exist.
+ * @param friendnumber The index in the friend list.
+ *
+ * @retval true if friend exists.
+ * @retval false if friend doesn't exist.
  */
 non_null()
-int m_friend_exists(const Messenger *m, int32_t friendnumber);
+bool m_friend_exists(const Messenger *m, int32_t friendnumber);
 
 /** Send a message of type to an online friend.
  *
@@ -499,10 +502,11 @@ non_null() uint64_t m_get_last_online(const Messenger *m, int32_t friendnumber);
  * returns -1 on failure.
  */
 non_null()
-int m_set_usertyping(Messenger *m, int32_t friendnumber, uint8_t is_typing);
+int m_set_usertyping(Messenger *m, int32_t friendnumber, bool is_typing);
 
 /** Get the typing status of a friend.
  *
+ * returns -1 if friend number is invalid.
  * returns 0 if friend is not typing.
  * returns 1 if friend is typing.
  */
@@ -575,11 +579,11 @@ void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function
 
 /** Send a conference invite packet.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return true on success
+ *  return false on failure
  */
 non_null()
-int send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+bool send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /*** FILE SENDING */
 
