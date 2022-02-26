@@ -897,7 +897,7 @@ static int handle_announce_response(void *object, const IP_Port *source, const u
 
     if (len_nodes != 0) {
         Node_format nodes[MAX_SENT_NODES];
-        const int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, nullptr, plain + 1 + ONION_PING_ID_SIZE, len_nodes, 0);
+        const int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, nullptr, plain + 1 + ONION_PING_ID_SIZE, len_nodes, false);
 
         if (num_nodes <= 0) {
             return 1;
@@ -999,7 +999,7 @@ static int handle_dhtpk_announce(void *object, const uint8_t *source_pubkey, con
     if (len_nodes != 0) {
         Node_format nodes[MAX_SENT_NODES];
         const int num_nodes = unpack_nodes(nodes, MAX_SENT_NODES, nullptr, data + 1 + sizeof(uint64_t) + CRYPTO_PUBLIC_KEY_SIZE,
-                                     len_nodes, 1);
+                                     len_nodes, true);
 
         if (num_nodes <= 0) {
             return 1;
@@ -1767,21 +1767,21 @@ static void do_announce(Onion_Client *onion_c)
     }
 }
 
-/**  return 0 if we are not connected to the network.
- *  return 1 if we are.
+/**  return false if we are not connected to the network.
+ *  return true if we are.
  */
 non_null()
-static int onion_isconnected(const Onion_Client *onion_c)
+static bool onion_isconnected(const Onion_Client *onion_c)
 {
     unsigned int num = 0;
     unsigned int announced = 0;
 
     if (mono_time_is_timeout(onion_c->mono_time, onion_c->last_packet_recv, ONION_OFFLINE_TIMEOUT)) {
-        return 0;
+        return false;
     }
 
     if (onion_c->path_nodes_index == 0) {
-        return 0;
+        return false;
     }
 
     for (unsigned int i = 0; i < MAX_ONION_CLIENTS_ANNOUNCE; ++i) {
@@ -1804,11 +1804,11 @@ static int onion_isconnected(const Onion_Client *onion_c)
      * we are connected to */
     if (num != 0 && announced != 0) {
         if ((num / 2) <= announced && (pnodes / 2) <= num) {
-            return 1;
+            return true;
         }
     }
 
-    return 0;
+    return false;
 }
 
 non_null()

@@ -680,11 +680,11 @@ void m_callback_msi_packet(Messenger *m, m_msi_packet_cb *function, void *userda
 
 /** Send an msi packet.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return true on success
+ *  return false on failure
  */
 non_null()
-int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
+bool m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length);
 
 /** Set handlers for lossy rtp packets.
  *

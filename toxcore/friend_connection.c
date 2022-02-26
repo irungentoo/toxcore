@@ -489,7 +489,7 @@ static int handle_packet(void *object, int number, const uint8_t *data, uint16_t
 
     if (data[0] == PACKET_ID_SHARE_RELAYS) {
         Node_format nodes[MAX_SHARED_RELAYS];
-        const int n = unpack_nodes(nodes, MAX_SHARED_RELAYS, nullptr, data + 1, length - 1, 1);
+        const int n = unpack_nodes(nodes, MAX_SHARED_RELAYS, nullptr, data + 1, length - 1, true);
 
         if (n == -1) {
             return -1;
@@ -876,7 +876,7 @@ int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint3
 
     if (friend_con->status == FRIENDCONN_STATUS_CONNECTED) {
         packet[0] = PACKET_ID_FRIEND_REQUESTS;
-        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet), false) != -1;
+        return write_cryptpacket(fr_c->net_crypto, friend_con->crypt_connection_id, packet, SIZEOF_VLA(packet), false) != -1 ? 1 : 0;
     }
 
     packet[0] = CRYPTO_PACKET_FRIEND_REQ;

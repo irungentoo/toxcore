@@ -1161,7 +1161,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
         switch (status) {
             case TCP_SOCKET_LISTENING: {
                 // socket is from socks_listening, accept connection
-                while (1) {
+                while (true) {
                     const Socket sock_new = net_accept(sock);
 
                     if (!sock_valid(sock_new)) {

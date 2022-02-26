@@ -359,7 +359,7 @@ int onion_send_1(const Onion *onion, const uint8_t *plain, uint16_t len, const I
 
     IP_Port send_to;
 
-    if (ipport_unpack(&send_to, plain, len, 0) == -1) {
+    if (ipport_unpack(&send_to, plain, len, false) == -1) {
         return 1;
     }
 
@@ -417,7 +417,7 @@ static int handle_send_1(void *object, const IP_Port *source, const uint8_t *pac
 
     IP_Port send_to;
 
-    if (ipport_unpack(&send_to, plain, len, 0) == -1) {
+    if (ipport_unpack(&send_to, plain, len, false) == -1) {
         return 1;
     }
 
@@ -485,7 +485,7 @@ static int handle_send_2(void *object, const IP_Port *source, const uint8_t *pac
 
     IP_Port send_to;
 
-    if (ipport_unpack(&send_to, plain, len, 0) == -1) {
+    if (ipport_unpack(&send_to, plain, len, false) == -1) {
         return 1;
     }
 
@@ -545,7 +545,7 @@ static int handle_recv_3(void *object, const IP_Port *source, const uint8_t *pac
 
     IP_Port send_to;
 
-    if (ipport_unpack(&send_to, plain, len, 0) == -1) {
+    if (ipport_unpack(&send_to, plain, len, false) == -1) {
         return 1;
     }
 
@@ -593,7 +593,7 @@ static int handle_recv_2(void *object, const IP_Port *source, const uint8_t *pac
 
     IP_Port send_to;
 
-    if (ipport_unpack(&send_to, plain, len, 0) == -1) {
+    if (ipport_unpack(&send_to, plain, len, false) == -1) {
         return 1;
     }
 
@@ -641,7 +641,7 @@ static int handle_recv_1(void *object, const IP_Port *source, const uint8_t *pac
 
     IP_Port send_to;
 
-    if (ipport_unpack(&send_to, plain, len, 1) == -1) {
+    if (ipport_unpack(&send_to, plain, len, true) == -1) {
         return 1;
     }
 

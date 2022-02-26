@@ -1879,10 +1879,10 @@ bool tox_conference_delete(Tox *tox, uint32_t conference_number, Tox_Err_Confere
 {
     assert(tox != nullptr);
     lock(tox);
-    const int ret = del_groupchat(tox->m->conferences_object, conference_number, true);
+    const bool ret = del_groupchat(tox->m->conferences_object, conference_number, true);
     unlock(tox);
 
-    if (ret == -1) {
+    if (!ret) {
         SET_ERROR_PARAMETER(error, TOX_ERR_CONFERENCE_DELETE_CONFERENCE_NOT_FOUND);
         return false;
     }

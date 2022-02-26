@@ -382,7 +382,7 @@ bool lan_discovery_send(Networking_Core *net, const Broadcast_Info *broadcast, c
     ip_port.ip = broadcast_ip(net_family(net), net_family_ipv4);
 
     if (ip_isset(&ip_port.ip)) {
-        if (sendpacket(net, &ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE)) {
+        if (sendpacket(net, &ip_port, data, 1 + CRYPTO_PUBLIC_KEY_SIZE) > 0) {
             res = true;
         }
     }

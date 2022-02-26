@@ -1418,14 +1418,14 @@ non_null()
 static int handle_getnodes(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length, void *userdata)
 {
     if (length != (CRYPTO_SIZE + CRYPTO_MAC_SIZE + sizeof(uint64_t))) {
-        return true;
+        return 1;
     }
 
     DHT *const dht = (DHT *)object;
 
     /* Check if packet is from ourself. */
     if (pk_equal(packet + 1, dht->self_public_key)) {
-        return true;
+        return 1;
     }
 
     uint8_t plain[CRYPTO_NODE_SIZE];
@@ -1441,7 +1441,7 @@ static int handle_getnodes(void *object, const IP_Port *source, const uint8_t *p
 
     if (len != CRYPTO_NODE_SIZE) {
         crypto_memzero(shared_key, sizeof(shared_key));
-        return true;
+        return 1;
     }
 
     sendnodes_ipv6(dht, source, packet + 1, plain, plain + CRYPTO_PUBLIC_KEY_SIZE, sizeof(uint64_t), shared_key);
@@ -1450,7 +1450,7 @@ static int handle_getnodes(void *object, const IP_Port *source, const uint8_t *p
 
     crypto_memzero(shared_key, sizeof(shared_key));
 
-    return false;
+    return 0;
 }
 
 /** Return true if we sent a getnode packet to the peer associated with the supplied info. */
@@ -1473,24 +1473,24 @@ static bool sent_getnode_to_node(DHT *dht, const uint8_t *public_key, const IP_P
 }
 
 non_null()
-static int handle_sendnodes_core(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
-                                 Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
+static bool handle_sendnodes_core(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
+                                  Node_format *plain_nodes, uint16_t size_plain_nodes, uint32_t *num_nodes_out)
 {
     DHT *const dht = (DHT *)object;
     const uint32_t cid_size = 1 + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_NONCE_SIZE + 1 + sizeof(uint64_t) + CRYPTO_MAC_SIZE;
 
     if (length < cid_size) { /* too short */
-        return 1;
+        return false;
     }
 
     const uint32_t data_size = length - cid_size;
 
     if (data_size == 0) {
-        return 1;
+        return false;
     }
 
     if (data_size > sizeof(Node_format) * MAX_SENT_NODES) { /* invalid length */
-        return 1;
+        return false;
     }
 
     VLA(uint8_t, plain, 1 + data_size + sizeof(uint64_t));
@@ -1506,33 +1506,33 @@ static int handle_sendnodes_core(void *object, const IP_Port *source, const uint
     crypto_memzero(shared_key, sizeof(shared_key));
 
     if ((unsigned int)len != SIZEOF_VLA(plain)) {
-        return 1;
+        return false;
     }
 
     if (plain[0] > size_plain_nodes) {
-        return 1;
+        return false;
     }
 
     uint64_t ping_id;
     memcpy(&ping_id, plain + 1 + data_size, sizeof(ping_id));
 
     if (!sent_getnode_to_node(dht, packet + 1, source, ping_id)) {
-        return 1;
+        return false;
     }
 
     uint16_t length_nodes = 0;
-    const int num_nodes = unpack_nodes(plain_nodes, plain[0], &length_nodes, plain + 1, data_size, 0);
+    const int num_nodes = unpack_nodes(plain_nodes, plain[0], &length_nodes, plain + 1, data_size, false);
 
     if (length_nodes != data_size) {
-        return 1;
+        return false;
     }
 
     if (num_nodes != plain[0]) {
-        return 1;
+        return false;
     }
 
     if (num_nodes < 0) {
-        return 1;
+        return false;
     }
 
     /* store the address the *request* was sent to */
@@ -1540,7 +1540,7 @@ static int handle_sendnodes_core(void *object, const IP_Port *source, const uint
 
     *num_nodes_out = num_nodes;
 
-    return 0;
+    return true;
 }
 
 non_null()
@@ -1551,7 +1551,7 @@ static int handle_sendnodes_ipv6(void *object, const IP_Port *source, const uint
     Node_format plain_nodes[MAX_SENT_NODES];
     uint32_t num_nodes;
 
-    if (handle_sendnodes_core(object, source, packet, length, plain_nodes, MAX_SENT_NODES, &num_nodes)) {
+    if (!handle_sendnodes_core(object, source, packet, length, plain_nodes, MAX_SENT_NODES, &num_nodes)) {
         return 1;
     }
 
@@ -1625,7 +1625,7 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
     dht_friend_lock(dht_friend, ip_callback, data, number, lock_count);
 
     dht_friend->num_to_bootstrap = get_close_nodes(dht, dht_friend->public_key, dht_friend->to_bootstrap, net_family_unspec,
-                                   1);
+                                   true);
 
     return 0;
 }
@@ -1800,7 +1800,7 @@ static void do_dht_friends(DHT *dht)
 
         do_ping_and_sendnode_requests(dht, &dht_friend->lastgetnode, dht_friend->public_key, dht_friend->client_list,
                                       MAX_FRIEND_CLIENTS,
-                                      &dht_friend->bootstrap_times, 1);
+                                      &dht_friend->bootstrap_times, true);
     }
 }
 
@@ -1818,7 +1818,7 @@ static void do_Close(DHT *dht)
 
     const uint8_t not_killed = do_ping_and_sendnode_requests(
                              dht, &dht->close_lastgetnodes, dht->self_public_key, dht->close_clientlist, LCLIENT_LIST, &dht->close_bootstrap_times,
-                             0);
+                             false);
 
     if (not_killed != 0) {
         return;
@@ -2393,7 +2393,7 @@ static uint16_t list_nodes(const Client_data *list, size_t length, uint64_t cur_
         if (!assoc_timeout(cur_time, &list[i - 1].assoc6)) {
             if (assoc == nullptr) {
                 assoc = &list[i - 1].assoc6;
-            } else if (random_u08() % 2) {
+            } else if ((random_u08() % 2) != 0) {
                 assoc = &list[i - 1].assoc6;
             }
         }
@@ -2754,7 +2754,7 @@ static State_Load_Status dht_load_state_callback(void *outer, const uint8_t *dat
                 break;
             }
 
-            const int num = unpack_nodes(dht->loaded_nodes_list, MAX_SAVED_DHT_NODES, nullptr, data, length, 0);
+            const int num = unpack_nodes(dht->loaded_nodes_list, MAX_SAVED_DHT_NODES, nullptr, data, length, false);
 
             if (num > 0) {
                 dht->loaded_num_nodes = num;

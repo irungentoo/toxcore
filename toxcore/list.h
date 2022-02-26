@@ -11,6 +11,7 @@
 #ifndef C_TOXCORE_TOXCORE_LIST_H
 #define C_TOXCORE_TOXCORE_LIST_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "attributes.h"
@@ -53,20 +54,20 @@ int bs_list_find(const BS_List *list, const uint8_t *data);
 /** Add an element with associated id to the list
  *
  * return value:
- *  1 : success
- *  0 : failure (data already in list)
+ *  true  : success
+ *  false : failure (data already in list)
  */
 non_null()
-int bs_list_add(BS_List *list, const uint8_t *data, int id);
+bool bs_list_add(BS_List *list, const uint8_t *data, int id);
 
 /** Remove element from the list
  *
  * return value:
- *  1 : success
- *  0 : failure (element not found or id does not match)
+ *  true  : success
+ *  false : failure (element not found or id does not match)
  */
 non_null()
-int bs_list_remove(BS_List *list, const uint8_t *data, int id);
+bool bs_list_remove(BS_List *list, const uint8_t *data, int id);
 
 #ifdef __cplusplus
 }  // extern "C"

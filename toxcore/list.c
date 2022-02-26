@@ -58,7 +58,7 @@ static int find(const BS_List *list, const uint8_t *data)
     int d = -1; // used to determine if closest match is found
     // closest match is found if we move back to where we have already been
 
-    while (1) {
+    while (true) {
         const int r = memcmp(data, list->data + list->element_size * i, list->element_size);
 
         if (r == 0) {
@@ -176,7 +176,7 @@ int bs_list_find(const BS_List *list, const uint8_t *data)
     return list->ids[r];
 }
 
-int bs_list_add(BS_List *list, const uint8_t *data, int id)
+bool bs_list_add(BS_List *list, const uint8_t *data, int id)
 {
     // find where the new element should be inserted
     // see: return value of find()
@@ -184,7 +184,7 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id)
 
     if (i >= 0) {
         // already in list
-        return 0;
+        return false;
     }
 
     i = ~i;
@@ -195,7 +195,7 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id)
         const uint32_t new_capacity = list->n + list->n / 2 + 1;
 
         if (!resize(list, new_capacity)) {
-            return 0;
+            return false;
         }
 
         list->capacity = new_capacity;
@@ -213,20 +213,20 @@ int bs_list_add(BS_List *list, const uint8_t *data, int id)
     // increase n
     ++list->n;
 
-    return 1;
+    return true;
 }
 
-int bs_list_remove(BS_List *list, const uint8_t *data, int id)
+bool bs_list_remove(BS_List *list, const uint8_t *data, int id)
 {
     const int i = find(list, data);
 
     if (i < 0) {
-        return 0;
+        return false;
     }
 
     if (list->ids[i] != id) {
         // this should never happen
-        return 0;
+        return false;
     }
 
     // decrease the size of the arrays if needed
@@ -244,5 +244,5 @@ int bs_list_remove(BS_List *list, const uint8_t *data, int id)
             (list->n - i) * list->element_size);
     memmove(&list->ids[i], &list->ids[i + 1], (list->n - i) * sizeof(int));
 
-    return 1;
+    return true;
 }

@@ -403,7 +403,7 @@ static void purge_closest(Group_Chats *g_c, uint32_t groupnumber)
             continue;
         }
 
-        if (!(g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST)) {
+        if ((g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST) == 0) {
             continue;
         }
 
@@ -417,8 +417,8 @@ static void purge_closest(Group_Chats *g_c, uint32_t groupnumber)
 }
 
 non_null()
-static int send_packet_online(const Friend_Connections *fr_c, int friendcon_id, uint16_t group_num,
-                              uint8_t type, const uint8_t *id);
+static bool send_packet_online(const Friend_Connections *fr_c, int friendcon_id, uint16_t group_num,
+                               uint8_t type, const uint8_t *id);
 
 non_null()
 static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, Group_c *g, uint8_t reason,
@@ -716,7 +716,7 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
 non_null()
 static void remove_connection(Group_Chats *g_c, Group_c *g, uint16_t i)
 {
-    if (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER) {
+    if ((g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER) != 0) {
         --g->num_introducer_connections;
     }
 
@@ -1131,7 +1131,7 @@ static int add_conn_to_groupchat(Group_Chats *g_c, int friendcon_id, Group_c *g,
 }
 
 non_null()
-static unsigned int send_peer_introduced(const Group_Chats *g_c, int friendcon_id, uint16_t group_num);
+static bool send_peer_introduced(const Group_Chats *g_c, int friendcon_id, uint16_t group_num);
 
 /** Removes reason for keeping connection.
  *
@@ -1199,15 +1199,15 @@ static bool group_leave(const Group_Chats *g_c, uint32_t groupnumber, bool perma
 /** Delete a groupchat from the chats array, informing the group first as
  * appropriate.
  *
- * return 0 on success.
- * return -1 if groupnumber is invalid.
+ * return true on success.
+ * return false if groupnumber is invalid.
  */
-int del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently)
+bool del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently)
 {
     Group_c *g = get_group_c(g_c, groupnumber);
 
     if (g == nullptr) {
-        return -1;
+        return false;
     }
 
     group_leave(g_c, groupnumber, leave_permanently);
@@ -1403,7 +1403,7 @@ int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, uint3
         return -3;
     }
 
-    return g->peer_number == g->group[peernumber].peer_number;
+    return (g->peer_number == g->group[peernumber].peer_number) ? 1 : 0;
 }
 
 /** return the type of groupchat (GROUPCHAT_TYPE_) that groupnumber is.
@@ -1547,7 +1547,7 @@ static bool try_send_rejoin(Group_Chats *g_c, Group_c *g, const uint8_t *real_pk
 }
 
 non_null()
-static unsigned int send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t group_num);
+static bool send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t group_num);
 
 non_null()
 static bool send_invite_response(Group_Chats *g_c, int groupnumber, uint32_t friendnumber, const uint8_t *data,
@@ -2107,8 +2107,8 @@ static unsigned int count_connected(const Group_c *g)
     return count;
 }
 
-static int send_packet_online(const Friend_Connections *fr_c, int friendcon_id, uint16_t group_num,
-                              uint8_t type, const uint8_t *id)
+static bool send_packet_online(const Friend_Connections *fr_c, int friendcon_id, uint16_t group_num,
+                               uint8_t type, const uint8_t *id)
 {
     uint8_t packet[1 + ONLINE_PACKET_DATA_SIZE];
     group_num = net_htons(group_num);
@@ -2156,7 +2156,7 @@ static int handle_packet_online(const Group_Chats *g_c, int friendcon_id, const 
         return -1;
     }
 
-    if (count_connected(g) == 0 || (g->connections[index].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER)) {
+    if (count_connected(g) == 0 || (g->connections[index].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER) != 0) {
         send_peer_query(g_c, friendcon_id, other_groupnum);
     }
 
@@ -2164,7 +2164,7 @@ static int handle_packet_online(const Group_Chats *g_c, int friendcon_id, const 
     g->connections[index].type = GROUPCHAT_CONNECTION_ONLINE;
     send_packet_online(g_c->fr_c, friendcon_id, groupnumber, g->type, g->id);
 
-    if (g->connections[index].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCING) {
+    if ((g->connections[index].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCING) != 0) {
         uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
         uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
         get_friendcon_public_keys(real_pk, temp_pk, g_c->fr_c, friendcon_id);
@@ -2223,10 +2223,10 @@ static int handle_packet_rejoin(Group_Chats *g_c, int friendcon_id, const uint8_
 
 // we could send title with invite, but then if it changes between sending and accepting inv, joinee won't see it
 
-/** return 1 on success.
- * return 0 on failure
+/** return true on success.
+ * return false on failure
  */
-static unsigned int send_peer_introduced(const Group_Chats *g_c, int friendcon_id, uint16_t group_num)
+static bool send_peer_introduced(const Group_Chats *g_c, int friendcon_id, uint16_t group_num)
 {
     uint8_t packet[1];
     packet[0] = PEER_INTRODUCED_ID;
@@ -2234,10 +2234,10 @@ static unsigned int send_peer_introduced(const Group_Chats *g_c, int friendcon_i
 }
 
 
-/** return 1 on success.
- * return 0 on failure
+/** return true on success.
+ * return false on failure
  */
-static unsigned int send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t group_num)
+static bool send_peer_query(const Group_Chats *g_c, int friendcon_id, uint16_t group_num)
 {
     uint8_t packet[1];
     packet[0] = PEER_QUERY_ID;
@@ -2453,7 +2453,7 @@ static unsigned int send_lossy_all_connections(const Group_Chats *g_c, const Gro
             continue;
         }
 
-        if (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST) {
+        if ((g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST) != 0) {
             connected_closest[num_connected_closest] = i;
             ++num_connected_closest;
             continue;
@@ -2716,7 +2716,7 @@ static void handle_message_packet_group(Group_Chats *g_c, uint32_t groupnumber, 
     if (g->num_introducer_connections > 0 && count_connected(g) > DESIRED_CLOSEST) {
         for (uint32_t i = 0; i < MAX_GROUP_CONNECTIONS; ++i) {
             if (g->connections[i].type == GROUPCHAT_CONNECTION_NONE
-                    || !(g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER)
+                    || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_INTRODUCER) == 0
                     || i == connection_index) {
                 continue;
             }
@@ -3199,7 +3199,7 @@ static void clean_connections(Group_Chats *g_c, Group_c *g)
 
         while (i < MAX_GROUP_CONNECTIONS
                 && (g->connections[i].type != GROUPCHAT_CONNECTION_CONNECTING
-                    || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST))) {
+                    || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST) != 0)) {
             ++i;
         }
 
@@ -3208,7 +3208,7 @@ static void clean_connections(Group_Chats *g_c, Group_c *g)
 
             while (i < MAX_GROUP_CONNECTIONS - to_clear
                     && (g->connections[i].type != GROUPCHAT_CONNECTION_ONLINE
-                        || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST))) {
+                        || (g->connections[i].reasons & GROUPCHAT_CONNECTION_REASON_CLOSEST) != 0)) {
                 ++i;
             }
         }

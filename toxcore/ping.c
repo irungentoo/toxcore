@@ -234,12 +234,12 @@ static int handle_ping_response(void *object, const IP_Port *source, const uint8
 
 /** Check if public_key with ip_port is in the list.
  *
- * return 1 if it is.
- * return 0 if it isn't.
+ * return true if it is.
+ * return false if it isn't.
  */
 non_null()
-static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mono_time, const uint8_t *public_key,
-                   const IP_Port *ip_port)
+static bool in_list(const Client_data *list, uint16_t length, const Mono_Time *mono_time, const uint8_t *public_key,
+                    const IP_Port *ip_port)
 {
     for (unsigned int i = 0; i < length; ++i) {
         if (pk_equal(list[i].public_key, public_key)) {
@@ -253,12 +253,12 @@ static int in_list(const Client_data *list, uint16_t length, const Mono_Time *mo
 
             if (!mono_time_is_timeout(mono_time, ipptp->timestamp, BAD_NODE_TIMEOUT)
                     && ipport_equal(&ipptp->ip_port, ip_port)) {
-                return 1;
+                return true;
             }
         }
     }
 
-    return 0;
+    return false;
 }
 
 /** Add nodes to the to_ping list.

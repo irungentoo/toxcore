@@ -1514,7 +1514,7 @@ static void connection_kill(Net_Crypto *c, int crypt_connection_id, void *userda
                 false, userdata);
     }
 
-    while (1) { /* TODO(irungentoo): is this really the best way to do this? */
+    while (true) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
 
         if (c->connection_use_counter == 0) {
@@ -1629,7 +1629,7 @@ static int handle_data_packet_core(Net_Crypto *c, int crypt_connection_id, const
             return -1;
         }
 
-        while (1) {
+        while (true) {
             pthread_mutex_lock(conn->mutex);
             const int ret = read_data_beg_buffer(&conn->recv_array, &dt);
             pthread_mutex_unlock(conn->mutex);
@@ -1831,7 +1831,7 @@ static int realloc_cryptoconnection(Net_Crypto *c, uint32_t num)
 non_null()
 static int create_crypto_connection(Net_Crypto *c)
 {
-    while (1) { /* TODO(irungentoo): is this really the best way to do this? */
+    while (true) { /* TODO(irungentoo): is this really the best way to do this? */
         pthread_mutex_lock(&c->connections_mutex);
 
         if (c->connection_use_counter == 0) {
@@ -2238,7 +2238,7 @@ static int tcp_data_callback(void *object, int crypt_connection_id, const uint8_
     // This unlocks the mutex that at this point is locked by do_tcp before
     // calling do_tcp_connections.
     pthread_mutex_unlock(&c->tcp_mutex);
-    const int ret = handle_packet_connection(c, crypt_connection_id, data, length, 0, userdata);
+    const int ret = handle_packet_connection(c, crypt_connection_id, data, length, false, userdata);
     pthread_mutex_lock(&c->tcp_mutex);
 
     if (ret != 0) {
@@ -2546,7 +2546,7 @@ static int udp_handle_packet(void *object, const IP_Port *source, const uint8_t 
         return 0;
     }
 
-    if (handle_packet_connection(c, crypt_connection_id, packet, length, 1, userdata) != 0) {
+    if (handle_packet_connection(c, crypt_connection_id, packet, length, true, userdata) != 0) {
         return 1;
     }
 

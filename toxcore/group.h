@@ -241,11 +241,11 @@ int add_groupchat(Group_Chats *g_c, uint8_t type);
 /** Delete a groupchat from the chats array, informing the group first as
  * appropriate.
  *
- * return 0 on success.
- * return -1 if groupnumber is invalid.
+ * return true on success.
+ * return false if groupnumber is invalid.
  */
 non_null()
-int del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently);
+bool del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently);
 
 /** Copy the public key of (frozen, if frozen is true) peernumber who is in
  * groupnumber to pk. pk must be CRYPTO_PUBLIC_KEY_SIZE long.

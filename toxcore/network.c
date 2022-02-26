@@ -1317,7 +1317,7 @@ bool addr_parse_ip(const char *address, IP *to)
 int addr_resolve(const char *address, IP *to, IP *extra)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return false;
+    return 0;
 #else
 
     if (address == nullptr || to == nullptr) {

@@ -121,10 +121,10 @@ void getaddress(const Messenger *m, uint8_t *address)
 }
 
 non_null()
-static int send_online_packet(Messenger *m, int32_t friendnumber)
+static bool send_online_packet(Messenger *m, int32_t friendnumber)
 {
     if (!m_friend_exists(m, friendnumber)) {
-        return 0;
+        return false;
     }
 
     uint8_t packet = PACKET_ID_ONLINE;
@@ -133,7 +133,7 @@ static int send_online_packet(Messenger *m, int32_t friendnumber)
 }
 
 non_null()
-static int send_offline_packet(Messenger *m, int friendcon_id)
+static bool send_offline_packet(Messenger *m, int friendcon_id)
 {
     uint8_t packet = PACKET_ID_OFFLINE;
     return write_cryptpacket(m->net_crypto, friend_connection_crypt_connection_id(m->fr_c, friendcon_id), &packet,
@@ -541,15 +541,15 @@ int m_send_message_generic(Messenger *m, int32_t friendnumber, uint8_t type, con
 }
 
 non_null()
-static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
-                                uint32_t length, bool congestion_control)
+static bool write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_t packet_id, const uint8_t *data,
+                                 uint32_t length, bool congestion_control)
 {
     if (!m_friend_exists(m, friendnumber)) {
-        return 0;
+        return false;
     }
 
     if (length >= MAX_CRYPTO_DATA_SIZE || m->friendlist[friendnumber].status != FRIEND_ONLINE) {
-        return 0;
+        return false;
     }
 
     VLA(uint8_t, packet, length + 1);
@@ -566,10 +566,10 @@ static int write_cryptpacket_id(const Messenger *m, int32_t friendnumber, uint8_
  * length is the length with the NULL terminator.
  */
 non_null()
-static int m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *name, uint16_t length)
+static bool m_sendname(const Messenger *m, int32_t friendnumber, const uint8_t *name, uint16_t length)
 {
     if (length > MAX_NAME_LENGTH) {
-        return 0;
+        return false;
     }
 
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_NICKNAME, name, length, false);
@@ -826,19 +826,19 @@ int m_get_istyping(const Messenger *m, int32_t friendnumber)
 }
 
 non_null()
-static int send_statusmessage(const Messenger *m, int32_t friendnumber, const uint8_t *status, uint16_t length)
+static bool send_statusmessage(const Messenger *m, int32_t friendnumber, const uint8_t *status, uint16_t length)
 {
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_STATUSMESSAGE, status, length, false);
 }
 
 non_null()
-static int send_userstatus(const Messenger *m, int32_t friendnumber, uint8_t status)
+static bool send_userstatus(const Messenger *m, int32_t friendnumber, uint8_t status)
 {
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_USERSTATUS, &status, sizeof(status), false);
 }
 
 non_null()
-static int send_user_istyping(const Messenger *m, int32_t friendnumber, bool is_typing)
+static bool send_user_istyping(const Messenger *m, int32_t friendnumber, bool is_typing)
 {
     const uint8_t typing = is_typing ? 1 : 0;
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_TYPING, &typing, sizeof(typing), false);
@@ -1009,7 +1009,7 @@ void m_callback_conference_invite(Messenger *m, m_conference_invite_cb *function
  */
 bool send_conference_invite_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
-    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, false) != 0;
+    return write_cryptpacket_id(m, friendnumber, PACKET_ID_INVITE_CONFERENCE, data, length, false);
 }
 
 /*** FILE SENDING */
@@ -1101,15 +1101,15 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
  *  return 0 on failure
  */
 non_null()
-static int file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint32_t file_type,
-                            uint64_t filesize, const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
+static bool file_sendrequest(const Messenger *m, int32_t friendnumber, uint8_t filenumber, uint32_t file_type,
+                             uint64_t filesize, const uint8_t *file_id, const uint8_t *filename, uint16_t filename_length)
 {
     if (!m_friend_exists(m, friendnumber)) {
-        return 0;
+        return false;
     }
 
     if (filename_length > MAX_FILENAME_LENGTH) {
-        return 0;
+        return false;
     }
 
     VLA(uint8_t, packet, 1 + sizeof(file_type) + sizeof(filesize) + FILE_ID_LENGTH + filename_length);
@@ -1158,7 +1158,7 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
         return -3;
     }
 
-    if (file_sendrequest(m, friendnumber, i, file_type, filesize, file_id, filename, filename_length) == 0) {
+    if (!file_sendrequest(m, friendnumber, i, file_type, filesize, file_id, filename, filename_length)) {
         return -4;
     }
 
@@ -1180,13 +1180,13 @@ long int new_filesender(const Messenger *m, int32_t friendnumber, uint32_t file_
 }
 
 non_null(1) nullable(6)
-static int send_file_control_packet(const Messenger *m, int32_t friendnumber, bool inbound, uint8_t filenumber,
-                                    uint8_t control_type, const uint8_t *data, uint16_t data_length)
+static bool send_file_control_packet(const Messenger *m, int32_t friendnumber, bool inbound, uint8_t filenumber,
+                                     uint8_t control_type, const uint8_t *data, uint16_t data_length)
 {
     assert(data_length == 0 || data != nullptr);
 
     if ((unsigned int)(1 + 3 + data_length) > MAX_CRYPTO_DATA_SIZE) {
-        return -1;
+        return false;
     }
 
     VLA(uint8_t, packet, 3 + data_length);
@@ -1746,10 +1746,10 @@ void m_callback_msi_packet(Messenger *m, m_msi_packet_cb *function, void *userda
 
 /** Send an msi packet.
  *
- *  return 1 on success
- *  return 0 on failure
+ *  return true on success
+ *  return false on failure
  */
-int m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
+bool m_msi_packet(const Messenger *m, int32_t friendnumber, const uint8_t *data, uint16_t length)
 {
     return write_cryptpacket_id(m, friendnumber, PACKET_ID_MSI, data, length, false);
 }
@@ -3010,7 +3010,7 @@ non_null()
 static State_Load_Status load_tcp_relays(Messenger *m, const uint8_t *data, uint32_t length)
 {
     if (length > 0) {
-        const int num = unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, 1);
+        const int num = unpack_nodes(m->loaded_relays, NUM_SAVED_TCP_RELAYS, nullptr, data, length, true);
 
         if (num == -1) {
             m->num_loaded_relays = 0;
@@ -3056,7 +3056,7 @@ static State_Load_Status load_path_nodes(Messenger *m, const uint8_t *data, uint
     Node_format nodes[NUM_SAVED_PATH_NODES];
 
     if (length > 0) {
-        const int num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, nullptr, data, length, 0);
+        const int num = unpack_nodes(nodes, NUM_SAVED_PATH_NODES, nullptr, data, length, false);
 
         if (num == -1) {
             return STATE_LOAD_STATUS_CONTINUE;
