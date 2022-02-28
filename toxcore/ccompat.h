@@ -67,10 +67,12 @@
 #if !defined(__cplusplus) || __cplusplus < 201103L
 #define nullptr NULL
 #ifndef static_assert
+#define STATIC_ASSERT_(cond, msg, line) typedef int static_assert_##line[(cond) ? 1 : -1]
+#define STATIC_ASSERT(cond, msg, line) STATIC_ASSERT_(cond, msg, line)
 #ifdef __GNUC__
-#define static_assert(cond, msg) extern __attribute__((__unused__)) const int unused_for_static_assert
+#define static_assert(cond, msg) __attribute__((__unused__)) STATIC_ASSERT(cond, msg, __LINE__)
 #else // !__GNUC__
-#define static_assert(cond, msg) extern const int unused_for_static_assert
+#define static_assert(cond, msg) STATIC_ASSERT(cond, msg, __LINE__)
 #endif // !__GNUC__
 #endif // !static_assert
 #endif // !__cplusplus

@@ -6,6 +6,43 @@
 add_flag -Wall
 add_flag -Wextra
 
+# Some additional warning flags not enabled by any of the above.
+add_flag -Wbool-compare
+add_flag -Wcast-align
+add_flag -Wcast-qual
+add_flag -Wchar-subscripts
+add_flag -Wdouble-promotion
+add_flag -Wduplicated-cond
+add_flag -Wempty-body
+add_flag -Wenum-compare
+add_flag -Wfloat-equal
+add_flag -Wformat=2
+add_flag -Wframe-address
+add_flag -Wframe-larger-than=12400
+add_flag -Wignored-attributes
+add_flag -Wignored-qualifiers
+add_flag -Winit-self
+add_flag -Winline
+add_flag -Wlarger-than=530000
+add_flag -Wmaybe-uninitialized
+add_flag -Wmemset-transposed-args
+add_flag -Wmisleading-indentation
+add_flag -Wmissing-declarations
+add_flag -Wnonnull
+add_flag -Wnull-dereference
+add_flag -Wodr
+add_flag -Wredundant-decls
+add_flag -Wreturn-type
+add_flag -Wshadow
+add_flag -Wsuggest-attribute=format
+add_flag -Wundef
+add_flag -Wunsafe-loop-optimizations
+add_flag -Wunused-but-set-parameter
+add_flag -Wunused-but-set-variable
+add_flag -Wunused-label
+add_flag -Wunused-local-typedefs
+add_flag -Wunused-value
+
 # Disable specific warning flags for both C and C++.
 
 # struct Foo foo = {0}; is a common idiom.
