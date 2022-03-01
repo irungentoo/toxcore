@@ -30,7 +30,7 @@ typedef struct Onion_Announce_Entry {
     IP_Port ret_ip_port;
     uint8_t ret[ONION_RETURN_3];
     uint8_t data_public_key[CRYPTO_PUBLIC_KEY_SIZE];
-    uint64_t time;
+    uint64_t announce_time;
 } Onion_Announce_Entry;
 
 struct Onion_Announce {
@@ -56,9 +56,9 @@ uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry
     return onion_a->entries[entry].public_key;
 }
 
-void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t cur_time)
+void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t announce_time)
 {
-    onion_a->entries[entry].time = cur_time;
+    onion_a->entries[entry].announce_time = announce_time;
 }
 
 /** Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
@@ -252,7 +252,7 @@ non_null()
 static int in_entries(const Onion_Announce *onion_a, const uint8_t *public_key)
 {
     for (unsigned int i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
-        if (!mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)
+        if (!mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].announce_time, ONION_ANNOUNCE_TIMEOUT)
                 && pk_equal(onion_a->entries[i].public_key, public_key)) {
             return i;
         }
@@ -276,8 +276,8 @@ static int cmp_entry(const void *a, const void *b)
     const Onion_Announce_Entry entry2 = cmp2->entry;
     const uint8_t *cmp_public_key = cmp1->base_public_key;
 
-    const bool t1 = mono_time_is_timeout(cmp1->mono_time, entry1.time, ONION_ANNOUNCE_TIMEOUT);
-    const bool t2 = mono_time_is_timeout(cmp1->mono_time, entry2.time, ONION_ANNOUNCE_TIMEOUT);
+    const bool t1 = mono_time_is_timeout(cmp1->mono_time, entry1.announce_time, ONION_ANNOUNCE_TIMEOUT);
+    const bool t2 = mono_time_is_timeout(cmp1->mono_time, entry2.announce_time, ONION_ANNOUNCE_TIMEOUT);
 
     if (t1 && t2) {
         return 0;
@@ -345,7 +345,7 @@ static int add_to_entries(Onion_Announce *onion_a, const IP_Port *ret_ip_port, c
 
     if (pos == -1) {
         for (unsigned i = 0; i < ONION_ANNOUNCE_MAX_ENTRIES; ++i) {
-            if (mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].time, ONION_ANNOUNCE_TIMEOUT)) {
+            if (mono_time_is_timeout(onion_a->mono_time, onion_a->entries[i].announce_time, ONION_ANNOUNCE_TIMEOUT)) {
                 pos = i;
             }
         }
@@ -365,7 +365,7 @@ static int add_to_entries(Onion_Announce *onion_a, const IP_Port *ret_ip_port, c
     onion_a->entries[pos].ret_ip_port = *ret_ip_port;
     memcpy(onion_a->entries[pos].ret, ret, ONION_RETURN_3);
     memcpy(onion_a->entries[pos].data_public_key, data_public_key, CRYPTO_PUBLIC_KEY_SIZE);
-    onion_a->entries[pos].time = mono_time_get(onion_a->mono_time);
+    onion_a->entries[pos].announce_time = mono_time_get(onion_a->mono_time);
 
     sort_onion_announce_list(onion_a->entries, ONION_ANNOUNCE_MAX_ENTRIES, onion_a->mono_time,
                              dht_get_self_public_key(onion_a->dht));

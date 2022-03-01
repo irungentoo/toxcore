@@ -259,7 +259,7 @@ static bool fill_data_into_slot(const Logger *log, struct RTPWorkBufferList *wkb
     struct RTPWorkBuffer *const slot = &wkbl->work_buffer[slot_id];
 
     assert(header != nullptr);
-    assert(is_keyframe == (bool)(header->flags & RTP_KEY_FRAME));
+    assert(is_keyframe == (bool)((header->flags & RTP_KEY_FRAME) != 0));
 
     if (slot->received_len == 0) {
         assert(slot->buf == nullptr);

@@ -144,7 +144,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
     ifc.ifc_buf = (char *)i_faces;
     ifc.ifc_len = sizeof(i_faces);
 
-    if (ioctl(sock.socket, SIOCGIFCONF, &ifc) < 0) {
+    if (ioctl(sock.sock, SIOCGIFCONF, &ifc) < 0) {
         kill_sock(sock);
         free(broadcast);
         return nullptr;
@@ -159,7 +159,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
 
     for (int i = 0; i < n; ++i) {
         /* there are interfaces with are incapable of broadcast */
-        if (ioctl(sock.socket, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
+        if (ioctl(sock.sock, SIOCGIFBRDADDR, &i_faces[i]) < 0) {
             continue;
         }
 

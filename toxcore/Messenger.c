@@ -3340,7 +3340,7 @@ void kill_messenger(Messenger *m)
     free(m);
 }
 
-bool is_receiving_file(Messenger *m)
+bool m_is_receiving_file(Messenger *m)
 {
     // Only run the expensive loop below once every 64 tox_iterate calls.
     const uint8_t skip_count = 64;

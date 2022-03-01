@@ -147,7 +147,7 @@ typedef struct IP_Port {
 } IP_Port;
 
 typedef struct Socket {
-    int socket;
+    int sock;
 } Socket;
 
 Socket net_socket(Family domain, int type, int protocol);

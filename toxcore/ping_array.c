@@ -18,7 +18,7 @@
 typedef struct Ping_Array_Entry {
     uint8_t *data;
     uint32_t length;
-    uint64_t time;
+    uint64_t ping_time;
     uint64_t ping_id;
 } Ping_Array_Entry;
 
@@ -94,7 +94,7 @@ static void ping_array_clear_timedout(Ping_Array *array, const Mono_Time *mono_t
     while (array->last_deleted != array->last_added) {
         const uint32_t index = array->last_deleted % array->total_size;
 
-        if (!mono_time_is_timeout(mono_time, array->entries[index].time, array->timeout)) {
+        if (!mono_time_is_timeout(mono_time, array->entries[index].ping_time, array->timeout)) {
             break;
         }
 
@@ -122,7 +122,7 @@ uint64_t ping_array_add(Ping_Array *array, const Mono_Time *mono_time, const uin
 
     memcpy(array->entries[index].data, data, length);
     array->entries[index].length = length;
-    array->entries[index].time = mono_time_get(mono_time);
+    array->entries[index].ping_time = mono_time_get(mono_time);
     ++array->last_added;
     uint64_t ping_id = random_u64();
     ping_id /= array->total_size;
@@ -150,7 +150,7 @@ int32_t ping_array_check(Ping_Array *array, const Mono_Time *mono_time, uint8_t 
         return -1;
     }
 
-    if (mono_time_is_timeout(mono_time, array->entries[index].time, array->timeout)) {
+    if (mono_time_is_timeout(mono_time, array->entries[index].ping_time, array->timeout)) {
         return -1;
     }
 

@@ -34,7 +34,7 @@ typedef struct Onion_Announce Onion_Announce;
 non_null()
 uint8_t *onion_announce_entry_public_key(Onion_Announce *onion_a, uint32_t entry);
 non_null()
-void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t cur_time);
+void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint64_t announce_time);
 
 /** Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
  *

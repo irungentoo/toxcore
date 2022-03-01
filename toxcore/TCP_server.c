@@ -887,9 +887,9 @@ TCP_Server *new_TCP_server(const Logger *logger, bool ipv6_enabled, uint16_t num
         struct epoll_event ev;
 
         ev.events = EPOLLIN | EPOLLET;
-        ev.data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_LISTENING << 32);
+        ev.data.u64 = sock.sock | ((uint64_t)TCP_SOCKET_LISTENING << 32);
 
-        if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock.socket, &ev) == -1) {
+        if (epoll_ctl(temp->efd, EPOLL_CTL_ADD, sock.sock, &ev) == -1) {
             continue;
         }
 
@@ -1123,7 +1123,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
         const int status = (events[n].data.u64 >> 32) & 0xFF;
         const int index = events[n].data.u64 >> 40;
 
-        if ((events[n].events & EPOLLERR) || (events[n].events & EPOLLHUP) || (events[n].events & EPOLLRDHUP)) {
+        if ((events[n].events & EPOLLERR) != 0 || (events[n].events & EPOLLHUP) != 0 || (events[n].events & EPOLLRDHUP) != 0) {
             switch (status) {
                 case TCP_SOCKET_LISTENING: {
                     // should never happen
@@ -1154,7 +1154,7 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
         }
 
 
-        if (!(events[n].events & EPOLLIN)) {
+        if ((events[n].events & EPOLLIN) == 0) {
             continue;
         }
 
@@ -1178,9 +1178,9 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
 
                     ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
 
-                    ev.data.u64 = sock_new.socket | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 40);
+                    ev.data.u64 = sock_new.sock | ((uint64_t)TCP_SOCKET_INCOMING << 32) | ((uint64_t)index_new << 40);
 
-                    if (epoll_ctl(tcp_server->efd, EPOLL_CTL_ADD, sock_new.socket, &ev) == -1) {
+                    if (epoll_ctl(tcp_server->efd, EPOLL_CTL_ADD, sock_new.sock, &ev) == -1) {
                         LOGGER_DEBUG(tcp_server->logger, "new connection %d was dropped due to epoll error %d", index, net_error());
                         kill_TCP_secure_connection(&tcp_server->incoming_connection_queue[index_new]);
                         continue;
@@ -1196,9 +1196,9 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
                 if (index_new != -1) {
                     LOGGER_TRACE(tcp_server->logger, "incoming connection %d was accepted as %d", index, index_new);
                     events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
-                    events[n].data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 40);
+                    events[n].data.u64 = sock.sock | ((uint64_t)TCP_SOCKET_UNCONFIRMED << 32) | ((uint64_t)index_new << 40);
 
-                    if (epoll_ctl(tcp_server->efd, EPOLL_CTL_MOD, sock.socket, &events[n]) == -1) {
+                    if (epoll_ctl(tcp_server->efd, EPOLL_CTL_MOD, sock.sock, &events[n]) == -1) {
                         LOGGER_DEBUG(tcp_server->logger, "incoming connection %d was dropped due to epoll error %d", index, net_error());
                         kill_TCP_secure_connection(&tcp_server->unconfirmed_connection_queue[index_new]);
                         break;
@@ -1214,9 +1214,9 @@ static bool tcp_epoll_process(TCP_Server *tcp_server, const Mono_Time *mono_time
                 if (index_new != -1) {
                     LOGGER_TRACE(tcp_server->logger, "unconfirmed connection %d was confirmed as %d", index, index_new);
                     events[n].events = EPOLLIN | EPOLLET | EPOLLRDHUP;
-                    events[n].data.u64 = sock.socket | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 40);
+                    events[n].data.u64 = sock.sock | ((uint64_t)TCP_SOCKET_CONFIRMED << 32) | ((uint64_t)index_new << 40);
 
-                    if (epoll_ctl(tcp_server->efd, EPOLL_CTL_MOD, sock.socket, &events[n]) == -1) {
+                    if (epoll_ctl(tcp_server->efd, EPOLL_CTL_MOD, sock.sock, &events[n]) == -1) {
                         // remove from confirmed connections
                         LOGGER_DEBUG(tcp_server->logger, "unconfirmed connection %d was dropped due to epoll error %d", index, net_error());
                         kill_accepted(tcp_server, index_new);

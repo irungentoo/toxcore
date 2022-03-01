@@ -824,6 +824,6 @@ non_null()
 uint32_t copy_friendlist(const Messenger *m, uint32_t *out_list, uint32_t list_size);
 
 non_null()
-bool is_receiving_file(Messenger *m);
+bool m_is_receiving_file(Messenger *m);
 
 #endif
