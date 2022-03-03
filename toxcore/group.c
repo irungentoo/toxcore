@@ -2948,7 +2948,7 @@ static int lossy_packet_not_received(const Group_c *g, int peer_index, uint16_t 
 /** Does this group type make use of lossy packets? */
 static bool type_uses_lossy(uint8_t type)
 {
-    return (type == GROUPCHAT_TYPE_AV);
+    return type == GROUPCHAT_TYPE_AV;
 }
 
 static int handle_lossy(void *object, int friendcon_id, const uint8_t *data, uint16_t length, void *userdata)
