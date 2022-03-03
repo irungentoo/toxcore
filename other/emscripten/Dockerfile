@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 WORKDIR /work/emsdk
 RUN git clone --depth=1 https://github.com/emscripten-core/emsdk /work/emsdk \
- && ./emsdk install latest \
- && ./emsdk activate latest
+ && ./emsdk install 3.1.3 \
+ && ./emsdk activate 3.1.3
 
 # Build libsodium.
 RUN . "/work/emsdk/emsdk_env.sh" \

@@ -246,30 +246,6 @@ cc_test(
 )
 
 cc_library(
-    name = "DHT_srcs",
-    hdrs = [
-        "DHT.c",
-        "DHT.h",
-        "LAN_discovery.c",
-        "LAN_discovery.h",
-        "ping.c",
-        "ping.h",
-    ],
-    visibility = [
-        "//c-toxcore/auto_tests:__pkg__",
-        "//c-toxcore/other:__pkg__",
-        "//c-toxcore/other/bootstrap_daemon:__pkg__",
-    ],
-    deps = [
-        ":logger",
-        ":mono_time",
-        ":network",
-        ":ping_array",
-        ":state",
-    ],
-)
-
-cc_library(
     name = "onion",
     srcs = ["onion.c"],
     hdrs = ["onion.h"],

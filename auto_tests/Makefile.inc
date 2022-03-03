@@ -12,7 +12,6 @@ TESTS = \
 	conference_test \
 	conference_two_test \
 	crypto_test \
-	dht_test \
 	file_transfer_test \
 	friend_connection_test \
 	friend_request_test \
@@ -21,7 +20,6 @@ TESTS = \
 	lan_discovery_test \
 	lossless_packet_test \
 	lossy_packet_test \
-	messenger_test \
 	network_test \
 	onion_test \
 	overflow_recvq_test \
@@ -99,10 +97,6 @@ crypto_test_SOURCES = ../auto_tests/crypto_test.c
 crypto_test_CFLAGS = $(AUTOTEST_CFLAGS)
 crypto_test_LDADD = $(AUTOTEST_LDADD)
 
-dht_test_SOURCES = ../auto_tests/dht_test.c
-dht_test_CFLAGS = $(AUTOTEST_CFLAGS)
-dht_test_LDADD = $(AUTOTEST_LDADD)
-
 encryptsave_test_SOURCES = ../auto_tests/encryptsave_test.c
 encryptsave_test_CFLAGS = $(AUTOTEST_CFLAGS)
 encryptsave_test_LDADD = $(AUTOTEST_LDADD)
@@ -142,10 +136,6 @@ lossless_packet_test_LDADD = $(AUTOTEST_LDADD)
 lossy_packet_test_SOURCES = ../auto_tests/lossy_packet_test.c
 lossy_packet_test_CFLAGS = $(AUTOTEST_CFLAGS)
 lossy_packet_test_LDADD = $(AUTOTEST_LDADD)
-
-messenger_test_SOURCES = ../auto_tests/messenger_test.c
-messenger_test_CFLAGS = $(AUTOTEST_CFLAGS)
-messenger_test_LDADD = $(AUTOTEST_LDADD)
 
 network_test_SOURCES = ../auto_tests/network_test.c
 network_test_CFLAGS = $(AUTOTEST_CFLAGS)
