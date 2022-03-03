@@ -143,21 +143,6 @@ void ac_iterate(ACSession *ac)
             const int fs = (ac->lp_sampling_rate * ac->lp_frame_duration) / 1000;
             rc = opus_decode(ac->decoder, nullptr, 0, temp_audio_buffer, fs, 1);
         } else {
-            /* Get values from packet and decode. */
-            /* NOTE: This didn't work very well */
-#if 0
-            rc = convert_bw_to_sampling_rate(opus_packet_get_bandwidth(msg->data));
-
-            if (rc != -1) {
-                cs->last_packet_sampling_rate = rc;
-            } else {
-                LOGGER_WARNING(ac->log, "Failed to load packet values!");
-                free(msg);
-                pthread_mutex_lock(ac->queue_mutex);
-                continue;
-            }
-
-#endif
             assert(msg->len > 4);
 
             /* Pick up sampling rate from packet */

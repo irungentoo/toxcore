@@ -3138,7 +3138,7 @@ static void kill_timedout(Net_Crypto *c, void *userdata)
 
         if (conn->status == CRYPTO_CONN_ESTABLISHED) {
             // TODO(irungentoo): add a timeout here?
-            do_timeout_here();
+            /* do_timeout_here(); */
         }
 
 #endif

@@ -2543,30 +2543,30 @@ static uint32_t friend_size(void)
     uint32_t data = 0;
     const struct Saved_Friend *const temp = nullptr;
 
-#define VALUE_MEMBER(name)          \
-    do {                            \
-        data += sizeof(temp->name); \
+#define VALUE_MEMBER(data, name) \
+    do {                         \
+        data += sizeof(name);    \
     } while (0)
-#define ARRAY_MEMBER(name)          \
-    do {                            \
-        data += sizeof(temp->name); \
+#define ARRAY_MEMBER(data, name) \
+    do {                         \
+        data += sizeof(name);    \
     } while (0)
 
     // Exactly the same in friend_load, friend_save, and friend_size
-    VALUE_MEMBER(status);
-    ARRAY_MEMBER(real_pk);
-    ARRAY_MEMBER(info);
+    VALUE_MEMBER(data, temp->status);
+    ARRAY_MEMBER(data, temp->real_pk);
+    ARRAY_MEMBER(data, temp->info);
     ++data; // padding
-    VALUE_MEMBER(info_size);
-    ARRAY_MEMBER(name);
-    VALUE_MEMBER(name_length);
-    ARRAY_MEMBER(statusmessage);
+    VALUE_MEMBER(data, temp->info_size);
+    ARRAY_MEMBER(data, temp->name);
+    VALUE_MEMBER(data, temp->name_length);
+    ARRAY_MEMBER(data, temp->statusmessage);
     ++data; // padding
-    VALUE_MEMBER(statusmessage_length);
-    VALUE_MEMBER(userstatus);
+    VALUE_MEMBER(data, temp->statusmessage_length);
+    VALUE_MEMBER(data, temp->userstatus);
     data += 3; // padding
-    VALUE_MEMBER(friendrequest_nospam);
-    ARRAY_MEMBER(last_seen_time);
+    VALUE_MEMBER(data, temp->friendrequest_nospam);
+    ARRAY_MEMBER(data, temp->last_seen_time);
 
 #undef VALUE_MEMBER
 #undef ARRAY_MEMBER
@@ -2577,33 +2577,33 @@ static uint32_t friend_size(void)
 non_null()
 static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
 {
-#define VALUE_MEMBER(name)                             \
-    do {                                               \
-        memcpy(data, &temp->name, sizeof(temp->name)); \
-        data += sizeof(temp->name);                    \
+#define VALUE_MEMBER(data, name)           \
+    do {                                   \
+        memcpy(data, &name, sizeof(name)); \
+        data += sizeof(name);              \
     } while (0)
 
-#define ARRAY_MEMBER(name)                            \
-    do {                                              \
-        memcpy(data, temp->name, sizeof(temp->name)); \
-        data += sizeof(temp->name);                   \
+#define ARRAY_MEMBER(data, name)          \
+    do {                                  \
+        memcpy(data, name, sizeof(name)); \
+        data += sizeof(name);             \
     } while (0)
 
     // Exactly the same in friend_load, friend_save, and friend_size
-    VALUE_MEMBER(status);
-    ARRAY_MEMBER(real_pk);
-    ARRAY_MEMBER(info);
+    VALUE_MEMBER(data, temp->status);
+    ARRAY_MEMBER(data, temp->real_pk);
+    ARRAY_MEMBER(data, temp->info);
     ++data; // padding
-    VALUE_MEMBER(info_size);
-    ARRAY_MEMBER(name);
-    VALUE_MEMBER(name_length);
-    ARRAY_MEMBER(statusmessage);
+    VALUE_MEMBER(data, temp->info_size);
+    ARRAY_MEMBER(data, temp->name);
+    VALUE_MEMBER(data, temp->name_length);
+    ARRAY_MEMBER(data, temp->statusmessage);
     ++data; // padding
-    VALUE_MEMBER(statusmessage_length);
-    VALUE_MEMBER(userstatus);
+    VALUE_MEMBER(data, temp->statusmessage_length);
+    VALUE_MEMBER(data, temp->userstatus);
     data += 3; // padding
-    VALUE_MEMBER(friendrequest_nospam);
-    ARRAY_MEMBER(last_seen_time);
+    VALUE_MEMBER(data, temp->friendrequest_nospam);
+    ARRAY_MEMBER(data, temp->last_seen_time);
 
 #undef VALUE_MEMBER
 #undef ARRAY_MEMBER
@@ -2615,33 +2615,33 @@ static uint8_t *friend_save(const struct Saved_Friend *temp, uint8_t *data)
 non_null()
 static const uint8_t *friend_load(struct Saved_Friend *temp, const uint8_t *data)
 {
-#define VALUE_MEMBER(name)                             \
-    do {                                               \
-        memcpy(&temp->name, data, sizeof(temp->name)); \
-        data += sizeof(temp->name);                    \
+#define VALUE_MEMBER(data, name)           \
+    do {                                   \
+        memcpy(&name, data, sizeof(name)); \
+        data += sizeof(name);              \
     } while (0)
 
-#define ARRAY_MEMBER(name)                            \
-    do {                                              \
-        memcpy(temp->name, data, sizeof(temp->name)); \
-        data += sizeof(temp->name);                   \
+#define ARRAY_MEMBER(data, name)          \
+    do {                                  \
+        memcpy(name, data, sizeof(name)); \
+        data += sizeof(name);             \
     } while (0)
 
     // Exactly the same in friend_load, friend_save, and friend_size
-    VALUE_MEMBER(status);
-    ARRAY_MEMBER(real_pk);
-    ARRAY_MEMBER(info);
+    VALUE_MEMBER(data, temp->status);
+    ARRAY_MEMBER(data, temp->real_pk);
+    ARRAY_MEMBER(data, temp->info);
     ++data; // padding
-    VALUE_MEMBER(info_size);
-    ARRAY_MEMBER(name);
-    VALUE_MEMBER(name_length);
-    ARRAY_MEMBER(statusmessage);
+    VALUE_MEMBER(data, temp->info_size);
+    ARRAY_MEMBER(data, temp->name);
+    VALUE_MEMBER(data, temp->name_length);
+    ARRAY_MEMBER(data, temp->statusmessage);
     ++data; // padding
-    VALUE_MEMBER(statusmessage_length);
-    VALUE_MEMBER(userstatus);
+    VALUE_MEMBER(data, temp->statusmessage_length);
+    VALUE_MEMBER(data, temp->userstatus);
     data += 3; // padding
-    VALUE_MEMBER(friendrequest_nospam);
-    ARRAY_MEMBER(last_seen_time);
+    VALUE_MEMBER(data, temp->friendrequest_nospam);
+    ARRAY_MEMBER(data, temp->last_seen_time);
 
 #undef VALUE_MEMBER
 #undef ARRAY_MEMBER
