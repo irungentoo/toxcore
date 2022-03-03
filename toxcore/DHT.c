@@ -78,6 +78,7 @@ struct DHT {
     Networking_Core *net;
 
     bool hole_punching_enabled;
+    bool lan_discovery_enabled;
 
     Client_data    close_clientlist[LCLIENT_LIST];
     uint64_t       close_lastgetnodes;
@@ -2531,9 +2532,31 @@ void dht_callback_get_nodes_response(DHT *dht, dht_get_nodes_response_cb *functi
     dht->get_nodes_response = function;
 }
 
+non_null(1, 2, 3) nullable(5)
+static int handle_LANdiscovery(void *object, const IP_Port *source, const uint8_t *packet, uint16_t length,
+                               void *userdata)
+{
+    DHT *dht = (DHT *)object;
+
+    if (!dht->lan_discovery_enabled) {
+        return 1;
+    }
+
+    if (!ip_is_lan(&source->ip)) {
+        return 1;
+    }
+
+    if (length != CRYPTO_PUBLIC_KEY_SIZE + 1) {
+        return 1;
+    }
+
+    dht_bootstrap(dht, source, packet + 1);
+    return 0;
+}
+
 /*----------------------------------------------------------------------------------*/
 
-DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool holepunching_enabled)
+DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool hole_punching_enabled, bool lan_discovery_enabled)
 {
     if (net == nullptr) {
         return nullptr;
@@ -2550,7 +2573,8 @@ DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool
     dht->log = log;
     dht->net = net;
 
-    dht->hole_punching_enabled = holepunching_enabled;
+    dht->hole_punching_enabled = hole_punching_enabled;
+    dht->lan_discovery_enabled = lan_discovery_enabled;
 
     dht->ping = ping_new(mono_time, dht);
 
@@ -2562,6 +2586,7 @@ DHT *new_dht(const Logger *log, Mono_Time *mono_time, Networking_Core *net, bool
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, &handle_getnodes, dht);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, &handle_sendnodes_ipv6, dht);
     networking_registerhandler(dht->net, NET_PACKET_CRYPTO, &cryptopacket_handle, dht);
+    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, &handle_NATping, dht);
 
     crypto_new_keypair(dht->self_public_key, dht->self_secret_key);
@@ -2613,7 +2638,10 @@ void kill_dht(DHT *dht)
 {
     networking_registerhandler(dht->net, NET_PACKET_GET_NODES, nullptr, nullptr);
     networking_registerhandler(dht->net, NET_PACKET_SEND_NODES_IPV6, nullptr, nullptr);
+    networking_registerhandler(dht->net, NET_PACKET_CRYPTO, nullptr, nullptr);
+    networking_registerhandler(dht->net, NET_PACKET_LAN_DISCOVERY, nullptr, nullptr);
     cryptopacket_registerhandler(dht, CRYPTO_PACKET_NAT_PING, nullptr, nullptr);
+
     ping_array_kill(dht->dht_ping_array);
     ping_kill(dht->ping);
     free(dht->friends_list);

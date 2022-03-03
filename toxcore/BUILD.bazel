@@ -207,15 +207,29 @@ cc_test(
 )
 
 cc_library(
+    name = "LAN_discovery",
+    srcs = ["LAN_discovery.c"],
+    hdrs = ["LAN_discovery.h"],
+    visibility = [
+        "//c-toxcore/other:__pkg__",
+        "//c-toxcore/other/bootstrap_daemon:__pkg__",
+        "//c-toxcore/testing:__pkg__",
+    ],
+    deps = [
+        ":ccompat",
+        ":crypto_core",
+        ":network",
+    ],
+)
+
+cc_library(
     name = "DHT",
     srcs = [
         "DHT.c",
-        "LAN_discovery.c",
         "ping.c",
     ],
     hdrs = [
         "DHT.h",
-        "LAN_discovery.h",
         "ping.h",
     ],
     visibility = [
@@ -224,6 +238,7 @@ cc_library(
         "//c-toxcore/testing:__pkg__",
     ],
     deps = [
+        ":LAN_discovery",
         ":crypto_core",
         ":logger",
         ":mono_time",
@@ -353,6 +368,7 @@ cc_library(
     ],
     deps = [
         ":DHT",
+        ":LAN_discovery",
         ":mono_time",
         ":network",
         ":onion",
@@ -366,6 +382,7 @@ cc_library(
     visibility = ["//c-toxcore/auto_tests:__pkg__"],
     deps = [
         ":DHT",
+        ":LAN_discovery",
         ":mono_time",
         ":net_crypto",
         ":network",

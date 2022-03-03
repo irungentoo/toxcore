@@ -915,7 +915,7 @@ Friend_Connections *new_friend_connections(const Logger *logger, const Mono_Time
     new_connection_handler(temp->net_crypto, &handle_new_connections, temp);
 
     if (temp->local_discovery_enabled) {
-        temp->broadcast = lan_discovery_init(temp->dht);
+        temp->broadcast = lan_discovery_init();
 
         if (temp->broadcast == nullptr) {
             LOGGER_ERROR(logger, "could not initialise LAN discovery");
@@ -1012,9 +1012,6 @@ void kill_friend_connections(Friend_Connections *fr_c)
         kill_friend_connection(fr_c, i);
     }
 
-    if (fr_c->local_discovery_enabled) {
-        lan_discovery_kill(fr_c->dht, fr_c->broadcast);
-    }
-
+    lan_discovery_kill(fr_c->broadcast);
     free(fr_c);
 }

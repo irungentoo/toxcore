@@ -3225,7 +3225,7 @@ Messenger *new_messenger(Mono_Time *mono_time, Messenger_Options *options, Messe
         return nullptr;
     }
 
-    m->dht = new_dht(m->log, m->mono_time, m->net, options->hole_punching_enabled);
+    m->dht = new_dht(m->log, m->mono_time, m->net, options->hole_punching_enabled, options->local_discovery_enabled);
 
     if (m->dht == nullptr) {
         kill_networking(m->net);

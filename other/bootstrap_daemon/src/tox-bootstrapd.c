@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 
     mono_time_update(mono_time);
 
-    DHT *const dht = new_dht(logger, mono_time, net, true);
+    DHT *const dht = new_dht(logger, mono_time, net, true, enable_lan_discovery);
 
     if (dht == nullptr) {
         log_write(LOG_LEVEL_ERROR, "Couldn't initialize Tox DHT instance. Exiting.\n");
@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
     Broadcast_Info *broadcast = nullptr;
 
     if (enable_lan_discovery) {
-        broadcast = lan_discovery_init(dht);
+        broadcast = lan_discovery_init();
         log_write(LOG_LEVEL_INFO, "Initialized LAN discovery successfully.\n");
     }
 
@@ -537,10 +537,7 @@ int main(int argc, char *argv[])
             log_write(LOG_LEVEL_INFO, "Received (%d) signal. Exiting.\n", caught_signal);
     }
 
-    if (enable_lan_discovery) {
-        lan_discovery_kill(dht, broadcast);
-    }
-
+    lan_discovery_kill(broadcast);
     kill_TCP_server(tcp_server);
     kill_onion_announce(onion_a);
     kill_onion(onion);

@@ -9,7 +9,7 @@
 #ifndef C_TOXCORE_TOXCORE_LAN_DISCOVERY_H
 #define C_TOXCORE_TOXCORE_LAN_DISCOVERY_H
 
-#include "DHT.h"
+#include "network.h"
 
 /**
  * Interval in seconds between LAN discovery packet sending.
@@ -27,16 +27,15 @@ non_null()
 bool lan_discovery_send(Networking_Core *net, const Broadcast_Info *broadcast, const uint8_t *dht_pk, uint16_t port);
 
 /**
- * Sets up packet handlers.
+ * Discovers broadcast devices and IP addresses.
  */
-non_null()
-Broadcast_Info *lan_discovery_init(DHT *dht);
+Broadcast_Info *lan_discovery_init(void);
 
 /**
- * Clear packet handlers.
+ * Free all resources associated with the broadcast info.
  */
-non_null()
-void lan_discovery_kill(DHT *dht, Broadcast_Info *broadcast);
+nullable(1)
+void lan_discovery_kill(Broadcast_Info *broadcast);
 
 /**
  * Is IP a local ip or not.

@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     }
 
     Mono_Time *mono_time = mono_time_new();
-    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, &ip, PORT, PORT, nullptr), true);
+    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, &ip, PORT, PORT, nullptr), true, true);
     Onion *onion = new_onion(logger, mono_time, dht);
     const Onion_Announce *onion_a = new_onion_announce(logger, mono_time, dht);
 
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
 
     uint64_t last_LANdiscovery = 0;
-    Broadcast_Info *broadcast = lan_discovery_init(dht);
+    Broadcast_Info *broadcast = lan_discovery_init();
 
     while (1) {
         mono_time_update(mono_time);
