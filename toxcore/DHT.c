@@ -313,33 +313,44 @@ void dht_get_shared_key_sent(DHT *dht, uint8_t *shared_key, const uint8_t *publi
 
 #define CRYPTO_SIZE (1 + CRYPTO_PUBLIC_KEY_SIZE * 2 + CRYPTO_NONCE_SIZE)
 
-/** Create a request to peer.
- * send_public_key and send_secret_key are the pub/secret keys of the sender.
- * recv_public_key is public key of receiver.
- * packet must be an array of MAX_CRYPTO_REQUEST_SIZE big.
- * Data represents the data we send with the request with length being the length of the data.
- * request_id is the id of the request (32 = friend request, 254 = ping request).
+/**
+ * @brief Create a request to peer.
  *
- *  return -1 on failure.
- *  return the length of the created packet on success.
+ * Packs the data and sender public key and encrypts the packet.
+ *
+ * @param[in] send_public_key public key of the sender.
+ * @param[in] send_secret_key secret key of the sender.
+ * @param[out] packet an array of @ref MAX_CRYPTO_REQUEST_SIZE big.
+ * @param[in] recv_public_key public key of the receiver.
+ * @param[in] data represents the data we send with the request.
+ * @param[in] data_length the length of the data.
+ * @param[in] request_id the id of the request (32 = friend request, 254 = ping request).
+ *
+ * @attention Constraints:
+ * @code
+ * sizeof(packet) >= MAX_CRYPTO_REQUEST_SIZE
+ * @endcode
+ *
+ * @retval -1 on failure.
+ * @return the length of the created packet on success.
  */
 int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_key, uint8_t *packet,
-                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t length, uint8_t request_id)
+                   const uint8_t *recv_public_key, const uint8_t *data, uint32_t data_length, uint8_t request_id)
 {
     if (send_public_key == nullptr || packet == nullptr || recv_public_key == nullptr || data == nullptr) {
         return -1;
     }
 
-    if (MAX_CRYPTO_REQUEST_SIZE < length + CRYPTO_SIZE + 1 + CRYPTO_MAC_SIZE) {
+    if (MAX_CRYPTO_REQUEST_SIZE < data_length + CRYPTO_SIZE + 1 + CRYPTO_MAC_SIZE) {
         return -1;
     }
 
     uint8_t *const nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     random_nonce(nonce);
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
-    memcpy(temp + 1, data, length);
+    memcpy(temp + 1, data, data_length);
     temp[0] = request_id;
-    const int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, length + 1,
+    const int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, data_length + 1,
                                  packet + CRYPTO_SIZE);
 
     if (len == -1) {
@@ -355,21 +366,37 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
     return len + CRYPTO_SIZE;
 }
 
-/** Puts the senders public key in the request in public_key, the data from the request
- * in data if a friend or ping request was sent to us and returns the length of the data.
- * packet is the request packet and length is its length.
+/**
+ * @brief Decrypts and unpacks a DHT request packet.
  *
- *  return -1 if not valid request.
+ * Puts the senders public key in the request in @p public_key, the data from
+ * the request in @p data.
+ *
+ * @param[in] self_public_key public key of the receiver (us).
+ * @param[in] self_secret_key secret key of the receiver (us).
+ * @param[out] public_key public key of the sender, copied from the input packet.
+ * @param[out] data decrypted request data, copied from the input packet, must
+ *    have room for @ref MAX_CRYPTO_REQUEST_SIZE bytes.
+ * @param[in] packet is the request packet.
+ * @param[in] packet_length length of the packet.
+ *
+ * @attention Constraints:
+ * @code
+ * sizeof(data) >= MAX_CRYPTO_REQUEST_SIZE
+ * @endcode
+ *
+ * @retval -1 if not valid request.
+ * @return the length of the unpacked data.
  */
 int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_key, uint8_t *public_key, uint8_t *data,
-                   uint8_t *request_id, const uint8_t *packet, uint16_t length)
+                   uint8_t *request_id, const uint8_t *packet, uint16_t packet_length)
 {
     if (self_public_key == nullptr || public_key == nullptr || data == nullptr || request_id == nullptr
             || packet == nullptr) {
         return -1;
     }
 
-    if (length <= CRYPTO_SIZE + CRYPTO_MAC_SIZE || length > MAX_CRYPTO_REQUEST_SIZE) {
+    if (packet_length <= CRYPTO_SIZE + CRYPTO_MAC_SIZE || packet_length > MAX_CRYPTO_REQUEST_SIZE) {
         return -1;
     }
 
@@ -381,13 +408,14 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
     const uint8_t *const nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
     int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                            packet + CRYPTO_SIZE, length - CRYPTO_SIZE, temp);
+                            packet + CRYPTO_SIZE, packet_length - CRYPTO_SIZE, temp);
 
     if (len1 == -1 || len1 == 0) {
         crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
         return -1;
     }
 
+    assert(len1 > 0);
     request_id[0] = temp[0];
     --len1;
     memcpy(data, temp + 1, len1);
