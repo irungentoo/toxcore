@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "Messenger.h"
+#include "ccompat.h"
 #include "group.h"
 #include "logger.h"
 #include "mono_time.h"

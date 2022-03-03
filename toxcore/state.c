@@ -6,6 +6,8 @@
 
 #include <string.h>
 
+#include "ccompat.h"
+
 /** state load/save */
 int state_load(const Logger *log, state_load_cb *state_load_callback, void *outer,
                const uint8_t *data, uint32_t length, uint16_t cookie_inner)

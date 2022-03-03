@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "LAN_discovery.h"
+#include "ccompat.h"
 #include "mono_time.h"
 #include "util.h"
 

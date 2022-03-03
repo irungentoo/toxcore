@@ -112,8 +112,6 @@ typedef union IP4 {
     uint8_t uint8[4];
 } IP4;
 
-static_assert(sizeof(IP4) == SIZE_IP4, "IP4 size must be 4");
-
 IP4 get_ip4_loopback(void);
 extern const IP4 ip4_broadcast;
 
@@ -123,10 +121,6 @@ typedef union IP6 {
     uint32_t uint32[4];
     uint64_t uint64[2];
 } IP6;
-
-// TODO(iphydf): Stop relying on this. We memcpy this struct (and IP4 above)
-// into packets but really should be serialising it properly.
-static_assert(sizeof(IP6) == SIZE_IP6, "IP6 size must be 16");
 
 IP6 get_ip6_loopback(void);
 extern const IP6 ip6_broadcast;

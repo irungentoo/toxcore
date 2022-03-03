@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "TCP_client.h"
+#include "ccompat.h"
 #include "mono_time.h"
 #include "util.h"
 

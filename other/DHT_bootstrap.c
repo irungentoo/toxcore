@@ -15,6 +15,7 @@
 
 #include "../toxcore/DHT.h"
 #include "../toxcore/LAN_discovery.h"
+#include "../toxcore/ccompat.h"
 #include "../toxcore/friend_requests.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"

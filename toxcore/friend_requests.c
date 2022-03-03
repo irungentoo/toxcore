@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ccompat.h"
 #include "util.h"
 
 /** NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.

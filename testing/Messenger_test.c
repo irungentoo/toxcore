@@ -33,6 +33,7 @@
 #endif
 
 #include "../toxcore/Messenger.h"
+#include "../toxcore/ccompat.h"
 #include "../toxcore/mono_time.h"
 #include "misc_tools.h"
 

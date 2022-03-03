@@ -12,9 +12,10 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
-#include "logger.h"
+#include "attributes.h"
 
 #ifdef __cplusplus
 extern "C" {

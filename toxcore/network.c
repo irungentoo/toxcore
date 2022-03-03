@@ -92,6 +92,7 @@
 #include <sodium.h>
 #endif
 
+#include "ccompat.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "util.h"
@@ -112,6 +113,12 @@
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #endif
 #endif
+
+static_assert(sizeof(IP4) == SIZE_IP4, "IP4 size must be 4");
+
+// TODO(iphydf): Stop relying on this. We memcpy this struct (and IP4 above)
+// into packets but really should be serialising it properly.
+static_assert(sizeof(IP6) == SIZE_IP6, "IP6 size must be 16");
 
 #if !defined(OS_WIN32)
 

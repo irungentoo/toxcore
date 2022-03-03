@@ -39,6 +39,7 @@
 #include <net/if.h>
 #endif
 
+#include "ccompat.h"
 #include "crypto_core.h"
 #include "util.h"
 

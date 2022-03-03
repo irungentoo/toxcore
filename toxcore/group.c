@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ccompat.h"
 #include "mono_time.h"
 #include "state.h"
 #include "util.h"

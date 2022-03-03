@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ccompat.h"
 
 struct Logger {
     logger_cb *callback;

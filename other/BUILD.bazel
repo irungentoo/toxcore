@@ -20,10 +20,11 @@ cc_binary(
         "//c-toxcore/toxcore:DHT",
         "//c-toxcore/toxcore:LAN_discovery",
         "//c-toxcore/toxcore:TCP_server",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:friend_requests",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore:network",
         "//c-toxcore/toxcore:tox",
+        "//c-toxcore/toxcore:util",
     ],
 )

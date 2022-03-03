@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/util.h"
 

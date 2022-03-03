@@ -14,6 +14,7 @@
 #include <string.h>
 #include <time.h>
 
+#include "ccompat.h"
 #include "logger.h"
 #include "mono_time.h"
 #include "network.h"

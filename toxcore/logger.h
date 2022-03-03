@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#include "ccompat.h"
+#include "attributes.h"
 
 #ifndef MIN_LOGGER_LEVEL
 #define MIN_LOGGER_LEVEL LOGGER_LEVEL_INFO

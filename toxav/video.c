@@ -12,6 +12,7 @@
 #include "ring_buffer.h"
 #include "rtp.h"
 
+#include "../toxcore/ccompat.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"
 #include "../toxcore/network.h"

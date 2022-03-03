@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "ccompat.h"
+
 void wipe_priority_list(TCP_Priority_List *p)
 {
     while (p != nullptr) {

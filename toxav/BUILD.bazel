@@ -51,9 +51,10 @@ cc_library(
         ":ring_buffer",
         "//c-toxcore/toxcore",
         "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
     ],
 )
 
@@ -64,9 +65,10 @@ cc_library(
     deps = [
         ":bwcontroller",
         "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
     ],
 )
 
@@ -89,9 +91,9 @@ cc_library(
     deps = [
         ":public_api",
         ":rtp",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore:network",
         "@opus",
     ],
 )
@@ -111,9 +113,11 @@ cc_library(
         ":public_api",
         ":ring_buffer",
         ":rtp",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
         "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
         "@libvpx",
     ],
 )
@@ -124,9 +128,10 @@ cc_library(
     hdrs = ["groupav.h"],
     deps = [
         "//c-toxcore/toxcore",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
         "@opus",
     ],
 )
@@ -146,9 +151,10 @@ cc_library(
         ":rtp",
         ":video",
         "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
-        "//c-toxcore/toxcore:network",
+        "//c-toxcore/toxcore:util",
     ],
 )
 

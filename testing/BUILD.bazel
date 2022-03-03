@@ -54,6 +54,7 @@ cc_binary(
     deps = [
         ":misc_tools",
         "//c-toxcore/toxcore:Messenger",
+        "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:mono_time",
     ],
 )
