@@ -814,14 +814,6 @@ static void at_shutdown(void)
 #endif
 
 /** Initialize networking.
- * Added for reverse compatibility with old new_networking calls.
- */
-Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port)
-{
-    return new_networking_ex(log, ip, port, port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM), nullptr);
-}
-
-/** Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
@@ -1280,8 +1272,6 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
 
     if (net_family_is_ipv4(ip->family)) {
         struct in_addr addr;
-        static_assert(sizeof(addr) == sizeof(ip->ip.v4.uint32),
-                      "assumption does not hold: in_addr should be 4 bytes");
         assert(make_family(ip->family) == AF_INET);
         fill_addr4(&ip->ip.v4, &addr);
         return inet_ntop4(&addr, address, length) != nullptr;
@@ -1289,8 +1279,6 @@ bool ip_parse_addr(const IP *ip, char *address, size_t length)
 
     if (net_family_is_ipv6(ip->family)) {
         struct in6_addr addr;
-        static_assert(sizeof(addr) == sizeof(ip->ip.v6.uint8),
-                      "assumption does not hold: in6_addr should be 16 bytes");
         assert(make_family(ip->family) == AF_INET6);
         fill_addr6(&ip->ip.v6, &addr);
         return inet_ntop6(&addr, address, length) != nullptr;

@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
 
     char *pid_file_path = nullptr;
     char *keys_file_path = nullptr;
-    int port;
+    int start_port;
     int enable_ipv6;
     int enable_ipv4_fallback;
     int enable_lan_discovery;
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
     int enable_motd;
     char *motd = nullptr;
 
-    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &port, &enable_ipv6, &enable_ipv4_fallback,
+    if (get_general_config(cfg_file_path, &pid_file_path, &keys_file_path, &start_port, &enable_ipv6, &enable_ipv4_fallback,
                            &enable_lan_discovery, &enable_tcp_relay, &tcp_relay_ports, &tcp_relay_port_count, &enable_motd, &motd)) {
         log_write(LOG_LEVEL_INFO, "General config read successfully\n");
     } else {
@@ -252,8 +252,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (port < MIN_ALLOWED_PORT || port > MAX_ALLOWED_PORT) {
-        log_write(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", port, MIN_ALLOWED_PORT,
+    if (start_port < MIN_ALLOWED_PORT || start_port > MAX_ALLOWED_PORT) {
+        log_write(LOG_LEVEL_ERROR, "Invalid port: %d, should be in [%d, %d]. Exiting.\n", start_port, MIN_ALLOWED_PORT,
                   MAX_ALLOWED_PORT);
         free(motd);
         free(tcp_relay_ports);
@@ -277,14 +277,15 @@ int main(int argc, char *argv[])
         logger_callback_log(logger, toxcore_logger_callback, nullptr, nullptr);
     }
 
-    Networking_Core *net = new_networking(logger, &ip, port);
+    const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
+    Networking_Core *net = new_networking_ex(logger, &ip, start_port, end_port, nullptr);
 
     if (net == nullptr) {
         if (enable_ipv6 && enable_ipv4_fallback) {
             log_write(LOG_LEVEL_WARNING, "Couldn't initialize IPv6 networking. Falling back to using IPv4.\n");
             enable_ipv6 = 0;
             ip_init(&ip, enable_ipv6);
-            net = new_networking(logger, &ip, port);
+            net = new_networking_ex(logger, &ip, start_port, end_port, nullptr);
 
             if (net == nullptr) {
                 log_write(LOG_LEVEL_ERROR, "Couldn't fallback to IPv4. Exiting.\n");
@@ -470,7 +471,7 @@ int main(int argc, char *argv[])
     print_public_key(dht_get_self_public_key(dht));
 
     uint64_t last_LANdiscovery = 0;
-    const uint16_t net_htons_port = net_htons(port);
+    const uint16_t net_htons_port = net_htons(start_port);
 
     int waiting_for_dht_connection = 1;
 

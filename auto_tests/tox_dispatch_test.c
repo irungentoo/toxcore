@@ -112,8 +112,10 @@ static void test_tox_events(void)
         ck_assert_msg(toxes[i] != nullptr, "failed to create tox instances %u", i);
     }
 
-    Tox_Dispatch *dispatch = tox_dispatch_new(nullptr);
+    Tox_Err_Dispatch_New err_new;
+    Tox_Dispatch *dispatch = tox_dispatch_new(&err_new);
     ck_assert_msg(dispatch != nullptr, "failed to create event dispatcher");
+    ck_assert(err_new == TOX_ERR_DISPATCH_NEW_OK);
 
     tox_events_callback_friend_message(dispatch, handle_events_friend_message);
 

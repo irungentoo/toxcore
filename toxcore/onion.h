@@ -115,18 +115,6 @@ non_null()
 int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const Onion_Path *path, const IP_Port *dest,
                             const uint8_t *data, uint16_t length);
 
-/** Create and send a onion packet.
- *
- * Use Onion_Path path to send data of length to dest.
- * Maximum length of data is ONION_MAX_DATA_SIZE.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-non_null()
-int send_onion_packet(const Networking_Core *net, const Onion_Path *path, const IP_Port *dest, const uint8_t *data,
-                      uint16_t length);
-
 /** Create and send a onion response sent initially to dest with.
  * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
  *
@@ -137,7 +125,7 @@ non_null()
 int send_onion_response(const Networking_Core *net, const IP_Port *dest, const uint8_t *data, uint16_t length,
                         const uint8_t *ret);
 
-/** Function to handle/send received decrypted versions of the packet sent with send_onion_packet.
+/** Function to handle/send received decrypted versions of the packet created by create_onion_packet.
  *
  * return 0 on success.
  * return 1 on failure.

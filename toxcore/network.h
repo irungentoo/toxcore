@@ -488,11 +488,6 @@ non_null()
 void net_kill_strerror(char *strerror);
 
 /** Initialize networking.
- * Added for reverse compatibility with old new_networking calls.
- */
-non_null()
-Networking_Core *new_networking(const Logger *log, const IP *ip, uint16_t port);
-/** Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).

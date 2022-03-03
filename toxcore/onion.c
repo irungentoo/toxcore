@@ -268,31 +268,6 @@ int create_onion_packet_tcp(uint8_t *packet, uint16_t max_packet_length, const O
     return CRYPTO_NONCE_SIZE + SIZE_IPPORT + CRYPTO_PUBLIC_KEY_SIZE + len;
 }
 
-/** Create and send a onion packet.
- *
- * Use Onion_Path path to send data of length to dest.
- * Maximum length of data is ONION_MAX_DATA_SIZE.
- *
- * return -1 on failure.
- * return 0 on success.
- */
-int send_onion_packet(const Networking_Core *net, const Onion_Path *path, const IP_Port *dest, const uint8_t *data,
-                      uint16_t length)
-{
-    uint8_t packet[ONION_MAX_PACKET_SIZE];
-    const int len = create_onion_packet(packet, sizeof(packet), path, dest, data, length);
-
-    if (len == -1) {
-        return -1;
-    }
-
-    if (sendpacket(net, &path->ip_port1, packet, len) != len) {
-        return -1;
-    }
-
-    return 0;
-}
-
 /** Create and send a onion response sent initially to dest with.
  * Maximum length of data is ONION_RESPONSE_MAX_DATA_SIZE.
  *
