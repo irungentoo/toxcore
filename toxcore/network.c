@@ -122,7 +122,7 @@ static bool should_ignore_recv_error(int err)
 
 static bool should_ignore_connect_error(int err)
 {
-    return err == EWOULDBLOCK || err == EINPROGRESS || err == EAGAIN;
+    return err == EWOULDBLOCK || err == EINPROGRESS;
 }
 
 non_null()
