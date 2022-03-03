@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
     int is_waiting_for_dht_connection = 1;
 
     uint64_t last_LANdiscovery = 0;
-    Broadcast_Info *broadcast = lan_discovery_init();
+    const Broadcast_Info *broadcast = lan_discovery_init();
 
     while (1) {
         mono_time_update(mono_time);

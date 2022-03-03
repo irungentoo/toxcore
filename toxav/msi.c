@@ -80,48 +80,31 @@ static msi_action_cb *get_callback(MSISession *session, MSICallbackID id);
  * Public functions
  */
 
-void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICallbackID id)
+void msi_callback_invite(MSISession *session, msi_action_cb *callback)
 {
-    if (session == nullptr) {
-        return;
-    }
-
-    pthread_mutex_lock(session->mutex);
-
-    switch (id) {
-        case MSI_ON_INVITE: {
-            session->invite_callback = callback;
-            break;
-        }
-
-        case MSI_ON_START: {
-            session->start_callback = callback;
-            break;
-        }
-
-        case MSI_ON_END: {
-            session->end_callback = callback;
-            break;
-        }
-
-        case MSI_ON_ERROR: {
-            session->error_callback = callback;
-            break;
-        }
-
-        case MSI_ON_PEERTIMEOUT: {
-            session->peertimeout_callback = callback;
-            break;
-        }
-
-        case MSI_ON_CAPABILITIES: {
-            session->capabilities_callback = callback;
-            break;
-        }
-    }
-
-    pthread_mutex_unlock(session->mutex);
+    session->invite_callback = callback;
 }
+void msi_callback_start(MSISession *session, msi_action_cb *callback)
+{
+    session->start_callback = callback;
+}
+void msi_callback_end(MSISession *session, msi_action_cb *callback)
+{
+    session->end_callback = callback;
+}
+void msi_callback_error(MSISession *session, msi_action_cb *callback)
+{
+    session->error_callback = callback;
+}
+void msi_callback_peertimeout(MSISession *session, msi_action_cb *callback)
+{
+    session->peertimeout_callback = callback;
+}
+void msi_callback_capabilities(MSISession *session, msi_action_cb *callback)
+{
+    session->capabilities_callback = callback;
+}
+
 MSISession *msi_new(Messenger *m)
 {
     if (m == nullptr) {

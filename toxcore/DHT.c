@@ -1269,7 +1269,7 @@ uint32_t addto_lists(DHT *dht, const IP_Port *ip_port, const uint8_t *public_key
         if (in_list
                 || replace_all(dht, dht->friends_list[i].client_list, MAX_FRIEND_CLIENTS, public_key, &ipp_copy,
                                dht->friends_list[i].public_key)) {
-            DHT_Friend *dht_friend = &dht->friends_list[i];
+            const DHT_Friend *dht_friend = &dht->friends_list[i];
 
             if (pk_equal(public_key, dht_friend->public_key)) {
                 friend_foundip = dht_friend;

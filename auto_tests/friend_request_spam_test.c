@@ -47,25 +47,16 @@ static void test_friend_request(AutoTox *autotoxes)
     }
 
     for (uint32_t t = 0; t < 100; ++t) {
-        bool connected = true;
-        for (uint32_t i = 0; i < FR_TOX_COUNT; ++i) {
-            uint32_t size = tox_self_get_friend_list_size(autotoxes[i].tox);
-            for (uint32_t fn = 0; fn < size; ++fn) {
-                if (tox_friend_get_connection_status(autotoxes[i].tox, fn, nullptr) == TOX_CONNECTION_NONE) {
-                    connected = false;
-                }
-            }
-        }
-
-        if (connected) {
+        if (all_friends_connected(autotoxes, FR_TOX_COUNT)) {
             break;
         }
 
         iterate_all_wait(autotoxes, FR_TOX_COUNT, ITERATION_INTERVAL);
     }
 
-    uint32_t size = tox_self_get_friend_list_size(autotoxes[0].tox);
-    printf("Tox clients connected took %lu seconds; tox1 has %u friends.\n", (unsigned long)(time(nullptr) - con_time), size);
+    const size_t size = tox_self_get_friend_list_size(autotoxes[0].tox);
+    printf("Tox clients connected took %lu seconds; tox1 has %u friends.\n",
+           (unsigned long)(time(nullptr) - con_time), (unsigned int)size);
 }
 
 int main(void)

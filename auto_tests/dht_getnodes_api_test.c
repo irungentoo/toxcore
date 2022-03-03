@@ -47,7 +47,7 @@ static bool node_crawled(Dht_Node **nodes, size_t num_nodes, const uint8_t *publ
     return false;
 }
 
-static bool all_nodes_crawled(AutoTox *autotoxes, uint32_t num_toxes, uint8_t **public_key_list)
+static bool all_nodes_crawled(const AutoTox *autotoxes, uint32_t num_toxes, uint8_t **public_key_list)
 {
     for (uint32_t i = 0; i < num_toxes; ++i) {
         const State *state = (const State *)autotoxes[i].state;

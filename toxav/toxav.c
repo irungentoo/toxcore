@@ -195,12 +195,12 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
     init_decode_time_stats(&av->video_stats);
     av->msi->av = av;
 
-    msi_register_callback(av->msi, callback_invite, MSI_ON_INVITE);
-    msi_register_callback(av->msi, callback_start, MSI_ON_START);
-    msi_register_callback(av->msi, callback_end, MSI_ON_END);
-    msi_register_callback(av->msi, callback_error, MSI_ON_ERROR);
-    msi_register_callback(av->msi, callback_error, MSI_ON_PEERTIMEOUT);
-    msi_register_callback(av->msi, callback_capabilites, MSI_ON_CAPABILITIES);
+    msi_callback_invite(av->msi, callback_invite);
+    msi_callback_start(av->msi, callback_start);
+    msi_callback_end(av->msi, callback_end);
+    msi_callback_error(av->msi, callback_error);
+    msi_callback_peertimeout(av->msi, callback_error);
+    msi_callback_capabilities(av->msi, callback_capabilites);
 
 RETURN:
 

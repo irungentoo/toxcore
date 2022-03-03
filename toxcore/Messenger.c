@@ -53,10 +53,8 @@ static int realloc_friendlist(Messenger *m, uint32_t num)
 int32_t getfriend_id(const Messenger *m, const uint8_t *real_pk)
 {
     for (uint32_t i = 0; i < m->numfriends; ++i) {
-        if (m->friendlist[i].status > 0) {
-            if (pk_equal(real_pk, m->friendlist[i].real_pk)) {
-                return i;
-            }
+        if (m->friendlist[i].status > 0 && pk_equal(real_pk, m->friendlist[i].real_pk)) {
+            return i;
         }
     }
 

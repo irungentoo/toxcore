@@ -119,9 +119,14 @@ MSISession *msi_new(Messenger *m);
  */
 int msi_kill(MSISession *session, const Logger *log);
 /**
- * Callback setter.
+ * Callback setters.
  */
-void msi_register_callback(MSISession *session, msi_action_cb *callback, MSICallbackID id);
+void msi_callback_invite(MSISession *session, msi_action_cb *callback);
+void msi_callback_start(MSISession *session, msi_action_cb *callback);
+void msi_callback_end(MSISession *session, msi_action_cb *callback);
+void msi_callback_error(MSISession *session, msi_action_cb *callback);
+void msi_callback_peertimeout(MSISession *session, msi_action_cb *callback);
+void msi_callback_capabilities(MSISession *session, msi_action_cb *callback);
 /**
  * Send invite request to friend_number.
  */
