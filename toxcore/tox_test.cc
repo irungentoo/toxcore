@@ -19,16 +19,23 @@ static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t 
 
 TEST(Tox, OneTest)
 {
+    struct Tox_Options *options = tox_options_new(nullptr);
+    ASSERT_NE(options, nullptr);
+
+    // Higher start/end point here to avoid conflict with the LAN discovery test.
+    tox_options_set_start_port(options, 33545);
+    tox_options_set_end_port(options, 33545 + 2000);
+
     std::array<uint8_t, TOX_MAX_NAME_LENGTH> name;
     std::array<uint8_t, TOX_MAX_STATUS_MESSAGE_LENGTH> status_message;
 
     std::array<uint8_t, TOX_MAX_NAME_LENGTH> name2;
     std::array<uint8_t, TOX_MAX_STATUS_MESSAGE_LENGTH> status_message2;
 
-    Tox *tox1 = tox_new(nullptr, nullptr);
+    Tox *tox1 = tox_new(options, nullptr);
     ASSERT_NE(tox1, nullptr);
     set_random_name_and_status_message(tox1, name.data(), status_message.data());
-    Tox *tox2 = tox_new(nullptr, nullptr);
+    Tox *tox2 = tox_new(options, nullptr);
     ASSERT_NE(tox2, nullptr);
     set_random_name_and_status_message(tox2, name2.data(), status_message2.data());
 
@@ -79,8 +86,6 @@ TEST(Tox, OneTest)
     tox_kill(tox2);
     Tox_Err_New err_n;
 
-    struct Tox_Options *options = tox_options_new(nullptr);
-    ASSERT_NE(options, nullptr);
     tox_options_set_savedata_type(options, TOX_SAVEDATA_TYPE_TOX_SAVE);
     tox_options_set_savedata_data(options, data.data(), data.size());
     tox2 = tox_new(options, &err_n);

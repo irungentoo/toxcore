@@ -46,12 +46,12 @@
 
 struct Broadcast_Info {
     uint32_t count;
-    IP_Port ip_ports[MAX_INTERFACES];
+    IP ips[MAX_INTERFACES];
 };
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 
-static Broadcast_Info *fetch_broadcast_info(uint16_t port)
+static Broadcast_Info *fetch_broadcast_info(void)
 {
     Broadcast_Info *broadcast = (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 
@@ -89,13 +89,12 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
             if (addr_parse_ip(pAdapter->IpAddressList.IpMask.String, &subnet_mask)
                     && addr_parse_ip(pAdapter->GatewayList.IpAddress.String, &gateway)) {
                 if (net_family_is_ipv4(gateway.family) && net_family_is_ipv4(subnet_mask.family)) {
-                    IP_Port *ip_port = &broadcast->ip_ports[broadcast->count];
-                    ip_port->ip.family = net_family_ipv4;
+                    IP *ip = &broadcast->ips[broadcast->count];
+                    ip->family = net_family_ipv4;
                     const uint32_t gateway_ip = net_ntohl(gateway.ip.v4.uint32);
                     const uint32_t subnet_ip = net_ntohl(subnet_mask.ip.v4.uint32);
                     const uint32_t broadcast_ip = gateway_ip + ~subnet_ip - 1;
-                    ip_port->ip.ip.v4.uint32 = net_htonl(broadcast_ip);
-                    ip_port->port = port;
+                    ip->ip.v4.uint32 = net_htonl(broadcast_ip);
                     ++broadcast->count;
 
                     if (broadcast->count >= MAX_INTERFACES) {
@@ -117,7 +116,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
 
 #elif !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) && (defined(__linux__) || defined(__FreeBSD__) || defined(__DragonFly__))
 
-static Broadcast_Info *fetch_broadcast_info(uint16_t port)
+static Broadcast_Info *fetch_broadcast_info(void)
 {
     Broadcast_Info *broadcast = (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 
@@ -174,15 +173,14 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
             break;
         }
 
-        IP_Port *ip_port = &broadcast->ip_ports[broadcast->count];
-        ip_port->ip.family = net_family_ipv4;
-        ip_port->ip.ip.v4.uint32 = sock4->sin_addr.s_addr;
+        IP *ip = &broadcast->ips[broadcast->count];
+        ip->family = net_family_ipv4;
+        ip->ip.v4.uint32 = sock4->sin_addr.s_addr;
 
-        if (ip_port->ip.ip.v4.uint32 == 0) {
+        if (ip->ip.v4.uint32 == 0) {
             continue;
         }
 
-        ip_port->port = port;
         ++broadcast->count;
     }
 
@@ -193,7 +191,7 @@ static Broadcast_Info *fetch_broadcast_info(uint16_t port)
 
 #else // TODO(irungentoo): Other platforms?
 
-static Broadcast_Info *fetch_broadcast_info(uint16_t port)
+static Broadcast_Info *fetch_broadcast_info(void)
 {
     return (Broadcast_Info *)calloc(1, sizeof(Broadcast_Info));
 }
@@ -214,7 +212,10 @@ static bool send_broadcasts(const Networking_Core *net, const Broadcast_Info *br
     }
 
     for (uint32_t i = 0; i < broadcast->count; ++i) {
-        sendpacket(net, &broadcast->ip_ports[i], data, length);
+        IP_Port ip_port;
+        ip_port.ip = broadcast->ips[i];
+        ip_port.port = port;
+        sendpacket(net, &ip_port, data, length);
     }
 
     return true;
@@ -393,7 +394,7 @@ bool lan_discovery_send(Networking_Core *net, const Broadcast_Info *broadcast, c
 
 Broadcast_Info *lan_discovery_init(DHT *dht)
 {
-    Broadcast_Info *broadcast = fetch_broadcast_info(net_htons(TOX_PORT_DEFAULT));
+    Broadcast_Info *broadcast = fetch_broadcast_info();
     networking_registerhandler(dht_get_net(dht), NET_PACKET_LAN_DISCOVERY, &handle_LANdiscovery, dht);
     return broadcast;
 }

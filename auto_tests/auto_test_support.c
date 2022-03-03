@@ -152,7 +152,7 @@ void set_mono_time_callback(AutoTox *autotox)
     Mono_Time *mono_time = ((Messenger *)autotox->tox)->mono_time;
 
     autotox->clock = current_time_monotonic(mono_time);
-    mono_time_set_current_time_callback(mono_time, nullptr, &autotox->clock);  // set to default first
+    mono_time_set_current_time_callback(mono_time, nullptr, nullptr);  // set to default first
     mono_time_set_current_time_callback(mono_time, get_state_clock_callback, &autotox->clock);
 }
 
@@ -379,8 +379,11 @@ Tox *tox_new_log_lan(struct Tox_Options *options, Tox_Err_New *err, void *log_us
     assert(log_options != nullptr);
 
     tox_options_set_local_discovery_enabled(log_options, lan_discovery);
-    tox_options_set_start_port(log_options, 33445);
-    tox_options_set_end_port(log_options, 33445 + 2000);
+    // Use a higher start port for non-LAN-discovery tests so it's more likely for the LAN discovery
+    // test to get the default port 33445.
+    const uint16_t start_port = lan_discovery ? 33445 : 33545;
+    tox_options_set_start_port(log_options, start_port);
+    tox_options_set_end_port(log_options, start_port + 2000);
     tox_options_set_log_callback(log_options, &print_debug_log);
     tox_options_set_log_user_data(log_options, log_user_data);
     Tox *tox = tox_new(log_options, err);

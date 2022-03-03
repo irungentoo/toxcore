@@ -71,7 +71,7 @@ def run_mallocfail(tmpdir: str, timeout: float, exe: str,
         print(f"\x1b[0;34mProgram '{exe}' timed out\x1b[0m")
     else:
         print(
-            f"\x1b[1;34mProgram '{exe}' failed to handle OOM situation cleanly\x1b[0m"
+            f"\x1b[1;32mProgram '{exe}' failed to handle OOM situation cleanly\x1b[0m"
         )
         raise Exception("Aborting test")
 
