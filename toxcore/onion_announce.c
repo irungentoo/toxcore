@@ -62,7 +62,9 @@ void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint
     onion_a->entries[entry].announce_time = announce_time;
 }
 
-/** Create an onion announce request packet in packet of max_packet_length (recommended size ONION_ANNOUNCE_REQUEST_SIZE).
+/** @brief Create an onion announce request packet in packet of max_packet_length.
+ *
+ * Recommended value for max_packet_length is ONION_ANNOUNCE_REQUEST_SIZE.
  *
  * dest_client_id is the public key of the node the packet will be sent to.
  * public_key and secret_key is the kepair which will be used to encrypt the request.
@@ -106,7 +108,9 @@ int create_announce_request(uint8_t *packet, uint16_t max_packet_length, const u
     return ONION_ANNOUNCE_REQUEST_SIZE;
 }
 
-/** Create an onion data request packet in packet of max_packet_length (recommended size ONION_MAX_PACKET_SIZE).
+/** @brief Create an onion data request packet in packet of max_packet_length.
+ *
+ * Recommended value for max_packet_length is ONION_ANNOUNCE_REQUEST_SIZE.
  *
  * public_key is the real public key of the node which we want to send the data of length length to.
  * encrypt_public_key is the public key used to encrypt the data packet.
@@ -148,7 +152,7 @@ int create_data_request(uint8_t *packet, uint16_t max_packet_length, const uint8
     return DATA_REQUEST_MIN_SIZE + length;
 }
 
-/** Create and send an onion announce request packet.
+/** @brief Create and send an onion announce request packet.
  *
  * path is the path the request will take before it is sent to dest.
  *
@@ -189,7 +193,7 @@ int send_announce_request(const Networking_Core *net, const Onion_Path *path, co
     return 0;
 }
 
-/** Create and send an onion data request packet.
+/** @brief Create and send an onion data request packet.
  *
  * path is the path the request will take before it is sent to dest.
  * (if dest knows the person with the public_key they should
@@ -244,7 +248,7 @@ static void generate_ping_id(const Onion_Announce *onion_a, uint64_t ping_time, 
     crypto_sha256(ping_id, data, sizeof(data));
 }
 
-/** check if public key is in entries list
+/** @brief check if public key is in entries list
  *
  * return -1 if no
  * return position in list if yes
@@ -332,7 +336,7 @@ static void sort_onion_announce_list(Onion_Announce_Entry *list, unsigned int le
     free(cmp_list);
 }
 
-/** add entry to entries list
+/** @brief add entry to entries list
  *
  * return -1 if failure
  * return position if added

@@ -328,7 +328,7 @@ typedef enum Tox_Err_Events_Iterate {
  * @param fail_hard Drop all events when any allocation fails.
  * @param error An error code. Will be set to OK on success.
  *
- * @returns the recorded events structure.
+ * @return the recorded events structure.
  */
 Tox_Events *tox_events_iterate(Tox *tox, bool fail_hard, Tox_Err_Events_Iterate *error);
 

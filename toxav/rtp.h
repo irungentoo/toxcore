@@ -23,7 +23,7 @@ extern "C" {
 #define RTP_HEADER_SIZE 80
 
 /**
- * Number of 32 bit padding fields between \ref RTPHeader::offset_lower and
+ * Number of 32 bit padding fields between @ref RTPHeader::offset_lower and
  * everything before it.
  */
 #define RTP_PADDING_FIELDS 11
@@ -43,7 +43,7 @@ typedef enum RTP_Type {
 typedef enum RTPFlags {
     /**
      * Support frames larger than 64KiB. The full 32 bit length and offset are
-     * set in \ref RTPHeader::data_length_full and \ref RTPHeader::offset_full.
+     * set in @ref RTPHeader::data_length_full and @ref RTPHeader::offset_full.
      */
     RTP_LARGE_FRAME = 1 << 0,
     /**
@@ -70,14 +70,14 @@ struct RTPHeader {
     /* Non-standard Tox-specific fields */
 
     /**
-     * Bit mask of \c RTPFlags setting features of the current frame.
+     * Bit mask of `RTPFlags` setting features of the current frame.
      */
     uint64_t flags;
 
     /**
-     * The full 32 bit data offset of the current data chunk. The \ref
+     * The full 32 bit data offset of the current data chunk. The @ref
      * offset_lower data member contains the lower 16 bits of this value. For
-     * frames smaller than 64KiB, \ref offset_full and \ref offset_lower are
+     * frames smaller than 64KiB, @ref offset_full and @ref offset_lower are
      * equal.
      */
     uint32_t offset_full;
@@ -106,7 +106,7 @@ struct RTPMessage {
      * This is used in the old code that doesn't deal with large frames, i.e.
      * the audio code or receiving code for old 16 bit messages. We use it to
      * record the number of bytes received so far in a multi-part message. The
-     * multi-part message in the old code is stored in \c RTPSession::mp.
+     * multi-part message in the old code is stored in `RTPSession::mp`.
      */
     uint16_t len;
 
@@ -192,10 +192,10 @@ void rtp_kill(RTPSession *session);
 int rtp_allow_receiving(RTPSession *session);
 int rtp_stop_receiving(RTPSession *session);
 /**
- * Send a frame of audio or video data, chunked in \ref RTPMessage instances.
+ * Send a frame of audio or video data, chunked in @ref RTPMessage instances.
  *
  * @param session The A/V session to send the data for.
- * @param data A byte array of length \p length.
+ * @param data A byte array of length @p length.
  * @param length The number of bytes to send from @p data.
  * @param is_keyframe Whether this video frame is a key frame. If it is an
  *   audio frame, this parameter is ignored.

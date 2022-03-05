@@ -200,7 +200,7 @@ static Broadcast_Info *fetch_broadcast_info(void)
 
 #endif
 
-/** Send packet to all IPv4 broadcast addresses
+/** @brief Send packet to all IPv4 broadcast addresses
  *
  * @retval true if sent to at least one broadcast target.
  * @retval false on failure to find any valid broadcast target.

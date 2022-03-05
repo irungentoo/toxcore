@@ -58,27 +58,30 @@ typedef struct TCP_Connection {
     TCP_Priority_List *priority_queue_end;
 } TCP_Connection;
 
-/** return 0 if pending data was sent completely
- * return -1 if it wasn't
+/**
+ * @retval 0 if pending data was sent completely
+ * @retval -1 if it wasn't
  */
 non_null()
 int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con);
 
-/** return 0 if pending data was sent completely
- * return -1 if it wasn't
+/**
+ * @retval 0 if pending data was sent completely
+ * @retval -1 if it wasn't
  */
 non_null()
 int send_pending_data(const Logger *logger, TCP_Connection *con);
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
 non_null()
 int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
                                        bool priority);
 
-/** Read length bytes from socket.
+/** @brief Read length bytes from socket.
  *
  * return length on success
  * return -1 on failure/no data in buffer.
@@ -86,9 +89,10 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
 non_null()
 int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t length, const IP_Port *ip_port);
 
-/** return length of received packet on success.
- * return 0 if could not read any packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @return length of received packet on success.
+ * @retval 0 if could not read any packet.
+ * @retval -1 on failure (connection must be killed).
  */
 non_null()
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,

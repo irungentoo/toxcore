@@ -223,8 +223,8 @@ bool tox_pass_decrypt(const uint8_t *ciphertext, size_t ciphertext_len, const ui
  *
  * A pass-key and a password are two different concepts: a password is given
  * by the user in plain text. A pass-key is the generated symmetric key used
- * for encryption and decryption. It is derived from a salt and the user-
- * provided password.
+ * for encryption and decryption. It is derived from a salt and the
+ * user-provided password.
  *
  * The Tox_Pass_Key structure is hidden in the implementation. It can be created
  * using tox_pass_key_derive or tox_pass_key_derive_with_salt and must be deallocated using tox_pass_key_free.
@@ -235,7 +235,7 @@ typedef struct Tox_Pass_Key Tox_Pass_Key;
 #endif /* TOX_PASS_KEY_DEFINED */
 
 /**
- * Deallocate a Tox_Pass_Key. This function behaves like free(), so NULL is an
+ * Deallocate a Tox_Pass_Key. This function behaves like `free()`, so NULL is an
  * acceptable argument value.
  */
 void tox_pass_key_free(struct Tox_Pass_Key *key);

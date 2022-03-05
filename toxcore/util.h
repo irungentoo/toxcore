@@ -25,9 +25,8 @@ extern "C" {
 non_null() bool pk_equal(const uint8_t *dest, const uint8_t *src);
 /**
  * @brief Copy a public key from `src` to `dest`.
- * @retval CLIENT_ID_SIZE
  */
-non_null() uint32_t pk_copy(uint8_t *dest, const uint8_t *src);
+non_null() void pk_copy(uint8_t *dest, const uint8_t *src);
 
 /** Returns -1 if failed or 0 if success */
 non_null() int create_recursive_mutex(pthread_mutex_t *mutex);

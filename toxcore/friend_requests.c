@@ -14,8 +14,9 @@
 #include "ccompat.h"
 #include "util.h"
 
-/** NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
- * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam.)
+/**
+ * NOTE: The following is just a temporary fix for the multiple friend requests received at the same time problem.
+ * TODO(irungentoo): Make this better (This will most likely tie in with the way we will handle spam).
  */
 #define MAX_RECEIVED_STORED 32
 
@@ -48,8 +49,7 @@ uint32_t get_nospam(const Friend_Requests *fr)
 }
 
 
-/** Set the function that will be executed when a friend request for us is received.
- */
+/** Set the function that will be executed when a friend request for us is received. */
 void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function, void *object)
 {
     fr->handle_friendrequest = function;
@@ -57,8 +57,8 @@ void callback_friendrequest(Friend_Requests *fr, fr_friend_request_cb *function,
     fr->handle_friendrequest_object = object;
 }
 
-/** Set the function used to check if a friend request should be displayed to the user or not.
- * It must return 0 if the request is ok (anything else if it is bad.)
+/** @brief Set the function used to check if a friend request should be displayed to the user or not.
+ * It must return 0 if the request is ok (anything else if it is bad).
  */
 void set_filter_function(Friend_Requests *fr, filter_function_cb *function, void *userdata)
 {
@@ -78,10 +78,10 @@ static void addto_receivedlist(Friend_Requests *fr, const uint8_t *real_pk)
     ++fr->received.requests_index;
 }
 
-/** Check if a friend request was already received.
+/** @brief Check if a friend request was already received.
  *
- *  return false if it did not.
- *  return true if it did.
+ * @retval false if it did not.
+ * @retval true if it did.
  */
 non_null()
 static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
@@ -95,10 +95,10 @@ static bool request_received(const Friend_Requests *fr, const uint8_t *real_pk)
     return false;
 }
 
-/** Remove real_pk from received_requests list.
+/** @brief Remove real_pk from received_requests list.
  *
- *  return 0 if it removed it successfully.
- *  return -1 if it didn't find it.
+ * @retval 0 if it removed it successfully.
+ * @retval -1 if it didn't find it.
  */
 int remove_request_received(Friend_Requests *fr, const uint8_t *real_pk)
 {

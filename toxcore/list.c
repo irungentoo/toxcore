@@ -5,8 +5,8 @@
 
 /**
  * Simple struct with functions to create a list which associates ids with data
- * -Allows for finding ids associated with data such as IPs or public keys in a short time
- * -Should only be used if there are relatively few add/remove calls to the list
+ * - Allows for finding ids associated with data such as IPs or public keys in a short time
+ * - Should only be used if there are relatively few add/remove calls to the list
  */
 #include "list.h"
 
@@ -16,15 +16,16 @@
 
 #include "ccompat.h"
 
-/** Basically, the elements in the list are placed in order so that they can be searched for easily
- * -each element is seen as a big-endian integer when ordering them
- * -the ids array is maintained so that each id always matches
- * -the search algorithm cuts down the time to find the id associated with a piece of data
+/**
+ * Basically, the elements in the list are placed in order so that they can be searched for easily
+ * - each element is seen as a big-endian integer when ordering them
+ * - the ids array is maintained so that each id always matches
+ * - the search algorithm cuts down the time to find the id associated with a piece of data
  *   at the cost of slow add/remove functions for large lists
- * -Starts at 1/2 of the array, compares the element in the array with the data,
- *   then moves +/- 1/4 of the array depending on whether the value is greater or lower,
- *   then +- 1/8, etc, until the value is matched or its position where it should be in the array is found
- * -some considerations since the array size is never perfect
+ * - Starts at `1/2` of the array, compares the element in the array with the data,
+ *   then moves `+/- 1/4` of the array depending on whether the value is greater or lower,
+ *   then `+- 1/8`, etc, until the value is matched or its position where it should be in the array is found
+ * - some considerations since the array size is never perfect
  */
 
 static int32_t
@@ -33,12 +34,11 @@ list_index(uint32_t i)
     return ~i;
 }
 
-/** Find data in list
+/** @brief Find data in list
  *
- * return value:
- *  >= 0 : index of data in array
- *  < 0  : no match, returns index (return value is list_index(index)) where
- *         the data should be inserted
+ * @retval >=0 index of data in array
+ * @retval <0  no match, returns index (return value is `list_index(index)`) where
+ *   the data should be inserted
  */
 non_null()
 static int find(const BS_List *list, const uint8_t *data)

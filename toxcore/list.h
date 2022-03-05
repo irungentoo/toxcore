@@ -28,12 +28,13 @@ typedef struct BS_List {
     int *ids; // array of element ids
 } BS_List;
 
-/** Initialize a list, element_size is the size of the elements in the list and
- * initial_capacity is the number of elements the memory will be initially allocated for
+/** @brief Initialize a list.
  *
- * return value:
- *  1 : success
- *  0 : failure
+ * @param element_size is the size of the elements in the list.
+ * @param initial_capacity is the number of elements the memory will be initially allocated for.
+ *
+ * @retval 1 success
+ * @retval 0 failure
  */
 non_null()
 int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity);
@@ -42,29 +43,26 @@ int bs_list_init(BS_List *list, uint32_t element_size, uint32_t initial_capacity
 non_null()
 void bs_list_free(BS_List *list);
 
-/** Retrieve the id of an element in the list
+/** @brief Retrieve the id of an element in the list
  *
- * return value:
- *  >= 0 : id associated with data
- *  -1   : failure
+ * @retval >=0 id associated with data
+ * @retval -1 failure
  */
 non_null()
 int bs_list_find(const BS_List *list, const uint8_t *data);
 
-/** Add an element with associated id to the list
+/** @brief Add an element with associated id to the list
  *
- * return value:
- *  true  : success
- *  false : failure (data already in list)
+ * @retval true  success
+ * @retval false failure (data already in list)
  */
 non_null()
 bool bs_list_add(BS_List *list, const uint8_t *data, int id);
 
-/** Remove element from the list
+/** @brief Remove element from the list
  *
- * return value:
- *  true  : success
- *  false : failure (element not found or id does not match)
+ * @retval true  success
+ * @retval false failure (element not found or id does not match)
  */
 non_null()
 bool bs_list_remove(BS_List *list, const uint8_t *data, int id);

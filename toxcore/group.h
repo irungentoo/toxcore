@@ -139,9 +139,9 @@ typedef struct Group_c {
     group_on_delete_cb *group_on_delete;
 } Group_c;
 
-/** Callback for group invites.
+/** @brief Callback for group invites.
  *
- * data of length is what needs to be passed to join_groupchat().
+ * data of length is what needs to be passed to `join_groupchat()`.
  */
 typedef void g_conference_invite_cb(Messenger *m, uint32_t friend_number, int type, const uint8_t *cookie,
                                     size_t length, void *user_data);
@@ -160,14 +160,14 @@ typedef void peer_name_cb(Messenger *m, uint32_t conference_number, uint32_t pee
 /** Set callback function for peer list changes. */
 typedef void peer_list_changed_cb(Messenger *m, uint32_t conference_number, void *user_data);
 
-/** Callback for title changes.
+/** @brief Callback for title changes.
  *
  * If peer_number == -1, then author is unknown (e.g. initial joining the group).
  */
 typedef void title_cb(Messenger *m, uint32_t conference_number, uint32_t peer_number, const uint8_t *title,
                       size_t length, void *user_data);
 
-/** Callback for lossy packets.
+/** @brief Callback for lossy packets.
  *
  * NOTE: Handler must return 0 if packet is to be relayed, -1 if the packet should not be relayed.
  */
@@ -214,168 +214,177 @@ void g_callback_group_message(Group_Chats *g_c, g_conference_message_cb *functio
 non_null()
 void g_callback_group_title(Group_Chats *g_c, title_cb *function);
 
-/** Set callback function for peer nickname changes.
+/** @brief Set callback function for peer nickname changes.
  *
  * It gets called every time a peer changes their nickname.
  */
 non_null()
 void g_callback_peer_name(Group_Chats *g_c, peer_name_cb *function);
 
-/** Set callback function for peer list changes.
+/** @brief Set callback function for peer list changes.
  *
  * It gets called every time the name list changes(new peer, deleted peer)
  */
 non_null()
 void g_callback_peer_list_changed(Group_Chats *g_c, peer_list_changed_cb *function);
 
-/** Creates a new groupchat and puts it in the chats array.
+/** @brief Creates a new groupchat and puts it in the chats array.
  *
  * type is one of `GROUPCHAT_TYPE_*`
  *
- * return group number on success.
- * return -1 on failure.
+ * @return group number on success.
+ * @retval -1 on failure.
  */
 non_null()
 int add_groupchat(Group_Chats *g_c, uint8_t type);
 
-/** Delete a groupchat from the chats array, informing the group first as
+/** @brief Delete a groupchat from the chats array, informing the group first as
  * appropriate.
  *
- * return true on success.
- * return false if groupnumber is invalid.
+ * @retval true on success.
+ * @retval false if groupnumber is invalid.
  */
 non_null()
 bool del_groupchat(Group_Chats *g_c, uint32_t groupnumber, bool leave_permanently);
 
-/** Copy the public key of (frozen, if frozen is true) peernumber who is in
- * groupnumber to pk. pk must be CRYPTO_PUBLIC_KEY_SIZE long.
+/**
+ * @brief Copy the public key of (frozen, if frozen is true) peernumber who is in
+ *   groupnumber to pk.
  *
- * return 0 on success
- * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * @param pk must be CRYPTO_PUBLIC_KEY_SIZE long.
+ *
+ * @retval 0 on success
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if peernumber is invalid.
  */
 non_null()
 int group_peer_pubkey(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, uint8_t *pk, bool frozen);
 
 /**
- * Return the size of (frozen, if frozen is true) peernumber's name.
+ * @brief Return the size of (frozen, if frozen is true) peernumber's name.
  *
- * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if peernumber is invalid.
  */
 non_null()
 int group_peername_size(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, bool frozen);
 
-/** Copy the name of (frozen, if frozen is true) peernumber who is in
- * groupnumber to name. name must be at least MAX_NAME_LENGTH long.
+/**
+ * @brief Copy the name of (frozen, if frozen is true) peernumber who is in
+ *   groupnumber to name.
  *
- * return length of name if success
- * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * @param  name must be at least MAX_NAME_LENGTH long.
+ *
+ * @return length of name if success
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if peernumber is invalid.
  */
 non_null()
 int group_peername(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, uint8_t *name,
                    bool frozen);
 
-/** Copy last active timestamp of frozen peernumber who is in groupnumber to
- * last_active.
+/**
+ * @brief Copy last active timestamp of frozen peernumber who is in groupnumber to
+ *   last_active.
  *
- * return 0 on success.
- * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
+ * @retval 0 on success.
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if peernumber is invalid.
  */
 non_null()
 int group_frozen_last_active(
     const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, uint64_t *last_active);
 
-/** Set maximum number of frozen peers.
+/** @brief Set maximum number of frozen peers.
  *
- * return 0 on success.
- * return -1 if groupnumber is invalid.
+ * @retval 0 on success.
+ * @retval -1 if groupnumber is invalid.
  */
 non_null()
 int group_set_max_frozen(const Group_Chats *g_c, uint32_t groupnumber, uint32_t maxfrozen);
 
-/** invite friendnumber to groupnumber.
+/** @brief invite friendnumber to groupnumber.
  *
- * return 0 on success.
- * return -1 if groupnumber is invalid.
- * return -2 if invite packet failed to send.
- * return -3 if we are not connected to the group chat.
+ * @retval 0 on success.
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if invite packet failed to send.
+ * @retval -3 if we are not connected to the group chat.
  */
 non_null()
 int invite_friend(const Group_Chats *g_c, uint32_t friendnumber, uint32_t groupnumber);
 
-/** Join a group (we need to have been invited first.)
+/** @brief Join a group (we need to have been invited first).
  *
- * expected_type is the groupchat type we expect the chat we are joining to
- * have.
+ * @param expected_type is the groupchat type we expect the chat we are joining
+ *   to have.
  *
- * return group number on success.
- * return -1 if data length is invalid.
- * return -2 if group is not the expected type.
- * return -3 if friendnumber is invalid.
- * return -4 if client is already in this group.
- * return -5 if group instance failed to initialize.
- * return -6 if join packet fails to send.
+ * @return group number on success.
+ * @retval -1 if data length is invalid.
+ * @retval -2 if group is not the expected type.
+ * @retval -3 if friendnumber is invalid.
+ * @retval -4 if client is already in this group.
+ * @retval -5 if group instance failed to initialize.
+ * @retval -6 if join packet fails to send.
  */
 non_null()
 int join_groupchat(
     Group_Chats *g_c, uint32_t friendnumber, uint8_t expected_type, const uint8_t *data, uint16_t length);
 
-/** send a group message
- * return 0 on success
- * see: send_message_group() for error codes.
+/** @brief send a group message
+ * @retval 0 on success
+ * @see send_message_group for error codes.
  */
 non_null()
 int group_message_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *message, uint16_t length);
 
-/** send a group action
- * return 0 on success
- * see: send_message_group() for error codes.
+/** @brief send a group action
+ * @retval 0 on success
+ * @see send_message_group for error codes.
  */
 non_null()
 int group_action_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *action, uint16_t length);
 
-/** set the group's title, limited to MAX_NAME_LENGTH
- * return 0 on success
- * return -1 if groupnumber is invalid.
- * return -2 if title is too long or empty.
- * return -3 if packet fails to send.
+/** @brief set the group's title, limited to MAX_NAME_LENGTH.
+ * @retval 0 on success
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if title is too long or empty.
+ * @retval -3 if packet fails to send.
  */
 non_null()
 int group_title_send(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *title, uint8_t title_len);
 
 
-/** return the group's title size.
- * return -1 of groupnumber is invalid.
- * return -2 if title is too long or empty.
+/** @brief return the group's title size.
+ * @retval -1 of groupnumber is invalid.
+ * @retval -2 if title is too long or empty.
  */
 non_null()
 int group_title_get_size(const Group_Chats *g_c, uint32_t groupnumber);
 
-/** Get group title from groupnumber and put it in title.
+/** @brief Get group title from groupnumber and put it in title.
+ *
  * Title needs to be a valid memory location with a size of at least MAX_NAME_LENGTH (128) bytes.
  *
- * return length of copied title if success.
- * return -1 if groupnumber is invalid.
- * return -2 if title is too long or empty.
+ * @return length of copied title if success.
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if title is too long or empty.
  */
 non_null()
 int group_title_get(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *title);
 
-/** Return the number of (frozen, if frozen is true) peers in the group chat on
- * success.
- * return -1 if groupnumber is invalid.
+/**
+ * @return the number of (frozen, if frozen is true) peers in the group chat on success.
+ * @retval -1 if groupnumber is invalid.
  */
 non_null()
 int group_number_peers(const Group_Chats *g_c, uint32_t groupnumber, bool frozen);
 
-/** return 1 if the peernumber corresponds to ours.
- * return 0 if the peernumber is not ours.
- * return -1 if groupnumber is invalid.
- * return -2 if peernumber is invalid.
- * return -3 if we are not connected to the group chat.
+/**
+ * @retval 1 if the peernumber corresponds to ours.
+ * @retval 0 if the peernumber is not ours.
+ * @retval -1 if groupnumber is invalid.
+ * @retval -2 if peernumber is invalid.
+ * @retval -3 if we are not connected to the group chat.
  */
 non_null()
 int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber);
@@ -384,104 +393,107 @@ int group_peernumber_is_ours(const Group_Chats *g_c, uint32_t groupnumber, uint3
 non_null()
 void group_lossy_packet_registerhandler(Group_Chats *g_c, uint8_t byte, lossy_packet_cb *function);
 
-/** High level function to send custom lossy packets.
+/** @brief High level function to send custom lossy packets.
  *
- * return -1 on failure.
- * return 0 on success.
+ * @retval -1 on failure.
+ * @retval 0 on success.
  */
 non_null()
 int send_group_lossy_packet(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *data, uint16_t length);
 
-/** Return the number of chats in the instance m.
+/**
+ * @brief Return the number of chats in the instance m.
+ *
  * You should use this to determine how much memory to allocate
  * for copy_chatlist.
  */
 non_null()
 uint32_t count_chatlist(const Group_Chats *g_c);
 
-/** Copy a list of valid chat IDs into the array out_list.
+/** @brief Copy a list of valid chat IDs into the array out_list.
+ *
  * If out_list is NULL, returns 0.
  * Otherwise, returns the number of elements copied.
  * If the array was too small, the contents
- * of out_list will be truncated to list_size. */
+ * of out_list will be truncated to list_size.
+ */
 non_null()
 uint32_t copy_chatlist(const Group_Chats *g_c, uint32_t *out_list, uint32_t list_size);
 
-/** return the type of groupchat (GROUPCHAT_TYPE_) that groupnumber is.
+/** @brief return the type of groupchat (GROUPCHAT_TYPE_) that groupnumber is.
  *
- * return -1 on failure.
- * return type on success.
+ * @retval -1 on failure.
+ * @return type on success.
  */
 non_null()
 int group_get_type(const Group_Chats *g_c, uint32_t groupnumber);
 
-/** Copies the unique id of `group_chat[groupnumber]` into `id`.
+/** @brief Copies the unique id of `group_chat[groupnumber]` into `id`.
  *
- * return false on failure.
- * return true on success.
+ * @retval false on failure.
+ * @retval true on success.
  */
 non_null()
 bool conference_get_id(const Group_Chats *g_c, uint32_t groupnumber, uint8_t *id);
 
 non_null() int32_t conference_by_id(const Group_Chats *g_c, const uint8_t *id);
 
-/** Send current name (set in messenger) to all online groups.
- */
+/** Send current name (set in messenger) to all online groups. */
 non_null()
 void send_name_all_groups(const Group_Chats *g_c);
 
-/** Set the object that is tied to the group chat.
+/** @brief Set the object that is tied to the group chat.
  *
- * return 0 on success.
- * return -1 on failure
+ * @retval 0 on success.
+ * @retval -1 on failure
  */
 non_null(1) nullable(3)
 int group_set_object(const Group_Chats *g_c, uint32_t groupnumber, void *object);
 
-/** Set the object that is tied to the group peer.
+/** @brief Set the object that is tied to the group peer.
  *
- * return 0 on success.
- * return -1 on failure
+ * @retval 0 on success.
+ * @retval -1 on failure
  */
 non_null(1) nullable(4)
 int group_peer_set_object(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber, void *object);
 
-/** Return the object tied to the group chat previously set by group_set_object.
+/** @brief Return the object tied to the group chat previously set by group_set_object.
  *
- * return NULL on failure.
- * return object on success.
+ * @retval NULL on failure.
+ * @return object on success.
  */
 non_null()
 void *group_get_object(const Group_Chats *g_c, uint32_t groupnumber);
 
-/** Return the object tied to the group chat peer previously set by group_peer_set_object.
+/** @brief Return the object tied to the group chat peer previously set by group_peer_set_object.
  *
- * return NULL on failure.
- * return object on success.
+ * @retval NULL on failure.
+ * @return object on success.
  */
 non_null()
 void *group_peer_get_object(const Group_Chats *g_c, uint32_t groupnumber, uint32_t peernumber);
 
-/** Set a function to be called when a new peer joins a group chat.
+/** @brief Set a function to be called when a new peer joins a group chat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 non_null(1) nullable(3)
 int callback_groupchat_peer_new(const Group_Chats *g_c, uint32_t groupnumber, peer_on_join_cb *function);
 
-/** Set a function to be called when a peer leaves a group chat.
+/** @brief Set a function to be called when a peer leaves a group chat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 non_null(1) nullable(3)
 int callback_groupchat_peer_delete(const Group_Chats *g_c, uint32_t groupnumber, peer_on_leave_cb *function);
 
-/** Set a function to be called when the group chat is deleted.
+/** @brief Set a function to be called when the group chat is deleted.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 non_null(1) nullable(3)
 int callback_groupchat_delete(const Group_Chats *g_c, uint32_t groupnumber, group_on_delete_cb *function);
@@ -490,7 +502,7 @@ int callback_groupchat_delete(const Group_Chats *g_c, uint32_t groupnumber, grou
 non_null()
 uint32_t conferences_size(const Group_Chats *g_c);
 
-/** Save the conferences in data (must be allocated memory of size at least conferences_size()) */
+/** Save the conferences in data (must be allocated memory of size at least `conferences_size()`). */
 non_null()
 uint8_t *conferences_save(const Group_Chats *g_c, uint8_t *data);
 

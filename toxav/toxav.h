@@ -147,7 +147,7 @@ uint32_t toxav_iteration_interval(const ToxAV *av);
 
 /**
  * Main loop for the session. This function needs to be called in intervals of
- * toxav_iteration_interval() milliseconds. It is best called in the separate
+ * `toxav_iteration_interval()` milliseconds. It is best called in the separate
  * thread from tox_iterate.
  */
 void toxav_iterate(ToxAV *av);
@@ -168,7 +168,7 @@ uint32_t toxav_audio_iteration_interval(const ToxAV *av);
 
 /**
  * Main loop for the session. This function needs to be called in intervals of
- * toxav_audio_iteration_interval() milliseconds. It is best called in a
+ * `toxav_audio_iteration_interval()` milliseconds. It is best called in a
  * separate thread from tox_iterate and toxav_video_iterate. The thread calling
  * this function should have higher priority than the one calling
  * toxav_video_iterate to prioritize audio over video.
@@ -184,7 +184,7 @@ uint32_t toxav_video_iteration_interval(const ToxAV *av);
 
 /**
  * Main loop for the session. This function needs to be called in intervals of
- * toxav_video_iteration_interval() milliseconds. It is best called in a
+ * `toxav_video_iteration_interval()` milliseconds. It is best called in a
  * separate thread from tox_iterate and toxav_audio_iterate. The thread calling
  * this function should have lower priority than the one calling
  * toxav_audio_iterate to prioritize audio over video.
@@ -595,12 +595,12 @@ typedef enum Toxav_Err_Send_Frame {
  * alternating.
  *
  * @param friend_number The friend number of the friend to which to send an
- * audio frame.
+ *   audio frame.
  * @param pcm An array of audio samples. The size of this array must be
- * `sample_count * channels`.
+ *   `sample_count * channels`.
  * @param sample_count Number of samples in this frame. Valid numbers here are
- * `((sample rate) * (audio length) / 1000)`, where audio length can be
- * 2.5, 5, 10, 20, 40 or 60 millseconds.
+ *   `((sample rate) * (audio length) / 1000)`, where audio length can be
+ *   2.5, 5, 10, 20, 40 or 60 millseconds.
  * @param channels Number of audio channels. Supported values are 1 and 2.
  * @param sampling_rate Audio sampling rate used in this frame. Valid sampling
  * rates are 8000, 12000, 16000, 24000, or 48000.
@@ -721,7 +721,7 @@ void toxav_callback_audio_receive_frame(ToxAV *av, toxav_audio_receive_frame_cb 
  *
  * Strides represent padding for each plane that may or may not be present.
  * You must handle strides in your image processing code. Strides are
- * negative if the image is bottom-up hence why you MUST abs() it when
+ * negative if the image is bottom-up hence why you MUST `abs()` it when
  * calculating plane buffer size.
  *
  * @param friend_number The friend number of the friend who sent a video frame.
@@ -761,33 +761,34 @@ typedef void toxav_group_audio_cb(Tox *tox, uint32_t groupnumber, uint32_t peern
 typedef void toxav_audio_data_cb(void *tox, uint32_t groupnumber, uint32_t peernumber, const int16_t *pcm,
                                  uint32_t samples, uint8_t channels, uint32_t sample_rate, void *userdata);
 
-/** Create a new toxav group.
+/** @brief Create a new toxav group.
  *
- * return group number on success.
- * return -1 on failure.
+ * @return group number on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
 int toxav_add_av_groupchat(Tox *tox, toxav_audio_data_cb *audio_callback, void *userdata);
 
-/** Join a AV group (you need to have been invited first.)
+/** @brief Join a AV group (you need to have been invited first).
  *
- * returns group number on success
- * returns -1 on failure.
+ * @return group number on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
 int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data, uint16_t length,
                             toxav_audio_data_cb *audio_callback, void *userdata);
 
-/** Send audio to the group chat.
+/** @brief Send audio to the group chat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  *
- * Valid number of samples are `(sample rate) * (audio length) / 1000` (Valid values for audio length are: 2.5, 5, 10, 20, 40 or 60 ms)
+ * Valid number of samples are `(sample rate) * (audio length) / 1000`
+ *   (Valid values for audio length are: 2.5, 5, 10, 20, 40 or 60 ms)
  * Valid number of channels are 1 or 2.
  * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
  *
@@ -796,7 +797,7 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
 int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                            uint32_t sample_rate);
 
-/** Enable A/V in a groupchat.
+/** @brief Enable A/V in a groupchat.
  *
  * A/V must be enabled on a groupchat for audio to be sent to it and for
  * received audio to be handled.
@@ -806,23 +807,22 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
  *
  * An A/V group loaded from a savefile will start with A/V disabled.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
 int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber,
                               toxav_audio_data_cb *audio_callback, void *userdata);
 
-/** Disable A/V in a groupchat.
+/** @brief Disable A/V in a groupchat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber);
 
-/** Return whether A/V is enabled in the groupchat.
- */
+/** @brief Return whether A/V is enabled in the groupchat. */
 bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber);
 
 /** @} */

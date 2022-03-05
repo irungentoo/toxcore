@@ -87,7 +87,8 @@ static void terminate_queue(Group_JitterBuffer *q)
     free(q);
 }
 
-/** Return 0 if packet was queued, -1 if it wasn't.
+/** @retval 0 if packet was queued
+ * @retval -1 if it wasn't.
  */
 static int queue(Group_JitterBuffer *q, const Mono_Time *mono_time, Group_Audio_Packet *pk)
 {
@@ -125,7 +126,12 @@ static int queue(Group_JitterBuffer *q, const Mono_Time *mono_time, Group_Audio_
     return 0;
 }
 
-/** success is 0 when there is nothing to dequeue, 1 when there's a good packet, 2 when there's a lost packet */
+/**
+ * success is:
+ * - 0 when there is nothing to dequeue
+ * - 1 when there's a good packet
+ * - 2 when there's a lost packet
+ */
 static Group_Audio_Packet *dequeue(Group_JitterBuffer *q, int *success)
 {
     if (q->top == q->bottom) {
@@ -433,10 +439,10 @@ static int handle_group_audio_packet(void *object, uint32_t groupnumber, uint32_
     return 0;
 }
 
-/** Enable A/V in a groupchat.
+/** @brief Enable A/V in a groupchat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t groupnumber,
                         audio_data_cb *audio_callback, void *userdata)
@@ -475,10 +481,10 @@ int groupchat_enable_av(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t 
     return 0;
 }
 
-/** Disable A/V in a groupchat.
+/** @brief Disable A/V in a groupchat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int groupchat_disable_av(const Group_Chats *g_c, uint32_t groupnumber)
 {
@@ -516,17 +522,16 @@ int groupchat_disable_av(const Group_Chats *g_c, uint32_t groupnumber)
     return 0;
 }
 
-/** Return whether A/V is enabled in the groupchat.
- */
+/** Return whether A/V is enabled in the groupchat. */
 bool groupchat_av_enabled(const Group_Chats *g_c, uint32_t groupnumber)
 {
     return group_get_object(g_c, groupnumber) != nullptr;
 }
 
-/** Create and connect to a new toxav group.
+/** @brief Create and connect to a new toxav group.
  *
- * return group number on success.
- * return -1 on failure.
+ * @return group number on success.
+ * @retval -1 on failure.
  */
 int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_cb *audio_callback, void *userdata)
 {
@@ -544,10 +549,10 @@ int add_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, audio_data_c
     return groupnumber;
 }
 
-/** Join a AV group (you need to have been invited first.)
+/** @brief Join a AV group (you need to have been invited first).
  *
- * returns group number on success
- * returns -1 on failure.
+ * @return group number on success
+ * @retval -1 on failure.
  */
 int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t friendnumber, const uint8_t *data,
                       uint16_t length, audio_data_cb *audio_callback, void *userdata)
@@ -566,10 +571,10 @@ int join_av_groupchat(const Logger *log, Tox *tox, Group_Chats *g_c, uint32_t fr
     return groupnumber;
 }
 
-/** Send an encoded audio packet to the group chat.
+/** @brief Send an encoded audio packet to the group chat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 static int send_audio_packet(const Group_Chats *g_c, uint32_t groupnumber, const uint8_t *packet, uint16_t length)
 {
@@ -601,10 +606,10 @@ static int send_audio_packet(const Group_Chats *g_c, uint32_t groupnumber, const
     return 0;
 }
 
-/** Send audio to the group chat.
+/** @brief Send audio to the group chat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int group_send_audio(Group_Chats *g_c, uint32_t groupnumber, const int16_t *pcm, unsigned int samples, uint8_t channels,
                      uint32_t sample_rate)

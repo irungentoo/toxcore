@@ -28,6 +28,16 @@ jobs:
           (find . -name "*.py" -and -not -name "conanfile.py"; grep -lR '^#!.*python') \
               | xargs -n1 -P8 mypy --strict
 
+  doxygen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Docker Build
+        uses: docker/build-push-action@v2
+        with:
+          file: other/docker/doxygen/Dockerfile
+
   tokstyle:
     runs-on: ubuntu-latest
     steps:
@@ -37,6 +47,13 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           file: other/docker/tokstyle/Dockerfile
+
+  cimplefmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run cimplefmt
+        run: other/docker/cimplefmt/run -u $(find tox* -name "*.[ch]")
 
   build-nacl:
     runs-on: ubuntu-latest

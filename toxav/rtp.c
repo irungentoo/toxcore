@@ -193,7 +193,7 @@ static int8_t get_slot(const Logger *log, struct RTPWorkBufferList *wkbl, bool i
  *
  * If there are no frames ready, we return NULL. If this function returns
  * non-NULL, it transfers ownership of the message to the caller, i.e. the
- * caller is responsible for storing it elsewhere or calling free().
+ * caller is responsible for storing it elsewhere or calling `free()`.
  */
 static struct RTPMessage *process_frame(const Logger *log, struct RTPWorkBufferList *wkbl, uint8_t slot_id)
 {
@@ -345,7 +345,8 @@ static void update_bwc_values(const Logger *log, RTPSession *session, const stru
  *   this is the actual payload length.
  * @param log A logger.
  *
- * @return -1 on error, 0 on success.
+ * @retval -1 on error.
+ * @retval 0 on success.
  */
 static int handle_video_packet(RTPSession *session, const struct RTPHeader *header,
                                const uint8_t *incoming_data, uint16_t incoming_data_length, const Logger *log)
@@ -436,7 +437,8 @@ static int handle_video_packet(RTPSession *session, const struct RTPHeader *head
 }
 
 /**
- * @return -1 on error, 0 on success.
+ * @retval -1 on error.
+ * @retval 0 on success.
  */
 static int handle_rtp_packet(Messenger *m, uint32_t friendnumber, const uint8_t *data, uint16_t length, void *object)
 {
@@ -741,10 +743,10 @@ int rtp_stop_receiving(RTPSession *session)
 }
 
 /**
- * Send a frame of audio or video data, chunked in \ref RTPMessage instances.
+ * Send a frame of audio or video data, chunked in @ref RTPMessage instances.
  *
  * @param session The A/V session to send the data for.
- * @param data A byte array of length \p length.
+ * @param data A byte array of length @p length.
  * @param length The number of bytes to send from @p data.
  * @param is_keyframe Whether this video frame is a key frame. If it is an
  *   audio frame, this parameter is ignored.

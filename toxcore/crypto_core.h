@@ -41,7 +41,7 @@ extern "C" {
 
 /**
  * @brief The number of bytes needed for the MAC (message authentication code) in an
- * encrypted message.
+ *   encrypted message.
  */
 #define CRYPTO_MAC_SIZE                16
 
@@ -174,7 +174,7 @@ void crypto_derive_public_key(uint8_t *public_key, const uint8_t *secret_key);
  * @ref CRYPTO_NONCE_SIZE byte nonce.
  *
  * @retval -1 if there was a problem.
- * @retval >=0 length of encrypted data if everything was fine.
+ * @return length of encrypted data if everything was fine.
  */
 non_null()
 int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce, const uint8_t *plain,
@@ -189,7 +189,7 @@ int32_t encrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const
  * @ref CRYPTO_NONCE_SIZE byte nonce.
  *
  * @retval -1 if there was a problem (decryption failed).
- * @retval >=0 length of plain text data if everything was fine.
+ * @return length of plain text data if everything was fine.
  */
 non_null()
 int32_t decrypt_data(const uint8_t *public_key, const uint8_t *secret_key, const uint8_t *nonce,
@@ -212,8 +212,8 @@ int32_t encrypt_precompute(const uint8_t *public_key, const uint8_t *secret_key,
  * using a shared key @ref CRYPTO_SYMMETRIC_KEY_SIZE big and a @ref CRYPTO_NONCE_SIZE
  * byte nonce.
  *
- * @return -1 if there was a problem, length of encrypted data if everything
- * was fine.
+ * @retval -1 if there was a problem.
+ * @return length of encrypted data if everything was fine.
  */
 non_null()
 int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce, const uint8_t *plain, size_t length,
@@ -222,12 +222,12 @@ int32_t encrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce, 
 /**
  * @brief Decrypt message with precomputed shared key.
  *
- * Decrypts encrypted of length length to plain of length length -
- * @ref CRYPTO_MAC_SIZE using a shared key @ref CRYPTO_SHARED_KEY_SIZE big and a
- * @ref CRYPTO_NONCE_SIZE byte nonce.
+ * Decrypts encrypted of length length to plain of length
+ * `length - CRYPTO_MAC_SIZE` using a shared key @ref CRYPTO_SHARED_KEY_SIZE
+ * big and a @ref CRYPTO_NONCE_SIZE byte nonce.
  *
- * @return -1 if there was a problem (decryption failed), length of plain data
- * if everything was fine.
+ * @retval -1 if there was a problem (decryption failed).
+ * @return length of plain data if everything was fine.
  */
 non_null()
 int32_t decrypt_data_symmetric(const uint8_t *shared_key, const uint8_t *nonce, const uint8_t *encrypted, size_t length,

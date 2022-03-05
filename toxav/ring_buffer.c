@@ -27,8 +27,8 @@ bool rb_empty(const RingBuffer *b)
 }
 
 /**
- * returns: NULL on success
- *          input value "p" on FAILURE -> caller can free on failed rb_write
+ * @retval NULL on success
+ * @return input value "p" on failure, so caller can free on failed rb_write
  */
 void *rb_write(RingBuffer *b, void *p)
 {

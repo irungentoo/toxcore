@@ -26,10 +26,9 @@ bool pk_equal(const uint8_t *dest, const uint8_t *src)
     return public_key_eq(dest, src);
 }
 
-uint32_t pk_copy(uint8_t *dest, const uint8_t *src)
+void pk_copy(uint8_t *dest, const uint8_t *src)
 {
     memcpy(dest, src, CRYPTO_PUBLIC_KEY_SIZE);
-    return CRYPTO_PUBLIC_KEY_SIZE;
 }
 
 int create_recursive_mutex(pthread_mutex_t *mutex)

@@ -54,29 +54,27 @@ void tcp_con_set_custom_object(TCP_Client_Connection *con, void *object);
 non_null()
 void tcp_con_set_custom_uint(TCP_Client_Connection *con, uint32_t value);
 
-/** Create new TCP connection to ip_port/public_key
- */
+/** Create new TCP connection to ip_port/public_key */
 non_null(1, 2, 3, 4, 5, 6) nullable(7)
 TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time *mono_time, const IP_Port *ip_port,
         const uint8_t *public_key, const uint8_t *self_public_key, const uint8_t *self_secret_key,
         const TCP_Proxy_Info *proxy_info);
 
-/** Run the TCP connection
- */
+/** Run the TCP connection */
 non_null(1, 2, 3) nullable(4)
 void do_TCP_connection(const Logger *logger, const Mono_Time *mono_time,
                        TCP_Client_Connection *tcp_connection, void *userdata);
 
-/** Kill the TCP connection
- */
+/** Kill the TCP connection */
 nullable(1)
 void kill_TCP_connection(TCP_Client_Connection *tcp_connection);
 
 typedef int tcp_onion_response_cb(void *object, const uint8_t *data, uint16_t length, void *userdata);
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
 non_null()
 int send_onion_request(const Logger *logger, TCP_Client_Connection *con, const uint8_t *data, uint16_t length);
@@ -86,9 +84,10 @@ void onion_response_handler(TCP_Client_Connection *con, tcp_onion_response_cb *o
 typedef int tcp_routing_response_cb(void *object, uint8_t connection_id, const uint8_t *public_key);
 typedef int tcp_routing_status_cb(void *object, uint32_t number, uint8_t connection_id, uint8_t status);
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
 non_null()
 int send_routing_request(const Logger *logger, TCP_Client_Connection *con, const uint8_t *public_key);
@@ -97,14 +96,15 @@ void routing_response_handler(TCP_Client_Connection *con, tcp_routing_response_c
 non_null()
 void routing_status_handler(TCP_Client_Connection *con, tcp_routing_status_cb *status_callback, void *object);
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
 non_null()
 int send_disconnect_request(const Logger *logger, TCP_Client_Connection *con, uint8_t con_id);
 
-/** Set the number that will be used as an argument in the callbacks related to con_id.
+/** @brief Set the number that will be used as an argument in the callbacks related to con_id.
  *
  * When not set by this function, the number is -1.
  *
@@ -117,9 +117,10 @@ int set_tcp_connection_number(TCP_Client_Connection *con, uint8_t con_id, uint32
 typedef int tcp_routing_data_cb(void *object, uint32_t number, uint8_t connection_id, const uint8_t *data,
                                 uint16_t length, void *userdata);
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure.
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure.
  */
 non_null()
 int send_data(const Logger *logger, TCP_Client_Connection *con, uint8_t con_id, const uint8_t *data, uint16_t length);
@@ -129,9 +130,10 @@ void routing_data_handler(TCP_Client_Connection *con, tcp_routing_data_cb *data_
 typedef int tcp_oob_data_cb(void *object, const uint8_t *public_key, const uint8_t *data, uint16_t length,
                             void *userdata);
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure.
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure.
  */
 non_null()
 int send_oob_packet(const Logger *logger, TCP_Client_Connection *con, const uint8_t *public_key, const uint8_t *data,

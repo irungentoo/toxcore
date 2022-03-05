@@ -44,12 +44,14 @@
  * estimation methods. Values greater than 0 will increase encoder speed at the
  * expense of quality.
  *
- * Note Valid range for VP8: -16..16
+ * Note Valid range for VP8: `-16..16`
  */
 #define VP8E_SET_CPUUSED_VALUE 16
 
 /**
- * Initialize encoder with this value. Target bandwidth to use for this stream, in kilobits per second.
+ * Initialize encoder with this value.
+ *
+ * Target bandwidth to use for this stream, in kilobits per second.
  */
 #define VIDEO_BITRATE_INITIAL_VALUE 5000
 #define VIDEO_DECODE_BUFFER_SIZE 5 // this buffer has normally max. 1 entry

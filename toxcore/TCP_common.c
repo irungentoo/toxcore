@@ -20,8 +20,9 @@ void wipe_priority_list(TCP_Priority_List *p)
     }
 }
 
-/** return 0 if pending data was sent completely
- * return -1 if it wasn't
+/**
+ * @retval 0 if pending data was sent completely
+ * @retval -1 if it wasn't
  */
 int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con)
 {
@@ -46,8 +47,9 @@ int send_pending_data_nonpriority(const Logger *logger, TCP_Connection *con)
     return -1;
 }
 
-/** return 0 if pending data was sent completely
- * return -1 if it wasn't
+/**
+ * @retval 0 if pending data was sent completely
+ * @retval -1 if it wasn't
  */
 int send_pending_data(const Logger *logger, TCP_Connection *con)
 {
@@ -86,8 +88,9 @@ int send_pending_data(const Logger *logger, TCP_Connection *con)
     return -1;
 }
 
-/** return false on failure (only if calloc fails)
- * return true on success
+/**
+ * @retval false on failure (only if calloc fails)
+ * @retval true on success
  */
 non_null()
 static bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t size, uint16_t sent)
@@ -121,9 +124,10 @@ static bool add_priority(TCP_Connection *con, const uint8_t *packet, uint16_t si
     return true;
 }
 
-/** return 1 on success.
- * return 0 if could not send packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @retval 1 on success.
+ * @retval 0 if could not send packet.
+ * @retval -1 on failure (connection must be killed).
  */
 int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con, const uint8_t *data, uint16_t length,
                                        bool priority)
@@ -186,7 +190,7 @@ int write_packet_TCP_secure_connection(const Logger *logger, TCP_Connection *con
     return 1;
 }
 
-/** Read length bytes from socket.
+/** @brief Read length bytes from socket.
  *
  * return length on success
  * return -1 on failure/no data in buffer.
@@ -210,7 +214,7 @@ int read_TCP_packet(const Logger *logger, Socket sock, uint8_t *data, uint16_t l
     return len;
 }
 
-/** Read the next two bytes in TCP stream then convert them to
+/** @brief Read the next two bytes in TCP stream then convert them to
  * length (host byte order).
  *
  * return length on success
@@ -245,9 +249,10 @@ static uint16_t read_TCP_length(const Logger *logger, Socket sock, const IP_Port
     return 0;
 }
 
-/** return length of received packet on success.
- * return 0 if could not read any packet.
- * return -1 on failure (connection must be killed).
+/**
+ * @return length of received packet on success.
+ * @retval 0 if could not read any packet.
+ * @retval -1 on failure (connection must be killed).
  */
 int read_packet_TCP_secure_connection(const Logger *logger, Socket sock, uint16_t *next_packet_length,
                                       const uint8_t *shared_key, uint8_t *recv_nonce, uint8_t *data,

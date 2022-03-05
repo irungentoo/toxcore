@@ -425,8 +425,7 @@ bool sock_valid(Socket sock)
     return sock.sock != net_invalid_socket.sock;
 }
 
-/** Close the socket.
- */
+/** Close the socket. */
 void kill_sock(Socket sock)
 {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
@@ -663,10 +662,10 @@ int sendpacket(const Networking_Core *net, const IP_Port *ip_port, const uint8_t
     return send_packet(net, ip_port, packet);
 }
 
-/** Function to receive data
- *  ip and port of sender is put into ip_port.
- *  Packet data is put into data.
- *  Packet length is put into length.
+/** @brief Function to receive data
+ * ip and port of sender is put into ip_port.
+ * Packet data is put into data.
+ * Packet length is put into length.
  */
 non_null()
 static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8_t *data, uint32_t *length)
@@ -820,13 +819,13 @@ static void at_shutdown(void)
 }
 #endif
 
-/** Initialize networking.
+/** @brief Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
  *
- *  return Networking_Core object if no problems
- *  return NULL if there are problems.
+ * @return Networking_Core object if no problems
+ * @retval NULL if there are problems.
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */
@@ -1221,7 +1220,7 @@ bool ipport_isset(const IP_Port *ipport)
     return ip_isset(&ipport->ip);
 }
 
-/** copies an ip structure (careful about direction!) */
+/** copies an ip structure (careful about direction) */
 void ip_copy(IP *target, const IP *source)
 {
     if (source == nullptr || target == nullptr) {
@@ -1231,7 +1230,7 @@ void ip_copy(IP *target, const IP *source)
     *target = *source;
 }
 
-/** copies an ip_port structure (careful about direction!) */
+/** copies an ip_port structure (careful about direction) */
 void ipport_copy(IP_Port *target, const IP_Port *source)
 {
     if (source == nullptr || target == nullptr) {
@@ -1241,13 +1240,13 @@ void ipport_copy(IP_Port *target, const IP_Port *source)
     *target = *source;
 }
 
-/** ip_ntoa
- *   converts ip into a string
- *   ip_str must be of length at least IP_NTOA_LEN
+/** @brief converts ip into a string
  *
- *   writes error message into the buffer on error
+ * @param ip_str must be of length at least IP_NTOA_LEN
  *
- *   returns ip_str
+ * writes error message into the buffer on error
+ *
+ * @return ip_str
  */
 const char *ip_ntoa(const IP *ip, char *ip_str, size_t length)
 {

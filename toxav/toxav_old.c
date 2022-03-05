@@ -10,13 +10,6 @@
 
 #include "groupav.h"
 
-/** Create a new toxav group.
- *
- * return group number on success.
- * return -1 on failure.
- *
- * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
- */
 int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userdata)
 {
     // TODO(iphydf): Don't rely on toxcore internals.
@@ -27,10 +20,10 @@ int toxav_add_av_groupchat(Tox *tox, audio_data_cb *audio_callback, void *userda
     return add_av_groupchat(m->log, tox, m->conferences_object, audio_callback, userdata);
 }
 
-/** Join a AV group (you need to have been invited first.)
+/** @brief Join a AV group (you need to have been invited first).
  *
- * returns group number on success
- * returns -1 on failure.
+ * @return group number on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
@@ -45,14 +38,15 @@ int toxav_join_av_groupchat(Tox *tox, uint32_t friendnumber, const uint8_t *data
     return join_av_groupchat(m->log, tox, m->conferences_object, friendnumber, data, length, audio_callback, userdata);
 }
 
-/** Send audio to the group chat.
+/** @brief Send audio to the group chat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  *
- * Valid number of samples are `(sample rate) * (audio length) / 1000` (Valid values for audio length are: 2.5, 5, 10, 20, 40 or 60 ms)
+ * Valid number of samples are `(sample rate) * (audio length) / 1000`
+ *   (Valid values for audio length are: 2.5, 5, 10, 20, 40 or 60 ms)
  * Valid number of channels are 1 or 2.
  * Valid sample rates are 8000, 12000, 16000, 24000, or 48000.
  *
@@ -69,7 +63,7 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
     return group_send_audio(m->conferences_object, groupnumber, pcm, samples, channels, sample_rate);
 }
 
-/** Enable A/V in a groupchat.
+/** @brief Enable A/V in a groupchat.
  *
  * A/V must be enabled on a groupchat for audio to be sent to it and for
  * received audio to be handled.
@@ -79,8 +73,8 @@ int toxav_group_send_audio(Tox *tox, uint32_t groupnumber, const int16_t *pcm, u
  *
  * An A/V group loaded from a savefile will start with A/V disabled.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  *
  * Note that total size of pcm in bytes is equal to `samples * channels * sizeof(int16_t)`.
  */
@@ -94,10 +88,10 @@ int toxav_groupchat_enable_av(Tox *tox, uint32_t groupnumber, audio_data_cb *aud
     return groupchat_enable_av(m->log, tox, m->conferences_object, groupnumber, audio_callback, userdata);
 }
 
-/** Disable A/V in a groupchat.
+/** @brief Disable A/V in a groupchat.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber)
 {
@@ -109,8 +103,7 @@ int toxav_groupchat_disable_av(Tox *tox, uint32_t groupnumber)
     return groupchat_disable_av(m->conferences_object, groupnumber);
 }
 
-/** Return whether A/V is enabled in the groupchat.
- */
+/** @brief Return whether A/V is enabled in the groupchat. */
 bool toxav_groupchat_av_enabled(Tox *tox, uint32_t groupnumber)
 {
     // TODO(iphydf): Don't rely on toxcore internals.

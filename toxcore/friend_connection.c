@@ -94,8 +94,9 @@ const IP_Port *friend_conn_get_dht_ip_port(const Friend_Conn *fc)
 }
 
 
-/** return true if the friendcon_id is valid.
- * return false if the friendcon_id is not valid.
+/**
+ * @retval true if the friendcon_id is valid.
+ * @retval false if the friendcon_id is not valid.
  */
 non_null()
 static bool friendconn_id_valid(const Friend_Connections *fr_c, int friendcon_id)
@@ -106,10 +107,10 @@ static bool friendconn_id_valid(const Friend_Connections *fr_c, int friendcon_id
 }
 
 
-/** Set the size of the friend connections list to num.
+/** @brief Set the size of the friend connections list to num.
  *
- *  return false if realloc fails.
- *  return true if it succeeds.
+ * @retval false if realloc fails.
+ * @retval true if it succeeds.
  */
 non_null()
 static bool realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
@@ -130,10 +131,10 @@ static bool realloc_friendconns(Friend_Connections *fr_c, uint32_t num)
     return true;
 }
 
-/** Create a new empty friend connection.
+/** @brief Create a new empty friend connection.
  *
- * return -1 on failure.
- * return friendcon_id on success.
+ * @retval -1 on failure.
+ * @return friendcon_id on success.
  */
 non_null()
 static int create_friend_conn(Friend_Connections *fr_c)
@@ -155,10 +156,10 @@ static int create_friend_conn(Friend_Connections *fr_c)
     return id;
 }
 
-/** Wipe a friend connection.
+/** @brief Wipe a friend connection.
  *
- * return -1 on failure.
- * return 0 on success.
+ * @retval -1 on failure.
+ * @retval 0 on success.
  */
 non_null()
 static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
@@ -194,8 +195,9 @@ Friend_Conn *get_conn(const Friend_Connections *fr_c, int friendcon_id)
     return &fr_c->conns[friendcon_id];
 }
 
-/** return friendcon_id corresponding to the real public key on success.
- * return -1 on failure.
+/** 
+ * @return friendcon_id corresponding to the real public key on success.
+ * @retval -1 on failure.
  */
 int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk)
 {
@@ -212,10 +214,10 @@ int getfriend_conn_id_pk(const Friend_Connections *fr_c, const uint8_t *real_pk)
     return -1;
 }
 
-/** Add a TCP relay associated to the friend.
+/** @brief Add a TCP relay associated to the friend.
  *
- * return -1 on failure.
- * return 0 on success.
+ * @retval -1 on failure.
+ * @retval 0 on success.
  */
 non_null()
 static int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, const IP_Port *ip_port,
@@ -644,10 +646,10 @@ static int send_ping(const Friend_Connections *fr_c, int friendcon_id)
     return -1;
 }
 
-/** Increases lock_count for the connection with friendcon_id by 1.
+/** @brief Increases lock_count for the connection with friendcon_id by 1.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int friend_connection_lock(const Friend_Connections *fr_c, int friendcon_id)
 {
@@ -661,9 +663,10 @@ int friend_connection_lock(const Friend_Connections *fr_c, int friendcon_id)
     return 0;
 }
 
-/** return FRIENDCONN_STATUS_CONNECTED if the friend is connected.
- * return FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
- * return FRIENDCONN_STATUS_NONE on failure.
+/**
+ * @retval FRIENDCONN_STATUS_CONNECTED if the friend is connected.
+ * @retval FRIENDCONN_STATUS_CONNECTING if the friend isn't connected.
+ * @retval FRIENDCONN_STATUS_NONE on failure.
  */
 unsigned int friend_con_connected(const Friend_Connections *fr_c, int friendcon_id)
 {
@@ -676,10 +679,10 @@ unsigned int friend_con_connected(const Friend_Connections *fr_c, int friendcon_
     return friend_con->status;
 }
 
-/** Copy public keys associated to friendcon_id.
+/** @brief Copy public keys associated to friendcon_id.
  *
- * return 0 on success.
- * return -1 on failure.
+ * @retval 0 on success.
+ * @retval -1 on failure.
  */
 int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Friend_Connections *fr_c, int friendcon_id)
 {
@@ -700,18 +703,18 @@ int get_friendcon_public_keys(uint8_t *real_pk, uint8_t *dht_temp_pk, const Frie
     return 0;
 }
 
-/** Set temp dht key for connection.
- */
+/** Set temp dht key for connection. */
 void set_dht_temp_pk(Friend_Connections *fr_c, int friendcon_id, const uint8_t *dht_temp_pk, void *userdata)
 {
     dht_pk_callback(fr_c, friendcon_id, dht_temp_pk, userdata);
 }
 
-/** Set the callbacks for the friend connection.
- * index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we want the callback to set in the array.
+/** @brief Set the callbacks for the friend connection.
+ * @param index is the index (0 to (MAX_FRIEND_CONNECTION_CALLBACKS - 1)) we
+ *   want the callback to set in the array.
  *
- * return 0 on success.
- * return -1 on failure
+ * @retval 0 on success.
+ * @retval -1 on failure
  */
 int friend_connection_callbacks(const Friend_Connections *fr_c, int friendcon_id, unsigned int index,
                                 fc_status_cb *status_callback,
@@ -756,10 +759,10 @@ void set_global_status_callback(Friend_Connections *fr_c, global_status_cb *glob
     fr_c->global_status_callback_object = object;
 }
 
-/** return the crypt_connection_id for the connection.
+/** @brief return the crypt_connection_id for the connection.
  *
- * return crypt_connection_id on success.
- * return -1 on failure.
+ * @return crypt_connection_id on success.
+ * @retval -1 on failure.
  */
 int friend_connection_crypt_connection_id(const Friend_Connections *fr_c, int friendcon_id)
 {
@@ -772,11 +775,11 @@ int friend_connection_crypt_connection_id(const Friend_Connections *fr_c, int fr
     return friend_con->crypt_connection_id;
 }
 
-/** Create a new friend connection.
+/** @brief Create a new friend connection.
  * If one to that real public key already exists, increase lock count and return it.
  *
- * return -1 on failure.
- * return connection id on success.
+ * @retval -1 on failure.
+ * @return connection id on success.
  */
 int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_key)
 {
@@ -812,10 +815,10 @@ int new_friend_connection(Friend_Connections *fr_c, const uint8_t *real_public_k
     return friendcon_id;
 }
 
-/** Kill a friend connection.
+/** @brief Kill a friend connection.
  *
- * return -1 on failure.
- * return 0 on success.
+ * @retval -1 on failure.
+ * @retval 0 on success.
  */
 int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
 {
@@ -841,7 +844,7 @@ int kill_friend_connection(Friend_Connections *fr_c, int friendcon_id)
 }
 
 
-/** Set friend request callback.
+/** @brief Set friend request callback.
  *
  * This function will be called every time a friend request packet is received.
  */
@@ -852,11 +855,11 @@ void set_friend_request_callback(Friend_Connections *fr_c, fr_request_cb *fr_req
     oniondata_registerhandler(fr_c->onion_c, CRYPTO_PACKET_FRIEND_REQ, fr_request_callback, object);
 }
 
-/** Send a Friend request packet.
+/** @brief Send a Friend request packet.
  *
- *  return -1 if failure.
- *  return  0 if it sent the friend request directly to the friend.
- *  return the number of peers it was routed through if it did not send it directly.
+ * @retval -1 if failure.
+ * @retval  0 if it sent the friend request directly to the friend.
+ * @return the number of peers it was routed through if it did not send it directly.
  */
 int send_friend_request_packet(Friend_Connections *fr_c, int friendcon_id, uint32_t nospam_num, const uint8_t *data,
                                uint16_t length)

@@ -180,8 +180,7 @@ Socket net_accept(Socket sock);
  */
 uint16_t net_socket_data_recv_buffer(Socket sock);
 
-/** Convert values between host and network byte order.
- */
+/** Convert values between host and network byte order. */
 uint32_t net_htonl(uint32_t hostlong);
 uint16_t net_htons(uint16_t hostshort);
 uint32_t net_ntohl(uint32_t hostlong);
@@ -216,13 +215,13 @@ bool ipv6_ipv4_in_v6(const IP6 *a);
 
 /** this would be TOX_INET6_ADDRSTRLEN, but it might be too short for the error message */
 #define IP_NTOA_LEN 96 // TODO(irungentoo): magic number. Why not INET6_ADDRSTRLEN ?
-/** ip_ntoa
- *   converts ip into a string
- *   ip_str must be of length at least IP_NTOA_LEN
+/** @brief converts ip into a string
  *
- *   writes error message into the buffer on error
+ * @param ip_str must be of length at least IP_NTOA_LEN
  *
- *   returns ip_str
+ * writes error message into the buffer on error
+ *
+ * @return ip_str
  */
 non_null()
 const char *ip_ntoa(const IP *ip, char *ip_str, size_t length);
@@ -290,10 +289,10 @@ bool ip_isset(const IP *ip);
 /** checks if ip is valid */
 non_null()
 bool ipport_isset(const IP_Port *ipport);
-/** copies an ip structure (careful about direction!) */
+/** copies an ip structure (careful about direction) */
 non_null()
 void ip_copy(IP *target, const IP *source);
-/** copies an ip_port structure (careful about direction!) */
+/** copies an ip_port structure (careful about direction) */
 non_null()
 void ipport_copy(IP_Port *target, const IP_Port *source);
 
@@ -304,13 +303,13 @@ void ipport_copy(IP_Port *target, const IP_Port *source);
  *
  * @param address a hostname (or something parseable to an IP address)
  * @param to to.family MUST be initialized, either set to a specific IP version
- *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (= 0), if both
- *     IP versions are acceptable
+ *   (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (0), if both
+ *   IP versions are acceptable
  * @param extra can be NULL and is only set in special circumstances, see returns
  *
- * returns in `*to` a valid IPAny (v4/v6),
- *     prefers v6 if `ip.family` was TOX_AF_UNSPEC and both available
- * returns in `*extra` an IPv4 address, if family was TOX_AF_UNSPEC and `*to` is TOX_AF_INET6
+ * Returns in `*to` a valid IPAny (v4/v6),
+ * prefers v6 if `ip.family` was TOX_AF_UNSPEC and both available
+ * Returns in `*extra` an IPv4 address, if family was TOX_AF_UNSPEC and `*to` is TOX_AF_INET6
  *
  * @return 0 on failure, `TOX_ADDR_RESOLVE_*` on success.
  */
@@ -322,19 +321,19 @@ int addr_resolve(const char *address, IP *to, IP *extra);
  *
  * @param address a hostname (or something parseable to an IP address)
  * @param to to.family MUST be initialized, either set to a specific IP version
- *     (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (= 0), if both
- *     IP versions are acceptable
+ *   (TOX_AF_INET/TOX_AF_INET6) or to the unspecified TOX_AF_UNSPEC (0), if both
+ *   IP versions are acceptable
  * @param extra can be NULL and is only set in special circumstances, see returns
  *
- * returns in `*to` a matching address (IPv6 or IPv4)
- * returns in `*extra`, if not NULL, an IPv4 address, if `to->family` was TOX_AF_UNSPEC
+ * Returns in `*to` a matching address (IPv6 or IPv4)
+ * Returns in `*extra`, if not NULL, an IPv4 address, if `to->family` was TOX_AF_UNSPEC
  *
  * @return true on success, false on failure
  */
 non_null(1, 2) nullable(3)
 bool addr_resolve_or_parse_ip(const char *address, IP *to, IP *extra);
 
-/** Function to receive data, ip and port of sender is put into ip_port.
+/** @brief Function to receive data, ip and port of sender is put into ip_port.
  * Packet data is put into data.
  * Packet length is put into length.
  */
@@ -347,15 +346,14 @@ Family net_family(const Networking_Core *net);
 non_null()
 uint16_t net_port(const Networking_Core *net);
 
-/** Run this before creating sockets.
+/** @brief Run this before creating sockets.
  *
  * return 0 on success
  * return -1 on failure
  */
 int networking_at_startup(void);
 
-/** Close the socket.
- */
+/** Close the socket. */
 void kill_sock(Socket sock);
 
 /**
@@ -420,7 +418,7 @@ void networking_registerhandler(Networking_Core *net, uint8_t byte, packet_handl
 non_null(1) nullable(2)
 void networking_poll(const Networking_Core *net, void *userdata);
 
-/** Connect a socket to the address specified by the ip_port.
+/** @brief Connect a socket to the address specified by the ip_port.
  *
  * Return true on success.
  * Return false on failure.
@@ -428,13 +426,14 @@ void networking_poll(const Networking_Core *net, void *userdata);
 non_null()
 bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
 
-/** High-level getaddrinfo implementation.
- * Given node, which identifies an Internet host, net_getipport() fills an array
+/** @brief High-level getaddrinfo implementation.
+ *
+ * Given node, which identifies an Internet host, `net_getipport()` fills an array
  * with one or more IP_Port structures, each of which contains an Internet
- * address that can be specified by calling net_connect(), the port is ignored.
+ * address that can be specified by calling `net_connect()`, the port is ignored.
  *
  * Skip all addresses with socktype != type (use type = -1 to get all addresses)
- * To correctly deallocate array memory use net_freeipport()
+ * To correctly deallocate array memory use `net_freeipport()`
  *
  * return number of elements in res array
  * and -1 on error.
@@ -442,8 +441,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port);
 non_null()
 int32_t net_getipport(const char *node, IP_Port **res, int tox_type);
 
-/** Deallocates memory allocated by net_getipport
- */
+/** Deallocates memory allocated by net_getipport */
 nullable(1)
 void net_freeipport(IP_Port *ip_ports);
 
@@ -452,7 +450,7 @@ void net_freeipport(IP_Port *ip_ports);
  */
 bool bind_to_port(Socket sock, Family family, uint16_t port);
 
-/** Get the last networking error code.
+/** @brief Get the last networking error code.
  *
  * Similar to Unix's errno, but cross-platform, as not all platforms use errno
  * to indicate networking errors.
@@ -460,34 +458,34 @@ bool bind_to_port(Socket sock, Family family, uint16_t port);
  * Note that different platforms may return different codes for the same error,
  * so you likely shouldn't be checking the value returned by this function
  * unless you know what you are doing, you likely just want to use it in
- * combination with net_new_strerror() to print the error.
+ * combination with `net_new_strerror()` to print the error.
  *
  * return platform-dependent network error code, if any.
  */
 int net_error(void);
 
-/** Get a text explanation for the error code from net_error().
+/** @brief Get a text explanation for the error code from `net_error()`.
  *
  * return NULL on failure.
  * return pointer to a NULL-terminated string describing the error code on
- * success. The returned string must be freed using net_kill_strerror().
+ * success. The returned string must be freed using `net_kill_strerror()`.
  */
 char *net_new_strerror(int error);
 
-/** Frees the string returned by net_new_strerror().
+/** @brief Frees the string returned by `net_new_strerror()`.
  * It's valid to pass NULL as the argument, the function does nothing in this
  * case.
  */
 non_null()
 void net_kill_strerror(char *strerror);
 
-/** Initialize networking.
+/** @brief Initialize networking.
  * Bind to ip and port.
  * ip must be in network order EX: 127.0.0.1 = (7F000001).
  * port is in host byte order (this means don't worry about it).
  *
- *  return Networking_Core object if no problems
- *  return NULL if there are problems.
+ * @return Networking_Core object if no problems
+ * @retval NULL if there are problems.
  *
  * If error is non NULL it is set to 0 if no issues, 1 if socket related error, 2 if other.
  */

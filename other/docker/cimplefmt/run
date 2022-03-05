@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$1" = "-u" ]; then
+  shift
+  docker pull toxchat/haskell:hs-cimple
+  docker build -t toxchat/cimplefmt -f other/docker/cimplefmt/Dockerfile .
+fi
+docker run --rm -v "$PWD:/work" toxchat/cimplefmt "$@"
