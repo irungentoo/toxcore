@@ -411,15 +411,15 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
     memcpy(public_key, packet + 1 + CRYPTO_PUBLIC_KEY_SIZE, CRYPTO_PUBLIC_KEY_SIZE);
     const uint8_t *const nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
-    int len1 = decrypt_data(public_key, self_secret_key, nonce,
-                            packet + CRYPTO_SIZE, packet_length - CRYPTO_SIZE, temp);
+    int32_t len1 = decrypt_data(public_key, self_secret_key, nonce,
+                                packet + CRYPTO_SIZE, packet_length - CRYPTO_SIZE, temp);
 
     if (len1 == -1 || len1 == 0) {
         crypto_memzero(temp, MAX_CRYPTO_REQUEST_SIZE);
         return -1;
     }
 
-    assert(len1 > 0);
+    assert(len1 == packet_length - CRYPTO_SIZE - CRYPTO_MAC_SIZE);
     request_id[0] = temp[0];
     --len1;
     memcpy(data, temp + 1, len1);

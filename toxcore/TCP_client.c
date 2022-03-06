@@ -162,7 +162,10 @@ static int proxy_http_read_connection_response(const Logger *logger, const TCP_C
 
         if (data_left > 0) {
             VLA(uint8_t, temp_data, data_left);
-            read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left, &tcp_conn->con.ip_port);
+            if (read_TCP_packet(logger, tcp_conn->con.sock, temp_data, data_left, &tcp_conn->con.ip_port) == -1) {
+                LOGGER_ERROR(logger, "failed to drain TCP data (but ignoring failure)");
+                return 1;
+            }
         }
 
         return 1;
