@@ -64,7 +64,7 @@ static uint8_t *msg_parse_header_out(MSIHeaderID id, uint8_t *dest, const void *
                                      uint16_t *length);
 static int send_message(Messenger *m, uint32_t friend_number, const MSIMessage *msg);
 static int send_error(Messenger *m, uint32_t friend_number, MSIError error);
-static int invoke_callback(MSICall *call, MSICallbackID cb);
+static bool invoke_callback(MSICall *call, MSICallbackID cb);
 static MSICall *get_call(MSISession *session, uint32_t friend_number);
 static MSICall *new_call(MSISession *session, uint32_t friend_number);
 static void kill_call(MSICall *call);
@@ -73,7 +73,6 @@ static void handle_init(MSICall *call, const MSIMessage *msg);
 static void handle_push(MSICall *call, const MSIMessage *msg);
 static void handle_pop(MSICall *call, const MSIMessage *msg);
 static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_t *data, uint16_t length, void *object);
-static msi_action_cb *get_callback(MSISession *session, MSICallbackID id);
 
 
 /*
@@ -506,33 +505,53 @@ static int send_error(Messenger *m, uint32_t friend_number, MSIError error)
     send_message(m, friend_number, &msg);
     return 0;
 }
-static int invoke_callback(MSICall *call, MSICallbackID cb)
+static int invoke_callback_inner(MSICall *call, MSICallbackID id)
+{
+    MSISession *session = call->session;
+    LOGGER_DEBUG(session->messenger->log, "invoking callback function: %d", id);
+
+    switch (id) {
+        case MSI_ON_INVITE:
+            return session->invite_callback(session->av, call);
+
+        case MSI_ON_START:
+            return session->start_callback(session->av, call);
+
+        case MSI_ON_END:
+            return session->end_callback(session->av, call);
+
+        case MSI_ON_ERROR:
+            return session->error_callback(session->av, call);
+
+        case MSI_ON_PEERTIMEOUT:
+            return session->peertimeout_callback(session->av, call);
+
+        case MSI_ON_CAPABILITIES:
+            return session->capabilities_callback(session->av, call);
+    }
+
+    LOGGER_FATAL(session->messenger->log, "invalid callback id: %d", id);
+    return -1;
+}
+static bool invoke_callback(MSICall *call, MSICallbackID cb)
 {
     assert(call != nullptr);
-    msi_action_cb *callback = get_callback(call->session, cb);
 
-    if (callback != nullptr) {
-        LOGGER_DEBUG(call->session->messenger->log, "Invoking callback function: %d", cb);
+    if (invoke_callback_inner(call, cb) != 0) {
+        LOGGER_WARNING(call->session->messenger->log,
+                       "Callback state handling failed, sending error");
 
-        if (callback(call->session->av, call) != 0) {
-            LOGGER_WARNING(call->session->messenger->log,
-                           "Callback state handling failed, sending error");
-            goto FAILURE;
+        /* If no callback present or error happened while handling,
+         * an error message will be sent to friend
+         */
+        if (call->error == MSI_E_NONE) {
+            call->error = MSI_E_HANDLE;
         }
 
-        return 0;
+        return false;
     }
 
-FAILURE:
-    /* If no callback present or error happened while handling,
-     * an error message will be sent to friend
-     */
-
-    if (call->error == MSI_E_NONE) {
-        call->error = MSI_E_HANDLE;
-    }
-
-    return -1;
+    return true;
 }
 static MSICall *get_call(MSISession *session, uint32_t friend_number)
 {
@@ -658,7 +677,7 @@ static void on_peer_status(Messenger *m, uint32_t friend_number, uint8_t status,
     kill_call(call);
     pthread_mutex_unlock(session->mutex);
 }
-static void handle_init(MSICall *call, const MSIMessage *msg)
+static bool try_handle_init(MSICall *call, const MSIMessage *msg)
 {
     assert(call != nullptr);
     LOGGER_DEBUG(call->session->messenger->log,
@@ -667,7 +686,7 @@ static void handle_init(MSICall *call, const MSIMessage *msg)
     if (!msg->capabilities.exists) {
         LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid capabilities on 'init'", (void *)call->session);
         call->error = MSI_E_INVALID_MESSAGE;
-        goto FAILURE;
+        return false;
     }
 
     switch (call->state) {
@@ -676,8 +695,8 @@ static void handle_init(MSICall *call, const MSIMessage *msg)
             call->peer_capabilities = msg->capabilities.value;
             call->state = MSI_CALL_REQUESTED;
 
-            if (invoke_callback(call, MSI_ON_INVITE) == -1) {
-                goto FAILURE;
+            if (!invoke_callback(call, MSI_ON_INVITE)) {
+                return false;
             }
 
             break;
@@ -711,14 +730,22 @@ static void handle_init(MSICall *call, const MSIMessage *msg)
         case MSI_CALL_REQUESTING: {
             LOGGER_WARNING(call->session->messenger->log, "Session: %p Invalid state on 'init'", (void *)call->session);
             call->error = MSI_E_INVALID_STATE;
-            goto FAILURE;
+            return false;
         }
     }
 
-    return;
-FAILURE:
-    send_error(call->session->messenger, call->friend_number, call->error);
-    kill_call(call);
+    return true;
+}
+static void handle_init(MSICall *call, const MSIMessage *msg)
+{
+    assert(call != nullptr);
+    LOGGER_DEBUG(call->session->messenger->log,
+                 "Session: %p Handling 'init' friend: %d", (void *)call->session, call->friend_number);
+
+    if (!try_handle_init(call, msg)) {
+        send_error(call->session->messenger, call->friend_number, call->error);
+        kill_call(call);
+    }
 }
 static void handle_push(MSICall *call, const MSIMessage *msg)
 {
@@ -741,7 +768,7 @@ static void handle_push(MSICall *call, const MSIMessage *msg)
 
                 call->peer_capabilities = msg->capabilities.value;
 
-                if (invoke_callback(call, MSI_ON_CAPABILITIES) == -1) {
+                if (!invoke_callback(call, MSI_ON_CAPABILITIES)) {
                     goto FAILURE;
                 }
             }
@@ -756,7 +783,7 @@ static void handle_push(MSICall *call, const MSIMessage *msg)
             call->peer_capabilities = msg->capabilities.value;
             call->state = MSI_CALL_ACTIVE;
 
-            if (invoke_callback(call, MSI_ON_START) == -1) {
+            if (!invoke_callback(call, MSI_ON_START)) {
                 goto FAILURE;
             }
 
@@ -873,29 +900,4 @@ static void handle_msi_packet(Messenger *m, uint32_t friend_number, const uint8_
     }
 
     pthread_mutex_unlock(session->mutex);
-}
-
-static msi_action_cb *get_callback(MSISession *session, MSICallbackID id)
-{
-    switch (id) {
-        case MSI_ON_INVITE:
-            return session->invite_callback;
-
-        case MSI_ON_START:
-            return session->start_callback;
-
-        case MSI_ON_END:
-            return session->end_callback;
-
-        case MSI_ON_ERROR:
-            return session->error_callback;
-
-        case MSI_ON_PEERTIMEOUT:
-            return session->peertimeout_callback;
-
-        case MSI_ON_CAPABILITIES:
-            return session->capabilities_callback;
-    }
-
-    return nullptr;
 }
