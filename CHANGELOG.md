@@ -1,9 +1,72 @@
 
 
+## v0.2.17
+
+### Merged PRs:
+
+- [#2136](https://github.com/TokTok/c-toxcore/pull/2136) docs: Clean up doxygen comments to be more doxygen-like.
+- [#2135](https://github.com/TokTok/c-toxcore/pull/2135) cleanup: Move test-only functions into tests.
+- [#2134](https://github.com/TokTok/c-toxcore/pull/2134) cleanup: Add explicit callback setters for MSI callbacks.
+- [#2133](https://github.com/TokTok/c-toxcore/pull/2133) cleanup: Remove redundant Messenger and DHT tests.
+- [#2132](https://github.com/TokTok/c-toxcore/pull/2132) cleanup: Remove dependency from LAN_discovery onto DHT.
+- [#2131](https://github.com/TokTok/c-toxcore/pull/2131) cleanup: Split util.c out of the network library.
+- [#2130](https://github.com/TokTok/c-toxcore/pull/2130) cleanup: Remove redundant `()` around `return` expression.
+- [#2128](https://github.com/TokTok/c-toxcore/pull/2128) test: Add unit test for create/handle request packets.
+- [#2127](https://github.com/TokTok/c-toxcore/pull/2127) cleanup: Remove `EAGAIN` from the list of ignored errors.
+- [#2126](https://github.com/TokTok/c-toxcore/pull/2126) cleanup: Remove port from `Broadcast_Info`.
+- [#2125](https://github.com/TokTok/c-toxcore/pull/2125) cleanup: Don't reference local variables in macro bodies.
+- [#2123](https://github.com/TokTok/c-toxcore/pull/2123) cleanup: Remove some more implicit bool conversions.
+- [#2122](https://github.com/TokTok/c-toxcore/pull/2122) chore: Enable a bunch more warnings in GCC builds.
+- [#2120](https://github.com/TokTok/c-toxcore/pull/2120) cleanup: Remove all boolean-int conversions.
+- [#2117](https://github.com/TokTok/c-toxcore/pull/2117) cleanup: Comply with strict include ordering.
+- [#2116](https://github.com/TokTok/c-toxcore/pull/2116) cleanup: Remove more boolean conversions (and a bugfix).
+- [#2115](https://github.com/TokTok/c-toxcore/pull/2115) cleanup: Log at ERROR level when `connect()` fails.
+- [#2114](https://github.com/TokTok/c-toxcore/pull/2114) cleanup: Avoid creating invalid enum values.
+- [#2113](https://github.com/TokTok/c-toxcore/pull/2113) cleanup: Remove superfluous parentheses on the rhs of assignments.
+- [#2108](https://github.com/TokTok/c-toxcore/pull/2108) test: Add mallocfail and proxy test to our coverage runs.
+- [#2106](https://github.com/TokTok/c-toxcore/pull/2106) test: Add test coverage docker build for local tests.
+- [#2105](https://github.com/TokTok/c-toxcore/pull/2105) cleanup: Change valid status of onion friend to bool.
+- [#2104](https://github.com/TokTok/c-toxcore/pull/2104) fix: Report failure to DHT bootstrap back to the client.
+- [#2103](https://github.com/TokTok/c-toxcore/pull/2103) cleanup: Remove more implicit bool conversions.
+- [#2102](https://github.com/TokTok/c-toxcore/pull/2102) cleanup: Mark all local non-pointers as const where possible.
+- [#2099](https://github.com/TokTok/c-toxcore/pull/2099) cleanup: Reduce name shadowing; remove ptr-to-bool conversions.
+- [#2097](https://github.com/TokTok/c-toxcore/pull/2097) cleanup: Remove implicit conversions from `uint32_t` to `bool`.
+- [#2096](https://github.com/TokTok/c-toxcore/pull/2096) cleanup: Return boolean constants, not ints from bool functions.
+- [#2094](https://github.com/TokTok/c-toxcore/pull/2094) fix: Null function pointer dereference.
+- [#2093](https://github.com/TokTok/c-toxcore/pull/2093) cleanup: Remove any disallowed casts.
+- [#2092](https://github.com/TokTok/c-toxcore/pull/2092) perf: fix issue with friend finding taking too long after disconnects.
+- [#2091](https://github.com/TokTok/c-toxcore/pull/2091) cleanup: Avoid casting function pointers.
+- [#2090](https://github.com/TokTok/c-toxcore/pull/2090) refactor: Move `tox_new_log` to `auto_test_support`.
+- [#2088](https://github.com/TokTok/c-toxcore/pull/2088) cleanup: Remove all implicit bool conversions in if-conditions.
+- [#2086](https://github.com/TokTok/c-toxcore/pull/2086) cleanup: Enable most cppcheck warnings as errors.
+- [#2084](https://github.com/TokTok/c-toxcore/pull/2084) fix: out-of-memory condition by corrupted save file
+- [#2079](https://github.com/TokTok/c-toxcore/pull/2079) cleanup: Remove unused execution trace library.
+- [#2078](https://github.com/TokTok/c-toxcore/pull/2078) perf: Refactor onion_client.c do_friends() to reduce network traffic
+- [#2075](https://github.com/TokTok/c-toxcore/pull/2075) chore: Add a .clang-format that mostly agrees with astyle.
+- [#2074](https://github.com/TokTok/c-toxcore/pull/2074) chore: Make coverity scan a nightly job.
+- [#2073](https://github.com/TokTok/c-toxcore/pull/2073) chore: Fix build-args in win32/win64 docker build.
+- [#2072](https://github.com/TokTok/c-toxcore/pull/2072) chore: Simplify and speed up windows builds using docker image.
+- [#2070](https://github.com/TokTok/c-toxcore/pull/2070) chore: Add docker image builds for windows cross compiler.
+- [#2064](https://github.com/TokTok/c-toxcore/pull/2064) fix: toxsave memory leak while loading groups
+
+### Closed issues:
+
+- [#2121](https://github.com/TokTok/c-toxcore/issues/2121) Improve speed and stability of LAN discovery test
+- [#2083](https://github.com/TokTok/c-toxcore/issues/2083) Tox save file format/loader doesn't limit or check the number of frozen peers
+- [#2080](https://github.com/TokTok/c-toxcore/issues/2080) speedup getting online after tox process has been suspended
+- [#2050](https://github.com/TokTok/c-toxcore/issues/2050) Excessive onion friend lookups
+- [#2034](https://github.com/TokTok/c-toxcore/issues/2034) Make coverity-scan workflow a nightly build instead of on master push
+- [#2000](https://github.com/TokTok/c-toxcore/issues/2000) Move win32 docker image build out to dockerfiles
+- [#1990](https://github.com/TokTok/c-toxcore/issues/1990) Add a .clang-format config that matches the astyle config as closely as possible.
+- [#1115](https://github.com/TokTok/c-toxcore/issues/1115) Add empty handler for LAN discovery packets when LAN discovery is disabled
+- [#647](https://github.com/TokTok/c-toxcore/issues/647) `tox_bootstrap` should return an error on unrecoverable `getnodes` failure
+- [#169](https://github.com/TokTok/c-toxcore/issues/169) Get rid of TOX_USER_STATUS_BUSY + 1
+
 ## v0.2.16
 
 ### Merged PRs:
 
+- [#2071](https://github.com/TokTok/c-toxcore/pull/2071) chore: Release 0.2.16
 - [#2069](https://github.com/TokTok/c-toxcore/pull/2069) chore: Simplify and speed up nacl build using toxchat/nacl.
 - [#2066](https://github.com/TokTok/c-toxcore/pull/2066) test: Add a profiling script and Dockerfile.
 - [#2058](https://github.com/TokTok/c-toxcore/pull/2058) fix: properly deallocate frozen peers
