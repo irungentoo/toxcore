@@ -143,7 +143,9 @@ int main(int argc, char *argv[])
     }
 
     Mono_Time *mono_time = mono_time_new();
-    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, &ip, PORT, PORT, nullptr), true, true);
+    const uint16_t start_port = PORT;
+    const uint16_t end_port = start_port + (TOX_PORTRANGE_TO - TOX_PORTRANGE_FROM);
+    DHT *dht = new_dht(logger, mono_time, new_networking_ex(logger, &ip, start_port, end_port, nullptr), true, true);
     Onion *onion = new_onion(logger, mono_time, dht);
     const Onion_Announce *onion_a = new_onion_announce(logger, mono_time, dht);
 
