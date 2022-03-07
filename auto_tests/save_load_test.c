@@ -27,7 +27,7 @@
 #ifdef TCP_RELAY_PORT
 #undef TCP_RELAY_PORT
 #endif
-#define TCP_RELAY_PORT 33430
+#define TCP_RELAY_PORT 33431
 
 static void accept_friend_request(Tox *m, const uint8_t *public_key, const uint8_t *data, size_t length, void *userdata)
 {

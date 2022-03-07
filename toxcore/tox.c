@@ -764,34 +764,49 @@ void tox_get_savedata(const Tox *tox, uint8_t *savedata)
     unlock(tox);
 }
 
-bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, Tox_Err_Bootstrap *error)
+non_null(5) nullable(1, 2, 4, 6)
+static int32_t resolve_bootstrap_node(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, IP_Port **root, Tox_Err_Bootstrap *error)
 {
     assert(tox != nullptr);
+    assert(root != nullptr);
 
     if (host == nullptr || public_key == nullptr) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
-        return false;
+        return -1;
     }
 
     if (port == 0) {
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
-        return false;
+        return -1;
     }
 
-    IP_Port *root;
-
-    const int32_t count = net_getipport(host, &root, TOX_SOCK_DGRAM);
+    const int32_t count = net_getipport(host, root, TOX_SOCK_DGRAM);
 
     if (count == -1) {
         LOGGER_DEBUG(tox->m->log, "could not resolve bootstrap node '%s'", host);
-        net_freeipport(root);
+        net_freeipport(*root);
         SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        return -1;
+    }
+
+    assert(*root != nullptr);
+    return count;
+}
+
+bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key, Tox_Err_Bootstrap *error)
+{
+    IP_Port *root;
+    const int32_t count = resolve_bootstrap_node(tox, host, port, public_key, &root, error);
+
+    if (count == -1) {
         return false;
     }
 
     lock(tox);
     assert(count >= 0);
-    bool success = false;
+    bool onion_success = false;
+    // UDP bootstrap is default success if it's disabled (because we don't even try).
+    bool udp_success = tox->m->options.udp_disabled;
 
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);
@@ -800,13 +815,13 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
             // If UDP is enabled, the caller cares about whether any of the
             // bootstrap calls below will succeed. In TCP-only mode, adding
             // onion path nodes successfully is sufficient.
-            success = success || tox->m->options.udp_disabled;
+            onion_success = true;
         }
 
         if (!tox->m->options.udp_disabled) {
             if (dht_bootstrap(tox->m->dht, &root[i], public_key)) {
                 // If any of the bootstrap calls worked, we call it success.
-                success = true;
+                udp_success = true;
             }
         }
     }
@@ -815,45 +830,34 @@ bool tox_bootstrap(Tox *tox, const char *host, uint16_t port, const uint8_t *pub
 
     net_freeipport(root);
 
-    if (count > 0 && success) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
-        return true;
+    if (count == 0 || !onion_success || !udp_success) {
+        LOGGER_DEBUG(tox->m->log, "bootstrap node '%s' resolved to %d IP_Ports%s (onion: %s, UDP: %s)",
+                     host, count,
+                     count > 0 ? ", but failed to bootstrap with any of them" : "",
+                     onion_success ? "success" : "FAILURE",
+                     tox->m->options.udp_disabled ? "disabled" : (udp_success ? "success" : "FAILURE"));
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        return false;
     }
 
-    LOGGER_DEBUG(tox->m->log, "bootstrap node '%s' resolved to %d IP_Ports%s", host, count,
-            count > 0 ? ", but failed to bootstrap with any of them" : "");
-    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-    return false;
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
+    return true;
 }
 
 bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t *public_key,
                        Tox_Err_Bootstrap *error)
 {
-    assert(tox != nullptr);
-
-    if (host == nullptr || public_key == nullptr) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_NULL);
-        return false;
-    }
-
-    if (port == 0) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_PORT);
-        return false;
-    }
-
     IP_Port *root;
-
-    const int32_t count = net_getipport(host, &root, TOX_SOCK_STREAM);
+    const int32_t count = resolve_bootstrap_node(tox, host, port, public_key, &root, error);
 
     if (count == -1) {
-        net_freeipport(root);
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
         return false;
     }
 
     lock(tox);
     assert(count >= 0);
 
+    LOGGER_DEBUG(tox->m->log, "count: %d", count);
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);
 
@@ -864,13 +868,13 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
 
     net_freeipport(root);
 
-    if (count > 0) {
-        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
-        return true;
+    if (count == 0) {
+        SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
+        return false;
     }
 
-    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_BAD_HOST);
-    return false;
+    SET_ERROR_PARAMETER(error, TOX_ERR_BOOTSTRAP_OK);
+    return true;
 }
 
 Tox_Connection tox_self_get_connection_status(const Tox *tox)

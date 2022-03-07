@@ -150,8 +150,16 @@ Net_Crypto *onion_get_net_crypto(const Onion_Client *onion_c)
 
 /** @brief Add a node to the path_nodes bootstrap array.
  *
- * return false on failure
- * return true on success
+ * If a node with the given public key was already in the bootstrap array, this function has no
+ * effect and returns successfully. There is currently no way to update the IP/port for a bootstrap
+ * node, so if it changes, the Onion_Client must be recreated.
+ *
+ * @param onion_c The onion client object.
+ * @param ip_port IP/port for the bootstrap node.
+ * @param public_key DHT public key for the bootstrap node.
+ *
+ * @retval false on failure
+ * @retval true on success
  */
 bool onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const uint8_t *public_key)
 {
@@ -161,7 +169,7 @@ bool onion_add_bs_path_node(Onion_Client *onion_c, const IP_Port *ip_port, const
 
     for (unsigned int i = 0; i < MAX_PATH_NODES; ++i) {
         if (pk_equal(public_key, onion_c->path_nodes_bs[i].public_key)) {
-            return false;
+            return true;
         }
     }
 

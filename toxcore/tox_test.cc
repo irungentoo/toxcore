@@ -17,6 +17,22 @@ static void set_random_name_and_status_message(Tox *tox, uint8_t *name, uint8_t 
     }
 }
 
+TEST(Tox, BootstrapErrorCodes)
+{
+    Tox *tox = tox_new(nullptr, nullptr);
+    ASSERT_NE(tox, nullptr);
+
+    Tox_Err_Bootstrap err;
+    std::array<uint8_t, TOX_PUBLIC_KEY_SIZE> pk;
+    tox_bootstrap(tox, "127.0.0.1", 0, pk.data(), &err);
+    EXPECT_EQ(err, TOX_ERR_BOOTSTRAP_BAD_PORT);
+
+    tox_bootstrap(tox, nullptr, 33445, pk.data(), &err);
+    EXPECT_EQ(err, TOX_ERR_BOOTSTRAP_NULL);
+
+    tox_kill(tox);
+}
+
 TEST(Tox, OneTest)
 {
     struct Tox_Options *options = tox_options_new(nullptr);
