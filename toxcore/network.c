@@ -1429,6 +1429,8 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
 {
     struct sockaddr_storage addr = {0};
     size_t addrsize;
+    char ip_str[IP_NTOA_LEN];
+    ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str));
 
     if (net_family_is_ipv4(ip_port->ip.family)) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *)&addr;
@@ -1445,16 +1447,15 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         fill_addr6(&ip_port->ip.ip.v6, &addr6->sin6_addr);
         addr6->sin6_port = ip_port->port;
     } else {
-        char ip_str[IP_NTOA_LEN];
-        LOGGER_ERROR(log, "cannot connect to %s:%d which is neither IPv4 nor IPv6",
-                ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), ip_port->port);
+        LOGGER_ERROR(log, "cannot connect to %s:%d which is neither IPv4 nor IPv6", ip_str, ip_port->port);
         return false;
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
     return true;
 #else
-    LOGGER_DEBUG(log, "connecting socket %d", (int)sock.sock);
+    LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
+            (int)sock.sock, ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), ip_port->port);
     errno = 0;
     if (connect(sock.sock, (struct sockaddr *)&addr, addrsize) == -1) {
         const int error = net_error();
@@ -1462,10 +1463,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
         // Non-blocking socket: "Operation in progress" means it's connecting.
         if (!should_ignore_connect_error(error)) {
             char *net_strerror = net_new_strerror(error);
-            char ip_str[IP_NTOA_LEN];
-            LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)",
-                    ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), ip_port->port,
-                    error, net_strerror);
+            LOGGER_ERROR(log, "failed to connect to %s:%d: %d (%s)", ip_str, ip_port->port, error, net_strerror);
             net_kill_strerror(net_strerror);
             return false;
         }
