@@ -420,6 +420,9 @@ int handle_request(const uint8_t *self_public_key, const uint8_t *self_secret_ke
     }
 
     assert(len1 == packet_length - CRYPTO_SIZE - CRYPTO_MAC_SIZE);
+    // Because coverity can't figure out this equation:
+    assert(len1 <= MAX_CRYPTO_REQUEST_SIZE - CRYPTO_SIZE - CRYPTO_MAC_SIZE);
+
     request_id[0] = temp[0];
     --len1;
     memcpy(data, temp + 1, len1);
