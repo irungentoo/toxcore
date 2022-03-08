@@ -857,7 +857,6 @@ bool tox_add_tcp_relay(Tox *tox, const char *host, uint16_t port, const uint8_t 
     lock(tox);
     assert(count >= 0);
 
-    LOGGER_DEBUG(tox->m->log, "count: %d", count);
     for (int32_t i = 0; i < count; ++i) {
         root[i].port = net_htons(port);
 
