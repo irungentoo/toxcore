@@ -11,133 +11,14 @@
 
 #include "Messenger.h"
 
-typedef enum Groupchat_Status {
-    GROUPCHAT_STATUS_NONE,
-    GROUPCHAT_STATUS_VALID,
-    GROUPCHAT_STATUS_CONNECTED,
-} Groupchat_Status;
-
 typedef enum Groupchat_Type {
     GROUPCHAT_TYPE_TEXT,
     GROUPCHAT_TYPE_AV,
 } Groupchat_Type;
 
-#define MAX_LOSSY_COUNT 256
-
-typedef struct Message_Info {
-    uint32_t message_number;
-    uint8_t  message_id;
-} Message_Info;
-
-#define MAX_LAST_MESSAGE_INFOS 8
-
-typedef struct Group_Peer {
-    uint8_t     real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t     temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    bool        temp_pk_updated;
-    bool        is_friend;
-
-    uint64_t    last_active;
-
-    Message_Info
-    last_message_infos[MAX_LAST_MESSAGE_INFOS]; /* received messages, strictly decreasing in message_number */
-    uint8_t     num_last_message_infos;
-
-    uint8_t     nick[MAX_NAME_LENGTH];
-    uint8_t     nick_len;
-    bool        nick_updated;
-
-    uint16_t peer_number;
-
-    uint8_t  recv_lossy[MAX_LOSSY_COUNT];
-    uint16_t bottom_lossy_number;
-    uint16_t top_lossy_number;
-
-    void *object;
-} Group_Peer;
-
-#define DESIRED_CLOSEST 4
-#define MAX_GROUP_CONNECTIONS 16
-#define GROUP_ID_LENGTH CRYPTO_SYMMETRIC_KEY_SIZE
-
-typedef enum Groupchat_Connection_Type {
-    GROUPCHAT_CONNECTION_NONE,
-    GROUPCHAT_CONNECTION_CONNECTING,
-    GROUPCHAT_CONNECTION_ONLINE,
-} Groupchat_Connection_Type;
-
-/** Connection is to one of the closest DESIRED_CLOSEST peers */
-#define GROUPCHAT_CONNECTION_REASON_CLOSEST     (1 << 0)
-
-/** Connection is to a peer we are introducing to the conference */
-#define GROUPCHAT_CONNECTION_REASON_INTRODUCING (1 << 1)
-
-/** Connection is to a peer who is introducing us to the conference */
-#define GROUPCHAT_CONNECTION_REASON_INTRODUCER  (1 << 2)
-
-typedef struct Groupchat_Connection {
-    uint8_t type; /* `GROUPCHAT_CONNECTION_*` */
-    uint8_t reasons; /* bit field with flags `GROUPCHAT_CONNECTION_REASON_*` */
-    uint32_t number;
-    uint16_t group_number;
-} Groupchat_Connection;
-
-typedef struct Groupchat_Closest {
-    /**
-     * Whether this peer is active in the closest_peers array.
-     */
-    bool active;
-    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    uint8_t temp_pk[CRYPTO_PUBLIC_KEY_SIZE];
-} Groupchat_Closest;
-
 typedef void peer_on_join_cb(void *object, uint32_t conference_number, uint32_t peer_number);
 typedef void peer_on_leave_cb(void *object, uint32_t conference_number, void *peer_object);
 typedef void group_on_delete_cb(void *object, uint32_t conference_number);
-
-// maximum number of frozen peers to store; group_set_max_frozen() overrides.
-#define MAX_FROZEN_DEFAULT 128
-
-typedef struct Group_c {
-    uint8_t status;
-
-    bool need_send_name;
-    bool title_fresh;
-
-    Group_Peer *group;
-    uint32_t numpeers;
-
-    Group_Peer *frozen;
-    uint32_t numfrozen;
-
-    uint32_t maxfrozen;
-
-    Groupchat_Connection connections[MAX_GROUP_CONNECTIONS];
-
-    uint8_t real_pk[CRYPTO_PUBLIC_KEY_SIZE];
-    Groupchat_Closest closest_peers[DESIRED_CLOSEST];
-    uint8_t changed;
-
-    uint8_t type;
-    uint8_t id[GROUP_ID_LENGTH];
-
-    uint8_t title[MAX_NAME_LENGTH];
-    uint8_t title_len;
-
-    uint32_t message_number;
-    uint16_t lossy_message_number;
-    uint16_t peer_number;
-
-    uint64_t last_sent_ping;
-
-    uint32_t num_introducer_connections;
-
-    void *object;
-
-    peer_on_join_cb *peer_on_join;
-    peer_on_leave_cb *peer_on_leave;
-    group_on_delete_cb *group_on_delete;
-} Group_c;
 
 /** @brief Callback for group invites.
  *
@@ -174,28 +55,10 @@ typedef void title_cb(Messenger *m, uint32_t conference_number, uint32_t peer_nu
 typedef int lossy_packet_cb(void *object, uint32_t conference_number, uint32_t peer_number, void *peer_object,
                             const uint8_t *packet, uint16_t length);
 
-typedef struct Group_Lossy_Handler {
-    lossy_packet_cb *function;
-} Group_Lossy_Handler;
+typedef struct Group_Chats Group_Chats;
 
-typedef struct Group_Chats {
-    const Mono_Time *mono_time;
-
-    Messenger *m;
-    Friend_Connections *fr_c;
-
-    Group_c *chats;
-    uint16_t num_chats;
-
-    g_conference_invite_cb *invite_callback;
-    g_conference_connected_cb *connected_callback;
-    g_conference_message_cb *message_callback;
-    peer_name_cb *peer_name_callback;
-    peer_list_changed_cb *peer_list_changed_callback;
-    title_cb *title_callback;
-
-    Group_Lossy_Handler lossy_packethandlers[256];
-} Group_Chats;
+non_null()
+const Mono_Time *g_mono_time(const Group_Chats *g_c);
 
 /** Set the callback for group invites. */
 non_null()

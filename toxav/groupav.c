@@ -263,7 +263,7 @@ static void group_av_peer_new(void *object, uint32_t groupnumber, uint32_t frien
         return;
     }
 
-    peer_av->mono_time = group_av->g_c->mono_time;
+    peer_av->mono_time = g_mono_time(group_av->g_c);
     peer_av->buffer = create_queue(GROUP_JBUF_SIZE);
 
     if (group_peer_set_object(group_av->g_c, groupnumber, friendgroupnumber, peer_av) == -1) {
