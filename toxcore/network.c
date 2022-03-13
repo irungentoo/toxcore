@@ -340,6 +340,9 @@ static void fill_addr6(const IP6 *ip, struct in6_addr *addr)
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 
+static const IP empty_ip = {{0}};
+const IP_Port empty_ip_port = {{{0}}};
+
 const IP4 ip4_broadcast = { INADDR_BROADCAST };
 const IP6 ip6_broadcast = {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff }
@@ -1172,7 +1175,7 @@ void ip_reset(IP *ip)
         return;
     }
 
-    memset(ip, 0, sizeof(IP));
+    *ip = empty_ip;
 }
 
 /** nulls out ip_port */
@@ -1182,7 +1185,7 @@ void ipport_reset(IP_Port *ipport)
         return;
     }
 
-    memset(ipport, 0, sizeof(IP_Port));
+    *ipport = empty_ip_port;
 }
 
 /** nulls out ip, sets family according to flag */
@@ -1192,7 +1195,7 @@ void ip_init(IP *ip, bool ipv6enabled)
         return;
     }
 
-    memset(ip, 0, sizeof(IP));
+    *ip = empty_ip;
     ip->family = ipv6enabled ? net_family_ipv6 : net_family_ipv4;
 }
 

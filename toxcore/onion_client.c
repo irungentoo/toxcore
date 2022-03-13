@@ -90,6 +90,8 @@ typedef struct Onion_Friend {
     uint32_t dht_pk_callback_number;
 } Onion_Friend;
 
+static const Onion_Friend empty_onion_friend = {false};
+
 typedef struct Onion_Data_Handler {
     oniondata_handler_cb *function;
     void *object;
@@ -287,9 +289,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
         }
 
         if (num_nodes >= 2) {
-            nodes[0] = (Node_format) {
-                0
-            };
+            nodes[0] = empty_node_format;
             nodes[0].ip_port.ip.family = net_family_tcp_family;
             nodes[0].ip_port.ip.ip.v4.uint32 = random_tcp;
 
@@ -304,9 +304,7 @@ static uint16_t random_nodes_path_onion(const Onion_Client *onion_c, Node_format
                 return 0;
             }
 
-            nodes[0] = (Node_format) {
-                0
-            };
+            nodes[0] = empty_node_format;
             nodes[0].ip_port.ip.family = net_family_tcp_family;
             nodes[0].ip_port.ip.ip.v4.uint32 = random_tcp;
 
@@ -1341,7 +1339,7 @@ int onion_addfriend(Onion_Client *onion_c, const uint8_t *public_key)
         }
 
         index = onion_c->num_friends;
-        memset(&onion_c->friends_list[onion_c->num_friends], 0, sizeof(Onion_Friend));
+        onion_c->friends_list[onion_c->num_friends] = empty_onion_friend;
         ++onion_c->num_friends;
     }
 

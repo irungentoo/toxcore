@@ -156,6 +156,9 @@ struct Group_Chats {
     lossy_packet_cb *lossy_packethandlers[256];
 };
 
+static const Group_c empty_group_c = {0};
+static const Group_Peer empty_group_peer = {{0}};
+
 /**
  * Packet type IDs as per the protocol specification.
  */
@@ -260,8 +263,7 @@ static bool realloc_conferences(Group_Chats *g_c, uint16_t num)
 non_null()
 static void setup_conference(Group_c *g)
 {
-    memset(g, 0, sizeof(Group_c));
-
+    *g = empty_group_c;
     g->maxfrozen = MAX_FROZEN_DEFAULT;
 }
 
@@ -833,7 +835,7 @@ static int addpeer(Group_Chats *g_c, uint32_t groupnumber, const uint8_t *real_p
         return -1;
     }
 
-    memset(&temp[g->numpeers], 0, sizeof(Group_Peer));
+    temp[g->numpeers] = empty_group_peer;
     g->group = temp;
 
     const uint32_t new_index = g->numpeers;
@@ -3617,7 +3619,7 @@ static uint32_t load_group(Group_c *g, const Group_Chats *g_c, const uint8_t *da
         g->frozen = tmp_frozen;
 
         Group_Peer *peer = &g->frozen[j];
-        memset(peer, 0, sizeof(Group_Peer));
+        *peer = empty_group_peer;
 
         pk_copy(peer->real_pk, data);
         data += CRYPTO_PUBLIC_KEY_SIZE;

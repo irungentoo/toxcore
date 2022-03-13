@@ -24,6 +24,8 @@
 static_assert(MAX_CONCURRENT_FILE_PIPES <= UINT8_MAX + 1,
               "uint8_t cannot represent all file transfer numbers");
 
+static const Friend empty_friend = {{0}};
+
 /** @brief Set the size of the friend list to numfriends.
  *
  * @retval -1 if realloc fails.
@@ -163,7 +165,7 @@ static int32_t init_new_friend(Messenger *m, const uint8_t *real_pk, uint8_t sta
         return FAERR_NOMEM;
     }
 
-    memset(&m->friendlist[m->numfriends], 0, sizeof(Friend));
+    m->friendlist[m->numfriends] = empty_friend;
 
     const int friendcon_id = new_friend_connection(m->fr_c, real_pk);
 
@@ -418,7 +420,7 @@ int m_delfriend(Messenger *m, int32_t friendnumber)
     }
 
     kill_friend_connection(m->fr_c, m->friendlist[friendnumber].friendcon_id);
-    memset(&m->friendlist[friendnumber], 0, sizeof(Friend));
+    m->friendlist[friendnumber] = empty_friend;
 
     uint32_t i;
 

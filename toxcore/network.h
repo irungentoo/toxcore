@@ -140,6 +140,8 @@ typedef struct IP_Port {
     uint16_t port;
 } IP_Port;
 
+extern const IP_Port empty_ip_port;
+
 typedef struct Socket {
     int sock;
 } Socket;

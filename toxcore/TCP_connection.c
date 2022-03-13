@@ -47,6 +47,10 @@ struct TCP_Connections {
 };
 
 
+static const TCP_Connection_to empty_tcp_connection_to = {0};
+static const TCP_con empty_tcp_con = {0};
+
+
 const uint8_t *tcp_connections_public_key(const TCP_Connections *tcp_c)
 {
     return tcp_c->self_public_key;
@@ -158,7 +162,7 @@ static int create_connection(TCP_Connections *tcp_c)
     if (realloc_TCP_Connection_to(&tcp_c->connections, tcp_c->connections_length + 1) == 0) {
         id = tcp_c->connections_length;
         ++tcp_c->connections_length;
-        memset(&tcp_c->connections[id], 0, sizeof(TCP_Connection_to));
+        tcp_c->connections[id] = empty_tcp_connection_to;
     }
 
     return id;
@@ -183,7 +187,7 @@ static int create_tcp_connection(TCP_Connections *tcp_c)
     if (realloc_TCP_con(&tcp_c->tcp_connections, tcp_c->tcp_connections_length + 1) == 0) {
         id = tcp_c->tcp_connections_length;
         ++tcp_c->tcp_connections_length;
-        memset(&tcp_c->tcp_connections[id], 0, sizeof(TCP_con));
+        tcp_c->tcp_connections[id] = empty_tcp_con;
     }
 
     return id;
@@ -202,7 +206,7 @@ static int wipe_connection(TCP_Connections *tcp_c, int connections_number)
     }
 
     uint32_t i;
-    memset(&tcp_c->connections[connections_number], 0, sizeof(TCP_Connection_to));
+    tcp_c->connections[connections_number] = empty_tcp_connection_to;
 
     for (i = tcp_c->connections_length; i != 0; --i) {
         if (tcp_c->connections[i - 1].status != TCP_CONN_NONE) {
@@ -230,7 +234,7 @@ static int wipe_tcp_connection(TCP_Connections *tcp_c, int tcp_connections_numbe
         return -1;
     }
 
-    memset(&tcp_c->tcp_connections[tcp_connections_number], 0, sizeof(TCP_con));
+    tcp_c->tcp_connections[tcp_connections_number] = empty_tcp_con;
 
     uint32_t i;
 

@@ -54,6 +54,8 @@ struct Friend_Conn {
     bool hosting_tcp_relay;
 };
 
+static const Friend_Conn empty_friend_conn = {0};
+
 
 struct Friend_Connections {
     const Mono_Time *mono_time;
@@ -151,7 +153,7 @@ static int create_friend_conn(Friend_Connections *fr_c)
 
     const int id = fr_c->num_cons;
     ++fr_c->num_cons;
-    memset(&fr_c->conns[id], 0, sizeof(Friend_Conn));
+    fr_c->conns[id] = empty_friend_conn;
 
     return id;
 }
@@ -168,7 +170,7 @@ static int wipe_friend_conn(Friend_Connections *fr_c, int friendcon_id)
         return -1;
     }
 
-    memset(&fr_c->conns[friendcon_id], 0, sizeof(Friend_Conn));
+    fr_c->conns[friendcon_id] = empty_friend_conn;
 
     uint32_t i;
 
@@ -245,7 +247,7 @@ static int friend_add_tcp_relay(Friend_Connections *fr_c, int friendcon_id, cons
     for (unsigned i = 0; i < FRIEND_MAX_STORED_TCP_RELAYS; ++i) {
         if (!net_family_is_unspec(friend_con->tcp_relays[i].ip_port.ip.family)
                 && pk_equal(friend_con->tcp_relays[i].public_key, public_key)) {
-            memset(&friend_con->tcp_relays[i], 0, sizeof(Node_format));
+            friend_con->tcp_relays[i] = empty_node_format;
         }
     }
 

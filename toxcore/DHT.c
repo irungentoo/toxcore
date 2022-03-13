@@ -68,6 +68,9 @@ struct DHT_Friend {
     unsigned int num_to_bootstrap;
 };
 
+static const DHT_Friend empty_dht_friend = {{0}};
+const Node_format empty_node_format = {{0}};
+
 typedef struct Cryptopacket_Handler {
     cryptopacket_handler_cb *function;
     void *object;
@@ -582,7 +585,6 @@ int unpack_ip_port(IP_Port *ip_port, const uint8_t *data, uint16_t length, bool 
         return -1;
     }
 
-    const IP_Port empty_ip_port = {{{0}}};
     *ip_port = empty_ip_port;
 
     if (is_ipv4) {
@@ -1652,7 +1654,7 @@ int dht_addfriend(DHT *dht, const uint8_t *public_key, dht_ip_cb *ip_callback,
 
     dht->friends_list = temp;
     DHT_Friend *const dht_friend = &dht->friends_list[dht->num_friends];
-    memset(dht_friend, 0, sizeof(DHT_Friend));
+    *dht_friend = empty_dht_friend;
     memcpy(dht_friend->public_key, public_key, CRYPTO_PUBLIC_KEY_SIZE);
 
     dht_friend->nat.nat_ping_id = random_u64();
