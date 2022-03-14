@@ -108,6 +108,8 @@
 extern "C" {
 #endif
 
+/** @{ @namespace tox */
+
 #ifndef TOX_DEFINED
 #define TOX_DEFINED
 /**
@@ -3231,6 +3233,8 @@ uint16_t tox_self_get_udp_port(const Tox *tox, Tox_Err_Get_Port *error);
  * This is only relevant if the instance is acting as a TCP relay.
  */
 uint16_t tox_self_get_tcp_port(const Tox *tox, Tox_Err_Get_Port *error);
+
+/** @} */
 
 /** @} */
 
