@@ -365,7 +365,7 @@ int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_num
     return sent_any ? 0 : -1;
 }
 
-/** @brief Return a random TCP connection number for use in send_tcp_onion_request.
+/** @brief Return a TCP connection number for use in send_tcp_onion_request.
  *
  * TODO(irungentoo): This number is just the index of an array that the elements
  * can change without warning.
@@ -459,21 +459,21 @@ int tcp_send_oob_packet_using_relay(const TCP_Connections *tcp_c, const uint8_t 
     return tcp_send_oob_packet(tcp_c, tcp_con_number, public_key, packet, length);
 }
 
-/** Set the callback for TCP data packets. */
+/** @brief Set the callback for TCP data packets. */
 void set_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_data_cb *tcp_data_callback, void *object)
 {
     tcp_c->tcp_data_callback = tcp_data_callback;
     tcp_c->tcp_data_callback_object = object;
 }
 
-/** Set the callback for TCP oob data packets. */
+/** @brief Set the callback for TCP oob data packets. */
 void set_oob_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_oob_cb *tcp_oob_callback, void *object)
 {
     tcp_c->tcp_oob_callback = tcp_oob_callback;
     tcp_c->tcp_oob_callback_object = object;
 }
 
-/** Set the callback for TCP onion packets. */
+/** @brief Set the callback for TCP onion packets. */
 void set_onion_packet_tcp_connection_callback(TCP_Connections *tcp_c, tcp_onion_cb *tcp_onion_callback, void *object)
 {
     tcp_c->tcp_onion_callback = tcp_onion_callback;
@@ -1339,7 +1339,8 @@ static bool copy_tcp_relay_conn(const TCP_Connections *tcp_c, Node_format *tcp_r
     return true;
 }
 
-/** @brief Copy a maximum of max_num random TCP relays we are connected to to tcp_relays.
+/** @brief Copy a maximum of max_num TCP relays we are connected to to tcp_relays.
+ *
  * NOTE that the family of the copied ip ports will be set to TCP_INET or TCP_INET6.
  *
  * return number of relays copied to tcp_relays on success.

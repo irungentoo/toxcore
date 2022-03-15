@@ -91,7 +91,7 @@ non_null()
 int send_packet_tcp_connection(const TCP_Connections *tcp_c, int connections_number, const uint8_t *packet,
                                uint16_t length);
 
-/** @brief Return a random TCP connection number for use in send_tcp_onion_request.
+/** @brief Return a TCP connection number for use in send_tcp_onion_request.
  *
  * TODO(irungentoo): This number is just the index of an array that the elements
  * can change without warning.

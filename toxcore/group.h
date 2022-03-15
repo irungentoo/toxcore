@@ -93,7 +93,7 @@ void g_callback_peer_list_changed(Group_Chats *g_c, peer_list_changed_cb *functi
 
 /** @brief Creates a new groupchat and puts it in the chats array.
  *
- * type is one of `GROUPCHAT_TYPE_*`
+ * @param type is one of `GROUPCHAT_TYPE_*`
  *
  * @return group number on success.
  * @retval -1 on failure.

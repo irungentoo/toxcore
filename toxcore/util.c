@@ -20,7 +20,7 @@
 #include "crypto_core.h" /* for CRYPTO_PUBLIC_KEY_SIZE */
 
 
-/** id functions */
+/** Equality function for public keys. */
 bool pk_equal(const uint8_t *dest, const uint8_t *src)
 {
     return public_key_eq(dest, src);
