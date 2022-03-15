@@ -154,6 +154,7 @@ cc_library(
         "//c-toxcore/toxcore:ccompat",
         "//c-toxcore/toxcore:logger",
         "//c-toxcore/toxcore:mono_time",
+        "//c-toxcore/toxcore:tox",
         "//c-toxcore/toxcore:util",
     ],
 )

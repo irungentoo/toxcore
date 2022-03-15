@@ -68,6 +68,7 @@ libtoxcore_la_SOURCES = ../toxcore/attributes.h \
                         ../toxcore/tox_unpack.h \
                         ../toxcore/tox_unpack.c \
                         ../toxcore/tox_private.h \
+                        ../toxcore/tox_struct.h \
                         ../toxcore/tox_api.c \
                         ../toxcore/util.h \
                         ../toxcore/util.c \

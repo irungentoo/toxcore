@@ -1082,13 +1082,9 @@ int file_get_id(const Messenger *m, int32_t friendnumber, uint32_t filenumber, u
 
     file_number = temp_filenum;
 
-    struct File_Transfers *ft;
-
-    if (inbound) {
-        ft = &m->friendlist[friendnumber].file_receiving[file_number];
-    } else {
-        ft = &m->friendlist[friendnumber].file_sending[file_number];
-    }
+    const struct File_Transfers *const ft = inbound
+        ? &m->friendlist[friendnumber].file_receiving[file_number]
+        : &m->friendlist[friendnumber].file_sending[file_number];
 
     if (ft->status == FILESTATUS_NONE) {
         return -2;

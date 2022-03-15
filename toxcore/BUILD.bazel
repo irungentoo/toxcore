@@ -516,6 +516,7 @@ cc_library(
     hdrs = [
         "tox.h",
         "tox_private.h",
+        "tox_struct.h",
     ],
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [

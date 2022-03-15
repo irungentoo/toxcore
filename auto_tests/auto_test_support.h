@@ -21,9 +21,9 @@ typedef struct AutoTox {
     void *state;
 } AutoTox;
 
-bool all_connected(AutoTox *autotoxes, uint32_t tox_count);
+bool all_connected(const AutoTox *autotoxes, uint32_t tox_count);
 
-bool all_friends_connected(AutoTox *autotoxes, uint32_t tox_count);
+bool all_friends_connected(const AutoTox *autotoxes, uint32_t tox_count);
 
 void iterate_all_wait(AutoTox *autotoxes, uint32_t tox_count, uint32_t wait);
 

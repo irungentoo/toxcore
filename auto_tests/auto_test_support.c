@@ -5,6 +5,7 @@
 #include "../testing/misc_tools.h"
 #include "../toxcore/Messenger.h"
 #include "../toxcore/mono_time.h"
+#include "../toxcore/tox_struct.h"
 
 #include "auto_test_support.h"
 
@@ -87,7 +88,7 @@ void bootstrap_tox_live_network(Tox *tox, bool enable_tcp)
     }
 }
 
-bool all_connected(AutoTox *autotoxes, uint32_t tox_count)
+bool all_connected(const AutoTox *autotoxes, uint32_t tox_count)
 {
     if (tox_count) {
         ck_assert(autotoxes != nullptr);
@@ -102,7 +103,7 @@ bool all_connected(AutoTox *autotoxes, uint32_t tox_count)
     return true;
 }
 
-bool all_friends_connected(AutoTox *autotoxes, uint32_t tox_count)
+bool all_friends_connected(const AutoTox *autotoxes, uint32_t tox_count)
 {
     if (tox_count) {
         ck_assert(autotoxes != nullptr);
@@ -148,8 +149,7 @@ void set_mono_time_callback(AutoTox *autotox)
 {
     ck_assert(autotox != nullptr);
 
-    // TODO(iphydf): Don't rely on toxcore internals.
-    Mono_Time *mono_time = ((Messenger *)autotox->tox)->mono_time;
+    Mono_Time *mono_time = autotox->tox->mono_time;
 
     autotox->clock = current_time_monotonic(mono_time);
     mono_time_set_current_time_callback(mono_time, nullptr, nullptr);  // set to default first

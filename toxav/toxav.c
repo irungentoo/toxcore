@@ -17,6 +17,7 @@
 #include "../toxcore/ccompat.h"
 #include "../toxcore/logger.h"
 #include "../toxcore/mono_time.h"
+#include "../toxcore/tox_struct.h"
 #include "../toxcore/util.h"
 
 // TODO(zoff99): don't hardcode this, let the application choose it
@@ -157,9 +158,7 @@ ToxAV *toxav_new(Tox *tox, Toxav_Err_New *error)
 
     // TODO(iphydf): Don't rely on toxcore internals.
     Messenger *m;
-    //!TOKSTYLE-
-    m = *(Messenger **)tox;
-    //!TOKSTYLE+
+    m = tox->m;
 
     if (m->msi_packet != nullptr) {
         rc = TOXAV_ERR_NEW_MULTIPLE;
