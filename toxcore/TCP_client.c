@@ -614,6 +614,142 @@ TCP_Client_Connection *new_TCP_connection(const Logger *logger, const Mono_Time 
     return temp;
 }
 
+non_null()
+static int handle_TCP_client_routing_response(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
+{
+    if (length != 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE) {
+        return -1;
+    }
+
+    if (data[1] < NUM_RESERVED_PORTS) {
+        return 0;
+    }
+
+    const uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+
+    if (conn->connections[con_id].status != 0) {
+        return 0;
+    }
+
+    conn->connections[con_id].status = 1;
+    conn->connections[con_id].number = -1;
+    memcpy(conn->connections[con_id].public_key, data + 2, CRYPTO_PUBLIC_KEY_SIZE);
+
+    if (conn->response_callback != nullptr) {
+        conn->response_callback(conn->response_callback_object, con_id, conn->connections[con_id].public_key);
+    }
+
+    return 0;
+}
+
+non_null()
+static int handle_TCP_client_connection_notification(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
+{
+    if (length != 1 + 1) {
+        return -1;
+    }
+
+    if (data[1] < NUM_RESERVED_PORTS) {
+        return -1;
+    }
+
+    const uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+
+    if (conn->connections[con_id].status != 1) {
+        return 0;
+    }
+
+    conn->connections[con_id].status = 2;
+
+    if (conn->status_callback != nullptr) {
+        conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
+                              conn->connections[con_id].status);
+    }
+
+    return 0;
+}
+
+non_null()
+static int handle_TCP_client_disconnect_notification(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
+{
+    if (length != 1 + 1) {
+        return -1;
+    }
+
+    if (data[1] < NUM_RESERVED_PORTS) {
+        return -1;
+    }
+
+    const uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+
+    if (conn->connections[con_id].status == 0) {
+        return 0;
+    }
+
+    if (conn->connections[con_id].status != 2) {
+        return 0;
+    }
+
+    conn->connections[con_id].status = 1;
+
+    if (conn->status_callback != nullptr) {
+        conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
+                              conn->connections[con_id].status);
+    }
+
+    return 0;
+}
+
+non_null()
+static int handle_TCP_client_ping(const Logger *logger, TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
+{
+    if (length != 1 + sizeof(uint64_t)) {
+        return -1;
+    }
+
+    uint64_t ping_id;
+    memcpy(&ping_id, data + 1, sizeof(uint64_t));
+    conn->ping_response_id = ping_id;
+    tcp_send_ping_response(logger, conn);
+    return 0;
+}
+
+non_null()
+static int handle_TCP_client_pong(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length)
+{
+    if (length != 1 + sizeof(uint64_t)) {
+        return -1;
+    }
+
+    uint64_t ping_id;
+    memcpy(&ping_id, data + 1, sizeof(uint64_t));
+
+    if (ping_id != 0) {
+        if (ping_id == conn->ping_id) {
+            conn->ping_id = 0;
+        }
+
+        return 0;
+    }
+
+    return -1;
+}
+
+non_null(1, 2) nullable(4)
+static int handle_TCP_client_oob_recv(TCP_Client_Connection *conn, const uint8_t *data, uint16_t length, void *userdata)
+{
+    if (length <= 1 + CRYPTO_PUBLIC_KEY_SIZE) {
+        return -1;
+    }
+
+    if (conn->oob_data_callback != nullptr) {
+        conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
+                                length - (1 + CRYPTO_PUBLIC_KEY_SIZE), userdata);
+    }
+
+    return 0;
+}
+
 /**
  * @retval 0 on success
  * @retval -1 on failure
@@ -627,129 +763,23 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
     }
 
     switch (data[0]) {
-        case TCP_PACKET_ROUTING_RESPONSE: {
-            if (length != 1 + 1 + CRYPTO_PUBLIC_KEY_SIZE) {
-                return -1;
-            }
+        case TCP_PACKET_ROUTING_RESPONSE:
+            return handle_TCP_client_routing_response(conn, data, length);
 
-            if (data[1] < NUM_RESERVED_PORTS) {
-                return 0;
-            }
+        case TCP_PACKET_CONNECTION_NOTIFICATION:
+            return handle_TCP_client_connection_notification(conn, data, length);
 
-            const uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
+        case TCP_PACKET_DISCONNECT_NOTIFICATION:
+            return handle_TCP_client_disconnect_notification(conn, data, length);
 
-            if (conn->connections[con_id].status != 0) {
-                return 0;
-            }
+        case TCP_PACKET_PING:
+            return handle_TCP_client_ping(logger, conn, data, length);
 
-            conn->connections[con_id].status = 1;
-            conn->connections[con_id].number = -1;
-            memcpy(conn->connections[con_id].public_key, data + 2, CRYPTO_PUBLIC_KEY_SIZE);
+        case TCP_PACKET_PONG:
+            return handle_TCP_client_pong(conn, data, length);
 
-            if (conn->response_callback != nullptr) {
-                conn->response_callback(conn->response_callback_object, con_id, conn->connections[con_id].public_key);
-            }
-
-            return 0;
-        }
-
-        case TCP_PACKET_CONNECTION_NOTIFICATION: {
-            if (length != 1 + 1) {
-                return -1;
-            }
-
-            if (data[1] < NUM_RESERVED_PORTS) {
-                return -1;
-            }
-
-            uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
-
-            if (conn->connections[con_id].status != 1) {
-                return 0;
-            }
-
-            conn->connections[con_id].status = 2;
-
-            if (conn->status_callback != nullptr) {
-                conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
-                                      conn->connections[con_id].status);
-            }
-
-            return 0;
-        }
-
-        case TCP_PACKET_DISCONNECT_NOTIFICATION: {
-            if (length != 1 + 1) {
-                return -1;
-            }
-
-            if (data[1] < NUM_RESERVED_PORTS) {
-                return -1;
-            }
-
-            uint8_t con_id = data[1] - NUM_RESERVED_PORTS;
-
-            if (conn->connections[con_id].status == 0) {
-                return 0;
-            }
-
-            if (conn->connections[con_id].status != 2) {
-                return 0;
-            }
-
-            conn->connections[con_id].status = 1;
-
-            if (conn->status_callback != nullptr) {
-                conn->status_callback(conn->status_callback_object, conn->connections[con_id].number, con_id,
-                                      conn->connections[con_id].status);
-            }
-
-            return 0;
-        }
-
-        case TCP_PACKET_PING: {
-            if (length != 1 + sizeof(uint64_t)) {
-                return -1;
-            }
-
-            uint64_t ping_id;
-            memcpy(&ping_id, data + 1, sizeof(uint64_t));
-            conn->ping_response_id = ping_id;
-            tcp_send_ping_response(logger, conn);
-            return 0;
-        }
-
-        case TCP_PACKET_PONG: {
-            if (length != 1 + sizeof(uint64_t)) {
-                return -1;
-            }
-
-            uint64_t ping_id;
-            memcpy(&ping_id, data + 1, sizeof(uint64_t));
-
-            if (ping_id != 0) {
-                if (ping_id == conn->ping_id) {
-                    conn->ping_id = 0;
-                }
-
-                return 0;
-            }
-
-            return -1;
-        }
-
-        case TCP_PACKET_OOB_RECV: {
-            if (length <= 1 + CRYPTO_PUBLIC_KEY_SIZE) {
-                return -1;
-            }
-
-            if (conn->oob_data_callback != nullptr) {
-                conn->oob_data_callback(conn->oob_data_callback_object, data + 1, data + 1 + CRYPTO_PUBLIC_KEY_SIZE,
-                                        length - (1 + CRYPTO_PUBLIC_KEY_SIZE), userdata);
-            }
-
-            return 0;
-        }
+        case TCP_PACKET_OOB_RECV:
+            return handle_TCP_client_oob_recv(conn, data, length, userdata);
 
         case TCP_PACKET_ONION_RESPONSE: {
             conn->onion_callback(conn->onion_callback_object, data + 1, length - 1, userdata);
@@ -761,7 +791,7 @@ static int handle_TCP_client_packet(const Logger *logger, TCP_Client_Connection 
                 return -1;
             }
 
-            uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
+            const uint8_t con_id = data[0] - NUM_RESERVED_PORTS;
 
             if (conn->data_callback != nullptr) {
                 conn->data_callback(conn->data_callback_object, conn->connections[con_id].number, con_id, data + 1, length - 1,

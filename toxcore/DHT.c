@@ -464,21 +464,21 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
     }
 
     bool is_ipv4;
-    uint8_t net_family;
+    uint8_t family;
 
     if (net_family_is_ipv4(ip_port->ip.family)) {
         // TODO(irungentoo): use functions to convert endianness
         is_ipv4 = true;
-        net_family = TOX_AF_INET;
+        family = TOX_AF_INET;
     } else if (net_family_is_tcp_ipv4(ip_port->ip.family)) {
         is_ipv4 = true;
-        net_family = TOX_TCP_INET;
+        family = TOX_TCP_INET;
     } else if (net_family_is_ipv6(ip_port->ip.family)) {
         is_ipv4 = false;
-        net_family = TOX_AF_INET6;
+        family = TOX_AF_INET6;
     } else if (net_family_is_tcp_ipv6(ip_port->ip.family)) {
         is_ipv4 = false;
-        net_family = TOX_TCP_INET6;
+        family = TOX_TCP_INET6;
     } else {
         char ip_str[IP_NTOA_LEN];
         // TODO(iphydf): Find out why we're trying to pack invalid IPs, stop
@@ -494,7 +494,7 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
             return -1;
         }
 
-        data[0] = net_family;
+        data[0] = family;
         memcpy(data + 1, &ip_port->ip.ip.v4, SIZE_IP4);
         memcpy(data + 1 + SIZE_IP4, &ip_port->port, sizeof(uint16_t));
         return size;
@@ -505,7 +505,7 @@ int pack_ip_port(const Logger *logger, uint8_t *data, uint16_t length, const IP_
             return -1;
         }
 
-        data[0] = net_family;
+        data[0] = family;
         memcpy(data + 1, &ip_port->ip.ip.v6, SIZE_IP6);
         memcpy(data + 1 + SIZE_IP6, &ip_port->port, sizeof(uint16_t));
         return size;

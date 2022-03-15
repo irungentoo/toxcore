@@ -234,10 +234,10 @@ bool tox_pass_encrypt(const uint8_t *plaintext, size_t plaintext_len, const uint
  *
  * returns true on success
  */
-bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, size_t length, uint8_t *plaintext,
-                          Tox_Err_Decryption *error)
+bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, size_t ciphertext_len,
+                          uint8_t *plaintext, Tox_Err_Decryption *error)
 {
-    if (length <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
+    if (ciphertext_len <= TOX_PASS_ENCRYPTION_EXTRA_LENGTH) {
         SET_ERROR_PARAMETER(error, TOX_ERR_DECRYPTION_INVALID_LENGTH);
         return false;
     }
@@ -255,7 +255,7 @@ bool tox_pass_key_decrypt(const Tox_Pass_Key *key, const uint8_t *ciphertext, si
     ciphertext += TOX_ENC_SAVE_MAGIC_LENGTH;
     ciphertext += crypto_pwhash_scryptsalsa208sha256_SALTBYTES; // salt only affects key derivation
 
-    const size_t decrypt_length = length - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
+    const size_t decrypt_length = ciphertext_len - TOX_PASS_ENCRYPTION_EXTRA_LENGTH;
 
     uint8_t nonce[crypto_box_NONCEBYTES];
     memcpy(nonce, ciphertext, crypto_box_NONCEBYTES);
