@@ -175,6 +175,10 @@ static void test_few_clients(void)
     ck_assert_msg(connected_t1, "Tox1 isn't connected. %u", connected_t1);
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
 
+    // We're done with this callback, so unset it to ensure we don't fail the
+    // test if tox1 goes offline while tox2 and 3 are reloaded.
+    tox_callback_self_connection_status(tox1, nullptr);
+
     reload_tox(&tox2, opts2, &index[1]);
 
     reload_tox(&tox3, opts3, &index[2]);
