@@ -71,8 +71,7 @@ jobs:
     steps:
       - checkout
       - run: rm -rf /src/workspace/c-toxcore/* && mv * /src/workspace/c-toxcore/
-      # TODO(iphydf): Remove "|| true" once this works.
-      - run: cd /src/workspace && bazel test //c-toxcore/auto_tests:lossless_packet_test || true
+      - run: cd /src/workspace && bazel test //c-toxcore/auto_tests:lossless_packet_test
 
   infer:
     working_directory: ~/work

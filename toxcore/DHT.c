@@ -351,9 +351,9 @@ int create_request(const uint8_t *send_public_key, const uint8_t *send_secret_ke
 
     uint8_t *const nonce = packet + 1 + CRYPTO_PUBLIC_KEY_SIZE * 2;
     random_nonce(nonce);
-    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE];
-    memcpy(temp + 1, data, data_length);
+    uint8_t temp[MAX_CRYPTO_REQUEST_SIZE] = {0};
     temp[0] = request_id;
+    memcpy(temp + 1, data, data_length);
     const int len = encrypt_data(recv_public_key, send_secret_key, nonce, temp, data_length + 1,
                                  packet + CRYPTO_SIZE);
 
