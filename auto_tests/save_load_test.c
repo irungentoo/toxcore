@@ -104,6 +104,34 @@ static void reload_tox(Tox **tox, struct Tox_Options *const in_opts, void *user_
     free(buffer);
 }
 
+typedef struct Time_Data {
+    pthread_mutex_t lock;
+    uint64_t clock;
+} Time_Data;
+
+static uint64_t get_state_clock_callback(Mono_Time *mono_time, void *user_data)
+{
+    Time_Data *time_data = (Time_Data *)user_data;
+    pthread_mutex_lock(&time_data->lock);
+    uint64_t clock = time_data->clock;
+    pthread_mutex_unlock(&time_data->lock);
+    return clock;
+}
+
+static void increment_clock(Time_Data *time_data, uint64_t count)
+{
+    pthread_mutex_lock(&time_data->lock);
+    time_data->clock += count;
+    pthread_mutex_unlock(&time_data->lock);
+}
+
+static void set_current_time_callback(Tox *tox, Time_Data *time_data)
+{
+    // TODO(iphydf): Don't rely on toxcore internals.
+    Mono_Time *mono_time = ((Messenger *)tox)->mono_time;
+    mono_time_set_current_time_callback(mono_time, get_state_clock_callback, time_data);
+}
+
 static void test_few_clients(void)
 {
     uint32_t index[] = { 1, 2, 3 };
@@ -128,6 +156,14 @@ static void test_few_clients(void)
     ck_assert_msg(t_n_error == TOX_ERR_NEW_OK, "Failed to create tox instance: %d", t_n_error);
 
     ck_assert_msg(tox1 && tox2 && tox3, "Failed to create 3 tox instances");
+
+
+    Time_Data time_data;
+    ck_assert_msg(pthread_mutex_init(&time_data.lock, nullptr) == 0, "Failed to init time_data mutex");
+    time_data.clock = current_time_monotonic(((Messenger *)tox1)->mono_time);
+    set_current_time_callback(tox1, &time_data);
+    set_current_time_callback(tox2, &time_data);
+    set_current_time_callback(tox3, &time_data);
 
     uint8_t dht_key[TOX_PUBLIC_KEY_SIZE];
     tox_self_get_dht_id(tox1, dht_key);
@@ -169,7 +205,8 @@ static void test_few_clients(void)
             }
         }
 
-        c_sleep(ITERATION_INTERVAL);
+        increment_clock(&time_data, 200);
+        c_sleep(5);
     }
 
     ck_assert_msg(connected_t1, "Tox1 isn't connected. %u", connected_t1);
@@ -206,7 +243,8 @@ static void test_few_clients(void)
             }
         }
 
-        c_sleep(ITERATION_INTERVAL);
+        increment_clock(&time_data, 100);
+        c_sleep(5);
     }
 
     printf("tox clients connected took %lu seconds\n", (unsigned long)(time(nullptr) - con_time));
