@@ -393,7 +393,6 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
     }
 
     vpx_codec_enc_cfg_t cfg2 = *vc->encoder->config.enc;
-    vpx_codec_err_t rc;
 
     if (cfg2.rc_target_bitrate == bit_rate && cfg2.g_w == width && cfg2.g_h == height && kf_max_dist == -1) {
         return 0; /* Nothing changed */
@@ -403,7 +402,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
         /* Only bit rate changed */
         LOGGER_INFO(vc->log, "bitrate change from: %u to: %u", (uint32_t)cfg2.rc_target_bitrate, (uint32_t)bit_rate);
         cfg2.rc_target_bitrate = bit_rate;
-        rc = vpx_codec_enc_config_set(vc->encoder, &cfg2);
+        const vpx_codec_err_t rc = vpx_codec_enc_config_set(vc->encoder, &cfg2);
 
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR(vc->log, "Failed to set encoder control setting: %s", vpx_codec_err_to_string(rc));
@@ -422,7 +421,7 @@ int vc_reconfigure_encoder(VCSession *vc, uint32_t bit_rate, uint16_t width, uin
         cfg.g_h = height;
 
         LOGGER_DEBUG(vc->log, "Using VP8 codec for encoder");
-        rc = vpx_codec_enc_init(&new_c, video_codec_encoder_interface(), &cfg, VPX_CODEC_USE_FRAME_THREADING);
+        vpx_codec_err_t rc = vpx_codec_enc_init(&new_c, video_codec_encoder_interface(), &cfg, VPX_CODEC_USE_FRAME_THREADING);
 
         if (rc != VPX_CODEC_OK) {
             LOGGER_ERROR(vc->log, "Failed to initialize encoder: %s", vpx_codec_err_to_string(rc));

@@ -2114,9 +2114,6 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
         return;
     }
 
-    const uint8_t *invite_data = data + 1;
-    const uint16_t invite_length = length - 1;
-
     switch (data[0]) {
         case INVITE_ID: {
             if (length != INVITE_PACKET_SIZE) {
@@ -2124,6 +2121,9 @@ static void handle_friend_invite_packet(Messenger *m, uint32_t friendnumber, con
             }
 
             const int groupnumber = get_group_num(g_c, data[1 + sizeof(uint16_t)], data + 1 + sizeof(uint16_t) + 1);
+
+            const uint8_t *invite_data = data + 1;
+            const uint16_t invite_length = length - 1;
 
             if (groupnumber == -1) {
                 if (g_c->invite_callback != nullptr) {

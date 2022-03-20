@@ -176,10 +176,10 @@ static int on_update(BWController *bwc, const struct BWCMessage *msg)
 
     bwc->cycle.last_recv_timestamp = current_time_monotonic(bwc->bwc_mono_time);
 
-    const uint32_t recv = msg->recv;
     const uint32_t lost = msg->lost;
 
     if (lost != 0 && bwc->mcb != nullptr) {
+        const uint32_t recv = msg->recv;
         LOGGER_DEBUG(bwc->m->log, "recved: %u lost: %u percentage: %f %%", recv, lost,
                      ((double)lost / (recv + lost)) * 100.0);
         bwc->mcb(bwc, bwc->friend_number,
