@@ -54,6 +54,8 @@ add_flag -Wno-sign-compare
 add_flag -Wno-type-limits
 # Callbacks often don't use all their parameters.
 add_flag -Wno-unused-parameter
+# cimple does this better
+add_flag -Wno-unused-function
 # struct Foo foo = {0}; is a common idiom. Missing braces means we'd need to
 # write {{{0}}} in some cases, which is ugly and a maintenance burden.
 add_flag -Wno-missing-braces

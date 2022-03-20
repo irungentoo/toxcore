@@ -45,6 +45,46 @@ extern const Family net_family_tox_tcp_ipv6;
 
 #define MAX_UDP_PACKET_SIZE 2048
 
+#ifdef USE_TEST_NETWORK
+typedef enum Net_Packet_Type {
+    NET_PACKET_PING_REQUEST         = 0x05, /* Ping request packet ID. */
+    NET_PACKET_PING_RESPONSE        = 0x06, /* Ping response packet ID. */
+    NET_PACKET_GET_NODES            = 0x07, /* Get nodes request packet ID. */
+    NET_PACKET_SEND_NODES_IPV6      = 0x08, /* Send nodes response packet ID for other addresses. */
+    NET_PACKET_COOKIE_REQUEST       = 0x1c, /* Cookie request packet */
+    NET_PACKET_COOKIE_RESPONSE      = 0x1d, /* Cookie response packet */
+    NET_PACKET_CRYPTO_HS            = 0x1e, /* Crypto handshake packet */
+    NET_PACKET_CRYPTO_DATA          = 0x1f, /* Crypto data packet */
+    NET_PACKET_CRYPTO               = 0x24, /* Encrypted data packet ID. */
+    NET_PACKET_LAN_DISCOVERY        = 0x25, /* LAN discovery packet ID. */
+
+    // TODO(Jfreegman): Uncomment these when we merge the rest of new groupchats
+    // NET_PACKET_GC_HANDSHAKE         = 0x62, /* Group chat handshake packet ID */
+    // NET_PACKET_GC_LOSSLESS          = 0x63, /* Group chat lossless packet ID */
+    // NET_PACKET_GC_LOSSY             = 0x64, /* Group chat lossy packet ID */
+
+    /* See: `docs/Prevent_Tracking.txt` and `onion.{c,h}` */
+    NET_PACKET_ONION_SEND_INITIAL   = 0x8f,
+    NET_PACKET_ONION_SEND_1         = 0x90,
+    NET_PACKET_ONION_SEND_2         = 0x91,
+
+    NET_PACKET_ANNOUNCE_REQUEST     = 0x92,
+    NET_PACKET_ANNOUNCE_RESPONSE    = 0x93,
+    NET_PACKET_ONION_DATA_REQUEST   = 0x94,
+    NET_PACKET_ONION_DATA_RESPONSE  = 0x95,
+
+    NET_PACKET_ANNOUNCE_REQUEST_OLD = 0x96, /* TODO: DEPRECATE */
+    NET_PACKET_ANNOUNCE_RESPONSE_OLD = 0x97, /* TODO: DEPRECATE */
+
+    NET_PACKET_ONION_RECV_3         = 0x9b,
+    NET_PACKET_ONION_RECV_2         = 0x9c,
+    NET_PACKET_ONION_RECV_1         = 0x9d,
+
+    BOOTSTRAP_INFO_PACKET_ID        = 0xf1, /* Only used for bootstrap nodes */
+
+    NET_PACKET_MAX                  = 0xff, /* This type must remain within a single uint8. */
+} Net_Packet_Type;
+#else
 typedef enum Net_Packet_Type {
     NET_PACKET_PING_REQUEST         = 0x00, /* Ping request packet ID. */
     NET_PACKET_PING_RESPONSE        = 0x01, /* Ping response packet ID. */
@@ -57,15 +97,23 @@ typedef enum Net_Packet_Type {
     NET_PACKET_CRYPTO               = 0x20, /* Encrypted data packet ID. */
     NET_PACKET_LAN_DISCOVERY        = 0x21, /* LAN discovery packet ID. */
 
+    // TODO(Jfreegman): Uncomment these when we merge the rest of new groupchats
+    // NET_PACKET_GC_HANDSHAKE         = 0x5a, /* Group chat handshake packet ID */
+    // NET_PACKET_GC_LOSSLESS          = 0x5b, /* Group chat lossless packet ID */
+    // NET_PACKET_GC_LOSSY             = 0x5c, /* Group chat lossy packet ID */
+
     /* See: `docs/Prevent_Tracking.txt` and `onion.{c,h}` */
     NET_PACKET_ONION_SEND_INITIAL   = 0x80,
     NET_PACKET_ONION_SEND_1         = 0x81,
     NET_PACKET_ONION_SEND_2         = 0x82,
 
-    NET_PACKET_ANNOUNCE_REQUEST     = 0x83,
-    NET_PACKET_ANNOUNCE_RESPONSE    = 0x84,
+    NET_PACKET_ANNOUNCE_REQUEST_OLD  = 0x83, /* TODO: DEPRECATE */
+    NET_PACKET_ANNOUNCE_RESPONSE_OLD = 0x84, /* TODO: DEPRECATE */
+
     NET_PACKET_ONION_DATA_REQUEST   = 0x85,
     NET_PACKET_ONION_DATA_RESPONSE  = 0x86,
+    NET_PACKET_ANNOUNCE_REQUEST     = 0x87,
+    NET_PACKET_ANNOUNCE_RESPONSE    = 0x88,
 
     NET_PACKET_ONION_RECV_3         = 0x8c,
     NET_PACKET_ONION_RECV_2         = 0x8d,
@@ -75,6 +123,7 @@ typedef enum Net_Packet_Type {
 
     NET_PACKET_MAX                  = 0xff, /* This type must remain within a single uint8. */
 } Net_Packet_Type;
+#endif // test network
 
 
 #define TOX_PORTRANGE_FROM 33445

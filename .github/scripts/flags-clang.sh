@@ -43,6 +43,8 @@ add_flag -Wno-thread-safety-analysis
 add_flag -Wno-type-limits
 # Callbacks often don't use all their parameters.
 add_flag -Wno-unused-parameter
+# cimple does this better
+add_flag -Wno-unused-function
 # libvpx uses __attribute__((unused)) for "potentially unused" static
 # functions to avoid unused static function warnings.
 add_flag -Wno-used-but-marked-unused

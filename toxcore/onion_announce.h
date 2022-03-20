@@ -15,13 +15,18 @@
 #define ONION_ANNOUNCE_MAX_ENTRIES 160
 #define ONION_ANNOUNCE_TIMEOUT 300
 #define ONION_PING_ID_SIZE CRYPTO_SHA256_SIZE
+#define ONION_MAX_EXTRA_DATA_SIZE 136
 
 #define ONION_ANNOUNCE_SENDBACK_DATA_LENGTH (sizeof(uint64_t))
 
-#define ONION_ANNOUNCE_REQUEST_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_MAC_SIZE)
+#define ONION_ANNOUNCE_REQUEST_MIN_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_MAC_SIZE)
+#define ONION_ANNOUNCE_REQUEST_MAX_SIZE (ONION_ANNOUNCE_REQUEST_MIN_SIZE + ONION_MAX_EXTRA_DATA_SIZE)
 
-#define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (1 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE + 1 + ONION_PING_ID_SIZE + CRYPTO_MAC_SIZE)
-#define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + sizeof(Node_format)*MAX_SENT_NODES)
+#define ONION_ANNOUNCE_RESPONSE_MIN_SIZE (2 + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_NONCE_SIZE + ONION_PING_ID_SIZE + CRYPTO_MAC_SIZE)
+#define ONION_ANNOUNCE_RESPONSE_MAX_SIZE (ONION_ANNOUNCE_RESPONSE_MIN_SIZE + ONION_MAX_EXTRA_DATA_SIZE * MAX_SENT_NODES)
+
+/* TODO: DEPRECATE */
+#define ONION_ANNOUNCE_REQUEST_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_PING_ID_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_PUBLIC_KEY_SIZE + ONION_ANNOUNCE_SENDBACK_DATA_LENGTH + CRYPTO_MAC_SIZE)
 
 #define ONION_DATA_RESPONSE_MIN_SIZE (1 + CRYPTO_NONCE_SIZE + CRYPTO_PUBLIC_KEY_SIZE + CRYPTO_MAC_SIZE)
 
@@ -38,7 +43,7 @@ void onion_announce_entry_set_time(Onion_Announce *onion_a, uint32_t entry, uint
 
 /** @brief Create an onion announce request packet in packet of max_packet_length.
  *
- * Recommended value for max_packet_length is ONION_ANNOUNCE_REQUEST_SIZE.
+ * Recommended value for max_packet_length is ONION_ANNOUNCE_REQUEST_MIN_SIZE.
  *
  * dest_client_id is the public key of the node the packet will be sent to.
  * public_key and secret_key is the kepair which will be used to encrypt the request.
@@ -113,6 +118,14 @@ int send_data_request(const Networking_Core *net, const Onion_Path *path, const 
                       const uint8_t *public_key,
                       const uint8_t *encrypt_public_key, const uint8_t *nonce, const uint8_t *data, uint16_t length);
 
+
+typedef int pack_extra_data_cb(void *object, const Logger *logger, const Mono_Time *mono_time,
+                               uint8_t num_nodes, uint8_t *plain, uint16_t plain_size,
+                               uint8_t *response, uint16_t response_size, uint16_t offset);
+
+non_null(1) nullable(3, 4)
+void onion_announce_extra_data_callback(Onion_Announce *onion_a, uint16_t extra_data_max_size,
+                                        pack_extra_data_cb *extra_data_callback, void *extra_data_object);
 
 non_null()
 Onion_Announce *new_onion_announce(const Logger *log, Mono_Time *mono_time, DHT *dht);

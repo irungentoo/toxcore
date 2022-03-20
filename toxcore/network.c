@@ -683,7 +683,8 @@ static int receivepacket(const Logger *log, Socket sock, IP_Port *ip_port, uint8
     *length = 0;
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    const int fail_or_len = fuzz_recvfrom(sock.sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
+    const int fail_or_len = fuzz_recvfrom(sock.sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr,
+                                          &addrlen);
 #else
     int fail_or_len = recvfrom(sock.sock, (char *) data, MAX_UDP_PACKET_SIZE, 0, (struct sockaddr *)&addr, &addrlen);
 #endif
@@ -979,11 +980,13 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
 
     if (net_family_is_ipv6(ip->family)) {
         const bool is_dualstack = set_socket_dualstack(temp->sock);
+
         if (is_dualstack) {
             LOGGER_TRACE(log, "Dual-stack socket: enabled");
         } else {
             LOGGER_ERROR(log, "Dual-stack socket failed to enable, won't be able to receive from/send to IPv4 addresses");
         }
+
         /* multicast local nodes */
         struct ipv6_mreq mreq;
         memset(&mreq, 0, sizeof(mreq));
@@ -1458,8 +1461,9 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
     return true;
 #else
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
-            (int)sock.sock, ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), ip_port->port);
+                 (int)sock.sock, ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port));
     errno = 0;
+
     if (connect(sock.sock, (struct sockaddr *)&addr, addrsize) == -1) {
         const int error = net_error();
 
@@ -1471,6 +1475,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
             return false;
         }
     }
+
     return true;
 #endif
 }

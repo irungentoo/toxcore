@@ -41,7 +41,7 @@ static int handle_test_1(void *object, const IP_Port *source, const uint8_t *pac
 
     const char req_message[] = "Install Gentoo";
     uint8_t req_packet[1 + sizeof(req_message)];
-    req_packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    req_packet[0] = NET_PACKET_ANNOUNCE_REQUEST_OLD;
     memcpy(req_packet + 1, req_message, sizeof(req_message));
 
     if (memcmp(packet, req_packet, sizeof(req_packet)) != 0) {
@@ -50,7 +50,7 @@ static int handle_test_1(void *object, const IP_Port *source, const uint8_t *pac
 
     const char res_message[] = "install gentoo";
     uint8_t res_packet[1 + sizeof(res_message)];
-    res_packet[0] = NET_PACKET_ANNOUNCE_RESPONSE;
+    res_packet[0] = NET_PACKET_ANNOUNCE_RESPONSE_OLD;
     memcpy(res_packet + 1, res_message, sizeof(res_message));
 
     if (send_onion_response(onion->net, source, res_packet, sizeof(res_packet),
@@ -67,7 +67,7 @@ static int handle_test_2(void *object, const IP_Port *source, const uint8_t *pac
 {
     const char res_message[] = "install gentoo";
     uint8_t res_packet[1 + sizeof(res_message)];
-    res_packet[0] = NET_PACKET_ANNOUNCE_RESPONSE;
+    res_packet[0] = NET_PACKET_ANNOUNCE_RESPONSE_OLD;
     memcpy(res_packet + 1, res_message, sizeof(res_message));
 
     if (length != sizeof(res_packet)) {
@@ -200,7 +200,7 @@ static void test_basic(void)
     Onion *onion1 = new_onion(log1, mono_time1, new_dht(log1, mono_time1, new_networking(log1, &ip, 36567), true, false));
     Onion *onion2 = new_onion(log2, mono_time2, new_dht(log2, mono_time2, new_networking(log2, &ip, 36568), true, false));
     ck_assert_msg((onion1 != nullptr) && (onion2 != nullptr), "Onion failed initializing.");
-    networking_registerhandler(onion2->net, NET_PACKET_ANNOUNCE_REQUEST, &handle_test_1, onion2);
+    networking_registerhandler(onion2->net, NET_PACKET_ANNOUNCE_REQUEST_OLD, &handle_test_1, onion2);
 
     IP_Port on1 = {ip, net_port(onion1->net)};
     Node_format n1;
@@ -214,7 +214,7 @@ static void test_basic(void)
 
     const char req_message[] = "Install Gentoo";
     uint8_t req_packet[1 + sizeof(req_message)];
-    req_packet[0] = NET_PACKET_ANNOUNCE_REQUEST;
+    req_packet[0] = NET_PACKET_ANNOUNCE_REQUEST_OLD;
     memcpy(req_packet + 1, req_message, sizeof(req_message));
 
     Node_format nodes[4];
@@ -233,7 +233,7 @@ static void test_basic(void)
         do_onion(onion2);
     } while (handled_test_1 == 0);
 
-    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_2, onion1);
+    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE_OLD, &handle_test_2, onion1);
     handled_test_2 = 0;
 
     do {
@@ -243,7 +243,7 @@ static void test_basic(void)
 
     Onion_Announce *onion1_a = new_onion_announce(log1, mono_time1, onion1->dht);
     Onion_Announce *onion2_a = new_onion_announce(log2, mono_time2, onion2->dht);
-    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE, &handle_test_3, onion1);
+    networking_registerhandler(onion1->net, NET_PACKET_ANNOUNCE_RESPONSE_OLD, &handle_test_3, onion1);
     ck_assert_msg((onion1_a != nullptr) && (onion2_a != nullptr), "Onion_Announce failed initializing.");
     uint8_t zeroes[64] = {0};
     random_bytes(sb_data, sizeof(sb_data));
