@@ -522,9 +522,8 @@ non_null()
 static void loglogdata(const Logger *log, const char *message, const uint8_t *buffer,
                        uint16_t buflen, const IP_Port *ip_port, long res)
 {
-    char ip_str[IP_NTOA_LEN];
-
     if (res < 0) { /* Windows doesn't necessarily know `%zu` */
+        char ip_str[IP_NTOA_LEN];
         const int error = net_error();
         char *strerror = net_new_strerror(error);
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
@@ -533,11 +532,13 @@ static void loglogdata(const Logger *log, const char *message, const uint8_t *bu
                      strerror, data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
         net_kill_strerror(strerror);
     } else if ((res > 0) && ((size_t)res <= buflen)) {
+        char ip_str[IP_NTOA_LEN];
         LOGGER_TRACE(log, "[%2u] %s %3u%c %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, min_u16(res, 999), (size_t)res < buflen ? '<' : '=',
                      ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",
                      data_0(buflen, buffer), data_1(buflen, buffer), buffer[buflen - 1]);
     } else { /* empty or overwrite */
+        char ip_str[IP_NTOA_LEN];
         LOGGER_TRACE(log, "[%2u] %s %lu%c%u %s:%u (%u: %s) | %08x%08x...%02x",
                      buffer[0], message, res, res == 0 ? '!' : '>', buflen,
                      ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port), 0, "OK",

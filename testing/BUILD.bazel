@@ -19,6 +19,7 @@ sh_test(
         "-Wno-type-check",
         "+RTS",
         "-N3",
+        "-RTS",
     ],
     data = CIMPLE_FILES,
     tags = ["haskell"],
