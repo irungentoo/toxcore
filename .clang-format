@@ -8,7 +8,7 @@ AlwaysBreakTemplateDeclarations: Yes
 SpaceBeforeCpp11BracedList: false
 Cpp11BracedListStyle: true
 
-IncludeIsMainRegex: '([-_](test))?$'
+IncludeIsMainRegex: '([-_](test|fuzz_test))?$'
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex:           '^<.*\.h>'

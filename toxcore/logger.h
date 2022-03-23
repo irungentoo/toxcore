@@ -13,6 +13,10 @@
 
 #include "attributes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef MIN_LOGGER_LEVEL
 #define MIN_LOGGER_LEVEL LOGGER_LEVEL_INFO
 #endif
@@ -92,5 +96,9 @@ void logger_write(
             LOGGER_FATAL(log, __VA_ARGS__);        \
         }                                          \
     } while (0)
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
 
 #endif // C_TOXCORE_TOXCORE_LOGGER_H

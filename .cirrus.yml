@@ -102,8 +102,8 @@ bazel-valgrind_task:
   test_all_script:
     - cd /src/workspace && bazel test -k
         --remote_http_cache=http://$CIRRUS_HTTP_CACHE_HOST
-        --build_tag_filters=-haskell
-        --test_tag_filters=-haskell
+        --build_tag_filters=-haskell,-fuzz-test
+        --test_tag_filters=-haskell,-fuzz-test
         --remote_download_minimal
         --config=valgrind
         --

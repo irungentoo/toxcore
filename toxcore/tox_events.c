@@ -246,9 +246,9 @@ void tox_events_get_bytes(const Tox_Events *events, uint8_t *bytes)
 Tox_Events *tox_events_load(const uint8_t *bytes, uint32_t bytes_size)
 {
     msgpack_unpacked msg;
+    msgpack_unpacked_init(&msg);
 
     size_t offset = 0;
-    msgpack_unpacked_init(&msg);
     const msgpack_unpack_return result = msgpack_unpack_next(&msg, (const char *)bytes, bytes_size, &offset);
 
     if (result != MSGPACK_UNPACK_SUCCESS) {

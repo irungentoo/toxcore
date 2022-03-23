@@ -66,7 +66,7 @@ ssize_t fuzz_recvfrom(int sockfd, void *buf, size_t len,
         src_addr->sa_family = AF_INET;
 
         // We want an AF_INET address with dummy values
-        struct sockaddr_in *addr_in = (struct sockaddr_in *) src_addr;
+        struct sockaddr_in *addr_in = (struct sockaddr_in *)(void *)src_addr;
         addr_in->sin_port = 12356;
         addr_in->sin_addr.s_addr = INADDR_LOOPBACK + 1;
         *addr_len = sizeof(struct sockaddr);

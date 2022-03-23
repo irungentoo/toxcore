@@ -2,6 +2,7 @@
 
 #include "../../toxcore/tox.h"
 
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     Tox_Err_Options_New error_options;

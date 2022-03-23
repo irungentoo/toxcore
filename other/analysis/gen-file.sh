@@ -55,6 +55,7 @@ FIND_QUERY="$FIND_QUERY -and -not -name amalgamation.cc"
 FIND_QUERY="$FIND_QUERY -and -not -name av_test.c"
 FIND_QUERY="$FIND_QUERY -and -not -name cracker.c"
 FIND_QUERY="$FIND_QUERY -and -not -name version_test.c"
+FIND_QUERY="$FIND_QUERY -and -not -name '*_fuzz_test.cc'"
 FIND_QUERY="$FIND_QUERY -and -not -wholename './testing/fuzzing/*'"
 
 if [ "$SKIP_GTEST" == 1 ]; then

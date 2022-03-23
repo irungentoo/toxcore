@@ -127,10 +127,12 @@ static bool should_ignore_recv_error(int err)
     return err == EWOULDBLOCK;
 }
 
+#ifndef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 static bool should_ignore_connect_error(int err)
 {
     return err == EWOULDBLOCK || err == EINPROGRESS;
 }
+#endif
 
 non_null()
 static const char *inet_ntop4(const struct in_addr *addr, char *buf, size_t bufsize)
@@ -274,8 +276,9 @@ static int make_socktype(int type)
             return type;
     }
 }
-#endif // FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+#endif  // FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
+#if !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) || !defined(NDEBUG)
 static int make_family(Family tox_family)
 {
     switch (tox_family.value) {
@@ -292,6 +295,7 @@ static int make_family(Family tox_family)
             return tox_family.value;
     }
 }
+#endif  // !defined(FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION) && !defined(NDEBUG)
 
 static const Family *make_tox_family(int family)
 {
@@ -1033,7 +1037,7 @@ Networking_Core *new_networking_ex(const Logger *log, const IP *ip, uint16_t por
 
     for (uint16_t tries = port_from; tries <= port_to; ++tries) {
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-        int res = 0;
+        int res = addrsize > 0 ? 0 : -1;
 #else
         int res = bind(temp->sock.sock, (struct sockaddr *)&addr, addrsize);
 #endif
@@ -1459,7 +1463,7 @@ bool net_connect(const Logger *log, Socket sock, const IP_Port *ip_port)
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return true;
+    return addrsize != 0;
 #else
     LOGGER_DEBUG(log, "connecting socket %d to %s:%d",
                  (int)sock.sock, ip_ntoa(&ip_port->ip, ip_str, sizeof(ip_str)), net_ntohs(ip_port->port));
@@ -1610,7 +1614,7 @@ bool bind_to_port(Socket sock, Family family, uint16_t port)
     }
 
 #ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
-    return true;
+    return addrsize != 0;
 #else
     return bind(sock.sock, (struct sockaddr *)&addr, addrsize) == 0;
 #endif

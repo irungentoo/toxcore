@@ -4,12 +4,13 @@
 #include "../../toxcore/tox.h"
 #include "fuzz_adapter.h"
 
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     network_adapter_init(data, size);
 
     Tox_Err_New error_new;
-    Tox *tox = tox_new(NULL, &error_new);
+    Tox *tox = tox_new(nullptr, &error_new);
 
     assert(tox != nullptr);
     assert(error_new == TOX_ERR_NEW_OK);

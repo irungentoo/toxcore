@@ -1,4 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
+load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load("//tools:no_undefined.bzl", "cc_library")
 
 package(features = ["layering_check"])
@@ -51,6 +52,7 @@ cc_library(
     visibility = ["//c-toxcore:__subpackages__"],
     deps = [
         ":ccompat",
+        "//c-toxcore/testing/fuzzing:fuzz_adapter",
         "@libsodium",
     ],
 )
@@ -121,6 +123,7 @@ cc_library(
     ],
     deps = [
         ":ccompat",
+        "//c-toxcore/testing/fuzzing:fuzz_adapter",
         "@pthread",
     ],
 )
@@ -169,6 +172,7 @@ cc_library(
         ":logger",
         ":mono_time",
         ":util",
+        "//c-toxcore/testing/fuzzing:fuzz_adapter",
         "@libsodium",
         "@psocket",
         "@pthread",
@@ -277,6 +281,13 @@ cc_test(
         "@com_google_googletest//:gtest",
         "@com_google_googletest//:gtest_main",
     ],
+)
+
+cc_fuzz_test(
+    name = "DHT_fuzz_test",
+    srcs = ["DHT_fuzz_test.cc"],
+    corpus = ["//tools/toktok-fuzzer/corpus:DHT_fuzz_test"],
+    deps = [":DHT"],
 )
 
 cc_library(
@@ -559,6 +570,25 @@ cc_library(
         ":tox_unpack",
         "@msgpack-c",
     ],
+)
+
+cc_test(
+    name = "tox_events_test",
+    size = "small",
+    srcs = ["tox_events_test.cc"],
+    deps = [
+        ":crypto_core",
+        ":tox_events",
+        "@com_google_googletest//:gtest",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_fuzz_test(
+    name = "tox_events_fuzz_test",
+    srcs = ["tox_events_fuzz_test.cc"],
+    corpus = ["//tools/toktok-fuzzer/corpus:tox_events_fuzz_test"],
+    deps = [":tox_events"],
 )
 
 cc_library(

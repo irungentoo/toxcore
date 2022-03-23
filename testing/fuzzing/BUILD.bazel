@@ -1,0 +1,25 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
+
+cc_library(
+    name = "fuzz_adapter",
+    srcs = ["fuzz_adapter.c"],
+    hdrs = ["fuzz_adapter.h"],
+    visibility = ["//c-toxcore:__subpackages__"],
+)
+
+cc_fuzz_test(
+    name = "bootstrap_fuzzer",
+    srcs = ["bootstrap_harness.cc"],
+    copts = ["-UNDEBUG"],
+    corpus = ["//tools/toktok-fuzzer/corpus:bootstrap_fuzzer"],
+    deps = ["//c-toxcore/toxcore:tox"],
+)
+
+cc_fuzz_test(
+    name = "toxsave_fuzz_test",
+    srcs = ["toxsave_harness.cc"],
+    copts = ["-UNDEBUG"],
+    corpus = ["//tools/toktok-fuzzer/corpus:toxsave_fuzzer"],
+    deps = ["//c-toxcore/toxcore:tox"],
+)
