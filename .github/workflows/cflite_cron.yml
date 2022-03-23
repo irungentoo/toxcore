@@ -24,7 +24,7 @@ jobs:
         # Optional but recommended.
         # See later section on "Git repo for storage".
         storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/TokTok/toktok-fuzzer.git
-        storage-repo-branch: main   # Optional. Defaults to "main"
+        storage-repo-branch: master   # Optional. Defaults to "main"
         storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
   Coverage:
     runs-on: ubuntu-latest
@@ -45,6 +45,6 @@ jobs:
         # Optional but recommended.
         # See later section on "Git repo for storage".
         storage-repo: https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/TokTok/toktok-fuzzer.git
-        storage-repo-branch: main   # Optional. Defaults to "main"
+        storage-repo-branch: master   # Optional. Defaults to "main"
         storage-repo-branch-coverage: gh-pages  # Optional. Defaults to "gh-pages".
 
