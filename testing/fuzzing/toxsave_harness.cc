@@ -1,4 +1,6 @@
 #include <cassert>
+#include <cstdint>
+#include <vector>
 
 #include "../../toxcore/tox.h"
 
@@ -17,8 +19,15 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     tox_options_set_savedata_type(tox_options, TOX_SAVEDATA_TYPE_TOX_SAVE);
 
     Tox *tox = tox_new(tox_options, nullptr);
-
     tox_options_free(tox_options);
+    if (tox == nullptr) {
+        // Tox save was invalid, we're finished here
+        return 0;
+    }
+
+    // verify that the file can be saved again
+    std::vector<uint8_t> new_savedata(tox_get_savedata_size(tox));
+    tox_get_savedata(tox, new_savedata.data());
 
     tox_kill(tox);
     return 0;  // Non-zero return values are reserved for future use.
